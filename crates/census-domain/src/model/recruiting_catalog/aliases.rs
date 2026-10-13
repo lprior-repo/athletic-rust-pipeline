@@ -1,6 +1,5 @@
-use super::policy::{
-    AMBIGUOUS, EXCLUSIONS, INCLUDED, PAIRS, QUALIFIERS, SEPARATORS, TERRAIN, UNITS,
-};
+use super::context::ContextualLabel;
+use super::policy::{AMBIGUOUS, EXCLUSIONS, INCLUDED, PAIRS, SEPARATORS, TERRAIN, UNITS};
 use super::{CatalogError, SourceEventLabel};
 use super::{
     EventDisposition, EventExclusionReason as Ex, EventKind, EventResolutionReason as Why,
@@ -29,17 +28,23 @@ pub(super) fn classify(source: &SourceEventLabel) -> Result<EventDisposition, Ca
             Why::AmbiguousAdaptiveOrSpecialLabel,
         ));
     }
-    if missing(label, &kind) {
+    let contextual = ContextualLabel::parse(label, &kind)?;
+    if missing(&contextual, &kind) {
         return Ok(EventDisposition::Unresolved(
             Why::UnsupportedScholasticVariant,
         ));
     }
-    if !INCLUDED.contains(&kind) || malformed_number(label) || !permitted(label, &kind) {
+    if !INCLUDED.contains(&kind)
+        || malformed_number(label)
+        || !super::policy::permitted(&contextual, &kind)
+    {
         return Ok(EventDisposition::Unresolved(
             Why::UnknownOrMixedSourceLabels,
         ));
     }
-    if !super::coherent_components(label, &kind)? || !super::coherent_pairs(label, &kind)? {
+    if !super::coherent_components(&contextual, &kind)?
+        || !super::coherent_pairs(&contextual, &kind)?
+    {
         return Ok(EventDisposition::Unresolved(Why::ContradictoryDeclarations));
     }
     Ok(EventDisposition::Included(kind))
@@ -100,7 +105,12 @@ fn cross_country(label: &str) -> bool {
 fn excluded(label: &str) -> Option<Ex> {
     let direct = EXCLUSIONS.iter().filter_map(|(alias, reason)| {
         tokens(label)
-            .any(|word| discipline(word, alias))
+            .zip(std::iter::once(None).chain(tokens(label).map(Some)))
+            .any(|(word, previous)| {
+                discipline(word, alias)
+                    && !(word.eq_ignore_ascii_case("cycling")
+                        && previous.is_some_and(|previous| previous.eq_ignore_ascii_case("hand")))
+            })
             .then_some(*reason)
     });
     let paired = PAIRS
@@ -145,7 +155,7 @@ pub(super) fn quantity(word: &str) -> bool {
         && (unit.is_empty() || member(unit, UNITS))
 }
 
-fn missing(label: &str, kind: &EventKind) -> bool {
+fn missing(label: &ContextualLabel<'_>, kind: &EventKind) -> bool {
     if matches!(
         kind,
         EventKind::CrossCountry | EventKind::SprintMedley | EventKind::DistanceMedley
@@ -161,20 +171,24 @@ fn missing(label: &str, kind: &EventKind) -> bool {
     ]
     .iter()
     .any(|(number, compact)| {
-        let present = tokens(label).any(|word| word.eq_ignore_ascii_case(compact))
-            || ["m", "meter", "meters", "metre", "metres"]
-                .iter()
-                .any(|unit| pair(label, number, unit));
+        let present = label.tokens().any(|word| {
+            word.declaration()
+                .is_some_and(|word| word.eq_ignore_ascii_case(compact))
+        }) || ["m", "meter", "meters", "metre", "metres"]
+            .iter()
+            .any(|unit| label.pair(number, unit));
         present
             && !matches!(
                 (*number, kind),
                 ("300", EventKind::Track300mHurdles) | ("2000", EventKind::Track2000mSteeplechase)
             )
-    }) || tokens(label).any(|word| member(word, &["10k", "2mile", "2miles", "twomile", "twomiles"]))
-        || ["2", "two"]
-            .iter()
-            .any(|number| pair(label, number, "mile") || pair(label, number, "miles"))
-        || pair(label, "10", "000m")
+    }) || label.tokens().any(|word| {
+        word.declaration()
+            .is_some_and(|word| member(word, &["10k", "2mile", "2miles", "twomile", "twomiles"]))
+    }) || ["2", "two"]
+        .iter()
+        .any(|number| label.pair(number, "mile") || label.pair(number, "miles"))
+        || label.pair("10", "000m")
 }
 
 fn malformed_number(label: &str) -> bool {
@@ -184,58 +198,6 @@ fn malformed_number(label: &str) -> bool {
             .next()
             .is_some_and(|byte| byte.is_ascii_digit())
     })
-}
-
-fn permitted(label: &str, kind: &EventKind) -> bool {
-    tokens(label)
-        .zip(tokens(label).skip(1).map(Some).chain(std::iter::once(None)))
-        .all(|(word, next)| {
-            if word
-                .bytes()
-                .all(|byte| byte.is_ascii_digit() || byte == b'.')
-            {
-                return next.is_some_and(|next| permitted_unit(next, kind))
-                    || kind.is_relay() && next.is_some_and(|next| next.eq_ignore_ascii_case("x"));
-            }
-            member(word, QUALIFIERS)
-                || permitted_unit(word, kind)
-                || permitted_quantity(word, kind)
-                || !matches!(
-                    EventKind::from_source_label(word),
-                    EventKind::Unmapped { .. }
-                )
-                || context_word(word, kind)
-                || word.eq_ignore_ascii_case("high") && pair(label, "high", "school")
-        })
-}
-
-fn permitted_quantity(word: &str, kind: &EventKind) -> bool {
-    quantity(word)
-        && word
-            .find(|ch: char| !ch.is_ascii_digit() && ch != '.')
-            .and_then(|end| word.get(end..))
-            .is_some_and(|unit| permitted_unit(unit, kind))
-}
-
-fn permitted_unit(word: &str, kind: &EventKind) -> bool {
-    member(
-        word,
-        &[
-            "m", "meter", "meters", "metre", "metres", "k", "km", "mile", "miles",
-        ],
-    ) || kind.is_hurdles()
-        && member(
-            word,
-            &["mm", "cm", "in", "inch", "inches", "ft", "feet", "foot"],
-        )
-        || matches!(
-            kind,
-            EventKind::ShotPut
-                | EventKind::Discus
-                | EventKind::Javelin
-                | EventKind::Hammer
-                | EventKind::WeightThrow
-        ) && member(word, &["kg", "g", "lb", "lbs"])
 }
 
 pub(super) fn excluded_component(word: &str) -> Option<EventKind> {
@@ -259,7 +221,7 @@ pub(super) fn excluded_component(word: &str) -> Option<EventKind> {
     })
 }
 
-fn context_word(word: &str, kind: &EventKind) -> bool {
+pub(super) fn context_word(word: &str, kind: &EventKind) -> bool {
     match kind {
         EventKind::CrossCountry => member(word, &["cross", "country", "race", "trail", "mountain"]),
         EventKind::HighJump => member(word, &["high", "jump"]),

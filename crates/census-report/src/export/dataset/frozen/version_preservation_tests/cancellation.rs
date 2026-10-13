@@ -5,10 +5,11 @@ use super::{
 use crate::export::dataset::frozen::cancel_freeze_v2;
 use crate::report::ReportError;
 
-const UNSUPPORTED: [VersionCase; 12] = [
+const UNSUPPORTED: [VersionCase; 13] = [
     VersionCase::HistoricalSchema,
     VersionCase::HistoricalPolicy,
     VersionCase::PolicyThirteen,
+    VersionCase::PolicyFourteen,
     VersionCase::CodecTwo,
     VersionCase::PreviousPolicy,
     VersionCase::PriorAffiliationPolicy,

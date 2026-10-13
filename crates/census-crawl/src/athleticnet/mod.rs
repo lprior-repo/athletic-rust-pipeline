@@ -22,7 +22,8 @@ const HIGH_SCHOOL_LEVEL: u32 = 4;
 
 pub const SCHOOL_KIND: &str = "school";
 
-const PARSE_VERSION: u32 = 2;
+const PARSE_VERSION: u32 = 3;
+const MEET_COMPLETION_PHASE: &str = "athleticnet_meet_completions_v3";
 
 #[derive(Debug, Clone, Default)]
 pub struct Options {

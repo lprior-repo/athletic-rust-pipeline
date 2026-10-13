@@ -125,7 +125,7 @@ fn athleticlive_fixture_is_armed_archived_executed_and_reopened_without_duplicat
             1
         );
         check!(eq;
-            store.journal_keys("athleticlive_results_effect_v2")?.len(),
+            store.journal_keys("athleticlive_results_effect_v3")?.len(),
             1
         );
         let before = store.journal_keys(ledger::PHASE)?;
@@ -144,7 +144,7 @@ fn athleticlive_fixture_is_armed_archived_executed_and_reopened_without_duplicat
             136
         );
         check!(eq;
-            store.journal_keys("athleticlive_results_effect_v2")?.len(),
+            store.journal_keys("athleticlive_results_effect_v3")?.len(),
             1
         );
         check!(eq; before.len(), 4);

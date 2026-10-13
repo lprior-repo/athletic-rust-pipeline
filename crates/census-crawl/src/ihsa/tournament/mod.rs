@@ -15,6 +15,8 @@ mod xc;
 pub use collect::collect;
 
 #[cfg(test)]
+mod interpretation_tests;
+#[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod walk_tests;

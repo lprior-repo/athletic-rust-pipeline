@@ -1,4 +1,73 @@
+use super::aliases;
+use super::context::{ContextualLabel, LabelToken};
 use super::{EventExclusionReason as Ex, EventKind};
+use crate::model::EventSpecification;
+
+pub(super) fn permitted(label: &ContextualLabel<'_>, kind: &EventKind) -> bool {
+    label
+        .tokens()
+        .zip(
+            label
+                .tokens()
+                .skip(1)
+                .map(Some)
+                .chain(std::iter::once(None)),
+        )
+        .all(|(token, next)| {
+            let LabelToken::Declaration(word) = token else {
+                return true;
+            };
+            let next = next.and_then(LabelToken::declaration);
+            if word
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || byte == b'.')
+            {
+                return next.is_some_and(|next| permitted_unit(next, kind))
+                    || kind.is_relay() && next.is_some_and(|next| next.eq_ignore_ascii_case("x"));
+            }
+            aliases::member(word, QUALIFIERS)
+                || permitted_unit(word, kind)
+                || permitted_quantity(word, kind)
+                || !matches!(
+                    EventKind::from_source_label(word),
+                    EventKind::Unmapped { .. }
+                )
+                || aliases::context_word(word, kind)
+                || word.eq_ignore_ascii_case("high")
+                    && next.is_some_and(|word| word.eq_ignore_ascii_case("school"))
+                || EventSpecification::from_published_label(word, kind)
+                    .is_ok_and(|value| value.category.is_some())
+        })
+}
+
+fn permitted_quantity(word: &str, kind: &EventKind) -> bool {
+    aliases::quantity(word)
+        && word
+            .find(|ch: char| !ch.is_ascii_digit() && ch != '.')
+            .and_then(|end| word.get(end..))
+            .is_some_and(|unit| permitted_unit(unit, kind))
+}
+
+fn permitted_unit(word: &str, kind: &EventKind) -> bool {
+    aliases::member(
+        word,
+        &[
+            "m", "meter", "meters", "metre", "metres", "k", "km", "mile", "miles",
+        ],
+    ) || kind.is_hurdles()
+        && aliases::member(
+            word,
+            &["mm", "cm", "in", "inch", "inches", "ft", "feet", "foot"],
+        )
+        || matches!(
+            kind,
+            EventKind::ShotPut
+                | EventKind::Discus
+                | EventKind::Javelin
+                | EventKind::Hammer
+                | EventKind::WeightThrow
+        ) && aliases::member(word, &["kg", "g", "lb", "lbs"])
+}
 
 pub(super) const INCLUDED: &[EventKind] = &[
     EventKind::Track55m,

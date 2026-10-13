@@ -74,16 +74,89 @@ fn cen10_unknown_category_never_merges_with_published_boys() -> TestResult {
         let event = event_with_specification(&meet, label, gender, specification)?;
         add(&mut data, meet, event, time)?;
     }
-    let rows = selections(&data)?;
-    check!(eq; rows.len(), 2);
+    let retained = serialized_bytes(&(&data.events, &data.performances))?;
+    let admission = crate::report::EventAdmission::of(&data)?;
     check!(
         eq;
-        rows.iter()
-            .find(|row| row.source.specification.category.is_none())
-            .ok_or("unknown category")?
-            .result
-            .mark,
-        Mark::TimeSeconds(ExactSeconds::parse("140")?)
+        admission.counts(),
+        &crate::report::EventCounts {
+            included: 1,
+            excluded: std::collections::BTreeMap::new(),
+            unresolved: std::collections::BTreeMap::from([(
+                EventResolutionReason::UnresolvedCategoryOrContext,
+                1,
+            )]),
+        }
+    );
+    let mut pure_keys = Vec::new();
+    for event in &data.events {
+        let performance = data
+            .performances
+            .iter()
+            .find(|performance| performance.event == event.id)
+            .ok_or("retained category performance")?;
+        let meet = data
+            .meets
+            .iter()
+            .find(|meet| meet.id == event.meet)
+            .ok_or("retained category meet")?;
+        let pure_key = crate::bests::PrKey::base(
+            performance,
+            &EventKind::Track1000m,
+            crate::bests::SurfaceClass::Indoor,
+            crate::bests::Measure::Time,
+            &performance.athlete,
+        )
+        .qualify(event)
+        .ok_or("pure comparison key")?;
+        let checked_key = crate::bests::PrKey::from_performance(
+            performance,
+            event,
+            Some(meet),
+            crate::bests::Measure::Time,
+        )?;
+        match event.gender {
+            Gender::Boys => {
+                check!(
+                    eq;
+                    admission.disposition(&event.id),
+                    Some(&EventDisposition::Included(EventKind::Track1000m))
+                );
+                check!(eq; checked_key, Some(pure_key.clone()));
+                check!(eq; pure_key.specification.category, Some(CompetitionCategory::Boys));
+                check!(eq; performance.mark, Mark::TimeSeconds(ExactSeconds::parse("150")?));
+            }
+            Gender::Unknown => {
+                check!(
+                    eq;
+                    admission.disposition(&event.id),
+                    Some(&EventDisposition::Unresolved(
+                        EventResolutionReason::UnresolvedCategoryOrContext
+                    ))
+                );
+                check!(eq; checked_key, None);
+                check!(eq; pure_key.specification.category, None);
+                check!(eq; performance.mark, Mark::TimeSeconds(ExactSeconds::parse("140")?));
+            }
+            other => return Err(format!("unexpected fixture category: {other:?}").into()),
+        }
+        pure_keys.push(pure_key);
+    }
+    check!(eq; pure_keys.len(), 2);
+    check!(
+        ne;
+        pure_keys.first().ok_or("known category pure key")?,
+        pure_keys.get(1).ok_or("unknown category pure key")?
+    );
+    let mut without_category = pure_keys.first().ok_or("known category pure key")?.clone();
+    without_category.specification.category = None;
+    check!(eq; &without_category, pure_keys.get(1).ok_or("unknown category pure key")?);
+    let rows = selections(&data)?;
+    check!(eq; rows.len(), 1);
+    check!(
+        eq;
+        rows.first().ok_or("qualified category winner")?.source.specification.category,
+        Some(CompetitionCategory::Boys)
     );
     check!(
         eq;
@@ -94,5 +167,8 @@ fn cen10_unknown_category_never_merges_with_published_boys() -> TestResult {
             .mark,
         Mark::TimeSeconds(ExactSeconds::parse("150")?)
     );
+    check!(eq; data.events.len(), 2);
+    check!(eq; data.performances.len(), 2);
+    check!(eq; serialized_bytes(&(&data.events, &data.performances))?, retained);
     Ok(())
 }

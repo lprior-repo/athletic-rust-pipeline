@@ -3,8 +3,8 @@ use crate::{AdapterContext, CrawlResult};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 
-pub(super) const PHASE: &str = "ihsa_tournament";
-const PARSER: u64 = 2;
+pub(super) const PHASE: &str = "ihsa_tournament_v3";
+const PARSER: u64 = 3;
 const MEET_KEY: &str = "meet";
 const QUALIFIERS_KEY: &str = "qualifiers";
 

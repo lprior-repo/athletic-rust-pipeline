@@ -5,7 +5,10 @@ use census_domain::model::SourceNamespace;
 use census_store::Table;
 use serde::Serialize;
 
-const PHASE: &str = "net_profile_projection_v4";
+const PHASE: &str = "net_profile_projection_v5";
+
+#[cfg(test)]
+mod tests;
 
 pub(super) fn persist(ctx: &AdapterContext<'_>, rows: Accumulator) -> CrawlResult<EntityCounts> {
     let schools = write_rows(ctx, Table::Schools, rows.schools.values())?;

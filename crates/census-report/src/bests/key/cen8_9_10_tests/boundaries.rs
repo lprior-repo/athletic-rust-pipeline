@@ -53,6 +53,8 @@ fn cen10_mass_height_are_exact_and_invalid_labels_cannot_mint_events() -> TestRe
 fn cen10_source_labels_require_parsed_binding_and_conflicts_withhold() -> TestResult {
     let meet = meet("binding", Sport::OutdoorTrack, "2025-05-01");
     let mut event = event(&meet, "Boys Shot Put (4kg)")?;
+    check!(eq; event.source_labels.len(), 1);
+    check!(eq; event.evidence.len(), 1);
     let source = event.source_labels.first().ok_or("source")?.source.clone();
     event.source_labels.push(SourceEventLabel {
         source,
@@ -69,7 +71,7 @@ fn cen10_source_labels_require_parsed_binding_and_conflicts_withhold() -> TestRe
         event.resolved_specification()?.implement,
         Some(ImplementMass::try_from(4_000_000_000)?)
     );
-    let mut unbound = crate::test_events::owned(CanonicalEvent::new(
+    let mut unbound = CanonicalEvent::new(
         EventIdentity {
             meet: &meet.id,
             kind: EventKind::ShotPut,
@@ -78,8 +80,9 @@ fn cen10_source_labels_require_parsed_binding_and_conflicts_withhold() -> TestRe
             round: None,
         },
         EventSpecification::default(),
-    )?);
+    )?;
     unbound.source_labels = event.source_labels;
+    check!(eq; unbound.evidence.len(), 0);
     check!(eq; unbound.resolved_specification()?.implement, None);
     Ok(())
 }

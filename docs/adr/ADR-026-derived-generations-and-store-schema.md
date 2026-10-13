@@ -286,3 +286,29 @@ These changes close a new-capture consistency gap. The previously implemented pu
 already rejects the observed unbound-to-bound mismatch before switching the current generation;
 this change does not claim a newly discovered stale-publication bypass. Reusable production
 installation, profile enrollment and dated affiliation remain separate delivery requirements.
+
+### 2026-10-13: catalog correction identity and policy 15
+
+The contextual hand-cycling exclusion, exact cross-country label anchors and source-published
+typed event dimensions change event admission semantics. The catalog grammar identity therefore advances to
+`ascii_delimited_tokens_typed_context_xc_anchors_v3`, and newly derived publication inputs
+use semantic policy 15. Logical schema 3, frozen codec 3, token protocol 3, publication manifest
+revision 2, physical store schema 2 and key format 1 are unchanged.
+
+Policy 14 input roots and archives are historical artifacts, not inputs to reinterpret using the
+corrected reducer. Reopen, resume and cancellation refuse their unsupported policy before
+retirement or mutation. Their bytes, markers, leases and input records remain intact. A new
+supported generation may be derived from retained source observations; it has a distinct input,
+recipe and publication identity. No migration overwrites a prior artifact or asserts that an old
+output satisfied the corrected classification. The preservation regression matrix includes
+policy 14 across every retained input state and after store reopen.
+
+The shared XC ontology correction also changes source interpretation. Raw captures retain their
+existing identities. Fresh interpretations use MileSplit owned v4/result-set v6, TFRRS projection
+v4, AthleticLIVE effect v3/projection v5/parser v5, Athletic.net meet parser/completion v3 and
+profile parser/attempt/projection v5, IHSA tournament parser/completion v3/fact effects v2, and
+WIAA parser v9/projection v3. Existing content-addressed, unchanged-payload application witnesses
+remain reusable. Old interpretation receipts remain retained and cannot stand in for current
+completion. AthleticLIVE's historical v2 ownership claims remain a separately decoded read-only
+ownership constraint under their frozen v4 parser; they never establish v3 effect completion.
+MileSplit owned v1 through v4 retain payload-digest validation and explicit migration recognition.

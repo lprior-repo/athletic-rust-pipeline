@@ -4,10 +4,11 @@ use super::exact::{convert_mark, decode, encode, invalid};
 use crate::{Store, StoreResult};
 
 pub(super) const ARCHIVE_PHASE: &str = "schema1_lineage_milesplit_owned_meet_v1";
-const PHASES: [&str; 3] = [
+const PHASES: [&str; 4] = [
     "milesplit_owned_meet_v1",
     "milesplit_owned_meet_v2",
     "milesplit_owned_meet_v3",
+    "milesplit_owned_meet_v4",
 ];
 
 pub(super) struct Rekeyed {

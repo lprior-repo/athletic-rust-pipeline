@@ -21,10 +21,11 @@ const MAX_DECODE_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_CHUNK_BYTES: usize = 512 * 1024;
 const MAX_CORRUPTIONS: usize = 1024;
 const MAX_LIMITS: usize = 16;
-const OWNED_DIGEST_PHASES: [&str; 3] = [
+const OWNED_DIGEST_PHASES: [&str; 4] = [
     "milesplit_owned_meet_v1",
     "milesplit_owned_meet_v2",
     "milesplit_owned_meet_v3",
+    "milesplit_owned_meet_v4",
 ];
 
 impl Store {
@@ -50,10 +51,18 @@ impl Store {
         decode.journal_pass()?;
         decode.payload_pass()?;
         let Decode {
-            corruptions,
-            limits,
+            mut corruptions,
+            mut limits,
             ..
         } = decode;
+        let profiles = super::profile_integrity::check(
+            &self.db.snapshot(),
+            &self.meta,
+            record_window,
+            byte_window,
+        )?;
+        corruptions.extend(profiles.corruptions);
+        limits.extend(profiles.limits);
         let tables_sound = tables
             .iter()
             .all(|table| table.expected == table.actual && table.details.is_empty());

@@ -241,7 +241,7 @@ fn competition() -> TestResult<(CanonicalMeet, CanonicalEvent)> {
         },
         EventSpecification::default(),
     )?);
-    event.evidence = vec![evidence()];
+    event.evidence.push(evidence());
     Ok((meet, event))
 }
 

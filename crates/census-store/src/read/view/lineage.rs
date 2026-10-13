@@ -23,13 +23,8 @@ impl StoreSnapshot<'_> {
         &self,
         id: &census_domain::model::ProfileId,
     ) -> StoreResult<census_domain::model::QueryProfileV1> {
-        use fjall::Readable;
-        let raw = self
-            .snapshot
-            .get(self.meta, crate::profiles::key(id))
-            .map_err(|source| crate::StoreError::Read { source })?
-            .ok_or_else(|| crate::ProfileRegistryError::MissingProfile { id: id.clone() })?;
-        crate::profiles::read::decode(id, raw.as_ref())
+        crate::profiles::read::retained(&self.snapshot, self.meta, id)?
+            .ok_or_else(|| crate::ProfileRegistryError::MissingProfile { id: id.clone() }.into())
     }
 
     pub fn selected_profile(

@@ -10,7 +10,7 @@ use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 pub(in crate::milesplit::results) const PARSER_REVISION: &str =
-    "milesplit_owned_v3_raw_metadata_v1";
+    "milesplit_owned_v4_raw_metadata_v1";
 
 pub(super) fn projection(
     input: &Input<'_>,

@@ -21,7 +21,7 @@ pub use pages::{
 };
 use run::Run;
 
-pub const RESULT_SET_PHASE: &str = "milesplit_result_sets_v5";
+pub const RESULT_SET_PHASE: &str = "milesplit_result_sets_v6";
 const ADAPTER: &str = "milesplit_results";
 const APPLICATION_PHASE: &str = "milesplit_result_set_effects_v1";
 

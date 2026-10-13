@@ -30,14 +30,13 @@ pub(super) fn require_selection(
     jurisdictions: &[census_domain::UsJurisdiction],
 ) -> ReportResult<()> {
     let selection = manifest.selection()?;
-    let mut expected: Vec<&str> = jurisdictions
+    let mut expected: Vec<&str> = effective_jurisdictions(jurisdictions)
         .iter()
         .map(|jurisdiction| jurisdiction.code())
         .collect();
     expected.sort_unstable();
     expected.dedup();
-    let mut published: Vec<&str> = selection
-        .jurisdictions
+    let mut published: Vec<&str> = effective_jurisdictions(&selection.jurisdictions)
         .iter()
         .map(|jurisdiction| jurisdiction.code())
         .collect();
@@ -49,6 +48,16 @@ pub(super) fn require_selection(
         ));
     }
     Ok(())
+}
+
+fn effective_jurisdictions(
+    jurisdictions: &[census_domain::UsJurisdiction],
+) -> &[census_domain::UsJurisdiction] {
+    if jurisdictions.is_empty() {
+        &census_domain::UsJurisdiction::CENSUS_SCOPE
+    } else {
+        jurisdictions
+    }
 }
 
 fn complete_selection(selection: &Options, scope: Scope, cohort: GradYear) -> ReportResult<()> {

@@ -5,6 +5,7 @@ mod generation;
 mod http_cache;
 mod integrity;
 mod manifest;
+mod profile_integrity;
 mod restore;
 mod tree;
 

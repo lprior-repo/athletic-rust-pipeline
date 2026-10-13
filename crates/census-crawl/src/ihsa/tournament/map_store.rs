@@ -10,7 +10,7 @@ use census_store::Table;
 use serde_json::Value;
 use std::collections::HashMap;
 
-const APPLICATION_PHASE: &str = "ihsa_tournament_fact_effects_v1";
+const APPLICATION_PHASE: &str = "ihsa_tournament_fact_effects_v2";
 
 #[derive(Debug, Default)]
 pub(super) struct EntityCounts {

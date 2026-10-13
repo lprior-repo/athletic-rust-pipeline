@@ -202,8 +202,9 @@ pub(super) fn check_shape(dataset: &ExportDataset, shape: EvidenceShape) -> Test
     check!(eq; evidence.rows, expected_rows);
     check!(eq; evidence.coach_lanes, expected_lanes);
     let expected = format!(
-        ",\"coverage_evidence\":{}}}",
-        String::from_utf8(serialized_bytes(evidence)?)?
+        ",\"coverage_evidence\":{},\"relays\":{}}}",
+        String::from_utf8(serialized_bytes(evidence)?)?,
+        String::from_utf8(serialized_bytes(&dataset.relays)?)?
     );
     check!(serialized_bytes(dataset)?.ends_with(expected.as_bytes()));
     check_report(dataset, shape)?;

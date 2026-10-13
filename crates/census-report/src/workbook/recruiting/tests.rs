@@ -147,7 +147,7 @@ fn meet(
 }
 
 fn event(store: &Store, meet: &MeetId, kind: EventKind) -> TestResult<EventId> {
-    let mut event = crate::test_events::owned(CanonicalEvent::new(
+    let event = crate::test_events::owned(CanonicalEvent::new(
         EventIdentity {
             meet,
             kind,

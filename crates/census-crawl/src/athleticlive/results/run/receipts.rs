@@ -3,34 +3,42 @@ use crate::net::cache::CacheMeta;
 use crate::{AdapterContext, CrawlResult};
 use serde_json::json;
 
+const HISTORICAL_EFFECT_PHASE: &str = "athleticlive_results_effect_v2";
+const HISTORICAL_PARSER: &str = "athleticlive_results_v4";
+
 pub(super) fn require_owner(
     ctx: &AdapterContext<'_>,
     path: &str,
     meta: &CacheMeta,
     run: &super::Run,
 ) -> CrawlResult<()> {
-    let keys = ctx.store.journal_keys(EFFECT_PHASE)?;
-    if keys.len() > super::MAX_CAPTURE_RECORDS {
-        return Err(super::resource("LIVE receipt index", keys.len()));
-    }
-    let meet = run.target.athleticlive_meet_id.to_string();
-    for key in keys {
-        let payload = ctx
-            .store
-            .journal_payload(EFFECT_PHASE, &key)?
-            .ok_or_else(|| super::schema(path, "current receipt has no payload"))?;
-        require_shape(path, &key, &payload)?;
-        if (payload.get("path").and_then(serde_json::Value::as_str) == Some(path)
-            || payload.get("digest").and_then(serde_json::Value::as_str)
-                == Some(meta.content_digest.as_str()))
-            && (payload.get("meet").and_then(serde_json::Value::as_str) != Some(meet.as_str())
-                || payload.get("provider").and_then(serde_json::Value::as_str)
-                    != Some(run.target.tenant.as_str()))
-        {
-            return Err(super::schema(
-                path,
-                "capture belongs to another meet/provider; refusing to project",
-            ));
+    for (phase, parser) in [
+        (HISTORICAL_EFFECT_PHASE, HISTORICAL_PARSER),
+        (EFFECT_PHASE, PARSER),
+    ] {
+        let keys = ctx.store.journal_keys(phase)?;
+        if keys.len() > super::MAX_CAPTURE_RECORDS {
+            return Err(super::resource("LIVE receipt index", keys.len()));
+        }
+        let meet = run.target.athleticlive_meet_id.to_string();
+        for key in keys {
+            let payload = ctx
+                .store
+                .journal_payload(phase, &key)?
+                .ok_or_else(|| super::schema(path, "projection receipt has no payload"))?;
+            require_shape(path, &key, &payload, parser)?;
+            if (payload.get("path").and_then(serde_json::Value::as_str) == Some(path)
+                || payload.get("digest").and_then(serde_json::Value::as_str)
+                    == Some(meta.content_digest.as_str()))
+                && (payload.get("meet").and_then(serde_json::Value::as_str) != Some(meet.as_str())
+                    || payload.get("provider").and_then(serde_json::Value::as_str)
+                        != Some(run.target.tenant.as_str()))
+            {
+                return Err(super::schema(
+                    path,
+                    "capture belongs to another meet/provider; refusing to project",
+                ));
+            }
         }
     }
     Ok(())
@@ -54,10 +62,12 @@ fn receipt_fields_present(
     meet: Option<&str>,
     projection: Option<&str>,
     payload: &serde_json::Value,
+    parser: &str,
 ) -> bool {
     meet.is_some()
         && projection.is_some()
-        && payload.get("parser").and_then(serde_json::Value::as_str) == Some(PARSER)
+        && capture_fields_match(payload)
+        && payload.get("parser").and_then(serde_json::Value::as_str) == Some(parser)
         && payload
             .get("complete")
             .and_then(serde_json::Value::as_bool)
@@ -74,6 +84,32 @@ fn receipt_fields_present(
             .get("provider")
             .and_then(serde_json::Value::as_str)
             .is_some()
+}
+
+fn capture_fields_match(payload: &serde_json::Value) -> bool {
+    let Some(digest) = payload
+        .get("digest")
+        .and_then(serde_json::Value::as_str)
+        .filter(|digest| {
+            digest.len() == 64
+                && digest
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || matches!(byte, b'a'..=b'f'))
+        })
+    else {
+        return false;
+    };
+    let Some(bytes) = payload.get("bytes").and_then(serde_json::Value::as_u64) else {
+        return false;
+    };
+    payload
+        .pointer("/metadata/content_digest")
+        .and_then(serde_json::Value::as_str)
+        == Some(digest)
+        && payload
+            .pointer("/metadata/bytes")
+            .and_then(serde_json::Value::as_u64)
+            == Some(bytes)
 }
 
 fn receipt_identity(payload: &serde_json::Value) -> serde_json::Value {
@@ -104,10 +140,15 @@ fn receipt_digest(payload: &serde_json::Value) -> CrawlResult<String> {
     })
 }
 
-fn require_shape(path: &str, key: &str, payload: &serde_json::Value) -> CrawlResult<()> {
+fn require_shape(
+    path: &str,
+    key: &str,
+    payload: &serde_json::Value,
+    parser: &str,
+) -> CrawlResult<()> {
     let meet = receipt_owner(payload);
     let projection = receipt_projection(payload);
-    if !receipt_fields_present(meet, projection, payload) {
+    if !receipt_fields_present(meet, projection, payload, parser) {
         return Err(super::schema(
             path,
             "ambiguous or incompatible LIVE projection receipt shape",
