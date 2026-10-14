@@ -38,10 +38,6 @@ pub(super) fn admit(
     let mut seen = HashSet::new();
     seen.try_reserve(effects.len())
         .map_err(|_| refused("allocating conditional operation membership"))?;
-    let mut bytes = encoded_bytes(base)?;
-    if bytes > MAX_STAGED_BYTES {
-        return Err(refused("conditional staged bytes exceed 33554432"));
-    }
     effects.iter().try_for_each(|effect| {
         if !std::ptr::eq(base.store, effect.batch.store) {
             return Err(refused("conditional batch belongs to another store"));
@@ -54,6 +50,19 @@ pub(super) fn admit(
                 "conditional operation occurs twice in one application",
             ));
         }
+        Ok(())
+    })
+}
+
+pub(super) fn admit_bytes(
+    base: &StoreBatch<'_>,
+    effects: &[ConditionalBatch<'_, '_>],
+) -> StoreResult<()> {
+    let mut bytes = encoded_bytes(base)?;
+    if bytes > MAX_STAGED_BYTES {
+        return Err(refused("conditional staged bytes exceed 33554432"));
+    }
+    effects.iter().try_for_each(|effect| {
         bytes = bytes
             .checked_add(encoded_bytes(&effect.batch)?)
             .ok_or(StoreError::CounterOverflow)?;

@@ -1,5 +1,7 @@
 #[path = "concurrency.rs"]
 mod concurrency;
+#[path = "journal_lock.rs"]
+mod journal_lock;
 #[path = "pinned.rs"]
 mod pinned;
 #[path = "preservation.rs"]

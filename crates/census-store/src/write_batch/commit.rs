@@ -9,12 +9,13 @@ use super::{conditional, ConditionalBatch, Page, Replacement, StoreBatch};
 
 impl<'store> StoreBatch<'store> {
     pub fn commit(self) -> StoreResult<()> {
-        self.commit_inner(None, None, Vec::new()).map(|_| ())
+        self.commit_inner(None, None, Vec::new(), Ok(()))
+            .map(|_| ())
     }
 
     pub fn commit_once(self, operation: &str, digest: &str) -> StoreResult<Application> {
         receipt::refuse_over_operation(operation, digest)?;
-        self.commit_inner(Some((operation, digest)), None, Vec::new())?
+        self.commit_inner(Some((operation, digest)), None, Vec::new(), Ok(()))?
             .ok_or_else(|| StoreError::Invariant {
                 detail: format!(
                     "receipted commit of operation {operation} wrote neither rows nor a receipt"
@@ -29,10 +30,15 @@ impl<'store> StoreBatch<'store> {
         generation: u64,
     ) -> StoreResult<Application> {
         receipt::refuse_over_operation(operation, digest)?;
-        self.commit_inner(Some((operation, digest)), Some(generation), Vec::new())?
-            .ok_or_else(|| StoreError::Invariant {
-                detail: format!("fenced operation {operation} wrote neither rows nor a receipt"),
-            })
+        self.commit_inner(
+            Some((operation, digest)),
+            Some(generation),
+            Vec::new(),
+            Ok(()),
+        )?
+        .ok_or_else(|| StoreError::Invariant {
+            detail: format!("fenced operation {operation} wrote neither rows nor a receipt"),
+        })
     }
 
     pub fn commit_once_with_effects(
@@ -43,8 +49,9 @@ impl<'store> StoreBatch<'store> {
     ) -> StoreResult<Application> {
         receipt::refuse_over_operation(operation, digest)?;
         conditional::admit(&self, &effects, operation)?;
+        let admission = conditional::admit_bytes(&self, &effects);
         self.conditional_byte_limit = Some(conditional::MAX_STAGED_BYTES);
-        self.commit_inner(Some((operation, digest)), None, effects)?
+        self.commit_inner(Some((operation, digest)), None, effects, admission)?
             .ok_or_else(|| StoreError::Invariant {
                 detail: format!("conditional operation {operation} produced no receipt"),
             })
@@ -55,6 +62,7 @@ impl<'store> StoreBatch<'store> {
         once: Option<(&str, &str)>,
         evidence: Option<u64>,
         effects: Vec<ConditionalBatch<'store, '_>>,
+        admission: StoreResult<()>,
     ) -> StoreResult<Option<Application>> {
         if self.is_empty() && once.is_none() {
             return Ok(None);
@@ -66,6 +74,7 @@ impl<'store> StoreBatch<'store> {
                 return Ok(Some(Application::Repeated(receipt)));
             }
         }
+        admission?;
         refuse_moved_evidence(store, once, evidence)?;
         let mut batch = store.db.batch();
         let prepared = conditional::merge(self, effects, &mut batch)?;
@@ -271,3 +280,6 @@ fn write_replacements(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;
