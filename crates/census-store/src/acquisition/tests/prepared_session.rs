@@ -3,6 +3,7 @@ mod continuation;
 mod freshness;
 mod owner;
 mod owner_binding;
+mod read_traces;
 
 fn selected(
     store: &Store,

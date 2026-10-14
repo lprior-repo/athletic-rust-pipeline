@@ -77,6 +77,17 @@ impl AcquisitionReadBudget {
 
 #[cfg(test)]
 impl AcquisitionReadBudget {
+    pub(in crate::acquisition) fn recovery_narrow_physical_reads(
+        &mut self,
+        roots: usize,
+        encoded: usize,
+        receipts: u64,
+    ) {
+        self.roots = self.roots.min(roots);
+        self.encoded = self.encoded.min(encoded);
+        self.recovery.total.receipts.limit = self.recovery.total.receipts.limit.min(receipts);
+    }
+
     pub(in crate::acquisition) fn recovery_limit_owned(&mut self, limit: u64) {
         self.recovery.total.allocations.owned.limit = limit;
     }

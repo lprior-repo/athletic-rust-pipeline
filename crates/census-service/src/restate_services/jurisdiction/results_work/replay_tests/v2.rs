@@ -4,9 +4,12 @@ use crate::restate_services::national::publication_tests::codec::Frame;
 use census_domain::model::CaptureProtocolVersion;
 use census_store::{AcquisitionTerminal, ImmutableAttemptResult, Receipt};
 
+mod branch_support;
 mod fixture;
 mod protocol;
 mod refusal;
+mod retained;
+mod successor;
 
 const PHASE: &str = "source_acquisition_attempt_v2";
 

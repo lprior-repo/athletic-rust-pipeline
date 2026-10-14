@@ -11,20 +11,26 @@ production enrollment, automatic migration, live census or historical rewrite is
   own bounded loan and preserves durable retained truth if publication fails.
 - Two named SDK runs freeze selection/discovery before execution and replay the original pin.
   Size limits, cumulative read/IO/allocation allowances and typed cleanup causes refuse excess.
-- CLI/bootstrap explicitly select v2 on fresh qualification roots. V1 remains the default.
+- CLI/bootstrap explicitly select v2 on fresh qualification roots. General serving still defaults
+  to LegacyFresh; historical v1 has explicit reopen/replay support.
 
 Review: Core corrections cover post-callback corruption, persistent multi-target owner binding,
 occupied-metadata precedence and exact historical/domain errors. Crawl corrections preserve
 both primary and cleanup causes and exhaustive classification. A concrete duplicate envelope
 parse now charges both traversals. General transitive allocation bounds remain unqualified.
 
-Executed: initial Moon format failed on duplicate module visibility; corrected format passed.
-Three all-target checks failed in sequence on five Core visibility errors, two Crawl error
-conversions, then five Service reexport visibility errors plus one HandlerError formatting
-error. Fourth check reached test compilation and failed on three anyhow downcasts and
-one missing fallible-test return type. All reported errors and unused-source warnings have
-source corrections; the final corrections have not been rechecked. No v2 tests or source lint
-have run yet.
+Executed follow-up: Moon all-target/all-feature check passed (3m41s) after five failed
+checks exposed and corrected visibility, error conversion, fixture and common-terminal enum
+errors. Moon format passed. The focused Store acquisition suite passed **90/90**, with 591
+skipped (nextest `9fd79bbe-dadf-4db8-aa38-c96fa1f266f5`). This includes genuine J0/J1 80/82-root,
+encoded-byte and receipt-probe boundaries, historical-family/reopen and backup preservation.
+
+The combined Crawl/Store/Service test build failed when the Crawl test compiler received
+SIGKILL after 8m29s; no tests executed in that attempt. Cause is not established. An earlier
+invocation was rejected for duplicate test-thread arguments before compilation. Crawl parser,
+publication and Service SDK endpoint regressions compile but remain unexecuted; source lint
+and full release qualification remain pending. Functional recovery iteration preserves the
+existing bounded read/debit/EOF order; additional endpoint/receipt assertions are included.
 
 Not run/accepted: full focused regression envelope, actual SDK cases, native-v7 frame limits,
 crash/SyncData/cancellation scenarios, complete physical read/allocation/resource traces,

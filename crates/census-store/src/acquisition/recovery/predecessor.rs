@@ -52,42 +52,47 @@ pub(in crate::acquisition) fn reserve(
     }
     account.reserve_scratch()?;
     let mut scratch = [0; 32768];
-    for attempt in facts.attempts.iter().take(2) {
-        if !attempt.terminal.as_ref().is_some_and(|terminal| {
-            matches!(
-                terminal.terminal(),
-                AcquisitionTerminal::PreparedRetentionFailed { .. }
-            )
-        }) {
-            continue;
-        }
-        let prepared = attempt
-            .prepared
-            .as_ref()
-            .ok_or(CaptureError::CorruptClosure)?;
-        let paths = backing::Paths::new(&http, &prepared.capture, &mut account)?;
-        if paths.body_missing(&mut account)?.is_none() {
-            backing::verify(
-                &paths.body,
-                prepared.capture.content_bytes(),
-                prepared.capture.content_digest(),
-                RecoveryPayloadRole::Body,
-                &mut account,
-                &mut scratch,
-            )?;
-        }
-        if paths.metadata_missing(&mut account)?.is_none() {
-            backing::verify(
-                &paths.metadata,
-                u64::try_from(prepared.capture.metadata_bytes().len())
-                    .map_err(|_| crate::StoreError::CounterOverflow)?,
-                prepared.capture.metadata_digest(),
-                RecoveryPayloadRole::Metadata,
-                &mut account,
-                &mut scratch,
-            )?;
-        }
-    }
+    facts
+        .attempts
+        .iter()
+        .take(2)
+        .try_for_each(|attempt| -> StoreResult<()> {
+            if !attempt.terminal.as_ref().is_some_and(|terminal| {
+                matches!(
+                    terminal.terminal(),
+                    AcquisitionTerminal::PreparedRetentionFailed { .. }
+                )
+            }) {
+                return Ok(());
+            }
+            let prepared = attempt
+                .prepared
+                .as_ref()
+                .ok_or(CaptureError::CorruptClosure)?;
+            let paths = backing::Paths::new(&http, &prepared.capture, &mut account)?;
+            if paths.body_missing(&mut account)?.is_none() {
+                backing::verify(
+                    &paths.body,
+                    prepared.capture.content_bytes(),
+                    prepared.capture.content_digest(),
+                    RecoveryPayloadRole::Body,
+                    &mut account,
+                    &mut scratch,
+                )?;
+            }
+            if paths.metadata_missing(&mut account)?.is_none() {
+                backing::verify(
+                    &paths.metadata,
+                    u64::try_from(prepared.capture.metadata_bytes().len())
+                        .map_err(|_| crate::StoreError::CounterOverflow)?,
+                    prepared.capture.metadata_digest(),
+                    RecoveryPayloadRole::Metadata,
+                    &mut account,
+                    &mut scratch,
+                )?;
+            }
+            Ok(())
+        })?;
     account.reserve_owned(3 * MAX_CAPTURE_RECORD_BYTES)?;
     crate::acquisition::transition::reserve_facts(store, work, &facts)
 }

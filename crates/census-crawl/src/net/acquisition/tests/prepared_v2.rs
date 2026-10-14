@@ -6,6 +6,7 @@ use census_store::{
     ResultsCaptureOwnerV1,
 };
 
+mod acceptance;
 mod boundaries;
 mod diagnostic;
 mod publication;

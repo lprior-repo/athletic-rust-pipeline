@@ -5,6 +5,7 @@ use census_domain::model::*;
 use sha2::{Digest, Sha256};
 use std::fs::{File, Metadata};
 use std::io::Read;
+use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 
 pub(super) struct Paths {
@@ -81,17 +82,23 @@ fn missing_chain(
     absent: MissingLocation,
     account: &mut TargetAccount<'_>,
 ) -> StoreResult<Option<MissingLocation>> {
-    for (path, location) in chain.iter().take(3) {
-        match inspect(path, account)? {
-            None => return Ok(Some(*location)),
-            Some(metadata) if metadata.is_dir() => {}
-            Some(_) => return Err(CaptureError::PreparedRepairRequired.into()),
-        }
-    }
-    match inspect(leaf, account)? {
-        None => Ok(Some(absent)),
-        Some(metadata) if metadata.is_file() => Ok(None),
-        Some(_) => Err(CaptureError::PreparedRepairRequired.into()),
+    let parents =
+        chain
+            .iter()
+            .take(3)
+            .try_fold((), |(), (path, location)| match inspect(path, account) {
+                Ok(None) => ControlFlow::Break(Ok(Some(*location))),
+                Ok(Some(metadata)) if metadata.is_dir() => ControlFlow::Continue(()),
+                Ok(Some(_)) => ControlFlow::Break(Err(CaptureError::PreparedRepairRequired.into())),
+                Err(error) => ControlFlow::Break(Err(error)),
+            });
+    match parents {
+        ControlFlow::Break(result) => result,
+        ControlFlow::Continue(()) => match inspect(leaf, account)? {
+            None => Ok(Some(absent)),
+            Some(metadata) if metadata.is_file() => Ok(None),
+            Some(_) => Err(CaptureError::PreparedRepairRequired.into()),
+        },
     }
 }
 
@@ -134,34 +141,41 @@ fn safe_ancestry(
             .map_err(|source| io(root, source, account))?
             .join(root)
     };
-    let mut parent = PathBuf::new();
-    for (position, component) in absolute.components().take(65).enumerate() {
-        if position == 64 {
-            return Err(CaptureError::ReadBudgetExceeded {
-                resource: "path depth",
-            }
-            .into());
-        }
-        match component {
-            std::path::Component::RootDir | std::path::Component::Normal(_) => {
-                parent.push(component)
-            }
-            _ => return Err(CaptureError::PreparedRepairRequired.into()),
-        }
-        account.direct_operation(Op::Inspect)?;
-        match std::fs::symlink_metadata(&parent) {
-            Ok(metadata) if metadata.is_dir() => {}
-            Ok(_) => return Err(CaptureError::PreparedRepairRequired.into()),
-            Err(source)
-                if source.kind() == std::io::ErrorKind::NotFound
-                    && matches!(purpose, PathPurpose::StoreRoot) =>
-            {
-                return Err(CaptureError::RequiredBackingMissing.into());
-            }
-            Err(source) => return Err(io(&parent, source, account)),
-        }
-    }
-    Ok(())
+    absolute
+        .components()
+        .take(65)
+        .enumerate()
+        .try_fold(
+            PathBuf::new(),
+            |mut parent, (position, component)| -> StoreResult<PathBuf> {
+                if position == 64 {
+                    return Err(CaptureError::ReadBudgetExceeded {
+                        resource: "path depth",
+                    }
+                    .into());
+                }
+                match component {
+                    std::path::Component::RootDir | std::path::Component::Normal(_) => {
+                        parent.push(component)
+                    }
+                    _ => return Err(CaptureError::PreparedRepairRequired.into()),
+                }
+                account.direct_operation(Op::Inspect)?;
+                match std::fs::symlink_metadata(&parent) {
+                    Ok(metadata) if metadata.is_dir() => {}
+                    Ok(_) => return Err(CaptureError::PreparedRepairRequired.into()),
+                    Err(source)
+                        if source.kind() == std::io::ErrorKind::NotFound
+                            && matches!(purpose, PathPurpose::StoreRoot) =>
+                    {
+                        return Err(CaptureError::RequiredBackingMissing.into());
+                    }
+                    Err(source) => return Err(io(&parent, source, account)),
+                }
+                Ok(parent)
+            },
+        )
+        .map(|_| ())
 }
 
 fn open_exact(
@@ -232,30 +246,45 @@ pub(super) fn verify(
 ) -> StoreResult<Metadata> {
     let (mut file, opened) = open_exact(path, length, account)?;
     account.payload(role, length)?;
-    let mut remaining = length;
-    let mut hasher = Sha256::new();
-    for _ in 0..=1024 {
-        if remaining == 0 {
-            break;
+    let streamed = (0..=1024).try_fold((length, Sha256::new()), |state, _| {
+        if state.0 == 0 {
+            return ControlFlow::Break(Ok(state));
         }
-        let count =
-            usize::try_from(remaining.min(32768)).map_err(|_| StoreError::CounterOverflow)?;
-        let bytes = scratch
-            .get_mut(..count)
-            .ok_or(CaptureError::BackingIntegrity)?;
-        file.read_exact(bytes)
-            .map_err(|source| io(path, source, account))?;
-        hasher.update(&*bytes);
-        remaining = remaining
-            .checked_sub(u64::try_from(count).map_err(|_| StoreError::CounterOverflow)?)
-            .ok_or(StoreError::CounterOverflow)?;
-    }
+        match read_hash_chunk(state, &mut file, path, account, scratch) {
+            Ok(next) => ControlFlow::Continue(next),
+            Err(error) => ControlFlow::Break(Err(error)),
+        }
+    });
+    let (remaining, hasher) = match streamed {
+        ControlFlow::Continue(state) => state,
+        ControlFlow::Break(result) => result?,
+    };
     if remaining != 0 || !matches_digest(&hasher.finalize().into(), digest) {
         return Err(CaptureError::PreparedRepairRequired.into());
     }
     eof(&mut file, path, role, account)?;
     sync(&file, path, account)?;
     require_descriptor(path, &file, &opened, account)
+}
+
+fn read_hash_chunk(
+    (remaining, mut hasher): (u64, Sha256),
+    file: &mut File,
+    path: &Path,
+    account: &mut TargetAccount<'_>,
+    scratch: &mut [u8; 32768],
+) -> StoreResult<(u64, Sha256)> {
+    let count = usize::try_from(remaining.min(32768)).map_err(|_| StoreError::CounterOverflow)?;
+    let bytes = scratch
+        .get_mut(..count)
+        .ok_or(CaptureError::BackingIntegrity)?;
+    file.read_exact(bytes)
+        .map_err(|source| io(path, source, account))?;
+    hasher.update(&*bytes);
+    let remaining = remaining
+        .checked_sub(u64::try_from(count).map_err(|_| StoreError::CounterOverflow)?)
+        .ok_or(StoreError::CounterOverflow)?;
+    Ok((remaining, hasher))
 }
 
 fn require_descriptor(

@@ -145,8 +145,7 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
                         .checked_add(1)
                         .context("resume ordinal exhausted")?,
                 };
-                ordinal =
-                    Some(std::num::NonZeroU32::new(next).context("resume ordinal wrapped")?);
+                ordinal = Some(std::num::NonZeroU32::new(next).context("resume ordinal wrapped")?);
                 println!(
                     "drive cycle {cycle}: the run is still owed work ({error:#}); re-driving under resume ordinal {next}"
                 );

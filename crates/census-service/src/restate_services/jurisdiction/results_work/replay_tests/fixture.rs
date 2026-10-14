@@ -11,6 +11,9 @@ use census_reconcile::identity::{Revision, WorkflowIdentity};
 use census_store::{clock::SystemClock, Store, Table};
 use std::collections::HashMap;
 
+#[path = "v2/continuation_fixture.rs"]
+mod continuation;
+
 pub(super) const RESULTS_URL: &str = "https://mi.milesplit.com/meets/725218/results";
 pub(super) const RAW_URL: &str = "https://mi.milesplit.com/meets/725218/results/1266814/raw";
 const MEET_PAGE: &[u8] =
