@@ -121,3 +121,6 @@ fn physical_byte_grant_counts_known_key_and_json_before_callback() -> TestResult
     check!(eq; counts, ReadCounts { key_visits: 1, decoded_rows: 1, encoded_bytes: exact, merged_rows: 0 });
     Ok(())
 }
+
+#[path = "raw_physical_regression_tests.rs"]
+mod regressions;

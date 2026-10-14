@@ -200,10 +200,8 @@ async fn open_store(region: &Spawner, data_dir: PathBuf) -> Result<Arc<Store>, B
                     source,
                 }
             })?;
-            let store = Store::open(&data_dir).map_err(|source| BootstrapError::StoreOpen {
-                path: data_dir,
-                source: Box::new(source),
-            })?;
+            let store =
+                Store::open(&data_dir).map_err(|source| store_open_error(data_dir, source))?;
             Ok(Arc::new(store))
         })
         .await;
@@ -218,6 +216,24 @@ async fn open_store(region: &Spawner, data_dir: PathBuf) -> Result<Arc<Store>, B
             state: DrainState::Cancelled,
             reason: "task cancelled".to_string(),
         }),
+    }
+}
+
+fn store_open_error(path: PathBuf, source: census_store::StoreError) -> BootstrapError {
+    match source {
+        census_store::StoreError::Installation(
+            census_store::InstallationError::EnrollmentOnlyUnsupported {
+                store_identity,
+                config_id,
+            },
+        ) => BootstrapError::EnrollmentOnlyUnsupported {
+            store_identity,
+            config_id,
+        },
+        source => BootstrapError::StoreOpen {
+            path,
+            source: Box::new(source),
+        },
     }
 }
 
@@ -273,3 +289,7 @@ async fn wait_for_trigger(_path: std::path::PathBuf) {}
 #[cfg(test)]
 #[path = "serve_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "../../tests/installation/bootstrap.rs"]
+mod installation_tests;

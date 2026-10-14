@@ -209,3 +209,10 @@ fn policy_sixteen_schema_three_roots_are_preserved_in_every_state_and_after_reop
         .into_iter()
         .try_for_each(|state| preserved(VersionCase::PolicySixteen, state))
 }
+
+#[test]
+fn policy_seventeen_is_preserved_in_every_retained_state() -> TestResult {
+    STATES
+        .into_iter()
+        .try_for_each(|state| preserved(VersionCase::PolicySeventeen, state))
+}

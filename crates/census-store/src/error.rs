@@ -1,6 +1,8 @@
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
     #[error(transparent)]
+    Installation(#[from] crate::InstallationError),
+    #[error(transparent)]
     ProfileRegistry(#[from] crate::ProfileRegistryError),
     #[error(transparent)]
     CanonicalJson(#[from] census_domain::model::CanonicalJsonError),

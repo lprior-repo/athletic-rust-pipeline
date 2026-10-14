@@ -22,7 +22,19 @@ fn advance_to_coaches(sink: &mut StreamSink<'_>, view: &StoreSnapshot<'_>) -> Te
 fn merged_writer_resource_error_survives_store_callback_bridge() -> TestResult {
     let root = tempfile::tempdir()?;
     let store = Store::open(root.path())?;
-    let row = padded_coach("Oversized Line", census_store::MAX_OBSERVATION_RECORD_BYTES)?;
+    let school = school("Synthetic");
+    let mut candidates = [
+        coach(&school.id, "A"),
+        coach(&school.id, "B"),
+        coach(&school.id, "C"),
+    ];
+    candidates.sort_by(|left, right| left.id.cmp(&right.id));
+    let [mut row, next, last] = candidates;
+    let initial = serde_json::to_vec(&row)?.len();
+    let padding = census_store::MAX_OBSERVATION_RECORD_BYTES
+        .checked_sub(initial)
+        .ok_or("synthetic row size")?;
+    row.name.push_str(&"x".repeat(padding));
     let expected = serde_json::to_vec(
         &serde_json::json!({"ordinal":0,"entity_id":row.entity_id(),"payload":&row}),
     )?
@@ -30,6 +42,8 @@ fn merged_writer_resource_error_survives_store_callback_bridge() -> TestResult {
     .checked_add(1)
     .ok_or("synthetic line size")?;
     store.append(Table::Coaches, &row)?;
+    store.append(Table::Coaches, &next)?;
+    store.append(Table::Coaches, &serde_json::json!({"id": last.id}))?;
     let view = store.snapshot();
     let objects = tempfile::tempdir()?;
     let mut sink = StreamSink::new(objects.path());

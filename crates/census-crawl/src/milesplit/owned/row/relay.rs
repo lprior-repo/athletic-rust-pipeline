@@ -1,4 +1,5 @@
 use super::{provider_id, EventKind, Gender, OwnedPerformance, OwnedRejectionKind, Scalar};
+use census_domain::model::parse_result_status;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -42,7 +43,8 @@ pub(super) fn reject(
             "team relay requires known gender and nonempty published teamName".to_string(),
         ));
     }
-    if !super::no_mark(row.mark) && crate::milesplit::mark::parse_published_time(row.mark).is_none()
+    if parse_result_status(row.mark).is_none()
+        && crate::milesplit::mark::parse_published_time(row.mark).is_none()
     {
         return Err((
             OwnedRejectionKind::InvalidContext,

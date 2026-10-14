@@ -1,8 +1,8 @@
 use serde_json::Value;
 
 use super::value_u64;
+use census_domain::model::{parse_result_status, EventKind, Mark};
 use census_domain::model::{CentiMetres, ExactSeconds};
-use census_domain::model::{EventKind, Mark};
 
 pub(super) fn row_mark(
     kind: &EventKind,
@@ -43,8 +43,8 @@ fn source_status<'a, 'b>(
     published: Option<&'a str>,
     validity: Option<&'b Value>,
 ) -> SourceStatus<'a, 'b> {
-    if let Some(token) = published.and_then(crate::result_status::invalid_token) {
-        return SourceStatus::InvalidToken(token);
+    if let Some(status) = published.and_then(parse_result_status) {
+        return SourceStatus::InvalidToken(status.token());
     }
     match validity.filter(|value| !valid_mark(value)) {
         Some(value) => SourceStatus::InvalidValidity(value),

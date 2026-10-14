@@ -108,7 +108,7 @@ fn future_lifecycle_revision_refuses_every_schema_and_supported_marker_without_w
             [None, Some("1"), Some("2")]
                 .into_iter()
                 .try_for_each(|marker| -> TestResult {
-                    [3_u32, u32::MAX].into_iter().try_for_each(|future| {
+                    [4_u32, u32::MAX].into_iter().try_for_each(|future| {
                         let dir = tempfile::tempdir()?;
                         let store = seed_retained(dir.path(), json!(1094))?;
                         schema(&store, revision)?;
@@ -122,7 +122,7 @@ fn future_lifecycle_revision_refuses_every_schema_and_supported_marker_without_w
                             ],
                         )?;
                         drop(store);
-                        newer(dir.path(), "lifecycle revision", future, 2)
+                        newer(dir.path(), "lifecycle revision", future, 3)
                     })
                 })
         })

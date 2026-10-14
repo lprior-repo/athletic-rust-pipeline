@@ -26,6 +26,10 @@ use std::path::PathBuf;
 #[derive(Subcommand, Debug)]
 pub(super) enum Command {
     #[command(
+        about = "Enroll or inspect an explicitly stopped empty installation; reusable acquisition and publication remain unsupported"
+    )]
+    Installation(super::installation::InstallationArgs),
+    #[command(
         about = "Verify one retained MileSplit capture without acquisition; explicit existing --store and stopped owner required; uses normal store-open recovery"
     )]
     VerifyRetainedCapture(super::retained_capture::RetainedCaptureArgs),

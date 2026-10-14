@@ -32,6 +32,13 @@ pub(crate) fn read(snapshot: &Snapshot, meta: &Keyspace) -> StoreResult<Option<R
 
 pub(super) fn write(store: &Store, manifest: &RunManifest) -> StoreResult<()> {
     let _binding = store.lock_appends();
+    let state = crate::installation::validate_format(
+        &store.db.snapshot(),
+        &store.meta,
+        &store.journal,
+        store.store_format()?.lifecycle_revision,
+    )?;
+    crate::installation::require_legacy_execution(&state)?;
     if let Some(retained) = read(&store.db.snapshot(), &store.meta)? {
         if retained == *manifest {
             return Ok(());

@@ -5,6 +5,7 @@ use serde_json::{json, Value};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod event_scores;
+mod result_status;
 mod status_precedence;
 
 pub(super) const TROY: &[u8] = include_bytes!("fixtures/troy_725218.json");

@@ -30,6 +30,11 @@ pub mod fs;
 mod generation;
 mod identity;
 mod inspect;
+mod installation;
+pub use installation::{
+    HistoricalStateKind, InstallationControl, InstallationEnrollmentOutcome, InstallationError,
+    InstallationState, MAX_INSTALLATION_RECORD_BYTES,
+};
 mod journal;
 mod keys;
 mod lineage;

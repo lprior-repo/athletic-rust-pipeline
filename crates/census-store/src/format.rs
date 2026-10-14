@@ -12,7 +12,8 @@ pub use migrate::MigrationReport;
 
 pub const STORE_SCHEMA_VERSION: u32 = 2;
 pub const KEY_FORMAT_VERSION: u32 = 1;
-pub const LIFECYCLE_REVISION: u32 = 2;
+pub const LIFECYCLE_REVISION: u32 = 3;
+const FRESH_LIFECYCLE_REVISION: u32 = 2;
 
 pub const DEFAULT_CACHE_BYTES: u64 = 1024 * 1024 * 1024;
 
@@ -61,7 +62,26 @@ pub(super) fn open_format(
         initialize(db, meta_keyspace)?;
         return read_format(meta_keyspace);
     }
-    require_current(root, format)
+    let format = require_current(root, format)?;
+    let [_, journal, _] = data;
+    crate::installation::validate_format(
+        &db.snapshot(),
+        meta_keyspace,
+        journal,
+        format.lifecycle_revision,
+    )?;
+    Ok(format)
+}
+
+pub(crate) fn require_semantic_format(
+    root: &Path,
+    db: &Database,
+    meta: &Keyspace,
+    journal: &Keyspace,
+) -> StoreResult<StoreFormat> {
+    let format = require_current(root, read_format(meta)?)?;
+    crate::installation::validate_format(&db.snapshot(), meta, journal, format.lifecycle_revision)?;
+    Ok(format)
 }
 
 fn require_current(root: &Path, format: StoreFormat) -> StoreResult<StoreFormat> {
@@ -200,7 +220,7 @@ fn initialize(db: &Database, meta_keyspace: &Keyspace) -> StoreResult<()> {
         &mut batch,
         meta_keyspace,
         LIFECYCLE_REVISION_KEY,
-        &LIFECYCLE_REVISION.to_string(),
+        &FRESH_LIFECYCLE_REVISION.to_string(),
     );
     meta::put_text(
         &mut batch,
@@ -239,7 +259,14 @@ impl Store {
         super::ensure_dirs(&root)?;
         let (db, entities, journal, meta_keyspace, receipts) =
             super::open_keyspaces(&root, cache_bytes)?;
-        open_format(&root, &db, [&entities, &journal, &receipts], &meta_keyspace)?;
+        let format = open_format(&root, &db, [&entities, &journal, &receipts], &meta_keyspace)?;
+        let state = crate::installation::validate_format(
+            &db.snapshot(),
+            &meta_keyspace,
+            &journal,
+            format.lifecycle_revision,
+        )?;
+        crate::installation::require_legacy_execution(&state)?;
         Self::recover_opened(root, db, entities, journal, meta_keyspace, receipts)
     }
 

@@ -29,6 +29,12 @@ impl Store {
             super::open_keyspaces(&root, cache_bytes)?;
         open_format(&root, &db, [&entities, &journal, &receipts], &meta_keyspace)?;
         let format = read_format(&meta_keyspace)?;
+        crate::installation::validate_format(
+            &db.snapshot(),
+            &meta_keyspace,
+            &journal,
+            format.lifecycle_revision,
+        )?;
         let generations = generation::Generations::seeded(&meta_keyspace)?;
         Ok(StoreInspection {
             root,

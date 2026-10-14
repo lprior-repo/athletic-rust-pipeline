@@ -36,7 +36,7 @@ const ORACLES: [(ContractRoleV1, &[u8], &str); 9] = [
     (
         ContractRoleV1::Publication,
         include_bytes!("fixtures/publication.canonical.json"),
-        "f6f117d062c64da3c3bcfcdb2a315fde00427105c6bde7e38b625b8d738a83e6",
+        "ff8dd79dbb18f925e0b6d830500d594ac507347ba32da2e6888b4d2c4121c84d",
     ),
     (
         ContractRoleV1::SourcePlan,

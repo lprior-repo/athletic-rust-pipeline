@@ -17,7 +17,7 @@ fn generation_bytes(directory: &Path) -> TestResult<BTreeMap<String, Vec<u8>>> {
         .collect()
 }
 
-fn cutover(grad_year: Option<i16>) -> TestResult {
+fn cutover(grad_year: Option<i16>, prior_policy: u32) -> TestResult {
     let temporary = tempfile::tempdir()?;
     let store_path = temporary.path().join("store");
     let store = Store::open(&store_path)?;
@@ -30,18 +30,15 @@ fn cutover(grad_year: Option<i16>) -> TestResult {
         school_year: SchoolYear::new(2026).ok_or("fixture season")?,
         jurisdictions: Vec::new(),
     };
-    let old = historical::install(&store, &root, &options)?;
+    let old = historical::install(&store, &root, &options, prior_policy)?;
     let old_directory = old.workbook.parent().ok_or("historical directory")?;
     let retained = generation_bytes(old_directory)?;
     let lease = store.get_lease_record(old.intent.request.identity.as_str())?;
-    let error = verify_published(&old.workbook)
-        .err()
-        .ok_or("policy 16 must be refused")?;
-    check!(error
-        .to_string()
-        .contains("unsupported or malformed frozen export lineage"));
+    check!(matches!(verify_published(&old.workbook),
+        Err(crate::report::ReportError::Invariant { ref detail })
+            if detail == "unsupported or malformed frozen export lineage"));
     let current = ExportDataset::load(&store)?;
-    check!(eq; current.lineage.policy_revision, 17);
+    check!(eq; current.lineage.policy_revision, 18);
     check!(eq; current.lineage.input_digest, old.lineage.input_digest);
     check!(eq; current.lineage.source_digest, old.lineage.source_digest);
     check!(ne; current.lineage.input_generation, old.lineage.input_generation);
@@ -79,13 +76,19 @@ fn cutover(grad_year: Option<i16>) -> TestResult {
     check!(eq; generation_bytes(old_directory)?, retained);
     check!(eq; current_workbook(&root)?, published);
     check!(eq; verify_published(&published)?.generation_digest, receipt.as_str());
-    check!(verify_published(&old.workbook).is_err());
+    check!(matches!(verify_published(&old.workbook),
+        Err(crate::report::ReportError::Invariant { ref detail })
+            if detail == "unsupported or malformed frozen export lineage"));
     Ok(())
 }
 
 #[test]
-fn policy_seventeen_cannot_reuse_a_policy_sixteen_published_receipt() -> TestResult {
+fn policy_eighteen_cannot_reuse_policy_sixteen_or_seventeen_published_receipts() -> TestResult {
     [Some(2027), Some(2028), None]
         .into_iter()
-        .try_for_each(cutover)
+        .try_for_each(|year| {
+            [16, 17]
+                .into_iter()
+                .try_for_each(|policy| cutover(year, policy))
+        })
 }

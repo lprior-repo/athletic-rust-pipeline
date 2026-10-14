@@ -15,6 +15,7 @@ pub mod bootstrap;
 pub mod census;
 pub mod coachverify;
 pub mod ingress;
+pub mod installation;
 pub mod outcome;
 pub mod restate_services;
 pub mod school_address;

@@ -132,7 +132,6 @@ pub mod raceday;
 pub mod recording;
 pub mod registry;
 pub mod result_file;
-mod result_status;
 pub mod riil;
 pub mod row_hygiene;
 pub mod school_sites;

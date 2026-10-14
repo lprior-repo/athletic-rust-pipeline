@@ -82,6 +82,23 @@ fn migrate_stopped(root: &Path, cache_bytes: u64) -> StoreResult<(StoreFormat, b
         journal: &journal,
         meta: &meta,
     };
+    if !matches!(classify(&format), Verdict::Newer { .. }) {
+        let state = crate::installation::validate_format(
+            &db.snapshot(),
+            &meta,
+            &journal,
+            format.lifecycle_revision,
+        )?;
+        if matches!(&state, crate::InstallationState::Enrolled { .. }) {
+            if format.schema_version != Some(STORE_SCHEMA_VERSION)
+                || format.key_format != Some(KEY_FORMAT_VERSION)
+                || format.migration_target.is_some()
+            {
+                return Err(StoreError::SchemaUnknown { detail: "enrollment-only records require schema 2/key format 1 and cannot enter legacy migration".to_string() });
+            }
+            crate::installation::require_legacy_execution(&state)?;
+        }
+    }
     let already_current = matches!(classify(&format), Verdict::Current);
     let rewritten = match classify(&format) {
         Verdict::Current => Rewritten::default(),

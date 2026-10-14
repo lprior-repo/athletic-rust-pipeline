@@ -8,6 +8,11 @@ use super::USAGE;
 
 #[derive(Debug, thiserror::Error)]
 pub enum BootstrapError {
+    #[error("installation {identity} with config {config_id} supports enrollment only; production serving remains unsupported", identity = .store_identity.as_str())]
+    EnrollmentOnlyUnsupported {
+        store_identity: census_domain::model::StoreIdentity,
+        config_id: census_domain::model::InstallationConfigId,
+    },
     #[error("{flag} needs a value\n{}", USAGE)]
     MissingValue { flag: String },
     #[error("{raw} is not a socket address")]

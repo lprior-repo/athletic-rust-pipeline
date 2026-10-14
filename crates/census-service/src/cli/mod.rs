@@ -5,6 +5,7 @@ mod cycle;
 mod dispatch;
 mod export_data;
 mod gather;
+mod installation;
 mod live;
 mod merge_coaches;
 mod national;
@@ -140,6 +141,9 @@ pub(super) fn build_fetcher_authorizing(
 pub(super) fn run() -> Result<()> {
     init_tracing();
     let cli = Cli::parse();
+    if let Command::Installation(args) = &cli.command {
+        return installation::run(&cli, args);
+    }
     if let Command::Profile(args) = &cli.command {
         return profile::run(&cli, args);
     }
@@ -157,7 +161,7 @@ async fn run_async(cli: Cli) -> Result<()> {
         args.validate_configuration()?;
     }
     match &cli.command {
-        Command::Profile(_) | Command::VerifyRetainedCapture(_) => {
+        Command::Installation(_) | Command::Profile(_) | Command::VerifyRetainedCapture(_) => {
             anyhow::bail!("offline diagnostic commands are routed before the runtime starts")
         }
         Command::Review(args) => {

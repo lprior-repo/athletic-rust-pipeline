@@ -59,7 +59,7 @@ pub use freeze::CancelOutcome;
 pub use root::FrozenRoot;
 
 const SCHEMA_REVISION: u32 = 3;
-const POLICY_REVISION: u32 = 17;
+const POLICY_REVISION: u32 = 18;
 const INPUT_TABLES: [Table; 16] = [
     Table::Schools,
     Table::Teams,

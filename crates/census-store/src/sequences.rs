@@ -80,6 +80,21 @@ impl Counters {
         Ok(Self(counters))
     }
 
+    pub(super) fn retained(meta: &Keyspace) -> StoreResult<Self> {
+        let mut counters = BTreeMap::new();
+        for table in Table::ALL {
+            let start = stored_mark(meta, table)?.ok_or_else(|| StoreError::SchemaUnknown {
+                detail: format!(
+                    "{} is missing from an installation-control store",
+                    mark_key(table)
+                ),
+            })?;
+            refuse_over_bound(table, start)?;
+            counters.insert(table.file(), SequenceCounter::starting_at(start));
+        }
+        Ok(Self(counters))
+    }
+
     pub(super) fn plan(&self, table: Table, count: u64) -> StoreResult<Reserved> {
         self.counter(table)?.plan(table, count)
     }

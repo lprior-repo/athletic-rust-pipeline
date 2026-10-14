@@ -84,7 +84,7 @@ fn snapshot_capture_matches_legacy_streams_without_advancing_the_store() -> Test
     check!(eq; direct.codec_revision, 3);
     check!(eq; direct.input_token.protocol, 3);
     check!(eq; direct.lineage.schema_revision, 3);
-    check!(eq; direct.lineage.policy_revision, 17);
+    check!(eq; direct.lineage.policy_revision, 18);
     check!(eq; direct.streams.len(), 15);
     check!(eq; direct.source_fingerprints.len(), 16);
     direct.validate()?;

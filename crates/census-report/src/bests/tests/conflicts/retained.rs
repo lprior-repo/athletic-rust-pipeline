@@ -1,6 +1,7 @@
 use super::*;
 
 mod classes;
+mod result_status;
 mod store;
 
 use store::reloaded_dataset;

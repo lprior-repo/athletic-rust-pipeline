@@ -8,9 +8,10 @@ use std::path::Path;
 use super::error::{ProfileCliError, ProfileCliResult};
 
 #[derive(Debug, Clone, Copy)]
-pub(super) enum InputKind {
+pub(in crate::cli) enum InputKind {
     Profile,
     Selection,
+    Installation,
 }
 
 impl fmt::Display for InputKind {
@@ -18,6 +19,7 @@ impl fmt::Display for InputKind {
         formatter.write_str(match self {
             Self::Profile => "query profile",
             Self::Selection => "profile selection",
+            Self::Installation => "installation configuration",
         })
     }
 }
@@ -27,20 +29,20 @@ struct VersionHeader {
     version: u32,
 }
 
-pub(super) fn read_profile(path: &Path) -> ProfileCliResult<QueryProfileV1> {
+pub(in crate::cli) fn read_profile(path: &Path) -> ProfileCliResult<QueryProfileV1> {
     parse_profile(&read_file(path)?)
 }
 
-pub(super) fn read_selection(path: &Path) -> ProfileCliResult<ProfileSelectionV1> {
+pub(in crate::cli) fn read_selection(path: &Path) -> ProfileCliResult<ProfileSelectionV1> {
     parse_versioned(&read_file(path)?, InputKind::Selection)
 }
 
-pub(super) fn parse_profile(bytes: &[u8]) -> ProfileCliResult<QueryProfileV1> {
+pub(in crate::cli) fn parse_profile(bytes: &[u8]) -> ProfileCliResult<QueryProfileV1> {
     let input: QueryProfileInputV1 = parse_versioned(bytes, InputKind::Profile)?;
     QueryProfileV1::new(input).map_err(ProfileCliError::InvalidProfile)
 }
 
-pub(super) fn parse_versioned<T: DeserializeOwned>(
+pub(in crate::cli) fn parse_versioned<T: DeserializeOwned>(
     bytes: &[u8],
     kind: InputKind,
 ) -> ProfileCliResult<T> {
@@ -59,7 +61,7 @@ fn parse_json<T: DeserializeOwned>(bytes: &[u8], kind: InputKind) -> ProfileCliR
     serde_json::from_slice(bytes).map_err(|source| ProfileCliError::InputJson { kind, source })
 }
 
-fn read_file(path: &Path) -> ProfileCliResult<Vec<u8>> {
+pub(in crate::cli) fn read_file(path: &Path) -> ProfileCliResult<Vec<u8>> {
     let metadata = std::fs::metadata(path).map_err(|source| ProfileCliError::InputMetadata {
         path: path.to_path_buf(),
         source,
@@ -102,7 +104,7 @@ fn check_size(observed: u64) -> ProfileCliResult<()> {
     Ok(())
 }
 
-pub(super) fn read_limited<R: Read>(reader: &mut R) -> ProfileCliResult<Vec<u8>> {
+pub(in crate::cli) fn read_limited<R: Read>(reader: &mut R) -> ProfileCliResult<Vec<u8>> {
     let capacity = MAX_PROFILE_RECORD_BYTES
         .checked_add(1)
         .ok_or(ProfileCliError::InputSizeArithmetic)?;
