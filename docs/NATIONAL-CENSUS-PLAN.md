@@ -3,7 +3,7 @@
 Status: binding unfinished delivery contract, **not execution evidence**. This is the only active
 plan. [ARCHITECTURE.md](../ARCHITECTURE.md) owns mission, engineering policy and semantics
 (§8–9), and [ADRs](adr/README.md) own decisions.
-The dated verification ledger (removed 2026-10-09) records what actually ran.
+[Verification evidence](VERIFICATION-EVIDENCE.md) records observed results; removed ledgers do not certify current behavior.
 
 ## 1. Run boundary
 
@@ -32,6 +32,25 @@ shadow domain model or parallel CLI. First prove one complete source-to-output p
   -> candidates -> Rust decisions (+ dual local advice when needed)
   -> immutable export dataset -> verified atomic bundle -> qualified seal
 ```
+
+### Selected-source qualification position — 2026-10-14
+
+Research and component tests are not a qualified denominator. School membership, enrollment,
+sport assignment and actual competition remain distinct. Preserve year/category, cooperative
+programs and access refusals; unknown is not zero. The five-state target does not discharge
+the separate 49-jurisdiction obligation.
+
+| Stratum | Primary source | Unqualified boundary |
+|---|---|---|
+| MI / UP | [2026–27 MHSAA enrollment](https://www.mhsaa.com/sites/default/files/Enrollment%20and%20Classification/26-27-Enrollment-List.pdf); [UP boys XC list](https://my.mhsaa.com/Sports/Boys-Cross-Country/School-Division-List-2026-27-UP) | Enrollment is not UP/sport membership. Named-list handlers are robots-disallowed; complete membership remains unproved. |
+| MN | [2026–27 boys XC assignments](https://www.mshsl.org/api/competitive-sections-map/get-csl-teams/698/124); [year dictionary](https://www.mshsl.org/api/competitive-sections-map/get-years) | Year 698 is 2026–27; sport-page year 232 is stale. Assigned teams/co-ops are not competition; actual-client access and qualified capture remain owed. |
+| IA | [Fall 2026 qualifying assignments](https://www.iahsaa.org/cross-country-2026-state-qualifying-assignments/) | Preserve boys-only exceptions and both associations. Current-year TF and unavailable girls-source evidence remain owed. |
+| IL | [2026–27 boys 1A XC assignments](https://www.ihsa.org/data/ccb/1assign.htm) | Inspected TF assignments are 2025–26, not 2026–27. API robots access was unresolved; full membership/co-op joins remain unproved. |
+| CO | [Official directory access policy](https://schools.chsaa.org/robots.txt) | Named AI agents are disallowed. No current-year membership or sport denominator was established; do not bypass or infer zero. |
+
+The [capability boundary](PROFILE-EXECUTION-V1.md) distinguishes current components from runtime
+acceptance. Retained public-source research must still pass policy, capture, interpretation,
+identity binding and complete-frontier qualification before it can discharge an obligation.
 
 ## 2. Discovery and coverage obligations
 
@@ -376,9 +395,9 @@ All canaries from the superseded delivery brief remain permanent behavior-test o
 brief and this table share the numbering 1–18 and 20–24, with 19 absent in both, so the table below
 names 23 canaries.
 Historical mark-shape cases exercise explicit maintenance readers, not a fresh-run import path.
-Executed per-canary coverage from 2026-10-05/06 — each carrier, its observed result, and the
-canaries that still have no carrier — is recorded in the "Named regression canaries §9 — executed
-coverage" section of the verification ledger (removed 2026-10-09).
+Historical per-canary claims from removed ledgers are not current evidence.
+[Verification evidence](VERIFICATION-EVIDENCE.md) owns dated execution; every canary below remains
+an obligation regardless of its earlier carrier.
 
 | # | Input/fault | Required outcome |
 |---|---|---|
@@ -414,17 +433,13 @@ counts-only fixture substitutes for these consumer-visible boundaries.
 [The fault catalog](NATIONAL-CENSUS-FAULTS.md) owns all 17 named native scenarios and their required
 phase-boundary subcases. Use owned isolated native non-Docker infrastructure, actual production
 paths and reached injections. A skipped, unselected, simulated substitute or unmeasured lane is not
-PASS. The release requirement retains 12 mandatory proof kernels, and no harness implements any of
-them: the [xtask](../xtask/README.md) command list and `tools/gate.sh` carry no proof, Kani or Verus
-command, no kernel registry and no proof verdict taxonomy, no `kani::proof` or Verus source is checked
-in, and neither invocation enumerates the eight kernels named as missing in
-the verification ledger (removed 2026-10-09), so a release invocation does not establish the
-twelve-kernel requirement and cannot fail for its absence. Moon is the only repository developer
-entrypoint: `env -u CI tools/moon-local run pipeline:gate -- --release`. Its internal `tools/gate.sh`
-and xtask carry the lint/type, all-feature test (property tests and `loom` async models included),
-security, feature-powerset, benchmark-presence and measured-performance lanes; no gate lane executes
-the `fuzz/` targets; the twelve-kernel reconciliation and the proof verdict taxonomy remain open with
-beads `7w5` and `psx`.
+PASS. Release retains twelve mandatory proof kernels; source checks and ordinary test results do
+not substitute for their verifier certificates. Kernel reconciliation and proof-verdict taxonomy
+remain open under `7w5` and `psx`; removed-ledger references do not discharge either obligation.
+Moon is the only repository developer entrypoint:
+`env -u CI tools/moon-local run pipeline:gate -- --release`. Preserve its source/type, all-feature
+test, security, feature-powerset and measured-performance obligations. Separately execute the
+required parser fuzz campaigns; passing narrower fixtures does not qualify hostile-input coverage.
 `xtask`'s perf commands own measured benchmark baselines. The whole-workspace mutation lane was
 retired by owner decision (`5rtr`), so mutation assurance is no longer required; scoped
 `cargo mutants` runs remain an unrequired procedure. License enforcement and cargo-vet are

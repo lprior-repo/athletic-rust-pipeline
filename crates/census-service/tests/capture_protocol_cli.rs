@@ -90,3 +90,26 @@ fn public_capture_init_refuses_legacy_roots_and_imported_files() -> TestResult {
     check!(eq; std::fs::read(imported.join("evidence"))?, b"preserve");
     Ok(())
 }
+
+#[test]
+fn serve_help_succeeds_without_acquiring_the_supplied_store() -> TestResult {
+    let cwd = tempfile::tempdir()?;
+    let root = cwd.path().join("owned");
+    let store = Store::open_with(&root, 8_388_608)?;
+    let before = store.snapshot().sequence();
+    let help = Command::new(env!("CARGO_BIN_EXE_census-serve"))
+        .current_dir(cwd.path())
+        .arg("--data-dir")
+        .arg(&root)
+        .arg("--help")
+        .output()?;
+    check!(eq; help.status.code(), Some(0));
+    check!(eq; store.snapshot().sequence(), before);
+    let invalid = Command::new(env!("CARGO_BIN_EXE_census-serve"))
+        .arg("--data-dir")
+        .arg(&root)
+        .arg("--not-a-supported-flag")
+        .output()?;
+    check!(eq; invalid.status.code(), Some(1));
+    Ok(())
+}

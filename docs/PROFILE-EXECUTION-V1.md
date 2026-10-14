@@ -57,6 +57,13 @@ nondefault selections and raw-model preservation. These tests establish the conf
 boundary only. Negative external API fixtures have not been executed through a dedicated
 compile-fail harness.
 
+Current components include domain-owned comparison policy, fallible athlete construction,
+bounded enrollment-text interpretation, immutable regional configuration and explicit Linux
+cgroup accounting. Participation, current-affiliation and identity-history candidates are pure
+components, not their runtime integration. [Dated repair evidence](verification/2026-10-14-deep-codebase-review.md)
+owns exercised results; none of these components authorizes reusable production or certifies
+UP/five-state discovery, a whole-workload resource envelope or the final workbook.
+
 Spec v2 sections 4 and 14 remain incomplete until selected profiles are bound into one
 retained evidence generation and every publication consumer. Dated current affiliation,
 qualified profile-bound source graphs, completion fences, UP qualification and the matching

@@ -170,6 +170,8 @@ tools/moon-local run pipeline:tests -- -E 'binary(restate_kill_restart)'
 |---|---|
 | `pipeline:report-test` | Cacheable scoped `census-report` library results, all features; a hit may replay prior logs instead of executing tests |
 | `pipeline:tests` | Full workspace/all-features Nextest, 16 test threads, `cache: false`; executes tests rather than replaying a native-fault result |
+| `pipeline:tests-scoped` | Manual uncached scoped Nextest; pass package/target/filter arguments explicitly; uses `target/fast-iteration` |
+| `pipeline:build-scoped` / `pipeline:run-scoped` | Manual uncached scoped build/run through the fast-iteration configuration; explicit package and binary/example selection |
 | `pipeline:check` | Uncached workspace/all-targets/all-features compilation |
 | `pipeline:lint-src` | Uncached workspace source Clippy (`--lib --bins --examples`, warnings denied); not test-style linting |
 | `pipeline:fmt` | Uncached workspace formatting check |
@@ -183,6 +185,17 @@ tools/moon-local run pipeline:tests -- -E 'binary(restate_kill_restart)'
 | `pipeline:g1-audit` | Manual uncached retained search audit |
 | `pipeline:durability` / `pipeline:backup-drill` | Manual uncached existing fault/backup wrappers, bound to portable Moon binaries; require owned scratch/stopped stores |
 | `pipeline:native-resources` | Manual uncached `tools/durability/native-resources.sh`: verifies the pinned Restate/QEMU/image/guest-capture resources, prepares owned scratch disks and probes the isolation mechanisms the native fault scenarios need; `--certificate <path>` records the observed identities |
+
+Scoped tasks are manual: unset `CI`, including when its value is `false`.
+
+```sh
+env -u CI tools/moon-local run pipeline:tests-scoped -- -p census-store --lib -E 'test(acquisition::tests::snapshot)'
+env -u CI tools/moon-local run pipeline:build-scoped -- -p census-service --bin census-serve
+env -u CI tools/moon-local run pipeline:run-scoped -- -p census-service --bin census-serve -- --help
+```
+
+These tasks do not replace workspace or release gates. Running a store-opening example against
+a serving store still violates the single-owner boundary; use isolated scratch or documented ingress.
 
 The full test task is deliberately uncached because native fault/recovery checks observe processes,
 ports and durable state not represented by source hashes. Running it does not by itself certify all
@@ -465,5 +478,5 @@ source qualification or national coverage acceptance.
 The auxiliary `g1-audit` binary lives at `xtask/src/g1/main.rs`:
 `env -u CI tools/moon-local run pipeline:g1-audit -- --help`.
 It inventories retained search response bodies offline; it is not a production census stage.
-The [2026-09-22 capture audit](../research/G1-LIVE-SEARCH-CONTRACT.md) owns its historical commands
-and findings.
+The original 2026-09-22 capture-audit document is not retained in this tree.
+Use current command help; historical audit notes do not qualify production search.

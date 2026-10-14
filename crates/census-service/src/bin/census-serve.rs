@@ -5,6 +5,17 @@ use std::process::ExitCode;
 use census_service::bootstrap::{serve, DrainReport, EndpointShutdown, ServeOptions, StopReason};
 
 fn main() -> ExitCode {
+    let options = match ServeOptions::from_env(std::env::args().skip(1)) {
+        Ok(options) => options,
+        Err(error @ census_service::bootstrap::BootstrapError::HelpRequested) => {
+            println!("{error}");
+            return ExitCode::SUCCESS;
+        }
+        Err(error) => {
+            eprintln!("census-serve: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
     let runtime = match tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -16,13 +27,6 @@ fn main() -> ExitCode {
         }
     };
     runtime.block_on(async {
-    let options = match ServeOptions::from_env(std::env::args().skip(1)) {
-        Ok(options) => options,
-        Err(error) => {
-            eprintln!("census-serve: {error}");
-            return ExitCode::FAILURE;
-        }
-    };
     match serve(options).await {
         Ok(report) => {
             println!(
