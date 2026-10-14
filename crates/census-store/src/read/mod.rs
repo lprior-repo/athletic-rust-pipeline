@@ -26,7 +26,8 @@ pub use journal_budget::JournalReadBudget;
 pub(crate) use snapshot::sweep_stale_temporaries;
 pub use snapshot::{csv_failure, publish_atomically, read_rows, write_snapshot_rows};
 pub use view::{
-    JournalDigest, JournalEntry, JournalObject, JournalRecord, JournalRecords, ReadBudget,
+    JournalDigest, JournalEntry, JournalNamespace, JournalNamespaceFingerprint,
+    JournalNamespaceInventory, JournalObject, JournalRecord, JournalRecords, ReadBudget,
     ReadCounts, StoreSnapshot,
 };
 

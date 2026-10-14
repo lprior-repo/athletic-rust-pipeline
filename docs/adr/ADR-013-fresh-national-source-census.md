@@ -36,3 +36,19 @@ subjects and recovery. Preserve historical stores, workbooks, fixtures and uniqu
 
 [The national delivery plan](../NATIONAL-CENSUS-PLAN.md) owns implementation order, F01–F15, named
 regressions and all 17 fault scenarios. Its requirements are not executed evidence.
+
+## Forward production-lifecycle amendment (2026-10-14)
+
+[ADR-038](ADR-038-selected-profile-reusable-production-state.md) supersedes this record's fresh-only
+lifecycle restriction solely for explicitly enrolled and qualified reusable production. Such
+production may reuse retained qualified public evidence through immutable selected-profile and
+source/input revision contracts, with original acquisition dates and explicit freshness/coverage.
+Its first selected delivery is Class of 2027 in MI, MN, IA, IL and CO with source-backed UP priority.
+
+Every decision above remains binding for isolated fresh qualification and historical fresh national
+claims: fresh named store and unused namespace/revision, no corpus or receipt/seal import and the
+49-jurisdiction national denominator. Public-source discovery, no private/workbook denominator,
+single store ownership and historical preservation remain unchanged in both lifecycles. Old stores,
+manifests, keys, receipts, workbooks and seals keep their original meaning and are not automatically
+enrolled or rewritten. Production adoption is not fresh-acquisition certification, migration
+permission or runtime qualification; Main owns the separate versioned enrollment/integration.

@@ -7,10 +7,13 @@ The [decision register](docs/adr/README.md) records rationale and supersession;
 
 ## 1. Mission
 
-Build a fresh, public-source-discovered Class-of-2027 high-school Track & Field / Cross Country
-recruiting census. Discover athletes, reconcile identities, retain athletic histories and
-source profiles, calculate comparable best marks, resolve time-scoped affiliations and public
-coaching contacts, and publish recruiter workbooks backed by durable evidence.
+Build the reusable, public-source-discovered high-school Track & Field / Cross Country
+recruiting database specified by [October 11 spec v2](docs/specifications/athletic-recruiting-end-vision-spec-v2.md).
+Discover athletes, reconcile identities, retain athletic histories and source profiles, calculate
+comparable best marks, resolve time-scoped affiliations and public coaching contacts, and publish
+recruiter workbooks backed by durable evidence. The first selected production profile is Class of
+2027 in MI, MN, IA, IL and CO with source-backed Michigan UP priority; the distinct long-term
+national profile remains the lower 48 states plus D.C.
 
 Restate owns durable work. Fjall owns observations and decisions. Deterministic Rust interprets
 and adjudicates evidence. Local models advise only on genuine ambiguity. Excel is a projection,
@@ -20,22 +23,31 @@ A multi-day run must retain completed work across crashes, reboots, browser/mode
 failures and operator interruption. Partial progress is durable; a failure does not justify
 restarting acquisition or manufacturing a new logical job.
 
-[ADR-013](docs/adr/ADR-013-fresh-national-source-census.md) requires a fresh store bound to an unused
-run namespace/revision. Preserve historical stores and artifacts without importing their population,
-receipts or seals. Reuse maintained code, fixtures and qualified entry points; acquire this run's
-source evidence afresh, then reuse its immutable captures and completed effects during recovery.
+[ADR-038](docs/adr/ADR-038-selected-profile-reusable-production-state.md) separates explicitly
+enrolled reusable production from isolated fresh qualification. Production retains qualified public
+evidence and stable identities across selected profiles, refreshes, corrections and annual cohorts.
+[ADR-013](docs/adr/ADR-013-fresh-national-source-census.md) still requires a fresh store and unused
+run namespace/revision for fresh qualification and historical fresh national claims, with no imported
+population, observations, decisions, receipts or seals. Preserve all historical stores and artifacts
+under their original identities. No profile selection, store open or new season implicitly enrolls
+production, migrates bytes or changes an old run's meaning. Intended architecture is not runtime
+qualification; [the capability boundary](docs/PROFILE-EXECUTION-V1.md) states current support.
 
 The former root acquisition package was removed on 2026-09-23. The virtual workspace below is the
 only product implementation; do not recreate the root pipeline or a parallel acquisition engine.
 
 ## 2. Scope
 
-- **Geography (§2):** 48 contiguous states plus D.C., exactly 49 jurisdictions under
-  [ADR-009](docs/adr/ADR-009-census-run-scope.md). `UsJurisdiction::ALL` models 50 states plus D.C.;
-  `UsJurisdiction::CENSUS_SCOPE` defines the run denominator. Alaska and Hawaii parse but are
-  excluded; territories are not modeled. Qualification subsets are not a national delivery.
-- **Cohort (§3):** graduation year 2027, not a timeless “junior” label. Grade and academic year are
-  evidence; [§9](#9-target-data-and-publication-contracts) owns their required interpretation.
+- **Geography (§2):** selected immutable profile scope, initially MI, MN, IA, IL and CO.
+  Source-backed UP-first scheduling preserves that denominator; a UP-only membership filter is a
+  separate qualification profile. The distinct national profile remains 48 contiguous states plus
+  D.C., exactly 49 jurisdictions under [ADR-009](docs/adr/ADR-009-census-run-scope.md).
+  `UsJurisdiction::ALL` models 50 states plus D.C.; `UsJurisdiction::CENSUS_SCOPE` retains the legacy
+  national denominator. Explicit 51-jurisdiction configuration is a forward contract, not current
+  qualified execution or a change to historical claims. Territories are not modeled.
+- **Cohort (§3):** selected graduation-year set, initially 2027, not a timeless “junior” label.
+  Additional cohorts coexist without replacing athlete IDs or relabeling old evidence. Grade and
+  academic year are evidence; [§9](#9-target-data-and-publication-contracts) owns interpretation.
 - **Population (§4):** source-verifiable boys' and girls' high-school XC, indoor and outdoor TF,
   including legitimate events and evidenced relay membership. Discovery includes programs that
   have not yet yielded an accepted athlete.
@@ -48,8 +60,8 @@ only product implementation; do not recreate the root pipeline or a parallel acq
 ## 3. Pipeline
 
 ```text
-49-jurisdiction run + qualified public source graph
-  -> school/program/season discovery obligations
+explicit lifecycle + immutable selected profile + qualified public source graph
+  -> profile-bound school/program/season discovery and refresh obligations
   -> origin-admitted durable acquisition
   -> immutable captures + provider-owned observations
   -> validated claims + identity candidates + contradiction checks
@@ -58,8 +70,12 @@ only product implementation; do not recreate the root pipeline or a parallel acq
   -> reversible identity/cohort/affiliation decisions + retained gaps
   -> shared snapshot-bound export dataset
   -> independently verified atomic workbook/audit generation
-  -> evidence-backed census seal
+  -> evidence-backed completion/publication for the declared profile and lifecycle
 ```
+
+The original fresh Class-of-2027 49-jurisdiction census uses this same acquisition plane with its
+retained run contract and seal gates. Reusable production is a forward contract, not a second engine
+or an implicit reinterpretation of a legacy request.
 
 Athletic.net, MileSplit, DirectAthletics, relevant TFRRS, AthleticLIVE, state associations, timing
 providers, organizers and school/team sites are complementary sources, not independent products.
@@ -95,7 +111,10 @@ orchestrator. There is one application path; CLI and service surfaces must not i
 business workflows. Batch-only reconciliation, review and gap handling must join that path.
 
 **Logical identity (§8):** distinguish run, source unit, physical attempt, capture, ingest effect,
-review case and export generation. A retry keeps its logical identity. Reusing an effect ID with
+review case and export generation. Installation/store identity and immutable query profile are
+separate from those identities; [ADR-038](docs/adr/ADR-038-selected-profile-reusable-production-state.md)
+owns their forward binding and historical preservation. A retry keeps its logical identity. Reusing an
+effect ID with
 different content is a typed mismatch. Increased execution budgets resume unfinished work; they do
 not change the immutable meaning of an already completed workflow.
 
@@ -146,7 +165,9 @@ Do not infer a physical keyspace from a domain collection or an Excel column.
 Preserve immutable observations and provenance needed to reverse any identity decision. Commit
 observations, progress and effect receipts together; acknowledge only after durability. Persisted
 schema changes require explicit versioned migration for affected stores, not silent reinterpretation.
-A fresh run does not authorize deletion of historical evidence.
+A fresh run does not authorize deletion of historical evidence. Reusable production enrollment,
+legacy corpus adoption and any changed persisted shape require explicit Main-owned contracts;
+profile registration/selection never performs migration or bypasses the current single-run binding.
 
 The store names the schema it holds (`format.rs`: schema and key-format versions, creator and
 creation date, and a migration resume marker) and refuses to open bytes it cannot interpret as
@@ -249,7 +270,10 @@ can add previously unresolved entities without rewriting unchanged source observ
 Partial mappings remain unfinished; source completeness may remain Unknown after projection.
 
 All reports, workbook sheets and audit outputs use one immutable export dataset derived from one
-input generation. Do not rebuild identity, cohort, contact, coverage or PR rules in writers. Keep
+input generation. Selected-profile production additionally binds the complete effective profile and
+exact contract references into that frozen generation and every consumer under ADR-038; legacy
+frozen inputs/publications keep their original profile, format and policy meanings. Do not rebuild
+identity, cohort, contact, coverage or PR rules in writers. Keep
 candidate statuses and accepted aliases distinct; athletes without performances remain in the
 population, and unresolved joins remain explicit coverage outcomes. Core evidence scope is not
 interchangeable with geographic scope or cohort eligibility.
@@ -394,7 +418,11 @@ exit/status, tested scope and remaining limits; never weaken a gate to manufactu
 
 ## 12. Acceptance (§70)
 
-[ADR-011](docs/adr/ADR-011-census-seal.md) defines evidence-backed completion. Every required
+[ADR-011](docs/adr/ADR-011-census-seal.md) defines the retained census seal contract.
+[ADR-038](docs/adr/ADR-038-selected-profile-reusable-production-state.md) separates exact-build
+qualification, configured-run completion and selected-publication approval; a five-state/UP outcome
+cannot discharge national obligations or inherit an old seal. For the declared census contract, every
+required
 jurisdiction/source obligation, cohort decision and identity candidate must have a terminal declared
 outcome. Retain conflicts, terminal gaps and exhausted failures; open work, unsupported claims and
 unverified publication block sealing. Unknown counts cannot become zero by default.
@@ -411,6 +439,10 @@ The nine-crate split exists. [OPERATIONS.md](docs/OPERATIONS.md) inventories bou
 Sections 8–9 above state required semantics, not a certificate of their implementation.
 
 [The national delivery plan](docs/NATIONAL-CENSUS-PLAN.md) is the only active repair/order/acceptance
-list. Prove one working source-discovery-to-evidence-to-output path before scaling breadth; then
-satisfy all 49 jurisdictions and all release obligations through the same implementation.
+list. Spec v2's full selected-profile reusable product is the forward target, not just profile JSON
+registration. Prove one working source-discovery-to-evidence-to-output path before scaling breadth;
+qualify UP and the first five-state profile, then the distinct 49-jurisdiction national obligations
+through the same implementation. Current single-run store binding, scalar workbook-year selection
+and configuration-only compilation do not certify annual production reuse. No lifecycle change
+waives applicable release obligations.
 [OPERATIONS.md](docs/OPERATIONS.md) is the runbook, not a competing project plan.

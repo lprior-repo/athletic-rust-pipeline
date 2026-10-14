@@ -12,7 +12,8 @@ Runtime ingress/admin commands remain actual census/Restate operations.
 
 ## Run selection and inspection
 
-For a fresh census, bind a new named store to an unused durable namespace/revision under
+For isolated fresh census/qualification operation, bind a new named store to an unused durable
+namespace/revision under
 [ADR-013](adr/ADR-013-fresh-national-source-census.md). Preserved historical stores, receipts and seals
 do not certify it. A new directory with old Restate keys can replay old work; a changed revision must
 not be used merely to reset an exhausted attempt budget.
@@ -946,7 +947,7 @@ the serving store, sample, stride or impose the former 5,000-sample ceiling. It 
 beside the store owner. Historical loose workbooks without a complete manifest are not certified;
 preserve them and publish a new generation instead of editing old evidence.
 
-A store admits exactly one census run. National submission binds a run manifest — store identity,
+The implemented legacy store contract admits exactly one census run. National submission binds a run manifest — store identity,
 season, revision, the Class-of-2027 cohort and the admitted jurisdiction scope — through the
 `Census.bind_run` handler before any jurisdiction fans out, and a store already bound to another
 run refuses terminally instead of adopting it. The binding lives in the store and survives restart.
@@ -981,6 +982,23 @@ fresh-source qualification or all-native-fault certification.
 If an old seal shape cannot decode, preserve it and diagnose an explicit version/migration
 decision; do not edit away evidence or quietly ignore it. Old seals do not certify changed input.
 Acceptance requirements live in [the active plan](NATIONAL-CENSUS-PLAN.md), not exit status alone.
+
+## Intended reusable-production boundary
+
+[ADR-038](adr/ADR-038-selected-profile-reusable-production-state.md) permits the forward full
+spec-v2 product: selected profiles over one explicitly enrolled installation with qualified public
+evidence and stable IDs across refreshes and annual cohorts. It does not supply runnable production
+enrollment/sync commands. [PROFILE-EXECUTION-V1](PROFILE-EXECUTION-V1.md) documents the current
+configuration-only capability and typed unsupported choices; scalar workbook-year selection is
+not selected-profile execution. Store identity initialization, profile registration/selection and
+reopening an old store do not enroll it, migrate bytes or bypass the single-run binding above.
+
+Do not use a new national revision/store path as an annual production reset or to evade receipt
+and retry ownership. Preserve legacy run manifests, Restate keys, captures, IDs, frozen inputs,
+publication bundles and seals. Main must explicitly version, integrate and qualify enrollment,
+profile-bound durable work and every output/completion consumer before annual production reuse
+is supported. Migration and legacy corpus adoption require separate ownership-safe preparation
+and approval; architecture adoption alone authorizes neither operation.
 
 ## Backup, deployment and release
 

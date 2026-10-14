@@ -1,5 +1,9 @@
 # Profile configuration capability v1
 
+[ADR-038](adr/ADR-038-selected-profile-reusable-production-state.md) defines the full forward
+selected-profile reusable-production architecture. This document records current support only;
+its narrower compiler envelope does not reduce that target or enroll/migrate a production store.
+
 This additive domain boundary checks a selected query profile against nine immutable,
 role-specific evidence-policy descriptors. It does not execute a recruiting publication,
 qualify a source, resolve an athlete, or certify completion.
@@ -22,7 +26,7 @@ missing raw field is refused. The descriptors bind evidence meaning, not field n
 - Affiliation: resolved school at the effective cutoff, distinct from historical result affiliation.
 - Contact: same-capture mailbox, role, program and selected current school year.
 - Participation: source-owned individual results or explicit ordered relay members; no inferred legs.
-- Publication: one frozen generation, shared derivation, scoped Coverage and verified atomic bundle; schema 3/policy 16 components.
+- Publication: one frozen generation, shared derivation, scoped Coverage and verified atomic bundle; schema 3/policy 17 components.
 - Source plan: qualified source obligations bound to scope, season and acquisition window.
 - Completion: exact profile scope/revision and verified terminal source evidence; unknown is not complete.
 
