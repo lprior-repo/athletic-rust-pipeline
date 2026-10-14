@@ -10,7 +10,7 @@ use census_store::{Store, Table};
 
 pub(super) fn seed(policy: u32) -> TestResult<SeededStore> {
     let seeded = seeded_store()?;
-    if policy == 15 {
+    if matches!(policy, 15 | 16) {
         let row = CoverageRow::new(CoverageScope::Jurisdiction, "WI")
             .with("registered", 1)
             .with("captured", 1);

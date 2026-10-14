@@ -75,7 +75,7 @@ pub(super) struct Series<'a, 'd> {
 impl Series<'_, '_> {
     fn sheets(&self) -> ReportResult<Vec<Sheet>> {
         let admission = crate::report::EventAdmission::of(self.dataset)?;
-        let cohort = cohort_of(self.dataset, self.scope, self.population.jurisdictions());
+        let cohort = cohort_of(self.recruiting);
         let names = school_name_index(self.population.schools());
         let conflicts = conflict_families(self.rows, &cohort, &names)?;
         let review = review_families(self.rows, &cohort, &names, &admission)?;
@@ -85,12 +85,7 @@ impl Series<'_, '_> {
             schools::expected(self.population.schools())?,
             meets::expected(self.population.meets())?,
             sources::expected(self.censuses)?,
-            coverage::expected(&Derivation::of(
-                self.dataset,
-                self.scope,
-                Some(census_domain::model::GradYear::CO2027.get()),
-                self.population.jurisdictions(),
-            ))?,
+            coverage::expected(self.recruiting)?,
             queues::conflicts(&conflicts, self.index),
             queues::review(&review, &self.dataset.verdicts, self.index),
             self.metrics(&conflicts)?,
@@ -221,3 +216,6 @@ fn value(expected: &Expect) -> Value {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod year_tests;

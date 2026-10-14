@@ -206,3 +206,20 @@ The PR9/PR10 lineage and independently updated main both allocated schema 2 / po
 This main integration allocates **policy 13**. It combines policy 12's integrity and coverage contracts with earliest-known-date best-mark tie selection, historical performance affiliation, and retained historical result-parent geography from the independently allocated policies 9, 10, and 11. These changes can alter selected winners and their published parents, so keeping policy 12 would silently reinterpret an already issued input. Schema 2 remains: coverage arrays remain required and the adjustment field is optional with an absent default. Manifest codec 2, token protocol 2 and the physical Fjall schema remain unchanged.
 
 Generation, frozen token, and publication recipe identities bind policy 13. Prior policies, including both independent schema-2/policy-8 representations and pushed schema-2/policy-12 inputs, are refused before current decoding or recovery. Refusal preserves archived bytes, objects, root markers, retained records and leases in every historical state. There is no in-place migration, retagging, or hydration from current coverage. New acceptance requires an explicitly selected current generation. Future branch integration must reconcile semantics rather than replace this revision with a smaller independently allocated constant.
+
+
+## Scalar workbook-year amendment — 2026-10-14
+
+Policy 17 supersedes the difference-ledger statement that athlete-scoped Review and Conflicts
+always select 2027. Their cohort-dependent candidates now follow the existing selected workbook
+derivation, as does Coverage and its independent readback. Unverified and contradictory
+candidates remain visible through the shared candidate rule. A scalar year selects that cohort;
+`None` keeps all-year behavior. School-, meet- and contact-scoped review families and the
+explicitly legacy public retained-records API retain their existing scope. Run Metrics labels
+the selected workbook cohort separately from census counters that still count Class of 2027.
+
+This is the scalar Options contract, not an implementation of profile-bound publication.
+Policy 16 and earlier frozen inputs and workbooks remain retained and refused for current
+semantic acceptance. ADR-026's policy-17 amendment owns the exact identity, descriptor,
+historical-preservation and publication-receipt transition. No shape or physical-store
+migration is introduced.

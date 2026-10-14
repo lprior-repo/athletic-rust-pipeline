@@ -125,7 +125,14 @@ fn top_rows(
             Expect::text(crate::workbook::recruiting::coach_spelling::DISTINCT_COACH_IDS),
             Expect::count(coach_census(recruiting).coach_ids)?,
         ],
-        text_row("Cohort behind the counters", "class of 2027"),
+        text_row(
+            "Workbook cohort",
+            &recruiting.grad_year().map_or_else(
+                || "all graduation years".to_string(),
+                |year| format!("class of {year}"),
+            ),
+        ),
+        text_row("Cohort behind census counters", "class of 2027"),
     ])
 }
 

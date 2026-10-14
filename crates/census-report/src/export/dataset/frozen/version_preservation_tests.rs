@@ -202,3 +202,10 @@ fn policy_ten_roots_are_preserved_across_all_record_states_and_reopen() -> TestR
 
 #[path = "version_preservation_tests/cancellation.rs"]
 mod cancellation;
+
+#[test]
+fn policy_sixteen_schema_three_roots_are_preserved_in_every_state_and_after_reopen() -> TestResult {
+    STATES
+        .into_iter()
+        .try_for_each(|state| preserved(VersionCase::PolicySixteen, state))
+}

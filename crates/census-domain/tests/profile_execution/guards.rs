@@ -158,3 +158,17 @@ fn every_contract_slot_is_mandatory_at_the_existing_raw_boundary() -> TestResult
     }
     Ok(())
 }
+
+#[test]
+fn exact_policy_sixteen_publication_reference_is_refused_without_rewriting_profile() -> TestResult {
+    let bytes = include_bytes!("fixtures/publication-policy16.canonical.json");
+    let expected = "6f650779c2e30c31a64eb2ab05cf3d5d7581f1692caad6aa3c25604a03664256";
+    use sha2::{Digest, Sha256};
+    equal(format!("{:x}", Sha256::digest(bytes)).as_str(), expected)?;
+    let mut raw = input()?;
+    raw.policies.publication = ContractRefV1::new(1, 1, expected)?;
+    let profile = QueryProfileV1::new(raw)?;
+    let retained = serialized_bytes(&profile)?;
+    refused_role(compile_profile(&profile), ContractRoleV1::Publication)?;
+    equal(serialized_bytes(&profile)?, retained)
+}

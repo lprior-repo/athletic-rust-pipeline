@@ -57,7 +57,14 @@ fn initial_metrics(facts: &RunFacts<'_>) -> ReportResult<Vec<Vec<Cell>>> {
         super::super::recruiting::coach_spelling::DISTINCT_COACH_IDS,
         Cell::number(coaches.coach_ids)?
     ));
-    cells.push(row!("Cohort behind the counters", "class of 2027"));
+    cells.push(row!(
+        "Workbook cohort",
+        facts.recruiting.grad_year().map_or_else(
+            || "all graduation years".to_string(),
+            |year| format!("class of {year}"),
+        )
+    ));
+    cells.push(row!("Cohort behind census counters", "class of 2027"));
     Ok(cells)
 }
 

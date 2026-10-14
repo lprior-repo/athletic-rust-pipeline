@@ -134,6 +134,7 @@ fn retained_root(
         root::remove_retained(directory)?;
         return fresh(store, job, directory);
     };
+    recover::ensure_record_binding(retained, &record)?;
     match record.state() {
         InputState::Frozen => reuse(store, job, directory, retained, &record),
         InputState::Requested | InputState::Freezing => {

@@ -1,5 +1,5 @@
 use super::chunks::{ChunkObject, ChunkWriter};
-use super::codec::count;
+use super::codec::{check_text, count, MAX_ROOT_TEXT_BYTES};
 use super::legacy::LegacyLogicalDigest;
 use super::manifest::FrozenManifest;
 use super::objects;
@@ -23,12 +23,21 @@ pub(super) fn capture(
 ) -> ReportResult<FrozenManifest> {
     store.store_identity()?;
     let snapshot = store.snapshot();
-    let mut lineage = super::lineage(store, &snapshot)?;
+    capture_at(store, &snapshot, job, objects_dir)
+}
+
+pub(super) fn capture_at(
+    store: &Store,
+    snapshot: &StoreSnapshot<'_>,
+    job: &str,
+    objects_dir: &Path,
+) -> ReportResult<FrozenManifest> {
+    let mut lineage = super::lineage(store, snapshot)?;
+    check_text("manifest export job", job, MAX_ROOT_TEXT_BYTES).map_err(codec_error)?;
     lineage.export_job = Some(job.to_string());
-    let token = FrozenInputToken::capture(&snapshot, &lineage)?;
-    let (streams, legacy) = streams(&snapshot, objects_dir)?;
-    let fingerprints = fingerprints(&snapshot)?;
-    drop(snapshot);
+    let token = FrozenInputToken::capture(snapshot, &lineage)?;
+    let (streams, legacy) = streams(snapshot, objects_dir)?;
+    let fingerprints = fingerprints(snapshot)?;
     lineage.input_digest = legacy.clone();
     lineage.input_generation = super::generation(&lineage)?;
     FrozenManifest::new(lineage, token, streams, fingerprints, Some(legacy)).map_err(codec_error)
@@ -258,3 +267,7 @@ mod fold_tests;
 
 #[path = "fold.rs"]
 mod fold;
+
+#[cfg(test)]
+#[path = "snapshot_capture_tests.rs"]
+mod snapshot_capture_tests;

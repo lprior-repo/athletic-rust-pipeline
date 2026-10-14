@@ -1,0 +1,166 @@
+{
+  "base": "5867b091acc7256bd821f43de843afd982453388",
+  "code_commit": "e22c5b346707edb7199f193546e3508ec7dfb4e4",
+  "files": [
+    {
+      "path": "crates/census-domain/src/profile_execution/components.rs",
+      "git_blob": "cd6ba0846121223ea9ca2d41db1b655af22a91df"
+    },
+    {
+      "path": "crates/census-domain/src/profile_execution/policy.rs",
+      "git_blob": "10a983e972efd35b46add74d39cbe5110c38f309"
+    },
+    {
+      "path": "crates/census-domain/tests/profile_execution/descriptors.rs",
+      "git_blob": "94238f30cc17758b4a4018e8216e04329dd305c4"
+    },
+    {
+      "path": "crates/census-domain/tests/profile_execution/fixtures/publication-policy16.canonical.json",
+      "git_blob": "3f226e0cfa1f590a4ba1888b33edd2272d54b377"
+    },
+    {
+      "path": "crates/census-domain/tests/profile_execution/fixtures/publication.canonical.json",
+      "git_blob": "0fa33bfbd8b2cc659255cbde9f1fd22fdd16a253"
+    },
+    {
+      "path": "crates/census-domain/tests/profile_execution/guards.rs",
+      "git_blob": "a84e355558607d8422d98c1b2c2a0ad2fd53cfe6"
+    },
+    {
+      "path": "crates/census-report/src/bests/tests/historical_parent_scope/workbook.rs",
+      "git_blob": "ab039edee97531530cb5e16e8038e0eee280c31b"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen.rs",
+      "git_blob": "ac543a08bcdd126b9b9fa3d44c6dcb32ba855037"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/capture.rs",
+      "git_blob": "23cdecd5546e19e87281a13c358f86c5cbd8bb11"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/coverage_tests.rs",
+      "git_blob": "bc3841333f8c35e6eea2348915501ec267ce5f28"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/coverage_tests/version_fixture.rs",
+      "git_blob": "b6c23b8e8ca81bdef8057ad4d00274f8061815b5"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/freeze.rs",
+      "git_blob": "7e044a30b847518a87638ed3b018d904538bb027"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/historical_policy_tests.rs",
+      "git_blob": "d7d32bd3fdb109497955c3acd0e12ed1e2a9f769"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/historical_policy_tests/merge.rs",
+      "git_blob": "df752a9157f2e06e8d11d084a0f580ce1d7a60b0"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/historical_policy_tests/merge/schema_three.rs",
+      "git_blob": "52bea6bd57267c5eaacb56cf9d7647e471af75da"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/job_ownership_tests.rs",
+      "git_blob": "aca8b5d640f5c5314ac86a99ae7c34ed6e54ba17"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/pinned_run_metadata_tests/token.rs",
+      "git_blob": "d9fd85f6b6017887321ad2d34cb250bf3a770407"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/preflight_tests.rs",
+      "git_blob": "dfe49d24b2518ff7ac85d442d9fc1ca533e1c49f"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/recover.rs",
+      "git_blob": "8a4227a6b5594a56ecbe0c8a33635737948dde53"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/snapshot_capture_tests.rs",
+      "git_blob": "8cea5870f916ae6fb0255489df41847fc87da7b8"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/version_preservation_tests.rs",
+      "git_blob": "8dd5b254be174dbd49fd025411eb4bed659c776d"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/version_preservation_tests/cancellation.rs",
+      "git_blob": "a6ad355179b55217b659b6cd8b90ff0fe28ebd10"
+    },
+    {
+      "path": "crates/census-report/src/workbook/meta.rs",
+      "git_blob": "fb363420cf257bbe6f938b4c8ce49407d682e8a0"
+    },
+    {
+      "path": "crates/census-report/src/workbook/meta/metrics.rs",
+      "git_blob": "ffa3681572c208771290c43b1f57cd880a8e0e27"
+    },
+    {
+      "path": "crates/census-report/src/workbook/meta/queues.rs",
+      "git_blob": "2c86da0fb0f497df58688f7bd2e0912122696907"
+    },
+    {
+      "path": "crates/census-report/src/workbook/meta/sheets.rs",
+      "git_blob": "1a87e0b523db2b7c6e23204b974d9bbf2134f176"
+    },
+    {
+      "path": "crates/census-report/src/workbook/publication/catalog_tests/transition.rs",
+      "git_blob": "68a63734da3a672b3ed5779221460a1e2b871c93"
+    },
+    {
+      "path": "crates/census-report/src/workbook/publication/coverage_tests.rs",
+      "git_blob": "02344e3f00e9335a8d2b8dbf656dfea5e924175b"
+    },
+    {
+      "path": "crates/census-report/src/workbook/publication/coverage_tests/fixture/adjustment_roundtrip.rs",
+      "git_blob": "0ee3fe0317107c9a1e8b254b5eab16704847e382"
+    },
+    {
+      "path": "crates/census-report/src/workbook/publication/tests.rs",
+      "git_blob": "8efd352b4e5d0b2118e9d5c2311094505b0fe624"
+    },
+    {
+      "path": "crates/census-report/src/workbook/publication/tests/policy_cutover.rs",
+      "git_blob": "4f88a1ebd08b531ea18d782d21e3d1e3f87515a7"
+    },
+    {
+      "path": "crates/census-report/src/workbook/publication/tests/policy_cutover/historical.rs",
+      "git_blob": "c6783cf10cc17083c7460ee1007d976df51579b6"
+    },
+    {
+      "path": "crates/census-report/src/workbook/publication/tests/policy_merge.rs",
+      "git_blob": "27139da4d6bb25ddd1b91c504e69a83ef9699742"
+    },
+    {
+      "path": "crates/census-report/src/workbook/verify/meta.rs",
+      "git_blob": "f5852ad804d3706035b0d62c0382cad0856a9c38"
+    },
+    {
+      "path": "crates/census-report/src/workbook/verify/meta/metrics.rs",
+      "git_blob": "8fe535c6fb0e14a985b8458bc9c4ef947420d848"
+    },
+    {
+      "path": "crates/census-report/src/workbook/verify/meta/year_tests.rs",
+      "git_blob": "5e8f41bef33f5625eb4f03176c825cb36ea67bf6"
+    },
+    {
+      "path": "crates/census-report/src/workbook/verify/meta/year_tests/fixture.rs",
+      "git_blob": "c0eb5aa7bc1d9f75cbba664e6d3b20fb62f9ac1d"
+    },
+    {
+      "path": "crates/census-report/src/workbook/verify/meta/year_tests/tamper.rs",
+      "git_blob": "08418d2fd8404913180a7bcdad2074177a47c9ec"
+    },
+    {
+      "path": "docs/adr/ADR-019-export-derivation-single-home.md",
+      "git_blob": "c158095b37ecb6ec9af24e80857c79792963a03d"
+    },
+    {
+      "path": "docs/adr/ADR-026-derived-generations-and-store-schema.md",
+      "git_blob": "dc8619a7bcfbd9f9a68e876c8cac929be5a8157c"
+    }
+  ]
+}
