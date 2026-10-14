@@ -56,12 +56,19 @@ pub(super) fn physical_rows(store: &Store) -> TestResult<Vec<(Table, census_stor
 
 pub(super) fn entity_digest(store: &Store) -> TestResult<String> {
     Ok(store.snapshot().tables_digest(&[
-        Table::Schools, Table::Meets, Table::Teams, Table::Athletes,
-        Table::SourceObservations, Table::Events, Table::Performances,
+        Table::Schools,
+        Table::Meets,
+        Table::Teams,
+        Table::Athletes,
+        Table::SourceObservations,
+        Table::Events,
+        Table::Performances,
     ])?)
 }
 
-pub(super) fn assert_v2_witnesses(recorded: &crate::recording::Recorded) -> TestResult<BTreeMap<String, serde_json::Value>> {
+pub(super) fn assert_v2_witnesses(
+    recorded: &crate::recording::Recorded,
+) -> TestResult<BTreeMap<String, serde_json::Value>> {
     use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalTeam, SourceObservation};
     let mut expected = BTreeMap::new();
     for batch in &recorded.rows {
@@ -77,9 +84,12 @@ pub(super) fn assert_v2_witnesses(recorded: &crate::recording::Recorded) -> Test
         };
         expected.extend(entries);
     }
-    let actual: BTreeMap<_, _> = recorded.journal.iter()
+    let actual: BTreeMap<_, _> = recorded
+        .journal
+        .iter()
         .filter(|entry| entry.phase == "crawl_effect_receipts_v1")
-        .map(|entry| (entry.key.clone(), entry.payload.clone())).collect();
+        .map(|entry| (entry.key.clone(), entry.payload.clone()))
+        .collect();
     check!(eq; actual, expected);
     check!(eq; recorded.effects.len(), expected.len());
     check!(eq; recorded.journal.len(), expected.len() + 1);
@@ -89,12 +99,19 @@ pub(super) fn assert_v2_witnesses(recorded: &crate::recording::Recorded) -> Test
 pub(super) fn row_witnesses<T: serde::de::DeserializeOwned + serde::Serialize>(
     batch: &crate::recording::RecordedBatch,
 ) -> TestResult<Vec<(String, serde_json::Value)>> {
-    batch.rows.iter().map(|value| {
-        let row: T = serde_json::from_value(value.clone())?;
-        let bytes = serde_json::to_vec(&("tfrrs_pages_v2", batch.table.file(), row))?;
-        let digest = content_digest(&bytes);
-        Ok((format!("tfrrs_pages_v2:{digest}"), serde_json::json!({"digest": digest})))
-    }).collect()
+    batch
+        .rows
+        .iter()
+        .map(|value| {
+            let row: T = serde_json::from_value(value.clone())?;
+            let bytes = serde_json::to_vec(&("tfrrs_pages_v2", batch.table.file(), row))?;
+            let digest = content_digest(&bytes);
+            Ok((
+                format!("tfrrs_pages_v2:{digest}"),
+                serde_json::json!({"digest": digest}),
+            ))
+        })
+        .collect()
 }
 
 pub(super) fn capture_bytes(

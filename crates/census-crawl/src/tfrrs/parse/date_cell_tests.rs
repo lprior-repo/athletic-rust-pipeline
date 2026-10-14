@@ -22,7 +22,10 @@ fn duplicate_date_cells_are_refused_even_after_a_complete_valid_cell() -> TestRe
         "<div data-label=\"Meet Date\">Mar 29, 2026".to_string(),
         "<span data-label=\"Meet Date\">Mar 29, 2026</span>".to_string(),
     ] {
-        let row = format!("{}<div data-label=\"Team\">Team</div>{second}", cell("Mar 28, 2026"));
+        let row = format!(
+            "{}<div data-label=\"Team\">Team</div>{second}",
+            cell("Mar 28, 2026")
+        );
         check!(eq; published_date(&row), None, "{second}");
     }
     Ok(())
@@ -73,14 +76,19 @@ fn supported_balanced_markup_retains_text_without_inventing_inline_spaces() -> T
 #[test]
 fn inert_fake_cells_before_or_after_the_real_cell_do_not_supply_a_date() -> TestResult {
     let fake = cell("Mar 29, 2026");
-    for tag in ["script", "style", "template", "svg", "math", "noscript", "textarea", "title", "xmp"] {
+    for tag in [
+        "script", "style", "template", "svg", "math", "noscript", "textarea", "title", "xmp",
+    ] {
         let inert = format!("<{tag}>{fake}</{tag}>");
         exact(&format!("{inert}{}", cell("Mar 28, 2026")))?;
         exact(&format!("{}{inert}", cell("Mar 28, 2026")))?;
         check!(eq; published_date(&inert), None, "{tag}");
     }
     exact(&format!("<!--{fake}-->{}", cell("Mar 28, 2026")))?;
-    exact(&format!("<span title='{fake}'></span>{}", cell("Mar 28, 2026")))?;
+    exact(&format!(
+        "<span title='{fake}'></span>{}",
+        cell("Mar 28, 2026")
+    ))?;
     Ok(())
 }
 
@@ -106,9 +114,11 @@ fn missing_truncated_and_tokenizer_damaged_cells_stay_unknown() -> TestResult {
 fn whole_row_byte_limit_is_checked_before_tokenizing_large_tokens() -> TestResult {
     let date = cell("Mar 28, 2026");
     for (prefix, suffix) in [("", ""), ("<div title=\"", "\"></div>"), ("<!--", "-->")] {
-        let padding = MAX_ROW_BYTES.checked_sub(date.len())
+        let padding = MAX_ROW_BYTES
+            .checked_sub(date.len())
             .and_then(|size| size.checked_sub(prefix.len()))
-            .and_then(|size| size.checked_sub(suffix.len())).ok_or("byte padding")?;
+            .and_then(|size| size.checked_sub(suffix.len()))
+            .ok_or("byte padding")?;
         let at_limit = format!("{date}{prefix}{}{suffix}", " ".repeat(padding));
         check!(eq; at_limit.len(), MAX_ROW_BYTES);
         exact(&at_limit)?;
@@ -133,11 +143,19 @@ fn complete_row_scan_refuses_token_exhaustion_after_a_valid_date() -> TestResult
 fn markup_depth_limit_covers_inline_tags_and_mixed_supported_tags() -> TestResult {
     let nesting = MAX_DEPTH.checked_sub(1).ok_or("root depth")?;
     for tag in ["span", "b", "strong", "i", "em", "small", "time", "a"] {
-        let label = format!("{}Mar 28, 2026{}", format!("<{tag}>").repeat(nesting), format!("</{tag}>").repeat(nesting));
+        let label = format!(
+            "{}Mar 28, 2026{}",
+            format!("<{tag}>").repeat(nesting),
+            format!("</{tag}>").repeat(nesting)
+        );
         exact(&cell(&label))?;
         check!(eq; published_date(&cell(&format!("<{tag}>{label}</{tag}>"))), None);
     }
-    let label = format!("{}<span>Mar 28, 2026</span>{}", "<span><b>".repeat(31), "</b></span>".repeat(31));
+    let label = format!(
+        "{}<span>Mar 28, 2026</span>{}",
+        "<span><b>".repeat(31),
+        "</b></span>".repeat(31)
+    );
     exact(&cell(&label))?;
     check!(eq; published_date(&cell(&format!("<em>{label}</em>"))), None);
     Ok(())
@@ -145,11 +163,17 @@ fn markup_depth_limit_covers_inline_tags_and_mixed_supported_tags() -> TestResul
 
 #[test]
 fn full_decoded_label_must_fit_without_prefix_acceptance() -> TestResult {
-    let padding = MAX_LABEL_BYTES.checked_sub("Mar 28, 2026".len()).ok_or("label padding")?;
+    let padding = MAX_LABEL_BYTES
+        .checked_sub("Mar 28, 2026".len())
+        .ok_or("label padding")?;
     let label = format!("Mar 28, 2026{}", " ".repeat(padding));
     exact(&cell(&label))?;
     check!(eq; published_date(&cell(&format!("{label} "))), None);
-    for label in ["Mar 28, 2026 &lt; 2027", "Mar 28, 2026 &amp; Mar 29, 2026", "Mar 28, 2026 &#x3F;"] {
+    for label in [
+        "Mar 28, 2026 &lt; 2027",
+        "Mar 28, 2026 &amp; Mar 29, 2026",
+        "Mar 28, 2026 &#x3F;",
+    ] {
         check!(eq; published_date(&cell(label)), None, "{label}");
     }
     Ok(())
@@ -171,7 +195,11 @@ fn every_english_month_spelling_is_read_through_the_production_cell_boundary() -
         ("Nov", "November", "2026-11-01"),
         ("Dec", "December", "2026-12-01"),
     ] {
-        for month in [short.to_string(), full.to_string(), format!("{}.", short.to_uppercase())] {
+        for month in [
+            short.to_string(),
+            full.to_string(),
+            format!("{}.", short.to_uppercase()),
+        ] {
             let label = format!("{month} 1, 2026");
             let date = published_date(&cell(&label)).ok_or("English single day")?;
             check!(eq; date.iso.as_str(), iso);
@@ -184,18 +212,37 @@ fn every_english_month_spelling_is_read_through_the_production_cell_boundary() -
 #[test]
 fn cell_grammar_rejects_ranges_trailing_text_and_impossible_gregorian_days() -> TestResult {
     for label in [
-        "Mar 28?, 2026", "Mar 28-29, 2026", "Mar 28–29, 2026", "Mar 28/29, 2026",
-        "Mar 28, 2026 or Mar 29, 2026", "Mar 28, 2026 updated", "Marching 28, 2026",
-        "Mar 28,, 2026", "Mar.. 28, 2026", "Mar 28, 2026,", "Mar +28, 2026",
-        "Mar 028, 2026", "Mar ２８, 2026", "Mar 28, ２０２６", "Mar 28, +2026",
-        "Feb 29, 1900", "Feb 29, 2100", "Feb 29, 2025", "Apr 31, 2026",
-        "Mar 0, 2026", "Mar 32, 2026", "Jan 1, 1899", "Jan 1, 3000",
+        "Mar 28?, 2026",
+        "Mar 28-29, 2026",
+        "Mar 28–29, 2026",
+        "Mar 28/29, 2026",
+        "Mar 28, 2026 or Mar 29, 2026",
+        "Mar 28, 2026 updated",
+        "Marching 28, 2026",
+        "Mar 28,, 2026",
+        "Mar.. 28, 2026",
+        "Mar 28, 2026,",
+        "Mar +28, 2026",
+        "Mar 028, 2026",
+        "Mar ２８, 2026",
+        "Mar 28, ２０２６",
+        "Mar 28, +2026",
+        "Feb 29, 1900",
+        "Feb 29, 2100",
+        "Feb 29, 2025",
+        "Apr 31, 2026",
+        "Mar 0, 2026",
+        "Mar 32, 2026",
+        "Jan 1, 1899",
+        "Jan 1, 3000",
     ] {
         check!(eq; published_date(&cell(label)), None, "{label}");
     }
     for (label, iso) in [
-        ("Feb 29, 2000", "2000-02-29"), ("Feb 29, 2024", "2024-02-29"),
-        ("Jan 1, 1900", "1900-01-01"), ("Dec 31, 2999", "2999-12-31"),
+        ("Feb 29, 2000", "2000-02-29"),
+        ("Feb 29, 2024", "2024-02-29"),
+        ("Jan 1, 1900", "1900-01-01"),
+        ("Dec 31, 2999", "2999-12-31"),
     ] {
         let date = published_date(&cell(label)).ok_or("Gregorian boundary")?;
         check!(eq; date.iso.as_str(), iso);

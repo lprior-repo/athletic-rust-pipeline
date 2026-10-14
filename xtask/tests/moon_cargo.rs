@@ -73,7 +73,20 @@ fn override_replaces_task_jobs_and_preserves_literal_arguments() -> TestResult {
 #[test]
 fn invalid_override_refuses_to_start_cargo() -> TestResult {
     for jobs in [
-        "", "0", "00", "01", "-1", "+1", "1.5", "1e2", " 1", "1 ", "1\n", "1x", "２", "$(echo 1)",
+        "",
+        "0",
+        "00",
+        "01",
+        "-1",
+        "+1",
+        "1.5",
+        "1e2",
+        " 1",
+        "1 ",
+        "1\n",
+        "1x",
+        "２",
+        "$(echo 1)",
     ] {
         let (_root, mut command) = cargo_case()?;
         let output = command
@@ -119,7 +132,10 @@ fn gate_cargo_children_inherit_the_effective_override() -> TestResult {
         .output()?;
     let stdout = String::from_utf8(output.stdout)?;
     check!(eq; output.status.code(), Some(1), "{stdout}");
-    check!(stdout.contains("1\01\0run\0-q\0-p\0xtask\0--\0contract\0"), "{stdout:?}");
+    check!(
+        stdout.contains("1\01\0run\0-q\0-p\0xtask\0--\0contract\0"),
+        "{stdout:?}"
+    );
     check!(stdout.contains("architecture contract: FAIL"), "{stdout}");
     check!(output.stderr.is_empty());
     Ok(())

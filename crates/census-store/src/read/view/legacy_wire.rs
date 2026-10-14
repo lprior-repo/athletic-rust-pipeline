@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use serde_json::Value;
 
 use super::object_wire::JournalPath;
@@ -6,9 +7,14 @@ use crate::journal::{
 };
 use crate::{JournalReadBudget, StoreError, StoreResult, MAX_JOURNAL_VALUE_BYTES};
 
-pub(super) enum LegacyRoot {
-    Inline(Value),
+pub(super) enum LegacyRoot<T> {
+    Inline(T),
     Chunked(LegacyBounds),
+}
+
+pub(super) struct LegacyEntry<T> {
+    pub(super) header: Value,
+    pub(super) payload: Option<T>,
 }
 
 pub(super) struct LegacyBounds {
@@ -31,10 +37,19 @@ pub(super) fn root(
     path: JournalPath<'_>,
     raw: &[u8],
     budget: JournalReadBudget,
-) -> StoreResult<LegacyRoot> {
+) -> StoreResult<LegacyRoot<Value>> {
+    root_with_decoder(path, raw, budget, value_entry)
+}
+
+pub(super) fn root_with_decoder<T>(
+    path: JournalPath<'_>,
+    raw: &[u8],
+    budget: JournalReadBudget,
+    decode: impl FnOnce(JournalPath<'_>, &str, &[u8]) -> StoreResult<LegacyEntry<T>>,
+) -> StoreResult<LegacyRoot<T>> {
     limit(path, "physical root", raw.len(), MAX_JOURNAL_VALUE_BYTES)?;
-    let value = record(path, "root", raw)?;
-    match value.get("type") {
+    let entry = decode(path, "root", raw)?;
+    match entry.header.get("type") {
         None => {
             limit(
                 path,
@@ -42,13 +57,25 @@ pub(super) fn root(
                 raw.len(),
                 budget.max_encoded_bytes(),
             )?;
-            payload(path, value).map(LegacyRoot::Inline)
+            payload(path, entry).map(LegacyRoot::Inline)
         }
         Some(kind) if kind.as_str() == Some(MANIFEST_TYPE) => {
-            bounds(path, &value, budget).map(LegacyRoot::Chunked)
+            bounds(path, &entry.header, budget).map(LegacyRoot::Chunked)
         }
         Some(_) => Err(path.refusal("root is neither an inline entry nor a chunked-manifest")),
     }
+}
+
+pub(super) fn value_entry(
+    path: JournalPath<'_>,
+    what: &str,
+    raw: &[u8],
+) -> StoreResult<LegacyEntry<Value>> {
+    let mut header: Value = record(path, what, raw)?;
+    let payload = header
+        .as_object_mut()
+        .and_then(|entry| entry.remove("payload"));
+    Ok(LegacyEntry { header, payload })
 }
 
 fn bounds(
@@ -81,17 +108,25 @@ fn bounds(
     })
 }
 
+pub(super) fn chunk_record<T>(
+    path: JournalPath<'_>,
+    index: usize,
+    raw: &[u8],
+    decode: impl FnOnce(JournalPath<'_>, &str, &[u8]) -> StoreResult<LegacyEntry<T>>,
+) -> StoreResult<Value> {
+    limit(path, "physical chunk", raw.len(), MAX_JOURNAL_VALUE_BYTES)?;
+    decode(path, &format!("chunk {index}"), raw).map(|entry| entry.header)
+}
+
 pub(super) fn chunk_into(
     path: JournalPath<'_>,
     bounds: &LegacyBounds,
     index: usize,
-    raw: &[u8],
+    value: &Value,
     output: &mut [u8],
 ) -> StoreResult<()> {
-    limit(path, "physical chunk", raw.len(), MAX_JOURNAL_VALUE_BYTES)?;
     let what = format!("chunk {index}");
-    let value = record(path, &what, raw)?;
-    chunk_owner(path, bounds, index, &value)?;
+    chunk_owner(path, bounds, index, value)?;
     let data = value
         .get("data")
         .and_then(Value::as_str)
@@ -164,20 +199,23 @@ fn chunk_owner(
     Ok(())
 }
 
-pub(super) fn payload(path: JournalPath<'_>, mut value: Value) -> StoreResult<Value> {
-    if value.get("type").is_some() || value.get("version").is_some() {
+pub(super) fn payload<T>(path: JournalPath<'_>, entry: LegacyEntry<T>) -> StoreResult<T> {
+    if entry.header.get("type").is_some() || entry.header.get("version").is_some() {
         return Err(path.refusal("entry contains an unsupported type or version"));
     }
-    if value.get("key").and_then(Value::as_str) != Some(path.key) {
+    if entry.header.get("key").and_then(Value::as_str) != Some(path.key) {
         return Err(path.refusal("entry key does not match its lookup"));
     }
-    value
-        .as_object_mut()
-        .and_then(|entry| entry.remove("payload"))
+    entry
+        .payload
         .ok_or_else(|| path.refusal("entry has no payload"))
 }
 
-pub(super) fn record(path: JournalPath<'_>, what: &str, raw: &[u8]) -> StoreResult<Value> {
+pub(super) fn record<'de, T: Deserialize<'de>>(
+    path: JournalPath<'_>,
+    what: &str,
+    raw: &'de [u8],
+) -> StoreResult<T> {
     serde_json::from_slice(raw).map_err(|source| StoreError::Decode {
         key: format!("legacy journal {what} for {}/{}", path.phase, path.key),
         source,

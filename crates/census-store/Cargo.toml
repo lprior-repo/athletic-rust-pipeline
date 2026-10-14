@@ -28,7 +28,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 fjall = "=3.1.10"
 loom = { version = "0.7", optional = true }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["raw_value"] }
 sha2 = "0.10"
 base64 = "0.22"
 thiserror = "2"

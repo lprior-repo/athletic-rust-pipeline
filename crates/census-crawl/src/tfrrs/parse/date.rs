@@ -58,7 +58,9 @@ fn month_number(name: &str) -> Option<u8> {
     }
     MONTH_NAMES
         .iter()
-        .position(|(short, full)| name.eq_ignore_ascii_case(short) || name.eq_ignore_ascii_case(full))
+        .position(|(short, full)| {
+            name.eq_ignore_ascii_case(short) || name.eq_ignore_ascii_case(full)
+        })
         .and_then(|index| index.checked_add(1))
         .and_then(|month| u8::try_from(month).ok())
 }

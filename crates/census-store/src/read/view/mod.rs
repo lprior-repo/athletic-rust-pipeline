@@ -6,6 +6,7 @@ mod bounded;
 #[path = "../keyed.rs"]
 mod keyed;
 mod legacy;
+mod legacy_raw;
 mod legacy_wire;
 mod lineage;
 mod membership;
