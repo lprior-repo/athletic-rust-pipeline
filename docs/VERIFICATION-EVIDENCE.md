@@ -1357,36 +1357,9 @@ number is load-contaminated (the run printed repeated `Unable to complete 100 sa
 warnings). Both require a quiet re-measure before any conclusion.
 
 
-## 2026-10-14 durable capture integration checkpoint
+## 2026-10-14 PR #29 focused implementation history
 
-See [the dated capture evidence](verification/2026-10-14-durable-capture.md). The source is an in-progress, explicitly unverified PR checkpoint. Historical core 30/30 and composed 143/144 results, compile/lint failures, interrupted checks, serial all-target pass, current source/review pins and pending reruns are retained separately. Lifecycle 4 is fresh qualification only; no production, native fault, full-spec or publication acceptance is claimed.
-
-## 2026-10-14 durable capture: terminal focused verification
-
-[Additive capture verification](verification/2026-10-14-durable-capture-green.md)
-records 165 distinct focused tests and final Moon source lint, all-target compilation and
-format checks passing at local `3708d6bab0b08c390887c562a89e8c6714255a5d`, tree-equivalent
-to PR #29 head `fe2731bd83629d4c33f7f4dfd8222aacfa9291a1`. Prior failures and the original
-checkpoint remain retained. Exact source/review coverage and full home-verification commands
-are linked there. This does not qualify release, native faults, production or the full spec.
-
-## 2026-10-14 positive roster locator preservation
-
-[Located-roster verification](verification/2026-10-14-roster-locator.md) binds 83 distinct
-focused and integration tests plus final Moon lint/check/format passes to source commit
-`f4506762506a4c2019b2b610f4554f3b77d005a1`. All 22 changed paths have exact review/test pins;
-pre-change canonical, journal and effect bytes were independently captured and compared.
-This preserves positive source coordinates in memory through existing projection callers;
-it does not add durable interpretation, accepted affiliation or selected publication authority.
-
-## 2026-10-14 archive lock-order repair
-
-[Archive lock-order verification](verification/2026-10-14-archive-lock-order.md) records 96
-focused regressions and Moon source lint/all-target check/format passing at source commit
-`0cde4e29ffbb95baa4d427b460a31dc0925dfd71`. Exact 16-file coverage, original and corrected
-reviews, and preservation/combined-fault oracles are retained. Full recovery v2 and release
-qualification remain unverified.
-
-## 2026-10-14 parser-envelope focused verification
-
-[Parser-envelope additive evidence](verification/2026-10-14-parser-envelope.md) binds 107 passing focused tests and Moon format/check/lint passes to source commit `771072a1013017a4f8b4993751f801df16f789a2`. All 38 source paths, six new envelope regressions, preserved producer/persistence/resource/buffer cases and original failures are pinned. The fifth passing invocation's compiler-thread/debug settings are explicit; 3195 unselected tests are disclosed. All eight API probes and clean restoration checks passed. Comments/panic-extraction passed; strict-size scan failed on 14 functions and module seams failed on 3 edges, all outside the envelope delta and still open. No all-historical-stores, release, full-specification, census or publication acceptance is claimed.
+The [concise PR #29 record](verification/2026-10-14-pr29-summary.md) retains scoped test
+results, earlier failures, current qualification limits and the Git snapshot for the original
+logs and reports. PR #29 remains open. Passing focused/basic lanes do not certify release,
+native faults, reusable production, full-spec completion or recruiting publication.

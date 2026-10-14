@@ -68,4 +68,4 @@ The explicit installation controls now bind a retained profile and bounded resou
 immutable lifecycle-3 enrollment. They reuse this configuration compiler and do not broaden
 its supported envelope. Generic execution of an enrolled installation is refused before
 recovery or serving. Fresh qualification keeps lifecycle 2; historical data is never
-implicitly enrolled. See [installation evidence and remaining qualification](verification/2026-10-14-installation-enrollment.md).
+implicitly enrolled. See [installation evidence and remaining qualification](verification/2026-10-14-pr29-summary.md#installation-and-result-status).
