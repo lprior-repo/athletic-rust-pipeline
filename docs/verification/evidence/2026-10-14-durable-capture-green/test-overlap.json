@@ -1,0 +1,1935 @@
+{
+  "schema": "capture-green-test-overlap/v1",
+  "current_distinct_tests": 165,
+  "current_composed_count": 158,
+  "current_cli_count": 5,
+  "current_overlap": 0,
+  "historical": {
+    "core-second.log": {
+      "tests": [
+        {
+          "status": "PASS",
+          "elapsed": "0.019s",
+          "ordinal": 1,
+          "total": 30,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::constrained_ids_response_dispositions_and_metadata_hashes_reject_invalid_inputs",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 11
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.021s",
+          "ordinal": 2,
+          "total": 30,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::stable_slot_excludes_request_payload_but_work_binds_exact_representation",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 12
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.028s",
+          "ordinal": 3,
+          "total": 30,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::history_window_move_preserves_exact_json_and_historical_unknown_field_policy",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 13
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.036s",
+          "ordinal": 4,
+          "total": 30,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::qualification_wire_requires_exact_version_roles_fields_and_case_preserving_identity",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 14
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.062s",
+          "ordinal": 5,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::malformed_capture_migration_and_backup_never_create_missing_keyspaces_or_directories",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 15
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.076s",
+          "ordinal": 6,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::corrupt_retryable_work_result_is_rejected_instead_of_suppressing_next_attempt",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 16
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.084s",
+          "ordinal": 7,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::capture_control_preserves_uppercase_existing_identity_and_never_remints_missing_identity",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 17
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.104s",
+          "ordinal": 8,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::a_hash_consistent_invalid_restore_cannot_promote_over_an_empty_destination",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 18
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.120s",
+          "ordinal": 9,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::capture_init_never_adopts_legacy_existing_or_artifact_roots",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 19
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.122s",
+          "ordinal": 10,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::explicit_capture_init_and_open_preserve_existing_store_identity",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 20
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.131s",
+          "ordinal": 11,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::a_reused_budget_never_reuses_backing_verification_across_new_snapshots",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 21
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.142s",
+          "ordinal": 12,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::capture_owner_requires_actual_bound_manifest_and_real_handle_origin",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 22
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.115s",
+          "ordinal": 13,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::generic_journal_receipt_and_credit_paths_cannot_overwrite_capture_roots",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 23
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.079s",
+          "ordinal": 14,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::slot_registration_replays_exact_bytes_and_refuses_changed_request_budget_reset",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 24
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.077s",
+          "ordinal": 15,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::actual_response_checkpoint_refusal_keeps_status_and_cannot_be_generic_dispatch_failure",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 25
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.207s",
+          "ordinal": 16,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::retained_reference_and_receipt_corruption_fail_with_no_identity_remint",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 26
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.124s",
+          "ordinal": 17,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::reservation_reuses_ordinal_but_armed_state_never_reconstructs_dispatch",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 27
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.133s",
+          "ordinal": 18,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::original_slot_lifetime_ceiling_survives_separate_owner_continuations",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 28
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.221s",
+          "ordinal": 19,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::stopped_relocation_backup_restore_preserves_identity_attempts_receipts_and_cache_v2",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 29
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.085s",
+          "ordinal": 20,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::prepared_archive_reopens_and_finishes_original_attempt_without_dispatch",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 30
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.264s",
+          "ordinal": 21,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::marker_namespace_version_and_case_preservation_are_checked_before_open_recovery",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 31
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.164s",
+          "ordinal": 22,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::retained_retryable_responses_do_not_become_success_or_cache_originals",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 32
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.142s",
+          "ordinal": 23,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::cache_replay_and_304_keep_exact_original_body_and_time_without_reference_chains",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 33
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.078s",
+          "ordinal": 24,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::stale_dispatch_token_cannot_rewrite_unknown_after_a_successor_was_reserved",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 34
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.290s",
+          "ordinal": 25,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::shared_root_budget_detects_surplus_orphan_and_corrupt_slot_closure",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 35
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.360s",
+          "ordinal": 26,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::full_three_attempt_five_dispatch_closure_fits_exactly_forty_two_roots",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 36
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.253s",
+          "ordinal": 27,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::missing_or_changed_prepared_backing_never_allocates_another_attempt",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 37
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.458s",
+          "ordinal": 28,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::capture_init_has_one_real_fjall_owner_and_missing_open_never_creates",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 38
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.594s",
+          "ordinal": 29,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::invalid_capture_backup_cannot_replace_previous_valid_generation",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 39
+        },
+        {
+          "status": "PASS",
+          "elapsed": "1.664s",
+          "ordinal": 30,
+          "total": 30,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::historical_non_capture_backup_keeps_raw_schema_preservation_policy",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/core-second.log",
+          "line": 40
+        }
+      ],
+      "repeated_summary_entries": [],
+      "nextest_run_ids": [
+        "5dbabbff-56b2-4249-9200-c038942b2612"
+      ],
+      "summary_lines": [
+        "Summary [   1.686s] 30 tests run: 30 passed, 1060 skipped"
+      ],
+      "moon_time_lines": [
+        "Time: 1m 22s 855ms"
+      ],
+      "overlap_with_composed_third": 30,
+      "not_rerun_in_composed_third": []
+    },
+    "composed-second.log": {
+      "tests": [
+        {
+          "status": "PASS",
+          "elapsed": "0.121s",
+          "ordinal": 1,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticlive::csv_capture_tests::csv_capture_refuses_declared_body_over_32_mib",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 28
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.127s",
+          "ordinal": 2,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticlive::capture::capture_tests::capture_refuses_input_path_over_4096_bytes",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 29
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.141s",
+          "ordinal": 3,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticlive::capture::capture_tests::capture_refuses_declared_body_over_32_bytes",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 30
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.166s",
+          "ordinal": 4,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticlive::capture::capture_tests::capture_refuses_physical_body_over_32_bytes_through_the_chunk_loop",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 31
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.167s",
+          "ordinal": 5,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticlive::capture::capture_tests::capture_refuses_producer_metadata_field_over_4096_bytes",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 32
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.168s",
+          "ordinal": 6,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticlive::csv_capture_tests::csv_capture_refuses_physical_body_over_32_mib",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 33
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.170s",
+          "ordinal": 7,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticlive::results::run::capture::capture_tests::result_capture_refuses_physical_body_over_1_mib",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 34
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.161s",
+          "ordinal": 8,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::historical_cached_entry_and_bundle_keep_the_observed_final_url_unknown",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 35
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.175s",
+          "ordinal": 9,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticlive::results::run::capture::capture_tests::result_capture_refuses_declared_body_over_1_mib",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 36
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.024s",
+          "ordinal": 10,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "coach_directories::research_failure::tests::capture_context_refusal_remains_failed_in_research_and_invariant_in_probe",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 37
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.199s",
+          "ordinal": 11,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticlive::csv_capture_tests::physical_csv_capture_admits_published_past_and_retains_future_debt",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 38
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.010s",
+          "ordinal": 12,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "coach_directories::research_failure::tests::capture_fetch_variants_remain_failed_in_research_and_invariant_in_probe",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 39
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.097s",
+          "ordinal": 13,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::journal::pre_admission_profile_receipts_do_not_hide_owed_owner_validation",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 40
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.109s",
+          "ordinal": 14,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::journal::explicit_refresh_reopens_journaled_profiles_and_keeps_failed_refresh_owed",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 41
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.251s",
+          "ordinal": 15,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::admitted_empty_history_uses_each_exact_profile_fetch_locator",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 42
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.100s",
+          "ordinal": 16,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::mismatched_cached_profile_is_durable_rejection_not_a_success_receipt",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 43
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.111s",
+          "ordinal": 17,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::malformed_bio_does_not_certify_a_completed_parse",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 44
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.142s",
+          "ordinal": 18,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::journal::previous_profile_parser_receipts_remain_retained_without_current_completion_credit",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 45
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.137s",
+          "ordinal": 19,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticnet::meet::tests::acquisition::old_meet_completion_is_retained_while_the_current_parser_interprets_cached_xc_labels",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 46
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.320s",
+          "ordinal": 20,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::unsafe_or_ambiguous_entry_html_refuses_before_any_bundle_acquisition",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 47
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.251s",
+          "ordinal": 21,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "mpa::tests::acquisition::collect_retains_cached_acquisition_when_execution_and_options_are_later",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 48
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.353s",
+          "ordinal": 22,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::journal::withheld_profile_commits_owner_grade_locators_without_successful_full_keys",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 49
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.255s",
+          "ordinal": 23,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::cache::eligible_cache_reuse_finishes_new_work_without_new_attempt_or_date",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 50
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.371s",
+          "ordinal": 24,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "milesplit::results::run::owned_tests::durable_capture::prepared_recovery_enters_acquired_meet_and_real_parser_without_http",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 51
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.590s",
+          "ordinal": 25,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::entry_and_module_http_failures_preserve_their_typed_retry_disposition",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 52
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.339s",
+          "ordinal": 26,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::actual_https_success_and_replay_without_eligible_cache_have_one_dispatch",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 53
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.650s",
+          "ordinal": 27,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::foreign::unmatched_foreign_markup_requests_only_the_genuine_entry_bundle",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 54
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.650s",
+          "ordinal": 28,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::a_deleted_discovered_asset_remains_a_typed_terminal_404_without_a_fallback",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 55
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.058s",
+          "ordinal": 29,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::grants::adopted_foreign_cache_root_refuses_before_grant_or_http",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 56
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.236s",
+          "ordinal": 30,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::cache::historical_or_unsupported_cache_is_a_pre_http_gap_without_fallback",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 57
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.529s",
+          "ordinal": 31,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "milesplit::results::run::owned_tests::durable_capture::durable_active_meet_reuses_one_grant_for_multiple_result_sets_and_replays",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 58
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.172s",
+          "ordinal": 32,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::failures::actual_malformed_429_preserves_source_cooldown_and_blocks_new_work_before_http",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 59
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.246s",
+          "ordinal": 33,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::cache::mismatched_eligible_metadata_cannot_publish_a_work_result",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 60
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.133s",
+          "ordinal": 34,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::grants::lifecycle_four_legacy_context_refuses_owned_role_before_http",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 61
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.642s",
+          "ordinal": 35,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "milesplit::results::run::owned_tests::durable_capture::durable_run_request_projects_then_reopens_and_replays_the_same_capture",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 62
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.204s",
+          "ordinal": 36,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::grants::target_bound_linear_grant_refuses_foreign_meet_then_consumed_reuse",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 63
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.147s",
+          "ordinal": 37,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::recovery::observed_interruption_requires_separate_original_owner_continuation",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 64
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.662s",
+          "ordinal": 38,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::actual_equal_byte_same_second_dispatches_keep_distinct_occurrences",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 65
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.332s",
+          "ordinal": 39,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::failures::actual_overbound_response_header_keeps_typed_status_and_url_checkpoint_refusal",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 66
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.014s",
+          "ordinal": 40,
+          "total": 144,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::constrained_ids_response_dispositions_and_metadata_hashes_reject_invalid_inputs",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 67
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.635s",
+          "ordinal": 41,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::cache::actual_304_keeps_original_occurrence_date_and_eligible_pointer",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 68
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.017s",
+          "ordinal": 42,
+          "total": 144,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::qualification_wire_requires_exact_version_roles_fields_and_case_preserving_identity",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 69
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.165s",
+          "ordinal": 43,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "riil::tests::acquisition::changed_content_is_not_suppressed_by_earlier_success_or_historical_journal",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 70
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.021s",
+          "ordinal": 44,
+          "total": 144,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::history_window_move_preserves_exact_json_and_historical_unknown_field_policy",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 71
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.011s",
+          "ordinal": 45,
+          "total": 144,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::stable_slot_excludes_request_payload_but_work_binds_exact_representation",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 72
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.099s",
+          "ordinal": 46,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "riil::tests::acquisition::recording_defers_rows_and_completion_until_application",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 73
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.117s",
+          "ordinal": 47,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "riil::tests::acquisition::historical_capture_replay_preserves_freshness_and_physical_rows",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 74
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.016s",
+          "ordinal": 48,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::grants::tests::same_target_can_receive_only_one_grant_per_continuation",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 75
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.027s",
+          "ordinal": 49,
+          "total": 144,
+          "binary": "census-service",
+          "name": "bootstrap::serve::capture_tests::capture_protocol_flag_has_explicit_closed_modes",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 76
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.045s",
+          "ordinal": 50,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::a_history_subset_without_milesplit_does_not_mint_or_require_its_role",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 77
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.723s",
+          "ordinal": 51,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::cache::actual_304_cache_compare_fence_rejects_changed_metadata_without_refetch",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 78
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.049s",
+          "ordinal": 52,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::attempts::same_original_owner_cannot_reset_allowance_by_changing_refresh_or_history",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 79
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.092s",
+          "ordinal": 53,
+          "total": 144,
+          "binary": "census-service",
+          "name": "bootstrap::serve::capture_tests::capture_explicit_serve_never_initializes_or_adopts_a_root",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 80
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.068s",
+          "ordinal": 54,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::capture_manifest_rejects_foreign_lineage_cohort_scope_and_run",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 81
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.026s",
+          "ordinal": 55,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_scope::tests::grant_target_matches_all_discovered_result_sets",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 82
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.309s",
+          "ordinal": 56,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::recovery::prepared_archive_recovers_through_real_owned_parser_with_zero_new_requests",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 83
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.057s",
+          "ordinal": 57,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::capture_owner_uses_sweepable_selection_and_retains_exact_plan_fingerprint",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 84
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.069s",
+          "ordinal": 58,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::capture_owner_requires_the_actual_retained_manifest_key_and_window",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 85
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.305s",
+          "ordinal": 59,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::recovery::prepared_without_archive_refuses_recovery_without_hidden_refetch",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 86
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.030s",
+          "ordinal": 60,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_tests::captured_results_match_existing_merged_selection_and_unfinished_accounting",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 87
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.042s",
+          "ordinal": 61,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_tests::advancing_generation_refuses_a_second_live_capture_then_rebuilds_after_release",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 88
+        },
+        {
+          "status": "FAIL",
+          "elapsed": "0.123s",
+          "ordinal": 62,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::attempts::original_owner_pass_continuations_keep_one_slot_and_lifetime_cap",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 89
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.021s",
+          "ordinal": 63,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::accounting_tests::business_failure_is_a_completed_join_with_a_separate_diagnostic",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 105
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.036s",
+          "ordinal": 64,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_tests::results_stage_reads_only_its_jurisdiction_meets",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 106
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.038s",
+          "ordinal": 65,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::work_admission::tests::cancelled_results_caller_keeps_original_owner_fenced_until_worker_drains",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 107
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.063s",
+          "ordinal": 66,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_tests::captured_partitions_never_cross_store_owners_with_equal_generations",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 108
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.023s",
+          "ordinal": 67,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::a_saturated_blocking_lane_defers_the_next_effect_until_the_holder_releases",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 109
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.035s",
+          "ordinal": 68,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::accounting_tests::queued_cancellation_cannot_consume_another_tasks_started_credit",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 110
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.013s",
+          "ordinal": 69,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::cancelling_deadline_reap_keeps_started_blocking_effect_and_certificate",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 111
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.023s",
+          "ordinal": 70,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::cancelled_drain_restores_closed_async_admission_and_exact_ledger",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 112
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.032s",
+          "ordinal": 71,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::cancelled_drain_restores_closed_blocking_admission_and_exact_ledger",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 113
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.019s",
+          "ordinal": 72,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::dedicated_domain_error_and_panic_have_distinct_region_accounting",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 114
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.036s",
+          "ordinal": 73,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::preadmitted_blocking_push_is_rejected_during_active_drain",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 115
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.016s",
+          "ordinal": 74,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::thread_start_failure_restores_lane_and_creates_no_accepted_unowned_work",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 116
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.034s",
+          "ordinal": 75,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::dedicated_worker_inherits_the_submitting_span_and_dispatcher",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 117
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.037s",
+          "ordinal": 76,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::dedicated_worker_survives_caller_cancellation_and_releases_lane_after_completion",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 118
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.046s",
+          "ordinal": 77,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::preadmitted_async_push_is_rejected_during_active_drain",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 119
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.044s",
+          "ordinal": 78,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::mixed_async_and_dedicated_deadline_is_counted_once_across_drain_reentry",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 120
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.018s",
+          "ordinal": 79,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::async_descriptor_refusal_never_evaluates_the_build_closure",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 121
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.018s",
+          "ordinal": 80,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::cancelling_blocking_descriptor_wait_returns_the_unstarted_lane",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 122
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.013s",
+          "ordinal": 81,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::cancelling_dedicated_descriptor_wait_returns_the_unstarted_lane",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 123
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.023s",
+          "ordinal": 82,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::blocking_follower_queues_after_lane_release_until_owned_tail_is_reaped",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 124
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.015s",
+          "ordinal": 83,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::capacity_one_async_parent_can_await_its_dedicated_child",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 125
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.023s",
+          "ordinal": 84,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::capacity_one_async_parent_can_await_its_blocking_child",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 126
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.015s",
+          "ordinal": 85,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::shutdown_tests::shutdown_wakes_waiting_admission_without_running_its_effect",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 127
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.061s",
+          "ordinal": 86,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::published_result_does_not_release_region_owned_thread_before_actual_exit",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 128
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.253s",
+          "ordinal": 87,
+          "total": 144,
+          "binary": "census-service",
+          "name": "bootstrap::serve::capture_tests::capture_default_serve_refuses_before_listener_and_explicit_serve_admits",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 129
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.025s",
+          "ordinal": 88,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::a_drain_closes_admission_for_good",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 130
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.024s",
+          "ordinal": 89,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::a_drain_counts_finished_work_and_the_deadline_separately",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 131
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.041s",
+          "ordinal": 90,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::shutdown_tests::cancelling_drain_keeps_started_effect_owned_for_the_next_drain",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 132
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.045s",
+          "ordinal": 91,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::dedicated_follower_queues_after_lane_release_until_owned_tail_is_reaped",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 133
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.054s",
+          "ordinal": 92,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::loom_tests::accepted_units_are_counted_exactly_once",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 134
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.035s",
+          "ordinal": 93,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::a_full_region_refuses_work_until_a_slot_frees",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 135
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.023s",
+          "ordinal": 94,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::a_timeout_the_clock_cannot_represent_still_drains",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 136
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.023s",
+          "ordinal": 95,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::adopting_counts_the_set_it_was_handed",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 137
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.020s",
+          "ordinal": 96,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::blocking_returns_the_jobs_value_and_the_jobs_error",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 138
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.024s",
+          "ordinal": 97,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::blocking_classifies_a_panicking_job_as_panicked",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 139
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.025s",
+          "ordinal": 98,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::counts_saturate_instead_of_wrapping",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 140
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.018s",
+          "ordinal": 99,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_reports_a_started_blocking_effect_as_still_running_until_it_settles",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 141
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.028s",
+          "ordinal": 100,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_aborts_and_counts_what_outlives_the_deadline",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 142
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.028s",
+          "ordinal": 101,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_reaps_and_counts_a_task_that_finishes_inside_the_deadline",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 143
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.048s",
+          "ordinal": 102,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::an_immediate_deadline_aborts_every_admitted_async_task",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 144
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.067s",
+          "ordinal": 103,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::a_running_blocking_job_is_waited_for_and_counted_as_completed",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 145
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.031s",
+          "ordinal": 104,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_counts_a_panicking_task_as_panicked",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 146
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.024s",
+          "ordinal": 105,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_separates_cancelled_before_effect_from_reaped_abort",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 147
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.038s",
+          "ordinal": 106,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_returns_promptly_when_task_overruns_deadline",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 148
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.048s",
+          "ordinal": 107,
+          "total": 144,
+          "binary": "census-service",
+          "name": "spawn::tests::the_default_region_admits_its_capacity_and_refuses_the_next_task",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 149
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.051s",
+          "ordinal": 108,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::bounds::oversized_canonical_envelope_refuses_before_any_journal_mutation",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 150
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.069s",
+          "ordinal": 109,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::a_reused_budget_never_reuses_backing_verification_across_new_snapshots",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 151
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.082s",
+          "ordinal": 110,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::bounds::maximum_canonical_envelope_and_physical_key_are_both_debited_before_materialization",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 152
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.109s",
+          "ordinal": 111,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::corrupt_retryable_work_result_is_rejected_instead_of_suppressing_next_attempt",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 153
+        },
+        {
+          "status": "PASS",
+          "elapsed": "1.225s",
+          "ordinal": 112,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "athleticnet::meet::tests::acquisition::cached_meet_keeps_capture_instants_and_published_school_year_on_later_replay",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 154
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.131s",
+          "ordinal": 113,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::retained_reference_and_receipt_corruption_fail_with_no_identity_remint",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 155
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.073s",
+          "ordinal": 114,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::capture_owner_requires_actual_bound_manifest_and_real_handle_origin",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 156
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.099s",
+          "ordinal": 115,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::capture_init_never_adopts_legacy_existing_or_artifact_roots",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 157
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.042s",
+          "ordinal": 116,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::malformed_capture_migration_and_backup_never_create_missing_keyspaces_or_directories",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 158
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.159s",
+          "ordinal": 117,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::shared_root_budget_detects_surplus_orphan_and_corrupt_slot_closure",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 159
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.066s",
+          "ordinal": 118,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::capture_control_preserves_uppercase_existing_identity_and_never_remints_missing_identity",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 160
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.807s",
+          "ordinal": 119,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::recovery::armed_interruption_records_no_local_execute_and_never_reuses_the_arm",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 161
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.778s",
+          "ordinal": 120,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::recovery::injected_prearm_timeout_reopens_reserved_without_consuming_attempt",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 162
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.235s",
+          "ordinal": 121,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::marker_namespace_version_and_case_preservation_are_checked_before_open_recovery",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 163
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.155s",
+          "ordinal": 122,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::explicit_capture_init_and_open_preserve_existing_store_identity",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 164
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.143s",
+          "ordinal": 123,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::a_hash_consistent_invalid_restore_cannot_promote_over_an_empty_destination",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 165
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.031s",
+          "ordinal": 124,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::slot_registration_replays_exact_bytes_and_refuses_changed_request_budget_reset",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 166
+        },
+        {
+          "status": "PASS",
+          "elapsed": "1.309s",
+          "ordinal": 125,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::actual_retryable_responses_keep_one_original_slot_and_three_attempt_limit",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 167
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.140s",
+          "ordinal": 126,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::stopped_relocation_backup_restore_preserves_identity_attempts_receipts_and_cache_v2",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 168
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.121s",
+          "ordinal": 127,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::generic_journal_receipt_and_credit_paths_cannot_overwrite_capture_roots",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 169
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.124s",
+          "ordinal": 128,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::retained_retryable_responses_do_not_become_success_or_cache_originals",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 170
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.141s",
+          "ordinal": 129,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::reservation_reuses_ordinal_but_armed_state_never_reconstructs_dispatch",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 171
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.160s",
+          "ordinal": 130,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::original_slot_lifetime_ceiling_survives_separate_owner_continuations",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 172
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.069s",
+          "ordinal": 131,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::prepared_archive_reopens_and_finishes_original_attempt_without_dispatch",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 173
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.101s",
+          "ordinal": 132,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::actual_response_checkpoint_refusal_keeps_status_and_cannot_be_generic_dispatch_failure",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 174
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.050s",
+          "ordinal": 133,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::stale_dispatch_token_cannot_rewrite_unknown_after_a_successor_was_reserved",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 175
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.107s",
+          "ordinal": 134,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::cache_replay_and_304_keep_exact_original_body_and_time_without_reference_chains",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 176
+        },
+        {
+          "status": "PASS",
+          "elapsed": "1.134s",
+          "ordinal": 135,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::failures::actual_truncated_bodies_reopen_with_observed_failures_and_three_attempt_limit",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 177
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.460s",
+          "ordinal": 136,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::capture_init_has_one_real_fjall_owner_and_missing_open_never_creates",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 178
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.239s",
+          "ordinal": 137,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::missing_or_changed_prepared_backing_never_allocates_another_attempt",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 179
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.389s",
+          "ordinal": 138,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::full_three_attempt_five_dispatch_closure_fits_exactly_forty_two_roots",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 180
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.634s",
+          "ordinal": 139,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::bounds::maximal_original_and_revalidation_join_uses_eighty_three_roots_with_default_eighty_four",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 181
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.545s",
+          "ordinal": 140,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::invalid_capture_backup_cannot_replace_previous_valid_generation",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 182
+        },
+        {
+          "status": "PASS",
+          "elapsed": "1.215s",
+          "ordinal": 141,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "uhsaa::capture_tests::uhsaa_retained_capture_readback_keeps_owned_address_and_unknown_tenure",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 183
+        },
+        {
+          "status": "PASS",
+          "elapsed": "2.650s",
+          "ordinal": 142,
+          "total": 144,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::an_owned_loopback_entry_redirect_and_redeployment_acquire_only_the_declared_bundle",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 184
+        },
+        {
+          "status": "PASS",
+          "elapsed": "2.100s",
+          "ordinal": 143,
+          "total": 144,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::historical_non_capture_backup_keeps_raw_schema_preservation_policy",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 185
+        },
+        {
+          "status": "PASS",
+          "elapsed": "2.943s",
+          "ordinal": 144,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_tests::national_fanout_decodes_one_capture_and_visits_only_49_owned_partitions",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 186
+        }
+      ],
+      "repeated_summary_entries": [
+        {
+          "status": "FAIL",
+          "elapsed": "0.123s",
+          "ordinal": 62,
+          "total": 144,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::attempts::original_owner_pass_continuations_keep_one_slot_and_lifetime_cap",
+          "log": "/workspace/shared/athletic-recovery-20261013-2203/capture-integration-evidence/composed-second.log",
+          "line": 189
+        }
+      ],
+      "nextest_run_ids": [
+        "e91a3300-7512-40c5-98fd-37af6afe75a9"
+      ],
+      "summary_lines": [
+        "Summary [   4.001s] 144 tests run: 143 passed, 1 failed, 3116 skipped"
+      ],
+      "moon_time_lines": [],
+      "overlap_with_composed_third": 144,
+      "not_rerun_in_composed_third": []
+    }
+  },
+  "new_since_composed_second": [
+    {
+      "status": "PASS",
+      "elapsed": "0.014s",
+      "ordinal": 12,
+      "total": 158,
+      "binary": "census-crawl",
+      "name": "coach_directories::map::postal::tests::boxed_summary_failure_preserves_typed_capture_error_and_source",
+      "log": "raw-logs/composed-third.log",
+      "line": 39
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.012s",
+      "ordinal": 17,
+      "total": 158,
+      "binary": "census-crawl",
+      "name": "net::acquisition::testing::linear_capture_leases_keep_bounded_stack_representations",
+      "log": "raw-logs/composed-third.log",
+      "line": 44
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.010s",
+      "ordinal": 37,
+      "total": 158,
+      "binary": "census-crawl",
+      "name": "net::types::tests::boxed_capture_store_conversions_preserve_the_exact_typed_refusal",
+      "log": "raw-logs/composed-third.log",
+      "line": 64
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.009s",
+      "ordinal": 38,
+      "total": 158,
+      "binary": "census-crawl",
+      "name": "net::types::tests::boxed_capture_store_io_preserves_path_display_and_typed_source",
+      "log": "raw-logs/composed-third.log",
+      "line": 65
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.011s",
+      "ordinal": 41,
+      "total": 158,
+      "binary": "census-crawl",
+      "name": "net::types::tests::capture_store_indirection_keeps_fetch_and_crawl_errors_below_128_bytes",
+      "log": "raw-logs/composed-third.log",
+      "line": 68
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.009s",
+      "ordinal": 47,
+      "total": 158,
+      "binary": "census-domain",
+      "name": "model::source_acquisition::tests::selected_history_requires_membership_without_serialized_authority",
+      "log": "raw-logs/composed-third.log",
+      "line": 74
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.093s",
+      "ordinal": 62,
+      "total": 158,
+      "binary": "census-service",
+      "name": "restate_services::jurisdiction::capture_admission::tests::attempts::observed_retryable_response_failures_exhaust_the_original_owner_lifetime_cap",
+      "log": "raw-logs/composed-third.log",
+      "line": 89
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.020s",
+      "ordinal": 65,
+      "total": 158,
+      "binary": "census-service",
+      "name": "restate_services::results_arms::capture_scope::tests::admitted_capture_storage_stays_within_two_machine_words",
+      "log": "raw-logs/composed-third.log",
+      "line": 92
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.223s",
+      "ordinal": 78,
+      "total": 158,
+      "binary": "census-service",
+      "name": "restate_services::jurisdiction::results_work::replay_tests::replayed_capture_results_failure_preserves_error_and_releases_original_owner_admission",
+      "log": "raw-logs/composed-third.log",
+      "line": 105
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.266s",
+      "ordinal": 83,
+      "total": 158,
+      "binary": "census-service",
+      "name": "restate_services::jurisdiction::results_work::replay_tests::replayed_capture_results_run_releases_unused_original_owner_admission",
+      "log": "raw-logs/composed-third.log",
+      "line": 110
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.138s",
+      "ordinal": 84,
+      "total": 158,
+      "binary": "census-service",
+      "name": "restate_services::results_arms::tests::dedicated_worker::dedicated_results_selector_and_tokio_dns_finish_with_one_blocking_thread",
+      "log": "raw-logs/composed-third.log",
+      "line": 111
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.253s",
+      "ordinal": 86,
+      "total": 158,
+      "binary": "census-service",
+      "name": "restate_services::jurisdiction::team_source::tests::replay::replay_consumes_registered_runs_when_live_teams_ledger_has_settled",
+      "log": "raw-logs/composed-third.log",
+      "line": 113
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.302s",
+      "ordinal": 91,
+      "total": 158,
+      "binary": "census-service",
+      "name": "restate_services::jurisdiction::team_source::tests::replay::replay_consumes_registered_runs_when_live_contacts_ledger_has_settled",
+      "log": "raw-logs/composed-third.log",
+      "line": 118
+    },
+    {
+      "status": "PASS",
+      "elapsed": "0.371s",
+      "ordinal": 108,
+      "total": 158,
+      "binary": "census-service",
+      "name": "restate_services::jurisdiction::results_work::replay_tests::capture_results_stage_finalizes_offline_attempt_with_only_stage_permit_then_replays",
+      "log": "raw-logs/composed-third.log",
+      "line": 135
+    }
+  ],
+  "warning": "Earlier 30 and 144 are fully overlapping test identities. Do not sum historical pass counts or duplicated failing summary lines. Fourteen newly selected tests are new relative to that filter, not necessarily newly authored tests.",
+  "current_parity_count": 2,
+  "current_parity_overlap": 0
+}

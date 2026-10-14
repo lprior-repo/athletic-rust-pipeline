@@ -43,7 +43,8 @@ pub use roster::{
     SourceRowLocator,
 };
 pub use wire::{
-    MeetRef, MeetResultFile, ResultSetRef, Roster, RosterAthlete, Season, Site, TeamRef,
+    LocatedRosterAthlete, MeetRef, MeetResultFile, ResultSetRef, Roster, RosterAthlete, Season,
+    Site, TeamRef,
 };
 
 #[cfg(test)]

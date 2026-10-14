@@ -1,0 +1,51 @@
+--- /workspace/shared/athletic-recovery-20261013-2203/transport-error-size-repair/source/crates/census-crawl/src/net/types/tests.rs	2026-10-14 02:03:20.112995923 -0500
++++ /workspace/shared/athletic-rebuild-20261013/crates/census-crawl/src/net/types/tests.rs	2026-10-14 02:05:59.770198758 -0500
+@@ -27,8 +27,10 @@
+         let wrapped = CrawlError::from(error);
+         check!(eq; wrapped.to_string(), expected);
+         check!(!wrapped.retryable());
+-        check!(matches!(wrapped, CrawlError::Fetch(FetchError::CaptureStore(store))
+-            if matches!(store.as_ref(), StoreError::Capture(CaptureError::CacheRootMismatch))));
++        check!(
++            matches!(wrapped, CrawlError::Fetch(FetchError::CaptureStore(store))
++            if matches!(store.as_ref(), StoreError::Capture(CaptureError::CacheRootMismatch)))
++        );
+     }
+     Ok(())
+ }
+@@ -38,21 +40,30 @@
+     let path = std::path::PathBuf::from("capture-fixture/archive/body");
+     let store = StoreError::Io {
+         path: path.clone(),
+-        source: std::io::Error::new(std::io::ErrorKind::PermissionDenied, "capture fixture denied"),
++        source: std::io::Error::new(
++            std::io::ErrorKind::PermissionDenied,
++            "capture fixture denied",
++        ),
+     };
+     let expected = store.to_string();
+     let fetch = FetchError::from(store);
+     check!(eq; fetch.to_string(), expected);
+-    let source = fetch.source().ok_or("missing fetch source")?
+-        .downcast_ref::<std::io::Error>().ok_or("fetch source type changed")?;
++    let source = fetch
++        .source()
++        .ok_or("missing fetch source")?
++        .downcast_ref::<std::io::Error>()
++        .ok_or("fetch source type changed")?;
+     check!(eq; source.kind(), std::io::ErrorKind::PermissionDenied);
+     check!(eq; source.to_string(), "capture fixture denied");
+     check!(matches!(&fetch, FetchError::CaptureStore(store)
+         if matches!(store.as_ref(), StoreError::Io { path: actual, .. } if actual == &path)));
+     let crawl = CrawlError::from(fetch);
+     check!(eq; crawl.to_string(), expected);
+-    let source = crawl.source().ok_or("missing crawl source")?
+-        .downcast_ref::<std::io::Error>().ok_or("crawl source type changed")?;
++    let source = crawl
++        .source()
++        .ok_or("missing crawl source")?
++        .downcast_ref::<std::io::Error>()
++        .ok_or("crawl source type changed")?;
+     check!(eq; source.kind(), std::io::ErrorKind::PermissionDenied);
+     check!(eq; source.to_string(), "capture fixture denied");
+     Ok(())

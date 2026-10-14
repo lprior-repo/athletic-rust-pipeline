@@ -1,3 +1,4 @@
+use super::roster::SourceRowLocator;
 use census_domain::model::{Gender, GradYear};
 use census_domain::UsJurisdiction;
 use serde::Deserialize;
@@ -101,9 +102,29 @@ pub struct RosterAthlete {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocatedRosterAthlete {
+    athlete: RosterAthlete,
+    locator: SourceRowLocator,
+}
+
+impl LocatedRosterAthlete {
+    pub(in crate::milesplit) fn new(athlete: RosterAthlete, locator: SourceRowLocator) -> Self {
+        Self { athlete, locator }
+    }
+
+    pub fn athlete(&self) -> &RosterAthlete {
+        &self.athlete
+    }
+
+    pub fn locator(&self) -> SourceRowLocator {
+        self.locator
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Roster {
     pub team: TeamRef,
-    pub athletes: Vec<RosterAthlete>,
+    pub athletes: Vec<LocatedRosterAthlete>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

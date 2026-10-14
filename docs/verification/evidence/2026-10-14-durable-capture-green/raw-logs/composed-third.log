@@ -1,0 +1,192 @@
+[ WARN 2026-10-14 02:06:05.664] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:tests-scoped (35526b01)
+   Compiling census-domain v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-domain)
+   Compiling census-store v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-store)
+▮▮▮▮ pipeline:tests-scoped (running for 30s)
+   Compiling census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+▮▮▮▮ pipeline:tests-scoped (running for 60s)
+▮▮▮▮ pipeline:tests-scoped (running for 90s)
+   Compiling census-review v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-review)
+   Compiling census-report v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-report)
+▮▮▮▮ pipeline:tests-scoped (running for 120s)
+   Compiling census-reconcile v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-reconcile)
+   Compiling census-service v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-service)
+▮▮▮▮ pipeline:tests-scoped (running for 150s)
+▮▮▮▮ pipeline:tests-scoped (running for 180s)
+▮▮▮▮ pipeline:tests-scoped (running for 210s)
+▮▮▮▮ pipeline:tests-scoped (running for 240s)
+▮▮▮▮ pipeline:tests-scoped (running for 270s)
+▮▮▮▮ pipeline:tests-scoped (running for 300s)
+▮▮▮▮ pipeline:tests-scoped (running for 330s)
+▮▮▮▮ pipeline:tests-scoped (running for 360s)
+▮▮▮▮ pipeline:tests-scoped (running for 390s)
+▮▮▮▮ pipeline:tests-scoped (running for 420s)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7m 05s
+────────────
+ Nextest run ID ee61a899-74a7-4875-a662-e2a18dee8c21 with nextest profile: default
+    Starting 158 tests across 4 binaries (3113 tests skipped)
+        PASS [   0.146s] (  1/158) census-crawl arbiter::collect::token::tests::acquisition::historical_cached_entry_and_bundle_keep_the_observed_final_url_unknown
+        PASS [   0.154s] (  2/158) census-crawl athleticlive::csv_capture_tests::physical_csv_capture_admits_published_past_and_retains_future_debt
+        PASS [   0.158s] (  3/158) census-crawl athleticlive::results::run::capture::capture_tests::result_capture_refuses_declared_body_over_1_mib
+        PASS [   0.171s] (  4/158) census-crawl athleticlive::csv_capture_tests::csv_capture_refuses_declared_body_over_32_mib
+        PASS [   0.180s] (  5/158) census-crawl athleticlive::capture::capture_tests::capture_refuses_input_path_over_4096_bytes
+        PASS [   0.182s] (  6/158) census-crawl athleticlive::capture::capture_tests::capture_refuses_declared_body_over_32_bytes
+        PASS [   0.185s] (  7/158) census-crawl athleticlive::results::run::capture::capture_tests::result_capture_refuses_physical_body_over_1_mib
+        PASS [   0.187s] (  8/158) census-crawl athleticlive::capture::capture_tests::capture_refuses_producer_metadata_field_over_4096_bytes
+        PASS [   0.195s] (  9/158) census-crawl athleticnet::absorb::tests::acquisition::admitted_empty_history_uses_each_exact_profile_fetch_locator
+        PASS [   0.202s] ( 10/158) census-crawl athleticlive::csv_capture_tests::csv_capture_refuses_physical_body_over_32_mib
+        PASS [   0.208s] ( 11/158) census-crawl athleticlive::capture::capture_tests::capture_refuses_physical_body_over_32_bytes_through_the_chunk_loop
+        PASS [   0.014s] ( 12/158) census-crawl coach_directories::map::postal::tests::boxed_summary_failure_preserves_typed_capture_error_and_source
+        PASS [   0.070s] ( 13/158) census-crawl athleticnet::absorb::tests::acquisition::journal::explicit_refresh_reopens_journaled_profiles_and_keeps_failed_refresh_owed
+        PASS [   0.018s] ( 14/158) census-crawl coach_directories::research_failure::tests::capture_context_refusal_remains_failed_in_research_and_invariant_in_probe
+        PASS [   0.012s] ( 15/158) census-crawl coach_directories::research_failure::tests::capture_fetch_variants_remain_failed_in_research_and_invariant_in_probe
+        PASS [   0.111s] ( 16/158) census-crawl athleticnet::absorb::tests::acquisition::malformed_bio_does_not_certify_a_completed_parse
+        PASS [   0.012s] ( 17/158) census-crawl net::acquisition::testing::linear_capture_leases_keep_bounded_stack_representations
+        PASS [   0.152s] ( 18/158) census-crawl athleticnet::absorb::tests::acquisition::journal::previous_profile_parser_receipts_remain_retained_without_current_completion_credit
+        PASS [   0.123s] ( 19/158) census-crawl athleticnet::meet::tests::acquisition::old_meet_completion_is_retained_while_the_current_parser_interprets_cached_xc_labels
+        PASS [   0.171s] ( 20/158) census-crawl athleticnet::absorb::tests::acquisition::journal::pre_admission_profile_receipts_do_not_hide_owed_owner_validation
+        PASS [   0.349s] ( 21/158) census-crawl arbiter::collect::token::tests::acquisition::unsafe_or_ambiguous_entry_html_refuses_before_any_bundle_acquisition
+        PASS [   0.192s] ( 22/158) census-crawl athleticnet::absorb::tests::acquisition::mismatched_cached_profile_is_durable_rejection_not_a_success_receipt
+        PASS [   0.202s] ( 23/158) census-crawl mpa::tests::acquisition::collect_retains_cached_acquisition_when_execution_and_options_are_later
+        PASS [   0.257s] ( 24/158) census-crawl milesplit::results::run::owned_tests::durable_capture::prepared_recovery_enters_acquired_meet_and_real_parser_without_http
+        PASS [   0.347s] ( 25/158) census-crawl athleticnet::absorb::tests::acquisition::journal::withheld_profile_commits_owner_grade_locators_without_successful_full_keys
+        PASS [   0.318s] ( 26/158) census-crawl milesplit::results::run::owned_tests::durable_capture::durable_active_meet_reuses_one_grant_for_multiple_result_sets_and_replays
+        PASS [   0.583s] ( 27/158) census-crawl arbiter::collect::token::tests::acquisition::a_deleted_discovered_asset_remains_a_typed_terminal_404_without_a_fallback
+        PASS [   0.299s] ( 28/158) census-crawl net::acquisition::tests::actual_https_success_and_replay_without_eligible_cache_have_one_dispatch
+        PASS [   0.627s] ( 29/158) census-crawl arbiter::collect::token::tests::acquisition::entry_and_module_http_failures_preserve_their_typed_retry_disposition
+        PASS [   0.640s] ( 30/158) census-crawl arbiter::collect::token::tests::acquisition::foreign::unmatched_foreign_markup_requests_only_the_genuine_entry_bundle
+        PASS [   0.160s] ( 31/158) census-crawl net::acquisition::tests::cache::mismatched_eligible_metadata_cannot_publish_a_work_result
+        PASS [   0.258s] ( 32/158) census-crawl net::acquisition::tests::cache::historical_or_unsupported_cache_is_a_pre_http_gap_without_fallback
+        PASS [   0.098s] ( 33/158) census-crawl net::acquisition::tests::grants::lifecycle_four_legacy_context_refuses_owned_role_before_http
+        PASS [   0.237s] ( 34/158) census-crawl net::acquisition::tests::failures::actual_malformed_429_preserves_source_cooldown_and_blocks_new_work_before_http
+        PASS [   0.205s] ( 35/158) census-crawl net::acquisition::tests::grants::adopted_foreign_cache_root_refuses_before_grant_or_http
+        PASS [   0.149s] ( 36/158) census-crawl net::acquisition::tests::recovery::observed_interruption_requires_separate_original_owner_continuation
+        PASS [   0.010s] ( 37/158) census-crawl net::types::tests::boxed_capture_store_conversions_preserve_the_exact_typed_refusal
+        PASS [   0.009s] ( 38/158) census-crawl net::types::tests::boxed_capture_store_io_preserves_path_display_and_typed_source
+        PASS [   0.265s] ( 39/158) census-crawl net::acquisition::tests::grants::target_bound_linear_grant_refuses_foreign_meet_then_consumed_reuse
+        PASS [   0.376s] ( 40/158) census-crawl net::acquisition::tests::failures::actual_overbound_response_header_keeps_typed_status_and_url_checkpoint_refusal
+        PASS [   0.011s] ( 41/158) census-crawl net::types::tests::capture_store_indirection_keeps_fetch_and_crawl_errors_below_128_bytes
+        PASS [   0.540s] ( 42/158) census-crawl net::acquisition::tests::cache::eligible_cache_reuse_finishes_new_work_without_new_attempt_or_date
+        PASS [   0.707s] ( 43/158) census-crawl milesplit::results::run::owned_tests::durable_capture::durable_run_request_projects_then_reopens_and_replays_the_same_capture
+        PASS [   0.012s] ( 44/158) census-domain model::source_acquisition::tests::constrained_ids_response_dispositions_and_metadata_hashes_reject_invalid_inputs
+        PASS [   0.011s] ( 45/158) census-domain model::source_acquisition::tests::history_window_move_preserves_exact_json_and_historical_unknown_field_policy
+        PASS [   0.010s] ( 46/158) census-domain model::source_acquisition::tests::qualification_wire_requires_exact_version_roles_fields_and_case_preserving_identity
+        PASS [   0.009s] ( 47/158) census-domain model::source_acquisition::tests::selected_history_requires_membership_without_serialized_authority
+        PASS [   0.013s] ( 48/158) census-domain model::source_acquisition::tests::stable_slot_excludes_request_payload_but_work_binds_exact_representation
+        PASS [   0.075s] ( 49/158) census-crawl riil::tests::acquisition::recording_defers_rows_and_completion_until_application
+        PASS [   0.173s] ( 50/158) census-crawl net::acquisition::tests::recovery::prepared_without_archive_refuses_recovery_without_hidden_refetch
+        PASS [   0.111s] ( 51/158) census-crawl riil::tests::acquisition::changed_content_is_not_suppressed_by_earlier_success_or_historical_journal
+        PASS [   0.118s] ( 52/158) census-crawl riil::tests::acquisition::historical_capture_replay_preserves_freshness_and_physical_rows
+        PASS [   0.036s] ( 53/158) census-service bootstrap::serve::capture_tests::capture_protocol_flag_has_explicit_closed_modes
+        PASS [   0.022s] ( 54/158) census-service restate_services::jurisdiction::capture_admission::grants::tests::same_target_can_receive_only_one_grant_per_continuation
+        PASS [   0.742s] ( 55/158) census-crawl net::acquisition::tests::actual_equal_byte_same_second_dispatches_keep_distinct_occurrences
+        PASS [   0.716s] ( 56/158) census-crawl net::acquisition::tests::cache::actual_304_keeps_original_occurrence_date_and_eligible_pointer
+        PASS [   0.050s] ( 57/158) census-service restate_services::jurisdiction::capture_admission::tests::a_history_subset_without_milesplit_does_not_mint_or_require_its_role
+        PASS [   0.777s] ( 58/158) census-crawl net::acquisition::tests::cache::actual_304_cache_compare_fence_rejects_changed_metadata_without_refetch
+        PASS [   0.036s] ( 59/158) census-service restate_services::jurisdiction::capture_admission::tests::capture_owner_requires_the_actual_retained_manifest_key_and_window
+        PASS [   0.130s] ( 60/158) census-service bootstrap::serve::capture_tests::capture_explicit_serve_never_initializes_or_adopts_a_root
+        PASS [   0.071s] ( 61/158) census-service restate_services::jurisdiction::capture_admission::tests::attempts::same_original_owner_cannot_reset_allowance_by_changing_refresh_or_history
+        PASS [   0.093s] ( 62/158) census-service restate_services::jurisdiction::capture_admission::tests::attempts::observed_retryable_response_failures_exhaust_the_original_owner_lifetime_cap
+        PASS [   0.072s] ( 63/158) census-service restate_services::jurisdiction::capture_admission::tests::capture_manifest_rejects_foreign_lineage_cohort_scope_and_run
+        PASS [   0.379s] ( 64/158) census-crawl net::acquisition::tests::recovery::prepared_archive_recovers_through_real_owned_parser_with_zero_new_requests
+        PASS [   0.020s] ( 65/158) census-service restate_services::results_arms::capture_scope::tests::admitted_capture_storage_stays_within_two_machine_words
+        PASS [   0.026s] ( 66/158) census-service restate_services::results_arms::capture_scope::tests::grant_target_matches_all_discovered_result_sets
+        PASS [   0.159s] ( 67/158) census-service restate_services::jurisdiction::capture_admission::tests::attempts::original_owner_pass_continuations_keep_one_slot_and_lifetime_cap
+        PASS [   0.093s] ( 68/158) census-service restate_services::jurisdiction::capture_admission::tests::capture_owner_uses_sweepable_selection_and_retains_exact_plan_fingerprint
+        PASS [   0.027s] ( 69/158) census-service restate_services::results_arms::capture_tests::advancing_generation_refuses_a_second_live_capture_then_rebuilds_after_release
+        PASS [   0.037s] ( 70/158) census-service restate_services::results_arms::capture_tests::captured_partitions_never_cross_store_owners_with_equal_generations
+        PASS [   0.053s] ( 71/158) census-service restate_services::results_arms::capture_tests::captured_results_match_existing_merged_selection_and_unfinished_accounting
+        PASS [   0.274s] ( 72/158) census-service bootstrap::serve::capture_tests::capture_default_serve_refuses_before_listener_and_explicit_serve_admits
+        PASS [   0.044s] ( 73/158) census-service restate_services::results_arms::capture_tests::results_stage_reads_only_its_jurisdiction_meets
+        PASS [   0.042s] ( 74/158) census-service restate_services::work_admission::tests::cancelled_results_caller_keeps_original_owner_fenced_until_worker_drains
+        PASS [   0.029s] ( 75/158) census-service spawn::accounting_tests::business_failure_is_a_completed_join_with_a_separate_diagnostic
+        PASS [   0.027s] ( 76/158) census-service spawn::accounting_tests::queued_cancellation_cannot_consume_another_tasks_started_credit
+        PASS [   0.022s] ( 77/158) census-service spawn::admission_tests::a_saturated_blocking_lane_defers_the_next_effect_until_the_holder_releases
+        PASS [   0.223s] ( 78/158) census-service restate_services::jurisdiction::results_work::replay_tests::replayed_capture_results_failure_preserves_error_and_releases_original_owner_admission
+        PASS [   0.030s] ( 79/158) census-service spawn::admission_tests::cancelled_drain_restores_closed_async_admission_and_exact_ledger
+        PASS [   0.022s] ( 80/158) census-service spawn::admission_tests::cancelling_deadline_reap_keeps_started_blocking_effect_and_certificate
+        PASS [   0.028s] ( 81/158) census-service spawn::admission_tests::cancelled_drain_restores_closed_blocking_admission_and_exact_ledger
+        PASS [   1.178s] ( 82/158) census-crawl athleticnet::meet::tests::acquisition::cached_meet_keeps_capture_instants_and_published_school_year_on_later_replay
+        PASS [   0.266s] ( 83/158) census-service restate_services::jurisdiction::results_work::replay_tests::replayed_capture_results_run_releases_unused_original_owner_admission
+        PASS [   0.138s] ( 84/158) census-service restate_services::results_arms::tests::dedicated_worker::dedicated_results_selector_and_tokio_dns_finish_with_one_blocking_thread
+        PASS [   0.036s] ( 85/158) census-service spawn::admission_tests::preadmitted_async_push_is_rejected_during_active_drain
+        PASS [   0.253s] ( 86/158) census-service restate_services::jurisdiction::team_source::tests::replay::replay_consumes_registered_runs_when_live_teams_ledger_has_settled
+        PASS [   0.035s] ( 87/158) census-service spawn::dedicated::tests::dedicated_domain_error_and_panic_have_distinct_region_accounting
+        PASS [   0.029s] ( 88/158) census-service spawn::dedicated::tests::dedicated_worker_inherits_the_submitting_span_and_dispatcher
+        PASS [   0.039s] ( 89/158) census-service spawn::admission_tests::preadmitted_blocking_push_is_rejected_during_active_drain
+        PASS [   0.025s] ( 90/158) census-service spawn::dedicated::tests::dedicated_worker_survives_caller_cancellation_and_releases_lane_after_completion
+        PASS [   0.302s] ( 91/158) census-service restate_services::jurisdiction::team_source::tests::replay::replay_consumes_registered_runs_when_live_contacts_ledger_has_settled
+        PASS [   0.027s] ( 92/158) census-service spawn::descriptor_tests::cancelling_blocking_descriptor_wait_returns_the_unstarted_lane
+        PASS [   0.739s] ( 93/158) census-crawl net::acquisition::tests::recovery::injected_prearm_timeout_reopens_reserved_without_consuming_attempt
+        PASS [   0.030s] ( 94/158) census-service spawn::descriptor_tests::async_descriptor_refusal_never_evaluates_the_build_closure
+        PASS [   0.033s] ( 95/158) census-service spawn::dedicated::tests::thread_start_failure_restores_lane_and_creates_no_accepted_unowned_work
+        PASS [   0.045s] ( 96/158) census-service spawn::dedicated::tests::published_result_does_not_release_region_owned_thread_before_actual_exit
+        PASS [   0.043s] ( 97/158) census-service spawn::descriptor_tests::blocking_follower_queues_after_lane_release_until_owned_tail_is_reaped
+        PASS [   0.017s] ( 98/158) census-service spawn::descriptor_tests::capacity_one_async_parent_can_await_its_dedicated_child
+        PASS [   0.031s] ( 99/158) census-service spawn::descriptor_tests::cancelling_dedicated_descriptor_wait_returns_the_unstarted_lane
+        PASS [   0.805s] (100/158) census-crawl net::acquisition::tests::recovery::armed_interruption_records_no_local_execute_and_never_reuses_the_arm
+        PASS [   0.024s] (101/158) census-service spawn::descriptor_tests::capacity_one_async_parent_can_await_its_blocking_child
+        PASS [   0.066s] (102/158) census-service spawn::dedicated::tests::mixed_async_and_dedicated_deadline_is_counted_once_across_drain_reentry
+        PASS [   0.023s] (103/158) census-service spawn::shutdown_tests::shutdown_wakes_waiting_admission_without_running_its_effect
+        PASS [   0.024s] (104/158) census-service spawn::tests::a_drain_closes_admission_for_good
+        PASS [   0.052s] (105/158) census-service spawn::descriptor_tests::dedicated_follower_queues_after_lane_release_until_owned_tail_is_reaped
+        PASS [   0.039s] (106/158) census-service spawn::tests::a_drain_counts_finished_work_and_the_deadline_separately
+        PASS [   0.037s] (107/158) census-service spawn::tests::a_full_region_refuses_work_until_a_slot_frees
+        PASS [   0.371s] (108/158) census-service restate_services::jurisdiction::results_work::replay_tests::capture_results_stage_finalizes_offline_attempt_with_only_stage_permit_then_replays
+        PASS [   0.059s] (109/158) census-service spawn::shutdown_tests::cancelling_drain_keeps_started_effect_owned_for_the_next_drain
+        PASS [   0.061s] (110/158) census-service spawn::loom_tests::accepted_units_are_counted_exactly_once
+        PASS [   0.031s] (111/158) census-service spawn::tests::adopting_counts_the_set_it_was_handed
+        PASS [   0.047s] (112/158) census-service spawn::tests::a_timeout_the_clock_cannot_represent_still_drains
+        PASS [   0.028s] (113/158) census-service spawn::tests::counts_saturate_instead_of_wrapping
+        PASS [   0.033s] (114/158) census-service spawn::tests::blocking_returns_the_jobs_value_and_the_jobs_error
+        PASS [   0.028s] (115/158) census-service spawn::tests::drain_reaps_and_counts_a_task_that_finishes_inside_the_deadline
+        PASS [   0.032s] (116/158) census-service spawn::tests::drain_aborts_and_counts_what_outlives_the_deadline
+        PASS [   0.052s] (117/158) census-service spawn::tests::blocking_classifies_a_panicking_job_as_panicked
+        PASS [   0.070s] (118/158) census-service spawn::tests::a_running_blocking_job_is_waited_for_and_counted_as_completed
+        PASS [   0.035s] (119/158) census-service spawn::tests::drain_counts_a_panicking_task_as_panicked
+        PASS [   0.035s] (120/158) census-service spawn::tests::drain_reports_a_started_blocking_effect_as_still_running_until_it_settles
+        PASS [   0.035s] (121/158) census-service spawn::tests::drain_returns_promptly_when_task_overruns_deadline
+        PASS [   0.070s] (122/158) census-service spawn::tests::an_immediate_deadline_aborts_every_admitted_async_task
+        PASS [   0.037s] (123/158) census-service spawn::tests::drain_separates_cancelled_before_effect_from_reaped_abort
+        PASS [   0.083s] (124/158) census-service spawn::tests::the_default_region_admits_its_capacity_and_refuses_the_next_task
+        PASS [   0.083s] (125/158) census-store acquisition::tests::bounds::maximum_canonical_envelope_and_physical_key_are_both_debited_before_materialization
+        PASS [   1.291s] (126/158) census-crawl net::acquisition::tests::actual_retryable_responses_keep_one_original_slot_and_three_attempt_limit
+        PASS [   0.104s] (127/158) census-store acquisition::tests::corruption::a_reused_budget_never_reuses_backing_verification_across_new_snapshots
+        PASS [   0.110s] (128/158) census-store acquisition::tests::bounds::oversized_canonical_envelope_refuses_before_any_journal_mutation
+        PASS [   0.033s] (129/158) census-store acquisition::tests::lifecycle::malformed_capture_migration_and_backup_never_create_missing_keyspaces_or_directories
+        PASS [   0.141s] (130/158) census-store acquisition::tests::corruption::corrupt_retryable_work_result_is_rejected_instead_of_suppressing_next_attempt
+        PASS [   0.070s] (131/158) census-store acquisition::tests::lifecycle::capture_owner_requires_actual_bound_manifest_and_real_handle_origin
+        PASS [   0.061s] (132/158) census-store acquisition::tests::preservation::capture_control_preserves_uppercase_existing_identity_and_never_remints_missing_identity
+        PASS [   0.172s] (133/158) census-store acquisition::tests::lifecycle::capture_init_never_adopts_legacy_existing_or_artifact_roots
+        PASS [   0.196s] (134/158) census-store acquisition::tests::corruption::retained_reference_and_receipt_corruption_fail_with_no_identity_remint
+        PASS [   0.124s] (135/158) census-store acquisition::tests::lifecycle::explicit_capture_init_and_open_preserve_existing_store_identity
+        PASS [   0.231s] (136/158) census-store acquisition::tests::corruption::marker_namespace_version_and_case_preservation_are_checked_before_open_recovery
+        PASS [   0.078s] (137/158) census-store acquisition::tests::protocol::original_slot_lifetime_ceiling_survives_separate_owner_continuations
+        PASS [   0.078s] (138/158) census-store acquisition::tests::protocol::reservation_reuses_ordinal_but_armed_state_never_reconstructs_dispatch
+        PASS [   0.179s] (139/158) census-store acquisition::tests::preservation::a_hash_consistent_invalid_restore_cannot_promote_over_an_empty_destination
+        PASS [   0.097s] (140/158) census-store acquisition::tests::protocol::generic_journal_receipt_and_credit_paths_cannot_overwrite_capture_roots
+        PASS [   0.289s] (141/158) census-store acquisition::tests::corruption::shared_root_budget_detects_surplus_orphan_and_corrupt_slot_closure
+        PASS [   0.157s] (142/158) census-store acquisition::tests::preservation::stopped_relocation_backup_restore_preserves_identity_attempts_receipts_and_cache_v2
+        PASS [   1.234s] (143/158) census-crawl net::acquisition::tests::failures::actual_truncated_bodies_reopen_with_observed_failures_and_three_attempt_limit
+        PASS [   0.046s] (144/158) census-store acquisition::tests::recovery::actual_response_checkpoint_refusal_keeps_status_and_cannot_be_generic_dispatch_failure
+        PASS [   0.057s] (145/158) census-store acquisition::tests::protocol::slot_registration_replays_exact_bytes_and_refuses_changed_request_budget_reset
+        PASS [   0.131s] (146/158) census-store acquisition::tests::protocol::retained_retryable_responses_do_not_become_success_or_cache_originals
+        PASS [   0.083s] (147/158) census-store acquisition::tests::recovery::prepared_archive_reopens_and_finishes_original_attempt_without_dispatch
+        PASS [   0.080s] (148/158) census-store acquisition::tests::recovery::stale_dispatch_token_cannot_rewrite_unknown_after_a_successor_was_reserved
+        PASS [   0.125s] (149/158) census-store acquisition::tests::recovery::cache_replay_and_304_keep_exact_original_body_and_time_without_reference_chains
+        PASS [   0.457s] (150/158) census-store acquisition::tests::lifecycle::capture_init_has_one_real_fjall_owner_and_missing_open_never_creates
+        PASS [   0.380s] (151/158) census-store acquisition::tests::protocol::full_three_attempt_five_dispatch_closure_fits_exactly_forty_two_roots
+        PASS [   0.324s] (152/158) census-store acquisition::tests::recovery::missing_or_changed_prepared_backing_never_allocates_another_attempt
+        PASS [   0.638s] (153/158) census-store acquisition::tests::bounds::maximal_original_and_revalidation_join_uses_eighty_three_roots_with_default_eighty_four
+        PASS [   1.323s] (154/158) census-crawl uhsaa::capture_tests::uhsaa_retained_capture_readback_keeps_owned_address_and_unknown_tenure
+        PASS [   0.621s] (155/158) census-store acquisition::tests::preservation::invalid_capture_backup_cannot_replace_previous_valid_generation
+        PASS [   2.671s] (156/158) census-crawl arbiter::collect::token::tests::acquisition::an_owned_loopback_entry_redirect_and_redeployment_acquire_only_the_declared_bundle
+        PASS [   2.025s] (157/158) census-store acquisition::tests::preservation::historical_non_capture_backup_keeps_raw_schema_preservation_policy
+        PASS [   3.016s] (158/158) census-service restate_services::results_arms::capture_tests::national_fanout_decodes_one_capture_and_visits_only_49_owned_partitions
+────────────
+     Summary [   4.230s] 158 tests run: 158 passed, 3113 skipped
+▮▮▮▮ pipeline:tests-scoped (7m 10s 617ms, 35526b01)
+
+Tasks: 1 completed
+ Time: 7m 11s 124ms
+

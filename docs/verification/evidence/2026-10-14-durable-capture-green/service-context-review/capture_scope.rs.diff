@@ -1,0 +1,28 @@
+--- a/crates/census-service/src/restate_services/results_arms/capture_scope.rs
++++ b/crates/census-service/src/restate_services/results_arms/capture_scope.rs
+@@ -8,14 +8,14 @@
+ 
+ pub(super) enum AdmittedCapture {
+     LegacyMetadata,
+-    DurableV1(ResultsCaptureContext),
++    DurableV1(Box<ResultsCaptureContext>),
+ }
+ 
+ impl AdmittedCapture {
+     pub(super) fn context(&self) -> CaptureContext<'_> {
+         match self {
+             Self::LegacyMetadata => CaptureContext::LegacyMetadata,
+-            Self::DurableV1(context) => CaptureContext::DurableV1(context),
++            Self::DurableV1(context) => CaptureContext::DurableV1(context.as_ref()),
+         }
+     }
+ }
+@@ -60,7 +60,7 @@
+         &target.meet_id,
+     )
+     .map_err(|error| job_error(jobs::collect_error(error)))?;
+-    Ok(AdmittedCapture::DurableV1(context))
++    Ok(AdmittedCapture::DurableV1(Box::new(context)))
+ }
+ 
+ #[derive(Debug, PartialEq, Eq, thiserror::Error)]

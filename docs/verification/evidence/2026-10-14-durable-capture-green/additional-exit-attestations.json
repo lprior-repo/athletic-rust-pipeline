@@ -1,0 +1,5 @@
+{
+  "all-target-final.log": {"exit_code": 0, "session": 88370, "evidence": "Root confirmed CHECK_EXIT=0 and final aggregate outer exit_code 0 at 2026-10-14T07:31:33Z."},
+  "format-final.log": {"exit_code": 0, "session": 88370, "evidence": "Root confirmed FMT_EXIT=0 and final aggregate outer exit_code 0 at 2026-10-14T07:31:33Z."},
+  "parity-final.log": {"exit_code": 0, "session": 34553, "evidence": "Root confirmed outer exit_code 0 at 2026-10-14T07:32:15Z."}
+}

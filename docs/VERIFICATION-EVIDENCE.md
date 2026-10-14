@@ -1360,3 +1360,21 @@ warnings). Both require a quiet re-measure before any conclusion.
 ## 2026-10-14 durable capture integration checkpoint
 
 See [the dated capture evidence](verification/2026-10-14-durable-capture.md). The source is an in-progress, explicitly unverified PR checkpoint. Historical core 30/30 and composed 143/144 results, compile/lint failures, interrupted checks, serial all-target pass, current source/review pins and pending reruns are retained separately. Lifecycle 4 is fresh qualification only; no production, native fault, full-spec or publication acceptance is claimed.
+
+## 2026-10-14 durable capture: terminal focused verification
+
+[Additive capture verification](verification/2026-10-14-durable-capture-green.md)
+records 165 distinct focused tests and final Moon source lint, all-target compilation and
+format checks passing at local `3708d6bab0b08c390887c562a89e8c6714255a5d`, tree-equivalent
+to PR #29 head `fe2731bd83629d4c33f7f4dfd8222aacfa9291a1`. Prior failures and the original
+checkpoint remain retained. Exact source/review coverage and full home-verification commands
+are linked there. This does not qualify release, native faults, production or the full spec.
+
+## 2026-10-14 positive roster locator preservation
+
+[Located-roster verification](verification/2026-10-14-roster-locator.md) binds 83 distinct
+focused and integration tests plus final Moon lint/check/format passes to source commit
+`f4506762506a4c2019b2b610f4554f3b77d005a1`. All 22 changed paths have exact review/test pins;
+pre-change canonical, journal and effect bytes were independently captured and compared.
+This preserves positive source coordinates in memory through existing projection callers;
+it does not add durable interpretation, accepted affiliation or selected publication authority.

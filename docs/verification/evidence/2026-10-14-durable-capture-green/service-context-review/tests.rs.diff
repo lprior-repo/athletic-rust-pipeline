@@ -1,0 +1,16 @@
+--- a/crates/census-service/src/restate_services/results_arms/capture_scope/tests.rs
++++ b/crates/census-service/src/restate_services/results_arms/capture_scope/tests.rs
+@@ -55,3 +55,13 @@
+     ));
+     Ok(())
+ }
++
++#[test]
++fn admitted_capture_storage_stays_within_two_machine_words() -> TestResult {
++    check!(std::mem::size_of::<AdmittedCapture>() <= std::mem::size_of::<[usize; 2]>());
++    check!(matches!(
++        AdmittedCapture::LegacyMetadata.context(),
++        CaptureContext::LegacyMetadata
++    ));
++    Ok(())
++}

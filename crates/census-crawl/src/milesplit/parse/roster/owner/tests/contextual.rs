@@ -48,7 +48,26 @@ fn assert_historical_rows_admitted(synthetic_prefix: &str) -> TestResult {
     let expected = parse_roster(BODY, requested.clone())?;
     let (body, capture) = synthetic_prefixed_capture(&requested, synthetic_prefix, None);
     validate_capture(&body, &requested, &capture)?;
-    check!(eq; parse_captured_roster(&body, requested, &capture)?, expected);
+    let actual = parse_captured_roster(&body, requested, &capture)?;
+    check!(matches!(&expected, RosterVerdict::Complete { .. }));
+    check!(matches!(&actual, RosterVerdict::Complete { .. }));
+    let expected = expected.roster().ok_or("missing historical rows")?;
+    let actual = actual.roster().ok_or("missing prefixed historical rows")?;
+    check!(eq; actual.team, expected.team);
+    check!(eq; actual.athletes.len(), expected.athletes.len());
+    for (actual, expected) in actual.athletes.iter().zip(&expected.athletes) {
+        check!(eq; actual.athlete(), expected.athlete());
+        let expected = expected.locator();
+        let offset = expected
+            .byte_offset
+            .checked_add(synthetic_prefix.len())
+            .ok_or("prefixed locator overflow")?;
+        check!(eq; actual.locator(), crate::milesplit::SourceRowLocator {
+            ordinal: expected.ordinal,
+            byte_offset: offset,
+            byte_length: expected.byte_length,
+        });
+    }
     Ok(())
 }
 
@@ -243,6 +262,7 @@ fn ownerless_authentic_rows_remain_available_to_pure_parser_only() -> TestResult
             .athletes
             .first()
             .ok_or("authentic first athlete unavailable")?
+            .athlete()
             .athlete_id,
         "14399169"
     );

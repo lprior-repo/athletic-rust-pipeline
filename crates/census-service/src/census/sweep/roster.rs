@@ -122,10 +122,10 @@ async fn apply_roster(
             return Ok(None);
         };
         let records = Records::of(&window, &run.site, run.school_year)?;
-        counts.include(window.athletes(), records.teams())?;
+        counts.include(records.members(), records.teams())?;
         let next =
             offset
-                .checked_add(window.athletes().len())
+                .checked_add(records.members().len())
                 .ok_or_else(|| CrawlError::Arithmetic {
                     detail: "roster window cursor overflowed".to_string(),
                 })?;

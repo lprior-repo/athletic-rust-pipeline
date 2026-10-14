@@ -1,5 +1,6 @@
 use census_crawl::milesplit::{
-    self, RosterOutcome, RosterQuarantine, RosterRejection, RosterVerdict, Site, TeamRef,
+    self, LocatedRosterAthlete, RosterOutcome, RosterQuarantine, RosterRejection, RosterVerdict,
+    Site, TeamRef,
 };
 use census_crawl::net::FetchOutcome;
 use census_crawl::{CrawlError, CrawlResult};
@@ -14,7 +15,8 @@ use super::super::units::RosterRun;
 use super::{counts::Counts, metadata::Window};
 use sha2::{Digest, Sha256};
 
-pub(super) struct Records {
+pub(super) struct Records<'a> {
+    members: &'a [LocatedRosterAthlete],
     school: CanonicalSchool,
     teams: Vec<CanonicalTeam>,
     athletes: Vec<CanonicalAthlete>,
@@ -22,8 +24,8 @@ pub(super) struct Records {
     athlete_observations: Vec<SourceObservation>,
 }
 
-impl Records {
-    pub(super) fn of(window: &Window<'_>, site: &Site, year: SchoolYear) -> CrawlResult<Self> {
+impl<'a> Records<'a> {
+    pub(super) fn of(window: &Window<'a>, site: &Site, year: SchoolYear) -> CrawlResult<Self> {
         let (school, athletes, teams) = milesplit::roster_entities(
             window.team(),
             window.athletes(),
@@ -34,6 +36,7 @@ impl Records {
         let school_observation = school_observation(&school, window.observed_on())?;
         let athlete_observations = athlete_observations(&athletes, &school, window.observed_on())?;
         Ok(Self {
+            members: window.athletes(),
             school,
             teams,
             athletes,
@@ -68,6 +71,10 @@ impl Records {
             &mut digest,
         )?;
         Ok(format!("{:x}", digest.finalize()))
+    }
+
+    pub(super) fn members(&self) -> &'a [LocatedRosterAthlete] {
+        self.members
     }
 
     pub(super) fn teams(&self) -> &[CanonicalTeam] {
@@ -176,7 +183,7 @@ fn disposition_of(verdict: &RosterVerdict) -> census_crawl::CollectionDispositio
 pub(super) fn roster_journal<'a>(
     team: &'a TeamRef,
     read: &'a RosterOutcome,
-    records: Option<&'a Records>,
+    records: Option<&'a Records<'_>>,
     run: &'a RosterRun<'_>,
     counts: &Counts,
 ) -> Journal<&'a str, &'a FetchOutcome, &'a [RosterRejection]> {
@@ -236,3 +243,6 @@ pub(super) fn roster_operation(
         team.id
     )
 }
+
+#[cfg(test)]
+mod legacy_compatibility;

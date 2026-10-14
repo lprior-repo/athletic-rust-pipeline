@@ -1,0 +1,2854 @@
+{
+  "schema": "capture-green-selected-tests/v1",
+  "commit": "3708d6bab0b08c390887c562a89e8c6714255a5d",
+  "runs": {
+    "composed-third.log": {
+      "tests": [
+        {
+          "status": "PASS",
+          "elapsed": "0.146s",
+          "ordinal": 1,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::historical_cached_entry_and_bundle_keep_the_observed_final_url_unknown",
+          "log": "raw-logs/composed-third.log",
+          "line": 28,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/arbiter/collect/token/tests/acquisition.rs",
+              "line": 158,
+              "sha256": "c29dbd05a461cdd946d6af16e1bd065b2ddeabe13e8cf39a6882e70d75e2314b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.154s",
+          "ordinal": 2,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticlive::csv_capture_tests::physical_csv_capture_admits_published_past_and_retains_future_debt",
+          "log": "raw-logs/composed-third.log",
+          "line": 29,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticlive/csv_capture_tests.rs",
+              "line": 7,
+              "sha256": "40cb487ec026a000376047b81289f4847af72f2e02e03b3e81b052cf792138f3"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.158s",
+          "ordinal": 3,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticlive::results::run::capture::capture_tests::result_capture_refuses_declared_body_over_1_mib",
+          "log": "raw-logs/composed-third.log",
+          "line": 30,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticlive/results/run/capture_tests.rs",
+              "line": 50,
+              "sha256": "07af65c39caa11048dad830c0f82fdfe8675b5a28b5c51c608da9b05203f313b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.171s",
+          "ordinal": 4,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticlive::csv_capture_tests::csv_capture_refuses_declared_body_over_32_mib",
+          "log": "raw-logs/composed-third.log",
+          "line": 31,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticlive/csv_capture_tests.rs",
+              "line": 66,
+              "sha256": "40cb487ec026a000376047b81289f4847af72f2e02e03b3e81b052cf792138f3"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.180s",
+          "ordinal": 5,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticlive::capture::capture_tests::capture_refuses_input_path_over_4096_bytes",
+          "log": "raw-logs/composed-third.log",
+          "line": 32,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticlive/capture_tests.rs",
+              "line": 50,
+              "sha256": "70da7fc5f88660c56866f0670a56b01f75e09b8050cd2951157fd846f0f5e3ed"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.182s",
+          "ordinal": 6,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticlive::capture::capture_tests::capture_refuses_declared_body_over_32_bytes",
+          "log": "raw-logs/composed-third.log",
+          "line": 33,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticlive/capture_tests.rs",
+              "line": 99,
+              "sha256": "70da7fc5f88660c56866f0670a56b01f75e09b8050cd2951157fd846f0f5e3ed"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.185s",
+          "ordinal": 7,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticlive::results::run::capture::capture_tests::result_capture_refuses_physical_body_over_1_mib",
+          "log": "raw-logs/composed-third.log",
+          "line": 34,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticlive/results/run/capture_tests.rs",
+              "line": 77,
+              "sha256": "07af65c39caa11048dad830c0f82fdfe8675b5a28b5c51c608da9b05203f313b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.187s",
+          "ordinal": 8,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticlive::capture::capture_tests::capture_refuses_producer_metadata_field_over_4096_bytes",
+          "log": "raw-logs/composed-third.log",
+          "line": 35,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticlive/capture_tests.rs",
+              "line": 75,
+              "sha256": "70da7fc5f88660c56866f0670a56b01f75e09b8050cd2951157fd846f0f5e3ed"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.195s",
+          "ordinal": 9,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::admitted_empty_history_uses_each_exact_profile_fetch_locator",
+          "log": "raw-logs/composed-third.log",
+          "line": 36,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticnet/absorb/tests/acquisition.rs",
+              "line": 173,
+              "sha256": "0d1877a97f6b15d647e296704929e7e70563b72c186b52072e2db4ef363d1537"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.202s",
+          "ordinal": 10,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticlive::csv_capture_tests::csv_capture_refuses_physical_body_over_32_mib",
+          "log": "raw-logs/composed-third.log",
+          "line": 37,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticlive/csv_capture_tests.rs",
+              "line": 119,
+              "sha256": "40cb487ec026a000376047b81289f4847af72f2e02e03b3e81b052cf792138f3"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.208s",
+          "ordinal": 11,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticlive::capture::capture_tests::capture_refuses_physical_body_over_32_bytes_through_the_chunk_loop",
+          "log": "raw-logs/composed-third.log",
+          "line": 38,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticlive/capture_tests.rs",
+              "line": 123,
+              "sha256": "70da7fc5f88660c56866f0670a56b01f75e09b8050cd2951157fd846f0f5e3ed"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.014s",
+          "ordinal": 12,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "coach_directories::map::postal::tests::boxed_summary_failure_preserves_typed_capture_error_and_source",
+          "log": "raw-logs/composed-third.log",
+          "line": 39,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/coach_directories/map/postal/tests.rs",
+              "line": 6,
+              "sha256": "982612818cba41c5903707bbd665ea5497010a8e33ce7146f4d319d4a6b427ec"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.070s",
+          "ordinal": 13,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::journal::explicit_refresh_reopens_journaled_profiles_and_keeps_failed_refresh_owed",
+          "log": "raw-logs/composed-third.log",
+          "line": 40,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticnet/absorb/tests/acquisition/journal.rs",
+              "line": 5,
+              "sha256": "26e404cdc56dcac524f4d65291342ac5fbda59538dc122457870e3221a4b1804"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.018s",
+          "ordinal": 14,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "coach_directories::research_failure::tests::capture_context_refusal_remains_failed_in_research_and_invariant_in_probe",
+          "log": "raw-logs/composed-third.log",
+          "line": 41,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/coach_directories/research_failure/tests.rs",
+              "line": 30,
+              "sha256": "1306cf292b67f203bdffb496af56b5ef3e54833b3b7ac7dd97541b98910d7b41"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.012s",
+          "ordinal": 15,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "coach_directories::research_failure::tests::capture_fetch_variants_remain_failed_in_research_and_invariant_in_probe",
+          "log": "raw-logs/composed-third.log",
+          "line": 42,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/coach_directories/research_failure/tests.rs",
+              "line": 8,
+              "sha256": "1306cf292b67f203bdffb496af56b5ef3e54833b3b7ac7dd97541b98910d7b41"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.111s",
+          "ordinal": 16,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::malformed_bio_does_not_certify_a_completed_parse",
+          "log": "raw-logs/composed-third.log",
+          "line": 43,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticnet/absorb/tests/acquisition.rs",
+              "line": 136,
+              "sha256": "0d1877a97f6b15d647e296704929e7e70563b72c186b52072e2db4ef363d1537"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.012s",
+          "ordinal": 17,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::testing::linear_capture_leases_keep_bounded_stack_representations",
+          "log": "raw-logs/composed-third.log",
+          "line": 44,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/testing.rs",
+              "line": 63,
+              "sha256": "19676ed25e57dcb9b01cd20e708281d94d5f6826926ab9edc44bb14bc23c4733"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.152s",
+          "ordinal": 18,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::journal::previous_profile_parser_receipts_remain_retained_without_current_completion_credit",
+          "log": "raw-logs/composed-third.log",
+          "line": 45,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticnet/absorb/tests/acquisition/journal.rs",
+              "line": 120,
+              "sha256": "26e404cdc56dcac524f4d65291342ac5fbda59538dc122457870e3221a4b1804"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.123s",
+          "ordinal": 19,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticnet::meet::tests::acquisition::old_meet_completion_is_retained_while_the_current_parser_interprets_cached_xc_labels",
+          "log": "raw-logs/composed-third.log",
+          "line": 46,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticnet/meet/tests/acquisition.rs",
+              "line": 131,
+              "sha256": "ca0c70a7eecc79bb215e902f8f579285e5755fdeb8abe32bc39129c509832028"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.171s",
+          "ordinal": 20,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::journal::pre_admission_profile_receipts_do_not_hide_owed_owner_validation",
+          "log": "raw-logs/composed-third.log",
+          "line": 47,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticnet/absorb/tests/acquisition/journal.rs",
+              "line": 71,
+              "sha256": "26e404cdc56dcac524f4d65291342ac5fbda59538dc122457870e3221a4b1804"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.349s",
+          "ordinal": 21,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::unsafe_or_ambiguous_entry_html_refuses_before_any_bundle_acquisition",
+          "log": "raw-logs/composed-third.log",
+          "line": 48,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/arbiter/collect/token/tests/acquisition.rs",
+              "line": 241,
+              "sha256": "c29dbd05a461cdd946d6af16e1bd065b2ddeabe13e8cf39a6882e70d75e2314b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.192s",
+          "ordinal": 22,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::mismatched_cached_profile_is_durable_rejection_not_a_success_receipt",
+          "log": "raw-logs/composed-third.log",
+          "line": 49,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticnet/absorb/tests/acquisition.rs",
+              "line": 81,
+              "sha256": "0d1877a97f6b15d647e296704929e7e70563b72c186b52072e2db4ef363d1537"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.202s",
+          "ordinal": 23,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "mpa::tests::acquisition::collect_retains_cached_acquisition_when_execution_and_options_are_later",
+          "log": "raw-logs/composed-third.log",
+          "line": 50,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/mpa/tests/acquisition.rs",
+              "line": 19,
+              "sha256": "4d267097b2370d153337a624770e64756044716b017b4cd31c9ab946c87e09c7"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.257s",
+          "ordinal": 24,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "milesplit::results::run::owned_tests::durable_capture::prepared_recovery_enters_acquired_meet_and_real_parser_without_http",
+          "log": "raw-logs/composed-third.log",
+          "line": 51,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/milesplit/results/run/owned_tests/durable_capture.rs",
+              "line": 86,
+              "sha256": "b2c12f540c5459153224a4c3995adb5206e8546a9714e0600977bc3165a8f666"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.347s",
+          "ordinal": 25,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticnet::absorb::tests::acquisition::journal::withheld_profile_commits_owner_grade_locators_without_successful_full_keys",
+          "log": "raw-logs/composed-third.log",
+          "line": 52,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticnet/absorb/tests/acquisition/journal.rs",
+              "line": 161,
+              "sha256": "26e404cdc56dcac524f4d65291342ac5fbda59538dc122457870e3221a4b1804"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.318s",
+          "ordinal": 26,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "milesplit::results::run::owned_tests::durable_capture::durable_active_meet_reuses_one_grant_for_multiple_result_sets_and_replays",
+          "log": "raw-logs/composed-third.log",
+          "line": 53,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/milesplit/results/run/owned_tests/durable_capture.rs",
+              "line": 9,
+              "sha256": "b2c12f540c5459153224a4c3995adb5206e8546a9714e0600977bc3165a8f666"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.583s",
+          "ordinal": 27,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::a_deleted_discovered_asset_remains_a_typed_terminal_404_without_a_fallback",
+          "log": "raw-logs/composed-third.log",
+          "line": 54,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/arbiter/collect/token/tests/acquisition.rs",
+              "line": 274,
+              "sha256": "c29dbd05a461cdd946d6af16e1bd065b2ddeabe13e8cf39a6882e70d75e2314b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.299s",
+          "ordinal": 28,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::actual_https_success_and_replay_without_eligible_cache_have_one_dispatch",
+          "log": "raw-logs/composed-third.log",
+          "line": 55,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests.rs",
+              "line": 11,
+              "sha256": "39d87054e708c168a829dcba56d30bac283f5d331f84e4684d363ac4f58adc18"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.627s",
+          "ordinal": 29,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::entry_and_module_http_failures_preserve_their_typed_retry_disposition",
+          "log": "raw-logs/composed-third.log",
+          "line": 56,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/arbiter/collect/token/tests/acquisition.rs",
+              "line": 202,
+              "sha256": "c29dbd05a461cdd946d6af16e1bd065b2ddeabe13e8cf39a6882e70d75e2314b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.640s",
+          "ordinal": 30,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::foreign::unmatched_foreign_markup_requests_only_the_genuine_entry_bundle",
+          "log": "raw-logs/composed-third.log",
+          "line": 57,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/arbiter/collect/token/tests/acquisition/foreign.rs",
+              "line": 5,
+              "sha256": "cc4df7e3ecb71d57f53f35c95563b4e6012935c0ac936c8ad85be6dd2c46c95c"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.160s",
+          "ordinal": 31,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::cache::mismatched_eligible_metadata_cannot_publish_a_work_result",
+          "log": "raw-logs/composed-third.log",
+          "line": 58,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/cache.rs",
+              "line": 188,
+              "sha256": "3a076e0e276c66a68adaafe580da74666e6a6638d4313a03dc4ce629f3cbe31c"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.258s",
+          "ordinal": 32,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::cache::historical_or_unsupported_cache_is_a_pre_http_gap_without_fallback",
+          "log": "raw-logs/composed-third.log",
+          "line": 59,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/cache.rs",
+              "line": 6,
+              "sha256": "3a076e0e276c66a68adaafe580da74666e6a6638d4313a03dc4ce629f3cbe31c"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.098s",
+          "ordinal": 33,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::grants::lifecycle_four_legacy_context_refuses_owned_role_before_http",
+          "log": "raw-logs/composed-third.log",
+          "line": 60,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/grants.rs",
+              "line": 43,
+              "sha256": "2346e04c33175878158d0be8d69e36c730c6b246c1b149771042e627354bf33d"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.237s",
+          "ordinal": 34,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::failures::actual_malformed_429_preserves_source_cooldown_and_blocks_new_work_before_http",
+          "log": "raw-logs/composed-third.log",
+          "line": 61,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/failures.rs",
+              "line": 60,
+              "sha256": "93a6526e5cd94769c15ef971db50d2d5b328ae1cfd62d461f5e65cf5530b856b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.205s",
+          "ordinal": 35,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::grants::adopted_foreign_cache_root_refuses_before_grant_or_http",
+          "log": "raw-logs/composed-third.log",
+          "line": 62,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/grants.rs",
+              "line": 60,
+              "sha256": "2346e04c33175878158d0be8d69e36c730c6b246c1b149771042e627354bf33d"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.149s",
+          "ordinal": 36,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::recovery::observed_interruption_requires_separate_original_owner_continuation",
+          "log": "raw-logs/composed-third.log",
+          "line": 63,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/recovery.rs",
+              "line": 63,
+              "sha256": "95196e6595ed3d9d18822357d9b503f968a4cb6741301d5bba4acdf77cb634a0"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.010s",
+          "ordinal": 37,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::types::tests::boxed_capture_store_conversions_preserve_the_exact_typed_refusal",
+          "log": "raw-logs/composed-third.log",
+          "line": 64,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/types/tests.rs",
+              "line": 16,
+              "sha256": "0014b818baf207615ee508d00b4f9280fdffcd305006f2361f432a97f5637be3"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.009s",
+          "ordinal": 38,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::types::tests::boxed_capture_store_io_preserves_path_display_and_typed_source",
+          "log": "raw-logs/composed-third.log",
+          "line": 65,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/types/tests.rs",
+              "line": 39,
+              "sha256": "0014b818baf207615ee508d00b4f9280fdffcd305006f2361f432a97f5637be3"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.265s",
+          "ordinal": 39,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::grants::target_bound_linear_grant_refuses_foreign_meet_then_consumed_reuse",
+          "log": "raw-logs/composed-third.log",
+          "line": 66,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/grants.rs",
+              "line": 6,
+              "sha256": "2346e04c33175878158d0be8d69e36c730c6b246c1b149771042e627354bf33d"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.376s",
+          "ordinal": 40,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::failures::actual_overbound_response_header_keeps_typed_status_and_url_checkpoint_refusal",
+          "log": "raw-logs/composed-third.log",
+          "line": 67,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/failures.rs",
+              "line": 16,
+              "sha256": "93a6526e5cd94769c15ef971db50d2d5b328ae1cfd62d461f5e65cf5530b856b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.011s",
+          "ordinal": 41,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::types::tests::capture_store_indirection_keeps_fetch_and_crawl_errors_below_128_bytes",
+          "log": "raw-logs/composed-third.log",
+          "line": 68,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/types/tests.rs",
+              "line": 9,
+              "sha256": "0014b818baf207615ee508d00b4f9280fdffcd305006f2361f432a97f5637be3"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.540s",
+          "ordinal": 42,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::cache::eligible_cache_reuse_finishes_new_work_without_new_attempt_or_date",
+          "log": "raw-logs/composed-third.log",
+          "line": 69,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/cache.rs",
+              "line": 162,
+              "sha256": "3a076e0e276c66a68adaafe580da74666e6a6638d4313a03dc4ce629f3cbe31c"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.707s",
+          "ordinal": 43,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "milesplit::results::run::owned_tests::durable_capture::durable_run_request_projects_then_reopens_and_replays_the_same_capture",
+          "log": "raw-logs/composed-third.log",
+          "line": 70,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/milesplit/results/run/owned_tests/durable_capture.rs",
+              "line": 115,
+              "sha256": "b2c12f540c5459153224a4c3995adb5206e8546a9714e0600977bc3165a8f666"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.012s",
+          "ordinal": 44,
+          "total": 158,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::constrained_ids_response_dispositions_and_metadata_hashes_reject_invalid_inputs",
+          "log": "raw-logs/composed-third.log",
+          "line": 71,
+          "source_declarations": [
+            {
+              "path": "crates/census-domain/src/model/source_acquisition/tests.rs",
+              "line": 89,
+              "sha256": "98f79b1a4b987721cb111652fd218bf9d0cd30b8c00dce5e62a567c98c97ceba"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.011s",
+          "ordinal": 45,
+          "total": 158,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::history_window_move_preserves_exact_json_and_historical_unknown_field_policy",
+          "log": "raw-logs/composed-third.log",
+          "line": 72,
+          "source_declarations": [
+            {
+              "path": "crates/census-domain/src/model/source_acquisition/tests.rs",
+              "line": 7,
+              "sha256": "98f79b1a4b987721cb111652fd218bf9d0cd30b8c00dce5e62a567c98c97ceba"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.010s",
+          "ordinal": 46,
+          "total": 158,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::qualification_wire_requires_exact_version_roles_fields_and_case_preserving_identity",
+          "log": "raw-logs/composed-third.log",
+          "line": 73,
+          "source_declarations": [
+            {
+              "path": "crates/census-domain/src/model/source_acquisition/tests.rs",
+              "line": 22,
+              "sha256": "98f79b1a4b987721cb111652fd218bf9d0cd30b8c00dce5e62a567c98c97ceba"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.009s",
+          "ordinal": 47,
+          "total": 158,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::selected_history_requires_membership_without_serialized_authority",
+          "log": "raw-logs/composed-third.log",
+          "line": 74,
+          "source_declarations": [
+            {
+              "path": "crates/census-domain/src/model/source_acquisition/tests.rs",
+              "line": 127,
+              "sha256": "98f79b1a4b987721cb111652fd218bf9d0cd30b8c00dce5e62a567c98c97ceba"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.013s",
+          "ordinal": 48,
+          "total": 158,
+          "binary": "census-domain",
+          "name": "model::source_acquisition::tests::stable_slot_excludes_request_payload_but_work_binds_exact_representation",
+          "log": "raw-logs/composed-third.log",
+          "line": 75,
+          "source_declarations": [
+            {
+              "path": "crates/census-domain/src/model/source_acquisition/tests.rs",
+              "line": 48,
+              "sha256": "98f79b1a4b987721cb111652fd218bf9d0cd30b8c00dce5e62a567c98c97ceba"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.075s",
+          "ordinal": 49,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "riil::tests::acquisition::recording_defers_rows_and_completion_until_application",
+          "log": "raw-logs/composed-third.log",
+          "line": 76,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/riil/tests/acquisition.rs",
+              "line": 105,
+              "sha256": "ef9fc913dc135361245fa82301e9257a532c52fc4e122f527b1386980f5d192b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.173s",
+          "ordinal": 50,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::recovery::prepared_without_archive_refuses_recovery_without_hidden_refetch",
+          "log": "raw-logs/composed-third.log",
+          "line": 77,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/recovery.rs",
+              "line": 35,
+              "sha256": "95196e6595ed3d9d18822357d9b503f968a4cb6741301d5bba4acdf77cb634a0"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.111s",
+          "ordinal": 51,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "riil::tests::acquisition::changed_content_is_not_suppressed_by_earlier_success_or_historical_journal",
+          "log": "raw-logs/composed-third.log",
+          "line": 78,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/riil/tests/acquisition.rs",
+              "line": 48,
+              "sha256": "ef9fc913dc135361245fa82301e9257a532c52fc4e122f527b1386980f5d192b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.118s",
+          "ordinal": 52,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "riil::tests::acquisition::historical_capture_replay_preserves_freshness_and_physical_rows",
+          "log": "raw-logs/composed-third.log",
+          "line": 79,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/riil/tests/acquisition.rs",
+              "line": 6,
+              "sha256": "ef9fc913dc135361245fa82301e9257a532c52fc4e122f527b1386980f5d192b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.036s",
+          "ordinal": 53,
+          "total": 158,
+          "binary": "census-service",
+          "name": "bootstrap::serve::capture_tests::capture_protocol_flag_has_explicit_closed_modes",
+          "log": "raw-logs/composed-third.log",
+          "line": 80,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/bootstrap/capture_tests.rs",
+              "line": 7,
+              "sha256": "7aa1ff5ef3fee8b891b1c1140e9bc31047e057d51e340074c6b90f68b08d07f7"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.022s",
+          "ordinal": 54,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::grants::tests::same_target_can_receive_only_one_grant_per_continuation",
+          "log": "raw-logs/composed-third.log",
+          "line": 81,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/capture_admission/grants.rs",
+              "line": 45,
+              "sha256": "d3245a7ca02be57127b66663da7f5557f0d7c5002d45dfa895b8fd46103b5dcf"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.742s",
+          "ordinal": 55,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::actual_equal_byte_same_second_dispatches_keep_distinct_occurrences",
+          "log": "raw-logs/composed-third.log",
+          "line": 82,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests.rs",
+              "line": 40,
+              "sha256": "39d87054e708c168a829dcba56d30bac283f5d331f84e4684d363ac4f58adc18"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.716s",
+          "ordinal": 56,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::cache::actual_304_keeps_original_occurrence_date_and_eligible_pointer",
+          "log": "raw-logs/composed-third.log",
+          "line": 83,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/cache.rs",
+              "line": 53,
+              "sha256": "3a076e0e276c66a68adaafe580da74666e6a6638d4313a03dc4ce629f3cbe31c"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.050s",
+          "ordinal": 57,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::a_history_subset_without_milesplit_does_not_mint_or_require_its_role",
+          "log": "raw-logs/composed-third.log",
+          "line": 84,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/capture_admission/tests.rs",
+              "line": 196,
+              "sha256": "03e0dbf3869446e95464a1aed6c1798397c23e312f6a4d2f5942bb9a2af30438"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.777s",
+          "ordinal": 58,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::cache::actual_304_cache_compare_fence_rejects_changed_metadata_without_refetch",
+          "log": "raw-logs/composed-third.log",
+          "line": 85,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/cache.rs",
+              "line": 122,
+              "sha256": "3a076e0e276c66a68adaafe580da74666e6a6638d4313a03dc4ce629f3cbe31c"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.036s",
+          "ordinal": 59,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::capture_owner_requires_the_actual_retained_manifest_key_and_window",
+          "log": "raw-logs/composed-third.log",
+          "line": 86,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/capture_admission/tests.rs",
+              "line": 95,
+              "sha256": "03e0dbf3869446e95464a1aed6c1798397c23e312f6a4d2f5942bb9a2af30438"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.130s",
+          "ordinal": 60,
+          "total": 158,
+          "binary": "census-service",
+          "name": "bootstrap::serve::capture_tests::capture_explicit_serve_never_initializes_or_adopts_a_root",
+          "log": "raw-logs/composed-third.log",
+          "line": 87,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/bootstrap/capture_tests.rs",
+              "line": 53,
+              "sha256": "7aa1ff5ef3fee8b891b1c1140e9bc31047e057d51e340074c6b90f68b08d07f7"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.071s",
+          "ordinal": 61,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::attempts::same_original_owner_cannot_reset_allowance_by_changing_refresh_or_history",
+          "log": "raw-logs/composed-third.log",
+          "line": 88,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/capture_admission/attempts.rs",
+              "line": 80,
+              "sha256": "75d3bc4545ebbc419a6e2219d061df77907c964a9dc6e8fbb3a35e4d521d2983"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.093s",
+          "ordinal": 62,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::attempts::observed_retryable_response_failures_exhaust_the_original_owner_lifetime_cap",
+          "log": "raw-logs/composed-third.log",
+          "line": 89,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/capture_admission/attempts.rs",
+              "line": 118,
+              "sha256": "75d3bc4545ebbc419a6e2219d061df77907c964a9dc6e8fbb3a35e4d521d2983"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.072s",
+          "ordinal": 63,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::capture_manifest_rejects_foreign_lineage_cohort_scope_and_run",
+          "log": "raw-logs/composed-third.log",
+          "line": 90,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/capture_admission/tests.rs",
+              "line": 160,
+              "sha256": "03e0dbf3869446e95464a1aed6c1798397c23e312f6a4d2f5942bb9a2af30438"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.379s",
+          "ordinal": 64,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::recovery::prepared_archive_recovers_through_real_owned_parser_with_zero_new_requests",
+          "log": "raw-logs/composed-third.log",
+          "line": 91,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/recovery.rs",
+              "line": 5,
+              "sha256": "95196e6595ed3d9d18822357d9b503f968a4cb6741301d5bba4acdf77cb634a0"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.020s",
+          "ordinal": 65,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_scope::tests::admitted_capture_storage_stays_within_two_machine_words",
+          "log": "raw-logs/composed-third.log",
+          "line": 92,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/results_arms/capture_scope/tests.rs",
+              "line": 60,
+              "sha256": "761d9482d9ad03d8c7119629ed65b547426a3de05595c9b82a1f2f921b98ef9a"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.026s",
+          "ordinal": 66,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_scope::tests::grant_target_matches_all_discovered_result_sets",
+          "log": "raw-logs/composed-third.log",
+          "line": 93,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/results_arms/capture_scope/tests.rs",
+              "line": 33,
+              "sha256": "761d9482d9ad03d8c7119629ed65b547426a3de05595c9b82a1f2f921b98ef9a"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.159s",
+          "ordinal": 67,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::attempts::original_owner_pass_continuations_keep_one_slot_and_lifetime_cap",
+          "log": "raw-logs/composed-third.log",
+          "line": 94,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/capture_admission/attempts.rs",
+              "line": 16,
+              "sha256": "75d3bc4545ebbc419a6e2219d061df77907c964a9dc6e8fbb3a35e4d521d2983"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.093s",
+          "ordinal": 68,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::capture_admission::tests::capture_owner_uses_sweepable_selection_and_retains_exact_plan_fingerprint",
+          "log": "raw-logs/composed-third.log",
+          "line": 95,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/capture_admission/tests.rs",
+              "line": 122,
+              "sha256": "03e0dbf3869446e95464a1aed6c1798397c23e312f6a4d2f5942bb9a2af30438"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.027s",
+          "ordinal": 69,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_tests::advancing_generation_refuses_a_second_live_capture_then_rebuilds_after_release",
+          "log": "raw-logs/composed-third.log",
+          "line": 96,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/results_arms/capture_tests.rs",
+              "line": 122,
+              "sha256": "9f0613781029208d542111c4933c90a7a02dd940dfa7ff123e6d85685f6e61e6"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.037s",
+          "ordinal": 70,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_tests::captured_partitions_never_cross_store_owners_with_equal_generations",
+          "log": "raw-logs/composed-third.log",
+          "line": 97,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/results_arms/capture_tests.rs",
+              "line": 152,
+              "sha256": "9f0613781029208d542111c4933c90a7a02dd940dfa7ff123e6d85685f6e61e6"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.053s",
+          "ordinal": 71,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_tests::captured_results_match_existing_merged_selection_and_unfinished_accounting",
+          "log": "raw-logs/composed-third.log",
+          "line": 98,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/results_arms/capture_tests.rs",
+              "line": 77,
+              "sha256": "9f0613781029208d542111c4933c90a7a02dd940dfa7ff123e6d85685f6e61e6"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.274s",
+          "ordinal": 72,
+          "total": 158,
+          "binary": "census-service",
+          "name": "bootstrap::serve::capture_tests::capture_default_serve_refuses_before_listener_and_explicit_serve_admits",
+          "log": "raw-logs/composed-third.log",
+          "line": 99,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/bootstrap/capture_tests.rs",
+              "line": 28,
+              "sha256": "7aa1ff5ef3fee8b891b1c1140e9bc31047e057d51e340074c6b90f68b08d07f7"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.044s",
+          "ordinal": 73,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_tests::results_stage_reads_only_its_jurisdiction_meets",
+          "log": "raw-logs/composed-third.log",
+          "line": 100,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/results_arms/capture_tests.rs",
+              "line": 41,
+              "sha256": "9f0613781029208d542111c4933c90a7a02dd940dfa7ff123e6d85685f6e61e6"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.042s",
+          "ordinal": 74,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::work_admission::tests::cancelled_results_caller_keeps_original_owner_fenced_until_worker_drains",
+          "log": "raw-logs/composed-third.log",
+          "line": 101,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/work_admission/tests.rs",
+              "line": 11,
+              "sha256": "dd86c9ce5a0f8f4a9557ff13167594737d05cc454d04fe4287cb9d49e9f37395"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.029s",
+          "ordinal": 75,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::accounting_tests::business_failure_is_a_completed_join_with_a_separate_diagnostic",
+          "log": "raw-logs/composed-third.log",
+          "line": 102,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/accounting_tests.rs",
+              "line": 72,
+              "sha256": "fef24acb4d1fbc15888cddd6494c6f0851463982405f264c2d49b56e7b915a24"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.027s",
+          "ordinal": 76,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::accounting_tests::queued_cancellation_cannot_consume_another_tasks_started_credit",
+          "log": "raw-logs/composed-third.log",
+          "line": 103,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/accounting_tests.rs",
+              "line": 7,
+              "sha256": "fef24acb4d1fbc15888cddd6494c6f0851463982405f264c2d49b56e7b915a24"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.022s",
+          "ordinal": 77,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::a_saturated_blocking_lane_defers_the_next_effect_until_the_holder_releases",
+          "log": "raw-logs/composed-third.log",
+          "line": 104,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/admission_tests.rs",
+              "line": 32,
+              "sha256": "ca4654d656c336ee071ee6c65a1d514f19640e341e3a66e5c4f0f7c1b2b930eb"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.223s",
+          "ordinal": 78,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::results_work::replay_tests::replayed_capture_results_failure_preserves_error_and_releases_original_owner_admission",
+          "log": "raw-logs/composed-third.log",
+          "line": 105,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/results_work/replay_tests.rs",
+              "line": 71,
+              "sha256": "87c1c4c77d197c1abc4793614649f7bbce8cb41f1f71f3aebb19409bb826bfa1"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.030s",
+          "ordinal": 79,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::cancelled_drain_restores_closed_async_admission_and_exact_ledger",
+          "log": "raw-logs/composed-third.log",
+          "line": 106,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/admission_tests.rs",
+              "line": 101,
+              "sha256": "ca4654d656c336ee071ee6c65a1d514f19640e341e3a66e5c4f0f7c1b2b930eb"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.022s",
+          "ordinal": 80,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::cancelling_deadline_reap_keeps_started_blocking_effect_and_certificate",
+          "log": "raw-logs/composed-third.log",
+          "line": 107,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/admission_tests.rs",
+              "line": 219,
+              "sha256": "ca4654d656c336ee071ee6c65a1d514f19640e341e3a66e5c4f0f7c1b2b930eb"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.028s",
+          "ordinal": 81,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::cancelled_drain_restores_closed_blocking_admission_and_exact_ledger",
+          "log": "raw-logs/composed-third.log",
+          "line": 108,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/admission_tests.rs",
+              "line": 106,
+              "sha256": "ca4654d656c336ee071ee6c65a1d514f19640e341e3a66e5c4f0f7c1b2b930eb"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "1.178s",
+          "ordinal": 82,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "athleticnet::meet::tests::acquisition::cached_meet_keeps_capture_instants_and_published_school_year_on_later_replay",
+          "log": "raw-logs/composed-third.log",
+          "line": 109,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/athleticnet/meet/tests/acquisition.rs",
+              "line": 72,
+              "sha256": "ca0c70a7eecc79bb215e902f8f579285e5755fdeb8abe32bc39129c509832028"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.266s",
+          "ordinal": 83,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::results_work::replay_tests::replayed_capture_results_run_releases_unused_original_owner_admission",
+          "log": "raw-logs/composed-third.log",
+          "line": 110,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/results_work/replay_tests.rs",
+              "line": 16,
+              "sha256": "87c1c4c77d197c1abc4793614649f7bbce8cb41f1f71f3aebb19409bb826bfa1"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.138s",
+          "ordinal": 84,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::tests::dedicated_worker::dedicated_results_selector_and_tokio_dns_finish_with_one_blocking_thread",
+          "log": "raw-logs/composed-third.log",
+          "line": 111,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/results_arms/tests/dedicated_worker.rs",
+              "line": 11,
+              "sha256": "6a60a529fc20b82511b1574725a9ade2da15c7504144fcd76cfb80c7274f7e6c"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.036s",
+          "ordinal": 85,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::preadmitted_async_push_is_rejected_during_active_drain",
+          "log": "raw-logs/composed-third.log",
+          "line": 112,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/admission_tests.rs",
+              "line": 27,
+              "sha256": "ca4654d656c336ee071ee6c65a1d514f19640e341e3a66e5c4f0f7c1b2b930eb"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.253s",
+          "ordinal": 86,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::team_source::tests::replay::replay_consumes_registered_runs_when_live_teams_ledger_has_settled",
+          "log": "raw-logs/composed-third.log",
+          "line": 113,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/team_source/tests/replay.rs",
+              "line": 16,
+              "sha256": "b536f5391e5bb8d2632111cf93b8075ee11c565801f83e3e38915019ee691b07"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.035s",
+          "ordinal": 87,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::dedicated_domain_error_and_panic_have_distinct_region_accounting",
+          "log": "raw-logs/composed-third.log",
+          "line": 114,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/dedicated/tests.rs",
+              "line": 114,
+              "sha256": "4f68b17c5db0660b5e065238479e4986dc507be35bd9b9486681c351fcdd9375"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.029s",
+          "ordinal": 88,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::dedicated_worker_inherits_the_submitting_span_and_dispatcher",
+          "log": "raw-logs/composed-third.log",
+          "line": 115,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/dedicated/tests.rs",
+              "line": 192,
+              "sha256": "4f68b17c5db0660b5e065238479e4986dc507be35bd9b9486681c351fcdd9375"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.039s",
+          "ordinal": 89,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::admission_tests::preadmitted_blocking_push_is_rejected_during_active_drain",
+          "log": "raw-logs/composed-third.log",
+          "line": 116,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/admission_tests.rs",
+              "line": 96,
+              "sha256": "ca4654d656c336ee071ee6c65a1d514f19640e341e3a66e5c4f0f7c1b2b930eb"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.025s",
+          "ordinal": 90,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::dedicated_worker_survives_caller_cancellation_and_releases_lane_after_completion",
+          "log": "raw-logs/composed-third.log",
+          "line": 117,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/dedicated/tests.rs",
+              "line": 73,
+              "sha256": "4f68b17c5db0660b5e065238479e4986dc507be35bd9b9486681c351fcdd9375"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.302s",
+          "ordinal": 91,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::team_source::tests::replay::replay_consumes_registered_runs_when_live_contacts_ledger_has_settled",
+          "log": "raw-logs/composed-third.log",
+          "line": 118,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/team_source/tests/replay.rs",
+              "line": 21,
+              "sha256": "b536f5391e5bb8d2632111cf93b8075ee11c565801f83e3e38915019ee691b07"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.027s",
+          "ordinal": 92,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::cancelling_blocking_descriptor_wait_returns_the_unstarted_lane",
+          "log": "raw-logs/composed-third.log",
+          "line": 119,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/descriptor_tests.rs",
+              "line": 101,
+              "sha256": "276b9993de55391bc48fa1aed5060002c3e8cc550e3e96b12b4e289d49fc5639"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.739s",
+          "ordinal": 93,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::recovery::injected_prearm_timeout_reopens_reserved_without_consuming_attempt",
+          "log": "raw-logs/composed-third.log",
+          "line": 120,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/recovery.rs",
+              "line": 132,
+              "sha256": "95196e6595ed3d9d18822357d9b503f968a4cb6741301d5bba4acdf77cb634a0"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.030s",
+          "ordinal": 94,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::async_descriptor_refusal_never_evaluates_the_build_closure",
+          "log": "raw-logs/composed-third.log",
+          "line": 121,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/descriptor_tests.rs",
+              "line": 70,
+              "sha256": "276b9993de55391bc48fa1aed5060002c3e8cc550e3e96b12b4e289d49fc5639"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.033s",
+          "ordinal": 95,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::thread_start_failure_restores_lane_and_creates_no_accepted_unowned_work",
+          "log": "raw-logs/composed-third.log",
+          "line": 122,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/dedicated/tests.rs",
+              "line": 140,
+              "sha256": "4f68b17c5db0660b5e065238479e4986dc507be35bd9b9486681c351fcdd9375"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.045s",
+          "ordinal": 96,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::published_result_does_not_release_region_owned_thread_before_actual_exit",
+          "log": "raw-logs/composed-third.log",
+          "line": 123,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/dedicated/tests.rs",
+              "line": 25,
+              "sha256": "4f68b17c5db0660b5e065238479e4986dc507be35bd9b9486681c351fcdd9375"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.043s",
+          "ordinal": 97,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::blocking_follower_queues_after_lane_release_until_owned_tail_is_reaped",
+          "log": "raw-logs/composed-third.log",
+          "line": 124,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/descriptor_tests.rs",
+              "line": 91,
+              "sha256": "276b9993de55391bc48fa1aed5060002c3e8cc550e3e96b12b4e289d49fc5639"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.017s",
+          "ordinal": 98,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::capacity_one_async_parent_can_await_its_dedicated_child",
+          "log": "raw-logs/composed-third.log",
+          "line": 125,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/descriptor_tests.rs",
+              "line": 26,
+              "sha256": "276b9993de55391bc48fa1aed5060002c3e8cc550e3e96b12b4e289d49fc5639"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.031s",
+          "ordinal": 99,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::cancelling_dedicated_descriptor_wait_returns_the_unstarted_lane",
+          "log": "raw-logs/composed-third.log",
+          "line": 126,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/descriptor_tests.rs",
+              "line": 106,
+              "sha256": "276b9993de55391bc48fa1aed5060002c3e8cc550e3e96b12b4e289d49fc5639"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.805s",
+          "ordinal": 100,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::recovery::armed_interruption_records_no_local_execute_and_never_reuses_the_arm",
+          "log": "raw-logs/composed-third.log",
+          "line": 127,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/recovery.rs",
+              "line": 99,
+              "sha256": "95196e6595ed3d9d18822357d9b503f968a4cb6741301d5bba4acdf77cb634a0"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.024s",
+          "ordinal": 101,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::capacity_one_async_parent_can_await_its_blocking_child",
+          "log": "raw-logs/composed-third.log",
+          "line": 128,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/descriptor_tests.rs",
+              "line": 21,
+              "sha256": "276b9993de55391bc48fa1aed5060002c3e8cc550e3e96b12b4e289d49fc5639"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.066s",
+          "ordinal": 102,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::dedicated::tests::mixed_async_and_dedicated_deadline_is_counted_once_across_drain_reentry",
+          "log": "raw-logs/composed-third.log",
+          "line": 129,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/dedicated/tests.rs",
+              "line": 163,
+              "sha256": "4f68b17c5db0660b5e065238479e4986dc507be35bd9b9486681c351fcdd9375"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.023s",
+          "ordinal": 103,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::shutdown_tests::shutdown_wakes_waiting_admission_without_running_its_effect",
+          "log": "raw-logs/composed-third.log",
+          "line": 130,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/shutdown_tests.rs",
+              "line": 45,
+              "sha256": "87bd593f84923da4df78e9c71950ad04e7344a01655672ee4cf7be71e6bbcb8a"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.024s",
+          "ordinal": 104,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::a_drain_closes_admission_for_good",
+          "log": "raw-logs/composed-third.log",
+          "line": 131,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 222,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.052s",
+          "ordinal": 105,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::descriptor_tests::dedicated_follower_queues_after_lane_release_until_owned_tail_is_reaped",
+          "log": "raw-logs/composed-third.log",
+          "line": 132,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/descriptor_tests.rs",
+              "line": 96,
+              "sha256": "276b9993de55391bc48fa1aed5060002c3e8cc550e3e96b12b4e289d49fc5639"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.039s",
+          "ordinal": 106,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::a_drain_counts_finished_work_and_the_deadline_separately",
+          "log": "raw-logs/composed-third.log",
+          "line": 133,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 248,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.037s",
+          "ordinal": 107,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::a_full_region_refuses_work_until_a_slot_frees",
+          "log": "raw-logs/composed-third.log",
+          "line": 134,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 274,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.371s",
+          "ordinal": 108,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::jurisdiction::results_work::replay_tests::capture_results_stage_finalizes_offline_attempt_with_only_stage_permit_then_replays",
+          "log": "raw-logs/composed-third.log",
+          "line": 135,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/jurisdiction/results_work/replay_tests.rs",
+              "line": 42,
+              "sha256": "87c1c4c77d197c1abc4793614649f7bbce8cb41f1f71f3aebb19409bb826bfa1"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.059s",
+          "ordinal": 109,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::shutdown_tests::cancelling_drain_keeps_started_effect_owned_for_the_next_drain",
+          "log": "raw-logs/composed-third.log",
+          "line": 136,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/shutdown_tests.rs",
+              "line": 7,
+              "sha256": "87bd593f84923da4df78e9c71950ad04e7344a01655672ee4cf7be71e6bbcb8a"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.061s",
+          "ordinal": 110,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::loom_tests::accepted_units_are_counted_exactly_once",
+          "log": "raw-logs/composed-third.log",
+          "line": 137,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/loom_tests.rs",
+              "line": 17,
+              "sha256": "a2f91ec8f9739cc845141d089ed2e0f6f398437fef2778be7b8151f841c64eba"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.031s",
+          "ordinal": 111,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::adopting_counts_the_set_it_was_handed",
+          "log": "raw-logs/composed-third.log",
+          "line": 138,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 186,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.047s",
+          "ordinal": 112,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::a_timeout_the_clock_cannot_represent_still_drains",
+          "log": "raw-logs/composed-third.log",
+          "line": 139,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 202,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.028s",
+          "ordinal": 113,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::counts_saturate_instead_of_wrapping",
+          "log": "raw-logs/composed-third.log",
+          "line": 140,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 356,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.033s",
+          "ordinal": 114,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::blocking_returns_the_jobs_value_and_the_jobs_error",
+          "log": "raw-logs/composed-third.log",
+          "line": 141,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 76,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.028s",
+          "ordinal": 115,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_reaps_and_counts_a_task_that_finishes_inside_the_deadline",
+          "log": "raw-logs/composed-third.log",
+          "line": 142,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 17,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.032s",
+          "ordinal": 116,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_aborts_and_counts_what_outlives_the_deadline",
+          "log": "raw-logs/composed-third.log",
+          "line": 143,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 37,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.052s",
+          "ordinal": 117,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::blocking_classifies_a_panicking_job_as_panicked",
+          "log": "raw-logs/composed-third.log",
+          "line": 144,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 167,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.070s",
+          "ordinal": 118,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::a_running_blocking_job_is_waited_for_and_counted_as_completed",
+          "log": "raw-logs/composed-third.log",
+          "line": 145,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 101,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.035s",
+          "ordinal": 119,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_counts_a_panicking_task_as_panicked",
+          "log": "raw-logs/composed-third.log",
+          "line": 146,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 57,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.035s",
+          "ordinal": 120,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_reports_a_started_blocking_effect_as_still_running_until_it_settles",
+          "log": "raw-logs/composed-third.log",
+          "line": 147,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 394,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.035s",
+          "ordinal": 121,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_returns_promptly_when_task_overruns_deadline",
+          "log": "raw-logs/composed-third.log",
+          "line": 148,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 137,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.070s",
+          "ordinal": 122,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::an_immediate_deadline_aborts_every_admitted_async_task",
+          "log": "raw-logs/composed-third.log",
+          "line": 149,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 332,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.037s",
+          "ordinal": 123,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::drain_separates_cancelled_before_effect_from_reaped_abort",
+          "log": "raw-logs/composed-third.log",
+          "line": 150,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 367,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.083s",
+          "ordinal": 124,
+          "total": 158,
+          "binary": "census-service",
+          "name": "spawn::tests::the_default_region_admits_its_capacity_and_refuses_the_next_task",
+          "log": "raw-logs/composed-third.log",
+          "line": 151,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/spawn/tests.rs",
+              "line": 307,
+              "sha256": "376a951e882e473af29b9471f2657a861336f1a021b847103cb9b45fb73b7665"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.083s",
+          "ordinal": 125,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::bounds::maximum_canonical_envelope_and_physical_key_are_both_debited_before_materialization",
+          "log": "raw-logs/composed-third.log",
+          "line": 152,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/bounds.rs",
+              "line": 138,
+              "sha256": "7477e9e680a0929c2b2d3a2250aaaa3609fb1b45dfbe4ee977e6cddae6cc0141"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "1.291s",
+          "ordinal": 126,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::actual_retryable_responses_keep_one_original_slot_and_three_attempt_limit",
+          "log": "raw-logs/composed-third.log",
+          "line": 153,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests.rs",
+              "line": 81,
+              "sha256": "39d87054e708c168a829dcba56d30bac283f5d331f84e4684d363ac4f58adc18"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.104s",
+          "ordinal": 127,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::a_reused_budget_never_reuses_backing_verification_across_new_snapshots",
+          "log": "raw-logs/composed-third.log",
+          "line": 154,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/corruption.rs",
+              "line": 103,
+              "sha256": "2dc6838bc852ebedc22068ede200938a5ec3490ba8524b8ccbf94c697569aa27"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.110s",
+          "ordinal": 128,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::bounds::oversized_canonical_envelope_refuses_before_any_journal_mutation",
+          "log": "raw-logs/composed-third.log",
+          "line": 155,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/bounds.rs",
+              "line": 198,
+              "sha256": "7477e9e680a0929c2b2d3a2250aaaa3609fb1b45dfbe4ee977e6cddae6cc0141"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.033s",
+          "ordinal": 129,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::malformed_capture_migration_and_backup_never_create_missing_keyspaces_or_directories",
+          "log": "raw-logs/composed-third.log",
+          "line": 156,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/lifecycle.rs",
+              "line": 139,
+              "sha256": "c2a097910f2db4bad8b4b28da216a1233d5f0828f43534e9d332af59210d6808"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.141s",
+          "ordinal": 130,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::corrupt_retryable_work_result_is_rejected_instead_of_suppressing_next_attempt",
+          "log": "raw-logs/composed-third.log",
+          "line": 157,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/corruption.rs",
+              "line": 56,
+              "sha256": "2dc6838bc852ebedc22068ede200938a5ec3490ba8524b8ccbf94c697569aa27"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.070s",
+          "ordinal": 131,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::capture_owner_requires_actual_bound_manifest_and_real_handle_origin",
+          "log": "raw-logs/composed-third.log",
+          "line": 158,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/lifecycle.rs",
+              "line": 92,
+              "sha256": "c2a097910f2db4bad8b4b28da216a1233d5f0828f43534e9d332af59210d6808"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.061s",
+          "ordinal": 132,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::capture_control_preserves_uppercase_existing_identity_and_never_remints_missing_identity",
+          "log": "raw-logs/composed-third.log",
+          "line": 159,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/preservation.rs",
+              "line": 130,
+              "sha256": "dfe357559a81485a0b19681ce974afe8caa2f22ad2a353f24ca1bc0031f2a456"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.172s",
+          "ordinal": 133,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::capture_init_never_adopts_legacy_existing_or_artifact_roots",
+          "log": "raw-logs/composed-third.log",
+          "line": 160,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/lifecycle.rs",
+              "line": 55,
+              "sha256": "c2a097910f2db4bad8b4b28da216a1233d5f0828f43534e9d332af59210d6808"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.196s",
+          "ordinal": 134,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::retained_reference_and_receipt_corruption_fail_with_no_identity_remint",
+          "log": "raw-logs/composed-third.log",
+          "line": 161,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/corruption.rs",
+              "line": 69,
+              "sha256": "2dc6838bc852ebedc22068ede200938a5ec3490ba8524b8ccbf94c697569aa27"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.124s",
+          "ordinal": 135,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::explicit_capture_init_and_open_preserve_existing_store_identity",
+          "log": "raw-logs/composed-third.log",
+          "line": 162,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/lifecycle.rs",
+              "line": 4,
+              "sha256": "c2a097910f2db4bad8b4b28da216a1233d5f0828f43534e9d332af59210d6808"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.231s",
+          "ordinal": 136,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::marker_namespace_version_and_case_preservation_are_checked_before_open_recovery",
+          "log": "raw-logs/composed-third.log",
+          "line": 163,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/corruption.rs",
+              "line": 117,
+              "sha256": "2dc6838bc852ebedc22068ede200938a5ec3490ba8524b8ccbf94c697569aa27"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.078s",
+          "ordinal": 137,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::original_slot_lifetime_ceiling_survives_separate_owner_continuations",
+          "log": "raw-logs/composed-third.log",
+          "line": 164,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/protocol.rs",
+              "line": 40,
+              "sha256": "9dfc2697dea371dbe48c802c76b1d53cab57bbeb868b85eb19d1c01ddfc59662"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.078s",
+          "ordinal": 138,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::reservation_reuses_ordinal_but_armed_state_never_reconstructs_dispatch",
+          "log": "raw-logs/composed-third.log",
+          "line": 165,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/protocol.rs",
+              "line": 61,
+              "sha256": "9dfc2697dea371dbe48c802c76b1d53cab57bbeb868b85eb19d1c01ddfc59662"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.179s",
+          "ordinal": 139,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::a_hash_consistent_invalid_restore_cannot_promote_over_an_empty_destination",
+          "log": "raw-logs/composed-third.log",
+          "line": 166,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/preservation.rs",
+              "line": 159,
+              "sha256": "dfe357559a81485a0b19681ce974afe8caa2f22ad2a353f24ca1bc0031f2a456"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.097s",
+          "ordinal": 140,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::generic_journal_receipt_and_credit_paths_cannot_overwrite_capture_roots",
+          "log": "raw-logs/composed-third.log",
+          "line": 167,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/protocol.rs",
+              "line": 114,
+              "sha256": "9dfc2697dea371dbe48c802c76b1d53cab57bbeb868b85eb19d1c01ddfc59662"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.289s",
+          "ordinal": 141,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::corruption::shared_root_budget_detects_surplus_orphan_and_corrupt_slot_closure",
+          "log": "raw-logs/composed-third.log",
+          "line": 168,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/corruption.rs",
+              "line": 4,
+              "sha256": "2dc6838bc852ebedc22068ede200938a5ec3490ba8524b8ccbf94c697569aa27"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.157s",
+          "ordinal": 142,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::stopped_relocation_backup_restore_preserves_identity_attempts_receipts_and_cache_v2",
+          "log": "raw-logs/composed-third.log",
+          "line": 169,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/preservation.rs",
+              "line": 4,
+              "sha256": "dfe357559a81485a0b19681ce974afe8caa2f22ad2a353f24ca1bc0031f2a456"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "1.234s",
+          "ordinal": 143,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "net::acquisition::tests::failures::actual_truncated_bodies_reopen_with_observed_failures_and_three_attempt_limit",
+          "log": "raw-logs/composed-third.log",
+          "line": 170,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/net/acquisition/tests/failures.rs",
+              "line": 106,
+              "sha256": "93a6526e5cd94769c15ef971db50d2d5b328ae1cfd62d461f5e65cf5530b856b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.046s",
+          "ordinal": 144,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::actual_response_checkpoint_refusal_keeps_status_and_cannot_be_generic_dispatch_failure",
+          "log": "raw-logs/composed-third.log",
+          "line": 171,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/recovery.rs",
+              "line": 155,
+              "sha256": "a9177ff148e836d6dd971b6a0837b92f3181cdf988643ec5440435570a766736"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.057s",
+          "ordinal": 145,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::slot_registration_replays_exact_bytes_and_refuses_changed_request_budget_reset",
+          "log": "raw-logs/composed-third.log",
+          "line": 172,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/protocol.rs",
+              "line": 4,
+              "sha256": "9dfc2697dea371dbe48c802c76b1d53cab57bbeb868b85eb19d1c01ddfc59662"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.131s",
+          "ordinal": 146,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::retained_retryable_responses_do_not_become_success_or_cache_originals",
+          "log": "raw-logs/composed-third.log",
+          "line": 173,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/protocol.rs",
+              "line": 88,
+              "sha256": "9dfc2697dea371dbe48c802c76b1d53cab57bbeb868b85eb19d1c01ddfc59662"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.083s",
+          "ordinal": 147,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::prepared_archive_reopens_and_finishes_original_attempt_without_dispatch",
+          "log": "raw-logs/composed-third.log",
+          "line": 174,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/recovery.rs",
+              "line": 52,
+              "sha256": "a9177ff148e836d6dd971b6a0837b92f3181cdf988643ec5440435570a766736"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.080s",
+          "ordinal": 148,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::stale_dispatch_token_cannot_rewrite_unknown_after_a_successor_was_reserved",
+          "log": "raw-logs/composed-third.log",
+          "line": 175,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/recovery.rs",
+              "line": 133,
+              "sha256": "a9177ff148e836d6dd971b6a0837b92f3181cdf988643ec5440435570a766736"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.125s",
+          "ordinal": 149,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::cache_replay_and_304_keep_exact_original_body_and_time_without_reference_chains",
+          "log": "raw-logs/composed-third.log",
+          "line": 176,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/recovery.rs",
+              "line": 77,
+              "sha256": "a9177ff148e836d6dd971b6a0837b92f3181cdf988643ec5440435570a766736"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.457s",
+          "ordinal": 150,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::lifecycle::capture_init_has_one_real_fjall_owner_and_missing_open_never_creates",
+          "log": "raw-logs/composed-third.log",
+          "line": 177,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/lifecycle.rs",
+              "line": 119,
+              "sha256": "c2a097910f2db4bad8b4b28da216a1233d5f0828f43534e9d332af59210d6808"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.380s",
+          "ordinal": 151,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::protocol::full_three_attempt_five_dispatch_closure_fits_exactly_forty_two_roots",
+          "log": "raw-logs/composed-third.log",
+          "line": 178,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/protocol.rs",
+              "line": 150,
+              "sha256": "9dfc2697dea371dbe48c802c76b1d53cab57bbeb868b85eb19d1c01ddfc59662"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.324s",
+          "ordinal": 152,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::recovery::missing_or_changed_prepared_backing_never_allocates_another_attempt",
+          "log": "raw-logs/composed-third.log",
+          "line": 179,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/recovery.rs",
+              "line": 4,
+              "sha256": "a9177ff148e836d6dd971b6a0837b92f3181cdf988643ec5440435570a766736"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.638s",
+          "ordinal": 153,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::bounds::maximal_original_and_revalidation_join_uses_eighty_three_roots_with_default_eighty_four",
+          "log": "raw-logs/composed-third.log",
+          "line": 180,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/bounds.rs",
+              "line": 4,
+              "sha256": "7477e9e680a0929c2b2d3a2250aaaa3609fb1b45dfbe4ee977e6cddae6cc0141"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "1.323s",
+          "ordinal": 154,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "uhsaa::capture_tests::uhsaa_retained_capture_readback_keeps_owned_address_and_unknown_tenure",
+          "log": "raw-logs/composed-third.log",
+          "line": 181,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/uhsaa/capture_tests.rs",
+              "line": 41,
+              "sha256": "d6101446ad3dcecca3b3deb7672ef6797f17bb6d352ba216ba74a185a0b7cc0e"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.621s",
+          "ordinal": 155,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::invalid_capture_backup_cannot_replace_previous_valid_generation",
+          "log": "raw-logs/composed-third.log",
+          "line": 182,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/preservation.rs",
+              "line": 37,
+              "sha256": "dfe357559a81485a0b19681ce974afe8caa2f22ad2a353f24ca1bc0031f2a456"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "2.671s",
+          "ordinal": 156,
+          "total": 158,
+          "binary": "census-crawl",
+          "name": "arbiter::collect::token::tests::acquisition::an_owned_loopback_entry_redirect_and_redeployment_acquire_only_the_declared_bundle",
+          "log": "raw-logs/composed-third.log",
+          "line": 183,
+          "source_declarations": [
+            {
+              "path": "crates/census-crawl/src/arbiter/collect/token/tests/acquisition.rs",
+              "line": 100,
+              "sha256": "c29dbd05a461cdd946d6af16e1bd065b2ddeabe13e8cf39a6882e70d75e2314b"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "2.025s",
+          "ordinal": 157,
+          "total": 158,
+          "binary": "census-store",
+          "name": "acquisition::tests::preservation::historical_non_capture_backup_keeps_raw_schema_preservation_policy",
+          "log": "raw-logs/composed-third.log",
+          "line": 184,
+          "source_declarations": [
+            {
+              "path": "crates/census-store/src/acquisition/tests/preservation.rs",
+              "line": 102,
+              "sha256": "dfe357559a81485a0b19681ce974afe8caa2f22ad2a353f24ca1bc0031f2a456"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "3.016s",
+          "ordinal": 158,
+          "total": 158,
+          "binary": "census-service",
+          "name": "restate_services::results_arms::capture_tests::national_fanout_decodes_one_capture_and_visits_only_49_owned_partitions",
+          "log": "raw-logs/composed-third.log",
+          "line": 185,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/restate_services/results_arms/capture_tests.rs",
+              "line": 176,
+              "sha256": "9f0613781029208d542111c4933c90a7a02dd940dfa7ff123e6d85685f6e61e6"
+            }
+          ]
+        }
+      ],
+      "repeated_summary_entries": [],
+      "nextest_run_ids": [
+        "ee61a899-74a7-4875-a662-e2a18dee8c21"
+      ],
+      "summary_lines": [
+        "Summary [   4.230s] 158 tests run: 158 passed, 3113 skipped"
+      ],
+      "moon_time_lines": [
+        "Time: 7m 11s 124ms"
+      ]
+    },
+    "cli-first.log": {
+      "tests": [
+        {
+          "status": "PASS",
+          "elapsed": "0.020s",
+          "ordinal": 1,
+          "total": 5,
+          "binary": "census-service::bin/census-service",
+          "name": "cli::capture_protocol::tests::capture_protocol_parser_requires_a_supported_subcommand",
+          "log": "raw-logs/cli-first.log",
+          "line": 19,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/cli/capture_protocol/tests.rs",
+              "line": 7,
+              "sha256": "32af6fbe41168ebb3146b33bca01d2faa17e963ced9903a231bc1da9cf7389ba"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.029s",
+          "ordinal": 2,
+          "total": 5,
+          "binary": "census-service::bin/census-service",
+          "name": "cli::capture_protocol::tests::explicit_cli_init_and_show_preserve_the_same_capability",
+          "log": "raw-logs/cli-first.log",
+          "line": 20,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/src/cli/capture_protocol/tests.rs",
+              "line": 35,
+              "sha256": "32af6fbe41168ebb3146b33bca01d2faa17e963ced9903a231bc1da9cf7389ba"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.031s",
+          "ordinal": 3,
+          "total": 5,
+          "binary": "census-service::capture_protocol_cli",
+          "name": "public_capture_init_requires_explicit_root_and_show_never_creates",
+          "log": "raw-logs/cli-first.log",
+          "line": 21,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/tests/capture_protocol_cli.rs",
+              "line": 7,
+              "sha256": "61c8adb31fdc97af026541d2ecb51d60ad90cb6936dd985409f85fc78f77e224"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.050s",
+          "ordinal": 4,
+          "total": 5,
+          "binary": "census-service::capture_protocol_cli",
+          "name": "public_capture_init_refuses_legacy_roots_and_imported_files",
+          "log": "raw-logs/cli-first.log",
+          "line": 22,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/tests/capture_protocol_cli.rs",
+              "line": 68,
+              "sha256": "61c8adb31fdc97af026541d2ecb51d60ad90cb6936dd985409f85fc78f77e224"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "0.087s",
+          "ordinal": 5,
+          "total": 5,
+          "binary": "census-service::capture_protocol_cli",
+          "name": "public_capture_init_show_and_serve_opt_in_use_the_bound_protocol",
+          "log": "raw-logs/cli-first.log",
+          "line": 23,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/tests/capture_protocol_cli.rs",
+              "line": 27,
+              "sha256": "61c8adb31fdc97af026541d2ecb51d60ad90cb6936dd985409f85fc78f77e224"
+            }
+          ]
+        }
+      ],
+      "repeated_summary_entries": [],
+      "nextest_run_ids": [
+        "14ef0659-9b43-4ea1-9f5a-ebd9d339e709"
+      ],
+      "summary_lines": [
+        "Summary [   0.089s] 5 tests run: 5 passed, 127 skipped"
+      ],
+      "moon_time_lines": [
+        "Time: 3m 11s 265ms"
+      ]
+    },
+    "parity-final.log": {
+      "tests": [
+        {
+          "status": "PASS",
+          "elapsed": "0.011s",
+          "ordinal": 1,
+          "total": 2,
+          "binary": "census-service::parity_pipeline",
+          "name": "artifacts::catalog_generation_is_identity_but_catalog_facts_remain_semantics",
+          "log": "raw-logs/parity-final.log",
+          "line": 8,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/tests/parity_pipeline_mod/artifacts.rs",
+              "line": 125,
+              "sha256": "5abbf738e0bba41db323e083ad4f2f95ab0abf10bb5c89b4d6a7308800a55016"
+            }
+          ]
+        },
+        {
+          "status": "PASS",
+          "elapsed": "9.881s",
+          "ordinal": 2,
+          "total": 2,
+          "binary": "census-service::parity_pipeline",
+          "name": "rebuilding_the_fixture_store_reproduces_semantics_not_publication_identity",
+          "log": "raw-logs/parity-final.log",
+          "line": 9,
+          "source_declarations": [
+            {
+              "path": "crates/census-service/tests/parity_pipeline.rs",
+              "line": 37,
+              "sha256": "5b817199410d47e74a7c4fa9a9cdefe3a110ea465208448d8731590fa6ddf592"
+            }
+          ]
+        }
+      ],
+      "repeated_summary_entries": [],
+      "nextest_run_ids": [
+        "6548ea10-9069-4911-9220-b3058aa7bd73"
+      ],
+      "summary_lines": [
+        "Summary [   9.881s] 2 tests run: 2 passed, 0 skipped"
+      ],
+      "moon_time_lines": [
+        "Time: 18s 134ms"
+      ]
+    }
+  },
+  "source_identity_note": "Declaration hashes are current commit bytes. No executable hash or historical build source receipt was manufactured."
+}

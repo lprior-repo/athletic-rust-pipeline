@@ -1,0 +1,30 @@
+[ WARN 2026-10-14 02:20:32.178] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:tests-scoped (fa830da4)
+   Compiling census-store v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-store)
+   Compiling census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+▮▮▮▮ pipeline:tests-scoped (running for 30s)
+▮▮▮▮ pipeline:tests-scoped (running for 60s)
+   Compiling census-review v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-review)
+   Compiling census-report v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-report)
+▮▮▮▮ pipeline:tests-scoped (running for 90s)
+   Compiling census-reconcile v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-reconcile)
+   Compiling census-service v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-service)
+▮▮▮▮ pipeline:tests-scoped (running for 120s)
+▮▮▮▮ pipeline:tests-scoped (running for 150s)
+▮▮▮▮ pipeline:tests-scoped (running for 180s)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 09s
+────────────
+ Nextest run ID 14ef0659-9b43-4ea1-9f5a-ebd9d339e709 with nextest profile: default
+    Starting 5 tests across 2 binaries (127 tests skipped)
+        PASS [   0.020s] (1/5) census-service::bin/census-service cli::capture_protocol::tests::capture_protocol_parser_requires_a_supported_subcommand
+        PASS [   0.029s] (2/5) census-service::bin/census-service cli::capture_protocol::tests::explicit_cli_init_and_show_preserve_the_same_capability
+        PASS [   0.031s] (3/5) census-service::capture_protocol_cli public_capture_init_requires_explicit_root_and_show_never_creates
+        PASS [   0.050s] (4/5) census-service::capture_protocol_cli public_capture_init_refuses_legacy_roots_and_imported_files
+        PASS [   0.087s] (5/5) census-service::capture_protocol_cli public_capture_init_show_and_serve_opt_in_use_the_bound_protocol
+────────────
+     Summary [   0.089s] 5 tests run: 5 passed, 127 skipped
+▮▮▮▮ pipeline:tests-scoped (3m 10s 654ms, fa830da4)
+
+Tasks: 1 completed
+ Time: 3m 11s 265ms
+
