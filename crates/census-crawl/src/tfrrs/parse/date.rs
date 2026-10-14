@@ -1,3 +1,4 @@
+#[cfg(test)]
 use super::html::text_of;
 use census_domain::model::SchoolYear;
 
@@ -16,20 +17,34 @@ impl PublishedDate {
     }
 }
 
+#[cfg(test)]
 pub fn published_date(text: &str) -> Option<PublishedDate> {
-    let raw = text_of(text);
-    let mut tokens = raw.split(' ').filter(|token| !token.is_empty());
+    from_label(text_of(text))
+}
+
+pub(super) fn from_label(raw: String) -> Option<PublishedDate> {
+    let mut tokens = raw.split_whitespace();
     let month = month_number(tokens.next()?)?;
-    let day_token = tokens.next()?.trim_end_matches(',');
-    let day: String = day_token.chars().take_while(char::is_ascii_digit).collect();
-    let day: u8 = day.parse().ok()?;
-    let year: i16 = tokens.next()?.trim_end_matches(',').parse().ok()?;
-    if !(1..=12).contains(&month) || !(1..=31).contains(&day) || !(1900..=2999).contains(&year) {
+    let day_token = tokens.next()?;
+    let day_token = day_token.strip_suffix(',').map_or(day_token, |value| value);
+    let year_token = tokens.next()?;
+    if tokens.next().is_some()
+        || !(1..=2).contains(&day_token.len())
+        || !day_token.bytes().all(|byte| byte.is_ascii_digit())
+        || year_token.len() != 4
+        || !year_token.bytes().all(|byte| byte.is_ascii_digit())
+    {
         return None;
     }
+    let day: u8 = day_token.parse().ok()?;
+    let year: i16 = year_token.parse().ok()?;
+    if !(1900..=2999).contains(&year) {
+        return None;
+    }
+    let date = chrono::NaiveDate::from_ymd_opt(i32::from(year), u32::from(month), u32::from(day))?;
     Some(PublishedDate {
         raw,
-        iso: format!("{year:04}-{month:02}-{day:02}"),
+        iso: date.to_string(),
         year,
         month,
         day,
@@ -37,14 +52,28 @@ pub fn published_date(text: &str) -> Option<PublishedDate> {
 }
 
 fn month_number(name: &str) -> Option<u8> {
-    let lowered = name.trim().to_ascii_lowercase();
-    MONTH_ABBREVIATIONS
+    let name = name.strip_suffix('.').map_or(name, |value| value);
+    if name.eq_ignore_ascii_case("sept") {
+        return Some(9);
+    }
+    MONTH_NAMES
         .iter()
-        .position(|abbreviation| lowered.starts_with(abbreviation))
+        .position(|(short, full)| name.eq_ignore_ascii_case(short) || name.eq_ignore_ascii_case(full))
         .and_then(|index| index.checked_add(1))
         .and_then(|month| u8::try_from(month).ok())
 }
 
-const MONTH_ABBREVIATIONS: [&str; 12] = [
-    "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
+const MONTH_NAMES: [(&str, &str); 12] = [
+    ("jan", "january"),
+    ("feb", "february"),
+    ("mar", "march"),
+    ("apr", "april"),
+    ("may", "may"),
+    ("jun", "june"),
+    ("jul", "july"),
+    ("aug", "august"),
+    ("sep", "september"),
+    ("oct", "october"),
+    ("nov", "november"),
+    ("dec", "december"),
 ];
