@@ -5,6 +5,7 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
+pub mod affiliation_candidates;
 pub mod core_scope;
 pub mod error;
 pub mod jurisdiction;

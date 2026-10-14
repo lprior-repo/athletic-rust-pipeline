@@ -8,6 +8,7 @@ mod keyed;
 mod legacy;
 mod legacy_wire;
 mod lineage;
+mod membership;
 mod merge;
 mod object;
 mod object_read;
@@ -16,6 +17,7 @@ mod operations;
 mod run;
 
 pub use bounded::{ReadBudget, ReadCounts};
+pub use membership::{JournalNamespace, JournalNamespaceFingerprint, JournalNamespaceInventory};
 pub use object::{JournalDigest, JournalEntry, JournalObject, JournalRecord, JournalRecords};
 
 pub struct StoreSnapshot<'s> {
@@ -144,3 +146,6 @@ fn verify_entity_key(table: Table, derived: bool, key: &[u8], value: &[u8]) -> S
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod raw_physical_tests;

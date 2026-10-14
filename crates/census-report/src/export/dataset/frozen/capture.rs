@@ -84,6 +84,7 @@ struct StreamSink<'a> {
     objects_dir: &'a Path,
     legacy: LegacyLogicalDigest,
     streams: Vec<ManifestStream>,
+    admission: admission::CaptureAdmission,
 }
 
 impl<'a> StreamSink<'a> {
@@ -92,6 +93,7 @@ impl<'a> StreamSink<'a> {
             objects_dir,
             legacy: LegacyLogicalDigest::new(),
             streams: Vec::new(),
+            admission: admission::CaptureAdmission::new(),
         }
     }
 
@@ -127,12 +129,17 @@ impl<'a> StreamSink<'a> {
             })
         };
         let scanned = snapshot
-            .for_each_observation(table, |row: T| fold.accept(row, &mut accept))
-            .and_then(|()| fold.finish(&mut accept));
+            .for_each_observation_bounded(table, self.admission.budget(), |row: T, _| {
+                fold.accept(row, &mut accept)
+            })
+            .and_then(|counts| {
+                fold.finish(&mut accept)?;
+                Ok(counts)
+            });
         if let Some(error) = failure {
             return Err(error);
         }
-        scanned?;
+        self.admission.charge(scanned?)?;
         let stream = writer.finish()?;
         self.push(stream, rows)
     }
@@ -145,16 +152,23 @@ impl<'a> StreamSink<'a> {
         )?;
         let mut failure: Option<ReportError> = None;
         let mut rows: u64 = 0;
-        snapshot.for_each_observation(Table::Coaches, |mut row: CanonicalCoach| {
-            Entity::publish(&mut row);
-            if failure.is_none() {
-                failure = observe(&mut writer, &mut rows, &row).err();
-            }
-            Ok(())
-        })?;
+        let scanned = snapshot.for_each_observation_bounded(
+            Table::Coaches,
+            self.admission.budget(),
+            |mut row: CanonicalCoach, _| {
+                Entity::publish(&mut row);
+                observe(&mut writer, &mut rows, &row).map_err(|error| {
+                    failure = Some(error);
+                    StoreError::Refused {
+                        detail: "frozen coach observation writer refused the record".to_string(),
+                    }
+                })
+            },
+        );
         if let Some(error) = failure {
             return Err(error);
         }
+        self.admission.charge(scanned?)?;
         let stream = writer.finish()?;
         self.push(stream, rows)
     }
@@ -271,3 +285,14 @@ mod fold;
 #[cfg(test)]
 #[path = "snapshot_capture_tests.rs"]
 mod snapshot_capture_tests;
+
+#[path = "capture_admission.rs"]
+mod admission;
+
+#[cfg(test)]
+#[path = "capture_budget_tests.rs"]
+mod capture_budget_tests;
+
+#[cfg(test)]
+#[path = "capture_writer_tests.rs"]
+mod capture_writer_tests;

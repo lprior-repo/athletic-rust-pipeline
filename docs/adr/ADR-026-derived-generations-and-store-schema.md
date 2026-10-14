@@ -413,3 +413,19 @@ have distinct generation, token, recipe and request identities, retain the old b
 receipt, and verify its own newly rendered workbook. This fixture proves transition/refusal
 behavior, not a historical semantic certification. Required Moon verification remains an
 integration obligation; this amendment alone is not release evidence.
+
+## Forward installation/profile lifecycle boundary (2026-10-14)
+
+[ADR-038](ADR-038-selected-profile-reusable-production-state.md) adds the intended reusable-production
+lifecycle above the existing schema and generation contracts. It does not change any current physical
+schema/key-format, Receipt, RunManifest, profile JSON, frozen codec/token or publication-policy
+version. Stable store identity and immutable profile registration are prerequisites, not enrollment.
+The implemented single-run binding remains; do not overwrite it with a later season/profile or
+reinterpret its historical journal keys. New production enrollment/synchronization contracts and
+any affected persisted/wire shapes are separately versioned and Main-owned.
+
+Selected-profile generations must bind complete effective configuration and exact semantic
+references before any consumer derives rows. A changed profile/policy/input has a new generation
+and publication identity; existing historical frozen/publication records retain their exact
+meanings and current read/refusal behavior. No automatic migration, destructive cleanup, corpus
+adoption or current-runtime acceptance follows from this documentation amendment.

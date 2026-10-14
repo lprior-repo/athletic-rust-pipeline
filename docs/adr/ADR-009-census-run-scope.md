@@ -19,3 +19,14 @@ Discovery, coverage, verification and seal requirements share the same declared 
 required jurisdiction must have an honest terminal status; an empty or unresearched applicability
 list is not completion. [ADR-013](ADR-013-fresh-national-source-census.md) changes population intake
 and freshness, not this scope: its proposed expansion to 51 was withdrawn on 2026-09-27.
+
+## Forward profile scope clarification (2026-10-14)
+
+[ADR-038](ADR-038-selected-profile-reusable-production-state.md) keeps this decision as the exact
+49-jurisdiction denominator for the historical fresh census and the distinct future national
+profile. It is not a hardcoded denominator for every selected production query. The first
+production profile is Class of 2027 in MI, MN, IA, IL and CO with source-backed UP priority;
+UP-only qualification and five-state delivery cannot certify national completion. Explicit
+50-state-plus-D.C. configuration is a separate forward profile requiring qualified execution,
+not a restoration of the withdrawn ADR-013 expansion or a reinterpretation of historical scope.
+Unknown geography stays unknown; territories still need a separate model extension.

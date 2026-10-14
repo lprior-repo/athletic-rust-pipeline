@@ -1,8 +1,10 @@
 # AGENTS.md — repository working instructions
 
-Read this file, then [ARCHITECTURE.md](ARCHITECTURE.md) before changing the repository. The product
-is a fresh, public-source-discovered Class-of-2027 TF/XC census; Excel is output, not population
-intake.
+Read this file, then [ARCHITECTURE.md](ARCHITECTURE.md) before changing the repository. The forward
+product is the full [October 11 spec v2](docs/specifications/athletic-recruiting-end-vision-spec-v2.md)
+reusable public-source recruiting database under [ADR-038](docs/adr/ADR-038-selected-profile-reusable-production-state.md).
+The legacy fresh Class-of-2027 49-jurisdiction census remains an explicit qualification/national
+contract. Excel is output, not population intake. Architecture adoption is not runtime acceptance.
 
 ## Startup — every session and after context reset
 
@@ -46,6 +48,13 @@ for release, proof, security or all seventeen fault obligations.
 
 
 ## Local Restate deployment lifecycle
+
+The teardown/start procedures below describe isolated fresh census/qualification deployment.
+Reusable production must retain its enrolled installation, durable source-work identities and
+qualified evidence across sessions; never follow the fresh-store procedure as an annual reset.
+Current single-run binding and unsupported-profile refusals remain until Main explicitly versions,
+integrates and qualifies the production lifecycle. Profile registration/selection does not enroll
+or migrate a store. Preserve historical IDs, manifests, artifacts, receipts and seals.
 
 No container runtime is used here. The node is the native binary at `/home/lewis/bin/restate-server`
 with one config per run (`var/<run>/restate.toml`, conventional loopback ingress 18095 and admin

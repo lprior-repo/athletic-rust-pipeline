@@ -1,0 +1,223 @@
+{
+  "baseline": "ca247d173ef0f36765a1d021ac681575abe861e1",
+  "code_commit": "89e9fa67de617e736c673ee18578254b16263f82",
+  "coverage": "Every changed path in the first integrated commit, including contracts and dated evidence; not a full acceptance certificate.",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "blob": "837f61dd0dd1b756bc02eb71d54a061f42f0385b"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "blob": "c1de574759f60cf83b5e0aa582d9bb2ac7260447"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/bounds.rs",
+      "blob": "41358461f91f63efb1dc21dd703f31abeea24d37"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/changes.rs",
+      "blob": "fa18bec1ab2c2568904fa3317c731be2639d08d3"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/equality.rs",
+      "blob": "0961f81fc42fc57408a3f2c6c789c4222419b2fc"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/evidence.rs",
+      "blob": "cb322260f99b20d465447b3504ce4e8023a36755"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/material_work.rs",
+      "blob": "2a89d57431a92adc5a93922e61fc712b78ddf478"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/mod.rs",
+      "blob": "4b3f66fe6664f905de6131ad4783d88853ac1107"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/observed.rs",
+      "blob": "bf52296b06e4728ebd135866bc96daf5834d4472"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/outcome.rs",
+      "blob": "bf00d0aecbc2254da29bdd877aef66dcc70690cd"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/relationship.rs",
+      "blob": "d2b798e074752d93c896fdb22978ae50d893178c"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/selection.rs",
+      "blob": "9bc1280d3d3e5cf17346863d6b415ebc76c35f3a"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/selection_checks.rs",
+      "blob": "8ae584e239222b26945365f6aebfba564090fd5e"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/selection_reduce.rs",
+      "blob": "13283b87e55f61b11ed895b0575fb2292c92d662"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/temporal.rs",
+      "blob": "30c56c4978670c0b8b7214c8e0639ca5d9cd43b4"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/tests/evidence.rs",
+      "blob": "f09ed814185db369bf60aa4f1d3f92be3c509249"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/tests/fixture.rs",
+      "blob": "94b2b4aa6fd7c5b6790e9a99de383996f50a89e1"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/tests/material_admission.rs",
+      "blob": "0d6e755f173ebb96c5d1eb76a7b6b63a1ecd5ae4"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/tests/material_branches.rs",
+      "blob": "cc5959175b026daf13a53872f1c819751db0ae3b"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/tests/mod.rs",
+      "blob": "8cb0b36d618b6e56f60c71abe93f1ca4f96519ce"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/tests/resources_and_replay.rs",
+      "blob": "01129a50dcb77034064337f2f9b8bb58dcc4180b"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/tests/selection.rs",
+      "blob": "7d00d77abbd7bbe2616e3600ae12b94b7f9cb54b"
+    },
+    {
+      "path": "crates/census-domain/src/affiliation_candidates/tests/temporal.rs",
+      "blob": "de529382981bf8fbbdaf7333ac94883aab7f03ad"
+    },
+    {
+      "path": "crates/census-domain/src/lib.rs",
+      "blob": "a54e35e139d37e3e593728d5b18baa41952f039c"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/capture.rs",
+      "blob": "b04b1372741ac3faec2ffbf57f2b7764ac49bfff"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/capture_admission.rs",
+      "blob": "945b0015dcc7076731f7afd70dd23104126cbb76"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/capture_budget_tests.rs",
+      "blob": "a1c2135da738a4639d6c6a1809639deec3cb42c1"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/capture_writer_tests.rs",
+      "blob": "221121d1f72ecf62a9c4e7be7afd4aa29997d49d"
+    },
+    {
+      "path": "crates/census-store/src/read/mod.rs",
+      "blob": "a276787adb9211d851ccffd93949150200ed8c09"
+    },
+    {
+      "path": "crates/census-store/src/read/view/bounded.rs",
+      "blob": "cb35f3ac1f98f778b88baa92b8004431bfeba8e8"
+    },
+    {
+      "path": "crates/census-store/src/read/view/bounded_tests.rs",
+      "blob": "6cf6f7cc089c86cefdea38df54a9d9d26d3b6cef"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/mod.rs",
+      "blob": "8f83eb1c5d1bf7006b5102ef68baec81068dad0b"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/namespace.rs",
+      "blob": "5d79fbf70917c8a2b00614cfdd13833342538a66"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/roots.rs",
+      "blob": "5f7c8fa11a2bcfc0236b803042e578abac886887"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/scan.rs",
+      "blob": "ca06d08f0758659589d758d220619f529b035666"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/tests.rs",
+      "blob": "fbb9babccba5edfa81199aeba8e22bee2cd55ef8"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/tests/bounds.rs",
+      "blob": "72cb7adfa8ef7cb0a6973d9533bf95c30409da05"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/tests/closure.rs",
+      "blob": "376607679d5649a181d2ab66539802f0d2e8bdd2"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/tests/descriptors.rs",
+      "blob": "b6054b8c0f1dd69063362f5b941a1e2b3b035e2c"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/tests/fingerprints.rs",
+      "blob": "3229606538bbb0238b13655793464cca96b99822"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/tests/provisional.rs",
+      "blob": "efc86445ae8193911174480ef0ca779f07df93a8"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/tests/snapshot.rs",
+      "blob": "c4e0f7bb20b599e31f219e8fda8b131bf0d7c67c"
+    },
+    {
+      "path": "crates/census-store/src/read/view/membership/tests/wire.rs",
+      "blob": "aa69d9d25d63eac56dd6693b0b65d7a58bcd9534"
+    },
+    {
+      "path": "crates/census-store/src/read/view/mod.rs",
+      "blob": "03041fee30c7d523027ecac298974e20a499d5a5"
+    },
+    {
+      "path": "crates/census-store/src/read/view/raw_physical_tests.rs",
+      "blob": "2ed7f2eda18e41c190a08407a32fe79d558dba51"
+    },
+    {
+      "path": "docs/NATIONAL-CENSUS-PLAN.md",
+      "blob": "01e6300b4dcc22f8796378e4c6de924005b20977"
+    },
+    {
+      "path": "docs/OPERATIONS.md",
+      "blob": "2fd252e0fc5e5501167878ead8dcaad2f94086cf"
+    },
+    {
+      "path": "docs/PROFILE-EXECUTION-V1.md",
+      "blob": "697dfc01c7bde9df58642b911b258ad83e04fbdb"
+    },
+    {
+      "path": "docs/adr/ADR-009-census-run-scope.md",
+      "blob": "6b3a06f7364c028cf061a59466fbb8052bdb6119"
+    },
+    {
+      "path": "docs/adr/ADR-013-fresh-national-source-census.md",
+      "blob": "6c1d3c15e2c12588946b23a8eec8b0404df621b2"
+    },
+    {
+      "path": "docs/adr/ADR-026-derived-generations-and-store-schema.md",
+      "blob": "7748c51f53bc3dd98a663341fde83f565ad79a06"
+    },
+    {
+      "path": "docs/adr/ADR-038-selected-profile-reusable-production-state.md",
+      "blob": "4ba470f395c36302da33590830b30ff3ae3a4aaf"
+    },
+    {
+      "path": "docs/adr/README.md",
+      "blob": "b47e9faba31a61526e5b14fef553d4af6cef873a"
+    },
+    {
+      "path": "docs/verification/2026-10-14-candidate-and-capture.md",
+      "blob": "113825ed6d804e2bed2d9e875796716000542cef"
+    }
+  ]
+}

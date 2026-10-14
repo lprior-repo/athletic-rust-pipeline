@@ -7,6 +7,13 @@ The dated verification ledger (removed 2026-10-09) records what actually ran.
 
 ## 1. Run boundary
 
+[ADR-038](adr/ADR-038-selected-profile-reusable-production-state.md) makes the complete October 11
+spec-v2 reusable selected-profile product the forward target, beginning with UP qualification and
+Class-of-2027 MI/MN/IA/IL/CO delivery. The fresh 49-jurisdiction requirements below remain the
+explicit national/isolated-qualification lane and keep their historical meaning. This remains
+the sole implementation/order/acceptance plan; the ADR does not add a parallel plan, enroll
+production, authorize migration or certify a currently unsupported runtime.
+
 Deliver the Class-of-2027 high-school TF/XC census from public-source discovery across exactly
 49 jurisdictions: 48 contiguous states plus D.C. `UsJurisdiction::ALL` models 51 locations;
 `CENSUS_SCOPE` is the run denominator. The proposed ADR-013 expansion was withdrawn on 2026-09-27.

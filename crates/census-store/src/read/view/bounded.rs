@@ -25,8 +25,29 @@ impl StoreSnapshot<'_> {
         budget: ReadBudget,
         mut visit: impl FnMut(T, u64) -> StoreResult<()>,
     ) -> StoreResult<ReadCounts> {
-        let mut counts = ReadCounts::default();
         let mut current = None;
+        let mut merged_rows = 0;
+        let mut counts =
+            self.for_each_observation_bounded(table, budget, |row, encoded_bytes| {
+                let mut publish = |row| visit(row, encoded_bytes);
+                merged_rows = merge::accept(&mut current, row, &mut publish, merged_rows)?;
+                Ok(())
+            })?;
+        if let Some(row) = current {
+            let mut publish = |row| visit(row, counts.encoded_bytes);
+            merged_rows = merge::publish(row, &mut publish, merged_rows)?;
+        }
+        counts.merged_rows = merged_rows;
+        Ok(counts)
+    }
+
+    pub fn for_each_observation_bounded<T: Entity>(
+        &self,
+        table: Table,
+        budget: ReadBudget,
+        mut visit: impl FnMut(T, u64) -> StoreResult<()>,
+    ) -> StoreResult<ReadCounts> {
+        let mut counts = ReadCounts::default();
         let prefix = self.layout().prefix(table);
         for guard in self.snapshot.prefix(self.entities, &prefix) {
             counts.key_visits = charge(counts.key_visits, 1, budget.rows, "capture physical rows")?;
@@ -55,13 +76,7 @@ impl StoreSnapshot<'_> {
                 .decoded_rows
                 .checked_add(1)
                 .ok_or(StoreError::CounterOverflow)?;
-            let mut publish = |row| visit(row, counts.encoded_bytes);
-            counts.merged_rows =
-                merge::accept(&mut current, row, &mut publish, counts.merged_rows)?;
-        }
-        if let Some(row) = current {
-            let mut publish = |row| visit(row, counts.encoded_bytes);
-            counts.merged_rows = merge::publish(row, &mut publish, counts.merged_rows)?;
+            visit(row, counts.encoded_bytes)?;
         }
         Ok(counts)
     }
