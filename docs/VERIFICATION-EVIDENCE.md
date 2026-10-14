@@ -1378,3 +1378,11 @@ focused and integration tests plus final Moon lint/check/format passes to source
 pre-change canonical, journal and effect bytes were independently captured and compared.
 This preserves positive source coordinates in memory through existing projection callers;
 it does not add durable interpretation, accepted affiliation or selected publication authority.
+
+## 2026-10-14 archive lock-order repair
+
+[Archive lock-order verification](verification/2026-10-14-archive-lock-order.md) records 96
+focused regressions and Moon source lint/all-target check/format passing at source commit
+`0cde4e29ffbb95baa4d427b460a31dc0925dfd71`. Exact 16-file coverage, original and corrected
+reviews, and preservation/combined-fault oracles are retained. Full recovery v2 and release
+qualification remain unverified.

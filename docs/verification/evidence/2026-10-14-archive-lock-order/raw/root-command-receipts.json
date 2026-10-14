@@ -1,0 +1,50 @@
+{
+  "kind": "root-observed command attestation; not a raw tool transcript",
+  "cwd": "/workspace/shared/athletic-rebuild-20261013",
+  "setup": "source /workspace/shared/athletic-recovery-20261013-2203/toolchain/env.sh; set -o pipefail",
+  "commands": [
+    {
+      "command": "env -u CI tools/moon-local run pipeline:fmt-write",
+      "log": "format-first.log",
+      "session_id": 77833,
+      "outer_exit": 0
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 1200s env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-domain -p census-store -p census-crawl -p census-service --lib -E 'test(net::cache::archive_tests::) | test(net::cache::archive::admission::tests::) | test(net::acquisition::tests::) | test(jurisdiction::results_work::replay_tests::) | test(spawn::dedicated::tests::) | test(work_admission::tests::)'",
+      "log": "tests-first.log",
+      "session_id": 92665,
+      "outer_exit": 0,
+      "nextest_run_id": "783d417a-ef14-4fbf-9071-bb75e22ee330",
+      "passed": 96,
+      "skipped": 3200,
+      "observed_terminal_utc": "2026-10-14T08:21:14Z"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:lint-src",
+      "log": "lint-first.log",
+      "session_id": 38839,
+      "status": "passed",
+      "command_exit": 0,
+      "serial_session_outer_exit": 0,
+      "observed_terminal_utc": "2026-10-14T08:27:15Z"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "log": "check-first.log",
+      "session_id": 38839,
+      "status": "passed",
+      "command_exit": 0,
+      "serial_session_outer_exit": 0,
+      "observed_terminal_utc": "2026-10-14T08:27:15Z"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:fmt",
+      "log": "fmt-check-first.log",
+      "session_id": 38839,
+      "status": "passed",
+      "command_exit": 0,
+      "serial_session_outer_exit": 0,
+      "observed_terminal_utc": "2026-10-14T08:27:15Z"
+    }
+  ]
+}

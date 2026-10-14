@@ -67,7 +67,7 @@ impl Fetcher {
         )?;
         let extra = super::super::execute::representation::cache_extra(None, &representation);
         let (body_path, meta_path) = self.cache_paths(&Self::key_for("GET", url, &extra));
-        crate::net::cache::with_eligible_fence(&meta_path, || {
+        crate::net::cache::with_archive_eligible_fence(&body_path, &meta_path, |archive_lock| {
             let mut finish_budget = AcquisitionReadBudget::for_work();
             let reference = store.finish_prepared_acquisition(work, &mut finish_budget)?;
             let mut read_budget = AcquisitionReadBudget::for_work();
@@ -88,7 +88,11 @@ impl Fetcher {
                     .join("archive/bodies")
                     .join(format!("{}.body", captured.capture.content_digest));
                 crate::net::cache::publish_eligible_held(
-                    &body_path, &meta_path, &envelope, &archived,
+                    archive_lock,
+                    &body_path,
+                    &meta_path,
+                    &envelope,
+                    &archived,
                 )?;
             }
             Ok(captured)

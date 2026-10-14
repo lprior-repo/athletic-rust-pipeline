@@ -1,3 +1,4 @@
+use super::archive::{admission, ArchiveAdmission, ArchiveLock};
 use super::archive_io::{invalid, lock_cache, present, replace_cache, with_stage};
 use super::envelope::{decode, CacheDocument, EligibleCacheV2};
 use super::{
@@ -115,30 +116,53 @@ pub(crate) fn publish_eligible(
     envelope: &EligibleCacheV2,
     archived_body: &Path,
 ) -> Result<(), FetchError> {
-    let _lock = lock_cache(meta_path)?;
-    publish_eligible_held(body_path, meta_path, envelope, archived_body)
+    with_archive_eligible_fence(body_path, meta_path, |archive_lock| {
+        publish_eligible_held(archive_lock, body_path, meta_path, envelope, archived_body)
+    })
 }
 
-pub(crate) fn publish_eligible_held(
+pub(in crate::net) fn publish_eligible_held(
+    archive_lock: &ArchiveLock,
     body_path: &Path,
     meta_path: &Path,
     envelope: &EligibleCacheV2,
     archived_body: &Path,
 ) -> Result<(), FetchError> {
-    let root = body_path
-        .parent()
-        .ok_or_else(|| invalid(body_path, "cache body has no parent"))?;
+    let root = archive_lock.root();
+    if super::archive::cache_root(body_path, meta_path)? != root {
+        return Err(invalid(
+            meta_path,
+            "cache paths do not belong to the held archive root",
+        ));
+    }
     let encoded = envelope.encode(meta_path)?;
     with_stage(root, |stage| {
-        super::archive::preserve_eligible_previous(root, stage, body_path, meta_path)?;
+        let archive = super::archive::initialize_archive(root)?;
+        let mut admission =
+            ArchiveAdmission::begin_with_capacity(archive_lock, admission::archive_capacity()?)?;
+        super::archive::preserve_eligible_previous(
+            &archive,
+            stage,
+            body_path,
+            meta_path,
+            &mut admission,
+        )?;
         replace_cache(stage, archived_body, body_path, meta_path, &encoded)
     })
 }
 
-pub(crate) fn with_eligible_fence<T>(
+pub(in crate::net) fn with_archive_eligible_fence<T>(
+    body_path: &Path,
     meta_path: &Path,
-    action: impl FnOnce() -> Result<T, FetchError>,
+    action: impl FnOnce(&ArchiveLock) -> Result<T, FetchError>,
 ) -> Result<T, FetchError> {
-    let _lock = lock_cache(meta_path)?;
-    action()
+    let root = super::archive::cache_root(body_path, meta_path)?;
+    let archive_lock = ArchiveLock::acquire(root)?;
+    let _eligible_lock = lock_cache(meta_path)?;
+    #[cfg(test)]
+    super::archive::lock_tests::checkpoint(
+        &root.join("archive-capacity.lock"),
+        super::archive::lock_tests::LockEvent::EligibleAcquired,
+    )?;
+    action(&archive_lock)
 }

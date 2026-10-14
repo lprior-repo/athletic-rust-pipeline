@@ -1,0 +1,1097 @@
+{
+  "schema": "archive-lock-order-test-run/v1",
+  "run_id": "783d417a-ef14-4fbf-9071-bb75e22ee330",
+  "selected": 96,
+  "passed": 96,
+  "failed": 0,
+  "skipped": 3200,
+  "binaries": 4,
+  "test_seconds": 1.543,
+  "moon_total": "6m 27s 574ms",
+  "moon_task": "pipeline:tests-scoped",
+  "moon_task_hash": "b169f8fe",
+  "raw_log": "raw/tests-first.log",
+  "outer_exit_status": 0,
+  "outer_exit_receipt": "raw/root-command-receipts.json commands[1] (Root executor attestation, not raw tool transcript)",
+  "reported_outer_exit_status": 0,
+  "named_coverage": [
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_admission_refusal_precedes_busy_writer_but_replay_defers",
+      "seconds": 0.015,
+      "ordinal": 44,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 66,
+      "short_name": "archive_lock_order_admission_refusal_precedes_busy_writer_but_replay_defers",
+      "source": "source/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "source_sha256": "af0536374693bc160e3b90518ef5f53ddcd9ec34cfdd038943f861c9a4d97d38",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_busy_cache_preserves_incoming_archive_and_exact_error",
+      "seconds": 0.019,
+      "ordinal": 45,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 67,
+      "short_name": "archive_lock_order_busy_cache_preserves_incoming_archive_and_exact_error",
+      "source": "source/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "source_sha256": "af0536374693bc160e3b90518ef5f53ddcd9ec34cfdd038943f861c9a4d97d38",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_busy_prepared_recovery_keeps_original_unfinished_facts",
+      "seconds": 0.552,
+      "ordinal": 10,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 32,
+      "short_name": "archive_lock_order_busy_prepared_recovery_keeps_original_unfinished_facts",
+      "source": "source/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "source_sha256": "0f1d5891645e9633aef69996bff9eea3fbae8ae4969a258606ce079928fc020c",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_callback_errors_release_both_actual_guards",
+      "seconds": 0.032,
+      "ordinal": 50,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 72,
+      "short_name": "archive_lock_order_callback_errors_release_both_actual_guards",
+      "source": "source/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "source_sha256": "af0536374693bc160e3b90518ef5f53ddcd9ec34cfdd038943f861c9a4d97d38",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_callback_unwind_releases_both_actual_guards",
+      "seconds": 0.012,
+      "ordinal": 46,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 68,
+      "short_name": "archive_lock_order_callback_unwind_releases_both_actual_guards",
+      "source": "source/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "source_sha256": "af0536374693bc160e3b90518ef5f53ddcd9ec34cfdd038943f861c9a4d97d38",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_current_v1_recovery_publishes_under_one_archive_guard",
+      "seconds": 1.143,
+      "ordinal": 89,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 111,
+      "short_name": "archive_lock_order_current_v1_recovery_publishes_under_one_archive_guard",
+      "source": "source/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "source_sha256": "0f1d5891645e9633aef69996bff9eea3fbae8ae4969a258606ce079928fc020c",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_existing_symlink_root_alias_keeps_legacy_behavior",
+      "seconds": 0.017,
+      "ordinal": 47,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 69,
+      "short_name": "archive_lock_order_existing_symlink_root_alias_keeps_legacy_behavior",
+      "source": "source/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "source_sha256": "af0536374693bc160e3b90518ef5f53ddcd9ec34cfdd038943f861c9a4d97d38",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_legacy_replay_and_writer_do_not_reverse_resources",
+      "seconds": 0.025,
+      "ordinal": 51,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 73,
+      "short_name": "archive_lock_order_legacy_replay_and_writer_do_not_reverse_resources",
+      "source": "source/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "source_sha256": "af0536374693bc160e3b90518ef5f53ddcd9ec34cfdd038943f861c9a4d97d38",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_lock_open_refusal_precedes_busy_eligible",
+      "seconds": 0.044,
+      "ordinal": 52,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 74,
+      "short_name": "archive_lock_order_lock_open_refusal_precedes_busy_eligible",
+      "source": "source/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "source_sha256": "af0536374693bc160e3b90518ef5f53ddcd9ec34cfdd038943f861c9a4d97d38",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_missing_prepared_defers_invalid_capacity_in_isolated_process",
+      "seconds": 0.548,
+      "ordinal": 13,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 35,
+      "short_name": "archive_lock_order_missing_prepared_defers_invalid_capacity_in_isolated_process",
+      "source": "source/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "source_sha256": "0f1d5891645e9633aef69996bff9eea3fbae8ae4969a258606ce079928fc020c",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_missing_prepared_invalid_capacity_child",
+      "seconds": 0.035,
+      "ordinal": 5,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 27,
+      "short_name": "archive_lock_order_missing_prepared_invalid_capacity_child",
+      "source": "source/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "source_sha256": "0f1d5891645e9633aef69996bff9eea3fbae8ae4969a258606ce079928fc020c",
+      "interpretation": "Direct no-environment selection returns early. Substantive invalid-capacity assertions are established only by the passing isolated parent, which invokes this exact test in a child with environment and verifies running 1 test.",
+      "parent_test": "archive_lock_order_missing_prepared_defers_invalid_capacity_in_isolated_process"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_non200_prepared_recovery_never_runs_archive_admission",
+      "seconds": 0.398,
+      "ordinal": 16,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 38,
+      "short_name": "archive_lock_order_non200_prepared_recovery_never_runs_archive_admission",
+      "source": "source/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "source_sha256": "0f1d5891645e9633aef69996bff9eea3fbae8ae4969a258606ce079928fc020c",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_prepared_missing_or_corrupt_backing_defers_admission",
+      "seconds": 0.607,
+      "ordinal": 68,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 90,
+      "short_name": "archive_lock_order_prepared_missing_or_corrupt_backing_defers_admission",
+      "source": "source/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "source_sha256": "0f1d5891645e9633aef69996bff9eea3fbae8ae4969a258606ce079928fc020c",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_publisher_encoding_and_link_errors_release_guards",
+      "seconds": 0.386,
+      "ordinal": 19,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 41,
+      "short_name": "archive_lock_order_publisher_encoding_and_link_errors_release_guards",
+      "source": "source/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "source_sha256": "0f1d5891645e9633aef69996bff9eea3fbae8ae4969a258606ce079928fc020c",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_publisher_uses_one_guard_and_preserves_busy_precedence",
+      "seconds": 0.236,
+      "ordinal": 12,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 34,
+      "short_name": "archive_lock_order_publisher_uses_one_guard_and_preserves_busy_precedence",
+      "source": "source/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "source_sha256": "0f1d5891645e9633aef69996bff9eea3fbae8ae4969a258606ce079928fc020c",
+      "interpretation": "substantive assertion path executed"
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_replay_miss_and_mismatch_defer_archive_initialization",
+      "seconds": 0.013,
+      "ordinal": 49,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 71,
+      "short_name": "archive_lock_order_replay_miss_and_mismatch_defer_archive_initialization",
+      "source": "source/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "source_sha256": "af0536374693bc160e3b90518ef5f53ddcd9ec34cfdd038943f861c9a4d97d38",
+      "interpretation": "substantive assertion path executed"
+    }
+  ],
+  "all_selected_tests": [
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::grants::lifecycle_four_legacy_context_refuses_owned_role_before_http",
+      "seconds": 0.118,
+      "ordinal": 1,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 23
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::grants::target_bound_linear_grant_refuses_foreign_meet_then_consumed_reuse",
+      "seconds": 0.314,
+      "ordinal": 2,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 24
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::failures::actual_malformed_429_preserves_source_cooldown_and_blocks_new_work_before_http",
+      "seconds": 0.326,
+      "ordinal": 3,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 25
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::grants::adopted_foreign_cache_root_refuses_before_grant_or_http",
+      "seconds": 0.332,
+      "ordinal": 4,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 26
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_missing_prepared_invalid_capacity_child",
+      "seconds": 0.035,
+      "ordinal": 5,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 27
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::actual_https_success_and_replay_without_eligible_cache_have_one_dispatch",
+      "seconds": 0.433,
+      "ordinal": 6,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 28
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::failures::actual_overbound_response_header_keeps_typed_status_and_url_checkpoint_refusal",
+      "seconds": 0.432,
+      "ordinal": 7,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 29
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::cache::eligible_cache_reuse_finishes_new_work_without_new_attempt_or_date",
+      "seconds": 0.485,
+      "ordinal": 8,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 30
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::cache::historical_or_unsupported_cache_is_a_pre_http_gap_without_fallback",
+      "seconds": 0.53,
+      "ordinal": 9,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 31
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_busy_prepared_recovery_keeps_original_unfinished_facts",
+      "seconds": 0.552,
+      "ordinal": 10,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 32
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::cache::mismatched_eligible_metadata_cannot_publish_a_work_result",
+      "seconds": 0.557,
+      "ordinal": 11,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 33
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_publisher_uses_one_guard_and_preserves_busy_precedence",
+      "seconds": 0.236,
+      "ordinal": 12,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 34
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_missing_prepared_defers_invalid_capacity_in_isolated_process",
+      "seconds": 0.548,
+      "ordinal": 13,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 35
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive::admission::tests::archive_capacity_environment_child",
+      "seconds": 0.015,
+      "ordinal": 14,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 36
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive::admission::tests::explicit_zero_capacity_refuses_before_creating_any_files",
+      "seconds": 0.026,
+      "ordinal": 15,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 37
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_non200_prepared_recovery_never_runs_archive_admission",
+      "seconds": 0.398,
+      "ordinal": 16,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 38
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::actual_equal_byte_same_second_dispatches_keep_distinct_occurrences",
+      "seconds": 0.724,
+      "ordinal": 17,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 39
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive::admission::tests::explicit_zero_capacity_refuses_before_opening_a_missing_root",
+      "seconds": 0.019,
+      "ordinal": 18,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 40
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_publisher_encoding_and_link_errors_release_guards",
+      "seconds": 0.386,
+      "ordinal": 19,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 41
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive::admission::tests::pure_capacity_parser_accepts_every_positive_u64_boundary",
+      "seconds": 0.021,
+      "ordinal": 20,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 42
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive::admission::tests::pure_capacity_parser_refuses_explicit_invalid_values",
+      "seconds": 0.016,
+      "ordinal": 21,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 43
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive::admission::tests::nonunicode_capacity_environment_is_refused_in_an_isolated_process",
+      "seconds": 0.029,
+      "ordinal": 22,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 44
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::recovery::observed_interruption_requires_separate_original_owner_continuation",
+      "seconds": 0.225,
+      "ordinal": 23,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 45
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::capacity::a_capture_over_capacity_is_refused_before_any_object_is_published",
+      "seconds": 0.012,
+      "ordinal": 24,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 46
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::body_storage_is_shared_read_only_and_replacement_never_mutates_the_old_inode",
+      "seconds": 0.021,
+      "ordinal": 25,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 47
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::capacity::a_capture_that_fits_is_published_and_settles_the_reservation",
+      "seconds": 0.015,
+      "ordinal": 26,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 48
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive::admission::tests::archive_capacity_environment_is_checked_in_isolated_processes",
+      "seconds": 0.096,
+      "ordinal": 27,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 49
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::capacity::capacity_accounting_is_exact_across_repeated_cycles_without_drift_or_double_charge",
+      "seconds": 0.014,
+      "ordinal": 28,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 50
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::capacity::a_retained_stage_charges_archive_capacity_so_the_cap_still_refuses",
+      "seconds": 0.019,
+      "ordinal": 29,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 51
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::capacity::an_archived_capture_settles_without_a_second_reservation",
+      "seconds": 0.021,
+      "ordinal": 30,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 52
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::capacity::invalid_archive_entries_refuse_capacity_accounting",
+      "seconds": 0.013,
+      "ordinal": 31,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 53
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::capacity::concurrent_publishers_share_one_capacity_budget",
+      "seconds": 0.024,
+      "ordinal": 32,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 54
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::capacity::a_stage_under_capacity_is_still_admitted_and_published",
+      "seconds": 0.031,
+      "ordinal": 33,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 55
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::capacity::configured_capacity_of_honors_positive_integers_and_defaults_only_when_unset",
+      "seconds": 0.025,
+      "ordinal": 34,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 56
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::failures::archive_io_failure_keeps_the_verified_old_mutable_cache_unreplaced",
+      "seconds": 0.016,
+      "ordinal": 35,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 57
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::recovery::prepared_archive_recovers_through_real_owned_parser_with_zero_new_requests",
+      "seconds": 0.244,
+      "ordinal": 36,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 58
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::failures::body_only_archive_publication_resumes_but_another_runs_stage_is_never_removed",
+      "seconds": 0.021,
+      "ordinal": 37,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 59
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::failures::corrupt_existing_archive_body_and_metadata_each_refuse_false_success",
+      "seconds": 0.023,
+      "ordinal": 38,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 60
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::failures::metadata_publication_io_failure_leaves_no_complete_archive_or_cache",
+      "seconds": 0.015,
+      "ordinal": 39,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 61
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::failures::invalid_new_digest_length_and_oversized_metadata_do_not_publish_any_capture",
+      "seconds": 0.016,
+      "ordinal": 40,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 62
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::failures::incomplete_old_capture_recovers_without_claiming_false_preservation",
+      "seconds": 0.029,
+      "ordinal": 41,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 63
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::failures::mismatched_old_body_is_never_archived_under_its_declared_hash",
+      "seconds": 0.02,
+      "ordinal": 42,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 64
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::identical_bodies_retain_distinct_source_method_status_and_capture_time",
+      "seconds": 0.019,
+      "ordinal": 43,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 65
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_admission_refusal_precedes_busy_writer_but_replay_defers",
+      "seconds": 0.015,
+      "ordinal": 44,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 66
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_busy_cache_preserves_incoming_archive_and_exact_error",
+      "seconds": 0.019,
+      "ordinal": 45,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 67
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_callback_unwind_releases_both_actual_guards",
+      "seconds": 0.012,
+      "ordinal": 46,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 68
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_existing_symlink_root_alias_keeps_legacy_behavior",
+      "seconds": 0.017,
+      "ordinal": 47,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 69
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::identical_replay_preserves_the_original_audit_files_without_duplicates",
+      "seconds": 0.032,
+      "ordinal": 48,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 70
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_replay_miss_and_mismatch_defer_archive_initialization",
+      "seconds": 0.013,
+      "ordinal": 49,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 71
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_callback_errors_release_both_actual_guards",
+      "seconds": 0.032,
+      "ordinal": 50,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 72
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_legacy_replay_and_writer_do_not_reverse_resources",
+      "seconds": 0.025,
+      "ordinal": 51,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 73
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_lock_open_refusal_precedes_busy_eligible",
+      "seconds": 0.044,
+      "ordinal": 52,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 74
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::migrating_an_identical_compact_capture_does_not_manufacture_an_audit_record",
+      "seconds": 0.035,
+      "ordinal": 53,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 75
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::migration_preserves_verified_old_non_success_capture_and_unknown_metadata",
+      "seconds": 0.043,
+      "ordinal": 54,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 76
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::quarantine_crashes::crash_before_reason_publication_does_not_block_recovery_or_remove_orphan_evidence",
+      "seconds": 0.044,
+      "ordinal": 55,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 77
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::quarantine_crashes::occupied_quarantine_destination_is_an_error_and_never_replaced",
+      "seconds": 0.021,
+      "ordinal": 56,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 78
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::races::an_in_progress_cache_writer_retains_the_response_without_retry_or_partial_replacement",
+      "seconds": 0.024,
+      "ordinal": 57,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 79
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::quarantine_crashes::interrupted_mutable_metadata_rename_does_not_hide_immutable_archive_corruption",
+      "seconds": 0.042,
+      "ordinal": 58,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 80
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::quarantine_crashes::every_durable_quarantine_boundary_allows_fresh_publication_without_evidence_loss",
+      "seconds": 0.06,
+      "ordinal": 59,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 81
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::races::simultaneous_identical_and_different_bodies_keep_each_metadata_binding_exact",
+      "seconds": 0.024,
+      "ordinal": 60,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 82
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::races::same_cache_races_never_bind_one_writers_body_to_another_writers_metadata",
+      "seconds": 0.028,
+      "ordinal": 61,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 83
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::recovery::interrupted_body_replacement_recovers_and_retains_all_three_verified_captures",
+      "seconds": 0.024,
+      "ordinal": 62,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 84
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::recovery::malformed_and_invalid_integrity_metadata_recovers_with_exact_untrusted_evidence",
+      "seconds": 0.024,
+      "ordinal": 63,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 85
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::cache::actual_304_keeps_original_occurrence_date_and_eligible_pointer",
+      "seconds": 0.925,
+      "ordinal": 64,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 86
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::recovery::oversized_sparse_mutable_body_is_renamed_without_copying_or_false_archival",
+      "seconds": 0.026,
+      "ordinal": 65,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 87
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::recovery::repeated_damage_creates_distinct_evidence_without_replacing_prior_quarantine",
+      "seconds": 0.027,
+      "ordinal": 66,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 88
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::recovery::quarantine_io_failure_preserves_damaged_mutable_evidence_and_refuses_publication",
+      "seconds": 0.028,
+      "ordinal": 67,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 89
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_prepared_missing_or_corrupt_backing_defers_admission",
+      "seconds": 0.607,
+      "ordinal": 68,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 90
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::cache::actual_304_cache_compare_fence_rejects_changed_metadata_without_refetch",
+      "seconds": 0.939,
+      "ordinal": 69,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 91
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::refresh_retains_both_raw_captures_and_serves_the_replacement",
+      "seconds": 0.032,
+      "ordinal": 70,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 92
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::reservations::concurrent_identical_reservations_are_deduplicated",
+      "seconds": 0.034,
+      "ordinal": 71,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 93
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::reservations::recovery::interrupted_body_publication_recovers_exact_usage_and_keeps_staged_evidence",
+      "seconds": 0.016,
+      "ordinal": 72,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 94
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::reservations::failed_staged_write_releases_reservation_before_admission_is_dropped",
+      "seconds": 0.029,
+      "ordinal": 73,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 95
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::reservations::recovery::abandoned_unpublished_reservation_recovers_without_charging_absent_objects",
+      "seconds": 0.02,
+      "ordinal": 74,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 96
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::reservations::repeated_in_flight_archive_key_reserves_its_bytes_only_once",
+      "seconds": 0.024,
+      "ordinal": 75,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 97
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::recovery::prepared_without_archive_refuses_recovery_without_hidden_refetch",
+      "seconds": 0.406,
+      "ordinal": 76,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 98
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::reservations::recovery::symbolic_link_reservations_refuse_accounting_without_following_the_link",
+      "seconds": 0.03,
+      "ordinal": 77,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 99
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::reservations::published_capture_with_stale_reservation_is_recovered_on_restart",
+      "seconds": 0.041,
+      "ordinal": 78,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 100
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::reservations::reserved_bytes_are_counted_and_refuse_competing_captures",
+      "seconds": 0.024,
+      "ordinal": 79,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 101
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::reservations::recovery::malformed_or_oversized_reservations_refuse_recovery_without_deleting_evidence",
+      "seconds": 0.044,
+      "ordinal": 80,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 102
+    },
+    {
+      "package": "census-service",
+      "test": "spawn::dedicated::tests::dedicated_worker_survives_caller_cancellation_and_releases_lane_after_completion",
+      "seconds": 0.058,
+      "ordinal": 81,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 103
+    },
+    {
+      "package": "census-service",
+      "test": "spawn::dedicated::tests::dedicated_worker_inherits_the_submitting_span_and_dispatcher",
+      "seconds": 0.066,
+      "ordinal": 82,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 104
+    },
+    {
+      "package": "census-service",
+      "test": "spawn::dedicated::tests::thread_start_failure_restores_lane_and_creates_no_accepted_unowned_work",
+      "seconds": 0.049,
+      "ordinal": 83,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 105
+    },
+    {
+      "package": "census-service",
+      "test": "spawn::dedicated::tests::dedicated_domain_error_and_panic_have_distinct_region_accounting",
+      "seconds": 0.069,
+      "ordinal": 84,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 106
+    },
+    {
+      "package": "census-service",
+      "test": "restate_services::work_admission::tests::cancelled_results_caller_keeps_original_owner_fenced_until_worker_drains",
+      "seconds": 0.089,
+      "ordinal": 85,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 107
+    },
+    {
+      "package": "census-service",
+      "test": "spawn::dedicated::tests::published_result_does_not_release_region_owned_thread_before_actual_exit",
+      "seconds": 0.077,
+      "ordinal": 86,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 108
+    },
+    {
+      "package": "census-service",
+      "test": "spawn::dedicated::tests::mixed_async_and_dedicated_deadline_is_counted_once_across_drain_reentry",
+      "seconds": 0.092,
+      "ordinal": 87,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 109
+    },
+    {
+      "package": "census-service",
+      "test": "restate_services::jurisdiction::results_work::replay_tests::replayed_capture_results_failure_preserves_error_and_releases_original_owner_admission",
+      "seconds": 0.189,
+      "ordinal": 88,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 110
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_current_v1_recovery_publishes_under_one_archive_guard",
+      "seconds": 1.143,
+      "ordinal": 89,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 111
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::recovery::armed_interruption_records_no_local_execute_and_never_reuses_the_arm",
+      "seconds": 0.754,
+      "ordinal": 90,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 112
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::actual_retryable_responses_keep_one_original_slot_and_three_attempt_limit",
+      "seconds": 1.247,
+      "ordinal": 91,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 113
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::recovery::injected_prearm_timeout_reopens_reserved_without_consuming_attempt",
+      "seconds": 0.762,
+      "ordinal": 92,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 114
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::acquisition::tests::failures::actual_truncated_bodies_reopen_with_observed_failures_and_three_attempt_limit",
+      "seconds": 1.252,
+      "ordinal": 93,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 115
+    },
+    {
+      "package": "census-service",
+      "test": "restate_services::jurisdiction::results_work::replay_tests::capture_results_stage_finalizes_offline_attempt_with_only_stage_permit_then_replays",
+      "seconds": 0.315,
+      "ordinal": 94,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 116
+    },
+    {
+      "package": "census-service",
+      "test": "restate_services::jurisdiction::results_work::replay_tests::replayed_capture_results_run_releases_unused_original_owner_admission",
+      "seconds": 0.318,
+      "ordinal": 95,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 117
+    },
+    {
+      "package": "census-crawl",
+      "test": "net::cache::archive_tests::captured_smoke::captured_nc_directory_and_summary_fixtures_survive_synthetic_cache_refresh",
+      "seconds": 0.768,
+      "ordinal": 96,
+      "result": "passed",
+      "log": "raw/tests-first.log",
+      "line": 118
+    }
+  ],
+  "exact_command": "timeout --signal=INT --kill-after=10s 1200s env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-domain -p census-store -p census-crawl -p census-service --lib -E 'test(net::cache::archive_tests::) | test(net::cache::archive::admission::tests::) | test(net::acquisition::tests::) | test(jurisdiction::results_work::replay_tests::) | test(spawn::dedicated::tests::) | test(work_admission::tests::)'",
+  "source_commit": "0cde4e29ffbb95baa4d427b460a31dc0925dfd71",
+  "source_tree": "73bb89461cf332eca30849c351c982431d1bbdf4"
+}

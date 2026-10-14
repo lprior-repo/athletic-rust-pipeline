@@ -1,0 +1,93 @@
+--- a/crates/census-crawl/src/net/cache/archive/admission/tests.rs
++++ b/crates/census-crawl/src/net/cache/archive/admission/tests.rs
+@@ -53,7 +53,7 @@
+ 
+ #[test]
+ fn explicit_zero_capacity_refuses_before_creating_any_files() -> TestResult {
+-    let root = tempfile::tempdir()?.get();
++    let root = tempfile::tempdir()?;
+     let witness = root.path().join("retained.body");
+     std::fs::write(&witness, b"retained capture")?;
+     let archive = root.path().join("archive");
+--- a/crates/census-crawl/src/net/cache/archive/admission.rs
++++ b/crates/census-crawl/src/net/cache/archive/admission.rs
+@@ -10,7 +10,7 @@
+ 
+ pub(in crate::net::cache) const DEFAULT_ARCHIVE_BYTES: u64 = 100 * 1024 * 1024;
+ const ARCHIVE_CAPACITY_ENV: &str = "CENSUS_ARCHIVE_CAPACITY_BYTES";
+-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++#[derive(Debug, PartialEq, Eq)]
+ pub(in crate::net::cache) struct ArchiveCapacity(NonZeroU64);
+ 
+ impl ArchiveCapacity {
+--- a/crates/census-crawl/src/net/cache/archive/lock.rs
++++ b/crates/census-crawl/src/net/cache/archive/lock.rs
+@@ -1,4 +1,4 @@
+-use super::super::archive_io::{invalid, io_error};
++use super::super::archive_io::io_error;
+ use super::super::FetchError;
+ use std::fs::{File, OpenOptions};
+ use std::path::{Path, PathBuf};
+@@ -12,10 +12,6 @@
+ 
+ impl ArchiveLock {
+     pub(in crate::net::cache) fn acquire(root: &Path) -> Result<Self, FetchError> {
+-        let metadata = std::fs::symlink_metadata(root).map_err(|error| io_error(root, error))?;
+-        if !metadata.is_dir() {
+-            return Err(invalid(root, "archive root is not a directory"));
+-        }
+         let path = root.join(ARCHIVE_LOCK_NAME);
+         #[cfg(test)]
+         tests::checkpoint(&path, tests::LockEvent::BeforeAcquire)?;
+--- a/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs
++++ b/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs
+@@ -191,31 +191,33 @@
+     let (body_path, meta_path) = cache_paths(root.path());
+     let result = std::panic::catch_unwind(|| {
+         with_archive_eligible_fence(&body_path, &meta_path, |_| -> Result<(), FetchError> {
++            archive_lock_test::require_held(&root.path().join("archive-capacity.lock"))?;
++            archive_lock_test::require_held(&meta_path.with_extension("json.lock"))?;
+             std::panic::resume_unwind(Box::new("owned callback unwind"))
+         })
+     });
+-    check!(result.is_err());
++    match result {
++        Err(payload) => check!(eq; payload.downcast_ref::<&str>(), Some(&"owned callback unwind")),
++        Ok(result) => return Err(format!("expected owned callback unwind, got {result:?}").into()),
++    }
+     archive_lock_test::require_available(&root.path().join("archive-capacity.lock"))?;
+     archive_lock_test::require_available(&meta_path.with_extension("json.lock"))?;
+     Ok(())
+ }
+ 
+ #[test]
+-fn archive_lock_order_invalid_roots_are_preserved_without_following_symlinks() -> TestResult {
++fn archive_lock_order_existing_symlink_root_alias_keeps_legacy_behavior() -> TestResult {
+     let directory = tempfile::tempdir()?;
+-    let file = directory.path().join("occupied");
+-    std::fs::write(&file, b"occupied root")?;
+     let target = directory.path().join("target");
+     std::fs::create_dir(&target)?;
+-    let link = directory.path().join("linked");
+-    std::os::unix::fs::symlink(&target, &link)?;
+-    for root in [&file, &link] {
+-        let result = ArchiveLock::acquire(root);
+-        check!(matches!(result, Err(FetchError::Cache { path, source })
+-            if &path == root && source.kind() == ErrorKind::InvalidData));
+-    }
+-    check!(eq; std::fs::read(&file)?, b"occupied root");
+-    check!(std::fs::symlink_metadata(&link)?.file_type().is_symlink());
+-    check!(eq; std::fs::read_dir(target)?.count(), 0);
+-    Ok(())
+-}
++    let alias = directory.path().join("alias");
++    std::os::unix::fs::symlink(&target, &alias)?;
++    let (body_path, meta_path) = cache_paths(&alias);
++    let meta = metadata(b"aliased root");
++    write_cache(&body_path, &meta_path, b"aliased root", &meta)?;
++    check!(eq; replay_cache(&body_path, &meta_path, &meta)?, Some(b"aliased root".to_vec()));
++    assert_capture(&target, b"aliased root", &meta)?;
++    check!(std::fs::symlink_metadata(&alias)?.file_type().is_symlink());
++    archive_lock_test::require_available(&target.join("archive-capacity.lock"))?;
++    Ok(())
++}

@@ -1,47 +1,52 @@
-use super::super::archive_io::{create_directory, invalid, io_error, present};
+use super::super::archive_io::{create_directory, invalid, present};
 use super::super::FetchError;
 use super::inventory::archive_bytes_used;
+use super::lock::ArchiveLock;
 use super::reservations::{
     read_record, record_path, recover_reservations, remove_record, reservation_bytes, write_record,
 };
-use std::fs::{File, OpenOptions};
+use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
 
 pub(in crate::net::cache) const DEFAULT_ARCHIVE_BYTES: u64 = 100 * 1024 * 1024;
 const ARCHIVE_CAPACITY_ENV: &str = "CENSUS_ARCHIVE_CAPACITY_BYTES";
-const ARCHIVE_LOCK_NAME: &str = "archive-capacity.lock";
+#[derive(Debug, PartialEq, Eq)]
+pub(in crate::net::cache) struct ArchiveCapacity(NonZeroU64);
 
-pub(in crate::net::cache) struct ArchiveAdmission {
-    _lock: File,
-    root: PathBuf,
+impl ArchiveCapacity {
+    pub(in crate::net::cache) fn new(capacity: u64, path: &Path) -> Result<Self, FetchError> {
+        NonZeroU64::new(capacity).map(Self).ok_or_else(|| {
+            invalid(
+                path,
+                "CENSUS_ARCHIVE_CAPACITY_BYTES must be a positive u64 byte count",
+            )
+        })
+    }
+
+    pub(in crate::net::cache) fn get(self) -> u64 {
+        self.0.get()
+    }
+}
+
+pub(in crate::net::cache) struct ArchiveAdmission<'lock> {
+    lock: &'lock ArchiveLock,
     archive: PathBuf,
     capacity: u64,
 }
 
-impl ArchiveAdmission {
+impl<'lock> ArchiveAdmission<'lock> {
     pub(in crate::net::cache) fn begin_with_capacity(
-        root: &Path,
-        archive: &Path,
-        capacity: u64,
+        lock: &'lock ArchiveLock,
+        capacity: ArchiveCapacity,
     ) -> Result<Self, FetchError> {
-        let capacity = positive_capacity(capacity, archive)?;
-        let lock_path = root.join(ARCHIVE_LOCK_NAME);
-        let lock = OpenOptions::new()
-            .create(true)
-            .truncate(false)
-            .read(true)
-            .write(true)
-            .open(&lock_path)
-            .map_err(|error| io_error(&lock_path, error))?;
-        lock.lock().map_err(|error| io_error(&lock_path, error))?;
+        let archive = lock.root().join("archive");
         create_directory(&archive.join("reservations"))?;
-        archive_bytes_used(root, archive)?;
-        recover_reservations(archive)?;
+        archive_bytes_used(lock.root(), &archive)?;
+        recover_reservations(&archive)?;
         Ok(Self {
-            _lock: lock,
-            root: root.to_path_buf(),
-            archive: archive.to_path_buf(),
-            capacity,
+            lock,
+            archive,
+            capacity: capacity.get(),
         })
     }
 
@@ -88,7 +93,7 @@ impl ArchiveAdmission {
     }
 
     fn check_capacity(&self, additional: u64) -> Result<(), FetchError> {
-        let used = archive_bytes_used(&self.root, &self.archive)?;
+        let used = archive_bytes_used(self.lock.root(), &self.archive)?;
         let reserved = reservation_bytes(&self.archive)?;
         let projected = used
             .checked_add(reserved)
@@ -118,7 +123,7 @@ impl ArchiveAdmission {
     }
 }
 
-pub(in crate::net::cache) fn archive_capacity() -> Result<u64, FetchError> {
+pub(in crate::net::cache) fn archive_capacity() -> Result<ArchiveCapacity, FetchError> {
     match std::env::var(ARCHIVE_CAPACITY_ENV) {
         Ok(value) => capacity_of(Some(value)),
         Err(std::env::VarError::NotPresent) => capacity_of(None),
@@ -129,9 +134,11 @@ pub(in crate::net::cache) fn archive_capacity() -> Result<u64, FetchError> {
     }
 }
 
-pub(in crate::net::cache) fn capacity_of(value: Option<String>) -> Result<u64, FetchError> {
+pub(in crate::net::cache) fn capacity_of(
+    value: Option<String>,
+) -> Result<ArchiveCapacity, FetchError> {
     let Some(value) = value else {
-        return Ok(DEFAULT_ARCHIVE_BYTES);
+        return ArchiveCapacity::new(DEFAULT_ARCHIVE_BYTES, Path::new(ARCHIVE_CAPACITY_ENV));
     };
     let path = Path::new(ARCHIVE_CAPACITY_ENV);
     let capacity = value.trim().parse::<u64>().map_err(|_| {
@@ -140,17 +147,7 @@ pub(in crate::net::cache) fn capacity_of(value: Option<String>) -> Result<u64, F
             "CENSUS_ARCHIVE_CAPACITY_BYTES must be a positive u64 byte count",
         )
     })?;
-    positive_capacity(capacity, path)
-}
-
-fn positive_capacity(capacity: u64, path: &Path) -> Result<u64, FetchError> {
-    if capacity == 0 {
-        return Err(invalid(
-            path,
-            "CENSUS_ARCHIVE_CAPACITY_BYTES must be a positive u64 byte count",
-        ));
-    }
-    Ok(capacity)
+    ArchiveCapacity::new(capacity, path)
 }
 
 #[cfg(test)]

@@ -14,7 +14,7 @@ pub(in crate::net::cache) fn preserve_capture(
     label: &str,
     body: &[u8],
     capture: &Capture,
-    admission: &mut ArchiveAdmission,
+    admission: &mut ArchiveAdmission<'_>,
 ) -> Result<PathBuf, FetchError> {
     let digest = &capture.meta.content_digest;
     let metadata_digest = content_digest(&capture.encoded);

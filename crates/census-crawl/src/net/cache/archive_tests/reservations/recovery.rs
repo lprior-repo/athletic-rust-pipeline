@@ -77,7 +77,9 @@ fn malformed_or_oversized_reservations_refuse_recovery_without_deleting_evidence
         let archive = initialize_archive(root.path())?;
         let capture = test_capture(root.path(), b"raw")?;
         let path = seed_reservation(root.path(), &capture, &record)?;
-        let result = ArchiveAdmission::begin_with_capacity(root.path(), &archive, 4096);
+        let capacity_result = ArchiveCapacity::new(4096, &archive)?;
+        let archive_lock_result = ArchiveLock::acquire(root.path())?;
+        let result = ArchiveAdmission::begin_with_capacity(&archive_lock_result, capacity_result);
         check!(matches!(result, Err(FetchError::Cache { source, .. })
             if source.kind() == ErrorKind::InvalidData));
         check!(eq; std::fs::read(path)?, record.as_bytes());
@@ -93,7 +95,9 @@ fn symbolic_link_reservations_refuse_accounting_without_following_the_link() -> 
     let target = root.path().join("external-record");
     std::fs::write(&target, b"10\n20")?;
     std::os::unix::fs::symlink(&target, archive.join("reservations/foreign"))?;
-    let result = ArchiveAdmission::begin_with_capacity(root.path(), &archive, 4096);
+    let capacity_result = ArchiveCapacity::new(4096, &archive)?;
+    let archive_lock_result = ArchiveLock::acquire(root.path())?;
+    let result = ArchiveAdmission::begin_with_capacity(&archive_lock_result, capacity_result);
     check!(matches!(result, Err(FetchError::Cache { source, .. })
         if source.kind() == ErrorKind::InvalidData));
     check!(eq; std::fs::read(target)?, b"10\n20");

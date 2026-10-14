@@ -300,3 +300,5 @@ mod quarantine_crashes;
 mod races;
 mod recovery;
 mod reservations;
+
+mod lock_order;

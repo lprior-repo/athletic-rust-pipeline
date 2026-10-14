@@ -11,6 +11,10 @@ use std::path::{Path, PathBuf};
 #[path = "archive/admission.rs"]
 pub(super) mod admission;
 pub(super) use admission::ArchiveAdmission;
+mod lock;
+#[cfg(test)]
+pub(in crate::net) use lock::tests as lock_tests;
+pub(in crate::net) use lock::ArchiveLock;
 
 mod inventory;
 mod publication;
@@ -48,8 +52,9 @@ pub(super) fn write_preserved_cache(
     let capacity = admission::archive_capacity()?;
     let capture = Capture::from_meta(meta, meta_path)?;
     capture.verify_body(body, body_path)?;
+    let archive_lock = ArchiveLock::acquire(root)?;
     let archive = initialize_archive(root)?;
-    let mut admission = ArchiveAdmission::begin_with_capacity(root, &archive, capacity)?;
+    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock, capacity)?;
     with_stage(root, |stage| {
         let lock = match lock_cache(meta_path) {
             Ok(lock) => lock,
@@ -83,8 +88,9 @@ pub(super) fn write_preserved_capture(
     let capacity = admission::archive_capacity()?;
     let capture = Capture::from_meta(meta, meta_path)?;
     capture.verify_body(body, body_path)?;
+    let archive_lock = ArchiveLock::acquire(root)?;
     let archive = initialize_archive(root)?;
-    let mut admission = ArchiveAdmission::begin_with_capacity(root, &archive, capacity)?;
+    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock, capacity)?;
     with_stage(root, |stage| {
         preserve_capture(&archive, stage, "new", body, &capture, &mut admission)
     })
@@ -97,6 +103,7 @@ pub(super) fn replay_preserved_cache(
 ) -> Result<Option<Vec<u8>>, FetchError> {
     let root = cache_root(body_path, meta_path)?;
     let capacity = admission::archive_capacity()?;
+    let archive_lock = ArchiveLock::acquire(root)?;
     let lock = lock_cache(meta_path)?;
     let Some((meta, body)) = super::read_cache(
         body_path,
@@ -112,7 +119,7 @@ pub(super) fn replay_preserved_cache(
         return Ok(None);
     }
     let archive = initialize_archive(root)?;
-    let mut admission = ArchiveAdmission::begin_with_capacity(root, &archive, capacity)?;
+    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock, capacity)?;
     with_stage(root, |stage| {
         preserve_previous(&archive, stage, body_path, meta_path, &mut admission)
     })?;
@@ -120,7 +127,10 @@ pub(super) fn replay_preserved_cache(
     Ok(Some(body))
 }
 
-fn cache_root<'a>(body_path: &'a Path, meta_path: &Path) -> Result<&'a Path, FetchError> {
+pub(super) fn cache_root<'a>(
+    body_path: &'a Path,
+    meta_path: &Path,
+) -> Result<&'a Path, FetchError> {
     if body_path == meta_path || body_path.file_name().is_none() || meta_path.file_name().is_none()
     {
         return Err(invalid(
@@ -157,7 +167,7 @@ fn preserve_previous(
     stage: &Path,
     body_path: &Path,
     meta_path: &Path,
-    admission: &mut ArchiveAdmission,
+    admission: &mut ArchiveAdmission<'_>,
 ) -> Result<(), FetchError> {
     let presence = (present(body_path)?, present(meta_path)?);
     match presence {
@@ -236,13 +246,11 @@ fn verified_body(path: &Path, capture: &Capture) -> Result<Vec<u8>, FetchError> 
 }
 
 pub(super) fn preserve_eligible_previous(
-    root: &Path,
+    archive: &Path,
     stage: &Path,
     body_path: &Path,
     meta_path: &Path,
+    admission: &mut ArchiveAdmission<'_>,
 ) -> Result<(), FetchError> {
-    let archive = initialize_archive(root)?;
-    let mut admission =
-        ArchiveAdmission::begin_with_capacity(root, &archive, admission::archive_capacity()?)?;
-    preserve_previous(&archive, stage, body_path, meta_path, &mut admission)
+    preserve_previous(archive, stage, body_path, meta_path, admission)
 }

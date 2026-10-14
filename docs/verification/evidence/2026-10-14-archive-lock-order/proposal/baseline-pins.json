@@ -1,0 +1,71 @@
+{
+  "repository": "/workspace/shared/athletic-rebuild-20261013",
+  "head": "5ecad4e42525165be8a45a3f7ea9411347c35334",
+  "files": [
+    {
+      "path": "crates/census-crawl/src/net/cache.rs",
+      "sha256": "208f22f2fc34ce83fe49232bf3160c18ba22a035177c9c06e8a0044e6cfa31b7",
+      "bytes": 5780
+    },
+    {
+      "path": "crates/census-crawl/src/net/cache/archive.rs",
+      "sha256": "5456f1875c32db93176d3f55a7e32320b3aa08311f6454f8426e96fce9d70c3f",
+      "bytes": 8068
+    },
+    {
+      "path": "crates/census-crawl/src/net/cache/archive/admission.rs",
+      "sha256": "58cb254439e06e755a89b3216e75bd2f43d267c5217346c27f2fa3b3667bda9f",
+      "bytes": 5154
+    },
+    {
+      "path": "crates/census-crawl/src/net/cache/archive/publication.rs",
+      "sha256": "a843d568f979815af9d38640931b62748a6b60233d313c4e1753de3dae840b84",
+      "bytes": 3633
+    },
+    {
+      "path": "crates/census-crawl/src/net/cache/eligible.rs",
+      "sha256": "d7d7d5bec8d9f5f0162947b5a0538827e467392ca9f8a9fb231166c03d099ffc",
+      "bytes": 5027
+    },
+    {
+      "path": "crates/census-crawl/src/net/acquisition/read.rs",
+      "sha256": "62b9f2b28d37ff97748083dc5bb7ee0d6eb542a4bf65f6fd0a9daf7a9edb8504",
+      "bytes": 3938
+    },
+    {
+      "path": "crates/census-crawl/src/net/cache/archive/admission/tests.rs",
+      "sha256": "3fc1966e863046647b27c021f330f23aaaa9546850e91d3d4df69b2a9cc922b6",
+      "bytes": 6893
+    },
+    {
+      "path": "crates/census-crawl/src/net/cache/archive_tests.rs",
+      "sha256": "08fab4997337734aec4d255da2b5ae4463a482763a0f6b0815aa48cb52935e73",
+      "bytes": 9871
+    },
+    {
+      "path": "crates/census-crawl/src/net/cache/archive_tests/capacity.rs",
+      "sha256": "8a61a2e58d95bea972b37a3dad1b0347670724c4913158094a98be0f41e29bb4",
+      "bytes": 11004
+    },
+    {
+      "path": "crates/census-crawl/src/net/cache/archive_tests/reservations.rs",
+      "sha256": "c99294199cf5c8eee2c02423087ca0ceb8c3d72517337b7d47864b657b9111e4",
+      "bytes": 8033
+    },
+    {
+      "path": "crates/census-crawl/src/net/cache/archive_tests/reservations/recovery.rs",
+      "sha256": "5b8d010b0518d780b09c4f4cece1ebcc7f9d9e89d9babd673977508ada1e772f",
+      "bytes": 3936
+    },
+    {
+      "path": "crates/census-crawl/src/net/cache/archive_tests/races.rs",
+      "sha256": "cc19fd7815b67a3dd0f3c3bbfc886f02a6045622c61fb358e2e686ca058dbc44",
+      "bytes": 5734
+    },
+    {
+      "path": "crates/census-crawl/src/net/acquisition/tests.rs",
+      "sha256": "39d87054e708c168a829dcba56d30bac283f5d331f84e4684d363ac4f58adc18",
+      "bytes": 4908
+    }
+  ]
+}

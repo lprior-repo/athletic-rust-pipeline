@@ -134,3 +134,5 @@ async fn actual_retryable_responses_keep_one_original_slot_and_three_attempt_lim
     check!(eq; keys.iter().filter(|key| key.ends_with("/terminal")).count(), 3);
     Ok(())
 }
+
+mod lock_order;

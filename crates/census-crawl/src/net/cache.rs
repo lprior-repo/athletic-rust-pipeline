@@ -10,11 +10,11 @@ mod archive_io;
 mod capture;
 mod eligible;
 mod envelope;
+#[cfg(test)]
+pub(in crate::net) use archive::lock_tests as archive_lock_test;
 pub(crate) use capture::Capture;
-pub(crate) use eligible::{
-    publish_eligible, publish_eligible_held, read_eligible, with_eligible_fence,
-    PinnedEligibleCache,
-};
+pub(crate) use eligible::{publish_eligible, read_eligible, PinnedEligibleCache};
+pub(in crate::net) use eligible::{publish_eligible_held, with_archive_eligible_fence};
 pub(crate) use envelope::EligibleCacheV2;
 mod quarantine;
 

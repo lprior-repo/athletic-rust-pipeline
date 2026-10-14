@@ -1,0 +1,826 @@
+{
+  "schema": "archive-lock-order-artifact-audit/v1",
+  "status": "UNVERIFIED",
+  "narrow_m1_gates": "passed",
+  "source_commit": "0cde4e29ffbb95baa4d427b460a31dc0925dfd71",
+  "source_tree": "73bb89461cf332eca30849c351c982431d1bbdf4",
+  "integrity_checks_passed": true,
+  "checks": [
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/acquisition/read.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/acquisition/tests.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/archive/admission/tests.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/archive/admission.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/archive/lock/tests.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/archive/lock.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/archive/publication.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/archive.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/archive_tests/capacity.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/archive_tests/reservations/recovery.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/archive_tests/reservations.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/archive_tests.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache/eligible.rs",
+      "passed": true
+    },
+    {
+      "check": "formatted_source_pin",
+      "path": "source/crates/census-crawl/src/net/cache.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/acquisition/read.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/acquisition/tests.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/archive/admission/tests.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/archive/admission.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/archive/lock/tests.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/archive/lock.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/archive/publication.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/archive.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/archive_tests/capacity.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/archive_tests/reservations/recovery.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/archive_tests/reservations.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/archive_tests.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache/eligible.rs",
+      "passed": true
+    },
+    {
+      "check": "committed_git_object_pin",
+      "path": "crates/census-crawl/src/net/cache.rs",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_admission_refusal_precedes_busy_writer_but_replay_defers",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_busy_cache_preserves_incoming_archive_and_exact_error",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_busy_prepared_recovery_keeps_original_unfinished_facts",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_callback_errors_release_both_actual_guards",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_callback_unwind_releases_both_actual_guards",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_current_v1_recovery_publishes_under_one_archive_guard",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_existing_symlink_root_alias_keeps_legacy_behavior",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_legacy_replay_and_writer_do_not_reverse_resources",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_lock_open_refusal_precedes_busy_eligible",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_missing_prepared_defers_invalid_capacity_in_isolated_process",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_missing_prepared_invalid_capacity_child",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_non200_prepared_recovery_never_runs_archive_admission",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_prepared_missing_or_corrupt_backing_defers_admission",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_publisher_encoding_and_link_errors_release_guards",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::acquisition::tests::lock_order::archive_lock_order_publisher_uses_one_guard_and_preserves_busy_precedence",
+      "passed": true
+    },
+    {
+      "check": "named_test_raw_PASS_row",
+      "test": "net::cache::archive_tests::lock_order::archive_lock_order_replay_miss_and_mismatch_defer_archive_initialization",
+      "passed": true
+    },
+    {
+      "check": "terminal_gate_log_and_exit",
+      "gate": "initial intentional format write",
+      "passed": true
+    },
+    {
+      "check": "terminal_gate_log_and_exit",
+      "gate": "focused cache/acquisition/service regression",
+      "passed": true
+    },
+    {
+      "check": "terminal_gate_log_and_exit",
+      "gate": "source lint",
+      "passed": true
+    },
+    {
+      "check": "terminal_gate_log_and_exit",
+      "gate": "all-target check --jobs 1",
+      "passed": true
+    },
+    {
+      "check": "terminal_gate_log_and_exit",
+      "gate": "format check",
+      "passed": true
+    },
+    {
+      "check": "all_bundled_json_and_jsonl_parse",
+      "passed": true
+    },
+    {
+      "check": "observed_96_raw_PASS_rows",
+      "passed": true
+    },
+    {
+      "check": "all_16_named_rows_exactly_once",
+      "passed": true
+    },
+    {
+      "check": "commit_changed_paths_exactly_source_manifest",
+      "passed": true
+    },
+    {
+      "check": "current_review_binds_corrected_patch",
+      "passed": true
+    },
+    {
+      "check": "all_inventoried_artifacts_nonempty",
+      "passed": true
+    }
+  ],
+  "pending_implementation_gates": [],
+  "remaining_evidence_acceptance": [
+    "Root final docs/evidence acceptance",
+    "dedicated truth-serum not available/not run; no formal bundle approval claimed"
+  ],
+  "artifacts": [
+    {
+      "path": "ACCEPTANCE-MAPPING.md",
+      "sha256": "e3feb14556767f5002124835589f42e42fde2ca3630b192c2701dc5432d001d2",
+      "bytes": 9269
+    },
+    {
+      "path": "ADOPTION.md",
+      "sha256": "eea05287437a0f774c981e6e1ff3172e486901fd27778635f0a1af734c57ec73",
+      "bytes": 2299
+    },
+    {
+      "path": "COMMIT-RECEIPT.json",
+      "sha256": "3b8c00725ddc5d8a1ed269955d6908e19dba608d573f9aaa9125d95d664ee58d",
+      "bytes": 4977
+    },
+    {
+      "path": "GATE-STATUS.json",
+      "sha256": "63c9d6d6defc744012f9e149a6c6b41185ec8caf8212677a8f291fd962d68398",
+      "bytes": 3057
+    },
+    {
+      "path": "LIMITS.md",
+      "sha256": "b1d10c320e0eff37b6008e562df2f98dd96702f6f548a13a023ab3a62fc31452",
+      "bytes": 3637
+    },
+    {
+      "path": "README.md",
+      "sha256": "0b1fb1845cddcc5aa373107c7ca805b3d1ebad68791ca33583b7196ec1cd9a00",
+      "bytes": 2278
+    },
+    {
+      "path": "SOURCE-PINS.json",
+      "sha256": "c2e5d093abdbbfcb842da1f8f7752ae81cc3f044f4875630d3efe69835556467",
+      "bytes": 6964
+    },
+    {
+      "path": "TEST-COVERAGE.json",
+      "sha256": "ea92aa1b208efef49540cb8f15ed3270747bf2e08e392ed4afa3223c92988481",
+      "bytes": 39710
+    },
+    {
+      "path": "configuration/.moon/workspace.yml",
+      "sha256": "ec7626a0fd994d05d59b11ef3aa8c098ac6b1ac3a4334ebc826483a57877d952",
+      "bytes": 445
+    },
+    {
+      "path": "configuration/Cargo.lock",
+      "sha256": "0b7b7023933bbb062bd298e35ca1b8fdbee8b5731322660563dc4eb819555a18",
+      "bytes": 95522
+    },
+    {
+      "path": "configuration/Cargo.toml",
+      "sha256": "0c2944f233d8485ad5f1e3dd6496cdfab0bd01f98530d10314f0debaa9388e37",
+      "bytes": 1851
+    },
+    {
+      "path": "configuration/moon.yml",
+      "sha256": "7af88ddf2d92d7b431b78604bf62cd009459976669f1e5622d2df9ed64ebc7be",
+      "bytes": 6783
+    },
+    {
+      "path": "configuration/rust-toolchain.toml",
+      "sha256": "617f17e428d802ca347420049161a2e9528ac5e2ac943f4ce18f6e095809c523",
+      "bytes": 171
+    },
+    {
+      "path": "configuration/tools/build-toolchain.json",
+      "sha256": "06fcf238469237218d1e6ec9a08a35520aa216699f577b2c6505f3832e4bc65e",
+      "bytes": 5385
+    },
+    {
+      "path": "configuration/tools/moon-local",
+      "sha256": "dd61031c49d49691b06b99017a4c0d47fa0a57b831362faf8175b9f3df0ec210",
+      "bytes": 3709
+    },
+    {
+      "path": "final-evidence-decision.md",
+      "sha256": "c67af68d545b6e357e8da1782f9f2f9b6ad6f8509d0bbd54cd4ce781c42ae62d",
+      "bytes": 1162
+    },
+    {
+      "path": "formatted-source.patch",
+      "sha256": "22b9a759127b2707af48f0d27a2ce099425fb7f4dc0f5775c207c17d4115b2ed",
+      "bytes": 35170
+    },
+    {
+      "path": "proposal/ADOPTED-PREREQUISITE.md",
+      "sha256": "fe9b1f711f4383cdc03456dca9b4be40547ee2d6c8fb594327d46cbd483eba67",
+      "bytes": 17351
+    },
+    {
+      "path": "proposal/HANDOFF.json",
+      "sha256": "8b61296e4885bc1c95a4a9deed4b7d20bb521d3d4b65fbe5853503df9d7791f4",
+      "bytes": 1982
+    },
+    {
+      "path": "proposal/REFERENCES.md",
+      "sha256": "d610cb837b04adba18d9ef5e56560388c5860839c238c021a366d685a98b97ec",
+      "bytes": 1569
+    },
+    {
+      "path": "proposal/TESTPLAN.md",
+      "sha256": "f94b6cf633d6f0fc9bae8592cc7a7c717270e592716052392773e39d9a707f76",
+      "bytes": 8260
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/acquisition/read.rs",
+      "sha256": "62b9f2b28d37ff97748083dc5bb7ee0d6eb542a4bf65f6fd0a9daf7a9edb8504",
+      "bytes": 3938
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/acquisition/tests.rs",
+      "sha256": "39d87054e708c168a829dcba56d30bac283f5d331f84e4684d363ac4f58adc18",
+      "bytes": 4908
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/cache/archive/admission/tests.rs",
+      "sha256": "3fc1966e863046647b27c021f330f23aaaa9546850e91d3d4df69b2a9cc922b6",
+      "bytes": 6893
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/cache/archive/admission.rs",
+      "sha256": "58cb254439e06e755a89b3216e75bd2f43d267c5217346c27f2fa3b3667bda9f",
+      "bytes": 5154
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/cache/archive/publication.rs",
+      "sha256": "a843d568f979815af9d38640931b62748a6b60233d313c4e1753de3dae840b84",
+      "bytes": 3633
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/cache/archive.rs",
+      "sha256": "5456f1875c32db93176d3f55a7e32320b3aa08311f6454f8426e96fce9d70c3f",
+      "bytes": 8068
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/cache/archive_tests/capacity.rs",
+      "sha256": "8a61a2e58d95bea972b37a3dad1b0347670724c4913158094a98be0f41e29bb4",
+      "bytes": 11004
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/cache/archive_tests/races.rs",
+      "sha256": "cc19fd7815b67a3dd0f3c3bbfc886f02a6045622c61fb358e2e686ca058dbc44",
+      "bytes": 5734
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/cache/archive_tests/reservations/recovery.rs",
+      "sha256": "5b8d010b0518d780b09c4f4cece1ebcc7f9d9e89d9babd673977508ada1e772f",
+      "bytes": 3936
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/cache/archive_tests/reservations.rs",
+      "sha256": "c99294199cf5c8eee2c02423087ca0ceb8c3d72517337b7d47864b657b9111e4",
+      "bytes": 8033
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/cache/archive_tests.rs",
+      "sha256": "08fab4997337734aec4d255da2b5ae4463a482763a0f6b0815aa48cb52935e73",
+      "bytes": 9871
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/cache/eligible.rs",
+      "sha256": "d7d7d5bec8d9f5f0162947b5a0538827e467392ca9f8a9fb231166c03d099ffc",
+      "bytes": 5027
+    },
+    {
+      "path": "proposal/baseline/crates/census-crawl/src/net/cache.rs",
+      "sha256": "208f22f2fc34ce83fe49232bf3160c18ba22a035177c9c06e8a0044e6cfa31b7",
+      "bytes": 5780
+    },
+    {
+      "path": "proposal/baseline-pins.json",
+      "sha256": "65af3fc3ed061ed4daaf9bf9030f99b603de97468bab9ecb0b3492c135cb088b",
+      "bytes": 2583
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/acquisition/read.rs",
+      "sha256": "db993cdb30822d17fd66ee9a1d2f575884a68ce9291df4ca4c422c5c143e27b3",
+      "bytes": 3984
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "sha256": "e628a618a7bdd15d60df99910fdfa776ad14702ee7f69aa780292a4f4aaaef1b",
+      "bytes": 15668
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/acquisition/tests.rs",
+      "sha256": "7cfb9b8be3003822de167f608f52e2fdd6a0b38760c81c1a950e06218fbeb001",
+      "bytes": 4925
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive/admission/tests.rs",
+      "sha256": "d1cc3ad4592f43e6885e2b5e68ca6570ec665fc3044cd06a23cd692e74337c91",
+      "bytes": 7436
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive/admission.rs",
+      "sha256": "0b75eb62f23a95c726acae71781348d4119e82d99573b462aa821f2582d3fa12",
+      "bytes": 5003
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive/lock/tests.rs",
+      "sha256": "05a6d1192254d70c953ae902a266bcfea13bb3cb2951b71000e1da3f37a6ff22",
+      "bytes": 2323
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive/lock.rs",
+      "sha256": "5113bde209bdac735f2229ba115ae64249b1305d97871e68964cd9c46182e3dc",
+      "bytes": 1135
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive/publication.rs",
+      "sha256": "356ee07cdabc013ddc950041c0d211b1e6f8026dcb716746fdc67630df997023",
+      "bytes": 3637
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive.rs",
+      "sha256": "92248520164cdc3a419da393701b2bbb4096f8be2906f5f0396e5ec6ef8884cb",
+      "bytes": 8225
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive_tests/capacity.rs",
+      "sha256": "79cdb9a99e4db6e014a650e5583c7d679028ec97658e59a162aedfa05a95dc7a",
+      "bytes": 13230
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "sha256": "b4e10555fd3036e8235288cfec5691d89517ddec691a212cc373a9a7d91a1a9b",
+      "bytes": 10472
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive_tests/races.rs",
+      "sha256": "cc19fd7815b67a3dd0f3c3bbfc886f02a6045622c61fb358e2e686ca058dbc44",
+      "bytes": 5734
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive_tests/reservations/recovery.rs",
+      "sha256": "eed7395b334269372817a758ced280a2fa48e359f017013410fd38b0819999a8",
+      "bytes": 4226
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive_tests/reservations.rs",
+      "sha256": "a3264a477b81d4731e20980b6278c6bd57ebf3baf60b3faed1eb68a3a20922c4",
+      "bytes": 9338
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/archive_tests.rs",
+      "sha256": "0c5d284acc8897aa18b0628d2526c06b9b1cff7c04cffb2a09c2cec1ae797ff6",
+      "bytes": 9888
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache/eligible.rs",
+      "sha256": "abc908e025fa782d43e6c1d83f25b0148f182a359d0025aeaa901bdea1ee7f99",
+      "bytes": 5900
+    },
+    {
+      "path": "proposal/candidate/crates/census-crawl/src/net/cache.rs",
+      "sha256": "bcd6e74a1eb6d41e4dcc59cc2645a04d4af36b91737ca9752ff1518b17724ae0",
+      "bytes": 5901
+    },
+    {
+      "path": "proposal/context.patch",
+      "sha256": "ee591d55af509f49e86a68bf91e14a678e40e6caa1e724f2195a82d19bb5bb42",
+      "bytes": 64018
+    },
+    {
+      "path": "proposal/named-tests.json",
+      "sha256": "6faa986356b7b20f707ac9122d844f921c43542400b7e632646e3923a4694a50",
+      "bytes": 1202
+    },
+    {
+      "path": "proposal/review-correction.patch",
+      "sha256": "4ed3f84a8d398eda43e43019b6c2818731abf311342b478ca3a4ca6b2101778d",
+      "bytes": 4374
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/acquisition/read.rs",
+      "sha256": "db993cdb30822d17fd66ee9a1d2f575884a68ce9291df4ca4c422c5c143e27b3",
+      "bytes": 3984
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "sha256": "e628a618a7bdd15d60df99910fdfa776ad14702ee7f69aa780292a4f4aaaef1b",
+      "bytes": 15668
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/acquisition/tests.rs",
+      "sha256": "7cfb9b8be3003822de167f608f52e2fdd6a0b38760c81c1a950e06218fbeb001",
+      "bytes": 4925
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive/admission/tests.rs",
+      "sha256": "7dd241b909c3736cce0b3a981f06b5c9075e7bc0142960a2fe9c83bf9480bf57",
+      "bytes": 7442
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive/admission.rs",
+      "sha256": "326b0ee664fec6e75e306034aaeb5c42417bc763e5a1d8c3609974b53d60a26b",
+      "bytes": 5016
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive/lock/tests.rs",
+      "sha256": "05a6d1192254d70c953ae902a266bcfea13bb3cb2951b71000e1da3f37a6ff22",
+      "bytes": 2323
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive/lock.rs",
+      "sha256": "d63b1e7ee145b795f075dcce959e9c2334750e81571c63888eda35bdc8cc6e41",
+      "bytes": 1358
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive/publication.rs",
+      "sha256": "356ee07cdabc013ddc950041c0d211b1e6f8026dcb716746fdc67630df997023",
+      "bytes": 3637
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive.rs",
+      "sha256": "92248520164cdc3a419da393701b2bbb4096f8be2906f5f0396e5ec6ef8884cb",
+      "bytes": 8225
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive_tests/capacity.rs",
+      "sha256": "79cdb9a99e4db6e014a650e5583c7d679028ec97658e59a162aedfa05a95dc7a",
+      "bytes": 13230
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "sha256": "8d8a7db86bedbf36a776e0df17d930db47e1fd39b7d89e7264e35f734508517a",
+      "bytes": 10154
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive_tests/races.rs",
+      "sha256": "cc19fd7815b67a3dd0f3c3bbfc886f02a6045622c61fb358e2e686ca058dbc44",
+      "bytes": 5734
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive_tests/reservations/recovery.rs",
+      "sha256": "eed7395b334269372817a758ced280a2fa48e359f017013410fd38b0819999a8",
+      "bytes": 4226
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive_tests/reservations.rs",
+      "sha256": "a3264a477b81d4731e20980b6278c6bd57ebf3baf60b3faed1eb68a3a20922c4",
+      "bytes": 9338
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/archive_tests.rs",
+      "sha256": "0c5d284acc8897aa18b0628d2526c06b9b1cff7c04cffb2a09c2cec1ae797ff6",
+      "bytes": 9888
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache/eligible.rs",
+      "sha256": "abc908e025fa782d43e6c1d83f25b0148f182a359d0025aeaa901bdea1ee7f99",
+      "bytes": 5900
+    },
+    {
+      "path": "proposal/revision1-candidate/crates/census-crawl/src/net/cache.rs",
+      "sha256": "bcd6e74a1eb6d41e4dcc59cc2645a04d4af36b91737ca9752ff1518b17724ae0",
+      "bytes": 5901
+    },
+    {
+      "path": "proposal/revision1-context.patch",
+      "sha256": "b0b29fd4ad00324e0dce57e1ac9232ab7144843a26c8c92e6f9bb6ff3a10c7e4",
+      "bytes": 64092
+    },
+    {
+      "path": "proposal/revision1-source-pins.json",
+      "sha256": "b37407a284d5888dce4343bada8c2491582d6f62264e14279fcd744e6665b581",
+      "bytes": 7378
+    },
+    {
+      "path": "proposal/source-pins.json",
+      "sha256": "6d9e1991a987cad6de54fba7870285eb52d366233d767b0034abcdf8823b44bc",
+      "bytes": 7476
+    },
+    {
+      "path": "raw/check-first.log",
+      "sha256": "dea067f4e8ba1834ea65e9fa2e78da0b8eb7f3096420ab300c0ac24641327535",
+      "bytes": 1140
+    },
+    {
+      "path": "raw/fmt-check-first.log",
+      "sha256": "6bac4ab2e3224c6cc6d2044ca3e8bf2e4fd7ed8ee07ed668b92ef6f5ed34c891",
+      "bytes": 241
+    },
+    {
+      "path": "raw/format-first.log",
+      "sha256": "4ac5fe0fdce423a2b67c9b2a6d45344db3d62137f6b8c3ce269a6af3ebbb3fb6",
+      "bytes": 253
+    },
+    {
+      "path": "raw/lint-first.log",
+      "sha256": "0ef74f05e28ecb2273b2fd3cd6d4defcd98f37590f3ae57896b909f6069e84c6",
+      "bytes": 862
+    },
+    {
+      "path": "raw/root-command-receipts.json",
+      "sha256": "78216c6001369e587aa197e5d0a6ad16d85d043c15cfcdcaa9f1503aa5cbf2c7",
+      "bytes": 2133
+    },
+    {
+      "path": "raw/tests-first.log",
+      "sha256": "be1cc27d6db4cdcb81fa186741e87bcf50e442e860308897b167ba984fb264c7",
+      "bytes": 16306
+    },
+    {
+      "path": "review/FIRST-CANDIDATE-REVIEW.md",
+      "sha256": "c812a2ec758998f555d5754ad04d0eb0e29125be57da1ed95e5620051aa73383",
+      "bytes": 9181
+    },
+    {
+      "path": "review/PIN-CHECK.json",
+      "sha256": "afcf1aea2de800f8dc52791078148cbfc3aa2b861c1adce869fbc39e5aee2e4a",
+      "bytes": 9053
+    },
+    {
+      "path": "review/REVIEW.md",
+      "sha256": "5540e0bad689943d8ea5f2eb1789e517093b494cca6c09d432c798cdab87a67d",
+      "bytes": 8483
+    },
+    {
+      "path": "review/REVIEWED-SOURCE-PINS.json",
+      "sha256": "6d9e1991a987cad6de54fba7870285eb52d366233d767b0034abcdf8823b44bc",
+      "bytes": 7476
+    },
+    {
+      "path": "review/TEST-PLAN.md",
+      "sha256": "a7fe694e56f36bba41c3aec40028688836631793509163eaa3e5bac2de722ea7",
+      "bytes": 8589
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/acquisition/read.rs",
+      "sha256": "f3dd44cb00d69a811a92151871f072d48dc22d848613c0ba1634087171979e1b",
+      "bytes": 4064
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+      "sha256": "0f1d5891645e9633aef69996bff9eea3fbae8ae4969a258606ce079928fc020c",
+      "bytes": 16493
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/acquisition/tests.rs",
+      "sha256": "7cfb9b8be3003822de167f608f52e2fdd6a0b38760c81c1a950e06218fbeb001",
+      "bytes": 4925
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/archive/admission/tests.rs",
+      "sha256": "687d584d8974c6fe18c29a5b9c1c80b9c26dc6ccdcd68ba25d3f11550d6af4a2",
+      "bytes": 7436
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/archive/admission.rs",
+      "sha256": "bb0384bb15cfdfa3ddce1bca3d784859ded623986ab0a1185a7be457d1d7b5d2",
+      "bytes": 5057
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/archive/lock/tests.rs",
+      "sha256": "44001c41907dd078eda98d1c01ab02fc2dcac946b4e240d5f1d22926a78a59e1",
+      "bytes": 2391
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/archive/lock.rs",
+      "sha256": "5113bde209bdac735f2229ba115ae64249b1305d97871e68964cd9c46182e3dc",
+      "bytes": 1135
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/archive/publication.rs",
+      "sha256": "356ee07cdabc013ddc950041c0d211b1e6f8026dcb716746fdc67630df997023",
+      "bytes": 3637
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/archive.rs",
+      "sha256": "575abdab477613f04ffe4d82998e54107217a8b91649b044fb82d2f104125d46",
+      "bytes": 8236
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/archive_tests/capacity.rs",
+      "sha256": "0f89cc5f75021decf217510a0175f595a6798da9a48a5694dd74606b087b842a",
+      "bytes": 13372
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs",
+      "sha256": "af0536374693bc160e3b90518ef5f53ddcd9ec34cfdd038943f861c9a4d97d38",
+      "bytes": 10908
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/archive_tests/reservations/recovery.rs",
+      "sha256": "eed7395b334269372817a758ced280a2fa48e359f017013410fd38b0819999a8",
+      "bytes": 4226
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/archive_tests/reservations.rs",
+      "sha256": "57b0e2cae23cd36b12db023d0731baa18ecb77dff703839380897bd6505fc255",
+      "bytes": 9439
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/archive_tests.rs",
+      "sha256": "0c5d284acc8897aa18b0628d2526c06b9b1cff7c04cffb2a09c2cec1ae797ff6",
+      "bytes": 9888
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache/eligible.rs",
+      "sha256": "f1dd6582133771f7b9a38762b697b943b33ffe8c29f638ce10f524f8d16f164c",
+      "bytes": 5960
+    },
+    {
+      "path": "source/crates/census-crawl/src/net/cache.rs",
+      "sha256": "ebd31ec4fd801ea2635c4a4605c33065426d25819aa08b9ac5e21b7ecf658c93",
+      "bytes": 5890
+    },
+    {
+      "path": "truth-serum-report.md",
+      "sha256": "9779f35ed27122f48414a0e2848cc366bf44dd83f1d70a544d0c07afcea53ccc",
+      "bytes": 2032
+    },
+    {
+      "path": "verification-ledger.jsonl",
+      "sha256": "d4347e12f6f838fd8746e17829ca35bf1cc35fe9888736ed306e72b0f12aae06",
+      "bytes": 3076
+    }
+  ]
+}

@@ -1,0 +1,1355 @@
+--- a/crates/census-crawl/src/net/acquisition/read.rs
++++ b/crates/census-crawl/src/net/acquisition/read.rs
+@@ -67,7 +67,7 @@
+         )?;
+         let extra = super::super::execute::representation::cache_extra(None, &representation);
+         let (body_path, meta_path) = self.cache_paths(&Self::key_for("GET", url, &extra));
+-        crate::net::cache::with_eligible_fence(&meta_path, || {
++        crate::net::cache::with_archive_eligible_fence(&body_path, &meta_path, |archive_lock| {
+             let mut finish_budget = AcquisitionReadBudget::for_work();
+             let reference = store.finish_prepared_acquisition(work, &mut finish_budget)?;
+             let mut read_budget = AcquisitionReadBudget::for_work();
+@@ -88,7 +88,7 @@
+                     .join("archive/bodies")
+                     .join(format!("{}.body", captured.capture.content_digest));
+                 crate::net::cache::publish_eligible_held(
+-                    &body_path, &meta_path, &envelope, &archived,
++                    archive_lock, &body_path, &meta_path, &envelope, &archived,
+                 )?;
+             }
+             Ok(captured)
+--- /dev/null
++++ b/crates/census-crawl/src/net/acquisition/tests/lock_order.rs
+@@ -0,0 +1,292 @@
++use super::*;
++use crate::net::acquisition::CaptureInterruption;
++use crate::net::cache::archive_lock_test::{self, LockEvent};
++use crate::net::cache::{content_digest, CacheMeta, Capture, EligibleCacheV2};
++use crate::net::FetchError;
++use std::cell::RefCell;
++use std::io::ErrorKind;
++use std::path::Path;
++use std::rc::Rc;
++
++async fn interrupted_fixture(
++    previous: Option<&[u8]>,
++    status: u16,
++    interruption: CaptureInterruption,
++) -> TestResult<Fixture> {
++    let listener = TcpListener::bind("127.0.0.1:0").await?;
++    let mut fixture = Fixture::new(&listener)?;
++    let requests = Arc::clone(&fixture.requests);
++    let reply = Reply { status, body: BODY, headers: "", before: Mutation::None };
++    if let Some(previous) = previous {
++        let fetch = async {
++            fixture.acquire(2025, true).await??;
++            fixture.fetcher.capture_interrupt = interruption;
++            let result = fixture.acquire(2026, true).await?;
++            check!(matches!(result, Err(ref error) if injected(error)));
++            Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
++        };
++        tokio::try_join!(serve(listener, [Reply::ok(previous), reply], requests), fetch)?;
++    } else {
++        fixture.fetcher.capture_interrupt = interruption;
++        let fetch = async {
++            let result = fixture.acquire(2026, true).await?;
++            check!(matches!(result, Err(ref error) if injected(error)));
++            Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
++        };
++        tokio::try_join!(serve(listener, [reply], requests), fetch)?;
++    }
++    fixture.resume_capture();
++    fixture.reopen()
++}
++
++fn observe_recovery(
++    meta_path: &Path,
++    events: Rc<RefCell<Vec<LockEvent>>>,
++) -> Result<archive_lock_test::Observation, FetchError> {
++    let eligible = meta_path.with_extension("json.lock");
++    archive_lock_test::observe(move |path, event| {
++        if event == LockEvent::BeforeAcquire {
++            if !events.borrow().is_empty() {
++                return Err(FetchError::Cache {
++                    path: path.to_path_buf(),
++                    source: std::io::Error::other("recursive archive acquisition during recovery"),
++                });
++            }
++            archive_lock_test::require_available(&eligible)?;
++        } else {
++            archive_lock_test::require_held(path)?;
++        }
++        if event == LockEvent::EligibleAcquired {
++            archive_lock_test::require_held(&eligible)?;
++        }
++        events.borrow_mut().push(event);
++        Ok(())
++    })
++}
++
++fn archived_metadata(root: &Path, metadata: &CacheMeta) -> TestResult<std::path::PathBuf> {
++    let capture = Capture::from_meta(metadata, root)?;
++    Ok(root.join("archive/captures").join(&metadata.content_digest)
++        .join(format!("{}.meta.json", content_digest(&capture.encoded))))
++}
++
++fn receipts(fixture: &Fixture) -> TestResult<Vec<census_store::Receipt>> {
++    let mut receipts = Vec::new();
++    fixture.store.for_each_receipt(64, |receipt| {
++        receipts.push(receipt);
++        Ok(())
++    })?;
++    Ok(receipts)
++}
++
++#[tokio::test]
++async fn archive_lock_order_current_v1_recovery_publishes_under_one_archive_guard() -> TestResult {
++    let mut previous = BODY.to_vec();
++    previous.push(b'\n');
++    for prior in [None, Some(previous.as_slice())] {
++        let fixture = interrupted_fixture(prior, 200, CaptureInterruption::AfterArchive).await?;
++        let (body_path, meta_path) = fixture.cache_paths()?;
++        let old = if prior.is_some() {
++            let envelope: EligibleCacheV2 = serde_json::from_slice(&std::fs::read(&meta_path)?)?;
++            let path = archived_metadata(&fixture.store.http_cache_dir(), &envelope.metadata)?;
++            Some((path.clone(), std::fs::read(path)?))
++        } else { None };
++        let requests = fixture.count();
++        let events = Rc::new(RefCell::new(Vec::new()));
++        let observation = observe_recovery(&meta_path, Rc::clone(&events))?;
++        let recovered = fixture.acquire(2026, true).await??;
++        drop(observation);
++        check!(eq; *events.borrow(), vec![LockEvent::BeforeAcquire, LockEvent::Acquired, LockEvent::EligibleAcquired]);
++        check!(eq; Fixture::occurrence(&recovered)?.attempt().ordinal().get(), 1);
++        check!(eq; recovered.capture.fetched_at, CAPTURED);
++        check!(eq; recovered.capture.body, BODY);
++        check!(matches!(recovered.verdict, crate::milesplit::OwnedMeetVerdict::Parsed(_)));
++        check!(eq; fixture.count(), requests);
++        let envelope: EligibleCacheV2 = serde_json::from_slice(&std::fs::read(&meta_path)?)?;
++        check!(eq; &envelope.original_occurrence, Fixture::occurrence(&recovered)?);
++        check!(eq; std::fs::read(&meta_path)?, envelope.encode(&meta_path)?);
++        check!(eq; std::fs::read(&body_path)?, BODY);
++        let retained = fixture.store.read_retained_acquisition_v1(
++            Fixture::occurrence(&recovered)?, &mut census_store::AcquisitionReadBudget::for_work(),
++        )?;
++        check!(eq; retained.prepared().metadata_bytes(), std::fs::read(archived_metadata(&fixture.store.http_cache_dir(), &envelope.metadata)?)?);
++        if let Some((path, bytes)) = old {
++            check!(eq; std::fs::read(path)?, bytes);
++            check!(eq; std::fs::read(fixture.store.http_cache_dir().join("archive/bodies").join(format!("{}.body", content_digest(&previous))))?, previous);
++        }
++        let journal = fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
++        let receipts_before = receipts(&fixture)?;
++        let fixture = fixture.reopen()?;
++        let replay = fixture.acquire(2026, true).await??;
++        check!(eq; Fixture::occurrence(&replay)?, Fixture::occurrence(&recovered)?);
++        check!(eq; fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?, journal);
++        check!(eq; receipts(&fixture)?, receipts_before);
++        check!(eq; fixture.count(), requests);
++        archive_lock_test::require_available(&fixture.store.http_cache_dir().join("archive-capacity.lock"))?;
++        archive_lock_test::require_available(&meta_path.with_extension("json.lock"))?;
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn archive_lock_order_prepared_missing_or_corrupt_backing_defers_admission() -> TestResult {
++    for interruption in [CaptureInterruption::AfterPrepared, CaptureInterruption::AfterArchive] {
++        let fixture = interrupted_fixture(None, 200, interruption).await?;
++        let root = fixture.store.http_cache_dir();
++        let record = root.join("archive/reservations").join(format!("{}-{}", "a".repeat(64), "b".repeat(64)));
++        std::fs::create_dir_all(record.parent().ok_or("reservation parent")?)?;
++        std::fs::write(&record, b"malformed")?;
++        if interruption == CaptureInterruption::AfterArchive {
++            let body = root.join("archive/bodies").join(format!("{}.body", content_digest(BODY)));
++            std::fs::remove_file(&body)?;
++            std::fs::write(body, b"corrupt body")?;
++        }
++        let before = fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
++        let receipts_before = receipts(&fixture)?;
++        let result = fixture.acquire(2026, true).await?;
++        let Err(crate::CrawlError::Fetch(FetchError::CaptureStore(error))) = result else {
++            return Err("expected existing Store backing refusal before archive admission".into());
++        };
++        match interruption {
++            CaptureInterruption::AfterPrepared => check!(matches!(error.as_ref(), census_store::StoreError::Capture(census_store::CaptureError::RequiredBackingMissing))),
++            CaptureInterruption::AfterArchive => check!(matches!(error.as_ref(), census_store::StoreError::Capture(census_store::CaptureError::BackingIntegrity))),
++            _ => return Err("unexpected fixture interruption".into()),
++        }
++        check!(eq; fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?, before);
++        check!(eq; receipts(&fixture)?, receipts_before);
++        check!(eq; std::fs::read(&record)?, b"malformed");
++        check!(eq; fixture.count(), 1);
++        if interruption == CaptureInterruption::AfterPrepared {
++            check!(!root.join("archive/bodies").exists());
++            check!(!root.join("archive/captures").exists());
++        }
++        archive_lock_test::require_available(&root.join("archive-capacity.lock"))?;
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn archive_lock_order_non200_prepared_recovery_never_runs_archive_admission() -> TestResult {
++    let fixture = interrupted_fixture(None, 500, CaptureInterruption::AfterArchive).await?;
++    let record = fixture.store.http_cache_dir().join("archive/reservations").join(format!("{}-{}", "a".repeat(64), "b".repeat(64)));
++    std::fs::write(&record, b"malformed")?;
++    let result = fixture.acquire(2026, true).await?;
++    check!(matches!(result, Err(crate::CrawlError::Fetch(FetchError::Http { status: 500, .. }))));
++    check!(eq; std::fs::read(&record)?, b"malformed");
++    check!(eq; fixture.count(), 1);
++    let (body_path, meta_path) = fixture.cache_paths()?;
++    check!(!body_path.exists());
++    check!(!meta_path.exists());
++    let keys = fixture.store.journal_keys(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
++    check!(eq; keys.iter().filter(|key| key.ends_with("/terminal")).count(), 1);
++    Ok(())
++}
++
++#[tokio::test]
++async fn archive_lock_order_busy_prepared_recovery_keeps_original_unfinished_facts() -> TestResult {
++    let fixture = interrupted_fixture(None, 200, CaptureInterruption::AfterArchive).await?;
++    let (_, meta_path) = fixture.cache_paths()?;
++    let lock_path = meta_path.with_extension("json.lock");
++    let lock = std::fs::OpenOptions::new().create(true).truncate(false).read(true).write(true).open(&lock_path)?;
++    lock.lock()?;
++    let before = fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
++    let result = fixture.acquire(2026, true).await?;
++    check!(matches!(result, Err(crate::CrawlError::Fetch(FetchError::Cache { path, source }))
++        if path == lock_path && source.kind() == ErrorKind::WouldBlock));
++    check!(eq; fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?, before);
++    check!(eq; fixture.count(), 1);
++    archive_lock_test::require_available(&fixture.store.http_cache_dir().join("archive-capacity.lock"))?;
++    drop(lock);
++    fixture.acquire(2026, true).await??;
++    check!(eq; fixture.count(), 1);
++    Ok(())
++}
++
++#[tokio::test]
++async fn archive_lock_order_publisher_uses_one_guard_and_preserves_busy_precedence() -> TestResult {
++    let fixture = interrupted_fixture(None, 200, CaptureInterruption::AfterArchive).await?;
++    fixture.acquire(2026, true).await??;
++    let (body_path, meta_path) = fixture.cache_paths()?;
++    let before = std::fs::read(&meta_path)?;
++    let envelope: EligibleCacheV2 = serde_json::from_slice(&before)?;
++    let root = fixture.store.http_cache_dir();
++    let archived_body = root.join("archive/bodies").join(format!("{}.body", content_digest(BODY)));
++    let events = Rc::new(RefCell::new(Vec::new()));
++    let observation = observe_recovery(&meta_path, Rc::clone(&events))?;
++    crate::net::cache::publish_eligible(&body_path, &meta_path, &envelope, &archived_body)?;
++    drop(observation);
++    check!(eq; *events.borrow(), vec![LockEvent::BeforeAcquire, LockEvent::Acquired, LockEvent::EligibleAcquired]);
++    check!(eq; std::fs::read(&meta_path)?, before);
++    let record = root.join("archive/reservations").join(format!("{}-{}", "a".repeat(64), "b".repeat(64)));
++    std::fs::write(&record, b"malformed")?;
++    let lock_path = meta_path.with_extension("json.lock");
++    let lock = std::fs::OpenOptions::new().create(true).truncate(false).read(true).write(true).open(&lock_path)?;
++    lock.lock()?;
++    let result = crate::net::cache::publish_eligible(&body_path, &meta_path, &envelope, &archived_body);
++    check!(matches!(result, Err(FetchError::Cache { path, source })
++        if path == lock_path && source.kind() == ErrorKind::WouldBlock));
++    drop(lock);
++    let result = crate::net::cache::publish_eligible(&body_path, &meta_path, &envelope, &archived_body);
++    check!(matches!(result, Err(FetchError::Cache { path, source })
++        if path == record && source.kind() == ErrorKind::InvalidData));
++    check!(eq; std::fs::read(&meta_path)?, before);
++    check!(eq; std::fs::read(&body_path)?, BODY);
++    check!(eq; std::fs::read(&record)?, b"malformed");
++    archive_lock_test::require_available(&root.join("archive-capacity.lock"))?;
++    archive_lock_test::require_available(&lock_path)?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn archive_lock_order_publisher_encoding_and_link_errors_release_guards() -> TestResult {
++    let fixture = interrupted_fixture(None, 200, CaptureInterruption::AfterArchive).await?;
++    fixture.acquire(2026, true).await??;
++    let (body_path, meta_path) = fixture.cache_paths()?;
++    let before = std::fs::read(&meta_path)?;
++    let envelope: EligibleCacheV2 = serde_json::from_slice(&before)?;
++    let root = fixture.store.http_cache_dir();
++    let mut invalid = envelope.clone();
++    invalid.metadata.content_digest = "invalid".into();
++    let result = crate::net::cache::publish_eligible(&body_path, &meta_path, &invalid, &body_path);
++    check!(matches!(result, Err(FetchError::Cache { path, source })
++        if path == meta_path && source.kind() == ErrorKind::InvalidData));
++    archive_lock_test::require_available(&root.join("archive-capacity.lock"))?;
++    archive_lock_test::require_available(&meta_path.with_extension("json.lock"))?;
++    let missing = root.join("unpublished.body");
++    let result = crate::net::cache::publish_eligible(&body_path, &meta_path, &envelope, &missing);
++    check!(matches!(result, Err(FetchError::Cache { path, source })
++        if path.file_name().is_some_and(|name| name == "cache.body") && source.kind() == ErrorKind::NotFound));
++    check!(eq; std::fs::read(&meta_path)?, before);
++    check!(eq; std::fs::read(&body_path)?, BODY);
++    archive_lock_test::require_available(&root.join("archive-capacity.lock"))?;
++    archive_lock_test::require_available(&meta_path.with_extension("json.lock"))?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn archive_lock_order_missing_prepared_invalid_capacity_child() -> TestResult {
++    if std::env::var_os("CENSUS_ARCHIVE_LOCK_ORDER_CHILD").is_none() {
++        return Ok(());
++    }
++    let fixture = interrupted_fixture(None, 200, CaptureInterruption::AfterPrepared).await?;
++    let before = fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
++    let result = fixture.acquire(2026, true).await?;
++    check!(matches!(result, Err(crate::CrawlError::Fetch(FetchError::CaptureStore(error)))
++        if matches!(error.as_ref(), census_store::StoreError::Capture(census_store::CaptureError::RequiredBackingMissing))));
++    check!(eq; fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?, before);
++    check!(eq; fixture.count(), 1);
++    check!(!fixture.store.http_cache_dir().join("archive").exists());
++    Ok(())
++}
++
++#[test]
++fn archive_lock_order_missing_prepared_defers_invalid_capacity_in_isolated_process() -> TestResult {
++    let output = std::process::Command::new(std::env::current_exe()?)
++        .args(["--exact", "net::acquisition::tests::lock_order::archive_lock_order_missing_prepared_invalid_capacity_child", "--nocapture"])
++        .env("CENSUS_ARCHIVE_LOCK_ORDER_CHILD", "1")
++        .env("CENSUS_ARCHIVE_CAPACITY_BYTES", "invalid")
++        .output()?;
++    check!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
++    check!(std::str::from_utf8(&output.stdout)?.contains("running 1 test"));
++    Ok(())
++}
+--- a/crates/census-crawl/src/net/acquisition/tests.rs
++++ b/crates/census-crawl/src/net/acquisition/tests.rs
+@@ -134,3 +134,5 @@
+     check!(eq; keys.iter().filter(|key| key.ends_with("/terminal")).count(), 3);
+     Ok(())
+ }
++
++mod lock_order;
+--- a/crates/census-crawl/src/net/cache/archive/admission/tests.rs
++++ b/crates/census-crawl/src/net/cache/archive/admission/tests.rs
+@@ -1,6 +1,7 @@
+ use super::super::super::{content_digest, CacheMeta};
+ use super::super::{replay_preserved_cache, write_preserved_cache, write_preserved_capture};
+ use super::*;
++use super::super::lock::ARCHIVE_LOCK_NAME;
+ use std::ffi::OsString;
+ use std::io::ErrorKind;
+ use std::process::Command;
+@@ -25,10 +26,10 @@
+ 
+ #[test]
+ fn pure_capacity_parser_accepts_every_positive_u64_boundary() -> TestResult {
+-    check!(eq; capacity_of(None)?, DEFAULT_ARCHIVE_BYTES);
+-    check!(eq; capacity_of(Some("1".to_string()))?, 1);
+-    check!(eq; capacity_of(Some(" 4096 \n".to_string()))?, 4096);
+-    check!(eq; capacity_of(Some(u64::MAX.to_string()))?, u64::MAX);
++    check!(eq; capacity_of(None)?.get(), DEFAULT_ARCHIVE_BYTES);
++    check!(eq; capacity_of(Some("1".to_string()))?.get(), 1);
++    check!(eq; capacity_of(Some(" 4096 \n".to_string()))?.get(), 4096);
++    check!(eq; capacity_of(Some(u64::MAX.to_string()))?.get(), u64::MAX);
+     Ok(())
+ }
+ 
+@@ -46,7 +47,7 @@
+     .into_iter()
+     .try_for_each(|value| match capacity_of(Some(value.to_string())) {
+         Err(error) => check_configuration_error(error),
+-        Ok(capacity) => Err(format!("invalid value {value:?} admitted {capacity} bytes").into()),
++        Ok(capacity) => Err(format!("invalid value {value:?} admitted {capacity:?} bytes").into()),
+     })
+ }
+ 
+@@ -56,7 +57,7 @@
+     let witness = root.path().join("retained.body");
+     std::fs::write(&witness, b"retained capture")?;
+     let archive = root.path().join("archive");
+-    match ArchiveAdmission::begin_with_capacity(root.path(), &archive, 0) {
++    match ArchiveCapacity::new(0, &archive) {
+         Err(error) => check_configuration_error(error)?,
+         Ok(_) => return Err("zero capacity must refuse admission".into()),
+     }
+@@ -71,7 +72,7 @@
+ fn explicit_zero_capacity_refuses_before_opening_a_missing_root() -> TestResult {
+     let directory = tempfile::tempdir()?;
+     let root = directory.path().join("not-created");
+-    match ArchiveAdmission::begin_with_capacity(&root, &root.join("archive"), 0) {
++    match ArchiveCapacity::new(0, &root.join("archive")) {
+         Err(error) => check_configuration_error(error)?,
+         Ok(_) => return Err("zero capacity must refuse admission".into()),
+     }
+@@ -116,11 +117,23 @@
+     check!(eq; std::fs::read(&body_path)?, body);
+     check!(eq; std::fs::read(&meta_path)?, encoded);
+     check!(eq; std::fs::read_dir(root.path())?.count(), 2);
++    let eligible = super::super::super::archive_io::lock_cache(&meta_path)?;
++    for outcome in [
++        write_preserved_cache(&body_path, &meta_path, body, &meta),
++        replay_preserved_cache(&body_path, &meta_path, &meta).map(|_| ()),
++    ] {
++        match outcome {
++            Err(error) => check_configuration_error(error)?,
++            Ok(()) => return Err("configuration refusal must precede busy eligible".into()),
++        }
++    }
++    check!(!root.path().join(ARCHIVE_LOCK_NAME).exists());
++    drop(eligible);
+     Ok(())
+ }
+ 
+ fn check_valid_environment(expected: u64) -> TestResult {
+-    check!(eq; archive_capacity()?, expected);
++    check!(eq; archive_capacity()?.get(), expected);
+     let root = tempfile::tempdir()?;
+     let body = b"valid source bytes";
+     let meta = metadata(body);
+--- a/crates/census-crawl/src/net/cache/archive/admission.rs
++++ b/crates/census-crawl/src/net/cache/archive/admission.rs
+@@ -1,47 +1,49 @@
+-use super::super::archive_io::{create_directory, invalid, io_error, present};
++use super::super::archive_io::{create_directory, invalid, present};
+ use super::super::FetchError;
+ use super::inventory::archive_bytes_used;
+ use super::reservations::{
+     read_record, record_path, recover_reservations, remove_record, reservation_bytes, write_record,
+ };
+-use std::fs::{File, OpenOptions};
++use super::lock::ArchiveLock;
++use std::num::NonZeroU64;
+ use std::path::{Path, PathBuf};
+ 
+ pub(in crate::net::cache) const DEFAULT_ARCHIVE_BYTES: u64 = 100 * 1024 * 1024;
+ const ARCHIVE_CAPACITY_ENV: &str = "CENSUS_ARCHIVE_CAPACITY_BYTES";
+-const ARCHIVE_LOCK_NAME: &str = "archive-capacity.lock";
++#[derive(Debug, PartialEq, Eq)]
++pub(in crate::net::cache) struct ArchiveCapacity(NonZeroU64);
+ 
+-pub(in crate::net::cache) struct ArchiveAdmission {
+-    _lock: File,
+-    root: PathBuf,
++impl ArchiveCapacity {
++    pub(in crate::net::cache) fn new(capacity: u64, path: &Path) -> Result<Self, FetchError> {
++        NonZeroU64::new(capacity).map(Self).ok_or_else(|| {
++            invalid(path, "CENSUS_ARCHIVE_CAPACITY_BYTES must be a positive u64 byte count")
++        })
++    }
++
++    pub(in crate::net::cache) fn get(self) -> u64 {
++        self.0.get()
++    }
++}
++
++pub(in crate::net::cache) struct ArchiveAdmission<'lock> {
++    lock: &'lock ArchiveLock,
+     archive: PathBuf,
+     capacity: u64,
+ }
+ 
+-impl ArchiveAdmission {
++impl<'lock> ArchiveAdmission<'lock> {
+     pub(in crate::net::cache) fn begin_with_capacity(
+-        root: &Path,
+-        archive: &Path,
+-        capacity: u64,
++        lock: &'lock ArchiveLock,
++        capacity: ArchiveCapacity,
+     ) -> Result<Self, FetchError> {
+-        let capacity = positive_capacity(capacity, archive)?;
+-        let lock_path = root.join(ARCHIVE_LOCK_NAME);
+-        let lock = OpenOptions::new()
+-            .create(true)
+-            .truncate(false)
+-            .read(true)
+-            .write(true)
+-            .open(&lock_path)
+-            .map_err(|error| io_error(&lock_path, error))?;
+-        lock.lock().map_err(|error| io_error(&lock_path, error))?;
++        let archive = lock.root().join("archive");
+         create_directory(&archive.join("reservations"))?;
+-        archive_bytes_used(root, archive)?;
+-        recover_reservations(archive)?;
++        archive_bytes_used(lock.root(), &archive)?;
++        recover_reservations(&archive)?;
+         Ok(Self {
+-            _lock: lock,
+-            root: root.to_path_buf(),
+-            archive: archive.to_path_buf(),
+-            capacity,
++            lock,
++            archive,
++            capacity: capacity.get(),
+         })
+     }
+ 
+@@ -88,7 +90,7 @@
+     }
+ 
+     fn check_capacity(&self, additional: u64) -> Result<(), FetchError> {
+-        let used = archive_bytes_used(&self.root, &self.archive)?;
++        let used = archive_bytes_used(self.lock.root(), &self.archive)?;
+         let reserved = reservation_bytes(&self.archive)?;
+         let projected = used
+             .checked_add(reserved)
+@@ -118,7 +120,7 @@
+     }
+ }
+ 
+-pub(in crate::net::cache) fn archive_capacity() -> Result<u64, FetchError> {
++pub(in crate::net::cache) fn archive_capacity() -> Result<ArchiveCapacity, FetchError> {
+     match std::env::var(ARCHIVE_CAPACITY_ENV) {
+         Ok(value) => capacity_of(Some(value)),
+         Err(std::env::VarError::NotPresent) => capacity_of(None),
+@@ -129,9 +131,9 @@
+     }
+ }
+ 
+-pub(in crate::net::cache) fn capacity_of(value: Option<String>) -> Result<u64, FetchError> {
++pub(in crate::net::cache) fn capacity_of(value: Option<String>) -> Result<ArchiveCapacity, FetchError> {
+     let Some(value) = value else {
+-        return Ok(DEFAULT_ARCHIVE_BYTES);
++        return ArchiveCapacity::new(DEFAULT_ARCHIVE_BYTES, Path::new(ARCHIVE_CAPACITY_ENV));
+     };
+     let path = Path::new(ARCHIVE_CAPACITY_ENV);
+     let capacity = value.trim().parse::<u64>().map_err(|_| {
+@@ -140,17 +142,7 @@
+             "CENSUS_ARCHIVE_CAPACITY_BYTES must be a positive u64 byte count",
+         )
+     })?;
+-    positive_capacity(capacity, path)
+-}
+-
+-fn positive_capacity(capacity: u64, path: &Path) -> Result<u64, FetchError> {
+-    if capacity == 0 {
+-        return Err(invalid(
+-            path,
+-            "CENSUS_ARCHIVE_CAPACITY_BYTES must be a positive u64 byte count",
+-        ));
+-    }
+-    Ok(capacity)
++    ArchiveCapacity::new(capacity, path)
+ }
+ 
+ #[cfg(test)]
+--- /dev/null
++++ b/crates/census-crawl/src/net/cache/archive/lock/tests.rs
+@@ -0,0 +1,78 @@
++use super::super::super::archive_io::{invalid, io_error};
++use super::FetchError;
++use std::cell::RefCell;
++use std::fs::{File, OpenOptions, TryLockError};
++use std::marker::PhantomData;
++use std::path::Path;
++use std::rc::Rc;
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub(in crate::net) enum LockEvent {
++    BeforeAcquire,
++    Acquired,
++    EligibleAcquired,
++}
++
++type Observer = Box<dyn FnMut(&Path, LockEvent) -> Result<(), FetchError>>;
++
++thread_local! {
++    static OBSERVER: RefCell<Option<Observer>> = const { RefCell::new(None) };
++}
++
++pub(in crate::net) struct Observation {
++    _thread: PhantomData<Rc<()>>,
++}
++
++pub(in crate::net) fn observe(
++    observer: impl FnMut(&Path, LockEvent) -> Result<(), FetchError> + 'static,
++) -> Result<Observation, FetchError> {
++    OBSERVER.with(|slot| {
++        let mut slot = slot.borrow_mut();
++        if slot.is_some() {
++            return Err(invalid(Path::new("archive-lock-test"), "observer already installed"));
++        }
++        *slot = Some(Box::new(observer));
++        Ok(Observation { _thread: PhantomData })
++    })
++}
++
++impl Drop for Observation {
++    fn drop(&mut self) {
++        OBSERVER.with(|slot| {
++            *slot.borrow_mut() = None;
++        });
++    }
++}
++
++pub(in crate::net) fn checkpoint(path: &Path, event: LockEvent) -> Result<(), FetchError> {
++    OBSERVER.with(|slot| match slot.borrow_mut().as_mut() {
++        Some(observer) => observer(path, event),
++        None => Ok(()),
++    })
++}
++
++fn probe(path: &Path) -> Result<File, FetchError> {
++    OpenOptions::new()
++        .create(true)
++        .truncate(false)
++        .read(true)
++        .write(true)
++        .open(path)
++        .map_err(|error| io_error(path, error))
++}
++
++pub(in crate::net) fn require_held(path: &Path) -> Result<(), FetchError> {
++    match probe(path)?.try_lock() {
++        Err(TryLockError::WouldBlock) => Ok(()),
++        Err(TryLockError::Error(error)) => Err(io_error(path, error)),
++        Ok(()) => Err(invalid(path, "expected actual OS lock to remain held")),
++    }
++}
++
++pub(in crate::net) fn require_available(path: &Path) -> Result<(), FetchError> {
++    match probe(path)?.try_lock() {
++        Ok(()) => Ok(()),
++        Err(TryLockError::WouldBlock) => Err(invalid(path, "eligible was acquired before archive")),
++        Err(TryLockError::Error(error)) => Err(io_error(path, error)),
++    }
++}
+--- /dev/null
++++ b/crates/census-crawl/src/net/cache/archive/lock.rs
+@@ -0,0 +1,40 @@
++use super::super::archive_io::io_error;
++use super::super::FetchError;
++use std::fs::{File, OpenOptions};
++use std::path::{Path, PathBuf};
++
++pub(in crate::net::cache) const ARCHIVE_LOCK_NAME: &str = "archive-capacity.lock";
++
++pub(in crate::net) struct ArchiveLock {
++    _file: File,
++    root: PathBuf,
++}
++
++impl ArchiveLock {
++    pub(in crate::net::cache) fn acquire(root: &Path) -> Result<Self, FetchError> {
++        let path = root.join(ARCHIVE_LOCK_NAME);
++        #[cfg(test)]
++        tests::checkpoint(&path, tests::LockEvent::BeforeAcquire)?;
++        let file = OpenOptions::new()
++            .create(true)
++            .truncate(false)
++            .read(true)
++            .write(true)
++            .open(&path)
++            .map_err(|error| io_error(&path, error))?;
++        file.lock().map_err(|error| io_error(&path, error))?;
++        #[cfg(test)]
++        tests::checkpoint(&path, tests::LockEvent::Acquired)?;
++        Ok(Self {
++            _file: file,
++            root: root.to_path_buf(),
++        })
++    }
++
++    pub(in crate::net::cache) fn root(&self) -> &Path {
++        &self.root
++    }
++}
++
++#[cfg(test)]
++pub(in crate::net) mod tests;
+--- a/crates/census-crawl/src/net/cache/archive/publication.rs
++++ b/crates/census-crawl/src/net/cache/archive/publication.rs
+@@ -14,7 +14,7 @@
+     label: &str,
+     body: &[u8],
+     capture: &Capture,
+-    admission: &mut ArchiveAdmission,
++    admission: &mut ArchiveAdmission<'_>,
+ ) -> Result<PathBuf, FetchError> {
+     let digest = &capture.meta.content_digest;
+     let metadata_digest = content_digest(&capture.encoded);
+--- a/crates/census-crawl/src/net/cache/archive.rs
++++ b/crates/census-crawl/src/net/cache/archive.rs
+@@ -11,6 +11,10 @@
+ #[path = "archive/admission.rs"]
+ pub(super) mod admission;
+ pub(super) use admission::ArchiveAdmission;
++mod lock;
++pub(in crate::net) use lock::ArchiveLock;
++#[cfg(test)]
++pub(in crate::net) use lock::tests as lock_tests;
+ 
+ mod inventory;
+ mod publication;
+@@ -48,8 +52,9 @@
+     let capacity = admission::archive_capacity()?;
+     let capture = Capture::from_meta(meta, meta_path)?;
+     capture.verify_body(body, body_path)?;
++    let archive_lock = ArchiveLock::acquire(root)?;
+     let archive = initialize_archive(root)?;
+-    let mut admission = ArchiveAdmission::begin_with_capacity(root, &archive, capacity)?;
++    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock, capacity)?;
+     with_stage(root, |stage| {
+         let lock = match lock_cache(meta_path) {
+             Ok(lock) => lock,
+@@ -83,8 +88,9 @@
+     let capacity = admission::archive_capacity()?;
+     let capture = Capture::from_meta(meta, meta_path)?;
+     capture.verify_body(body, body_path)?;
++    let archive_lock = ArchiveLock::acquire(root)?;
+     let archive = initialize_archive(root)?;
+-    let mut admission = ArchiveAdmission::begin_with_capacity(root, &archive, capacity)?;
++    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock, capacity)?;
+     with_stage(root, |stage| {
+         preserve_capture(&archive, stage, "new", body, &capture, &mut admission)
+     })
+@@ -97,6 +103,7 @@
+ ) -> Result<Option<Vec<u8>>, FetchError> {
+     let root = cache_root(body_path, meta_path)?;
+     let capacity = admission::archive_capacity()?;
++    let archive_lock = ArchiveLock::acquire(root)?;
+     let lock = lock_cache(meta_path)?;
+     let Some((meta, body)) = super::read_cache(
+         body_path,
+@@ -112,7 +119,7 @@
+         return Ok(None);
+     }
+     let archive = initialize_archive(root)?;
+-    let mut admission = ArchiveAdmission::begin_with_capacity(root, &archive, capacity)?;
++    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock, capacity)?;
+     with_stage(root, |stage| {
+         preserve_previous(&archive, stage, body_path, meta_path, &mut admission)
+     })?;
+@@ -120,7 +127,7 @@
+     Ok(Some(body))
+ }
+ 
+-fn cache_root<'a>(body_path: &'a Path, meta_path: &Path) -> Result<&'a Path, FetchError> {
++pub(super) fn cache_root<'a>(body_path: &'a Path, meta_path: &Path) -> Result<&'a Path, FetchError> {
+     if body_path == meta_path || body_path.file_name().is_none() || meta_path.file_name().is_none()
+     {
+         return Err(invalid(
+@@ -157,7 +164,7 @@
+     stage: &Path,
+     body_path: &Path,
+     meta_path: &Path,
+-    admission: &mut ArchiveAdmission,
++    admission: &mut ArchiveAdmission<'_>,
+ ) -> Result<(), FetchError> {
+     let presence = (present(body_path)?, present(meta_path)?);
+     match presence {
+@@ -236,13 +243,11 @@
+ }
+ 
+ pub(super) fn preserve_eligible_previous(
+-    root: &Path,
++    archive: &Path,
+     stage: &Path,
+     body_path: &Path,
+     meta_path: &Path,
++    admission: &mut ArchiveAdmission<'_>,
+ ) -> Result<(), FetchError> {
+-    let archive = initialize_archive(root)?;
+-    let mut admission =
+-        ArchiveAdmission::begin_with_capacity(root, &archive, admission::archive_capacity()?)?;
+-    preserve_previous(&archive, stage, body_path, meta_path, &mut admission)
+-}
++    preserve_previous(archive, stage, body_path, meta_path, admission)
++}
+--- a/crates/census-crawl/src/net/cache/archive_tests/capacity.rs
++++ b/crates/census-crawl/src/net/cache/archive_tests/capacity.rs
+@@ -1,5 +1,6 @@
+ use super::super::archive::admission::{capacity_of, DEFAULT_ARCHIVE_BYTES};
+-use super::super::archive::{preserve_capture, ArchiveAdmission};
++use super::super::archive::admission::ArchiveCapacity;
++use super::super::archive::{preserve_capture, ArchiveAdmission, ArchiveLock};
+ use super::*;
+ 
+ fn archive_dirs(root: &Path) -> TestResult<PathBuf> {
+@@ -26,9 +27,9 @@
+ 
+ #[test]
+ fn configured_capacity_of_honors_positive_integers_and_defaults_only_when_unset() -> TestResult {
+-    check!(eq; capacity_of(Some("2048".to_string()))?, 2048);
+-    check!(eq; capacity_of(Some("  4096 \n".to_string()))?, 4096);
+-    check!(eq; capacity_of(None)?, DEFAULT_ARCHIVE_BYTES);
++    check!(eq; capacity_of(Some("2048".to_string()))?.get(), 2048);
++    check!(eq; capacity_of(Some("  4096 \n".to_string()))?.get(), 4096);
++    check!(eq; capacity_of(None)?.get(), DEFAULT_ARCHIVE_BYTES);
+     check!(capacity_of(Some("0".to_string())).is_err());
+     check!(capacity_of(Some("twelve".to_string())).is_err());
+     check!(capacity_of(Some("".to_string())).is_err());
+@@ -42,7 +43,9 @@
+     let body = b"capture body";
+     let capture = capture_of(root.path(), body)?;
+     let needed = needed_bytes(body, &capture);
+-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed - 1)?;
++    let capacity_admission = ArchiveCapacity::new(needed - 1, &archive)?;
++    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
++    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
+     let stage = archive_stage(root.path(), "stage-refused")?;
+     let outcome = preserve_capture(&archive, &stage, "new", body, &capture, &mut admission);
+     let Err(error) = outcome else {
+@@ -68,12 +71,17 @@
+     let body = b"capture body";
+     let capture = capture_of(root.path(), body)?;
+     let needed = needed_bytes(body, &capture);
+-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
++    let capacity_admission = ArchiveCapacity::new(needed, &archive)?;
++    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
++    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
+     let stage = archive_stage(root.path(), "stage-fits")?;
+     preserve_capture(&archive, &stage, "new", body, &capture, &mut admission)?;
+     assert_capture(root.path(), body, &capture.meta)?;
+     drop(admission);
+-    let mut replay = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
++    drop(archive_lock_admission);
++    let capacity_replay = ArchiveCapacity::new(needed, &archive)?;
++    let archive_lock_replay = ArchiveLock::acquire(root.path())?;
++    let mut replay = ArchiveAdmission::begin_with_capacity(&archive_lock_replay, capacity_replay)?;
+     let replay_stage = archive_stage(root.path(), "stage-replay")?;
+     preserve_capture(&archive, &replay_stage, "new", body, &capture, &mut replay)?;
+     Ok(())
+@@ -86,11 +94,16 @@
+     let body = b"shared raw body";
+     let capture = capture_of(root.path(), body)?;
+     let needed = needed_bytes(body, &capture);
+-    let mut first = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
++    let capacity_first = ArchiveCapacity::new(needed, &archive)?;
++    let archive_lock_first = ArchiveLock::acquire(root.path())?;
++    let mut first = ArchiveAdmission::begin_with_capacity(&archive_lock_first, capacity_first)?;
+     let first_stage = archive_stage(root.path(), "stage-first")?;
+     preserve_capture(&archive, &first_stage, "new", body, &capture, &mut first)?;
+     drop(first);
+-    let mut second = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
++    drop(archive_lock_first);
++    let capacity_second = ArchiveCapacity::new(needed, &archive)?;
++    let archive_lock_second = ArchiveLock::acquire(root.path())?;
++    let mut second = ArchiveAdmission::begin_with_capacity(&archive_lock_second, capacity_second)?;
+     let second_stage = archive_stage(root.path(), "stage-second")?;
+     preserve_capture(&archive, &second_stage, "old", body, &capture, &mut second)?;
+     check!(
+@@ -105,7 +118,9 @@
+     let root = tempfile::tempdir()?;
+     let archive = archive_dirs(root.path())?;
+     std::os::unix::fs::symlink("bodies", archive.join("linked"))?;
+-    let outcome = ArchiveAdmission::begin_with_capacity(root.path(), &archive, 1 << 20);
++    let capacity_outcome = ArchiveCapacity::new(1 << 20, &archive)?;
++    let archive_lock_outcome = ArchiveLock::acquire(root.path())?;
++    let outcome = ArchiveAdmission::begin_with_capacity(&archive_lock_outcome, capacity_outcome);
+     let Err(error) = outcome else {
+         return Err("accounting over a symbolic link should be refused".into());
+     };
+@@ -142,8 +157,9 @@
+             let root = root.path();
+             let archive = archive.clone();
+             scope.spawn(move || {
+-                let mut admission =
+-                    ArchiveAdmission::begin_with_capacity(root, &archive, capacity)?;
++                let capacity_admission = ArchiveCapacity::new(capacity, &archive)?;
++                let archive_lock_admission = ArchiveLock::acquire(root)?;
++                let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
+                 preserve_capture(&archive, &stage, "new", body, capture, &mut admission)
+             })
+         })
+@@ -181,15 +197,19 @@
+     let body = b"first capture body";
+     let capture = capture_of(root.path(), body)?;
+     let needed = needed_bytes(body, &capture);
+-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
++    let capacity_admission = ArchiveCapacity::new(needed, &archive)?;
++    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
++    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
+     let stage = archive_stage(root.path(), "stage-first")?;
+     preserve_capture(&archive, &stage, "new", body, &capture, &mut admission)?;
+     drop(admission);
++    drop(archive_lock_admission);
+     let second_body = b"second capture body that will fail to publish";
+     let second = capture_of(root.path(), second_body)?;
+     let second_needed = needed_bytes(second_body, &second);
+-    let mut admission2 =
+-        ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed + second_needed)?;
++    let capacity_admission2 = ArchiveCapacity::new(needed + second_needed, &archive)?;
++    let archive_lock_admission2 = ArchiveLock::acquire(root.path())?;
++    let mut admission2 = ArchiveAdmission::begin_with_capacity(&archive_lock_admission2, capacity_admission2)?;
+     let second_stage = archive_stage(root.path(), "stage-fail")?;
+     let stage_body = second_stage.join("new.body");
+     std::fs::write(&stage_body, second_body)?;
+@@ -200,10 +220,12 @@
+         "0000000000000000000000000000000000000000000000000000000000000000",
+     )?;
+     drop(admission2);
++    drop(archive_lock_admission2);
+     let third_body = b"third body";
+     let third = capture_of(root.path(), third_body)?;
+-    let mut admission3 =
+-        ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed + second_needed)?;
++    let capacity_admission3 = ArchiveCapacity::new(needed + second_needed, &archive)?;
++    let archive_lock_admission3 = ArchiveLock::acquire(root.path())?;
++    let mut admission3 = ArchiveAdmission::begin_with_capacity(&archive_lock_admission3, capacity_admission3)?;
+     let third_stage = archive_stage(root.path(), "stage-third")?;
+     let outcome = preserve_capture(
+         &archive,
+@@ -230,7 +252,9 @@
+     let body = b"under capacity body";
+     let capture = capture_of(root.path(), body)?;
+     let needed = needed_bytes(body, &capture);
+-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed * 2)?;
++    let capacity_admission = ArchiveCapacity::new(needed * 2, &archive)?;
++    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
++    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
+     let stage = archive_stage(root.path(), "stage-admitted")?;
+     preserve_capture(&archive, &stage, "new", body, &capture, &mut admission)?;
+     assert_capture(root.path(), body, &capture.meta)?;
+@@ -246,12 +270,17 @@
+     let capture = capture_of(root.path(), body)?;
+     let needed = needed_bytes(body, &capture);
+     for cycle in 0..3 {
+-        let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
++        let capacity_admission = ArchiveCapacity::new(needed, &archive)?;
++        let archive_lock_admission = ArchiveLock::acquire(root.path())?;
++        let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
+         let stage = archive_stage(root.path(), &format!("stage-cycle-{cycle}"))?;
+         preserve_capture(&archive, &stage, "new", body, &capture, &mut admission)?;
+         drop(admission);
++        drop(archive_lock_admission);
+     }
+-    let mut final_admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
++    let capacity_final_admission = ArchiveCapacity::new(needed, &archive)?;
++    let archive_lock_final_admission = ArchiveLock::acquire(root.path())?;
++    let mut final_admission = ArchiveAdmission::begin_with_capacity(&archive_lock_final_admission, capacity_final_admission)?;
+     let final_stage = archive_stage(root.path(), "stage-final")?;
+     let extra_body = b"extra capture";
+     let extra = capture_of(root.path(), extra_body)?;
+--- /dev/null
++++ b/crates/census-crawl/src/net/cache/archive_tests/lock_order.rs
+@@ -0,0 +1,223 @@
++use super::*;
++use super::super::archive::{initialize_archive, ArchiveLock};
++use super::super::archive_lock_test::{self, LockEvent};
++use std::sync::mpsc;
++use std::time::Duration;
++
++#[derive(Clone, Copy)]
++enum Operation {
++    Replay,
++    Write,
++}
++
++fn ordered_actor(operation: Operation) -> TestResult {
++    let root = tempfile::tempdir()?;
++    let (body_path, meta_path) = cache_paths(root.path());
++    let meta = metadata(b"retained");
++    write_cache(&body_path, &meta_path, b"retained", &meta)?;
++    let archive_lock = ArchiveLock::acquire(root.path())?;
++    let archive_path = root.path().join("archive-capacity.lock");
++    archive_lock_test::require_held(&archive_path)?;
++    let (ready_tx, ready_rx) = mpsc::sync_channel(1);
++    let (release_tx, release_rx) = mpsc::sync_channel(1);
++    let worker_body = body_path.clone();
++    let worker_meta = meta_path.clone();
++    let worker = std::thread::spawn(move || -> TestResult {
++        let eligible = worker_meta.with_extension("json.lock");
++        let mut acquisitions = 0_u8;
++        let _observation = archive_lock_test::observe(move |path, event| {
++            if event == LockEvent::BeforeAcquire {
++                if acquisitions != 0 {
++                    return Err(archive_io::invalid(path, "recursive archive lock acquisition"));
++                }
++                acquisitions = 1;
++                archive_lock_test::require_available(&eligible)?;
++                ready_tx.send(()).map_err(|error| archive_io::invalid(path, &error.to_string()))?;
++                release_rx.recv_timeout(Duration::from_secs(5))
++                    .map_err(|error| archive_io::invalid(path, &format!("actor B awaiting archive-holder A release: {error}")))?;
++            }
++            if event == LockEvent::Acquired {
++                archive_lock_test::require_held(path)?;
++            }
++            Ok(())
++        })?;
++        match operation {
++            Operation::Replay => {
++                check!(eq; replay_cache(&worker_body, &worker_meta, &meta)?, Some(b"retained".to_vec()));
++            }
++            Operation::Write => {
++                write_cache(&worker_body, &worker_meta, b"replacement", &metadata(b"replacement"))?;
++            }
++        }
++        Ok(())
++    });
++    let observed = ready_rx.recv_timeout(Duration::from_secs(5));
++    let eligible = archive_io::lock_cache(&meta_path);
++    let eligible_result = eligible.map(drop);
++    drop(archive_lock);
++    let released = release_tx.send(());
++    let joined = worker.join().map_err(|_| "archive actor B panicked")?;
++    joined?;
++    observed.map_err(|error| format!("actor A awaiting B before archive acquisition: {error}"))?;
++    eligible_result?;
++    released?;
++    match operation {
++        Operation::Replay => assert_served(root.path(), b"retained", &metadata(b"retained"))?,
++        Operation::Write => assert_served(root.path(), b"replacement", &metadata(b"replacement"))?,
++    }
++    assert_capture(root.path(), b"retained", &metadata(b"retained"))?;
++    archive_lock_test::require_available(&archive_path)?;
++    Ok(())
++}
++
++#[test]
++fn archive_lock_order_legacy_replay_and_writer_do_not_reverse_resources() -> TestResult {
++    [Operation::Replay, Operation::Write].into_iter().try_for_each(ordered_actor)
++}
++
++#[test]
++fn archive_lock_order_busy_cache_preserves_incoming_archive_and_exact_error() -> TestResult {
++    let root = tempfile::tempdir()?;
++    let (body_path, meta_path) = cache_paths(root.path());
++    let old = metadata(b"old");
++    let new = metadata(b"new");
++    write_cache(&body_path, &meta_path, b"old", &old)?;
++    let encoded = std::fs::read(&meta_path)?;
++    let old_archive = std::fs::read(archive_meta(root.path(), &old)?)?;
++    let eligible = archive_io::lock_cache(&meta_path)?;
++    let result = write_cache(&body_path, &meta_path, b"new", &new);
++    check!(matches!(result, Err(FetchError::Cache { path, source })
++        if path == meta_path.with_extension("json.lock") && source.kind() == ErrorKind::WouldBlock));
++    check!(eq; std::fs::read(&body_path)?, b"old");
++    check!(eq; std::fs::read(&meta_path)?, encoded);
++    check!(eq; std::fs::read(archive_meta(root.path(), &old)?)?, old_archive);
++    assert_capture(root.path(), b"old", &old)?;
++    assert_capture(root.path(), b"new", &new)?;
++    archive_lock_test::require_available(&root.path().join("archive-capacity.lock"))?;
++    drop(eligible);
++    Ok(())
++}
++
++#[test]
++fn archive_lock_order_lock_open_refusal_precedes_busy_eligible() -> TestResult {
++    let root = tempfile::tempdir()?;
++    let (body_path, meta_path) = cache_paths(root.path());
++    let lock_path = root.path().join("archive-capacity.lock");
++    std::fs::create_dir(&lock_path)?;
++    let eligible = archive_io::lock_cache(&meta_path)?;
++    let outcomes = [
++        write_cache(&body_path, &meta_path, b"raw", &metadata(b"raw")),
++        replay_cache(&body_path, &meta_path, &metadata(b"raw")).map(|_| ()),
++        with_archive_eligible_fence(&body_path, &meta_path, |_| Ok(())),
++    ];
++    for result in outcomes {
++        check!(matches!(result, Err(FetchError::Cache { path, source })
++            if path == lock_path && source.kind() == ErrorKind::IsADirectory));
++    }
++    check!(lock_path.is_dir());
++    check!(!root.path().join("archive").exists());
++    drop(eligible);
++    Ok(())
++}
++
++#[test]
++fn archive_lock_order_admission_refusal_precedes_busy_writer_but_replay_defers() -> TestResult {
++    let root = tempfile::tempdir()?;
++    let (body_path, meta_path) = cache_paths(root.path());
++    let meta = metadata(b"raw");
++    write_cache(&body_path, &meta_path, b"raw", &meta)?;
++    let encoded = std::fs::read(&meta_path)?;
++    let record = root.path().join("archive/reservations").join(format!("{}-{}", "a".repeat(64), "b".repeat(64)));
++    std::fs::write(&record, b"malformed")?;
++    let eligible = archive_io::lock_cache(&meta_path)?;
++    let writer = write_cache(&body_path, &meta_path, b"next", &metadata(b"next"));
++    check!(matches!(writer, Err(FetchError::Cache { path, source })
++        if path == record && source.kind() == ErrorKind::InvalidData));
++    let replay = replay_cache(&body_path, &meta_path, &meta);
++    check!(matches!(replay, Err(FetchError::Cache { path, source })
++        if path == meta_path.with_extension("json.lock") && source.kind() == ErrorKind::WouldBlock));
++    check!(eq; std::fs::read(&record)?, b"malformed");
++    check!(eq; std::fs::read(&meta_path)?, encoded);
++    check!(eq; std::fs::read(&body_path)?, b"raw");
++    drop(eligible);
++    let replay = replay_cache(&body_path, &meta_path, &meta);
++    check!(matches!(replay, Err(FetchError::Cache { path, source })
++        if path == record && source.kind() == ErrorKind::InvalidData));
++    archive_lock_test::require_available(&root.path().join("archive-capacity.lock"))?;
++    Ok(())
++}
++
++#[test]
++fn archive_lock_order_replay_miss_and_mismatch_defer_archive_initialization() -> TestResult {
++    let root = tempfile::tempdir()?;
++    let (body_path, meta_path) = cache_paths(root.path());
++    let meta = metadata(b"raw");
++    check!(eq; replay_cache(&body_path, &meta_path, &meta)?, None);
++    check!(!root.path().join("archive").exists());
++    check!(root.path().join("archive-capacity.lock").is_file());
++    let archive = initialize_archive(root.path())?;
++    let obstruction = archive.join("reservations");
++    std::fs::write(&obstruction, b"occupied reservation directory")?;
++    std::fs::write(&body_path, b"raw")?;
++    std::fs::write(&meta_path, serde_json::to_vec(&meta)?)?;
++    let mut expected = meta;
++    expected.fetched_at = "2026-09-28T12:34:56Z".into();
++    check!(eq; replay_cache(&body_path, &meta_path, &expected)?, None);
++    check!(eq; std::fs::read(&obstruction)?, b"occupied reservation directory");
++    check!(eq; file_names(&archive.join("captures"))?.len(), 0);
++    Ok(())
++}
++
++#[test]
++fn archive_lock_order_callback_errors_release_both_actual_guards() -> TestResult {
++    let root = tempfile::tempdir()?;
++    let (body_path, meta_path) = cache_paths(root.path());
++    let result: Result<(), FetchError> = with_archive_eligible_fence(&body_path, &meta_path, |_| {
++        archive_lock_test::require_held(&root.path().join("archive-capacity.lock"))?;
++        archive_lock_test::require_held(&meta_path.with_extension("json.lock"))?;
++        Err(archive_io::invalid(&body_path, "injected callback refusal"))
++    });
++    check!(matches!(result, Err(FetchError::Cache { path, source })
++        if path == body_path && source.kind() == ErrorKind::InvalidData));
++    archive_lock_test::require_available(&root.path().join("archive-capacity.lock"))?;
++    archive_lock_test::require_available(&meta_path.with_extension("json.lock"))?;
++    check!(!root.path().join("archive").exists());
++    Ok(())
++}
++
++#[test]
++fn archive_lock_order_callback_unwind_releases_both_actual_guards() -> TestResult {
++    let root = tempfile::tempdir()?;
++    let (body_path, meta_path) = cache_paths(root.path());
++    let result = std::panic::catch_unwind(|| {
++        with_archive_eligible_fence(&body_path, &meta_path, |_| -> Result<(), FetchError> {
++            archive_lock_test::require_held(&root.path().join("archive-capacity.lock"))?;
++            archive_lock_test::require_held(&meta_path.with_extension("json.lock"))?;
++            std::panic::resume_unwind(Box::new("owned callback unwind"))
++        })
++    });
++    match result {
++        Err(payload) => check!(eq; payload.downcast_ref::<&str>(), Some(&"owned callback unwind")),
++        Ok(result) => return Err(format!("expected owned callback unwind, got {result:?}").into()),
++    }
++    archive_lock_test::require_available(&root.path().join("archive-capacity.lock"))?;
++    archive_lock_test::require_available(&meta_path.with_extension("json.lock"))?;
++    Ok(())
++}
++
++#[test]
++fn archive_lock_order_existing_symlink_root_alias_keeps_legacy_behavior() -> TestResult {
++    let directory = tempfile::tempdir()?;
++    let target = directory.path().join("target");
++    std::fs::create_dir(&target)?;
++    let alias = directory.path().join("alias");
++    std::os::unix::fs::symlink(&target, &alias)?;
++    let (body_path, meta_path) = cache_paths(&alias);
++    let meta = metadata(b"aliased root");
++    write_cache(&body_path, &meta_path, b"aliased root", &meta)?;
++    check!(eq; replay_cache(&body_path, &meta_path, &meta)?, Some(b"aliased root".to_vec()));
++    assert_capture(&target, b"aliased root", &meta)?;
++    check!(std::fs::symlink_metadata(&alias)?.file_type().is_symlink());
++    archive_lock_test::require_available(&target.join("archive-capacity.lock"))?;
++    Ok(())
++}
+--- a/crates/census-crawl/src/net/cache/archive_tests/reservations/recovery.rs
++++ b/crates/census-crawl/src/net/cache/archive_tests/reservations/recovery.rs
+@@ -77,7 +77,9 @@
+         let archive = initialize_archive(root.path())?;
+         let capture = test_capture(root.path(), b"raw")?;
+         let path = seed_reservation(root.path(), &capture, &record)?;
+-        let result = ArchiveAdmission::begin_with_capacity(root.path(), &archive, 4096);
++        let capacity_result = ArchiveCapacity::new(4096, &archive)?;
++        let archive_lock_result = ArchiveLock::acquire(root.path())?;
++        let result = ArchiveAdmission::begin_with_capacity(&archive_lock_result, capacity_result);
+         check!(matches!(result, Err(FetchError::Cache { source, .. })
+             if source.kind() == ErrorKind::InvalidData));
+         check!(eq; std::fs::read(path)?, record.as_bytes());
+@@ -93,7 +95,9 @@
+     let target = root.path().join("external-record");
+     std::fs::write(&target, b"10\n20")?;
+     std::os::unix::fs::symlink(&target, archive.join("reservations/foreign"))?;
+-    let result = ArchiveAdmission::begin_with_capacity(root.path(), &archive, 4096);
++    let capacity_result = ArchiveCapacity::new(4096, &archive)?;
++    let archive_lock_result = ArchiveLock::acquire(root.path())?;
++    let result = ArchiveAdmission::begin_with_capacity(&archive_lock_result, capacity_result);
+     check!(matches!(result, Err(FetchError::Cache { source, .. })
+         if source.kind() == ErrorKind::InvalidData));
+     check!(eq; std::fs::read(target)?, b"10\n20");
+--- a/crates/census-crawl/src/net/cache/archive_tests/reservations.rs
++++ b/crates/census-crawl/src/net/cache/archive_tests/reservations.rs
+@@ -1,4 +1,5 @@
+-use super::super::archive::{initialize_archive, preserve_capture, ArchiveAdmission};
++use super::super::archive::admission::ArchiveCapacity;
++use super::super::archive::{initialize_archive, preserve_capture, ArchiveAdmission, ArchiveLock};
+ use super::*;
+ use std::sync::{Arc, Barrier};
+ 
+@@ -21,7 +22,9 @@
+     capture: &capture::Capture,
+     capacity: u64,
+ ) -> TestResult {
+-    let mut admission = ArchiveAdmission::begin_with_capacity(root, archive, capacity)?;
++    let capacity_admission = ArchiveCapacity::new(capacity, archive)?;
++    let archive_lock_admission = ArchiveLock::acquire(root)?;
++    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
+     let stage = test_stage(root, &format!("stage-{stage_name}"))?;
+     preserve_capture(archive, &stage, "new", body, capture, &mut admission)?;
+     Ok(())
+@@ -76,8 +79,9 @@
+     let first_needed = first_body.len() as u64 + first.encoded.len() as u64;
+     let second_needed = second_body.len() as u64 + second.encoded.len() as u64;
+     let capacity = first_needed + second_needed;
+-    let mut first_admission =
+-        ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
++    let capacity_first_admission = ArchiveCapacity::new(capacity, &archive)?;
++    let archive_lock_first_admission = ArchiveLock::acquire(root.path())?;
++    let mut first_admission = ArchiveAdmission::begin_with_capacity(&archive_lock_first_admission, capacity_first_admission)?;
+     let first_stage = test_stage(root.path(), "stage-first")?;
+     preserve_capture(
+         &archive,
+@@ -88,7 +92,10 @@
+         &mut first_admission,
+     )?;
+     drop(first_admission);
+-    let mut abandoned = ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
++    drop(archive_lock_first_admission);
++    let capacity_abandoned = ArchiveCapacity::new(capacity, &archive)?;
++    let archive_lock_abandoned = ArchiveLock::acquire(root.path())?;
++    let mut abandoned = ArchiveAdmission::begin_with_capacity(&archive_lock_abandoned, capacity_abandoned)?;
+     abandoned.reserve_capture_sizes(
+         &first.meta.content_digest,
+         &content_digest(&first.encoded),
+@@ -96,8 +103,10 @@
+         Some(first.encoded.len() as u64),
+     )?;
+     drop(abandoned);
+-    let mut second_admission =
+-        ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
++    drop(archive_lock_abandoned);
++    let capacity_second_admission = ArchiveCapacity::new(capacity, &archive)?;
++    let archive_lock_second_admission = ArchiveLock::acquire(root.path())?;
++    let mut second_admission = ArchiveAdmission::begin_with_capacity(&archive_lock_second_admission, capacity_second_admission)?;
+     let second_stage = test_stage(root.path(), "stage-second")?;
+     preserve_capture(
+         &archive,
+@@ -125,8 +134,9 @@
+     let first_meta_digest = content_digest(&first.encoded);
+     let second_digest = second.meta.content_digest.clone();
+     let second_meta_digest = content_digest(&second.encoded);
+-    let mut first_admission =
+-        ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
++    let capacity_first_admission = ArchiveCapacity::new(capacity, &archive)?;
++    let archive_lock_first_admission = ArchiveLock::acquire(root.path())?;
++    let mut first_admission = ArchiveAdmission::begin_with_capacity(&archive_lock_first_admission, capacity_first_admission)?;
+     first_admission.reserve_capture_sizes(
+         &first_digest,
+         &first_meta_digest,
+@@ -140,6 +150,7 @@
+         Some(second.encoded.len() as u64),
+     );
+     drop(first_admission);
++    drop(archive_lock_first_admission);
+     match result {
+         Err(FetchError::ArchiveCapacity { .. }) => Ok(()),
+         Ok(_) => Err("second reservation was admitted despite insufficient capacity".into()),
+@@ -159,7 +170,9 @@
+         .checked_add(meta_bytes)
+         .ok_or("capacity overflow")?;
+     let digest = content_digest(&capture.encoded);
+-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
++    let capacity_admission = ArchiveCapacity::new(capacity, &archive)?;
++    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
++    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
+     admission.reserve_capture_sizes(
+         &capture.meta.content_digest,
+         &digest,
+@@ -187,7 +200,9 @@
+     let capacity = u64::try_from(body.len())?
+         .checked_add(u64::try_from(capture.encoded.len())?)
+         .ok_or("capacity overflow")?;
+-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
++    let capacity_admission = ArchiveCapacity::new(capacity, &archive)?;
++    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
++    let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
+     let stage = test_stage(root.path(), "stage-obstructed")?;
+     let obstruction = stage.join("new.body");
+     std::fs::write(&obstruction, b"retained interrupted bytes")?;
+--- a/crates/census-crawl/src/net/cache/archive_tests.rs
++++ b/crates/census-crawl/src/net/cache/archive_tests.rs
+@@ -300,3 +300,5 @@
+ mod races;
+ mod recovery;
+ mod reservations;
++
++mod lock_order;
+--- a/crates/census-crawl/src/net/cache/eligible.rs
++++ b/crates/census-crawl/src/net/cache/eligible.rs
+@@ -1,3 +1,4 @@
++use super::archive::{admission, ArchiveAdmission, ArchiveLock};
+ use super::archive_io::{invalid, lock_cache, present, replace_cache, with_stage};
+ use super::envelope::{decode, CacheDocument, EligibleCacheV2};
+ use super::{
+@@ -115,30 +116,48 @@
+     envelope: &EligibleCacheV2,
+     archived_body: &Path,
+ ) -> Result<(), FetchError> {
+-    let _lock = lock_cache(meta_path)?;
+-    publish_eligible_held(body_path, meta_path, envelope, archived_body)
++    with_archive_eligible_fence(body_path, meta_path, |archive_lock| {
++        publish_eligible_held(archive_lock, body_path, meta_path, envelope, archived_body)
++    })
+ }
+ 
+-pub(crate) fn publish_eligible_held(
++pub(in crate::net) fn publish_eligible_held(
++    archive_lock: &ArchiveLock,
+     body_path: &Path,
+     meta_path: &Path,
+     envelope: &EligibleCacheV2,
+     archived_body: &Path,
+ ) -> Result<(), FetchError> {
+-    let root = body_path
+-        .parent()
+-        .ok_or_else(|| invalid(body_path, "cache body has no parent"))?;
++    let root = archive_lock.root();
++    if super::archive::cache_root(body_path, meta_path)? != root {
++        return Err(invalid(meta_path, "cache paths do not belong to the held archive root"));
++    }
+     let encoded = envelope.encode(meta_path)?;
+     with_stage(root, |stage| {
+-        super::archive::preserve_eligible_previous(root, stage, body_path, meta_path)?;
++        let archive = super::archive::initialize_archive(root)?;
++        let mut admission = ArchiveAdmission::begin_with_capacity(
++            archive_lock,
++            admission::archive_capacity()?,
++        )?;
++        super::archive::preserve_eligible_previous(
++            &archive, stage, body_path, meta_path, &mut admission,
++        )?;
+         replace_cache(stage, archived_body, body_path, meta_path, &encoded)
+     })
+ }
+ 
+-pub(crate) fn with_eligible_fence<T>(
++pub(in crate::net) fn with_archive_eligible_fence<T>(
++    body_path: &Path,
+     meta_path: &Path,
+-    action: impl FnOnce() -> Result<T, FetchError>,
++    action: impl FnOnce(&ArchiveLock) -> Result<T, FetchError>,
+ ) -> Result<T, FetchError> {
+-    let _lock = lock_cache(meta_path)?;
+-    action()
++    let root = super::archive::cache_root(body_path, meta_path)?;
++    let archive_lock = ArchiveLock::acquire(root)?;
++    let _eligible_lock = lock_cache(meta_path)?;
++    #[cfg(test)]
++    super::archive::lock_tests::checkpoint(
++        &root.join("archive-capacity.lock"),
++        super::archive::lock_tests::LockEvent::EligibleAcquired,
++    )?;
++    action(&archive_lock)
+ }
+--- a/crates/census-crawl/src/net/cache.rs
++++ b/crates/census-crawl/src/net/cache.rs
+@@ -12,9 +12,12 @@
+ mod envelope;
+ pub(crate) use capture::Capture;
+ pub(crate) use eligible::{
+-    publish_eligible, publish_eligible_held, read_eligible, with_eligible_fence,
++    publish_eligible, read_eligible,
+     PinnedEligibleCache,
+ };
++pub(in crate::net) use eligible::{publish_eligible_held, with_archive_eligible_fence};
++#[cfg(test)]
++pub(in crate::net) use archive::lock_tests as archive_lock_test;
+ pub(crate) use envelope::EligibleCacheV2;
+ mod quarantine;
+ 
