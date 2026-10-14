@@ -69,13 +69,23 @@ when any `CI` value is present, including `CI=false`.
 ### Prerequisites and compiler iteration
 
 Use the installed **Moon 2.2.4**, the pinned `nightly-2026-04-27` toolchain and its checked-in
-components/target via `rustup`, Cargo Nextest, Bash, `jq`, GNU coreutils, and the system C/C++
-compilers, archiver and linker. The parent launcher also fingerprints the pinned toolchain's bundled
-LLD. It selects Cargo via `rustup which cargo` at the repository root and supplies that executable to
+components/target via `rustup`, Cargo Nextest, Bash, `jq`, and the system C/C++ compilers, archiver
+and linker. The launcher uses `sha256sum` when available, otherwise `shasum -a 256`, and does not
+require GNU `realpath`. Linux gate/fault tooling still requires GNU coreutils, and the Linux
+launcher retains the pinned toolchain's bundled LLD fingerprint. It selects Cargo via
+`rustup which cargo` at the repository root and supplies that executable to
 `tools/moon-cargo`, keeping `rust-toolchain.toml` authoritative rather than duplicating its nightly
 selection in task commands. The offline build/test tasks use `--locked --offline`; populate locked
 dependencies with `env -u CI tools/moon-local run pipeline:fetch` when needed.
 These tasks do not install tools, change global Cargo configuration or manage daemons.
+
+Native macOS launcher support requires Xcode Command Line Tools and `xcrun`. It resolves system
+compiler/archiver shims, selects the host Cargo linker driver, and fingerprints that driver's actual
+linker. Apple `ar` has no standalone version option, so its executable SHA256 records its identity.
+The wrappers support macOS system Bash 3.2. Native Mac scope is formatting, checking and scoped
+tests; `build`, `build-portable`, `build-native`, `bench` and `fetch` retain their explicit
+`x86_64-unknown-linux-gnu` target and are not native Mac lanes. Launcher support alone does not
+certify Mac compilation, runtime behavior or the Linux release/fault gate.
 
 For a real scoped report-library test run without Moon task-result replay:
 
