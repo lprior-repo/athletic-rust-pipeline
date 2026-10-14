@@ -240,8 +240,10 @@ fn the_offline_cycle_publishes_each_cohort_athlete_once_in_a_verified_bundle() -
     let output = run_cycle(&data_dir, &output_path)?;
     check!(
         output.status.success(),
-        "the offline cycle must exit 0, got {:?}",
-        output.status
+        "the offline cycle must exit 0, got {:?}; stderr: {}; stdout: {}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout)
     );
 
     let published = census_report::workbook::publication::current_workbook(&output_path)?;

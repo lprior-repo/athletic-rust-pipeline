@@ -220,8 +220,10 @@ fn the_offline_cycle_retains_each_event_and_surface_pr_with_the_cross_source_win
     let output = run_cycle(&data_dir, &output_path)?;
     check!(
         output.status.success(),
-        "offline run must exit 0, got {:?}",
-        output.status
+        "offline run must exit 0, got {:?}; stderr: {}; stdout: {}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout)
     );
     let published = census_report::workbook::publication::current_workbook(&output_path)?;
     check!(eq; xlsx_rows(&published, "Athletes")?, 11, "one row per canonical athlete");
