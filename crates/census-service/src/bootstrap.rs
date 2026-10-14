@@ -10,10 +10,14 @@ mod store;
 
 pub use error::BootstrapError;
 
-pub const DEFAULT_MAX_CONCURRENT: usize = 8;
+pub const DEFAULT_MAX_CONCURRENT: usize =
+    census_domain::model::ServiceResourceProfileV1::ENROLLMENT_DEFAULTS_V1.max_concurrent();
 pub const MAX_CONCURRENT_CEILING: usize = 1024;
-pub const DEFAULT_DRAIN_TIMEOUT: Duration = Duration::from_secs(30);
-pub const DEFAULT_MEMORY_BUDGET_BYTES: u64 = 48 * 1024 * 1024 * 1024;
+pub const DEFAULT_DRAIN_TIMEOUT: Duration = Duration::from_secs(
+    census_domain::model::ServiceResourceProfileV1::ENROLLMENT_DEFAULTS_V1.drain_timeout_seconds(),
+);
+pub const DEFAULT_MEMORY_BUDGET_BYTES: u64 =
+    census_domain::model::ServiceResourceProfileV1::ENROLLMENT_DEFAULTS_V1.memory_budget_bytes();
 pub const MEMORY_BUDGET_CEILING_GIB: u64 = 1024;
 
 pub use census_store::clock::{Clock, SystemClock};

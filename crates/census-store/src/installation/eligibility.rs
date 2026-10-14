@@ -75,25 +75,7 @@ fn require_empty_metadata(store: &Store) -> StoreResult<()> {
             .into());
         }
         let key = guard.key().map_err(|source| StoreError::Read { source })?;
-        let length = snapshot
-            .size_of(&store.meta, key.as_ref())
-            .map_err(|source| StoreError::Read { source })?
-            .ok_or_else(|| StoreError::Invariant {
-                detail: "metadata row vanished from pinned snapshot".to_string(),
-            })?;
-        let bytes = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
-        if bytes > super::MAX_INSTALLATION_RECORD_BYTES {
-            return Err(StoreError::RowTooLarge {
-                bytes,
-                max: super::MAX_INSTALLATION_RECORD_BYTES,
-            });
-        }
-        let raw = snapshot
-            .get(&store.meta, key.as_ref())
-            .map_err(|source| StoreError::Read { source })?
-            .ok_or_else(|| StoreError::Invariant {
-                detail: "metadata row vanished from pinned snapshot".to_string(),
-            })?;
+        let raw = read_metadata_row(&snapshot, &store.meta, key.as_ref())?;
         let key =
             std::str::from_utf8(&key).map_err(|_| InstallationError::HistoricalStatePresent {
                 kind: HistoricalStateKind::Metadata,
@@ -101,6 +83,33 @@ fn require_empty_metadata(store: &Store) -> StoreResult<()> {
         allowed_metadata(key, &raw)?;
     }
     Ok(())
+}
+
+fn read_metadata_row(
+    snapshot: &fjall::Snapshot,
+    meta: &fjall::Keyspace,
+    key: &[u8],
+) -> StoreResult<fjall::Slice> {
+    let length = snapshot
+        .size_of(meta, key)
+        .map_err(|source| StoreError::Read { source })?
+        .ok_or_else(|| StoreError::Invariant {
+            detail: "metadata row vanished from pinned snapshot".to_string(),
+        })?;
+    let bytes = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
+    if bytes > super::MAX_INSTALLATION_RECORD_BYTES {
+        return Err(StoreError::RowTooLarge {
+            bytes,
+            max: super::MAX_INSTALLATION_RECORD_BYTES,
+        });
+    }
+    let raw = snapshot
+        .get(meta, key)
+        .map_err(|source| StoreError::Read { source })?
+        .ok_or_else(|| StoreError::Invariant {
+            detail: "metadata row vanished from pinned snapshot".to_string(),
+        })?;
+    Ok(raw)
 }
 
 fn allowed_metadata(key: &str, raw: &[u8]) -> StoreResult<()> {

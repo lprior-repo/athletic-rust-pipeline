@@ -89,3 +89,58 @@ fn installation_compiler_refuses_changed_exact_reference_without_claiming_runtim
     }
     Ok(())
 }
+
+#[test]
+fn enrollment_defaults_preserve_exact_historical_bytes_digest_and_runtime_values() -> TestResult {
+    let known = defaults()?;
+    let expected = br#"{"version":1,"revision":1,"name":"installation_enrollment_defaults_v1","service_resources":{"max_concurrent":8,"memory_budget_bytes":51539607552,"drain_timeout_seconds":30},"capability":"enrollment_only_v1"}"#;
+    assert_eq!(
+        census_domain::model::serialized_bytes(&known.operating_defaults)?.as_slice(),
+        expected
+    );
+    assert_eq!(
+        serde_json::to_vec(&known.operating_defaults)?.as_slice(),
+        expected
+    );
+    let digest = "d1424eef806c13d898f44542b0a4b119dbdbe9b55e2a246a7ca5e0ff1d987a84";
+    assert_eq!(serialized_digest(&known.operating_defaults)?, digest);
+    assert_eq!(
+        known.operating_defaults_reference,
+        ContractRefV1::new(1, 1, digest)?
+    );
+    let runtime = crate::bootstrap::ServeOptions::default();
+    let parsed = crate::bootstrap::ServeOptions::from_env(std::iter::empty())?;
+    for options in [runtime, parsed] {
+        assert_eq!(options.max_concurrent, 8);
+        assert_eq!(options.memory_budget_bytes, 51_539_607_552);
+        assert_eq!(options.drain_timeout, std::time::Duration::from_secs(30));
+        assert_eq!(
+            options.max_concurrent,
+            known.operating_defaults.service_resources.max_concurrent()
+        );
+        assert_eq!(
+            options.memory_budget_bytes,
+            known
+                .operating_defaults
+                .service_resources
+                .memory_budget_bytes()
+        );
+        assert_eq!(
+            options.drain_timeout.as_secs(),
+            known
+                .operating_defaults
+                .service_resources
+                .drain_timeout_seconds()
+        );
+    }
+    assert_eq!(crate::bootstrap::DEFAULT_MAX_CONCURRENT, 8);
+    assert_eq!(
+        crate::bootstrap::DEFAULT_MEMORY_BUDGET_BYTES,
+        51_539_607_552
+    );
+    assert_eq!(
+        crate::bootstrap::DEFAULT_DRAIN_TIMEOUT,
+        std::time::Duration::from_secs(30)
+    );
+    Ok(())
+}

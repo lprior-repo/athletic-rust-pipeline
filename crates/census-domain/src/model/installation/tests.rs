@@ -186,3 +186,19 @@ fn installation_unknown_version_capability_and_digest_refuse() -> TestResult {
         serde_json::from_slice(&serde_json::to_vec(&enrollment)?)?;
     equal(reopened.store_identity(), &identity)
 }
+
+#[test]
+fn versioned_enrollment_resources_preserve_historical_values_and_serialized_identity() -> TestResult
+{
+    let defaults = ServiceResourceProfileV1::ENROLLMENT_DEFAULTS_V1;
+    let expected = ServiceResourceProfileV1::new(8, 51_539_607_552, 30)?;
+    equal(defaults, expected)?;
+    let bytes =
+        br#"{"max_concurrent":8,"memory_budget_bytes":51539607552,"drain_timeout_seconds":30}"#;
+    equal(crate::model::serialized_bytes(&defaults)?, bytes.to_vec())?;
+    equal(serde_json::to_vec(&defaults)?, bytes.to_vec())?;
+    equal(
+        crate::model::serialized_digest(&defaults)?,
+        "ad6d22a187d2db22da6d5bef55ed674ccc53f1c0f231c322d92cbecdfcab856e".to_string(),
+    )
+}
