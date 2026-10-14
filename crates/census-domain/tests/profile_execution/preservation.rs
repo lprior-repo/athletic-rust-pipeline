@@ -103,3 +103,24 @@ fn reordered_sets_keep_one_original_profile_identity_after_compilation() -> Test
     )?;
     equal(serialized_bytes(&original)?, serialized_bytes(&reordered)?)
 }
+
+#[test]
+fn retained_policy_eighteen_references_compile_without_rewriting_profile() -> TestResult {
+    let mut raw = input()?;
+    raw.policies.event = ContractRefV1::new(
+        1,
+        1,
+        "95746745f36a7bc3354695d8ae8998ebe3710fe941c7ca39084c321af62d7b42",
+    )?;
+    raw.policies.publication = ContractRefV1::new(
+        1,
+        1,
+        "ff8dd79dbb18f925e0b6d830500d594ac507347ba32da2e6888b4d2c4121c84d",
+    )?;
+    let profile = QueryProfileV1::new(raw)?;
+    let retained = serialized_bytes(&profile)?;
+    let id = profile.id()?;
+    let compiled = compile_profile(&profile)?;
+    equal(serialized_bytes(compiled.profile())?, retained)?;
+    equal(compiled.profile().id()?, id)
+}

@@ -259,3 +259,22 @@ env -u CI tools/moon-local run pipeline:gate -- --release
 ```
 
 The release command is the full home gate, not a claim that this run executed it.
+
+### Profile descriptor compatibility follow-up
+
+The policy-19 review found that configuration-only event descriptors inherited the
+new default catalog while retaining revision 1/publication policy 18. Explicit
+Legacy18 binding restores the original bytes and digest; no historical fixture or
+reference was regenerated. Changes: `profile_execution/components.rs`, integration
+`descriptors.rs` and `preservation.rs`. New literal-reference regression checks
+compilation without changing profile bytes or identity.
+
+- FAILED: actual integration target 15/17 passed, two failed, zero skipped;
+  nextest `d222fd4d-6d81-4d4d-a2be-b7fc3a76ee6d` (14.501s task).
+- PASS after repair: 18/18, zero skipped;
+  `98ef2eb4-b80e-4e18-a5ef-81b173862b7f` (15.317s task).
+- NOT COVERAGE: first incorrect lib selector ran zero tests and failed explicitly.
+- Current profile execution remains configuration/enrollment-only; policy-19 runtime
+  profile support requires a separately versioned coherent contract.
+
+Home regression: `env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-domain --test profile_execution --no-tests fail`.
