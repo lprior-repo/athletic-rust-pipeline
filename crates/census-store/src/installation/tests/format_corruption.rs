@@ -115,18 +115,31 @@ fn enrollment_records_with_legacy_marker_are_not_silently_upgraded() -> TestResu
 
 #[test]
 fn newer_format_wins_before_decoding_invalid_enrollment() -> TestResult {
-    for (key, value, what, supported) in [
-        ("schema:lifecycle_revision", "4", "lifecycle revision", 3),
-        ("schema:store_version", "3", "schema version", 2),
-        ("schema:key_format", "2", "key format", 1),
+    for (key, what, supported) in [
+        (
+            crate::format::LIFECYCLE_REVISION_KEY,
+            "lifecycle revision",
+            crate::format::LIFECYCLE_REVISION,
+        ),
+        (
+            "schema:store_version",
+            "schema version",
+            crate::format::STORE_SCHEMA_VERSION,
+        ),
+        (
+            "schema:key_format",
+            "key format",
+            crate::format::KEY_FORMAT_VERSION,
+        ),
     ] {
+        let future = supported.checked_add(1).ok_or("future format revision")?;
         let root = tempfile::tempdir()?;
         let _config = prepare(root.path())?;
         let store = Store::open_existing(root.path())?;
         store
             .meta
             .insert(super::super::super::ENROLLMENT_KEY, b"{")?;
-        store.meta.insert(key, value)?;
+        store.meta.insert(key, future.to_string())?;
         store.flush()?;
         drop(store);
         match Store::installation_control_existing(root.path()) {
@@ -136,7 +149,7 @@ fn newer_format_wins_before_decoding_invalid_enrollment() -> TestResult {
                 supported: actual_supported,
             }) => {
                 equal(actual, what)?;
-                equal(found.to_string(), value.to_string())?;
+                equal(found, future)?;
                 equal(actual_supported, supported)?;
             }
             Err(other) => return Err(format!("newer format={other:?}").into()),

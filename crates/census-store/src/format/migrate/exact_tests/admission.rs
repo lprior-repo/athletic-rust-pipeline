@@ -102,13 +102,17 @@ fn newer(root: &Path, what: &str, found: u32, supported: u32) -> TestResult {
 #[test]
 fn future_lifecycle_revision_refuses_every_schema_and_supported_marker_without_writes() -> TestResult
 {
+    let supported = crate::format::LIFECYCLE_REVISION;
+    let next = supported
+        .checked_add(1)
+        .ok_or("future lifecycle revision")?;
     [Some(2), Some(1), Some(0), None]
         .into_iter()
         .try_for_each(|revision| -> TestResult {
             [None, Some("1"), Some("2")]
                 .into_iter()
                 .try_for_each(|marker| -> TestResult {
-                    [4_u32, u32::MAX].into_iter().try_for_each(|future| {
+                    [next, u32::MAX].into_iter().try_for_each(|future| {
                         let dir = tempfile::tempdir()?;
                         let store = seed_retained(dir.path(), json!(1094))?;
                         schema(&store, revision)?;
@@ -122,7 +126,7 @@ fn future_lifecycle_revision_refuses_every_schema_and_supported_marker_without_w
                             ],
                         )?;
                         drop(store);
-                        newer(dir.path(), "lifecycle revision", future, 3)
+                        newer(dir.path(), "lifecycle revision", future, supported)
                     })
                 })
         })

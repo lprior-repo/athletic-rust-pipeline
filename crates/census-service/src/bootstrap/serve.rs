@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use restate_sdk::http_server::HttpServer;
+use restate_sdk::prelude::Endpoint;
 
 use crate::ingress;
 use crate::restate_services;
@@ -163,34 +164,41 @@ fn spawn_endpoint(
         ceiling: error.ceiling,
     })?;
     region
-        .spawn(async move {
-            let fault = std::env::var_os("ATHLETIC_FAULT_HTTP_EXIT");
-            if http_exit_fault_requested(fault.as_deref()) {
-                match http_exit_trigger_path(fault.as_deref()) {
-                    Some(trigger) => {
-                        let server = HttpServer::new(endpoint).serve_with_cancel(listener, stop);
-                        tokio::select! {
-                            () = server => {}
-                            () = wait_for_trigger(trigger) => {
-                                tracing::error!(
-                                    "HTTP endpoint exiting due to the ATHLETIC_FAULT_HTTP_EXIT trigger"
-                                );
-                            }
-                        }
-                    }
-                    None => {
-                        tracing::error!("HTTP endpoint exiting due to ATHLETIC_FAULT_HTTP_EXIT");
-                    }
-                }
-            } else {
-                HttpServer::new(endpoint)
-                    .serve_with_cancel(listener, stop)
-                    .await;
-            }
-            ended.send(()).ok();
-        })
+        .spawn(run_endpoint(endpoint, listener, stop, ended))
         .map_err(count_error)?;
     Ok((cancel, endpoint_done))
+}
+
+async fn run_endpoint(
+    endpoint: Endpoint,
+    listener: tokio::net::TcpListener,
+    stop: impl Future<Output = ()> + Send,
+    ended: tokio::sync::oneshot::Sender<()>,
+) {
+    let fault = std::env::var_os("ATHLETIC_FAULT_HTTP_EXIT");
+    if http_exit_fault_requested(fault.as_deref()) {
+        match http_exit_trigger_path(fault.as_deref()) {
+            Some(trigger) => {
+                let server = HttpServer::new(endpoint).serve_with_cancel(listener, stop);
+                tokio::select! {
+                    () = server => {}
+                    () = wait_for_trigger(trigger) => {
+                        tracing::error!(
+                            "HTTP endpoint exiting due to the ATHLETIC_FAULT_HTTP_EXIT trigger"
+                        );
+                    }
+                }
+            }
+            None => {
+                tracing::error!("HTTP endpoint exiting due to ATHLETIC_FAULT_HTTP_EXIT");
+            }
+        }
+    } else {
+        HttpServer::new(endpoint)
+            .serve_with_cancel(listener, stop)
+            .await;
+    }
+    ended.send(()).ok();
 }
 
 pub fn init_tracing() {
@@ -253,3 +261,7 @@ mod installation_tests;
 #[cfg(test)]
 #[path = "capture_tests.rs"]
 mod capture_tests;
+
+#[cfg(test)]
+#[path = "endpoint_region_tests.rs"]
+mod endpoint_region_tests;
