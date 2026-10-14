@@ -94,6 +94,33 @@ on `PATH`. In the measured snapshot Cargo selected Nextest 0.9.133 from `/cache/
 even though a direct PATH invocation reported 0.9.137. Record the actual Cargo-selected tool, not
 only `cargo-nextest --version`.
 
+### Cargo build-job override
+
+For memory-constrained compilation, set `MOON_RUST_BUILD_JOBS` on the canonical launcher:
+
+```sh
+env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:check pipeline:lint-src
+env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:gate -- --release
+```
+
+The optional value must be a positive decimal integer without leading zeros; empty, zero, signed,
+fractional and whitespace-containing values fail before Cargo starts. Unset leaves existing task
+defaults unchanged. `tools/moon-cargo` exports the exact value as `CARGO_BUILD_JOBS` immediately before
+executing the selected Cargo, overriding Moon's task-level `16`. Gate/xtask Cargo children inherit
+that value. Gate's nested `tools/moon-local` calls retain `MOON_RUST_BUILD_JOBS`; build and durability
+scenario calls through `tools/moon-cargo` reapply it after Moon restores task defaults. Explicit Cargo
+`--jobs` or Nextest `--build-jobs` arguments still take precedence; the wrapper never rewrites arguments.
+
+This controls Cargo compilation jobs, not whole-lane concurrency. Nextest tasks retain their explicit
+16 test threads, the iteration profile retains rustc `-Z threads=4`, and compiler/linker, build-script
+and runtime pools can still run concurrently. It does not certify a fully serial or memory-bounded lane.
+
+The launcher preserves the override before Moon hashing. All Rust task inputs already include
+`$MOON_RUST_*` and `tools/moon-*`, so the override and wrapper changes participate in task cache
+identity. `tools/build-toolchain.json` records launcher-time Cargo configuration, before task-level
+environment and this override; it is not the effective build-job record. Retain the invocation's
+`MOON_RUST_BUILD_JOBS` value alongside verification evidence.
+
 ### Parent launcher and task boundaries
 
 Always enter Moon through `tools/moon-local`, including CI. Before Moon can look up a cached task,
