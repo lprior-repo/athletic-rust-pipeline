@@ -1,0 +1,37 @@
+[
+  {
+    "path": "crates/census-crawl/src/coach_directories/research_failure/tests.rs",
+    "base_sha256": "63607ab1c1c82f74f35581fb78ffca22289f15e02a2467f1b01c1f36614fff47",
+    "source_sha256": "1306cf292b67f203bdffb496af56b5ef3e54833b3b7ac7dd97541b98910d7b41"
+  },
+  {
+    "path": "crates/census-crawl/src/net/acquisition/tests/failures.rs",
+    "base_sha256": "2bbd0796f563643460dc745028d4b4f82bf584da340e09cfe4c52ba97cee83da",
+    "source_sha256": "93a6526e5cd94769c15ef971db50d2d5b328ae1cfd62d461f5e65cf5530b856b"
+  },
+  {
+    "path": "crates/census-crawl/src/net/acquisition/tests/recovery.rs",
+    "base_sha256": "f12717ed4a19f751147ade03736f3a64517a0f87fa453d08ab5b952a582744eb",
+    "source_sha256": "95196e6595ed3d9d18822357d9b503f968a4cb6741301d5bba4acdf77cb634a0"
+  },
+  {
+    "path": "crates/census-crawl/src/net/acquisition/tests.rs",
+    "base_sha256": "746bbab8ee3683255803317961322a19a8c9199c4cfedd34a6ebbabbbe01734f",
+    "source_sha256": "39d87054e708c168a829dcba56d30bac283f5d331f84e4684d363ac4f58adc18"
+  },
+  {
+    "path": "crates/census-crawl/src/net/acquisition.rs",
+    "base_sha256": "4fdbc7b1daaa7e7c1da58e49c7e79d1f20f9454e69f3b76d8c33bf848324f4b4",
+    "source_sha256": "8d6b3ea4d725204c5bb05fcec2759a6f40a99ef22c4741fca1828d30b7a3a7b3"
+  },
+  {
+    "path": "crates/census-crawl/src/net/types/tests.rs",
+    "base_sha256": null,
+    "source_sha256": "44c06e6a788c2dac38a723b0707a16fb6ec5efcfa84ff75b41e0b906e972c1df"
+  },
+  {
+    "path": "crates/census-crawl/src/net/types.rs",
+    "base_sha256": "b71546b59d81df824e3b5a05eb9b8c37d841352f70ee666358e88b0c50f1add4",
+    "source_sha256": "9a6c5a5897af335f77e91452c7281d706a739a1496ace4ebb85c3b66f5ded673"
+  }
+]

@@ -1,0 +1,6 @@
+63607ab1c1c82f74f35581fb78ffca22289f15e02a2467f1b01c1f36614fff47  crates/census-crawl/src/coach_directories/research_failure/tests.rs
+2bbd0796f563643460dc745028d4b4f82bf584da340e09cfe4c52ba97cee83da  crates/census-crawl/src/net/acquisition/tests/failures.rs
+f12717ed4a19f751147ade03736f3a64517a0f87fa453d08ab5b952a582744eb  crates/census-crawl/src/net/acquisition/tests/recovery.rs
+746bbab8ee3683255803317961322a19a8c9199c4cfedd34a6ebbabbbe01734f  crates/census-crawl/src/net/acquisition/tests.rs
+4fdbc7b1daaa7e7c1da58e49c7e79d1f20f9454e69f3b76d8c33bf848324f4b4  crates/census-crawl/src/net/acquisition.rs
+b71546b59d81df824e3b5a05eb9b8c37d841352f70ee666358e88b0c50f1add4  crates/census-crawl/src/net/types.rs
