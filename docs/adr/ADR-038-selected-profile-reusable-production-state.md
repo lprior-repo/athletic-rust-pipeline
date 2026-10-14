@@ -176,8 +176,9 @@ registration/selection and a configuration-only profile compiler. The compiler r
 source-backed region membership/priority, jurisdictions outside the legacy 49 envelope,
 provisional inclusion and acquisition after as-of. These modeled unsupported choices are not
 removed from the raw profile. Its descriptors explicitly disclose current-affiliation,
-profile-source-graph and completion integrations still pending. Existing scalar workbook-year
-selection, introduced under policy 17 and now using policy 18, is distinct from selected-profile execution.
+profile-source-graph and completion integrations still pending. The configuration-only descriptor
+remains policy 18; scalar publication now derives policy 20. Neither descriptor registration nor
+publication-policy support qualifies selected-profile execution.
 
 The legacy store RunManifest accepts one census run and refuses a different binding. Legacy
 sealing remains Class-of-2027-bound. Current athlete allocation incorporates candidate

@@ -42,9 +42,6 @@ mod verify;
 #[cfg(test)]
 mod coverage_tests;
 #[cfg(test)]
-mod version_preservation_tests;
-
-#[cfg(test)]
 mod freeze_recovery_tests;
 #[cfg(test)]
 mod freeze_v2_tests;
@@ -56,12 +53,20 @@ mod job_ownership_tests;
 mod preflight_tests;
 #[cfg(test)]
 mod resource_tests;
+#[cfg(test)]
+mod version_preservation_tests;
+#[cfg(test)]
+#[path = "frozen/coverage_tests/version_records.rs"]
+mod version_records;
+#[cfg(test)]
+#[path = "frozen/coverage_tests/version_snapshot.rs"]
+mod version_snapshot;
 
 pub use freeze::CancelOutcome;
 pub use root::FrozenRoot;
 
 const SCHEMA_REVISION: u32 = 3;
-const POLICY_REVISION: u32 = 19;
+const POLICY_REVISION: u32 = census_domain::model::EventSemantics::CURRENT.revision();
 const INPUT_TABLES: [Table; 16] = [
     Table::Schools,
     Table::Teams,

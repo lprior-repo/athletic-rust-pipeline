@@ -76,16 +76,18 @@ mod tests {
         let rows = athlete_observations_of(&[first, second], [&school], "2026-09-26");
         let identities: BTreeSet<_> = rows
             .iter()
-            .map(|row| match row {
-                SourceObservation::Athlete(row) => {
-                    assert_eq!(row.namespace, SourceNamespace::MilesplitAthlete);
-                    row.source_athlete_id.as_str()
+            .map(|row| -> TestResult<&str> {
+                match row {
+                    SourceObservation::Athlete(row) => {
+                        check!(eq; row.namespace, SourceNamespace::MilesplitAthlete);
+                        Ok(row.source_athlete_id.as_str())
+                    }
+                    other => Err(format!("unexpected observation: {other:?}").into()),
                 }
-                other => panic!("unexpected observation: {other:?}"),
             })
-            .collect();
-        assert_eq!(identities, BTreeSet::from(["11111", "22222"]));
-        assert_eq!(rows.len(), identities.len());
+            .collect::<TestResult<_>>()?;
+        check!(eq; identities, BTreeSet::from(["11111", "22222"]));
+        check!(eq; rows.len(), identities.len());
         Ok(())
     }
 
@@ -102,14 +104,12 @@ mod tests {
         ));
         let observations = athlete_observations_of(&[row], [&school], "2026-09-26");
         let [SourceObservation::Athlete(observation)] = observations.as_slice() else {
-            panic!("expected exactly one row-owned observation");
+            return Err("expected exactly one row-owned observation".into());
         };
-        assert_eq!(observation.namespace, namespace);
-        assert_eq!(observation.source_athlete_id, "meet:5:event:2:row:9");
-        assert_eq!(
-            observation.source_row_key,
-            "https://example.test/meet/5/event/2"
-        );
+        check!(eq; observation.namespace, namespace);
+        check!(eq; observation.source_athlete_id, "meet:5:event:2:row:9");
+        check!(eq; observation.source_row_key,
+        "https://example.test/meet/5/event/2");
         Ok(())
     }
 }

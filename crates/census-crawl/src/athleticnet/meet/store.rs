@@ -236,5 +236,6 @@ fn performance_row(
         source_key: input.source_key,
         source_athlete: Some(input.source_athlete),
         retained_conflicts,
+        combined_completion: None,
     }
 }

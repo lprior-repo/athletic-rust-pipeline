@@ -2,7 +2,7 @@ use super::TestResult;
 use crate::bests::key::MarkOrdering;
 use crate::bests::{should_replace, tie_break_preferred, Measure};
 
-mod fixture;
+pub(super) mod fixture;
 mod selection;
 mod workbook;
 

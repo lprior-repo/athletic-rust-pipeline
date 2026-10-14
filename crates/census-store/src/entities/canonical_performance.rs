@@ -59,6 +59,9 @@ impl Entity for CanonicalPerformance {
         {
             self.timing = other.timing;
         }
+        if self.combined_completion.is_none() {
+            self.combined_completion = other.combined_completion;
+        }
         union_vec(&mut self.evidence, other.evidence);
     }
 }
@@ -67,9 +70,29 @@ fn performance_conflict(
     left: &CanonicalPerformance,
     right: &CanonicalPerformance,
 ) -> Option<RetainedConflict> {
+    if !is_performance_contradictory(left, right) {
+        return None;
+    }
+    let mut statements = [
+        performance_tuple_statement(left),
+        performance_tuple_statement(right),
+    ];
+    statements.sort();
+    Some(RetainedConflict::new(
+        "Individual result scalar",
+        left.id.as_str(),
+        "mark, timing, place, observed_grade, adjustment, combined_completion",
+        format!(
+            "contradictory individual statements: {}",
+            statements.join(" versus ")
+        ),
+    ))
+}
+
+fn is_performance_contradictory(left: &CanonicalPerformance, right: &CanonicalPerformance) -> bool {
     let timing =
         |value: Option<TimingMethod>| value.filter(|value| *value != TimingMethod::Unknown);
-    let contradictory = contradictory_marks(&left.mark, &right.mark)
+    contradictory_marks(&left.mark, &right.mark)
         || timing(left.timing)
             .zip(timing(right.timing))
             .is_some_and(|(left, right)| left != right)
@@ -84,30 +107,25 @@ fn performance_conflict(
         || match (&left.adjustment, &right.adjustment) {
             (Some(left), Some(right)) => left != right,
             _ => false,
-        };
-    if !contradictory {
-        return None;
-    }
-    let mut statements = [
-        format!(
-            "{:?}",
-            (&left.mark, left.timing, left.place, left.observed_grade)
-        ),
-        format!(
-            "{:?}",
-            (&right.mark, right.timing, right.place, right.observed_grade)
-        ),
-    ];
-    statements.sort();
-    Some(RetainedConflict::new(
-        "Individual result scalar",
-        left.id.as_str(),
-        "mark, timing, place, observed_grade",
-        format!(
-            "contradictory individual statements: {}",
-            statements.join(" versus ")
-        ),
-    ))
+        }
+        || match (&left.combined_completion, &right.combined_completion) {
+            (Some(left), Some(right)) => left != right,
+            _ => false,
+        }
+}
+
+fn performance_tuple_statement(performance: &CanonicalPerformance) -> String {
+    format!(
+        "{:?}",
+        (
+            &performance.mark,
+            performance.timing,
+            performance.place,
+            performance.observed_grade,
+            &performance.adjustment,
+            &performance.combined_completion
+        )
+    )
 }
 
 fn contradictory_marks(left: &Mark, right: &Mark) -> bool {

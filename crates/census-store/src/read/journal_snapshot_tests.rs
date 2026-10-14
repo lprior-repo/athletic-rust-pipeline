@@ -87,9 +87,9 @@ fn latest_legacy_journal_read_waits_for_one_commit_boundary() -> Result<(), Box<
     let first = json!({"blob": "a".repeat(2_000_000)});
     let second = json!({"blob": "b".repeat(2_000_000)});
     store.journal_done("snapshot_boundary", "latest", &first)?;
-    let held = store.lock_appends();
     let (sender, receiver) = std::sync::mpsc::channel();
     std::thread::scope(|scope| -> Result<(), Box<dyn Error>> {
+        let held = store.lock_appends();
         let reader =
             scope.spawn(|| sender.send(store.journal_payload("snapshot_boundary", "latest")));
         check!(
@@ -99,7 +99,7 @@ fn latest_legacy_journal_read_waits_for_one_commit_boundary() -> Result<(), Box<
             ),
             "the latest journal reader bypassed the snapshot commit boundary"
         );
-        store.journal_done("snapshot_boundary", "latest", &second)?;
+        store.journal_done_locked("snapshot_boundary", "latest", &second)?;
         drop(held);
         let observed = receiver.recv_timeout(std::time::Duration::from_secs(60))??;
         check!(eq; observed, Some(second));

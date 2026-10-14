@@ -185,7 +185,7 @@ fn missing(label: &ContextualLabel<'_>, kind: &EventKind) -> bool {
             .iter()
             .any(|unit| label.pair(number, unit));
         present
-            && !(label.semantics() == EventSemantics::FlatEvents19
+            && !(label.semantics().supports_flat_extensions()
                 && matches!(*number, "300" | "500" | "600" | "2000" | "10000"))
             && !matches!(
                 (*number, kind),

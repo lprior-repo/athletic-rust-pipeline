@@ -69,7 +69,7 @@ pub(super) fn lock(metadata: &Path, io: &mut RecoveryArchiveIo<'_>) -> Result<Fi
         .open(&path)
     {
         Ok(file) => file,
-        Err(source) => return Err(shell::retained_error(&path, source, io)?),
+        Err(source) => return Err(super::diagnostic::retained_error(&path, source, io)?),
     };
     io.direct_operation(Op::Open)?;
     match file.try_lock() {
@@ -89,7 +89,7 @@ pub(super) fn lock(metadata: &Path, io: &mut RecoveryArchiveIo<'_>) -> Result<Fi
             });
         }
         Err(std::fs::TryLockError::Error(source)) => {
-            return Err(shell::retained_error(&path, source, io)?)
+            return Err(super::diagnostic::retained_error(&path, source, io)?)
         }
     }
     io.release_owned(
@@ -137,8 +137,8 @@ pub(super) fn eligible(
         )
         .map_err(|error| Failure::During(error.into()))?;
         if let Err(source) = testing::reached() {
-            let error =
-                shell::retained_error(metadata_path, source, io).map_err(Failure::During)?;
+            let error = super::diagnostic::retained_error(metadata_path, source, io)
+                .map_err(Failure::During)?;
             return Err(Failure::During(error));
         }
     }

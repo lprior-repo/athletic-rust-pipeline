@@ -2,20 +2,20 @@
 
 | Control | Value |
 |---|---|
-| Status | Reviewed; **final-spec acceptance not established** |
+| Status | Review retained; repairs in progress; **final-spec acceptance not established** |
 | Owner / date | Main / 2026-10-14 |
 | Scope | Nine workspace crates; redundancy, Rust discipline, architecture/ADR currency |
 | Authority | [Spec v2](../specifications/athletic-recruiting-end-vision-spec-v2.md), [architecture](../../ARCHITECTURE.md), [ADRs](../adr/README.md) |
 | Tracking | Review `cbxd`; unresolved findings `iilh`; [existing delivery plan](../NATIONAL-CENSUS-PLAN.md) remains authoritative |
-| Provenance | Observed HEAD `59a80d451fba1ba95dffd46fb979d6f9d8935d02`; documentation dirty; concurrent source activity prevents an immutable-release claim |
+| Provenance | Original review `59a80d451fba1ba95dffd46fb979d6f9d8935d02`; full-suite repair base `9745c809`, subsequently rebased onto `cdd1bd4f`; repository history identifies the repair revision, not a release certificate |
 
 **Method:** architecture-description organization informed by
 [ISO/IEC/IEEE 42010:2022](https://www.iso.org/standard/74393.html): stakeholder concerns,
 views, decision rationale, correspondence and known inconsistencies. Not ISO conformity
 or NASA certification. Concerns: recruiting accuracy, durable evidence, honest coverage,
-minimal repeated work and maintainable ownership. Three read-only reviewers covered
-(domain/report/reconcile/review), (store/service) and (crawl/browser); Main integrated
-findings and executed verification. No production repair, live census, database opening,
+minimal repeated work and maintainable ownership. The original read-only review covered
+domain/report/reconcile/review, store/service and crawl/browser. Subsequent implementation and
+execution evidence are recorded below; neither phase establishes national coverage, a complete
 security audit or exhaustive dead-code proof.
 
 The Downloads spec and repository spec are byte-identical:
@@ -25,9 +25,9 @@ implemented components and qualified behavior must remain separate evidence stat
 
 ## Findings register
 
-Source paths below are relative to `crates/`. Static counterexamples identify risks,
-not observed contamination of a live dataset. H = final-product correctness/acceptance
-hold; M = bounded defect, contract gap or maintainability risk. No finding is waived.
+Source paths below are relative to `crates/` at the original review revision. Static
+counterexamples identify risks, not observed contamination of a live dataset. H = final-product
+correctness/acceptance hold; M = bounded defect, contract gap or maintainability risk. No finding is waived.
 
 | ID | Level / concern | Evidence | Disposition required |
 |---|---|---|---|
@@ -138,9 +138,9 @@ exist; required startup skills and the contract gate's backtick architecture poi
 present. This checks links/pointers, not semantic release acceptance.
 
 Changed only startup/documentation/evidence: `AGENTS.md`, `ARCHITECTURE.md`, ADR-038,
-ADR register, deployment lifecycle and this report. AGENTS is 42 lines / 2,444 bytes,
-down from 296 lines (86% fewer), not a second policy manual. Native procedures were
-retained in the existing deployment owner; headed
+ADR register, deployment lifecycle and this report. At review capture, AGENTS was 42 lines /
+2,444 bytes, down from 296 lines; subsequent startup cleanup reduced it to 32 lines.
+Native procedures were retained in the existing deployment owner; headed
 Athletic.net and real drain accounting replace the misleading copied headless/default
 assumptions. ADR-038 now distinguishes policy 18 and existing enrollment-only capability
 from qualified reusable execution. Historical amendments and original spec are untouched.
@@ -149,5 +149,70 @@ TASK / OWNERSHIP: review and concise documentation / Main. DO NOT MODIFY: produc
 live/historical durable state, unrelated work. INPUT CONTRACT: final spec and binding
 architecture. OUTPUT CONTRACT: findings and observed evidence, no release certificate.
 ACCEPTANCE: review delivered; `iilh` retains unresolved findings for owner disposition.
-HANDOFF: use the existing plan for repairs and exact-build qualification. No commit,
-push or remote sync.
+HANDOFF: use the existing plan for repairs and exact-build qualification. Review documentation
+was subsequently published in `91066391` and startup cleanup in `e58ffa88`.
+
+## Repair integration — 2026-10-14
+
+Incremental repairs, not closure of the final-product findings. Main includes PRs #36–41 at
+`cdd1bd4f`. Earlier restoration conflicts were reconciled; subsequent main updates and the PR41
+rebase preserved local work without new conflicts. Preservation stashes and live/historical state remain intact.
+
+### Implemented scope
+
+- R10: fallible `CanonicalAthlete::new`; callers propagate `AthleteConstructionError`.
+- R4/R5/R6: policy 20, checked combined-event completion, distinct eligible/tied inventories,
+  eight normalized CSV families and artifact revision 3. Original policies 18/19 remain read-only
+  under their original encodings/layouts. Source qualification and remaining lineage gaps stay open.
+- R9: shared `EventKind::is_relay`; comparison-policy ownership is still unresolved.
+- Archive: finite 20 GiB default and attributed capacity-refusal logging. Controlled admission/replay
+  is covered; no product capture-rate field or national-scale acceptance is claimed.
+- Post-PR38/37 integration: explicit offline-store validation runs before store access without
+  rejecting valid global-argument placement; build-job validation accepts ASCII decimal digits only.
+- Browser correlation, bounded CSV parsing, historical-school tamper detection and module-size
+  repairs are integrated. Actual browser execution and bootstrap/transport 403/429 gate consistency
+  remain open.
+
+### Executed evidence
+
+| Command / run | Observed result | Qualification boundary |
+|---|---|---|
+| `pipeline:check` / `69a3c4a5` | Passed | After PR41 rebase |
+| `pipeline:tests` / `248d03af` | 5,623 passed; four skipped | Pre-PR41 whole workspace; Nextest `7d6782e8-48ce-4b91-931e-f1d54f06d9c2` |
+| Journal/conditional/lineage tests / `26c6a922` | 141 passed; 614 filtered | After PR41 fixture migration; Nextest `96576d73-dbf0-4e25-b933-2287e1c513b5` |
+| `pipeline:lint-src` / `a4c92269` | Passed; three forced argument-count advisories | After PR41 rebase; no suppression or artificial context bags |
+| Release lane `ratchet` / `a6c3d03f` | Passed; oversized production files 5 → 0; no metric grew | Pre-PR41 strict source/size measurement, not a full release pass |
+| Release lane `panic-extraction` / `65a5e44f` | Passed | Pre-PR41: 3,136 Rust files, three rendered templates and all-target checks |
+| Release lane `contract` / `c46399c6` | Passed with declared crate-boundary deviations | Pre-PR41: ten architecture checks, not complete target-architecture conformance |
+| `pipeline:bench -- --bench capture_export` / `3855f844` | 185 canonical rows; 60 cohort members; authoritative XLSX/CSV/JSONL readback passed | Captured fixture corpus, not national coverage |
+| Actual `store_smoke` | Valid athlete persisted; empty name returned `EmptyName`, exit 1 | Constructor/store behavior |
+| Actual offline CLI without `--store` | Exit 1; isolated working directory remained empty | No implicit store opened |
+| Real Moon check with `MOON_RUST_BUILD_JOBS=２` / `6b28de2e` | Wrapper exit 2; no compiler invocation | Expected invalid-input refusal; Moon reports exit 1 |
+
+The first PR41 integration run passed 140 focused cases but hung in an existing snapshot fixture:
+it held the append guard and called the newly locking public writer. The fixture now uses the
+already-locked writer and owns the guard inside its scoped closure, preserving the reader boundary
+and releasing it on errors. The case passed in 2.143 seconds; the 141-case rerun completed.
+
+The distinct-ID combined-event counterexample failed in both arrival orders (`cf8a7c86`), then
+passed after policy-20 context quarantine. The captured export estimate was 62.202 ms, with no
+statistically detected change against the immediately preceding iteration. This does not reverse
+the earlier 8.0856% regression against an older baseline or establish a performance improvement.
+
+### Release blockers retained
+
+Earlier release `a02e3509` timed out at 3,600 seconds during performance checks; audit passed,
+while source and size checks failed. Those source failures were subsequently repaired and their
+focused lanes passed above. The full release gate has not passed; focused passes do not replace it.
+
+Earlier native durability `6e37d364`: 12 passed, six failed out of 18 (02/03/06/07/11/12).
+Host scenarios encountered the live endpoint's valid VT origin lock. Scenario 03 booted and
+recovered work but failed orderly guest drain (`qualification.service`: `exit-code`); scenario 12
+had no successful producer to reuse. New pre-teardown diagnostics are implemented but unexecuted.
+Retain `var/durability-scratch/run-TbiWLWFY`; never bypass locks, stop the live owner or reset its store.
+
+Read-only admin inspection did not establish the paused `open_work` cause. `refused_sources`
+counts planned refusals, not archive-capacity failures; team, result and contact gates are distinct.
+`iilh`, `6fhk` and the owning feature beads remain open. No reusable-production, selected-profile,
+national, full fault-catalog, global-resource or final-spec acceptance is certified.
+

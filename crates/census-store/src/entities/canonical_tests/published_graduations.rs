@@ -111,10 +111,11 @@ fn a_natural_key_collision_does_not_attach_another_subjects_published_claim() ->
         .published_graduations
         .push(published(GradYear::CO2027, "other-api"));
     retained.merge(other);
-    assert_eq!(retained.published_graduations, Vec::new());
-    assert_eq!(retained.derived_cohort_confidence(), None);
-    assert_eq!(retained.retained_conflicts.len(), 1);
-    assert_eq!(
+    check!(eq; retained.published_graduations, Vec::new());
+    check!(eq; retained.derived_cohort_confidence(), None);
+    check!(eq; retained.retained_conflicts.len(), 1);
+    check!(
+        eq;
         retained.retained_conflicts[0].family,
         CANONICAL_ID_COLLISION_FAMILY
     );

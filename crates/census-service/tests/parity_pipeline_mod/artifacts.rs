@@ -5,6 +5,9 @@ use anyhow::{bail, Context, Result};
 use calamine::{open_workbook, Data, Reader, Xlsx};
 use serde_json::Value;
 
+#[path = "artifacts/csv.rs"]
+mod csv_semantics;
+
 #[derive(Debug, PartialEq)]
 pub struct Semantics {
     workbook: BTreeMap<String, Vec<Vec<Data>>>,
@@ -46,6 +49,12 @@ pub fn read(workbook: &Path) -> Result<Semantics> {
         .get("artifacts")
         .and_then(Value::as_object)
         .context("publication artifact inventory")?;
+    let input_generation = manifest
+        .get("lineage")
+        .and_then(|lineage| lineage.get("input_generation"))
+        .and_then(Value::as_str)
+        .context("publication input generation")?;
+    csv_semantics::require_families(inventory)?;
     let mut sidecars = BTreeMap::new();
     let mut csv = BTreeMap::new();
     for name in inventory.keys() {
@@ -53,13 +62,7 @@ pub fn read(workbook: &Path) -> Result<Semantics> {
         match path.extension().and_then(|extension| extension.to_str()) {
             Some("xlsx") => {}
             Some("csv") => {
-                let mut reader = csv::ReaderBuilder::new()
-                    .has_headers(false)
-                    .from_path(&path)?;
-                let rows = reader
-                    .records()
-                    .map(|row| row.map(|row| row.iter().map(str::to_string).collect()))
-                    .collect::<std::result::Result<Vec<Vec<String>>, csv::Error>>()?;
+                let rows = csv_semantics::read(&path, name, input_generation)?;
                 csv.insert(name.clone(), rows);
             }
             Some("json" | "jsonl") => {

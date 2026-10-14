@@ -194,3 +194,22 @@ fn combine_cache(
         ),
     })
 }
+
+pub(super) fn retained_error(
+    path: &Path,
+    source: std::io::Error,
+    io: &mut RecoveryArchiveIo<'_>,
+) -> Result<FetchError, FetchError> {
+    error(
+        &source,
+        path.as_os_str()
+            .len()
+            .checked_add(512)
+            .ok_or_else(|| shell::limit("diagnostic bytes"))?,
+        io,
+    )?;
+    Ok(FetchError::Cache {
+        path: path.to_path_buf(),
+        source,
+    })
+}

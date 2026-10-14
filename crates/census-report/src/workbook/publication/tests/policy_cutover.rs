@@ -34,11 +34,8 @@ fn cutover(grad_year: Option<i16>, prior_policy: u32) -> TestResult {
     let old_directory = old.workbook.parent().ok_or("historical directory")?;
     let retained = generation_bytes(old_directory)?;
     let lease = store.get_lease_record(old.intent.request.identity.as_str())?;
-    check!(matches!(verify_published(&old.workbook),
-        Err(crate::report::ReportError::Invariant { ref detail })
-            if detail == "unsupported or malformed frozen export lineage"));
+    historical_input_is_read_only(&old)?;
     let current = ExportDataset::load(&store)?;
-    check!(eq; current.lineage.policy_revision, 19);
     check!(eq; current.lineage.input_digest, old.lineage.input_digest);
     check!(eq; current.lineage.source_digest, old.lineage.source_digest);
     check!(ne; current.lineage.input_generation, old.lineage.input_generation);
@@ -71,24 +68,50 @@ fn cutover(grad_year: Option<i16>, prior_policy: u32) -> TestResult {
     drop(current);
     drop(store);
     let reopened = Store::open(&store_path)?;
-    check!(eq; reopened.publication_read(&old.intent.request.identity)?, Some(old.intent));
+    check!(eq; reopened.publication_read(&old.intent.request.identity)?, Some(old.intent.clone()));
     check!(eq; reopened.publication_read(&identity)?, Some(new_intent));
     check!(eq; generation_bytes(old_directory)?, retained);
     check!(eq; current_workbook(&root)?, published);
     check!(eq; verify_published(&published)?.generation_digest, receipt.as_str());
-    check!(matches!(verify_published(&old.workbook),
-        Err(crate::report::ReportError::Invariant { ref detail })
-            if detail == "unsupported or malformed frozen export lineage"));
+    historical_input_is_read_only(&old)?;
+    check!(eq; generation_bytes(old_directory)?, retained);
     Ok(())
 }
 
 #[test]
-fn policy_nineteen_cannot_reuse_policy_sixteen_or_seventeen_published_receipts() -> TestResult {
+fn current_policy_cannot_reuse_historical_published_receipts() -> TestResult {
     [Some(2027), Some(2028), None]
         .into_iter()
         .try_for_each(|year| {
-            [16, 17]
+            [19, 18, 17, 16]
                 .into_iter()
                 .try_for_each(|policy| cutover(year, policy))
         })
+}
+
+fn historical_input_is_read_only(old: &historical::Historical) -> TestResult {
+    let directory = old.workbook.parent().ok_or("historical directory")?;
+    manifest::verify_directory(directory)?;
+    if matches!(old.lineage.policy_revision, 18 | 19) {
+        let dataset = ExportDataset::reopen_frozen(&directory.join("frozen-input.json"))?;
+        check!(eq; dataset.lineage, old.lineage);
+        let semantics = if old.lineage.policy_revision == 18 {
+            census_domain::model::EventSemantics::Legacy18
+        } else {
+            census_domain::model::EventSemantics::FlatEvents19
+        };
+        check!(eq; dataset.semantic_policy()?, semantics);
+        check!(matches!(
+            dataset.ensure_current_policy(),
+            Err(crate::report::ReportError::Invariant { ref detail })
+                if detail == "historical recruiting policy is read-only and cannot capture or publish"
+        ));
+    } else {
+        check!(matches!(
+            verify_published(&old.workbook),
+            Err(crate::report::ReportError::Invariant { ref detail })
+                if detail == "unsupported or malformed frozen export lineage"
+        ));
+    }
+    Ok(())
 }

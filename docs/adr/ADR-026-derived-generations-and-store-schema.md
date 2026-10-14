@@ -447,3 +447,19 @@ digest and unchanged descriptor version/revision. Retain the exact policy-17 des
 and reject its old reference without rewriting the raw profile. Current selected execution
 remains unqualified. The dated result-status verification document records actual evidence
 separately from this architectural decision.
+
+### 2026-10-14: policy 20 and normalized artifact revision 3
+
+New scalar publications use policy 20: versioned combined-event completion, retained eligible
+and tied candidate inventories, and eight normalized CSV families. Policy 19 retains its original
+flat-event semantics; policy 18 retains its original terminal-status semantics. Both remain
+read-only under their original layouts and keys, not reinterpreted as policy 20.
+
+Publication artifact revision 3 requires 21 inventory entries: the original 13 plus the eight
+normalized families. Historical revisions 1/2 retain their original inventory and readback
+dispatch. Logical schema 3, frozen codec/token 3, physical Store schema 2 and key format 1 are
+unchanged. Optional combined-event fields do not change historical encodings when absent.
+
+This records integrated implementation, not source-adapter, selected-profile, national or release
+qualification. Exact commands, failures and historical-fixture limits are retained in the
+[review evidence](../verification/2026-10-14-deep-codebase-review.md#repair-integration--2026-10-14).

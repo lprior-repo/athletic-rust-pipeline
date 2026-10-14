@@ -79,6 +79,7 @@ impl<'a> Mapper<'a> {
             source_key: row.source_key,
             source_athlete: Some(subject.1),
             retained_conflicts: Vec::new(),
+            combined_completion: None,
         };
         self.accumulated.performances.insert(key, performance);
         self.stats.performances = self.stats.performances.saturating_add(1);

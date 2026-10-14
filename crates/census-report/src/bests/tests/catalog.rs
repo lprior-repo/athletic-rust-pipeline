@@ -52,6 +52,36 @@ fn checked_public_key_admits_only_the_positive_event_for_one_athlete() -> TestRe
             EventDisposition::Included(EventKind::Track100m),
         ),
         (
+            "300m",
+            EventKind::Track300m,
+            EventDisposition::Included(EventKind::Track300m),
+        ),
+        (
+            "500m",
+            EventKind::Track500m,
+            EventDisposition::Included(EventKind::Track500m),
+        ),
+        (
+            "600m",
+            EventKind::Track600m,
+            EventDisposition::Included(EventKind::Track600m),
+        ),
+        (
+            "2000m",
+            EventKind::Track2000m,
+            EventDisposition::Included(EventKind::Track2000m),
+        ),
+        (
+            "10000m",
+            EventKind::Track10000m,
+            EventDisposition::Included(EventKind::Track10000m),
+        ),
+        (
+            "2 Mile",
+            EventKind::Track2Miles,
+            EventDisposition::Included(EventKind::Track2Miles),
+        ),
+        (
             "100m Wheelchair",
             EventKind::Unmapped {
                 label: "100m Wheelchair".into(),
@@ -85,7 +115,7 @@ fn checked_public_key_admits_only_the_positive_event_for_one_athlete() -> TestRe
         }
         check!(eq; performance.athlete, athlete);
     }
-    check!(eq; keys.len(), 1);
+    check!(eq; keys.len(), 7);
     check!(eq; keys.first().ok_or("positive key")?.event_kind, EventKind::Track100m);
     check!(eq; keys.first().ok_or("positive key")?.athlete_id, athlete);
     Ok(())
@@ -94,7 +124,7 @@ fn checked_public_key_admits_only_the_positive_event_for_one_athlete() -> TestRe
 #[test]
 fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_keys() -> TestResult {
     let meet = test_meet(vec![Sport::OutdoorTrack]);
-    for label in ["700m", "3 Mile", "100m mystery", "100m <span>"] {
+    for label in ["700m", "3 Mile", "650m", "100m mystery", "100m <span>"] {
         let event = catalog_event(
             EventKind::Unmapped {
                 label: label.into(),
@@ -189,6 +219,12 @@ fn append_catalog_meet(store: &Store) -> TestResult {
     store.append(Table::Meets, &meet)?;
     for (label, kind) in [
         ("100m", EventKind::Track100m),
+        ("300m", EventKind::Track300m),
+        ("500m", EventKind::Track500m),
+        ("600m", EventKind::Track600m),
+        ("2000m", EventKind::Track2000m),
+        ("10000m", EventKind::Track10000m),
+        ("2 Mile", EventKind::Track2Miles),
         (
             "Wheelchair 100m",
             EventKind::Unmapped {
@@ -218,18 +254,17 @@ fn append_catalog_meet(store: &Store) -> TestResult {
 }
 
 fn catalog_readback(dataset: &ExportDataset) -> TestResult {
-    check!(eq; dataset.events.len(), 4);
-    check!(eq; dataset.performances.len(), 4);
+    check!(eq; dataset.events.len(), 10);
+    check!(eq; dataset.performances.len(), 10);
     let mut included = 0usize;
     let mut excluded = 0usize;
     let mut unresolved = 0usize;
     let mut keys = Vec::new();
     for event in &dataset.events {
         match RecruitingCatalogV1::new().classify(event, Sport::OutdoorTrack)? {
-            EventDisposition::Included(EventKind::Track100m) => {
+            EventDisposition::Included(_) => {
                 included = included.checked_add(1).ok_or("included count")?
             }
-            EventDisposition::Included(_) => return Err("unexpected included family".into()),
             EventDisposition::Excluded(_) => {
                 excluded = excluded.checked_add(1).ok_or("excluded count")?
             }
@@ -258,8 +293,8 @@ fn catalog_readback(dataset: &ExportDataset) -> TestResult {
             keys.push(key);
         }
     }
-    check!(eq; (included, excluded, unresolved), (1, 2, 1));
-    check!(eq; keys.len(), 1);
+    check!(eq; (included, excluded, unresolved), (7, 2, 1));
+    check!(eq; keys.len(), 7);
     check!(eq; keys.first().ok_or("eligible key")?.event_kind, EventKind::Track100m);
 
     Ok(())

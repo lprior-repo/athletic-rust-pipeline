@@ -222,6 +222,7 @@ fn performance(
             source_key,
             source_athlete: Some(source_athlete),
             retained_conflicts: Vec::new(),
+            combined_completion: None,
         },
     )?;
     Ok(())
@@ -1245,6 +1246,7 @@ fn a_provider_adjusted_track_size_mark_retains_published_and_adjusted_distinctly
                 "tsr-1",
             )),
             retained_conflicts: Vec::new(),
+            combined_completion: None,
         },
     )?;
 
@@ -1374,6 +1376,7 @@ fn a_legacy_performance_without_adjustment_provenance_publishes_blank_conversion
                 "legacy-1",
             )),
             retained_conflicts: Vec::new(),
+            combined_completion: None,
         },
     )?;
 

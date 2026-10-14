@@ -77,8 +77,9 @@ fn shared_selection_better_numeric_marks_win_even_with_unknown_dates() -> TestRe
     numeric_cases()?.iter().try_for_each(|case| -> TestResult {
         let earlier = fixture.report(case, "earlier-slower", "2024-02-29")?;
         let later = fixture.report(case, "later-slower", "2026-04-01")?;
-        let mut better = fixture.report(case, "better-unknown-date", "2025-02-29")?;
-        better.performance.mark = case.better.clone();
+        let better = fixture
+            .report(case, "better-unknown-date", "2025-02-29")?
+            .with_mark(case.better.clone())?;
         assert_all_orders(&fixture, &[earlier, better.clone(), later], &better)
     })
 }
@@ -147,7 +148,7 @@ pub(super) fn reverse_meet_order(
 }
 
 fn rebind_event(observation: &mut Observation, case: &NumericCase) -> TestResult {
-    let event = crate::test_events::owned(CanonicalEvent::new(
+    let event = CanonicalEvent::new(
         EventIdentity {
             meet: &observation.meet.id,
             kind: case.kind.clone(),
@@ -155,8 +156,8 @@ fn rebind_event(observation: &mut Observation, case: &NumericCase) -> TestResult
             division: None,
             round: None,
         },
-        EventSpecification::default(),
-    )?);
+        observation.event.specification.clone(),
+    )?;
     observation.event.id = event.id;
     observation.event.meet = observation.meet.id.clone();
     observation.performance.meet = observation.meet.id.clone();
@@ -269,8 +270,7 @@ fn shared_selection_tie_preference_cannot_revive_a_retained_conflict_context() -
     let fixture = TieFixture::new()?;
     numeric_cases()?.iter().try_for_each(|case| -> TestResult {
         let contested = fixture.report(case, "contested-earliest", "2024-02-29")?;
-        let mut revision = contested.clone();
-        revision.performance.mark = case.better.clone();
+        let revision = contested.clone().with_mark(case.better.clone())?;
         let mut duplicate = contested.clone();
         duplicate.performance.id = Id::mint("perf", &["contested-duplicate"]);
         duplicate.performance.source_key = "contested-duplicate".into();
@@ -298,6 +298,165 @@ fn shared_selection_tie_preference_cannot_revive_a_retained_conflict_context() -
                     .retain(|performance| performance.id != clean.performance.id);
                 check!(eq; selected(&dataset)?, Vec::new());
                 Ok(())
+            })
+    })
+}
+
+fn assert_inventory(
+    dataset: &ExportDataset,
+    winner: &Observation,
+    eligible: usize,
+    ids: &[PerformanceId],
+) -> TestResult {
+    let row = assert_winner(dataset, winner)?;
+    let mut expected = ids.to_vec();
+    expected.sort();
+    check!(eq; row.eligible_candidate_count, eligible);
+    check!(eq; row.tied_performance_count, expected.len());
+    check!(eq; row.tied_performance_ids, expected);
+    Ok(())
+}
+
+fn same_context(mut report: Observation, context: &Observation) -> Observation {
+    report.meet = context.meet.clone();
+    report.event = context.event.clone();
+    report.performance.meet = context.performance.meet.clone();
+    report.performance.event = context.performance.event.clone();
+    report
+}
+
+#[test]
+fn tie_inventory_counts_distinct_eligible_and_tied_performances() -> TestResult {
+    let fixture = TieFixture::new()?;
+    numeric_cases()?.iter().try_for_each(|case| -> TestResult {
+        let [preferred, other] = stable_id_reports(&fixture, case)?;
+        let preferred = preferred.with_mark(case.better.clone())?;
+        let duplicate = same_context(other.with_mark(case.better.clone())?, &preferred);
+        let later = fixture
+            .report(case, "inventory-later", "2026-04-02")?
+            .with_mark(case.better.clone())?;
+        let inferior = fixture.report(case, "inventory-inferior", "2024-02-29")?;
+        let directory = tempfile::tempdir()?;
+        let store = fixture.store_with_replay(
+            directory.path(),
+            &[preferred.clone(), duplicate, later.clone(), inferior],
+        )?;
+        let dataset = ExportDataset::load(&store)?;
+        assert_inventory(
+            &dataset,
+            &preferred,
+            3,
+            &[
+                preferred.performance.id.clone(),
+                later.performance.id.clone(),
+            ],
+        )
+    })
+}
+
+#[test]
+fn tie_inventory_deduplicates_replayed_publications() -> TestResult {
+    let fixture = TieFixture::new()?;
+    numeric_cases()?.iter().try_for_each(|case| -> TestResult {
+        let earlier = fixture.report(case, "replay-earlier", "2025-04-01")?;
+        let later = fixture.report(case, "replay-later", "2026-04-01")?;
+        let observations = [
+            earlier.clone(),
+            later.clone(),
+            earlier.clone(),
+            later.clone(),
+        ];
+        let directory = tempfile::tempdir()?;
+        let store = fixture.store_with_replay(directory.path(), &observations)?;
+        let dataset = ExportDataset::load(&store)?;
+        assert_inventory(
+            &dataset,
+            &earlier,
+            2,
+            &[earlier.performance.id.clone(), later.performance.id.clone()],
+        )
+    })
+}
+
+#[test]
+fn tie_inventory_conflicting_best_falls_back_to_clean_candidate() -> TestResult {
+    let fixture = TieFixture::new()?;
+    numeric_cases()?.iter().try_for_each(|case| -> TestResult {
+        let contested = fixture.report(case, "conflict-earliest", "2024-02-29")?;
+        let revision = contested.clone().with_mark(case.better.clone())?;
+        let clean = fixture.report(case, "conflict-clean", "2026-04-01")?;
+        let observations = [contested, revision, clean.clone()];
+        let directory = tempfile::tempdir()?;
+        let store = fixture.store_with_replay(directory.path(), &observations)?;
+        let dataset = ExportDataset::load(&store)?;
+        let row = assert_winner(&dataset, &clean)?;
+        check!(eq; row.result.value, case.value);
+        check!(eq; row.conflicts.len(), 1);
+        assert_inventory(
+            &dataset,
+            &clean,
+            1,
+            std::slice::from_ref(&clean.performance.id),
+        )
+    })
+}
+
+#[test]
+fn tie_inventory_precision_equivalent_marks_tie() -> TestResult {
+    let fixture = TieFixture::new()?;
+    let cases = numeric_cases()?;
+    let case = cases.first().ok_or("time fixture")?;
+    let [preferred, other] = stable_id_reports(&fixture, case)?;
+    let duplicate = same_context(
+        other.with_mark(Mark::TimeSeconds(ExactSeconds::parse("50.0")?))?,
+        &preferred,
+    );
+    let later = fixture
+        .report(case, "precision-later", "2026-04-02")?
+        .with_mark(Mark::TimeSeconds(ExactSeconds::parse("50.000")?))?;
+    check!(eq; crate::bests::mark_text(&preferred.performance.mark), "50.00");
+    check!(eq; crate::bests::mark_text(&duplicate.performance.mark), "50.0");
+    check!(eq; crate::bests::mark_text(&later.performance.mark), "50.000");
+    let directory = tempfile::tempdir()?;
+    let store = fixture.store_with_replay(
+        directory.path(),
+        &[preferred.clone(), duplicate, later.clone()],
+    )?;
+    let dataset = ExportDataset::load(&store)?;
+    assert_inventory(
+        &dataset,
+        &preferred,
+        2,
+        &[
+            preferred.performance.id.clone(),
+            later.performance.id.clone(),
+        ],
+    )
+}
+
+#[test]
+fn tie_inventory_is_permutation_invariant() -> TestResult {
+    let fixture = TieFixture::new()?;
+    numeric_cases()?.iter().try_for_each(|case| -> TestResult {
+        let [preferred, other] = stable_id_reports(&fixture, case)?;
+        let duplicate = same_context(other, &preferred);
+        let later = fixture.report(case, "perm-later", "2026-04-02")?;
+        let observations = [preferred.clone(), duplicate, later.clone()];
+        orders(&observations)?
+            .into_iter()
+            .try_for_each(|order| -> TestResult {
+                let directory = tempfile::tempdir()?;
+                let store = fixture.store_with_replay(directory.path(), &order)?;
+                let dataset = ExportDataset::load(&store)?;
+                assert_inventory(
+                    &dataset,
+                    &preferred,
+                    2,
+                    &[
+                        preferred.performance.id.clone(),
+                        later.performance.id.clone(),
+                    ],
+                )
             })
     })
 }

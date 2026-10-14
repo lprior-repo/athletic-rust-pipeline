@@ -2,6 +2,7 @@ use super::super::mark_text;
 use super::super::selection::Conflict;
 use super::super::Measure;
 use super::{Candidate, Parents};
+use crate::report::EventAdmission;
 use census_domain::model::CanonicalPerformance;
 use std::collections::BTreeSet;
 
@@ -35,12 +36,19 @@ pub(super) enum ContextIntegrity {
 pub(super) struct RetainedContexts<'a>(BTreeSet<(&'a str, CompetitionContext<'a>)>);
 
 impl<'a> RetainedContexts<'a> {
-    pub(super) fn of(performances: &[&'a CanonicalPerformance], parents: &Parents<'a>) -> Self {
+    pub(super) fn of(
+        performances: &[&'a CanonicalPerformance],
+        parents: &Parents<'a>,
+        admission: &EventAdmission<'_>,
+    ) -> Self {
         Self(
             performances
                 .iter()
                 .copied()
-                .filter(|performance| !performance.retained_conflicts.is_empty())
+                .filter(|performance| {
+                    !performance.retained_conflicts.is_empty()
+                        || super::combined::explicit_terminal(performance, admission)
+                })
                 .filter_map(|performance| {
                     let athlete = parents.athlete(performance.athlete.as_str())?;
                     Some((athlete.id.as_str(), CompetitionContext::of(performance)))

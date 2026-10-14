@@ -103,6 +103,7 @@ fn performance(store: &Store, athlete: &AthleteId, team: &TeamId) -> TestResult 
         source_key,
         source_athlete: None,
         retained_conflicts: Vec::new(),
+        combined_completion: None,
     };
     store.append(Table::Performances, &row)?;
     Ok(())

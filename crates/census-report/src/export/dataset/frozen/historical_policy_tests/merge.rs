@@ -2,11 +2,11 @@ mod schema_three;
 
 use super::super::codec::sha256_hex;
 use super::super::stream::StreamKind;
-use super::super::{cancel_freeze_v2, generation, INPUT_TABLES, POLICY_REVISION};
+use super::super::{cancel_freeze_v2, generation, INPUT_TABLES};
 use super::*;
 use crate::export::ExportDataset;
 
-const PRIOR_POLICIES: [u32; 10] = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+const PRIOR_POLICIES: [u32; 12] = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 const PRIOR_STATES: [Option<InputState>; 5] = [
     None,
     Some(InputState::Requested),
@@ -16,18 +16,19 @@ const PRIOR_STATES: [Option<InputState>; 5] = [
 ];
 
 fn prior_manifest(current: &FrozenManifest, policy: u32) -> TestResult<FrozenManifest> {
-    check!(eq; POLICY_REVISION, 19);
-    check!(eq; current.lineage.schema_revision, 3);
-    check!(eq; current.lineage.policy_revision, 19);
     let mut prior = current.clone();
     prior.lineage.policy_revision = policy;
+    if matches!(policy, 14..=19) {
+        prior.lineage.schema_revision = 3;
+        prior.codec = "census-frozen-jsonl-v3".into();
+        prior.codec_revision = 3;
+        prior.input_token.protocol = 3;
+        prior.input_token.logical_schema = 3;
+    }
     prior.lineage.input_generation = generation(&prior.lineage)?;
     prior.input_token.semantic_policy = policy;
     prior.input_token.validate_against(&prior.lineage)?;
-    if matches!(policy, 15 | 16 | 17) {
-        check!(eq; prior.lineage.schema_revision, 3);
-        check!(eq; prior.codec_revision, 3);
-        check!(eq; prior.input_token.protocol, 3);
+    if matches!(policy, 15..=19) {
         check!(eq; prior.streams.len(), 15);
         check!(eq; prior.source_fingerprints.len(), 16);
         for kind in [
@@ -50,16 +51,29 @@ fn install_prior_policy(
     state: Option<InputState>,
 ) -> TestResult<Retained> {
     let encoded = serialized_bytes(manifest)?;
-    let expected = format!("policy revision {}", manifest.lineage.policy_revision);
-    check!(matches!(
-        FrozenManifest::decode(&encoded),
-        Err(FrozenCodecError::UnsupportedVersion { what: "manifest lineage", ref found, ref supported })
-            if found.contains(&expected) && supported == "schema revision 3 policy revisions 18 or 19"
-    ));
+    if matches!(manifest.lineage.policy_revision, 18 | 19) {
+        check!(eq; FrozenManifest::decode(&encoded)?, *manifest);
+    } else {
+        let expected = format!("policy revision {}", manifest.lineage.policy_revision);
+        check!(
+            matches!(
+                FrozenManifest::decode(&encoded),
+                Err(FrozenCodecError::UnsupportedVersion { what: "manifest lineage", ref found, .. })
+                    if found.contains(&expected)
+            ) || matches!(
+                FrozenManifest::decode(&encoded),
+                Err(FrozenCodecError::UnsupportedVersion { what: "frozen manifest", ref found, .. })
+                    if found == "census-frozen-jsonl-v2 revision 2"
+            )
+        );
+    }
     let manifest_digest = objects::install(&objects::directory(directory), &encoded)?;
     check!(eq; objects::read(&objects::directory(directory), &manifest_digest, objects::MANIFEST_CEILING)?, encoded);
-    let inventory =
-        verify::inventory_of(&objects::directory(directory), &manifest_digest, manifest)?;
+    let inventory = if manifest.codec_revision == 2 {
+        legacy_inventory::inventory(directory, &manifest_digest, manifest)?
+    } else {
+        verify::inventory_of(&objects::directory(directory), &manifest_digest, manifest)?
+    };
     let attempt = serialized_digest(&("pr9-policy-merge", &manifest_digest, format!("{state:?}")))?;
     let retained = Retained {
         attempt,
@@ -74,26 +88,29 @@ fn install_prior_policy(
 }
 
 fn refused_prior_policy(store: &Store, job: &str, policy: u32) -> TestResult {
-    let expected = format!("policy revision {policy}");
-    check!(matches!(
-        freeze_v2(store, job),
-        Err(ReportError::ArtifactCorrupt { ref detail, .. })
-            if detail.contains("unsupported manifest lineage")
-                && detail.contains(&expected)
-                && detail.contains("schema revision 3 policy revisions 18 or 19")
-    ));
-    Ok(())
+    check_refusal(freeze_v2(store, job), policy)
 }
 
 fn refused_prior_cancellation(store: &Store, job: &str, policy: u32) -> TestResult {
-    let expected = format!("policy revision {policy}");
-    check!(matches!(
-        cancel_freeze_v2(store, job),
-        Err(ReportError::ArtifactCorrupt { ref detail, .. })
-            if detail.contains("unsupported manifest lineage")
-                && detail.contains(&expected)
-                && detail.contains("schema revision 3 policy revisions 18 or 19")
-    ));
+    check_refusal(cancel_freeze_v2(store, job), policy)
+}
+
+fn check_refusal<T>(result: Result<T, ReportError>, policy: u32) -> TestResult {
+    if matches!(policy, 18 | 19) {
+        check!(matches!(
+            result,
+            Err(ReportError::Invariant { ref detail })
+                if detail.contains("historical recruiting policy is read-only")
+        ));
+    } else {
+        let expected = format!("policy revision {policy}");
+        check!(matches!(
+            result,
+            Err(ReportError::ArtifactCorrupt { ref detail, .. })
+                if (detail.contains("unsupported manifest lineage") && detail.contains(&expected))
+                    || detail.contains("unsupported frozen manifest: census-frozen-jsonl-v2")
+        ));
+    }
     Ok(())
 }
 
@@ -127,8 +144,8 @@ fn policy_preserved(policy: u32, state: Option<InputState>) -> TestResult {
 }
 
 #[test]
-fn policy_eighteen_preserves_prior_policies_eight_through_seventeen_in_every_retained_state(
-) -> TestResult {
+fn historical_policies_eight_through_nineteen_are_preserved_in_every_retained_state() -> TestResult
+{
     PRIOR_POLICIES.into_iter().try_for_each(|policy| {
         PRIOR_STATES
             .into_iter()
@@ -148,9 +165,10 @@ fn prior_archive(
     policy: u32,
     coverage: PriorCoverage,
 ) -> TestResult<Vec<u8>> {
-    if matches!(policy, 14 | 15 | 16 | 17) {
+    if matches!(policy, 14..=19) {
         let data = serialized_bytes(dataset)?;
         let mut lineage = dataset.lineage.clone();
+        lineage.schema_revision = 3;
         lineage.policy_revision = policy;
         lineage.input_digest = sha256_hex(&data);
         lineage.input_generation = generation(&lineage)?;
@@ -211,14 +229,13 @@ fn archive_preserved(policy: u32, coverage: PriorCoverage) -> TestResult {
     let seeded = schema_three::seed(policy)?;
     let store = seeded.store;
     let dataset = ExportDataset::load(&store)?;
-    check!(eq; dataset.lineage.policy_revision, 19);
-    if matches!(policy, 15 | 16 | 17) {
+    if matches!(policy, 15..=19) {
         check!(eq; dataset.relays.len(), 1);
         check!(eq; dataset.coverage_evidence.rows.len(), 1);
         check!(eq; dataset.coverage_evidence.coach_lanes.len(), 1);
     }
     let retained = prior_archive(&dataset, &store, policy, coverage)?;
-    if matches!(policy, 14 | 15 | 16 | 17) {
+    if matches!(policy, 14..=19) {
         let shape: serde_json::Value = serde_json::from_slice(&retained)?;
         check!(eq; shape.pointer("/lineage/schema_revision"), Some(&serde_json::json!(3)));
         check!(eq; shape.pointer("/lineage/policy_revision"), Some(&serde_json::json!(policy)));
@@ -229,10 +246,7 @@ fn archive_preserved(policy: u32, coverage: PriorCoverage) -> TestResult {
     std::fs::write(&path, &retained)?;
     let sequence = store.snapshot().sequence();
     (0..2).try_for_each(|_| -> TestResult {
-        check!(matches!(
-            ExportDataset::reopen_frozen(&path),
-            Err(ReportError::Invariant { ref detail }) if detail == "unsupported or malformed frozen export lineage"
-        ));
+        check_archive(&path, &store, policy, &retained)?;
         check!(eq; std::fs::read(&path)?, retained);
         check!(eq; store.snapshot().sequence(), sequence);
         Ok(())
@@ -240,25 +254,41 @@ fn archive_preserved(policy: u32, coverage: PriorCoverage) -> TestResult {
     drop(dataset);
     drop(store);
     let reopened = Store::open(seeded.directory.path())?;
-    check!(matches!(
-        ExportDataset::reopen_frozen(&path),
-        Err(ReportError::Invariant { ref detail }) if detail == "unsupported or malformed frozen export lineage"
-    ));
+    check_archive(&path, &reopened, policy, &retained)?;
     check!(eq; std::fs::read(&path)?, retained);
     check!(eq; reopened.snapshot().sequence(), sequence);
     Ok(())
 }
 
 #[test]
-fn policy_eighteen_refuses_prior_full_coverage_archives_and_preserves_their_bytes() -> TestResult {
+fn historical_full_coverage_archives_are_preserved_without_rewriting_their_bytes() -> TestResult {
     PRIOR_POLICIES
         .into_iter()
         .try_for_each(|policy| archive_preserved(policy, PriorCoverage::Captured))
 }
 
+fn check_archive(path: &Path, store: &Store, policy: u32, retained: &[u8]) -> TestResult {
+    if matches!(policy, 18 | 19) {
+        let dataset = ExportDataset::reopen_frozen(path)?;
+        check!(eq; dataset.lineage.policy_revision, policy);
+        check!(eq; dataset.relays.len(), 1);
+        check!(eq; dataset.coverage_evidence.rows.len(), 1);
+        check!(eq; dataset.coverage_evidence.coach_lanes.len(), 1);
+        check_refusal(dataset.ensure_current_policy(), policy)?;
+        check_refusal(dataset.ensure_current(store), policy)?;
+        let value: serde_json::Value = serde_json::from_slice(retained)?;
+        check!(eq; serde_json::to_value(&dataset)?, *value.get("data").ok_or("historical data missing")?);
+    } else {
+        check!(matches!(
+            ExportDataset::reopen_frozen(path),
+            Err(ReportError::Invariant { .. })
+        ));
+    }
+    Ok(())
+}
+
 #[test]
-fn policy_eighteen_refuses_main_policy_eight_archive_before_missing_coverage_decode() -> TestResult
-{
+fn main_policy_eight_archive_is_refused_before_missing_coverage_decode() -> TestResult {
     archive_preserved(8, PriorCoverage::Missing)
 }
 
@@ -285,6 +315,7 @@ fn main_style_manifest(
     check!(eq; prior.lineage.policy_revision, 8);
     check!(eq; prior.streams.len(), 12);
     check!(eq; prior.source_fingerprints.len(), 13);
+    legacy_inventory::downgrade(current.directory(), &mut prior)?;
     Ok(prior)
 }
 
@@ -313,7 +344,6 @@ fn main_style_preserved(state: Option<InputState>) -> TestResult {
 }
 
 #[test]
-fn policy_eighteen_refuses_main_policy_eight_missing_coverage_manifest_without_retirement(
-) -> TestResult {
+fn main_policy_eight_missing_coverage_manifest_is_refused_without_retirement() -> TestResult {
     PRIOR_STATES.into_iter().try_for_each(main_style_preserved)
 }

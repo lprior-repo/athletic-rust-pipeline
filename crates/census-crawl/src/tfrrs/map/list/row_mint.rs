@@ -71,6 +71,7 @@ impl<'a> Absorb<'a> {
             source_key,
             source_athlete: Some(mints.source_athlete),
             retained_conflicts: Vec::new(),
+            combined_completion: None,
         };
         let key = id.as_str().to_string();
         if let Some(existing) = self.accumulator.performances.get_mut(&key) {

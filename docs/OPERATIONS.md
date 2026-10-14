@@ -549,15 +549,18 @@ previous capture) holds the exclusive `<cache-root>/archive-capacity.lock`, inve
 archive, reserves the net-new content and metadata bytes, and only then publishes. Already
 archived content addresses reserve nothing, so replaying an existing capture never fails on a
 near-limit archive, and two concurrent writers cannot both be admitted against a budget only one
-of them fits. `CENSUS_ARCHIVE_CAPACITY_BYTES` configures the bound (default 100 MiB); exhaustion
-is the typed `FetchError::ArchiveCapacity` outcome naming the archive, used bytes, requested bytes
-and capacity, it stops intake for the run, and it never deletes or rewrites existing evidence.
+of them fits. `CENSUS_ARCHIVE_CAPACITY_BYTES` configures the bound (default 20 GiB); exhaustion
+returns `FetchError::ArchiveCapacity` and emits an error with archive, used, reserved, requested,
+projected and capacity bytes. It refuses capture publication without deleting retained evidence;
+it does not prove that the workflow driver stopped or that ingest completions are new captures.
 Inventory is fail-closed: an unreadable archive directory, a symbolic link, or an entry that is
 neither a regular file nor a directory refuses accounting instead of under-reporting usage.
 304 reuse verifies the planned metadata and bounded body under the same publication lock; it cannot
 overwrite a newer refresh. Contending downloads retain their own archive before lock refusal.
 Quarantine and failed staging directories are retained and synchronized; preserve them for operator
 inspection rather than deleting a potentially unique capture after an IO/publication failure.
+Lock filenames are synchronization artifacts, not evidence of a held lock. Do not unlink them
+while processes can use the archive: replacing a lock inode can break mutual exclusion.
 
 Arbiter incomplete-response recovery uses `arbiter_coaches_incomplete_v2:<state>:<org>:<public-id>`
 with version-2 owner-bound payloads. An unchanged incomplete cached response triggers an ordinary

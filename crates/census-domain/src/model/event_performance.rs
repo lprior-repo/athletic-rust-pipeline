@@ -39,7 +39,7 @@ impl CanonicalEvent {
     }
 
     pub fn resolved_source_kind(&self) -> Option<EventKind> {
-        self.resolved_source_kind_with_policy(EventSemantics::FlatEvents19)
+        self.resolved_source_kind_with_policy(EventSemantics::CURRENT)
     }
 
     pub fn resolved_source_kind_with_policy(&self, semantics: EventSemantics) -> Option<EventKind> {
@@ -61,7 +61,7 @@ impl CanonicalEvent {
     }
 
     pub fn source_bound_kind(&self, kind: &EventKind) -> bool {
-        self.source_bound_kind_with_policy(kind, EventSemantics::FlatEvents19)
+        self.source_bound_kind_with_policy(kind, EventSemantics::CURRENT)
     }
 
     pub fn source_bound_kind_with_policy(
@@ -133,6 +133,8 @@ pub struct CanonicalPerformance {
     pub observed_grade: Option<Grade>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub adjustment: Option<super::Adjustment>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub combined_completion: Option<super::CombinedEventCompletion>,
     pub evidence: Vec<Evidence>,
     pub source_key: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -209,11 +211,35 @@ impl CanonicalPerformance {
             source_key: identity.source_key.to_owned(),
             source_athlete: None,
             retained_conflicts: Vec::new(),
+            combined_completion: None,
         }
     }
 
     pub fn mark_compatible(&self, kind: &EventKind) -> bool {
         mark_kind_compatible(kind, &self.mark)
+    }
+
+    pub fn combined_eligibility(
+        &self,
+        specification: &EventSpecification,
+    ) -> super::CombinedEligibility {
+        let Some(expected) = specification.combined_event.as_ref() else {
+            return super::CombinedEligibility::MissingSpecification;
+        };
+        let Some(completion) = self.combined_completion.as_ref() else {
+            return super::CombinedEligibility::MissingCompletion;
+        };
+        if completion.specification() != expected {
+            return super::CombinedEligibility::SpecificationConflict;
+        }
+        match (completion.completed_total(), &self.mark) {
+            (Ok(None), _) => super::CombinedEligibility::Incomplete,
+            (Err(_), _) => super::CombinedEligibility::PointsOverflow,
+            (Ok(Some(total)), Mark::Points(mark)) if total == *mark => {
+                super::CombinedEligibility::Eligible
+            }
+            _ => super::CombinedEligibility::TotalMismatch,
+        }
     }
 
     pub fn mint(

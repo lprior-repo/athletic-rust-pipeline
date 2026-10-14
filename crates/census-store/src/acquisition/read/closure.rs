@@ -67,54 +67,73 @@ fn dispatches(
     budget: &mut AcquisitionReadBudget,
 ) -> StoreResult<Vec<(Armed, Option<Observed>)>> {
     let mut dispatches: Vec<(Armed, Option<Observed>)> = Vec::new();
-    budget.reserve_recovery_owned(5 * std::mem::size_of::<(Armed, Option<Observed>)>() + 640)?;
+    let bytes = std::mem::size_of::<[(Armed, Option<Observed>); 5]>()
+        .checked_add(640)
+        .ok_or(CaptureError::ReadBudgetExceeded {
+            resource: "allocation",
+        })?;
+    budget.reserve_recovery_owned(bytes)?;
     dispatches
         .try_reserve_exact(5)
         .map_err(|_| CaptureError::ReadBudgetExceeded {
             resource: "allocation",
         })?;
     for hop in 0..=4 {
-        let copied = match protocol {
-            CaptureProtocolVersion::V1 => id.clone(),
-            CaptureProtocolVersion::V2 => {
-                id.try_clone()
-                    .map_err(|_| CaptureError::ReadBudgetExceeded {
-                        resource: "allocation",
-                    })?
+        match load_one_dispatch(rows, id, hop, protocol, budget)? {
+            Some((armed, response)) => {
+                validate_prior(dispatches.last(), &armed)?;
+                dispatches.push((armed, response));
             }
-        };
-        let dispatch =
-            AcquisitionDispatchId::new(copied, HopOrdinal::new(hop).map_err(CaptureError::Domain)?);
-        let prefix = dispatch_prefix(&dispatch);
-        let Some(armed): Option<Armed> =
-            take_fact(rows, &format!("{prefix}/armed"), protocol, budget)?
-        else {
-            break;
-        };
-        if armed.version != protocol {
-            return Err(CaptureError::CaptureProtocolUnsupported.into());
+            None => break,
         }
-        if armed.dispatch != dispatch {
-            return Err(CaptureError::CorruptClosure.into());
-        }
-        let response: Option<Observed> =
-            take_fact(rows, &format!("{prefix}/response"), protocol, budget)?;
-        if response
-            .as_ref()
-            .is_some_and(|response| response.version != protocol)
-        {
-            return Err(CaptureError::CaptureProtocolUnsupported.into());
-        }
-        if response
-            .as_ref()
-            .is_some_and(|r| r.dispatch != dispatch || !r.response.is_for_dispatch(&armed.request))
-        {
-            return Err(CaptureError::CorruptClosure.into());
-        }
-        validate_prior(dispatches.last(), &armed)?;
-        dispatches.push((armed, response));
     }
     Ok(dispatches)
+}
+
+fn load_one_dispatch(
+    rows: &mut BTreeMap<String, Vec<u8>>,
+    id: &AcquisitionAttemptId,
+    hop: u8,
+    protocol: CaptureProtocolVersion,
+    budget: &mut AcquisitionReadBudget,
+) -> StoreResult<Option<(Armed, Option<Observed>)>> {
+    let copied = match protocol {
+        CaptureProtocolVersion::V1 => id.clone(),
+        CaptureProtocolVersion::V2 => {
+            id.try_clone()
+                .map_err(|_| CaptureError::ReadBudgetExceeded {
+                    resource: "allocation",
+                })?
+        }
+    };
+    let dispatch =
+        AcquisitionDispatchId::new(copied, HopOrdinal::new(hop).map_err(CaptureError::Domain)?);
+    let prefix = dispatch_prefix(&dispatch);
+    let Some(armed): Option<Armed> = take_fact(rows, &format!("{prefix}/armed"), protocol, budget)?
+    else {
+        return Ok(None);
+    };
+    if armed.version != protocol {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
+    if armed.dispatch != dispatch {
+        return Err(CaptureError::CorruptClosure.into());
+    }
+    let response: Option<Observed> =
+        take_fact(rows, &format!("{prefix}/response"), protocol, budget)?;
+    if response
+        .as_ref()
+        .is_some_and(|response| response.version != protocol)
+    {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
+    if response
+        .as_ref()
+        .is_some_and(|r| r.dispatch != dispatch || !r.response.is_for_dispatch(&armed.request))
+    {
+        return Err(CaptureError::CorruptClosure.into());
+    }
+    Ok(Some((armed, response)))
 }
 fn validate_prior(
     prior_pair: Option<&(Armed, Option<Observed>)>,

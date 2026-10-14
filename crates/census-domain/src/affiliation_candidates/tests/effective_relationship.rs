@@ -38,14 +38,12 @@ fn coop_membership_keeps_both_intervals_inclusive_and_preserves_exact_audit_disp
             ),
             _ => (CandidateOutcome::Unknown, Disposition::CoopMemberUnknown),
         };
-        assert_eq!(selected.outcome, outcome);
-        assert_eq!(
-            selected.facts,
-            [FactDisposition::Assertion {
-                fact: claim,
-                disposition
-            }]
-        );
+        check!(eq; selected.outcome, outcome);
+        check!(eq; selected.facts,
+        [FactDisposition::Assertion {
+            fact: claim,
+            disposition
+        }]);
     }
     Ok(())
 }
@@ -72,19 +70,17 @@ fn visible_withdrawal_precedes_unknown_coop_member_in_the_assertion_audit() -> T
     )?];
     let change = changes.first().ok_or("change")?;
     let selected = select_candidates(fixture.query()?, &claims, &changes)?;
-    assert_eq!(selected.outcome, CandidateOutcome::Unknown);
-    assert_eq!(
-        selected.facts,
-        [
-            FactDisposition::Assertion {
-                fact: claim,
-                disposition: Disposition::WithdrawnClaim
-            },
-            FactDisposition::Change {
-                fact: change,
-                disposition: Disposition::ChangeApplied
-            },
-        ]
-    );
+    check!(eq; selected.outcome, CandidateOutcome::Unknown);
+    check!(eq; selected.facts,
+    [
+        FactDisposition::Assertion {
+            fact: claim,
+            disposition: Disposition::WithdrawnClaim
+        },
+        FactDisposition::Change {
+            fact: change,
+            disposition: Disposition::ChangeApplied
+        },
+    ]);
     Ok(())
 }

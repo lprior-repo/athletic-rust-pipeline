@@ -21,6 +21,7 @@ mod fetch_loop;
 mod fetch_state;
 mod rankings;
 mod script;
+pub(crate) mod transfer;
 pub(super) use capture::{capture_body, response_headers};
 use fetch_loop::{drive_capture, subscribe_fetch};
 use fetch_state::{complete_fetch, FetchCapture};

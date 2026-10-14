@@ -13,6 +13,8 @@ pub struct EventSpecification {
     pub implement: Option<ImplementMass>,
     pub indoor_track: Option<IndoorTrackSpecification>,
     pub category: Option<CompetitionCategory>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub combined_event: Option<crate::model::CombinedEventSpecification>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]

@@ -34,6 +34,14 @@ pub(crate) fn limit(
     available: usize,
 ) -> Result<(), GroupingError> {
     if needed > available {
+        tracing::error!(
+            stage,
+            group,
+            resource,
+            needed,
+            available,
+            "grouping capacity refuses the complete stage"
+        );
         return Err(GroupingError::BudgetExceeded {
             stage,
             group: group.to_owned(),

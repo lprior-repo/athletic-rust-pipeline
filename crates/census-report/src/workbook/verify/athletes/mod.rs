@@ -4,6 +4,7 @@ use census_domain::model::CanonicalAthlete;
 use super::canonical::cell_at;
 use super::expectations::Expectations;
 use super::labels;
+use super::labels::athlete_headers::Schema;
 use super::read::{
     compare, verify_header, verify_width, Book, Budget, SparseRow, EXCEL_COLUMNS_PER_SHEET,
     EXCEL_ROWS_PER_SHEET,
@@ -19,11 +20,12 @@ pub(super) fn verify(
     expectations: &Expectations<'_>,
     findings: &mut Findings,
 ) -> ReportResult<()> {
-    Verifier::new(expectations, findings).run(book)
+    Verifier::new(expectations, findings)?.run(book)
 }
 
 struct Verifier<'a, 'd> {
     expectations: &'a Expectations<'d>,
+    schema: Schema,
     ordered: Vec<&'a CanonicalAthlete>,
     printed: Vec<String>,
     seen: usize,
@@ -31,15 +33,17 @@ struct Verifier<'a, 'd> {
 }
 
 impl<'a, 'd> Verifier<'a, 'd> {
-    fn new(expectations: &'a Expectations<'d>, findings: &'a mut Findings) -> Self {
+    fn new(expectations: &'a Expectations<'d>, findings: &'a mut Findings) -> ReportResult<Self> {
+        let schema = Schema::of(expectations.dataset.semantic_policy()?);
         let ordered = ordered_athletes(expectations);
-        Self {
+        Ok(Self {
             expectations,
+            schema,
             ordered,
             printed: Vec::new(),
             seen: 0_usize,
             findings,
-        }
+        })
     }
 
     fn run(mut self, book: &mut Book) -> ReportResult<()> {
@@ -83,18 +87,13 @@ impl<'a, 'd> Verifier<'a, 'd> {
         verify_width(
             row,
             labels::ATHLETES,
-            labels::ATHLETE_HEADERS.len(),
+            self.schema.headers().len(),
             self.findings,
         );
         if row.index() != 0 {
             return false;
         }
-        verify_header(
-            row,
-            labels::ATHLETES,
-            &labels::ATHLETE_HEADERS,
-            self.findings,
-        );
+        verify_header(row, labels::ATHLETES, self.schema.headers(), self.findings);
         true
     }
 

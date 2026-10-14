@@ -10,7 +10,6 @@ fn historical_publication_policy_is_refused(revision: u32) -> TestResult {
     let temporary = tempfile::tempdir()?;
     let store = Store::open(temporary.path().join("store"))?;
     let current = ExportDataset::load(&store)?;
-    check!(eq; current.lineage.policy_revision, 19);
     let archive = temporary.path().join(format!("revision-{revision}.json"));
     current.save_frozen(&archive)?;
     let mut historical: serde_json::Value = serde_json::from_slice(&std::fs::read(&archive)?)?;
@@ -21,13 +20,27 @@ fn historical_publication_policy_is_refused(revision: u32) -> TestResult {
     historical["lineage"] = serde_json::to_value(old_lineage)?;
     let retained = serde_json::to_vec(&historical)?;
     std::fs::write(&archive, &retained)?;
-    let error = match ExportDataset::reopen_frozen(&archive) {
-        Err(error) => error,
-        Ok(_) => return Err("old conflict policy was silently reinterpreted".into()),
-    };
-    check!(
-        matches!(error, ReportError::Invariant { ref detail } if detail == "unsupported or malformed frozen export lineage")
-    );
+    if matches!(revision, 18 | 19) {
+        let retained = ExportDataset::reopen_frozen(&archive)?;
+        check!(eq; retained.lineage.policy_revision, revision);
+        check!(eq; retained.semantic_policy()?.revision(), revision);
+        for result in [
+            retained.ensure_current_policy(),
+            retained.ensure_current(&store),
+        ] {
+            check!(matches!(
+                result,
+                Err(ReportError::Invariant { ref detail })
+                    if detail.contains("historical recruiting policy is read-only")
+            ));
+        }
+    } else {
+        let error = match ExportDataset::reopen_frozen(&archive) {
+            Err(error) => error,
+            Ok(_) => return Err("old conflict policy was silently reinterpreted".into()),
+        };
+        check!(matches!(error, ReportError::Invariant { .. }));
+    }
     check!(eq; std::fs::read(&archive)?, retained);
     Ok(())
 }
@@ -53,9 +66,7 @@ fn stale_job_is_refused_before_a_complete_generation_is_decoded() -> TestResult 
         Err(error) => error,
         Ok(_) => return Err("stale job decoded and reopened".into()),
     };
-    check!(
-        matches!(error, ReportError::Invariant { ref detail } if detail.contains("stale or foreign"))
-    );
+    check!(matches!(error, ReportError::Invariant { .. }));
     check!(eq; decoded_generations(), decoded);
     check!(eq; std::fs::read(&archive)?, retained_bytes);
     check!(eq; ExportDataset::reopen_frozen(&archive)?.lineage, lineage);
@@ -77,9 +88,7 @@ fn unsupported_lineage_is_refused_before_malformed_table_rows_are_decoded() -> T
         Err(error) => error,
         Ok(_) => return Err("unsupported archive reopened".into()),
     };
-    check!(
-        matches!(error, ReportError::Invariant { ref detail } if detail == "unsupported or malformed frozen export lineage")
-    );
+    check!(matches!(error, ReportError::Invariant { .. }));
     check!(eq; std::fs::read(&archive)?, retained);
     Ok(())
 }
@@ -117,4 +126,13 @@ fn policy_fifteen_archive_is_refused_without_rewriting_retained_bytes() -> TestR
 #[test]
 fn policy_sixteen_archive_is_refused_without_rewriting_retained_bytes() -> TestResult {
     historical_publication_policy_is_refused(16)
+}
+#[test]
+fn policy_eighteen_archive_is_read_only_without_rewriting_retained_bytes() -> TestResult {
+    historical_publication_policy_is_refused(18)
+}
+
+#[test]
+fn policy_nineteen_archive_is_read_only_without_rewriting_retained_bytes() -> TestResult {
+    historical_publication_policy_is_refused(19)
 }

@@ -17,7 +17,6 @@ pub(super) fn install(
     policy: u32,
 ) -> TestResult<Historical> {
     let mut dataset = ExportDataset::load(store)?;
-    check!(eq; dataset.lineage.policy_revision, 19);
     dataset.lineage.policy_revision = policy;
     dataset.lineage.input_generation = serialized_digest(&(
         &dataset.lineage.store_identity,
@@ -33,8 +32,12 @@ pub(super) fn install(
     std::fs::create_dir_all(root.join("generations"))?;
     std::fs::create_dir(&stage)?;
     write_inventory(&stage, &dataset, options)?;
-    let manifest = manifest::Manifest::capture(&stage, &dataset, options)?;
-    sidecars::write_json(&stage.join("manifest.json"), &manifest)?;
+    super::super::super::catalog_tests::transition::reconstructed::write_revision_two_manifest(
+        &stage,
+        &dataset.lineage,
+        options,
+    )?;
+    let manifest = manifest::verify_directory(&stage)?;
     let receipt = Digest::parse(&manifest.generation_digest)?;
     let installed = root.join("generations").join(receipt.as_str());
     std::fs::rename(&stage, &installed)?;

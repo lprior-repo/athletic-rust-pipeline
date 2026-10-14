@@ -1,18 +1,28 @@
-use super::rankings_helper::{
-    click_numeric_page, parse_binding, validate_request, wait_for_active_page, CapturedRanking,
-    BINDING_NAME,
-};
+mod binding;
+mod completion;
+mod package;
+
+use self::binding::{process_binding_event, try_resolve_pending};
+use self::package::{observe_response_event, route_path_matches, validate_route};
+use super::rankings_helper::CapturedRanking;
 use crate::protocol::RankingsCapture;
 use crate::request::RankingsAction;
 use crate::{gate::ProfileGate, BrowserError};
-use chromiumoxide::cdp::browser_protocol::network::EventResponseReceived;
+use chromiumoxide::cdp::browser_protocol::network::{
+    EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent, EventResponseReceived,
+    RequestId,
+};
 use chromiumoxide::cdp::js_protocol::runtime::EventBindingCalled;
 use chromiumoxide::Page;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 pub(super) enum CaptureEvent {
     Binding(Arc<EventBindingCalled>),
+    Request(Arc<EventRequestWillBeSent>),
     Response(Arc<EventResponseReceived>),
+    Finished(Arc<EventLoadingFinished>),
+    Failed(Arc<EventLoadingFailed>),
     Closed,
 }
 
@@ -25,14 +35,154 @@ pub(super) struct CaptureContext<'a> {
     pub(super) gate: &'a ProfileGate,
 }
 
+const CANCELED_LOADING: &str = "net::ERR_ABORTED";
+
+struct WireRequest {
+    id: RequestId,
+    url: String,
+    method: String,
+}
+
+struct PendingBinding {
+    url: String,
+    method: String,
+    package: serde_json::Value,
+}
+
+pub(super) struct WireLedger {
+    requests: Vec<WireRequest>,
+    finished: HashMap<RequestId, f64>,
+    failed: HashSet<RequestId>,
+    redirects: HashSet<RequestId>,
+    pending: Vec<PendingBinding>,
+}
+
+impl WireLedger {
+    pub(super) fn new() -> Self {
+        Self {
+            requests: Vec::new(),
+            finished: HashMap::new(),
+            failed: HashSet::new(),
+            redirects: HashSet::new(),
+            pending: Vec::new(),
+        }
+    }
+
+    pub(super) fn note_request(
+        &mut self,
+        id: RequestId,
+        url: String,
+        method: String,
+        has_post_data: Option<bool>,
+        has_redirect: bool,
+        origin: &str,
+        capture: RankingsCapture,
+    ) {
+        if !validate_route(&url, origin, capture.clone(), &method) {
+            return;
+        }
+        if capture == RankingsCapture::Navigation && has_post_data == Some(true) {
+            return;
+        }
+        if has_redirect {
+            self.redirects.insert(id.clone());
+        }
+        if self.requests.iter().any(|existing| existing.id == id) {
+            return;
+        }
+        self.requests.push(WireRequest { id, url, method });
+    }
+
+    pub(super) fn note_response(
+        &mut self,
+        id: RequestId,
+        url: String,
+        status: i64,
+        origin: &str,
+        capture: RankingsCapture,
+    ) {
+        if !route_path_matches(&url, origin, capture) {
+            return;
+        }
+        if (300..400).contains(&status) {
+            self.redirects.insert(id);
+        }
+    }
+
+    pub(super) fn note_finished(&mut self, id: RequestId, encoded: f64) {
+        self.finished.insert(id, encoded);
+    }
+
+    pub(super) fn note_failed(
+        &mut self,
+        id: RequestId,
+        error_text: String,
+        canceled: Option<bool>,
+    ) {
+        if canceled == Some(true) || error_text == CANCELED_LOADING {
+            self.requests.retain(|existing| existing.id != id);
+            self.finished.remove(&id);
+            self.failed.remove(&id);
+            self.redirects.remove(&id);
+            return;
+        }
+        self.failed.insert(id);
+    }
+
+    pub(super) fn candidates_for(&self, url: &str, method: &str) -> Vec<RequestId> {
+        self.requests
+            .iter()
+            .filter(|existing| existing.url == url && existing.method.eq_ignore_ascii_case(method))
+            .map(|existing| existing.id.clone())
+            .collect()
+    }
+
+    pub(super) fn pending_count_for(&self, url: &str, method: &str) -> usize {
+        self.pending
+            .iter()
+            .filter(|existing| existing.url == url && existing.method.eq_ignore_ascii_case(method))
+            .count()
+    }
+}
+
+pub(super) fn uniquely_bound(
+    candidates: Vec<RequestId>,
+    pending_count: usize,
+) -> Result<Option<RequestId>, BrowserError> {
+    if pending_count != 1 {
+        return Err(BrowserError::Protocol);
+    }
+    let mut iter = candidates.into_iter();
+    let Some(single) = iter.next() else {
+        return Ok(None);
+    };
+    if iter.next().is_some() {
+        return Err(BrowserError::Protocol);
+    }
+    Ok(Some(single))
+}
+
 pub(super) async fn process_capture_event(
     event: CaptureEvent,
     context: &CaptureContext<'_>,
     page_one_seen: &mut bool,
+    ledger: &mut WireLedger,
 ) -> Result<Option<CapturedRanking>, BrowserError> {
     match event {
         CaptureEvent::Binding(binding) => {
-            process_binding_event(&binding, context, page_one_seen).await
+            process_binding_event(&binding, context, page_one_seen, ledger).await
+        }
+        CaptureEvent::Request(request) => {
+            ledger.note_request(
+                request.request_id.clone(),
+                request.request.url.clone(),
+                request.request.method.clone(),
+                request.request.has_post_data,
+                request.redirect_response.is_some(),
+                context.origin,
+                context.action.capture.clone(),
+            );
+            try_resolve_pending(context, page_one_seen, ledger).await
         }
         CaptureEvent::Response(response) => {
             observe_response_event(
@@ -41,172 +191,27 @@ pub(super) async fn process_capture_event(
                 context.origin,
                 context.gate,
             );
-            Ok(None)
-        }
-        CaptureEvent::Closed => Err(BrowserError::Transport),
-    }
-}
-
-async fn process_binding_event(
-    event: &EventBindingCalled,
-    context: &CaptureContext<'_>,
-    page_one_seen: &mut bool,
-) -> Result<Option<CapturedRanking>, BrowserError> {
-    let Some(package) = binding_package(event, context) else {
-        return Ok(None);
-    };
-    let Some(parsed) = resolve_binding(&package, context)? else {
-        return Ok(None);
-    };
-    if parsed.challenge {
-        context.gate.revoke();
-    }
-    if context.action.capture == RankingsCapture::Navigation {
-        return Ok(parsed.request_body.is_none().then_some(parsed));
-    }
-    let Some(request_page) = validate_request(
-        &parsed,
-        context.action,
-        context.action.page > 1 && !*page_one_seen,
-    )?
-    else {
-        return Ok(None);
-    };
-    if request_page == context.action.page {
-        return Ok(Some(parsed));
-    }
-    click_through_first_page(context, request_page, page_one_seen).await?;
-    Ok(None)
-}
-
-fn binding_package(
-    event: &EventBindingCalled,
-    context: &CaptureContext<'_>,
-) -> Option<serde_json::Value> {
-    if event.name != BINDING_NAME {
-        return None;
-    }
-    let package: serde_json::Value = serde_json::from_str(&event.payload).ok()?;
-    let expected_kind = match context.action.capture {
-        RankingsCapture::Navigation => "navigation",
-        RankingsCapture::Results => "results",
-    };
-    if package.get("nonce").and_then(serde_json::Value::as_u64) != Some(context.nonce)
-        || package.get("kind").and_then(serde_json::Value::as_str) != Some(expected_kind)
-    {
-        return None;
-    }
-    let route_url = package
-        .get("requestUrl")
-        .and_then(serde_json::Value::as_str);
-    let route_method = package.get("method").and_then(serde_json::Value::as_str);
-    if !route_url.is_some_and(|url| {
-        route_method.is_some_and(|method| {
-            validate_route(url, context.origin, context.action.capture.clone(), method)
-        })
-    }) {
-        return None;
-    }
-    Some(package)
-}
-
-fn resolve_binding(
-    package: &serde_json::Value,
-    context: &CaptureContext<'_>,
-) -> Result<Option<CapturedRanking>, BrowserError> {
-    match parse_binding(package, context.action.capture.clone()) {
-        Ok(value)
-            if validate_route(
-                &value.response_url,
+            ledger.note_response(
+                response.request_id.clone(),
+                response.response.url.clone(),
+                response.response.status,
                 context.origin,
                 context.action.capture.clone(),
-                &value.method,
-            ) =>
-        {
-            Ok(Some(value))
+            );
+            try_resolve_pending(context, page_one_seen, ledger).await
         }
-        Ok(_) => Err(BrowserError::Redirect),
-        Err(BrowserError::PayloadLimit) => {
-            context.gate.revoke();
-            Err(BrowserError::PayloadLimit)
+        CaptureEvent::Finished(finished) => {
+            ledger.note_finished(finished.request_id.clone(), finished.encoded_data_length);
+            try_resolve_pending(context, page_one_seen, ledger).await
         }
-        Err(BrowserError::Unavailable) => {
-            context.gate.revoke();
-            Err(BrowserError::Unavailable)
+        CaptureEvent::Failed(failed) => {
+            ledger.note_failed(
+                failed.request_id.clone(),
+                failed.error_text.clone(),
+                failed.canceled,
+            );
+            try_resolve_pending(context, page_one_seen, ledger).await
         }
-        Err(BrowserError::Redirect) => Err(BrowserError::Redirect),
-        Err(BrowserError::Shutdown) => Err(BrowserError::Shutdown),
-        Err(BrowserError::TaskPanicked) => Err(BrowserError::TaskPanicked),
-        Err(BrowserError::HumanRequired) => Err(BrowserError::HumanRequired),
-        Err(BrowserError::Timeout | BrowserError::Transport | BrowserError::Protocol) => Ok(None),
-    }
-}
-
-async fn click_through_first_page(
-    context: &CaptureContext<'_>,
-    request_page: u32,
-    page_one_seen: &mut bool,
-) -> Result<(), BrowserError> {
-    if *page_one_seen || request_page != 1 {
-        return Ok(());
-    }
-    *page_one_seen = true;
-    wait_for_active_page(context.page, 1, context.deadline).await?;
-    if !click_numeric_page(context.page, context.action.page).await? {
-        return Err(BrowserError::Timeout);
-    }
-    Ok(())
-}
-
-fn observe_response_event(
-    event: &EventResponseReceived,
-    capture: RankingsCapture,
-    origin: &str,
-    gate: &ProfileGate,
-) {
-    let expected_path = match capture {
-        RankingsCapture::Navigation => "/api/v1/tfRankings/GetNavInfo",
-        RankingsCapture::Results => "/api/v1/tfRankings/GetRankings",
-    };
-    let parsed = url::Url::parse(&event.response.url).ok();
-    if !parsed.as_ref().is_some_and(|value| {
-        value.origin().ascii_serialization() == origin && value.path() == expected_path
-    }) {
-        return;
-    }
-    let Ok(status) = u16::try_from(event.response.status) else {
-        return;
-    };
-    if status == 403
-        || status == 429
-        || event
-            .response
-            .headers
-            .inner()
-            .get("cf-mitigated")
-            .and_then(|value| value.as_str())
-            == Some("challenge")
-    {
-        gate.revoke();
-    }
-}
-fn validate_route(url: &str, origin: &str, kind: RankingsCapture, method: &str) -> bool {
-    let parsed = match url::Url::parse(url) {
-        Ok(value) => value,
-        Err(_) => return false,
-    };
-    if parsed.origin().ascii_serialization() != origin {
-        return false;
-    }
-    let expected_path = match kind {
-        RankingsCapture::Navigation => "/api/v1/tfRankings/GetNavInfo",
-        RankingsCapture::Results => "/api/v1/tfRankings/GetRankings",
-    };
-    if parsed.path() != expected_path {
-        return false;
-    }
-    match kind {
-        RankingsCapture::Navigation => method == "GET",
-        RankingsCapture::Results => method == "POST",
+        CaptureEvent::Closed => Err(BrowserError::Transport),
     }
 }

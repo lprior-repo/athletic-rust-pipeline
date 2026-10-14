@@ -612,6 +612,7 @@ fn add_athlete(
             source_key,
             source_athlete: Some(source.clone()),
             retained_conflicts: Vec::new(),
+            combined_completion: None,
         });
     }
     Ok(())

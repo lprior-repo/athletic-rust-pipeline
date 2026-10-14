@@ -20,3 +20,15 @@ Main owns public contracts and final integration; narrow adapters own source dif
 [ADR-012](ADR-012-single-acquisition-plane.md) fixes the acquisition boundary. New crate extraction
 requires an actual responsibility/consumer need, not a repeat of the superseded migration inventory.
 The only unfinished delivery ordering lives in [the active plan](../NATIONAL-CENSUS-PLAN.md).
+
+## Boundary clarification — 2026-10-14
+
+The browser bridge deliberately separates the JSON consumer contract (`census-crawl` wire DTOs)
+from browser runtime outcomes (`athleticnet-browser`). HTTP status/header objects and owned body
+bytes are not the consumer's integer status, header pairs and base64 representation. Neither crate
+imports the other's runtime outcome types; shared wire fixtures verify encoding/decoding parity.
+This is an effect-boundary representation, not a second domain model or acquisition engine.
+
+Do not extract a shared crate merely to remove these DTOs. Change the wire contract coherently at
+both endpoints and retain unknown-variant/field refusal. Qualification remains execution evidence,
+not this architectural decision.

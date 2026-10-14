@@ -1,9 +1,11 @@
 use super::*;
 
 mod classes;
+mod fixture;
 mod result_status;
 mod store;
 
+use fixture::{numeric_dataset, numeric_report, with_mark};
 use store::reloaded_dataset;
 
 struct NumericCase {
@@ -45,15 +47,17 @@ fn numeric_cases() -> TestResult<[NumericCase; 3]> {
     ])
 }
 
-fn conflicting_pair(dataset: &ExportDataset, case: &NumericCase) -> [CanonicalPerformance; 2] {
-    let first = reported(
+fn conflicting_pair(
+    dataset: &ExportDataset,
+    case: &NumericCase,
+) -> TestResult<[CanonicalPerformance; 2]> {
+    let first = numeric_report(
         dataset,
         "retained_scalar_conflict",
         case.conflicting[0].clone(),
-    );
-    let mut revision = first.clone();
-    revision.mark = case.conflicting[1].clone();
-    [first, revision]
+    )?;
+    let revision = with_mark(dataset, first.clone(), case.conflicting[1].clone())?;
+    Ok([first, revision])
 }
 
 fn append_orders(pair: &[CanonicalPerformance; 2]) -> [[CanonicalPerformance; 2]; 2] {
@@ -79,8 +83,8 @@ fn stored_same_id_numeric_conflict_has_no_best_and_preserves_observations() -> T
     numeric_cases()?
         .into_iter()
         .try_for_each(|case| -> TestResult {
-            let seed = selection_dataset(case.kind.clone())?;
-            let pair = conflicting_pair(&seed, &case);
+            let seed = numeric_dataset(case.kind.clone())?;
+            let pair = conflicting_pair(&seed, &case)?;
             append_orders(&pair)
                 .into_iter()
                 .try_for_each(|order| -> TestResult {
@@ -98,9 +102,9 @@ fn stored_same_id_numeric_conflict_uses_clean_context_fallback() -> TestResult {
     numeric_cases()?
         .into_iter()
         .try_for_each(|case| -> TestResult {
-            let seed = selection_dataset(case.kind.clone())?;
-            let pair = conflicting_pair(&seed, &case);
-            let mut clean = reported(&seed, "clean_context_fallback", case.fallback.clone());
+            let seed = numeric_dataset(case.kind.clone())?;
+            let pair = conflicting_pair(&seed, &case)?;
+            let mut clean = numeric_report(&seed, "clean_context_fallback", case.fallback.clone())?;
             clean.date = "2025-02-28".into();
             append_orders(&pair)
                 .into_iter()
@@ -126,8 +130,8 @@ fn clean_duplicate_cannot_revive_retained_conflict_context() -> TestResult {
     numeric_cases()?
         .into_iter()
         .try_for_each(|case| -> TestResult {
-            let seed = selection_dataset(case.kind.clone())?;
-            let pair = conflicting_pair(&seed, &case);
+            let seed = numeric_dataset(case.kind.clone())?;
+            let pair = conflicting_pair(&seed, &case)?;
             append_orders(&pair)
                 .into_iter()
                 .try_for_each(|order| -> TestResult {
@@ -153,14 +157,13 @@ fn every_stored_context_contested_has_no_published_best() -> TestResult {
     numeric_cases()?
         .into_iter()
         .try_for_each(|case| -> TestResult {
-            let seed = selection_dataset(case.kind.clone())?;
-            let pair = conflicting_pair(&seed, &case);
+            let seed = numeric_dataset(case.kind.clone())?;
+            let pair = conflicting_pair(&seed, &case)?;
             let mut other = pair[0].clone();
             other.id = Id::mint("perf", &["other_contested_context"]);
             other.source_key = "other_contested_context".into();
             other.date = "2025-02-28".into();
-            let mut other_revision = other.clone();
-            other_revision.mark = pair[1].mark.clone();
+            let other_revision = with_mark(&seed, other.clone(), pair[1].mark.clone())?;
             append_orders(&pair)
                 .into_iter()
                 .try_for_each(|order| -> TestResult {

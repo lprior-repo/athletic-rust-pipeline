@@ -88,6 +88,7 @@ fn performance(index: usize, version: usize) -> TestResult<CanonicalPerformance>
         source_key: format!("athlete-{index}"),
         source_athlete: Some(identity),
         retained_conflicts: Vec::new(),
+        combined_completion: None,
     })
 }
 

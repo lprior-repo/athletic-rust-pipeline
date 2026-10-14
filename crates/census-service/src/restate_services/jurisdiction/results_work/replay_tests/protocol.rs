@@ -151,7 +151,7 @@ pub(super) fn completion(
         .ok_or("Results Run proposal absent")?;
     check!(eq; frames.iter().filter(|frame| frame.kind == 0x0411).count(), 1);
     check!(eq; frames.iter().filter(|frame| frame.kind == 0x0005).count(), 1);
-    check!(codec::field(&run.payload, 12)?.map_or(true, |name| name.is_empty()));
+    check!(codec::field(&run.payload, 12)?.is_none_or(|name| name.is_empty()));
     check!(eq; proposal.number(1)?, run.number(11)?);
     let outcome = serde_json::from_slice(proposal.bytes(14)?)?;
     journal.push(state.clone());

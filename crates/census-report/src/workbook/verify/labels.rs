@@ -1,5 +1,9 @@
 use crate::bests::{SharedSelection, SurfaceClass};
 
+use athlete_headers::Schema;
+
+pub(super) mod athlete_headers;
+
 pub(super) const ATHLETES: &str = "Athletes";
 
 pub(super) const PRS: &str = "PRs";
@@ -39,73 +43,6 @@ pub(super) const PERFORMANCE_HEADERS: [&str; 20] = [
     "Source",
     "Source ResultID",
     "Source URL",
-];
-
-pub(super) const ATHLETE_HEADERS: [&str; 64] = [
-    "Athlete ID",
-    "Name",
-    "Gender",
-    "Graduation Year",
-    "Observed School Year",
-    "State",
-    "School",
-    "School ID",
-    "School City",
-    "TF",
-    "XC",
-    "Indoor",
-    "Outdoor",
-    "Event list",
-    "Headline PR summary",
-    "100m (s)",
-    "200m (s)",
-    "400m (s)",
-    "800m (s)",
-    "1600m (s)",
-    "3200m (s)",
-    "1 Mile (s)",
-    "5000m (s)",
-    "100m Hurdles (s)",
-    "110m Hurdles (s)",
-    "300m Hurdles (s)",
-    "High Jump (m)",
-    "Long Jump (m)",
-    "Triple Jump (m)",
-    "Pole Vault (m)",
-    "Shot Put (m)",
-    "Discus (m)",
-    "Javelin (m)",
-    "XC (s)",
-    "Performance count",
-    "Meet count",
-    "Head TF Coach",
-    "Head TF Coach Email",
-    "Head XC Coach",
-    "Head XC Coach Email",
-    "Coach Professional Email",
-    "Athletic Director",
-    "AD Email",
-    "School Athletics URL",
-    "Public Recruiting GPA",
-    "GPA Source",
-    "All Emails (school)",
-    "Preferred Recruiting Contact",
-    "Preferred Contact Role",
-    "Preferred Contact Email",
-    "Contact Coverage State",
-    "Preferred Contact Coach ID",
-    "Preferred Contact Source URL",
-    "Preferred Contact Capture SHA256",
-    "Preferred Contact Acquired At",
-    "Athletic.net URL",
-    "MileSplit URL",
-    "Other profile URLs",
-    "Sources Count",
-    "Identity Status",
-    "Coverage State",
-    "Conflict Flag",
-    "Review Status",
-    crate::export::postal::ATHLETE_ADDRESS_HEADER,
 ];
 
 pub(super) const PR_HEADERS: [&str; 29] = [
@@ -172,28 +109,6 @@ pub(super) const COACH_HEADERS: [&str; 29] = [
     "Contact Admission State",
 ];
 
-pub(super) const PR_EVENTS: [&str; 19] = [
-    "Track100m",
-    "Track200m",
-    "Track400m",
-    "Track800m",
-    "Track1600m",
-    "Track3200m",
-    "Track1Mile",
-    "Track5000m",
-    "Track100mHurdles",
-    "Track110mHurdles",
-    "Track300mHurdles",
-    "HighJump",
-    "LongJump",
-    "TripleJump",
-    "PoleVault",
-    "ShotPut",
-    "Discus",
-    "Javelin",
-    "CrossCountry",
-];
-
 pub(super) fn pr_event_name(key: &str) -> &str {
     match key {
         "Track100m" => "100m",
@@ -219,17 +134,17 @@ pub(super) fn pr_event_name(key: &str) -> &str {
     }
 }
 
-pub(super) fn mark_name<'a>(pr: &SharedSelection, event: &'a str) -> &'a str {
+pub(super) fn mark_name<'a>(pr: &SharedSelection, event: &'a str, schema: Schema) -> &'a str {
     if pr.key.surface == SurfaceClass::CrossCountry {
         "XC"
     } else {
-        pr_event_name(event)
+        schema.event_name(event)
     }
 }
 
-pub(super) fn qualified_mark(pr: &SharedSelection) -> String {
+pub(super) fn qualified_mark(pr: &SharedSelection, schema: Schema) -> String {
     let mut text = String::new();
-    text.push_str(mark_name(pr, &pr.key.event_kind.stable_key()));
+    text.push_str(mark_name(pr, &pr.key.event_kind.stable_key(), schema));
     text.push(' ');
     text.push_str(&pr.mark_text());
     text.push_str(" [");

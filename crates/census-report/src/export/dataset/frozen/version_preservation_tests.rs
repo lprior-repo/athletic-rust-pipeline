@@ -2,21 +2,15 @@ use super::fixtures::{seeded_store, TestResult};
 use super::inventory::StreamInventory;
 use super::root;
 use super::stream::StreamKind;
-use super::{freeze_v2, objects, to_export_dataset};
+use super::version_records::RetainedState;
+use super::version_snapshot::{object_bytes, RetainedEvidence};
+use super::{freeze_v2, objects, to_export_dataset, version_records};
 use crate::report::ReportError;
 use census_store::{InputState, Store};
 use version_fixture::VersionCase;
-use version_records::RetainedState;
-use version_snapshot::{object_bytes, RetainedEvidence};
 
 #[path = "coverage_tests/version_fixture.rs"]
 mod version_fixture;
-#[allow(clippy::duplicate_mod)]
-#[path = "coverage_tests/version_records.rs"]
-mod version_records;
-#[allow(clippy::duplicate_mod)]
-#[path = "coverage_tests/version_snapshot.rs"]
-mod version_snapshot;
 
 const STATES: [RetainedState; 5] = [
     RetainedState::Missing,
@@ -56,11 +50,25 @@ fn preserved(case: VersionCase, state: RetainedState) -> TestResult {
 }
 
 fn refused(store: &Store, job: &str, case: VersionCase) -> TestResult {
-    let expected = format!("unsupported {}", case.refusal_what());
-    check!(matches!(
-        freeze_v2(store, job),
-        Err(ReportError::ArtifactCorrupt { ref detail, .. }) if detail.contains(&expected)
-    ));
+    check_refusal(freeze_v2(store, job), case)
+}
+
+fn check_refusal<T>(result: Result<T, ReportError>, case: VersionCase) -> TestResult {
+    if matches!(
+        case,
+        VersionCase::HistoricalPolicyEighteen | VersionCase::HistoricalPolicyNineteen
+    ) {
+        check!(matches!(
+            result,
+            Err(ReportError::Invariant { ref detail })
+                if detail.contains("historical recruiting policy is read-only")
+        ));
+    } else {
+        check!(matches!(
+            result,
+            Err(ReportError::ArtifactCorrupt { ref detail, .. }) if detail.contains("unsupported")
+        ));
+    }
     Ok(())
 }
 
@@ -215,4 +223,18 @@ fn policy_seventeen_is_preserved_in_every_retained_state() -> TestResult {
     STATES
         .into_iter()
         .try_for_each(|state| preserved(VersionCase::PolicySeventeen, state))
+}
+
+#[test]
+fn historical_policy_eighteen_is_preserved_in_every_retained_state() -> TestResult {
+    STATES
+        .into_iter()
+        .try_for_each(|state| preserved(VersionCase::HistoricalPolicyEighteen, state))
+}
+
+#[test]
+fn historical_policy_nineteen_is_preserved_in_every_retained_state() -> TestResult {
+    STATES
+        .into_iter()
+        .try_for_each(|state| preserved(VersionCase::HistoricalPolicyNineteen, state))
 }

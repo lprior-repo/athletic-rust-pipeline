@@ -116,7 +116,7 @@ impl EventKind {
     }
 
     pub fn from_source_label(label: &str) -> Self {
-        Self::from_source_label_with_policy(label, EventSemantics::FlatEvents19)
+        Self::from_source_label_with_policy(label, EventSemantics::CURRENT)
     }
 
     pub fn from_source_label_with_policy(label: &str, semantics: EventSemantics) -> Self {

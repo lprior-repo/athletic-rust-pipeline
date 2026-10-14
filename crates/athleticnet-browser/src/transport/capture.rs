@@ -7,6 +7,7 @@ use chromiumoxide::cdp::browser_protocol::network::{
 use chromiumoxide::Page;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
+use super::transfer::base64_len_for_decoded;
 use super::BrowserError;
 use crate::protocol::MAX_SOURCE_RESPONSE_BYTES;
 
@@ -55,9 +56,7 @@ pub(super) fn decode_body(encoded: &str) -> Result<Vec<u8>, BrowserError> {
     };
     let max_encoded = match u64::try_from(MAX_SOURCE_RESPONSE_BYTES)
         .ok()
-        .and_then(|value| value.checked_add(2))
-        .and_then(|value| value.checked_div(3))
-        .and_then(|value| value.checked_mul(4))
+        .and_then(base64_len_for_decoded)
     {
         Some(value) => value,
         None => return Err(BrowserError::Protocol),

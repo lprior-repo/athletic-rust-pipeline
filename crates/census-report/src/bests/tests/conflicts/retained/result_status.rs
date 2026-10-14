@@ -6,24 +6,23 @@ fn status_pair(
     dataset: &ExportDataset,
     case: &NumericCase,
     status: &str,
-) -> [CanonicalPerformance; 2] {
-    let measured = reported(
+) -> TestResult<[CanonicalPerformance; 2]> {
+    let measured = numeric_report(
         dataset,
         "terminal_numeric_context",
         case.conflicting[0].clone(),
-    );
-    let mut terminal = measured.clone();
-    terminal.mark = Mark::Raw(status.into());
+    )?;
+    let mut terminal = with_mark(dataset, measured.clone(), Mark::Raw(status.into()))?;
     terminal.timing = None;
-    [measured, terminal]
+    Ok([measured, terminal])
 }
 
 #[test]
 fn stored_terminal_numeric_context_has_no_best_in_both_append_orders() -> TestResult {
     for status in ["DQ", "DNF", "DNS", "NH", "FOUL", "NM", "NT", "SCR"] {
         for case in numeric_cases()? {
-            let seed = selection_dataset(case.kind.clone())?;
-            let pair = status_pair(&seed, &case, status);
+            let seed = numeric_dataset(case.kind.clone())?;
+            let pair = status_pair(&seed, &case, status)?;
             for order in append_orders(&pair) {
                 let dataset = reloaded_dataset(&seed, &order)?;
                 check!(eq; dataset.performances.len(), 1);
@@ -40,18 +39,18 @@ fn stored_terminal_numeric_context_uses_clean_fallback_without_duplicate_resurre
 {
     for status in ["DQ", "DNF", "DNS", "NH", "FOUL", "NM", "NT", "SCR"] {
         for case in numeric_cases()? {
-            let seed = selection_dataset(case.kind.clone())?;
-            let pair = status_pair(&seed, &case, status);
+            let seed = numeric_dataset(case.kind.clone())?;
+            let pair = status_pair(&seed, &case, status)?;
             let mut duplicate = pair[0].clone();
             duplicate.id = Id::mint("perf", &["duplicate_numeric_in_terminal_context"]);
             duplicate.source_key = "duplicate_numeric_in_terminal_context".into();
             duplicate.source_athlete =
                 Some(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "2001"));
-            let mut clean = reported(
+            let mut clean = numeric_report(
                 &seed,
                 "clean_after_terminal_conflict",
                 case.fallback.clone(),
-            );
+            )?;
             clean.date = "2025-02-28".into();
             for order in append_orders(&pair) {
                 let observations = [

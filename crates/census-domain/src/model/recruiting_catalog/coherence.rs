@@ -16,7 +16,7 @@ pub(super) fn coherent_components(
             let Some(word) = token.declaration() else {
                 return Ok(coherent);
             };
-            if label.semantics() == EventSemantics::FlatEvents19
+            if label.semantics().supports_flat_extensions()
                 && is_distance_unit_word(word, previous.and_then(|token| token.declaration()))
             {
                 return Ok(coherent);

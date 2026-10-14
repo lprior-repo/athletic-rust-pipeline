@@ -21,7 +21,7 @@ fn separately_allocated_replay_material_is_charged_before_full_equality() -> Tes
         .and_then(|n| n.checked_add(20))
         .ok_or("test arithmetic")?;
     query.grant = SelectionGrant::new(size(2)?, size(1)?, size(2)?, size(8_388_608)?, size(20)?)?;
-    assert!(matches!(select_candidates(query, &facts, &[]),
+    check!(matches!(select_candidates(query, &facts, &[]),
         Err(AffiliationCandidateError::BudgetExceeded { resource: Resource::WorkUnits, needed, maximum: 20 }) if needed == expected));
     query.grant = SelectionGrant::new(
         size(2)?,
@@ -31,8 +31,8 @@ fn separately_allocated_replay_material_is_charged_before_full_equality() -> Tes
         size(expected)?,
     )?;
     let selected = select_candidates(query, &facts, &[])?;
-    assert_eq!(selected.facts.len(), 1);
-    assert_eq!(selected.outcome, CandidateOutcome::SingleCandidate(&a));
+    check!(eq; selected.facts.len(), 1);
+    check!(eq; selected.outcome, CandidateOutcome::SingleCandidate(&a));
     Ok(())
 }
 
@@ -46,8 +46,8 @@ fn shared_immutable_replay_bytes_do_not_consume_material_comparison_grant() -> T
     let mut query = fixture.query()?;
     query.grant = SelectionGrant::new(size(2)?, size(1)?, size(2)?, size(8_388_608)?, size(20)?)?;
     let selected = select_candidates(query, &facts, &[])?;
-    assert_eq!(selected.facts.len(), 1);
-    assert_eq!(selected.outcome, CandidateOutcome::SingleCandidate(&a));
+    check!(eq; selected.facts.len(), 1);
+    check!(eq; selected.outcome, CandidateOutcome::SingleCandidate(&a));
     Ok(())
 }
 
@@ -65,7 +65,7 @@ fn legacy_whitespace_date_is_bounded_before_candidate_date_parsing() -> TestResu
     )?;
     let mut raw = *evidence.raw();
     raw.metadata = &metadata;
-    assert!(matches!(
+    check!(matches!(
         LocallyCheckedEvidence::check(raw),
         Err(AffiliationCandidateError::BudgetExceeded {
             resource: Resource::MetadataBytes,
@@ -97,7 +97,7 @@ fn distinct_assertions_charge_both_capture_and_interpretation_material_checks() 
     let mut query = fixture.query()?;
     query.grant =
         SelectionGrant::new(size(2)?, size(1)?, size(2)?, size(8_388_608)?, size(lower)?)?;
-    assert!(matches!(select_candidates(query, &facts, &[]),
+    check!(matches!(select_candidates(query, &facts, &[]),
         Err(AffiliationCandidateError::BudgetExceeded { resource: Resource::WorkUnits, needed, maximum }) if needed == expected && maximum == lower));
     query.grant = SelectionGrant::new(
         size(2)?,
@@ -107,20 +107,18 @@ fn distinct_assertions_charge_both_capture_and_interpretation_material_checks() 
         size(expected)?,
     )?;
     let selected = select_candidates(query, &facts, &[])?;
-    assert_eq!(selected.outcome, CandidateOutcome::SingleCandidate(&a));
-    assert_eq!(
-        selected.facts,
-        [
-            FactDisposition::Assertion {
-                fact: &a,
-                disposition: Disposition::Candidate
-            },
-            FactDisposition::Assertion {
-                fact: &b,
-                disposition: Disposition::Candidate
-            }
-        ]
-    );
+    check!(eq; selected.outcome, CandidateOutcome::SingleCandidate(&a));
+    check!(eq; selected.facts,
+    [
+        FactDisposition::Assertion {
+            fact: &a,
+            disposition: Disposition::Candidate
+        },
+        FactDisposition::Assertion {
+            fact: &b,
+            disposition: Disposition::Candidate
+        }
+    ]);
     Ok(())
 }
 
@@ -145,7 +143,7 @@ fn same_address_different_length_is_not_equal_material() -> TestResult {
     let facts = [a, b];
     let mut query = fixture.query()?;
     query.grant = SelectionGrant::new(size(2)?, size(1)?, size(2)?, size(8_388_608)?, size(20)?)?;
-    assert!(matches!(
+    check!(matches!(
         select_candidates(query, &facts, &[]),
         Err(AffiliationCandidateError::DuplicateIdDifferentPayload)
     ));
@@ -169,9 +167,9 @@ fn legacy_capture_date_exact_candidate_limit_is_preserved() -> TestResult {
         raw.metadata = &metadata;
         let checked = LocallyCheckedEvidence::check(raw);
         if spaces == 54 {
-            assert_eq!(checked?.raw().metadata.captured_at(), date);
+            check!(eq; checked?.raw().metadata.captured_at(), date);
         } else {
-            assert!(matches!(
+            check!(matches!(
                 checked,
                 Err(AffiliationCandidateError::BudgetExceeded {
                     resource: Resource::MetadataBytes,

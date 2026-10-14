@@ -1,5 +1,6 @@
 use super::super::codec::{sha256_hex, FrozenCodecResult, CODEC_REVISION, TOKEN_PROTOCOL};
 use super::super::fixtures::{refusal, refusal_what, TestResult};
+use super::super::historical_policy_tests::legacy_inventory;
 use super::super::inventory::{ArtifactRef, StreamInventory};
 use super::super::manifest::FrozenManifest;
 use super::super::root::{self, FrozenRoot, Retained};
@@ -20,6 +21,8 @@ pub(super) enum VersionCase {
     PolicyFifteen,
     PolicySixteen,
     PolicySeventeen,
+    HistoricalPolicyEighteen,
+    HistoricalPolicyNineteen,
     CodecTwo,
     PreviousPolicy,
     PriorAffiliationPolicy,
@@ -35,18 +38,19 @@ pub(super) enum VersionCase {
 impl VersionCase {
     pub(super) fn refusal_what(self) -> &'static str {
         match self {
-            Self::HistoricalSchema
-            | Self::HistoricalPolicy
+            Self::HistoricalPolicy
             | Self::PolicyThirteen
             | Self::PolicyFourteen
             | Self::PolicyFifteen
             | Self::PolicySixteen
             | Self::PolicySeventeen
+            | Self::HistoricalPolicyEighteen
+            | Self::HistoricalPolicyNineteen
             | Self::PreviousPolicy
             | Self::PriorAffiliationPolicy
             | Self::PriorParentScopePolicy => "manifest lineage",
             Self::HistoricalProtocol => "input token",
-            Self::ManifestCodec | Self::CodecTwo => "frozen manifest",
+            Self::HistoricalSchema | Self::ManifestCodec | Self::CodecTwo => "frozen manifest",
             Self::AdvertisedInventory => "artifact reference",
             Self::InventoryHeader => "stream inventory",
             Self::ChunkDescriptor => "chunk descriptor",
@@ -62,10 +66,10 @@ pub(super) fn install(
     state: RetainedState,
 ) -> TestResult<Retained> {
     let mut manifest = current.manifest().clone();
-    let excluded = match case {
-        VersionCase::HistoricalSchema => historical_schema(store, current, &mut manifest)?,
-        _ => Vec::new(),
-    };
+    if case == VersionCase::HistoricalSchema {
+        historical_schema(store, current, &mut manifest)?;
+        legacy_inventory::downgrade(current.directory(), &mut manifest)?;
+    }
     change_manifest(&mut manifest, case)?;
     let replacement = change_page(current.directory(), &mut manifest, case)?;
     let encoded = serialized_bytes(&manifest)?;
@@ -74,12 +78,15 @@ pub(super) fn install(
     let original = store
         .get_input_record(current.attempt())?
         .ok_or("the supported baseline input is missing")?;
-    let inventory = original
-        .chunks()
-        .iter()
-        .filter(|digest| !excluded.contains(*digest))
-        .map(|digest| replacement_digest(digest, current, &manifest_digest, &replacement))
-        .collect::<Vec<_>>();
+    let inventory = if case == VersionCase::HistoricalSchema {
+        legacy_inventory::inventory(current.directory(), &manifest_digest, &manifest)?
+    } else {
+        original
+            .chunks()
+            .iter()
+            .map(|digest| replacement_digest(digest, current, &manifest_digest, &replacement))
+            .collect::<Vec<_>>()
+    };
     let attempt = serialized_digest(&(
         "version-preservation-fixture",
         format!("{case:?}:{state:?}"),
@@ -102,7 +109,7 @@ fn historical_schema(
     store: &Store,
     current: &FrozenRoot,
     manifest: &mut FrozenManifest,
-) -> TestResult<Vec<String>> {
+) -> TestResult {
     let dataset = to_export_dataset(current, store)?;
     check!(eq; dataset.coverage_evidence.rows.len(), 0);
     check!(eq; dataset.coverage_evidence.coach_lanes.len(), 0);
@@ -127,79 +134,84 @@ fn historical_schema(
         .ok_or("historical input tables missing")?;
     manifest.lineage.source_digest = store.snapshot().tables_digest(old_tables)?;
     manifest.input_token.input_root = manifest.lineage.source_digest.clone();
-    let excluded = [
+    for kind in [
         StreamKind::CoverageRows,
         StreamKind::CoachLanes,
         StreamKind::Relays,
-    ]
-    .into_iter()
-    .map(|kind| -> TestResult<_> {
+    ] {
         let reference = manifest.stream(kind).ok_or("coverage stream missing")?;
         check!(eq; reference.rows, 0);
         check!(eq; reference.bytes, 0);
-        Ok(reference.inventory.digest.clone())
-    })
-    .collect::<TestResult<Vec<_>>>()?;
+    }
     manifest.streams.truncate(12);
     manifest.source_fingerprints.truncate(13);
     check!(eq; manifest.streams.len(), 12);
     check!(eq; manifest.source_fingerprints.len(), 13);
-    Ok(excluded)
+    Ok(())
 }
 
 fn change_manifest(manifest: &mut FrozenManifest, case: VersionCase) -> TestResult {
+    if matches!(
+        case,
+        VersionCase::PolicyFourteen
+            | VersionCase::PolicyFifteen
+            | VersionCase::PolicySixteen
+            | VersionCase::PolicySeventeen
+            | VersionCase::HistoricalPolicyEighteen
+            | VersionCase::HistoricalPolicyNineteen
+    ) {
+        manifest.lineage.schema_revision = 3;
+        manifest.codec = "census-frozen-jsonl-v3".into();
+        manifest.codec_revision = 3;
+        manifest.input_token.logical_schema = 3;
+        manifest.input_token.protocol = 3;
+    }
     match case {
         VersionCase::HistoricalSchema => {
-            check!(eq; manifest.lineage.schema_revision, 3);
             manifest.lineage.schema_revision = 1;
             manifest.input_token.logical_schema = 1;
             manifest.lineage.policy_revision = 8;
             manifest.input_token.semantic_policy = 8;
         }
         VersionCase::HistoricalPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 19);
             manifest.lineage.policy_revision = 7;
             manifest.input_token.semantic_policy = 7;
         }
         VersionCase::PolicyFourteen => {
-            check!(eq; manifest.lineage.schema_revision, 3);
-            check!(eq; manifest.lineage.policy_revision, 19);
             manifest.lineage.policy_revision = 14;
             manifest.input_token.semantic_policy = 14;
         }
         VersionCase::PolicyFifteen => {
-            check!(eq; manifest.lineage.schema_revision, 3);
-            check!(eq; manifest.lineage.policy_revision, 19);
-            check!(eq; manifest.codec_revision, 3);
-            check!(eq; manifest.input_token.protocol, 3);
             check!(eq; manifest.streams.len(), 15);
             check!(eq; manifest.source_fingerprints.len(), 16);
             manifest.lineage.policy_revision = 15;
             manifest.input_token.semantic_policy = 15;
         }
         VersionCase::PolicySixteen => {
-            check!(eq; manifest.lineage.schema_revision, 3);
-            check!(eq; manifest.lineage.policy_revision, 19);
-            check!(eq; manifest.codec_revision, 3);
-            check!(eq; manifest.input_token.protocol, 3);
             check!(eq; manifest.streams.len(), 15);
             check!(eq; manifest.source_fingerprints.len(), 16);
             manifest.lineage.policy_revision = 16;
             manifest.input_token.semantic_policy = 16;
         }
         VersionCase::PolicySeventeen => {
-            check!(eq; manifest.lineage.schema_revision, 3);
-            check!(eq; manifest.lineage.policy_revision, 19);
-            check!(eq; manifest.codec_revision, 3);
-            check!(eq; manifest.input_token.protocol, 3);
             check!(eq; manifest.streams.len(), 15);
             check!(eq; manifest.source_fingerprints.len(), 16);
             manifest.lineage.policy_revision = 17;
             manifest.input_token.semantic_policy = 17;
         }
+        VersionCase::HistoricalPolicyEighteen => {
+            check!(eq; manifest.streams.len(), 15);
+            check!(eq; manifest.source_fingerprints.len(), 16);
+            manifest.lineage.policy_revision = 18;
+            manifest.input_token.semantic_policy = 18;
+        }
+        VersionCase::HistoricalPolicyNineteen => {
+            check!(eq; manifest.streams.len(), 15);
+            check!(eq; manifest.source_fingerprints.len(), 16);
+            manifest.lineage.policy_revision = 19;
+            manifest.input_token.semantic_policy = 19;
+        }
         VersionCase::PolicyThirteen => {
-            check!(eq; manifest.lineage.schema_revision, 3);
-            check!(eq; manifest.lineage.policy_revision, 19);
             manifest.lineage.schema_revision = 2;
             manifest.lineage.policy_revision = 13;
             manifest.input_token.logical_schema = 2;
@@ -210,22 +222,18 @@ fn change_manifest(manifest: &mut FrozenManifest, case: VersionCase) -> TestResu
             manifest.codec_revision = 2;
         }
         VersionCase::PreviousPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 19);
             manifest.lineage.policy_revision = 8;
             manifest.input_token.semantic_policy = 8;
         }
         VersionCase::PriorAffiliationPolicy => {
-            check!(eq; manifest.lineage.policy_revision, 19);
             manifest.lineage.policy_revision = 9;
             manifest.input_token.semantic_policy = 9;
         }
         VersionCase::PriorParentScopePolicy => {
-            check!(eq; manifest.lineage.policy_revision, 19);
             manifest.lineage.policy_revision = 10;
             manifest.input_token.semantic_policy = 10;
         }
         VersionCase::HistoricalProtocol => {
-            check!(eq; manifest.input_token.protocol, TOKEN_PROTOCOL);
             manifest.input_token.protocol = 1;
         }
         VersionCase::ManifestCodec => manifest.codec_revision = future_codec_revision()?,
@@ -271,7 +279,6 @@ fn change_page(
         .chunks
         .first_mut()
         .ok_or("the schools chunk is missing")?;
-    check!(eq; descriptor.codec_revision, CODEC_REVISION);
     if case == VersionCase::ChunkDescriptor {
         descriptor.codec_revision = future_codec_revision()?;
     } else {
@@ -297,7 +304,11 @@ fn change_page(
 
 fn check_manifest(manifest: &FrozenManifest, encoded: &[u8], case: VersionCase) -> TestResult {
     match case {
-        VersionCase::InventoryHeader | VersionCase::ChunkDescriptor | VersionCase::Supported => {
+        VersionCase::InventoryHeader
+        | VersionCase::ChunkDescriptor
+        | VersionCase::HistoricalPolicyEighteen
+        | VersionCase::HistoricalPolicyNineteen
+        | VersionCase::Supported => {
             check!(eq; FrozenManifest::decode(encoded)?, *manifest);
         }
         _ => check_unsupported(FrozenManifest::decode(encoded), case.refusal_what())?,

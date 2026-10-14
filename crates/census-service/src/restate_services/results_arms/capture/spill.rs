@@ -126,31 +126,7 @@ impl Build {
             Ok(partitions) => partitions,
             Err(primary) => return Err(self.abort(primary)),
         };
-        let metadata = partitions
-            .iter()
-            .try_fold((0_u64, 0_u64), |(bytes, paths), partition| {
-                self.directory
-                    .as_mut()
-                    .ok_or_else(budget::allocation)?
-                    .seal_name(&partition.path, &partition.file, partition.bytes)?;
-                let bytes = bytes
-                    .checked_add(partition.bytes)
-                    .ok_or(StoreError::CounterOverflow)?;
-                let paths = paths
-                    .checked_add(
-                        u64::try_from(partition.path.capacity())
-                            .map_err(|_| StoreError::CounterOverflow)?,
-                    )
-                    .ok_or(StoreError::CounterOverflow)?;
-                Ok((bytes, paths))
-            })
-            .and_then(|(disk_bytes, paths)| {
-                let retained_bytes = budget::slots::<Partition>(partitions.capacity())?
-                    .checked_add(budget::slots::<Dataset>(1)?)
-                    .and_then(|bytes| bytes.checked_add(paths))
-                    .ok_or(StoreError::CounterOverflow)?;
-                Ok((disk_bytes, retained_bytes))
-            });
+        let metadata = self.seal_metadata(&partitions, partitions.capacity());
         let (disk_bytes, retained_bytes) = match metadata {
             Ok(metadata) => metadata,
             Err(primary) => {
@@ -184,6 +160,37 @@ impl Build {
             disk_bytes,
             retained_bytes,
         })
+    }
+
+    fn seal_metadata(
+        &mut self,
+        partitions: &[Partition],
+        retained_capacity: usize,
+    ) -> StoreResult<(u64, u64)> {
+        let (disk_bytes, paths) =
+            partitions
+                .iter()
+                .try_fold((0_u64, 0_u64), |(bytes, paths), partition| {
+                    self.directory
+                        .as_mut()
+                        .ok_or_else(budget::allocation)?
+                        .seal_name(&partition.path, &partition.file, partition.bytes)?;
+                    let bytes = bytes
+                        .checked_add(partition.bytes)
+                        .ok_or(StoreError::CounterOverflow)?;
+                    let paths = paths
+                        .checked_add(
+                            u64::try_from(partition.path.capacity())
+                                .map_err(|_| StoreError::CounterOverflow)?,
+                        )
+                        .ok_or(StoreError::CounterOverflow)?;
+                    Ok::<_, StoreError>((bytes, paths))
+                })?;
+        let retained_bytes = budget::slots::<Partition>(retained_capacity)?
+            .checked_add(budget::slots::<Dataset>(1)?)
+            .and_then(|bytes| bytes.checked_add(paths))
+            .ok_or(StoreError::CounterOverflow)?;
+        Ok((disk_bytes, retained_bytes))
     }
 }
 

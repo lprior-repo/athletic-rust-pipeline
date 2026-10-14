@@ -172,6 +172,7 @@ fn seed(store: &Store, fixture: &Fixture) -> TestResult<String> {
         source_key,
         source_athlete: athlete.source.clone(),
         retained_conflicts: Vec::new(),
+        combined_completion: None,
     };
     store.append(Table::Performances, &performance)?;
     Ok(performance.id.as_str().to_string())
@@ -487,6 +488,7 @@ fn a_performance_the_store_cannot_join_is_still_written() -> TestResult {
         source_key: "test:orphan".to_string(),
         source_athlete: Some(source),
         retained_conflicts: Vec::new(),
+        combined_completion: None,
     };
     store.append(Table::Performances, &performance)?;
 

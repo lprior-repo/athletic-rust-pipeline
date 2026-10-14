@@ -110,6 +110,10 @@ async fn dedicated_worker_survives_caller_cancellation_and_releases_lane_after_c
     Ok(())
 }
 
+fn dedicated_panic_fixture() -> ! {
+    panic!("dedicated panic fixture")
+}
+
 #[tokio::test(flavor = "current_thread")]
 async fn dedicated_domain_error_and_panic_have_distinct_region_accounting() -> TestResult {
     let failed = Spawner::with_capacity(1);
@@ -122,9 +126,7 @@ async fn dedicated_domain_error_and_panic_have_distinct_region_accounting() -> T
     let panicked = Spawner::with_capacity(1);
     check!(matches!(
         panicked
-            .dedicated((), || -> Result<(), ()> {
-                panic!("dedicated panic fixture")
-            })
+            .dedicated((), || -> Result<(), ()> { dedicated_panic_fixture() })
             .await?,
         Outcome::Panicked
     ));

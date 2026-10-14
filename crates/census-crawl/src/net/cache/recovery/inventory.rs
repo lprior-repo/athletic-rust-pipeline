@@ -17,7 +17,11 @@ pub(super) fn used(
 ) -> Result<u64, FetchError> {
     let memory = 64_usize
         .checked_mul(std::mem::size_of::<Frame>())
-        .and_then(|bytes| bytes.checked_add(4096 * std::mem::size_of::<u64>()))
+        .and_then(|bytes| {
+            4096_usize
+                .checked_mul(std::mem::size_of::<u64>())
+                .and_then(|inodes| bytes.checked_add(inodes))
+        })
         .ok_or_else(|| shell::limit("allocation"))?;
     io.reserve_owned(memory)?;
     let mut pending = Vec::new();

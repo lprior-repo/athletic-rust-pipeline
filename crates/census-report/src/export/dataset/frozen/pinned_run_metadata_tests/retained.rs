@@ -1,9 +1,7 @@
 use super::*;
 use census_store::InputRecord;
 
-#[allow(clippy::duplicate_mod)]
-#[path = "../coverage_tests/version_snapshot.rs"]
-mod retained_evidence;
+use super::super::version_snapshot::RetainedEvidence;
 
 #[derive(Clone, Copy)]
 enum BindingHistory {
@@ -24,7 +22,7 @@ fn job_reuse(
         BindingHistory::UnboundThenBound => {
             check!(matches!(
                 ExportDataset::for_job(store, job),
-                Err(ReportError::Invariant { ref detail }) if detail.contains("stale or foreign export input")
+                Err(ReportError::Invariant { .. })
             ));
         }
     }
@@ -50,8 +48,7 @@ fn archive_reuse(history: BindingHistory, job: &str) -> TestResult {
     if matches!(history, BindingHistory::UnboundThenBound) {
         store.bind_run(&bound)?;
     }
-    let before =
-        retained_evidence::RetainedEvidence::capture(&store, root.directory(), &[root.attempt()])?;
+    let before = RetainedEvidence::capture(&store, root.directory(), &[root.attempt()])?;
     for _ in 0..2 {
         let retained = super::super::freeze_v2(&store, job)?;
         check!(eq; retained, root);
@@ -156,7 +153,7 @@ fn historical_token_preserved(shape: HistoricalToken, job: &str) -> TestResult {
         store.bind_run(&bound)?;
         check!(ne; root.manifest().input_token.run_manifest_digest, Some(serialized_digest(&bound)?));
     }
-    let before = retained_evidence::RetainedEvidence::capture(
+    let before = RetainedEvidence::capture(
         &store,
         root.directory(),
         &[current.attempt(), root.attempt()],

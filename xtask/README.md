@@ -87,6 +87,11 @@ tests; `build`, `build-portable`, `build-native`, `bench` and `fetch` retain the
 `x86_64-unknown-linux-gnu` target and are not native Mac lanes. Launcher support alone does not
 certify Mac compilation, runtime behavior or the Linux release/fault gate.
 
+For an intentional locked dependency change, use
+`env -u CI tools/moon-local run pipeline:dependency-update -- -p <package> --precise <version>`,
+then `pipeline:fetch` and the applicable compile/test/security lanes. This manual task changes
+`Cargo.lock`; it is not an automatic upgrade or permission to ignore an advisory.
+
 For a real scoped report-library test run without Moon task-result replay:
 
 ```sh

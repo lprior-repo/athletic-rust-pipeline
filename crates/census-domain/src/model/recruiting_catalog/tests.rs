@@ -49,6 +49,12 @@ fn every_existing_positive_family_is_admitted_without_distance_remapping() -> Te
         ("60m", EventKind::Track60m),
         ("100m", EventKind::Track100m),
         ("200m", EventKind::Track200m),
+        ("300m", EventKind::Track300m),
+        ("500m", EventKind::Track500m),
+        ("600m", EventKind::Track600m),
+        ("2000m", EventKind::Track2000m),
+        ("10000m", EventKind::Track10000m),
+        ("2 Mile", EventKind::Track2Miles),
         ("400m", EventKind::Track400m),
         ("800m", EventKind::Track800m),
         ("1000m", EventKind::Track1000m),
@@ -625,5 +631,85 @@ fn policy_digest_is_exactly_the_existing_canonical_encoder_payload_hash() -> Tes
     check!(eq; catalog.digest()?, format!("{:x}", Sha256::digest(&bytes)));
     check!(eq; catalog.digest()?, RecruitingCatalogV1::new().digest()?);
     check!(eq; catalog.digest()?.len(), 64);
+    Ok(())
+}
+
+#[test]
+fn stable_keys_for_new_flat_distance_variants() -> TestResult {
+    check!(eq; EventKind::Track300m.stable_key(), "Track300m");
+    check!(eq; EventKind::Track500m.stable_key(), "Track500m");
+    check!(eq; EventKind::Track600m.stable_key(), "Track600m");
+    check!(eq; EventKind::Track2000m.stable_key(), "Track2000m");
+    check!(eq; EventKind::Track10000m.stable_key(), "Track10000m");
+    check!(eq; EventKind::Track2Miles.stable_key(), "Track2Miles");
+    check!(ne; EventKind::Track2000m.stable_key(), EventKind::Track2000mSteeplechase.stable_key());
+    check!(ne; EventKind::Track300m.stable_key(), EventKind::Track300mHurdles.stable_key());
+    check!(ne; EventKind::Track2Miles.stable_key(), EventKind::Track1Mile.stable_key());
+    check!(ne; EventKind::Track10000m.stable_key(), EventKind::CrossCountry.stable_key());
+    Ok(())
+}
+
+#[test]
+fn new_flat_distances_reject_conflicting_component_declarations() -> TestResult {
+    for (label, kind) in [
+        ("300m 400m", EventKind::Track300m),
+        ("500m 800m", EventKind::Track500m),
+        ("600m 1000m", EventKind::Track600m),
+        ("2000m 3000m", EventKind::Track2000m),
+        ("10000m 5000m", EventKind::Track10000m),
+        ("2 Mile 1 Mile", EventKind::Track2Miles),
+    ] {
+        let event = owned(kind.clone(), &[label])?;
+        check!(
+            matches!(
+                RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?,
+                EventDisposition::Unresolved(EventResolutionReason::ContradictoryDeclarations)
+            ),
+            "{label}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn new_flat_distances_distinguish_from_hurdles_and_steeple() -> TestResult {
+    let event = owned(EventKind::Track300m, &["300m"])?;
+    check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, EventDisposition::Included(EventKind::Track300m));
+    let hurdles = owned(EventKind::Track300mHurdles, &["300m Hurdles"])?;
+    check!(eq; RecruitingCatalogV1::new().classify(&hurdles, Sport::OutdoorTrack)?, EventDisposition::Included(EventKind::Track300mHurdles));
+    let flat = owned(EventKind::Track2000m, &["2000m"])?;
+    check!(eq; RecruitingCatalogV1::new().classify(&flat, Sport::OutdoorTrack)?, EventDisposition::Included(EventKind::Track2000m));
+    let steeple = owned(EventKind::Track2000mSteeplechase, &["2000m Steeplechase"])?;
+    check!(eq; RecruitingCatalogV1::new().classify(&steeple, Sport::OutdoorTrack)?, EventDisposition::Included(EventKind::Track2000mSteeplechase));
+    Ok(())
+}
+
+#[test]
+fn track_10000_distinct_from_cross_country_context() -> TestResult {
+    let event = owned(EventKind::Track10000m, &["10000m"])?;
+    check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, EventDisposition::Included(EventKind::Track10000m));
+    let xc = owned(EventKind::CrossCountry, &["Cross Country"])?;
+    check!(eq; RecruitingCatalogV1::new().classify(&xc, Sport::CrossCountry)?, EventDisposition::Included(EventKind::CrossCountry));
+    let mixed = owned(EventKind::Track10000m, &["10000m Cross Country"])?;
+    check!(matches!(
+        RecruitingCatalogV1::new().classify(&mixed, Sport::OutdoorTrack)?,
+        EventDisposition::Unresolved(EventResolutionReason::ContradictoryDeclarations)
+    ));
+    Ok(())
+}
+
+#[test]
+fn track_2_mile_distinct_from_1_mile_and_3200m() -> TestResult {
+    let mile = owned(EventKind::Track1Mile, &["1 Mile"])?;
+    check!(eq; RecruitingCatalogV1::new().classify(&mile, Sport::OutdoorTrack)?, EventDisposition::Included(EventKind::Track1Mile));
+    let two = owned(EventKind::Track2Miles, &["2 Mile"])?;
+    check!(eq; RecruitingCatalogV1::new().classify(&two, Sport::OutdoorTrack)?, EventDisposition::Included(EventKind::Track2Miles));
+    let mile_two = owned(EventKind::Track1Mile, &["1 Mile 2 Mile"])?;
+    check!(matches!(
+        RecruitingCatalogV1::new().classify(&mile_two, Sport::OutdoorTrack)?,
+        EventDisposition::Unresolved(EventResolutionReason::ContradictoryDeclarations)
+    ));
+    let two_mile = owned(EventKind::Track3200m, &["2 Mile"])?;
+    check!(eq; RecruitingCatalogV1::new().classify(&two_mile, Sport::OutdoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::ContradictoryDeclarations));
     Ok(())
 }

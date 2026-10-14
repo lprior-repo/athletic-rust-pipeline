@@ -43,6 +43,39 @@ fn matches_root(root: &Path, candidate: &Path) -> bool {
         .eq(candidate.components())
 }
 
+fn io(path: &Path, source: std::io::Error) -> StoreError {
+    StoreError::Io {
+        path: path.to_path_buf(),
+        source,
+    }
+}
+
+pub(super) fn preflight(
+    root: &Path,
+    account: &mut super::budget::TargetAccount<'_>,
+) -> StoreResult<()> {
+    let path = root.join("archive-capacity.lock");
+    match super::backing::inspect(&path, account)? {
+        None => Ok(()),
+        Some(metadata) if metadata.is_file() => Ok(()),
+        Some(_) => Err(crate::CaptureError::PreparedRepairRequired.into()),
+    }
+}
+pub(super) fn verify(
+    fence: &ArchiveWriteFence,
+    account: &mut super::budget::TargetAccount<'_>,
+) -> StoreResult<()> {
+    super::backing::safe_root(fence.root(), account)?;
+    let path = fence.root().join("archive-capacity.lock");
+    let named = super::backing::inspect(&path, account)?
+        .ok_or(crate::CaptureError::PreparedAssessmentChanged)?;
+    account.direct_operation(super::RecoveryFsOperation::Inspect)?;
+    let held = fence.file.metadata().map_err(|source| io(&path, source))?;
+    if !named.is_file() || !held.is_file() || !super::backing::same_file(&named, &held) {
+        return Err(crate::CaptureError::PreparedAssessmentChanged.into());
+    }
+    Ok(())
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -77,38 +110,4 @@ mod tests {
             }
         }
     }
-}
-
-fn io(path: &Path, source: std::io::Error) -> StoreError {
-    StoreError::Io {
-        path: path.to_path_buf(),
-        source,
-    }
-}
-
-pub(super) fn preflight(
-    root: &Path,
-    account: &mut super::budget::TargetAccount<'_>,
-) -> StoreResult<()> {
-    let path = root.join("archive-capacity.lock");
-    match super::backing::inspect(&path, account)? {
-        None => Ok(()),
-        Some(metadata) if metadata.is_file() => Ok(()),
-        Some(_) => Err(crate::CaptureError::PreparedRepairRequired.into()),
-    }
-}
-pub(super) fn verify(
-    fence: &ArchiveWriteFence,
-    account: &mut super::budget::TargetAccount<'_>,
-) -> StoreResult<()> {
-    super::backing::safe_root(fence.root(), account)?;
-    let path = fence.root().join("archive-capacity.lock");
-    let named = super::backing::inspect(&path, account)?
-        .ok_or(crate::CaptureError::PreparedAssessmentChanged)?;
-    account.direct_operation(super::RecoveryFsOperation::Inspect)?;
-    let held = fence.file.metadata().map_err(|source| io(&path, source))?;
-    if !named.is_file() || !held.is_file() || !super::backing::same_file(&named, &held) {
-        return Err(crate::CaptureError::PreparedAssessmentChanged.into());
-    }
-    Ok(())
 }

@@ -1,5 +1,5 @@
 use super::super::MAX_CAPTURE_EVENTS;
-use super::capture::{process_capture_event, CaptureContext, CaptureEvent};
+use super::capture::{process_capture_event, CaptureContext, CaptureEvent, WireLedger};
 use super::rankings_helper::{
     build_interceptor_script, build_response, build_ui_url, transport, BINDING_NAME,
 };
@@ -9,7 +9,9 @@ use crate::clock::Clock;
 use crate::protocol::RankingsCapture;
 use crate::request::RankingsAction;
 use crate::{gate::ProfileGate, BrowserError, BrowserResponse};
-use chromiumoxide::cdp::browser_protocol::network::EventResponseReceived;
+use chromiumoxide::cdp::browser_protocol::network::{
+    EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent, EventResponseReceived,
+};
 use chromiumoxide::cdp::browser_protocol::page::{
     AddScriptToEvaluateOnNewDocumentParams, NavigateParams, ScriptIdentifier,
 };
@@ -83,34 +85,44 @@ struct CaptureRun<'a> {
 
 impl CaptureRun<'_> {
     async fn run(&mut self) -> Result<BrowserResponse, BrowserError> {
-        let (binding_events, response_events) = self.wire_page().await?;
-        self.collect(binding_events, response_events).await
+        let streams = self.wire_page().await?;
+        self.collect(streams).await
     }
 
-    async fn wire_page(
-        &mut self,
-    ) -> Result<
-        (
-            EventStream<EventBindingCalled>,
-            EventStream<EventResponseReceived>,
-        ),
-        BrowserError,
-    > {
+    async fn wire_page(&mut self) -> Result<CaptureStreams, BrowserError> {
         self.install().await?;
         let binding_events = transport(
             self.page.event_listener::<EventBindingCalled>().await,
             "binding_listener",
         )?;
+        let request_events = transport(
+            self.page.event_listener::<EventRequestWillBeSent>().await,
+            "request_listener",
+        )?;
         let response_events = transport(
             self.page.event_listener::<EventResponseReceived>().await,
             "response_listener",
+        )?;
+        let finished_events = transport(
+            self.page.event_listener::<EventLoadingFinished>().await,
+            "finished_listener",
+        )?;
+        let failed_events = transport(
+            self.page.event_listener::<EventLoadingFailed>().await,
+            "failure_listener",
         )?;
         let ui_url = build_ui_url(self.source_origin, self.action)?;
         transport(
             self.page.goto(NavigateParams::new(ui_url)).await,
             "navigate",
         )?;
-        Ok((binding_events, response_events))
+        Ok(CaptureStreams {
+            binding_events,
+            request_events,
+            response_events,
+            finished_events,
+            failed_events,
+        })
     }
 
     async fn install(&mut self) -> Result<(), BrowserError> {
@@ -162,18 +174,33 @@ impl CaptureRun<'_> {
         Ok(())
     }
 
-    async fn collect(
-        &self,
-        binding_events: EventStream<EventBindingCalled>,
-        response_events: EventStream<EventResponseReceived>,
-    ) -> Result<BrowserResponse, BrowserError> {
+    async fn collect(&self, streams: CaptureStreams) -> Result<BrowserResponse, BrowserError> {
+        let binding_stream = streams
+            .binding_events
+            .map(CaptureEvent::Binding)
+            .chain(futures::stream::once(async { CaptureEvent::Closed }));
+        let request_stream = streams
+            .request_events
+            .map(CaptureEvent::Request)
+            .chain(futures::stream::once(async { CaptureEvent::Closed }));
+        let response_stream = streams
+            .response_events
+            .map(CaptureEvent::Response)
+            .chain(futures::stream::once(async { CaptureEvent::Closed }));
+        let finished_stream = streams
+            .finished_events
+            .map(CaptureEvent::Finished)
+            .chain(futures::stream::once(async { CaptureEvent::Closed }));
+        let failed_stream = streams
+            .failed_events
+            .map(CaptureEvent::Failed)
+            .chain(futures::stream::once(async { CaptureEvent::Closed }));
         let events = futures::stream::select(
-            binding_events
-                .map(CaptureEvent::Binding)
-                .chain(futures::stream::once(async { CaptureEvent::Closed })),
-            response_events
-                .map(CaptureEvent::Response)
-                .chain(futures::stream::once(async { CaptureEvent::Closed })),
+            futures::stream::select(binding_stream, request_stream),
+            futures::stream::select(
+                futures::stream::select(response_stream, finished_stream),
+                failed_stream,
+            ),
         )
         .take(MAX_CAPTURE_EVENTS)
         .take_until(tokio::time::sleep_until(self.deadline));
@@ -188,12 +215,13 @@ impl CaptureRun<'_> {
         };
         let capture_context = &capture_context;
         let candidates = futures::stream::unfold(
-            (events, false),
-            |(mut events, mut page_one_seen)| async move {
+            (events, false, WireLedger::new()),
+            |(mut events, mut page_one_seen, mut ledger)| async move {
                 let event = events.next().await?;
                 let candidate =
-                    process_capture_event(event, capture_context, &mut page_one_seen).await;
-                Some((candidate, (events, page_one_seen)))
+                    process_capture_event(event, capture_context, &mut page_one_seen, &mut ledger)
+                        .await;
+                Some((candidate, (events, page_one_seen, ledger)))
             },
         )
         .try_filter_map(|candidate| async move { Ok(candidate) });
@@ -205,4 +233,12 @@ impl CaptureRun<'_> {
             .ok_or(BrowserError::Timeout)?;
         build_response(captured)
     }
+}
+
+struct CaptureStreams {
+    binding_events: EventStream<EventBindingCalled>,
+    request_events: EventStream<EventRequestWillBeSent>,
+    response_events: EventStream<EventResponseReceived>,
+    finished_events: EventStream<EventLoadingFinished>,
+    failed_events: EventStream<EventLoadingFailed>,
 }

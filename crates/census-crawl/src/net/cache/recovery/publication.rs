@@ -3,6 +3,9 @@ use crate::net::FetchError;
 use census_domain::model::{AcquisitionOccurrenceRefV1, PreparedCaptureInputV1};
 use census_store::{ArchiveWriteFence, RecoveryArchiveIo};
 
+#[cfg(test)]
+mod tests;
+
 pub(in crate::net) fn publish_recovered_eligible_held(
     fence: &ArchiveWriteFence,
     prepared: &PreparedCaptureInputV1,

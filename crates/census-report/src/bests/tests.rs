@@ -15,6 +15,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 mod adjustment;
 mod catalog;
 mod classification;
+mod combined_events;
 mod conflicts;
 mod exact_time;
 mod historical_affiliation;
@@ -92,6 +93,7 @@ fn test_performance(
             "test_athlete_id",
         )),
         retained_conflicts: vec![],
+        combined_completion: None,
     }
 }
 
@@ -149,6 +151,7 @@ fn test_parent_performance(
             "test_athlete_id",
         )),
         retained_conflicts: vec![],
+        combined_completion: None,
     }
 }
 

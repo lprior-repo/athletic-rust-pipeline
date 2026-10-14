@@ -19,7 +19,7 @@ fn resource_exhaustion_never_returns_a_preferred_prefix() -> TestResult {
         size(8_388_608)?,
         size(2_000_000)?,
     )?;
-    assert!(matches!(
+    check!(matches!(
         select_candidates(query, &claims, &[]),
         Err(AffiliationCandidateError::BudgetExceeded {
             resource: Resource::Assertions,
@@ -34,7 +34,7 @@ fn resource_exhaustion_never_returns_a_preferred_prefix() -> TestResult {
         size(8_388_608)?,
         size(2_000_000)?,
     )?;
-    assert!(matches!(
+    check!(matches!(
         select_candidates(query, &claims, &[]),
         Err(AffiliationCandidateError::BudgetExceeded {
             resource: Resource::AuditFacts,
@@ -48,7 +48,7 @@ fn resource_exhaustion_never_returns_a_preferred_prefix() -> TestResult {
         size(1)?,
         size(2_000_000)?,
     )?;
-    assert!(matches!(
+    check!(matches!(
         select_candidates(query, &claims, &[]),
         Err(AffiliationCandidateError::BudgetExceeded {
             resource: Resource::ComponentBytes,
@@ -80,8 +80,8 @@ fn reparse_keeps_one_capture_and_distinct_interpretations() -> TestResult {
     )?)?;
     let claims = [first, second];
     let result = select_candidates(fixture.query()?, &claims, &[])?;
-    assert_eq!(result.outcome, CandidateOutcome::SingleCandidate(&first));
-    assert_eq!(result.facts.len(), 2);
+    check!(eq; result.outcome, CandidateOutcome::SingleCandidate(&first));
+    check!(eq; result.facts.len(), 2);
     let material = first_evidence.raw();
     let exact_bytes = material
         .body
@@ -91,14 +91,10 @@ fn reparse_keeps_one_capture_and_distinct_interpretations() -> TestResult {
         .and_then(|n| n.checked_add(second_raw.interpretation_bytes.len()))
         .ok_or("synthetic size overflow")?;
     assert_component_boundary(fixture.query()?, &claims, exact_bytes)?;
-    assert_eq!(
-        first.raw().evidence.raw().occurrence,
-        second.raw().evidence.raw().occurrence
-    );
-    assert_ne!(
-        first.raw().evidence.raw().interpretation_key,
-        second.raw().evidence.raw().interpretation_key
-    );
+    check!(eq; first.raw().evidence.raw().occurrence,
+    second.raw().evidence.raw().occurrence);
+    check!(ne; first.raw().evidence.raw().interpretation_key,
+    second.raw().evidence.raw().interpretation_key);
     Ok(())
 }
 
@@ -129,7 +125,7 @@ fn same_bytes_later_actual_occurrence_is_not_suppressed_by_legacy_id() -> TestRe
     let mut query = fixture.query()?;
     query.acquisition_cutoff = instant("2026-08-01T13:00:00Z")?;
     let result = select_candidates(query, &claims, &[])?;
-    assert_eq!(result.facts.len(), 2);
+    check!(eq; result.facts.len(), 2);
     let material = first_evidence.raw();
     let exact_bytes = material
         .body
@@ -141,18 +137,12 @@ fn same_bytes_later_actual_occurrence_is_not_suppressed_by_legacy_id() -> TestRe
         .and_then(|n| n.checked_add(second_raw.interpretation_bytes.len()))
         .ok_or("synthetic size overflow")?;
     assert_component_boundary(query, &claims, exact_bytes)?;
-    assert_eq!(
-        first_evidence.raw().metadata.capture_id(),
-        second_evidence.raw().metadata.capture_id()
-    );
-    assert_ne!(
-        first_evidence.raw().occurrence,
-        second_evidence.raw().occurrence
-    );
-    assert_ne!(
-        first_evidence.raw().acquired_at,
-        second_evidence.raw().acquired_at
-    );
+    check!(eq; first_evidence.raw().metadata.capture_id(),
+    second_evidence.raw().metadata.capture_id());
+    check!(ne; first_evidence.raw().occurrence,
+    second_evidence.raw().occurrence);
+    check!(ne; first_evidence.raw().acquired_at,
+    second_evidence.raw().acquired_at);
     Ok(())
 }
 
@@ -176,7 +166,7 @@ fn same_interpretation_reference_cannot_hide_changed_parser_or_capture() -> Test
             key("claim-B")?,
         )?)?,
     ];
-    assert!(matches!(
+    check!(matches!(
         select_candidates(fixture.query()?, &claims, &[]),
         Err(AffiliationCandidateError::DuplicateIdDifferentPayload)
     ));
@@ -195,19 +185,19 @@ fn late_acquisition_and_impossible_frozen_instant_refuse() -> TestResult {
     )?)?];
     let mut query = fixture.query()?;
     query.acquisition_cutoff = instant("2026-08-01T11:59:59Z")?;
-    assert!(matches!(
+    check!(matches!(
         select_candidates(query, &claims, &[]),
         Err(AffiliationCandidateError::AcquisitionAfterDeclaredCutoff)
     ));
     query = fixture.query()?;
     query.known.captured_at = instant("2026-08-01T11:59:59Z")?;
-    assert!(matches!(
+    check!(matches!(
         select_candidates(query, &claims, &[]),
         Err(AffiliationCandidateError::AcquisitionAfterFrozenInstant)
     ));
     query = fixture.query()?;
     query.acquisition_cutoff = instant("2026-10-11T00:00:00Z")?;
-    assert!(matches!(
+    check!(matches!(
         select_candidates(query, &[], &[]),
         Err(AffiliationCandidateError::CurrentCompilerEnvelopeViolated)
     ));
@@ -228,11 +218,11 @@ fn same_school_enrollment_and_program_remain_distinct_relationship_candidates() 
     };
     let claims = [a, LocallyCheckedAssertion::check(b)?];
     let result = select_candidates(fixture.query()?, &claims, &[])?;
-    assert!(matches!(
+    check!(matches!(
         result.outcome,
         CandidateOutcome::MultipleCompatibleCandidates
     ));
-    assert_eq!(result.facts.len(), 2);
+    check!(eq; result.facts.len(), 2);
     Ok(())
 }
 
@@ -249,7 +239,7 @@ fn assert_component_boundary<'a>(
         size(lower)?,
         size(2_000_000)?,
     )?;
-    assert!(
+    check!(
         matches!(select_candidates(query, claims, &[]), Err(AffiliationCandidateError::BudgetExceeded { resource: Resource::ComponentBytes, needed, maximum }) if needed == exact && maximum == lower)
     );
     query.grant = SelectionGrant::new(
@@ -260,11 +250,9 @@ fn assert_component_boundary<'a>(
         size(2_000_000)?,
     )?;
     let selected = select_candidates(query, claims, &[])?;
-    assert_eq!(selected.facts.len(), claims.len());
-    assert_eq!(
-        selected.outcome,
-        CandidateOutcome::SingleCandidate(claims.first().ok_or("synthetic claim absent")?)
-    );
+    check!(eq; selected.facts.len(), claims.len());
+    check!(eq; selected.outcome,
+    CandidateOutcome::SingleCandidate(claims.first().ok_or("synthetic claim absent")?));
     Ok(())
 }
 
@@ -286,7 +274,7 @@ fn reused_interpretation_key_refuses_changed_occurrence_and_final_url() -> TestR
             LocallyCheckedAssertion::check(fixture.assertion(&first, &owners, key("A")?)?)?,
             LocallyCheckedAssertion::check(fixture.assertion(&second, &owners, key("B")?)?)?,
         ];
-        assert!(matches!(
+        check!(matches!(
             select_candidates(fixture.query()?, &claims, &[]),
             Err(AffiliationCandidateError::DuplicateIdDifferentPayload)
         ));

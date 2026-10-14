@@ -244,10 +244,18 @@ fn inspect_candidate(
 
 fn matches_digest(bytes: &[u8; 32], expected: &AcquisitionDigest) -> bool {
     let hex = b"0123456789abcdef";
-    bytes.iter().enumerate().all(|(index, byte)| {
-        expected.as_str().as_bytes().get(index * 2) == hex.get(usize::from(byte >> 4))
-            && expected.as_str().as_bytes().get(index * 2 + 1) == hex.get(usize::from(byte & 15))
-    })
+    expected
+        .as_str()
+        .as_bytes()
+        .chunks_exact(2)
+        .zip(bytes)
+        .all(|(pair, byte)| {
+            let [high, low] = pair else {
+                return false;
+            };
+            hex.get(usize::from(byte >> 4)) == Some(high)
+                && hex.get(usize::from(byte & 15)) == Some(low)
+        })
 }
 pub(super) fn empty_exact(capture: &PreparedCaptureInputV1) -> bool {
     capture.content_bytes() == 0

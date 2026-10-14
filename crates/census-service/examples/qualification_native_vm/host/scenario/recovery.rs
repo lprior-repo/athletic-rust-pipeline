@@ -1,6 +1,6 @@
 use super::{artifacts, Process, Ssh};
 use anyhow::Result;
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 use std::path::Path;
 
 const SHOW_STAGE: &str = "recovered-supervisor-systemd-show";
@@ -11,6 +11,11 @@ const JOURNAL_COMMAND: &str =
 
 #[cfg(test)]
 mod tests;
+
+enum FailureScope {
+    RecoveredReadiness,
+    OfflineSnapshot,
+}
 
 pub(super) fn ready(
     ssh: &Ssh,
@@ -34,37 +39,109 @@ fn retain_failure(
     primary: anyhow::Error,
 ) -> anyhow::Error {
     let health = vm.health_status();
-    let shown = ssh.exec(SHOW_STAGE, SHOW_COMMAND);
-    let journal = ssh.exec(JOURNAL_STAGE, JOURNAL_COMMAND);
-    let published = artifacts::publish(
-        &root.join("recovered-supervisor-failure.json"),
-        &json!({
-            "failure":format!("{primary:#}"),
-            "changed_boot":boot,
-            "before":before,
-            "qemu_health":format!("{health:?}"),
-            "qemu_owner":vm.evidence(),
-            "serial_evidence":vm.log,
-            "systemd":diagnostic(SHOW_STAGE, SHOW_COMMAND, &shown),
-            "journal":diagnostic(JOURNAL_STAGE, JOURNAL_COMMAND, &journal),
-            "journal_entry_limit":200,
-            "at":artifacts::now()
-        }),
-    );
-    [
-        ("recovered supervisor QEMU health", health.as_ref().err()),
-        (SHOW_STAGE, shown.as_ref().err()),
-        (JOURNAL_STAGE, journal.as_ref().err()),
-        (
-            "recovered supervisor failure evidence publication",
-            published.as_ref().err(),
-        ),
+    let fields = [
+        ("phase", json!("recovered-readiness")),
+        ("changed_boot", boot.clone()),
+        ("before", before.clone()),
+        ("qemu_health", json!(format!("{health:?}"))),
+        ("qemu_owner", vm.evidence()),
+        ("serial_evidence", json!(vm.log)),
     ]
     .into_iter()
-    .fold(primary, |primary, (label, failure)| match failure {
+    .map(|(key, value)| (key.to_owned(), value))
+    .collect();
+    let failure = retain_diagnostics(
+        ssh,
+        &root.join("recovered-supervisor-failure.json"),
+        fields,
+        primary,
+        FailureScope::RecoveredReadiness,
+    );
+    append_failure(
+        failure,
+        "recovered supervisor QEMU health",
+        health.as_ref().err(),
+    )
+}
+
+pub(super) fn offline_failure(
+    ssh: &Ssh,
+    root: &Path,
+    label: &str,
+    phase: &str,
+    primary: anyhow::Error,
+) -> anyhow::Error {
+    let fields = [("phase", json!(phase)), ("label", json!(label))]
+        .into_iter()
+        .map(|(key, value)| (key.to_owned(), value))
+        .collect();
+    retain_diagnostics(
+        ssh,
+        &root.join(format!("{label}-offline-failure.json")),
+        fields,
+        primary,
+        FailureScope::OfflineSnapshot,
+    )
+}
+
+fn retain_diagnostics(
+    ssh: &Ssh,
+    path: &Path,
+    mut fields: Map<String, Value>,
+    primary: anyhow::Error,
+    scope: FailureScope,
+) -> anyhow::Error {
+    let (show_stage, journal_stage, publication_label) = match scope {
+        FailureScope::RecoveredReadiness => (
+            SHOW_STAGE,
+            JOURNAL_STAGE,
+            "recovered supervisor failure evidence publication",
+        ),
+        FailureScope::OfflineSnapshot => (
+            "offline-supervisor-systemd-show",
+            "offline-supervisor-journal",
+            "offline failure evidence publication",
+        ),
+    };
+    let shown = ssh.exec(show_stage, SHOW_COMMAND);
+    let journal = ssh.exec(journal_stage, JOURNAL_COMMAND);
+    fields.extend(
+        [
+            ("verdict", json!("UNPROVEN")),
+            ("failure", json!(format!("{primary:#}"))),
+            ("systemd", diagnostic(show_stage, SHOW_COMMAND, &shown)),
+            (
+                "journal",
+                diagnostic(journal_stage, JOURNAL_COMMAND, &journal),
+            ),
+            ("journal_entry_limit", json!(200)),
+            ("command_capture_limit_bytes", json!(artifacts::LIMIT)),
+            ("at", json!(artifacts::now())),
+        ]
+        .into_iter()
+        .map(|(key, value)| (key.to_owned(), value)),
+    );
+    let published = artifacts::publish(path, &fields);
+    [
+        (show_stage, shown.as_ref().err()),
+        (journal_stage, journal.as_ref().err()),
+        (publication_label, published.as_ref().err()),
+    ]
+    .into_iter()
+    .fold(primary, |primary, (label, failure)| {
+        append_failure(primary, label, failure)
+    })
+}
+
+fn append_failure(
+    primary: anyhow::Error,
+    label: &str,
+    failure: Option<&anyhow::Error>,
+) -> anyhow::Error {
+    match failure {
         Some(failure) => primary.context(format!("{label} failed: {failure:#}")),
         None => primary,
-    })
+    }
 }
 
 fn diagnostic(stage: &str, command: &str, result: &Result<String>) -> Value {

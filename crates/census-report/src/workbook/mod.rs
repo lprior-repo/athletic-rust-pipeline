@@ -91,6 +91,7 @@ fn write_artifacts(
         None => "all".to_string(),
     };
     bests::write(directory, &bests, &cohort)?;
+    publication::normalized::write(directory, dataset, options, &bests)?;
     dataset.save_frozen(&directory.join("frozen-input.json"))?;
 
     publication::write_json(&directory.join("event-catalog.json"), &admission.audit())?;

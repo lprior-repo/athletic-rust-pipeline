@@ -3,18 +3,12 @@ use super::fixtures::{seeded_store, TestResult};
 use super::inventory::{ArtifactRef, StreamInventory};
 use super::root::{self, Retained};
 use super::stream::StreamKind;
+use super::version_records::{install_record, RetainedState};
+use super::version_snapshot::RetainedEvidence;
 use super::{cancel_freeze_v2, freeze_v2, objects, FrozenRoot};
 use crate::report::{ExportResourceError, ReportError};
 use census_domain::model::{serialized_bytes, serialized_digest};
 use census_store::Store;
-use version_records::{install_record, RetainedState};
-use version_snapshot::RetainedEvidence;
-
-#[path = "coverage_tests/version_records.rs"]
-mod version_records;
-#[allow(clippy::duplicate_mod)]
-#[path = "coverage_tests/version_snapshot.rs"]
-mod version_snapshot;
 
 #[derive(Debug, Clone, Copy)]
 enum Oversize {

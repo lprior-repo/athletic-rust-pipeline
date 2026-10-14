@@ -3,10 +3,7 @@ use super::{RegionMembershipError, RegionSchoolV1, MAX_REGION_ASSERTIONS};
 use super::{MAX_REGION_CONSTITUENTS, MAX_REGION_JURISDICTIONS, MAX_REGION_PAYLOAD_BYTES};
 use crate::model::{EvidenceMethod, SchoolId, TeamId};
 use chrono::Datelike;
-use serde::de::{DeserializeSeed, SeqAccess, Visitor};
-use serde::{Deserialize, Deserializer};
-use std::fmt;
-use std::marker::PhantomData;
+use serde::Deserializer;
 
 pub(super) fn count(
     field: &'static str,
@@ -142,73 +139,24 @@ impl std::io::Write for SizeWriter {
     }
 }
 
-struct BoundedSequence<T, const MAX: usize>(PhantomData<T>);
-
-impl<'de, T: Deserialize<'de>, const MAX: usize> Visitor<'de> for BoundedSequence<T, MAX> {
-    type Value = Vec<T>;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(formatter, "at most {MAX} regional payload entries")
-    }
-
-    fn visit_seq<A: SeqAccess<'de>>(self, mut sequence: A) -> Result<Self::Value, A::Error> {
-        if sequence.size_hint().is_some_and(|size| size > MAX) {
-            return Err(serde::de::Error::custom(
-                "regional sequence exceeds its raw-entry ceiling",
-            ));
-        }
-        let mut values = Vec::new();
-        values
-            .try_reserve_exact(MAX)
-            .map_err(|_| serde::de::Error::custom(RegionMembershipError::AllocationFailed))?;
-        for _ in 0..MAX {
-            match sequence.next_element()? {
-                Some(value) => values.push(value),
-                None => return Ok(values),
-            }
-        }
-        if sequence.next_element_seed(ExcessElement)?.is_some() {
-            return Err(serde::de::Error::custom(
-                "regional sequence exceeds its raw-entry ceiling",
-            ));
-        }
-        Ok(values)
-    }
-}
-
-struct ExcessElement;
-
-impl<'de> DeserializeSeed<'de> for ExcessElement {
-    type Value = ();
-
-    fn deserialize<D: Deserializer<'de>>(self, _deserializer: D) -> Result<Self::Value, D::Error> {
-        Err(serde::de::Error::custom(
-            "regional sequence exceeds its raw-entry ceiling",
-        ))
-    }
-}
-
 pub(super) fn assertions<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Vec<RegionAssertionV1>, D::Error> {
-    deserializer.deserialize_seq(BoundedSequence::<RegionAssertionV1, MAX_REGION_ASSERTIONS>(
-        PhantomData,
-    ))
+    crate::model::serde_bounds::sequence::<D, RegionAssertionV1, MAX_REGION_ASSERTIONS>(
+        deserializer,
+    )
 }
 
 pub(super) fn jurisdictions<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Vec<crate::UsJurisdiction>, D::Error> {
-    deserializer.deserialize_seq(BoundedSequence::<
-        crate::UsJurisdiction,
-        MAX_REGION_JURISDICTIONS,
-    >(PhantomData))
+    crate::model::serde_bounds::sequence::<D, crate::UsJurisdiction, MAX_REGION_JURISDICTIONS>(
+        deserializer,
+    )
 }
 
 pub(super) fn constituents<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Vec<RegionSchoolV1>, D::Error> {
-    deserializer.deserialize_seq(BoundedSequence::<RegionSchoolV1, MAX_REGION_CONSTITUENTS>(
-        PhantomData,
-    ))
+    crate::model::serde_bounds::sequence::<D, RegionSchoolV1, MAX_REGION_CONSTITUENTS>(deserializer)
 }

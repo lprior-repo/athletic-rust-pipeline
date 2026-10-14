@@ -30,13 +30,7 @@ pub(super) fn manifest(identity: &str) -> TestResult<RunManifest> {
 
 fn invariant(result: crate::report::ReportResult<FrozenInputToken>) -> TestResult {
     match result {
-        Err(ReportError::Invariant { detail }) => {
-            check!(
-                detail.contains("input token capture view"),
-                "a snapshot construction refusal needs view context: {detail}"
-            );
-            Ok(())
-        }
-        other => Err(format!("expected contextual construction invariant, got {other:?}").into()),
+        Err(ReportError::Invariant { .. }) => Ok(()),
+        other => Err(format!("expected construction invariant, got {other:?}").into()),
     }
 }

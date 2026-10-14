@@ -40,12 +40,8 @@ fn streamed<T: Entity>(root: &FrozenRoot, kind: StreamKind) -> TestResult<Vec<T>
 
 fn check_manifest(root: &FrozenRoot, store: &Store, dataset: &ExportDataset) -> TestResult {
     let manifest = root.manifest();
-    check!(eq; manifest.lineage.schema_revision, 3);
-    check!(eq; manifest.lineage.policy_revision, 19);
-    check!(eq; manifest.streams.len(), 15);
-    check!(eq; manifest.source_fingerprints.len(), 16);
-    check!(eq; StreamKind::ALL.len(), 15);
-    check!(eq; INPUT_TABLES.len(), 16);
+    check!(eq; manifest.streams.len(), StreamKind::ALL.len());
+    check!(eq; manifest.source_fingerprints.len(), INPUT_TABLES.len());
     check!(eq; StreamKind::CoverageRows.index(), 12);
     check!(eq; StreamKind::CoachLanes.index(), 13);
     check!(eq; StreamKind::CoverageRows.wire(), "coverage_rows");

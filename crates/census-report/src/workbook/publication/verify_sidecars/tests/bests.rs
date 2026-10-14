@@ -85,6 +85,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
         source_key: "verify:slower".to_string(),
         source_athlete: athlete.source.clone(),
         retained_conflicts: vec![],
+        combined_completion: None,
     };
     store.append(Table::Performances, &slower)?;
     let mut faster = slower.clone();
@@ -109,10 +110,10 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
 
     let output = directory.path().join("bests");
     write(&output, &rows, "co2027")?;
-    super::super::bests::verify(&output, &inputs)?;
+    super::super::bests::verify(&output, &inputs, 3)?;
 
     rewrite_cell(&output.join("best-results-co2027.csv"), "best_value", "999")?;
-    let error = match super::super::bests::verify(&output, &inputs) {
+    let error = match super::super::bests::verify(&output, &inputs, 3) {
         Err(error) => error,
         Ok(()) => return Err("forged best value accepted".into()),
     };
@@ -126,7 +127,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     let jsonl = jsonl_output.join("best-results-co2027.jsonl");
     let line = std::fs::read_to_string(&jsonl)?;
     std::fs::write(&jsonl, format!("{line}{line}"))?;
-    let error = match super::super::bests::verify(&jsonl_output, &inputs) {
+    let error = match super::super::bests::verify(&jsonl_output, &inputs, 3) {
         Err(error) => error,
         Ok(()) => return Err("duplicate best-results record accepted".into()),
     };

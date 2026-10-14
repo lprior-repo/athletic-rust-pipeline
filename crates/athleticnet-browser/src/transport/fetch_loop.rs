@@ -127,5 +127,8 @@ pub(super) async fn drive_capture(
             break;
         }
     }
+    if capture.awaiting_evaluation() {
+        return Err(fail(capture.page, capture.gate, BrowserError::Transport).await);
+    }
     Ok(())
 }

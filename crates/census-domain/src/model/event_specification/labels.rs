@@ -44,6 +44,7 @@ impl EventSpecification {
             indoor_track: indoor(tokens, label)?,
             category: category::parse(tokens)?,
             cross_country: course::parse(tokens, kind)?,
+            combined_event: None,
         })
     }
 }

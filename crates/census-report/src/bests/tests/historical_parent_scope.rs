@@ -122,5 +122,6 @@ fn expected_specification() -> EventSpecification {
         implement: None,
         indoor_track: None,
         category: Some(census_domain::model::CompetitionCategory::Boys),
+        combined_event: None,
     }
 }

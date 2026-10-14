@@ -11,6 +11,7 @@ mod census;
 mod contacts;
 mod diff;
 mod input;
+mod normalized;
 mod read;
 mod recruiting;
 #[cfg(test)]
@@ -22,6 +23,7 @@ pub(super) fn verify(
     directory: &Path,
     dataset: &ExportDataset,
     options: &Options,
+    artifact_revision: u32,
 ) -> ReportResult<()> {
     let inputs = input::Inputs::new(dataset, options)?;
     catalog::verify(directory, &inputs)?;
@@ -29,7 +31,11 @@ pub(super) fn verify(
     recruiting::verify(directory, &inputs)?;
     contacts::verify(directory, &inputs)?;
     audit::verify(directory, &inputs)?;
-    bests::verify(directory, &inputs)
+    bests::verify(directory, &inputs, artifact_revision)?;
+    if artifact_revision == 3 {
+        normalized::verify(directory, &inputs)?;
+    }
+    Ok(())
 }
 
 pub(super) fn cohort(grad_year: Option<i16>) -> String {

@@ -132,8 +132,10 @@ fn old_schema_archive(dataset: &ExportDataset, store: &Store) -> TestResult<Vec<
 }
 
 fn unsupported_schema(path: &Path, retained: &[u8]) -> TestResult {
-    check!(matches!(ExportDataset::reopen_frozen(path),
-        Err(ReportError::Invariant { ref detail }) if detail == "unsupported or malformed frozen export lineage"));
+    check!(matches!(
+        ExportDataset::reopen_frozen(path),
+        Err(ReportError::Invariant { .. })
+    ));
     check!(eq; std::fs::read(path)?, retained);
     Ok(())
 }

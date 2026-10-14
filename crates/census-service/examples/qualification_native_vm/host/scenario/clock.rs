@@ -4,7 +4,7 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 use super::super::super::{artifacts, transport::Ssh};
-use super::clock_window;
+use super::{clock_window, recovery};
 
 pub(super) fn midnight(ssh: &Ssh, root: &Path) -> Result<Value> {
     ssh.checkpoint()?;
@@ -66,9 +66,13 @@ pub(super) fn offline_snapshot(ssh: &Ssh, root: &Path, label: &str) -> Result<Va
     ssh.exec(
         "offline-stop",
         "/usr/bin/systemctl stop qualification.service",
-    )?;
-    let output = ssh.exec("offline-snapshot", "/srv/qualification/lib/ld-linux-x86-64.so.2 --library-path /srv/qualification/lib /srv/qualification/qualification guest-action --action snapshot")?;
-    let value: Value = serde_json::from_str(output.trim())?;
+    )
+    .map_err(|primary| recovery::offline_failure(ssh, root, label, "offline-stop", primary))?;
+    let output = ssh.exec("offline-snapshot", "/srv/qualification/lib/ld-linux-x86-64.so.2 --library-path /srv/qualification/lib /srv/qualification/qualification guest-action --action snapshot")
+        .map_err(|primary| recovery::offline_failure(ssh, root, label, "offline-snapshot", primary))?;
+    let value: Value = serde_json::from_str(output.trim()).map_err(|primary| {
+        recovery::offline_failure(ssh, root, label, "offline-snapshot-parse", primary.into())
+    })?;
     artifacts::publish(
         &root.join(format!("{label}-physical-snapshot.json")),
         &value,

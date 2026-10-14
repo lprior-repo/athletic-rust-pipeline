@@ -15,7 +15,7 @@ pub(in crate::workbook::publication) fn verify_directory(
     let path = directory.join("manifest.json");
     let head: RevisionHead = sidecars::read_json(&path)?;
     match head.schema_revision {
-        1 | 2 => {}
+        1..=3 => {}
         _ => {
             return Err(invariant(
                 "unsupported publication artifact revision".into(),

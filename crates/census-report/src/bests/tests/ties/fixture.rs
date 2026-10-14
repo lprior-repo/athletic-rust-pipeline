@@ -1,11 +1,12 @@
 use super::super::*;
 use census_domain::model::{
-    CanonicalTeam, CompetitionLevel, Evidence, PublishedGraduation, SchoolYear, SourceEventLabel,
-    SourceRef,
+    CanonicalTeam, CombinedComponentResult, CombinedDiscipline, CombinedEventCompletion,
+    CombinedEventSpecification, CompetitionLevel, Evidence, HurdleSpecification, ImplementMass,
+    PublishedGraduation, SchoolYear, SourceEventLabel, SourceRef,
 };
 use std::path::Path;
 
-pub(super) struct NumericCase {
+pub(in crate::bests::tests) struct NumericCase {
     pub kind: EventKind,
     pub label: &'static str,
     pub tied: Mark,
@@ -13,7 +14,7 @@ pub(super) struct NumericCase {
     pub value: i64,
 }
 
-pub(super) fn numeric_cases() -> TestResult<[NumericCase; 3]> {
+pub(in crate::bests::tests) fn numeric_cases() -> TestResult<[NumericCase; 3]> {
     Ok([
         NumericCase {
             kind: EventKind::Track400m,
@@ -39,17 +40,99 @@ pub(super) fn numeric_cases() -> TestResult<[NumericCase; 3]> {
     ])
 }
 
-pub(super) struct TieFixture {
+pub(in crate::bests::tests) struct TieFixture {
     school: CanonicalSchool,
     athlete: CanonicalAthlete,
     team: CanonicalTeam,
 }
 
 #[derive(Clone)]
-pub(super) struct Observation {
+pub(in crate::bests::tests) struct Observation {
     pub meet: CanonicalMeet,
     pub event: CanonicalEvent,
     pub performance: CanonicalPerformance,
+}
+
+pub(in crate::bests::tests) fn completion_with_total(
+    specification: CombinedEventSpecification,
+    total: CentiPoints,
+) -> TestResult<CombinedEventCompletion> {
+    let count = i32::try_from(specification.lineup().len())?;
+    let share = total.value().checked_div(count).ok_or("component share")?;
+    let remainder = total
+        .value()
+        .checked_rem(count)
+        .ok_or("component remainder")?;
+    let components = specification
+        .lineup()
+        .iter()
+        .enumerate()
+        .map(|(index, _)| -> TestResult<CombinedComponentResult> {
+            let points = if index == 0 {
+                share.checked_add(remainder).ok_or("component points")?
+            } else {
+                share
+            };
+            Ok(CombinedComponentResult::Completed(CentiPoints::new(points)))
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    Ok(CombinedEventCompletion::new(specification, components)?)
+}
+
+fn decathlon_specification() -> TestResult<EventSpecification> {
+    let lineup = [
+        (EventKind::Track100m, None, None),
+        (EventKind::LongJump, None, None),
+        (
+            EventKind::ShotPut,
+            None,
+            Some(ImplementMass::try_from(6_000_000_000)?),
+        ),
+        (EventKind::HighJump, None, None),
+        (EventKind::Track400m, None, None),
+        (
+            EventKind::Track110mHurdles,
+            Some(HurdleSpecification::new(990_600, Some(9_140_000))?),
+            None,
+        ),
+        (
+            EventKind::Discus,
+            None,
+            Some(ImplementMass::try_from(1_750_000_000)?),
+        ),
+        (EventKind::PoleVault, None, None),
+        (
+            EventKind::Javelin,
+            None,
+            Some(ImplementMass::try_from(800_000_000)?),
+        ),
+        (EventKind::Track1500m, None, None),
+    ]
+    .into_iter()
+    .map(|(kind, hurdles, implement)| CombinedDiscipline::new(kind, hurdles, implement))
+    .collect::<Result<Vec<_>, _>>()?;
+    Ok(EventSpecification {
+        combined_event: Some(CombinedEventSpecification::new(
+            EventKind::Decathlon,
+            lineup,
+            "Synthetic tie fixture scoring".into(),
+            1,
+        )?),
+        ..EventSpecification::default()
+    })
+}
+
+impl Observation {
+    pub fn with_mark(mut self, mark: Mark) -> TestResult<Self> {
+        if let (Some(specification), Mark::Points(total)) =
+            (&self.event.specification.combined_event, &mark)
+        {
+            self.performance.combined_completion =
+                Some(completion_with_total(specification.clone(), *total)?);
+        }
+        self.performance.mark = mark;
+        Ok(self)
+    }
 }
 
 impl TieFixture {
@@ -99,6 +182,20 @@ impl TieFixture {
     }
 
     pub fn report(&self, case: &NumericCase, label: &str, date: &str) -> TestResult<Observation> {
+        let specification = match case.kind {
+            EventKind::Decathlon => decathlon_specification()?,
+            _ => EventSpecification::default(),
+        };
+        self.report_with_specification(case, label, date, specification)
+    }
+
+    pub fn report_with_specification(
+        &self,
+        case: &NumericCase,
+        label: &str,
+        date: &str,
+        specification: EventSpecification,
+    ) -> TestResult<Observation> {
         let source = SourceRef::new(
             "wiaa_results",
             Some(format!("https://example.test/ties/{label}")),
@@ -112,7 +209,7 @@ impl TieFixture {
         )?;
         meet.sports = vec![Sport::OutdoorTrack];
         meet.evidence = vec![evidence.clone()];
-        let mut event = crate::test_events::owned(CanonicalEvent::new(
+        let mut event = CanonicalEvent::new(
             EventIdentity {
                 meet: &meet.id,
                 kind: case.kind.clone(),
@@ -120,8 +217,8 @@ impl TieFixture {
                 division: None,
                 round: None,
             },
-            EventSpecification::default(),
-        )?);
+            specification,
+        )?;
         event.source_labels = vec![SourceEventLabel {
             source,
             label: case.label.into(),
@@ -146,12 +243,14 @@ impl TieFixture {
             source_key: label.into(),
             source_athlete: self.athlete.source.clone(),
             retained_conflicts: Vec::new(),
+            combined_completion: None,
         };
-        Ok(Observation {
+        Observation {
             meet,
             event,
             performance,
-        })
+        }
+        .with_mark(case.tied.clone())
     }
 
     pub fn store_with_replay(
@@ -226,7 +325,9 @@ fn retained_observations(store: &Store, observations: &[Observation]) -> TestRes
         })
 }
 
-pub(super) fn orders(observations: &[Observation]) -> TestResult<Vec<Vec<Observation>>> {
+pub(in crate::bests::tests) fn orders(
+    observations: &[Observation],
+) -> TestResult<Vec<Vec<Observation>>> {
     if observations.is_empty() || observations.len() > 4 {
         return Err("tie permutations require one through four observations".into());
     }

@@ -238,5 +238,6 @@ fn performance_of(
         source_key,
         source_athlete: Some(owner.clone()),
         retained_conflicts: Vec::new(),
+        combined_completion: None,
     })
 }

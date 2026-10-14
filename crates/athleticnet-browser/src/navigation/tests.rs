@@ -160,3 +160,164 @@ fn a_foreign_final_document_never_opens_the_profile_gate() -> Result<(), Box<dyn
     );
     Ok(())
 }
+
+#[test]
+fn pending_headers_replay_only_on_exact_request_id() -> Result<(), Box<dyn std::error::Error>> {
+    use super::observer::{is_current, navigation_status};
+    use chromiumoxide::cdp::browser_protocol::network::RequestId;
+    let current = Some(RequestId::new("req-1"));
+    check!(
+        is_current(&current, &RequestId::new("req-1")),
+        "a matching request id is current"
+    );
+    check!(
+        !is_current(&current, &RequestId::new("req-2")),
+        "a stale request id never replays pending headers"
+    );
+    check!(
+        is_current(&None, &RequestId::new("req-9")),
+        "a keyless observer accepts the first arrival before a request is known"
+    );
+    check!(eq; navigation_status(200)?, 200);
+    check!(eq; navigation_status(403)?, 403);
+    check!(
+        navigation_status(-1).is_err(),
+        "a negative wire status is protocol, not a status"
+    );
+    check!(
+        navigation_status(70_000).is_err(),
+        "an out-of-range wire status is protocol, not a status"
+    );
+    Ok(())
+}
+
+#[test]
+fn wire_is_classified_before_decode_without_zero_default() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::transport::transfer::{classify_wire_total, refuse_excess_wire, WireTotal};
+    use crate::BrowserError;
+    check!(eq; classify_wire_total(0.0), WireTotal::WithinBudget);
+    check!(eq; classify_wire_total(1_048_576.0), WireTotal::WithinBudget);
+    check!(eq; classify_wire_total(40_000_000.0), WireTotal::Excess);
+    check!(eq; classify_wire_total(f64::NAN), WireTotal::Malformed);
+    check!(eq; classify_wire_total(f64::INFINITY), WireTotal::Malformed);
+    check!(eq; classify_wire_total(-1.0), WireTotal::Malformed);
+    check!(refuse_excess_wire(true, Some(1_048_576.0)).is_ok());
+    check!(matches!(
+        refuse_excess_wire(true, Some(40_000_000.0)),
+        Err(BrowserError::PayloadLimit)
+    ));
+    check!(matches!(
+        refuse_excess_wire(true, Some(f64::NAN)),
+        Err(BrowserError::Protocol)
+    ));
+    check!(
+        matches!(refuse_excess_wire(true, None), Err(BrowserError::Protocol)),
+        "a missing total waits as protocol, never as zero"
+    );
+    Ok(())
+}
+
+#[test]
+fn challenge_only_revokes_the_gate() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::clock::TestClock;
+    let clock = TestClock::at(0);
+    let open_gate = || {
+        let gate = ProfileGate::new();
+        let generation = gate.snapshot().generation;
+        check!(
+            gate.try_open(generation),
+            "gate opens from a clean snapshot"
+        );
+        Ok::<_, Box<dyn std::error::Error>>(gate)
+    };
+    let mut limited =
+        super::observer::empty_observation("https://www.athletic.net/team/123".to_owned());
+    limited.status = Some(429);
+    limited.body_complete = true;
+    let gate = open_gate()?;
+    check!(
+        eq;
+        classify_observation(limited, &gate, &clock)?,
+        NavigationOutcome::CoolingDown(std::time::Duration::from_secs(60))
+    );
+    check!(
+        gate.is_ready(),
+        "a bare 429 cools down without revoking the gate"
+    );
+    let mut forbidden =
+        super::observer::empty_observation("https://www.athletic.net/team/123".to_owned());
+    forbidden.status = Some(403);
+    forbidden.body_complete = true;
+    let gate = open_gate()?;
+    check!(
+        eq;
+        classify_observation(forbidden, &gate, &clock)?,
+        NavigationOutcome::Failed(403)
+    );
+    check!(
+        gate.is_ready(),
+        "a bare 403 fails without assuming a challenge revocation"
+    );
+    let mut challenged =
+        super::observer::empty_observation("https://www.athletic.net/team/123".to_owned());
+    challenged.status = Some(200);
+    challenged.body_complete = true;
+    challenged.challenged = true;
+    let gate = open_gate()?;
+    check!(eq; classify_observation(challenged, &gate, &clock)?, NavigationOutcome::Challenged);
+    check!(!gate.is_ready(), "a header challenge revokes the gate");
+    let mut body =
+        super::observer::empty_observation("https://www.athletic.net/team/123".to_owned());
+    body.status = Some(200);
+    body.body_complete = true;
+    body.body_challenged = true;
+    let gate = open_gate()?;
+    check!(eq; classify_observation(body, &gate, &clock)?, NavigationOutcome::Challenged);
+    check!(!gate.is_ready(), "a body challenge revokes the gate");
+    Ok(())
+}
+
+#[test]
+fn refusal_states_do_not_settle_as_ready() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::clock::TestClock;
+    use crate::BrowserError;
+    let clock = TestClock::at(0);
+    let gate = ProfileGate::new();
+    let mut failed =
+        super::observer::empty_observation("https://www.athletic.net/team/123".to_owned());
+    failed.status = Some(200);
+    failed.body_complete = true;
+    failed.failed = true;
+    check!(matches!(
+        classify_observation(failed, &gate, &clock),
+        Err(BrowserError::Transport)
+    ));
+    let mut redirect =
+        super::observer::empty_observation("https://www.athletic.net/team/123".to_owned());
+    redirect.status = Some(302);
+    redirect.body_complete = true;
+    check!(matches!(
+        classify_observation(redirect, &gate, &clock),
+        Err(BrowserError::Redirect)
+    ));
+    let mut pending =
+        super::observer::empty_observation("https://www.athletic.net/team/123".to_owned());
+    pending.status = Some(200);
+    pending.body_complete = false;
+    check!(
+        eq;
+        classify_observation(pending, &gate, &clock)?,
+        NavigationOutcome::Pending
+    );
+    let mut ready =
+        super::observer::empty_observation("https://www.athletic.net/team/123".to_owned());
+    ready.status = Some(200);
+    ready.body_complete = true;
+    check!(
+        eq;
+        classify_observation(ready, &gate, &clock)?,
+        NavigationOutcome::Ready
+    );
+    Ok(())
+}

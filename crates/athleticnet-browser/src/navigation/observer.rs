@@ -31,7 +31,6 @@ pub(super) struct Observation {
     pub(super) body_challenged: bool,
     pub(super) body_complete: bool,
     pub(super) failed: bool,
-    pub(super) denied: bool,
 }
 
 pub(crate) struct PageObserver {
@@ -138,7 +137,8 @@ impl PageObserver {
                     if !is_current(&latest_request_id, &event.request_id) { continue; }
                     if latest_request_id.is_some() {
                         let id = event.request_id.clone();
-                        body_futures.push(capture_body_bounded(self.page.clone(), id));
+                        let total = event.encoded_data_length;
+                        body_futures.push(capture_body_bounded(self.page.clone(), id, total));
                     }
                 }
                 event = self.failures.next() => {
@@ -175,12 +175,6 @@ impl PageObserver {
     ) -> Result<(), BrowserError> {
         observation.status = Some(navigation_status(event.response.status)?);
         observation.headers = transport::response_headers(event)?;
-        if let Some(status) = observation.status {
-            if status == 403 || status == 429 {
-                observation.denied = true;
-                self.gate.revoke();
-            }
-        }
         observation.challenged = cf_header_challenge(&observation.headers);
         if observation.challenged {
             self.gate.revoke();
@@ -208,7 +202,11 @@ impl PageObserver {
 async fn capture_body_bounded(
     page: Page,
     id: RequestId,
+    encoded_total: f64,
 ) -> (RequestId, Result<Vec<u8>, BrowserError>) {
+    if let Err(wire) = transport::transfer::refuse_excess_wire(true, Some(encoded_total)) {
+        return (id, Err(wire));
+    }
     let body_result = timeout(
         BODY_CAPTURE_TIMEOUT,
         transport::capture_body(&page, id.clone()),
@@ -241,7 +239,6 @@ pub(super) fn empty_observation(url: String) -> Observation {
         body_challenged: false,
         body_complete: false,
         failed: false,
-        denied: false,
     }
 }
 

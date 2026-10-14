@@ -453,6 +453,7 @@ fn seed_partition_store(store: &Store, fixture: &PartitionFixture) -> TestResult
         source_key,
         source_athlete: athlete.source.clone(),
         retained_conflicts: Vec::new(),
+        combined_completion: None,
     };
     store.append(Table::Performances, &performance)?;
     Ok(())

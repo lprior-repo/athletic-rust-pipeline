@@ -6,6 +6,8 @@ use crate::acquisition::budget::target::limits;
 use crate::acquisition::{AcquisitionSelectionUsage, CaptureError};
 use crate::{StoreError, StoreResult};
 
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 mod allocations;
 mod diagnostics;
 mod phases;
@@ -27,15 +29,15 @@ fn refused<T>(result: StoreResult<T>) {
 }
 
 #[test]
-fn prepared_recovery_plan_twelve_admits_thirteen_refuses_before_targets() -> StoreResult<()> {
+fn prepared_recovery_plan_twelve_admits_thirteen_refuses_before_targets() -> TestResult {
     let budget = PreparedRecoveryBudget::admit(usage(12)?, 12)?;
-    assert_eq!(budget.targets.limit, 12);
-    assert_eq!(budget.targets.used, 0);
-    assert_eq!(budget.shell.payload.limit, 2_017_198_080);
-    assert_eq!(budget.shell.payload.used, 0);
-    assert_eq!(budget.reads.recovery_totals().roots.limit, 504);
-    assert_eq!(budget.reads.recovery_totals().encoded.limit, 37_472_256);
-    assert_eq!(budget.reads.recovery_totals().receipts.limit, 36);
+    check!(eq; budget.targets.limit, 12);
+    check!(eq; budget.targets.used, 0);
+    check!(eq; budget.shell.payload.limit, 2_017_198_080);
+    check!(eq; budget.shell.payload.used, 0);
+    check!(eq; budget.reads.recovery_totals().roots.limit, 504);
+    check!(eq; budget.reads.recovery_totals().encoded.limit, 37_472_256);
+    check!(eq; budget.reads.recovery_totals().receipts.limit, 36);
     exceeded(
         PreparedRecoveryBudget::admit(usage(13)?, 13),
         "backing bytes",
@@ -44,7 +46,7 @@ fn prepared_recovery_plan_twelve_admits_thirteen_refuses_before_targets() -> Sto
 }
 
 #[test]
-fn prepared_recovery_plan_remaining_roots_encoded_n_and_n_minus_one() -> StoreResult<()> {
+fn prepared_recovery_plan_remaining_roots_encoded_n_and_n_minus_one() -> TestResult {
     let exact = AcquisitionSelectionUsage::new(1_048_534, 533_748_224, 0, 0, 25_000, 0)?;
     let mut budget = PreparedRecoveryBudget::admit(exact, 1)?;
     {
@@ -56,8 +58,8 @@ fn prepared_recovery_plan_remaining_roots_encoded_n_and_n_minus_one() -> StoreRe
             account.reads().receipt_probe()?;
             account.reads().encoded(66_048)?;
         }
-        assert_eq!(account.reads().selection_usage().roots(), 42);
-        assert_eq!(
+        check!(eq; account.reads().selection_usage().roots(), 42);
+        check!(eq;
             account.reads().selection_usage().encoded_bytes(),
             limits::ENCODED
         );
@@ -75,7 +77,7 @@ fn prepared_recovery_plan_remaining_roots_encoded_n_and_n_minus_one() -> StoreRe
 }
 
 #[test]
-fn prepared_recovery_actual_row_and_receipt_debits_cannot_reset() -> StoreResult<()> {
+fn prepared_recovery_actual_row_and_receipt_debits_cannot_reset() -> TestResult {
     let mut budget = PreparedRecoveryBudget::admit(usage(2)?, 2)?;
     for _ in 0..2 {
         let mut account = budget.begin_target()?;
@@ -89,19 +91,19 @@ fn prepared_recovery_actual_row_and_receipt_debits_cannot_reset() -> StoreResult
         exceeded(account.reads().row(1, 1), "roots");
         exceeded(account.reads().receipt_probe(), "receipt probes");
     }
-    assert_eq!(budget.reads.recovery_totals().roots.used, 84);
-    assert_eq!(budget.reads.recovery_totals().receipts.used, 6);
-    assert_eq!(budget.reads.selection_usage().encoded_bytes(), 168);
+    check!(eq; budget.reads.recovery_totals().roots.used, 84);
+    check!(eq; budget.reads.recovery_totals().receipts.used, 6);
+    check!(eq; budget.reads.selection_usage().encoded_bytes(), 168);
     exceeded(budget.begin_target(), "recovery targets");
     Ok(())
 }
 
 #[test]
-fn prepared_recovery_zero_pin_admission_has_no_new_target() -> StoreResult<()> {
+fn prepared_recovery_zero_pin_admission_has_no_new_target() -> TestResult {
     let mut budget =
         PreparedRecoveryBudget::admit(AcquisitionSelectionUsage::new(0, 0, 0, 0, 3, 3)?, 0)?;
-    assert_eq!(budget.shell.payload.limit, 0);
-    assert_eq!(budget.reads.recovery_totals().allocations.owned.limit, 0);
+    check!(eq; budget.shell.payload.limit, 0);
+    check!(eq; budget.reads.recovery_totals().allocations.owned.limit, 0);
     exceeded(budget.begin_target(), "recovery targets");
     exceeded(
         PreparedRecoveryBudget::admit(usage(1)?, 2),
@@ -133,7 +135,7 @@ fn prepared_recovery_selection_usage_rejects_incoherent_six_scalars() {
 }
 
 #[test]
-fn prepared_recovery_parent_backing_threshold_is_exact() -> StoreResult<()> {
+fn prepared_recovery_parent_backing_threshold_is_exact() -> TestResult {
     let mut exact = PreparedRecoveryBudget::admit(usage(1)?, 1)?;
     exact.shell.payload.limit = limits::PAYLOAD;
     {
@@ -144,7 +146,7 @@ fn prepared_recovery_parent_backing_threshold_is_exact() -> StoreResult<()> {
         account.payload(RecoveryPayloadRole::Body, 67_108_864)?;
         account.payload(RecoveryPayloadRole::Metadata, 131_072)?;
     }
-    assert_eq!(exact.shell.payload.used, limits::PAYLOAD);
+    check!(eq; exact.shell.payload.used, limits::PAYLOAD);
     let mut short = PreparedRecoveryBudget::admit(usage(1)?, 1)?;
     short.shell.payload.limit = limits::PAYLOAD
         .checked_sub(1)

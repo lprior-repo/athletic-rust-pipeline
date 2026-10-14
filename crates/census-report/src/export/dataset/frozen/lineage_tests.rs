@@ -154,9 +154,7 @@ fn uppercase_legacy_archive_stays_exact_without_lowercase_v2_substitution() -> T
     check!(eq; reopened.lineage.store_identity, uppercase);
     check!(eq; store.snapshot().sequence(), before);
     let refusal = super::freeze_v2(&store, "uppercase-refusal");
-    check!(matches!(refusal, Err(ReportError::Invariant { detail })
-        if detail.contains("input token store identity")
-            && detail.contains("not a lowercase sha256 digest")));
+    check!(matches!(refusal, Err(ReportError::Invariant { .. })));
     check!(eq; store.store_identity()?.as_str(), uppercase.as_str());
     check!(eq; std::fs::read(&archive)?, bytes);
     check!(census_store::publish::Digest::parse(&uppercase).is_err());

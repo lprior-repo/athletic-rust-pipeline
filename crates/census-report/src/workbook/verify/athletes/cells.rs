@@ -5,6 +5,7 @@ use census_domain::model::{CanonicalAthlete, EventKind, ObservedGrade, SchoolYea
 
 use super::super::canonical::Value;
 use super::super::labels;
+use super::super::labels::athlete_headers::Schema;
 
 pub(super) fn newest_observation(athlete: &CanonicalAthlete) -> Option<&ObservedGrade> {
     athlete
@@ -75,7 +76,7 @@ fn classify_profile(profiles: &mut Profiles, url: String) {
     }
 }
 
-pub(super) fn event_list(prs: &[&SharedSelection]) -> Value {
+pub(super) fn event_list(prs: &[&SharedSelection], schema: Schema) -> Value {
     if prs.is_empty() {
         return Value::Empty;
     }
@@ -92,27 +93,29 @@ pub(super) fn event_list(prs: &[&SharedSelection]) -> Value {
         .collect();
     let names: Vec<&str> = events
         .iter()
-        .map(|(event, pr)| labels::mark_name(pr, event))
+        .map(|(event, pr)| labels::mark_name(pr, event, schema))
         .collect();
     Value::text(names.join("; "))
 }
 
-pub(super) fn headline(prs: &[&SharedSelection]) -> Value {
-    qualified_summary(prs.iter().copied())
+pub(super) fn headline(prs: &[&SharedSelection], schema: Schema) -> Value {
+    qualified_summary(prs.iter().copied(), schema)
 }
 
-pub(super) fn pr_events(prs: &[&SharedSelection]) -> Vec<Value> {
-    labels::PR_EVENTS
+pub(super) fn pr_events(prs: &[&SharedSelection], schema: Schema) -> Vec<Value> {
+    schema
+        .pr_events()
         .iter()
-        .map(|event| event_cell(prs, event))
+        .map(|event| event_cell(prs, event, schema))
         .collect()
 }
 
-pub(super) fn event_cell(prs: &[&SharedSelection], event: &str) -> Value {
+pub(super) fn event_cell(prs: &[&SharedSelection], event: &str, schema: Schema) -> Value {
     qualified_summary(
         prs.iter()
             .copied()
             .filter(|pr| selection_matches_event(pr, event)),
+        schema,
     )
 }
 
@@ -130,8 +133,13 @@ fn selection_matches_event(pr: &SharedSelection, event: &str) -> bool {
 const SUMMARY_OVERFLOW: &str = "; additional classified marks in PRs";
 const SUMMARY_BUDGET: usize = 32_767_usize.saturating_sub(SUMMARY_OVERFLOW.len());
 
-fn qualified_summary<'a>(mut prs: impl Iterator<Item = &'a SharedSelection>) -> Value {
-    let result = prs.try_fold((String::new(), 0_usize, 0_usize), append_summary_mark);
+fn qualified_summary<'a>(
+    mut prs: impl Iterator<Item = &'a SharedSelection>,
+    schema: Schema,
+) -> Value {
+    let result = prs.try_fold((String::new(), 0_usize, 0_usize), |state, pr| {
+        append_summary_mark(state, pr, schema)
+    });
     match result {
         Ok((text, _, _)) if text.is_empty() => Value::Empty,
         Ok((text, _, _)) => Value::text(text),
@@ -145,8 +153,9 @@ fn qualified_summary<'a>(mut prs: impl Iterator<Item = &'a SharedSelection>) -> 
 fn append_summary_mark(
     (mut text, used, marker_end): (String, usize, usize),
     pr: &SharedSelection,
+    schema: Schema,
 ) -> Result<(String, usize, usize), String> {
-    let mark = labels::qualified_mark(pr);
+    let mark = labels::qualified_mark(pr, schema);
     let separator = if text.is_empty() { 0 } else { 2 };
     let total = used
         .saturating_add(mark.encode_utf16().count())

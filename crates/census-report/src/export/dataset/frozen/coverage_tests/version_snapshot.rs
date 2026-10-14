@@ -1,5 +1,5 @@
-use super::super::fixtures::TestResult;
-use super::super::objects;
+use super::fixtures::TestResult;
+use super::objects;
 use census_store::{InputRecord, LeaseRecord, Store};
 use std::collections::BTreeMap;
 use std::ffi::OsString;

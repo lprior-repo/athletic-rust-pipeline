@@ -123,6 +123,12 @@ pub(crate) fn refusal_what(error: &FrozenCodecError) -> Option<&'static str> {
 }
 
 pub(crate) fn seeded_store() -> TestResult<SeededStore> {
+    seeded_store_with_source_athlete(None)
+}
+
+pub(crate) fn seeded_store_with_source_athlete(
+    source_athlete: Option<SourceIdentity>,
+) -> TestResult<SeededStore> {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
     let (school, school_id) = CanonicalSchool::new(
@@ -172,7 +178,7 @@ pub(crate) fn seeded_store() -> TestResult<SeededStore> {
         specification,
     )?;
     store.append(Table::Events, &event)?;
-    let performance = CanonicalPerformance::new(
+    let mut performance = CanonicalPerformance::new(
         PerformanceIdentity {
             athlete: &athlete_a.id,
             event: &event.id,
@@ -188,6 +194,7 @@ pub(crate) fn seeded_store() -> TestResult<SeededStore> {
             place: Some(1),
         },
     )?;
+    performance.source_athlete = source_athlete;
     store.append(Table::Performances, &performance)?;
     let case = ReviewCase::pending(
         CONTACT_CONFLICT_FAMILY,

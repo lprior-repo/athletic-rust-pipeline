@@ -6,8 +6,11 @@ use census_service::installation::defaults as installation_defaults;
 mod acquisition;
 #[path = "installation/fixture.rs"]
 mod fixture;
+#[path = "installation/image.rs"]
+mod image;
 use census_store::Store;
 use fixture::{configuration, equal, profile, TestResult};
+use image::logical_image;
 use std::path::Path;
 use std::process::{Command, Output};
 
@@ -186,26 +189,6 @@ fn actual_cli_refuses_live_owner_and_unsupported_exact_reference_without_creatin
     equal(absent.exists(), false)
 }
 
-fn logical_image(root: &Path) -> TestResult<(u64, Vec<Vec<(Vec<u8>, Vec<u8>)>>)> {
-    use fjall::Readable;
-    let db = fjall::Database::builder(root.join("fjall")).open()?;
-    let snapshot = db.snapshot();
-    let mut image = Vec::new();
-    for name in ["entities", "journal", "meta", "receipts"] {
-        let keyspace = db.keyspace(name, fjall::KeyspaceCreateOptions::default)?;
-        let mut rows = Vec::new();
-        for guard in snapshot.prefix(&keyspace, b"").take(513) {
-            if rows.len() == 512 {
-                return Err("logical image exceeds fixture row bound".into());
-            }
-            let (key, value) = guard.into_inner()?;
-            rows.push((key.to_vec(), value.to_vec()));
-        }
-        image.push(rows);
-    }
-    Ok((snapshot.seqno(), image))
-}
-
 #[test]
 fn service_cli_rejects_both_semantic_reference_mismatches_without_any_metadata_mutation(
 ) -> TestResult {
@@ -241,7 +224,7 @@ fn service_cli_rejects_both_semantic_reference_mismatches_without_any_metadata_m
                 .and_then(serde_json::Value::as_str),
             Some("installation_reference_unsupported"),
         )?;
-        equal(logical_image(root.path())?, before.clone())?;
+        equal(&logical_image(root.path())?, &before)?;
     }
     Ok(())
 }
@@ -278,7 +261,7 @@ fn representative_real_legacy_mutation_and_export_commands_refuse_without_side_e
         if !stderr.contains("enrollment only") || !stderr.contains(config.id()?.as_str()) {
             return Err(format!("legacy command {arguments:?} refusal={stderr}").into());
         }
-        equal(logical_image(root.path())?, before.clone())?;
+        equal(&logical_image(root.path())?, &before)?;
         equal(
             std::fs::read_dir(root.path().join("out"))?.next().is_none(),
             true,

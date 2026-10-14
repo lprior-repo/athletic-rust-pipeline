@@ -80,6 +80,7 @@ fn seed(
         source_key: locator.into(),
         source_athlete: Some(owner),
         retained_conflicts: Vec::new(),
+        combined_completion: None,
     };
     store.append_many(Table::Performances, std::slice::from_ref(&perf))?;
     Ok(perf)

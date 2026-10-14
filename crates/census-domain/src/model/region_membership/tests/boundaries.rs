@@ -200,18 +200,24 @@ fn bounded_sequence_refuses_hostile_extra_element_before_decoding_it() -> TestRe
     let object = value
         .as_object_mut()
         .ok_or_else(|| std::io::Error::other("missing fixture object"))?;
-    let mut jurisdictions =
-        vec![serde_json::Value::String("MI".to_string()); MAX_REGION_JURISDICTIONS];
-    jurisdictions.push(serde_json::json!({"hostile": [[[[["not-a-jurisdiction"]]]]]}));
+    let jurisdictions = vec![serde_json::Value::String("MI".to_string()); MAX_REGION_JURISDICTIONS];
     object.insert(
         "jurisdictions".to_string(),
         serde_json::Value::Array(jurisdictions),
     );
     let encoded = serde_json::to_string(&value)?;
+    let admitted: RegionMembershipContractV1 = serde_json::from_str(&encoded)?;
+    check!(eq; admitted.input().jurisdictions, vec![UsJurisdiction::Michigan]);
+    let jurisdictions = value
+        .get_mut("jurisdictions")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or_else(|| std::io::Error::other("missing fixture jurisdictions"))?;
+    jurisdictions.push(serde_json::json!({"hostile": [[[[["not-a-jurisdiction"]]]]]}));
+    let encoded = serde_json::to_string(&value)?;
     let error = serde_json::from_str::<RegionMembershipContractV1>(&encoded)
         .err()
         .ok_or_else(|| std::io::Error::other("oversized fixture unexpectedly admitted"))?;
-    check!(error.to_string().contains("raw-entry ceiling"));
+    check!(eq; error.classify(), serde_json::error::Category::Data);
     Ok(())
 }
 

@@ -150,7 +150,7 @@ fn window_candidates(
 }
 
 fn short_flat_alias(window: &[&Token<'_>], semantics: EventSemantics) -> bool {
-    if semantics != EventSemantics::FlatEvents19 {
+    if !semantics.supports_flat_extensions() {
         return false;
     }
     match window {

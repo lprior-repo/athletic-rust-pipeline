@@ -161,6 +161,7 @@ fn build_corpus(schools: usize) -> TestResult<Corpus> {
                 source_key: format!("cycle-{index}-{slot}"),
                 source_athlete: Some(source),
                 retained_conflicts: Vec::new(),
+                combined_completion: None,
             });
         }
     }

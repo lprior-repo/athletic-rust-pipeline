@@ -301,11 +301,10 @@ fn context<'a>(
 
 #[test]
 fn provider_offline_requires_an_explicit_store() -> TestResult {
-    let error = Cli::try_parse_from(["census-service", "provider", "tfrrs", "--offline"])
-        .err()
-        .ok_or("offline provider accepted the implicit default store")?;
-    check!(eq; error.kind(), clap::error::ErrorKind::MissingRequiredArgument);
-    check!(error.to_string().contains("--store"));
+    let cli = Cli::try_parse_from(["census-service", "provider", "tfrrs", "--offline"])?;
+    check!(provider(&cli)?
+        .validate_offline_store(cli.store.as_deref())
+        .is_err());
     Ok(())
 }
 

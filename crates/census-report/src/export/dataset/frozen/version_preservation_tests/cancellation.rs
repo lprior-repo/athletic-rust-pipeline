@@ -3,9 +3,8 @@ use super::{
     VersionCase, STATES,
 };
 use crate::export::dataset::frozen::cancel_freeze_v2;
-use crate::report::ReportError;
 
-const UNSUPPORTED: [VersionCase; 16] = [
+const HISTORICAL: [VersionCase; 18] = [
     VersionCase::HistoricalSchema,
     VersionCase::HistoricalPolicy,
     VersionCase::PolicyThirteen,
@@ -13,6 +12,8 @@ const UNSUPPORTED: [VersionCase; 16] = [
     VersionCase::PolicyFifteen,
     VersionCase::PolicySixteen,
     VersionCase::PolicySeventeen,
+    VersionCase::HistoricalPolicyEighteen,
+    VersionCase::HistoricalPolicyNineteen,
     VersionCase::CodecTwo,
     VersionCase::PreviousPolicy,
     VersionCase::PriorAffiliationPolicy,
@@ -25,12 +26,7 @@ const UNSUPPORTED: [VersionCase; 16] = [
 ];
 
 fn refused(store: &Store, job: &str, case: VersionCase) -> TestResult {
-    let expected = format!("unsupported {}", case.refusal_what());
-    check!(matches!(
-        cancel_freeze_v2(store, job),
-        Err(ReportError::ArtifactCorrupt { ref detail, .. }) if detail.contains(&expected)
-    ));
-    Ok(())
+    super::check_refusal(cancel_freeze_v2(store, job), case)
 }
 
 fn preserved(case: VersionCase, state: RetainedState) -> TestResult {
@@ -58,8 +54,8 @@ fn preserved(case: VersionCase, state: RetainedState) -> TestResult {
 }
 
 #[test]
-fn cancellation_preserves_unsupported_roots_in_every_state_and_after_reopen() -> TestResult {
-    UNSUPPORTED.into_iter().try_for_each(|case| {
+fn cancellation_preserves_historical_roots_in_every_state_and_after_reopen() -> TestResult {
+    HISTORICAL.into_iter().try_for_each(|case| {
         STATES
             .into_iter()
             .try_for_each(|state| preserved(case, state))

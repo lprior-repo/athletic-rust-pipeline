@@ -163,12 +163,9 @@ pub(super) fn xlsx_golden(range: &Range<Data>, section: &str) -> TestResult {
 }
 
 pub(super) fn bound_generation(directory: &Path) -> TestResult {
-    let entries = std::fs::read_dir(directory)?
-        .take(17)
-        .collect::<Result<Vec<_>, _>>()?;
-    check!(entries.len() <= 16);
     let mut bytes = 0_u64;
-    for entry in entries {
+    for entry in std::fs::read_dir(directory)? {
+        let entry = entry?;
         let size = entry.metadata()?.len();
         check!(size <= 1_048_576);
         bytes = bytes

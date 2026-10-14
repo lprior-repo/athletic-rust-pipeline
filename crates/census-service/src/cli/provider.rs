@@ -67,7 +67,6 @@ pub(super) struct ProviderArgs {
     refresh: bool,
     #[arg(
         long,
-        requires = "store",
         conflicts_with = "refresh",
         help = "Use eligible cached source bytes only; no HTTP or browser requests. Requires explicit --store with its owner stopped; missing cache remains an explicit refusal"
     )]
@@ -85,6 +84,13 @@ pub(super) struct ProviderArgs {
 impl ProviderArgs {
     fn jurisdictions(&self) -> Result<Vec<UsJurisdiction>> {
         super::resolve_restriction(self.all_states, &self.states)
+    }
+
+    pub(super) fn validate_offline_store(&self, root: Option<&std::path::Path>) -> Result<()> {
+        if self.offline && root.is_none() {
+            bail!("provider --offline requires explicit --store with census-serve stopped");
+        }
+        Ok(())
     }
 }
 

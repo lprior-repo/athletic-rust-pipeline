@@ -10,6 +10,7 @@ mod incident;
 mod install;
 mod lifecycle;
 mod manifest;
+pub(super) mod normalized;
 mod pointer;
 mod protocol;
 mod recovery;

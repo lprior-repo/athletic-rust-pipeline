@@ -103,7 +103,17 @@ fn specifications<S: SerializeStruct>(wire: &mut S, row: &SharedSelection) -> Re
     match adjustment_source {
         Some(source) => text(wire, "adjustment_source", &source),
         None => wire.serialize_field("adjustment_source", &None::<String>),
+    }?;
+    wire.serialize_field("eligible_candidate_count", &row.eligible_candidate_count)?;
+    wire.serialize_field("tied_performance_count", &row.tied_performance_count)?;
+    let mut tied_ids = String::new();
+    for id in &row.tied_performance_ids {
+        if !tied_ids.is_empty() {
+            tied_ids.push(';');
+        }
+        tied_ids.push_str(id.as_str());
     }
+    text(wire, "tied_performance_ids", &tied_ids)
 }
 
 fn text<S: SerializeStruct>(

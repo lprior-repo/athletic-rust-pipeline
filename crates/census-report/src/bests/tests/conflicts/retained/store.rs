@@ -10,6 +10,9 @@ pub(super) fn reloaded_dataset(
         .values()
         .try_for_each(|school| store.append(Table::Schools, school))?;
     store.append_many(Table::Athletes, &seed.athletes)?;
+    seed.teams
+        .values()
+        .try_for_each(|team| store.append(Table::Teams, team))?;
     store.append_many(Table::Meets, &seed.meets)?;
     store.append_many(Table::Events, &seed.events)?;
     store.append_many(Table::Performances, observations)?;

@@ -140,6 +140,13 @@ fn frozen_corruption_unsupported_manifest_codec_revision_is_refused() -> TestRes
         .checked_add(1)
         .ok_or("a codec revision overflowed")?;
     let encoded = serde_json::to_vec(&manifest)?;
+    check!(matches!(
+        super::super::manifest::FrozenManifest::decode(&encoded),
+        Err(super::super::codec::FrozenCodecError::UnsupportedVersion {
+            what: "frozen manifest",
+            ..
+        })
+    ));
     let objects_dir = objects::directory(fixture.root.directory());
     let digest = objects::install(&objects_dir, &encoded)?;
     root::write_retained(
@@ -158,11 +165,6 @@ fn frozen_corruption_unsupported_manifest_codec_revision_is_refused() -> TestRes
     );
     let error = refused_dataset(&tampered, fixture.store())?;
     artifact_corrupt(&error)?;
-    check!(
-        error.to_string().contains("unsupported frozen manifest"),
-        "{error}"
-    );
-    check!(error.to_string().contains("revision 3"), "{error}");
     check!(eq;
         object_bytes(&tampered, &digest)?,
         encoded,

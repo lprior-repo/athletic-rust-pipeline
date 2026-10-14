@@ -104,9 +104,16 @@ once per capture/parse revision and reused across subjects; see [ADR-004](docs/a
 
 Parse external representations once into validated domain values. Pure rules receive explicit
 inputs; clocks, network, storage and spawning remain effect boundaries. Existing exceptions are
-implementation work, not permission to create duplicate rules or mirrored public types.
+implementation work, not permission to create duplicate domain rules or mirrored domain types.
 [ADR-007](docs/adr/ADR-007-crate-boundaries.md) and [ADR-012](docs/adr/ADR-012-single-acquisition-plane.md)
 record the completed crate cut. `fuzz/` is a separate cargo-fuzz workspace; `fixtures/` is shared data.
+
+Browser DTOs cross a JSON service boundary, not a shared runtime object boundary.
+`census-crawl/src/net/bridge/wire.rs` owns the consumer wire contract;
+`athleticnet-browser/src/outcome.rs` owns browser runtime values and encoding.
+Keep their representation differences explicit and prove shared-fixture parity; do not add a
+cross-crate runtime dependency solely to unify these DTOs. [ADR-007](docs/adr/ADR-007-crate-boundaries.md)
+records this distinction.
 
 ## 5. Workflow backbone (§7-§9)
 

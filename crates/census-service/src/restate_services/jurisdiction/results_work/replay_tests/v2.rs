@@ -125,9 +125,9 @@ fn require_failed_rows(
 
 fn acquisition(fixture: &Fixture) -> TestResult<serde_json::Value> {
     check!(eq; CaptureProtocolVersion::V2.phase(), PHASE);
-    Ok(
-        serde_json::json!({ "keys":fixture.store.journal_keys(PHASE)?, "payloads":fixture.store.journal_payloads(PHASE)? }),
-    )
+    let mut keys: Vec<_> = fixture.store.journal_keys(PHASE)?.into_iter().collect();
+    keys.sort();
+    Ok(serde_json::json!({ "keys":keys, "payloads":fixture.store.journal_payloads(PHASE)? }))
 }
 
 async fn snapshot(fixture: &Fixture) -> TestResult<serde_json::Value> {

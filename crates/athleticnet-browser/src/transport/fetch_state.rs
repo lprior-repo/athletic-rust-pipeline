@@ -9,6 +9,7 @@ use chromiumoxide::Page;
 use reqwest::header::CONTENT_TYPE;
 use tokio::time::timeout;
 
+use super::transfer::{classify_wire_total, refuse_excess_wire, WireTotal};
 use super::{capture, fail, matches_request, record_response, FetchResult, ResponseEvidence};
 use crate::challenge::html_body_challenge;
 use crate::request::RequestSpec;
@@ -33,6 +34,8 @@ pub(super) struct FetchCapture<'a> {
     request_id: Option<RequestId>,
     pending_response: Option<Arc<EventResponseReceived>>,
     pending_finished: Option<RequestId>,
+    pending_encoded: Option<f64>,
+    encoded_total: Option<f64>,
     response: Option<ResponseEvidence>,
     loading_finished: bool,
     evaluation_result: Option<FetchResult>,
@@ -55,6 +58,8 @@ impl<'a> FetchCapture<'a> {
             request_id: None,
             pending_response: None,
             pending_finished: None,
+            pending_encoded: None,
+            encoded_total: None,
             response: None,
             loading_finished: false,
             evaluation_result: None,
@@ -77,7 +82,7 @@ impl<'a> FetchCapture<'a> {
             FetchEvent::Request(event) => self.on_request(event, remaining).await?,
             FetchEvent::Response(event) => self.on_response(event)?,
             FetchEvent::ExtraInfo(event) => self.on_extra_info(&event),
-            FetchEvent::Finished(event) => self.on_finished(event),
+            FetchEvent::Finished(event) => self.on_finished(event)?,
             FetchEvent::Failed(event) => self.on_failed(&event)?,
             FetchEvent::Closed => return Err(BrowserError::Transport),
             FetchEvent::Timer => return Err(BrowserError::Timeout),
@@ -139,6 +144,7 @@ impl<'a> FetchCapture<'a> {
         }
         if self.pending_finished.as_ref() == Some(&id) {
             self.loading_finished = true;
+            self.encoded_total = self.pending_encoded.take();
         }
         Ok(())
     }
@@ -172,19 +178,28 @@ impl<'a> FetchCapture<'a> {
         }
     }
 
-    fn on_finished(&mut self, event: Arc<EventLoadingFinished>) {
+    fn on_finished(&mut self, event: Arc<EventLoadingFinished>) -> Result<(), BrowserError> {
+        if matches!(
+            classify_wire_total(event.encoded_data_length),
+            WireTotal::Malformed
+        ) {
+            return Err(BrowserError::Protocol);
+        }
         if self
             .request_id
             .as_ref()
             .is_some_and(|known| known != &event.request_id)
         {
-            return;
+            return Ok(());
         }
         if self.request_id.as_ref() == Some(&event.request_id) {
             self.loading_finished = true;
+            self.encoded_total = Some(event.encoded_data_length);
         } else if self.request_id.is_none() {
             self.pending_finished = Some(event.request_id.clone());
+            self.pending_encoded = Some(event.encoded_data_length);
         }
+        Ok(())
     }
 
     fn on_failed(&mut self, event: &EventLoadingFailed) -> Result<(), BrowserError> {
@@ -211,6 +226,7 @@ pub(super) async fn complete_fetch(
     if result.status != Some(evidence.status) {
         return Err(BrowserError::Protocol);
     }
+    refuse_excess_wire(result.ok, capture.encoded_total)?;
     let encoded = result.body_base64.ok_or(BrowserError::Protocol)?;
     let body = capture::decode_body(&encoded)?;
     let body_challenge = html_body_challenge(

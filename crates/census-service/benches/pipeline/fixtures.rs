@@ -123,6 +123,7 @@ impl Fixture {
                 format!("athlete-{:05}", self.index),
             )),
             retained_conflicts: Vec::new(),
+            combined_completion: None,
         })
     }
 }

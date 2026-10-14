@@ -1,4 +1,4 @@
-use super::super::fixtures::TestResult;
+use super::fixtures::TestResult;
 use census_store::{InputRecord, InputState, Store};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

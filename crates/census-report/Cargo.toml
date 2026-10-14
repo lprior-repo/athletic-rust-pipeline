@@ -19,6 +19,7 @@ census-store = { path = "../census-store" }
 calamine = "=0.36.1"
 chrono = { version = "0.4", default-features = false, features = ["std"] }
 csv = "1"
+csv-core = "0.1"
 rust_xlsxwriter = { version = "=0.99.1", features = ["constant_memory"] }
 rustix = { version = "1", features = ["fs"] }
 serde = { version = "1", features = ["derive"] }

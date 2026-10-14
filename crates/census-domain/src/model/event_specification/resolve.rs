@@ -3,7 +3,7 @@ use crate::model::{CanonicalEvent, EvidenceMethod, SourceEventLabel};
 
 impl CanonicalEvent {
     pub fn resolved_specification(&self) -> Result<EventSpecification, SpecificationError> {
-        self.resolved_specification_with_policy(crate::model::EventSemantics::FlatEvents19)
+        self.resolved_specification_with_policy(crate::model::EventSemantics::CURRENT)
     }
 
     pub fn resolved_specification_with_policy(
@@ -29,6 +29,13 @@ impl CanonicalEvent {
                 )?)
             })?;
         resolved.category = resolved.category_in_context(self.gender, self.division.as_deref())?;
+        if resolved
+            .combined_event
+            .as_ref()
+            .is_some_and(|value| value.kind() != kind)
+        {
+            return Err(SpecificationError::ConflictingSpecification);
+        }
         Ok(resolved)
     }
 
@@ -66,6 +73,7 @@ impl EventSpecification {
             indoor_track: merge(self.indoor_track, parsed.indoor_track)?,
             category: merge(self.category, parsed.category)?,
             cross_country: merge_course(self.cross_country, parsed.cross_country)?,
+            combined_event: merge(self.combined_event, parsed.combined_event)?,
         })
     }
 }

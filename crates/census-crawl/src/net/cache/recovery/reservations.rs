@@ -153,14 +153,14 @@ pub(super) fn recover(directory: &Path, io: &mut RecoveryArchiveIo<'_>) -> Resul
         match fs::remove_file(path) {
             Ok(()) => {}
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(source) => return Err(shell::retained_error(path, source, io)?),
+            Err(source) => return Err(super::diagnostic::retained_error(path, source, io)?),
         }
         let file = match fs::File::open(directory) {
             Ok(file) => file,
-            Err(source) => return Err(shell::retained_error(directory, source, io)?),
+            Err(source) => return Err(super::diagnostic::retained_error(directory, source, io)?),
         };
         if let Err(source) = file.sync_all() {
-            return Err(shell::retained_error(directory, source, io)?);
+            return Err(super::diagnostic::retained_error(directory, source, io)?);
         }
         io.release_owned(
             path.as_os_str()

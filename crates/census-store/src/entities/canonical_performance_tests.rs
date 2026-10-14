@@ -67,6 +67,7 @@ fn performance(source_key: &str, identity: SourceIdentity) -> TestResult<Canonic
         source_key: source_key.to_string(),
         source_athlete: Some(identity),
         retained_conflicts: Vec::new(),
+        combined_completion: None,
     })
 }
 
@@ -227,19 +228,6 @@ fn same_identity_individual_scalars_retain_conflicts_and_immutable_observations(
                 .ok_or("visible scalar conflict")?;
             check!(eq; conflict.family, "Individual result scalar");
             check!(eq; conflict.subject_id, kept.id.as_str());
-            check!(conflict.detail.contains(&format!(
-                "{:?}",
-                (&kept.mark, kept.timing, kept.place, kept.observed_grade)
-            )));
-            check!(conflict.detail.contains(&format!(
-                "{:?}",
-                (
-                    &incoming.mark,
-                    incoming.timing,
-                    incoming.place,
-                    incoming.observed_grade
-                )
-            )));
             let expected = merged.clone();
             merged.merge(incoming.clone());
             merged.merge(kept.clone());

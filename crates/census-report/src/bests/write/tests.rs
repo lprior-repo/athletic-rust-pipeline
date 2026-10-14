@@ -34,6 +34,9 @@ fn selection(
             sources: 2,
         },
         conflicts: Vec::new(),
+        eligible_candidate_count: 3,
+        tied_performance_count: 1,
+        tied_performance_ids: vec![Id::mint("perf", &["csv_safety"])],
     }
 }
 

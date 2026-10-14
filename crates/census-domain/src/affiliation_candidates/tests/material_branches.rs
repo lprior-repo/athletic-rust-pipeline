@@ -16,7 +16,7 @@ fn boundary<'a>(
         size(8_388_608)?,
         size(lower)?,
     )?;
-    assert!(
+    check!(
         matches!(select_candidates(query, facts, changes), Err(AffiliationCandidateError::BudgetExceeded { resource: Resource::WorkUnits, needed, maximum }) if needed == work && maximum == lower)
     );
     query.grant = SelectionGrant::new(
@@ -55,20 +55,18 @@ fn duplicate_change_material_is_admitted_before_replay_equality() -> TestResult 
         .and_then(|n| n.checked_add(25))
         .ok_or("synthetic work")?;
     let selected = boundary(fixture.query()?, &facts, &changes, work)?;
-    assert_eq!(selected.outcome, CandidateOutcome::SingleCandidate(&fact));
-    assert_eq!(
-        selected.facts,
-        [
-            FactDisposition::Assertion {
-                fact: &fact,
-                disposition: Disposition::Candidate
-            },
-            FactDisposition::Change {
-                fact: &change,
-                disposition: Disposition::ChangeOutsideEffectiveScope
-            }
-        ]
-    );
+    check!(eq; selected.outcome, CandidateOutcome::SingleCandidate(&fact));
+    check!(eq; selected.facts,
+    [
+        FactDisposition::Assertion {
+            fact: &fact,
+            disposition: Disposition::Candidate
+        },
+        FactDisposition::Change {
+            fact: &change,
+            disposition: Disposition::ChangeOutsideEffectiveScope
+        }
+    ]);
     Ok(())
 }
 
@@ -93,20 +91,18 @@ fn nonshared_manifest_and_interpretation_have_separate_comparison_charges() -> T
         .and_then(|n| n.checked_add(20))
         .ok_or("synthetic work")?;
     let selected = boundary(fixture.query()?, &facts, &[], work)?;
-    assert_eq!(selected.outcome, CandidateOutcome::SingleCandidate(&a));
-    assert_eq!(
-        selected.facts,
-        [
-            FactDisposition::Assertion {
-                fact: &a,
-                disposition: Disposition::Candidate
-            },
-            FactDisposition::Assertion {
-                fact: &b,
-                disposition: Disposition::Candidate
-            }
-        ]
-    );
+    check!(eq; selected.outcome, CandidateOutcome::SingleCandidate(&a));
+    check!(eq; selected.facts,
+    [
+        FactDisposition::Assertion {
+            fact: &a,
+            disposition: Disposition::Candidate
+        },
+        FactDisposition::Assertion {
+            fact: &b,
+            disposition: Disposition::Candidate
+        }
+    ]);
     Ok(())
 }
 
@@ -168,14 +164,12 @@ fn duplicate_calendar_charges_label_and_nested_evidence_before_deduplication() -
             .ok_or("synthetic work")?;
         let selected = boundary(fixture.query()?, &facts, &[], work)?;
         let fact = facts.first().ok_or("synthetic fact")?;
-        assert_eq!(selected.outcome, CandidateOutcome::SingleCandidate(fact));
-        assert_eq!(
-            selected.facts,
-            [FactDisposition::Assertion {
-                fact,
-                disposition: Disposition::Candidate
-            }]
-        );
+        check!(eq; selected.outcome, CandidateOutcome::SingleCandidate(fact));
+        check!(eq; selected.facts,
+        [FactDisposition::Assertion {
+            fact,
+            disposition: Disposition::Candidate
+        }]);
     }
     Ok(())
 }
@@ -203,7 +197,7 @@ fn equal_length_metadata_requires_exact_bytes_after_admission() -> TestResult {
             LocallyCheckedAssertion::check(fixture.assertion(&first, &owners, key("A")?)?)?,
             LocallyCheckedAssertion::check(fixture.assertion(&second, &owners, key("B")?)?)?,
         ];
-        assert!(matches!(
+        check!(matches!(
             select_candidates(fixture.query()?, &facts, &[]),
             Err(AffiliationCandidateError::DuplicateIdDifferentPayload)
         ));

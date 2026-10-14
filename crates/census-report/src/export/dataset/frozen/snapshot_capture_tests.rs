@@ -80,13 +80,11 @@ fn snapshot_capture_matches_legacy_streams_without_advancing_the_store() -> Test
     check!(eq; legacy.lineage.snapshot_sequence, snapshot.sequence());
     check!(eq; direct.input_token.run_manifest_digest, Some(serialized_digest(&bound)?));
     check!(eq; legacy.input_token.run_manifest_digest, direct.input_token.run_manifest_digest);
-    check!(eq; direct.codec, "census-frozen-jsonl-v3");
-    check!(eq; direct.codec_revision, 3);
-    check!(eq; direct.input_token.protocol, 3);
-    check!(eq; direct.lineage.schema_revision, 3);
-    check!(eq; direct.lineage.policy_revision, 19);
-    check!(eq; direct.streams.len(), 15);
-    check!(eq; direct.source_fingerprints.len(), 16);
+    check!(eq; direct.codec, super::super::codec::MANIFEST_CODEC_ID);
+    check!(eq; direct.codec_revision, super::super::codec::CODEC_REVISION);
+    check!(eq; direct.input_token.protocol, super::super::codec::TOKEN_PROTOCOL);
+    check!(eq; direct.streams.len(), super::super::stream::StreamKind::ALL.len());
+    check!(eq; direct.source_fingerprints.len(), INPUT_TABLES.len());
     direct.validate()?;
     legacy.validate()?;
     check!(eq; store.snapshot().sequence(), snapshot.sequence());

@@ -137,12 +137,7 @@ fn new_flat_events_retain_ownership_sport_and_category_gates() -> TestResult {
 }
 
 #[test]
-fn flat_event_policy_has_explicit_revision_and_preserves_old_kind_bytes() -> TestResult {
-    let mut bytes = Vec::new();
-    RecruitingCatalogV1::new().write_policy(&mut bytes)?;
-    let policy: serde_json::Value = serde_json::from_slice(&bytes)?;
-    check!(eq; policy.get("policy_revision"), Some(&serde_json::json!(2)));
-    check!(eq; policy.get("grammar"), Some(&serde_json::json!("ascii_delimited_tokens_typed_context_xc_anchors_v4")));
+fn event_kinds_preserve_original_wire_bytes_and_keys() -> TestResult {
     for (kind, encoded, key) in [
         (EventKind::Track300m, "\"track300m\"", "Track300m"),
         (EventKind::Track500m, "\"track500m\"", "Track500m"),

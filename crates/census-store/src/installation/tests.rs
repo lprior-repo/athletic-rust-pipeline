@@ -137,7 +137,7 @@ fn enrollment_with_preexisting_uppercase_identity_has_exactly_one_commit() -> Te
         before.sequence.checked_add(1).ok_or("sequence")?,
     )?;
     equal(before.rows.get(1), after.rows.get(1))?;
-    equal(before.rows.get(0), after.rows.get(0))?;
+    equal(before.rows.first(), after.rows.first())?;
     equal(before.rows.get(3), after.rows.get(3))
 }
 

@@ -13,6 +13,7 @@ mod coach;
 mod coach_lane;
 mod cohort;
 mod collision;
+mod combined_event;
 mod contact;
 mod contact_proof;
 mod contact_tenure;
@@ -56,6 +57,7 @@ mod run;
 mod school;
 mod school_address;
 mod school_contact;
+mod serde_bounds;
 mod store_identity;
 pub use installation::{
     InstallationCapabilityV1, InstallationConfigId, InstallationConfigV1, InstallationDomainError,
@@ -87,6 +89,10 @@ pub use coach_lane::{
 };
 pub use cohort::{GradYear, Grade, ObservedGrade, PublishedGraduation, SchoolYear};
 pub use collision::{id_collision, CANONICAL_ID_COLLISION_FAMILY};
+pub use combined_event::{
+    CombinedComponentResult, CombinedDiscipline, CombinedEligibility, CombinedEventCompletion,
+    CombinedEventError, CombinedEventSpecification, MAX_COMBINED_COMPONENTS,
+};
 pub use contact::{is_consumer_domain, published_email, MailboxKind};
 pub use contact_proof::{
     claim_binds_to_row, compute_contact_proof, is_director, verify_contact_proof,

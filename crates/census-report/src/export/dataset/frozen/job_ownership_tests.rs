@@ -1,16 +1,11 @@
 use super::fixtures::{seeded_store, TestResult};
 use super::root::{self, Retained};
+use super::version_records::{install_record, RetainedState};
+use super::version_snapshot::RetainedEvidence;
 use super::{cancel_freeze_v2, freeze_v2, objects, verify, FrozenRoot};
 use crate::report::ReportError;
 use census_domain::model::serialized_digest;
 use census_store::Store;
-use version_records::{install_record, RetainedState};
-use version_snapshot::RetainedEvidence;
-
-#[path = "coverage_tests/version_records.rs"]
-mod version_records;
-#[path = "coverage_tests/version_snapshot.rs"]
-mod version_snapshot;
 
 const FIRST_JOB: &str = "job-ownership:first";
 const SECOND_JOB: &str = "job-ownership:second";

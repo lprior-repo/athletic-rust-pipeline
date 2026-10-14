@@ -24,7 +24,7 @@ impl ComparisonPolicy {
 impl PrKey {
     #[cfg(test)]
     pub(super) fn qualify(self, event: &CanonicalEvent) -> Option<Self> {
-        self.qualify_with_policy(event, census_domain::model::EventSemantics::FlatEvents19)
+        self.qualify_with_policy(event, census_domain::model::EventSemantics::CURRENT)
     }
 
     pub(super) fn qualify_with_policy(

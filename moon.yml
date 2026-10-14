@@ -193,6 +193,11 @@ tasks:
     toolchains: [system]
     inputs: *rustCacheInputs
     options: *manualRustTask
+  dependency-update:
+    command: 'tools/moon-cargo update'
+    toolchains: [system]
+    inputs: *rustCacheInputs
+    options: *manualRustTask
   fmt-write:
     command: 'tools/moon-cargo fmt --all'
     toolchains: [system]

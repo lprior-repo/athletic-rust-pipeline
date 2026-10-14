@@ -59,12 +59,20 @@ struct SpecificationIdentity<'a> {
 
 impl Serialize for SpecificationIdentity<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut wire = serializer.serialize_struct("EventSpecification", 5)?;
+        let fields = if self.specification.combined_event.is_some() {
+            6
+        } else {
+            5
+        };
+        let mut wire = serializer.serialize_struct("EventSpecification", fields)?;
         wire.serialize_field("cross_country", &self.specification.cross_country)?;
         wire.serialize_field("hurdles", &self.specification.hurdles)?;
         wire.serialize_field("implement", &self.specification.implement)?;
         wire.serialize_field("indoor_track", &self.specification.indoor_track)?;
         wire.serialize_field("category", &self.category)?;
+        if let Some(combined) = &self.specification.combined_event {
+            wire.serialize_field("combined_event", combined)?;
+        }
         wire.end()
     }
 }

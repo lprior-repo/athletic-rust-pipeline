@@ -1,3 +1,4 @@
+mod combined;
 mod reports;
 mod row;
 
@@ -32,7 +33,7 @@ pub(crate) fn build_admitted(
         &options.jurisdictions,
     );
     let parents = Parents::of(&derivation);
-    let retained = RetainedContexts::of(derivation.performances(), &parents);
+    let retained = RetainedContexts::of(derivation.performances(), &parents, admission);
     let mut slots: HashMap<PrKey, PrSlot<'_>> = HashMap::new();
     derivation
         .performances()
@@ -64,7 +65,7 @@ struct PrSlot<'a> {
     marks: usize,
 }
 
-impl PrSlot<'_> {
+impl<'a> PrSlot<'a> {
     fn empty() -> Self {
         Self {
             sources: Vec::new(),
@@ -95,6 +96,21 @@ impl<'a> Candidate<'a> {
         let (measure, value) = eligible_measure(performance, kind)?;
         let meet = parents.meet(performance.meet.as_str());
         let event = parents.canonical_event(performance.event.as_str())?;
+        if admission.semantics().requires_completed_combined()
+            && matches!(
+                kind,
+                census_domain::model::EventKind::Pentathlon
+                    | census_domain::model::EventKind::Heptathlon
+                    | census_domain::model::EventKind::Decathlon
+            )
+            && performance.combined_eligibility(
+                &event
+                    .resolved_specification_with_policy(admission.semantics())
+                    .ok()?,
+            ) != census_domain::model::CombinedEligibility::Eligible
+        {
+            return None;
+        }
         let disposition = admission.disposition(&event.id)?;
         let key = PrKey::from_admitted(
             performance,
@@ -180,29 +196,8 @@ fn close(
     scope: Scope,
     semantics: census_domain::model::EventSemantics,
 ) -> Option<SharedSelection> {
-    let candidate = winning_candidate(&slot)?;
-    let specification = candidate
-        .event
-        .resolved_specification_with_policy(semantics)
-        .ok()?;
-    let mut winner = make_row(key, candidate, parents, scope, specification);
-    let sources_count = slot.sources.len();
-    let conflicts = slot
+    let candidate = slot
         .reports
-        .into_values()
-        .filter_map(ReportGroup::conflict)
-        .collect();
-
-    winner.population = Population {
-        marks: slot.marks,
-        sources: sources_count,
-    };
-    winner.conflicts = conflicts;
-    Some(winner)
-}
-
-fn winning_candidate<'a, 'slot>(slot: &'slot PrSlot<'a>) -> Option<&'slot Candidate<'a>> {
-    slot.reports
         .values()
         .filter_map(ReportGroup::eligible)
         .reduce(|incumbent, candidate| {
@@ -211,7 +206,37 @@ fn winning_candidate<'a, 'slot>(slot: &'slot PrSlot<'a>) -> Option<&'slot Candid
             } else {
                 incumbent
             }
-        })
+        })?;
+    let specification = candidate
+        .event
+        .resolved_specification_with_policy(semantics)
+        .ok()?;
+    let mut row = make_row(key, candidate, parents, scope, specification);
+    row.eligible_candidate_count = slot
+        .reports
+        .values()
+        .filter_map(ReportGroup::eligible)
+        .count();
+    row.tied_performance_ids = slot
+        .reports
+        .values()
+        .filter_map(ReportGroup::eligible)
+        .filter(|value| value.value == candidate.value)
+        .map(|value| value.performance.id.clone())
+        .collect();
+    row.tied_performance_ids.sort();
+    row.tied_performance_ids.dedup();
+    row.tied_performance_count = row.tied_performance_ids.len();
+    row.population = Population {
+        marks: slot.marks,
+        sources: slot.sources.len(),
+    };
+    row.conflicts = slot
+        .reports
+        .into_values()
+        .filter_map(ReportGroup::conflict)
+        .collect();
+    Some(row)
 }
 
 fn make_row(
@@ -229,6 +254,9 @@ fn make_row(
         athlete: candidate.athlete(parents),
         population: Population::default(),
         conflicts: Vec::new(),
+        eligible_candidate_count: 0,
+        tied_performance_count: 0,
+        tied_performance_ids: Vec::new(),
     }
 }
 

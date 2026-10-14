@@ -85,6 +85,9 @@ pub struct SharedSelection {
     pub athlete: SelectionAthlete,
     pub population: Population,
     pub conflicts: Vec<Conflict>,
+    pub eligible_candidate_count: usize,
+    pub tied_performance_count: usize,
+    pub tied_performance_ids: Vec<PerformanceId>,
 }
 
 type OrderKey<'a> = (JurisdictionBucket, &'a str, &'a str, &'a PrKey);

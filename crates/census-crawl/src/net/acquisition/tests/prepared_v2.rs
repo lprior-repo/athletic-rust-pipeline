@@ -67,9 +67,9 @@ async fn fixed_v2_exact_recovery_moves_the_genuine_body_into_real_parser_once() 
         crate::milesplit::fetch_owned_meet(&ctx, &fixture.reference()?, &ctx.fetch_options()).await;
     check!(matches!(
         alias,
-        Err(crate::CrawlError::Fetch(crate::net::FetchError::Capture(
+        Err(crate::CrawlError::Capture(
             crate::net::CaptureTransportError::DispatchConsumed
-        )))
+        ))
     ));
     check!(eq; fixture.count(), 0);
     check!(eq; fixture.store.journal_keys(CaptureProtocolVersion::V2.phase())?, before);

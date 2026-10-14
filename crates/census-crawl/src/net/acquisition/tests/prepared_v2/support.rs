@@ -6,7 +6,6 @@ pub(super) enum Encoding {
     Canonical,
     Compact,
     Unknown,
-    EnvelopeEdge,
 }
 
 pub(super) struct Prepared {
@@ -52,7 +51,7 @@ pub(super) fn prepare(fixture: &Fixture, body: &[u8], encoding: Encoding) -> Tes
         ResponseObservationV1::new(200, work.request().original_url(), CAPTURED, vec![])?,
     )?;
     let digest = format!("{:x}", Sha256::digest(body));
-    let mut meta: crate::net::cache::CacheMeta = serde_json::from_value(serde_json::json!({
+    let meta: crate::net::cache::CacheMeta = serde_json::from_value(serde_json::json!({
         "url": work.request().original_url(), "response_url": work.request().original_url(),
         "method": "GET", "status": 200, "content_digest": digest,
         "bytes": body.len(), "fetched_at": CAPTURED,
@@ -62,19 +61,6 @@ pub(super) fn prepare(fixture: &Fixture, body: &[u8], encoding: Encoding) -> Tes
             crate::net::cache::Capture::from_meta(&meta, fixture.fetcher.cache_dir())?.encoded
         }
         Encoding::Compact => serde_json::to_vec(&meta)?,
-        Encoding::EnvelopeEdge => {
-            meta.content_type = Some(String::new());
-            let baseline =
-                crate::net::cache::Capture::from_meta(&meta, fixture.fetcher.cache_dir())?
-                    .encoded
-                    .len();
-            let fill = (64_usize * 1024)
-                .checked_sub(64)
-                .and_then(|n| n.checked_sub(baseline))
-                .ok_or("metadata edge length")?;
-            meta.content_type = Some("x".repeat(fill));
-            crate::net::cache::Capture::from_meta(&meta, fixture.fetcher.cache_dir())?.encoded
-        }
         Encoding::Unknown => {
             let mut value = serde_json::to_value(&meta)?;
             value.as_object_mut().ok_or("metadata object")?.insert(

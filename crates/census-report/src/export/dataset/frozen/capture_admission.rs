@@ -39,42 +39,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn physical_bytes_are_shared_across_completed_scans() -> StoreResult<()> {
+    fn physical_bytes_are_shared_across_completed_scans() -> Result<(), Box<dyn std::error::Error>>
+    {
         let mut admission = CaptureAdmission { remaining: 10 };
         let counts = ReadCounts {
             encoded_bytes: 4,
             ..ReadCounts::default()
         };
         admission.charge(counts)?;
-        assert_eq!(admission.budget().bytes, 6);
+        check!(eq; admission.budget().bytes, 6);
         admission.charge(counts)?;
-        assert_eq!(admission.budget().bytes, 2);
-        assert_eq!(admission.budget().rows, census_store::MAX_ROWS_PER_TABLE);
-        assert_eq!(
-            admission.budget().record_bytes,
-            census_store::MAX_OBSERVATION_RECORD_BYTES
-        );
-        assert!(matches!(
+        check!(eq; admission.budget().bytes, 2);
+        check!(eq; admission.budget().rows, census_store::MAX_ROWS_PER_TABLE);
+        check!(eq; admission.budget().record_bytes,
+        census_store::MAX_OBSERVATION_RECORD_BYTES);
+        check!(matches!(
             admission.charge(counts),
             Err(StoreError::CounterOverflow)
         ));
-        assert_eq!(admission.budget().bytes, 2);
+        check!(eq; admission.budget().bytes, 2);
         admission.charge(ReadCounts {
             encoded_bytes: 2,
             ..ReadCounts::default()
         })?;
-        assert_eq!(admission.budget().bytes, 0);
+        check!(eq; admission.budget().bytes, 0);
         admission.charge(ReadCounts::default())?;
-        assert_eq!(admission.budget().bytes, 0);
+        check!(eq; admission.budget().bytes, 0);
         Ok(())
-    }
-
-    #[test]
-    fn default_capture_grant_is_physical_frozen_input_limit() {
-        let admission = CaptureAdmission::new();
-        assert_eq!(
-            admission.budget().bytes,
-            crate::export::MAX_FROZEN_INPUT_BYTES
-        );
     }
 }

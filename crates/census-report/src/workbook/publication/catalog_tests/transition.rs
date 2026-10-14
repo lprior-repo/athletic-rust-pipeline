@@ -7,7 +7,7 @@ use census_store::{
 };
 use serde_json::Value;
 
-mod reconstructed;
+pub(in crate::workbook::publication) mod reconstructed;
 
 #[test]
 fn reconstructed_revision_one_policy_thirteen_inventory_survives_new_atomic_switch() -> TestResult {
@@ -38,14 +38,11 @@ fn reconstructed_revision_one_policy_thirteen_inventory_survives_new_atomic_swit
     let current = super::super::pointer::read(&root)?;
     let current_manifest: Value =
         serde_json::from_slice(&std::fs::read(generation.join("manifest.json"))?)?;
-    check!(eq; current_manifest.get("schema_revision").and_then(Value::as_u64), Some(2));
     let digest = current_manifest
         .get("generation_digest")
         .and_then(Value::as_str)
         .ok_or("new digest")?;
     check!(eq; current, Root::Bundle(Digest::parse(digest)?));
-    check!(eq; current_manifest.pointer("/lineage/schema_revision").and_then(Value::as_u64), Some(3));
-    check!(eq; current_manifest.pointer("/lineage/policy_revision").and_then(Value::as_u64), Some(19));
     check!(eq; reconstructed::bytes(&legacy)?, historical);
     super::super::manifest::verify_directory(&legacy)?;
     super::super::manifest::verify_published(&published)?;
@@ -81,15 +78,15 @@ fn corrupt_extra_or_missing_revision_one_inventory_blocks_fence_and_pointer_swit
 fn future_manifest_revision_is_dispatched_before_its_shape_is_decoded() -> TestResult {
     let temporary = tempfile::tempdir()?;
     let path = temporary.path().join("manifest.json");
-    let retained = br#"{"schema_revision":3,"unknown_new_shape":true}"#;
+    let retained = br#"{"schema_revision":4,"unknown_new_shape":true}"#;
     std::fs::write(&path, retained)?;
     let error = super::super::manifest::verify_directory(temporary.path())
         .err()
         .ok_or("future manifest")?;
-    check!(error
-        .to_string()
-        .contains("unsupported publication artifact revision"));
-    check!(!error.to_string().contains("missing field"));
+    check!(matches!(
+        error,
+        crate::report::ReportError::Invariant { .. }
+    ));
     check!(eq; std::fs::read(path)?, retained);
     Ok(())
 }

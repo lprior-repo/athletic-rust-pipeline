@@ -1,4 +1,4 @@
-use super::super::fixtures::{seeded_store, SeededStore, TestResult};
+use super::super::fixtures::{seeded_store_with_source_athlete, SeededStore, TestResult};
 use crate::bests::{self, SharedSelection};
 use crate::export::ExportDataset;
 use crate::report::{coverage_report, CoverageReport, Scope};
@@ -6,7 +6,7 @@ use census_domain::model::{
     serialized_bytes, serialized_digest, CanonicalAthlete, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CoachLaneObligation, Confidence, CoverageRow, CoverageScope, EventKind,
     Evidence, GradYear, PendingCoachLane, PublishedGraduation, SchoolYear, SourceEventLabel,
-    SourceRef, Sport,
+    SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -55,7 +55,10 @@ pub(super) fn lane() -> TestResult<CoachLaneObligation> {
 }
 
 pub(super) fn seed(shape: EvidenceShape) -> TestResult<SeededStore> {
-    let seeded = seeded_store()?;
+    let seeded = seeded_store_with_source_athlete(Some(SourceIdentity::new(
+        SourceNamespace::MilesplitAthlete,
+        "1",
+    )))?;
     seed_accepted_discus(&seeded.store)?;
     if shape.has_rows() {
         check!(eq; CoverageReport::publish_coverage_rows(&seeded.store, &[row()])?, 1);
@@ -115,7 +118,6 @@ fn seed_accepted_discus(store: &Store) -> TestResult {
     });
     event.evidence.push(evidence.clone());
     store.append(Table::Events, &event)?;
-    performance.source_athlete = athlete.source.clone();
     performance.evidence.push(evidence);
     store.append(Table::Performances, &performance)?;
     Ok(())
@@ -209,12 +211,6 @@ pub(super) fn check_shape(dataset: &ExportDataset, shape: EvidenceShape) -> Test
     check!(serialized_bytes(dataset)?.ends_with(expected.as_bytes()));
     check_report(dataset, shape)?;
     let interpreted = interpretation(dataset)?;
-    if interpreted.selections.is_empty() {
-        eprintln!(
-            "frozen-coverage diagnostic: {}",
-            serde_json::to_string(dataset)?
-        );
-    }
     check!(eq; interpreted.selections.len(), 1);
     let selection = interpreted
         .selections

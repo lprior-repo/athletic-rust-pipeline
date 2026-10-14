@@ -72,9 +72,7 @@ impl<'a> ContextualLabel<'a> {
             bytes = after;
             words = end;
         }
-        if semantics == EventSemantics::FlatEvents19
-            && parsed.dimensions.iter().any(Option::is_some)
-        {
+        if semantics.supports_flat_extensions() && parsed.dimensions.iter().any(Option::is_some) {
             parsed.dimension_free_kind = Some(parsed.resolve_dimension_free_kind()?);
         }
         Ok(parsed)

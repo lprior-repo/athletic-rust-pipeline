@@ -2,6 +2,7 @@ use crate::protocol::{RankingPageObservation, RankingsCapture};
 use crate::{BrowserError, BrowserResponse};
 use base64::Engine;
 use reqwest::header::HeaderMap;
+
 pub(crate) fn parse_binding(
     data: &serde_json::Value,
     capture_kind: RankingsCapture,

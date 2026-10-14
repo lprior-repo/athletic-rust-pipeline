@@ -153,6 +153,7 @@ fn historical_performance(
         source_key: "61k:original-result".to_owned(),
         source_athlete: athlete.source.clone(),
         retained_conflicts: Vec::new(),
+        combined_completion: None,
     };
     store.append(Table::Meets, &meet)?;
     store.append(Table::Teams, &team)?;

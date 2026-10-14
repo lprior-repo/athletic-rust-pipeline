@@ -34,20 +34,7 @@ fn finish<T>(
             )?;
             Ok(value)
         }
-        Err(source) => {
-            super::diagnostic::error(
-                &source,
-                path.as_os_str()
-                    .len()
-                    .checked_add(512)
-                    .ok_or_else(|| limit("diagnostic bytes"))?,
-                io,
-            )?;
-            Err(FetchError::Cache {
-                path: path.to_path_buf(),
-                source,
-            })
-        }
+        Err(source) => Err(super::diagnostic::retained_error(path, source, io)?),
     }
 }
 
@@ -287,23 +274,4 @@ pub(super) fn release_directory(
             .checked_add(512)
             .ok_or_else(|| limit("allocation"))?,
     )?)
-}
-
-pub(super) fn retained_error(
-    path: &Path,
-    source: std::io::Error,
-    io: &mut RecoveryArchiveIo<'_>,
-) -> Result<FetchError, FetchError> {
-    super::diagnostic::error(
-        &source,
-        path.as_os_str()
-            .len()
-            .checked_add(512)
-            .ok_or_else(|| limit("diagnostic bytes"))?,
-        io,
-    )?;
-    Ok(FetchError::Cache {
-        path: path.to_path_buf(),
-        source,
-    })
 }

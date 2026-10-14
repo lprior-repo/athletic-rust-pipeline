@@ -16,31 +16,25 @@ fn explicit_interval_is_inclusive_without_automatic_extension() -> TestResult {
         let as_of = day(value)?;
         let mut query = fixture.query()?;
         query.as_of = &as_of;
-        assert_eq!(
-            select_candidates(query, &claims, &[])?.outcome,
-            CandidateOutcome::SingleCandidate(claims.first().ok_or("synthetic claim absent")?)
-        );
+        check!(eq; select_candidates(query, &claims, &[])?.outcome,
+        CandidateOutcome::SingleCandidate(claims.first().ok_or("synthetic claim absent")?));
     }
-    for value in ["2026-08-31"] {
-        let as_of = day(value)?;
-        let mut query = fixture.query()?;
-        query.as_of = &as_of;
-        assert!(matches!(
-            select_candidates(query, &claims, &[])?.outcome,
-            CandidateOutcome::Unknown
-        ));
-    }
+    let before = day("2026-08-31")?;
+    let mut query = fixture.query()?;
+    query.as_of = &before;
+    check!(matches!(
+        select_candidates(query, &claims, &[])?.outcome,
+        CandidateOutcome::Unknown
+    ));
     let after = day("2027-06-16")?;
     let mut query = fixture.query()?;
     query.as_of = &after;
-    assert!(matches!(
+    check!(matches!(
         select_candidates(query, &claims, &[])?.outcome,
         CandidateOutcome::EndedWithoutReplacement
     ));
-    assert_eq!(
-        ProfileDateRangeV1::new(day("2027-06-15")?, day("2026-09-01")?),
-        Err(crate::model::ProfileError::ReversedDateRange)
-    );
+    check!(eq; ProfileDateRangeV1::new(day("2027-06-15")?, day("2026-09-01")?),
+    Err(crate::model::ProfileError::ReversedDateRange));
     Ok(())
 }
 
@@ -70,14 +64,12 @@ fn exact_day_does_not_carry_forward() -> TestResult {
                 Disposition::OutsideEffectiveScope,
             )
         };
-        assert_eq!(selected.outcome, outcome);
-        assert_eq!(
-            selected.facts,
-            [FactDisposition::Assertion {
-                fact: claim,
-                disposition
-            }]
-        );
+        check!(eq; selected.outcome, outcome);
+        check!(eq; selected.facts,
+        [FactDisposition::Assertion {
+            fact: claim,
+            disposition
+        }]);
     }
     Ok(())
 }
@@ -96,7 +88,7 @@ fn undated_and_ongoing_contract_gaps_cannot_select() -> TestResult {
     ] {
         raw.temporal = TemporalScope::Unresolved(gap);
         let claims = [LocallyCheckedAssertion::check(raw)?];
-        assert!(matches!(
+        check!(matches!(
             select_candidates(fixture.query()?, &claims, &[])?.outcome,
             CandidateOutcome::Unknown
         ));
@@ -106,7 +98,7 @@ fn undated_and_ongoing_contract_gaps_cannot_select() -> TestResult {
         continuing_tenure: SourceSpan::new(0, BODY.len())?,
     };
     let claims = [LocallyCheckedAssertion::check(raw)?];
-    assert!(matches!(
+    check!(matches!(
         select_candidates(fixture.query()?, &claims, &[])?
             .facts
             .first(),
@@ -130,11 +122,11 @@ fn xc_roster_never_becomes_track_enrollment() -> TestResult {
     };
     let claims = [LocallyCheckedAssertion::check(raw)?];
     let xc = select_candidates(fixture.query()?, &claims, &[])?;
-    assert!(matches!(xc.outcome, CandidateOutcome::SingleCandidate(fact)
+    check!(matches!(xc.outcome, CandidateOutcome::SingleCandidate(fact)
         if matches!(fact.raw().relationship, RelationshipCandidate::RepresentsSchoolProgram { .. })));
     let mut track = fixture.query()?;
     track.sport = Sport::OutdoorTrack;
-    assert!(matches!(
+    check!(matches!(
         select_candidates(track, &claims, &[])?.outcome,
         CandidateOutcome::Unknown
     ));
@@ -154,8 +146,8 @@ fn coop_program_without_athlete_campus_binding_stays_unknown() -> TestResult {
     };
     let claims = [LocallyCheckedAssertion::check(raw)?];
     let result = select_candidates(fixture.query()?, &claims, &[])?;
-    assert!(matches!(result.outcome, CandidateOutcome::Unknown));
-    assert!(matches!(
+    check!(matches!(result.outcome, CandidateOutcome::Unknown));
+    check!(matches!(
         result.facts.first(),
         Some(FactDisposition::Assertion {
             disposition: Disposition::CoopMemberUnknown,
@@ -217,24 +209,20 @@ fn season_uses_supplied_calendar_and_keeps_year_and_sport_binding() -> TestResul
                 Disposition::Candidate,
             ),
         };
-        assert_eq!(selected.outcome, outcome);
-        assert_eq!(
-            selected.facts,
-            [FactDisposition::Assertion {
-                fact: claim,
-                disposition
-            }]
-        );
+        check!(eq; selected.outcome, outcome);
+        check!(eq; selected.facts,
+        [FactDisposition::Assertion {
+            fact: claim,
+            disposition
+        }]);
     }
     raw.temporal = TemporalScope::AcademicSeason {
         year,
         sport: Sport::OutdoorTrack,
         calendar: &calendar,
     };
-    assert_eq!(
-        LocallyCheckedAssertion::check(raw),
-        Err(AffiliationCandidateError::CalendarScopeMismatch)
-    );
+    check!(eq; LocallyCheckedAssertion::check(raw),
+    Err(AffiliationCandidateError::CalendarScopeMismatch));
     Ok(())
 }
 
@@ -259,7 +247,7 @@ fn coop_campus_requires_both_effective_intervals_and_exact_source_person() -> Te
         },
     };
     let claims = [LocallyCheckedAssertion::check(raw)?];
-    assert!(matches!(
+    check!(matches!(
         select_candidates(fixture.query()?, &claims, &[])?.outcome,
         CandidateOutcome::Unknown
     ));
@@ -276,10 +264,8 @@ fn coop_campus_requires_both_effective_intervals_and_exact_source_person() -> Te
         },
     };
     let claims = [LocallyCheckedAssertion::check(raw)?];
-    assert_eq!(
-        select_candidates(fixture.query()?, &claims, &[])?.outcome,
-        CandidateOutcome::SingleCandidate(claims.first().ok_or("synthetic claim absent")?)
-    );
+    check!(eq; select_candidates(fixture.query()?, &claims, &[])?.outcome,
+    CandidateOutcome::SingleCandidate(claims.first().ok_or("synthetic claim absent")?));
     if let RelationshipCandidate::RepresentsCoopProgram {
         program,
         member:
@@ -307,9 +293,7 @@ fn coop_campus_requires_both_effective_intervals_and_exact_source_person() -> Te
             },
         };
     }
-    assert_eq!(
-        LocallyCheckedAssertion::check(raw),
-        Err(AffiliationCandidateError::CoopPersonMismatch)
-    );
+    check!(eq; LocallyCheckedAssertion::check(raw),
+    Err(AffiliationCandidateError::CoopPersonMismatch));
     Ok(())
 }

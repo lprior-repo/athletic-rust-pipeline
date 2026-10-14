@@ -13,7 +13,7 @@ mod flat_readback;
 mod mutate;
 mod readback;
 mod scope;
-mod transition;
+pub(in crate::workbook::publication) mod transition;
 use fixture::{fixture, Fixture, TestResult};
 
 fn options() -> TestResult<Options> {
@@ -58,7 +58,7 @@ fn whole_meet_publishes_one_individual_one_team_relay_and_all_retained_dispositi
     check!(eq; admission.counts().included, 2);
     check!(eq; admission.counts().excluded.get(&EventExclusionReason::WheelchairRace), Some(&2));
     check!(eq; admission.counts().excluded.get(&EventExclusionReason::CompetitiveWalking), Some(&1));
-    check!(eq; admission.counts().unresolved.get(&EventResolutionReason::UnsupportedScholasticVariant), Some(&1));
+    check!(eq; admission.counts().unresolved.get(&EventResolutionReason::UnknownOrMixedSourceLabels), Some(&1));
     let bests = bests::build_from_dataset(&dataset, &best_options())?;
     check!(eq; bests.len(), 1);
     check!(eq; bests.first().ok_or("ordinary best")?.key.event_kind, EventKind::Track100m);
@@ -72,7 +72,7 @@ fn whole_meet_publishes_one_individual_one_team_relay_and_all_retained_dispositi
     check!(eq; winner.population.sources, 1);
     let path = publish(&fixture, &dataset)?;
     let generation = path.parent().ok_or("published generation")?;
-    super::verify_sidecars::verify(generation, &dataset, &options()?)?;
+    super::verify_sidecars::verify(generation, &dataset, &options()?, 3)?;
     workbook::verify::verify_frozen(&path, &dataset, &options()?)?;
     mutate::assert_cell(&path, "Athletes", "Performance count", "1")?;
     let relays = lines(&generation.join("relays.jsonl"))?;
@@ -96,7 +96,7 @@ fn whole_meet_publishes_one_individual_one_team_relay_and_all_retained_dispositi
     check!(eq; reopened.events.len(), 6);
     check!(eq; reopened.performances.len(), 4);
     check!(eq; census_domain::model::serialized_bytes(&reopened.events)?, raw_events);
-    super::verify_sidecars::verify(generation, &reopened, &options()?)?;
+    super::verify_sidecars::verify(generation, &reopened, &options()?, 3)?;
     Ok(())
 }
 
@@ -220,7 +220,12 @@ fn independent_oracle_rejects_missing_catalog_family_and_extra_excluded_best_or_
             }
             _ => return Err("unknown finite mutation".into()),
         }
-        check!(super::verify_sidecars::verify(generation, &dataset, &options()?).is_err());
+        let refused = super::verify_sidecars::verify(generation, &dataset, &options()?, 3);
+        check!(matches!(
+            refused,
+            Err(crate::report::ReportError::Invariant { .. }
+                | crate::report::ReportError::Io { .. })
+        ));
     }
     Ok(())
 }
@@ -292,7 +297,7 @@ fn semantic_readback_rejects_wrong_marks_missing_rows_and_same_count_excluded_re
             _ => return Err("unknown finite semantic mutation".into()),
         }
         mutate::write_lines(&path, &rows)?;
-        let error = super::verify_sidecars::verify(generation, &dataset, &options()?)
+        let error = super::verify_sidecars::verify(generation, &dataset, &options()?, 3)
             .err()
             .ok_or("semantic corruption accepted")?;
         check!(error.to_string().contains(file));

@@ -72,6 +72,255 @@ mod pagination {
     }
 }
 #[cfg(test)]
+mod navigation_wire {
+    use super::super::capture::{uniquely_bound, WireLedger};
+    use crate::protocol::RankingsCapture;
+    use crate::BrowserError;
+    use chromiumoxide::cdp::browser_protocol::network::RequestId;
+
+    const ORIGIN: &str = "https://www.athletic.net";
+    const NAV_URL: &str =
+        "https://www.athletic.net/api/v1/tfRankings/GetNavInfo?seasonId=2026&level=4&gender=m";
+    const OTHER_URL: &str = "https://www.athletic.net/api/v1/tfRankings/GetRankings";
+
+    fn ledger_with_request(id: &str) -> WireLedger {
+        let mut ledger = WireLedger::new();
+        ledger.note_request(
+            RequestId::new(id),
+            NAV_URL.to_owned(),
+            "GET".to_owned(),
+            None,
+            false,
+            ORIGIN,
+            RankingsCapture::Navigation,
+        );
+        ledger
+    }
+
+    #[test]
+    fn a_single_matching_request_binds_uniquely_regardless_of_arrival_order() -> anyhow::Result<()>
+    {
+        let mut early_wire = WireLedger::new();
+        early_wire.note_finished(RequestId::new("req-1"), 1_048_576.0);
+        early_wire.note_request(
+            RequestId::new("req-1"),
+            NAV_URL.to_owned(),
+            "GET".to_owned(),
+            None,
+            false,
+            ORIGIN,
+            RankingsCapture::Navigation,
+        );
+        let mut late_wire = WireLedger::new();
+        late_wire.note_request(
+            RequestId::new("req-1"),
+            NAV_URL.to_owned(),
+            "GET".to_owned(),
+            None,
+            false,
+            ORIGIN,
+            RankingsCapture::Navigation,
+        );
+        late_wire.note_finished(RequestId::new("req-1"), 1_048_576.0);
+        for ledger in [&early_wire, &late_wire] {
+            let candidates = ledger.candidates_for(NAV_URL, "GET");
+            anyhow::ensure!(candidates.len() == 1);
+            let bound = uniquely_bound(candidates, 1)?;
+            anyhow::ensure!(bound.is_some());
+            anyhow::ensure!(super::super::super::transfer::refuse_excess_wire(
+                true,
+                Some(1_048_576.0)
+            )
+            .is_ok());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn duplicate_matching_requests_refuse_as_protocol_rather_than_picking_latest(
+    ) -> anyhow::Result<()> {
+        let mut ledger = ledger_with_request("req-1");
+        ledger.note_request(
+            RequestId::new("req-2"),
+            NAV_URL.to_owned(),
+            "GET".to_owned(),
+            None,
+            false,
+            ORIGIN,
+            RankingsCapture::Navigation,
+        );
+        let candidates = ledger.candidates_for(NAV_URL, "GET");
+        anyhow::ensure!(candidates.len() == 2);
+        anyhow::ensure!(matches!(
+            uniquely_bound(candidates, 1),
+            Err(BrowserError::Protocol)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn duplicate_bindings_for_one_wire_refuse_as_protocol() -> anyhow::Result<()> {
+        let ledger = ledger_with_request("req-1");
+        let candidates = ledger.candidates_for(NAV_URL, "GET");
+        anyhow::ensure!(matches!(
+            uniquely_bound(candidates, 2),
+            Err(BrowserError::Protocol)
+        ));
+        anyhow::ensure!(matches!(
+            uniquely_bound(Vec::new(), 0),
+            Err(BrowserError::Protocol)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn missing_wire_waits_rather_than_assigning_zero() -> anyhow::Result<()> {
+        let ledger = ledger_with_request("req-1");
+        let absent = ledger.candidates_for(
+            "https://www.athletic.net/api/v1/tfRankings/GetNavInfo?seasonId=2027&level=4&gender=m",
+            "GET",
+        );
+        anyhow::ensure!(absent.is_empty());
+        anyhow::ensure!(uniquely_bound(absent, 1)?.is_none());
+        let mut unrelated = WireLedger::new();
+        unrelated.note_request(
+            RequestId::new("other-1"),
+            OTHER_URL.to_owned(),
+            "POST".to_owned(),
+            Some(true),
+            false,
+            ORIGIN,
+            RankingsCapture::Results,
+        );
+        unrelated.note_request(
+            RequestId::new("foreign-1"),
+            NAV_URL.to_owned(),
+            "GET".to_owned(),
+            None,
+            false,
+            "https://other.example",
+            RankingsCapture::Navigation,
+        );
+        anyhow::ensure!(unrelated.candidates_for(NAV_URL, "GET").is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn an_excess_wire_total_is_refused_before_decode() -> anyhow::Result<()> {
+        let ledger = ledger_with_request("req-1");
+        let candidates = ledger.candidates_for(NAV_URL, "GET");
+        let bound = uniquely_bound(candidates, 1)?.ok_or(anyhow::anyhow!("missing bound"))?;
+        let _ = bound;
+        anyhow::ensure!(matches!(
+            super::super::super::transfer::refuse_excess_wire(true, Some(40_000_000.0)),
+            Err(BrowserError::PayloadLimit)
+        ));
+        anyhow::ensure!(matches!(
+            super::super::super::transfer::refuse_excess_wire(true, Some(f64::NAN)),
+            Err(BrowserError::Protocol)
+        ));
+        anyhow::ensure!(matches!(
+            super::super::super::transfer::refuse_excess_wire(true, None),
+            Err(BrowserError::Protocol)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn a_canceled_request_does_not_create_ambiguity() -> anyhow::Result<()> {
+        let mut ledger = ledger_with_request("req-1");
+        ledger.note_request(
+            RequestId::new("req-2"),
+            NAV_URL.to_owned(),
+            "GET".to_owned(),
+            None,
+            false,
+            ORIGIN,
+            RankingsCapture::Navigation,
+        );
+        ledger.note_failed(RequestId::new("req-2"), "net::ERR_ABORTED".to_owned(), None);
+        let candidates = ledger.candidates_for(NAV_URL, "GET");
+        anyhow::ensure!(candidates.len() == 1);
+        anyhow::ensure!(uniquely_bound(candidates, 1)?.is_some());
+        Ok(())
+    }
+    #[test]
+    fn a_stale_malformed_wire_does_not_poison_the_bound_request() -> anyhow::Result<()> {
+        let mut ledger = ledger_with_request("req-1");
+        ledger.note_finished(RequestId::new("req-1"), 1_048_576.0);
+        ledger.note_finished(RequestId::new("stale-1"), f64::NAN);
+        let candidates = ledger.candidates_for(NAV_URL, "GET");
+        anyhow::ensure!(candidates.len() == 1);
+        let bound = uniquely_bound(candidates, 1)?.ok_or(anyhow::anyhow!("missing bound"))?;
+        anyhow::ensure!(bound == RequestId::new("req-1"));
+        anyhow::ensure!(
+            super::super::super::transfer::refuse_excess_wire(true, Some(1_048_576.0)).is_ok()
+        );
+        anyhow::ensure!(matches!(
+            super::super::super::transfer::refuse_excess_wire(true, Some(f64::NAN)),
+            Err(BrowserError::Protocol)
+        ));
+        Ok(())
+    }
+    #[test]
+    fn a_bound_malformed_wire_is_refused_before_decode() -> anyhow::Result<()> {
+        let mut ledger = ledger_with_request("req-1");
+        ledger.note_finished(RequestId::new("req-1"), f64::NEG_INFINITY);
+        let candidates = ledger.candidates_for(NAV_URL, "GET");
+        let bound = uniquely_bound(candidates, 1)?.ok_or(anyhow::anyhow!("missing bound"))?;
+        anyhow::ensure!(bound == RequestId::new("req-1"));
+        anyhow::ensure!(matches!(
+            super::super::super::transfer::refuse_excess_wire(true, Some(f64::NEG_INFINITY)),
+            Err(BrowserError::Protocol)
+        ));
+        anyhow::ensure!(matches!(
+            super::super::super::transfer::refuse_excess_wire(true, None),
+            Err(BrowserError::Protocol)
+        ));
+        Ok(())
+    }
+    #[test]
+    fn stale_redirect_and_failure_on_another_route_do_not_poison() -> anyhow::Result<()> {
+        let mut ledger = ledger_with_request("req-1");
+        ledger.note_request(
+            RequestId::new("other-1"),
+            OTHER_URL.to_owned(),
+            "POST".to_owned(),
+            Some(true),
+            false,
+            ORIGIN,
+            RankingsCapture::Results,
+        );
+        ledger.note_response(
+            RequestId::new("other-1"),
+            OTHER_URL.to_owned(),
+            302,
+            ORIGIN,
+            RankingsCapture::Results,
+        );
+        ledger.note_failed(
+            RequestId::new("other-1"),
+            "net::ERR_FAILED".to_owned(),
+            None,
+        );
+        let candidates = ledger.candidates_for(NAV_URL, "GET");
+        anyhow::ensure!(candidates.len() == 1);
+        anyhow::ensure!(uniquely_bound(candidates, 1)?.is_some());
+        let other = ledger.candidates_for(OTHER_URL, "POST");
+        anyhow::ensure!(other.len() == 1);
+        Ok(())
+    }
+    #[test]
+    fn method_matching_ignores_case_but_not_route() -> anyhow::Result<()> {
+        let ledger = ledger_with_request("req-1");
+        anyhow::ensure!(ledger.candidates_for(NAV_URL, "get").len() == 1);
+        anyhow::ensure!(ledger.candidates_for(NAV_URL, "POST").is_empty());
+        anyhow::ensure!(ledger.candidates_for(OTHER_URL, "GET").is_empty());
+        Ok(())
+    }
+}
+
+#[cfg(test)]
 mod lane_smoke {
     use super::super::session::fetch_rankings;
     use crate::gate::ProfileGate;

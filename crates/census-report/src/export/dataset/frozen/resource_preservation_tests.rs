@@ -1,21 +1,15 @@
 use super::fixtures::{seeded_store, TestResult};
 use super::root;
-use super::{cancel_freeze_v2, freeze_v2};
+use super::version_records::RetainedState;
+use super::version_snapshot::RetainedEvidence;
+use super::{cancel_freeze_v2, freeze_v2, version_records};
 use census_store::Store;
 use fixture::ResourceCase;
-use version_records::RetainedState;
-use version_snapshot::RetainedEvidence;
 
 #[path = "resource_preservation_tests/bind.rs"]
 mod bind;
 #[path = "resource_preservation_tests/fixture.rs"]
 mod fixture;
-#[allow(clippy::duplicate_mod)]
-#[path = "coverage_tests/version_records.rs"]
-mod version_records;
-#[allow(clippy::duplicate_mod)]
-#[path = "coverage_tests/version_snapshot.rs"]
-mod version_snapshot;
 
 const STATES: [RetainedState; 5] = [
     RetainedState::Missing,

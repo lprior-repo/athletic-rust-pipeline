@@ -36,16 +36,18 @@ fn every_namespace_renders_and_classifies() -> Result<(), Box<dyn std::error::Er
 }
 
 const EVENT_LABELS: &str = "\
-100m=Track100m;100 Meters=Track100m;200m=Track200m;400m=Track400m;800m=Track800m;\
-800-metre=Track800m;1600m=Track1600m;3200m=Track3200m;1mile=Track1Mile;1 Mile=Track1Mile;\
-3000m=Track3000m;3k=Track3000m;5000m=Track5000m;110mh=Track110mHurdles;\
-110m Hurdles=Track110mHurdles;110mH=Track110mHurdles;100mh=Track100mHurdles;\
-300mh=Track300mHurdles;400mh=Track400mHurdles;2000msteeplechase=Track2000mSteeplechase;\
-2K Steeplechase=Track2000mSteeplechase;3000msteeplechase=Track3000mSteeplechase;\
-3000msteeple=Track3000mSteeplechase;crosscountry=CrossCountry;xc=CrossCountry;\
-Cross-Country=CrossCountry;4x100m=Relay4x100;4x100 Relay=Relay4x100;4x200m=Relay4x200;\
-4x400m=Relay4x400;4x400 Meter Relay=Relay4x400;4x800m=Relay4x800;sprintmedley=SprintMedley;\
-smr=SprintMedley;distancemedley=DistanceMedley;Distance Medley=DistanceMedley;\
+100m=Track100m;100 Meters=Track100m;200m=Track200m;300m=Track300m;500m=Track500m;\
+600m=Track600m;400m=Track400m;800m=Track800m;800-metre=Track800m;1600m=Track1600m;\
+3200m=Track3200m;1mile=Track1Mile;1 Mile=Track1Mile;2mile=Track2Miles;2 Mile=Track2Miles;\
+3000m=Track3000m;3k=Track3000m;5000m=Track5000m;2000m=Track2000m;10000m=Track10000m;\
+10k=Track10000m;110mh=Track110mHurdles;110m Hurdles=Track110mHurdles;110mH=Track110mHurdles;\
+100mh=Track100mHurdles;300mh=Track300mHurdles;400mh=Track400mHurdles;\
+2000msteeplechase=Track2000mSteeplechase;2K Steeplechase=Track2000mSteeplechase;\
+3000msteeplechase=Track3000mSteeplechase;3000msteeple=Track3000mSteeplechase;\
+crosscountry=CrossCountry;xc=CrossCountry;Cross-Country=CrossCountry;\
+4x100m=Relay4x100;4x100 Relay=Relay4x100;4x200m=Relay4x200;4x400m=Relay4x400;\
+4x400 Meter Relay=Relay4x400;4x800m=Relay4x800;sprintmedley=SprintMedley;smr=SprintMedley;\
+distancemedley=DistanceMedley;Distance Medley=DistanceMedley;\
 highjump=HighJump;High Jump=HighJump;longjump=LongJump;triplejump=TripleJump;\
 polevault=PoleVault;shotput=ShotPut;shot_put=ShotPut;discus=Discus;javelin=Javelin;\
 hammer=Hammer;weightthrow=WeightThrow;pentathlon=Pentathlon;heptathlon=Heptathlon;\
@@ -54,8 +56,9 @@ decathlon=Decathlon";
 const FIELD_LABELS: &str = "highjump longjump triplejump polevault shotput discus javelin \
                             hammer weightthrow pentathlon heptathlon decathlon";
 const RELAY_LABELS: &str = "4x100m 4x200m 4x400m 4x800m sprintmedley distancemedley";
-const PLAIN_LABELS: &str = "100m 200m 400m 800m 1600m 3200m 1mile 3000m 5000m 110mh 100mh \
-                            300mh 400mh 2000msteeplechase 3000msteeplechase crosscountry 3,200m";
+const PLAIN_LABELS: &str = "100m 200m 300m 500m 600m 400m 800m 1600m 3200m 1mile 3000m 5000m \
+                            2000m 10000m 110mh 100mh 300mh 400mh 2000msteeplechase \
+                            3000msteeplechase crosscountry 3,200m";
 
 #[test]
 fn every_event_label_maps_to_its_kind() -> Result<(), Box<dyn std::error::Error>> {
@@ -119,7 +122,15 @@ fn medley_relay_and_modifier_labels_never_fall_back_to_a_distance(
         check!(
             !matches!(
                 got,
-                EventKind::Track1600m | EventKind::Track3000m | EventKind::Track200m
+                EventKind::Track1600m
+                    | EventKind::Track3000m
+                    | EventKind::Track200m
+                    | EventKind::Track300m
+                    | EventKind::Track500m
+                    | EventKind::Track600m
+                    | EventKind::Track2000m
+                    | EventKind::Track10000m
+                    | EventKind::Track2Miles
             ),
             "{label} fell back to a flat distance: {got:?}"
         );

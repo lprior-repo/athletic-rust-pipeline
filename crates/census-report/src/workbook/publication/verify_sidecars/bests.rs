@@ -8,48 +8,21 @@ use super::input::Inputs;
 use super::read::{self, Limits};
 use super::{cohort, defect, diff};
 
-const HEADERS: [&str; 33] = [
-    "athlete_id",
-    "name",
-    "school",
-    "state",
-    "grad_year",
-    "gender",
-    "sport",
-    "event",
-    "surface",
-    "wind_class",
-    "timing_class",
-    "best_mark",
-    "original_mark",
-    "best_value",
-    "best_value_unit",
-    "measure",
-    "date",
-    "meet",
-    "place",
-    "wind_mps",
-    "timing",
-    "marks_in_event",
-    "profile_url",
-    "performance_id",
-    "source_athlete",
-    "source_key",
-    "comparison_policy",
-    "comparison_specification",
-    "source_specification",
-    "adjustment_kind",
-    "adjustment_basis",
-    "adjustment_note",
-    "adjustment_source",
-];
+mod schema;
+
+use schema::Schema;
 
 const LIMITS: Limits = Limits {
     bytes: 2 * 1024 * 1024 * 1024,
     records: 4_000_000,
 };
 
-pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> {
+pub(super) fn verify(
+    directory: &Path,
+    inputs: &Inputs<'_>,
+    artifact_revision: u32,
+) -> ReportResult<()> {
+    let schema = Schema::parse(artifact_revision)?;
     let rows = selections::build_from_dataset(
         inputs.dataset,
         &selections::Options {
@@ -60,17 +33,30 @@ pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> 
         },
     )?;
     let cohort = cohort(inputs.options.grad_year);
-    verify_csv(&directory.join(format!("best-results-{cohort}.csv")), &rows)?;
+    verify_csv(
+        &directory.join(format!("best-results-{cohort}.csv")),
+        &rows,
+        schema,
+    )?;
     verify_jsonl(
         &directory.join(format!("best-results-{cohort}.jsonl")),
         &rows,
+        schema,
     )
 }
 
-fn verify_csv(path: &Path, rows: &[selections::SharedSelection]) -> ReportResult<()> {
+fn verify_csv(
+    path: &Path,
+    rows: &[selections::SharedSelection],
+    schema: Schema,
+) -> ReportResult<()> {
+    let headers = schema.headers()?;
     let mut position = 0usize;
     let total = read::csv(path, LIMITS, "best-results CSV", |index, record| {
-        verify_csv_row(path, index, record, rows, &mut position)
+        if index == 1 {
+            return read::headers(path, record, headers);
+        }
+        verify_csv_row(path, index, record, rows, &mut position, schema)
     })?;
     verify_csv_count(path, total, rows.len())
 }
@@ -100,25 +86,27 @@ fn verify_csv_row(
     record: &csv::StringRecord,
     rows: &[selections::SharedSelection],
     position: &mut usize,
+    schema: Schema,
 ) -> ReportResult<()> {
-    if index == 1 {
-        return read::headers(path, record, &HEADERS);
-    }
     let Some(expected) = rows.get(*position) else {
         return Err(defect(format!(
             "{} record {index} is an unexpected extra best-results row",
             path.display()
         )));
     };
-    read::compare_record(path, index, record, &cells(path, expected)?)?;
+    read::compare_record(path, index, record, &cells(path, expected, schema)?)?;
     *position = position.saturating_add(1);
     Ok(())
 }
 
-fn verify_jsonl(path: &Path, rows: &[selections::SharedSelection]) -> ReportResult<()> {
+fn verify_jsonl(
+    path: &Path,
+    rows: &[selections::SharedSelection],
+    schema: Schema,
+) -> ReportResult<()> {
     let mut position = 0usize;
     let total = read::lines(path, LIMITS, "best-results JSONL", |line, text| {
-        verify_jsonl_row(path, line, text, rows, &mut position)
+        verify_jsonl_row(path, line, text, rows, &mut position, schema)
     })?;
     verify_jsonl_count(path, total, rows.len())
 }
@@ -141,6 +129,7 @@ fn verify_jsonl_row(
     text: &str,
     rows: &[selections::SharedSelection],
     position: &mut usize,
+    schema: Schema,
 ) -> ReportResult<()> {
     let found: serde_json::Value =
         serde_json::from_str(text).map_err(|source| decode(path, line, source))?;
@@ -151,6 +140,7 @@ fn verify_jsonl_row(
         ))
     })?;
     let expected = serde_json::to_value(expected).map_err(|source| decode(path, line, source))?;
+    let expected = schema.project_json(expected)?;
     compare_jsonl(path, line, &expected, &found)?;
     *position = position.saturating_add(1);
     Ok(())
@@ -173,12 +163,22 @@ fn compare_jsonl(
     }
 }
 
-fn cells(path: &Path, row: &selections::SharedSelection) -> ReportResult<Vec<Cell>> {
-    Ok(identity_cells(row)
-        .into_iter()
-        .chain(result_cells(row))
-        .chain(specification_cells(path, row)?)
-        .collect())
+fn cells(
+    path: &Path,
+    row: &selections::SharedSelection,
+    schema: Schema,
+) -> ReportResult<Vec<Cell>> {
+    let mut cells = Vec::with_capacity(schema.headers()?.len());
+    cells.extend(
+        identity_cells(row)
+            .into_iter()
+            .chain(result_cells(row))
+            .chain(specification_cells(path, row)?),
+    );
+    if let Schema::CandidateInventory = schema {
+        cells.extend(inventory_cells(row));
+    }
+    Ok(cells)
 }
 
 fn specification_cells(path: &Path, row: &selections::SharedSelection) -> ReportResult<[Cell; 7]> {
@@ -203,6 +203,21 @@ fn specification_cells(path: &Path, row: &selections::SharedSelection) -> Report
         Cell::optional(row.result.adjustment_note.as_deref()),
         Cell::optional(adjustment_source.as_deref()),
     ])
+}
+
+fn inventory_cells(row: &selections::SharedSelection) -> [Cell; 3] {
+    let mut tied_ids = String::new();
+    for id in &row.tied_performance_ids {
+        if !tied_ids.is_empty() {
+            tied_ids.push(';');
+        }
+        tied_ids.push_str(id.as_str());
+    }
+    [
+        Cell::integer(row.eligible_candidate_count.to_string()),
+        Cell::integer(row.tied_performance_count.to_string()),
+        Cell::text(tied_ids),
+    ]
 }
 
 fn identity_cells(row: &selections::SharedSelection) -> [Cell; 11] {

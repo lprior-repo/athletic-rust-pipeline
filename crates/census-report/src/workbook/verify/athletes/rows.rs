@@ -1,5 +1,5 @@
 use super::super::canonical::Value;
-use super::super::{labels, reach};
+use super::super::{labels::athlete_headers::Schema, reach};
 use super::{cells, Verifier};
 use crate::bests::SharedSelection;
 use census_domain::model::{CanonicalAthlete, IdentityStatus, Sport};
@@ -7,9 +7,9 @@ use census_domain::model::{CanonicalAthlete, IdentityStatus, Sport};
 impl Verifier<'_, '_> {
     pub(super) fn values(&mut self, athlete: &CanonicalAthlete) -> Vec<Value> {
         let prs: Vec<&SharedSelection> = self.expectations.prs_of(athlete.id.as_str()).collect();
-        let mut values = Vec::with_capacity(labels::ATHLETE_HEADERS.len());
+        let mut values = Vec::with_capacity(self.schema.headers().len());
         values.extend(self.identity(athlete));
-        append_performance_cells(&mut values, athlete, &prs);
+        append_performance_cells(&mut values, athlete, &prs, self.schema);
         values.extend(self.tally_cells(athlete));
         let reach = reach::Reach::of(self.expectations, athlete);
         append_reach(
@@ -116,6 +116,7 @@ fn append_performance_cells(
     values: &mut Vec<Value>,
     athlete: &CanonicalAthlete,
     prs: &[&SharedSelection],
+    schema: Schema,
 ) {
     values.push(cells::flag(athlete.sports.iter().any(|sport| {
         matches!(sport, Sport::IndoorTrack | Sport::OutdoorTrack)
@@ -123,9 +124,9 @@ fn append_performance_cells(
     values.push(cells::flag(athlete.sports.contains(&Sport::CrossCountry)));
     values.push(cells::flag(athlete.sports.contains(&Sport::IndoorTrack)));
     values.push(cells::flag(athlete.sports.contains(&Sport::OutdoorTrack)));
-    values.push(cells::event_list(prs));
-    values.push(cells::headline(prs));
-    values.extend(cells::pr_events(prs));
+    values.push(cells::event_list(prs, schema));
+    values.push(cells::headline(prs, schema));
+    values.extend(cells::pr_events(prs, schema));
 }
 
 fn append_reach(values: &mut Vec<Value>, reach: reach::Reach, athletics_url: Option<&str>) {

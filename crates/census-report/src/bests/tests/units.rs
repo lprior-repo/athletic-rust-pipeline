@@ -28,27 +28,31 @@ fn selection_skips_distance_reports_for_timed_events() -> TestResult {
 
 #[test]
 fn selection_skips_time_reports_for_combined_events() -> TestResult {
-    let mut dataset = selection_dataset(EventKind::Decathlon)?;
-    let valid = reported(
-        &dataset,
-        "valid_points",
-        Mark::Points(CentiPoints::new(345600)),
-    );
-    let incompatible = reported(
-        &dataset,
-        "historical_time",
-        Mark::TimeSeconds(ExactSeconds::parse("34.56")?),
-    );
-    dataset.performances = vec![incompatible, valid.clone()];
-
+    use super::ties::fixture::{NumericCase, TieFixture};
+    let fixture = TieFixture::new()?;
+    let case = NumericCase {
+        kind: EventKind::Decathlon,
+        label: "Decathlon",
+        tied: Mark::Points(CentiPoints::new(345600)),
+        better: Mark::Points(CentiPoints::new(345600)),
+        value: 345600,
+    };
+    let valid = fixture.report(&case, "valid_points", "2026-05-01")?;
+    let mut incompatible = fixture
+        .report(&case, "historical_time", "2026-05-01")?
+        .with_mark(Mark::TimeSeconds(ExactSeconds::parse("34.56")?))?;
+    incompatible.performance.combined_completion = None;
+    let directory = tempfile::tempdir()?;
+    let store = fixture.store_with_replay(directory.path(), &[incompatible, valid.clone()])?;
+    let dataset = ExportDataset::load(&store)?;
     let rows = selected(&dataset)?;
-
     check!(eq; rows.len(), 1);
-    check!(eq; rows[0].source.performance_id, valid.id);
-    check!(eq; rows[0].result.mark, valid.mark);
-    check!(eq; rows[0].result.value, 345600);
-    check!(eq; rows[0].population.marks, 1);
-    check!(eq; rows[0].conflicts, Vec::new());
+    let row = rows.first().ok_or("missing completed points selection")?;
+    check!(eq; row.source.performance_id, valid.performance.id);
+    check!(eq; row.result.mark, valid.performance.mark);
+    check!(eq; row.result.value, 345600);
+    check!(eq; row.population.marks, 1);
+    check!(eq; row.conflicts, Vec::new());
     Ok(())
 }
 

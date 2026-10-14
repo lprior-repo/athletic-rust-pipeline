@@ -10,7 +10,6 @@ fn current_six_event_publication_reopens_and_independently_verifies() -> TestRes
     let fixture = fixture()?;
     seed_flat_events(&fixture)?;
     let dataset = ExportDataset::load(&fixture.store)?;
-    check!(eq; dataset.lineage.policy_revision, 19);
     let selected = bests::build_from_dataset(&dataset, &best_options())?;
     check!(eq; selected.len(), 7);
     let workbook = publish(&fixture, &dataset)?;
@@ -31,14 +30,19 @@ fn current_six_event_publication_reopens_and_independently_verifies() -> TestRes
         check!(eq; selected.iter().filter(|row| row.key.event_kind == kind).count(), 1);
     }
     check!(eq; std::fs::read(directory.join("frozen-input.json"))?, before);
-    let mut historical = reopened;
-    historical.lineage.policy_revision = 18;
-    let refused_root = fixture.directory.path().join("historical-publish-refused");
-    let mut options = options()?;
-    options.out = Some(refused_root.clone());
-    let censuses = Censuses::of(&historical, &fixture.store.out_dir(), &[]);
-    check!(workbook::build_from(&historical, &fixture.store, &options, &censuses).is_err());
-    check!(!refused_root.exists());
+    for policy in [18, 19] {
+        let mut historical = ExportDataset::reopen_frozen(&directory.join("frozen-input.json"))?;
+        historical.lineage.policy_revision = policy;
+        let refused_root = fixture
+            .directory
+            .path()
+            .join(format!("historical-policy{policy}-publish-refused"));
+        let mut options = options()?;
+        options.out = Some(refused_root.clone());
+        let censuses = Censuses::of(&historical, &fixture.store.out_dir(), &[]);
+        check!(workbook::build_from(&historical, &fixture.store, &options, &censuses).is_err());
+        check!(!refused_root.exists());
+    }
     Ok(())
 }
 

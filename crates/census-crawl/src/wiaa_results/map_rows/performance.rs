@@ -46,5 +46,6 @@ pub(super) fn record_performance(
             source_key: facts.key,
             source_athlete: Some(facts.source),
             retained_conflicts: Vec::new(),
+            combined_completion: None,
         });
 }

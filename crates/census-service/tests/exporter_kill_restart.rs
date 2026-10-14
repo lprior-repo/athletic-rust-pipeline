@@ -146,6 +146,7 @@ fn build_corpus(n: usize) -> TestResult<Corpus> {
                 source_key: format!("kill-{i}-{s}"),
                 source_athlete: Some(source),
                 retained_conflicts: Vec::new(),
+                combined_completion: None,
             });
         }
     }

@@ -17,12 +17,11 @@ fn triplet(
     case: &NumericCase,
     status: &str,
     unresolved: &str,
-) -> [CanonicalPerformance; 3] {
-    let [measured, terminal] = status_pair(seed, case, status);
-    let mut unknown = measured.clone();
-    unknown.mark = Mark::Raw(unresolved.into());
+) -> TestResult<[CanonicalPerformance; 3]> {
+    let [measured, terminal] = status_pair(seed, case, status)?;
+    let mut unknown = with_mark(seed, measured.clone(), Mark::Raw(unresolved.into()))?;
     unknown.timing = None;
-    [unknown, terminal, measured]
+    Ok([unknown, terminal, measured])
 }
 
 fn permutations(rows: &[CanonicalPerformance; 3]) -> [[CanonicalPerformance; 3]; 6] {
@@ -44,10 +43,10 @@ fn replayed(observations: &[CanonicalPerformance]) -> Vec<CanonicalPerformance> 
 fn every_stored_result_status_triplet_order_has_no_best_before_and_after_replay_and_reopen(
 ) -> TestResult {
     let case = timed_case()?;
-    let seed = selection_dataset(case.kind.clone())?;
+    let seed = numeric_dataset(case.kind.clone())?;
     for status in ["DQ", "DNF", "DNS", "NH", "FOUL", "NM", "NT", "SCR"] {
         for unresolved in ["unknown published mark", "X", "--"] {
-            let original = triplet(&seed, &case, status, unresolved);
+            let original = triplet(&seed, &case, status, unresolved)?;
             for order in permutations(&original) {
                 let mut first = reloaded_dataset(&seed, &order)?;
                 check!(eq; selected(&first)?, Vec::new());
@@ -72,16 +71,16 @@ fn every_stored_result_status_triplet_order_has_no_best_before_and_after_replay_
 fn every_stored_result_status_triplet_order_uses_clean_fallback_before_and_after_replay(
 ) -> TestResult {
     let case = timed_case()?;
-    let seed = selection_dataset(case.kind.clone())?;
-    let mut clean = reported(
+    let seed = numeric_dataset(case.kind.clone())?;
+    let mut clean = numeric_report(
         &seed,
         "clean_after_result_status_triplet",
         case.fallback.clone(),
-    );
+    )?;
     clean.date = "2025-02-28".into();
     for status in ["DQ", "DNF", "DNS", "NH", "FOUL", "NM", "NT", "SCR"] {
         for unresolved in ["unknown published mark", "X", "--"] {
-            let original = triplet(&seed, &case, status, unresolved);
+            let original = triplet(&seed, &case, status, unresolved)?;
             let mut duplicate = original[2].clone();
             duplicate.id = Id::mint("perf", &["numeric_duplicate_after_result_status_triplet"]);
             duplicate.source_key = "numeric_duplicate_after_result_status_triplet".into();

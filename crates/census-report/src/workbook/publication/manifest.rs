@@ -98,13 +98,13 @@ impl Manifest {
         options: &Options,
     ) -> ReportResult<Self> {
         let selection = Selection::of(options);
-        let names = artifact_names(2, options.grad_year)?;
+        let names = artifact_names(3, options.grad_year)?;
         let artifacts = names
             .into_iter()
             .map(|name| hash_artifact(&directory.join(&name)).map(|artifact| (name, artifact)))
             .collect::<ReportResult<BTreeMap<_, _>>>()?;
         let mut manifest = Self {
-            schema_revision: 2,
+            schema_revision: 3,
             lineage: dataset.lineage.clone(),
             selection,
             artifacts,
@@ -229,7 +229,7 @@ fn artifact_names(revision: u32, grad_year: Option<i16>) -> ReportResult<Vec<Str
     ];
     match revision {
         1 => {}
-        2 => names.extend(
+        2 | 3 => names.extend(
             [
                 "event-catalog.json",
                 "relay-dispositions.json",
@@ -242,6 +242,21 @@ fn artifact_names(revision: u32, grad_year: Option<i16>) -> ReportResult<Vec<Str
                 "unsupported publication artifact revision".into(),
             ))
         }
+    }
+    if revision == 3 {
+        names.extend(
+            [
+                "athletes.csv",
+                "best_marks.csv",
+                "schools.csv",
+                "coach_contacts.csv",
+                "comparison_classes.csv",
+                "provenance.csv",
+                "coverage.csv",
+                "identity_aliases.csv",
+            ]
+            .map(str::to_string),
+        );
     }
     names.sort_unstable();
     Ok(names)

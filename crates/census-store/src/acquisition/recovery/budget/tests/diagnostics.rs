@@ -2,8 +2,7 @@ use super::*;
 use crate::acquisition::recovery::budget::io::RecoveryArchiveIo;
 
 #[test]
-fn prepared_recovery_io_diagnostics_share_original_cleanup_and_publication_cap() -> StoreResult<()>
-{
+fn prepared_recovery_io_diagnostics_share_original_cleanup_and_publication_cap() -> TestResult {
     let mut parent = PreparedRecoveryBudget::admit(usage(1)?, 1)?;
     let mut account = parent.begin_target()?;
     let mut scratch = [0; 32768];

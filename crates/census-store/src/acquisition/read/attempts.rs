@@ -17,7 +17,12 @@ pub(super) fn reconstruct(
     budget: &mut AcquisitionReadBudget,
     protocol: CaptureProtocolVersion,
 ) -> StoreResult<Vec<AttemptFacts>> {
-    budget.reserve_recovery_owned(3 * std::mem::size_of::<AttemptFacts>() + 384)?;
+    let bytes = std::mem::size_of::<[AttemptFacts; 3]>()
+        .checked_add(384)
+        .ok_or(CaptureError::ReadBudgetExceeded {
+            resource: "allocation",
+        })?;
+    budget.reserve_recovery_owned(bytes)?;
     let mut attempts = Vec::new();
     attempts
         .try_reserve_exact(3)

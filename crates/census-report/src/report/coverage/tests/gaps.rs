@@ -34,6 +34,7 @@ fn dated_performance(
         source_key: source_key.to_string(),
         source_athlete: athlete.source.clone(),
         retained_conflicts: Vec::new(),
+        combined_completion: None,
     })
 }
 

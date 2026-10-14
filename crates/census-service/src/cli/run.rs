@@ -33,6 +33,9 @@ async fn run_async(cli: Cli) -> Result<()> {
     if let Command::Review(args) = &cli.command {
         args.validate_configuration()?;
     }
+    if let Command::Provider(args) = &cli.command {
+        args.validate_offline_store(cli.store.as_deref())?;
+    }
     match &cli.command {
         Command::CaptureProtocol(_)
         | Command::Installation(_)

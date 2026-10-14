@@ -32,8 +32,6 @@ impl Witness {
         readback::assert_baseline(&captured.dataset, &captured.workbook)?;
         let verified = verify_published(&captured.workbook)?;
         check!(eq; verified.workbook.mapped_athletes, 1);
-        check!(eq; captured.dataset.lineage.schema_revision, 3);
-        check!(eq; captured.dataset.lineage.policy_revision, 19);
         let selection = readback::selection(&captured.workbook)?;
         check!(eq; selection, selected_options(&captured.options));
         Ok(Self {

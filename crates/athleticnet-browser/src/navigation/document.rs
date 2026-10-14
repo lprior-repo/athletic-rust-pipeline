@@ -49,6 +49,8 @@ pub(super) struct DocumentState {
     observation: Observation,
     pending_response: Option<Arc<EventResponseReceived>>,
     pending_finished: Option<RequestId>,
+    encoded_total: Option<f64>,
+    pending_encoded: Option<f64>,
 }
 
 impl DocumentState {
@@ -60,6 +62,8 @@ impl DocumentState {
             observation: empty_observation(url),
             pending_response: None,
             pending_finished: None,
+            encoded_total: None,
+            pending_encoded: None,
         }
     }
 
@@ -98,8 +102,19 @@ impl DocumentState {
         self.observation.body_challenged = false;
         self.observation.body_complete = false;
         self.observation.failed = false;
-        self.pending_response.take();
+        self.encoded_total = None;
+        if let Some(pending) = self.pending_response.take() {
+            if pending.request_id == id {
+                self.observation.status = Some(navigation_status(pending.response.status)?);
+                self.observation.headers = transport::response_headers(&pending)?;
+                self.observation.challenged = cf_header_challenge(&self.observation.headers);
+            }
+        }
         if self.pending_finished.as_ref() == Some(&id) {
+            let total = self.pending_encoded.take();
+            self.pending_finished.take();
+            self.encoded_total = total;
+            transport::transfer::refuse_excess_wire(true, self.encoded_total)?;
             let body = transport::capture_body(page, id.clone()).await?;
             record_body(&mut self.observation, &body);
         }
@@ -131,10 +146,19 @@ impl DocumentState {
             return Ok(());
         }
         if self.document_id.as_ref() == Some(&event.request_id) {
+            if matches!(
+                transport::transfer::classify_wire_total(event.encoded_data_length),
+                transport::transfer::WireTotal::Malformed
+            ) {
+                return Err(BrowserError::Protocol);
+            }
+            self.encoded_total = Some(event.encoded_data_length);
+            transport::transfer::refuse_excess_wire(true, self.encoded_total)?;
             let body = transport::capture_body(page, event.request_id.clone()).await?;
             record_body(&mut self.observation, &body);
         } else if self.document_id.is_none() {
             self.pending_finished = Some(event.request_id.clone());
+            self.pending_encoded = Some(event.encoded_data_length);
         }
         Ok(())
     }

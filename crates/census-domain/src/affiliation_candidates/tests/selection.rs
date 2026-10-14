@@ -5,8 +5,8 @@ use crate::affiliation_candidates::*;
 fn empty_input_is_unknown_without_canonical_school_fallback() -> TestResult {
     let fixture = Fixture::new()?;
     let result = select_candidates(fixture.query()?, &[], &[])?;
-    assert!(matches!(result.outcome, CandidateOutcome::Unknown));
-    assert!(result.facts.is_empty());
+    check!(matches!(result.outcome, CandidateOutcome::Unknown));
+    check!(result.facts.is_empty());
     Ok(())
 }
 
@@ -25,10 +25,10 @@ fn distinct_schools_conflict_in_both_arrival_orders() -> TestResult {
     let reverse = [b, a];
     let first = select_candidates(fixture.query()?, &forward, &[])?;
     let second = select_candidates(fixture.query()?, &reverse, &[])?;
-    assert!(matches!(first.outcome, CandidateOutcome::Conflicted));
-    assert_eq!(first.outcome, second.outcome);
-    assert_eq!(first.facts, second.facts);
-    assert_eq!(first.facts.len(), 2);
+    check!(matches!(first.outcome, CandidateOutcome::Conflicted));
+    check!(eq; first.outcome, second.outcome);
+    check!(eq; first.facts, second.facts);
+    check!(eq; first.facts.len(), 2);
     Ok(())
 }
 
@@ -46,8 +46,8 @@ fn mapped_other_person_cannot_supply_queried_athlete() -> TestResult {
     };
     let claims = [LocallyCheckedAssertion::check(raw)?];
     let result = select_candidates(fixture.query()?, &claims, &[])?;
-    assert!(matches!(result.outcome, CandidateOutcome::Unknown));
-    assert!(matches!(
+    check!(matches!(result.outcome, CandidateOutcome::Unknown));
+    check!(matches!(
         result.facts.first(),
         Some(FactDisposition::Assertion {
             disposition: Disposition::DifferentAthlete,
@@ -66,11 +66,11 @@ fn missing_person_key_remains_subject_unresolved() -> TestResult {
     raw.person = PersonCandidate::MissingKey;
     let claims = [LocallyCheckedAssertion::check(raw)?];
     let result = select_candidates(fixture.query()?, &claims, &[])?;
-    assert!(matches!(
+    check!(matches!(
         result.outcome,
         CandidateOutcome::SubjectUnresolved
     ));
-    assert!(matches!(
+    check!(matches!(
         result.facts.first(),
         Some(FactDisposition::Assertion {
             disposition: Disposition::SubjectUnresolved(SubjectGap::MissingPersonKey),
@@ -96,15 +96,15 @@ fn withdrawal_removes_trust_without_asserting_departure() -> TestResult {
         },
     )?];
     let result = select_candidates(fixture.query()?, &claims, &changes)?;
-    assert!(matches!(result.outcome, CandidateOutcome::Unknown));
-    assert!(matches!(
+    check!(matches!(result.outcome, CandidateOutcome::Unknown));
+    check!(matches!(
         result.facts.first(),
         Some(FactDisposition::Assertion {
             disposition: Disposition::WithdrawnClaim,
             ..
         })
     ));
-    assert_eq!(result.facts.len(), 2);
+    check!(eq; result.facts.len(), 2);
     Ok(())
 }
 
@@ -125,12 +125,10 @@ fn departure_keeps_last_day_inclusive_and_next_day_ended() -> TestResult {
     )?];
     let mut query = fixture.query()?;
     query.as_of = &last;
-    assert_eq!(
-        select_candidates(query, &claims, &changes)?.outcome,
-        CandidateOutcome::SingleCandidate(&claim)
-    );
+    check!(eq; select_candidates(query, &claims, &changes)?.outcome,
+    CandidateOutcome::SingleCandidate(&claim));
     query.as_of = &next;
-    assert!(matches!(
+    check!(matches!(
         select_candidates(query, &claims, &changes)?.outcome,
         CandidateOutcome::EndedWithoutReplacement
     ));
@@ -157,14 +155,14 @@ fn later_committed_withdrawal_does_not_change_older_known_selection() -> TestRes
     change.known = known(2, 3)?;
     let changes = [LocallyCheckedChange::check(change)?];
     let older = select_candidates(fixture.query()?, &claims, &changes)?;
-    assert_eq!(older.outcome, CandidateOutcome::SingleCandidate(&claim));
+    check!(eq; older.outcome, CandidateOutcome::SingleCandidate(&claim));
     let mut newer = fixture.query()?;
     newer.known.revision = revision(2)?;
-    assert!(matches!(
+    check!(matches!(
         select_candidates(newer, &claims, &changes)?.outcome,
         CandidateOutcome::Unknown
     ));
-    assert!(matches!(
+    check!(matches!(
         older.facts.last(),
         Some(FactDisposition::Change {
             disposition: Disposition::NotVisibleAtKnownRevision,
@@ -185,7 +183,7 @@ fn missing_or_foreign_change_target_refuses() -> TestResult {
             scope: &fixture.interval,
         },
     )?];
-    assert!(matches!(
+    check!(matches!(
         select_candidates(fixture.query()?, &[], &changes),
         Err(AffiliationCandidateError::DanglingOrForeignChangeTarget)
     ));
@@ -210,7 +208,7 @@ fn unresolved_correction_policy_never_chooses_replacement() -> TestResult {
             scope: &fixture.interval,
         },
     )?];
-    assert!(matches!(
+    check!(matches!(
         select_candidates(fixture.query()?, &claims, &changes),
         Err(AffiliationCandidateError::UnsupportedChange)
     ));
@@ -225,16 +223,14 @@ fn identical_replay_deduplicates_but_same_id_different_payload_refuses() -> Test
     let raw = fixture.assertion(&evidence, &owners, key("claim-A")?)?;
     let claim = LocallyCheckedAssertion::check(raw)?;
     let duplicate = [claim, claim];
-    assert_eq!(
-        select_candidates(fixture.query()?, &duplicate, &[])?
-            .facts
-            .len(),
-        1
-    );
+    check!(eq; select_candidates(fixture.query()?, &duplicate, &[])?
+        .facts
+        .len(),
+    1);
     let mut changed = raw;
     changed.temporal = TemporalScope::Unresolved(TemporalGap::Undated);
     let different = [claim, LocallyCheckedAssertion::check(changed)?];
-    assert!(matches!(
+    check!(matches!(
         select_candidates(fixture.query()?, &different, &[]),
         Err(AffiliationCandidateError::DuplicateIdDifferentPayload)
     ));
@@ -249,14 +245,14 @@ fn mixed_lineage_and_hidden_dependency_refuse() -> TestResult {
     let mut raw = fixture.assertion(&evidence, &owners, key("claim-A")?)?;
     raw.known = KnownBounds::new(key("different-lineage")?, revision(1)?, revision(3)?)?;
     let claims = [LocallyCheckedAssertion::check(raw)?];
-    assert!(matches!(
+    check!(matches!(
         select_candidates(fixture.query()?, &claims, &[]),
         Err(AffiliationCandidateError::MixedKnownLineage)
     ));
     raw.known = known(1, 3)?;
     raw.owner.known = known(2, 3)?;
     let claims = [LocallyCheckedAssertion::check(raw)?];
-    assert!(matches!(
+    check!(matches!(
         select_candidates(fixture.query()?, &claims, &[]),
         Err(AffiliationCandidateError::DependencyNotVisible)
     ));
@@ -294,7 +290,7 @@ fn present_change_target_requires_exact_source_person_and_mapped_athlete() -> Te
             known: known(1, 3)?,
         };
         let changes = [LocallyCheckedChange::check(raw)?];
-        assert!(matches!(
+        check!(matches!(
             select_candidates(fixture.query()?, &claims, &changes),
             Err(AffiliationCandidateError::DanglingOrForeignChangeTarget)
         ));

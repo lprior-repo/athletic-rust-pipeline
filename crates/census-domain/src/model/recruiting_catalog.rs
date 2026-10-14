@@ -41,7 +41,7 @@ impl Default for RecruitingCatalogV1 {
 
 impl RecruitingCatalogV1 {
     pub const fn new() -> Self {
-        Self::with_policy(EventSemantics::FlatEvents19)
+        Self::with_policy(EventSemantics::CURRENT)
     }
 
     pub const fn with_policy(semantics: EventSemantics) -> Self {
@@ -65,14 +65,19 @@ impl RecruitingCatalogV1 {
             policy_revision: match self.semantics {
                 EventSemantics::Legacy18 => None,
                 EventSemantics::FlatEvents19 => Some(2),
+                EventSemantics::CombinedEvents20 => Some(3),
             },
             grammar: match self.semantics {
                 EventSemantics::Legacy18 => "ascii_delimited_tokens_typed_context_xc_anchors_v3",
-                EventSemantics::FlatEvents19 => {
+                EventSemantics::FlatEvents19 | EventSemantics::CombinedEvents20 => {
                     "ascii_delimited_tokens_typed_context_xc_anchors_v4"
                 }
             },
             coherence: "all_owned_assertions_canonical_kind_sport_category_v1",
+            combined_completion: self
+                .semantics
+                .requires_completed_combined()
+                .then_some("versioned_lineup_scoring_complete_components_exact_points_v1"),
             max_source_labels: CATALOG_V1_MAX_SOURCE_LABELS,
             max_label_bytes: CATALOG_V1_MAX_LABEL_BYTES,
             max_aggregate_label_bytes: CATALOG_V1_MAX_AGGREGATE_LABEL_BYTES,
@@ -83,7 +88,7 @@ impl RecruitingCatalogV1 {
             ambiguous: policy::AMBIGUOUS,
             missing: match self.semantics {
                 EventSemantics::Legacy18 => legacy_policy::MISSING,
-                EventSemantics::FlatEvents19 => policy::MISSING,
+                EventSemantics::FlatEvents19 | EventSemantics::CombinedEvents20 => policy::MISSING,
             },
             qualifiers: policy::QUALIFIERS,
             units: policy::UNITS,
@@ -134,6 +139,8 @@ struct CatalogIdentity<'a> {
     policy_revision: Option<u32>,
     grammar: &'a str,
     coherence: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    combined_completion: Option<&'a str>,
     max_source_labels: usize,
     max_label_bytes: usize,
     max_aggregate_label_bytes: usize,

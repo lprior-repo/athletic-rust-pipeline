@@ -326,5 +326,6 @@ fn performance(
         source_key: format!("wiaa_results:{}:400m:final", case.owner()),
         source_athlete: athlete.source.clone(),
         retained_conflicts: Vec::new(),
+        combined_completion: None,
     })
 }

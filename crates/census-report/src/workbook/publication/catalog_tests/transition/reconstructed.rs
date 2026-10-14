@@ -153,3 +153,63 @@ pub(super) fn bytes(directory: &Path) -> TestResult<BTreeMap<String, Vec<u8>>> {
         })
         .collect()
 }
+
+pub(in crate::workbook::publication) fn write_revision_two_manifest(
+    directory: &Path,
+    lineage: &DatasetLineage,
+    options: &crate::workbook::Options,
+) -> TestResult {
+    if !options.jurisdictions.is_empty() {
+        return Err("historical integrity fixture requires unrestricted geography".into());
+    }
+    let cohort = options
+        .grad_year
+        .map_or_else(|| "all".to_string(), |year| format!("co{year}"));
+    let names = [
+        "audit.json".to_string(),
+        format!("best-results-{cohort}.csv"),
+        format!("best-results-{cohort}.jsonl"),
+        "census-all-sources.json".to_string(),
+        "census-core.json".to_string(),
+        "frozen-input.json".to_string(),
+        "recruiting.csv".to_string(),
+        "school-contacts.csv".to_string(),
+        "contact-research.csv".to_string(),
+        "workbook.xlsx".to_string(),
+        "event-catalog.json".to_string(),
+        "relay-dispositions.json".to_string(),
+        "relays.jsonl".to_string(),
+    ];
+    let artifacts = names
+        .into_iter()
+        .map(|name| {
+            let bytes = std::fs::read(directory.join(&name))?;
+            Ok((
+                name,
+                Artifact {
+                    bytes: u64::try_from(bytes.len())?,
+                    sha256: format!("{:x}", Sha256::digest(&bytes)),
+                },
+            ))
+        })
+        .collect::<TestResult<BTreeMap<_, _>>>()?;
+    let selection = Selection {
+        scope: options.scope.as_str(),
+        grad_year: options.grad_year,
+        limit: options.limit,
+        school_year: Some(options.school_year),
+    };
+    let generation_digest = serialized_digest(&(2_u32, lineage, &selection, &artifacts))?;
+    let manifest = Manifest {
+        schema_revision: 2,
+        lineage,
+        selection,
+        artifacts,
+        generation_digest,
+    };
+    std::fs::write(
+        directory.join("manifest.json"),
+        serde_json::to_vec(&manifest)?,
+    )?;
+    Ok(())
+}

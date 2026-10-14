@@ -148,6 +148,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
                 source_key,
                 source_athlete: athlete.source.clone(),
                 retained_conflicts: Vec::new(),
+                combined_completion: None,
             };
             store.append(Table::Performances, &performance)?;
         }
