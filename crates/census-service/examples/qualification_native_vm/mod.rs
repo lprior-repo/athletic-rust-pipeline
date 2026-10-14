@@ -13,8 +13,8 @@ mod native;
 mod oracle;
 mod process;
 mod qmp;
-mod transport;
 mod record;
+mod transport;
 
 #[derive(Parser)]
 struct Cli {

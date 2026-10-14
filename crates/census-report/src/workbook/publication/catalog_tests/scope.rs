@@ -96,7 +96,10 @@ fn core_relays_refuse_non_core_result_event_or_meet_without_losing_raw_rows() ->
             .iter()
             .find(|row| row.relay == &fixture.relay)
             .ok_or("retained refusal")?;
-        check!(matches!(refused.disposition, RelayDisposition::Unresolved(RelayGap::OutsideEvidenceScope)));
+        check!(matches!(
+            refused.disposition,
+            RelayDisposition::Unresolved(RelayGap::OutsideEvidenceScope)
+        ));
         check!(eq; census_domain::model::serialized_bytes(&dataset.relays)?, raw);
     }
     Ok(())

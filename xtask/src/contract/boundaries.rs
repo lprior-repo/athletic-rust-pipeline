@@ -19,16 +19,14 @@ const LAYERS: [(&str, u32); 9] = [
     ("xtask", 6),
 ];
 
-const DOMAIN_FORBIDDEN: [&str; 5] = [
-    "tokio",
-    "reqwest",
-    "fjall",
-    "restate-sdk",
-    "chromiumoxide",
-];
+const DOMAIN_FORBIDDEN: [&str; 5] = ["tokio", "reqwest", "fjall", "restate-sdk", "chromiumoxide"];
 
-const TOOLING_FORBIDDEN: [&str; 4] =
-    ["census-crawl", "census-report", "census-service", "census-store"];
+const TOOLING_FORBIDDEN: [&str; 4] = [
+    "census-crawl",
+    "census-report",
+    "census-service",
+    "census-store",
+];
 
 const KNOWN_UPWARD: [(&str, &str); 5] = [
     ("census-reconcile", "census-report"),
@@ -176,7 +174,9 @@ fn cycles(members: &BTreeMap<String, BTreeSet<String>>) -> Vec<String> {
     for name in members.keys() {
         let mut seen: BTreeSet<String> = BTreeSet::new();
         if reaches_self(name, name, members, &mut seen) {
-            found.push(format!("{name} reaches itself through internal dependencies"));
+            found.push(format!(
+                "{name} reaches itself through internal dependencies"
+            ));
         }
     }
     found.sort();
@@ -212,7 +212,10 @@ mod tests {
     fn graph(edges: &[(&str, &str)]) -> BTreeMap<String, BTreeSet<String>> {
         let mut members: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
         for (from, to) in edges {
-            members.entry((*from).to_string()).or_default().insert((*to).to_string());
+            members
+                .entry((*from).to_string())
+                .or_default()
+                .insert((*to).to_string());
             members.entry((*to).to_string()).or_default();
         }
         members

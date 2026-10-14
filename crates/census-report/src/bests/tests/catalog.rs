@@ -102,12 +102,24 @@ fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_key
             &meet.id,
         )?;
         let performance = catalog_performance(&event, label, &athlete_id())?;
-        check!(crate::bests::PrKey::from_performance(&performance, &event, Some(&meet), crate::bests::Measure::Time)?.is_none());
+        check!(crate::bests::PrKey::from_performance(
+            &performance,
+            &event,
+            Some(&meet),
+            crate::bests::Measure::Time
+        )?
+        .is_none());
     }
     let mut event = catalog_event(EventKind::Track100m, "100m", &meet.id)?;
     let performance = catalog_performance(&event, "missing_owner", &athlete_id())?;
     event.evidence.clear();
-    check!(crate::bests::PrKey::from_performance(&performance, &event, Some(&meet), crate::bests::Measure::Time)?.is_none());
+    check!(crate::bests::PrKey::from_performance(
+        &performance,
+        &event,
+        Some(&meet),
+        crate::bests::Measure::Time
+    )?
+    .is_none());
     let mut event = catalog_event(EventKind::Track100m, "100m", &meet.id)?;
     let source = event
         .source_labels
@@ -120,7 +132,13 @@ fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_key
         label: "100m Wheelchair".into(),
     });
     let performance = catalog_performance(&event, "mixed_labels", &athlete_id())?;
-    check!(crate::bests::PrKey::from_performance(&performance, &event, Some(&meet), crate::bests::Measure::Time)?.is_none());
+    check!(crate::bests::PrKey::from_performance(
+        &performance,
+        &event,
+        Some(&meet),
+        crate::bests::Measure::Time
+    )?
+    .is_none());
     Ok(())
 }
 

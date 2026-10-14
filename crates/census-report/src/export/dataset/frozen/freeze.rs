@@ -44,7 +44,7 @@ pub(super) fn cancel(store: &Store, job: &str) -> ReportResult<CancelOutcome> {
     let Some(retained) = root::read_retained(&directory)? else {
         return Ok(CancelOutcome::Absent);
     };
-    ensure_retirable(&directory, &retained)?;
+    ensure_retirable(&directory, &retained, job)?;
     recover::cancel_attempt(store, &directory, &retained)
 }
 
@@ -130,17 +130,17 @@ fn retained_root(
     retained: &Retained,
 ) -> ReportResult<FrozenRoot> {
     let Some(record) = store.get_input_record(&retained.attempt)? else {
-        ensure_retirable(directory, retained)?;
+        ensure_retirable(directory, retained, job)?;
         root::remove_retained(directory)?;
         return fresh(store, job, directory);
     };
     match record.state() {
         InputState::Frozen => reuse(store, job, directory, retained, &record),
         InputState::Requested | InputState::Freezing => {
-            recover::recover(store, directory, retained, &record)
+            recover::recover(store, job, directory, retained, &record)
         }
         InputState::Abandoned => {
-            ensure_retirable(directory, retained)?;
+            ensure_retirable(directory, retained, job)?;
             root::remove_retained(directory)?;
             fresh(store, job, directory)
         }
@@ -203,7 +203,7 @@ fn reusable(
 ) -> Result<FrozenRoot, ReuseFailure> {
     let objects_dir = objects::directory(directory);
     let manifest = retained_manifest(&objects_dir, retained)?;
-    recover::ensure_job(&manifest, job)?;
+    recover::ensure_job(&manifest, job).map_err(ReuseFailure::Preserve)?;
     recover::ensure_identity(store, &manifest)?;
     verify::verify_record(&objects_dir, &retained.manifest, &manifest, record)?;
     recover::release_bound_lease(store, &retained.attempt, record)?;
@@ -224,13 +224,17 @@ fn retained_manifest(
     FrozenManifest::decode(&encoded).map_err(ReuseFailure::from_codec)
 }
 
-fn ensure_retirable(directory: &Path, retained: &Retained) -> ReportResult<()> {
+fn ensure_retirable(directory: &Path, retained: &Retained, job: &str) -> ReportResult<()> {
     let objects_dir = objects::directory(directory);
-    let checked = retained_manifest(&objects_dir, retained).and_then(|manifest| {
-        verify::verify_root(&objects_dir, &retained.manifest, &manifest)
-            .map(|_| ())
-            .map_err(ReuseFailure::from)
-    });
+    let manifest = match retained_manifest(&objects_dir, retained) {
+        Ok(manifest) => manifest,
+        Err(ReuseFailure::Preserve(error)) => return Err(error),
+        Err(ReuseFailure::Retire(_)) => return Ok(()),
+    };
+    recover::ensure_job(&manifest, job)?;
+    let checked = verify::verify_root(&objects_dir, &retained.manifest, &manifest)
+        .map(|_| ())
+        .map_err(ReuseFailure::from);
     match checked {
         Err(ReuseFailure::Preserve(error)) => Err(error),
         Ok(()) | Err(ReuseFailure::Retire(_)) => Ok(()),

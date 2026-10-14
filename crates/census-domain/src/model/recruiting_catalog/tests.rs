@@ -177,8 +177,8 @@ fn explicit_excluded_disciplines_never_inherit_ordinary_running_substrings() -> 
     ] {
         let event = owned(unmapped(label), &[label])?;
         let before = serialized_bytes(&event)?;
-            check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, EventDisposition::Excluded(reason), "{label}");
-            check!(eq; serialized_bytes(&event)?, before);
+        check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, EventDisposition::Excluded(reason), "{label}");
+        check!(eq; serialized_bytes(&event)?, before);
     }
     Ok(())
 }
@@ -205,8 +205,8 @@ fn hand_cycling_phrase_keeps_separate_excluded_disciplines() -> TestResult {
     ] {
         let event = owned(unmapped(label), &[label])?;
         let before = serialized_bytes(&event)?;
-            check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, EventDisposition::Excluded(reason), "{label}");
-            check!(eq; serialized_bytes(&event)?, before);
+        check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, EventDisposition::Excluded(reason), "{label}");
+        check!(eq; serialized_bytes(&event)?, before);
     }
     Ok(())
 }
@@ -240,7 +240,13 @@ fn mixed_event_declarations_do_not_depend_on_source_assertion_order() -> TestRes
         "Wheelchair 100m 800m",
     ] {
         let event = owned(EventKind::from_source_label(label), &[label])?;
-        check!(matches!(RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, EventDisposition::Unresolved(_)), "{label}");
+        check!(
+            matches!(
+                RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?,
+                EventDisposition::Unresolved(_)
+            ),
+            "{label}"
+        );
     }
     Ok(())
 }
@@ -391,7 +397,13 @@ fn generic_adaptive_and_false_substring_labels_stay_unresolved() -> TestResult {
         "100m @ $",
     ] {
         let event = owned(EventKind::Track100m, &[label])?;
-        check!(matches!(RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, EventDisposition::Unresolved(_)), "{label}");
+        check!(
+            matches!(
+                RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?,
+                EventDisposition::Unresolved(_)
+            ),
+            "{label}"
+        );
     }
     Ok(())
 }
@@ -505,7 +517,13 @@ fn xc_anchor_boundaries_do_not_rescue_unknown_or_conflicting_labels() -> TestRes
         "100m 5000m XC",
     ] {
         let event = owned(EventKind::CrossCountry, &[label])?;
-        check!(matches!(RecruitingCatalogV1::new().classify(&event, Sport::CrossCountry)?, EventDisposition::Unresolved(_)), "{label}");
+        check!(
+            matches!(
+                RecruitingCatalogV1::new().classify(&event, Sport::CrossCountry)?,
+                EventDisposition::Unresolved(_)
+            ),
+            "{label}"
+        );
     }
     Ok(())
 }
@@ -550,13 +568,17 @@ fn raw_count_byte_and_aggregate_envelopes_refuse_overflow_before_semantic_return
         .push(' ');
     check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack), Err(CatalogError::LabelBytesExceeded));
     let mut event = owned(unmapped("wheelchair"), &vec!["wheelchair"; 256])?;
-    check!(RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack).is_ok());
+    check!(RecruitingCatalogV1::new()
+        .classify(&event, Sport::OutdoorTrack)
+        .is_ok());
     event
         .source_labels
         .push(event.source_labels.first().ok_or("fixture label")?.clone());
     check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack), Err(CatalogError::LabelCountExceeded));
     let mut event = owned(unmapped("wheelchair"), &vec![label.as_str(); 64])?;
-    check!(RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack).is_ok());
+    check!(RecruitingCatalogV1::new()
+        .classify(&event, Sport::OutdoorTrack)
+        .is_ok());
     event.source_labels.push(SourceEventLabel {
         source: event
             .source_labels
@@ -573,7 +595,9 @@ fn raw_count_byte_and_aggregate_envelopes_refuse_overflow_before_semantic_return
     }
     let label = "é".repeat(2048);
     let mut event = owned(EventKind::Track100m, &[&label])?;
-    check!(RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack).is_ok());
+    check!(RecruitingCatalogV1::new()
+        .classify(&event, Sport::OutdoorTrack)
+        .is_ok());
     event
         .source_labels
         .first_mut()
@@ -600,7 +624,13 @@ fn finite_hostile_suffix_property_never_rescues_a_second_unknown_distance() -> T
         }
         let label = format!("100m {distance}m");
         let event = owned(EventKind::Track100m, &[&label])?;
-        check!(!matches!(RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, EventDisposition::Included(_)), "{label}");
+        check!(
+            !matches!(
+                RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?,
+                EventDisposition::Included(_)
+            ),
+            "{label}"
+        );
     }
     Ok(())
 }

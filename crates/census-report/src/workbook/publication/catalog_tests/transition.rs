@@ -24,7 +24,9 @@ fn reconstructed_revision_one_policy_thirteen_inventory_survives_new_atomic_swit
     let error = super::super::manifest::verify_published(&legacy.join("workbook.xlsx"))
         .err()
         .ok_or("legacy input must not be reinterpreted")?;
-    check!(error.to_string().contains("unsupported or malformed frozen export lineage"));
+    check!(error
+        .to_string()
+        .contains("unsupported or malformed frozen export lineage"));
     check!(eq; reconstructed::bytes(&legacy)?, historical);
     let dataset = ExportDataset::load(&store)?;
     super::super::fence(&root, &dataset)?;
@@ -84,7 +86,9 @@ fn future_manifest_revision_is_dispatched_before_its_shape_is_decoded() -> TestR
     let error = super::super::manifest::verify_directory(temporary.path())
         .err()
         .ok_or("future manifest")?;
-    check!(error.to_string().contains("unsupported publication artifact revision"));
+    check!(error
+        .to_string()
+        .contains("unsupported publication artifact revision"));
     check!(!error.to_string().contains("missing field"));
     check!(eq; std::fs::read(path)?, retained);
     Ok(())

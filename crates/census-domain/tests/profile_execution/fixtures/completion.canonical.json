@@ -1,0 +1,1 @@
+{"version":1,"revision":1,"role":"completion","binding":"configuration_only","policy":{"evidence_rule":"exact_profile_scope_revision_and_verified_source_terminal_evidence_unknown_is_not_complete","component_support":"profile_bound_completion_fence_unimplemented","components":{"kind":"completion"}},"runtime_execution":"not_certified"}
