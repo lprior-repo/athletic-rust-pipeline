@@ -1,7 +1,8 @@
-use super::EventKind;
+use super::{EventKind, EventSemantics};
 
-pub(super) fn resolve(label: &str) -> Option<EventKind> {
+pub(super) fn resolve(label: &str, semantics: EventSemantics) -> Option<EventKind> {
     track(label)
+        .filter(|kind| semantics.admits_flat_extension(kind))
         .or_else(|| hurdles(label))
         .or_else(|| steeplechase(label))
         .or_else(|| relay(label))
@@ -14,6 +15,9 @@ fn track(label: &str) -> Option<EventKind> {
         "60m" => EventKind::Track60m,
         "100m" => EventKind::Track100m,
         "200m" => EventKind::Track200m,
+        "300m" => EventKind::Track300m,
+        "500m" => EventKind::Track500m,
+        "600m" => EventKind::Track600m,
         "400m" => EventKind::Track400m,
         "800m" => EventKind::Track800m,
         "1000m" | "1k" => EventKind::Track1000m,
@@ -21,8 +25,11 @@ fn track(label: &str) -> Option<EventKind> {
         "1600m" => EventKind::Track1600m,
         "3200m" => EventKind::Track3200m,
         "1mile" | "mile" => EventKind::Track1Mile,
+        "2mile" | "2miles" | "twomile" | "twomiles" => EventKind::Track2Miles,
         "3000m" | "3k" => EventKind::Track3000m,
         "5000m" | "5k" => EventKind::Track5000m,
+        "2000m" | "2k" => EventKind::Track2000m,
+        "10000m" | "10k" => EventKind::Track10000m,
         "crosscountry" | "xc" | "crosscountryrace" => EventKind::CrossCountry,
         _ => return None,
     })

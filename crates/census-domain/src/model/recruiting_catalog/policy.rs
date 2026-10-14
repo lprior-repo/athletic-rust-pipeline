@@ -1,6 +1,7 @@
 use super::aliases;
 use super::context::{ContextualLabel, LabelToken};
 use super::{EventExclusionReason as Ex, EventKind};
+use crate::model::EventSemantics;
 use crate::model::EventSpecification;
 
 pub(super) fn permitted(label: &ContextualLabel<'_>, kind: &EventKind) -> bool {
@@ -25,13 +26,13 @@ pub(super) fn permitted(label: &ContextualLabel<'_>, kind: &EventKind) -> bool {
                 return next.is_some_and(|next| permitted_unit(next, kind))
                     || kind.is_relay() && next.is_some_and(|next| next.eq_ignore_ascii_case("x"));
             }
-            aliases::member(word, QUALIFIERS)
+            kind == &EventKind::Track2Miles
+                && word.eq_ignore_ascii_case("two")
+                && next.is_some_and(|unit| aliases::member(unit, &["mile", "miles"]))
+                || aliases::member(word, QUALIFIERS)
                 || permitted_unit(word, kind)
                 || permitted_quantity(word, kind)
-                || !matches!(
-                    EventKind::from_source_label(word),
-                    EventKind::Unmapped { .. }
-                )
+                || !matches!(label.resolve(word), EventKind::Unmapped { .. })
                 || aliases::context_word(word, kind)
                 || word.eq_ignore_ascii_case("high")
                     && next.is_some_and(|word| word.eq_ignore_ascii_case("school"))
@@ -74,15 +75,21 @@ pub(super) const INCLUDED: &[EventKind] = &[
     EventKind::Track60m,
     EventKind::Track100m,
     EventKind::Track200m,
+    EventKind::Track300m,
     EventKind::Track400m,
+    EventKind::Track500m,
+    EventKind::Track600m,
     EventKind::Track800m,
     EventKind::Track1000m,
     EventKind::Track1500m,
     EventKind::Track1600m,
     EventKind::Track3200m,
     EventKind::Track1Mile,
+    EventKind::Track2Miles,
     EventKind::Track3000m,
     EventKind::Track5000m,
+    EventKind::Track2000m,
+    EventKind::Track10000m,
     EventKind::Track55mHurdles,
     EventKind::Track60mHurdles,
     EventKind::Track100mHurdles,
@@ -187,9 +194,7 @@ pub(super) const AMBIGUOUS: &[&str] = &[
     "ambulatory",
     "paraambulatory",
 ];
-pub(super) const MISSING: &[&str] = &[
-    "300m", "500m", "600m", "2000m", "10000m", "10k", "2mile", "2miles", "twomile", "twomiles",
-];
+pub(super) const MISSING: &[&str] = &[];
 pub(super) const QUALIFIERS: &[&str] = &[
     "girls",
     "boys",
@@ -248,3 +253,10 @@ pub(super) const UNITS: &[&str] = &[
     "inch", "inches", "ft", "feet", "foot", "lb", "lbs", "kg", "g",
 ];
 pub(super) const SEPARATORS: &str = "._-',()[]:/\"";
+
+pub(super) fn included(semantics: EventSemantics) -> &'static [EventKind] {
+    match semantics {
+        EventSemantics::Legacy18 => super::legacy_policy::INCLUDED,
+        EventSemantics::FlatEvents19 => INCLUDED,
+    }
+}

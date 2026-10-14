@@ -3,31 +3,43 @@ use super::{
     aliases, policy, CanonicalEvent, CatalogError, EventDisposition, EventExclusionReason,
     EventKind, EventResolutionReason,
 };
+use crate::model::EventSemantics;
 
 pub(super) fn coherent_components(
     label: &ContextualLabel<'_>,
     kind: &EventKind,
 ) -> Result<bool, CatalogError> {
-    label.tokens().try_fold(true, |coherent, token| {
-        let Some(word) = token.declaration() else {
-            return Ok(coherent);
-        };
-        let component = EventKind::from_source_label(word);
-        let matches = match component {
-            EventKind::Unmapped { .. } if distance_quantity(word) => coherent_distance(word, kind)?,
-            EventKind::Unmapped { .. } => true,
-            _ => component == *kind || distance_component(kind, &component),
-        };
-        Ok(coherent && matches)
-    })
+    label
+        .tokens()
+        .zip(std::iter::once(None).chain(label.tokens().map(Some)))
+        .try_fold(true, |coherent, (token, previous)| {
+            let Some(word) = token.declaration() else {
+                return Ok(coherent);
+            };
+            if label.semantics() == EventSemantics::FlatEvents19
+                && is_distance_unit_word(word, previous.and_then(|token| token.declaration()))
+            {
+                return Ok(coherent);
+            }
+            let component = label.resolve(word);
+            let matches = match component {
+                EventKind::Unmapped { .. } if distance_quantity(word) => {
+                    coherent_distance(word, kind, label.semantics())?
+                }
+                EventKind::Unmapped { .. } => true,
+                _ => component == *kind || distance_component(kind, &component),
+            };
+            Ok(coherent && matches)
+        })
 }
 
 pub(super) fn excluded_coherence(
     event: &CanonicalEvent,
     reason: EventExclusionReason,
+    semantics: EventSemantics,
 ) -> Result<EventDisposition, CatalogError> {
     if matches!(
-        event.resolved_specification(),
+        event.resolved_specification_with_policy(semantics),
         Err(crate::model::SpecificationError::ConflictingSpecification)
     ) {
         return Ok(EventDisposition::Unresolved(
@@ -43,7 +55,7 @@ pub(super) fn excluded_coherence(
             if unit {
                 continue;
             }
-            if let Some(component) = aliases::excluded_component(word) {
+            if let Some(component) = aliases::excluded_component(word, semantics) {
                 if !update_kind(&mut kind, component) {
                     return Ok(EventDisposition::Unresolved(
                         EventResolutionReason::ContradictoryDeclarations,
@@ -58,7 +70,7 @@ pub(super) fn excluded_coherence(
             if !is_distance_pair(left, right) {
                 continue;
             }
-            let component = build_distance_component(&mut buffer, left, right)?;
+            let component = build_distance_component(&mut buffer, left, right, semantics)?;
             if !update_kind(&mut kind, component) {
                 return Ok(EventDisposition::Unresolved(
                     EventResolutionReason::ContradictoryDeclarations,
@@ -99,6 +111,7 @@ fn build_distance_component(
     buffer: &mut String,
     left: &str,
     right: &str,
+    semantics: EventSemantics,
 ) -> Result<EventKind, CatalogError> {
     let bytes = left
         .len()
@@ -110,7 +123,7 @@ fn build_distance_component(
         .map_err(|_| CatalogError::ResourceExhausted)?;
     buffer.push_str(left);
     buffer.push_str(right);
-    Ok(EventKind::from_source_label(buffer))
+    Ok(EventKind::from_source_label_with_policy(buffer, semantics))
 }
 
 pub(super) fn coherent_pairs(
@@ -132,10 +145,10 @@ pub(super) fn coherent_pairs(
             .map_err(|_| CatalogError::ResourceExhausted)?;
         buffer.push_str(left);
         buffer.push_str(right);
-        let component = EventKind::from_source_label(&buffer);
+        let component = label.resolve(&buffer);
         match component {
             EventKind::Unmapped { .. } if distance_quantity(&buffer) => {
-                if !coherent_distance(&buffer, kind)? {
+                if !coherent_distance(&buffer, kind, label.semantics())? {
                     return Ok(false);
                 }
             }
@@ -162,7 +175,11 @@ pub(super) fn distance_quantity(word: &str) -> bool {
             })
 }
 
-fn coherent_distance(word: &str, kind: &EventKind) -> Result<bool, CatalogError> {
+fn coherent_distance(
+    word: &str,
+    kind: &EventKind,
+    semantics: EventSemantics,
+) -> Result<bool, CatalogError> {
     let suffix = match kind {
         EventKind::CrossCountry | EventKind::SprintMedley | EventKind::DistanceMedley => {
             return Ok(true)
@@ -181,7 +198,7 @@ fn coherent_distance(word: &str, kind: &EventKind) -> Result<bool, CatalogError>
         .map_err(|_| CatalogError::ResourceExhausted)?;
     qualified.push_str(word);
     qualified.push_str(suffix);
-    Ok(EventKind::from_source_label(&qualified) == *kind)
+    Ok(EventKind::from_source_label_with_policy(&qualified, semantics) == *kind)
 }
 
 fn distance_component(kind: &EventKind, component: &EventKind) -> bool {
@@ -189,7 +206,9 @@ fn distance_component(kind: &EventKind, component: &EventKind) -> bool {
         EventKind::Track55mHurdles => component == &EventKind::Track55m,
         EventKind::Track60mHurdles => component == &EventKind::Track60m,
         EventKind::Track100mHurdles => component == &EventKind::Track100m,
+        EventKind::Track300mHurdles => component == &EventKind::Track300m,
         EventKind::Track400mHurdles => component == &EventKind::Track400m,
+        EventKind::Track2000mSteeplechase => component == &EventKind::Track2000m,
         EventKind::Track3000mSteeplechase => component == &EventKind::Track3000m,
         EventKind::CrossCountry | EventKind::SprintMedley | EventKind::DistanceMedley => {
             matches!(
@@ -198,6 +217,10 @@ fn distance_component(kind: &EventKind, component: &EventKind) -> bool {
                     | EventKind::Track60m
                     | EventKind::Track100m
                     | EventKind::Track200m
+                    | EventKind::Track300m
+                    | EventKind::Track500m
+                    | EventKind::Track600m
+                    | EventKind::Track2Miles
                     | EventKind::Track400m
                     | EventKind::Track800m
                     | EventKind::Track1000m
@@ -207,6 +230,8 @@ fn distance_component(kind: &EventKind, component: &EventKind) -> bool {
                     | EventKind::Track3000m
                     | EventKind::Track3200m
                     | EventKind::Track5000m
+                    | EventKind::Track2000m
+                    | EventKind::Track10000m
             )
         }
         _ => false,

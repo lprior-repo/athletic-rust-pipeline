@@ -28,11 +28,23 @@ fn v2_qualification_has_exact_six_field_wire_and_no_v1_protocol_fallback() -> Te
     check!(eq; serde_json::to_string(&record)?, expected.clone());
     check!(eq; serde_json::from_str::<CaptureQualificationV2>(&expected)?.store_identity(), &identity);
     for (label, raw) in [
-        ("v1 version", expected.replace("\"version\":2", "\"version\":1")),
-        ("v3 version", expected.replace("\"version\":2", "\"version\":3")),
+        (
+            "v1 version",
+            expected.replace("\"version\":2", "\"version\":1"),
+        ),
+        (
+            "v3 version",
+            expected.replace("\"version\":2", "\"version\":3"),
+        ),
         ("v1 protocol", expected.replace("attempt_v2", "attempt_v1")),
-        ("duplicate version", expected.replacen("{", "{\"version\":2,", 1)),
-        ("unknown field", expected.replacen("{", "{\"unknown\":0,", 1)),
+        (
+            "duplicate version",
+            expected.replacen("{", "{\"version\":2,", 1),
+        ),
+        (
+            "unknown field",
+            expected.replacen("{", "{\"unknown\":0,", 1),
+        ),
     ] {
         data_error::<CaptureQualificationV2>(label, &raw)?;
     }
@@ -52,20 +64,54 @@ fn recovery_target_and_decision_strictly_bind_repeated_store_identity() -> TestR
     check!(eq; serde_json::from_str::<MissingPreparedDecisionV1>(&decision_raw)?, decision.clone());
     check!(decision_raw.len() <= 4096);
     for (label, raw) in [
-        ("foreign Store", target_raw.replacen(target.store_identity().as_str(), &"e".repeat(64), 1)),
-        ("duplicate identity", target_raw.replacen("{", &format!("{{\"store_identity\":\"{}\",", target.store_identity().as_str()), 1)),
-        ("unknown field", target_raw.replacen("{", "{\"extra\":0,", 1)),
-        ("zero ordinal", target_raw.replace("\"ordinal\":1", "\"ordinal\":0")),
+        (
+            "foreign Store",
+            target_raw.replacen(target.store_identity().as_str(), &"e".repeat(64), 1),
+        ),
+        (
+            "duplicate identity",
+            target_raw.replacen(
+                "{",
+                &format!(
+                    "{{\"store_identity\":\"{}\",",
+                    target.store_identity().as_str()
+                ),
+                1,
+            ),
+        ),
+        (
+            "unknown field",
+            target_raw.replacen("{", "{\"extra\":0,", 1),
+        ),
+        (
+            "zero ordinal",
+            target_raw.replace("\"ordinal\":1", "\"ordinal\":0"),
+        ),
     ] {
         data_error::<PreparedRecoveryTarget>(label, &raw)?;
     }
     empty_error::<PreparedRecoveryTarget>()?;
     for (label, raw) in [
-        ("foreign Store", decision_raw.replacen(target.store_identity().as_str(), &"e".repeat(64), 1)),
-        ("wrong version", decision_raw.replacen("\"version\":1", "\"version\":2", 1)),
-        ("duplicate version", decision_raw.replacen("{", "{\"version\":1,", 1)),
-        ("unknown field", decision_raw.replacen("{", "{\"extra\":0,", 1)),
-        ("unknown reason", decision_raw.replace("close_without_supplied_exact_body", "ignored")),
+        (
+            "foreign Store",
+            decision_raw.replacen(target.store_identity().as_str(), &"e".repeat(64), 1),
+        ),
+        (
+            "wrong version",
+            decision_raw.replacen("\"version\":1", "\"version\":2", 1),
+        ),
+        (
+            "duplicate version",
+            decision_raw.replacen("{", "{\"version\":1,", 1),
+        ),
+        (
+            "unknown field",
+            decision_raw.replacen("{", "{\"extra\":0,", 1),
+        ),
+        (
+            "unknown reason",
+            decision_raw.replace("close_without_supplied_exact_body", "ignored"),
+        ),
     ] {
         data_error::<MissingPreparedDecisionV1>(label, &raw)?;
     }
@@ -84,12 +130,30 @@ fn missing_assessment_has_exact_wire_digest_and_rejects_wrong_role_shared_parent
     let decision = MissingPreparedDecisionV1::new(target, assessment);
     check!(eq; decision.digest()?.as_str(), crate::model::serialized_digest(&("prepared-missing-decision-v1", &decision))?);
     for (label, raw) in [
-        ("wrong body role", expected.replace("body_leaf", "metadata_leaf")),
-        ("removed HTTP role", expected.replace("body_leaf", "http_directory")),
-        ("shared parent", expected.replace("body_leaf", "archive_directory")),
-        ("wrong metadata role", expected.replace("\"exact\"", "\"missing\",\"location\":\"bodies_directory\"")),
-        ("wrong version", expected.replace("\"version\":1", "\"version\":2")),
-        ("duplicate version", expected.replacen("{", "{\"version\":1,", 1)),
+        (
+            "wrong body role",
+            expected.replace("body_leaf", "metadata_leaf"),
+        ),
+        (
+            "removed HTTP role",
+            expected.replace("body_leaf", "http_directory"),
+        ),
+        (
+            "shared parent",
+            expected.replace("body_leaf", "archive_directory"),
+        ),
+        (
+            "wrong metadata role",
+            expected.replace("\"exact\"", "\"missing\",\"location\":\"bodies_directory\""),
+        ),
+        (
+            "wrong version",
+            expected.replace("\"version\":1", "\"version\":2"),
+        ),
+        (
+            "duplicate version",
+            expected.replacen("{", "{\"version\":1,", 1),
+        ),
         ("unknown field", expected.replacen("{", "{\"extra\":0,", 1)),
     ] {
         data_error::<MissingPreparedAssessmentV1>(label, &raw)?;
@@ -127,10 +191,7 @@ fn missing_assessment_has_exact_wire_digest_and_rejects_wrong_role_shared_parent
     Ok(())
 }
 
-fn data_error<T: serde::de::DeserializeOwned>(
-    label: &str,
-    raw: &str,
-) -> TestResult {
+fn data_error<T: serde::de::DeserializeOwned>(label: &str, raw: &str) -> TestResult {
     let error = serde_json::from_str::<T>(raw)
         .err()
         .ok_or("accepted hostile wire")?;

@@ -11,6 +11,8 @@ mod io;
 pub(super) mod job;
 
 mod archive;
+mod semantics;
+pub(super) use semantics::{ensure_current_policy, ensure_semantic_policy, semantic_policy};
 mod budget;
 mod capture;
 mod chunks;
@@ -59,7 +61,7 @@ pub use freeze::CancelOutcome;
 pub use root::FrozenRoot;
 
 const SCHEMA_REVISION: u32 = 3;
-const POLICY_REVISION: u32 = 18;
+const POLICY_REVISION: u32 = 19;
 const INPUT_TABLES: [Table; 16] = [
     Table::Schools,
     Table::Teams,
@@ -148,6 +150,7 @@ pub(super) fn bind(dataset: &mut ExportDataset) -> ReportResult<()> {
 }
 
 pub(super) fn ensure_current(dataset: &ExportDataset, store: &Store) -> ReportResult<()> {
+    ensure_current_policy(&dataset.lineage)?;
     job::ensure_store(dataset, store)?;
     ensure_snapshot(dataset, &store.snapshot())
 }
@@ -279,14 +282,8 @@ where
         .collect())
 }
 
-pub(super) fn ensure_semantic_policy(lineage: &DatasetLineage) -> ReportResult<()> {
-    if lineage.schema_revision != SCHEMA_REVISION || lineage.policy_revision != POLICY_REVISION {
-        return Err(invalid(
-            "retained export input uses an incompatible recruiting policy or schema",
-        ));
-    }
-    Ok(())
-}
+#[cfg(test)]
+mod semantic_policy_tests;
 
 #[cfg(test)]
 mod resource_classification_tests;

@@ -204,6 +204,7 @@ fn reusable(
 ) -> Result<FrozenRoot, ReuseFailure> {
     let objects_dir = objects::directory(directory);
     let manifest = retained_manifest(&objects_dir, retained)?;
+    super::ensure_current_policy(&manifest.lineage).map_err(ReuseFailure::Preserve)?;
     recover::ensure_job(&manifest, job).map_err(ReuseFailure::Preserve)?;
     recover::ensure_identity(store, &manifest)?;
     verify::verify_record(&objects_dir, &retained.manifest, &manifest, record)?;
@@ -232,6 +233,7 @@ fn ensure_retirable(directory: &Path, retained: &Retained, job: &str) -> ReportR
         Err(ReuseFailure::Preserve(error)) => return Err(error),
         Err(ReuseFailure::Retire(_)) => return Ok(()),
     };
+    super::ensure_current_policy(&manifest.lineage)?;
     recover::ensure_job(&manifest, job)?;
     let checked = verify::verify_root(&objects_dir, &retained.manifest, &manifest)
         .map(|_| ())

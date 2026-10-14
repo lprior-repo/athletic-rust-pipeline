@@ -16,9 +16,9 @@ const PRIOR_STATES: [Option<InputState>; 5] = [
 ];
 
 fn prior_manifest(current: &FrozenManifest, policy: u32) -> TestResult<FrozenManifest> {
-    check!(eq; POLICY_REVISION, 18);
+    check!(eq; POLICY_REVISION, 19);
     check!(eq; current.lineage.schema_revision, 3);
-    check!(eq; current.lineage.policy_revision, 18);
+    check!(eq; current.lineage.policy_revision, 19);
     let mut prior = current.clone();
     prior.lineage.policy_revision = policy;
     prior.lineage.input_generation = generation(&prior.lineage)?;
@@ -54,7 +54,7 @@ fn install_prior_policy(
     check!(matches!(
         FrozenManifest::decode(&encoded),
         Err(FrozenCodecError::UnsupportedVersion { what: "manifest lineage", ref found, ref supported })
-            if found.contains(&expected) && supported == "schema revision 3 policy revision 18"
+            if found.contains(&expected) && supported == "schema revision 3 policy revisions 18 or 19"
     ));
     let manifest_digest = objects::install(&objects::directory(directory), &encoded)?;
     check!(eq; objects::read(&objects::directory(directory), &manifest_digest, objects::MANIFEST_CEILING)?, encoded);
@@ -80,7 +80,7 @@ fn refused_prior_policy(store: &Store, job: &str, policy: u32) -> TestResult {
         Err(ReportError::ArtifactCorrupt { ref detail, .. })
             if detail.contains("unsupported manifest lineage")
                 && detail.contains(&expected)
-                && detail.contains("schema revision 3 policy revision 18")
+                && detail.contains("schema revision 3 policy revisions 18 or 19")
     ));
     Ok(())
 }
@@ -92,7 +92,7 @@ fn refused_prior_cancellation(store: &Store, job: &str, policy: u32) -> TestResu
         Err(ReportError::ArtifactCorrupt { ref detail, .. })
             if detail.contains("unsupported manifest lineage")
                 && detail.contains(&expected)
-                && detail.contains("schema revision 3 policy revision 18")
+                && detail.contains("schema revision 3 policy revisions 18 or 19")
     ));
     Ok(())
 }
@@ -211,7 +211,7 @@ fn archive_preserved(policy: u32, coverage: PriorCoverage) -> TestResult {
     let seeded = schema_three::seed(policy)?;
     let store = seeded.store;
     let dataset = ExportDataset::load(&store)?;
-    check!(eq; dataset.lineage.policy_revision, 18);
+    check!(eq; dataset.lineage.policy_revision, 19);
     if matches!(policy, 15 | 16 | 17) {
         check!(eq; dataset.relays.len(), 1);
         check!(eq; dataset.coverage_evidence.rows.len(), 1);

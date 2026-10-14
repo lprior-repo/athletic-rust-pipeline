@@ -24,6 +24,7 @@ pub(super) fn recover(
 ) -> ReportResult<FrozenRoot> {
     let objects_dir = objects::directory(directory);
     let manifest = open_manifest(&objects_dir, &retained.manifest)?;
+    super::ensure_current_policy(&manifest.lineage)?;
     ensure_job(&manifest, job)?;
     if let Err(error) = verify::verify_record(&objects_dir, &retained.manifest, &manifest, record) {
         if error.preserves_retained() {

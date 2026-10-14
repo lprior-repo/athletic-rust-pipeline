@@ -8,6 +8,10 @@ pub(super) fn track(kind: &EventKind) -> Option<&'static str> {
         EventKind::Track1500m => "Track1500m",
         EventKind::Track100m => "Track100m",
         EventKind::Track200m => "Track200m",
+        EventKind::Track300m => "Track300m",
+        EventKind::Track500m => "Track500m",
+        EventKind::Track600m => "Track600m",
+        EventKind::Track2Miles => "Track2Miles",
         EventKind::Track400m => "Track400m",
         EventKind::Track800m => "Track800m",
         EventKind::Track1600m => "Track1600m",
@@ -15,6 +19,8 @@ pub(super) fn track(kind: &EventKind) -> Option<&'static str> {
         EventKind::Track1Mile => "Track1Mile",
         EventKind::Track3000m => "Track3000m",
         EventKind::Track5000m => "Track5000m",
+        EventKind::Track2000m => "Track2000m",
+        EventKind::Track10000m => "Track10000m",
         _ => return None,
     })
 }

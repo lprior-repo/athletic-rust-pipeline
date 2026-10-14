@@ -1,12 +1,16 @@
 use super::context::ContextualLabel;
-use super::policy::{AMBIGUOUS, EXCLUSIONS, INCLUDED, PAIRS, SEPARATORS, TERRAIN, UNITS};
+use super::policy::{AMBIGUOUS, EXCLUSIONS, PAIRS, SEPARATORS, TERRAIN, UNITS};
 use super::{CatalogError, SourceEventLabel};
 use super::{
     EventDisposition, EventExclusionReason as Ex, EventKind, EventResolutionReason as Why,
 };
+use crate::model::EventSemantics;
 use crate::model::{EventSpecification, SpecificationError};
 
-pub(super) fn classify(source: &SourceEventLabel) -> Result<EventDisposition, CatalogError> {
+pub(super) fn classify(
+    source: &SourceEventLabel,
+    semantics: EventSemantics,
+) -> Result<EventDisposition, CatalogError> {
     let label = &source.label;
     if label.chars().any(|ch| {
         !ch.is_ascii()
@@ -16,7 +20,7 @@ pub(super) fn classify(source: &SourceEventLabel) -> Result<EventDisposition, Ca
             Why::UnknownOrMixedSourceLabels,
         ));
     }
-    let kind = EventKind::from_source_label(label);
+    let kind = EventKind::from_source_label_with_policy(label, semantics);
     if let Some(reason) = category_fragments(label, &kind) {
         return Ok(EventDisposition::Unresolved(reason));
     }
@@ -28,13 +32,16 @@ pub(super) fn classify(source: &SourceEventLabel) -> Result<EventDisposition, Ca
             Why::AmbiguousAdaptiveOrSpecialLabel,
         ));
     }
-    let contextual = ContextualLabel::parse(label, &kind)?;
+    let contextual = ContextualLabel::parse(label, &kind, semantics)?;
+    if !contextual.dimensions_match(&kind) {
+        return Ok(EventDisposition::Unresolved(Why::ContradictoryDeclarations));
+    }
     if missing(&contextual, &kind) {
         return Ok(EventDisposition::Unresolved(
             Why::UnsupportedScholasticVariant,
         ));
     }
-    if !INCLUDED.contains(&kind)
+    if !super::policy::included(semantics).contains(&kind)
         || malformed_number(label)
         || !super::policy::permitted(&contextual, &kind)
     {
@@ -178,16 +185,21 @@ fn missing(label: &ContextualLabel<'_>, kind: &EventKind) -> bool {
             .iter()
             .any(|unit| label.pair(number, unit));
         present
+            && !(label.semantics() == EventSemantics::FlatEvents19
+                && matches!(*number, "300" | "500" | "600" | "2000" | "10000"))
             && !matches!(
                 (*number, kind),
                 ("300", EventKind::Track300mHurdles) | ("2000", EventKind::Track2000mSteeplechase)
             )
     }) || label.tokens().any(|word| {
-        word.declaration()
-            .is_some_and(|word| member(word, &["10k", "2mile", "2miles", "twomile", "twomiles"]))
-    }) || ["2", "two"]
-        .iter()
-        .any(|number| label.pair(number, "mile") || label.pair(number, "miles"))
+        word.declaration().is_some_and(|word| {
+            label.semantics() == EventSemantics::Legacy18
+                && member(word, &["10k", "2mile", "2miles", "twomile", "twomiles"])
+        })
+    }) || label.semantics() == EventSemantics::Legacy18
+        && ["2", "two"]
+            .iter()
+            .any(|number| label.pair(number, "mile") || label.pair(number, "miles"))
         || label.pair("10", "000m")
 }
 
@@ -200,8 +212,8 @@ fn malformed_number(label: &str) -> bool {
     })
 }
 
-pub(super) fn excluded_component(word: &str) -> Option<EventKind> {
-    let direct = EventKind::from_source_label(word);
+pub(super) fn excluded_component(word: &str, semantics: EventSemantics) -> Option<EventKind> {
+    let direct = EventKind::from_source_label_with_policy(word, semantics);
     if !matches!(direct, EventKind::Unmapped { .. }) || super::distance_quantity(word) {
         return Some(direct);
     }
@@ -217,7 +229,7 @@ pub(super) fn excluded_component(word: &str) -> Option<EventKind> {
             .and_then(|_| word.get(..start));
         head.or(tail)
             .filter(|part| quantity(part))
-            .map(EventKind::from_source_label)
+            .map(|label| EventKind::from_source_label_with_policy(label, semantics))
     })
 }
 

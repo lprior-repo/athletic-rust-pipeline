@@ -17,7 +17,7 @@ pub(super) fn install(
     policy: u32,
 ) -> TestResult<Historical> {
     let mut dataset = ExportDataset::load(store)?;
-    check!(eq; dataset.lineage.policy_revision, 18);
+    check!(eq; dataset.lineage.policy_revision, 19);
     dataset.lineage.policy_revision = policy;
     dataset.lineage.input_generation = serialized_digest(&(
         &dataset.lineage.store_identity,

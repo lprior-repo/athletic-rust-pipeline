@@ -38,7 +38,7 @@ fn cutover(grad_year: Option<i16>, prior_policy: u32) -> TestResult {
         Err(crate::report::ReportError::Invariant { ref detail })
             if detail == "unsupported or malformed frozen export lineage"));
     let current = ExportDataset::load(&store)?;
-    check!(eq; current.lineage.policy_revision, 18);
+    check!(eq; current.lineage.policy_revision, 19);
     check!(eq; current.lineage.input_digest, old.lineage.input_digest);
     check!(eq; current.lineage.source_digest, old.lineage.source_digest);
     check!(ne; current.lineage.input_generation, old.lineage.input_generation);
@@ -83,7 +83,7 @@ fn cutover(grad_year: Option<i16>, prior_policy: u32) -> TestResult {
 }
 
 #[test]
-fn policy_eighteen_cannot_reuse_policy_sixteen_or_seventeen_published_receipts() -> TestResult {
+fn policy_nineteen_cannot_reuse_policy_sixteen_or_seventeen_published_receipts() -> TestResult {
     [Some(2027), Some(2028), None]
         .into_iter()
         .try_for_each(|year| {

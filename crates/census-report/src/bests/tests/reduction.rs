@@ -126,12 +126,14 @@ fn key_separates_timing_methods_at_one_meet() -> TestResult {
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?;
     let result_hand = crate::bests::PrKey::from_performance(
         &perf_hand,
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?;
     check!(eq; result_fat.ok_or("missing FAT key")?.timing, crate::bests::TimingClass::Fat);
     check!(eq; result_hand.ok_or("missing hand key")?.timing, crate::bests::TimingClass::Hand);
@@ -171,12 +173,14 @@ fn key_separates_wind_assisted_and_legal_results() -> TestResult {
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?;
     let result_assisted = crate::bests::PrKey::from_performance(
         &perf_assisted,
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?;
     check!(eq; result_legal.ok_or("missing legal key")?.wind_class, crate::bests::WindClass::Legal);
     check!(eq; result_assisted.ok_or("missing assisted key")?.wind_class, crate::bests::WindClass::Assisted);
@@ -216,12 +220,14 @@ fn same_meet_different_dates_retain_the_same_comparison_key() -> TestResult {
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?;
     let result_later = crate::bests::PrKey::from_performance(
         &perf_later,
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?;
     check!(
         eq;
@@ -265,12 +271,14 @@ fn reduce_different_events_different_keys() -> TestResult {
         &event_100m,
         Some(&meet),
         crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?;
     let result_200m = crate::bests::PrKey::from_performance(
         &perf_200m,
         &event_200m,
         Some(&meet),
         crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?;
     check!(eq; result_100m.ok_or("missing 100m key")?.event_kind, EventKind::Track100m);
     check!(eq; result_200m.ok_or("missing 200m key")?.event_kind, EventKind::Track200m);

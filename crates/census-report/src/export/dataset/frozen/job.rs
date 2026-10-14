@@ -63,6 +63,7 @@ fn reopen_job(
 }
 
 fn preflight(store: &Store, job: &str, lineage: &super::DatasetLineage) -> ReportResult<()> {
+    super::ensure_current_policy(lineage)?;
     if lineage.store_identity != store_identity(store)? {
         return Err(invalid("frozen input belongs to a different census store"));
     }

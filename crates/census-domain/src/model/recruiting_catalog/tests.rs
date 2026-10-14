@@ -1,5 +1,7 @@
 use super::*;
 mod dimensions;
+mod flat_events;
+mod long_flat_events;
 use crate::model::{
     serialized_bytes, EventIdentity, EventSpecification, Evidence, EvidenceMethod, Gender, Id,
     RetainedConflict, SourceRef,
@@ -96,30 +98,10 @@ fn every_existing_positive_family_is_admitted_without_distance_remapping() -> Te
 }
 
 #[test]
-fn retained_supported_but_unimplemented_distances_are_visible_unresolved() -> TestResult {
-    for label in [
-        "300m",
-        "500m",
-        "600m",
-        "2000m",
-        "10000m",
-        "2 Mile",
-        "300 meters",
-        "500 metres",
-        "600 meter",
-        "2000 metre",
-        "10,000m",
-        "10k",
-        "two mile",
-        "2 miles",
-        "Girls 2 Mile Finals",
-        "Boys 600 meters",
-        "600m 800m",
-        "800m 600m",
-        "300m Hurdles 600m",
-    ] {
+fn historical_long_flat_distances_remain_visible_unresolved() -> TestResult {
+    for label in ["2000m", "10000m", "2000 metre", "10,000m", "10k"] {
         let event = owned(unmapped(label), &[label])?;
-        check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::UnsupportedScholasticVariant), "{label}");
+        check!(eq; RecruitingCatalogV1::with_policy(EventSemantics::Legacy18).classify(&event, Sport::OutdoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::UnsupportedScholasticVariant), "{label}");
     }
     Ok(())
 }

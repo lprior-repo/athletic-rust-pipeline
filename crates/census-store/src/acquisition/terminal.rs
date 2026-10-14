@@ -139,7 +139,6 @@ impl Store {
         settle(self, terminal, Some(&occurrence))?;
         Ok(occurrence)
     }
-
 }
 
 fn prepared_attempt<'a>(

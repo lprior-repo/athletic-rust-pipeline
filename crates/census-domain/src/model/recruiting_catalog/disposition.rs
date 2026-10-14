@@ -171,13 +171,16 @@ pub(super) fn qualify(
     event: &CanonicalEvent,
     sport: Sport,
     kind: EventKind,
+    semantics: crate::model::EventSemantics,
 ) -> Result<EventDisposition, CatalogError> {
     let unresolved = |reason| Ok(EventDisposition::Unresolved(reason));
     let canonical_matches = match &event.kind {
-        EventKind::Unmapped { .. } => event.resolved_source_kind().as_ref() == Some(&kind),
+        EventKind::Unmapped { .. } => {
+            event.resolved_source_kind_with_policy(semantics).as_ref() == Some(&kind)
+        }
         canonical => canonical == &kind,
     };
-    if !canonical_matches || !event.source_bound_kind(&kind) {
+    if !canonical_matches || !event.source_bound_kind_with_policy(&kind, semantics) {
         return unresolved(EventResolutionReason::ContradictoryDeclarations);
     }
     match sport {
@@ -190,7 +193,7 @@ pub(super) fn qualify(
         }
         Sport::CrossCountry | Sport::IndoorTrack | Sport::OutdoorTrack => {}
     }
-    let specification = match event.resolved_specification() {
+    let specification = match event.resolved_specification_with_policy(semantics) {
         Ok(value) => value,
         Err(SpecificationError::ConflictingSpecification) => {
             return unresolved(EventResolutionReason::ContradictoryDeclarations);

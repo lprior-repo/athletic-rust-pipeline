@@ -1,5 +1,6 @@
 use super::super::*;
 use super::common::{equal, TestResult};
+use census_domain::model::EventSemantics;
 use sha2::{Digest, Sha256};
 
 const ORACLES: [(ContractRoleV1, &[u8], &str); 9] = [
@@ -89,7 +90,7 @@ fn each_role_has_a_distinct_exact_reference() -> TestResult {
 
 #[test]
 fn event_descriptor_binds_the_exact_corrected_catalog_policy_bytes() -> TestResult {
-    let catalog = RecruitingCatalogV1::new();
+    let catalog = RecruitingCatalogV1::with_policy(EventSemantics::Legacy18);
     let expected = include_bytes!("fixtures/catalog-policy.canonical.json");
     let mut actual = Vec::new();
     catalog.write_policy(&mut actual)?;

@@ -8,7 +8,7 @@ use super::codec::{
 use super::references::{ManifestFingerprint, ManifestStream};
 use super::stream::StreamKind;
 use super::token::FrozenInputToken;
-use super::{INPUT_TABLES, POLICY_REVISION, SCHEMA_REVISION};
+use super::{INPUT_TABLES, SCHEMA_REVISION};
 use census_domain::model::{serialized_bytes, SchoolYear};
 use census_store::Table;
 use serde::{Deserialize, Serialize};
@@ -200,8 +200,10 @@ impl FrozenManifest {
 }
 
 fn check_lineage(lineage: &DatasetLineage) -> FrozenCodecResult<()> {
-    let supported = format!("schema revision {SCHEMA_REVISION} policy revision {POLICY_REVISION}");
-    if lineage.schema_revision != SCHEMA_REVISION || lineage.policy_revision != POLICY_REVISION {
+    let supported = format!("schema revision {SCHEMA_REVISION} policy revisions 18 or 19");
+    if lineage.schema_revision != SCHEMA_REVISION
+        || census_domain::model::EventSemantics::from_revision(lineage.policy_revision).is_none()
+    {
         return Err(FrozenCodecError::UnsupportedVersion {
             what: "manifest lineage",
             found: format!(

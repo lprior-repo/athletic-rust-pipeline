@@ -3,11 +3,18 @@ use crate::model::{CanonicalEvent, EvidenceMethod, SourceEventLabel};
 
 impl CanonicalEvent {
     pub fn resolved_specification(&self) -> Result<EventSpecification, SpecificationError> {
+        self.resolved_specification_with_policy(crate::model::EventSemantics::FlatEvents19)
+    }
+
+    pub fn resolved_specification_with_policy(
+        &self,
+        semantics: crate::model::EventSemantics,
+    ) -> Result<EventSpecification, SpecificationError> {
         self.specification.validate()?;
         if !self.retained_conflicts.is_empty() {
             return Err(SpecificationError::ConflictingSpecification);
         }
-        let resolved_kind = self.resolved_source_kind();
+        let resolved_kind = self.resolved_source_kind_with_policy(semantics);
         let kind = resolved_kind
             .as_ref()
             .map_or(&self.kind, core::convert::identity);

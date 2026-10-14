@@ -15,13 +15,19 @@ pub enum EventKind {
     Track60mHurdles,
     Track100m,
     Track200m,
+    Track300m,
     Track400m,
+    Track500m,
+    Track600m,
     Track800m,
     Track1600m,
     Track3200m,
     Track1Mile,
+    Track2Miles,
     Track3000m,
     Track5000m,
+    Track2000m,
+    Track10000m,
     Track110mHurdles,
     Track100mHurdles,
     Track300mHurdles,
@@ -110,12 +116,16 @@ impl EventKind {
     }
 
     pub fn from_source_label(label: &str) -> Self {
-        if let Some(kind) = direct::resolve(&Self::normalized_label(label)) {
+        Self::from_source_label_with_policy(label, EventSemantics::FlatEvents19)
+    }
+
+    pub fn from_source_label_with_policy(label: &str, semantics: EventSemantics) -> Self {
+        if let Some(kind) = direct::resolve(&Self::normalized_label(label), semantics) {
             return kind;
         }
-        match qualified::candidates(label)
+        match qualified::candidates(label, semantics)
             .into_iter()
-            .find_map(|candidate| direct::resolve(&Self::normalized_label(&candidate)))
+            .find_map(|candidate| direct::resolve(&Self::normalized_label(&candidate), semantics))
         {
             Some(kind) => kind,
             None => Self::Unmapped {

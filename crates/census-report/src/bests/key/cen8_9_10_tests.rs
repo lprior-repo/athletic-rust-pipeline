@@ -5,6 +5,7 @@ mod boundaries;
 mod courses;
 mod dimensions;
 mod fixtures;
+mod flat_semantics;
 mod surfaces;
 use fixtures::*;
 

@@ -14,7 +14,13 @@ fn key_construction_outdoor() -> TestResult {
     let event = test_event(EventKind::Track100m, &meet.id)?;
     perf.event = event.id.clone();
 
-    let result = crate::bests::PrKey::from_performance(&perf, &event, Some(&meet), measure)?;
+    let result = crate::bests::PrKey::from_performance(
+        &perf,
+        &event,
+        Some(&meet),
+        measure,
+        census_domain::model::EventSemantics::FlatEvents19,
+    )?;
     let key = result.ok_or("outdoor performance has no PR key")?;
     check!(matches!(
         key.surface,
@@ -47,6 +53,7 @@ fn key_excluded_unresolved_surface() -> TestResult {
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?;
     check!(result.is_none());
     Ok(())
@@ -64,8 +71,13 @@ fn key_no_meet_is_excluded() -> TestResult {
     let event = test_event(EventKind::Track100m, &perf.meet)?;
     perf.event = event.id.clone();
 
-    let result =
-        crate::bests::PrKey::from_performance(&perf, &event, None, crate::bests::Measure::Time)?;
+    let result = crate::bests::PrKey::from_performance(
+        &perf,
+        &event,
+        None,
+        crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
+    )?;
     check!(result.is_none());
     Ok(())
 }
@@ -108,9 +120,12 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?
     .ok_or("first distance key")?;
-    let first_course = first.same_course(&event).ok_or("first course key")?;
+    let first_course = first
+        .same_course(&event, census_domain::model::EventSemantics::FlatEvents19)
+        .ok_or("first course key")?;
     specification
         .cross_country
         .as_mut()
@@ -132,9 +147,12 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
         &event,
         Some(&meet),
         crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?
     .ok_or("second distance key")?;
-    let second_course = second.same_course(&event).ok_or("second course key")?;
+    let second_course = second
+        .same_course(&event, census_domain::model::EventSemantics::FlatEvents19)
+        .ok_or("second course key")?;
     check!(eq; first, second);
     check!(ne; first_course, second_course);
     perf.mark = Mark::TimeSeconds(ExactSeconds::parse("170.00")?);
@@ -147,6 +165,7 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
             &event,
             Some(&meet),
             crate::bests::Measure::Time,
+            census_domain::model::EventSemantics::FlatEvents19,
         )?
     );
     Ok(())

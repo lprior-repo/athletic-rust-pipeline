@@ -1,6 +1,7 @@
 use super::{ContractRoleV1, ProfileExecutionError};
 use crate::model::{
-    ContractRefV1, RecruitingCatalogV1, ATHLETE_IDENTITY_POLICY, COHORT_ASSESSMENT_POLICY,
+    ContractRefV1, EventSemantics, RecruitingCatalogV1, ATHLETE_IDENTITY_POLICY,
+    COHORT_ASSESSMENT_POLICY,
 };
 use serde::Serialize;
 
@@ -35,7 +36,7 @@ pub(super) fn components_v1(
             assessment_revision: COHORT_ASSESSMENT_POLICY,
         }),
         ContractRoleV1::Event => {
-            let digest = RecruitingCatalogV1::new().digest()?;
+            let digest = RecruitingCatalogV1::with_policy(EventSemantics::Legacy18).digest()?;
             Ok(PolicyComponentsV1::Event {
                 catalog: ContractRefV1::new(1, 1, &digest)?,
             })

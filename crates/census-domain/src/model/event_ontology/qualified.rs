@@ -1,4 +1,4 @@
-use super::{LABEL_PHRASES, LABEL_QUALIFIERS};
+use super::{EventSemantics, LABEL_PHRASES, LABEL_QUALIFIERS};
 
 const MODIFIERS: &[&str] = &[
     "relay",
@@ -54,7 +54,7 @@ struct Token<'a> {
     cleaned: String,
 }
 
-pub(super) fn candidates(label: &str) -> Vec<String> {
+pub(super) fn candidates(label: &str, semantics: EventSemantics) -> Vec<String> {
     let tokens = tokenize(label);
     let kept = kept_tokens(&tokens);
     let modifier_ranges = modifier_runs(&modifier_flags(&kept));
@@ -62,7 +62,7 @@ pub(super) fn candidates(label: &str) -> Vec<String> {
     if !kept.is_empty() {
         candidates.push(render(&kept));
     }
-    window_candidates(&kept, &modifier_ranges, &mut candidates);
+    window_candidates(&kept, &modifier_ranges, &mut candidates, semantics);
     candidates
 }
 
@@ -126,6 +126,7 @@ fn window_candidates(
     kept: &[&Token<'_>],
     modifier_ranges: &[(usize, usize)],
     candidates: &mut Vec<String>,
+    semantics: EventSemantics,
 ) {
     for width in (1..=kept.len().min(4)).rev() {
         for (start, window) in kept.windows(width).enumerate() {
@@ -139,10 +140,23 @@ fn window_candidates(
                 .iter()
                 .any(|(first, after)| *first < start || *after > start.saturating_add(width));
             let short_xc = window.first().is_some_and(|token| token.cleaned == "xc");
-            if (compact_len >= 3 || short_xc) && !discards_modifier {
+            if (compact_len >= 3 || short_xc || short_flat_alias(window, semantics))
+                && !discards_modifier
+            {
                 candidates.push(render(window));
             }
         }
+    }
+}
+
+fn short_flat_alias(window: &[&Token<'_>], semantics: EventSemantics) -> bool {
+    if semantics != EventSemantics::FlatEvents19 {
+        return false;
+    }
+    match window {
+        [token] => token.cleaned == "2k",
+        [number, unit] => number.cleaned == "2" && unit.cleaned == "k",
+        _ => false,
     }
 }
 

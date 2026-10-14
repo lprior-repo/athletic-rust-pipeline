@@ -70,9 +70,9 @@ pub(super) fn fixture() -> TestResult<Fixture> {
     let unresolved = event(
         &meet,
         EventKind::Unmapped {
-            label: "600m".into(),
+            label: "10,000m".into(),
         },
-        "600m",
+        "10,000m",
     )?;
     for event in [&ordinary, &excluded, &walking, &unresolved] {
         store.append(Table::Events, event)?;

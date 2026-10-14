@@ -22,8 +22,17 @@ impl ComparisonPolicy {
 }
 
 impl PrKey {
-    pub(super) fn qualify(mut self, event: &CanonicalEvent) -> Option<Self> {
-        self.specification = event.resolved_specification().ok()?;
+    #[cfg(test)]
+    pub(super) fn qualify(self, event: &CanonicalEvent) -> Option<Self> {
+        self.qualify_with_policy(event, census_domain::model::EventSemantics::FlatEvents19)
+    }
+
+    pub(super) fn qualify_with_policy(
+        mut self,
+        event: &CanonicalEvent,
+        semantics: census_domain::model::EventSemantics,
+    ) -> Option<Self> {
+        self.specification = event.resolved_specification_with_policy(semantics).ok()?;
         if !self.compatible_fields() {
             return None;
         }
@@ -60,13 +69,17 @@ impl PrKey {
         Some(self)
     }
 
-    pub fn same_course(&self, event: &CanonicalEvent) -> Option<Self> {
+    pub fn same_course(
+        &self,
+        event: &CanonicalEvent,
+        semantics: census_domain::model::EventSemantics,
+    ) -> Option<Self> {
         if self.surface != SurfaceClass::CrossCountry
             || self.comparison == ComparisonPolicy::SameCourse
         {
             return None;
         }
-        let specification = event.resolved_specification().ok()?;
+        let specification = event.resolved_specification_with_policy(semantics).ok()?;
         specification.cross_country.as_ref()?.course.as_ref()?;
         Some(self.with_specification(specification, ComparisonPolicy::SameCourse))
     }

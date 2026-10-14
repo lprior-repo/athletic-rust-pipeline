@@ -14,6 +14,7 @@ impl<'s> Stage<'s> {
         store: &'s Store,
         options: &Options,
     ) -> ReportResult<Self> {
+        dataset.ensure_current_policy()?;
         let root = match &options.out {
             Some(root) => root.clone(),
             None => store.out_dir().join("publication"),
@@ -88,6 +89,7 @@ impl<'s> Stage<'s> {
     }
 
     fn commit(&self, dataset: &ExportDataset, options: &Options) -> ReportResult<PathBuf> {
+        dataset.ensure_current_policy()?;
         {
             let snapshot = self.store.snapshot();
             dataset

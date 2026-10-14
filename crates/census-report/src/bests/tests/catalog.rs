@@ -64,9 +64,9 @@ fn checked_public_key_admits_only_the_positive_event_for_one_athlete() -> TestRe
             EventDisposition::Excluded(EventExclusionReason::CompetitiveWalking),
         ),
         (
-            "600m",
+            "10,000m",
             EventKind::Unmapped {
-                label: "600m".into(),
+                label: "10,000m".into(),
             },
             EventDisposition::Unresolved(EventResolutionReason::UnsupportedScholasticVariant),
         ),
@@ -79,6 +79,7 @@ fn checked_public_key_admits_only_the_positive_event_for_one_athlete() -> TestRe
             &event,
             Some(&meet),
             crate::bests::Measure::Time,
+            census_domain::model::EventSemantics::FlatEvents19,
         )? {
             keys.push(key);
         }
@@ -93,7 +94,7 @@ fn checked_public_key_admits_only_the_positive_event_for_one_athlete() -> TestRe
 #[test]
 fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_keys() -> TestResult {
     let meet = test_meet(vec![Sport::OutdoorTrack]);
-    for label in ["700m", "2 Mile", "100m mystery", "100m <span>"] {
+    for label in ["700m", "3 Mile", "100m mystery", "100m <span>"] {
         let event = catalog_event(
             EventKind::Unmapped {
                 label: label.into(),
@@ -106,7 +107,8 @@ fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_key
             &performance,
             &event,
             Some(&meet),
-            crate::bests::Measure::Time
+            crate::bests::Measure::Time,
+            census_domain::model::EventSemantics::FlatEvents19,
         )?
         .is_none());
     }
@@ -117,7 +119,8 @@ fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_key
         &performance,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time
+        crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?
     .is_none());
     let mut event = catalog_event(EventKind::Track100m, "100m", &meet.id)?;
@@ -136,7 +139,8 @@ fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_key
         &performance,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time
+        crate::bests::Measure::Time,
+        census_domain::model::EventSemantics::FlatEvents19,
     )?
     .is_none());
     Ok(())
@@ -152,7 +156,7 @@ fn catalog_input_failure_is_a_typed_public_key_error() -> TestResult {
         .first_mut()
         .ok_or("fixture label")?
         .label = "x".repeat(4097);
-    check!(eq; crate::bests::PrKey::from_performance(&performance, &event, Some(&meet), crate::bests::Measure::Time), Err(CatalogError::LabelBytesExceeded));
+    check!(eq; crate::bests::PrKey::from_performance(&performance, &event, Some(&meet), crate::bests::Measure::Time, census_domain::model::EventSemantics::FlatEvents19), Err(CatalogError::LabelBytesExceeded));
     Ok(())
 }
 
@@ -198,9 +202,9 @@ fn append_catalog_meet(store: &Store) -> TestResult {
             },
         ),
         (
-            "600m",
+            "10,000m",
             EventKind::Unmapped {
-                label: "600m".into(),
+                label: "10,000m".into(),
             },
         ),
     ] {
@@ -249,6 +253,7 @@ fn catalog_readback(dataset: &ExportDataset) -> TestResult {
             event,
             Some(meet),
             crate::bests::Measure::Time,
+            census_domain::model::EventSemantics::FlatEvents19,
         )? {
             keys.push(key);
         }

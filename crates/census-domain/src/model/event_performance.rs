@@ -39,10 +39,14 @@ impl CanonicalEvent {
     }
 
     pub fn resolved_source_kind(&self) -> Option<EventKind> {
+        self.resolved_source_kind_with_policy(EventSemantics::FlatEvents19)
+    }
+
+    pub fn resolved_source_kind_with_policy(&self, semantics: EventSemantics) -> Option<EventKind> {
         let EventKind::Unmapped { label } = &self.kind else {
             return None;
         };
-        let resolved = EventKind::from_source_label(label);
+        let resolved = EventKind::from_source_label_with_policy(label, semantics);
         if matches!(resolved, EventKind::Unmapped { .. })
             || !self.retained_conflicts.is_empty()
             || !self
@@ -52,14 +56,23 @@ impl CanonicalEvent {
         {
             return None;
         }
-        self.source_bound_kind(&resolved).then_some(resolved)
+        self.source_bound_kind_with_policy(&resolved, semantics)
+            .then_some(resolved)
     }
 
     pub fn source_bound_kind(&self, kind: &EventKind) -> bool {
+        self.source_bound_kind_with_policy(kind, EventSemantics::FlatEvents19)
+    }
+
+    pub fn source_bound_kind_with_policy(
+        &self,
+        kind: &EventKind,
+        semantics: EventSemantics,
+    ) -> bool {
         !matches!(kind, EventKind::Unmapped { .. })
             && !self.source_labels.is_empty()
             && self.source_labels.iter().all(|source| {
-                EventKind::from_source_label(&source.label) == *kind
+                EventKind::from_source_label_with_policy(&source.label, semantics) == *kind
                     && self.evidence.iter().any(|evidence| {
                         evidence.method == EvidenceMethod::Parsed
                             && evidence.source == source.source
