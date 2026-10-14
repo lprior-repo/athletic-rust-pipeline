@@ -61,7 +61,7 @@ pub(super) struct RunArgs {
     observed_on: Option<String>,
     #[arg(
         long,
-        help = "Published performance cutoff date, independent of physical acquisition"
+        help = "Unsupported for standalone run: retained-data publication has no performance cutoff"
     )]
     as_of: Option<chrono::NaiveDate>,
     #[arg(
@@ -91,6 +91,11 @@ pub(super) struct RunArgs {
 }
 
 pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
+    if args.as_of.is_some() {
+        anyhow::bail!(
+            "standalone run does not support --as-of: retained-data publication has no performance cutoff"
+        );
+    }
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
             reject_offline_generation(args.generation.as_deref())?;
