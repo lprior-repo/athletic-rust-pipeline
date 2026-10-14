@@ -105,7 +105,7 @@ pub(crate) fn read_admitted(
 
 fn create(store: &Store) -> StoreResult<StoreIdentity> {
     let identity = generate(store.root())?;
-    store.journal_done(PHASE, KEY, &identity)?;
+    store.journal_done_locked(PHASE, KEY, &identity)?;
     Ok(identity)
 }
 

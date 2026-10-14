@@ -107,6 +107,16 @@ impl Store {
         key: &str,
         payload: &T,
     ) -> StoreResult<()> {
+        let _appends = self.lock_appends();
+        self.journal_done_locked(phase, key, payload)
+    }
+
+    pub(super) fn journal_done_locked<T: Serialize>(
+        &self,
+        phase: &str,
+        key: &str,
+        payload: &T,
+    ) -> StoreResult<()> {
         crate::acquisition::codec::reject_generic_phase(phase)?;
         let entry = serde_json::json!({
             "key": key,
