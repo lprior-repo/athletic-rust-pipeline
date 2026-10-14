@@ -1,6 +1,7 @@
 use anyhow::Result;
-use census_crawl::{AdapterReport, CollectionDisposition as Disposition, CrawlError};
+use census_crawl::{AdapterReport, CollectionDisposition as Disposition};
 use census_domain::UsJurisdiction;
+use census_service::census::SourceAccessFailure;
 use census_service::restate_services::TeamsSourceOutcome;
 use serde::Serialize;
 use std::fmt;
@@ -85,7 +86,7 @@ impl TeamsOutcomes {
     pub(in crate::cli) fn record_failure(
         &mut self,
         jurisdiction: UsJurisdiction,
-        error: &CrawlError,
+        error: &SourceAccessFailure,
     ) -> String {
         let message = error.to_string();
         let failure = if error.retryable() {

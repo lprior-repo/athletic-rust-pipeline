@@ -1,6 +1,7 @@
 use census_store::StoreSnapshot;
 
-use super::{classify, next_attempt, read as read_payload, slot_key, terminal};
+use super::settlement::classify;
+use super::{next_attempt, read as read_payload, slot_key, terminal};
 use super::{AttemptOutcome, Completion, History, Identity, Reservation, MAX_ATTEMPTS};
 use crate::restate_services::wire::TeamsAttemptProgress;
 use crate::restate_services::JobError;

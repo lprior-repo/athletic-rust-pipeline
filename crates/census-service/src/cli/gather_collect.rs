@@ -7,7 +7,7 @@ use clap::Args;
 
 use super::super::live::{self, jurisdiction_request};
 use super::super::national::WorkflowFlags;
-use super::super::source::print_blocked_hosts;
+use super::super::source::{combine_access, print_blocked_hosts};
 use super::super::{build_fetcher, resolve_states, Cli, Route};
 
 #[derive(Args, Debug)]
@@ -72,7 +72,8 @@ pub(in crate::cli) async fn run_collect(cli: &Cli, args: &CollectArgs) -> Result
             let store = Store::open(root)?;
             let fetcher = build_fetcher(cli, &store)?.with_source("milesplit");
             let outcome = census::collect_milesplit(&fetcher, &store, &options).await;
-            print_blocked_hosts(&fetcher).await;
+            let access = print_blocked_hosts(&fetcher).await;
+            let outcome = combine_access(outcome, access);
             let report = outcome.context("milesplit collection")?;
             println!("{}", serde_json::to_string_pretty(&report)?);
             Ok(())

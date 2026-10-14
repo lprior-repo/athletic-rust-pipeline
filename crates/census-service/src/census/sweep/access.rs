@@ -3,7 +3,10 @@ use tracing::warn;
 use census_crawl::net::{FetchError, Fetcher};
 use census_crawl::CrawlError;
 use census_domain::model::SourceAccessCondition;
-use census_store::{Store, Table};
+use census_store::Store;
+
+mod failure;
+pub use failure::SourceAccessFailure;
 
 pub(super) const FORBIDDEN_RUN: u32 = 5;
 
@@ -54,14 +57,17 @@ pub(super) struct Observed {
     pub(super) failures: u64,
 }
 
-pub(super) async fn observed(fetcher: &Fetcher, store: &Store) -> Observed {
-    let conditions = fetcher.access_conditions().await;
+pub(super) async fn observed(
+    fetcher: &Fetcher,
+    store: &Store,
+) -> census_crawl::CrawlResult<Observed> {
+    let conditions = fetcher.access_conditions().await?;
     let blocked_hosts = fetcher
         .blocked_hosts(census_crawl::net::now_iso8601().as_str())
         .await;
     let evidence_losses = fetcher.refusal_evidence_losses().await;
     let mut failures = 0_u64;
-    if let Err(error) = store.replace_many(Table::SourceAccess, &conditions) {
+    if let Err(error) = persist(store, &conditions) {
         failures = 1;
         warn!(%error, "source access conditions were not recorded");
     }
@@ -77,12 +83,12 @@ pub(super) async fn observed(fetcher: &Fetcher, store: &Store) -> Observed {
             "refusal captures were not retained; their refusals keep their classification without an archived body"
         );
     }
-    Observed {
+    Ok(Observed {
         conditions,
         blocked_hosts,
         evidence_losses,
         failures,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -157,4 +163,56 @@ mod tests {
             assert_eq!(refusal(&error), Refusal::None, "{error}");
         }
     }
+}
+
+pub fn combined_failure(
+    primary: &impl std::fmt::Display,
+    secondary: &impl std::fmt::Display,
+) -> CrawlError {
+    use std::fmt::Write;
+    struct Bounded(String);
+    impl Write for Bounded {
+        fn write_str(&mut self, value: &str) -> std::fmt::Result {
+            let room = 4096usize.saturating_sub(self.0.len());
+            let mut end = value.len().min(room);
+            while !value.is_char_boundary(end) {
+                end = end.saturating_sub(1);
+            }
+            self.0.push_str(value.get(..end).ok_or(std::fmt::Error)?);
+            Ok(())
+        }
+    }
+    let render = |value: &dyn std::fmt::Display| {
+        let mut out = Bounded(String::new());
+        out.0
+            .try_reserve_exact(4096)
+            .map_err(|_| CrawlError::Resource {
+                resource: "source access error rendering",
+                requested: 4096,
+                limit: 4096,
+            })?;
+        write!(&mut out, "{value}").map_err(|_| CrawlError::Invariant {
+            detail: "source access error rendering failed".to_string(),
+        })?;
+        Ok::<_, CrawlError>(out.0)
+    };
+    match (render(primary), render(secondary)) {
+        (Ok(primary), Ok(secondary)) => CrawlError::Invariant {
+            detail: format!("{primary}; retaining access evidence also failed: {secondary}"),
+        },
+        (Err(error), _) | (_, Err(error)) => error,
+    }
+}
+
+pub(crate) fn stage(
+    batch: &mut census_store::StoreBatch<'_>,
+    conditions: &[SourceAccessCondition],
+) -> census_store::StoreResult<()> {
+    batch.merge_source_access(conditions)
+}
+
+fn persist(store: &Store, conditions: &[SourceAccessCondition]) -> census_store::StoreResult<()> {
+    let mut batch = store.write_batch();
+    stage(&mut batch, conditions)?;
+    batch.commit()
 }

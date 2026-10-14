@@ -23,6 +23,7 @@ mod summary;
 #[cfg(test)]
 mod tests;
 
+pub(super) use super::access::SourceAccessFailure as Failure;
 use commit::Commit;
 use counts::Counts;
 use journal::Records;
@@ -36,7 +37,7 @@ pub(super) async fn fetch_and_store(
     store: &Store,
     team: &TeamRef,
     run: &RosterRun<'_>,
-) -> CrawlResult<Application> {
+) -> Result<Application, Failure> {
     let body = async {
         match milesplit::fetch_roster(
             fetcher,
@@ -50,8 +51,10 @@ pub(super) async fn fetch_and_store(
         )
         .await
         {
-            Ok(read) => apply(store, team, run, &read).await,
-            Err(error) => Err(retain_error(store, team, run, error)),
+            Ok(read) => apply(store, team, run, &read)
+                .await
+                .map_err(Failure::Primary),
+            Err(error) => Err(retain_error(fetcher, store, team, run, error).await),
         }
     };
     scoped(store, team, run, body).await

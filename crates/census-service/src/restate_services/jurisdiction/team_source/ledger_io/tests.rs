@@ -61,6 +61,7 @@ async fn teams_source_ledger_work_runs_on_the_blocking_region() -> TestResult {
                 message: "source access refused".to_string(),
             }),
             Arc::clone(&admitted),
+            Vec::new(),
         )
         .await?
     else {
@@ -140,6 +141,7 @@ async fn offloaded_ledger_errors_retain_the_synchronous_error_and_release_admiss
                 message: "physical attempt failed".to_string(),
             }),
             admitted,
+            Vec::new(),
         )
         .await;
     check!(matches!(result, Err(JobError::Terminal { message }) if message == expected));

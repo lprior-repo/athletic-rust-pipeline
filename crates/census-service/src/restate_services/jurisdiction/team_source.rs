@@ -10,6 +10,7 @@ use crate::restate_services::wire::{
 };
 use crate::restate_services::{blocking, job_error, teams_arms, JobError, Jobs};
 
+mod acquisition;
 mod admission;
 mod execution;
 mod operation;
@@ -58,44 +59,6 @@ impl TeamsSource {
             })
             .await?;
         Ok(identity)
-    }
-
-    async fn acquire(&self, request: &TeamsSourceRequest, observed_on: String) -> ledger::Attempt {
-        let fetcher = match self
-            .owner
-            .fetcher(
-                &request.jurisdiction.authorized_hosts,
-                request.jurisdiction.source_parallelism,
-            )
-            .await
-        {
-            Ok(fetcher) => fetcher,
-            Err(error) => {
-                return ledger::Attempt::Failed(JobError::Terminal {
-                    message: format!("{error:?}"),
-                })
-            }
-        };
-        match teams_arms::team_source(
-            teams_arms::SourceRuntime {
-                store: &self.owner.store,
-                fetcher: &fetcher,
-                region: self.jobs.region(),
-            },
-            request.jurisdiction.jurisdiction,
-            crate::restate_services::jobs::AdapterScope {
-                season: request.jurisdiction.season,
-                refresh: request.jurisdiction.refresh,
-                at: &observed_on,
-                as_of: request.jurisdiction.history.as_of(),
-            },
-            &request.source,
-        )
-        .await
-        {
-            Ok(report) => stage(report, observed_on),
-            Err(error) => ledger::Attempt::Failed(error),
-        }
     }
 }
 
@@ -279,5 +242,25 @@ impl TeamsSource {
             .await
             .map_err(job_error)?;
         Ok(Json(inspection))
+    }
+}
+
+fn access_snapshot_failure(
+    result: ledger::Attempt,
+    secondary: census_crawl::CrawlError,
+) -> JobError {
+    let primary = match result {
+        ledger::Attempt::Failed(primary) | ledger::Attempt::Incomplete { error: primary, .. } => {
+            primary
+        }
+        ledger::Attempt::Completed(_) => {
+            return crate::restate_services::jobs::collect_error(secondary)
+        }
+    };
+    let message = crate::census::access::combined_failure(&primary, &secondary).to_string();
+    match primary {
+        JobError::Transient { .. } => JobError::Transient { message },
+        JobError::Terminal { .. } => JobError::Terminal { message },
+        JobError::Resource { source, .. } => JobError::Resource { source, message },
     }
 }

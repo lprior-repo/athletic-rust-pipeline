@@ -278,7 +278,7 @@ mod user_agent_policy_tests {
                     }
                 }
                 check!(
-                    fetcher.access_conditions().await.is_empty(),
+                    fetcher.access_conditions().await?.is_empty(),
                     "a policy refusal is not an observation about the host"
                 );
                 check!(eq;

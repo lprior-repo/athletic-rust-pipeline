@@ -75,9 +75,18 @@ impl TeamsSource {
             _registered,
         )
         .await?;
-        let result = self.acquire(request, observed_on).await;
+        let (result, conditions) = self
+            .acquire(request, observed_on)
+            .await
+            .map_err(job_error)?;
         match self
-            .finish_attempt(ctx.key().to_string(), attempt, result, _admission)
+            .finish_attempt(
+                ctx.key().to_string(),
+                attempt,
+                result,
+                _admission,
+                conditions,
+            )
             .await
             .map_err(job_error)?
         {

@@ -130,6 +130,7 @@ async fn failed_retry_and_quarantine_preserve_accepted_prefix_and_owed_counts() 
         &CrawlError::Invariant {
             detail: "capture unavailable".to_string(),
         },
+        &[],
     )?;
     let row = prior(&store, &team(), &run)?.ok_or("missing refusal journal")?;
     check!(eq; row.athletes, 1);
@@ -142,6 +143,7 @@ async fn failed_retry_and_quarantine_preserve_accepted_prefix_and_owed_counts() 
             status: 429,
             url: format!("{}/roster", team().url),
         }),
+        &[],
     )?;
     let blocked = prior(&store, &team(), &run)?.ok_or("missing blocked journal")?;
     check!(eq; (blocked.athletes, blocked.disposition), (1, census_crawl::CollectionDisposition::Blocked));
@@ -183,6 +185,7 @@ async fn existing_application_receipt_does_not_pin_later_failed_progress() -> Te
         &CrawlError::Invariant {
             detail: "rebind pending".to_string(),
         },
+        &[],
     )?;
     apply(&store, &team(), &run, &corrected).await?;
     check!(prior(&store, &team(), &run)?
@@ -310,5 +313,87 @@ async fn completion_requires_scoped_capture_without_refusal_quarantine_or_reject
     store.journal_done(&phase, "WI:52649", &payload)?;
     check!(eq; crate::census::scope::pending_rosters(&store, &[team()], UsJurisdiction::Wisconsin, run.school_year, run.revision)?, Vec::<TeamRef>::new());
     check!(eq; crate::census::scope::pending_rosters(&store, &[team()], UsJurisdiction::Wisconsin, run.school_year, NonZeroU32::new(2).ok_or("invalid revision")?)?, vec![team()]);
+    Ok(())
+}
+
+#[test]
+fn refusal_journal_and_exact_access_conditions_commit_together() -> TestResult {
+    use census_domain::model::{AccessBlockKind, SourceAccessCondition};
+    let root = tempfile::tempdir()?;
+    let store = Store::open(root.path())?;
+    let run = run()?;
+    let error = CrawlError::Fetch(census_crawl::net::FetchError::Http {
+        status: 429,
+        url: team().url,
+    });
+    let condition = SourceAccessCondition::new(
+        "original-source",
+        "wi.milesplit.com",
+        AccessBlockKind::RateLimited,
+        429,
+        "2026-10-14T11:00:00Z",
+        "original detail",
+    )
+    .with_retry_after(Some(60));
+    retain_refusal(
+        &store,
+        &team(),
+        &run,
+        &error,
+        std::slice::from_ref(&condition),
+    )?;
+    check!(eq; prior(&store, &team(), &run)?.ok_or("refusal missing")?.disposition,
+        census_crawl::CollectionDisposition::Blocked);
+    check!(eq; store.scan::<SourceAccessCondition>(Table::SourceAccess)?, vec![condition.clone()]);
+    let mut older = condition.clone();
+    older.observed_at = "2026-10-13T11:00:00Z".into();
+    older.detail = "stale detail".into();
+    retain_refusal(&store, &team(), &run, &error, &[older])?;
+    check!(eq; store.scan::<SourceAccessCondition>(Table::SourceAccess)?, vec![condition]);
+    Ok(())
+}
+
+#[test]
+fn oversized_access_refuses_roster_journal_atomically() -> TestResult {
+    use census_domain::model::{AccessBlockKind, SourceAccessCondition};
+    let root = tempfile::tempdir()?;
+    let store = Store::open(root.path())?;
+    let run = run()?;
+    let error = CrawlError::Fetch(census_crawl::net::FetchError::Http {
+        status: 403,
+        url: team().url,
+    });
+    let condition = SourceAccessCondition::new(
+        "original-source",
+        "wi.milesplit.com",
+        AccessBlockKind::Forbidden,
+        403,
+        "2026-10-14T11:00:00Z",
+        "x".repeat(census_store::MAX_OBSERVATION_RECORD_BYTES),
+    );
+    check!(retain_refusal(&store, &team(), &run, &error, &[condition]).is_err());
+    check!(prior(&store, &team(), &run)?.is_none());
+    check!(store
+        .scan::<SourceAccessCondition>(Table::SourceAccess)?
+        .is_empty());
+    Ok(())
+}
+
+#[test]
+fn access_failure_preserves_the_original_roster_refusal_classification() -> TestResult {
+    let failure = Failure::retention(
+        CrawlError::Fetch(census_crawl::net::FetchError::Http {
+            status: 429,
+            url: team().url,
+        }),
+        CrawlError::Resource {
+            resource: "source access snapshot",
+            requested: 4097,
+            limit: 4096,
+        },
+    );
+    check!(eq; super::super::access::refusal(failure.primary()), super::super::access::Refusal::Host);
+    let detail = failure.to_string();
+    check!(detail.contains("429") && detail.contains("source access snapshot"));
     Ok(())
 }

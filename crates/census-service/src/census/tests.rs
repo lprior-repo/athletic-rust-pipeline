@@ -1,6 +1,8 @@
 use super::TransportReport;
 use census_crawl::net::{FetchStats, HostTraffic};
 
+mod collection_access;
+
 #[test]
 fn the_transport_report_reads_the_counters_once() {
     let mut stats = FetchStats {

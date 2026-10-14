@@ -15,21 +15,7 @@ impl StoreBatch<'_> {
         }
         let count = u64::try_from(records.len()).map_err(|_| StoreError::CounterOverflow)?;
         refuse_over_bound(table, count)?;
-        let (held_rows, held_bytes) =
-            self.pages
-                .iter()
-                .try_fold((0usize, 0usize), |(rows, bytes), page| {
-                    page.records
-                        .iter()
-                        .try_fold((rows, bytes), |(rows, bytes), (_, value)| {
-                            Ok::<_, StoreError>((
-                                rows.checked_add(1).ok_or(StoreError::CounterOverflow)?,
-                                bytes
-                                    .checked_add(value.len())
-                                    .ok_or(StoreError::CounterOverflow)?,
-                            ))
-                        })
-                })?;
+        let (held_rows, held_bytes) = self.pending_counts()?;
         ObservationBudget::admit(records, held_rows, held_bytes)?;
         let mut encoded = Vec::new();
         encoded
@@ -82,6 +68,9 @@ impl StoreBatch<'_> {
         refuse_observation_replacement(table)?;
         if records.is_empty() {
             return Ok(());
+        }
+        if table == Table::SourceAccess && !self.source_access.is_empty() {
+            return Err(super::source_access::mixed());
         }
         if self.replacements.iter().any(|held| held.table == table) {
             return Err(StoreError::Invariant {

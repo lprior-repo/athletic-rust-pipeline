@@ -33,13 +33,30 @@ pub(super) async fn run_fetch(cli: &Cli, store: &Store, url: &str, refresh: bool
     Ok(())
 }
 
-pub(super) async fn print_blocked_hosts(fetcher: &Fetcher) {
-    let conditions = fetcher.access_conditions().await;
+pub(super) async fn print_blocked_hosts(fetcher: &Fetcher) -> Result<()> {
+    let conditions = fetcher.access_conditions().await?;
     let now = census_crawl::net::now_iso8601();
     for host in fetcher.blocked_hosts(now.as_str()).await {
         match conditions.iter().find(|condition| condition.host == host) {
             Some(condition) => println!("blocked\t{host}\t{}", condition.kind.slug()),
             None => println!("blocked\t{host}"),
+        }
+    }
+    Ok(())
+}
+
+pub(super) fn combine_access<T, E: Into<anyhow::Error>>(
+    outcome: Result<T, E>,
+    access: Result<()>,
+) -> Result<T> {
+    match (outcome, access) {
+        (Ok(value), Ok(())) => Ok(value),
+        (Ok(_), Err(error)) => Err(error),
+        (Err(error), Ok(())) => Err(error.into()),
+        (Err(error), Err(access)) => {
+            let primary = error.into();
+            let detail = census_service::census::access_failure(&primary, &access);
+            Err(primary.context(detail))
         }
     }
 }

@@ -159,3 +159,5 @@ fn missing_durable_team_input_refuses_completed_directory_report() -> TestResult
     check!(eq; report.unfinished, vec!["WI/roster-input/52649/unmeasured".to_string()]);
     Ok(())
 }
+
+mod access_evidence;

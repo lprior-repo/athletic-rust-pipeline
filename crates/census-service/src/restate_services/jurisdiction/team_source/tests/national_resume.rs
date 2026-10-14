@@ -22,6 +22,7 @@ pub(crate) fn exhaust(
             ledger::Attempt::Failed(JobError::Transient {
                 message: format!("retained acquisition refusal {attempt}"),
             }),
+            &[],
         )?;
     }
     store.flush()?;

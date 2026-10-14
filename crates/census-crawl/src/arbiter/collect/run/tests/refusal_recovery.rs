@@ -35,7 +35,7 @@ async fn http_refusal_preserves_owed_state(status: u16) -> TestResult {
             &store,
             &BTreeSet::from(["Ada Lane".to_string(), "Casey Reed".to_string()]),
         )?;
-        let conditions = fetcher.access_conditions().await;
+        let conditions = fetcher.access_conditions().await?;
         check!(eq; conditions.len(), 1);
         check!(eq; conditions.first().ok_or("source condition")?.status, status);
         let before = fetcher.stats().await.physical_requests();

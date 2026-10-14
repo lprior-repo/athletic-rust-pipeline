@@ -4,6 +4,8 @@ use crate::{StoreError, StoreResult};
 use fjall::OwnedWriteBatch;
 use std::collections::HashSet;
 
+pub(super) const MAX_STAGED_BYTES: usize = 32 * 1024 * 1024;
+
 pub struct ConditionalBatch<'store, 'identity> {
     batch: StoreBatch<'store>,
     operation: &'identity str,
@@ -37,7 +39,7 @@ pub(super) fn admit(
     seen.try_reserve(effects.len())
         .map_err(|_| refused("allocating conditional operation membership"))?;
     let mut bytes = encoded_bytes(base)?;
-    if bytes > 32 * 1024 * 1024 {
+    if bytes > MAX_STAGED_BYTES {
         return Err(refused("conditional staged bytes exceed 33554432"));
     }
     effects.iter().try_for_each(|effect| {
@@ -55,7 +57,7 @@ pub(super) fn admit(
         bytes = bytes
             .checked_add(encoded_bytes(&effect.batch)?)
             .ok_or(StoreError::CounterOverflow)?;
-        if bytes > 32 * 1024 * 1024 {
+        if bytes > MAX_STAGED_BYTES {
             return Err(refused("conditional staged bytes exceed 33554432"));
         }
         Ok(())
@@ -86,8 +88,14 @@ pub(super) fn merge<'store>(
             .try_reserve(effect.batch.journal.len())
             .map_err(|_| refused("allocating conditional journals"))?;
         base.journal.extend(effect.batch.journal);
-        merge_replacements(&mut base.replacements, effect.batch.replacements)
+        merge_replacements(&mut base.replacements, effect.batch.replacements)?;
+        base.source_access
+            .try_reserve(effect.batch.source_access.len())
+            .map_err(|_| refused("allocating conditional source access rows"))?;
+        base.source_access.extend(effect.batch.source_access);
+        Ok::<_, StoreError>(())
     })?;
+    base.admit_source_access()?;
     Ok(base)
 }
 
@@ -145,15 +153,45 @@ fn encoded_bytes(batch: &StoreBatch<'_>) -> StoreResult<usize> {
         .iter()
         .flat_map(|page| page.records.iter())
         .map(|value| (0, value.len()));
+    let source_access = batch
+        .source_access
+        .iter()
+        .map(|(key, value)| (key.len(), value.len()));
     pages
         .chain(journal)
         .chain(replacements)
+        .chain(source_access)
         .try_fold(0usize, |total, (key, value)| {
             total
                 .checked_add(key)
                 .and_then(|total| total.checked_add(value))
                 .ok_or(StoreError::CounterOverflow)
         })
+}
+
+pub(super) fn source_access_capacity(batch: &StoreBatch<'_>) -> StoreResult<Option<usize>> {
+    if batch.source_access.is_empty() {
+        return Ok(None);
+    }
+    let Some(limit) = batch.conditional_byte_limit else {
+        return Ok(None);
+    };
+    let pending = batch
+        .source_access
+        .iter()
+        .try_fold(0usize, |total, (key, value)| {
+            total
+                .checked_add(key.len())
+                .and_then(|total| total.checked_add(value.len()))
+                .ok_or(StoreError::CounterOverflow)
+        })?;
+    let other = encoded_bytes(batch)?
+        .checked_sub(pending)
+        .ok_or(StoreError::CounterOverflow)?;
+    let available = limit
+        .checked_sub(other)
+        .ok_or_else(|| refused("conditional staged bytes exceed 33554432"))?;
+    Ok(Some(available))
 }
 
 fn refused(detail: &str) -> StoreError {

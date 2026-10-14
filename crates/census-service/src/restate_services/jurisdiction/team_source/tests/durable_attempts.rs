@@ -41,6 +41,7 @@ fn attempt_ledger_bridge_separates_recorded_attempts_from_unknown_ones() -> Test
             message: "source read timed out".to_string(),
         }))
         .into(),
+        &[],
     )?;
     check!(matches!(
         finished,
@@ -72,6 +73,7 @@ fn attempt_ledger_bridge_counts_settled_sources_without_reopening_their_attempts
             message: "public source access refused".to_string(),
         }))
         .into(),
+        &[],
     )?;
     let state = ledger::durable_attempts(&store)?;
     check!(eq; state.ceiling, 3);
@@ -114,6 +116,7 @@ fn settled_replay_and_queued_cancellation_preserve_durable_attempt_counts() -> T
                 disposition: census_crawl::CollectionDisposition::Complete,
                 unfinished: Vec::new(),
             }),
+            &[],
         )?;
         store.flush()?;
     }

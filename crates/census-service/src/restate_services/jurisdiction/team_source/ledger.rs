@@ -10,12 +10,14 @@ use crate::restate_services::wire::{
 };
 
 mod attempt;
+mod completion;
 mod history;
 mod registration;
 mod settlement;
 pub(super) use attempt::Attempt;
+pub(super) use completion::finish;
 pub(super) use registration::register;
-use settlement::{classify, settle, validated_settled};
+use settlement::{settle, validated_settled};
 
 pub(super) const PHASE: &str = "teams_source_attempts_v1";
 const MAX_ATTEMPTS: u8 = 3;
@@ -183,53 +185,6 @@ pub(crate) fn durable_attempts(store: &Store) -> Result<AttemptState, JobError> 
     }
     state.unknown = state.reserved.saturating_sub(state.recorded);
     Ok(state)
-}
-
-pub(super) fn finish(
-    store: &Store,
-    key: &str,
-    attempt: u8,
-    result: Attempt,
-) -> Result<Completion, JobError> {
-    if !(1..=MAX_ATTEMPTS).contains(&attempt) {
-        return Err(terminal(
-            "teams source attempt is outside the persisted budget",
-        ));
-    }
-    let snapshot = store.snapshot();
-    let identity: Identity = read(&snapshot, &format!("{key}/identity"))?
-        .ok_or_else(|| terminal("teams source completion has no operation identity"))?;
-    let mut history = history::read(&snapshot, key, &identity)?;
-    if let Some(outcome) = validated_settled(&snapshot, key, &history, false)? {
-        return settle(store, key, outcome).map(Completion::Settled);
-    }
-    if history.attempt != attempt {
-        return Err(terminal(
-            "teams source completion does not match the latest reservation",
-        ));
-    }
-    if let Some(message) = history.transient {
-        return Ok(Completion::Retry(JobError::Transient { message }));
-    }
-    if !history.missing {
-        return Err(terminal(
-            "teams source completion has no outstanding reservation",
-        ));
-    }
-    let outcome = result.into_outcome(&identity.observed_on)?;
-    let recorded = history
-        .progress
-        .last_mut()
-        .ok_or_else(|| terminal("teams source reservation has no progress slot"))?;
-    *recorded = attempt::progress(attempt, &outcome);
-    let completion = classify(attempt, history.uncertain, &outcome, &history.progress);
-    let mut batch = store.write_batch();
-    batch.journal_done(PHASE, &slot_key(key, attempt, "outcome"), &outcome)?;
-    if let Completion::Settled(outcome) = &completion {
-        batch.journal_done(PHASE, &format!("{key}/settled"), outcome)?;
-    }
-    batch.commit()?;
-    Ok(completion)
 }
 
 fn identity(

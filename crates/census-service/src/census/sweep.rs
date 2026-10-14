@@ -9,7 +9,7 @@ use std::time::Instant;
 use tokio::sync::Mutex;
 use tracing::info;
 
-mod access;
+pub(crate) mod access;
 pub(crate) mod index;
 pub(super) mod roster;
 mod units;
@@ -30,7 +30,7 @@ pub async fn collect_state_teams(
     store: &Store,
     jurisdiction: UsJurisdiction,
     refresh: bool,
-) -> CrawlResult<Vec<TeamRef>> {
+) -> Result<Vec<TeamRef>, access::SourceAccessFailure> {
     let site = Site::for_jurisdiction(jurisdiction);
     let read = match milesplit::fetch_team_index(
         fetcher,
@@ -43,10 +43,12 @@ pub async fn collect_state_teams(
     .await
     {
         Ok(read) => read,
-        Err(error) => return Err(index::retain_failure(store, jurisdiction, error)),
+        Err(error) => return Err(index::retain_failure(fetcher, store, jurisdiction, error).await),
     };
-    let teams = index::configure(store, jurisdiction, read)
-        .map_err(|error| index::retain_failure(store, jurisdiction, error))?;
+    let teams = match index::configure(store, jurisdiction, read) {
+        Ok(teams) => teams,
+        Err(error) => return Err(index::retain_failure(fetcher, store, jurisdiction, error).await),
+    };
     info!(
         state = jurisdiction.code(),
         teams = teams.len(),
@@ -195,25 +197,35 @@ pub async fn collect_milesplit(
     fetcher: &Fetcher,
     store: &Store,
     options: &CollectOptions,
-) -> CrawlResult<CollectReport> {
+) -> Result<CollectReport, access::SourceAccessFailure> {
     if options.jurisdictions.len() > UsJurisdiction::ALL.len() {
-        return Err(team_resource(options.jurisdictions.len()));
+        return Err(team_resource(options.jurisdictions.len()).into());
     }
     let started = Instant::now();
     let results = collect_states(fetcher, store, options).await?;
     let (mut report, failures) = summarize_states(results);
-    finish_report(fetcher, store, &mut report, started).await?;
-    if !failures.is_empty() {
-        return Err(CrawlError::Invariant {
+    let access = finish_report(fetcher, store, &mut report, started).await;
+    let outcome = if failures.is_empty() {
+        Ok(report)
+    } else {
+        Err(CrawlError::Invariant {
             detail: format!(
                 "{} state(s) failed after {} rosters: {}",
                 failures.len(),
                 report.rosters_fetched,
                 failures.join("; ")
             ),
-        });
+        })
+    };
+    match (outcome, access) {
+        (Ok(report), Ok(())) => Ok(report),
+        (Err(primary), Ok(())) | (Ok(_), Err(primary)) => {
+            Err(access::SourceAccessFailure::Primary(primary))
+        }
+        (Err(primary), Err(secondary)) => {
+            Err(access::SourceAccessFailure::retention(primary, secondary))
+        }
     }
-    Ok(report)
 }
 
 async fn collect_states(
@@ -251,7 +263,7 @@ async fn finish_report(
         detail: "observed athlete count exceeds u64".to_string(),
     })?;
     report.transport = TransportReport::from_stats(&stats, verified);
-    let observed = access::observed(fetcher, store).await;
+    let observed = access::observed(fetcher, store).await?;
     report.errors = report
         .errors
         .checked_add(observed.failures)
@@ -264,12 +276,12 @@ async fn finish_report(
     Ok(())
 }
 
-async fn record_roster(shared: &Mutex<Shared>, outcome: CrawlResult<Application>) {
+async fn record_roster(shared: &Mutex<Shared>, outcome: Result<Application, roster::Failure>) {
     let mut guard = shared.lock().await;
     let refusal = match outcome {
         Ok(_) => access::Refusal::None,
         Err(error) => {
-            let refusal = access::refusal(&error);
+            let refusal = access::refusal(error.primary());
             guard.errors.push(error.to_string());
             refusal
         }

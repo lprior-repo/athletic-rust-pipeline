@@ -64,6 +64,7 @@ fn transient_admissions_survive_reopen_and_exhaust_without_attempt_four() -> Tes
                 message: format!("real source failure {attempt}"),
             }))
             .into(),
+            &[],
         )?;
         if expected < 3 {
             check!(matches!(
@@ -109,7 +110,7 @@ fn acknowledged_completion_replays_original_progress_and_date_after_midnight() -
         unfinished: Vec::new(),
     };
     let expected = serde_json::to_value(&outcome)?;
-    ledger::finish(&store, &key(&request), attempt, (Ok(outcome)).into())?;
+    ledger::finish(&store, &key(&request), attempt, (Ok(outcome)).into(), &[])?;
     store.flush()?;
     drop(store);
     request.observed_on = "2026-10-03".to_string();
@@ -174,6 +175,7 @@ fn permanent_failure_stops_first_attempt_and_retains_its_reason() -> TestResult 
             message: "public source access refused".to_string(),
         }))
         .into(),
+        &[],
     )?;
     drop(store);
     let store = Store::open(root.path())?;
@@ -227,6 +229,7 @@ fn mixed_unknown_and_transient_attempts_never_claim_three_acknowledged_failures(
                 message: format!("acknowledged failure {attempt}"),
             }))
             .into(),
+            &[],
         )?;
     }
     let ledger::Admission::Settled(TeamsSourceOutcome::Interrupted {
@@ -285,3 +288,5 @@ fn deliberate_foreign_state_exclusions_complete_teams_acquisition() -> TestResul
     check!(matches!(refused, ledger::Attempt::Incomplete { .. }));
     Ok(())
 }
+
+mod access_evidence;

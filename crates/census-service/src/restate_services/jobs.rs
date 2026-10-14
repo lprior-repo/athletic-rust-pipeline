@@ -1,3 +1,5 @@
+mod source_access;
+
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -240,7 +242,7 @@ pub(super) async fn rosters_stage(
 ) -> Result<Json<StateProgress>, HandlerError> {
     let teams = census::collect_state_teams(&fetcher, &store, jurisdiction, false)
         .await
-        .map_err(|error| job_error(collect_error(error)))?;
+        .map_err(|error| job_error(error.into()))?;
     install_native_boundary_hook();
     let progress = census::collect_state_rosters(&fetcher, &store, &teams, &options, jurisdiction)
         .await

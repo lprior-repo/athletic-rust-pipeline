@@ -11,11 +11,12 @@ fn report(rows: u64, disposition: Disposition) -> AdapterReport {
     report
 }
 
-fn failure() -> CrawlError {
+fn failure() -> census_service::census::SourceAccessFailure {
     CrawlError::Schema {
         url: "https://wi.milesplit.com/teams".to_string(),
         detail: "index publishes conflicting application ownership".to_string(),
     }
+    .into()
 }
 
 #[test]
@@ -100,16 +101,41 @@ fn a_partial_team_collection_is_not_success() -> TestResult {
 
 #[test]
 fn a_transient_team_failure_reports_the_single_attempt_without_claiming_exhaustion() -> TestResult {
-    let error = census_crawl::net::FetchError::Http {
+    let error = CrawlError::Fetch(census_crawl::net::FetchError::Http {
         status: 503,
         url: "https://wi.milesplit.com/teams".to_string(),
-    }
+    })
     .into();
     let mut outcomes = TeamsOutcomes::default();
     outcomes.record_failure(Wisconsin, &error);
     let json: serde_json::Value = serde_json::from_str(&outcomes.json()?)?;
     check!(eq; json.pointer("/jurisdictions/0/failure/status"), Some(&serde_json::json!("interrupted")));
     check!(eq; json.pointer("/jurisdictions/0/failure/attempts"), Some(&serde_json::json!(1)));
+    check!(eq; outcomes.disposition(), Disposition::Failed);
+    Ok(())
+}
+
+#[test]
+fn team_access_retention_failure_keeps_original_retry_status_and_both_diagnostics() -> TestResult {
+    let error = census_service::census::SourceAccessFailure::retention(
+        CrawlError::Fetch(census_crawl::net::FetchError::Http {
+            status: 429,
+            url: "https://wi.milesplit.com/teams".to_string(),
+        }),
+        CrawlError::Resource {
+            resource: "source access snapshot",
+            requested: 4097,
+            limit: 4096,
+        },
+    );
+    let expected = error.to_string();
+    let mut outcomes = TeamsOutcomes::default();
+    outcomes.record_failure(Wisconsin, &error);
+    let json: serde_json::Value = serde_json::from_str(&outcomes.json()?)?;
+    check!(eq; json.pointer("/jurisdictions/0/failure/status"), Some(&serde_json::json!("interrupted")));
+    check!(eq; json.pointer("/jurisdictions/0/failure/attempts"), Some(&serde_json::json!(1)));
+    check!(eq; json.pointer("/jurisdictions/0/failure/message"), Some(&serde_json::json!(expected)));
+    check!(expected.contains("429") && expected.contains("source access snapshot"));
     check!(eq; outcomes.disposition(), Disposition::Failed);
     Ok(())
 }

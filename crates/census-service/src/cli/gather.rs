@@ -110,7 +110,9 @@ async fn teams_offline(
         let collected = census::collect_state_teams(&fetcher, &store, *jurisdiction, args.refresh)
             .await
             .and_then(|teams| {
-                census::team_index_report(&store, *jurisdiction).map(|report| (teams, report))
+                census::team_index_report(&store, *jurisdiction)
+                    .map(|report| (teams, report))
+                    .map_err(census::SourceAccessFailure::from)
             });
         match collected {
             Ok((teams, report)) => {

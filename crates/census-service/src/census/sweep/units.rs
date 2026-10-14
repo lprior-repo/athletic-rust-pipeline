@@ -26,7 +26,7 @@ pub(super) async fn roster_unit(
 ) {
     let outcome = match admission(shared).await {
         Ok(()) => roster::fetch_and_store(fetcher, store, team, run).await,
-        Err(error) => Err(roster::retain_error(store, team, run, error)),
+        Err(error) => Err(roster::retain_error(fetcher, store, team, run, error).await),
     };
     record_roster(shared, outcome).await;
 }
