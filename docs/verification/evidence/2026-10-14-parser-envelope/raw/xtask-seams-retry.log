@@ -1,0 +1,238 @@
+[ WARN 2026-10-14 04:43:05.215] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:xtask (5dca8ddc)
+    Finished `dev` profile [unoptimized] target(s) in 0.29s
+     Running `target/fast-iteration/debug/xtask seams`
+{
+  "crate_edges": [
+    {
+      "from": "census-crawl",
+      "refs": 508,
+      "to": "census-domain"
+    },
+    {
+      "from": "census-crawl",
+      "refs": 86,
+      "to": "census-store"
+    },
+    {
+      "from": "census-reconcile",
+      "refs": 11,
+      "to": "census-domain"
+    },
+    {
+      "from": "census-reconcile",
+      "refs": 7,
+      "to": "census-report"
+    },
+    {
+      "from": "census-reconcile",
+      "refs": 9,
+      "to": "census-store"
+    },
+    {
+      "from": "census-report",
+      "refs": 2,
+      "to": "census-crawl"
+    },
+    {
+      "from": "census-report",
+      "refs": 207,
+      "to": "census-domain"
+    },
+    {
+      "from": "census-report",
+      "refs": 4,
+      "to": "census-review"
+    },
+    {
+      "from": "census-report",
+      "refs": 101,
+      "to": "census-store"
+    },
+    {
+      "from": "census-review",
+      "refs": 36,
+      "to": "census-domain"
+    },
+    {
+      "from": "census-review",
+      "refs": 29,
+      "to": "census-store"
+    },
+    {
+      "from": "census-service",
+      "refs": 9,
+      "to": "athleticnet-browser"
+    },
+    {
+      "from": "census-service",
+      "refs": 285,
+      "to": "census-crawl"
+    },
+    {
+      "from": "census-service",
+      "refs": 294,
+      "to": "census-domain"
+    },
+    {
+      "from": "census-service",
+      "refs": 29,
+      "to": "census-reconcile"
+    },
+    {
+      "from": "census-service",
+      "refs": 52,
+      "to": "census-report"
+    },
+    {
+      "from": "census-service",
+      "refs": 5,
+      "to": "census-review"
+    },
+    {
+      "from": "census-service",
+      "refs": 211,
+      "to": "census-store"
+    },
+    {
+      "from": "census-store",
+      "refs": 76,
+      "to": "census-domain"
+    },
+    {
+      "from": "xtask",
+      "refs": 15,
+      "to": "census-crawl"
+    },
+    {
+      "from": "xtask",
+      "refs": 4,
+      "to": "census-domain"
+    },
+    {
+      "from": "xtask",
+      "refs": 3,
+      "to": "census-report"
+    },
+    {
+      "from": "xtask",
+      "refs": 4,
+      "to": "census-service"
+    },
+    {
+      "from": "xtask",
+      "refs": 1,
+      "to": "census-store"
+    }
+  ],
+  "crate_violations": [],
+  "crates": [
+    "athleticnet-browser",
+    "census-crawl",
+    "census-domain",
+    "census-reconcile",
+    "census-report",
+    "census-review",
+    "census-service",
+    "census-store",
+    "xtask"
+  ],
+  "edges": [
+    {
+      "from": "bootstrap",
+      "refs": 1,
+      "to": "ingress"
+    },
+    {
+      "from": "bootstrap",
+      "refs": 3,
+      "to": "outcome"
+    },
+    {
+      "from": "bootstrap",
+      "refs": 5,
+      "to": "restate_services"
+    },
+    {
+      "from": "bootstrap",
+      "refs": 5,
+      "to": "spawn"
+    },
+    {
+      "from": "installation",
+      "refs": 3,
+      "to": "bootstrap"
+    },
+    {
+      "from": "restate_services",
+      "refs": 26,
+      "to": "census"
+    },
+    {
+      "from": "restate_services",
+      "refs": 6,
+      "to": "outcome"
+    },
+    {
+      "from": "restate_services",
+      "refs": 3,
+      "to": "school_address"
+    },
+    {
+      "from": "restate_services",
+      "refs": 13,
+      "to": "spawn"
+    },
+    {
+      "from": "spawn",
+      "refs": 3,
+      "to": "admission"
+    },
+    {
+      "from": "spawn",
+      "refs": 4,
+      "to": "outcome"
+    }
+  ],
+  "modules": [
+    "admission",
+    "bootstrap",
+    "census",
+    "coachverify",
+    "ingress",
+    "installation",
+    "lib",
+    "outcome",
+    "restate_services",
+    "school_address",
+    "school_sites",
+    "spawn"
+  ],
+  "violations": [
+    {
+      "file": "crates/census-service/src/installation/contracts.rs",
+      "from": "installation",
+      "line": 42,
+      "to": "bootstrap"
+    },
+    {
+      "file": "crates/census-service/src/installation/contracts.rs",
+      "from": "installation",
+      "line": 43,
+      "to": "bootstrap"
+    },
+    {
+      "file": "crates/census-service/src/installation/contracts.rs",
+      "from": "installation",
+      "line": 44,
+      "to": "bootstrap"
+    }
+  ]
+}
+xtask: 3 module-seam and 0 crate-seam violation(s): an edge outside the allowed tables
+▮▮▮▮ pipeline:xtask (1s 516ms, 5dca8ddc)
+Error: task_runner::run_failed
+
+  × Task pipeline:xtask failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 1
+

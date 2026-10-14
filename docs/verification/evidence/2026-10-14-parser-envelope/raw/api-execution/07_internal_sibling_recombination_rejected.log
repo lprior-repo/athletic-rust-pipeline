@@ -1,0 +1,38 @@
+[ WARN 2026-10-14 04:29:55.991] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:check (2648201b)
+    Checking census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+error[E0616]: field `capture` of struct `CapturedFetch` is private
+ --> crates/census-crawl/src/parser_envelope_api_probe.rs:6:11
+  |
+6 |     value.capture = unrelated;
+  |           ^^^^^^^ private field
+
+error[E0616]: field `verdict` of struct `OwnedMeetOutcome` is private
+  --> crates/census-crawl/src/parser_envelope_api_probe.rs:10:11
+   |
+10 |     value.verdict = unrelated;
+   |           ^^^^^^^ private field
+
+error[E0624]: associated function `retained` is private
+  --> crates/census-crawl/src/parser_envelope_api_probe.rs:14:54
+   |
+14 |       let _provenance = crate::net::CaptureProvenance::retained(occurrence, original);
+   |                                                        ^^^^^^^^ private associated function
+   |
+  ::: crates/census-crawl/src/net/acquisition.rs:49:5
+   |
+49 | /     fn retained(
+50 | |         occurrence: AcquisitionOccurrenceRefV1,
+51 | |         original: AcquisitionOccurrenceRefV1,
+52 | |     ) -> Self {
+   | |_____________- private associated function defined here
+
+Some errors have detailed explanations: E0616, E0624.
+For more information about an error, try `rustc --explain E0616`.
+error: could not compile `census-crawl` (lib) due to 3 previous errors
+▮▮▮▮ pipeline:check (3s 734ms, 2648201b)
+Error: task_runner::run_failed
+
+  × Task pipeline:check failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 101
+

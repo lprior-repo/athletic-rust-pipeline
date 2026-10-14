@@ -1,0 +1,133 @@
+crates/census-crawl/src/milesplit.rs:17:    fetch_meet_result_files, fetch_owned_meet, fetch_result_set, fetch_roster, fetch_team_index,
+crates/census-crawl/src/milesplit.rs:25:    OwnedCompleteness, OwnedDocumentFailure, OwnedMeetOutcome, OwnedMeetPage, OwnedMeetParseError,
+crates/census-crawl/src/milesplit/fetch.rs:128:pub async fn fetch_owned_meet(
+crates/census-crawl/src/milesplit/fetch.rs:132:) -> CrawlResult<super::owned::OwnedMeetOutcome> {
+crates/census-crawl/src/milesplit/fetch.rs:134:    match super::owned::OwnedMeetOutcome::interpret(acquired, owned_meet_id(reference)?, ctx.capture)? {
+crates/census-crawl/src/milesplit/fetch.rs:173:) -> CrawlResult<crate::net::CapturedFetch> {
+crates/census-crawl/src/milesplit/fetch.rs:182:            Ok(crate::net::CapturedFetch::historical(
+crates/census-crawl/src/milesplit/map/owned/tests.rs:3:use crate::milesplit::owned::{parse_owned_meet, OwnedMeetOutcome, OwnedMeetVerdict};
+crates/census-crawl/src/milesplit/map/owned/tests.rs:56:    let outcome = OwnedMeetOutcome::historical_fixture(
+crates/census-crawl/src/milesplit/owned/effect.rs:4:    OwnedCaptureResourceFailure, OwnedMeetOutcome, OwnedMeetVerdict, OwnedParseResourceFailure,
+crates/census-crawl/src/milesplit/owned/effect.rs:31:pub(crate) async fn read_owned_meet(
+crates/census-crawl/src/milesplit/owned/effect.rs:34:) -> CrawlResult<OwnedMeetOutcome> {
+crates/census-crawl/src/milesplit/owned/effect.rs:44:    let outcome = match OwnedMeetOutcome::interpret(acquired, owned_meet_id(reference)?, ctx.capture)? {
+crates/census-crawl/src/milesplit/owned/effect.rs:66:    outcome: &OwnedMeetOutcome,
+crates/census-crawl/src/milesplit/owned/effect.rs:79:) -> CrawlResult<OwnedMeetOutcome> {
+crates/census-crawl/src/milesplit/owned/effect/acquisition_partial_tests.rs:59:fn partial_outcome(capture: FetchOutcome) -> TestResult<OwnedMeetOutcome> {
+crates/census-crawl/src/milesplit/owned/effect/acquisition_partial_tests.rs:61:    Ok(OwnedMeetOutcome::historical_fixture(capture, verdict))
+crates/census-crawl/src/milesplit/owned/effect/interpretation.rs:1:use super::{journal, OwnedMeetOutcome, OwnedMeetVerdict, OWNED_MEET_PHASE};
+crates/census-crawl/src/milesplit/owned/effect/interpretation.rs:10:    outcome: &OwnedMeetOutcome,
+crates/census-crawl/src/milesplit/owned/effect/interpretation.rs:30:    outcome: &OwnedMeetOutcome,
+crates/census-crawl/src/milesplit/owned/effect/interpretation.rs:92:fn parsed_summary(outcome: &OwnedMeetOutcome, page: &OwnedMeetPage) -> serde_json::Value {
+crates/census-crawl/src/milesplit/owned/effect/tests.rs:66:fn parsed(outcome: &OwnedMeetOutcome) -> TestResult<&super::super::OwnedMeetPage> {
+crates/census-crawl/src/milesplit/owned/effect/tests.rs:83:            let first = read_owned_meet(&ctx, &reference).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests.rs:86:            let replay = read_owned_meet(&ctx, &reference).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests.rs:190:                    &OwnedMeetOutcome::historical_fixture(capture, verdict),
+crates/census-crawl/src/milesplit/owned/effect/tests.rs:221:            let outcome = read_owned_meet(&ctx, &reference).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests/capture_outcomes.rs:18:            let outcome = read_owned_meet(&ctx, &reference).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests/capture_outcomes.rs:90:            let error = match read_owned_meet(&context(&store, &live)?, &reference).await {
+crates/census-crawl/src/milesplit/owned/effect/tests/capture_outcomes.rs:110:            let outcome = read_owned_meet(&context(&store, &fetcher)?, &reference).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests/parser_revisions.rs:49:        &OwnedMeetOutcome::historical_fixture(capture, OwnedMeetVerdict::Parsed(page)),
+crates/census-crawl/src/milesplit/owned/effect/tests/parser_revisions.rs:88:            let current = read_owned_meet(&ctx, &reference).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests/parser_revisions.rs:100:            let replay = read_owned_meet(&context(&store, &fetcher)?, &reference).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests/replay.rs:95:            let outcome = read_owned_meet(&ctx, &reference).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests/replay.rs:109:            let replay = read_owned_meet(&context(&store, &fetcher)?, &reference).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests/replay.rs:148:            let outcome = read_owned_meet(&context(&store, &fetcher)?, &reference).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests/resource_errors.rs:16:                crate::milesplit::fetch_owned_meet(&ctx, &reference, &ctx.fetch_options()).await;
+crates/census-crawl/src/milesplit/owned/effect/tests/resource_errors.rs:17:            let read = read_owned_meet(&ctx, &reference).await;
+crates/census-crawl/src/milesplit/owned/effect/tests/resource_errors.rs:76:            let fetched = crate::milesplit::fetch_owned_meet(&ctx, &reference, &ctx.fetch_options()).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests/resource_errors.rs:77:            let read = read_owned_meet(&ctx, &reference).await?;
+crates/census-crawl/src/milesplit/owned/effect/tests/resource_errors.rs:150:            match read_owned_meet(&context(&store, &fetcher)?, &reference).await {
+crates/census-crawl/src/milesplit/owned/effect/tests/uncaptured.rs:10:            let error = match read_owned_meet(&ctx, &reference).await {
+crates/census-crawl/src/milesplit/owned/mod.rs:14:pub(crate) use effect::{acquisition_manifest_key, read_owned_meet, retained_parse_resource};
+crates/census-crawl/src/milesplit/owned/mod.rs:15:pub use outcome::OwnedMeetOutcome;
+crates/census-crawl/src/milesplit/owned/outcome.rs:2:use crate::net::{CaptureProvenance, CaptureProvenanceView, CapturedFetch, FetchOutcome};
+crates/census-crawl/src/milesplit/owned/outcome.rs:6:pub struct OwnedMeetOutcome {
+crates/census-crawl/src/milesplit/owned/outcome.rs:8:    provenance: CaptureProvenance,
+crates/census-crawl/src/milesplit/owned/outcome.rs:14:    Interpreted(OwnedMeetOutcome),
+crates/census-crawl/src/milesplit/owned/outcome.rs:16:        capture: CapturedFetch,
+crates/census-crawl/src/milesplit/owned/outcome.rs:21:impl OwnedMeetOutcome {
+crates/census-crawl/src/milesplit/owned/outcome.rs:23:        acquired: CapturedFetch,
+crates/census-crawl/src/milesplit/owned/outcome.rs:47:        let (capture, provenance) = acquired.into_parser_parts();
+crates/census-crawl/src/milesplit/owned/outcome.rs:59:    pub fn provenance(&self) -> CaptureProvenanceView<'_> {
+crates/census-crawl/src/milesplit/owned/outcome.rs:83:    pub(in crate::milesplit) fn historical_fixture(
+crates/census-crawl/src/milesplit/owned/outcome.rs:87:        let (capture, provenance) = CapturedFetch::historical(capture).into_parser_parts();
+crates/census-crawl/src/milesplit/owned/outcome.rs:98:    provenance: CaptureProvenanceView<'_>,
+crates/census-crawl/src/milesplit/owned/outcome.rs:101:        (CaptureContext::LegacyMetadata, CaptureProvenanceView::HistoricalAttemptUnknown)
+crates/census-crawl/src/milesplit/owned/outcome.rs:102:        | (CaptureContext::DurableV1(_), CaptureProvenanceView::Retained { .. }) => Ok(()),
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:9:async fn captured(body: &[u8]) -> TestResult<(Fixture, ResultsCaptureContext, CapturedFetch)> {
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:43:        CaptureProvenanceView::Retained { occurrence, original } => {
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:48:    let result = OwnedMeetOutcome::interpret(capture, 725218, CaptureContext::DurableV1(&owner))?;
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:63:    check!(eq; outcome.provenance(), CaptureProvenanceView::Retained {
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:80:    let result = OwnedMeetOutcome::interpret(capture, 725218, CaptureContext::DurableV1(&owner))?;
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:100:    check!(matches!(capture.provenance(), CaptureProvenanceView::Retained { .. }));
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:115:    let historical = CapturedFetch::historical(retained.into_capture());
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:117:    let result = OwnedMeetOutcome::interpret(historical, 725218, CaptureContext::DurableV1(&owner));
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:131:    let result = OwnedMeetOutcome::interpret(capture, 725218, CaptureContext::LegacyMetadata);
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:145:    let result = OwnedMeetOutcome::interpret(
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:146:        CapturedFetch::historical(raw),
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:153:    check!(eq; outcome.provenance(), CaptureProvenanceView::HistoricalAttemptUnknown);
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:166:    let outcome = OwnedMeetOutcome::historical_fixture(
+crates/census-crawl/src/milesplit/owned/outcome/tests.rs:170:    check!(eq; outcome.provenance(), CaptureProvenanceView::HistoricalAttemptUnknown);
+crates/census-crawl/src/milesplit/results/run.rs:2:use super::super::owned::read_owned_meet;
+crates/census-crawl/src/milesplit/results/run.rs:170:        let mut meet = AcquiredMeet::new(read_owned_meet(ctx, reference).await?)?;
+crates/census-crawl/src/milesplit/results/run/acquired.rs:2:use super::super::super::owned::{OwnedMeetOutcome, OwnedMeetVerdict, MAX_OWNED_ROWS};
+crates/census-crawl/src/milesplit/results/run/acquired.rs:9:    pub(super) outcome: OwnedMeetOutcome,
+crates/census-crawl/src/milesplit/results/run/acquired.rs:14:    pub(super) fn new(outcome: OwnedMeetOutcome) -> CrawlResult<Self> {
+crates/census-crawl/src/milesplit/results/run/owned_tests.rs:192:            match crate::milesplit::fetch_owned_meet(
+crates/census-crawl/src/milesplit/results/run/owned_tests/resource_recovery.rs:68:        crate::milesplit::owned::read_owned_meet(&plain, &reference).await?;
+crates/census-crawl/src/milesplit/results/run/owned_tests/resource_recovery/recording_pressure.rs:20:        let archived = match crate::milesplit::owned::read_owned_meet(&ctx, &reference).await {
+crates/census-crawl/src/milesplit/results/run/owned_tests/resource_recovery/relocation.rs:11:    match crate::milesplit::owned::read_owned_meet(&context(store, fetcher)?, reference).await {
+crates/census-crawl/src/milesplit/results/run/receipt/tests.rs:2:use crate::milesplit::owned::{parse_owned_meet, OwnedMeetOutcome, OwnedMeetVerdict};
+crates/census-crawl/src/milesplit/results/run/receipt/tests.rs:36:    let acquired = AcquiredMeet::new(OwnedMeetOutcome::historical_fixture(owned, verdict))?;
+crates/census-crawl/src/milesplit/results/run/receipt/tests.rs:198:    let acquired = AcquiredMeet::new(OwnedMeetOutcome::historical_fixture(owned, verdict))?;
+crates/census-crawl/src/net/acquisition.rs:20:pub enum CaptureProvenanceView<'a> {
+crates/census-crawl/src/net/acquisition.rs:29:pub(crate) struct CaptureProvenance {
+crates/census-crawl/src/net/acquisition.rs:30:    state: CaptureProvenanceState,
+crates/census-crawl/src/net/acquisition.rs:34:enum CaptureProvenanceState {
+crates/census-crawl/src/net/acquisition.rs:42:impl CaptureProvenance {
+crates/census-crawl/src/net/acquisition.rs:45:            state: CaptureProvenanceState::HistoricalAttemptUnknown,
+crates/census-crawl/src/net/acquisition.rs:54:            state: CaptureProvenanceState::Retained { occurrence, original },
+crates/census-crawl/src/net/acquisition.rs:58:    pub(crate) fn view(&self) -> CaptureProvenanceView<'_> {
+crates/census-crawl/src/net/acquisition.rs:60:            CaptureProvenanceState::HistoricalAttemptUnknown => {
+crates/census-crawl/src/net/acquisition.rs:61:                CaptureProvenanceView::HistoricalAttemptUnknown
+crates/census-crawl/src/net/acquisition.rs:63:            CaptureProvenanceState::Retained { occurrence, original } => {
+crates/census-crawl/src/net/acquisition.rs:64:                CaptureProvenanceView::Retained { occurrence, original }
+crates/census-crawl/src/net/acquisition.rs:71:pub struct CapturedFetch {
+crates/census-crawl/src/net/acquisition.rs:73:    provenance: CaptureProvenance,
+crates/census-crawl/src/net/acquisition.rs:76:impl CapturedFetch {
+crates/census-crawl/src/net/acquisition.rs:80:            provenance: CaptureProvenance::historical(),
+crates/census-crawl/src/net/acquisition.rs:88:    pub fn provenance(&self) -> CaptureProvenanceView<'_> {
+crates/census-crawl/src/net/acquisition.rs:96:    pub(crate) fn into_parser_parts(self) -> (FetchOutcome, CaptureProvenance) {
+crates/census-crawl/src/net/acquisition.rs:130:    ) -> Result<CapturedFetch, FetchError> {
+crates/census-crawl/src/net/acquisition.rs:174:    ) -> Result<CapturedFetch, FetchError> {
+crates/census-crawl/src/net/acquisition.rs:217:            Ok(capture) => Ok(CapturedFetch {
+crates/census-crawl/src/net/acquisition.rs:235:fn accepted(captured: CapturedFetch, options: &FetchOptions) -> Result<CapturedFetch, FetchError> {
+crates/census-crawl/src/net/acquisition/read.rs:1:use super::{CaptureProvenance, CaptureProvenanceView, CapturedFetch};
+crates/census-crawl/src/net/acquisition/read.rs:12:) -> Result<CapturedFetch, FetchError> {
+crates/census-crawl/src/net/acquisition/read.rs:23:) -> Result<CapturedFetch, FetchError> {
+crates/census-crawl/src/net/acquisition/read.rs:37:    let provenance = CaptureProvenance::retained(
+crates/census-crawl/src/net/acquisition/read.rs:41:    Ok(CapturedFetch {
+crates/census-crawl/src/net/acquisition/read.rs:63:    ) -> Result<CapturedFetch, FetchError> {
+crates/census-crawl/src/net/acquisition/read.rs:81:            let CaptureProvenanceView::Retained { original, .. } = captured.provenance() else {
+crates/census-crawl/src/net/acquisition/retention.rs:2:use super::CaptureProvenance;
+crates/census-crawl/src/net/acquisition/retention.rs:48:        *stage = Stage::Complete(CaptureProvenance::retained(
+crates/census-crawl/src/net/acquisition/retention.rs:90:        *stage = Stage::Complete(CaptureProvenance::retained(
+crates/census-crawl/src/net/acquisition/session.rs:2:use super::CaptureProvenance;
+crates/census-crawl/src/net/acquisition/session.rs:24:    Complete(CaptureProvenance),
+crates/census-crawl/src/net/acquisition/session.rs:154:    pub(in crate::net) fn provenance(self) -> Result<CaptureProvenance, FetchError> {
+crates/census-crawl/src/net/acquisition/session.rs:156:            Self::Legacy => Ok(CaptureProvenance::historical()),
+crates/census-crawl/src/net/acquisition/tests/cache.rs:2:use crate::net::{CaptureProvenanceView, CaptureTransportError, FetchError};
+crates/census-crawl/src/net/acquisition/tests/cache.rs:66:            crate::milesplit::fetch_owned_meet(&ctx, &fixture.reference()?, &options).await?;
+crates/census-crawl/src/net/acquisition/tests/cache.rs:71:            CaptureProvenanceView::Retained {
+crates/census-crawl/src/net/acquisition/tests/cache.rs:135:            crate::milesplit::fetch_owned_meet(&ctx, &fixture.reference()?, &options).await;
+crates/census-crawl/src/net/acquisition/tests/fixture.rs:161:    ) -> TestResult<Result<crate::milesplit::OwnedMeetOutcome, crate::CrawlError>> {
+crates/census-crawl/src/net/acquisition/tests/fixture.rs:165:            crate::milesplit::fetch_owned_meet(&ctx, &self.reference()?, &ctx.fetch_options())
+crates/census-crawl/src/net/acquisition/tests/fixture.rs:183:        outcome: &crate::milesplit::OwnedMeetOutcome,
+crates/census-crawl/src/net/acquisition/tests/fixture.rs:186:            crate::net::CaptureProvenanceView::Retained { occurrence, .. } => Ok(occurrence),
+crates/census-crawl/src/net/acquisition/tests/grants.rs:15:    let result = crate::milesplit::fetch_owned_meet(&ctx, &foreign, &ctx.fetch_options()).await;
+crates/census-crawl/src/net/acquisition/tests/grants.rs:23:            crate::milesplit::fetch_owned_meet(&ctx, &fixture.reference()?, &ctx.fetch_options())
+crates/census-crawl/src/net/acquisition/tests/grants.rs:26:            crate::milesplit::fetch_owned_meet(&ctx, &fixture.reference()?, &ctx.fetch_options())
+crates/census-crawl/src/net/acquisition/tests/grants.rs:50:        crate::milesplit::fetch_owned_meet(&ctx, &fixture.reference()?, &ctx.fetch_options()).await;
+crates/census-crawl/src/net/mod.rs:19:pub(crate) use acquisition::CaptureProvenance;
+crates/census-crawl/src/net/mod.rs:20:pub use acquisition::{CaptureProvenanceView, CapturedFetch};

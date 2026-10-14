@@ -1,0 +1,28 @@
+[ WARN 2026-10-14 04:30:00.991] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:check (af1fee09)
+    Checking census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+error[E0599]: no associated function or constant named `historical_fixture` found for struct `OwnedMeetOutcome` in the current scope
+  --> crates/census-crawl/src/milesplit/parser_envelope_api_probe.rs:5:23
+   |
+ 5 |     OwnedMeetOutcome::historical_fixture(raw, verdict)
+   |                       ^^^^^^^^^^^^^^^^^^ associated function or constant not found in `OwnedMeetOutcome`
+   |
+  ::: crates/census-crawl/src/milesplit/owned/outcome.rs:6:1
+   |
+ 6 | pub struct OwnedMeetOutcome {
+   | --------------------------- associated function or constant `historical_fixture` not found for this struct
+   |
+help: there is a method `into_capture` with a similar name, but with different arguments
+  --> crates/census-crawl/src/milesplit/owned/outcome.rs:67:5
+   |
+67 |     pub fn into_capture(self) -> FetchOutcome {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `census-crawl` (lib) due to 1 previous error
+▮▮▮▮ pipeline:check (4s 283ms, af1fee09)
+Error: task_runner::run_failed
+
+  × Task pipeline:check failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 101
+

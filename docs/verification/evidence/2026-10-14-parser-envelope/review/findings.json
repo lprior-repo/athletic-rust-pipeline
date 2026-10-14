@@ -1,0 +1,31 @@
+[
+  {
+    "id": "PE-1",
+    "subject": "capture/provenance recombination",
+    "disposition": "fixed_with_evidence",
+    "evidence_kind": "STATIC_SOURCE_ONLY",
+    "source": "REVIEW.md"
+  },
+  {
+    "id": "PE-2",
+    "subject": "caller supplied verdict and resource ownership",
+    "disposition": "fixed_with_evidence",
+    "evidence_kind": "STATIC_SOURCE_ONLY",
+    "source": "REVIEW.md"
+  },
+  {
+    "id": "PE-3",
+    "subject": "synthetic historical fixture retained authority",
+    "disposition": "fixed_with_evidence",
+    "evidence_kind": "STATIC_SOURCE_AND_REGRESSION_DEFINITION_ONLY",
+    "execution": "NOT RUN",
+    "source": "REVIEW.md"
+  },
+  {
+    "id": "PE-4",
+    "subject": "same-variant arbitrary internal context not identity-bound",
+    "disposition": "owner_approved_no_action",
+    "approval_source": "Root collaboration message on 2026-10-14: Retain adopted variant-only context check, with exact owner/work binding attributed only to verified production acquisition caller chain.",
+    "source": "REVIEW.md"
+  }
+]

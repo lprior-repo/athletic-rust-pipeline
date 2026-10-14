@@ -1,0 +1,16 @@
+[
+  {
+    "path": "crates/census-crawl/src/net/acquisition/read.rs",
+    "base_sha256": "db993cdb30822d17fd66ee9a1d2f575884a68ce9291df4ca4c422c5c143e27b3",
+    "integrated_sha256": "bc9eb2ccc2a167b363721ef2b6598dd9bb708756d761e50c3ae67d26310f1170",
+    "source": "/workspace/shared/athletic-recovery-20261013-2203/archive-lock-order-proposal/candidate/crates/census-crawl/src/net/acquisition/read.rs",
+    "patch": "read-integration.patch"
+  },
+  {
+    "path": "crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+    "base_sha256": "e628a618a7bdd15d60df99910fdfa776ad14702ee7f69aa780292a4f4aaaef1b",
+    "integrated_sha256": "c2e2984af298a2835c8f008f54e236d038fa995dbc3480dd276d4d2e4544604e",
+    "source": "/workspace/shared/athletic-recovery-20261013-2203/archive-lock-order-proposal/candidate/crates/census-crawl/src/net/acquisition/tests/lock_order.rs",
+    "patch": "lock-order-tests-accessor.patch"
+  }
+]

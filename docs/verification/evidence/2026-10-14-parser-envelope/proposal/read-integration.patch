@@ -1,0 +1,42 @@
+--- a/crates/census-crawl/src/net/acquisition/read.rs
++++ b/crates/census-crawl/src/net/acquisition/read.rs
+@@ -1,4 +1,4 @@
+-use super::{CaptureProvenance, CapturedFetch};
++use super::{CaptureProvenance, CaptureProvenanceView, CapturedFetch};
+ use crate::net::cache::{CacheMeta, Capture, EligibleCacheV2};
+ use crate::net::{CaptureTransportError, FetchError, FetchOutcome, Fetcher};
+ use census_domain::model::AcquisitionOccurrenceRefV1;
+@@ -34,10 +34,10 @@
+     .ok_or(CaptureTransportError::BackingUnavailable)?;
+     Capture::from_meta(&metadata, retained.body_path())?
+         .verify_body(&body, retained.body_path())?;
+-    let provenance = CaptureProvenance::Retained {
+-        occurrence: retained.reference().clone(),
+-        original: retained.body_reference().clone(),
+-    };
++    let provenance = CaptureProvenance::retained(
++        retained.reference().clone(),
++        retained.body_reference().clone(),
++    );
+     Ok(CapturedFetch {
+         capture: FetchOutcome {
+             url: metadata.url,
+@@ -78,15 +78,15 @@
+                     source,
+                 })?;
+             let captured = outcome(retained, true)?;
+-            let CaptureProvenance::Retained { original, .. } = &captured.provenance else {
++            let CaptureProvenanceView::Retained { original, .. } = captured.provenance() else {
+                 return Err(CaptureTransportError::CacheOccurrenceMismatch.into());
+             };
+-            if captured.capture.status == 200 {
++            if captured.capture().status == 200 {
+                 let envelope = EligibleCacheV2::new(metadata, original.clone());
+                 let archived = self
+                     .cache_dir
+                     .join("archive/bodies")
+-                    .join(format!("{}.body", captured.capture.content_digest));
++                    .join(format!("{}.body", captured.capture().content_digest));
+                 crate::net::cache::publish_eligible_held(
+                     archive_lock, &body_path, &meta_path, &envelope, &archived,
+                 )?;

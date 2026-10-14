@@ -1,0 +1,9 @@
+[ WARN 2026-10-14 04:25:04.457] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:check (3f1614bd)
+    Checking census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.98s
+▮▮▮▮ pipeline:check (2s 447ms, 3f1614bd)
+
+Tasks: 1 completed
+ Time: 3s 762ms
+

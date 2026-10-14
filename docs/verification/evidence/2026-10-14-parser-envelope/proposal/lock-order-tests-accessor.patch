@@ -1,0 +1,15 @@
+--- a/crates/census-crawl/src/net/acquisition/tests/lock_order.rs
++++ b/crates/census-crawl/src/net/acquisition/tests/lock_order.rs
+@@ -98,9 +98,9 @@
+         drop(observation);
+         check!(eq; *events.borrow(), vec![LockEvent::BeforeAcquire, LockEvent::Acquired, LockEvent::EligibleAcquired]);
+         check!(eq; Fixture::occurrence(&recovered)?.attempt().ordinal().get(), 1);
+-        check!(eq; recovered.capture.fetched_at, CAPTURED);
+-        check!(eq; recovered.capture.body, BODY);
+-        check!(matches!(recovered.verdict, crate::milesplit::OwnedMeetVerdict::Parsed(_)));
++        check!(eq; recovered.capture().fetched_at, CAPTURED);
++        check!(eq; recovered.capture().body, BODY);
++        check!(matches!(recovered.verdict(), crate::milesplit::OwnedMeetVerdict::Parsed(_)));
+         check!(eq; fixture.count(), requests);
+         let envelope: EligibleCacheV2 = serde_json::from_slice(&std::fs::read(&meta_path)?)?;
+         check!(eq; &envelope.original_occurrence, Fixture::occurrence(&recovered)?);

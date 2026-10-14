@@ -1,0 +1,239 @@
+{
+  "kind": "Root-observed executor attestation; not raw tool transcript",
+  "cwd": "/workspace/shared/athletic-rebuild-20261013",
+  "setup": "source /workspace/shared/athletic-recovery-20261013-2203/toolchain/env.sh; set -o pipefail",
+  "commands": [
+    {
+      "command": "env -u CI tools/moon-local run pipeline:fmt-write",
+      "log": "format-first.log",
+      "session_id": 28267,
+      "outer_exit": 0
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 1800s env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-domain -p census-store -p census-crawl -p census-service --lib -E 'test(milesplit::owned::outcome::tests) | test(net::acquisition::tests) | test(milesplit::results::run::owned_tests::durable_capture) | test(milesplit::owned::effect) | test(milesplit::map::owned::tests) | test(milesplit::results::run::receipt) | test(milesplit::results::run::owned_tests::resource_recovery) | test(milesplit::results::run::owned_tests::bounded_buffers)'",
+      "log": "tests-first.log",
+      "session_id": 25531,
+      "outer_exit": 1,
+      "internal_cargo_exit": 101,
+      "result": "Compilation failed: seven E0308 HashSet versus Vec test expectations. Tests not executed."
+    },
+    {
+      "command": "env -u CI tools/moon-local run pipeline:fmt-write",
+      "log": "format-second.log",
+      "session_id": 10354,
+      "outer_exit": 0
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 1800s env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-domain -p census-store -p census-crawl -p census-service --lib -E 'test(milesplit::owned::outcome::tests) | test(net::acquisition::tests) | test(milesplit::results::run::owned_tests::durable_capture) | test(milesplit::owned::effect) | test(milesplit::map::owned::tests) | test(milesplit::results::run::receipt) | test(milesplit::results::run::owned_tests::resource_recovery) | test(milesplit::results::run::owned_tests::bounded_buffers)'",
+      "log": "tests-second.log",
+      "session_id": 19051,
+      "status": "failed",
+      "outer_exit": 1,
+      "internal_cargo_exit": 101,
+      "result": "rustc census-crawl lib test terminated with signal 9 SIGKILL; tests not executed. No verified cause."
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 1800s env -u CI CARGO_INCREMENTAL=0 CARGO_PROFILE_TEST_DEBUG=0 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-domain -p census-store -p census-crawl -p census-service --lib -E 'test(milesplit::owned::outcome::tests) | test(net::acquisition::tests) | test(milesplit::results::run::owned_tests::durable_capture) | test(milesplit::owned::effect) | test(milesplit::map::owned::tests) | test(milesplit::results::run::receipt) | test(milesplit::results::run::owned_tests::resource_recovery) | test(milesplit::results::run::owned_tests::bounded_buffers)'",
+      "log": "tests-third.log",
+      "session_id": 75972,
+      "status": "failed",
+      "outer_exit": 1,
+      "internal_cargo_exit": 101,
+      "result": "rustc census-crawl lib test terminated SIGKILL9. Intended environment debug override did not take effect: actual rustc still debuginfo=line-tables-only. Tests not executed; cause not established."
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 1800s env -u CI CARGO_INCREMENTAL=0 tools/moon-local run pipeline:tests-scoped -- --config 'profile.test.debug=0' --build-jobs 1 -p census-domain -p census-store -p census-crawl -p census-service --lib -E 'test(milesplit::owned::outcome::tests) | test(net::acquisition::tests) | test(milesplit::results::run::owned_tests::durable_capture) | test(milesplit::owned::effect) | test(milesplit::map::owned::tests) | test(milesplit::results::run::receipt) | test(milesplit::results::run::owned_tests::resource_recovery) | test(milesplit::results::run::owned_tests::bounded_buffers)'",
+      "log": "tests-fourth.log",
+      "session_id": 88906,
+      "status": "failed",
+      "outer_exit": 1,
+      "internal_cargo_exit": 101,
+      "result": "rustc census-crawl lib test killed SIGKILL9. Explicit profile.test.debug=0 took effect (strip=debuginfo; no debuginfo=line-tables-only). No tests executed; cause unverified."
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:fmt",
+      "log": "fmt-check-first.log",
+      "session_id": 52922,
+      "outer_exit": 0,
+      "status": "passed"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:lint-src",
+      "log": "lint-first.log",
+      "session_id": 50034,
+      "command_exit": 0,
+      "serial_session_outer_exit": 0,
+      "status": "passed",
+      "observed_terminal_utc": "2026-10-14T09:08:30Z"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "log": "check-first.log",
+      "session_id": 50034,
+      "command_exit": 0,
+      "serial_session_outer_exit": 0,
+      "status": "passed",
+      "observed_terminal_utc": "2026-10-14T09:08:30Z"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 1800s env -u CI CARGO_INCREMENTAL=0 RUSTFLAGS='-Z threads=1' tools/moon-local run pipeline:tests-scoped -- --config 'profile.test.debug=0' --build-jobs 1 -p census-domain -p census-store -p census-crawl -p census-service --lib -E 'test(milesplit::owned::outcome::tests) | test(net::acquisition::tests) | test(milesplit::results::run::owned_tests::durable_capture) | test(milesplit::owned::effect) | test(milesplit::map::owned::tests) | test(milesplit::results::run::receipt) | test(milesplit::results::run::owned_tests::resource_recovery) | test(milesplit::results::run::owned_tests::bounded_buffers)'",
+      "log": "tests-fifth.log",
+      "session_id": 50939,
+      "status": "passed",
+      "outer_exit": 0,
+      "passed": 107,
+      "skipped": 3195,
+      "slow": 1,
+      "nextest_run_id": "d5e5dd37-b1c4-4f09-914d-f8fca009052a",
+      "test_seconds": 117.49,
+      "moon_total": "14m28.946s",
+      "observed_terminal_utc": "2026-10-14T09:24:40Z"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "log": "api-execution/01-external-allowed.log",
+      "session_id": 22557,
+      "probe": "parser-envelope-review/compile-probes/01_external_allowed.rs",
+      "status": "passed",
+      "outer_exit": 0,
+      "moon_total": "3.762s",
+      "source_sha256": "7c4664d2ce2e9d3f2f261038bccd4b8ea1c2057f6d28265d59f2fb32c706a905"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "probe": "parser-envelope-review/compile-probes/02_external_recombination_rejected.rs",
+      "source_sha256": "031cee7ab253fa29856b1b90e290c92f6c9adcd2d6f73e97a8d4959cf2ba5ae3",
+      "log": "api-execution/02_external_recombination_rejected.log",
+      "outer_exit": 1,
+      "status": "expected compile rejection verified for every named forbidden operation",
+      "session_id": 48376
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "probe": "parser-envelope-review/compile-probes/03_external_mutation_rejected.rs",
+      "source_sha256": "0d06415b2212c3c29ac6a86c99fa404818bee4e4f19e4968c2d23301b463e261",
+      "log": "api-execution/03_external_mutation_rejected.log",
+      "outer_exit": 1,
+      "status": "expected compile rejection verified for every named forbidden operation",
+      "session_id": 48376
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "probe": "parser-envelope-review/compile-probes/04_external_constructor_escape_rejected.rs",
+      "source_sha256": "d35f2efb61c4e02b8021ca6373e7fc6bc605071cd4fcdaa8a1743d965c3d4b66",
+      "log": "api-execution/04_external_constructor_escape_rejected.log",
+      "outer_exit": 1,
+      "status": "expected compile rejection verified for every named forbidden operation",
+      "session_id": 48376
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "probe": "parser-envelope-review/compile-probes/05_external_trusted_traits_rejected.rs",
+      "source_sha256": "6517a995ea099fd45376176d9b3f3f9836cc64194dbec19a74702f831e35718b",
+      "log": "api-execution/05_external_trusted_traits_rejected.log",
+      "outer_exit": 1,
+      "status": "expected compile rejection verified for every named forbidden operation",
+      "session_id": 48376
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "probe": "parser-envelope-review/compile-probes/06_external_retained_state_rejected.rs",
+      "source_sha256": "b3db1e6c8967869ff3d612294b2479f11747bd9b35386e9be1ef132b069573ce",
+      "log": "api-execution/06_external_retained_state_rejected.log",
+      "outer_exit": 1,
+      "status": "expected compile rejection verified for every named forbidden operation",
+      "session_id": 48376
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "probe": "parser-envelope-review/compile-probes/07_internal_sibling_recombination_rejected.rs",
+      "source_sha256": "f8b949f001e78026c75432cab30116776b81a3dc4656a8f604e66367c0fe18f4",
+      "log": "api-execution/07_internal_sibling_recombination_rejected.log",
+      "outer_exit": 1,
+      "status": "expected compile rejection verified for every named forbidden operation",
+      "session_id": 9301
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "probe": "parser-envelope-review/compile-probes/08_milesplit_production_fixture_rejected.rs",
+      "source_sha256": "5508a61c7189fac53f6477b9e3ec8c88d836bbf72f04ea95da9a0276bf804c42",
+      "log": "api-execution/08_milesplit_production_fixture_rejected.log",
+      "outer_exit": 1,
+      "status": "expected compile rejection verified for every named forbidden operation",
+      "session_id": 9301
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "log": "api-execution/clean-check.log",
+      "session_id": 57472,
+      "outer_exit": 0,
+      "status": "passed after removal of all temporary API probes",
+      "moon_total": "51.018s"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:fmt",
+      "log": "api-execution/clean-fmt.log",
+      "session_id": 57472,
+      "outer_exit": 0,
+      "status": "passed after removal of all temporary API probes",
+      "moon_total": "7.354s"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:xtask -- scan",
+      "log": "xtask-scan.log",
+      "session_id": 45960,
+      "command_exit": 1,
+      "internal_cargo_exit": 101,
+      "status": "prerequisite compilation failed",
+      "result": "chromiumoxide_cdp lib rustc killed SIGKILL9; scan never ran; cause not established"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:xtask -- comments",
+      "log": "xtask-comments.log",
+      "session_id": 45960,
+      "serial_session_outer_exit": 130,
+      "status": "interrupted by Root before repeating failed prerequisite compile",
+      "result": "No comments result established; original seams/panic-extraction not run"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 1800s env -u CI CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 RUSTFLAGS='-Z threads=1' tools/moon-local run pipeline:xtask -- scan",
+      "log": "xtask-scan-retry.log",
+      "command_exit": 1,
+      "session_id": 64605,
+      "serial_session_outer_exit": 0,
+      "moon_total": "5m35.173s",
+      "result": "FAIL: 14 strict function-size violations; scan executed, no forbidden construct findings",
+      "environment": "requested settings; dev build reports unoptimized without debuginfo; actual individual rustc argv not printed on successful retry"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 RUSTFLAGS='-Z threads=1' tools/moon-local run pipeline:xtask -- comments",
+      "log": "xtask-comments-retry.log",
+      "command_exit": 0,
+      "session_id": 54561,
+      "serial_session_outer_exit": 0,
+      "moon_total": "2.397s",
+      "result": "PASS: 3002 Rust files, no comments",
+      "environment": "requested settings; dev build reports unoptimized without debuginfo; actual individual rustc argv not printed on successful retry"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 RUSTFLAGS='-Z threads=1' tools/moon-local run pipeline:xtask -- seams",
+      "log": "xtask-seams-retry.log",
+      "command_exit": 1,
+      "session_id": 54561,
+      "serial_session_outer_exit": 0,
+      "moon_total": null,
+      "result": "FAIL: 3 installation-to-bootstrap module edges, 0 crate violations",
+      "environment": "requested settings; dev build reports unoptimized without debuginfo; actual individual rustc argv not printed on successful retry"
+    },
+    {
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 RUSTFLAGS='-Z threads=1' tools/moon-local run pipeline:xtask -- panic-extraction",
+      "log": "xtask-panic-extraction-retry.log",
+      "command_exit": 0,
+      "session_id": 54561,
+      "serial_session_outer_exit": 0,
+      "moon_total": "2.915s",
+      "result": "PASS: 3002 Rust files and 3 rendered templates",
+      "environment": "requested settings; dev build reports unoptimized without debuginfo; actual individual rustc argv not printed on successful retry"
+    }
+  ]
+}
