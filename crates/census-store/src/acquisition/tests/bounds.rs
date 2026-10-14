@@ -158,13 +158,25 @@ fn maximum_canonical_envelope_and_physical_key_are_both_debited_before_materiali
     })?;
     check!(eq; canonical.len(), MAX_CAPTURE_RECORD_BYTES);
     let mut batch = store.db.batch();
-    codec::stage(&store, &mut batch, &key, &payload)?;
+    codec::stage(
+        &store,
+        &mut batch,
+        &key,
+        &payload,
+        CaptureProtocolVersion::V1,
+    )?;
     codec::commit(batch)?;
     let physical = Store::journal_key(SOURCE_ACQUISITION_PHASE, &key);
     let snapshot = store.db.snapshot();
     let mut value_only = AcquisitionReadBudget::new(1, MAX_CAPTURE_RECORD_BYTES, 0)?;
     check!(matches!(
-        codec::raw(&snapshot, &store.journal, &key, &mut value_only),
+        codec::raw(
+            &snapshot,
+            &store.journal,
+            &key,
+            &mut value_only,
+            CaptureProtocolVersion::V1
+        ),
         Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
             resource: "encoded bytes"
         }))
@@ -176,8 +188,14 @@ fn maximum_canonical_envelope_and_physical_key_are_both_debited_before_materiali
             .ok_or("encoded budget")?,
         0,
     )?;
-    let actual = codec::raw(&snapshot, &store.journal, &key, &mut exact)?
-        .ok_or("missing staged envelope")?;
+    let actual = codec::raw(
+        &snapshot,
+        &store.journal,
+        &key,
+        &mut exact,
+        CaptureProtocolVersion::V1,
+    )?
+    .ok_or("missing staged envelope")?;
     check!(eq; actual.len(), MAX_CAPTURE_RECORD_BYTES);
     check!(eq; codec::decode::<String>(&key, &actual)?, payload.clone());
     let envelope: serde_json::Value = serde_json::from_slice(&actual)?;
@@ -214,7 +232,13 @@ fn oversized_canonical_envelope_refuses_before_any_journal_mutation() -> TestRes
     let before = rows(&store)?;
     let mut batch = store.db.batch();
     check!(matches!(
-        codec::stage(&store, &mut batch, &key, &payload),
+        codec::stage(
+            &store,
+            &mut batch,
+            &key,
+            &payload,
+            CaptureProtocolVersion::V1
+        ),
         Err(StoreError::RowTooLarge { .. })
     ));
     drop(batch);

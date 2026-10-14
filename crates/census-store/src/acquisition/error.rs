@@ -1,5 +1,23 @@
 use census_domain::model::CaptureDomainError;
 
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum PreparedCandidateRejection {
+    #[error("candidate length {observed} differs from {expected}")]
+    WrongLength { expected: u64, observed: u64 },
+    #[error("candidate digest differs from the fixed Prepared digest")]
+    WrongDigest,
+    #[error("candidate is not a regular file")]
+    NonRegular,
+    #[error("candidate ancestry is unsafe")]
+    UnsafeParent,
+    #[error("candidate changed while being read")]
+    Changed,
+    #[error("candidate length {observed} exceeds {limit}")]
+    TooLarge { limit: u64, observed: u64 },
+    #[error("candidate path is unsupported")]
+    UnsupportedPath,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum CaptureError {
     #[error(transparent)]
@@ -62,6 +80,16 @@ pub enum CaptureError {
     RecoveryRequired,
     #[error("capture prepared recovery must finish the original attempt")]
     PreparedRecoveryRequired,
+    #[error("exact prepared backing is available for retention")]
+    ExactRecoveryAvailable,
+    #[error("prepared backing changed after its assessment")]
+    PreparedAssessmentChanged,
+    #[error("occupied prepared backing requires authorized repair")]
+    PreparedRepairRequired,
+    #[error("prepared recovery target does not match its immutable facts")]
+    PreparedTargetMismatch,
+    #[error("prepared body candidate was rejected: {reason}")]
+    PreparedCandidateRejected { reason: PreparedCandidateRejection },
     #[error("acquisition read exceeds its shared {resource} budget")]
     ReadBudgetExceeded { resource: &'static str },
     #[error("unsupported or surplus acquisition root")]

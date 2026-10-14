@@ -4,6 +4,7 @@ mod capture_scope;
 mod collection;
 mod meet_pages;
 pub(in crate::restate_services) mod outcomes;
+pub(in crate::restate_services) mod plan_v2;
 mod rows;
 mod selection;
 use std::sync::Arc;

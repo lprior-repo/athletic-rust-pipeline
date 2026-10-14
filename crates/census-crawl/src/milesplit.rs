@@ -15,6 +15,7 @@ mod wire;
 
 pub use fetch::{
     fetch_meet_result_files, fetch_owned_meet, fetch_result_set, fetch_roster, fetch_team_index,
+    owned_meet_request,
 };
 pub use index::{fetch_meet_index, MeetIndexPage, MeetIndexRequest, PageContinuation};
 pub use mark::{parse_published_metric_distance, parse_published_time};
@@ -35,8 +36,9 @@ pub use parse::{
 pub use raw::{parse_raw, RawPage};
 pub use raw_issue::{RawGradeIssue, RawGradeIssueKind};
 pub use results::{
-    collect as collect_result_sets, is_results_page, read_meet_pages, ListedResultFile, MeetPage,
-    MeetPages, ResultSetOptions, ResultSetRequest, MISMATCH_LIMIT, RESULT_SET_PHASE,
+    collect as collect_result_sets, is_results_page, read_meet_pages, read_meet_pages_bounded,
+    BoundedMeetPages, ListedResultFile, MeetPage, MeetPageLimits, MeetPages, ResultSetOptions,
+    ResultSetRequest, MISMATCH_LIMIT, RESULT_SET_PHASE,
 };
 pub use roster::{
     RosterOutcome, RosterQuarantine, RosterRejection, RosterRejectionKind, RosterVerdict,

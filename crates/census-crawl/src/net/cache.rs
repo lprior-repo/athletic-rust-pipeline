@@ -17,6 +17,7 @@ pub(crate) use eligible::{publish_eligible, read_eligible, PinnedEligibleCache};
 pub(in crate::net) use eligible::{publish_eligible_held, with_archive_eligible_fence};
 pub(crate) use envelope::EligibleCacheV2;
 mod quarantine;
+pub(in crate::net) mod recovery;
 
 const MAX_META_BYTES: usize = 64 * 1024;
 
@@ -51,14 +52,25 @@ impl Fetcher {
     }
 
     pub(crate) fn key_for(method: &str, url: &str, extra: &str) -> String {
-        let mut hasher = Sha256::new();
-        hasher.update(method.as_bytes());
-        hasher.update([0x1f]);
-        hasher.update(url.as_bytes());
-        hasher.update([0x1f]);
-        hasher.update(extra.as_bytes());
+        let hasher = cache_hash(method, url, [extra.as_bytes()]);
         sha256_prefix16(hasher)
     }
+}
+
+pub(super) fn cache_hash<'a>(
+    method: &str,
+    url: &str,
+    extra: impl IntoIterator<Item = &'a [u8]>,
+) -> Sha256 {
+    let mut hasher = Sha256::new();
+    hasher.update(method.as_bytes());
+    hasher.update([0x1f]);
+    hasher.update(url.as_bytes());
+    hasher.update([0x1f]);
+    for bytes in extra {
+        hasher.update(bytes);
+    }
+    hasher
 }
 
 pub(crate) fn sha256_prefix16(hasher: Sha256) -> String {

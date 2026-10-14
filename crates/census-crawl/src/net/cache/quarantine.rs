@@ -17,13 +17,13 @@ pub(super) enum Damage {
 }
 
 #[derive(Serialize)]
-struct QuarantineReason<'a> {
-    version: u8,
-    body_path: &'a Path,
-    meta_path: &'a Path,
-    body_present: bool,
-    meta_present: bool,
-    reason: Damage,
+pub(super) struct QuarantineReason<'a> {
+    pub(super) version: u8,
+    pub(super) body_path: &'a Path,
+    pub(super) meta_path: &'a Path,
+    pub(super) body_present: bool,
+    pub(super) meta_present: bool,
+    pub(super) reason: Damage,
 }
 
 pub(super) fn quarantine_pair(

@@ -163,7 +163,7 @@ fn actual_response_checkpoint_refusal_keeps_status_and_cannot_be_generic_dispatc
         ResponseCheckpointRefusalV1::UnrepresentableResponse,
     )?;
     check!(
-        matches!(terminal.terminal(), AcquisitionTerminalV1::FailedUncaptured { checkpoint: AcquisitionCheckpointV1::Armed { .. }, failure: AcquisitionFailureV1::ResponseCheckpointRefused { status, .. } } if status.get() == 429)
+        matches!(terminal.terminal(), AcquisitionTerminal::FailedUncaptured { checkpoint: AcquisitionCheckpointV1::Armed { .. }, failure: AcquisitionFailureV1::ResponseCheckpointRefused { status, .. } } if status.get() == 429)
     );
     let owned = registered(&store, &writer, &owner)?;
     check!(matches!(

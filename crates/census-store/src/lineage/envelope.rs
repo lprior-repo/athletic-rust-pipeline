@@ -49,13 +49,18 @@ impl<'de> Deserialize<'de> for InlineEnvelope {
     }
 }
 
-pub(super) fn read(raw: &[u8]) -> StoreResult<StoreIdentity> {
+pub(super) fn read(
+    raw: &[u8],
+    meter: &mut crate::acquisition::admission::ReadMeter<'_>,
+) -> StoreResult<StoreIdentity> {
+    meter.decode(raw)?;
     drop(
         serde_json::from_slice::<serde_json::Value>(raw).map_err(|source| StoreError::Decode {
             key: format!("{PHASE}/{KEY}"),
             source,
         })?,
     );
+    meter.decode(raw)?;
     let InlineEnvelope(envelope) = serde_json::from_slice(raw).map_err(|source| {
         if source.is_data() {
             StoreLineageError::MalformedEnvelope.into()

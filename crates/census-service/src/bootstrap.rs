@@ -28,7 +28,7 @@ pub use serve::{init_tracing, serve, serve_until};
 pub use stop::StopReason;
 
 const USAGE: &str = "census-serve [--listen ADDR] [--data-dir DIR] \
-                     [--capture-protocol fresh-qualification-v1] \
+                     [--capture-protocol fresh-qualification-v1|fresh-qualification-v2] \
                      [--max-concurrent N] [--drain-timeout SECONDS] [--memory-budget-gib GIB] \
                      [--browser-profile DIR] [--browser-executable PATH] [--browser-headless] [--help]";
 

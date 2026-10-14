@@ -11,13 +11,14 @@ mod accumulator;
 mod append;
 mod budget;
 mod frontier;
-mod pages;
+pub(in crate::milesplit) mod pages;
 mod report;
 mod run;
 mod schools;
 
 pub use pages::{
-    is_results_page, read_meet_pages, ListedResultFile, MeetPage, MeetPages, MISMATCH_LIMIT,
+    is_results_page, read_meet_pages, read_meet_pages_bounded, BoundedMeetPages, ListedResultFile,
+    MeetPage, MeetPageLimits, MeetPages, MISMATCH_LIMIT,
 };
 use run::Run;
 

@@ -29,6 +29,7 @@ native-fault-injection = ["census-store/native-fault-injection"]
 # reaches it over the ingress client rather than linking it.
 athleticnet-browser = { path = "../athleticnet-browser" }
 anyhow = "1"
+bytes = "1"
 # The acquisition plane (fetcher, provider adapters, provider registry) is its own crate now; the
 # sweep, the meet walk and the CLI here are its consumers.
 census-crawl = { path = "../census-crawl" }

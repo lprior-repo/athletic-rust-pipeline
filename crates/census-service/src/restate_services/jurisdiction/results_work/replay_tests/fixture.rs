@@ -55,10 +55,16 @@ impl ResultsStageBridge {
 
 impl Fixture {
     pub(super) fn new() -> TestResult<Self> {
+        Self::with_protocol(census_domain::model::CaptureProtocolVersion::V1)
+    }
+
+    pub(super) fn v2() -> TestResult<Self> {
+        Self::with_protocol(census_domain::model::CaptureProtocolVersion::V2)
+    }
+
+    fn with_protocol(protocol: census_domain::model::CaptureProtocolVersion) -> TestResult<Self> {
         let root = tempfile::tempdir()?;
-        Store::create_capture_qualification_v1(root.path().join("store"))?;
-        let (store, writer) =
-            Store::open_capture_qualification_v1(root.path().join("store"))?.into_parts();
+        let (store, writer) = open(root.path(), protocol)?;
         let store = Arc::new(store);
         let request = request()?;
         store.bind_run(&RunManifest {
@@ -92,7 +98,7 @@ impl Fixture {
             Arc::clone(&store),
             Arc::new(SystemClock),
             None,
-            CaptureExecution::FreshQualificationV1(Arc::new(writer)),
+            CaptureExecution::FreshQualification(Arc::new(writer)),
             jobs.clone(),
         );
         *owner.fetcher.try_lock()? =
@@ -114,6 +120,19 @@ impl Fixture {
         &self.state.identity
     }
 
+    pub(super) fn capture(&self) -> TestResult<capture_admission::ResultsCaptureExecution> {
+        let sources = SourceSelection::parse(&["milesplit".to_owned()])
+            .map_err(crate::restate_services::tests::sdk_error)?;
+        Ok(capture_admission::admit_results_owner(
+            &self.store,
+            &self.bridge.owner.capture,
+            self.key(),
+            &self.request,
+            &self.state,
+            (2026, sources),
+        )?)
+    }
+
     pub(super) fn seed_failed_attempt(&self) -> TestResult {
         use census_domain::model::{AcquisitionFailureV1, RequestRepresentationV1};
         let sources = SourceSelection::parse(&["milesplit".to_owned()])
@@ -126,7 +145,7 @@ impl Fixture {
             &self.state,
             (2026, sources),
         )?;
-        let capture_admission::ResultsCaptureExecution::FreshQualificationV1 {
+        let capture_admission::ResultsCaptureExecution::FreshQualification {
             writer, owner, ..
         } = capture
         else {
@@ -201,7 +220,7 @@ fn state(request: &JurisdictionRequest) -> JurisdictionState {
     }
 }
 
-fn meet() -> SourceMeetRef {
+pub(super) fn meet() -> SourceMeetRef {
     SourceMeetRef {
         id: SourceMeetRef::row_id("milesplit", "725218"),
         source: "milesplit".to_owned(),
@@ -215,4 +234,22 @@ fn meet() -> SourceMeetRef {
         results_url: RESULTS_URL.to_owned(),
         observed_on: "2026-10-01".to_owned(),
     }
+}
+
+fn open(
+    root: &std::path::Path,
+    protocol: census_domain::model::CaptureProtocolVersion,
+) -> TestResult<(Store, census_store::CaptureWriterV1)> {
+    use census_domain::model::CaptureProtocolVersion;
+    let path = root.join("store");
+    Ok(match protocol {
+        CaptureProtocolVersion::V1 => {
+            Store::create_capture_qualification_v1(&path)?;
+            Store::open_capture_qualification_v1(path)?.into_parts()
+        }
+        CaptureProtocolVersion::V2 => {
+            Store::create_capture_qualification_v2(&path)?;
+            Store::open_capture_qualification_v2(path)?.into_parts()
+        }
+    })
 }

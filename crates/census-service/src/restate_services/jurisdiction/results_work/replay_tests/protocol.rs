@@ -80,6 +80,19 @@ pub(super) async fn invoke(
     fixture: &Fixture,
     journal: &[Frame],
 ) -> TestResult<Vec<Frame>> {
+    let frames = invoke_frames(client, url, fixture, journal).await?;
+    if let Some(error) = frames.iter().find(|frame| frame.kind == 0x0002) {
+        return Err(format!("Results SDK invocation failed: {}", error.text(2)?).into());
+    }
+    Ok(frames)
+}
+
+pub(super) async fn invoke_frames(
+    client: &reqwest::Client,
+    url: &str,
+    fixture: &Fixture,
+    journal: &[Frame],
+) -> TestResult<Vec<Frame>> {
     let mut start = codec::blob(1, b"results-capture-stage-replay-fixture")?;
     start.extend(codec::blob(2, b"results-capture-stage-replay-fixture")?);
     start.extend(codec::integer(3, u64::try_from(journal.len())?));
@@ -98,11 +111,7 @@ pub(super) async fn invoke(
         .send()
         .await?;
     check!(eq; response.status(), reqwest::StatusCode::OK);
-    let frames = codec::frames(&response.bytes().await?)?;
-    if let Some(error) = frames.iter().find(|frame| frame.kind == 0x0002) {
-        return Err(format!("Results SDK invocation failed: {}", error.text(2)?).into());
-    }
-    Ok(frames)
+    codec::frames(&response.bytes().await?)
 }
 
 pub(super) fn output(frames: &[Frame]) -> TestResult<Vec<u8>> {
@@ -142,6 +151,7 @@ pub(super) fn completion(
         .ok_or("Results Run proposal absent")?;
     check!(eq; frames.iter().filter(|frame| frame.kind == 0x0411).count(), 1);
     check!(eq; frames.iter().filter(|frame| frame.kind == 0x0005).count(), 1);
+    check!(codec::field(&run.payload, 12)?.map_or(true, |name| name.is_empty()));
     check!(eq; proposal.number(1)?, run.number(11)?);
     let outcome = serde_json::from_slice(proposal.bytes(14)?)?;
     journal.push(state.clone());

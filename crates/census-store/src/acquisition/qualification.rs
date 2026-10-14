@@ -18,7 +18,7 @@ impl CaptureQualificationControl {
     pub(crate) fn new(store: Store) -> Self {
         Self { store }
     }
-    pub fn show(&self) -> StoreResult<CaptureQualificationV1> {
+    pub fn show(&self) -> StoreResult<CaptureQualification> {
         validate_format(
             self.store.root(),
             &self.store.db.snapshot(),
@@ -31,10 +31,11 @@ impl CaptureQualificationControl {
     }
 }
 impl CaptureQualificationStore {
-    pub(crate) fn new(store: Store, record: CaptureQualificationV1) -> Self {
+    pub(crate) fn new(store: Store, record: CaptureQualification) -> Self {
         let writer = CaptureWriterV1 {
             origin: store.appends.clone(),
             identity: record.store_identity().clone(),
+            protocol: record.protocol(),
         };
         Self { store, writer }
     }
@@ -43,7 +44,7 @@ impl CaptureQualificationStore {
     }
 }
 
-pub(crate) fn require_legacy(record: &Option<CaptureQualificationV1>) -> StoreResult<()> {
+pub(crate) fn require_legacy(record: &Option<CaptureQualification>) -> StoreResult<()> {
     if record.is_some() {
         return Err(CaptureError::CaptureQualificationOptInRequired.into());
     }
@@ -56,7 +57,7 @@ pub(crate) fn validate_format(
     journal: &Keyspace,
     receipts: &Keyspace,
     format: &StoreFormat,
-) -> StoreResult<Option<CaptureQualificationV1>> {
+) -> StoreResult<Option<CaptureQualification>> {
     let declaration = declaration(snapshot, meta, journal, format)?;
     if declaration.is_none()
         && snapshot
@@ -77,16 +78,35 @@ pub(crate) fn declaration(
     meta: &Keyspace,
     journal: &Keyspace,
     format: &StoreFormat,
-) -> StoreResult<Option<CaptureQualificationV1>> {
+) -> StoreResult<Option<CaptureQualification>> {
+    declaration_admitted(
+        snapshot,
+        meta,
+        journal,
+        format,
+        &mut super::admission::ReadMeter::Legacy,
+    )
+}
+
+pub(crate) fn declaration_admitted(
+    snapshot: &Snapshot,
+    meta: &Keyspace,
+    journal: &Keyspace,
+    format: &StoreFormat,
+    meter: &mut super::admission::ReadMeter<'_>,
+) -> StoreResult<Option<CaptureQualification>> {
     let mut rows = snapshot.prefix(meta, b"capture:");
+    meter.probe()?;
     let row = rows
         .next()
         .map(|guard| guard.key().map_err(|source| StoreError::Read { source }))
         .transpose()?;
+    meter.probe()?;
     if let Some(guard) = rows.next() {
         guard.key().map_err(|source| StoreError::Read { source })?;
         return Err(CaptureError::CaptureCapabilityNamespaceUnsupported.into());
     }
+    meter.probe()?;
     let family = snapshot
         .prefix(journal, b"source_acquisition_attempt_")
         .next()
@@ -104,35 +124,57 @@ pub(crate) fn declaration(
     {
         return Err(CaptureError::CaptureMarkerMismatch.into());
     }
+    meter.probe()?;
     if snapshot.prefix(meta, b"installation:").next().is_some() {
         return Err(CaptureError::CaptureMarkerMismatch.into());
     }
     let row = row.ok_or(CaptureError::CaptureCapabilityMissing)?;
-    if row.as_ref() != CAPTURE_QUALIFICATION_KEY.as_bytes() {
-        return Err(CaptureError::CaptureCapabilityNamespaceUnsupported.into());
-    }
-    let length = snapshot
-        .size_of(meta, &row)
-        .map_err(|source| StoreError::Read { source })?
-        .ok_or(CaptureError::CaptureCapabilityMissing)?;
-    if length > 65_536 {
-        return Err(CaptureError::RecordTooLarge.into());
-    }
-    let raw = snapshot
-        .get(meta, &row)
-        .map_err(|source| StoreError::Read { source })?
-        .ok_or(CaptureError::CaptureCapabilityMissing)?;
-    let record: CaptureQualificationV1 =
-        serde_json::from_slice(&raw).map_err(|source| StoreError::Decode {
-            key: CAPTURE_QUALIFICATION_KEY.to_string(),
-            source,
-        })?;
-    match crate::lineage::read(snapshot, journal)? {
+    let protocol = match row.as_ref() {
+        b"capture:v1:qualification" => CaptureProtocolVersion::V1,
+        b"capture:v2:qualification" => CaptureProtocolVersion::V2,
+        _ => return Err(CaptureError::CaptureCapabilityNamespaceUnsupported.into()),
+    };
+    let record = load_declaration(snapshot, meta, &row, protocol, meter)?;
+    match crate::lineage::read_admitted(snapshot, journal, meter)? {
         crate::lineage::RetainedIdentity::Present(identity)
             if &identity == record.store_identity() => {}
         _ => return Err(CaptureError::CaptureCapabilityForeignStore.into()),
     }
     Ok(Some(record))
+}
+
+fn load_declaration(
+    snapshot: &Snapshot,
+    meta: &Keyspace,
+    row: &[u8],
+    protocol: CaptureProtocolVersion,
+    meter: &mut super::admission::ReadMeter<'_>,
+) -> StoreResult<CaptureQualification> {
+    let length = snapshot
+        .size_of(meta, row)
+        .map_err(|source| StoreError::Read { source })?
+        .ok_or(CaptureError::CaptureCapabilityMissing)?;
+    if length > 65_536 {
+        return Err(CaptureError::RecordTooLarge.into());
+    }
+    meter.value(
+        row.len(),
+        usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?,
+    )?;
+    let raw = snapshot
+        .get(meta, row)
+        .map_err(|source| StoreError::Read { source })?
+        .ok_or(CaptureError::CaptureCapabilityMissing)?;
+    meter.decode(&raw)?;
+    let record = match protocol {
+        CaptureProtocolVersion::V1 => serde_json::from_slice(&raw).map(CaptureQualification::V1),
+        CaptureProtocolVersion::V2 => serde_json::from_slice(&raw).map(CaptureQualification::V2),
+    }
+    .map_err(|source| StoreError::Decode {
+        key: protocol.qualification_key().to_string(),
+        source,
+    })?;
+    Ok(record)
 }
 
 pub(crate) fn validate_preservation(

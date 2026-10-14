@@ -4,5 +4,5 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub enum CaptureExecution {
     LegacyFresh,
-    FreshQualificationV1(Arc<CaptureWriterV1>),
+    FreshQualification(Arc<CaptureWriterV1>),
 }

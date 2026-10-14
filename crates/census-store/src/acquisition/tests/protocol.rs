@@ -45,7 +45,7 @@ fn original_slot_lifetime_ceiling_survives_separate_owner_continuations() -> Tes
         let terminal = store.fail_acquisition_dispatch(dispatch, AcquisitionFailureV1::Timeout)?;
         check!(matches!(
             terminal.terminal(),
-            AcquisitionTerminalV1::OutcomeUnknown { .. }
+            AcquisitionTerminal::OutcomeUnknown { .. }
         ));
     }
     let owned = registered(&store, &writer, &owner)?;
@@ -127,7 +127,7 @@ fn generic_journal_receipt_and_credit_paths_cannot_overwrite_capture_roots() -> 
         .journal_done_once(SOURCE_ACQUISITION_PHASE, &key, &"replacement")
         .is_err());
     drop(stage);
-    let operation = read::terminal_operation(occurrence.attempt());
+    let operation = read::terminal_operation(occurrence.attempt(), CaptureProtocolVersion::V1);
     check!(store
         .write_batch()
         .commit_once(&operation, "replacement")

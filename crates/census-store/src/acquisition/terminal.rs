@@ -36,11 +36,21 @@ impl Store {
         work: OwnedAcquisitionWork,
         budget: &mut AcquisitionReadBudget,
     ) -> StoreResult<AcquisitionOccurrenceRefV1> {
+        if work.protocol() == CaptureProtocolVersion::V2 {
+            return Err(CaptureError::PreparedTargetMismatch.into());
+        }
         budget.begin_operation();
         let _writes = self.lock_appends();
         work.verify(self)?;
         let snapshot = self.db.snapshot();
-        let facts = read::read_work(&snapshot, &self.journal, &self.receipts, &work.id, budget)?;
+        let facts = read::read_work(
+            &snapshot,
+            &self.journal,
+            &self.receipts,
+            &work.id,
+            budget,
+            work.owner.protocol(),
+        )?;
         if facts.work != work.work {
             return Err(CaptureError::ObligationConflict.into());
         }
@@ -88,6 +98,7 @@ impl Store {
             &self.receipts,
             &response.work.id,
             budget,
+            response.work.owner.protocol(),
         )?;
         let last = transition::observed(&facts, &response.observed)?;
         if response.observed.response.status() != 304
@@ -110,6 +121,7 @@ impl Store {
             &self.receipts,
             original.attempt().work_id(),
             budget,
+            facts.protocol,
         )?;
         if facts.work.request() != original_facts.work.request()
             || facts.work.slot().store_identity() != original.attempt().store_identity()
@@ -118,12 +130,13 @@ impl Store {
         }
         read::reusable_body_reference(self.root(), &original_facts, original, budget)?;
         let terminal = ImmutableAttemptResult::new(
+            facts.protocol,
             response.observed.dispatch.attempt().clone(),
-            AcquisitionTerminalV1::ValidatedNotModified {
+            AcquisitionTerminal::ValidatedNotModified {
                 dispatch: response.observed.dispatch,
                 original: original.clone(),
             },
-        );
+        )?;
         let occurrence = terminal.occurrence()?;
         settle(self, terminal, Some(&occurrence))?;
         Ok(occurrence)
@@ -139,7 +152,14 @@ impl Store {
         let _writes = self.lock_appends();
         work.verify(self)?;
         let snapshot = self.db.snapshot();
-        let facts = read::read_work(&snapshot, &self.journal, &self.receipts, &work.id, budget)?;
+        let facts = read::read_work(
+            &snapshot,
+            &self.journal,
+            &self.receipts,
+            &work.id,
+            budget,
+            work.owner.protocol(),
+        )?;
         if facts.work != work.work || facts.work.cache_intent() != CaptureCacheIntent::ReuseEligible
         {
             return Err(CaptureError::CacheOccurrenceMismatch.into());
@@ -168,33 +188,44 @@ impl Store {
         {
             return Err(CaptureError::TransitionRefused.into());
         }
-        let original_facts = read::read_work(
-            &snapshot,
-            &self.journal,
-            &self.receipts,
-            original.attempt().work_id(),
-            budget,
-        )?;
-        if facts.work.request() != original_facts.work.request()
-            || original.attempt().store_identity() != facts.work.slot().store_identity()
-        {
-            return Err(CaptureError::CacheOccurrenceMismatch.into());
-        }
-        let verified =
-            read::reusable_body_reference(self.root(), &original_facts, original, budget)?;
+        let verified = reusable_original(self, &snapshot, &facts, original, budget)?;
         let mut batch = self.db.batch();
         codec::stage(
             self,
             &mut batch,
             &format!("work/{}/result", work.id),
             &WorkResult {
-                version: VersionOne,
+                version: facts.protocol,
                 occurrence: original.clone(),
             },
+            facts.protocol,
         )?;
         codec::commit(batch)?;
         Ok(verified)
     }
+}
+
+fn reusable_original(
+    store: &Store,
+    snapshot: &fjall::Snapshot,
+    facts: &WorkFacts,
+    original: &AcquisitionOccurrenceRefV1,
+    budget: &mut AcquisitionReadBudget,
+) -> StoreResult<VerifiedRetainedOccurrence> {
+    let original_facts = read::read_work(
+        snapshot,
+        &store.journal,
+        &store.receipts,
+        original.attempt().work_id(),
+        budget,
+        facts.protocol,
+    )?;
+    if facts.work.request() != original_facts.work.request()
+        || original.attempt().store_identity() != facts.work.slot().store_identity()
+    {
+        return Err(CaptureError::CacheOccurrenceMismatch.into());
+    }
+    read::reusable_body_reference(store.root(), &original_facts, original, budget)
 }
 
 fn prepared_attempt<'a>(
@@ -216,12 +247,13 @@ fn prepared_attempt<'a>(
 }
 fn retained_terminal(store: &Store, prepared: Prepared) -> StoreResult<AcquisitionOccurrenceRefV1> {
     let terminal = ImmutableAttemptResult::new(
+        prepared.version,
         prepared.attempt.clone(),
-        AcquisitionTerminalV1::ResponseRetained {
+        AcquisitionTerminal::ResponseRetained {
             prepared_digest: digest(&prepared)?,
             disposition: prepared.disposition,
         },
-    );
+    )?;
     let occurrence = terminal.occurrence()?;
     let settled = match prepared.disposition {
         CaptureDispositionV1::RetryableResponse => None,
@@ -235,7 +267,8 @@ fn settle(
     terminal: ImmutableAttemptResult,
     result: Option<&AcquisitionOccurrenceRefV1>,
 ) -> StoreResult<ImmutableAttemptResult> {
-    let operation = read::terminal_operation(terminal.attempt());
+    let protocol = terminal.protocol();
+    let operation = read::terminal_operation(terminal.attempt(), protocol);
     let digest = digest(&terminal)?;
     let receipt = match crate::receipt::decide(store, &operation, digest.as_str())? {
         crate::receipt::Decision::First => crate::receipt::first(&operation, digest.as_str(), 0),
@@ -249,6 +282,7 @@ fn settle(
         &mut batch,
         &format!("{}/terminal", read::attempt_prefix(terminal.attempt())),
         &terminal,
+        protocol,
     )?;
     if let Some(occurrence) = result {
         codec::stage(
@@ -256,9 +290,10 @@ fn settle(
             &mut batch,
             &format!("work/{}/result", terminal.attempt().work_id()),
             &WorkResult {
-                version: VersionOne,
+                version: protocol,
                 occurrence: occurrence.clone(),
             },
+            protocol,
         )?;
     }
     batch.insert(

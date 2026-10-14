@@ -2,8 +2,11 @@ mod error;
 mod identity;
 mod protocol;
 mod qualification;
+mod qualification_v2;
+mod recovery;
 mod request;
 mod scalar;
+mod version;
 mod work;
 
 pub use error::CaptureDomainError;
@@ -15,10 +18,16 @@ pub use protocol::{
     ResponseCheckpointRefusalV1, ResponseObservationV1, ResponseStatusV1, ResponseUrlV1,
 };
 pub use qualification::CaptureQualificationV1;
+pub use qualification_v2::{CaptureQualification, CaptureQualificationV2};
+pub use recovery::{
+    MissingBodyV1, MissingLocation, MissingMetadataV1, MissingPreparedAssessmentV1,
+    MissingPreparedDecisionV1, PreparedRecoveryTarget,
+};
 pub use request::{ConditionalRequestV1, DispatchRequestV1, RequestRepresentationV1};
 pub use scalar::{
     AcquisitionDigest, AcquisitionSlotId, AcquisitionWorkId, AttemptOrdinal, HopOrdinal,
 };
+pub use version::CaptureProtocolVersion;
 pub use work::{
     AcquisitionWorkV1, CaptureCacheIntent, ResultsCaptureScopeV1, SelectedHistoryV1,
     SourceAdmissionV1,

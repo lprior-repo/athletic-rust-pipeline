@@ -8,58 +8,78 @@ impl Store {
     pub fn create_capture_qualification_v1(
         root: impl AsRef<Path>,
     ) -> StoreResult<CaptureQualificationV1> {
-        let root = root.as_ref();
-        claim_empty_root(root)?;
-        let (db, entities, journal, meta, receipts) =
-            crate::open_keyspaces(root, crate::DEFAULT_CACHE_BYTES)?;
-        require_claimed_root(root)?;
-        for keyspace in [&entities, &journal, &meta, &receipts] {
-            if !keyspace
-                .is_empty()
-                .map_err(|source| StoreError::Read { source })?
-            {
-                return Err(CaptureError::CaptureInitExistingStore.into());
-            }
+        match create(root.as_ref(), CaptureProtocolVersion::V1)? {
+            CaptureQualification::V1(record) => Ok(record),
+            CaptureQualification::V2(_) => Err(CaptureError::CaptureProtocolUnsupported.into()),
         }
-        let mut batch = db.batch();
-        crate::format::stage_initialization(&mut batch, &meta, CAPTURE_QUALIFICATION_LIFECYCLE);
-        for table in Table::ALL {
-            crate::meta::put_text(
-                &mut batch,
-                &meta,
-                &format!("sequence:{}", table.file()),
-                "0",
-            );
-            crate::meta::put_text(&mut batch, &meta, &format!("rows:{}", table.file()), "0");
-        }
-        let identity = crate::lineage::stage_new(&mut batch, &journal, root)?;
-        let record = CaptureQualificationV1::new(identity);
-        batch.insert(
-            &meta,
-            CAPTURE_QUALIFICATION_KEY,
-            crate::records::codec::encode_canonical(&record)?,
-        );
-        batch
-            .durability(Some(PersistMode::SyncData))
-            .commit()
-            .map_err(|source| StoreError::Write { source })?;
-        crate::ensure_dirs(root)?;
-        crate::fs::fsync_dir(root)?;
-        let format = crate::format::read_format(&meta)?;
-        let verified = super::qualification::validate_format(
-            root,
-            &db.snapshot(),
-            &meta,
-            &journal,
-            &receipts,
-            &format,
-        )?
-        .ok_or(CaptureError::CaptureCapabilityMissing)?;
-        if verified != record {
-            return Err(CaptureError::CaptureMarkerMismatch.into());
-        }
-        Ok(verified)
     }
+    pub fn create_capture_qualification_v2(
+        root: impl AsRef<Path>,
+    ) -> StoreResult<CaptureQualificationV2> {
+        match create(root.as_ref(), CaptureProtocolVersion::V2)? {
+            CaptureQualification::V2(record) => Ok(record),
+            CaptureQualification::V1(_) => Err(CaptureError::CaptureProtocolUnsupported.into()),
+        }
+    }
+}
+fn create(root: &Path, protocol: CaptureProtocolVersion) -> StoreResult<CaptureQualification> {
+    claim_empty_root(root)?;
+    let (db, entities, journal, meta, receipts) =
+        crate::open_keyspaces(root, crate::DEFAULT_CACHE_BYTES)?;
+    require_claimed_root(root)?;
+    for keyspace in [&entities, &journal, &meta, &receipts] {
+        if !keyspace
+            .is_empty()
+            .map_err(|source| StoreError::Read { source })?
+        {
+            return Err(CaptureError::CaptureInitExistingStore.into());
+        }
+    }
+    let mut batch = db.batch();
+    crate::format::stage_initialization(&mut batch, &meta, CAPTURE_QUALIFICATION_LIFECYCLE);
+    for table in Table::ALL {
+        crate::meta::put_text(
+            &mut batch,
+            &meta,
+            &format!("sequence:{}", table.file()),
+            "0",
+        );
+        crate::meta::put_text(&mut batch, &meta, &format!("rows:{}", table.file()), "0");
+    }
+    let identity = crate::lineage::stage_new(&mut batch, &journal, root)?;
+    let record = match protocol {
+        CaptureProtocolVersion::V1 => {
+            CaptureQualification::V1(CaptureQualificationV1::new(identity))
+        }
+        CaptureProtocolVersion::V2 => {
+            CaptureQualification::V2(CaptureQualificationV2::new(identity))
+        }
+    };
+    batch.insert(
+        &meta,
+        protocol.qualification_key(),
+        crate::records::codec::encode_canonical(&record)?,
+    );
+    batch
+        .durability(Some(PersistMode::SyncData))
+        .commit()
+        .map_err(|source| StoreError::Write { source })?;
+    crate::ensure_dirs(root)?;
+    crate::fs::fsync_dir(root)?;
+    let format = crate::format::read_format(&meta)?;
+    let verified = super::qualification::validate_format(
+        root,
+        &db.snapshot(),
+        &meta,
+        &journal,
+        &receipts,
+        &format,
+    )?
+    .ok_or(CaptureError::CaptureCapabilityMissing)?;
+    if verified != record {
+        return Err(CaptureError::CaptureMarkerMismatch.into());
+    }
+    Ok(verified)
 }
 fn claim_empty_root(root: &Path) -> StoreResult<()> {
     match std::fs::symlink_metadata(root) {

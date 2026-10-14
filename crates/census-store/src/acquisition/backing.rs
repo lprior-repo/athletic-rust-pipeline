@@ -67,15 +67,19 @@ pub(super) fn validate_metadata(
             return Err(CaptureError::BackingIntegrity.into());
         }
     }
+    validate_redirects(attempt, &metadata.redirects)
+}
+
+fn validate_redirects(attempt: &AttemptFacts, retained: &[RedirectBinding]) -> StoreResult<()> {
     let redirects = attempt
         .dispatches
         .len()
         .checked_sub(1)
         .ok_or(CaptureError::CorruptClosure)?;
-    if metadata.redirects.len() != redirects {
+    if retained.len() != redirects {
         return Err(CaptureError::BackingIntegrity.into());
     }
-    for (redirect, pair) in metadata.redirects.iter().zip(attempt.dispatches.windows(2)) {
+    for (redirect, pair) in retained.iter().zip(attempt.dispatches.windows(2)) {
         let [(previous, Some(observed)), (next, _)] = pair else {
             return Err(CaptureError::CorruptClosure.into());
         };

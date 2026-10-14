@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex};
 pub struct CaptureWriterV1 {
     pub(super) origin: Arc<Mutex<()>>,
     pub(super) identity: StoreIdentity,
+    pub(super) protocol: CaptureProtocolVersion,
 }
 #[derive(Clone)]
 pub struct ResultsCaptureOwnerV1 {
@@ -46,6 +47,9 @@ pub struct PreparedCapture {
 }
 
 impl CaptureWriterV1 {
+    pub fn protocol(&self) -> CaptureProtocolVersion {
+        self.protocol
+    }
     pub fn store_identity(&self) -> &StoreIdentity {
         &self.identity
     }
@@ -88,12 +92,20 @@ impl CaptureWriterV1 {
             &store.journal,
             &store.store_format()?,
         )? {
-            Some(record) if record.store_identity() == &self.identity => Ok(()),
+            Some(record)
+                if record.store_identity() == &self.identity
+                    && record.protocol() == self.protocol =>
+            {
+                Ok(())
+            }
             _ => Err(CaptureError::CaptureCapabilityForeignStore.into()),
         }
     }
 }
 impl ResultsCaptureOwnerV1 {
+    pub fn protocol(&self) -> CaptureProtocolVersion {
+        self.writer.protocol
+    }
     pub fn slot_for_owned_meet(
         &self,
         site: UsJurisdiction,
@@ -163,6 +175,9 @@ impl ResultsCaptureOwnerV1 {
     }
 }
 impl OwnedAcquisitionWork {
+    pub fn protocol(&self) -> CaptureProtocolVersion {
+        self.owner.protocol()
+    }
     pub fn work(&self) -> &AcquisitionWorkV1 {
         &self.work
     }
@@ -218,6 +233,14 @@ fn verify_scope(
 ) -> StoreResult<()> {
     let manifest = crate::run::read(&store.db.snapshot(), &store.meta)?
         .ok_or(CaptureError::CaptureRunManifestMissing)?;
+    validate_scope(identity, scope, &manifest)
+}
+
+pub(super) fn validate_scope(
+    identity: &StoreIdentity,
+    scope: &ResultsCaptureScopeV1,
+    manifest: &RunManifest,
+) -> StoreResult<()> {
     if manifest.store_identity != identity.as_str()
         || manifest.run != scope.run()
         || manifest.cohort.get() != 2027

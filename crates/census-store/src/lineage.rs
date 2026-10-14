@@ -49,12 +49,26 @@ impl Store {
 }
 
 pub(crate) fn read(snapshot: &Snapshot, journal: &Keyspace) -> StoreResult<RetainedIdentity> {
+    read_admitted(
+        snapshot,
+        journal,
+        &mut crate::acquisition::admission::ReadMeter::Legacy,
+    )
+}
+
+pub(crate) fn read_admitted(
+    snapshot: &Snapshot,
+    journal: &Keyspace,
+    meter: &mut crate::acquisition::admission::ReadMeter<'_>,
+) -> StoreResult<RetainedIdentity> {
     let prefix = Store::journal_key(PHASE, "");
     let mut rows = snapshot.prefix(journal, &prefix);
+    meter.probe()?;
     let Some(first) = rows.next() else {
         return Ok(RetainedIdentity::Absent);
     };
     let key = first.key().map_err(|source| StoreError::Read { source })?;
+    meter.probe()?;
     if let Some(second) = rows.next() {
         second.key().map_err(|source| StoreError::Read { source })?;
         return Err(StoreLineageError::Multiple.into());
@@ -74,6 +88,7 @@ pub(crate) fn read(snapshot: &Snapshot, journal: &Keyspace) -> StoreResult<Retai
         }
         .into());
     }
+    meter.value(key.len(), bytes)?;
     let raw = snapshot
         .get(journal, &key)
         .map_err(|source| StoreError::Read { source })?
@@ -85,7 +100,7 @@ pub(crate) fn read(snapshot: &Snapshot, journal: &Keyspace) -> StoreResult<Retai
         }
         .into());
     }
-    envelope::read(raw.as_ref()).map(RetainedIdentity::Present)
+    envelope::read(raw.as_ref(), meter).map(RetainedIdentity::Present)
 }
 
 fn create(store: &Store) -> StoreResult<StoreIdentity> {

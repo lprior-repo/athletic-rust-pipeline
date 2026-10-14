@@ -45,6 +45,7 @@ pub fn classify_error(error: &CrawlError) -> (&'static str, String) {
             FetchError::Policy { .. } | FetchError::OriginHeld { .. } => "policy",
             FetchError::Offline { .. } => "offline",
             FetchError::CaptureStore(_)
+            | FetchError::RecoveryCleanup(_)
             | FetchError::CaptureDomain(_)
             | FetchError::Capture(_)
             | FetchError::Cache { .. }

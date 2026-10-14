@@ -14,7 +14,7 @@ pub(super) enum CaptureProtocol {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-enum CaptureConsumer {
+pub(super) enum CaptureConsumer {
     MilesplitStructuredWholeMeetV1,
 }
 

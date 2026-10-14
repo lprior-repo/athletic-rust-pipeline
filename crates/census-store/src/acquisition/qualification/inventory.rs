@@ -10,11 +10,12 @@ pub(super) fn inventory(
     meta: &Keyspace,
     journal: &Keyspace,
     receipts: &Keyspace,
-    declaration: &CaptureQualificationV1,
+    declaration: &CaptureQualification,
 ) -> StoreResult<()> {
+    let protocol = declaration.protocol();
     let mut budget = AcquisitionReadBudget::inventory();
     let manifest = inventory_manifest(snapshot, meta, &mut budget)?;
-    let prefix = Store::journal_key(SOURCE_ACQUISITION_PHASE, "");
+    let prefix = Store::journal_key(protocol.phase(), "");
     for (position, guard) in snapshot
         .prefix(journal, b"source_acquisition_attempt_")
         .take(1_048_577)
@@ -38,56 +39,23 @@ pub(super) fn inventory(
         let parts: Vec<&str> = key.split('/').take(8).collect();
         match parts.as_slice() {
             ["slot", slot, "binding"] => {
-                let binding: SlotBinding = codec::get(snapshot, journal, key, &mut budget)?
-                    .ok_or(CaptureError::SlotWorkMismatch)?;
-                if binding.slot.id().map_err(CaptureError::Domain)?.as_str() != *slot
-                    || binding.slot.store_identity() != declaration.store_identity()
-                {
-                    return Err(CaptureError::SlotWorkMismatch.into());
-                }
-                let identity = format!("work/{}/identity", binding.work_id);
-                let work: AcquisitionWorkV1 =
-                    codec::get(snapshot, journal, &identity, &mut budget)?
-                        .ok_or(CaptureError::SlotWorkMismatch)?;
-                if work.slot() != &binding.slot
-                    || work.id().map_err(CaptureError::Domain)? != binding.work_id
-                {
-                    return Err(CaptureError::SlotWorkMismatch.into());
-                }
+                inventory_slot(snapshot, journal, key, slot, declaration, &mut budget)?;
             }
             ["work", id, "identity"] => {
                 let id = AcquisitionWorkId::parse(id).map_err(CaptureError::Domain)?;
-                let facts = read::read_work(snapshot, journal, receipts, &id, &mut budget)?;
-                let (manifest, manifest_digest) = manifest
-                    .as_ref()
-                    .ok_or(CaptureError::CaptureRunManifestMissing)?;
-                if manifest.store_identity != declaration.store_identity().as_str()
-                    || facts.work.run() != manifest.run
-                    || facts.work.run_manifest_digest() != manifest_digest
-                    || manifest.cohort.get() != 2027
-                {
-                    return Err(CaptureError::CaptureRunMismatch.into());
-                }
-                if facts.work.slot().store_identity() != declaration.store_identity() {
-                    return Err(CaptureError::CaptureCapabilityForeignStore.into());
-                }
+                let facts =
+                    read::read_work(snapshot, journal, receipts, &id, &mut budget, protocol)?;
+                validate_manifest(declaration, &facts, manifest.as_ref())?;
                 validate_backing(root, snapshot, journal, receipts, &facts, &mut budget)?;
             }
             ["work", id, ..] => {
                 let id = AcquisitionWorkId::parse(id).map_err(CaptureError::Domain)?;
-                let identity =
-                    Store::journal_key(SOURCE_ACQUISITION_PHASE, &format!("work/{id}/identity"));
-                if !snapshot
-                    .contains_key(journal, &identity)
-                    .map_err(|source| StoreError::Read { source })?
-                {
-                    return Err(CaptureError::SlotWorkMismatch.into());
-                }
+                require_work_identity(snapshot, journal, &id, protocol)?;
             }
             _ => return Err(CaptureError::UnsupportedRoot.into()),
         }
     }
-    inventory_receipts(snapshot, journal, receipts, &mut budget)?;
+    inventory_receipts(snapshot, journal, receipts, &mut budget, protocol)?;
     crate::acquisition::cache::inventory(
         root,
         snapshot,
@@ -98,11 +66,72 @@ pub(super) fn inventory(
     )?;
     Ok(())
 }
+fn inventory_slot(
+    snapshot: &Snapshot,
+    journal: &Keyspace,
+    key: &str,
+    slot: &str,
+    declaration: &CaptureQualification,
+    budget: &mut AcquisitionReadBudget,
+) -> StoreResult<()> {
+    let protocol = declaration.protocol();
+    let binding: SlotBinding = codec::get_fact(snapshot, journal, key, budget, protocol)?
+        .ok_or(CaptureError::SlotWorkMismatch)?;
+    if binding.version != protocol {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
+    if binding.slot.id().map_err(CaptureError::Domain)?.as_str() != slot
+        || binding.slot.store_identity() != declaration.store_identity()
+    {
+        return Err(CaptureError::SlotWorkMismatch.into());
+    }
+    let identity = format!("work/{}/identity", binding.work_id);
+    let work: AcquisitionWorkV1 = codec::get(snapshot, journal, &identity, budget, protocol)?
+        .ok_or(CaptureError::SlotWorkMismatch)?;
+    if work.slot() != &binding.slot || work.id().map_err(CaptureError::Domain)? != binding.work_id {
+        return Err(CaptureError::SlotWorkMismatch.into());
+    }
+    Ok(())
+}
+fn validate_manifest(
+    declaration: &CaptureQualification,
+    facts: &WorkFacts,
+    manifest: Option<&(RunManifest, AcquisitionDigest)>,
+) -> StoreResult<()> {
+    let (manifest, manifest_digest) = manifest.ok_or(CaptureError::CaptureRunManifestMissing)?;
+    if manifest.store_identity != declaration.store_identity().as_str()
+        || facts.work.run() != manifest.run
+        || facts.work.run_manifest_digest() != manifest_digest
+        || manifest.cohort.get() != 2027
+    {
+        return Err(CaptureError::CaptureRunMismatch.into());
+    }
+    if facts.work.slot().store_identity() != declaration.store_identity() {
+        return Err(CaptureError::CaptureCapabilityForeignStore.into());
+    }
+    Ok(())
+}
+fn require_work_identity(
+    snapshot: &Snapshot,
+    journal: &Keyspace,
+    id: &AcquisitionWorkId,
+    protocol: CaptureProtocolVersion,
+) -> StoreResult<()> {
+    let identity = Store::journal_key(protocol.phase(), &format!("work/{id}/identity"));
+    if !snapshot
+        .contains_key(journal, &identity)
+        .map_err(|source| StoreError::Read { source })?
+    {
+        return Err(CaptureError::SlotWorkMismatch.into());
+    }
+    Ok(())
+}
 fn inventory_receipts(
     snapshot: &Snapshot,
     journal: &Keyspace,
     receipts: &Keyspace,
     budget: &mut AcquisitionReadBudget,
+    protocol: CaptureProtocolVersion,
 ) -> StoreResult<()> {
     for (position, guard) in snapshot
         .prefix(receipts, b"source_acquisition_attempt_")
@@ -121,7 +150,7 @@ fn inventory_receipts(
         }
         budget.encoded(key.len())?;
         let key = std::str::from_utf8(&key).map_err(|_| CaptureError::UnsupportedRoot)?;
-        let Some(logical) = key.strip_prefix("source_acquisition_attempt_v1/") else {
+        let Some(logical) = key.strip_prefix(&format!("{}/", protocol.phase())) else {
             return Err(CaptureError::CaptureCapabilityNamespaceUnsupported.into());
         };
         let parts: Vec<&str> = logical.split('/').take(6).collect();
@@ -133,10 +162,7 @@ fn inventory_receipts(
             return Err(CaptureError::UnsupportedRoot.into());
         }
         if !snapshot
-            .contains_key(
-                journal,
-                Store::journal_key(SOURCE_ACQUISITION_PHASE, logical),
-            )
+            .contains_key(journal, Store::journal_key(protocol.phase(), logical))
             .map_err(|source| StoreError::Read { source })?
         {
             return Err(CaptureError::CorruptClosure.into());
@@ -155,7 +181,7 @@ fn validate_backing(
     for attempt in &facts.attempts {
         if let Some(terminal) = &attempt.terminal {
             match terminal.terminal() {
-                AcquisitionTerminalV1::ResponseRetained { .. } => {
+                AcquisitionTerminal::ResponseRetained { .. } => {
                     let prepared = attempt
                         .prepared
                         .as_ref()
@@ -168,13 +194,14 @@ fn validate_backing(
                         budget,
                     )?;
                 }
-                AcquisitionTerminalV1::ValidatedNotModified { original, .. } => {
+                AcquisitionTerminal::ValidatedNotModified { original, .. } => {
                     let original_facts = read::read_work(
                         snapshot,
                         journal,
                         receipts,
                         original.attempt().work_id(),
                         budget,
+                        facts.protocol,
                     )?;
                     if facts.work.request() != original_facts.work.request()
                         || original.attempt().store_identity() != facts.work.slot().store_identity()

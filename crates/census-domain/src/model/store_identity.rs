@@ -14,6 +14,12 @@ pub enum StoreIdentityError {
 pub struct StoreIdentity(String);
 
 impl StoreIdentity {
+    pub fn try_clone(&self) -> Result<Self, std::collections::TryReserveError> {
+        let mut value = String::new();
+        value.try_reserve_exact(self.0.len())?;
+        value.push_str(&self.0);
+        Ok(Self(value))
+    }
     pub fn parse(value: &str) -> Result<Self, StoreIdentityError> {
         if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
             return Err(StoreIdentityError::InvalidFormat);

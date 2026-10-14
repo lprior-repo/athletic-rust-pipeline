@@ -3,6 +3,7 @@ use super::{codec, facts::*, read, AcquisitionReadBudget, CaptureError};
 use crate::{Store, StoreResult};
 use census_domain::model::*;
 mod work;
+pub(super) use work::reserve_facts;
 
 impl Store {
     pub fn arm_acquisition_dispatch(
@@ -20,7 +21,7 @@ impl Store {
         {
             return Err(CaptureError::TransitionRefused.into());
         }
-        verify_conditional(self, &facts.work, &request, &snapshot, &mut budget)?;
+        verify_conditional(self, &facts, &request, &snapshot, &mut budget)?;
         let dispatch = AcquisitionDispatchId::new(
             attempt.attempt,
             HopOrdinal::new(0).map_err(CaptureError::Domain)?,
@@ -49,7 +50,7 @@ impl Store {
             return Err(CaptureError::TransitionRefused.into());
         }
         let observed = Observed {
-            version: VersionOne,
+            version: facts.protocol,
             dispatch: dispatch.armed.dispatch,
             response,
         };
@@ -59,6 +60,7 @@ impl Store {
             &mut batch,
             &format!("{}/response", read::dispatch_prefix(&observed.dispatch)),
             &observed,
+            facts.protocol,
         )?;
         codec::commit(batch)?;
         Ok(ObservedResponse {
@@ -93,7 +95,7 @@ impl Store {
             .hop()
             .next()
             .map_err(CaptureError::Domain)?;
-        verify_conditional(self, &facts.work, &request, &snapshot, &mut budget)?;
+        verify_conditional(self, &facts, &request, &snapshot, &mut budget)?;
         let dispatch =
             AcquisitionDispatchId::new(response.observed.dispatch.attempt().clone(), hop);
         arm(self, response.work, dispatch, request)
@@ -119,7 +121,7 @@ impl Store {
         }
         super::backing::validate_metadata(&facts.work, last, &input)?;
         let prepared = Prepared {
-            version: VersionOne,
+            version: facts.protocol,
             attempt: response.observed.dispatch.attempt().clone(),
             dispatch: response.observed.dispatch,
             capture: input,
@@ -131,6 +133,7 @@ impl Store {
             &mut batch,
             &format!("{}/prepared", read::attempt_prefix(&prepared.attempt)),
             &prepared,
+            facts.protocol,
         )?;
         codec::commit(batch)?;
         Ok(PreparedCapture {
@@ -147,7 +150,7 @@ fn arm(
     request: DispatchRequestV1,
 ) -> StoreResult<ArmedDispatch> {
     let armed = Armed {
-        version: VersionOne,
+        version: work.owner.protocol(),
         dispatch,
         request,
     };
@@ -157,6 +160,7 @@ fn arm(
         &mut batch,
         &format!("{}/armed", read::dispatch_prefix(&armed.dispatch)),
         &armed,
+        work.owner.protocol(),
     )?;
     codec::commit(batch)?;
     Ok(ArmedDispatch { work, armed })
@@ -168,7 +172,14 @@ pub(super) fn current(
     budget: &mut AcquisitionReadBudget,
 ) -> StoreResult<WorkFacts> {
     work.verify(store)?;
-    let facts = read::read_work(snapshot, &store.journal, &store.receipts, &work.id, budget)?;
+    let facts = read::read_work(
+        snapshot,
+        &store.journal,
+        &store.receipts,
+        &work.id,
+        budget,
+        work.owner.protocol(),
+    )?;
     if facts.work != work.work {
         return Err(CaptureError::ObligationConflict.into());
     }
@@ -208,7 +219,7 @@ pub(super) fn observed<'a>(
 }
 fn verify_conditional(
     store: &Store,
-    work: &AcquisitionWorkV1,
+    current: &WorkFacts,
     request: &DispatchRequestV1,
     snapshot: &fjall::Snapshot,
     budget: &mut AcquisitionReadBudget,
@@ -220,9 +231,10 @@ fn verify_conditional(
             &store.receipts,
             original.attempt().work_id(),
             budget,
+            current.protocol,
         )?;
-        if facts.work.request() != work.request()
-            || original.attempt().store_identity() != work.slot().store_identity()
+        if facts.work.request() != current.work.request()
+            || original.attempt().store_identity() != current.work.slot().store_identity()
         {
             return Err(CaptureError::CacheOccurrenceMismatch.into());
         }

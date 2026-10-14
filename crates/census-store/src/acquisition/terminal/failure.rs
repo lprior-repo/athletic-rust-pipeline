@@ -23,11 +23,11 @@ impl Store {
             return Err(CaptureError::TransitionRefused.into());
         }
         let terminal = match failure {
-            AcquisitionFailureV1::Transport => AcquisitionTerminalV1::OutcomeUnknown {
+            AcquisitionFailureV1::Transport => AcquisitionTerminal::OutcomeUnknown {
                 checkpoint: last.checkpoint(),
                 cause: InterruptionCauseV1::TransportFailed,
             },
-            AcquisitionFailureV1::Timeout => AcquisitionTerminalV1::OutcomeUnknown {
+            AcquisitionFailureV1::Timeout => AcquisitionTerminal::OutcomeUnknown {
                 checkpoint: last.checkpoint(),
                 cause: InterruptionCauseV1::TransportTimedOut,
             },
@@ -35,7 +35,11 @@ impl Store {
         };
         settle(
             self,
-            ImmutableAttemptResult::new(dispatch.armed.dispatch.attempt().clone(), terminal),
+            ImmutableAttemptResult::new(
+                facts.protocol,
+                dispatch.armed.dispatch.attempt().clone(),
+                terminal,
+            )?,
             None,
         )
     }
@@ -68,13 +72,17 @@ impl Store {
             response_url,
             reason,
         };
-        let terminal = AcquisitionTerminalV1::FailedUncaptured {
+        let terminal = AcquisitionTerminal::FailedUncaptured {
             checkpoint: last.checkpoint(),
             failure,
         };
         settle(
             self,
-            ImmutableAttemptResult::new(dispatch.armed.dispatch.attempt().clone(), terminal),
+            ImmutableAttemptResult::new(
+                facts.protocol,
+                dispatch.armed.dispatch.attempt().clone(),
+                terminal,
+            )?,
             None,
         )
     }
@@ -95,13 +103,17 @@ impl Store {
         ) {
             return Err(CaptureError::TransitionRefused.into());
         }
-        let terminal = AcquisitionTerminalV1::FailedUncaptured {
+        let terminal = AcquisitionTerminal::FailedUncaptured {
             checkpoint: last.checkpoint(),
             failure,
         };
         settle(
             self,
-            ImmutableAttemptResult::new(response.observed.dispatch.attempt().clone(), terminal),
+            ImmutableAttemptResult::new(
+                facts.protocol,
+                response.observed.dispatch.attempt().clone(),
+                terminal,
+            )?,
             None,
         )
     }
@@ -127,9 +139,10 @@ impl Store {
         settle(
             self,
             ImmutableAttemptResult::new(
+                facts.protocol,
                 attempt.attempt,
-                AcquisitionTerminalV1::NotDispatched { failure },
-            ),
+                AcquisitionTerminal::NotDispatched { failure },
+            )?,
             None,
         )
     }
@@ -153,13 +166,17 @@ impl Store {
         if last.dispatches.is_empty() || last.terminal.is_some() || facts.result.is_some() {
             return Err(CaptureError::TransitionRefused.into());
         }
-        let terminal = AcquisitionTerminalV1::OutcomeUnknown {
+        let terminal = AcquisitionTerminal::OutcomeUnknown {
             checkpoint: last.checkpoint(),
             cause,
         };
         settle(
             self,
-            ImmutableAttemptResult::new(last.reservation.attempt.clone(), terminal),
+            ImmutableAttemptResult::new(
+                facts.protocol,
+                last.reservation.attempt.clone(),
+                terminal,
+            )?,
             None,
         )
     }
