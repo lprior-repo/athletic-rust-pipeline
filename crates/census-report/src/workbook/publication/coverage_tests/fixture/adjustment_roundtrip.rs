@@ -260,7 +260,7 @@ fn adjusted_bests_and_nonempty_coverage_survive_json_chunks_publication_and_live
     drop(live);
     let manifest = captured.frozen.manifest();
     check!(eq; manifest.lineage.schema_revision, 3);
-    check!(eq; manifest.lineage.policy_revision, 16);
+    check!(eq; manifest.lineage.policy_revision, 17);
     check!(eq; manifest.streams.len(), 15);
     check!(eq; manifest.source_fingerprints.len(), 16);
     check!(eq; manifest.lineage, captured.dataset.lineage);

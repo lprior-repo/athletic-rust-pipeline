@@ -32,7 +32,7 @@ enum ComponentSupportV1 {
     DatedCurrentAffiliationUnimplemented,
     ExistingTenureComponentsProfileIntegrationPending,
     ExistingOwnedResultTypesProfileIntegrationPending,
-    ExistingPolicy16ProfileIntegrationPending,
+    ExistingPolicy17ProfileIntegrationPending,
     ProfileBoundQualifiedSourceGraphUnimplemented,
     ProfileBoundCompletionFenceUnimplemented,
 }
@@ -78,7 +78,7 @@ fn evidence_semantics_v1(role: ContractRoleV1) -> (EvidenceRuleV1, ComponentSupp
         ),
         ContractRoleV1::Publication => (
             Rule::OneFrozenGenerationSharedDerivationScopedCoverageAtomicVerifiedBundle,
-            Support::ExistingPolicy16ProfileIntegrationPending,
+            Support::ExistingPolicy17ProfileIntegrationPending,
         ),
         ContractRoleV1::SourcePlan => (
             Rule::QualifiedPublicSourceObligationsBoundToScopeSeasonAndAcquisitionWindow,

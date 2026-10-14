@@ -11,8 +11,15 @@ observed results from unverified requirements.
 
 ## Documentation map
 
+The full [Athletic Recruiting Database End Vision and Implementation Specification v2](docs/specifications/athletic-recruiting-end-vision-spec-v2.md)
+(October 11, 2026) is the requested end-state contract. Its initial delivery covers MI/MN/IA/IL/CO,
+with Michigan's Upper Peninsula prioritized, and reusable production state. It is preserved verbatim;
+its requirements do not certify that current runtime behavior or historical artifacts satisfy them.
+Explicit ADR transitions and dated verification evidence govern implementation and compatibility.
+
 | Need | Authoritative document |
 |---|---|
+| Read the complete requested end-state specification | [Recruiting specification v2](docs/specifications/athletic-recruiting-end-vision-spec-v2.md) |
 | Work in this repository | [AGENTS.md](AGENTS.md) |
 | Understand scope, boundaries and binding standards | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Understand why a decision was made | [ADR register](docs/adr/README.md) |

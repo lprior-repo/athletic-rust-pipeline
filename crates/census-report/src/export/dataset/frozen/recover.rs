@@ -74,6 +74,7 @@ pub(super) fn cancel_attempt(
         root::remove_retained(directory)?;
         return Ok(CancelOutcome::Absent);
     };
+    ensure_record_binding(retained, &record)?;
     if record.state() == InputState::Frozen {
         return Ok(CancelOutcome::Retained {
             attempt: retained.attempt.clone(),
@@ -93,6 +94,15 @@ pub(super) fn cancel_attempt(
 pub(super) fn open_manifest(objects_dir: &Path, digest: &str) -> ReportResult<FrozenManifest> {
     let encoded = objects::read(objects_dir, digest, objects::MANIFEST_CEILING)?;
     FrozenManifest::decode(&encoded).map_err(codec_error)
+}
+
+pub(super) fn ensure_record_binding(retained: &Retained, record: &InputRecord) -> ReportResult<()> {
+    if record.chunks().first().map(String::as_str) != Some(retained.manifest.as_str()) {
+        return Err(invalid(
+            "a retained frozen root does not match its durable input record",
+        ));
+    }
+    Ok(())
 }
 
 pub(super) fn ensure_job(manifest: &FrozenManifest, job: &str) -> ReportResult<()> {

@@ -370,3 +370,46 @@ not claimed to be byte-identical after opening the database engine.
 This admission repair does not enable reusable production enrollment, allocate a new physical
 schema, or authorize conversion of a production store. A future lifecycle transition still needs
 its own explicit physical compatibility barrier and stage-specific migration dispatch.
+
+
+### 2026-10-14: selected scalar workbook year and policy 17
+
+Publication semantic policy 17 repairs the existing scalar `Options.grad_year` contract.
+Workbook Coverage and its independent readback consume the selected recruiting derivation.
+Cohort-dependent Review and Conflicts candidates use that derivation's selected year, evidence
+scope and jurisdictions through the shared candidate rule; selecting admitted athletes alone
+would incorrectly erase unresolved candidates. `None` keeps the existing all-graduation-years
+meaning. Run Metrics identifies the workbook cohort separately from the legacy Class-of-2027
+census counters, whose values and serialized fields retain their previous meanings. The
+cohort-free sidecars, public retained-records API and national/qualification seal gates are
+unchanged. This correction does not implement selected-profile runtime execution.
+
+The cutover changes no persisted shape: logical schema 3, frozen codec 3, token protocol 3,
+publication manifest 2, physical store schema 2 and key format 1 remain unchanged. Fifteen
+streams and sixteen source fingerprints remain shape counts. The existing generation, token
+and recipe bindings include policy 17, giving the same source evidence and workbook options
+new publication identities rather than returning a policy-16 Published receipt.
+
+Every policy-16 input and publication remains historical evidence. Current reopen, resume,
+cancellation and semantic verification refuse it under the existing version gates before
+retirement or mutation. Preserve archive and bundle bytes, retained root markers, input
+records, leases and Published requests/receipts. Policy 16 keeps its schema-3 coverage and
+relay shape, including nonempty coverage rows, coach lanes and ordered relay membership.
+No historical artifact is retagged, hydrated, rewritten or certified under policy 17.
+A newly and explicitly selected policy-17 generation can use retained source observations;
+a failed historical job is not silently given a replacement identity.
+
+The configuration-only publication descriptor names the policy-17 component and receives a
+new canonical digest. Its descriptor schema/version and revision remain 1, while its exact
+content reference changes. Historical policy-16 references are retained and refused by exact
+reference checking; raw profiles are not rewritten. The descriptor continues to disclose
+`configuration_only`, profile integration pending and `not_certified`.
+
+Regression obligations add policy 16 to all retained-state, repeated refusal, cancellation,
+archive and store-reopen cases without removing prior-policy cases. A synthetic integrity-only
+publication fixture carries a real persisted Published request and original policy-16 lineage;
+a fresh policy-17 publication with identical evidence and 2027, 2028 or all-year selection must
+have distinct generation, token, recipe and request identities, retain the old bundle and
+receipt, and verify its own newly rendered workbook. This fixture proves transition/refusal
+behavior, not a historical semantic certification. Required Moon verification remains an
+integration obligation; this amendment alone is not release evidence.

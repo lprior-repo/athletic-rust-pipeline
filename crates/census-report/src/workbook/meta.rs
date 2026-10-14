@@ -46,11 +46,7 @@ pub(super) fn write_meta_sheets(
     let rows = step("meta_rows", || {
         StoreRows::of(facts.population, facts.school_year)
     })?;
-    let cohort = cohort_of(
-        facts.population.dataset(),
-        facts.population.scope(),
-        facts.population.jurisdictions(),
-    );
+    let cohort = cohort_of(facts.recruiting);
     let names = school_name_index(rows.schools);
     let conflicts = step("conflicts", || conflict_families(&rows, &cohort, &names))?;
     let review = step("review", || {
