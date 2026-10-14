@@ -216,3 +216,46 @@ counts planned refusals, not archive-capacity failures; team, result and contact
 `iilh`, `6fhk` and the owning feature beads remain open. No reusable-production, selected-profile,
 national, full fault-catalog, global-resource or final-spec acceptance is certified.
 
+### R5/R6 focused evidence repairs — 2026-10-14
+
+Base `b4b6a485`. R5: normalized alias readback now checks `input_generation`
+against frozen lineage, including a copied bundle whose manifest hashes were
+recaptured after tampering. R6: the existing reducer retains sorted, deduplicated
+supporting source IDs through a nonserialized accessor. Exported representative
+IDs/counts and winner ordering remain unchanged. Repeated IDs with equal original
+marks and different adjusted values retain the best converted value deterministically;
+contested contexts discard supporting IDs but retain conflict marks.
+
+Additional reference inventory is pre-admitted before reduction using the existing
+256-MiB logical grouping budget, charging two class references per performance at
+128 bytes plus ID length each. This is conservative accounting, including excluded
+and replayed inputs, and may refuse large historical/current input sets. It is not
+an allocator bound, measured RSS, or qualification of the historical 64-GB problem.
+
+Exact cloud checks through Moon, with `CI` unset and `MOON_RUST_BUILD_JOBS=1`:
+- `tools/moon-local run pipeline:fmt-write`: PASS, 7.447 seconds.
+- Initial normalized/tie run: 56 PASS, 1 FAIL, 711 skipped; the copied-manifest test
+  incorrectly used create-new while its copied manifest existed. Fixed only that
+  temporary-fixture setup; original-bundle preservation assertions remain.
+- Added duplicate-conversion regression before the correction: 0 PASS, 1 FAIL,
+  768 skipped (Nextest `62ff154a-6b71-4387-ac3c-a25cad513fb4`).
+- `tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-report
+  -E 'test(workbook::publication::verify_sidecars::normalized::) |
+  test(bests::tests::ties::) | test(bests::tests::adjustment::) |
+  test(bests::reduce::support::)' --no-capture --no-tests fail`: PASS, 70 tests,
+  0 failures, 701 skipped, 35.420 seconds test time; Nextest
+  `d035d2fd-367e-42cf-8c25-45320daf93e8`.
+- Unchanged base all-target/all-feature `pipeline:check`: PASS, 4m59.164s.
+  Changed-tree all-target check: PENDING. Strict lint/full release, representative
+  memory, live acquisition and national census: NOT RUN for this change.
+
+Changed-surface independent review caught and verified the duplicate-ID ordering
+repair and checked the logical budget, conflict behavior and serialization boundary.
+Functional-core, DDD, Holzman boundedness and adversarial-test review applied; no
+async/lock boundary changed. Complete skill/release qualification is not claimed.
+R5 acceptance mapping: normalized/athletes.rs plus tests/generation.rs. R6 mapping:
+bests/reduce.rs, reduce/{reports,support}.rs, selection.rs and supporting/adjustment
+regressions. R5 still needs complete metadata and broader positive fixtures. R6's
+context-based duplicate-count policy needs identity justification; normalized
+provenance still enumerates exported tied IDs rather than every supporting source ID.
+Neither review item is fully closed by these focused repairs.

@@ -137,7 +137,10 @@ pub(super) fn aliases(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()>
         ("identity_aliases.csv", schema::ALIASES),
         athletes.len(),
         &["original_id"],
-        |row| alias_row(row, &athletes, &members, &projection),
+        |row| {
+            row.text("input_generation", &inputs.dataset.lineage.input_generation)?;
+            alias_row(row, &athletes, &members, &projection)
+        },
     )
 }
 

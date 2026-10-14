@@ -88,11 +88,17 @@ pub struct SharedSelection {
     pub eligible_candidate_count: usize,
     pub tied_performance_count: usize,
     pub tied_performance_ids: Vec<PerformanceId>,
+    #[serde(skip)]
+    pub(super) supporting_tied_candidate_ids: Vec<PerformanceId>,
 }
 
 type OrderKey<'a> = (JurisdictionBucket, &'a str, &'a str, &'a PrKey);
 
 impl SharedSelection {
+    pub fn supporting_tied_candidate_ids(&self) -> &[PerformanceId] {
+        &self.supporting_tied_candidate_ids
+    }
+
     pub fn athlete_id(&self) -> &AthleteId {
         &self.key.athlete_id
     }

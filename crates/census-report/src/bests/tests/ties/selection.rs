@@ -214,7 +214,7 @@ fn shared_selection_unknown_dates_use_stable_id_without_inventing_a_year() -> Te
     assert_all_orders(&fixture, &observations, preferred)
 }
 
-fn provider_evidence(observation: &mut Observation, provider: &str) -> TestResult {
+pub(super) fn provider_evidence(observation: &mut Observation, provider: &str) -> TestResult {
     let url = observation
         .performance
         .evidence
@@ -317,7 +317,7 @@ fn assert_inventory(
     Ok(())
 }
 
-fn same_context(mut report: Observation, context: &Observation) -> Observation {
+pub(super) fn same_context(mut report: Observation, context: &Observation) -> Observation {
     report.meet = context.meet.clone();
     report.event = context.event.clone();
     report.performance.meet = context.performance.meet.clone();
