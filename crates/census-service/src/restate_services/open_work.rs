@@ -13,6 +13,8 @@ use super::wire::{
 use crate::census::JurisdictionStages;
 
 mod athleticlive;
+mod diagnostics;
+use diagnostics::diagnostic_row;
 mod history;
 mod inventory;
 mod source_objects;
@@ -109,7 +111,7 @@ fn reply(
     let mut rows = Vec::new();
     rows.try_reserve_exact(jurisdictions.len())
         .map_err(|_| capacity())?;
-    rows.extend(jurisdictions.into_iter().map(|entry| entry.row));
+    rows.extend(jurisdictions.into_iter().map(diagnostic_row));
     Ok(OpenWorkReply {
         season: season.short(),
         revision: revision.get(),
@@ -160,6 +162,7 @@ async fn read_jurisdictions(
             inventory::validate(&state)?;
             rows.push(ReadJurisdiction { row: JurisdictionOpen { jurisdiction, identity: identity.as_str().to_string(),
                 stages: stages_of(&state, evidence.contacts(jurisdiction), evidence.publication, evidence.rosters(jurisdiction))?, unreadable,
+                teams_stage: None, source_refusals: None,
                 athleticlive_manifest: None, athleticlive_manifest_reason: None }, state });
             Ok(rows)
         }).await

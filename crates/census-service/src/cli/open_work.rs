@@ -2,7 +2,9 @@ use anyhow::Result;
 use clap::Args;
 use restate_sdk::prelude::Json;
 
-use census_service::restate_services::{CensusIngressClient, OpenWorkReply, OpenWorkRequest};
+use census_service::restate_services::{
+    CensusIngressClient, JurisdictionOpen, OpenWorkReply, OpenWorkRequest,
+};
 
 use super::Cli;
 use census_service::ingress;
@@ -72,6 +74,7 @@ fn print_open_work(reply: &OpenWorkReply) -> Result<()> {
             );
             continue;
         }
+        print_diagnostics(&mut std::io::stdout().lock(), row)?;
         let owing = row.stages.owing();
         if owing.is_empty() {
             continue;
@@ -99,3 +102,33 @@ fn print_open_work(reply: &OpenWorkReply) -> Result<()> {
 fn count(value: Option<u64>) -> String {
     value.map_or_else(|| "unmeasured".to_string(), |count| count.to_string())
 }
+
+fn print_diagnostics(writer: &mut impl std::io::Write, row: &JurisdictionOpen) -> Result<()> {
+    if row.unreadable {
+        return Ok(());
+    }
+    let code = row.jurisdiction.code();
+    match &row.teams_stage {
+        Some(stage) => writeln!(
+            writer,
+            "  {code} teams stage: {}",
+            serde_json::to_string(stage)?
+        )?,
+        None => writeln!(writer, "  {code} teams stage: unmeasured")?,
+    }
+    match &row.source_refusals {
+        Some(refusals) => {
+            writeln!(writer, "  {code} source refusals: {}", refusals.len())?;
+            refusals.iter().try_for_each(|refusal| -> Result<()> {
+                writeln!(writer, "    {}", serde_json::to_string(refusal)?)?;
+                Ok(())
+            })?;
+        }
+        None => writeln!(writer, "  {code} source refusals: unmeasured")?,
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+#[path = "open_work/tests.rs"]
+mod tests;

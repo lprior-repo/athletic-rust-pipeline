@@ -2,10 +2,10 @@ use crate::net::{FetchError, FetchOptions, Fetcher};
 use crate::{CrawlError, CrawlResult};
 
 use super::boundary;
-use super::parse::{parse_meet_result_files, parse_team_index, TeamIndexRead};
+use super::parse::{parse_team_index, TeamIndexRead};
 use super::raw::{parse_raw, RawPage};
 use super::roster::{RosterOutcome, RosterQuarantine, RosterVerdict};
-use super::wire::{MeetResultFile, ResultSetRef, Site, TeamRef};
+use super::wire::{ResultSetRef, Site, TeamRef};
 
 pub async fn fetch_team_index(
     fetcher: &Fetcher,
@@ -107,21 +107,6 @@ pub async fn fetch_result_set(
         }));
     }
     parse_raw(&outcome.text(), &reference.url)
-}
-
-pub async fn fetch_meet_result_files(
-    fetcher: &Fetcher,
-    results_url: &str,
-    options: &FetchOptions,
-) -> CrawlResult<Vec<MeetResultFile>> {
-    let outcome = fetcher.get(results_url, options).await?;
-    if outcome.status != 200 {
-        return Err(CrawlError::Fetch(FetchError::Http {
-            status: outcome.status,
-            url: outcome.url.clone(),
-        }));
-    }
-    parse_meet_result_files(&outcome.url, &outcome.text())
 }
 
 #[tracing::instrument(skip(ctx, options))]

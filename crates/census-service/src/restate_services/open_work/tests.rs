@@ -14,6 +14,7 @@ use sha2::{Digest, Sha256};
 
 mod athleticlive;
 mod collection;
+mod diagnostics;
 mod rosters;
 mod source_objects;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -187,6 +188,8 @@ fn omitted_source_or_refusal_cannot_certify_the_registry_inventory() -> TestResu
             unreadable: false,
             athleticlive_manifest: None,
             athleticlive_manifest_reason: None,
+            teams_stage: None,
+            source_refusals: None,
         },
         state: JurisdictionState {
             plan: Some(SourcePlan {

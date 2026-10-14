@@ -28,14 +28,7 @@ pub(super) fn inventory(
             .into());
         }
         let physical = guard.key().map_err(|source| StoreError::Read { source })?;
-        if physical.len() > crate::MAX_JOURNAL_KEY_BYTES {
-            return Err(CaptureError::UnsupportedRoot.into());
-        }
-        budget.encoded(physical.len())?;
-        let logical = physical
-            .strip_prefix(prefix.as_slice())
-            .ok_or(CaptureError::CaptureCapabilityNamespaceUnsupported)?;
-        let key = std::str::from_utf8(logical).map_err(|_| CaptureError::UnsupportedRoot)?;
+        let key = inventory_key(&physical, &prefix, &mut budget)?;
         let parts: Vec<&str> = key.split('/').take(8).collect();
         match parts.as_slice() {
             ["slot", slot, "binding"] => {
@@ -66,6 +59,21 @@ pub(super) fn inventory(
     )?;
     Ok(())
 }
+fn inventory_key<'a>(
+    physical: &'a [u8],
+    prefix: &[u8],
+    budget: &mut AcquisitionReadBudget,
+) -> StoreResult<&'a str> {
+    if physical.len() > crate::MAX_JOURNAL_KEY_BYTES {
+        return Err(CaptureError::UnsupportedRoot.into());
+    }
+    budget.encoded(physical.len())?;
+    let logical = physical
+        .strip_prefix(prefix)
+        .ok_or(CaptureError::CaptureCapabilityNamespaceUnsupported)?;
+    std::str::from_utf8(logical).map_err(|_| CaptureError::UnsupportedRoot.into())
+}
+
 fn inventory_slot(
     snapshot: &Snapshot,
     journal: &Keyspace,
@@ -214,6 +222,17 @@ fn validate_backing(
             }
         }
     }
+    verify_reused_result(root, snapshot, journal, receipts, facts, budget)
+}
+
+fn verify_reused_result(
+    root: &Path,
+    snapshot: &Snapshot,
+    journal: &Keyspace,
+    receipts: &Keyspace,
+    facts: &WorkFacts,
+    budget: &mut AcquisitionReadBudget,
+) -> StoreResult<()> {
     if let Some(result) = &facts.result {
         if result.occurrence.attempt().work_id()
             != &facts.work.id().map_err(CaptureError::Domain)?

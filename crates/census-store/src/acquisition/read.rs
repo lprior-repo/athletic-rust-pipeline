@@ -142,21 +142,7 @@ pub(super) fn read_work(
         })?;
     for ordinal in 1..=3 {
         let ordinal = AttemptOrdinal::new(ordinal).map_err(CaptureError::Domain)?;
-        let (identity, work_id) = match protocol {
-            CaptureProtocolVersion::V1 => (work.slot().store_identity().clone(), id.clone()),
-            CaptureProtocolVersion::V2 => (
-                work.slot().store_identity().try_clone().map_err(|_| {
-                    CaptureError::ReadBudgetExceeded {
-                        resource: "allocation",
-                    }
-                })?,
-                id.try_clone()
-                    .map_err(|_| CaptureError::ReadBudgetExceeded {
-                        resource: "allocation",
-                    })?,
-            ),
-        };
-        let attempt = AcquisitionAttemptId::new(identity, work_id, ordinal);
+        let attempt = read_attempt_id(&work, id, ordinal, protocol)?;
         let Some(mut facts) = closure::attempt(&mut rows, &attempt, protocol, budget)? else {
             break;
         };
@@ -173,6 +159,38 @@ pub(super) fn read_work(
         attempts,
         result,
     };
+    reserve_failed_retention_metadata(&facts, budget)?;
+    closure::work(&facts)?;
+    Ok(facts)
+}
+
+fn read_attempt_id(
+    work: &AcquisitionWorkV1,
+    id: &AcquisitionWorkId,
+    ordinal: AttemptOrdinal,
+    protocol: CaptureProtocolVersion,
+) -> StoreResult<AcquisitionAttemptId> {
+    let (identity, work_id) = match protocol {
+        CaptureProtocolVersion::V1 => (work.slot().store_identity().clone(), id.clone()),
+        CaptureProtocolVersion::V2 => (
+            work.slot().store_identity().try_clone().map_err(|_| {
+                CaptureError::ReadBudgetExceeded {
+                    resource: "allocation",
+                }
+            })?,
+            id.try_clone()
+                .map_err(|_| CaptureError::ReadBudgetExceeded {
+                    resource: "allocation",
+                })?,
+        ),
+    };
+    Ok(AcquisitionAttemptId::new(identity, work_id, ordinal))
+}
+
+fn reserve_failed_retention_metadata(
+    facts: &WorkFacts,
+    budget: &mut AcquisitionReadBudget,
+) -> StoreResult<()> {
     for attempt in facts.attempts.iter().take(3) {
         if attempt.terminal.as_ref().is_some_and(|terminal| {
             matches!(
@@ -187,8 +205,7 @@ pub(super) fn read_work(
             codec::reserve_decode(prepared.capture.metadata_bytes(), budget)?;
         }
     }
-    closure::work(&facts)?;
-    Ok(facts)
+    Ok(())
 }
 
 fn work_rows(
@@ -198,7 +215,7 @@ fn work_rows(
     budget: &mut AcquisitionReadBudget,
     protocol: CaptureProtocolVersion,
 ) -> StoreResult<BTreeMap<String, Vec<u8>>> {
-    let physical_prefix = Store::journal_key(protocol.phase(), &prefix);
+    let physical_prefix = Store::journal_key(protocol.phase(), prefix);
     let mut rows = BTreeMap::new();
     for (position, guard) in snapshot
         .prefix(journal, &physical_prefix)

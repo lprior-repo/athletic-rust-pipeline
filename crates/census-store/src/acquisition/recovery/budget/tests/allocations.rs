@@ -117,3 +117,25 @@ fn prepared_recovery_empty_body_uses_no_body_allocation_and_oversized_body_refus
     assert_eq!(budget.reads.recovery_totals().allocations.live_body, 0);
     Ok(())
 }
+
+#[test]
+fn prepared_recovery_box_debits_survive_release_and_refuse_n_minus_one_calls() -> StoreResult<()> {
+    let mut budget = PreparedRecoveryBudget::admit(usage(1)?, 1)?;
+    budget.reads.recovery_limit_calls(2);
+    {
+        let mut account = budget.begin_target()?;
+        account.reserve_owned(256)?;
+        account.release_owned(256)?;
+        account.reserve_owned(256)?;
+        account.release_owned(256)?;
+        exceeded(account.reserve_owned(256), "allocation calls");
+        let totals = account.reads().recovery_totals().allocations;
+        assert_eq!(totals.owned.used, 512);
+        assert_eq!(totals.calls.used, 2);
+        assert_eq!(totals.live_owned, 0);
+    }
+    assert_eq!(budget.reads.recovery_totals().allocations.owned.used, 512);
+    assert_eq!(budget.reads.recovery_totals().allocations.calls.used, 2);
+    assert_eq!(budget.reads.recovery_totals().allocations.live_owned, 0);
+    Ok(())
+}

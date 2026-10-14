@@ -1,10 +1,7 @@
-use crate::milesplit::fetch::fetch_meet_result_files;
-use crate::net::{FetchOptions, Fetcher};
-use crate::{CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
 
 pub(in crate::milesplit) mod bounded;
-pub use bounded::{read_meet_pages_bounded, BoundedMeetPages, MeetPageLimits};
+pub use bounded::{read_meet_pages, BoundedMeetPages, MeetPageLimits};
 
 pub const MISMATCH_LIMIT: usize = 25;
 
@@ -62,34 +59,6 @@ impl MeetPages {
     pub fn stopped(&self) -> bool {
         self.quarantined.len() >= MISMATCH_LIMIT && self.quarantined.len() > self.pages_read
     }
-}
-
-pub async fn read_meet_pages(
-    fetcher: &Fetcher,
-    pages: impl IntoIterator<Item = MeetPage>,
-    options: &FetchOptions,
-) -> CrawlResult<MeetPages> {
-    let mut out = MeetPages::default();
-    for page in pages {
-        if out.stopped() {
-            break;
-        }
-        match fetch_meet_result_files(fetcher, &page.results_url, options).await {
-            Ok(files) => {
-                out.pages_read = out.pages_read.saturating_add(1);
-                out.files.extend(files.iter().map(|file| ListedResultFile {
-                    url: file.raw_url(&page.results_url),
-                    jurisdiction: page.jurisdiction,
-                    is_meet_pro: file.is_meet_pro,
-                }));
-            }
-            Err(CrawlError::Schema { detail, .. }) => {
-                out.quarantined.push((page.results_url.clone(), detail));
-            }
-            Err(other) => return Err(other),
-        }
-    }
-    Ok(out)
 }
 
 #[cfg(test)]

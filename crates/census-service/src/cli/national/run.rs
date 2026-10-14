@@ -1,12 +1,14 @@
 use anyhow::{Context, Result};
 use census_crawl::ingress::{CurrentRoute, Ingress};
+use census_domain::{model::SchoolYear, UsJurisdiction};
 use census_reconcile::identity::{admitted_scope, Revision, WorkflowIdentity};
 use census_service::restate_services::{
-    JurisdictionCensusIngressClient, JurisdictionRequest, NationalCensusIngressClient,
-    NationalReport, NationalRequest, SchoolAddressJoinRequest,
+    HistoryWindow, JurisdictionCensusIngressClient, JurisdictionRequest,
+    NationalCensusIngressClient, NationalReport, NationalRequest, SchoolAddressJoinRequest,
 };
 use restate_sdk::ingress::{InvocationHandle, SendStatus};
 use restate_sdk::prelude::*;
+use std::num::NonZeroU32;
 
 use super::observe::{observe, observe_jurisdiction, Watch};
 use super::report::{failure_exit, print_jurisdiction, print_national};
@@ -15,6 +17,9 @@ use crate::cli::Cli;
 use census_service::ingress;
 
 mod resume;
+#[cfg(test)]
+#[path = "run/size_tests.rs"]
+mod size_tests;
 
 pub(crate) async fn attach_existing(
     ingestion: &Ingress,
@@ -91,29 +96,16 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     let mut ordinal = args.resume;
     for cycle in 1..=cycles {
         let identity = resume::identity(season, revision, &jurisdictions, ordinal);
-        let history = if ordinal.is_some() {
-            resume::history(&ingestion, season, revision, &jurisdictions).await?
-        } else {
-            census_service::restate_services::HistoryWindow::cohort(
-                &chrono::Utc::now().date_naive().to_string(),
-            )
-            .map_err(anyhow::Error::msg)?
-        };
-        let request = NationalRequest {
+        let request = national_request(
+            cli,
+            args,
+            &ingestion,
             season,
             revision,
-            history,
-            jurisdictions: jurisdictions.clone(),
-            refresh: args.refresh,
-            limit_per_state: args.limit_per_state,
-            concurrency: args.concurrency,
-            observed_on: None,
-            authorized_hosts: cli.authorized_hosts.clone(),
-            source_parallelism: cli.source_parallelism,
-            school_address: school_address_request(args)?,
-            pass_budget: args.pass_budget,
-            pass_delay_seconds: args.pass_delay_seconds,
-        };
+            &jurisdictions,
+            ordinal,
+        )
+        .await?;
         let handle = submit_national(&ingestion, &identity, request).await?;
         println!(
             "{} invocation {}",
@@ -138,14 +130,8 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
                 return failure_exit(&report);
             }
             Err(error) if cycle < cycles => {
-                let next = match ordinal {
-                    None => 2,
-                    Some(current) => current
-                        .get()
-                        .checked_add(1)
-                        .context("resume ordinal exhausted")?,
-                };
-                ordinal = Some(std::num::NonZeroU32::new(next).context("resume ordinal wrapped")?);
+                let next = next_resume_ordinal(ordinal)?;
+                ordinal = Some(next);
                 println!(
                     "drive cycle {cycle}: the run is still owed work ({error:#}); re-driving under resume ordinal {next}"
                 );
@@ -159,6 +145,51 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
         "drive finished without a completed run report"
     ))
 }
+
+#[tracing::instrument(skip_all)]
+async fn national_request(
+    cli: &Cli,
+    args: &NationalArgs,
+    ingestion: &Ingress,
+    season: SchoolYear,
+    revision: Revision,
+    jurisdictions: &[UsJurisdiction],
+    ordinal: Option<NonZeroU32>,
+) -> Result<NationalRequest> {
+    let history = if ordinal.is_some() {
+        resume::history(ingestion, season, revision, jurisdictions).await?
+    } else {
+        HistoryWindow::cohort(&chrono::Utc::now().date_naive().to_string())
+            .map_err(anyhow::Error::msg)?
+    };
+    Ok(NationalRequest {
+        season,
+        revision,
+        history,
+        jurisdictions: jurisdictions.to_vec(),
+        refresh: args.refresh,
+        limit_per_state: args.limit_per_state,
+        concurrency: args.concurrency,
+        observed_on: None,
+        authorized_hosts: cli.authorized_hosts.clone(),
+        source_parallelism: cli.source_parallelism,
+        school_address: school_address_request(args)?,
+        pass_budget: args.pass_budget,
+        pass_delay_seconds: args.pass_delay_seconds,
+    })
+}
+
+fn next_resume_ordinal(ordinal: Option<NonZeroU32>) -> Result<NonZeroU32> {
+    let next = match ordinal {
+        None => 2,
+        Some(current) => current
+            .get()
+            .checked_add(1)
+            .context("resume ordinal exhausted")?,
+    };
+    NonZeroU32::new(next).context("resume ordinal wrapped")
+}
+
 #[tracing::instrument(skip_all, fields(command = "jurisdiction"))]
 pub(crate) async fn run_jurisdiction(cli: &Cli, args: &JurisdictionArgs) -> Result<()> {
     let (season, revision) = (args.flags.season()?, args.flags.revision());

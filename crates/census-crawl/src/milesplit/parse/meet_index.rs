@@ -44,11 +44,6 @@ fn meet_result_files_regex() -> CrawlResult<&'static Regex> {
         })
 }
 
-fn legacy_option(option_html: &str) -> Option<(i64, String)> {
-    let (id, name) = legacy_fields(option_html)?;
-    Some((id, name.to_string()))
-}
-
 fn legacy_fields(option_html: &str) -> Option<(i64, &str)> {
     let re = LEGACY_OPTION_REGEX.as_ref().ok()?;
     let cap = re.captures(option_html)?;
@@ -57,55 +52,10 @@ fn legacy_fields(option_html: &str) -> Option<(i64, &str)> {
     (!name.is_empty() && id > 0).then_some((id, name))
 }
 
-fn parse_legacy_results_page(html: &str) -> Option<Vec<MeetResultFile>> {
-    let re = DD_RESULTS_PAGE_REGEX.as_ref().ok()?;
-    let select_html = re.captures(html)?.get(1)?.as_str();
-    let mut files = Vec::new();
-    for option_match in LEGACY_OPTION_REGEX
-        .as_ref()
-        .ok()?
-        .captures_iter(select_html)
-    {
-        if let Some((id, name)) = legacy_option(option_match.get(0)?.as_str()) {
-            files.push(MeetResultFile {
-                id,
-                name,
-                is_meet_pro: 0,
-                inline: false,
-            });
-        }
-    }
-    Some(files)
-}
-
 pub fn parse_meet_result_files(url: &str, html: &str) -> CrawlResult<Vec<MeetResultFile>> {
-    let regex = meet_result_files_regex()?;
-    let Some(captured) = regex.captures(html) else {
-        if let Some(files) = parse_legacy_results_page(html) {
-            return Ok(files);
-        }
-        if html.contains(INLINE_RESULTS_ANCHOR) {
-            return Ok(vec![MeetResultFile {
-                id: 0,
-                name: "Results".to_string(),
-                is_meet_pro: 0,
-                inline: true,
-            }]);
-        }
-        return Err(CrawlError::Schema {
-            url: url.to_string(),
-            detail: "no meetResultFiles literal, ddResultsPage select or meetResultsBody block"
-                .to_string(),
-        });
-    };
-    let literal = captured
-        .get(1)
-        .map(|match_| match_.as_str())
-        .map_or(Default::default(), core::convert::identity);
-    serde_json::from_str(literal).map_err(|source| CrawlError::Decode {
-        url: "meet results page".to_string(),
-        source,
-    })
+    use crate::milesplit::results::pages::bounded::{Allocation, MeetPageLimits, MAX_FILES};
+    let mut allocation = Allocation::new(MeetPageLimits::standard());
+    parse_bounded(url, html, MAX_FILES, &mut allocation)
 }
 
 fn meet_row_id_regex() -> CrawlResult<&'static Regex> {

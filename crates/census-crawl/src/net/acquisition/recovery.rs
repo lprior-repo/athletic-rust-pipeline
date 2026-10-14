@@ -12,7 +12,7 @@ pub use crate::net::cache::recovery::{EligiblePublicationOutcome, EligiblePublic
 
 pub enum PreparedRecoveryOutcome {
     Retained {
-        captured: CapturedFetch,
+        captured: Box<CapturedFetch>,
         terminal: ImmutableAttemptResult,
         receipt: Receipt,
         eligible: EligiblePublicationOutcome,
@@ -144,6 +144,15 @@ fn retained_outcome(
     mut retained: CommittedRetainedBody<'_>,
     capacity: u64,
 ) -> PreparedRecoveryOutcome {
+    if let Err(error) = retained.reserve_consumer_owned(std::mem::size_of::<CapturedFetch>()) {
+        let parts = retained.into_parts();
+        return PreparedRecoveryOutcome::RetainedUnavailable {
+            occurrence: parts.occurrence,
+            terminal: parts.terminal,
+            receipt: parts.receipt,
+            consumption_error: error.into(),
+        };
+    }
     let eligible = match retained.publication_io() {
         Ok((fence, prepared, occurrence, io)) => {
             publish_recovered_eligible_held(fence, prepared, occurrence, capacity, io)
@@ -154,7 +163,7 @@ fn retained_outcome(
     };
     let (captured, terminal, receipt) = CapturedFetch::from_prepared_recovery(retained);
     PreparedRecoveryOutcome::Retained {
-        captured,
+        captured: Box::new(captured),
         terminal,
         receipt,
         eligible,

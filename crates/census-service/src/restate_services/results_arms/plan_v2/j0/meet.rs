@@ -1,11 +1,19 @@
 use super::super::{Discovery, DiscoveryFailureCategory, MeetRoute, PlanBuilder, ResultsPlanError};
 use super::{error, Planner};
 use census_crawl::milesplit::{MeetPage, MeetPageLimits, ResultSetOptions};
+use census_crawl::net::FetchOptions;
 use census_domain::model::{AcquisitionWorkV1, SourceMeetRef};
 use census_store::AcquisitionReadBudget;
 use restate_sdk::prelude::HandlerError;
+use std::ops::ControlFlow;
 
 type SelectionState = (PlanBuilder, AcquisitionReadBudget);
+
+struct PreparedMeet {
+    work: AcquisitionWorkV1,
+    page: MeetPage,
+    options: FetchOptions,
+}
 
 impl Planner<'_> {
     #[tracing::instrument(skip_all)]
@@ -31,6 +39,32 @@ impl Planner<'_> {
         }
         let allocation = super::super::request::allocation(&meet.results_url).map_err(error)?;
         plan.charge_planning(allocation).map_err(error)?;
+        let (work, page, options) = match self.prepare_meet(&mut plan, index)? {
+            ControlFlow::Continue(PreparedMeet {
+                work,
+                page,
+                options,
+            }) => (work, page, options),
+            ControlFlow::Break(()) => return Ok((plan, ledger)),
+        };
+        let route = self.read_target(&mut plan, &mut ledger, work)?;
+        let limits = MeetPageLimits::new(plan.discovery_allowance().map_err(error)?);
+        let pages = census_crawl::milesplit::read_meet_pages(
+            self.fetcher,
+            std::iter::once(page),
+            &options,
+            limits,
+        )
+        .await;
+        plan.record_pages(pages, route).map_err(error)?;
+        Ok((plan, ledger))
+    }
+
+    fn prepare_meet(
+        &self,
+        plan: &mut PlanBuilder,
+        index: usize,
+    ) -> Result<ControlFlow<(), PreparedMeet>, HandlerError> {
         let meet = plan
             .meets()
             .get(index)
@@ -47,7 +81,7 @@ impl Planner<'_> {
                     MeetRoute::NotOwned,
                 )
                 .map_err(error)?;
-                return Ok((plan, ledger));
+                return Ok(ControlFlow::Break(()));
             }
         };
         let options = super::super::request::options(self.store, self.fetcher, self.scope, meet)?;
@@ -61,7 +95,7 @@ impl Planner<'_> {
                         MeetRoute::NotOwned,
                     )
                     .map_err(error)?;
-                    return Ok((plan, ledger));
+                    return Ok(ControlFlow::Break(()));
                 }
                 Err(failure) => {
                     return Err(crate::restate_services::job_error(
@@ -74,17 +108,11 @@ impl Planner<'_> {
             .for_owned_meet(reference.site.jurisdiction(), &reference.meet_id, request)
             .map_err(|failure| crate::restate_services::job_error(failure.into()))?;
         let page = page(meet).map_err(error)?;
-        let route = self.read_target(&mut plan, &mut ledger, work)?;
-        let limits = MeetPageLimits::new(plan.discovery_allowance().map_err(error)?);
-        let pages = census_crawl::milesplit::read_meet_pages_bounded(
-            self.fetcher,
-            std::iter::once(page),
-            &options,
-            limits,
-        )
-        .await;
-        plan.record_pages(pages, route).map_err(error)?;
-        Ok((plan, ledger))
+        Ok(ControlFlow::Continue(PreparedMeet {
+            work,
+            page,
+            options,
+        }))
     }
 
     fn read_target(

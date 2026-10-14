@@ -30,7 +30,7 @@ enum GrantSlot {
     Consumed,
     Resolved {
         target: PreparedRecoveryTarget,
-        captured: CapturedFetch,
+        captured: Box<CapturedFetch>,
     },
     ResolvedConsumed,
 }
@@ -56,7 +56,7 @@ impl ResultsCaptureContext {
         owner: ResultsCaptureOwnerV1,
         target: PreparedRecoveryTarget,
         exact_work: AcquisitionWorkV1,
-        captured: CapturedFetch,
+        captured: Box<CapturedFetch>,
     ) -> CrawlResult<Self> {
         let CaptureProvenanceView::Retained {
             occurrence,
@@ -113,7 +113,7 @@ impl ResultsCaptureContext {
                 if target.store_identity() != self.owner.store_identity() {
                     return Err(CaptureTransportError::TargetMismatch.into());
                 }
-                Ok(Some(captured))
+                Ok(Some(*captured))
             }
             _ => Err(CaptureTransportError::DispatchConsumed.into()),
         }

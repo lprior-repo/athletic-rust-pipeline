@@ -1,9 +1,11 @@
-use super::{ListedResultFile, MeetPage, MeetPages, MISMATCH_LIMIT};
+use super::{MeetPage, MeetPages};
 use crate::net::{FetchOptions, Fetcher};
 use crate::{CrawlError, CrawlResult};
 use std::fmt::Write;
 
-const MAX_FILES: usize = 4096;
+mod discovery;
+
+pub(in crate::milesplit) const MAX_FILES: usize = 4096;
 const MAX_TEXT: usize = 4096;
 
 pub struct MeetPageLimits {
@@ -11,6 +13,10 @@ pub struct MeetPageLimits {
 }
 
 impl MeetPageLimits {
+    pub fn standard() -> Self {
+        Self::new(64 * 1024 * 1024)
+    }
+
     pub fn new(allocation_bytes: u64) -> Self {
         Self { allocation_bytes }
     }
@@ -36,6 +42,23 @@ pub(in crate::milesplit) struct Allocation {
 }
 
 impl Allocation {
+    pub(in crate::milesplit) fn new(limits: MeetPageLimits) -> Self {
+        Self {
+            limit: limits.allocation_bytes,
+            requested: 0,
+        }
+    }
+
+    pub(in crate::milesplit) fn text(&mut self, value: &str) -> CrawlResult<String> {
+        self.reserve(value.len())?;
+        let mut owned = String::new();
+        owned
+            .try_reserve_exact(value.len())
+            .map_err(|_| resource("meet-page allocation", value.len(), value.len()))?;
+        owned.push_str(value);
+        Ok(owned)
+    }
+
     pub(in crate::milesplit) fn reserve(&mut self, bytes: usize) -> CrawlResult<()> {
         let bytes = u64::try_from(bytes)
             .map_err(|_| resource("meet-page allocation", usize::MAX, usize::MAX))?;
@@ -102,93 +125,18 @@ pub(in crate::milesplit) fn resource(
     }
 }
 
-pub async fn read_meet_pages_bounded(
+pub async fn read_meet_pages(
     fetcher: &Fetcher,
     pages: impl IntoIterator<Item = MeetPage>,
     options: &FetchOptions,
     limits: MeetPageLimits,
 ) -> BoundedMeetPages {
-    let mut allocation = Allocation {
-        limit: limits.allocation_bytes,
-        requested: 0,
-    };
-    let pages = discover(fetcher, pages, options, &mut allocation).await;
+    let mut allocation = Allocation::new(limits);
+    let pages = discovery::discover(fetcher, pages, options, &mut allocation).await;
     BoundedMeetPages {
         pages,
         allocation_requested: allocation.requested,
     }
-}
-
-async fn discover(
-    fetcher: &Fetcher,
-    pages: impl IntoIterator<Item = MeetPage>,
-    options: &FetchOptions,
-    allocation: &mut Allocation,
-) -> CrawlResult<MeetPages> {
-    let mut out = MeetPages::default();
-    for (ordinal, page) in pages.into_iter().enumerate() {
-        if out.stopped() {
-            break;
-        }
-        if ordinal >= MAX_FILES {
-            return Err(resource("meet pages", ordinal.saturating_add(1), MAX_FILES));
-        }
-        if page.results_url.len() > MAX_TEXT {
-            return Err(resource("meet-page URL", page.results_url.len(), MAX_TEXT));
-        }
-        let outcome = fetcher.get(&page.results_url, options).await?;
-        if outcome.status != 200 {
-            return Err(crate::net::FetchError::Http {
-                status: outcome.status,
-                url: outcome.url,
-            }
-            .into());
-        }
-        let html = match std::str::from_utf8(&outcome.body) {
-            Ok(html) => std::borrow::Cow::Borrowed(html),
-            Err(_) => std::borrow::Cow::Owned(lossy_body(&outcome.body, allocation)?),
-        };
-        let remaining = MAX_FILES
-            .checked_sub(out.files.len())
-            .ok_or_else(|| resource("meet-page files", usize::MAX, MAX_FILES))?;
-        match crate::milesplit::parse::meet_index::parse_bounded(
-            &outcome.url,
-            &html,
-            remaining,
-            allocation,
-        ) {
-            Ok(files) => {
-                out.pages_read = out
-                    .pages_read
-                    .checked_add(1)
-                    .ok_or_else(|| resource("meet pages", usize::MAX, MAX_FILES))?;
-                for file in files {
-                    let url = raw_url(&file, &page.results_url, allocation)?;
-                    allocation.push(
-                        &mut out.files,
-                        ListedResultFile {
-                            url,
-                            jurisdiction: page.jurisdiction,
-                            is_meet_pro: file.is_meet_pro,
-                        },
-                        MAX_FILES,
-                    )?;
-                }
-            }
-            Err(CrawlError::Schema { detail, .. }) => {
-                if detail.len() > MAX_TEXT {
-                    return Err(resource("meet-page diagnostic", detail.len(), MAX_TEXT));
-                }
-                allocation.push(
-                    &mut out.quarantined,
-                    (page.results_url, detail),
-                    MISMATCH_LIMIT,
-                )?;
-            }
-            Err(error) => return Err(error),
-        }
-    }
-    Ok(out)
 }
 
 fn lossy_body(mut bytes: &[u8], allocation: &mut Allocation) -> CrawlResult<String> {

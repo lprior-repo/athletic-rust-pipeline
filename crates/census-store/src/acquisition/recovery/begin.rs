@@ -13,49 +13,8 @@ impl Store {
         let mut account = budget.begin_target()?;
         account.diagnostic_bytes(512)?;
         account.reserve_owned(512)?;
-        if owner.protocol() != CaptureProtocolVersion::V2 {
-            return Err(CaptureError::CaptureProtocolUnsupported.into());
-        }
-        if !Arc::ptr_eq(&owner.writer.origin, &self.appends)
-            || owner.store_identity() != target.store_identity()
-        {
-            return Err(CaptureError::CaptureCapabilityForeignStore.into());
-        }
-        match account.owner_admission(self, owner)? {
-            budget::OwnerAdmission::Validated => {}
-            budget::OwnerAdmission::Refresh => admission::owner(self, owner, account.reads())?,
-            budget::OwnerAdmission::Bind => {
-                let proof = admission::validated(self, owner, account.reads())?;
-                account.bind_owner(proof)?;
-            }
-        }
-        account.path_bytes(
-            self.root()
-                .as_os_str()
-                .len()
-                .checked_add(64)
-                .ok_or(StoreError::CounterOverflow)?,
-        )?;
-        account.reserve_owned(
-            self.root()
-                .as_os_str()
-                .len()
-                .checked_mul(3)
-                .and_then(|bytes| bytes.checked_add(256))
-                .ok_or(StoreError::CounterOverflow)?,
-        )?;
-        let http = self.http_cache_dir();
-        backing::safe_root(&http, &mut account)?;
-        fence::preflight(&http, &mut account)?;
-        account.diagnostic_bytes(
-            http.as_os_str()
-                .len()
-                .checked_add(32)
-                .ok_or(StoreError::CounterOverflow)?,
-        )?;
-        account.direct_operation(RecoveryFsOperation::Open)?;
-        let fence = ArchiveWriteFence::acquire(&http)?;
-        fence::verify(&fence, &mut account)?;
+        admit_recovery_owner(self, owner, target, &mut account)?;
+        let (http, fence) = acquire_archive_fence(self, &mut account)?;
         let writes = self.lock_appends();
         let mut facts = read::read_work(
             &self.db.snapshot(),
@@ -94,6 +53,67 @@ impl Store {
             state: State::Uninspected,
         })
     }
+}
+
+fn admit_recovery_owner(
+    store: &Store,
+    owner: &crate::ResultsCaptureOwnerV1,
+    target: &PreparedRecoveryTarget,
+    account: &mut budget::TargetAccount<'_>,
+) -> StoreResult<()> {
+    if owner.protocol() != CaptureProtocolVersion::V2 {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
+    if !Arc::ptr_eq(&owner.writer.origin, &store.appends)
+        || owner.store_identity() != target.store_identity()
+    {
+        return Err(CaptureError::CaptureCapabilityForeignStore.into());
+    }
+    match account.owner_admission(store, owner)? {
+        budget::OwnerAdmission::Validated => {}
+        budget::OwnerAdmission::Refresh => admission::owner(store, owner, account.reads())?,
+        budget::OwnerAdmission::Bind => {
+            let proof = admission::validated(store, owner, account.reads())?;
+            account.bind_owner(proof)?;
+        }
+    }
+    Ok(())
+}
+
+pub(super) fn acquire_archive_fence(
+    store: &Store,
+    account: &mut budget::TargetAccount<'_>,
+) -> StoreResult<(std::path::PathBuf, ArchiveWriteFence)> {
+    account.path_bytes(
+        store
+            .root()
+            .as_os_str()
+            .len()
+            .checked_add(64)
+            .ok_or(StoreError::CounterOverflow)?,
+    )?;
+    account.reserve_owned(
+        store
+            .root()
+            .as_os_str()
+            .len()
+            .checked_mul(3)
+            .and_then(|bytes| bytes.checked_add(256))
+            .ok_or(StoreError::CounterOverflow)?,
+    )?;
+    let http = store.http_cache_dir();
+    backing::safe_root(&http, account)?;
+    fence::preflight(&http, account)?;
+    account.diagnostic_bytes(
+        http.as_os_str()
+            .len()
+            .checked_add(32)
+            .ok_or(StoreError::CounterOverflow)?,
+    )?;
+    account.direct_operation(RecoveryFsOperation::Open)?;
+    let fence = ArchiveWriteFence::acquire(&http)?;
+    fence::verify(&fence, account)?;
+    Ok((http, fence))
 }
 
 fn exact_target(facts: &WorkFacts, target: &PreparedRecoveryTarget) -> StoreResult<usize> {
