@@ -11,6 +11,9 @@ const URL: &str = "https://indiana.tfrrs.org/lists/5489/HSR_All_School_Performan
 const HISTORICAL_PHASE: &str = "tfrrs_projection_v3";
 const LIST: &str = include_str!("../../tests/fixtures/tfrrs/indiana_list_5489_excerpt.html");
 
+#[path = "run_receipts_date_tests.rs"]
+mod dates;
+
 fn context<'a>(
     store: &'a Store,
     fetcher: &'a crate::net::Fetcher,
@@ -92,7 +95,7 @@ async fn collect(ctx: &AdapterContext<'_>) -> TestResult<crate::AdapterReport> {
 }
 
 #[test]
-fn v3_completion_does_not_suppress_v4_xc_interpretation_and_unchanged_row_effects_replay_once(
+fn v3_completion_does_not_suppress_current_xc_interpretation_and_unchanged_row_effects_replay_once(
 ) -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let dir = tempfile::tempdir()?;
@@ -110,7 +113,7 @@ fn v3_completion_does_not_suppress_v4_xc_interpretation_and_unchanged_row_effect
             "body_sha256": content_digest(body.as_bytes()), "projection_context": old_context});
         store.journal_done(HISTORICAL_PHASE, &old_key, &historical)?;
         let history = snapshot(&store, HISTORICAL_PHASE)?;
-        check!(eq; PHASE, "tfrrs_projection_v4");
+        check!(eq; PHASE, "tfrrs_projection_v5");
         let new_context = super::context(&ctx, &bindings)?;
         check!(ne; new_context, old_context);
         let new_key = key(&new_context, URL, &content_digest(body.as_bytes()))?;
