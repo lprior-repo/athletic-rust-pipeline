@@ -20,6 +20,11 @@ impl ServiceResourceProfileV1 {
     pub const MAX_CONCURRENT: usize = 1024;
     pub const GIB: u64 = 1024 * 1024 * 1024;
     pub const MAX_MEMORY_BYTES: u64 = 1024 * Self::GIB;
+    pub const ENROLLMENT_DEFAULTS_V1: Self = Self {
+        max_concurrent: 8,
+        memory_budget_bytes: 48 * Self::GIB,
+        drain_timeout_seconds: 30,
+    };
 
     pub fn new(
         max_concurrent: usize,

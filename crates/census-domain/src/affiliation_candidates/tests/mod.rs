@@ -10,3 +10,5 @@ type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 mod material_admission;
 
 mod material_branches;
+
+mod effective_relationship;

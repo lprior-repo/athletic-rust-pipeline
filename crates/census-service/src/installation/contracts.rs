@@ -38,11 +38,7 @@ pub fn defaults() -> Result<InstallationContractsV1, InstallationCompileError> {
         version: 1,
         revision: 1,
         name: "installation_enrollment_defaults_v1",
-        service_resources: ServiceResourceProfileV1::new(
-            crate::bootstrap::DEFAULT_MAX_CONCURRENT,
-            crate::bootstrap::DEFAULT_MEMORY_BUDGET_BYTES,
-            crate::bootstrap::DEFAULT_DRAIN_TIMEOUT.as_secs(),
-        )?,
+        service_resources: ServiceResourceProfileV1::ENROLLMENT_DEFAULTS_V1,
         capability: InstallationCapabilityV1::EnrollmentOnlyV1,
     };
     let source_registry_reference =

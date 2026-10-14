@@ -43,14 +43,24 @@ pub(super) fn classify_assertion(
         Err(gap) => return Ok(Disposition::TemporalUnresolved(gap)),
         Ok(true) => {}
     }
-    if matches!(
+    Ok(classify_effective_relationship(
         raw.relationship,
+        query.as_of,
+    ))
+}
+
+fn classify_effective_relationship(
+    relationship: RelationshipCandidate<'_>,
+    as_of: &ProfileDate,
+) -> Disposition {
+    if matches!(
+        relationship,
         RelationshipCandidate::RepresentsCoopProgram {
             member: CoopMemberCandidate::Unknown,
             ..
         }
     ) {
-        return Ok(Disposition::CoopMemberUnknown);
+        return Disposition::CoopMemberUnknown;
     }
     if let RelationshipCandidate::RepresentsCoopProgram {
         member:
@@ -60,15 +70,14 @@ pub(super) fn classify_assertion(
                 ..
             },
         ..
-    } = raw.relationship
+    } = relationship
     {
-        if !campus_binding_interval.contains(query.as_of)
-            || !program_membership_interval.contains(query.as_of)
+        if !campus_binding_interval.contains(as_of) || !program_membership_interval.contains(as_of)
         {
-            return Ok(Disposition::CoopMemberUnknown);
+            return Disposition::CoopMemberUnknown;
         }
     }
-    Ok(Disposition::Candidate)
+    Disposition::Candidate
 }
 
 fn changed_disposition(

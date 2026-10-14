@@ -15,15 +15,7 @@ impl Fetcher {
     ) -> Result<reqwest::Response, FetchError> {
         let request = self.planned_request(url, plan)?;
         if session.is_adopted() {
-            self.destination.validate_resolved_url(url).await?;
-            if let Some(refusal) = self.refused_admission(host, url).await {
-                return Err(refusal);
-            }
-            if self.host_blocked(host, &crate::net::now_iso8601()).await {
-                return Err(FetchError::Cooldown {
-                    host: host.to_owned(),
-                });
-            }
+            self.admit_adopted_dispatch(url, host).await?;
         }
         #[cfg(test)]
         session.prearm_timeout(url)?;
@@ -73,6 +65,19 @@ impl Fetcher {
         session.interrupt(crate::net::acquisition::CaptureInterruption::AfterObserved)?;
         Ok(response)
     }
+    async fn admit_adopted_dispatch(&self, url: &str, host: &str) -> Result<(), FetchError> {
+        self.destination.validate_resolved_url(url).await?;
+        if let Some(refusal) = self.refused_admission(host, url).await {
+            return Err(refusal);
+        }
+        if self.host_blocked(host, &crate::net::now_iso8601()).await {
+            return Err(FetchError::Cooldown {
+                host: host.to_owned(),
+            });
+        }
+        Ok(())
+    }
+
     fn planned_request(
         &self,
         url: &str,

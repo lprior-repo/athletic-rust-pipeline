@@ -59,43 +59,7 @@ pub(super) fn crate_boundaries() -> Result<Check> {
     let mut deviations: Vec<String> = Vec::new();
 
     for (name, dependencies) in &members {
-        let internal: Vec<&String> = dependencies
-            .iter()
-            .filter(|dependency| members.contains_key(*dependency))
-            .collect();
-
-        if name == DOMAIN {
-            for dependency in dependencies {
-                if DOMAIN_FORBIDDEN.contains(&dependency.as_str())
-                    || members.contains_key(dependency)
-                {
-                    failures.push(format!(
-                        "{DOMAIN} depends on {dependency}; the domain crate owns pure constrained types only"
-                    ));
-                }
-            }
-        }
-
-        if name == "xtask" {
-            for dependency in &internal {
-                if TOOLING_FORBIDDEN.contains(&dependency.as_str()) {
-                    note_edge(name, dependency, &mut failures, &mut deviations);
-                }
-            }
-        }
-
-        let own = layer(name);
-        for dependency in internal {
-            match (own, layer(dependency)) {
-                (Some(own), Some(dependency_layer)) if dependency_layer > own => {
-                    note_edge(name, dependency, &mut failures, &mut deviations);
-                }
-                (Some(_), Some(_)) => {}
-                _ => failures.push(format!(
-                    "{name} or {dependency} is not placed in the crate layering"
-                )),
-            }
-        }
+        check_package_edges(name, dependencies, &members, &mut failures, &mut deviations);
     }
 
     failures.extend(cycles(&members));
@@ -123,6 +87,50 @@ pub(super) fn crate_boundaries() -> Result<Check> {
         return Ok(Check::deviates(10, NAME, detail, joined));
     }
     Ok(Check::holds(10, NAME, detail))
+}
+
+fn check_package_edges(
+    name: &str,
+    dependencies: &BTreeSet<String>,
+    members: &BTreeMap<String, BTreeSet<String>>,
+    failures: &mut Vec<String>,
+    deviations: &mut Vec<String>,
+) {
+    let internal: Vec<&String> = dependencies
+        .iter()
+        .filter(|dependency| members.contains_key(*dependency))
+        .collect();
+
+    if name == DOMAIN {
+        for dependency in dependencies {
+            if DOMAIN_FORBIDDEN.contains(&dependency.as_str()) || members.contains_key(dependency) {
+                failures.push(format!(
+                    "{DOMAIN} depends on {dependency}; the domain crate owns pure constrained types only"
+                ));
+            }
+        }
+    }
+
+    if name == "xtask" {
+        for dependency in &internal {
+            if TOOLING_FORBIDDEN.contains(&dependency.as_str()) {
+                note_edge(name, dependency, failures, deviations);
+            }
+        }
+    }
+
+    let own = layer(name);
+    for dependency in internal {
+        match (own, layer(dependency)) {
+            (Some(own), Some(dependency_layer)) if dependency_layer > own => {
+                note_edge(name, dependency, failures, deviations);
+            }
+            (Some(_), Some(_)) => {}
+            _ => failures.push(format!(
+                "{name} or {dependency} is not placed in the crate layering"
+            )),
+        }
+    }
 }
 
 fn layer(name: &str) -> Option<u32> {
@@ -205,65 +213,5 @@ fn reaches_self(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{cycles, layer, note_edge, reaches_self};
-    use std::collections::{BTreeMap, BTreeSet};
-
-    fn graph(edges: &[(&str, &str)]) -> BTreeMap<String, BTreeSet<String>> {
-        let mut members: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-        for (from, to) in edges {
-            members
-                .entry((*from).to_string())
-                .or_default()
-                .insert((*to).to_string());
-            members.entry((*to).to_string()).or_default();
-        }
-        members
-    }
-
-    #[test]
-    fn the_declared_layering_places_every_workspace_crate() {
-        assert!(layer("census-domain") < layer("census-store"));
-        assert!(layer("census-store") < layer("census-crawl"));
-        assert!(layer("census-report") < layer("census-service"));
-        assert!(layer("unknown-crate").is_none());
-    }
-
-    #[test]
-    fn a_cycle_is_reported_once_per_participant() {
-        let members = graph(&[("a", "b"), ("b", "c"), ("c", "a"), ("d", "b")]);
-        let found = cycles(&members);
-        assert_eq!(found.len(), 3);
-        assert!(found.iter().all(|entry| entry.contains("reaches itself")));
-    }
-
-    #[test]
-    fn a_diamond_is_not_a_cycle() {
-        let members = graph(&[("a", "b"), ("a", "c"), ("b", "d"), ("c", "d")]);
-        assert!(cycles(&members).is_empty());
-        let mut seen = BTreeSet::new();
-        assert!(!reaches_self("a", "a", &members, &mut seen));
-    }
-
-    #[test]
-    fn a_recorded_boundary_crossing_is_reported_but_a_new_one_fails() {
-        let mut failures = Vec::new();
-        let mut deviations = Vec::new();
-        note_edge(
-            "census-reconcile",
-            "census-report",
-            &mut failures,
-            &mut deviations,
-        );
-        assert!(failures.is_empty());
-        assert_eq!(deviations.len(), 1);
-        note_edge(
-            "census-crawl",
-            "census-service",
-            &mut failures,
-            &mut deviations,
-        );
-        assert_eq!(failures.len(), 1);
-        assert_eq!(deviations.len(), 1);
-    }
-}
+#[path = "boundaries_tests.rs"]
+mod tests;

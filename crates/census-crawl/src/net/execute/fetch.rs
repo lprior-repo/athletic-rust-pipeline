@@ -73,15 +73,24 @@ impl Fetcher {
         };
         let _family_permit = self.family_permit(&host).await?;
         let started = Instant::now();
-        let outcome = match crate::registry::transport_for_host(&host) {
+        let outcome = self.fetch_admitted_transport(gate, &plan, session).await;
+        self.record_transport(started, &outcome).await;
+        outcome
+    }
+
+    async fn fetch_admitted_transport(
+        &self,
+        gate: std::sync::Arc<tokio::sync::Mutex<()>>,
+        plan: &FetchPlan<'_>,
+        session: &mut crate::net::acquisition::CaptureSession<'_>,
+    ) -> Result<FetchOutcome, FetchError> {
+        match crate::registry::transport_for_host(plan.host) {
             Some(crate::registry::TransportKind::Browser) if session.is_adopted() => {
                 Err(crate::net::CaptureTransportError::UnsupportedLane.into())
             }
-            Some(crate::registry::TransportKind::Browser) => self.fetch_browser(gate, &plan).await,
-            _ => self.fetch_once(&plan, session).await,
-        };
-        self.record_transport(started, &outcome).await;
-        outcome
+            Some(crate::registry::TransportKind::Browser) => self.fetch_browser(gate, plan).await,
+            _ => self.fetch_once(plan, session).await,
+        }
     }
 
     async fn reuse_cached(
@@ -136,3 +145,7 @@ impl Fetcher {
         }))
     }
 }
+
+#[cfg(test)]
+#[path = "fetch_tests.rs"]
+mod tests;

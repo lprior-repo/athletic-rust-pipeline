@@ -12,6 +12,8 @@ mod fixture;
 mod format_corruption;
 #[path = "tests/lifecycle.rs"]
 mod lifecycle;
+#[path = "tests/metadata_eligibility.rs"]
+mod metadata_eligibility;
 #[path = "tests/preservation.rs"]
 mod preservation;
 
