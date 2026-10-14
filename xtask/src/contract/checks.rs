@@ -2,6 +2,7 @@ use anyhow::Result;
 use census_domain::UsJurisdiction;
 use std::collections::BTreeSet;
 
+use super::boundaries;
 use super::reach;
 use super::registry;
 use super::tree;
@@ -17,7 +18,7 @@ const MODELLED: usize = 51;
 type Entry = (usize, &'static str, fn() -> Result<Check>);
 
 pub(super) fn all() -> Vec<Check> {
-    let table: [Entry; 9] = [
+    let table: [Entry; 10] = [
         (1, "census scope", census_scope),
         (2, "athleticnet transport", registry::athleticnet_transport),
         (3, "retry ceilings", retry_ceilings),
@@ -27,6 +28,7 @@ pub(super) fn all() -> Vec<Check> {
         (7, "documented set", tree::documentation),
         (8, "adapter registration", registry::adapter_registration),
         (9, "source reachability", reach::source_reachability),
+        (10, "crate boundaries", boundaries::crate_boundaries),
     ];
     table
         .into_iter()

@@ -1,5 +1,6 @@
 use anyhow::Result;
 
+mod boundaries;
 mod checks;
 mod docs;
 mod reach;
