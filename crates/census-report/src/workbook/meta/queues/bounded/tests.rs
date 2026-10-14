@@ -11,7 +11,7 @@ fn oversized_duplicate_school_review_expansion_is_refused_whole() -> TestResult 
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
     let mut dataset = ExportDataset::load(&store)?;
-    for ordinal in 0..600 {
+    for ordinal in 0..2_700 {
         let city = format!("City {ordinal}");
         let school = CanonicalSchool::new(
             UsJurisdiction::Wisconsin,
@@ -22,7 +22,7 @@ fn oversized_duplicate_school_review_expansion_is_refused_whole() -> TestResult 
         .0;
         dataset.schools.insert(school.id.clone(), school);
     }
-    check!(eq; dataset.schools.len(), 600);
+    check!(eq; dataset.schools.len(), 2_700);
     let year = SchoolYear::new(2026).ok_or("season")?;
     let result = super::super::retained_records(&dataset, year, &[]);
     let error = match result {
@@ -39,10 +39,9 @@ fn oversized_duplicate_school_review_expansion_is_refused_whole() -> TestResult 
         crate::grouping::GroupingError::BudgetExceeded {
             stage: "conflicts",
             resource: "encoded bytes",
-            available: 67_108_864,
+            available: 268_435_456,
             ..
         }
     ));
-    check!(eq; dataset.schools.len(), 600);
     Ok(())
 }

@@ -17,7 +17,7 @@ mod provenance;
 use provenance::PublicationJournals;
 
 const MAX_STAGE_ROWS: usize = 25_000;
-const MAX_STAGE_BYTES: usize = 64 * 1024 * 1024;
+const MAX_STAGE_BYTES: usize = 256 * 1024 * 1024;
 const PUBLICATION_RECLAIM_BUDGET: u64 = 250_000;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

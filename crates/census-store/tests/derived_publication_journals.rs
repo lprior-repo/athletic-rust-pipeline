@@ -290,7 +290,7 @@ fn aggregate_publication_budget_fails_closed_without_exposing_a_journal() -> Tes
     let mut stage = store.stage_derived()?;
     let payload = "x".repeat(512 * 1024);
     let mut refused = false;
-    for position in 0..129 {
+    for position in 0..520 {
         match stage.journal_done_once(PHASE, &format!("aggregate-{position}"), &payload) {
             Ok(()) => {}
             Err(StoreError::Refused { .. }) => {
