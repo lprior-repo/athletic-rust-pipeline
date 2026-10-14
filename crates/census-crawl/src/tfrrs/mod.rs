@@ -6,6 +6,8 @@ mod report;
 mod run;
 
 #[cfg(test)]
+mod policy_tests;
+#[cfg(test)]
 mod tests;
 
 pub use parse::{
@@ -49,6 +51,14 @@ fn source_id(state: UsJurisdiction) -> String {
 }
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
+    if let Some(reason) = crate::registry::acquisition_refusal_for_source(ADAPTER)
+        .filter(|_| !ctx.fetcher.is_offline())
+    {
+        return Err(crate::net::FetchError::Policy {
+            detail: reason.to_string(),
+        }
+        .into());
+    }
     let mut report = AdapterReport::new(ADAPTER, "rows");
     if options.urls.is_empty() {
         report

@@ -61,7 +61,7 @@ fn bound(jurisdiction: UsJurisdiction) -> Result<JurisdictionState, Box<dyn std:
 
 fn expected_status(jurisdiction: UsJurisdiction) -> CoachLaneStatus {
     match jurisdiction {
-        UsJurisdiction::SouthDakota | UsJurisdiction::Utah => CoachLaneStatus::Armed,
+        UsJurisdiction::Utah => CoachLaneStatus::Armed,
         _ => CoachLaneStatus::Blocked,
     }
 }
@@ -143,8 +143,17 @@ fn assert_decision(state: &JurisdictionState, expected_reason: &str) -> TestResu
         }
         CoachLaneStatus::Blocked => {
             let refusal = lane.refusal().ok_or("blocked obligation has no refusal")?;
-            check!(eq; refusal.source().id.as_str(), slug);
-            check!(eq; refusal.reason(), expected_reason);
+            let (lane_source, lane_reason) = if jurisdiction == UsJurisdiction::SouthDakota {
+                (
+                    "bound",
+                    census_crawl::registry::acquisition_refusal_for_source("bound")
+                        .ok_or("bound acquisition hold missing")?,
+                )
+            } else {
+                (slug.as_str(), expected_reason)
+            };
+            check!(eq; refusal.source().id.as_str(), lane_source);
+            check!(eq; refusal.reason(), lane_reason);
             check!(eq; refusal.observed_on(), OBSERVED_ON);
             check!(lane.evidence().is_none());
             check!(lane.acceptance().is_none());

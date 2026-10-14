@@ -82,6 +82,14 @@ struct Totals {
 }
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
+    if let Some(reason) = crate::registry::acquisition_refusal_for_source(SOURCE_ID)
+        .filter(|_| !ctx.fetcher.is_offline())
+    {
+        return Err(crate::net::FetchError::Policy {
+            detail: reason.to_string(),
+        }
+        .into());
+    }
     let mut report = AdapterReport::new(SOURCE_ID, "schools");
     let before = ctx.fetcher.stats().await;
 
@@ -101,6 +109,10 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
     Ok(report)
 }
+
+#[cfg(test)]
+#[path = "collect/policy_tests.rs"]
+mod policy_tests;
 
 async fn walk_state(
     ctx: &AdapterContext<'_>,

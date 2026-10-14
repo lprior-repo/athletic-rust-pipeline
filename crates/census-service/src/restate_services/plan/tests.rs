@@ -197,7 +197,7 @@ fn a_states_own_directory_walk_is_planned_only_for_that_state() {
 }
 
 #[test]
-fn the_gobound_staff_walk_is_planned_for_iowa_and_south_dakota_only() {
+fn the_gobound_staff_walk_is_not_swept_while_acquisition_is_held() {
     let slugs = |jurisdiction: UsJurisdiction| -> Vec<&'static str> {
         sweepable(&plan(jurisdiction, BrowserLaneState::Configured))
             .iter()
@@ -207,7 +207,7 @@ fn the_gobound_staff_walk_is_planned_for_iowa_and_south_dakota_only() {
 
     for jurisdiction in [UsJurisdiction::Iowa, UsJurisdiction::SouthDakota] {
         let planned = slugs(jurisdiction);
-        assert!(planned.contains(&"bound"), "{jurisdiction}: {planned:?}");
+        assert!(!planned.contains(&"bound"), "{jurisdiction}: {planned:?}");
     }
 
     for jurisdiction in [UsJurisdiction::Nebraska, UsJurisdiction::Minnesota] {

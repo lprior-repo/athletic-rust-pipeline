@@ -1,8 +1,13 @@
+mod acquisition_policy;
 mod policy;
 mod table;
 
 use std::num::NonZeroUsize;
 
+pub use acquisition_policy::{
+    acquisition_policy_for_source, acquisition_refusal_for_host, acquisition_refusal_for_source,
+    AcquisitionPolicyRefusal,
+};
 pub use table::descriptors;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]

@@ -82,6 +82,11 @@ impl Fetcher {
     ) -> Result<(String, Option<tokio::sync::OwnedSemaphorePermit>), FetchError> {
         let (host, origin) = super::request_target(current_url)?;
         self.destination.validate_url(current_url)?;
+        if let Some(reason) = crate::registry::acquisition_refusal_for_host(&host) {
+            return Err(FetchError::Policy {
+                detail: reason.to_string(),
+            });
+        }
         self.origin_locks.ensure(&origin)?;
         if self.host_blocked(&host, &crate::net::now_iso8601()).await {
             return Err(FetchError::Cooldown { host });
