@@ -125,6 +125,14 @@ impl<'store, 'budget> PreparedRecoverySession<'store, 'budget> {
                 &mut self.scratch,
             )?;
         }
+        self.classify_unresolved(body_missing, metadata_missing)
+    }
+    fn classify_unresolved(
+        &mut self,
+        body_missing: Option<MissingLocation>,
+        metadata_missing: Option<MissingLocation>,
+    ) -> StoreResult<()> {
+        let prepared = &self.prepared;
         if let Some(location) = body_missing {
             if prepared.capture.content_bytes() == 0 {
                 if !backing::empty_exact(&prepared.capture) {

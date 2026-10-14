@@ -12,7 +12,7 @@ pub(super) mod writer;
 pub(super) enum Compatible {
     NotReusable,
     Encoded {
-        metadata: CacheMeta,
+        metadata: Box<CacheMeta>,
         envelope: Vec<u8>,
     },
     MetadataChanged,
@@ -47,7 +47,11 @@ pub(super) fn recovered(
         return Ok(Compatible::EnvelopeTooLarge);
     };
     let envelope = writer::encode(&envelope, count, io)?;
-    Ok(Compatible::Encoded { metadata, envelope })
+    io.reserve_owned(std::mem::size_of::<CacheMeta>())?;
+    Ok(Compatible::Encoded {
+        metadata: Box::new(metadata),
+        envelope,
+    })
 }
 
 #[derive(Serialize)]

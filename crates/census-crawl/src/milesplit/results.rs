@@ -17,8 +17,8 @@ mod run;
 mod schools;
 
 pub use pages::{
-    is_results_page, read_meet_pages, read_meet_pages_bounded, BoundedMeetPages, ListedResultFile,
-    MeetPage, MeetPageLimits, MeetPages, MISMATCH_LIMIT,
+    is_results_page, read_meet_pages, BoundedMeetPages, ListedResultFile, MeetPage, MeetPageLimits,
+    MeetPages, MISMATCH_LIMIT,
 };
 use run::Run;
 

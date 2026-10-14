@@ -92,8 +92,11 @@ async fn read_pages(
         context.fetcher,
         selected.iter().cloned(),
         &context.fetch_options(),
+        providers::milesplit::MeetPageLimits::standard(),
     )
     .await
+    .into_parts()
+    .0
     .context("milesplit result pages")
 }
 

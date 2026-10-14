@@ -176,8 +176,11 @@ async fn milesplit_results(
         context.fetcher,
         std::iter::once(page),
         &context.fetch_options(),
+        census_crawl::milesplit::MeetPageLimits::standard(),
     )
     .await
+    .into_parts()
+    .0
     .map_err(|error| job_error(collect_error(error)))?;
     let options = meet_pages::options(&pages)?;
     let admitted = capture_scope::admit(context.store, capture, meet, &options)?;

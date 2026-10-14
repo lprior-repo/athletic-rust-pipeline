@@ -1,4 +1,4 @@
-use super::{is_results_page, read_meet_pages, MeetPage, MISMATCH_LIMIT};
+use super::{is_results_page, read_meet_pages, MeetPage, MeetPageLimits, MISMATCH_LIMIT};
 use crate::net::{FetchOptions, Fetcher};
 use census_domain::UsJurisdiction;
 use std::collections::HashMap;
@@ -87,8 +87,11 @@ fn an_unreadable_page_is_quarantined_and_the_walk_goes_on() -> TestResult {
                 &fetcher,
                 vec![page(foreign), page(OH_MEET_RESULTS_URL)],
                 &options(),
+                MeetPageLimits::standard(),
             )
-            .await?;
+            .await
+            .into_parts()
+            .0?;
 
             check!(eq; pages.quarantined.len(), 1, "{:?}", pages.quarantined);
             check!(eq; pages.quarantined[0].0, foreign);
@@ -153,14 +156,14 @@ fn an_unreachable_page_is_not_read_as_a_meet_without_results() -> TestResult {
     };
     let (result, served) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
         tokio::join!(
-            read_meet_pages(&fetcher, vec![page(&failing)], &options),
+            read_meet_pages(&fetcher, vec![page(&failing)], &options, MeetPageLimits::standard()),
             serve
         )
     })
     .await
     ?;
     served?;
-    let error = match result {
+    let error = match result.into_parts().0 {
         Err(error) => error,
         Ok(_) => return Err("a fetch failure propagates".into()),
     };
@@ -195,8 +198,15 @@ fn mismatches_without_readable_pages_stop_the_walk() -> TestResult {
 
             let mut walked = junk.clone();
             walked.push(OH_MEET_RESULTS_URL.to_string());
-            let pages =
-                read_meet_pages(&fetcher, walked.iter().map(|url| page(url)), &options()).await?;
+            let pages = read_meet_pages(
+                &fetcher,
+                walked.iter().map(|url| page(url)),
+                &options(),
+                MeetPageLimits::standard(),
+            )
+            .await
+            .into_parts()
+            .0?;
 
             check!(pages.stopped(), "a majority-mismatch run stops");
             check!(eq; pages.pages_read, 0);

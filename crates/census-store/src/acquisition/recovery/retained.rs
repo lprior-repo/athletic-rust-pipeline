@@ -25,6 +25,9 @@ pub struct CommittedRetainedBody<'budget> {
     parts: RetainedCaptureParts,
 }
 impl CommittedRetainedBody<'_> {
+    pub fn reserve_consumer_owned(&mut self, bytes: usize) -> StoreResult<()> {
+        self.account.reserve_owned(bytes)
+    }
     pub fn publication_io(
         &mut self,
     ) -> StoreResult<(

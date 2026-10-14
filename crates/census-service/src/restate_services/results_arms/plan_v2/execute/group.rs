@@ -1,5 +1,9 @@
 use super::super::Discovery;
-use super::{error, presentation, resolution::Resolution, Execution, ResultsPlanV2};
+use super::{
+    error, presentation,
+    resolution::{Resolution, ResolutionFailure, RetainedResolution},
+    Execution, ResultsPlanV2,
+};
 use crate::restate_services::{jobs, results_arms::ResultsSourceRows};
 use census_crawl::CaptureContext;
 use census_domain::model::{PreparedRecoveryTarget, SourceMeetRef};
@@ -55,8 +59,9 @@ impl Execution<'_> {
             .meets
             .get(index)
             .ok_or_else(|| jobs::invariant("fixed meet index"))?;
-        let Resolution::Retained { context, notice } = resolution else {
-            return failed_fixed(meet, discovery, resolution);
+        let RetainedResolution { context, notice } = match resolution {
+            Ok(retained) => retained,
+            Err(failure) => return failed_fixed(meet, discovery, failure),
         };
         let mut row = match discovery {
             Discovery::Ready(ready) => {
@@ -74,12 +79,13 @@ impl Execution<'_> {
 fn failed_fixed(
     meet: &SourceMeetRef,
     discovery: Discovery,
-    resolution: &Resolution,
+    failure: &ResolutionFailure,
 ) -> Result<ResultsSourceRows, HandlerError> {
-    let detail = match resolution {
-        Resolution::Unavailable { notice } | Resolution::Failed { notice } => notice.as_str(),
-        Resolution::Refused { detail } => detail.as_str(),
-        Resolution::Retained { .. } => return Err(jobs::invariant("retained branch mismatch")),
+    let detail = match failure {
+        ResolutionFailure::Unavailable { notice } | ResolutionFailure::Failed { notice } => {
+            notice.as_str()
+        }
+        ResolutionFailure::Refused { detail } => detail.as_str(),
     };
     let mut row = presentation::failed(meet, &detail)?;
     match discovery {

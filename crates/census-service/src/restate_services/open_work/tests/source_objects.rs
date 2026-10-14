@@ -36,6 +36,8 @@ pub(super) fn enumerated_jurisdictions() -> Result<Vec<ReadJurisdiction>, Box<dy
                     unreadable: false,
                     athleticlive_manifest: None,
                     athleticlive_manifest_reason: None,
+                    teams_stage: None,
+                    source_refusals: None,
                 },
                 state,
             })

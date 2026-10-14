@@ -58,32 +58,40 @@ impl Store {
         if &facts.work != exact_work {
             return Err(CaptureError::ObligationConflict.into());
         }
-        let Some(last) = facts.attempts.last() else {
-            return Ok(ExistingRecoveryRoute::ExistingNoPrepared);
-        };
-        if facts.result.is_some() || last.terminal.is_some() {
-            return Ok(ExistingRecoveryRoute::ExistingNoPrepared);
-        }
-        let Some(prepared) = &last.prepared else {
-            return Ok(ExistingRecoveryRoute::ExistingNoPrepared);
-        };
-        let target = PreparedRecoveryTarget::new(
-            owner
-                .store_identity()
-                .try_clone()
-                .map_err(|_| CaptureError::ReadBudgetExceeded {
-                    resource: "allocation",
-                })?,
-            slot,
-            prepared
-                .attempt
-                .try_clone()
-                .map_err(|_| CaptureError::ReadBudgetExceeded {
-                    resource: "allocation",
-                })?,
-            digest(prepared)?,
-        )
-        .map_err(CaptureError::Domain)?;
-        Ok(ExistingRecoveryRoute::Prepared(target))
+        prepared_route(owner, slot, &facts)
     }
+}
+
+fn prepared_route(
+    owner: &ResultsCaptureOwnerV1,
+    slot: AcquisitionSlotId,
+    facts: &crate::acquisition::facts::WorkFacts,
+) -> StoreResult<ExistingRecoveryRoute> {
+    let Some(last) = facts.attempts.last() else {
+        return Ok(ExistingRecoveryRoute::ExistingNoPrepared);
+    };
+    if facts.result.is_some() || last.terminal.is_some() {
+        return Ok(ExistingRecoveryRoute::ExistingNoPrepared);
+    }
+    let Some(prepared) = &last.prepared else {
+        return Ok(ExistingRecoveryRoute::ExistingNoPrepared);
+    };
+    let target = PreparedRecoveryTarget::new(
+        owner
+            .store_identity()
+            .try_clone()
+            .map_err(|_| CaptureError::ReadBudgetExceeded {
+                resource: "allocation",
+            })?,
+        slot,
+        prepared
+            .attempt
+            .try_clone()
+            .map_err(|_| CaptureError::ReadBudgetExceeded {
+                resource: "allocation",
+            })?,
+        digest(prepared)?,
+    )
+    .map_err(CaptureError::Domain)?;
+    Ok(ExistingRecoveryRoute::Prepared(target))
 }

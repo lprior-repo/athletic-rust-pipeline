@@ -32,12 +32,10 @@ impl ResultsPlanV2 {
                 meet,
             );
         match route {
-            MeetRoute::NotOwned if eligible => {
-                return self.require_rejected_target(meet, discovery)
-            }
-            MeetRoute::NotOwned => return require_not_applicable(discovery),
+            MeetRoute::NotOwned if eligible => self.require_rejected_target(meet, discovery),
+            MeetRoute::NotOwned => require_not_applicable(discovery),
             MeetRoute::Owned(_) if !eligible => {
-                return Err(ResultsPlanError::Invalid("foreign owned route"))
+                Err(ResultsPlanError::Invalid("foreign owned route"))
             }
             MeetRoute::Owned(index) => {
                 let target = self

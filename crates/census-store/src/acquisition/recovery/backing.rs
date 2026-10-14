@@ -349,34 +349,7 @@ pub(super) fn candidate(
     capture: &PreparedCaptureInputV1,
     account: &mut TargetAccount<'_>,
 ) -> StoreResult<Vec<u8>> {
-    account.path_bytes(path.as_os_str().len())?;
-    account.reserve_owned(path.as_os_str().len())?;
-    let parent = path
-        .parent()
-        .ok_or_else(|| rejected(PreparedCandidateRejection::UnsupportedPath))?;
-    safe_ancestry(parent, account, PathPurpose::Candidate).map_err(|error| match error {
-        StoreError::Capture(CaptureError::PreparedRepairRequired) => {
-            rejected(PreparedCandidateRejection::UnsafeParent)
-        }
-        error => error,
-    })?;
-    account.direct_operation(Op::Inspect)?;
-    let metadata = std::fs::symlink_metadata(path).map_err(|source| io(path, source, account))?;
-    if !metadata.is_file() {
-        return Err(rejected(PreparedCandidateRejection::NonRegular));
-    }
-    if metadata.len() > MAX_ACQUISITION_BODY_BYTES {
-        return Err(rejected(PreparedCandidateRejection::TooLarge {
-            limit: MAX_ACQUISITION_BODY_BYTES,
-            observed: metadata.len(),
-        }));
-    }
-    if metadata.len() != capture.content_bytes() {
-        return Err(rejected(PreparedCandidateRejection::WrongLength {
-            expected: capture.content_bytes(),
-            observed: metadata.len(),
-        }));
-    }
+    let metadata = inspect_candidate(path, capture, account)?;
     account.direct_operation(Op::Open)?;
     let mut file = File::open(path).map_err(|source| io(path, source, account))?;
     account.direct_operation(Op::Inspect)?;
@@ -409,6 +382,42 @@ pub(super) fn candidate(
     }
     Ok(body)
 }
+fn inspect_candidate(
+    path: &Path,
+    capture: &PreparedCaptureInputV1,
+    account: &mut TargetAccount<'_>,
+) -> StoreResult<Metadata> {
+    account.path_bytes(path.as_os_str().len())?;
+    account.reserve_owned(path.as_os_str().len())?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| rejected(PreparedCandidateRejection::UnsupportedPath))?;
+    safe_ancestry(parent, account, PathPurpose::Candidate).map_err(|error| match error {
+        StoreError::Capture(CaptureError::PreparedRepairRequired) => {
+            rejected(PreparedCandidateRejection::UnsafeParent)
+        }
+        error => error,
+    })?;
+    account.direct_operation(Op::Inspect)?;
+    let metadata = std::fs::symlink_metadata(path).map_err(|source| io(path, source, account))?;
+    if !metadata.is_file() {
+        return Err(rejected(PreparedCandidateRejection::NonRegular));
+    }
+    if metadata.len() > MAX_ACQUISITION_BODY_BYTES {
+        return Err(rejected(PreparedCandidateRejection::TooLarge {
+            limit: MAX_ACQUISITION_BODY_BYTES,
+            observed: metadata.len(),
+        }));
+    }
+    if metadata.len() != capture.content_bytes() {
+        return Err(rejected(PreparedCandidateRejection::WrongLength {
+            expected: capture.content_bytes(),
+            observed: metadata.len(),
+        }));
+    }
+    Ok(metadata)
+}
+
 fn matches_digest(bytes: &[u8; 32], expected: &AcquisitionDigest) -> bool {
     let hex = b"0123456789abcdef";
     bytes.iter().enumerate().all(|(index, byte)| {

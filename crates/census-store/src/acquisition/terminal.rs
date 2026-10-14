@@ -189,20 +189,29 @@ impl Store {
             return Err(CaptureError::TransitionRefused.into());
         }
         let verified = reusable_original(self, &snapshot, &facts, original, budget)?;
-        let mut batch = self.db.batch();
-        codec::stage(
-            self,
-            &mut batch,
-            &format!("work/{}/result", work.id),
-            &WorkResult {
-                version: facts.protocol,
-                occurrence: original.clone(),
-            },
-            facts.protocol,
-        )?;
-        codec::commit(batch)?;
+        commit_cache_reuse(self, &work.id, original, facts.protocol)?;
         Ok(verified)
     }
+}
+
+fn commit_cache_reuse(
+    store: &Store,
+    work_id: &AcquisitionWorkId,
+    original: &AcquisitionOccurrenceRefV1,
+    protocol: CaptureProtocolVersion,
+) -> StoreResult<()> {
+    let mut batch = store.db.batch();
+    codec::stage(
+        store,
+        &mut batch,
+        &format!("work/{}/result", work_id),
+        &WorkResult {
+            version: protocol,
+            occurrence: original.clone(),
+        },
+        protocol,
+    )?;
+    codec::commit(batch)
 }
 
 fn reusable_original(

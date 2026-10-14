@@ -23,6 +23,10 @@ pub struct JurisdictionOpen {
     pub stages: JurisdictionStages,
     pub unreadable: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub teams_stage: Option<super::TeamsStage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_refusals: Option<Vec<super::RefusedSource>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub athleticlive_manifest: Option<super::AthleticLiveObligation>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub athleticlive_manifest_reason: Option<String>,

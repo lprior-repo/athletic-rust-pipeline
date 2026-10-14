@@ -57,6 +57,8 @@ fn prepare(
         }
         codec::Compatible::Encoded { metadata, envelope } => (metadata, envelope),
     };
+    let metadata = *metadata;
+    io.release_owned(std::mem::size_of::<super::super::CacheMeta>())?;
     let key = replace::cache_key(&metadata, io)?;
     let body = paths::suffixed(fence.root(), &key, ".body", io)?;
     let metadata_path = paths::suffixed(fence.root(), &key, ".meta.json", io)?;

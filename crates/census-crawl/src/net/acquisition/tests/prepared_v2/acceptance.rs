@@ -215,3 +215,42 @@ async fn actual_held_restoration_preserves_occupied_corrupt_metadata_and_store_r
     check!(eq; fixture.count(), 0);
     Ok(())
 }
+
+#[tokio::test]
+async fn retained_consumer_allocation_refusal_preserves_committed_parts() -> TestResult {
+    let listener = TcpListener::bind("127.0.0.1:0").await?;
+    let fixture = Fixture::new_v2(&listener)?;
+    let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
+    publish(&fixture, &prepared)?;
+    let mut budget = prepared.budget()?;
+    let read = fixture
+        .store
+        .begin_prepared_recovery(&prepared.owner, &prepared.target, &mut budget)?
+        .read_backing()?;
+    let census_store::PreparedRecoveryRead::Unresolved(session) = read else {
+        return Err("exact Prepared session".into());
+    };
+    let mut retained = session.finish()?;
+    check!(matches!(
+        retained.reserve_consumer_owned(usize::MAX),
+        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded { .. }))
+            | Err(StoreError::CounterOverflow)
+    ));
+    retained.reserve_consumer_owned(std::mem::size_of::<crate::net::CapturedFetch>())?;
+    let parts = retained.into_parts();
+    check!(eq; parts.body, BODY);
+    check!(eq; parts.terminal.attempt(), prepared.target.attempt());
+    check!(eq; parts.receipt.digest, serialized_digest(&parts.terminal)?);
+    check!(eq; fixture.store.receipt(&parts.receipt.operation)?, Some(parts.receipt));
+    let (body, metadata) = fixture.cache_paths()?;
+    check!(!body.exists());
+    check!(!metadata.exists());
+    check!(eq; fixture.count(), 0);
+    Ok(())
+}
+
+#[test]
+fn prepared_recovery_outcome_stays_within_512_bytes() -> TestResult {
+    check!(std::mem::size_of::<PreparedRecoveryOutcome>() <= 512);
+    Ok(())
+}

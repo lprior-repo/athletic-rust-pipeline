@@ -12,7 +12,7 @@ pub(super) enum Previous {
         damage: Damage,
     },
     Valid {
-        metadata: CacheMeta,
+        metadata: Box<CacheMeta>,
         canonical: Vec<u8>,
     },
 }
@@ -79,8 +79,9 @@ pub(super) fn read(
     }
     io.release_owned(encoded.capacity())?;
     drop(encoded);
+    io.reserve_owned(std::mem::size_of::<CacheMeta>())?;
     Ok(Previous::Valid {
-        metadata: meta,
+        metadata: Box::new(meta),
         canonical,
     })
 }
@@ -109,7 +110,7 @@ pub(super) fn reserve(
     let content = paths::child(&captures, &metadata.content_digest, io)?;
     paths::safe_directory(&content, io)?;
     let body = paths::suffixed(&bodies, &metadata.content_digest, ".body", io)?;
-    let meta = paths::suffixed(&content, &digest, ".meta.json", io)?;
+    let meta = paths::suffixed(&content, digest, ".meta.json", io)?;
     let missing = (
         shell::regular(&body, io)?.is_none(),
         shell::regular(&meta, io)?.is_none(),
@@ -124,12 +125,8 @@ pub(super) fn reserve(
     } else {
         0
     };
-    let reservation = admission.reserve(
-        &metadata.content_digest,
-        &digest,
-        (body_size, meta_size),
-        io,
-    )?;
+    let reservation =
+        admission.reserve(&metadata.content_digest, digest, (body_size, meta_size), io)?;
     for path in [&archive, &bodies, &captures, &content] {
         io.release_owned(path.as_os_str().len())?;
     }
@@ -160,6 +157,8 @@ pub(super) fn preserve(
             metadata: meta,
             canonical,
         } => {
+            let meta = *meta;
+            io.release_owned(std::mem::size_of::<CacheMeta>())?;
             let paths = pending
                 .paths
                 .as_ref()
@@ -189,22 +188,31 @@ pub(super) fn preserve(
                     BodyFailure::Source(error) | BodyFailure::Archive(error) => return Err(error),
                 }
             }
-            if paths.missing.1 {
-                let leaf = stage::write_leaf(stage_path, "old.meta.json", &canonical, io)?;
-                stage::publish(&leaf, &paths.metadata, io)?;
-                io.release_owned(leaf.as_os_str().len())?;
-            }
-            stream::metadata_exact(&paths.metadata, &canonical, io)?;
-            shell::freeze(&paths.metadata, io)?;
-            shell::sync_directory(
-                paths
-                    .metadata
-                    .parent()
-                    .ok_or_else(|| shell::limit("archive ancestry"))?,
-                io,
-            )
+            preserve_metadata(paths, stage_path, &canonical, io)
         }
     }
+}
+
+fn preserve_metadata(
+    paths: &OldPaths,
+    stage_path: &Path,
+    canonical: &[u8],
+    io: &mut RecoveryArchiveIo<'_>,
+) -> Result<(), FetchError> {
+    if paths.missing.1 {
+        let leaf = stage::write_leaf(stage_path, "old.meta.json", canonical, io)?;
+        stage::publish(&leaf, &paths.metadata, io)?;
+        io.release_owned(leaf.as_os_str().len())?;
+    }
+    stream::metadata_exact(&paths.metadata, canonical, io)?;
+    shell::freeze(&paths.metadata, io)?;
+    shell::sync_directory(
+        paths
+            .metadata
+            .parent()
+            .ok_or_else(|| shell::limit("archive ancestry"))?,
+        io,
+    )
 }
 
 enum BodyFailure {

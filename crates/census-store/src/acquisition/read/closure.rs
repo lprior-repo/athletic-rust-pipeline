@@ -191,41 +191,17 @@ pub(super) fn work(facts: &WorkFacts) -> StoreResult<()> {
         {
             return Err(CaptureError::CorruptClosure.into());
         }
-        if let Some(terminal) = &attempt.terminal {
-            if let AcquisitionTerminal::PreparedRetentionFailed { decision, .. } =
-                terminal.terminal()
-            {
-                if decision.slot_id() != &facts.work.slot().id().map_err(CaptureError::Domain)? {
-                    return Err(CaptureError::CorruptClosure.into());
-                }
-                let prepared = attempt
-                    .prepared
-                    .as_ref()
-                    .ok_or(CaptureError::CorruptClosure)?;
-                crate::acquisition::backing::validate_metadata(
-                    &facts.work,
-                    attempt,
-                    &prepared.capture,
-                )?;
-            }
-            if matches!(
-                terminal.terminal(),
-                AcquisitionTerminal::ResponseRetained {
-                    disposition: CaptureDispositionV1::ReusableResponse
-                        | CaptureDispositionV1::TerminalResponse,
-                    ..
-                } | AcquisitionTerminal::ValidatedNotModified { .. }
-            ) && facts.result.as_ref().map(|r| &r.occurrence) != Some(&terminal.occurrence()?)
-            {
-                return Err(CaptureError::CorruptClosure.into());
-            }
-        }
+        validate_terminal_result(facts, attempt)?;
     }
+    validate_work_result(facts, &work_id)
+}
+
+fn validate_work_result(facts: &WorkFacts, work_id: &AcquisitionWorkId) -> StoreResult<()> {
     if let Some(result) = &facts.result {
         if result.occurrence.attempt().store_identity() != facts.work.slot().store_identity() {
             return Err(CaptureError::CaptureCapabilityForeignStore.into());
         }
-        if result.occurrence.attempt().work_id() == &work_id {
+        if result.occurrence.attempt().work_id() == work_id {
             if !facts.attempts.iter().any(|a| {
                 a.terminal.as_ref().is_some_and(|t| {
                     !matches!(
@@ -244,6 +220,37 @@ pub(super) fn work(facts: &WorkFacts) -> StoreResult<()> {
                 .attempts
                 .iter()
                 .any(|a| !a.dispatches.is_empty() || a.terminal.is_some())
+        {
+            return Err(CaptureError::CorruptClosure.into());
+        }
+    }
+    Ok(())
+}
+
+fn validate_terminal_result(facts: &WorkFacts, attempt: &AttemptFacts) -> StoreResult<()> {
+    if let Some(terminal) = &attempt.terminal {
+        if let AcquisitionTerminal::PreparedRetentionFailed { decision, .. } = terminal.terminal() {
+            if decision.slot_id() != &facts.work.slot().id().map_err(CaptureError::Domain)? {
+                return Err(CaptureError::CorruptClosure.into());
+            }
+            let prepared = attempt
+                .prepared
+                .as_ref()
+                .ok_or(CaptureError::CorruptClosure)?;
+            crate::acquisition::backing::validate_metadata(
+                &facts.work,
+                attempt,
+                &prepared.capture,
+            )?;
+        }
+        if matches!(
+            terminal.terminal(),
+            AcquisitionTerminal::ResponseRetained {
+                disposition: CaptureDispositionV1::ReusableResponse
+                    | CaptureDispositionV1::TerminalResponse,
+                ..
+            } | AcquisitionTerminal::ValidatedNotModified { .. }
+        ) && facts.result.as_ref().map(|r| &r.occurrence) != Some(&terminal.occurrence()?)
         {
             return Err(CaptureError::CorruptClosure.into());
         }
@@ -281,37 +288,44 @@ pub(super) fn receipt(
         .map_err(|source| StoreError::Read { source })?;
     match (&facts.terminal, raw) {
         (None, None) => Ok(ReceiptWitness::Absent),
-        (Some(terminal), Some(raw)) => {
-            if raw.len() > MAX_CAPTURE_RECORD_BYTES {
-                return Err(CaptureError::RecordTooLarge.into());
-            }
-            let receipt: Receipt = {
-                crate::acquisition::codec::reserve_decode(&raw, budget)?;
-                serde_json::from_slice(&raw).map_err(|source| StoreError::Decode {
-                    key: operation.clone(),
-                    source,
-                })?
-            };
-            if receipt.operation != operation
-                || receipt.digest != digest(terminal)?.as_str()
-                || receipt.appended != 0
-                || receipt.credited
-            {
-                return Err(CaptureError::CorruptClosure.into());
-            }
-            let mut owned = Vec::new();
-            budget.reserve_recovery_owned(raw.len())?;
-            owned
-                .try_reserve_exact(raw.len())
-                .map_err(|_| CaptureError::ReadBudgetExceeded {
-                    resource: "receipt allocation",
-                })?;
-            owned.extend_from_slice(&raw);
-            Ok(ReceiptWitness::Present {
-                receipt,
-                raw: owned,
-            })
-        }
+        (Some(terminal), Some(raw)) => decode_receipt_witness(&operation, terminal, &raw, budget),
         _ => Err(CaptureError::CorruptClosure.into()),
     }
+}
+
+fn decode_receipt_witness(
+    operation: &str,
+    terminal: &ImmutableAttemptResult,
+    raw: &[u8],
+    budget: &mut AcquisitionReadBudget,
+) -> StoreResult<ReceiptWitness> {
+    if raw.len() > MAX_CAPTURE_RECORD_BYTES {
+        return Err(CaptureError::RecordTooLarge.into());
+    }
+    let receipt: Receipt = {
+        crate::acquisition::codec::reserve_decode(raw, budget)?;
+        serde_json::from_slice(raw).map_err(|source| StoreError::Decode {
+            key: operation.to_string(),
+            source,
+        })?
+    };
+    if receipt.operation != operation
+        || receipt.digest != digest(terminal)?.as_str()
+        || receipt.appended != 0
+        || receipt.credited
+    {
+        return Err(CaptureError::CorruptClosure.into());
+    }
+    let mut owned = Vec::new();
+    budget.reserve_recovery_owned(raw.len())?;
+    owned
+        .try_reserve_exact(raw.len())
+        .map_err(|_| CaptureError::ReadBudgetExceeded {
+            resource: "receipt allocation",
+        })?;
+    owned.extend_from_slice(raw);
+    Ok(ReceiptWitness::Present {
+        receipt,
+        raw: owned,
+    })
 }

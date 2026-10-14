@@ -8,20 +8,17 @@ use census_domain::model::{AcquisitionWorkV1, PreparedRecoveryTarget};
 use census_store::{ExactBodySource, PreparedRecoveryBudget, Receipt};
 use restate_sdk::prelude::HandlerError;
 
-pub(super) enum Resolution {
-    Retained {
-        context: ResultsCaptureContext,
-        notice: String,
-    },
-    Unavailable {
-        notice: String,
-    },
-    Failed {
-        notice: String,
-    },
-    Refused {
-        detail: String,
-    },
+pub(super) type Resolution = Result<RetainedResolution, ResolutionFailure>;
+
+pub(super) struct RetainedResolution {
+    pub(super) context: ResultsCaptureContext,
+    pub(super) notice: String,
+}
+
+pub(super) enum ResolutionFailure {
+    Unavailable { notice: String },
+    Failed { notice: String },
+    Refused { detail: String },
 }
 
 impl Execution<'_> {
@@ -54,26 +51,26 @@ impl Execution<'_> {
                 consumption_error,
             }) => {
                 let identity = presentation::identity(&pin, &receipt, "retained_unavailable")?;
-                Ok(Resolution::Unavailable {
+                Ok(Err(ResolutionFailure::Unavailable {
                     notice: presentation::text(&format_args!(
                         "{identity}; consumption error: {consumption_error}"
                     ))?,
-                })
+                }))
             }
             Ok(PreparedRecoveryOutcome::RetentionFailed {
                 terminal: _,
                 receipt,
             }) => {
                 let identity = presentation::identity(&pin, &receipt, "retention_failed")?;
-                Ok(Resolution::Failed {
+                Ok(Err(ResolutionFailure::Failed {
                     notice: presentation::text(&format_args!(
                         "{identity}; original-owner continuation requires a later invocation"
                     ))?,
-                })
+                }))
             }
-            Err(error) => Ok(Resolution::Refused {
+            Err(error) => Ok(Err(ResolutionFailure::Refused {
                 detail: presentation::text(&error)?,
-            }),
+            })),
         }
     }
 
@@ -81,7 +78,7 @@ impl Execution<'_> {
         &self,
         pin: PreparedRecoveryTarget,
         work: AcquisitionWorkV1,
-        captured: CapturedFetch,
+        captured: Box<CapturedFetch>,
         receipt: Receipt,
         eligible: EligiblePublicationOutcome,
     ) -> Result<Resolution, HandlerError> {
@@ -90,12 +87,12 @@ impl Execution<'_> {
         let notice = presentation::text(&format_args!("{identity}; {publication}"))?;
         match ResultsCaptureContext::from_prepared_recovery(self.owner.clone(), pin, work, captured)
         {
-            Ok(context) => Ok(Resolution::Retained { context, notice }),
-            Err(error) => Ok(Resolution::Unavailable {
+            Ok(context) => Ok(Ok(RetainedResolution { context, notice })),
+            Err(error) => Ok(Err(ResolutionFailure::Unavailable {
                 notice: presentation::text(&format_args!(
                     "{notice}; retained consumption unavailable: {error}"
                 ))?,
-            }),
+            })),
         }
     }
 
