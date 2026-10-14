@@ -13,6 +13,8 @@ mod journal_budget_tests;
 #[cfg(test)]
 mod journal_object_tests;
 #[cfg(test)]
+mod journal_raw_tests;
+#[cfg(test)]
 mod journal_snapshot_tests;
 #[cfg(test)]
 mod legacy_journal_tests;
@@ -121,6 +123,16 @@ impl Store {
         budget: JournalReadBudget,
     ) -> StoreResult<Option<serde_json::Value>> {
         self.snapshot().journal_payload_bounded(phase, key, budget)
+    }
+
+    pub fn journal_payload_raw_bounded(
+        &self,
+        phase: &str,
+        key: &str,
+        budget: JournalReadBudget,
+    ) -> StoreResult<Option<Box<serde_json::value::RawValue>>> {
+        self.snapshot()
+            .journal_payload_raw_bounded(phase, key, budget)
     }
 
     pub fn journal_keys(&self, phase: &str) -> StoreResult<HashSet<String>> {

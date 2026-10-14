@@ -20,15 +20,13 @@ mod capture_cache;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-const URL: &str =
-    "https://indiana.tfrrs.org/lists/5489/HSR_All_School_Performance_List/2026/i";
+const URL: &str = "https://indiana.tfrrs.org/lists/5489/HSR_All_School_Performance_List/2026/i";
 const ACQUIRED_AT: &str = "2026-09-22T03:55:31Z";
 const BROWSER_URL: &str = "https://www.athletic.net/athlete/123456/track-and-field";
 const REQUEST_DEADLINE: Duration = Duration::from_secs(5);
 const BROWSER_CAPTURE: &str = r#"{"outcome":"captured","response":{"status":200,"headers":[],"body":"b2JzZXJ2ZWQ=","rankings":null},"challenge":false,"retry_after_ms":null,"fetched_at_ms":1758542400000}"#;
-const LIST: &[u8] = include_bytes!(
-    "../../../../census-crawl/tests/fixtures/tfrrs/indiana_list_5489_excerpt.html"
-);
+const LIST: &[u8] =
+    include_bytes!("../../../../census-crawl/tests/fixtures/tfrrs/indiana_list_5489_excerpt.html");
 
 fn offline_cli(root: &Path) -> TestResult<Cli> {
     Ok(Cli::try_parse_from([
@@ -109,9 +107,7 @@ impl LoopbackObserver {
         match self.pending.accept() {
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => Ok(()),
             Err(error) => Err(error.into()),
-            Ok((_, peer)) => {
-                Err(format!("unexpected queued loopback dispatch from {peer}").into())
-            }
+            Ok((_, peer)) => Err(format!("unexpected queued loopback dispatch from {peer}").into()),
         }
     }
 
@@ -356,7 +352,10 @@ fn provider_store_alone_preserves_the_existing_network_capable_default() -> Test
         "provider",
         "tfrrs",
         "--store",
-        directory.path().to_str().ok_or("fixture path is not UTF-8")?,
+        directory
+            .path()
+            .to_str()
+            .ok_or("fixture path is not UTF-8")?,
     ])?;
     let args = provider(&cli)?;
     check!(eq; args.offline, false);
@@ -494,7 +493,10 @@ async fn provider_offline_refuses_corrupt_cached_bytes_without_replacing_them() 
     capture_cache::seed(fetcher.cache_dir(), &url, LIST, ACQUIRED_AT, &[])?;
     let body = cache_files(&fetcher)?
         .into_keys()
-        .find(|path| path.extension().is_some_and(|extension| extension == "body"))
+        .find(|path| {
+            path.extension()
+                .is_some_and(|extension| extension == "body")
+        })
         .ok_or("cached fixture body missing")?;
     std::fs::write(body, b"corrupt fixture")?;
     let retained = cache_files(&fetcher)?;
@@ -511,7 +513,8 @@ async fn provider_offline_refuses_corrupt_cached_bytes_without_replacing_them() 
 }
 
 #[tokio::test]
-async fn provider_offline_uses_the_current_collector_and_replays_physical_rows_once() -> TestResult {
+async fn provider_offline_uses_the_current_collector_and_replays_physical_rows_once() -> TestResult
+{
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
     let cli = offline_cli(directory.path())?;
@@ -538,7 +541,10 @@ async fn provider_offline_uses_the_current_collector_and_replays_physical_rows_o
         })
         .ok_or("published control performance")?;
     check!(eq; control.mark, Mark::TimeSeconds(ExactSeconds::parse("6.97")?));
-    check!(control.evidence.iter().any(|evidence| evidence.observed_on == ACQUIRED_AT));
+    check!(control
+        .evidence
+        .iter()
+        .any(|evidence| evidence.observed_on == ACQUIRED_AT));
     let physical = store.walk_table(Table::Performances)?;
     drop(store);
     let reopened = Store::open(directory.path())?;
@@ -568,10 +574,13 @@ async fn provider_offline_missing_capture_keeps_the_collector_unfinished() -> Te
     check!(eq; report.errors, 1);
     check!(eq; report.unfinished, vec![URL.to_string()]);
     check!(eq; report.disposition, CollectionDisposition::Partial);
-    check!(report.notes.iter().any(|note| note.contains(&format!("offline and not cached: {URL}"))));
+    check!(report
+        .notes
+        .iter()
+        .any(|note| note.contains(&format!("offline and not cached: {URL}"))));
     check!(eq; report.requests, 0);
     check!(eq; report.from_cache, 0);
     check!(eq; fetcher.stats().await.physical_requests(), 0);
-    check!(eq; store.walk_table(Table::Performances)?.len(), 0);
+    check!(eq; store.walk_table(Table::Performances)?.rows, 0);
     Ok(())
 }

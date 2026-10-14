@@ -97,7 +97,8 @@ fn synthetic_v4_single_day_completion_is_reinterpreted_as_v5_without_duplicate_p
             seed(&fetcher, LIST.as_bytes())?;
             let bindings = schools(&store, LIST)?;
             let ctx = context(&store, &fetcher)?;
-            let (old_key, old_receipt) = synthetic_v4_date_projection(&ctx, &bindings, LIST.as_bytes()).await?;
+            let (old_key, old_receipt) =
+                synthetic_v4_date_projection(&ctx, &bindings, LIST.as_bytes()).await?;
             let capture = capture_bytes(&fetcher, LIST.as_bytes())?;
             let historical = snapshot(&store, DATE_PREDECESSOR_PHASE)?;
             let physical = physical_rows(&store)?;

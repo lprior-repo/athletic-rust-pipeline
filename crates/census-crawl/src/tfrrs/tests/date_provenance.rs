@@ -1,6 +1,6 @@
 use super::{
-    parse_list_page, parse_list_path, parse_team_page, published_date, Absorb, ListContext,
-    Page, SchoolIndex, SourceRef, TestResult, UsJurisdiction, LIST, LIVE_LIST, ROSTER,
+    parse_list_page, parse_list_path, parse_team_page, published_date, Absorb, ListContext, Page,
+    SchoolIndex, SourceRef, TestResult, UsJurisdiction, LIST, LIVE_LIST, ROSTER,
 };
 
 const URL: &str = "https://indiana.tfrrs.org/lists/5489/HSR_All_School_Performance_List/2026/i";
@@ -60,7 +60,11 @@ fn ambiguous_or_malformed_labels_cannot_become_exact_single_days() -> TestResult
 fn captured_list_dates_remain_supported_without_using_acquisition_time() -> TestResult {
     for (html, expected_rows) in [(LIST, 28_usize), (LIVE_LIST, 2_usize)] {
         let parsed = parse_list_page(html);
-        let rows: Vec<_> = parsed.sections.iter().flat_map(|section| &section.rows).collect();
+        let rows: Vec<_> = parsed
+            .sections
+            .iter()
+            .flat_map(|section| &section.rows)
+            .collect();
         check!(eq; rows.len(), expected_rows);
         for row in rows {
             let date = row.date.as_ref().ok_or("captured row date")?;
@@ -77,23 +81,31 @@ fn captured_list_dates_remain_supported_without_using_acquisition_time() -> Test
     for performance in absorb.accumulator.performances.values() {
         check!(performance.date.starts_with("2026-03-"));
         check!(!performance.evidence.is_empty());
-        check!(performance.evidence.iter().all(|evidence| {
-            evidence.observed_on == ACQUIRED && evidence.source == source
-        }));
+        check!(performance
+            .evidence
+            .iter()
+            .all(|evidence| { evidence.observed_on == ACQUIRED && evidence.source == source }));
     }
     Ok(())
 }
 
 #[test]
 fn ambiguous_row_dates_keep_projection_unfinished_and_other_rows_available() -> TestResult {
-    for label in ["Mar 28?, 2026", "Mar 28-29, 2026", "Mar 28, 2026 or Mar 29, 2026"] {
+    for label in [
+        "Mar 28?, 2026",
+        "Mar 28-29, 2026",
+        "Mar 28, 2026 or Mar 29, 2026",
+    ] {
         let html = LIST.replace("Mar 28, 2026", label);
         let source = SourceRef::new("tfrrs_in", Some(URL.to_string()));
         let route = parse_list_path(URL).ok_or("list route")?;
         let index = SchoolIndex::from_schools(&[]);
         let mut absorb = Absorb::new(&index);
         let outcome = absorb.absorb_list(&context(&source, &route)?, &parse_list_page(&html));
-        check!(matches!(outcome, Err(crate::CrawlError::PerformanceDateUnknown { .. })));
+        check!(matches!(
+            outcome,
+            Err(crate::CrawlError::PerformanceDateUnknown { .. })
+        ));
         check!(eq; absorb.accumulator.performances.len(), 16);
         check!(eq; absorb.stats.rows_seen, 28);
         check!(eq; absorb.stats.rows_relay, 5);
@@ -135,7 +147,11 @@ fn ambiguous_or_malformed_date_cells_cannot_be_truncated_to_an_exact_day() -> Te
     ] {
         let html = LIST.replace("Mar 28, 2026", label);
         let parsed = parse_list_page(&html);
-        let rows: Vec<_> = parsed.sections.iter().flat_map(|section| &section.rows).collect();
+        let rows: Vec<_> = parsed
+            .sections
+            .iter()
+            .flat_map(|section| &section.rows)
+            .collect();
         check!(eq; rows.len(), 28);
         check!(eq; rows.iter().filter(|row| row.date.is_none()).count(), 6);
         let expected = parse_list_page(LIST);
