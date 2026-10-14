@@ -1,0 +1,691 @@
+{
+  "kind": "bounded_static_review_coverage",
+  "version": 1,
+  "observed_at_utc": "2026-10-14T07:30:10.104190+00:00",
+  "head": "3708d6bab0b08c390887c562a89e8c6714255a5d",
+  "working_tree_status": "",
+  "working_tree_clean": true,
+  "repository_writes": false,
+  "build_or_test_execution": false,
+  "whole_repository_audit": false,
+  "note": "Whole-file hashes pin bytes even where review_scope specifies only excerpts or caller-symbol inspection. Such pins are not whole-file approval. Other symbol-search hits are not asserted as reviewed coverage.",
+  "files": [
+    {
+      "root": "repository",
+      "path": "AGENTS.md",
+      "sha256": "4c752a276cc38aa1645732272acc78824dcc874fd67ca7aafb1dd7d83e9b990c",
+      "bytes": 14441,
+      "lines": 248,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "ARCHITECTURE.md",
+      "sha256": "6adbc673650d4262a0f87db0e31256fdd69e2961b80e441c301291ed35997049",
+      "bytes": 34903,
+      "lines": 454,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "docs/adr/ADR-038-selected-profile-reusable-production-state.md",
+      "sha256": "63400f2f15e957f9839a42855184c118b4ea1fe3b87993749c2b5fd6c8834256",
+      "bytes": 14782,
+      "lines": 195,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit.rs",
+      "sha256": "7c065ed73675b027a01d3eb9656fe5d33f975ca768f7ff422b294d26e586e7ea",
+      "bytes": 1771,
+      "lines": 50,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/wire.rs",
+      "sha256": "dea71d0c88d9d1771b8a21f9807620c9512139d474e0484344d16b5a9c00ac63",
+      "bytes": 5274,
+      "lines": 196,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/roster.rs",
+      "sha256": "33e43bd9cc3d487ebf48a718f7e908364934a4823c189d2887577d9e05c75e9d",
+      "bytes": 2170,
+      "lines": 85,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/parse/roster.rs",
+      "sha256": "599454f37fc5ec549038514e2621f382681fefb836c3ead49487ab663b1fe9c1",
+      "bytes": 8368,
+      "lines": 277,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/normalize.rs",
+      "sha256": "636f42cad61d4393d98180fd2a499401220c3d28f61b531c7a8c58896eddbd38",
+      "bytes": 9162,
+      "lines": 286,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/census/sweep/roster.rs",
+      "sha256": "13014c8374c86c2dc59606f6067d20e7b7a0c73163ed0cffaeb2572f4b0147b7",
+      "bytes": 6535,
+      "lines": 210,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/census/sweep/roster/metadata.rs",
+      "sha256": "5b1f00ef156e0943c37d5c287b8f71f3661b8395ffa06d8dbd029c58517eeed9",
+      "bytes": 4218,
+      "lines": 135,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/census/sweep/roster/counts.rs",
+      "sha256": "bfbf69a5ab4c2dfb1c721773342ba04125eab7df7a51b7aca3bcec53038901bf",
+      "bytes": 2140,
+      "lines": 71,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/census/sweep/roster/journal.rs",
+      "sha256": "2619cc68c6a77905925ce24b105a72c28d78d8f3bbead4f09ce02e7e4501ffba",
+      "bytes": 7578,
+      "lines": 238,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/census/sweep/roster/commit.rs",
+      "sha256": "5ec3b8718ea376d4742ba10c56a87fab196fbd08977d7f2540cddb235d41ae14",
+      "bytes": 3109,
+      "lines": 93,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/tests/roster_entities.rs",
+      "sha256": "52111c926cfac231540670c9f8bb46829017df64d0bf73688a80a8b7ce9352f0",
+      "bytes": 4622,
+      "lines": 124,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/census/sweep/roster/tests/windows.rs",
+      "sha256": "35bd4ed1023a1a342b0eecefcf659cd97a9b0256fcbfd551820a478c7e817741",
+      "bytes": 5459,
+      "lines": 132,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-domain/src/model/engine_affiliation.rs",
+      "sha256": "73385c02b448392981c9a1b98829bf42634855669b5664783201ec1f0ff6842e",
+      "bytes": 6087,
+      "lines": 218,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/restate_services/capture_execution.rs",
+      "sha256": "3de1c48edec031f129e8bc667bde643b2a68b48837271b06e3976772564e5712",
+      "bytes": 168,
+      "lines": 8,
+      "review_scope": "Owning contract or source read; static scoped reasoning only, not execution qualification"
+    },
+    {
+      "root": "repository",
+      "path": "docs/specifications/athletic-recruiting-end-vision-spec-v2.md",
+      "sha256": "a3b687cc06952dbceaeda2f21300e4769acb96130570fc1174ff70210a09f11e",
+      "bytes": 104189,
+      "lines": 566,
+      "review_scope": "Sections 5, 7 participation/corrections, 8 affiliation; keyword context only elsewhere"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/fetch.rs",
+      "sha256": "2b6a81e74a728f68923a47968793c8a0b5397387d0b519bd261d9850f6bf4aa3",
+      "bytes": 7441,
+      "lines": 221,
+      "review_scope": "fetch_roster and surrounding lines 1-130; remaining file not audited"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/parse/mod.rs",
+      "sha256": "5a07abfae19a59398c003aece94535003260eb1c79293a02c0da7c8c37650bf0",
+      "bytes": 3918,
+      "lines": 121,
+      "review_scope": "row/link regex and accessor, lines 1-55; parser re-export search"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/net/types.rs",
+      "sha256": "9a6c5a5897af335f77e91452c7281d706a739a1496ace4ebb85c3b66f5ded673",
+      "bytes": 7289,
+      "lines": 257,
+      "review_scope": "FetchOutcome lines 171-190"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-domain/src/affiliation_candidates/observed.rs",
+      "sha256": "5e9eb716b2b8a16bea32d00767a8798c07d903abdc90f42a664f7781a7e64f90",
+      "bytes": 7311,
+      "lines": 233,
+      "review_scope": "RawAssertion and LocallyCheckedAssertion lines 75-155"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-store/src/format.rs",
+      "sha256": "08456758ba47464c97506b6989602a395f3fdaf75b1203a311e5fb8841d715b0",
+      "bytes": 7911,
+      "lines": 259,
+      "review_scope": "schema/key/lifecycle constants and related symbol matches only"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-store/src/acquisition/capability.rs",
+      "sha256": "e202ddace77d8e17792eebeb77644ff1f2a3569c64871e3cdbc64546f7e61e65",
+      "bytes": 7243,
+      "lines": 237,
+      "review_scope": "writer and owned-meet scope lines 1-125"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/restate_services/wire.rs",
+      "sha256": "e2b5742d652bc2fce5500d93424ed24b1c13ba5af85fe29ad24c35be07394159",
+      "bytes": 7404,
+      "lines": 272,
+      "review_scope": "WorkbookRequest/Reply lines 125-160"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/restate_services/publish.rs",
+      "sha256": "e2219d465a19b631e399edd52890081e10a88cae89b19a9d07b78bb960eee860",
+      "bytes": 7667,
+      "lines": 256,
+      "review_scope": "Workbook handler lines 175-265"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/restate_services/jobs.rs",
+      "sha256": "a6e9ae613f9d93fc41c8bb842734eea18cbb7bf2e18fab96701d9f88a8a3c9e5",
+      "bytes": 9815,
+      "lines": 289,
+      "review_scope": "build_workbook and surrounding composition lines 125-220"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-report/src/export/dataset/frozen/capture.rs",
+      "sha256": "5e378a582cde890465e784c132cd3212d008a1b20cb84298be6f0f821cc88575",
+      "bytes": 10164,
+      "lines": 298,
+      "review_scope": "capture/capture_at/stream family entrypoints lines 1-85; remaining implementation consulted, not audited"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "sha256": "abe602de5f690bf90f0009cc51daa3464e73c8399e868f23088e17b3bf6a9bb3",
+      "bytes": 12158,
+      "lines": 334,
+      "review_scope": "direct roster field access and fixture/count/partial assertions; keyword excerpts"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests.rs",
+      "sha256": "016a377d1cf877184a04213400c44e8fe41dac9fc7fedbe826bc9227f6474ec0",
+      "bytes": 5826,
+      "lines": 163,
+      "review_scope": "first-athlete ID assertions lines 28-85; ownership test symbol context"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "sha256": "04c42a1eeaf7a9329379f31ca3a4b4c502b55f958dc61d3ff94032487c30ee9e",
+      "bytes": 9179,
+      "lines": 250,
+      "review_scope": "ownerless pure/captured parser assertion lines 226-255; caller search"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/census/sweep/roster/tests.rs",
+      "sha256": "c088490f6db631eeb0977ecfb7cf0672d057158d8d51bede3b78170c57b595be",
+      "bytes": 12051,
+      "lines": 313,
+      "review_scope": "capture fixture, reopen/refusal/completion named test context and module tail; no full audit"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/tests/milesplit_roster_observations.rs",
+      "sha256": "8be1977095d9004e00f4f8c04ea2b81efd913bf1e7c4aaf62fbe9f7c89b356c7",
+      "bytes": 8473,
+      "lines": 223,
+      "review_scope": "source payload map lines 125-154; caller context"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/tests/recovery_mod/jurisdiction_replay.rs",
+      "sha256": "7d83df0a0d1533d6a3b97faf6aaea277510d6ed4a97a06c9d0d47a2e8e19cdfc",
+      "bytes": 8575,
+      "lines": 225,
+      "review_scope": "source cohort filter lines 42-49 and replay assertions; caller search"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/tests/parity_pipeline_mod/fixture_builders.rs",
+      "sha256": "9088c34f52ab562ec7fc91496409216ce9b60b3d281c6bf9362ffd820088a63c",
+      "bytes": 5928,
+      "lines": 167,
+      "review_scope": "MileSplit producer lines 42-82"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/examples/qualification_bound_projection/binding.rs",
+      "sha256": "5c2e24bc2e7d684d0e5818f6be1c93f6042ce8a4db75a7fb8798e25b37797beb",
+      "bytes": 6115,
+      "lines": 150,
+      "review_scope": "roster projection caller lines 109-127 plus caller context"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/examples/qualification_native_vm/captures.rs",
+      "sha256": "5c30e2bf5c1a94664f4f30fe7f21713d87282638b352e3b839a313fc156f4c5c",
+      "bytes": 4841,
+      "lines": 124,
+      "review_scope": "roster projection caller lines 72-84 plus caller context"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/examples/qualification_native_vm/record.rs",
+      "sha256": "5e29db7816fc8cf9aeb582f300dbec9e7a1806f135a334332d4e7e2b4223fcb4",
+      "bytes": 5541,
+      "lines": 169,
+      "review_scope": "parse_roster caller search only"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/tests/boundary_points.rs",
+      "sha256": "3caf8e7daf79a253da23d5f0bc4f163c8cb07489efccc33441091b0eea732144",
+      "bytes": 6753,
+      "lines": 180,
+      "review_scope": "roster boundary/count caller lines 108-124"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/benches/core/fixtures.rs",
+      "sha256": "7470761d6b51a60aa1753bf68c6a835613cdd8618e41a703cdbcaf7308b6ce04",
+      "bytes": 6364,
+      "lines": 237,
+      "review_scope": "roster parse/count caller lines 154-160"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/tests/milesplit_roster_observations/provenance.rs",
+      "sha256": "669234ff2fae9245f2dff9b26550bf213314f6ea47515df500e796b100849b37",
+      "bytes": 4546,
+      "lines": 103,
+      "review_scope": "parse/verdict caller and related provenance assertions, grep context only"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/tests/milesplit_roster_observations/outcomes.rs",
+      "sha256": "0948fa80b459d108cbc08d5c52d75183c65f782e4aaa7dcbfd145b7382cd93f0",
+      "bytes": 4972,
+      "lines": 141,
+      "review_scope": "parse_roster caller search only"
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/parse/roster/ownership_tests.rs",
+      "sha256": "8a4142731e25d6a2782ad6f574a9a19e79e7ef10919cb2e372e8708b279961b8",
+      "bytes": 3826,
+      "lines": 107,
+      "review_scope": "parse_roster/emptiness caller search only"
+    },
+    {
+      "root": "recovery",
+      "path": "accepted-affiliation-bridge-proposal/HANDOFF.md",
+      "sha256": "f4a06d35c4e9ad4899311a548fc2b83a92a3cd8cc592303363442ddc068602af",
+      "bytes": 3575,
+      "lines": 35,
+      "review_scope": "Proposal text reviewed; proposed artifacts are not runtime authority"
+    },
+    {
+      "root": "recovery",
+      "path": "accepted-affiliation-bridge-proposal/README.md",
+      "sha256": "8ebd781311686e350f1e239836dfe6a74626564d58facd307fe6adb6d149e705",
+      "bytes": 4733,
+      "lines": 29,
+      "review_scope": "Proposal text reviewed; proposed artifacts are not runtime authority"
+    },
+    {
+      "root": "recovery",
+      "path": "accepted-affiliation-bridge-proposal/producer-inventory.md",
+      "sha256": "8a964a1975295e824e0a50ee0a028786d40044baefe63094a8da45eb01462079",
+      "bytes": 6302,
+      "lines": 25,
+      "review_scope": "Proposal text reviewed; proposed artifacts are not runtime authority"
+    },
+    {
+      "root": "recovery",
+      "path": "accepted-affiliation-bridge-proposal/contract.md",
+      "sha256": "69b4879b5873cb75e9b58ac1ccaf6e787662ca524e2e576d32609e02b8965b9f",
+      "bytes": 8156,
+      "lines": 51,
+      "review_scope": "Proposal text reviewed; proposed artifacts are not runtime authority"
+    },
+    {
+      "root": "recovery",
+      "path": "accepted-affiliation-bridge-proposal/api-wire.md",
+      "sha256": "aed8cdc4373ff0cb0951f80a255f3187b3009d997d054e9e915ec50f7c8bc362",
+      "bytes": 14794,
+      "lines": 101,
+      "review_scope": "Proposal text reviewed; proposed artifacts are not runtime authority"
+    },
+    {
+      "root": "recovery",
+      "path": "accepted-affiliation-bridge-proposal/source-pack.md",
+      "sha256": "ccb1486343ec51531f1de581175c324217c06ab1aeb1f147f3ef7258d554234e",
+      "bytes": 5752,
+      "lines": 29,
+      "review_scope": "Proposal text reviewed; proposed artifacts are not runtime authority"
+    },
+    {
+      "root": "recovery",
+      "path": "accepted-affiliation-bridge-proposal/history.md",
+      "sha256": "772f4e61403c2b9f397539e830ac6a513ce063cf50e8403e7477866ce06a19e4",
+      "bytes": 6460,
+      "lines": 38,
+      "review_scope": "Proposal text reviewed; proposed artifacts are not runtime authority"
+    },
+    {
+      "root": "recovery",
+      "path": "accepted-affiliation-bridge-proposal/test-plan.md",
+      "sha256": "5cf47580d53725a880cf73071b73b661d3ea7460a68c7cae4f9a4453f649fe8f",
+      "bytes": 8405,
+      "lines": 46,
+      "review_scope": "Proposal text reviewed; proposed artifacts are not runtime authority"
+    },
+    {
+      "root": "recovery",
+      "path": "accepted-affiliation-bridge-proposal/source-pins.json",
+      "sha256": "47a6fa9d7612125233d2210bf831ac2e878c0dd19b0f03b8b415eaf3e6a7b2e4",
+      "bytes": 91019,
+      "lines": 3012,
+      "review_scope": "Metadata/selected covered-file hash comparison only; not an audit of the proposal entire source inventory"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/rust-contract/SKILL.md",
+      "sha256": "f809fae97e55494f98df2c9b44a8bfe1986f3c39f0318d21cfc531dc3b1eca1b",
+      "bytes": 3583,
+      "lines": 71,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/rust-contract/references/type-contract-checklist.md",
+      "sha256": "55d18013456a124ef291b87cf040b93118f8d7fa28b0154332f77a5e3bab6716",
+      "bytes": 376,
+      "lines": 8,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/scott-ddd-refactor/SKILL.md",
+      "sha256": "3af926bf55fb2ee00068ecb996583fe83342dd02e8515a5f86daf0b001edbb39",
+      "bytes": 5572,
+      "lines": 44,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/scott-ddd-refactor/reference.md",
+      "sha256": "f49e8b6c0a222ddfc8a9b0f69e8b628e152554b533a772a231ee066c73cb3171",
+      "bytes": 1382,
+      "lines": 17,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/scott-ddd-refactor/decision-matrix.md",
+      "sha256": "299841e3117eaea59cdae8897af1ea3ca87a0cc2b5523f7e57aab344a9a36625",
+      "bytes": 1185,
+      "lines": 11,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/scott-ddd-refactor/checklist.md",
+      "sha256": "6f3e5270048a20f1260ae8cd3aca4bbf22f52867f23e3dbcce505905a31040f7",
+      "bytes": 1011,
+      "lines": 14,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/holzman-rust/SKILL.md",
+      "sha256": "c2f760c9e7bbd6e88638deaf7338e026a4cdc83e415de575913cc34b89a2fb9a",
+      "bytes": 42648,
+      "lines": 387,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/holzman-rust/references/nasa-jpl-standards.md",
+      "sha256": "ac0833beab6d19d6a3f3313db7796e480624b53baaa62c5faca26248d94816d4",
+      "bytes": 13919,
+      "lines": 210,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/holzman-rust/references/runtime-performance-architecture.md",
+      "sha256": "1dd48f15c3239b638442a41a91c5421c8d47666a5189789b18f95c010a9cbdb2",
+      "bytes": 17985,
+      "lines": 555,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/holzman-rust/references/zero-cost-abstractions.md",
+      "sha256": "24ef8ad9fb511163433189491be2300fc78e33abf978dcc5a75cb0f5c517dffb",
+      "bytes": 9304,
+      "lines": 186,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/async-rust-reviewer/SKILL.md",
+      "sha256": "aaf15691f99e61d04fc6cf5e98ee7623d4510220bda697ce120b695599a32cc1",
+      "bytes": 49813,
+      "lines": 443,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/async-rust-reviewer/references/hexagonal-boundaries.md",
+      "sha256": "248f5b665deb2d11c2f5bfddaf0a3ecc0f95d9f0f251a921a56008ce388282c1",
+      "bytes": 5782,
+      "lines": 154,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    },
+    {
+      "root": "recovery",
+      "path": "skills/architectural-drift/SKILL.md",
+      "sha256": "36ea383186f2ead7d3561dcf00354eed3c09c0627c13b0f3abaac559fbf1a82b",
+      "bytes": 942,
+      "lines": 22,
+      "review_scope": "Recovered guidance consulted; no generic build/whole-repository gate run"
+    }
+  ],
+  "covered_proposal_pin_comparisons": [
+    {
+      "root": "repository",
+      "path": "AGENTS.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "ARCHITECTURE.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "docs/adr/ADR-038-selected-profile-reusable-production-state.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/wire.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/roster.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/parse/roster.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/normalize.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/census/sweep/roster.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/census/sweep/roster/metadata.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/census/sweep/roster/journal.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/census/sweep/roster/commit.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-domain/src/model/engine_affiliation.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/restate_services/capture_execution.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "docs/specifications/athletic-recruiting-end-vision-spec-v2.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-crawl/src/milesplit/fetch.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-domain/src/affiliation_candidates/observed.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-store/src/format.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-store/src/acquisition/capability.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/restate_services/publish.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-service/src/restate_services/jobs.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "repository",
+      "path": "crates/census-report/src/export/dataset/frozen/capture.rs",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "recovery",
+      "path": "skills/rust-contract/SKILL.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "recovery",
+      "path": "skills/scott-ddd-refactor/SKILL.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "recovery",
+      "path": "skills/scott-ddd-refactor/reference.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "recovery",
+      "path": "skills/scott-ddd-refactor/checklist.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "recovery",
+      "path": "skills/holzman-rust/SKILL.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "recovery",
+      "path": "skills/holzman-rust/references/nasa-jpl-standards.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "recovery",
+      "path": "skills/holzman-rust/references/runtime-performance-architecture.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "recovery",
+      "path": "skills/async-rust-reviewer/SKILL.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "recovery",
+      "path": "skills/async-rust-reviewer/references/hexagonal-boundaries.md",
+      "matches_proposal_pin": true
+    },
+    {
+      "root": "recovery",
+      "path": "skills/architectural-drift/SKILL.md",
+      "matches_proposal_pin": true
+    }
+  ]
+}

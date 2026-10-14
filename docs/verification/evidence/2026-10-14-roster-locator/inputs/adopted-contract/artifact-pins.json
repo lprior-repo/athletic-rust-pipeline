@@ -1,0 +1,31 @@
+{
+  "kind": "review_artifact_pins",
+  "version": 1,
+  "files": [
+    {
+      "path": "REVIEW.md",
+      "bytes": 10696,
+      "sha256": "12a8def2e192e653295c2432a228e966c6afd83fbd743141813a4b00ca89083d"
+    },
+    {
+      "path": "IMPLEMENTATION-CONTRACT.md",
+      "bytes": 13969,
+      "sha256": "e06b44b4123a698290450c9f46ebaf89c0eefb683457384b659ad79ade9105e2"
+    },
+    {
+      "path": "HANDOFF.md",
+      "bytes": 2761,
+      "sha256": "e3ecc6a193a54a3db5315f6bc6081038223299cbfa4df6d80fb5dcc2a8a9a3a0"
+    },
+    {
+      "path": "coverage.json",
+      "bytes": 26291,
+      "sha256": "eb073bd7d5acec12a79c7a39a13ddc4b8e6a136a3198b6aa499421eb276ca891"
+    },
+    {
+      "path": "repository-status.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

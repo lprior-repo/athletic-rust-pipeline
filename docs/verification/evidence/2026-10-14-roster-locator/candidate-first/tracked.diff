@@ -1,0 +1,522 @@
+diff --git a/crates/census-crawl/src/milesplit.rs b/crates/census-crawl/src/milesplit.rs
+index 2fef9f1a..f3916727 100644
+--- a/crates/census-crawl/src/milesplit.rs
++++ b/crates/census-crawl/src/milesplit.rs
+@@ -43,7 +43,8 @@ pub use roster::{
+     SourceRowLocator,
+ };
+ pub use wire::{
+-    MeetRef, MeetResultFile, ResultSetRef, Roster, RosterAthlete, Season, Site, TeamRef,
++    LocatedRosterAthlete, MeetRef, MeetResultFile, ResultSetRef, Roster, RosterAthlete, Season,
++    Site, TeamRef,
+ };
+ 
+ #[cfg(test)]
+diff --git a/crates/census-crawl/src/milesplit/normalize.rs b/crates/census-crawl/src/milesplit/normalize.rs
+index 6fea381e..4e0af63e 100644
+--- a/crates/census-crawl/src/milesplit/normalize.rs
++++ b/crates/census-crawl/src/milesplit/normalize.rs
+@@ -1,4 +1,4 @@
+-use super::wire::{RosterAthlete, Site, TeamRef};
++use super::wire::{LocatedRosterAthlete, RosterAthlete, Site, TeamRef};
+ use crate::{CrawlError, CrawlResult};
+ use census_domain::model::{
+     normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, Gender,
+@@ -35,7 +35,7 @@ struct Projection<'a> {
+ 
+ pub fn roster_entities(
+     team: &TeamRef,
+-    entries: &[RosterAthlete],
++    entries: &[LocatedRosterAthlete],
+     school_year: SchoolYear,
+     observed_on: &str,
+     site: &Site,
+@@ -54,7 +54,8 @@ pub fn roster_entities(
+         at: observed_on,
+         site,
+     };
+-    let programs = entries.iter().try_fold(0u16, |programs, entry| {
++    let programs = entries.iter().try_fold(0u16, |programs, member| {
++        let entry = member.athlete();
+         athletes.push(roster_athlete_entity(entry, &projection)?);
+         Ok::<_, CrawlError>(sport_iter(entry).fold(programs, |mask, sport| {
+             mask | program_bit(sport, entry.gender)
+@@ -63,7 +64,7 @@ pub fn roster_entities(
+     Ok((school, athletes, roster_teams(programs, &projection)?))
+ }
+ 
+-fn admit(team: &TeamRef, entries: &[RosterAthlete], at: &str) -> CrawlResult<()> {
++fn admit(team: &TeamRef, entries: &[LocatedRosterAthlete], at: &str) -> CrawlResult<()> {
+     if entries.len() > MAX_WINDOW_ROWS {
+         return Err(resource(
+             "roster projection rows",
+@@ -80,7 +81,8 @@ fn admit(team: &TeamRef, entries: &[RosterAthlete], at: &str) -> CrawlResult<()>
+     ]
+     .into_iter()
+     .try_fold(at.len(), |total, value| add(total, value.len()))?;
+-    let bytes = entries.iter().try_fold(initial, |total, row| {
++    let bytes = entries.iter().try_fold(initial, |total, member| {
++        let row = member.athlete();
+         [
+             &row.name,
+             &row.roster_name,
+diff --git a/crates/census-crawl/src/milesplit/parse/roster.rs b/crates/census-crawl/src/milesplit/parse/roster.rs
+index 85c28dd9..c1d83b6c 100644
+--- a/crates/census-crawl/src/milesplit/parse/roster.rs
++++ b/crates/census-crawl/src/milesplit/parse/roster.rs
+@@ -1,7 +1,7 @@
+ use super::super::roster::{
+     RosterQuarantine, RosterRejection, RosterRejectionKind, RosterVerdict, SourceRowLocator,
+ };
+-use super::super::wire::{Roster, RosterAthlete, TeamRef};
++use super::super::wire::{LocatedRosterAthlete, Roster, RosterAthlete, TeamRef};
+ use super::{
+     athlete_link_regex, athlete_row_regex, gender_cell_regex, grad_cell_regex, html_unescape,
+     season_cell_regex,
+@@ -34,7 +34,7 @@ pub fn parse_roster(html: &str, team: TeamRef) -> CrawlResult<RosterVerdict> {
+ 
+ #[derive(Default)]
+ struct Parsed {
+-    athletes: Vec<RosterAthlete>,
++    athletes: Vec<LocatedRosterAthlete>,
+     rejected: Vec<RosterRejection>,
+     unfinished: Option<SourceRowLocator>,
+ }
+@@ -89,7 +89,8 @@ impl Parsed {
+         match value {
+             Ok(athlete) => {
+                 reserve(&mut self.athletes)?;
+-                self.athletes.push(athlete);
++                self.athletes
++                    .push(LocatedRosterAthlete::new(athlete, locator));
+             }
+             Err(rejection) => {
+                 reserve(&mut self.rejected)?;
+diff --git a/crates/census-crawl/src/milesplit/parse/roster/owner/tests.rs b/crates/census-crawl/src/milesplit/parse/roster/owner/tests.rs
+index bea7d9b3..3c656a3b 100644
+--- a/crates/census-crawl/src/milesplit/parse/roster/owner/tests.rs
++++ b/crates/census-crawl/src/milesplit/parse/roster/owner/tests.rs
+@@ -46,6 +46,7 @@ fn ownerless_historical_fragment_cannot_establish_roster_affiliations() -> TestR
+             .athletes
+             .first()
+             .ok_or("captured athlete missing")?
++            .athlete()
+             .athlete_id,
+         "14399169"
+     );
+@@ -72,6 +73,7 @@ fn matching_published_owner_admits_historical_rows_without_fabricating_final_pro
+             .athletes
+             .first()
+             .ok_or("captured athlete missing")?
++            .athlete()
+             .athlete_id,
+         "14399169"
+     );
+diff --git a/crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs b/crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs
+index 124aeaf2..422da3a3 100644
+--- a/crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs
++++ b/crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs
+@@ -48,7 +48,26 @@ fn assert_historical_rows_admitted(synthetic_prefix: &str) -> TestResult {
+     let expected = parse_roster(BODY, requested.clone())?;
+     let (body, capture) = synthetic_prefixed_capture(&requested, synthetic_prefix, None);
+     validate_capture(&body, &requested, &capture)?;
+-    check!(eq; parse_captured_roster(&body, requested, &capture)?, expected);
++    let actual = parse_captured_roster(&body, requested, &capture)?;
++    check!(matches!(&expected, RosterVerdict::Complete { .. }));
++    check!(matches!(&actual, RosterVerdict::Complete { .. }));
++    let expected = expected.roster().ok_or("missing historical rows")?;
++    let actual = actual.roster().ok_or("missing prefixed historical rows")?;
++    check!(eq; actual.team, expected.team);
++    check!(eq; actual.athletes.len(), expected.athletes.len());
++    for (actual, expected) in actual.athletes.iter().zip(&expected.athletes) {
++        check!(eq; actual.athlete(), expected.athlete());
++        let expected = expected.locator();
++        let offset = expected
++            .byte_offset
++            .checked_add(synthetic_prefix.len())
++            .ok_or("prefixed locator overflow")?;
++        check!(eq; actual.locator(), crate::milesplit::SourceRowLocator {
++            ordinal: expected.ordinal,
++            byte_offset: offset,
++            byte_length: expected.byte_length,
++        });
++    }
+     Ok(())
+ }
+ 
+@@ -243,6 +262,7 @@ fn ownerless_authentic_rows_remain_available_to_pure_parser_only() -> TestResult
+             .athletes
+             .first()
+             .ok_or("authentic first athlete unavailable")?
++            .athlete()
+             .athlete_id,
+         "14399169"
+     );
+diff --git a/crates/census-crawl/src/milesplit/tests/mod.rs b/crates/census-crawl/src/milesplit/tests/mod.rs
+index e97b8d05..9d3a349d 100644
+--- a/crates/census-crawl/src/milesplit/tests/mod.rs
++++ b/crates/census-crawl/src/milesplit/tests/mod.rs
+@@ -32,7 +32,7 @@ fn parses_roster_rows_with_grad_year_and_seasons() -> TestResult {
+         .roster()
+         .ok_or("the fixture has readable roster rows")?;
+     check!(eq; roster.athletes.len(), 25);
+-    let first = &roster.athletes[0];
++    let first = roster.athletes[0].athlete();
+     check!(eq; first.name, "Julian Aguilera");
+     check!(eq; first.roster_name, "Aguilera, Julian");
+     check!(eq; first.grad_year, GradYear::CO2027);
+@@ -45,10 +45,10 @@ fn parses_roster_rows_with_grad_year_and_seasons() -> TestResult {
+     let all_sports = roster
+         .athletes
+         .iter()
+-        .find(|athlete| athlete.roster_name.starts_with("Altamirano"))
++        .find(|athlete| athlete.athlete().roster_name.starts_with("Altamirano"))
+         .ok_or("Altamirano row present in fixture")?;
+     check!(eq;
+-        all_sports.sports(),
++        all_sports.athlete().sports(),
+         vec![Sport::IndoorTrack, Sport::OutdoorTrack, Sport::CrossCountry]
+     );
+     Ok(())
+@@ -183,13 +183,13 @@ fn oh_roster_pins_319_graded_rows_and_96_class_of_2027() -> TestResult {
+     let co2027 = roster
+         .athletes
+         .iter()
+-        .filter(|athlete| athlete.grad_year == GradYear::CO2027)
++        .filter(|athlete| athlete.athlete().grad_year == GradYear::CO2027)
+         .count();
+     check!(eq; co2027, 96);
+     check!(roster
+         .athletes
+         .iter()
+-        .all(|athlete| (2027..=2030).contains(&athlete.grad_year.get())));
++        .all(|athlete| (2027..=2030).contains(&athlete.athlete().grad_year.get())));
+     Ok(())
+ }
+ 
+@@ -226,6 +226,7 @@ fn raw_result_set_body_pins_80_rows_in_two_sections() -> TestResult {
+     check!(matches!(first.mark, Mark::TimeSeconds(_)));
+     Ok(())
+ }
++mod located_roster;
+ mod parsing;
+ mod roster;
+ mod roster_entities;
+@@ -258,7 +259,7 @@ fn rejected_rows_keep_their_provider_identity_and_exact_utf8_span() -> TestResul
+     check!(roster
+         .athletes
+         .iter()
+-        .all(|athlete| athlete.athlete_id != id));
++        .all(|athlete| athlete.athlete().athlete_id != id));
+     check!(eq;
+         locator.ordinal as usize + 1,
+         body[..locator.byte_offset]
+diff --git a/crates/census-crawl/src/milesplit/tests/roster_entities.rs b/crates/census-crawl/src/milesplit/tests/roster_entities.rs
+index 145e1e1c..d3b9d816 100644
+--- a/crates/census-crawl/src/milesplit/tests/roster_entities.rs
++++ b/crates/census-crawl/src/milesplit/tests/roster_entities.rs
+@@ -24,9 +24,9 @@ fn roster_names_decode_numeric_entities_without_recursively_decoding_escaped_tex
+         let RosterVerdict::Complete { roster } = parse_roster(&body, team.clone())? else {
+             return Err("a readable roster row must remain complete".into());
+         };
+-        check!(eq; roster.athletes[0].name, expected);
+-        check!(eq; roster.athletes[0].athlete_id, "42");
+-        check!(eq; roster.athletes[0].grad_year.get(), 2027);
++        check!(eq; roster.athletes[0].athlete().name, expected);
++        check!(eq; roster.athletes[0].athlete().athlete_id, "42");
++        check!(eq; roster.athletes[0].athlete().grad_year.get(), 2027);
+     }
+     Ok(())
+ }
+@@ -49,8 +49,8 @@ fn provider_owned_athlete_hosts_preserve_profile_urls_and_roster_identity() -> T
+             )
+             .into());
+         };
+-        check!(eq; roster.athletes[0].athlete_id, "42");
+-        check!(eq; roster.athletes[0].profile_url, url);
++        check!(eq; roster.athletes[0].athlete().athlete_id, "42");
++        check!(eq; roster.athletes[0].athlete().profile_url, url);
+         check!(eq; roster.team, team);
+     }
+     Ok(())
+diff --git a/crates/census-crawl/src/milesplit/wire.rs b/crates/census-crawl/src/milesplit/wire.rs
+index d24c6e42..911e2a6e 100644
+--- a/crates/census-crawl/src/milesplit/wire.rs
++++ b/crates/census-crawl/src/milesplit/wire.rs
+@@ -1,3 +1,4 @@
++use super::roster::SourceRowLocator;
+ use census_domain::model::{Gender, GradYear};
+ use census_domain::UsJurisdiction;
+ use serde::Deserialize;
+@@ -100,10 +101,30 @@ pub struct RosterAthlete {
+     pub xc: bool,
+ }
+ 
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct LocatedRosterAthlete {
++    athlete: RosterAthlete,
++    locator: SourceRowLocator,
++}
++
++impl LocatedRosterAthlete {
++    pub(in crate::milesplit) fn new(athlete: RosterAthlete, locator: SourceRowLocator) -> Self {
++        Self { athlete, locator }
++    }
++
++    pub fn athlete(&self) -> &RosterAthlete {
++        &self.athlete
++    }
++
++    pub fn locator(&self) -> SourceRowLocator {
++        self.locator
++    }
++}
++
+ #[derive(Debug, Clone, PartialEq, Eq)]
+ pub struct Roster {
+     pub team: TeamRef,
+-    pub athletes: Vec<RosterAthlete>,
++    pub athletes: Vec<LocatedRosterAthlete>,
+ }
+ 
+ #[derive(Debug, Clone, PartialEq, Eq)]
+diff --git a/crates/census-service/src/census/sweep/roster.rs b/crates/census-service/src/census/sweep/roster.rs
+index 08d77b8f..c8725ebd 100644
+--- a/crates/census-service/src/census/sweep/roster.rs
++++ b/crates/census-service/src/census/sweep/roster.rs
+@@ -122,10 +122,10 @@ async fn apply_roster(
+             return Ok(None);
+         };
+         let records = Records::of(&window, &run.site, run.school_year)?;
+-        counts.include(window.athletes(), records.teams())?;
++        counts.include(records.members(), records.teams())?;
+         let next =
+             offset
+-                .checked_add(window.athletes().len())
++                .checked_add(records.members().len())
+                 .ok_or_else(|| CrawlError::Arithmetic {
+                     detail: "roster window cursor overflowed".to_string(),
+                 })?;
+diff --git a/crates/census-service/src/census/sweep/roster/commit.rs b/crates/census-service/src/census/sweep/roster/commit.rs
+index ae99d46f..701fed25 100644
+--- a/crates/census-service/src/census/sweep/roster/commit.rs
++++ b/crates/census-service/src/census/sweep/roster/commit.rs
+@@ -40,7 +40,7 @@ impl<'a> Commit<'a> {
+ 
+     pub(super) async fn window(
+         &self,
+-        records: Option<&Records>,
++        records: Option<&Records<'_>>,
+         counts: &Counts,
+         offset: usize,
+         terminal: bool,
+@@ -71,7 +71,7 @@ impl<'a> Commit<'a> {
+ 
+     fn journal<'b>(
+         &'b self,
+-        records: Option<&'b Records>,
++        records: Option<&'b Records<'_>>,
+         counts: &'b Counts,
+         terminal: bool,
+         prior: Option<&'b journal::Journal>,
+diff --git a/crates/census-service/src/census/sweep/roster/counts.rs b/crates/census-service/src/census/sweep/roster/counts.rs
+index bc6c670d..6b76a907 100644
+--- a/crates/census-service/src/census/sweep/roster/counts.rs
++++ b/crates/census-service/src/census/sweep/roster/counts.rs
+@@ -1,4 +1,4 @@
+-use census_crawl::milesplit::RosterAthlete;
++use census_crawl::milesplit::LocatedRosterAthlete;
+ use census_crawl::{CrawlError, CrawlResult};
+ use census_domain::model::{CanonicalTeam, Gender, GradYear, Sport};
+ use std::collections::HashSet;
+@@ -30,11 +30,12 @@ impl Counts {
+ 
+     pub(super) fn include(
+         &mut self,
+-        rows: &[RosterAthlete],
++        rows: &[LocatedRosterAthlete],
+         teams: &[CanonicalTeam],
+     ) -> CrawlResult<()> {
+         self.athletes = add(self.athletes, rows.len())?;
+         rows.iter()
++            .map(LocatedRosterAthlete::athlete)
+             .filter(|row| row.grad_year == GradYear::CO2027)
+             .try_for_each(|row| {
+                 self.co2027 = add(self.co2027, 1)?;
+diff --git a/crates/census-service/src/census/sweep/roster/journal.rs b/crates/census-service/src/census/sweep/roster/journal.rs
+index 3917b5c8..54467586 100644
+--- a/crates/census-service/src/census/sweep/roster/journal.rs
++++ b/crates/census-service/src/census/sweep/roster/journal.rs
+@@ -1,5 +1,6 @@
+ use census_crawl::milesplit::{
+-    self, RosterOutcome, RosterQuarantine, RosterRejection, RosterVerdict, Site, TeamRef,
++    self, LocatedRosterAthlete, RosterOutcome, RosterQuarantine, RosterRejection, RosterVerdict,
++    Site, TeamRef,
+ };
+ use census_crawl::net::FetchOutcome;
+ use census_crawl::{CrawlError, CrawlResult};
+@@ -14,7 +15,8 @@ use super::super::units::RosterRun;
+ use super::{counts::Counts, metadata::Window};
+ use sha2::{Digest, Sha256};
+ 
+-pub(super) struct Records {
++pub(super) struct Records<'a> {
++    members: &'a [LocatedRosterAthlete],
+     school: CanonicalSchool,
+     teams: Vec<CanonicalTeam>,
+     athletes: Vec<CanonicalAthlete>,
+@@ -22,8 +24,8 @@ pub(super) struct Records {
+     athlete_observations: Vec<SourceObservation>,
+ }
+ 
+-impl Records {
+-    pub(super) fn of(window: &Window<'_>, site: &Site, year: SchoolYear) -> CrawlResult<Self> {
++impl<'a> Records<'a> {
++    pub(super) fn of(window: &Window<'a>, site: &Site, year: SchoolYear) -> CrawlResult<Self> {
+         let (school, athletes, teams) = milesplit::roster_entities(
+             window.team(),
+             window.athletes(),
+@@ -34,6 +36,7 @@ impl Records {
+         let school_observation = school_observation(&school, window.observed_on())?;
+         let athlete_observations = athlete_observations(&athletes, &school, window.observed_on())?;
+         Ok(Self {
++            members: window.athletes(),
+             school,
+             teams,
+             athletes,
+@@ -70,6 +73,10 @@ impl Records {
+         Ok(format!("{:x}", digest.finalize()))
+     }
+ 
++    pub(super) fn members(&self) -> &'a [LocatedRosterAthlete] {
++        self.members
++    }
++
+     pub(super) fn teams(&self) -> &[CanonicalTeam] {
+         &self.teams
+     }
+@@ -176,7 +183,7 @@ fn disposition_of(verdict: &RosterVerdict) -> census_crawl::CollectionDispositio
+ pub(super) fn roster_journal<'a>(
+     team: &'a TeamRef,
+     read: &'a RosterOutcome,
+-    records: Option<&'a Records>,
++    records: Option<&'a Records<'_>>,
+     run: &'a RosterRun<'_>,
+     counts: &Counts,
+ ) -> Journal<&'a str, &'a FetchOutcome, &'a [RosterRejection]> {
+@@ -236,3 +243,6 @@ pub(super) fn roster_operation(
+         team.id
+     )
+ }
++
++#[cfg(test)]
++mod legacy_compatibility;
+diff --git a/crates/census-service/src/census/sweep/roster/metadata.rs b/crates/census-service/src/census/sweep/roster/metadata.rs
+index 9fddcbeb..13e5ac19 100644
+--- a/crates/census-service/src/census/sweep/roster/metadata.rs
++++ b/crates/census-service/src/census/sweep/roster/metadata.rs
+@@ -1,4 +1,4 @@
+-use census_crawl::milesplit::{Roster, RosterAthlete, TeamRef};
++use census_crawl::milesplit::{LocatedRosterAthlete, Roster, RosterAthlete, TeamRef};
+ use census_crawl::{CrawlError, CrawlResult};
+ use std::ops::ControlFlow;
+ 
+@@ -8,7 +8,7 @@ const MAX_WINDOW_ROWS: usize = 64;
+ 
+ pub(super) struct Window<'a> {
+     team: &'a TeamRef,
+-    athletes: &'a [RosterAthlete],
++    athletes: &'a [LocatedRosterAthlete],
+     observed_on: &'a str,
+ }
+ 
+@@ -34,7 +34,7 @@ impl<'a> Window<'a> {
+     pub(super) fn team(&self) -> &'a TeamRef {
+         self.team
+     }
+-    pub(super) fn athletes(&self) -> &'a [RosterAthlete] {
++    pub(super) fn athletes(&self) -> &'a [LocatedRosterAthlete] {
+         self.athletes
+     }
+     pub(super) fn observed_on(&self) -> &'a str {
+@@ -63,13 +63,13 @@ fn common(team: &TeamRef, observed_on: &str) -> CrawlResult<usize> {
+     })
+ }
+ 
+-fn window_len(rows: &[RosterAthlete], common: usize) -> CrawlResult<usize> {
++fn window_len(rows: &[LocatedRosterAthlete], common: usize) -> CrawlResult<usize> {
+     let initial = add(scale(common, 32)?, 16 * 1024)?;
+     let outcome =
+         rows.iter()
+             .take(MAX_WINDOW_ROWS)
+             .try_fold((initial, 0_usize), |(used, count), row| {
+-                match row_bytes(row, common).and_then(|bytes| add(used, bytes)) {
++                match row_bytes(row.athlete(), common).and_then(|bytes| add(used, bytes)) {
+                     Ok(next) if next <= MAX_PROJECTED => match count.checked_add(1) {
+                         Some(count) => ControlFlow::Continue((next, count)),
+                         None => ControlFlow::Break(Err(arithmetic())),
+diff --git a/crates/census-service/src/census/sweep/roster/tests.rs b/crates/census-service/src/census/sweep/roster/tests.rs
+index 0891fb2a..f81af682 100644
+--- a/crates/census-service/src/census/sweep/roster/tests.rs
++++ b/crates/census-service/src/census/sweep/roster/tests.rs
+@@ -10,6 +10,7 @@ use census_store::Table;
+ use sha2::{Digest, Sha256};
+ use std::num::NonZeroU32;
+ 
++mod locators;
+ mod windows;
+ 
+ type TestResult = Result<(), Box<dyn std::error::Error>>;
+diff --git a/crates/census-service/src/census/sweep/roster/tests/windows.rs b/crates/census-service/src/census/sweep/roster/tests/windows.rs
+index e21b902c..7c1a52d7 100644
+--- a/crates/census-service/src/census/sweep/roster/tests/windows.rs
++++ b/crates/census-service/src/census/sweep/roster/tests/windows.rs
+@@ -46,7 +46,7 @@ async fn persist_prefix(store: &Store, run: &RosterRun<'_>, read: &RosterOutcome
+     let commit = Commit::new(store, &roster.team, run, read)?;
+     let records = Records::of(&first, &run.site, run.school_year)?;
+     let mut counts = Counts::new()?;
+-    counts.include(first.athletes(), records.teams())?;
++    counts.include(records.members(), records.teams())?;
+     commit.window(Some(&records), &counts, 0, false).await?;
+     check!(eq; athletes(store)?, (0..prefix).map(|index| format!("Person{index:04} Runner")).collect::<Vec<_>>());
+     Ok(())
+diff --git a/crates/census-service/tests/milesplit_roster_observations.rs b/crates/census-service/tests/milesplit_roster_observations.rs
+index 8673da49..a661cd2c 100644
+--- a/crates/census-service/tests/milesplit_roster_observations.rs
++++ b/crates/census-service/tests/milesplit_roster_observations.rs
+@@ -139,7 +139,8 @@ fn a_synthetic_owned_roster_pass_files_an_observation_per_published_athlete() ->
+             let published: BTreeMap<String, (&str, &str)> = roster
+                 .athletes
+                 .iter()
+-                .map(|athlete| {
++                .map(|member| {
++                    let athlete = member.athlete();
+                     (
+                         athlete.athlete_id.clone(),
+                         (athlete.name.as_str(), athlete.profile_url.as_str()),
+diff --git a/crates/census-service/tests/milesplit_roster_observations/outcomes.rs b/crates/census-service/tests/milesplit_roster_observations/outcomes.rs
+index d31ba850..75f16cf5 100644
+--- a/crates/census-service/tests/milesplit_roster_observations/outcomes.rs
++++ b/crates/census-service/tests/milesplit_roster_observations/outcomes.rs
+@@ -42,7 +42,7 @@ fn accepted_names(body: &str, team: &milesplit::TeamRef) -> TestResult<Vec<Strin
+             roster
+                 .athletes
+                 .iter()
+-                .map(|athlete| athlete.name.clone())
++                .map(|member| member.athlete().name.clone())
+                 .collect::<Vec<_>>()
+         })
+         .map_or(Default::default(), core::convert::identity);
+diff --git a/crates/census-service/tests/recovery_mod/jurisdiction_replay.rs b/crates/census-service/tests/recovery_mod/jurisdiction_replay.rs
+index 9584d49b..a64fe3c3 100644
+--- a/crates/census-service/tests/recovery_mod/jurisdiction_replay.rs
++++ b/crates/census-service/tests/recovery_mod/jurisdiction_replay.rs
+@@ -45,7 +45,7 @@ fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters(
+             .ok_or("roster fixture carries no readable athletes")?
+             .athletes
+             .iter()
+-            .filter(|athlete| athlete.grad_year == GradYear::CO2027)
++            .filter(|athlete| athlete.athlete().grad_year == GradYear::CO2027)
+             .count();
+         check!(per_roster > 0, "the roster fixture carries Co2027 athletes");
+         let walk = Walk {

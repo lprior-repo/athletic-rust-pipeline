@@ -1,0 +1,31 @@
+{
+  "provenance": "Root attestation of observed exec/write_stdin results; not a raw tool export",
+  "cwd": "/workspace/shared/athletic-rebuild-20261013",
+  "setup": "source /workspace/shared/athletic-recovery-20261013-2203/toolchain/env.sh",
+  "shell": "bash; set -o pipefail; command 2>&1 | tee named_log",
+  "commands": [
+    {
+      "lane": "baseline-probe",
+      "command": "timeout --signal=INT --kill-after=10s 1200s env -u CI CARGO_INCREMENTAL=0 POSITIVE_ROSTER_BASELINE_PATH=/workspace/shared/athletic-recovery-20261013-2203/positive-roster-locator-proposal/baseline-probe/legacy-bytes.json tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-domain -p census-store -p census-crawl -p census-service --lib -E 'test(positive_roster_legacy_bytes_probe)'",
+      "session_id": 25657,
+      "outer_exit": 0,
+      "log": "/workspace/shared/athletic-recovery-20261013-2203/positive-roster-locator-proposal/baseline-probe/probe-first.log",
+      "nextest_id": "684a5b5e-e3d1-4b36-bb16-7282385a4467"
+    },
+    {
+      "lane": "baseline-probe-v2",
+      "command": "timeout --signal=INT --kill-after=10s 1200s env -u CI CARGO_INCREMENTAL=0 POSITIVE_ROSTER_BASELINE_PATH=/workspace/shared/athletic-recovery-20261013-2203/positive-roster-locator-proposal/baseline-probe-v2/legacy-bytes.json tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-domain -p census-store -p census-crawl -p census-service --lib -E 'test(positive_roster_legacy_bytes_probe)'",
+      "session_id": 13580,
+      "outer_exit": 0,
+      "log": "/workspace/shared/athletic-recovery-20261013-2203/positive-roster-locator-proposal/baseline-probe-v2/probe-first.log",
+      "nextest_id": "445729b4-0a11-472d-896d-8054ba1bb501"
+    },
+    {
+      "lane": "format-first",
+      "command": "env -u CI tools/moon-local run pipeline:fmt-write",
+      "session_id": 95995,
+      "outer_exit": 0,
+      "log": "/workspace/shared/athletic-recovery-20261013-2203/positive-roster-locator-proposal/format-first.log"
+    }
+  ]
+}

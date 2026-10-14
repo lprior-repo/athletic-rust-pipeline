@@ -1,0 +1,46 @@
+{
+  "production_baseline": "3708d6bab0b08c390887c562a89e8c6714255a5d",
+  "integration_head": "5ecad4e42525165be8a45a3f7ea9411347c35334",
+  "integration_head_tree": "0f0b453ea7658d71a362fd6057c590f0c24f417f",
+  "candidate_definition": "Exact local source commit f4506762506a4c2019b2b610f4554f3b77d005a1; all 22 changed paths independently matched to final tested/reviewed snapshot. Integration HEAD records its documentation-only parent.",
+  "modified_existing_files": 18,
+  "new_files": 4,
+  "production_files": 9,
+  "test_or_fixture_files": 13,
+  "configured_build_inputs": [
+    {
+      "path": "Cargo.toml",
+      "sha256": "0c2944f233d8485ad5f1e3dd6496cdfab0bd01f98530d10314f0debaa9388e37",
+      "bytes": 1851
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "0b7b7023933bbb062bd298e35ca1b8fdbee8b5731322660563dc4eb819555a18",
+      "bytes": 95522
+    },
+    {
+      "path": "rust-toolchain.toml",
+      "sha256": "617f17e428d802ca347420049161a2e9528ac5e2ac943f4ce18f6e095809c523",
+      "bytes": 171
+    },
+    {
+      "path": "tools/moon-local",
+      "sha256": "dd61031c49d49691b06b99017a4c0d47fa0a57b831362faf8175b9f3df0ec210",
+      "bytes": 3709
+    },
+    {
+      "path": "xtask/README.md",
+      "sha256": "cbf2ba635473adc358ca7665fcfd10e4d75969d0d9ddef2e32b0fe35851946f5",
+      "bytes": 32187
+    },
+    {
+      "path": "moon.yml",
+      "sha256": "7af88ddf2d92d7b431b78604bf62cd009459976669f1e5622d2df9ed64ebc7be",
+      "bytes": 6783
+    }
+  ],
+  "actual_toolchain_and_binary_at_execution": "MISSING_EVIDENCE: input files and Root shell setup are preserved; no complete binary-at-run fingerprint or inherited environment was captured by this worker. Do not infer configured version equals actual executed tool version.",
+  "evidence_worker_execution": "Read-only Git/source/log inspection, hashing, JSON parsing and detached artifact generation only. No project build/test/check/lint/format/browser/census/production/publication command run.",
+  "source_commit": "f4506762506a4c2019b2b610f4554f3b77d005a1",
+  "source_tree": "a5d6f335dbba4c9fbecc8e23a9f69c14f8bab303"
+}
