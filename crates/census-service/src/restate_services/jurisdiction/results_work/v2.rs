@@ -30,7 +30,7 @@ impl JurisdictionCensus {
                 "v2 Results requires the admitted structured owner",
             ));
         };
-        let owner = owner.clone();
+        let owner = owner.as_ref().clone();
         let store = Arc::clone(&self.store);
         let planning_fetcher = Arc::clone(&fetcher);
         let region = self.region();

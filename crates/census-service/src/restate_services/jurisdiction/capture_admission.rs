@@ -43,7 +43,7 @@ pub(in crate::restate_services) enum ResultsCaptureExecution {
     UnadoptedSources,
     FreshQualification {
         writer: Arc<CaptureWriterV1>,
-        owner: ResultsCaptureOwnerV1,
+        owner: Box<ResultsCaptureOwnerV1>,
         grants: GrantedTargets,
     },
 }
@@ -121,7 +121,7 @@ pub(super) fn admit_results_owner(
     let owner = writer.results_owner(store, scope)?;
     Ok(ResultsCaptureExecution::FreshQualification {
         writer: Arc::clone(writer),
-        owner,
+        owner: Box::new(owner),
         grants: GrantedTargets::default(),
     })
 }

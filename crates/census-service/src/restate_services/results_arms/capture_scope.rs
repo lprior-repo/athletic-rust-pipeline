@@ -54,7 +54,7 @@ pub(super) fn admit(
         .continuation_for_owned_meet(store, owner, target.site.jurisdiction(), &target.meet_id)
         .map_err(|error| job_error(error.into()))?;
     let context = ResultsCaptureContext::new(
-        owner.clone(),
+        owner.as_ref().clone(),
         grant,
         target.site.jurisdiction(),
         &target.meet_id,

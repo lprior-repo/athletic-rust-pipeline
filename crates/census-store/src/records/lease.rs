@@ -7,6 +7,8 @@ use sha2::{Digest as _, Sha256};
 
 const MAX_DURABLE_LEASES: usize = 4096;
 
+#[path = "lease_boot.rs"]
+mod boot;
 #[path = "lease_transition.rs"]
 mod transition;
 fn lease_key(digest: &str) -> String {
@@ -27,18 +29,14 @@ fn expiry(value: &str) -> StoreResult<DateTime<Utc>> {
 }
 impl LeaseRecord {
     pub fn new(owner: &str, expires_at: &str, epoch: u64, object_root: &str) -> StoreResult<Self> {
-        let boot_path = std::path::PathBuf::from("/proc/sys/kernel/random/boot_id");
-        let boot = std::fs::read(&boot_path).map_err(|source| StoreError::Io {
-            path: boot_path,
-            source,
-        })?;
+        let owner_boot = boot::read_owner_boot_digest()?;
         let task = Digest::parse(&format!("{:x}", Sha256::digest(owner.as_bytes())))?;
         let record = Self {
             owner: owner.into(),
             expires_at: expires_at.into(),
             epoch,
             revision: 1,
-            owner_boot: Digest::parse(&format!("{:x}", Sha256::digest(&boot)))?,
+            owner_boot,
             owner_task: task,
             object_root: Digest::parse(object_root)?,
             mode: LeaseMode::Write,

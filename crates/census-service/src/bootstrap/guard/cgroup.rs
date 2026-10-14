@@ -4,11 +4,9 @@ use std::path::PathBuf;
 mod linux;
 #[cfg(target_os = "linux")]
 use linux::{read_hard_limit, read_swap, read_usage, resolve_current_scope};
+#[cfg(target_os = "linux")]
 #[derive(Debug, thiserror::Error)]
 pub(super) enum MemoryEnvelopeError {
-    #[cfg(not(target_os = "linux"))]
-    #[error("cgroup envelope unsupported on this platform")]
-    UnsupportedPlatform,
     #[error("cgroup membership missing at {path}: {source}")]
     MembershipMissing {
         path: PathBuf,
@@ -61,6 +59,12 @@ pub(super) enum MemoryEnvelopeError {
         source: std::io::Error,
     },
 }
+#[cfg(not(target_os = "linux"))]
+#[derive(Debug, thiserror::Error)]
+pub(super) enum MemoryEnvelopeError {
+    #[error("cgroup envelope unsupported on this platform")]
+    UnsupportedPlatform,
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct MemoryEnvelopeSample {
     pub(super) current_bytes: u64,
@@ -68,6 +72,7 @@ pub(super) struct MemoryEnvelopeSample {
     pub(super) hard_limit_bytes: NonZeroU64,
     pub(super) scope: PathBuf,
 }
+#[cfg(target_os = "linux")]
 #[derive(Debug)]
 pub(super) struct CgroupMemoryReader {
     budget: NonZeroU64,
@@ -76,6 +81,9 @@ pub(super) struct CgroupMemoryReader {
     scope: PathBuf,
     membership: PathBuf,
 }
+#[cfg(not(target_os = "linux"))]
+#[derive(Debug)]
+pub(super) struct CgroupMemoryReader;
 #[cfg(target_os = "linux")]
 impl CgroupMemoryReader {
     pub(super) fn declared(

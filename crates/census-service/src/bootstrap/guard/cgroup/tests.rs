@@ -2,6 +2,7 @@ use super::CgroupMemoryReader;
 use super::MemoryEnvelopeError;
 use std::num::NonZeroU64;
 use std::path::Path;
+#[cfg(target_os = "linux")]
 use std::path::PathBuf;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 #[cfg(target_os = "linux")]
