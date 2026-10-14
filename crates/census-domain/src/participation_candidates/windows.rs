@@ -1,0 +1,79 @@
+use super::checks::visible;
+use super::{
+    CandidateQuery, CohortFact, EligibilityWindowFact, ParticipationInputError,
+    ParticipationObservation, ParticipationReason, ParticipationReasons,
+};
+use crate::model::ProfileDate;
+
+pub(super) fn assess(
+    query: CandidateQuery<'_>,
+    observation: &ParticipationObservation<'_>,
+    date: &ProfileDate,
+    reasons: &mut ParticipationReasons,
+) -> Result<(), ParticipationInputError> {
+    // The public assessor checks MAX_PARTICIPATION_FACTS before either traversal.
+    let (seen, admitted, conflicted) = observation.eligibility_windows.iter().try_fold(
+        (false, false, false),
+        |(seen, admitted, conflicted), fact| {
+            if !applicable(query, observation, fact)? {
+                return Ok((seen, admitted, conflicted));
+            }
+            let competing = competing_boundary(query, observation, fact, date)?;
+            Ok::<_, ParticipationInputError>((
+                true,
+                admitted || fact.interval.contains(date),
+                conflicted || competing,
+            ))
+        },
+    )?;
+    if conflicted {
+        reasons.add(ParticipationReason::ParticipationWindowConflict);
+    }
+    if !seen {
+        reasons.add(ParticipationReason::SummerBoundaryUnresolved);
+    } else if !admitted {
+        reasons.add(ParticipationReason::OutsideParticipationWindow);
+    }
+    Ok(())
+}
+
+fn applicable(
+    query: CandidateQuery<'_>,
+    observation: &ParticipationObservation<'_>,
+    fact: &EligibilityWindowFact<'_>,
+) -> Result<bool, ParticipationInputError> {
+    if !visible(query, fact.boundary_proof)?
+        || fact.identity.participation_rule != query.binding.participation_rule
+        || !query
+            .profile
+            .input()
+            .graduation_years
+            .contains(&fact.identity.cohort)
+    {
+        return Ok(false);
+    }
+    if let CohortFact::Resolved { year, .. } = observation.cohort {
+        if fact.identity.cohort != year {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+fn competing_boundary(
+    query: CandidateQuery<'_>,
+    observation: &ParticipationObservation<'_>,
+    fact: &EligibilityWindowFact<'_>,
+    date: &ProfileDate,
+) -> Result<bool, ParticipationInputError> {
+    observation
+        .eligibility_windows
+        .iter()
+        .try_fold(false, |found, other| {
+            Ok(found
+                || (fact.identity == other.identity
+                    && fact.interval != other.interval
+                    && (fact.interval.contains(date) || other.interval.contains(date))
+                    && applicable(query, observation, other)?))
+        })
+}
