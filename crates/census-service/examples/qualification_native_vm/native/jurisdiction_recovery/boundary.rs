@@ -148,9 +148,18 @@ fn validate_plan(
     );
     ensure!(
         matches!(&observation.parent_state.teams, TeamsStage::Owed),
-        "source boundary does not retain owed teams stage"
+        "source boundary does not retain owed teams stage: observed {}",
+        stage_name(&observation.parent_state.teams)
     );
     Ok(())
+}
+
+fn stage_name(teams: &TeamsStage) -> &'static str {
+    match teams {
+        TeamsStage::Owed => "owed",
+        TeamsStage::Completed(_) => "completed",
+        TeamsStage::Failed(_) => "failed",
+    }
 }
 
 fn source_witness(

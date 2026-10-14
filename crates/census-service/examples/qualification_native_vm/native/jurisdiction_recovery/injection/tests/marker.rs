@@ -88,7 +88,7 @@ fn marker_cannot_override_completed_parent_or_completed_teams_stage() -> Result<
     );
     assert_eq!(
         failure(fixture::runtime(&config, &original, &observation))?,
-        "source boundary does not retain owed teams stage"
+        "source boundary does not retain owed teams stage: observed completed"
     );
     observation.parent_state.teams = TeamsStage::Owed;
     fixture::completed_parent(&mut observation)?;
