@@ -1,0 +1,5 @@
+e17ead48839b38edddbc7350383dd1476213ed894483a1c0bdd4feb8f44a3024  root-compile-delta-20261014-0618/crates/census-store/src/acquisition/init.rs
+0b81db53a3b47e6ff56f58bb688a45a8d3a04e4ff733f84323f3fcf1124c7942  root-compile-delta-20261014-0618/crates/census-store/src/acquisition/read/closure.rs
+9bde52ad022f8991a42712e51c829e9a3d9e5f9e20a03ba5f360c976acd22401  root-compile-delta-20261014-0618/crates/census-store/src/acquisition/tests/lifecycle.rs
+e68a9d52112b3604aaef4a748dbe6c776fc2c39bf41e18822b167da0b13a62c2  root-compile-delta-20261014-0618/crates/census-store/src/acquisition/tests/preservation.rs
+7f74effdf2c9f8b2e5558e41e49aa56d399540591ee4771ccef57d984544c304  root-compile-delta-20261014-0618/crates/census-store/src/acquisition/transition.rs

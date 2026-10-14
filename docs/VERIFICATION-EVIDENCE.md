@@ -1355,3 +1355,8 @@ allocation_count 1,344,479 → 1,427,442 (+6.2%) and `census/merge/coaches_scan`
 (`read/mod.rs`, `read/view/legacy*.rs`, `JournalReadBudget`, `format/existing.rs`); the tail-time
 number is load-contaminated (the run printed repeated `Unable to complete 100 samples in 5.0s`
 warnings). Both require a quiet re-measure before any conclusion.
+
+
+## 2026-10-14 durable capture integration checkpoint
+
+See [the dated capture evidence](verification/2026-10-14-durable-capture.md). The source is an in-progress, explicitly unverified PR checkpoint. Historical core 30/30 and composed 143/144 results, compile/lint failures, interrupted checks, serial all-target pass, current source/review pins and pending reruns are retained separately. Lifecycle 4 is fresh qualification only; no production, native fault, full-spec or publication acceptance is claimed.

@@ -1,0 +1,46 @@
+[
+  {
+    "path": "AGENTS.md",
+    "sha256": "4c752a276cc38aa1645732272acc78824dcc874fd67ca7aafb1dd7d83e9b990c"
+  },
+  {
+    "path": "ARCHITECTURE.md",
+    "sha256": "6adbc673650d4262a0f87db0e31256fdd69e2961b80e441c301291ed35997049"
+  },
+  {
+    "path": "docs/specifications/athletic-recruiting-end-vision-spec-v2.md",
+    "sha256": "a3b687cc06952dbceaeda2f21300e4769acb96130570fc1174ff70210a09f11e"
+  },
+  {
+    "path": "docs/adr/ADR-038-selected-profile-reusable-production-state.md",
+    "sha256": "63400f2f15e957f9839a42855184c118b4ea1fe3b87993749c2b5fd6c8834256"
+  },
+  {
+    "path": "docs/PROFILE-EXECUTION-V1.md",
+    "sha256": "5fe9f75c49c47b2575116da6c30996d51bbe5f555743b0b86d71e4087791c4ec"
+  },
+  {
+    "path": "docs/VERIFICATION-EVIDENCE.md",
+    "sha256": "6b7dbb9b86464e8027a6d62c424d7694c5e9ebf05b7554916f3257491ce4a148"
+  },
+  {
+    "path": "docs/NATIONAL-CENSUS-PLAN.md",
+    "sha256": "86a9fa1ad2a24a83032ed750ead2c55be6c9f96a700b793df891a9574aa63382"
+  },
+  {
+    "path": "moon.yml",
+    "sha256": "7af88ddf2d92d7b431b78604bf62cd009459976669f1e5622d2df9ed64ebc7be"
+  },
+  {
+    "path": "tools/moon-local",
+    "sha256": "dd61031c49d49691b06b99017a4c0d47fa0a57b831362faf8175b9f3df0ec210"
+  },
+  {
+    "path": "rust-toolchain.toml",
+    "sha256": "617f17e428d802ca347420049161a2e9528ac5e2ac943f4ce18f6e095809c523"
+  },
+  {
+    "path": "tools/build-toolchain.json",
+    "sha256": "06fcf238469237218d1e6ec9a08a35520aa216699f577b2c6505f3832e4bc65e"
+  }
+]

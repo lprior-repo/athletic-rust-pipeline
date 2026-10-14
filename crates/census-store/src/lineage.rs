@@ -37,6 +37,12 @@ impl Store {
         let _appends = self.lock_appends();
         match read(&self.db.snapshot(), &self.journal)? {
             RetainedIdentity::Present(identity) => Ok(identity),
+            RetainedIdentity::Absent
+                if self.store_format()?.lifecycle_revision
+                    == Some(census_domain::model::CAPTURE_QUALIFICATION_LIFECYCLE) =>
+            {
+                Err(StoreLineageError::Missing.into())
+            }
             RetainedIdentity::Absent => create(self),
         }
     }
@@ -56,6 +62,18 @@ pub(crate) fn read(snapshot: &Snapshot, journal: &Keyspace) -> StoreResult<Retai
     if key.as_ref() != Store::journal_key(PHASE, KEY).as_slice() {
         return Err(StoreLineageError::UnexpectedKey.into());
     }
+    let length = snapshot
+        .size_of(journal, &key)
+        .map_err(|source| StoreError::Read { source })?
+        .ok_or(StoreLineageError::MalformedEnvelope)?;
+    let bytes = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
+    if bytes > MAX_JOURNAL_VALUE_BYTES {
+        return Err(StoreLineageError::OversizedEnvelope {
+            bytes,
+            max: MAX_JOURNAL_VALUE_BYTES,
+        }
+        .into());
+    }
     let raw = snapshot
         .get(journal, &key)
         .map_err(|source| StoreError::Read { source })?
@@ -71,20 +89,41 @@ pub(crate) fn read(snapshot: &Snapshot, journal: &Keyspace) -> StoreResult<Retai
 }
 
 fn create(store: &Store) -> StoreResult<StoreIdentity> {
+    let identity = generate(store.root())?;
+    store.journal_done(PHASE, KEY, &identity)?;
+    Ok(identity)
+}
+
+fn generate(root: &std::path::Path) -> StoreResult<StoreIdentity> {
     let created = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|error| StoreError::Invariant {
             detail: format!("creating export store identity: {error}"),
         })?;
     let digest = serialized_digest(&(
-        store.root().display().to_string(),
+        root.display().to_string(),
         created.as_secs(),
         created.subsec_nanos(),
     ))
     .map_err(|error| StoreError::Invariant {
         detail: format!("encoding store identity: {error}"),
     })?;
-    let identity = StoreIdentity::parse(&digest)?;
-    store.journal_done(PHASE, KEY, &identity)?;
+    Ok(StoreIdentity::parse(&digest)?)
+}
+
+pub(crate) fn stage_new(
+    batch: &mut fjall::OwnedWriteBatch,
+    journal: &Keyspace,
+    root: &std::path::Path,
+) -> StoreResult<StoreIdentity> {
+    use crate::clock::{Clock, SystemClock};
+    let identity = generate(root)?;
+    let entry =
+        serde_json::json!({ "key": KEY, "at": SystemClock.today_iso8601(), "payload": &identity });
+    let encoded = serde_json::to_vec(&entry).map_err(|source| StoreError::Json {
+        detail: "staging existing lineage envelope".to_string(),
+        source,
+    })?;
+    batch.insert(journal, Store::journal_key(PHASE, KEY), encoded);
     Ok(identity)
 }

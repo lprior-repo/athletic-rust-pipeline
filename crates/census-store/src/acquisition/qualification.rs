@@ -1,0 +1,232 @@
+use super::{CaptureError, CaptureWriterV1};
+use crate::{Store, StoreError, StoreFormat, StoreResult};
+use census_domain::model::*;
+use fjall::{Database, Keyspace, Readable, Snapshot};
+use std::path::Path;
+
+mod inventory;
+use inventory::inventory;
+
+pub struct CaptureQualificationControl {
+    store: Store,
+}
+pub struct CaptureQualificationStore {
+    store: Store,
+    writer: CaptureWriterV1,
+}
+impl CaptureQualificationControl {
+    pub(crate) fn new(store: Store) -> Self {
+        Self { store }
+    }
+    pub fn show(&self) -> StoreResult<CaptureQualificationV1> {
+        validate_format(
+            self.store.root(),
+            &self.store.db.snapshot(),
+            &self.store.meta,
+            &self.store.journal,
+            &self.store.receipts,
+            &self.store.store_format()?,
+        )?
+        .ok_or_else(|| CaptureError::CaptureCapabilityMissing.into())
+    }
+}
+impl CaptureQualificationStore {
+    pub(crate) fn new(store: Store, record: CaptureQualificationV1) -> Self {
+        let writer = CaptureWriterV1 {
+            origin: store.appends.clone(),
+            identity: record.store_identity().clone(),
+        };
+        Self { store, writer }
+    }
+    pub fn into_parts(self) -> (Store, CaptureWriterV1) {
+        (self.store, self.writer)
+    }
+}
+
+pub(crate) fn require_legacy(record: &Option<CaptureQualificationV1>) -> StoreResult<()> {
+    if record.is_some() {
+        return Err(CaptureError::CaptureQualificationOptInRequired.into());
+    }
+    Ok(())
+}
+pub(crate) fn validate_format(
+    root: &Path,
+    snapshot: &Snapshot,
+    meta: &Keyspace,
+    journal: &Keyspace,
+    receipts: &Keyspace,
+    format: &StoreFormat,
+) -> StoreResult<Option<CaptureQualificationV1>> {
+    let declaration = declaration(snapshot, meta, journal, format)?;
+    if declaration.is_none()
+        && snapshot
+            .prefix(receipts, b"source_acquisition_attempt_")
+            .next()
+            .is_some()
+    {
+        return Err(CaptureError::CaptureMarkerMismatch.into());
+    }
+    if let Some(record) = &declaration {
+        inventory(root, snapshot, meta, journal, receipts, record)?;
+    }
+    Ok(declaration)
+}
+
+pub(crate) fn declaration(
+    snapshot: &Snapshot,
+    meta: &Keyspace,
+    journal: &Keyspace,
+    format: &StoreFormat,
+) -> StoreResult<Option<CaptureQualificationV1>> {
+    let mut rows = snapshot.prefix(meta, b"capture:");
+    let row = rows
+        .next()
+        .map(|guard| guard.key().map_err(|source| StoreError::Read { source }))
+        .transpose()?;
+    if let Some(guard) = rows.next() {
+        guard.key().map_err(|source| StoreError::Read { source })?;
+        return Err(CaptureError::CaptureCapabilityNamespaceUnsupported.into());
+    }
+    let family = snapshot
+        .prefix(journal, b"source_acquisition_attempt_")
+        .next()
+        .map(|guard| guard.key().map_err(|source| StoreError::Read { source }))
+        .transpose()?;
+    if format.lifecycle_revision != Some(CAPTURE_QUALIFICATION_LIFECYCLE) {
+        if row.is_some() || family.is_some() {
+            return Err(CaptureError::CaptureMarkerMismatch.into());
+        }
+        return Ok(None);
+    }
+    if format.schema_version != Some(2)
+        || format.key_format != Some(1)
+        || format.migration_target.is_some()
+    {
+        return Err(CaptureError::CaptureMarkerMismatch.into());
+    }
+    if snapshot.prefix(meta, b"installation:").next().is_some() {
+        return Err(CaptureError::CaptureMarkerMismatch.into());
+    }
+    let row = row.ok_or(CaptureError::CaptureCapabilityMissing)?;
+    if row.as_ref() != CAPTURE_QUALIFICATION_KEY.as_bytes() {
+        return Err(CaptureError::CaptureCapabilityNamespaceUnsupported.into());
+    }
+    let length = snapshot
+        .size_of(meta, &row)
+        .map_err(|source| StoreError::Read { source })?
+        .ok_or(CaptureError::CaptureCapabilityMissing)?;
+    if length > 65_536 {
+        return Err(CaptureError::RecordTooLarge.into());
+    }
+    let raw = snapshot
+        .get(meta, &row)
+        .map_err(|source| StoreError::Read { source })?
+        .ok_or(CaptureError::CaptureCapabilityMissing)?;
+    let record: CaptureQualificationV1 =
+        serde_json::from_slice(&raw).map_err(|source| StoreError::Decode {
+            key: CAPTURE_QUALIFICATION_KEY.to_string(),
+            source,
+        })?;
+    match crate::lineage::read(snapshot, journal)? {
+        crate::lineage::RetainedIdentity::Present(identity)
+            if &identity == record.store_identity() => {}
+        _ => return Err(CaptureError::CaptureCapabilityForeignStore.into()),
+    }
+    Ok(Some(record))
+}
+
+pub(crate) fn validate_preservation(
+    root: &Path,
+    db: &Database,
+    meta: &Keyspace,
+    journal: &Keyspace,
+    receipts: &Keyspace,
+) -> StoreResult<()> {
+    let snapshot = db.snapshot();
+    let lifecycle_size = snapshot
+        .size_of(meta, crate::format::LIFECYCLE_REVISION_KEY)
+        .map_err(|source| StoreError::Read { source })?;
+    let raw_lifecycle = if lifecycle_size.is_some_and(|size| size <= 32) {
+        snapshot
+            .get(meta, crate::format::LIFECYCLE_REVISION_KEY)
+            .map_err(|source| StoreError::Read { source })?
+    } else {
+        None
+    };
+    let lifecycle = raw_lifecycle
+        .as_ref()
+        .and_then(|value| std::str::from_utf8(value).ok())
+        .and_then(|value| value.trim().parse::<u32>().ok());
+    let has_marker = db.snapshot().prefix(meta, b"capture:").next().is_some();
+    let has_family = db
+        .snapshot()
+        .prefix(journal, b"source_acquisition_attempt_")
+        .next()
+        .is_some();
+    let has_receipt = snapshot
+        .prefix(receipts, b"source_acquisition_attempt_")
+        .next()
+        .is_some();
+    if lifecycle != Some(CAPTURE_QUALIFICATION_LIFECYCLE)
+        && !has_marker
+        && !has_family
+        && !has_receipt
+    {
+        return Ok(());
+    }
+    let format = crate::format::require_current(root, crate::format::read_format(meta)?)?;
+    validate_format(root, &db.snapshot(), meta, journal, receipts, &format)?;
+    Ok(())
+}
+
+impl Store {
+    pub fn require_legacy_structured_capture(&self) -> StoreResult<()> {
+        let record = declaration(
+            &self.db.snapshot(),
+            &self.meta,
+            &self.journal,
+            &self.store_format()?,
+        )?;
+        require_legacy(&record)
+    }
+}
+
+pub(crate) fn preflight_keyspaces(db: &Database) -> StoreResult<()> {
+    let snapshot = db.snapshot();
+    let mut relevant = false;
+    for (name, prefix) in [
+        (crate::META, "capture:"),
+        (crate::JOURNAL, "source_acquisition_attempt_"),
+        (crate::RECEIPTS, "source_acquisition_attempt_"),
+    ] {
+        if !db.keyspace_exists(name) {
+            continue;
+        }
+        let keyspace = db
+            .keyspace(name, fjall::KeyspaceCreateOptions::default)
+            .map_err(|source| StoreError::Open { source })?;
+        relevant |= snapshot
+            .prefix(&keyspace, prefix.as_bytes())
+            .next()
+            .is_some();
+        if name == crate::META {
+            let size = snapshot
+                .size_of(&keyspace, crate::format::LIFECYCLE_REVISION_KEY)
+                .map_err(|source| StoreError::Read { source })?;
+            if size.is_some_and(|size| size <= 32) {
+                let raw = snapshot
+                    .get(&keyspace, crate::format::LIFECYCLE_REVISION_KEY)
+                    .map_err(|source| StoreError::Read { source })?;
+                relevant |= raw
+                    .as_ref()
+                    .and_then(|v| std::str::from_utf8(v).ok())
+                    .and_then(|v| v.trim().parse::<u32>().ok())
+                    == Some(CAPTURE_QUALIFICATION_LIFECYCLE);
+            }
+        }
+    }
+    if relevant {
+        crate::format::existing::require_keyspaces(db)?;
+    }
+    Ok(())
+}

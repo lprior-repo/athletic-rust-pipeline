@@ -1,0 +1,151 @@
+[ WARN 2026-10-14 01:33:12.829] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:lint-src (8b23fb40)
+pipeline:lint-src |     Checking census-domain v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-domain)
+pipeline:lint-src | warning: this function has too many arguments (8/7)
+pipeline:lint-src |   --> crates/census-domain/src/model/source_acquisition/work.rs:81:5
+pipeline:lint-src |    |
+pipeline:lint-src | 81 | /     pub fn new(
+pipeline:lint-src | 82 | |         owner_key: &str,
+pipeline:lint-src | 83 | |         jurisdiction: UsJurisdiction,
+pipeline:lint-src | 84 | |         run: CensusRun,
+pipeline:lint-src | ...  |
+pipeline:lint-src | 89 | |         cache_intent: CaptureCacheIntent,
+pipeline:lint-src | 90 | |     ) -> Result<Self, CaptureDomainError> {
+pipeline:lint-src |    | |_________________________________________^
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+pipeline:lint-src |    = note: requested on the command line with `--force-warn clippy::too-many-arguments`
+
+pipeline:lint-src | warning: `census-domain` (lib) generated 1 warning
+pipeline:lint-src |     Checking census-store v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-store)
+pipeline:lint-src | warning: this function has too many arguments (8/7)
+pipeline:lint-src |    --> crates/census-store/src/format/existing.rs:108:1
+pipeline:lint-src |     |
+pipeline:lint-src | 108 | / fn finish_existing(
+pipeline:lint-src | 109 | |     root: &Path,
+pipeline:lint-src | 110 | |     purpose: OpenPurpose,
+pipeline:lint-src | 111 | |     db: Database,
+pipeline:lint-src | ...   |
+pipeline:lint-src | 116 | |     format: crate::StoreFormat,
+pipeline:lint-src | 117 | | ) -> StoreResult<Store> {
+pipeline:lint-src |     | |_______________________^
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments
+pipeline:lint-src |     = note: requested on the command line with `--force-warn clippy::too-many-arguments`
+
+pipeline:lint-src | warning: `census-store` (lib) generated 1 warning
+pipeline:lint-src |     Checking census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+pipeline:lint-src |     Checking census-review v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-review)
+▮▮▮▮ pipeline:lint-src (running for 30s)
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-crawl/src/coach_directories/map/postal.rs:88:6
+pipeline:lint-src |    |
+pipeline:lint-src | 44 |     Coaches(#[from] crate::CrawlError),
+pipeline:lint-src |    |     ---------------------------------- the largest variant contains at least 128 bytes
+pipeline:lint-src | ...
+pipeline:lint-src | 88 | ) -> Result<SummaryEmission, SummaryError> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `coach_directories::map::postal::SummaryError`, for example by boxing large elements or replacing it with `Box<coach_directories::map::postal::SummaryError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+pipeline:lint-src |    = note: `-D clippy::result-large-err` implied by `-D warnings`
+pipeline:lint-src |    = help: to override `-D warnings` add `#[allow(clippy::result_large_err)]`
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-crawl/src/coach_directories/map/postal.rs:123:6
+pipeline:lint-src |     |
+pipeline:lint-src |  44 |     Coaches(#[from] crate::CrawlError),
+pipeline:lint-src |     |     ---------------------------------- the largest variant contains at least 128 bytes
+pipeline:lint-src | ...
+pipeline:lint-src | 123 | ) -> Result<(), SummaryError> {
+pipeline:lint-src |     |      ^^^^^^^^^^^^^^^^^^^^^^^^
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `coach_directories::map::postal::SummaryError`, for example by boxing large elements or replacing it with `Box<coach_directories::map::postal::SummaryError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: large size difference between variants
+pipeline:lint-src |   --> crates/census-crawl/src/net/acquisition/session.rs:8:1
+pipeline:lint-src |    |
+pipeline:lint-src |  8 | /  pub(in crate::net) enum CaptureSession<'a> {
+pipeline:lint-src |  9 | |      Legacy,
+pipeline:lint-src |    | |      ------ the second-largest variant carries no data at all
+pipeline:lint-src | 10 | |/     Adopted {
+pipeline:lint-src | 11 | ||         store: &'a Store,
+pipeline:lint-src | 12 | ||         stage: Stage,
+pipeline:lint-src | 13 | ||         cached: Option<PinnedEligibleCache>,
+pipeline:lint-src | 14 | ||         #[cfg(test)]
+pipeline:lint-src | 15 | ||         interruption: super::CaptureInterruption,
+pipeline:lint-src | 16 | ||     },
+pipeline:lint-src |    | ||_____- the largest variant contains at least 888 bytes
+pipeline:lint-src | 17 | |  }
+pipeline:lint-src |    | |__^ the entire enum is at least 888 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#large_enum_variant
+pipeline:lint-src |    = note: `-D clippy::large-enum-variant` implied by `-D warnings`
+pipeline:lint-src |    = help: to override `-D warnings` add `#[allow(clippy::large_enum_variant)]`
+pipeline:lint-src | help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+pipeline:lint-src |    |
+pipeline:lint-src | 12 ~         stage: Box<Stage>,
+pipeline:lint-src | 13 ~         cached: Box<Option<PinnedEligibleCache>>,
+pipeline:lint-src |    |
+
+pipeline:lint-src | error: large size difference between variants
+pipeline:lint-src |   --> crates/census-crawl/src/net/acquisition/session.rs:26:1
+pipeline:lint-src |    |
+pipeline:lint-src | 26 | /  pub(in crate::net) enum ArmedLease<'a> {
+pipeline:lint-src | 27 | |      Legacy,
+pipeline:lint-src |    | |      ------ the second-largest variant carries no data at all
+pipeline:lint-src | 28 | |/     Adopted {
+pipeline:lint-src | 29 | ||         store: &'a Store,
+pipeline:lint-src | 30 | ||         armed: ArmedDispatch,
+pipeline:lint-src | 31 | ||     },
+pipeline:lint-src |    | ||_____- the largest variant contains at least 600 bytes
+pipeline:lint-src | 32 | |  }
+pipeline:lint-src |    | |__^ the entire enum is at least 600 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#large_enum_variant
+pipeline:lint-src | help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+pipeline:lint-src |    |
+pipeline:lint-src | 30 -         armed: ArmedDispatch,
+pipeline:lint-src | 30 +         armed: Box<ArmedDispatch>,
+pipeline:lint-src |    |
+
+pipeline:lint-src | error: large size difference between variants
+pipeline:lint-src |   --> crates/census-crawl/src/net/acquisition/session.rs:46:1
+pipeline:lint-src |    |
+pipeline:lint-src | 46 | /  pub(in crate::net) enum DispatchLease<'a> {
+pipeline:lint-src | 47 | |      Legacy,
+pipeline:lint-src |    | |      ------ the second-largest variant carries no data at all
+pipeline:lint-src | 48 | |/     Adopted {
+pipeline:lint-src | 49 | ||         store: &'a Store,
+pipeline:lint-src | 50 | ||         observation: DispatchObservation,
+pipeline:lint-src | 51 | ||     },
+pipeline:lint-src |    | ||_____- the largest variant contains at least 600 bytes
+pipeline:lint-src | 52 | |  }
+pipeline:lint-src |    | |__^ the entire enum is at least 600 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#large_enum_variant
+pipeline:lint-src | help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+pipeline:lint-src |    |
+pipeline:lint-src | 50 -         observation: DispatchObservation,
+pipeline:lint-src | 50 +         observation: Box<DispatchObservation>,
+pipeline:lint-src |    |
+
+pipeline:lint-src | error: deref which would be done by auto-deref
+pipeline:lint-src |    --> crates/census-crawl/src/net/acquisition/session.rs:103:20
+pipeline:lint-src |     |
+pipeline:lint-src | 103 |             store: *store,
+pipeline:lint-src |     |                    ^^^^^^ help: try: `store`
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#explicit_auto_deref
+pipeline:lint-src |     = note: `-D clippy::explicit-auto-deref` implied by `-D warnings`
+pipeline:lint-src |     = help: to override `-D warnings` add `#[allow(clippy::explicit_auto_deref)]`
+
+pipeline:lint-src | error: could not compile `census-crawl` (lib) due to 6 previous errors
+▮▮▮▮ pipeline:lint-src (41s 64ms, 8b23fb40)
+▮▮▮▮ pipeline:fmt (d110ce93)
+Error: task_runner::run_failed
+
+  × Task pipeline:lint-src failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 101
+

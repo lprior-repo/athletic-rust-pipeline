@@ -5,30 +5,98 @@ use fjall::Database;
 use crate::{Store, StoreError, StoreResult};
 
 #[derive(Clone, Copy)]
-enum OpenPurpose {
+pub(crate) enum OpenPurpose {
     LegacyExecution,
     InstallationControl,
+    CaptureControl,
+    CaptureExecution,
 }
 
 impl Store {
     pub fn open_existing(root: impl AsRef<Path>) -> StoreResult<Self> {
-        existing(root.as_ref(), OpenPurpose::LegacyExecution)
+        existing(
+            root.as_ref(),
+            OpenPurpose::LegacyExecution,
+            super::DEFAULT_CACHE_BYTES,
+        )
     }
 
     pub fn installation_control_existing(
         root: impl AsRef<Path>,
     ) -> StoreResult<crate::InstallationControl> {
-        existing(root.as_ref(), OpenPurpose::InstallationControl)
-            .map(crate::InstallationControl::new)
+        existing(
+            root.as_ref(),
+            OpenPurpose::InstallationControl,
+            super::DEFAULT_CACHE_BYTES,
+        )
+        .map(crate::InstallationControl::new)
+    }
+    pub fn capture_qualification_control_existing(
+        root: impl AsRef<Path>,
+    ) -> StoreResult<crate::CaptureQualificationControl> {
+        existing(
+            root.as_ref(),
+            OpenPurpose::CaptureControl,
+            super::DEFAULT_CACHE_BYTES,
+        )
+        .map(crate::CaptureQualificationControl::new)
+    }
+    pub fn open_capture_qualification_v1(
+        root: impl AsRef<Path>,
+    ) -> StoreResult<crate::CaptureQualificationStore> {
+        let store = existing(
+            root.as_ref(),
+            OpenPurpose::CaptureExecution,
+            super::DEFAULT_CACHE_BYTES,
+        )?;
+        let record = crate::acquisition::qualification::declaration(
+            &store.db.snapshot(),
+            &store.meta,
+            &store.journal,
+            &store.store_format()?,
+        )?
+        .ok_or(crate::CaptureError::CaptureCapabilityMissing)?;
+        Ok(crate::CaptureQualificationStore::new(store, record))
     }
 }
 
-fn existing(root: &Path, purpose: OpenPurpose) -> StoreResult<Store> {
+pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> StoreResult<Store> {
     existing_marker(root)?;
     let db = Database::builder(root.join(crate::DB_DIR))
-        .cache_size(super::DEFAULT_CACHE_BYTES)
+        .cache_size(cache_bytes)
         .open()
         .map_err(|source| StoreError::Open { source })?;
+    require_keyspaces(&db)?;
+    let (db, entities, journal, meta, receipts) = crate::keyspaces(db)?;
+    let format = super::require_current(root, super::read_format(&meta)?)?;
+    let capture = crate::acquisition::validate_format(
+        root,
+        &db.snapshot(),
+        &meta,
+        &journal,
+        &receipts,
+        &format,
+    )?;
+    match purpose {
+        OpenPurpose::LegacyExecution | OpenPurpose::InstallationControl => {
+            crate::acquisition::require_legacy(&capture)?
+        }
+        OpenPurpose::CaptureControl | OpenPurpose::CaptureExecution if capture.is_none() => {
+            return Err(crate::CaptureError::CaptureCapabilityMissing.into())
+        }
+        _ => {}
+    }
+    let keyspaces = ExistingKeyspaces {
+        db,
+        entities,
+        journal,
+        meta,
+        receipts,
+    };
+    finish_existing(root, purpose, keyspaces, format)
+}
+
+pub(crate) fn require_keyspaces(db: &Database) -> StoreResult<()> {
     for name in [
         crate::ENTITIES,
         crate::JOURNAL,
@@ -41,8 +109,30 @@ fn existing(root: &Path, purpose: OpenPurpose) -> StoreResult<Store> {
             });
         }
     }
-    let (db, entities, journal, meta, receipts) = crate::keyspaces(db)?;
-    let format = super::require_semantic_format(root, &db, &meta, &journal)?;
+    Ok(())
+}
+
+struct ExistingKeyspaces {
+    db: Database,
+    entities: fjall::Keyspace,
+    journal: fjall::Keyspace,
+    meta: fjall::Keyspace,
+    receipts: fjall::Keyspace,
+}
+
+fn finish_existing(
+    root: &Path,
+    purpose: OpenPurpose,
+    keyspaces: ExistingKeyspaces,
+    format: crate::StoreFormat,
+) -> StoreResult<Store> {
+    let ExistingKeyspaces {
+        db,
+        entities,
+        journal,
+        meta,
+        receipts,
+    } = keyspaces;
     let state = crate::installation::validate_format(
         &db.snapshot(),
         &meta,
@@ -50,15 +140,17 @@ fn existing(root: &Path, purpose: OpenPurpose) -> StoreResult<Store> {
         format.lifecycle_revision,
     )?;
     match purpose {
-        OpenPurpose::LegacyExecution => crate::installation::require_legacy_execution(&state)?,
-        OpenPurpose::InstallationControl => {}
+        OpenPurpose::LegacyExecution | OpenPurpose::CaptureExecution => {
+            crate::installation::require_legacy_execution(&state)?
+        }
+        OpenPurpose::InstallationControl | OpenPurpose::CaptureControl => {}
     }
     match purpose {
-        OpenPurpose::LegacyExecution => {
+        OpenPurpose::LegacyExecution | OpenPurpose::CaptureExecution => {
             crate::ensure_dirs(root)?;
             Store::recover_opened(root.to_path_buf(), db, entities, journal, meta, receipts)
         }
-        OpenPurpose::InstallationControl => {
+        OpenPurpose::InstallationControl | OpenPurpose::CaptureControl => {
             control_store(root, db, entities, journal, meta, receipts)
         }
     }

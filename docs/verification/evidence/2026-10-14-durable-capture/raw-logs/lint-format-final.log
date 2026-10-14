@@ -1,0 +1,908 @@
+[ WARN 2026-10-14 01:57:50.625] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:fmt (1ba71422)
+▮▮▮▮ pipeline:fmt (7s 240ms, 1ba71422)
+▮▮▮▮ pipeline:lint-src (78ddc2b0)
+pipeline:lint-src |     Checking census-domain v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-domain)
+pipeline:lint-src |     Checking census-store v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-store)
+pipeline:lint-src |     Checking census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+pipeline:lint-src |     Checking census-review v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-review)
+▮▮▮▮ pipeline:lint-src (running for 30s)
+pipeline:lint-src |     Checking census-report v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-report)
+pipeline:lint-src |     Checking census-reconcile v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-reconcile)
+pipeline:lint-src |     Checking census-service v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-service)
+▮▮▮▮ pipeline:lint-src (running for 60s)
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/meets/progress.rs:47:55
+pipeline:lint-src |    |
+pipeline:lint-src | 47 |     pub(super) fn load(store: &Store, phase: &str) -> CrawlResult<Self> {
+pipeline:lint-src |    |                                                       ^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+pipeline:lint-src |    = note: `-D clippy::result-large-err` implied by `-D warnings`
+pipeline:lint-src |    = help: to override `-D warnings` add `#[allow(clippy::result_large_err)]`
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/meets/progress.rs:70:10
+pipeline:lint-src |    |
+pipeline:lint-src | 70 |     ) -> CrawlResult<PageObservation> {
+pipeline:lint-src |    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/meets/progress.rs:103:6
+pipeline:lint-src |     |
+pipeline:lint-src | 103 | ) -> CrawlResult<(DiscoveryDisposition, u32)> {
+pipeline:lint-src |     |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/meets/progress.rs:113:38
+pipeline:lint-src |     |
+pipeline:lint-src | 113 | fn fingerprint(meets: &[MeetRef]) -> CrawlResult<String> {
+pipeline:lint-src |     |                                      ^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/meets/request.rs:40:61
+pipeline:lint-src |    |
+pipeline:lint-src | 40 |     pub fn with_page_budget(mut self, pages: NonZeroU32) -> CrawlResult<Self> {
+pipeline:lint-src |    |                                                             ^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/meets/walk/page.rs:56:6
+pipeline:lint-src |    |
+pipeline:lint-src | 56 | ) -> CrawlResult<()> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/meets/walk/page.rs:69:6
+pipeline:lint-src |    |
+pipeline:lint-src | 69 | ) -> CrawlResult<Vec<census_domain::model::SourceMeetRef>> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/meets/walk.rs:169:44
+pipeline:lint-src |     |
+pipeline:lint-src | 169 |     fn absorb(mut self, step: PageStep) -> CrawlResult<Self> {
+pipeline:lint-src |     |                                            ^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/meets/walk.rs:183:49
+pipeline:lint-src |     |
+pipeline:lint-src | 183 | pub(super) fn add(left: usize, right: usize) -> CrawlResult<usize> {
+pipeline:lint-src |     |                                                 ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/meets.rs:151:46
+pipeline:lint-src |     |
+pipeline:lint-src | 151 |     fn absorb(mut self, walk: SeasonWalk) -> CrawlResult<Self> {
+pipeline:lint-src |     |                                              ^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |  --> crates/census-service/src/census/sweep/index/ids.rs:9:67
+pipeline:lint-src |   |
+pipeline:lint-src | 9 | pub(super) fn merge(mut prior: Vec<String>, fresh: &[TeamRef]) -> CrawlResult<Vec<String>> {
+pipeline:lint-src |   |                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |   |
+pipeline:lint-src |   = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/ids.rs:19:51
+pipeline:lint-src |    |
+pipeline:lint-src | 19 |       let mut bytes = prior.iter().try_fold(0usize, |bytes, id| {
+pipeline:lint-src |    |  ___________________________________________________^
+pipeline:lint-src | 20 | |         if !seen.insert(id.as_str()) {
+pipeline:lint-src | 21 | |             return Err(CrawlError::Invariant {
+pipeline:lint-src | 22 | |                 detail: format!("duplicate configured roster ID {id}"),
+pipeline:lint-src | ...  |
+pipeline:lint-src | 25 | |         add(bytes, id)
+pipeline:lint-src | 26 | |     })?;
+pipeline:lint-src |    | |_____^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/ids.rs:33:23
+pipeline:lint-src |    |
+pipeline:lint-src | 33 |         .try_for_each(|team| append(&mut seen, &mut bytes, &mut added, team))?;
+pipeline:lint-src |    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/ids.rs:47:6
+pipeline:lint-src |    |
+pipeline:lint-src | 47 | ) -> CrawlResult<()> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/ids.rs:58:43
+pipeline:lint-src |    |
+pipeline:lint-src | 58 | pub(super) fn validate(ids: &[String]) -> CrawlResult<()> {
+pipeline:lint-src |    |                                           ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/ids.rs:63:33
+pipeline:lint-src |    |
+pipeline:lint-src | 63 |       ids.iter().try_fold(0usize, |bytes, id| {
+pipeline:lint-src |    |  _________________________________^
+pipeline:lint-src | 64 | |         if !seen.insert(id.as_str()) {
+pipeline:lint-src | 65 | |             return Err(CrawlError::Invariant {
+pipeline:lint-src | 66 | |                 detail: format!("duplicate configured roster ID {id}"),
+pipeline:lint-src | ...  |
+pipeline:lint-src | 69 | |         add(bytes, id)
+pipeline:lint-src | 70 | |     })?;
+pipeline:lint-src |    | |_____^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/ids.rs:74:38
+pipeline:lint-src |    |
+pipeline:lint-src | 74 | pub(super) fn bound(count: usize) -> CrawlResult<()> {
+pipeline:lint-src |    |                                      ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/ids.rs:89:35
+pipeline:lint-src |    |
+pipeline:lint-src | 89 | fn add(bytes: usize, id: &str) -> CrawlResult<usize> {
+pipeline:lint-src |    |                                   ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index/ids.rs:108:22
+pipeline:lint-src |     |
+pipeline:lint-src | 108 | fn copy(id: &str) -> CrawlResult<String> {
+pipeline:lint-src |     |                      ^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/inputs.rs:14:6
+pipeline:lint-src |    |
+pipeline:lint-src | 14 | ) -> CrawlResult<()> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/inputs.rs:15:35
+pipeline:lint-src |    |
+pipeline:lint-src | 15 |       teams.chunks(64).try_for_each(|window| {
+pipeline:lint-src |    |  ___________________________________^
+pipeline:lint-src | 16 | |         let bytes = window
+pipeline:lint-src | 17 | |             .iter()
+pipeline:lint-src | 18 | |             .try_fold(0usize, |bytes, team| add(bytes, measure(team)?))?;
+pipeline:lint-src | ...  |
+pipeline:lint-src | 27 | |         Ok(())
+pipeline:lint-src | 28 | |     })
+pipeline:lint-src |    | |_____^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/inputs.rs:18:31
+pipeline:lint-src |    |
+pipeline:lint-src | 18 |             .try_fold(0usize, |bytes, team| add(bytes, measure(team)?))?;
+pipeline:lint-src |    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/inputs.rs:35:6
+pipeline:lint-src |    |
+pipeline:lint-src | 35 | ) -> CrawlResult<Option<TeamRef>> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/inputs.rs:53:31
+pipeline:lint-src |    |
+pipeline:lint-src | 53 | fn measure(team: &TeamRef) -> CrawlResult<usize> {
+pipeline:lint-src |    |                               ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/inputs.rs:62:25
+pipeline:lint-src |    |
+pipeline:lint-src | 62 |       .try_fold(256usize, |bytes, field| {
+pipeline:lint-src |    |  _________________________^
+pipeline:lint-src | 63 | |         if field.len() > MAX_FIELD_BYTES {
+pipeline:lint-src | 64 | |             return Err(resource(field.len(), MAX_FIELD_BYTES));
+pipeline:lint-src | ...  |
+pipeline:lint-src | 67 | |         add(bytes, escaped)
+pipeline:lint-src | 68 | |     })
+pipeline:lint-src |    | |_____^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/inputs.rs:74:38
+pipeline:lint-src |    |
+pipeline:lint-src | 74 | fn add(left: usize, right: usize) -> CrawlResult<usize> {
+pipeline:lint-src |    |                                      ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/inspection.rs:21:6
+pipeline:lint-src |    |
+pipeline:lint-src | 21 | ) -> CrawlResult<RosterIndexEvidence> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/inspection.rs:66:6
+pipeline:lint-src |    |
+pipeline:lint-src | 66 | ) -> CrawlResult<()> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/inspection.rs:95:6
+pipeline:lint-src |    |
+pipeline:lint-src | 95 | ) -> CrawlResult<bool> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index/inspection.rs:96:31
+pipeline:lint-src |     |
+pipeline:lint-src |  96 |       ids.iter().try_fold(true, |resolved, id| {
+pipeline:lint-src |     |  _______________________________^
+pipeline:lint-src |  97 | |         let (row, input) = team(store, jurisdiction, scope, id)?;
+pipeline:lint-src |  98 | |         if !row.terminal() {
+pipeline:lint-src |  99 | |             evidence.owed = evidence.owed.checked_add(1).ok_or_else(arithmetic)?;
+pipeline:lint-src | ...   |
+pipeline:lint-src | 102 | |         Ok(resolved && input)
+pipeline:lint-src | 103 | |     })
+pipeline:lint-src |     | |_____^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index/inspection.rs:111:6
+pipeline:lint-src |     |
+pipeline:lint-src | 111 | ) -> CrawlResult<(SourceObject, bool)> {
+pipeline:lint-src |     |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index/inspection.rs:155:27
+pipeline:lint-src |     |
+pipeline:lint-src | 155 | fn count(value: usize) -> CrawlResult<u64> {
+pipeline:lint-src |     |                           ^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |  --> crates/census-service/src/census/sweep/index/work.rs:6:70
+pipeline:lint-src |   |
+pipeline:lint-src | 6 | pub(super) fn merge(prior: Vec<String>, mut current: Vec<String>) -> CrawlResult<Vec<String>> {
+pipeline:lint-src |   |                                                                      ^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |   |
+pipeline:lint-src |   = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/work.rs:19:48
+pipeline:lint-src |    |
+pipeline:lint-src | 19 | pub(super) fn validate(locators: &[String]) -> CrawlResult<()> {
+pipeline:lint-src |    |                                                ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index/work.rs:23:38
+pipeline:lint-src |    |
+pipeline:lint-src | 23 |       locators.iter().try_fold(0usize, |bytes, locator| {
+pipeline:lint-src |    |  ______________________________________^
+pipeline:lint-src | 24 | |         let bytes = bytes
+pipeline:lint-src | 25 | |             .checked_add(locator.len())
+pipeline:lint-src | 26 | |             .ok_or_else(|| CrawlError::Arithmetic {
+pipeline:lint-src | ...  |
+pipeline:lint-src | 36 | |         Ok(bytes)
+pipeline:lint-src | 37 | |     })?;
+pipeline:lint-src |    | |_____^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index.rs:33:6
+pipeline:lint-src |    |
+pipeline:lint-src | 33 | ) -> CrawlResult<census_crawl::AdapterReport> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index.rs:52:31
+pipeline:lint-src |    |
+pipeline:lint-src | 52 |         .try_for_each(|id| -> CrawlResult<()> {
+pipeline:lint-src |    |                               ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/index.rs:90:6
+pipeline:lint-src |    |
+pipeline:lint-src | 90 | ) -> CrawlResult<Vec<TeamRef>> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index.rs:121:6
+pipeline:lint-src |     |
+pipeline:lint-src | 121 | ) -> CrawlResult<Vec<TeamRef>> {
+pipeline:lint-src |     |      ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index.rs:133:23
+pipeline:lint-src |     |
+pipeline:lint-src | 133 |           .try_for_each(|id| {
+pipeline:lint-src |     |  _______________________^
+pipeline:lint-src | 134 | |             if let Some(team) = inputs::load(store, jurisdiction, id)? {
+pipeline:lint-src | 135 | |                 extra.push(team);
+pipeline:lint-src | ...   |
+pipeline:lint-src | 138 | |         })?;
+pipeline:lint-src |     | |_________^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index.rs:147:17
+pipeline:lint-src |     |
+pipeline:lint-src | 147 |       let saved = (|| {
+pipeline:lint-src |     |  _________________^
+pipeline:lint-src | 148 | |         let mut receipt =
+pipeline:lint-src | 149 | |             load(store, jurisdiction)?.map_or(Receipt::default(), core::convert::identity);
+pipeline:lint-src | 150 | |         receipt.disposition = Disposition::Partial;
+pipeline:lint-src | ...   |
+pipeline:lint-src | 157 | |         save(store, jurisdiction, &receipt)
+pipeline:lint-src | 158 | |     })();
+pipeline:lint-src |     | |______^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index.rs:172:6
+pipeline:lint-src |     |
+pipeline:lint-src | 172 | ) -> CrawlResult<StateProgress> {
+pipeline:lint-src |     |      ^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index.rs:176:14
+pipeline:lint-src |     |
+pipeline:lint-src | 176 |         .map(|receipt| covers(receipt, teams))
+pipeline:lint-src |     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index.rs:205:52
+pipeline:lint-src |     |
+pipeline:lint-src | 205 | fn covers(receipt: &Receipt, teams: &[TeamRef]) -> CrawlResult<bool> {
+pipeline:lint-src |     |                                                    ^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index.rs:218:57
+pipeline:lint-src |     |
+pipeline:lint-src | 218 | fn load(store: &Store, jurisdiction: UsJurisdiction) -> CrawlResult<Option<Receipt>> {
+pipeline:lint-src |     |                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/index.rs:244:76
+pipeline:lint-src |     |
+pipeline:lint-src | 244 | fn save(store: &Store, jurisdiction: UsJurisdiction, receipt: &Receipt) -> CrawlResult<()> {
+pipeline:lint-src |     |                                                                            ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/commit.rs:26:10
+pipeline:lint-src |    |
+pipeline:lint-src | 26 |     ) -> CrawlResult<Self> {
+pipeline:lint-src |    |          ^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/commit.rs:51:18
+pipeline:lint-src |    |
+pipeline:lint-src | 51 |             .map(|records| records.stage(self.store, &mut batch))
+pipeline:lint-src |    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/counts.rs:18:28
+pipeline:lint-src |    |
+pipeline:lint-src | 18 |     pub(super) fn new() -> CrawlResult<Self> {
+pipeline:lint-src |    |                            ^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/counts.rs:35:10
+pipeline:lint-src |    |
+pipeline:lint-src | 35 |     ) -> CrawlResult<()> {
+pipeline:lint-src |    |          ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/counts.rs:39:27
+pipeline:lint-src |    |
+pipeline:lint-src | 39 |               .try_for_each(|row| {
+pipeline:lint-src |    |  ___________________________^
+pipeline:lint-src | 40 | |                 self.co2027 = add(self.co2027, 1)?;
+pipeline:lint-src | 41 | |                 match row.gender {
+pipeline:lint-src | 42 | |                     Gender::Boys => self.boys = add(self.boys, 1)?,
+pipeline:lint-src | ...  |
+pipeline:lint-src | 46 | |                 Ok::<_, CrawlError>(())
+pipeline:lint-src | 47 | |             })?;
+pipeline:lint-src |    | |_____________^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/counts.rs:48:35
+pipeline:lint-src |    |
+pipeline:lint-src | 48 |           teams.iter().try_for_each(|team| {
+pipeline:lint-src |    |  ___________________________________^
+pipeline:lint-src | 49 | |             let key = (team.sport, team.gender);
+pipeline:lint-src | 50 | |             if self.programs.len() >= MAX_PROGRAMS && !self.programs.contains(&key) {
+pipeline:lint-src | 51 | |                 return Err(resource(self.programs.len()));
+pipeline:lint-src | ...  |
+pipeline:lint-src | 54 | |             Ok(())
+pipeline:lint-src | 55 | |         })
+pipeline:lint-src |    | |_________^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/counts.rs:59:38
+pipeline:lint-src |    |
+pipeline:lint-src | 59 | fn add(left: usize, right: usize) -> CrawlResult<usize> {
+pipeline:lint-src |    |                                      ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/effects.rs:11:62
+pipeline:lint-src |    |
+pipeline:lint-src | 11 | pub(super) fn reserve<T>(rows: &mut Vec<T>, count: usize) -> CrawlResult<()> {
+pipeline:lint-src |    |                                                              ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/effects.rs:32:6
+pipeline:lint-src |    |
+pipeline:lint-src | 32 | ) -> CrawlResult<()> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/effects.rs:39:30
+pipeline:lint-src |    |
+pipeline:lint-src | 39 |       rows.iter().try_for_each(|row| {
+pipeline:lint-src |    |  ______________________________^
+pipeline:lint-src | 40 | |         let digest = serialized_digest(row).map_err(|source| CrawlError::Canonical {
+pipeline:lint-src | 41 | |             table: table.file().to_string(),
+pipeline:lint-src | 42 | |             source,
+pipeline:lint-src | ...  |
+pipeline:lint-src | 53 | |         Ok(())
+pipeline:lint-src | 54 | |     })
+pipeline:lint-src |    | |_____^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/journal.rs:26:77
+pipeline:lint-src |    |
+pipeline:lint-src | 26 |     pub(super) fn of(window: &Window<'_>, site: &Site, year: SchoolYear) -> CrawlResult<Self> {
+pipeline:lint-src |    |                                                                             ^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/journal.rs:45:78
+pipeline:lint-src |    |
+pipeline:lint-src | 45 |     pub(super) fn stage(&self, store: &Store, batch: &mut StoreBatch<'_>) -> CrawlResult<String> {
+pipeline:lint-src |    |                                                                              ^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/journal.rs:78:62
+pipeline:lint-src |    |
+pipeline:lint-src | 78 | fn school_observation(school: &CanonicalSchool, at: &str) -> CrawlResult<SourceObservation> {
+pipeline:lint-src |    |                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/journal.rs:90:6
+pipeline:lint-src |    |
+pipeline:lint-src | 90 | ) -> CrawlResult<Vec<SourceObservation>> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/roster/journal.rs:93:36
+pipeline:lint-src |     |
+pipeline:lint-src |  93 |       athletes.iter().try_fold(rows, |mut rows, athlete| {
+pipeline:lint-src |     |  ____________________________________^
+pipeline:lint-src |  94 | |         let observation = SourceAthleteObservation::of_athlete(
+pipeline:lint-src |  95 | |             &SourceNamespace::MilesplitAthlete,
+pipeline:lint-src |  96 | |             athlete,
+pipeline:lint-src | ...   |
+pipeline:lint-src | 104 | |         Ok(rows)
+pipeline:lint-src | 105 | |     })
+pipeline:lint-src |     | |_____^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/roster/journal.rs:208:6
+pipeline:lint-src |     |
+pipeline:lint-src | 208 | ) -> CrawlResult<String> {
+pipeline:lint-src |     |      ^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/metadata.rs:20:10
+pipeline:lint-src |    |
+pipeline:lint-src | 20 |     ) -> CrawlResult<Option<Self>> {
+pipeline:lint-src |    |          ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/metadata.rs:45:49
+pipeline:lint-src |    |
+pipeline:lint-src | 45 | fn common(team: &TeamRef, observed_on: &str) -> CrawlResult<usize> {
+pipeline:lint-src |    |                                                 ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/metadata.rs:54:18
+pipeline:lint-src |    |
+pipeline:lint-src | 54 |       .try_fold(0, |bytes, (resource, value)| {
+pipeline:lint-src |    |  __________________^
+pipeline:lint-src | 55 | |         if value.len() > MAX_BYTES {
+pipeline:lint-src | 56 | |             return Err(CrawlError::Resource {
+pipeline:lint-src | 57 | |                 resource,
+pipeline:lint-src | ...  |
+pipeline:lint-src | 62 | |         add(bytes, value.len())
+pipeline:lint-src | 63 | |     })
+pipeline:lint-src |    | |_____^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/metadata.rs:66:57
+pipeline:lint-src |    |
+pipeline:lint-src | 66 | fn window_len(rows: &[RosterAthlete], common: usize) -> CrawlResult<usize> {
+pipeline:lint-src |    |                                                         ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/metadata.rs:72:55
+pipeline:lint-src |    |
+pipeline:lint-src | 72 |                 match row_bytes(row, common).and_then(|bytes| add(used, bytes)) {
+pipeline:lint-src |    |                                                       ^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/metadata.rs:88:53
+pipeline:lint-src |    |
+pipeline:lint-src | 88 | fn row_bytes(row: &RosterAthlete, common: usize) -> CrawlResult<usize> {
+pipeline:lint-src |    |                                                     ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/roster/metadata.rs:100:43
+pipeline:lint-src |     |
+pipeline:lint-src | 100 | pub(super) fn school_name(value: &str) -> CrawlResult<String> {
+pipeline:lint-src |     |                                           ^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/roster/metadata.rs:111:38
+pipeline:lint-src |     |
+pipeline:lint-src | 111 | fn add(left: usize, right: usize) -> CrawlResult<usize> {
+pipeline:lint-src |     |                                      ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/roster/metadata.rs:114:42
+pipeline:lint-src |     |
+pipeline:lint-src | 114 | fn scale(bytes: usize, copies: usize) -> CrawlResult<usize> {
+pipeline:lint-src |     |                                          ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/refusal.rs:42:6
+pipeline:lint-src |    |
+pipeline:lint-src | 42 | ) -> CrawlResult<Application> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/refusal.rs:58:6
+pipeline:lint-src |    |
+pipeline:lint-src | 58 | ) -> CrawlResult<Application> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/refusal.rs:77:6
+pipeline:lint-src |    |
+pipeline:lint-src | 77 | ) -> CrawlResult<Application> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/summary.rs:26:6
+pipeline:lint-src |    |
+pipeline:lint-src | 26 | ) -> CrawlResult<Summary> {
+pipeline:lint-src |    |      ^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/summary.rs:38:36
+pipeline:lint-src |    |
+pipeline:lint-src | 38 |       teams.iter().try_fold(summary, |mut summary, team| {
+pipeline:lint-src |    |  ____________________________________^
+pipeline:lint-src | 39 | |         if !seen.insert(team.id.as_str()) {
+pipeline:lint-src | 40 | |             return Ok(summary);
+pipeline:lint-src | ...  |
+pipeline:lint-src | 60 | |         include(summary, &row)
+pipeline:lint-src | 61 | |     })
+pipeline:lint-src |    | |_____^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep/roster/summary.rs:72:52
+pipeline:lint-src |    |
+pipeline:lint-src | 72 | fn include(mut summary: Summary, row: &Journal) -> CrawlResult<Summary> {
+pipeline:lint-src |    |                                                    ^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/roster/summary.rs:105:6
+pipeline:lint-src |     |
+pipeline:lint-src | 105 | ) -> CrawlResult<usize> {
+pipeline:lint-src |     |      ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/roster/summary.rs:113:38
+pipeline:lint-src |     |
+pipeline:lint-src | 113 | fn sum(left: usize, right: usize) -> CrawlResult<usize> {
+pipeline:lint-src |     |                                      ^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/roster.rs:170:6
+pipeline:lint-src |     |
+pipeline:lint-src | 170 | ) -> CrawlResult<Option<journal::Journal>> {
+pipeline:lint-src |     |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this closure is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep/roster.rs:175:14
+pipeline:lint-src |     |
+pipeline:lint-src | 175 |           .map(|value| {
+pipeline:lint-src |     |  ______________^
+pipeline:lint-src | 176 | |             let journal: journal::Journal =
+pipeline:lint-src | 177 | |                 serde_json::from_value(value).map_err(|source| CrawlError::Decode {
+pipeline:lint-src | 178 | |                     url: format!("journal:{phase}/{key}"),
+pipeline:lint-src | ...   |
+pipeline:lint-src | 186 | |             Ok(journal)
+pipeline:lint-src | 187 | |         })
+pipeline:lint-src |     | |_________^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep.rs:58:45
+pipeline:lint-src |    |
+pipeline:lint-src | 58 | fn unique_teams(mut teams: Vec<TeamRef>) -> CrawlResult<Vec<TeamRef>> {
+pipeline:lint-src |    |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep.rs:74:32
+pipeline:lint-src |    |
+pipeline:lint-src | 74 | fn team_bound(count: usize) -> CrawlResult<()> {
+pipeline:lint-src |    |                                ^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |   --> crates/census-service/src/census/sweep.rs:96:28
+pipeline:lint-src |    |
+pipeline:lint-src | 96 | fn shared(count: usize) -> CrawlResult<Mutex<Shared>> {
+pipeline:lint-src |    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: the `Err`-variant returned from this function is very large
+pipeline:lint-src |    --> crates/census-service/src/census/sweep.rs:114:6
+pipeline:lint-src |     |
+pipeline:lint-src | 114 | ) -> CrawlResult<StateProgress> {
+pipeline:lint-src |     |      ^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 128 bytes
+pipeline:lint-src |     |
+pipeline:lint-src |     = help: try reducing the size of `census_crawl::CrawlError`, for example by boxing large elements or replacing it with `Box<census_crawl::CrawlError>`
+pipeline:lint-src |     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#result_large_err
+
+pipeline:lint-src | error: large size difference between variants
+pipeline:lint-src |   --> crates/census-service/src/restate_services/results_arms/capture_scope.rs:9:1
+pipeline:lint-src |    |
+pipeline:lint-src |  9 | / pub(super) enum AdmittedCapture {
+pipeline:lint-src | 10 | |     LegacyMetadata,
+pipeline:lint-src |    | |     -------------- the second-largest variant carries no data at all
+pipeline:lint-src | 11 | |     DurableV1(ResultsCaptureContext),
+pipeline:lint-src |    | |     -------------------------------- the largest variant contains at least 320 bytes
+pipeline:lint-src | 12 | | }
+pipeline:lint-src |    | |_^ the entire enum is at least 320 bytes
+pipeline:lint-src |    |
+pipeline:lint-src |    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#large_enum_variant
+pipeline:lint-src |    = note: `-D clippy::large-enum-variant` implied by `-D warnings`
+pipeline:lint-src |    = help: to override `-D warnings` add `#[allow(clippy::large_enum_variant)]`
+pipeline:lint-src | help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+pipeline:lint-src |    |
+pipeline:lint-src | 11 -     DurableV1(ResultsCaptureContext),
+pipeline:lint-src | 11 +     DurableV1(Box<ResultsCaptureContext>),
+pipeline:lint-src |    |
+
+pipeline:lint-src | error: could not compile `census-service` (lib) due to 86 previous errors
+▮▮▮▮ pipeline:lint-src (1m 13s 31ms, 78ddc2b0)
+Error: task_runner::run_failed
+
+  × Task pipeline:lint-src failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 101
+

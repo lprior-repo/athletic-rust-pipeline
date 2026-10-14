@@ -17,6 +17,8 @@ const JOURNAL: &str = "journal";
 const META: &str = "meta";
 const RECEIPTS: &str = "receipts";
 
+mod acquisition;
+pub use acquisition::*;
 mod backup;
 mod batch;
 pub mod clock;
@@ -136,6 +138,7 @@ fn open_keyspaces(
         .cache_size(cache_bytes)
         .open()
         .map_err(|source| StoreError::Open { source })?;
+    acquisition::qualification::preflight_keyspaces(&db)?;
     keyspaces(db)
 }
 
@@ -226,6 +229,13 @@ impl Store {
         }
     }
     pub fn http_cache_integrity(&self) -> StoreResult<Vec<String>> {
+        acquisition::validate_preservation(
+            self.root(),
+            &self.db,
+            &self.meta,
+            &self.journal,
+            &self.receipts,
+        )?;
         backup::http_cache_integrity(self.root())
     }
 }

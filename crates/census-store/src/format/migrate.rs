@@ -56,8 +56,8 @@ impl Store {
 
     pub fn migrate_with(root: impl AsRef<Path>, cache_bytes: u64) -> StoreResult<MigrationReport> {
         let root = root.as_ref();
-        crate::ensure_dirs(root)?;
         let (format, already_current, rewritten) = migrate_stopped(root, cache_bytes)?;
+        crate::ensure_dirs(root)?;
         let store = Self::open_with(root, cache_bytes)?;
         let integrity = store.integrity_complete()?;
         Ok(MigrationReport {
@@ -74,8 +74,16 @@ impl Store {
 }
 
 fn migrate_stopped(root: &Path, cache_bytes: u64) -> StoreResult<(StoreFormat, bool, Rewritten)> {
-    let (db, entities, journal, meta, receipts) = crate::open_keyspaces(root, cache_bytes)?;
+    let db = fjall::Database::builder(root.join(crate::DB_DIR))
+        .cache_size(cache_bytes)
+        .open()
+        .map_err(|source| StoreError::Open { source })?;
+    crate::acquisition::qualification::preflight_keyspaces(&db)?;
+    let (db, entities, journal, meta, receipts) = crate::keyspaces(db)?;
     let format = read_format(&meta)?;
+    let capture =
+        crate::acquisition::qualification::declaration(&db.snapshot(), &meta, &journal, &format)?;
+    crate::acquisition::require_legacy(&capture)?;
     let context = time::Context {
         db: &db,
         entities: &entities,

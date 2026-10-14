@@ -1,0 +1,6 @@
+482a7b121dbc315757fc71a8889714079e167d400cff13f6a290927b5110afac  crates/census-crawl/src/coach_directories/collect/postal.rs
+982612818cba41c5903707bbd665ea5497010a8e33ce7146f4d319d4a6b427ec  crates/census-crawl/src/coach_directories/map/postal/tests.rs
+3b27ef975a3b733964d0c4c7f5628186f6890f802580295ea5dc88d2ec5790a9  crates/census-crawl/src/coach_directories/map/postal.rs
+30d2b84b6bd21f0e643c669fa2fbc8b02bd19cca9eb8e1cc5445b6a40226d438  crates/census-crawl/src/net/acquisition/retention.rs
+fb51f625762acdbc0a136af25b30cd4792f38784c91914f2660e2cdc3f360a65  crates/census-crawl/src/net/acquisition/session.rs
+19676ed25e57dcb9b01cd20e708281d94d5f6826926ab9edc44bb14bc23c4733  crates/census-crawl/src/net/acquisition/testing.rs

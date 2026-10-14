@@ -1,0 +1,12 @@
+{
+  "captured_at": "2026-10-14T07:07:43.794833+00:00",
+  "changed_files": 237,
+  "tracked": 146,
+  "new": 91,
+  "review_counts": {
+    "exact_reviewed_bytes": 228,
+    "reviewed_path_changed_after_pins": 8,
+    "no_review_pin_found": 1
+  },
+  "changed_during_capture": []
+}

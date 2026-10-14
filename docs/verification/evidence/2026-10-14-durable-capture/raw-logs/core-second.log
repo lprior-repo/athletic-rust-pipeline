@@ -1,0 +1,47 @@
+[ WARN 2026-10-14 01:16:26.935] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:tests-scoped (f5dd9c1c)
+   Compiling census-store v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-store)
+▮▮▮▮ pipeline:tests-scoped (running for 30s)
+   Compiling census-domain v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-domain)
+▮▮▮▮ pipeline:tests-scoped (running for 60s)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 20s
+────────────
+ Nextest run ID 5dbabbff-56b2-4249-9200-c038942b2612 with nextest profile: default
+    Starting 30 tests across 2 binaries (1060 tests skipped)
+        PASS [   0.019s] ( 1/30) census-domain model::source_acquisition::tests::constrained_ids_response_dispositions_and_metadata_hashes_reject_invalid_inputs
+        PASS [   0.021s] ( 2/30) census-domain model::source_acquisition::tests::stable_slot_excludes_request_payload_but_work_binds_exact_representation
+        PASS [   0.028s] ( 3/30) census-domain model::source_acquisition::tests::history_window_move_preserves_exact_json_and_historical_unknown_field_policy
+        PASS [   0.036s] ( 4/30) census-domain model::source_acquisition::tests::qualification_wire_requires_exact_version_roles_fields_and_case_preserving_identity
+        PASS [   0.062s] ( 5/30) census-store acquisition::tests::lifecycle::malformed_capture_migration_and_backup_never_create_missing_keyspaces_or_directories
+        PASS [   0.076s] ( 6/30) census-store acquisition::tests::corruption::corrupt_retryable_work_result_is_rejected_instead_of_suppressing_next_attempt
+        PASS [   0.084s] ( 7/30) census-store acquisition::tests::preservation::capture_control_preserves_uppercase_existing_identity_and_never_remints_missing_identity
+        PASS [   0.104s] ( 8/30) census-store acquisition::tests::preservation::a_hash_consistent_invalid_restore_cannot_promote_over_an_empty_destination
+        PASS [   0.120s] ( 9/30) census-store acquisition::tests::lifecycle::capture_init_never_adopts_legacy_existing_or_artifact_roots
+        PASS [   0.122s] (10/30) census-store acquisition::tests::lifecycle::explicit_capture_init_and_open_preserve_existing_store_identity
+        PASS [   0.131s] (11/30) census-store acquisition::tests::corruption::a_reused_budget_never_reuses_backing_verification_across_new_snapshots
+        PASS [   0.142s] (12/30) census-store acquisition::tests::lifecycle::capture_owner_requires_actual_bound_manifest_and_real_handle_origin
+        PASS [   0.115s] (13/30) census-store acquisition::tests::protocol::generic_journal_receipt_and_credit_paths_cannot_overwrite_capture_roots
+        PASS [   0.079s] (14/30) census-store acquisition::tests::protocol::slot_registration_replays_exact_bytes_and_refuses_changed_request_budget_reset
+        PASS [   0.077s] (15/30) census-store acquisition::tests::recovery::actual_response_checkpoint_refusal_keeps_status_and_cannot_be_generic_dispatch_failure
+        PASS [   0.207s] (16/30) census-store acquisition::tests::corruption::retained_reference_and_receipt_corruption_fail_with_no_identity_remint
+        PASS [   0.124s] (17/30) census-store acquisition::tests::protocol::reservation_reuses_ordinal_but_armed_state_never_reconstructs_dispatch
+        PASS [   0.133s] (18/30) census-store acquisition::tests::protocol::original_slot_lifetime_ceiling_survives_separate_owner_continuations
+        PASS [   0.221s] (19/30) census-store acquisition::tests::preservation::stopped_relocation_backup_restore_preserves_identity_attempts_receipts_and_cache_v2
+        PASS [   0.085s] (20/30) census-store acquisition::tests::recovery::prepared_archive_reopens_and_finishes_original_attempt_without_dispatch
+        PASS [   0.264s] (21/30) census-store acquisition::tests::corruption::marker_namespace_version_and_case_preservation_are_checked_before_open_recovery
+        PASS [   0.164s] (22/30) census-store acquisition::tests::protocol::retained_retryable_responses_do_not_become_success_or_cache_originals
+        PASS [   0.142s] (23/30) census-store acquisition::tests::recovery::cache_replay_and_304_keep_exact_original_body_and_time_without_reference_chains
+        PASS [   0.078s] (24/30) census-store acquisition::tests::recovery::stale_dispatch_token_cannot_rewrite_unknown_after_a_successor_was_reserved
+        PASS [   0.290s] (25/30) census-store acquisition::tests::corruption::shared_root_budget_detects_surplus_orphan_and_corrupt_slot_closure
+        PASS [   0.360s] (26/30) census-store acquisition::tests::protocol::full_three_attempt_five_dispatch_closure_fits_exactly_forty_two_roots
+        PASS [   0.253s] (27/30) census-store acquisition::tests::recovery::missing_or_changed_prepared_backing_never_allocates_another_attempt
+        PASS [   0.458s] (28/30) census-store acquisition::tests::lifecycle::capture_init_has_one_real_fjall_owner_and_missing_open_never_creates
+        PASS [   0.594s] (29/30) census-store acquisition::tests::preservation::invalid_capture_backup_cannot_replace_previous_valid_generation
+        PASS [   1.664s] (30/30) census-store acquisition::tests::preservation::historical_non_capture_backup_keeps_raw_schema_preservation_policy
+────────────
+     Summary [   1.686s] 30 tests run: 30 passed, 1060 skipped
+▮▮▮▮ pipeline:tests-scoped (1m 22s 445ms, f5dd9c1c)
+
+Tasks: 1 completed
+ Time: 1m 22s 855ms
+

@@ -1,0 +1,34 @@
+{
+  "base_commit": "5111a603cc1d945e2da3f85c00d149796552e43e",
+  "core_patch_sha256": "bbdd23de99f5c9abbc3ff9156fd561632dfec42ad5f3dec31b5417a14467dd86",
+  "transport_patch_sha256": "b716c818490fde0f5bb052a82af20502b521ee7f4b55f4b8cd097ad515169f35",
+  "core_first": {
+    "status": "compile_failed_no_tests",
+    "errors": [
+      "E0282 dispatch Vec inference",
+      "E0308 backup PathBuf borrow in lifecycle test",
+      "E0308 backup PathBuf borrow in preservation test"
+    ],
+    "warnings": [
+      "unused StoreError transition",
+      "unused Readable init"
+    ]
+  },
+  "core_second": {
+    "status": "passed",
+    "tests_passed": 30,
+    "tests_skipped": 1060,
+    "nextest_run": "5dbabbff-56b2-4249-9200-c038942b2612",
+    "test_seconds": 1.686,
+    "moon_seconds": 82.855
+  },
+  "transport_first": {
+    "status": "running"
+  },
+  "service_integration": "pending corrected v2 freeze",
+  "full_deliverable": "unverified",
+  "logs": {
+    "core-second.log": "c31cffba298a12a5b0dab07e01e5467766449c7a5c19ca458f22b25986944159",
+    "core-first.log": "bd354f901029e41a38ed8550ff7f261e63de8e57ff9e695d35ae61a9d2ae2207"
+  }
+}

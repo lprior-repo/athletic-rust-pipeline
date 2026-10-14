@@ -7,7 +7,9 @@ use std::path::Path;
 const DIGEST_BYTES: usize = 64;
 const ARCHIVE_CAPACITY_LOCK: &str = "archive-capacity.lock";
 
+mod metadata;
 mod reservations;
+use metadata::{parse_meta_digest, read_meta_digest};
 
 pub(crate) fn http_cache_integrity(root: &Path) -> crate::StoreResult<Vec<String>> {
     let http = root.join("http");
@@ -232,39 +234,6 @@ fn check_capture_directory(
         }
     }
     Ok(matched)
-}
-
-fn read_meta_digest(
-    path: &Path,
-    label: &str,
-    issues: &mut Vec<String>,
-) -> crate::StoreResult<Option<String>> {
-    let bytes = match fs::read(path) {
-        Ok(bytes) => bytes,
-        Err(_) => {
-            issues.push(format!("meta {label}: unreadable"));
-            return Ok(None);
-        }
-    };
-    parse_meta_digest(&bytes, label, issues)
-}
-
-fn parse_meta_digest(
-    bytes: &[u8],
-    label: &str,
-    issues: &mut Vec<String>,
-) -> crate::StoreResult<Option<String>> {
-    let Ok(meta) = serde_json::from_slice::<serde_json::Value>(bytes) else {
-        issues.push(format!("meta {label}: invalid JSON"));
-        return Ok(None);
-    };
-    match meta.get("content_digest").and_then(|value| value.as_str()) {
-        Some(value) if is_digest(value) => Ok(Some(value.to_string())),
-        _ => {
-            issues.push(format!("meta {label}: missing or invalid content_digest"));
-            Ok(None)
-        }
-    }
 }
 
 fn verify_body(
