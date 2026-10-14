@@ -1,0 +1,153 @@
+# Final-spec alignment review
+
+| Control | Value |
+|---|---|
+| Status | Reviewed; **final-spec acceptance not established** |
+| Owner / date | Main / 2026-10-14 |
+| Scope | Nine workspace crates; redundancy, Rust discipline, architecture/ADR currency |
+| Authority | [Spec v2](../specifications/athletic-recruiting-end-vision-spec-v2.md), [architecture](../../ARCHITECTURE.md), [ADRs](../adr/README.md) |
+| Tracking | Review `cbxd`; unresolved findings `iilh`; [existing delivery plan](../NATIONAL-CENSUS-PLAN.md) remains authoritative |
+| Provenance | Observed HEAD `59a80d451fba1ba95dffd46fb979d6f9d8935d02`; documentation dirty; concurrent source activity prevents an immutable-release claim |
+
+**Method:** architecture-description organization informed by
+[ISO/IEC/IEEE 42010:2022](https://www.iso.org/standard/74393.html): stakeholder concerns,
+views, decision rationale, correspondence and known inconsistencies. Not ISO conformity
+or NASA certification. Concerns: recruiting accuracy, durable evidence, honest coverage,
+minimal repeated work and maintainable ownership. Three read-only reviewers covered
+(domain/report/reconcile/review), (store/service) and (crawl/browser); Main integrated
+findings and executed verification. No production repair, live census, database opening,
+security audit or exhaustive dead-code proof.
+
+The Downloads spec and repository spec are byte-identical:
+`a3b687cc06952dbceaeda2f21300e4769acb96130570fc1174ff70210a09f11e`.
+Architecture adopts the full reusable product; current runtime is narrower. Decisions,
+implemented components and qualified behavior must remain separate evidence states.
+
+## Findings register
+
+Source paths below are relative to `crates/`. Static counterexamples identify risks,
+not observed contamination of a live dataset. H = final-product correctness/acceptance
+hold; M = bounded defect, contract gap or maintainability risk. No finding is waived.
+
+| ID | Level / concern | Evidence | Disposition required |
+|---|---|---|---|
+| R1 | H — Participation/window eligibility | `census-report/src/bests/reduce.rs:79–103,233–241`; `bests/mod.rs:30–36`: athlete/event/numeric compatibility gate, no selected high-school participation/as-of interval. | Spec §§4,7: gate candidates with versioned participation and temporal evidence; retain rejection reasons. Counterexample: admitted athlete with a collegiate/post-graduation mark. |
+| R2 | H — Current school | `census-domain/src/model/athlete.rs:69–90`; `census-report/src/report/derivation/population.rs:39–52`: geography uses one stored school, not dated affiliation resolution. | Spec §§4,8: bind accepted affiliation at cutoff into frozen input; preserve performance-time school separately. Domain affiliation candidates are not integrated publication evidence. |
+| R3 | H — Permanent identity / splits | `census-domain/src/model/athlete.rs:7–47,135–151`; `model/identity_application.rs:107–116`; `model/identity_decision.rs:20–45`: candidate-derived IDs, least-member canonical projection, incomplete split/revocation/successor contract. | Spec §5: Main-owned stable public-ID and reversible decision contract; preserve historical IDs and export aliases. Do not remint old athletes. |
+| R4 | H — Required event classes | `census-domain/src/model/recruiting_catalog/policy.rs:190–192` lists flat 300m/500m/600m/2000m/10000m/two-mile variants as missing. `model/event_specification.rs:8–16` lacks combined-event lineup/scoring version; performance contract lacks multis completion. | Spec §7: add explicit versioned classes; withhold unknown/incomplete multis. Current unresolved disposition is correct but incomplete. |
+| R5 | H — Normalized dataset | `census-report/src/workbook/publication/manifest.rs:213–247` has convenience artifacts, not the eight required normalized CSV families. | Spec §13: athletes, best marks, schools, coach contacts, comparison classes, provenance, coverage and aliases from one frozen generation. SQLite remains optional, not a missing mandatory feature. |
+| R6 | M — Tie evidence | `census-report/src/bests/reduce.rs:106–110`; `bests/selection.rs:8–15`; `bests/write.rs:8–39`: candidate count is not tied-winner count; context reducer retains an incumbent. | Spec §§7,13: distinct eligible/tied counts and deduplicated tied references. Passing winner tie-break tests do not establish those fields. |
+| R7 | M — Repeated publication loads | `census-service/src/restate_services/national/publication.rs:118–140`; `restate_services/jobs.rs:106–145`; `census-report/src/export/dataset.rs:195–208`: Report, Bests and Workbook separately acquire datasets. | Share one bound generation for outputs advertised together. Separate snapshots can differ; **no mixed-revision defect inside the managed workbook bundle was demonstrated**. No optimization speedup claimed. |
+| R8 | M — Duplicate workflow ordering | `census-service/src/cli/cycle.rs:145–178,218–238` and `restate_services/national/publication.rs:18–41`: offline/live/national sequences differ; live explicitly skips index derivation. | Architecture §5: one application-stage/completion contract with explicit online/stopped-store effects. Retain legitimate offline maintenance, not competing business rules. |
+| R9 | M — Duplicate relay rule / ownership | `census-domain/src/model/event_ontology.rs:158–168` and `census-report/src/bests/events.rs:3–13` repeat six variants. Complete comparison policy lives in report `bests/key.rs:15–72`. | Use domain relay predicate; domain owns comparison semantics. No current relay disagreement or duplicate workbook winner reducer found. |
+| R10 | M — Unchecked construction | `census-domain/src/model/athlete.rs:163–193`: public `new` uses debug assertions; `new_checked` exists. `census-crawl/src/athleticlive/map_rows/identity.rs:115–125` calls `new`. | Checked untrusted construction. Public empty-name input can panic in debug; adapter crash not demonstrated and upstream validation may prevent that particular path. Lexical scan is not whole-program panic proof. |
+| R11 | M — Semantic receipt witness | `census-store/src/receipt.rs:17–25`: operation/digest/time/count/credit; `write_batch/commit.rs:52–105`: serialized receipt check and SyncData atomic batch. | Spec §9: explicitly bind accepted revision, commit sequence, output/version and outcome. Some callers encode meaning elsewhere; no local atomicity race alleged. Version, do not reinterpret old receipts. |
+| R12 | H — Reusable lifecycle integration | `census-domain/src/model/source_acquisition/work.rs:13–25,152–228`; [capability boundary](../PROFILE-EXECUTION-V1.md): run-bound MileSplit attempts and enrollment-only refusal. | Spec §§6,9–12,14: attempts are not frontier/refresh/reparse/invalidation/annual reuse. Keep planned gaps and fail-closed refusal; no implicit reset/rebinding. |
+| R13 | H — Discovery/UP qualification | `census-service/src/restate_services/meets_arms/prerequisites.rs:6–11` blocks Athletic.net without producer/frontier; profile compiler refuses source-backed regional priority/membership. | Spec §§3,4,19: qualify source-backed UP denominator and five-state path. Registration/armed dispatch/directory collection are not completed athlete discovery. |
+| R14 | M — Browser resource accounting | `athleticnet-browser/src/transport/script.rs:21–52` caps decoded bytes, not separate encoded/wire bytes; base64 creates additional representations. | Spec §§10,12,16: account for wire/decoded limits and aggregate process/browser/storage envelope. Local task/body caps do not prove global RAM/disk ceilings. |
+| R15 | M — Protocol maintenance duplication | Browser `src/outcome.rs` and crawl `src/net/bridge/wire.rs` separately express corresponding outcomes with different runtime representations and shared wire fixtures. | Evaluate one wire-contract owner or explicit boundary rationale. Not duplicate acquisition logic; do not create a dependency cycle merely to remove DTOs. |
+
+**Retain, do not deduplicate blindly:** provider-specific ownership/label parsing,
+Athletic.net profile versus whole-meet/per-event acquisition, immutable historical
+policy fixtures, and independent artifact readback. Whole-meet wind/heat remain unknown
+unless separately captured; this is source limitation, not permission to assign favorable
+conditions. Shared exact integer ranking, surface/timing/wind classes, conflict fallback,
+cohort contradiction handling, managed atomic workbook publication and owned task drain
+are substantive components. None certifies the unfinished product.
+
+## Requirement correspondence
+
+| Spec | Current correspondence / limit |
+|---|---|
+| §§1–2,17 | Architecture and ADR-038 adopt reusable public-source product; fresh/historical contracts preserved. |
+| §§3–4,19 | Registry, profile configuration and explicit source refusals; full source graph, UP fence and selected execution incomplete. R1–2,R13. |
+| §5 | Conservative identity decisions/alias projection; permanent split/consumer contract incomplete. R3. |
+| §§6,9–11 | Capture integrity and atomic local effects are components; general interpretation identity, A→B→A revisions, frontier, negative evidence, reparse and affected-key invalidation incomplete. R11–12. |
+| §7 | Exact ranking and technical classes; eligibility, listed event variants, multis and tie inventory incomplete. R1,R4,R6. |
+| §8 | Source-backed addresses/tenure rules; dated current-school integration incomplete. R2. |
+| §§12,14,16 | Local bounds/configuration/backup APIs; global quotas, annual reuse and exact-build fault/resource qualification unestablished. R12,R14. |
+| §§13,15 | Frozen workbook bundle exists; normalized snapshot incomplete. Query database is an optional downstream choice. R5,R7. |
+| §18 | Existing delivery plan remains the implementation/acceptance authority; this review creates no competing roadmap. |
+
+## Rust discipline: measured, not asserted
+
+The strict scan checked 18,380 callables / 1,585 files; zero unresolved syntax sites.
+It reported zero counted production unsafe/unwrap/expect/panic/indexing/as-cast sites,
+but **failed nine handwritten callables above 60 logical lines**:
+
+| Location (relative to `crates/`) | Logical lines |
+|---|---:|
+| `census-store/src/acquisition/transition/work.rs:9` register_acquisition_work | 66 |
+| `census-store/src/acquisition/terminal.rs:132` reuse_acquisition_cache | 66 |
+| `census-store/src/acquisition/read.rs:99` read_work | 77 |
+| `census-store/src/acquisition/read/closure.rs:8` attempt | 64 |
+| `census-store/src/acquisition/qualification.rs:75` declaration | 62 |
+| `census-store/src/acquisition/qualification/inventory.rs:7` inventory | 94 |
+| `census-store/src/acquisition/cache.rs:35` inventory | 82 |
+| `census-store/src/acquisition/backing.rs:33` validate_metadata | 63 |
+| `census-service/src/cli/national/run.rs:84` run_national | 79 |
+
+Physical-file warnings: production `census-store/src/backup/integrity.rs` 668 lines;
+example recovery boundary 309. Advisory counts: 1,693 callables above 25 lines; 138 above
+five parameters. These are not new hard failures or reasons for mechanical context bags.
+
+Power-of-Ten Rule 4 has observed failures; Rule 5/7 boundary enforcement has R10;
+Rule 10 cannot pass while format/contract/size fail. Static loop termination (Rule 2),
+post-init allocation freedom (Rule 3), worst-case process resource limits and universal
+cancellation correctness were not proved. No measured allocation/layout/dispatch rewrite
+is proposed. Read Holzman references: `nasa-jpl-standards.md`,
+`runtime-performance-architecture.md`, `zero-cost-abstractions.md`,
+`latency-throughput-playbook.md`; async references: `structural-correctness.md`,
+`cancellation-safety.md`, `spawn-discipline.md` (each under its skill's `references/`).
+All four repository startup skills were available and read; the spec's historical
+missing-skill statement remains historical.
+
+## Verification record
+
+| Exact command | Observed result |
+|---|---|
+| `sha256sum /home/lewis/Downloads/athletic-recruiting-end-vision-spec.md docs/specifications/athletic-recruiting-end-vision-spec-v2.md` | Identical digest above. |
+| `env -u CI tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src` | Check/lint passed; fmt failed at `census-service/src/cli/national/run.rs:145` wrapping; overall exit 1. No Rust formatting performed. |
+| `env -u CI tools/moon-local run pipeline:xtask -- scan` | Exit 1; nine hard callable-size failures; counts above. |
+| `env -u CI tools/moon-local run pipeline:xtask -- comments` | Pass: 2,871 Rust files, no comments. |
+| `env -u CI tools/moon-local run pipeline:xtask -- panic-extraction` | Pass: 2,871 Rust files and three rendered templates. |
+| `env -u CI tools/moon-local run pipeline:xtask -- seams` | Pass: no allowlisted module/crate violations. |
+| `env -u CI tools/moon-local run pipeline:xtask -- domain-purity` | Pass: no banned async/I/O normal dependency. |
+| `env -u CI tools/moon-local run pipeline:xtask -- contract` | Initial exit 1: empty documented-set and `http_retry_fixture` registration. AGENTS backtick reference repaired. Repeat exit 1: documented-set passed; fixture registration still failed; five known crate-edge deviations. No gate weakened. |
+| `tools/moon-local run pipeline:tests -- -E 'test(bests) \| test(recruiting_catalog) \| test(affiliation) \| test(identity_application) \| test(spawn::)'` | 311 passed / 4,841 skipped; run `7c2267ff-4218-49da-b535-0b8cc9f2bac4`. Markdown escapes represent literal filter bars, not shell pipelines. |
+| `env -u CI tools/moon-local run pipeline:bench -- --bench capture_export -- --sample-size 10 --warm-up-time 1 --measurement-time 1 --noplot` | Pass: retained-capture ingest → real temporary Store → workbook/CSV/JSONL independent readback; 185 canonical rows / 60 cohort members verified. No live fetch. |
+
+Benchmark `pipeline/capture_export/captured_live_wiaa_co2027`: 10 samples / 20 iterations,
+1 s warmup, estimated 1.1908 s collection; Criterion time interval
+57.382–58.617 ms (estimate 57.991 ms), throughput 3.3437–3.4157 Kelem/s
+(estimate 3.3798). Throughput counts the declared 196 input elements, not accepted
+athletes. Optimized portable build. Short local sample, uncontrolled concurrent/cache
+conditions; no before/after comparison, p99, allocation profiler, process-memory/disk
+ceiling or annual/skew certification. Gnuplot unavailable; plotters fallback did not
+prevent benchmark/readback execution.
+
+**Not run:** full release/security, all 17 native faults, parser fuzz campaigns,
+whole-workload resource/retention/restore, annual rollover, live UP/five-state collection
+or approved production publication. Known gate failures already prohibit acceptance;
+this review did not own native fault stores/processes. Focused passes do not waive holds.
+
+## Document control and handoff
+
+Documentation verification: 102 local Markdown targets across the six changed documents
+exist; required startup skills and the contract gate's backtick architecture pointer are
+present. This checks links/pointers, not semantic release acceptance.
+
+Changed only startup/documentation/evidence: `AGENTS.md`, `ARCHITECTURE.md`, ADR-038,
+ADR register, deployment lifecycle and this report. AGENTS is 42 lines / 2,444 bytes,
+down from 296 lines (86% fewer), not a second policy manual. Native procedures were
+retained in the existing deployment owner; headed
+Athletic.net and real drain accounting replace the misleading copied headless/default
+assumptions. ADR-038 now distinguishes policy 18 and existing enrollment-only capability
+from qualified reusable execution. Historical amendments and original spec are untouched.
+
+TASK / OWNERSHIP: review and concise documentation / Main. DO NOT MODIFY: production,
+live/historical durable state, unrelated work. INPUT CONTRACT: final spec and binding
+architecture. OUTPUT CONTRACT: findings and observed evidence, no release certificate.
+ACCEPTANCE: review delivered; `iilh` retains unresolved findings for owner disposition.
+HANDOFF: use the existing plan for repairs and exact-build qualification. No commit,
+push or remote sync.

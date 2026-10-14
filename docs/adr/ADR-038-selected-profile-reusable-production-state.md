@@ -177,13 +177,20 @@ source-backed region membership/priority, jurisdictions outside the legacy 49 en
 provisional inclusion and acquisition after as-of. These modeled unsupported choices are not
 removed from the raw profile. Its descriptors explicitly disclose current-affiliation,
 profile-source-graph and completion integrations still pending. Existing scalar workbook-year
-selection/policy 17 is distinct from selected-profile execution.
+selection, introduced under policy 17 and now using policy 18, is distinct from selected-profile execution.
 
 The legacy store RunManifest accepts one census run and refuses a different binding. Legacy
 sealing remains Class-of-2027-bound. Current athlete allocation incorporates candidate
 school/name/cohort material. Those facts establish implementation gaps, not authorization to
 weaken existing refusal, change IDs or claim stable multi-cohort runtime is implemented.
 [PROFILE-EXECUTION-V1](../PROFILE-EXECUTION-V1.md) describes the current narrower capability.
+
+The enrollment-only lifecycle-3 installation capability now exists and binds an immutable
+profile/resource configuration. It refuses generic execution before recovery or serving;
+it is not qualified ReusableProduction enrollment/execution. Lifecycle 4 is a separately
+scoped fresh capture qualification capability. Neither changes the forward lifecycle
+contract or certifies annual operation. See the
+[dated implementation record](../verification/2026-10-14-pr29-summary.md#installation-and-result-status).
 
 This ADR supersedes ADR-013's fresh-only lifecycle restriction solely for
 explicitly enrolled, qualified ReusableProduction operation. ADR-013 remains binding for

@@ -87,6 +87,54 @@ receipts before an operator deliberately cancels/kills it. Do not create replace
 to evade blocked/exhausted work. Historical API retirement responses and timeout incidents are in
 the verification ledger (removed 2026-10-09), not guarantees about every server version.
 
+### Local restart and continuation
+
+For the native local node (`/home/lewis/bin/restate-server`, per-run
+`var/<run>/restate.toml`), retain the node's durable base directory, store, browser
+profile, logs and publications. A fresh qualification uses a new store, unused
+run namespace, endpoint port and registration; reusable production must not use
+that procedure as an annual reset. Enrollment alone does not authorize production
+execution; [current capabilities](PROFILE-EXECUTION-V1.md) govern refusals.
+
+On full teardown, SIGTERM the endpoint first, await exit and retain the
+[drain certificate](OPERATIONS.md#shutdown-and-diagnostics). Then SIGTERM the
+native node and await its configured shutdown timeout. Confirm process exit and
+closed ports before handing ownership over. Never SIGKILL or delete durable state
+to manufacture a fresh or drained result.
+
+For a fresh isolated node, use unique node/cluster names and a new `base-dir`,
+start `restate-server --no-logo -c var/<run>/restate.toml`, and wait for its
+`Admin:` and `HTTP Ingress:` banners. Start the verified immutable endpoint
+against its intended store on an unused port, with an absolute browser-profile
+path and `/usr/bin/chromium` when that lane is configured. Athletic.net requires
+the [headed profile](OPERATIONS.md#browser-lane); a headless CLI flag does not
+waive that policy. Register the endpoint and inspect the discovered service
+catalog before submitting `census-service national --ingress <origin> --detach`.
+Observe through ingress/admin APIs, never a second opener of the live store.
+
+A legacy store accepts exactly one census run. A different `--revision` is
+refused; a duplicate submission of a journaled invocation does not apply changed
+parameters. Resubmitting `--source-parallelism`, `--delay-ms`, `--states`,
+`--refresh`, `--limit` or `--concurrency` is not evidence those values took effect.
+The CLI's `--resume <n>` requests one bounded continuation; `--drive` reattaches
+under new resume ordinals while work remains. Neither permits changing immutable
+scope or resetting exhausted logical source budgets.
+
+After an ownership-safe same-store binary handoff, inspect `GET /services` and
+`GET /deployments` for the actual deployment binding before continuation. A
+retained invocation can still be pinned to its old deployment even when the
+service advertises the new one. Local reports of deployment `DELETE` returning
+501 and cancellation returning 202 without releasing a paused owner are
+version-specific observations, not a universal retirement contract.
+
+Diagnose that owner through `sys_invocation`, retaining its ID, service key,
+status and pinned deployment. The documented operator alternatives are resume
+against a supported reachable deployment or deliberate
+`PATCH /invocations/<id>/kill` after accounting for retained effects and work;
+see [the invocation API](restate/invocation.md). Do not mass-kill, erase journals,
+or describe killing an invocation as graceful drain. A paused parent can block
+later jurisdiction submissions; a new resume ordinal alone does not release it.
+
 Store-backed handlers advertise long inactivity/abort timeouts; the browser uses SDK defaults.
 Queueing without journal progress consumes that budget. Increasing a timeout is not a substitute
 for bounded work, explicit checkpoints or supervised blocking effects.

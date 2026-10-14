@@ -5,6 +5,12 @@ Binding product architecture and engineering standards. Numbered sections and th
 The [decision register](docs/adr/README.md) records rationale and supersession;
 [the delivery plan](docs/NATIONAL-CENSUS-PLAN.md) owns unfinished work and acceptance.
 
+Document control: **binding target architecture; owner Main**. Organization follows
+[ISO/IEC/IEEE 42010:2022](https://www.iso.org/standard/74393.html) concepts, not a conformity claim:
+§§1–3 identify purpose, scope and stakeholder concerns; §§4–9 describe structural/runtime/data
+views; ADRs retain decision rationale; §§10–12 define constraints and acceptance.
+Implementation correspondence and observed gaps belong in dated evidence, not implied capability.
+
 ## 1. Mission
 
 Build the reusable, public-source-discovered high-school Track & Field / Cross Country
@@ -453,3 +459,8 @@ through the same implementation. Current single-run store binding, scalar workbo
 and configuration-only compilation do not certify annual production reuse. No lifecycle change
 waives applicable release obligations.
 [OPERATIONS.md](docs/OPERATIONS.md) is the runbook, not a competing project plan.
+
+The [2026-10-14 alignment review](docs/verification/2026-10-14-deep-codebase-review.md)
+records current redundancy, semantic gaps and executed checks against the identical final spec.
+Enrollment-only configuration and fresh capture qualification remain narrower than reusable
+execution; passing focused tests does not close the review's publication, identity or release holds.
