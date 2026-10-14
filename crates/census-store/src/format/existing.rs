@@ -9,7 +9,7 @@ pub(crate) enum OpenPurpose {
     LegacyExecution,
     InstallationControl,
     CaptureControl,
-    CaptureExecution,
+    CaptureExecution(census_domain::model::CaptureProtocolVersion),
 }
 
 impl Store {
@@ -46,7 +46,24 @@ impl Store {
     ) -> StoreResult<crate::CaptureQualificationStore> {
         let store = existing(
             root.as_ref(),
-            OpenPurpose::CaptureExecution,
+            OpenPurpose::CaptureExecution(census_domain::model::CaptureProtocolVersion::V1),
+            super::DEFAULT_CACHE_BYTES,
+        )?;
+        let record = crate::acquisition::qualification::declaration(
+            &store.db.snapshot(),
+            &store.meta,
+            &store.journal,
+            &store.store_format()?,
+        )?
+        .ok_or(crate::CaptureError::CaptureCapabilityMissing)?;
+        Ok(crate::CaptureQualificationStore::new(store, record))
+    }
+    pub fn open_capture_qualification_v2(
+        root: impl AsRef<Path>,
+    ) -> StoreResult<crate::CaptureQualificationStore> {
+        let store = existing(
+            root.as_ref(),
+            OpenPurpose::CaptureExecution(census_domain::model::CaptureProtocolVersion::V2),
             super::DEFAULT_CACHE_BYTES,
         )?;
         let record = crate::acquisition::qualification::declaration(
@@ -81,8 +98,15 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
         OpenPurpose::LegacyExecution | OpenPurpose::InstallationControl => {
             crate::acquisition::require_legacy(&capture)?
         }
-        OpenPurpose::CaptureControl | OpenPurpose::CaptureExecution if capture.is_none() => {
+        OpenPurpose::CaptureControl | OpenPurpose::CaptureExecution(_) if capture.is_none() => {
             return Err(crate::CaptureError::CaptureCapabilityMissing.into())
+        }
+        OpenPurpose::CaptureExecution(expected)
+            if capture
+                .as_ref()
+                .is_none_or(|record| record.protocol() != expected) =>
+        {
+            return Err(crate::CaptureError::CaptureProtocolUnsupported.into());
         }
         _ => {}
     }
@@ -140,13 +164,13 @@ fn finish_existing(
         format.lifecycle_revision,
     )?;
     match purpose {
-        OpenPurpose::LegacyExecution | OpenPurpose::CaptureExecution => {
+        OpenPurpose::LegacyExecution | OpenPurpose::CaptureExecution(_) => {
             crate::installation::require_legacy_execution(&state)?
         }
         OpenPurpose::InstallationControl | OpenPurpose::CaptureControl => {}
     }
     match purpose {
-        OpenPurpose::LegacyExecution | OpenPurpose::CaptureExecution => {
+        OpenPurpose::LegacyExecution | OpenPurpose::CaptureExecution(_) => {
             crate::ensure_dirs(root)?;
             Store::recover_opened(root.to_path_buf(), db, entities, journal, meta, receipts)
         }
