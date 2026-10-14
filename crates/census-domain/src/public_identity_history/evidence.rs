@@ -1,0 +1,56 @@
+use crate::model::{
+    serialized_digest, AcceptedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId,
+};
+use serde::Serialize;
+
+use super::{HistoryError, ReplayLimits};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub enum CandidateEvidenceKind {
+    SourceBound,
+    SamePerson,
+    Correction,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CandidateDecisionReference {
+    pub application_id: String,
+    pub evidence_digest: String,
+    pub kind: CandidateEvidenceKind,
+    pub members: Vec<AthleteCandidateId>,
+}
+
+impl CandidateDecisionReference {
+    pub fn from_accepted(
+        application: &AcceptedAthleteIdentity,
+        limits: ReplayLimits,
+    ) -> Result<Self, HistoryError> {
+        let record = application.record();
+        super::budget::accepted_reference(record, limits)?;
+        let kind = match record.kind {
+            AppliedIdentityKind::SourceBound => CandidateEvidenceKind::SourceBound,
+            AppliedIdentityKind::SamePerson => CandidateEvidenceKind::SamePerson,
+            AppliedIdentityKind::DifferentPerson => return Err(HistoryError::EvidenceMismatch),
+        };
+        Ok(Self {
+            application_id: record.id.clone(),
+            evidence_digest: serialized_digest(&(
+                "accepted-athlete-identity-reference-v1",
+                &record.id,
+                record.policy,
+                record.kind,
+                &record.members,
+                &record.canonical_id,
+                &record.case_id,
+                &record.verdict_digest,
+            ))
+            .map_err(|error| HistoryError::Encoding(error.to_string()))?,
+            kind,
+            members: record
+                .members
+                .iter()
+                .map(|member| member.subject.clone())
+                .collect(),
+        })
+    }
+}
