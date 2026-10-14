@@ -1,0 +1,1 @@
+{"version":1,"revision":1,"role":"identity","binding":"configuration_only","policy":{"evidence_rule":"captured_primary_or_independent_attested_person_keys_hard_contradictions_withheld","component_support":"existing_admissibility_profile_integration_pending","components":{"kind":"identity","acceptance_revision":1}},"runtime_execution":"not_certified"}

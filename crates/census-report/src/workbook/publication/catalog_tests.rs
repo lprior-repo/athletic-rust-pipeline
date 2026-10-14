@@ -150,7 +150,13 @@ fn dataset_admission_refuses_oversize_labels_before_every_candidate_skip() -> Te
         let error = bests::build_from_dataset(&dataset, &best_options())
             .err()
             .ok_or("hidden catalog error")?;
-        check!(matches!(error, ReportError::Catalog { source: CatalogError::LabelBytesExceeded, .. }));
+        check!(matches!(
+            error,
+            ReportError::Catalog {
+                source: CatalogError::LabelBytesExceeded,
+                ..
+            }
+        ));
     }
     Ok(())
 }

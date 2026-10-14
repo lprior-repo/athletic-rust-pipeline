@@ -1,7 +1,7 @@
 use super::artifacts;
 use anyhow::{bail, ensure, Context, Result};
 use census_crawl::milesplit::{parse_roster, parse_team_index, RosterVerdict, Site};
-use census_crawl::net::{Fetcher, FetchOptions};
+use census_crawl::net::{FetchOptions, Fetcher};
 use census_domain::UsJurisdiction;
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -93,7 +93,10 @@ pub fn run(args: Args) -> Result<()> {
     });
     artifacts::publish(&args.out, &manifest)?;
 
-    let absolute = args.out.canonicalize().context("canonicalizing manifest path")?;
+    let absolute = args
+        .out
+        .canonicalize()
+        .context("canonicalizing manifest path")?;
     println!("{}", absolute.display());
     Ok(())
 }

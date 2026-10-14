@@ -9,6 +9,7 @@ pub mod core_scope;
 pub mod error;
 pub mod jurisdiction;
 pub mod model;
+pub mod profile_execution;
 pub mod school_directory;
 pub mod school_index;
 

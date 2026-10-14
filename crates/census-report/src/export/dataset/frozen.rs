@@ -49,6 +49,8 @@ mod freeze_v2_tests;
 #[cfg(test)]
 mod historical_policy_tests;
 #[cfg(test)]
+mod job_ownership_tests;
+#[cfg(test)]
 mod preflight_tests;
 #[cfg(test)]
 mod resource_tests;

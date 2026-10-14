@@ -17,12 +17,14 @@ pub(super) fn bind(store: &Store, staged: &Staged) -> ReportResult<FrozenRoot> {
 
 pub(super) fn recover(
     store: &Store,
+    job: &str,
     directory: &Path,
     retained: &Retained,
     record: &InputRecord,
 ) -> ReportResult<FrozenRoot> {
     let objects_dir = objects::directory(directory);
     let manifest = open_manifest(&objects_dir, &retained.manifest)?;
+    ensure_job(&manifest, job)?;
     if let Err(error) = verify::verify_record(&objects_dir, &retained.manifest, &manifest, record) {
         if error.preserves_retained() {
             return Err(error.into());

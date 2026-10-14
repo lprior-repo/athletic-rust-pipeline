@@ -63,8 +63,9 @@ pub(super) fn workbook(original: &Path, target: &Path, mutation: &str) -> TestRe
 fn mutate_rows(name: &str, mutation: &str, rows: &mut Vec<Vec<Data>>) -> TestResult {
     match (name, mutation) {
         ("Review", "Review") => rows.retain(|row| {
-            row.first()
-                .is_none_or(|cell| !matches!(cell, Data::String(s) if s == "Recruiting event unresolved"))
+            row.first().is_none_or(
+                |cell| !matches!(cell, Data::String(s) if s == "Recruiting event unresolved"),
+            )
         }),
         ("Relays", "Relays") => rows.push(rows.get(1).ok_or("positive team relay")?.clone()),
         ("Relays", "relay_missing_members") => {
