@@ -1,9 +1,9 @@
-use crate::net::FetchOutcome;
 use census_domain::model::{EventKind, Gender, GradYear, Mark, SourceIdentity, TimingMethod};
 use serde::{Deserialize, Serialize};
 
 mod context;
 mod effect;
+mod outcome;
 mod parse;
 mod resource_error;
 mod retained;
@@ -12,6 +12,8 @@ mod row;
 mod tests;
 
 pub(crate) use effect::{acquisition_manifest_key, read_owned_meet, retained_parse_resource};
+pub(super) use outcome::OwnedInterpretationOutcome;
+pub use outcome::OwnedMeetOutcome;
 pub use parse::{
     parse_owned_meet, OwnedCaptureResourceFailure, OwnedCaptureRetention, OwnedDocumentFailure,
     OwnedMeetParseError, OwnedParseArithmetic, OwnedParseLocator, OwnedParseResource,
@@ -27,13 +29,6 @@ pub const OWNED_CAPTURE_PHASE: &str = "milesplit_owned_capture_v1";
 pub const OWNED_FIELDS: &str = "id,meetId,teamId,teamName,athleteId,firstName,lastName,gender,divisionId,divisionName,meetResultsId,meetResultsDivisionId,resultsDivisionId,gradYear,eventName,eventCode,eventDistance,round,roundName,heat,units,mark,place,windReading,profileUrl,statusCode";
 pub const MAX_OWNED_BODY_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_OWNED_ROWS: usize = 20_000;
-
-#[derive(Debug)]
-pub struct OwnedMeetOutcome {
-    pub capture: FetchOutcome,
-    pub provenance: crate::net::CaptureProvenance,
-    pub verdict: OwnedMeetVerdict,
-}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "disposition", rename_all = "snake_case")]

@@ -75,9 +75,9 @@ fn genuine_malformed_fetch_and_owned_read_keep_exact_historical_verdict_bytes() 
             let expected = b"{\"disposition\":\"malformed\",\"detail\":\"expected a JSON object with a data array\"}";
             let fetched = crate::milesplit::fetch_owned_meet(&ctx, &reference, &ctx.fetch_options()).await?;
             let read = read_owned_meet(&ctx, &reference).await?;
-            check!(eq; serde_json::to_vec(&fetched.verdict)?, expected);
-            check!(eq; serde_json::to_vec(&read.verdict)?, expected);
-            check!(eq; read.capture.body, body);
+            check!(eq; serde_json::to_vec(fetched.verdict())?, expected);
+            check!(eq; serde_json::to_vec(read.verdict())?, expected);
+            check!(eq; read.capture().body, body);
             let payloads = store.journal_payloads(OWNED_MEET_PHASE)?;
             let summary = payloads.first().ok_or("malformed capture receipt")?;
             check!(eq; summary["verdict"], serde_json::from_slice::<serde_json::Value>(expected)?);
@@ -102,7 +102,7 @@ fn resource_capture_network_metadata_to_cache_replay_preserves_every_original_pa
             let ctx = context(&store, &fetcher)?;
             let mut capture = fetch_owned_capture(&ctx, &reference, &ctx.fetch_options())
                 .await?
-                .capture;
+                .into_capture();
             capture.from_cache = false;
             let failure = match parse_owned_meet(&body, 725218) {
                 Err(OwnedMeetParseError::Resource(failure)) => failure,

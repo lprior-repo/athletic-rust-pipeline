@@ -20,9 +20,9 @@ async fn prepared_archive_recovers_through_real_owned_parser_with_zero_new_reque
     let fixture = fixture.reopen()?;
     let recovered = fixture.acquire(2026, false).await??;
     check!(eq; Fixture::occurrence(&recovered)?.attempt().ordinal().get(), 1);
-    check!(eq; recovered.capture.fetched_at, CAPTURED);
+    check!(eq; recovered.capture().fetched_at, CAPTURED);
     check!(matches!(
-        recovered.verdict,
+        recovered.verdict(),
         crate::milesplit::OwnedMeetVerdict::Parsed(_)
     ));
     check!(eq; fixture.count(), 1);

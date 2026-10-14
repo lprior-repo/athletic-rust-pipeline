@@ -1,0 +1,9 @@
+{
+  "archive": "history/provisional-20261014T091846Z.tar.gz",
+  "original_checksum_manifest_sha256": "12309a1e97352c2514f1e63d4086577d3c2b4c66995ee50afdf4bf548db01e01",
+  "original_manifest_unchanged": true,
+  "archived_checksum_manifest_matches": true,
+  "archived_artifacts_checked": 287,
+  "archived_artifacts_all_match": true,
+  "notes": "Read-only tar member verification; no extraction or original snapshot changes."
+}

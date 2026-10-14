@@ -27,7 +27,7 @@ pub(super) fn prepare(
     indices: &[usize],
     stats: &mut Stats,
 ) -> CrawlResult<Prepared> {
-    validate_capture(&input.acquired.outcome.capture, input.reference)?;
+    validate_capture(input.acquired.outcome.capture(), input.reference)?;
     let mut projected = Accumulator::reserved(indices.len())?;
     let Some(owned) = input
         .acquired

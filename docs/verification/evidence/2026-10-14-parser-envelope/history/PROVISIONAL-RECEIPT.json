@@ -1,0 +1,9 @@
+{
+  "archive": "provisional-20261014T091846Z.tar.gz",
+  "archive_sha256": "b8fd195de1fd89d1df4345828a1ac8d1bfebf92dce97a343a902a1586cc563b5",
+  "prior_frozen_at_utc": "2026-10-14T09:18:46.720190+00:00",
+  "prior_SHA256SUMS_sha256": "12309a1e97352c2514f1e63d4086577d3c2b4c66995ee50afdf4bf548db01e01",
+  "prior_manifest_sha256": "755dd90e940fe37492279418c6e45f5f9e0ebbbe4cf338b0ace95faf0571c9bf",
+  "unchanged_original_provisional": "/workspace/shared/athletic-recovery-20261013-2203/parser-envelope-evidence-proposal/docs-ready",
+  "interpretation": "Full original provisional docs-ready tree, handoff, append proposal and checksum verification log preserved inside archive. Its pending states are historical."
+}

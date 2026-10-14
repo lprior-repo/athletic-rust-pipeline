@@ -29,8 +29,8 @@ async fn actual_https_success_and_replay_without_eligible_cache_have_one_dispatc
     let fixture = fixture.reopen()?;
     let replay = fixture.acquire(2026, false).await??;
     check!(eq; Fixture::occurrence(&replay)?, &original);
-    check!(eq; replay.capture.fetched_at, CAPTURED);
-    check!(eq; replay.capture.body, BODY);
+    check!(eq; replay.capture().fetched_at, CAPTURED);
+    check!(eq; replay.capture().body, BODY);
     check!(eq; fixture.count(), 1);
     check!(eq; fixture.fetcher.stats().await.physical_requests(), 1);
     Ok(())
@@ -52,9 +52,9 @@ async fn actual_equal_byte_same_second_dispatches_keep_distinct_occurrences() ->
     )?;
     check!(eq; fixture.count(), 2);
     check!(Fixture::occurrence(&first)? != Fixture::occurrence(&second)?);
-    check!(eq; first.capture.fetched_at, CAPTURED);
-    check!(eq; second.capture.fetched_at, CAPTURED);
-    check!(eq; first.capture.content_digest, second.capture.content_digest);
+    check!(eq; first.capture().fetched_at, CAPTURED);
+    check!(eq; second.capture().fetched_at, CAPTURED);
+    check!(eq; first.capture().content_digest, second.capture().content_digest);
     let mut budget = census_store::AcquisitionReadBudget::for_work();
     let retained = fixture
         .store

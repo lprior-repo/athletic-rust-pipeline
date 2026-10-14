@@ -16,7 +16,7 @@ fn recording_route_retains_all_capture_chunks_before_source_receipts_are_applied
                 ..context(&store, &fetcher)?
             };
             let outcome = read_owned_meet(&ctx, &reference).await?;
-            check!(eq; outcome.capture.body, body);
+            check!(eq; outcome.capture().body, body);
             check!(eq;
                 store
                     .journal_keys(OWNED_MEET_PHASE)

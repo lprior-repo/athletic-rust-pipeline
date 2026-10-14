@@ -131,32 +131,17 @@ pub async fn fetch_owned_meet(
     options: &FetchOptions,
 ) -> CrawlResult<super::owned::OwnedMeetOutcome> {
     let acquired = fetch_owned_capture(ctx, reference, options).await?;
-    let capture = acquired.capture;
-    let meet_id = owned_meet_id(reference)?;
-    let verdict = if capture.status == 200 {
-        match super::owned::parse_owned_meet(&capture.body, meet_id) {
-            Ok(page) => super::owned::OwnedMeetVerdict::Parsed(page),
-            Err(super::owned::OwnedMeetParseError::Malformed(failure)) => {
-                super::owned::OwnedMeetVerdict::Malformed {
-                    detail: failure.to_string(),
-                }
-            }
-            Err(super::owned::OwnedMeetParseError::Resource(failure)) => {
-                return Err(
-                    super::owned::retained_parse_resource(ctx.fetcher, capture, failure)?.into(),
-                );
-            }
-        }
-    } else {
-        super::owned::OwnedMeetVerdict::Refused {
-            status: capture.status,
-        }
-    };
-    Ok(super::owned::OwnedMeetOutcome {
-        capture,
-        verdict,
-        provenance: acquired.provenance,
-    })
+    match super::owned::OwnedMeetOutcome::interpret(
+        acquired,
+        owned_meet_id(reference)?,
+        ctx.capture,
+    )? {
+        super::owned::OwnedInterpretationOutcome::Interpreted(outcome) => Ok(outcome),
+        super::owned::OwnedInterpretationOutcome::Resource { capture, failure } => Err(
+            super::owned::retained_parse_resource(ctx.fetcher, capture.into_capture(), failure)?
+                .into(),
+        ),
+    }
 }
 
 pub(super) fn owned_meet_id(reference: &ResultSetRef) -> CrawlResult<u64> {
@@ -198,10 +183,9 @@ pub(super) async fn fetch_owned_capture(
     match ctx.capture {
         crate::CaptureContext::LegacyMetadata => {
             ctx.store.require_legacy_structured_capture()?;
-            Ok(crate::net::CapturedFetch {
-                capture: ctx.fetcher.get(&url, &options).await?,
-                provenance: crate::net::CaptureProvenance::HistoricalAttemptUnknown,
-            })
+            Ok(crate::net::CapturedFetch::historical(
+                ctx.fetcher.get(&url, &options).await?,
+            ))
         }
         crate::CaptureContext::DurableV1(owner) => {
             let request = ctx.fetcher.acquisition_request(&url, &options)?;

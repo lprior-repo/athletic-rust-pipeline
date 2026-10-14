@@ -1,0 +1,184 @@
+{
+  "audit_kind": "ACTIVE ASSEMBLER ARTIFACT-INTEGRITY AUDIT ONLY; NOT FORMAL TRUTH-SERUM",
+  "performed_at_utc": "2026-10-14T09:48:40.158807+00:00",
+  "methods": "Read-only committed-source/current-snapshot SHA256 comparison; exact raw-log/status reconciliation; JSON/JSONL/link/signature checks; archived original checksum validation. No build/test/live source edit.",
+  "overall": "PASS",
+  "checks": [
+    {
+      "check": "38 commit-bound source files",
+      "status": "PASS",
+      "detail": {
+        "commit": "771072a1013017a4f8b4993751f801df16f789a2",
+        "tree": "1a811cfe9328a4e3eaf7b923f2c18671c540aaef"
+      }
+    },
+    {
+      "check": "38 current live paths match source pins",
+      "status": "PASS",
+      "detail": "No temporary probe included."
+    },
+    {
+      "check": "original frozen f5b3988 proposal retained",
+      "status": "PASS",
+      "detail": "f5b3988005370686f93c351949d804c0b8b72b3c6c6cd2f895cbd11c0d4b8aba"
+    },
+    {
+      "check": "36 original candidate hashes",
+      "status": "PASS",
+      "detail": 36
+    },
+    {
+      "check": "38 frozen review overlay hashes",
+      "status": "PASS",
+      "detail": 38
+    },
+    {
+      "check": "separate compile repair hashes",
+      "status": "PASS",
+      "detail": "6b81c436ef73da969cb7bab283b1926b5a471a83c8e2d2bb5cc747aa299ebfbb"
+    },
+    {
+      "check": "all original test failures preserved",
+      "status": "PASS",
+      "detail": {
+        "first_E0308": 7,
+        "later_SIGKILL_logs": 3
+      }
+    },
+    {
+      "check": "107 distinct observed tests; six new names included",
+      "status": "PASS",
+      "detail": {
+        "pass": 107,
+        "new_included": 6,
+        "skipped": 3195,
+        "slow": 1,
+        "run_id": "d5e5dd37-b1c4-4f09-914d-f8fca009052a"
+      }
+    },
+    {
+      "check": "nine named persistence/resource/buffer oracles",
+      "status": "PASS",
+      "detail": 9
+    },
+    {
+      "check": "eight API cases and 22 negative sites match evidence",
+      "status": "PASS",
+      "detail": {
+        "positive": 1,
+        "negative": 7,
+        "negative_expression_sites": 22
+      }
+    },
+    {
+      "check": "temporary probes removed and module registrations restored",
+      "status": "PASS",
+      "detail": "2026-10-14T09:32:58.653878+00:00"
+    },
+    {
+      "check": "all indexed raw logs present and terminal",
+      "status": "PASS",
+      "detail": {
+        "commands": 26,
+        "running": 0
+      }
+    },
+    {
+      "check": "failed static gates retained without scope waiver",
+      "status": "PASS",
+      "detail": {
+        "size": 14,
+        "seams": 3,
+        "overlap": 0,
+        "formal_acceptance": "REJECTED"
+      }
+    },
+    {
+      "check": "initial static failure and interruption retained",
+      "status": "PASS",
+      "detail": "Initial scan never executed; comments session interrupted130."
+    },
+    {
+      "check": "passing static counts match raw logs",
+      "status": "PASS",
+      "detail": {
+        "comments_files": 3002,
+        "panic_files": 3002,
+        "templates": 3
+      }
+    },
+    {
+      "check": "requested versus observed compiler settings are qualified",
+      "status": "PASS",
+      "detail": "Successful individual rustc argv not printed; exact requested controls preserved."
+    },
+    {
+      "check": "original provisional checksum unchanged",
+      "status": "PASS",
+      "detail": "12309a1e97352c2514f1e63d4086577d3c2b4c66995ee50afdf4bf548db01e01"
+    },
+    {
+      "check": "full prior provisional archive verifies",
+      "status": "PASS",
+      "detail": {
+        "files": 287,
+        "archive_sha256": "b8fd195de1fd89d1df4345828a1ac8d1bfebf92dce97a343a902a1586cc563b5"
+      }
+    },
+    {
+      "check": "JSON and JSONL parse",
+      "status": "PASS",
+      "detail": {
+        "JSON_files": 32,
+        "JSONL_records": 35,
+        "errors": []
+      }
+    },
+    {
+      "check": "current authored links resolve",
+      "status": "PASS",
+      "detail": []
+    },
+    {
+      "check": "merge-marker scan",
+      "status": "PASS",
+      "detail": []
+    },
+    {
+      "check": "bounded common secret-signature scan",
+      "status": "PASS",
+      "detail": {
+        "matches": [],
+        "limit": "Not universal secret certification; archived original separately verified."
+      }
+    }
+  ],
+  "acceptance_status": "REJECTED",
+  "blockers": [
+    {
+      "id": "PE-SIZE-14",
+      "disposition": "blocker",
+      "status": "OPEN",
+      "count": 14,
+      "evidence": "STATIC-GATE-RESULTS.json",
+      "scope": "Strict callable-size repository gate; zero overlap with 38 envelope paths; unchanged files do not waive failure."
+    },
+    {
+      "id": "PE-SEAMS-3",
+      "disposition": "blocker",
+      "status": "OPEN",
+      "count": 3,
+      "evidence": "STATIC-GATE-RESULTS.json",
+      "scope": "Module-seam repository gate; installation/contracts.rs to bootstrap; zero crate violations."
+    },
+    {
+      "id": "PE-AUDIT-MISSING",
+      "disposition": "blocker",
+      "status": "UNAVAILABLE_NOT_RUN",
+      "evidence": "truth-serum-report.md",
+      "scope": "Required active-context formal evidence audit unavailable; artifact-integrity checks are separate."
+    }
+  ],
+  "source_commit": "771072a1013017a4f8b4993751f801df16f789a2",
+  "formal_audit": "truth-serum unavailable; NOT RUN"
+}

@@ -1,7 +1,8 @@
+#[cfg(test)]
+use super::{parse_owned_meet, OwnedMeetParseError};
 use super::{
-    parse_owned_meet, OwnedCaptureResourceFailure, OwnedMeetOutcome, OwnedMeetParseError,
-    OwnedMeetVerdict, OwnedParseResourceFailure, OwnedResourceReceipt, OWNED_CAPTURE_PHASE,
-    OWNED_MEET_PHASE,
+    OwnedCaptureResourceFailure, OwnedMeetOutcome, OwnedMeetVerdict, OwnedParseResourceFailure,
+    OwnedResourceReceipt, OWNED_CAPTURE_PHASE, OWNED_MEET_PHASE,
 };
 use crate::milesplit::fetch::{fetch_owned_capture, owned_meet_id, owned_meet_url};
 use crate::milesplit::wire::ResultSetRef;
@@ -40,31 +41,22 @@ pub(crate) async fn read_owned_meet(
             return Err(error);
         }
     };
-    let capture = acquired.capture;
-    let verdict = if capture.status == 200 {
-        match parse_owned_meet(&capture.body, owned_meet_id(reference)?) {
-            Ok(page) => OwnedMeetVerdict::Parsed(page),
-            Err(OwnedMeetParseError::Malformed(failure)) => OwnedMeetVerdict::Malformed {
-                detail: failure.to_string(),
-            },
-            Err(OwnedMeetParseError::Resource(failure)) => {
-                return retain_limited_capture(ctx, reference, capture, failure.into());
+    let outcome =
+        match OwnedMeetOutcome::interpret(acquired, owned_meet_id(reference)?, ctx.capture)? {
+            super::OwnedInterpretationOutcome::Interpreted(outcome) => outcome,
+            super::OwnedInterpretationOutcome::Resource { capture, failure } => {
+                return retain_limited_capture(
+                    ctx,
+                    reference,
+                    capture.into_capture(),
+                    failure.into(),
+                );
             }
-        }
-    } else {
-        OwnedMeetVerdict::Refused {
-            status: capture.status,
-        }
-    };
-    let outcome = OwnedMeetOutcome {
-        capture,
-        verdict,
-        provenance: acquired.provenance,
-    };
+        };
     match record_outcome(ctx, reference, &outcome) {
         Ok(()) => Ok(outcome),
         Err(error @ CrawlError::Resource { .. }) => {
-            retain_limited_capture(ctx, reference, outcome.capture, error)
+            retain_limited_capture(ctx, reference, outcome.into_capture(), error)
         }
         Err(error) => Err(error),
     }
@@ -79,9 +71,9 @@ fn record_outcome(
     reference: &ResultSetRef,
     outcome: &OwnedMeetOutcome,
 ) -> CrawlResult<()> {
-    let key = content_key(reference, &outcome.capture);
-    let manifest = acquisition_manifest_key(owned_meet_id(reference)?, &outcome.capture)?;
-    capture::archive(ctx, &key, &manifest, &outcome.capture)?;
+    let key = content_key(reference, outcome.capture());
+    let manifest = acquisition_manifest_key(owned_meet_id(reference)?, outcome.capture())?;
+    capture::archive(ctx, &key, &manifest, outcome.capture())?;
     interpretation::record(ctx, &key, &manifest, outcome)
 }
 

@@ -94,14 +94,14 @@ fn typed_origin_roots_preserve_every_cause_and_ignore_all_retention_states() -> 
             for (failure, origin) in parse_origins()? {
                 check!(eq; failure.stable_origin().to_string(), origin);
                 check!(eq; failure.to_string(), origin);
-                let capture = crate::milesplit::fetch::fetch_owned_capture(&ctx, &reference, &ctx.fetch_options()).await?.capture;
+                let capture = crate::milesplit::fetch::fetch_owned_capture(&ctx, &reference, &ctx.fetch_options()).await?.into_capture();
                 let path = fetcher.cache_dir().join("archive").join("bodies")
                     .join(format!("{}.body", capture.content_digest));
                 let failure = failure.retain(capture, path, receipt);
                 check!(eq; failure.stable_origin().to_string(), origin);
                 assert_origin_root(&ctx, &reference, failure.into(), &origin, receipt)?;
             }
-            let capture = crate::milesplit::fetch::fetch_owned_capture(&ctx, &reference, &ctx.fetch_options()).await?.capture;
+            let capture = crate::milesplit::fetch::fetch_owned_capture(&ctx, &reference, &ctx.fetch_options()).await?.into_capture();
             let path = fetcher.cache_dir().join("archive").join("bodies")
                 .join(format!("{}.body", capture.content_digest));
             let failure = OwnedCaptureResourceFailure::new("recorded retained bytes", 101, 100, capture, path, receipt);

@@ -10,7 +10,7 @@ async fn historical_resource(body: &[u8], old_detail: String, locator: &str) -> 
     let mut capture =
         crate::milesplit::fetch::fetch_owned_capture(&ctx, &reference, &ctx.fetch_options())
             .await?
-            .capture;
+            .into_capture();
     capture.from_cache = false;
     let prefix = format!("725218/{}", capture.content_digest);
     let content_manifest = format!("{prefix}/manifest");

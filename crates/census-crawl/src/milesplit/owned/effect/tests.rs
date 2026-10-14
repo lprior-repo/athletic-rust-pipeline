@@ -64,7 +64,7 @@ fn seed(fetcher: &Fetcher, reference: &ResultSetRef, body: &[u8]) -> TestResult 
 }
 
 fn parsed(outcome: &OwnedMeetOutcome) -> TestResult<&super::super::OwnedMeetPage> {
-    match &outcome.verdict {
+    match outcome.verdict() {
         OwnedMeetVerdict::Parsed(page) => Ok(page),
         other => Err(format!("expected parsed capture, got {other:?}").into()),
     }
@@ -84,7 +84,7 @@ fn successful_receipt_returns_current_owner_and_marks_for_downstream_replay() ->
             let payloads = store.journal_payloads(OWNED_MEET_PHASE)?;
             let captures = store.journal_payloads(OWNED_CAPTURE_PHASE)?;
             let replay = read_owned_meet(&ctx, &reference).await?;
-            check!(eq; replay.verdict, first.verdict);
+            check!(eq; replay.verdict(), first.verdict());
             let spann = parsed(&replay)?
                 .rows
                 .iter()
@@ -102,8 +102,8 @@ fn successful_receipt_returns_current_owner_and_marks_for_downstream_replay() ->
                     metres: census_domain::model::CentiMetres::new(419),
                 }
             );
-            check!(eq; replay.capture.body, body);
-            check!(eq; replay.capture.content_digest, content_digest(body));
+            check!(eq; replay.capture().body, body);
+            check!(eq; replay.capture().content_digest, content_digest(body));
             let receipt = payloads
                 .iter()
                 .find(|value| value["disposition"] == "parsed")
@@ -187,11 +187,7 @@ fn malformed_partial_and_refused_captures_never_receive_parse_success_receipts()
                 record_outcome(
                     &ctx,
                     &reference,
-                    &OwnedMeetOutcome {
-                        provenance: crate::net::CaptureProvenance::HistoricalAttemptUnknown,
-                        capture,
-                        verdict,
-                    },
+                    &OwnedMeetOutcome::historical_fixture(capture, verdict),
                 )?;
                 let digest = content_digest(body);
                 let summaries = store.journal_payloads(OWNED_MEET_PHASE)?;

@@ -1,5 +1,5 @@
 use super::*;
-use crate::net::{CaptureProvenance, CaptureTransportError, FetchError};
+use crate::net::{CaptureProvenanceView, CaptureTransportError, FetchError};
 use crate::CrawlError;
 
 #[tokio::test]
@@ -64,11 +64,11 @@ async fn actual_304_keeps_original_occurrence_date_and_eligible_pointer() -> Tes
             .push(("If-None-Match".into(), "\"capture-v1\"".into()));
         let second =
             crate::milesplit::fetch_owned_meet(&ctx, &fixture.reference()?, &options).await?;
-        check!(eq; second.capture.body, first.capture.body);
-        check!(eq; second.capture.fetched_at, first.capture.fetched_at);
+        check!(eq; second.capture().body, first.capture().body);
+        check!(eq; second.capture().fetched_at, first.capture().fetched_at);
         check!(eq; std::fs::read(fixture.cache_paths()?.1)?, pointer_before);
-        match &second.provenance {
-            CaptureProvenance::Retained {
+        match second.provenance() {
+            CaptureProvenanceView::Retained {
                 occurrence,
                 original,
             } => {
@@ -174,7 +174,7 @@ async fn eligible_cache_reuse_finishes_new_work_without_new_attempt_or_date() ->
     )?;
     let reused = fixture.acquire(2026, false).await??;
     check!(eq; Fixture::occurrence(&reused)?, Fixture::occurrence(&original)?);
-    check!(eq; reused.capture.fetched_at, CAPTURED);
+    check!(eq; reused.capture().fetched_at, CAPTURED);
     check!(eq; fixture.count(), 1);
     let keys = fixture
         .store

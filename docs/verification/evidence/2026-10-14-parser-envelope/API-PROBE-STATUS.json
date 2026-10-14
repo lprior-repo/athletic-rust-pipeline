@@ -1,0 +1,290 @@
+{
+  "count": 8,
+  "status": "PASS: all eight executed as specified; positive 01 compiled, negative 02-08 rejected every named forbidden operation.",
+  "oracles": "review/API-CHECKS.md",
+  "probes": [
+    {
+      "probe": "01_external_allowed.rs",
+      "path": "review/compile-probes/01_external_allowed.rs",
+      "sha256": "7c4664d2ce2e9d3f2f261038bccd4b8ea1c2057f6d28265d59f2fb32c706a905",
+      "expected": "COMPILE SUCCESS",
+      "actual": "PASS: allowed external consumer compiled",
+      "outer_exit": 0,
+      "raw_log": "raw/api-execution/01-external-allowed.log",
+      "log_sha256": "d8cc5ad0a721311654db1a3e74ef659a224d8a608741785e89cb2e28fa1939ba",
+      "source_binding": "Exact staged-source SHA256 from Root receipt, equal to frozen reviewed probe.",
+      "staged_source_sha256": "7c4664d2ce2e9d3f2f261038bccd4b8ea1c2057f6d28265d59f2fb32c706a905",
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "session_id": 22557
+    },
+    {
+      "probe": "02_external_recombination_rejected.rs",
+      "path": "review/compile-probes/02_external_recombination_rejected.rs",
+      "sha256": "031cee7ab253fa29856b1b90e290c92f6c9adcd2d6f73e97a8d4959cf2ba5ae3",
+      "expected": "COMPILER REJECTION OF NAMED FORBIDDEN EXPRESSIONS",
+      "actual": "PASS_EXPECTED_REJECTION",
+      "outer_exit": 1,
+      "raw_log": "raw/api-execution/02_external_recombination_rejected.log",
+      "log_sha256": "4ea4550e65b5070f336d57666810de2397dc9da37c806cbe6bb008ac6f297e95",
+      "staged_source_sha256": "031cee7ab253fa29856b1b90e290c92f6c9adcd2d6f73e97a8d4959cf2ba5ae3",
+      "staged_source_hash_file": "raw/api-execution/02_external_recombination_rejected.source-sha256",
+      "exit_file": "raw/api-execution/02_external_recombination_rejected.exit",
+      "diagnostics": [
+        {
+          "operation": "CapturedFetch destructure",
+          "source_line": 5,
+          "expected_code": "E0451",
+          "observed": true
+        },
+        {
+          "operation": "CapturedFetch reassembly",
+          "source_line": 6,
+          "expected_code": "E0451",
+          "observed": true
+        },
+        {
+          "operation": "OwnedMeetOutcome destructure",
+          "source_line": 10,
+          "expected_code": "E0451",
+          "observed": true
+        },
+        {
+          "operation": "OwnedMeetOutcome reassembly",
+          "source_line": 11,
+          "expected_code": "E0451",
+          "observed": true
+        }
+      ],
+      "unexpected_baseline_failure": false,
+      "source_binding": "Exact staged-source SHA256 from Root receipt, equal to frozen reviewed probe.",
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "session_id": 48376
+    },
+    {
+      "probe": "03_external_mutation_rejected.rs",
+      "path": "review/compile-probes/03_external_mutation_rejected.rs",
+      "sha256": "0d06415b2212c3c29ac6a86c99fa404818bee4e4f19e4968c2d23301b463e261",
+      "expected": "COMPILER REJECTION OF NAMED FORBIDDEN EXPRESSIONS",
+      "actual": "PASS_EXPECTED_REJECTION",
+      "outer_exit": 1,
+      "raw_log": "raw/api-execution/03_external_mutation_rejected.log",
+      "log_sha256": "9bbb5b24f8c5167b733c8148a79dab3c114415fc83a321c9edd9730c1a06d6f3",
+      "staged_source_sha256": "0d06415b2212c3c29ac6a86c99fa404818bee4e4f19e4968c2d23301b463e261",
+      "staged_source_hash_file": "raw/api-execution/03_external_mutation_rejected.source-sha256",
+      "exit_file": "raw/api-execution/03_external_mutation_rejected.exit",
+      "diagnostics": [
+        {
+          "operation": "capture body mutation",
+          "source_line": 4,
+          "expected_code": "E0596",
+          "observed": true
+        },
+        {
+          "operation": "interpreted capture body mutation",
+          "source_line": 5,
+          "expected_code": "E0596",
+          "observed": true
+        },
+        {
+          "operation": "parsed verdict row mutation",
+          "source_line": 7,
+          "expected_code": "E0596",
+          "observed": true
+        },
+        {
+          "operation": "owner-restricted release",
+          "source_line": 9,
+          "expected_code": "E0624",
+          "observed": true
+        }
+      ],
+      "unexpected_baseline_failure": false,
+      "source_binding": "Exact staged-source SHA256 from Root receipt, equal to frozen reviewed probe.",
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "session_id": 48376
+    },
+    {
+      "probe": "04_external_constructor_escape_rejected.rs",
+      "path": "review/compile-probes/04_external_constructor_escape_rejected.rs",
+      "sha256": "d35f2efb61c4e02b8021ca6373e7fc6bc605071cd4fcdaa8a1743d965c3d4b66",
+      "expected": "COMPILER REJECTION OF NAMED FORBIDDEN EXPRESSIONS",
+      "actual": "PASS_EXPECTED_REJECTION",
+      "outer_exit": 1,
+      "raw_log": "raw/api-execution/04_external_constructor_escape_rejected.log",
+      "log_sha256": "115c1c0e82a7a809b61e41d209dbafa8a483c6980dba9b5c44225400ccdb1682",
+      "staged_source_sha256": "d35f2efb61c4e02b8021ca6373e7fc6bc605071cd4fcdaa8a1743d965c3d4b66",
+      "staged_source_hash_file": "raw/api-execution/04_external_constructor_escape_rejected.source-sha256",
+      "exit_file": "raw/api-execution/04_external_constructor_escape_rejected.exit",
+      "diagnostics": [
+        {
+          "operation": "consuming parser parts",
+          "source_line": 4,
+          "expected_code": "E0624",
+          "observed": true
+        },
+        {
+          "operation": "crate-private historical wrapper",
+          "source_line": 5,
+          "expected_code": "E0624",
+          "observed": true
+        },
+        {
+          "operation": "production fixture absent",
+          "source_line": 7,
+          "expected_code": "E0599",
+          "observed": true
+        }
+      ],
+      "unexpected_baseline_failure": false,
+      "source_binding": "Exact staged-source SHA256 from Root receipt, equal to frozen reviewed probe.",
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "session_id": 48376
+    },
+    {
+      "probe": "05_external_trusted_traits_rejected.rs",
+      "path": "review/compile-probes/05_external_trusted_traits_rejected.rs",
+      "sha256": "6517a995ea099fd45376176d9b3f3f9836cc64194dbec19a74702f831e35718b",
+      "expected": "COMPILER REJECTION OF NAMED FORBIDDEN EXPRESSIONS",
+      "actual": "PASS_EXPECTED_REJECTION",
+      "outer_exit": 1,
+      "raw_log": "raw/api-execution/05_external_trusted_traits_rejected.log",
+      "log_sha256": "c08f28d4ce5ff3be2f8281798cea4b48d658c5ee411a20ba86733b1d8bdff716",
+      "staged_source_sha256": "6517a995ea099fd45376176d9b3f3f9836cc64194dbec19a74702f831e35718b",
+      "staged_source_hash_file": "raw/api-execution/05_external_trusted_traits_rejected.source-sha256",
+      "exit_file": "raw/api-execution/05_external_trusted_traits_rejected.exit",
+      "diagnostics": [
+        {
+          "operation": "CapturedFetch Deserialize",
+          "source_line": 4,
+          "expected_code": "E0277",
+          "observed": true
+        },
+        {
+          "operation": "OwnedMeetOutcome Deserialize",
+          "source_line": 5,
+          "expected_code": "E0277",
+          "observed": true
+        },
+        {
+          "operation": "CapturedFetch Default",
+          "source_line": 6,
+          "expected_code": "E0277",
+          "observed": true
+        },
+        {
+          "operation": "OwnedMeetOutcome Default",
+          "source_line": 7,
+          "expected_code": "E0277",
+          "observed": true
+        },
+        {
+          "operation": "CapturedFetch From<FetchOutcome>",
+          "source_line": 8,
+          "expected_code": "E0277",
+          "observed": true
+        },
+        {
+          "operation": "OwnedMeetOutcome From<FetchOutcome>",
+          "source_line": 9,
+          "expected_code": "E0277",
+          "observed": true
+        }
+      ],
+      "unexpected_baseline_failure": false,
+      "source_binding": "Exact staged-source SHA256 from Root receipt, equal to frozen reviewed probe.",
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "session_id": 48376
+    },
+    {
+      "probe": "06_external_retained_state_rejected.rs",
+      "path": "review/compile-probes/06_external_retained_state_rejected.rs",
+      "sha256": "b3db1e6c8967869ff3d612294b2479f11747bd9b35386e9be1ef132b069573ce",
+      "expected": "COMPILER REJECTION OF NAMED FORBIDDEN EXPRESSIONS",
+      "actual": "PASS_EXPECTED_REJECTION",
+      "outer_exit": 1,
+      "raw_log": "raw/api-execution/06_external_retained_state_rejected.log",
+      "log_sha256": "7256adfc8aeea951568d90ab30769970449962562731bca849b2cecf6d54ba1c",
+      "staged_source_sha256": "b3db1e6c8967869ff3d612294b2479f11747bd9b35386e9be1ef132b069573ce",
+      "staged_source_hash_file": "raw/api-execution/06_external_retained_state_rejected.source-sha256",
+      "exit_file": "raw/api-execution/06_external_retained_state_rejected.exit",
+      "diagnostics": [
+        {
+          "operation": "opaque retained provenance type",
+          "source_line": 1,
+          "expected_code": "E0603",
+          "observed": true
+        }
+      ],
+      "unexpected_baseline_failure": false,
+      "source_binding": "Exact staged-source SHA256 from Root receipt, equal to frozen reviewed probe.",
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "session_id": 48376
+    },
+    {
+      "probe": "07_internal_sibling_recombination_rejected.rs",
+      "path": "review/compile-probes/07_internal_sibling_recombination_rejected.rs",
+      "sha256": "f8b949f001e78026c75432cab30116776b81a3dc4656a8f604e66367c0fe18f4",
+      "expected": "COMPILER REJECTION OF NAMED FORBIDDEN EXPRESSIONS",
+      "actual": "PASS_EXPECTED_REJECTION",
+      "staged_source_sha256": "f8b949f001e78026c75432cab30116776b81a3dc4656a8f604e66367c0fe18f4",
+      "source_binding": "Exact staged-source SHA256 from Root receipt, equal to frozen reviewed probe.",
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "session_id": 9301,
+      "outer_exit": 1,
+      "raw_log": "raw/api-execution/07_internal_sibling_recombination_rejected.log",
+      "log_sha256": "bc21241278df6052b6c53ac334e76c076f8ad878d211625c9f6eb8a927150566",
+      "staged_source_hash_file": "raw/api-execution/07_internal_sibling_recombination_rejected.source-sha256",
+      "exit_file": "raw/api-execution/07_internal_sibling_recombination_rejected.exit",
+      "diagnostics": [
+        {
+          "operation": "CapturedFetch field assignment",
+          "source_line": 6,
+          "expected_code": "E0616",
+          "observed": true
+        },
+        {
+          "operation": "OwnedMeetOutcome verdict assignment",
+          "source_line": 10,
+          "expected_code": "E0616",
+          "observed": true
+        },
+        {
+          "operation": "opaque retained mint",
+          "source_line": 14,
+          "expected_code": "E0624",
+          "observed": true
+        }
+      ],
+      "normal_library_rejection": true,
+      "unexpected_baseline_failure": false
+    },
+    {
+      "probe": "08_milesplit_production_fixture_rejected.rs",
+      "path": "review/compile-probes/08_milesplit_production_fixture_rejected.rs",
+      "sha256": "5508a61c7189fac53f6477b9e3ec8c88d836bbf72f04ea95da9a0276bf804c42",
+      "expected": "COMPILER REJECTION OF NAMED FORBIDDEN EXPRESSIONS",
+      "actual": "PASS_EXPECTED_REJECTION",
+      "staged_source_sha256": "5508a61c7189fac53f6477b9e3ec8c88d836bbf72f04ea95da9a0276bf804c42",
+      "source_binding": "Exact staged-source SHA256 from Root receipt, equal to frozen reviewed probe.",
+      "command": "timeout --signal=INT --kill-after=10s 900s env -u CI tools/moon-local run pipeline:check -- --jobs 1",
+      "session_id": 9301,
+      "outer_exit": 1,
+      "raw_log": "raw/api-execution/08_milesplit_production_fixture_rejected.log",
+      "log_sha256": "f9c8dce86a39813a00dc07f518dd049fdea7e133b2e9a1ad1d9479abb6622c10",
+      "staged_source_hash_file": "raw/api-execution/08_milesplit_production_fixture_rejected.source-sha256",
+      "exit_file": "raw/api-execution/08_milesplit_production_fixture_rejected.exit",
+      "diagnostics": [
+        {
+          "operation": "synthetic fixture absent from normal production MileSplit library",
+          "source_line": 5,
+          "expected_code": "E0599",
+          "observed": true
+        }
+      ],
+      "normal_library_rejection": true,
+      "unexpected_baseline_failure": false
+    }
+  ],
+  "production_source_exclusion": "Temporary probe staging is excluded from the 38 committed production source paths and is not copied into source/.",
+  "post_probe_cleanup": "PASS: temporary files absent, registrations restored, clean check and format pass; API-CLEANUP-RECEIPT.json"
+}

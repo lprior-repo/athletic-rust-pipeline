@@ -110,10 +110,10 @@ async fn archive_lock_order_current_v1_recovery_publishes_under_one_archive_guar
         drop(observation);
         check!(eq; *events.borrow(), vec![LockEvent::BeforeAcquire, LockEvent::Acquired, LockEvent::EligibleAcquired]);
         check!(eq; Fixture::occurrence(&recovered)?.attempt().ordinal().get(), 1);
-        check!(eq; recovered.capture.fetched_at, CAPTURED);
-        check!(eq; recovered.capture.body, BODY);
+        check!(eq; recovered.capture().fetched_at, CAPTURED);
+        check!(eq; recovered.capture().body, BODY);
         check!(matches!(
-            recovered.verdict,
+            recovered.verdict(),
             crate::milesplit::OwnedMeetVerdict::Parsed(_)
         ));
         check!(eq; fixture.count(), requests);

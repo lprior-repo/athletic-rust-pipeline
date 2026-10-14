@@ -172,7 +172,7 @@ impl Run {
         self.stats.peak_capture_bytes = self
             .stats
             .peak_capture_bytes
-            .max(meet.outcome.capture.bytes);
+            .max(meet.outcome.capture().bytes);
         meet.release_body();
         self.owned = Some(ActiveMeet { key, meet });
         Ok(())

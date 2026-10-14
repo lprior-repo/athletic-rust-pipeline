@@ -46,11 +46,7 @@ fn seed_history(
     record_outcome(
         &staged,
         reference,
-        &OwnedMeetOutcome {
-            provenance: crate::net::CaptureProvenance::HistoricalAttemptUnknown,
-            capture,
-            verdict: OwnedMeetVerdict::Parsed(page),
-        },
+        &OwnedMeetOutcome::historical_fixture(capture, OwnedMeetVerdict::Parsed(page)),
     )?;
     let mut batch = store.write_batch();
     for entry in recording.drain().journal {
@@ -77,7 +73,7 @@ fn xc_interpretation_allocates_v4_and_preserves_v3_rows_and_v1_capture() -> Test
             let ctx = context(&store, &fetcher)?;
             let capture = fetch_owned_capture(&ctx, &reference, &ctx.fetch_options())
                 .await?
-                .capture;
+                .into_capture();
             seed_history(&store, &ctx, &reference, capture)?;
             let history = snapshot(&store, HISTORICAL_PHASE)?;
             let raw = snapshot(&store, OWNED_CAPTURE_PHASE)?;
@@ -102,7 +98,7 @@ fn xc_interpretation_allocates_v4_and_preserves_v3_rows_and_v1_capture() -> Test
             drop(store);
             let store = Store::open(dir.path().join("store"))?;
             let replay = read_owned_meet(&context(&store, &fetcher)?, &reference).await?;
-            check!(eq; replay.verdict, current.verdict);
+            check!(eq; replay.verdict(), current.verdict());
             check!(eq; snapshot(&store, OWNED_MEET_PHASE)?, interpreted);
             check!(eq; snapshot(&store, HISTORICAL_PHASE)?, history);
             check!(eq; snapshot(&store, OWNED_CAPTURE_PHASE)?, raw);

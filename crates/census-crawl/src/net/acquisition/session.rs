@@ -153,7 +153,7 @@ impl<'a> CaptureSession<'a> {
 
     pub(in crate::net) fn provenance(self) -> Result<CaptureProvenance, FetchError> {
         match self {
-            Self::Legacy => Ok(CaptureProvenance::HistoricalAttemptUnknown),
+            Self::Legacy => Ok(CaptureProvenance::historical()),
             Self::Adopted(adopted) => match adopted.stage {
                 Stage::Complete(provenance) => Ok(provenance),
                 _ => Err(CaptureTransportError::DispatchConsumed.into()),

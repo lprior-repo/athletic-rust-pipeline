@@ -16,9 +16,9 @@ pub(super) fn context(input: &Input<'_>, metadata: &FetchOutcome) -> CrawlResult
         &metadata.response_url,
         &metadata.fetched_at,
         &metadata.content_type,
-        &input.acquired.outcome.capture.url,
-        &input.acquired.outcome.capture.response_url,
-        &input.acquired.outcome.capture.fetched_at,
+        &input.acquired.outcome.capture().url,
+        &input.acquired.outcome.capture().response_url,
+        &input.acquired.outcome.capture().fetched_at,
         &input.performance_as_of,
     ))
 }

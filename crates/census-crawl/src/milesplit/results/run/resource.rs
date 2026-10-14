@@ -48,7 +48,7 @@ impl Run {
         performance_as_of: chrono::NaiveDate,
     ) -> serde_json::Value {
         let owned = match &self.owned {
-            Some(ActiveMeet { meet, .. }) => capture::provenance(&meet.outcome.capture),
+            Some(ActiveMeet { meet, .. }) => capture::provenance(meet.outcome.capture()),
             None => match resource_capture(error) {
                 Some(captured) => capture::provenance(captured),
                 None => serde_json::Value::Null,
@@ -71,7 +71,7 @@ impl Run {
     }
     fn resource_locator(&self, url: &str, error: &CrawlError, receipt: &str) -> String {
         let owned = match &self.owned {
-            Some(ActiveMeet { meet, .. }) => meet.outcome.capture.content_digest.as_str(),
+            Some(ActiveMeet { meet, .. }) => meet.outcome.capture().content_digest.as_str(),
             None => resource_capture(error)
                 .map_or("unacquired", |capture| capture.content_digest.as_str()),
         };

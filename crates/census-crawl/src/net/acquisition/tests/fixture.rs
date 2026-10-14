@@ -182,8 +182,8 @@ impl Fixture {
     pub(crate) fn occurrence(
         outcome: &crate::milesplit::OwnedMeetOutcome,
     ) -> TestResult<&AcquisitionOccurrenceRefV1> {
-        match &outcome.provenance {
-            crate::net::CaptureProvenance::Retained { occurrence, .. } => Ok(occurrence),
+        match outcome.provenance() {
+            crate::net::CaptureProvenanceView::Retained { occurrence, .. } => Ok(occurrence),
             _ => Err("historical provenance on adopted capture".into()),
         }
     }

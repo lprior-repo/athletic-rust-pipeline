@@ -42,7 +42,7 @@ pub(super) fn context(
     metadata: &FetchOutcome,
 ) -> CrawlResult<serde_json::Value> {
     let reference = input.reference;
-    let (completeness, ownership_complete) = match &input.acquired.outcome.verdict {
+    let (completeness, ownership_complete) = match input.acquired.outcome.verdict() {
         OwnedMeetVerdict::Parsed(page) => (Some(page.completeness), page.ownership_complete()),
         _ => (None, false),
     };
@@ -50,10 +50,10 @@ pub(super) fn context(
         "meet": reference.meet_id, "rsid": reference.rsid, "source_url": reference.url,
         "performance_as_of": input.performance_as_of,
         "source_instance": reference.site.source_id(), "jurisdiction": reference.site.jurisdiction(),
-        "capture": capture::provenance(&input.acquired.outcome.capture),
+        "capture": capture::provenance(input.acquired.outcome.capture()),
         "raw_metadata_capture": capture::provenance(metadata),
         "raw_metadata_archive": capture::metadata_provenance(reference, metadata)?,
-        "owned_capture_archive": crate::milesplit::owned::acquisition_manifest_key(crate::milesplit::fetch::owned_meet_id(reference)?, &input.acquired.outcome.capture)?,
+        "owned_capture_archive": crate::milesplit::owned::acquisition_manifest_key(crate::milesplit::fetch::owned_meet_id(reference)?, input.acquired.outcome.capture())?,
         "parser_revision": PARSER_REVISION, "schema_revision": RESULT_SET_PHASE,
         "raw_rejections": input.page.skipped, "raw_grade_issues": input.page.grade_issues,
         "raw_rows_role": "metadata only", "source_completeness": completeness,
@@ -73,10 +73,10 @@ pub(super) fn failure(
         "meet": reference.meet_id, "rsid": reference.rsid, "source_url": reference.url,
         "performance_as_of": performance_as_of,
         "source_instance": reference.site.source_id(), "jurisdiction": reference.site.jurisdiction(),
-        "capture": capture::provenance(&acquired.outcome.capture),
+        "capture": capture::provenance(acquired.outcome.capture()),
         "raw_metadata_capture": metadata.map(capture::provenance),
         "raw_metadata_archive": metadata.map(|capture| capture::metadata_provenance(reference, capture)).transpose()?,
-        "owned_capture_archive": crate::milesplit::owned::acquisition_manifest_key(crate::milesplit::fetch::owned_meet_id(reference)?, &acquired.outcome.capture)?,
+        "owned_capture_archive": crate::milesplit::owned::acquisition_manifest_key(crate::milesplit::fetch::owned_meet_id(reference)?, acquired.outcome.capture())?,
         "parser_revision": PARSER_REVISION, "schema_revision": RESULT_SET_PHASE,
         "disposition": "metadata_unavailable", "document_rejection": reason,
         "source_observations": "retained in owned capture/interpretation journals", "ownership_complete": false,

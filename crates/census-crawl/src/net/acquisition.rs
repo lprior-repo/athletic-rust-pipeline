@@ -16,8 +16,22 @@ pub(super) use testing::CaptureInterruption;
 pub(crate) mod tests;
 pub(super) use session::CaptureSession;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CaptureProvenance {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CaptureProvenanceView<'a> {
+    HistoricalAttemptUnknown,
+    Retained {
+        occurrence: &'a AcquisitionOccurrenceRefV1,
+        original: &'a AcquisitionOccurrenceRefV1,
+    },
+}
+
+#[derive(Debug)]
+pub(crate) struct CaptureProvenance {
+    state: CaptureProvenanceState,
+}
+
+#[derive(Debug)]
+enum CaptureProvenanceState {
     HistoricalAttemptUnknown,
     Retained {
         occurrence: AcquisitionOccurrenceRefV1,
@@ -25,10 +39,70 @@ pub enum CaptureProvenance {
     },
 }
 
+impl CaptureProvenance {
+    fn historical() -> Self {
+        Self {
+            state: CaptureProvenanceState::HistoricalAttemptUnknown,
+        }
+    }
+
+    fn retained(
+        occurrence: AcquisitionOccurrenceRefV1,
+        original: AcquisitionOccurrenceRefV1,
+    ) -> Self {
+        Self {
+            state: CaptureProvenanceState::Retained {
+                occurrence,
+                original,
+            },
+        }
+    }
+
+    pub(crate) fn view(&self) -> CaptureProvenanceView<'_> {
+        match &self.state {
+            CaptureProvenanceState::HistoricalAttemptUnknown => {
+                CaptureProvenanceView::HistoricalAttemptUnknown
+            }
+            CaptureProvenanceState::Retained {
+                occurrence,
+                original,
+            } => CaptureProvenanceView::Retained {
+                occurrence,
+                original,
+            },
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct CapturedFetch {
-    pub capture: FetchOutcome,
-    pub provenance: CaptureProvenance,
+    capture: FetchOutcome,
+    provenance: CaptureProvenance,
+}
+
+impl CapturedFetch {
+    pub(crate) fn historical(capture: FetchOutcome) -> Self {
+        Self {
+            capture,
+            provenance: CaptureProvenance::historical(),
+        }
+    }
+
+    pub fn capture(&self) -> &FetchOutcome {
+        &self.capture
+    }
+
+    pub fn provenance(&self) -> CaptureProvenanceView<'_> {
+        self.provenance.view()
+    }
+
+    pub fn into_capture(self) -> FetchOutcome {
+        self.capture
+    }
+
+    pub(crate) fn into_parser_parts(self) -> (FetchOutcome, CaptureProvenance) {
+        (self.capture, self.provenance)
+    }
 }
 
 impl Fetcher {

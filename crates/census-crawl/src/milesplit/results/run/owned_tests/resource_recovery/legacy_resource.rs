@@ -11,7 +11,7 @@ async fn seed_legacy_resources(
     let mut captured =
         crate::milesplit::fetch::fetch_owned_capture(ctx, reference, &ctx.fetch_options())
             .await?
-            .capture;
+            .into_capture();
     captured.from_cache = false;
     let failure = match crate::milesplit::parse_owned_meet(body, 725218) {
         Err(OwnedMeetParseError::Resource(failure)) => failure,

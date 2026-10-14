@@ -1,0 +1,11 @@
+# Additive terminal focused evidence
+
+The original provisional remains unchanged with SHA256SUMS SHA256 `12309a1e97352c2514f1e63d4086577d3c2b4c66995ee50afdf4bf548db01e01`. A complete portable copy is archived under `history/`; its receipt records the archive hash and prior manifest hash. Historical pending/not-run states inside that archive and the original review are intentional.
+
+New terminal evidence is `raw/tests-fifth.log` plus the updated Root command receipt. It reports 107 passed, 1 slow, 3195 skipped, test duration 117.490s and total Moon duration 14m28.946s. The 107 distinct PASS names are partitioned exactly into 6 new envelope, 27 acquisition, 3 durable-capture, 40 owned-effect, 13 map, 5 receipt, 11 resource-recovery and 2 bounded-buffer tests. `TEST-RESULTS.json` records every name, ordinal and observed duration. `NAMED-ORACLE-RESULTS.json` verifies all nine specially named parity/resource/buffer oracles.
+
+All four prior failures remain intact. A later successful run establishes the selected behavior result; it does not retroactively convert failed attempts into passes or establish why rustc was killed. No test selection or source assertion was weakened. The changed compiler debug/thread settings are explicit.
+
+All eight API probes executed their expected outcomes: one allowed external consumer compiled; seven negative snippets rejected every named forbidden expression (22 mapped diagnostic sites). Temporary probe paths are absent, both module-registration files match committed bytes, and clean check/format passed. API-RESULTS.md and API-CLEANUP-RECEIPT.json retain the evidence. Production source remains the exact 38 committed paths. Initial xtask scan prerequisite compilation failed and comments was interrupted. Terminal retry results are strict-size FAIL14, comments PASS3002, seams FAIL3module/0crate, and panic-extraction PASS3002files+3templates. Failure paths are outside the 38-path envelope delta and unchanged across its source commit; repository gate failures remain open.
+
+Formal acceptance status is REJECTED while the size and module-seam gate failures remain open. The unavailable active-context truth-serum audit is also disclosed. No broad release, complete specification or historical-all-stores claim is added.

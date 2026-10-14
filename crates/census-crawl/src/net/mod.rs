@@ -16,7 +16,8 @@ mod capture_error;
 mod client;
 #[cfg(test)]
 pub(crate) use acquisition::tests::fixture as capture_fixture;
-pub use acquisition::{CaptureProvenance, CapturedFetch};
+pub(crate) use acquisition::CaptureProvenance;
+pub use acquisition::{CaptureProvenanceView, CapturedFetch};
 pub use capture_error::CaptureTransportError;
 mod destination_guard;
 mod execute;

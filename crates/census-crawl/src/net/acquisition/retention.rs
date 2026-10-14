@@ -45,10 +45,10 @@ impl CaptureSession<'_> {
         #[cfg(test)]
         interruption.at(super::CaptureInterruption::AfterArchive)?;
         let occurrence = store.finish_acquisition_capture(prepared)?;
-        *stage = Stage::Complete(CaptureProvenance::Retained {
-            occurrence: occurrence.clone(),
-            original: occurrence.clone(),
-        });
+        *stage = Stage::Complete(CaptureProvenance::retained(
+            occurrence.clone(),
+            occurrence.clone(),
+        ));
         if metadata.status == 200 {
             let envelope = EligibleCacheV2::new(metadata.clone(), occurrence);
             publish_eligible(body_path, meta_path, &envelope, &archived_body)?;
@@ -87,10 +87,10 @@ impl CaptureSession<'_> {
             Ok((reference, body))
         })?;
         let meta = &pinned.envelope.metadata;
-        *stage = Stage::Complete(CaptureProvenance::Retained {
-            occurrence: result,
-            original: pinned.envelope.original_occurrence.clone(),
-        });
+        *stage = Stage::Complete(CaptureProvenance::retained(
+            result,
+            pinned.envelope.original_occurrence.clone(),
+        ));
         Ok(Some(FetchOutcome {
             url: meta.url.clone(),
             response_url: meta.response_url.clone(),

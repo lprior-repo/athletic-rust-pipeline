@@ -63,8 +63,8 @@ async fn durable_active_meet_reuses_one_grant_for_multiple_result_sets_and_repla
             .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
         check!(eq; first_ids, std::collections::BTreeSet::from([201782263, 201782806]));
         check!(eq; second_ids, std::collections::BTreeSet::from([201782277]));
-        check!(eq; acquired.outcome.capture.body.len(), 0);
-        check!(eq; acquired.outcome.capture.fetched_at, CAPTURED);
+        check!(eq; acquired.outcome.capture().body.len(), 0);
+        check!(eq; acquired.outcome.capture().fetched_at, CAPTURED);
         Ok::<_, Box<dyn std::error::Error + Send + Sync>>(
             Fixture::occurrence(&acquired.outcome)?.clone(),
         )
@@ -103,10 +103,10 @@ async fn prepared_recovery_enters_acquired_meet_and_real_parser_without_http() -
     run.acquire_owned(&ctx, &fixture.reference()?).await?;
     let acquired = acquired(&run.owned)?;
     check!(
-        matches!(&acquired.outcome.verdict, crate::milesplit::OwnedMeetVerdict::Parsed(page) if !page.rows.is_empty())
+        matches!(acquired.outcome.verdict(), crate::milesplit::OwnedMeetVerdict::Parsed(page) if !page.rows.is_empty())
     );
     check!(eq; Fixture::occurrence(&acquired.outcome)?.attempt().ordinal().get(), 1);
-    check!(eq; acquired.outcome.capture.fetched_at, CAPTURED);
+    check!(eq; acquired.outcome.capture().fetched_at, CAPTURED);
     check!(eq; fixture.count(), 1);
     Ok(())
 }

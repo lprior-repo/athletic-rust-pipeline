@@ -1386,3 +1386,7 @@ focused regressions and Moon source lint/all-target check/format passing at sour
 `0cde4e29ffbb95baa4d427b460a31dc0925dfd71`. Exact 16-file coverage, original and corrected
 reviews, and preservation/combined-fault oracles are retained. Full recovery v2 and release
 qualification remain unverified.
+
+## 2026-10-14 parser-envelope focused verification
+
+[Parser-envelope additive evidence](verification/2026-10-14-parser-envelope.md) binds 107 passing focused tests and Moon format/check/lint passes to source commit `771072a1013017a4f8b4993751f801df16f789a2`. All 38 source paths, six new envelope regressions, preserved producer/persistence/resource/buffer cases and original failures are pinned. The fifth passing invocation's compiler-thread/debug settings are explicit; 3195 unselected tests are disclosed. All eight API probes and clean restoration checks passed. Comments/panic-extraction passed; strict-size scan failed on 14 functions and module seams failed on 3 edges, all outside the envelope delta and still open. No all-historical-stores, release, full-specification, census or publication acceptance is claimed.
