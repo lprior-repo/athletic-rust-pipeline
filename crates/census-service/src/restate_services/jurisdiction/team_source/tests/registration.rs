@@ -95,6 +95,7 @@ fn registration_replay_preserves_three_transient_reservations_across_reopen() ->
                 message: format!("known failure {attempt}"),
             })
             .into(),
+            &[],
         )?;
 
         match finished {

@@ -98,7 +98,8 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         recording: None,
     };
     let outcome = dispatch(&context, args, observed_on).await;
-    super::source::print_blocked_hosts(&fetcher).await;
+    let access = super::source::print_blocked_hosts(&fetcher).await;
+    let outcome = super::source::combine_access(outcome, access);
     let report = outcome.with_context(|| format!("adapter {}", args.name))?;
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())

@@ -7,6 +7,8 @@ use std::collections::HashSet;
 
 use super::super::{teams_phase, SourceObject, StateProgress};
 
+mod failure;
+pub(super) use failure::retain_failure;
 mod ids;
 mod inputs;
 mod inspection;
@@ -137,31 +139,6 @@ fn retained(
             Ok::<_, CrawlError>(())
         })?;
     Ok(extra)
-}
-
-pub(super) fn retain_failure(
-    store: &Store,
-    jurisdiction: UsJurisdiction,
-    error: CrawlError,
-) -> CrawlError {
-    let saved = (|| {
-        let mut receipt =
-            load(store, jurisdiction)?.map_or(Receipt::default(), core::convert::identity);
-        receipt.disposition = Disposition::Partial;
-        receipt.errors = receipt
-            .errors
-            .checked_add(1)
-            .ok_or_else(|| CrawlError::Arithmetic {
-                detail: "team index error count overflow".to_string(),
-            })?;
-        save(store, jurisdiction, &receipt)
-    })();
-    match saved {
-        Ok(()) => error,
-        Err(persistence) => CrawlError::Invariant {
-            detail: format!("{error}; retaining team index failure also failed: {persistence}"),
-        },
-    }
 }
 
 pub(super) fn guard_progress(

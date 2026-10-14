@@ -22,14 +22,35 @@ impl From<Result<StageOutcome, JobError>> for Attempt {
 }
 
 impl Attempt {
-    pub(super) fn into_outcome(self, observed_on: &str) -> Result<AttemptOutcome, JobError> {
+    pub(super) fn into_outcome(
+        self,
+        observed_on: &str,
+    ) -> Result<
+        (
+            AttemptOutcome,
+            Option<census_report::report::ExportResourceError>,
+        ),
+        JobError,
+    > {
+        let mut resource = None;
+        let retain = |error, resource: &mut Option<census_report::report::ExportResourceError>| {
+            match error {
+                JobError::Resource { source, message } => {
+                    *resource = Some(source);
+                    JobError::Terminal { message }
+                }
+                error => error,
+            }
+        };
         let outcome = match self {
             Self::Completed(outcome) => AttemptOutcome::Completed { outcome },
-            Self::Incomplete { outcome, error } => failure(error, Some(outcome)),
-            Self::Failed(error) => failure(error, None),
+            Self::Incomplete { outcome, error } => {
+                failure(retain(error, &mut resource), Some(outcome))
+            }
+            Self::Failed(error) => failure(retain(error, &mut resource), None),
         };
         validate(&outcome, observed_on)?;
-        Ok(outcome)
+        Ok((outcome, resource))
     }
 }
 

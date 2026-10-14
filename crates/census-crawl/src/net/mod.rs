@@ -10,6 +10,7 @@ use destination_guard::DestinationGuard;
 
 pub mod bridge;
 
+mod access_conditions;
 mod acquisition;
 pub mod cache;
 mod capture_error;
@@ -204,13 +205,6 @@ impl Fetcher {
         let mut blocks = self.pacing.blocks.lock().await;
         blocks.insert(condition.id.clone(), condition.clone());
         condition
-    }
-
-    pub async fn access_conditions(&self) -> Vec<SourceAccessCondition> {
-        let blocks = self.pacing.blocks.lock().await;
-        let mut rows: Vec<SourceAccessCondition> = blocks.values().cloned().collect();
-        rows.sort_by(|left, right| left.id.cmp(&right.id));
-        rows
     }
 
     pub async fn record_refusal_evidence_loss(

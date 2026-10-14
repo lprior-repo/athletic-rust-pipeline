@@ -89,7 +89,7 @@ async fn actual_malformed_429_preserves_source_cooldown_and_blocks_new_work_befo
         serve(listener, replies, Arc::clone(&fixture.requests)),
         fetch
     )?;
-    let conditions = fixture.fetcher.access_conditions().await;
+    let conditions = fixture.fetcher.access_conditions().await?;
     check!(eq; conditions.len(), 1);
     check!(
         fixture

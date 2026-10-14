@@ -63,7 +63,7 @@ pub(super) async fn walk_milesplit(
     } = crawl;
     census::collect_state_teams(fetcher, store, jurisdiction, refresh)
         .await
-        .map_err(collect_error)?;
+        .map_err(super::super::JobError::from)?;
     census::team_index_report(store, jurisdiction).map_err(collect_error)
 }
 

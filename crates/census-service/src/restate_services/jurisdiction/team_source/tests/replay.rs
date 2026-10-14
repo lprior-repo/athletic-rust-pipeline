@@ -97,6 +97,7 @@ async fn replay(store: &Store, url: &str, handler: &str) -> TestResult {
         ledger::Attempt::Failed(JobError::Terminal {
             message: "source access refused".to_owned(),
         }),
+        &[],
     )?
     else {
         return Err("fixture failure did not settle".into());

@@ -166,7 +166,7 @@ mod tests {
         let after = fetcher.stats().await;
         check!(eq; before.requests, after.requests);
         check!(eq; before.cache_hits, after.cache_hits);
-        check!(eq; fetcher.access_conditions().await.len(), 1);
+        check!(eq; fetcher.access_conditions().await?.len(), 1);
         Ok(())
     }
 

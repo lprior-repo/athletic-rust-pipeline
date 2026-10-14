@@ -207,7 +207,7 @@ fn an_oversized_retry_after_is_refused_instead_of_parking_or_panicking() -> Test
                 matches!(outcome, Err(FetchError::Http { status: 429, .. })),
                 "the 429 keeps its status: {outcome:?}"
             );
-            let conditions = fetcher.access_conditions().await;
+            let conditions = fetcher.access_conditions().await?;
             let refused = conditions
                 .first()
                 .ok_or("the 429 must record an access condition")?;
@@ -265,7 +265,7 @@ fn retry_after_a_future_http_date_is_honoured_end_to_end() -> TestResult {
                 matches!(outcome, Err(FetchError::Http { status: 429, .. })),
                 "the 429 keeps its status: {outcome:?}"
             );
-            let conditions = fetcher.access_conditions().await;
+            let conditions = fetcher.access_conditions().await?;
             let limited = conditions
                 .first()
                 .ok_or("the 429 must record an access condition")?;

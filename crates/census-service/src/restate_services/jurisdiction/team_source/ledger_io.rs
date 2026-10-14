@@ -107,11 +107,12 @@ impl TeamsSource {
         attempt: u8,
         result: ledger::Attempt,
         admission: Arc<WorkAdmission>,
+        conditions: Vec<census_domain::model::SourceAccessCondition>,
     ) -> Result<ledger::Completion, JobError> {
         let store = Arc::clone(&self.owner.store);
         blocking(Arc::clone(self.jobs.region()), move || {
             let _admission = admission;
-            ledger::finish(&store, &operation, attempt, result)
+            ledger::finish(&store, &operation, attempt, result, &conditions)
         })
         .await
     }

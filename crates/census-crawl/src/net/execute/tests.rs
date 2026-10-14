@@ -275,14 +275,14 @@ fn one_blocking_status_mints_one_condition_for_the_host() -> TestResult {
             check!(eq; condition.status, 403);
 
             let now = crate::net::now_iso8601();
-            check!(eq; fetcher.access_conditions().await.len(), 1);
+            check!(eq; fetcher.access_conditions().await?.len(), 1);
             check!(fetcher.host_blocked(HOST, &now).await);
             check!(eq; fetcher.blocked_hosts(&now).await, vec![HOST.to_string()]);
 
             fetcher
                 .record_access_condition(HOST, AccessBlockKind::Forbidden, 403, None, "again")
                 .await;
-            check!(eq; fetcher.access_conditions().await.len(), 1);
+            check!(eq; fetcher.access_conditions().await?.len(), 1);
             Ok(())
         })
 }

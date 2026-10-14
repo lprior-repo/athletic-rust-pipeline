@@ -60,7 +60,8 @@ fn source_completion_refuses_error_bearing_or_changed_date_outcomes() -> TestRes
                     disposition: census_crawl::CollectionDisposition::Complete,
                     unfinished: Vec::new(),
                 })
-                .into()
+                .into(),
+                &[],
             ),
             Err(JobError::Terminal { .. })
         ));

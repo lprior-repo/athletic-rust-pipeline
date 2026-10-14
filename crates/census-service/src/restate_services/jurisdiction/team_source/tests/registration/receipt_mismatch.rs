@@ -62,6 +62,7 @@ fn admission_refuses_cached_digest_mismatch_with_acquisition_history() -> TestRe
             message: "retained acquisition failure".to_string(),
         })
         .into(),
+        &[],
     )?;
     check!(matches!(
         completion,
@@ -108,6 +109,7 @@ fn admission_refuses_cached_date_mismatch_with_acquisition_history() -> TestResu
             message: "retained acquisition failure".to_string(),
         })
         .into(),
+        &[],
     )?;
     check!(matches!(
         completion,

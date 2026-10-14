@@ -6,6 +6,7 @@ mod commit;
 mod conditional;
 mod journal;
 mod revision;
+mod source_access;
 
 pub use revision::{RevisionedApplication, StoreRevision};
 
@@ -34,6 +35,8 @@ pub struct StoreBatch<'s> {
     pages: Vec<Page>,
     journal: Vec<(Vec<u8>, Vec<u8>)>,
     replacements: Vec<Replacement>,
+    source_access: Vec<(String, Vec<u8>)>,
+    conditional_byte_limit: Option<usize>,
 }
 
 impl Store {
@@ -43,12 +46,17 @@ impl Store {
             pages: Vec::new(),
             journal: Vec::new(),
             replacements: Vec::new(),
+            source_access: Vec::new(),
+            conditional_byte_limit: None,
         }
     }
 }
 
 impl StoreBatch<'_> {
     pub fn is_empty(&self) -> bool {
-        self.pages.is_empty() && self.journal.is_empty() && self.replacements.is_empty()
+        self.pages.is_empty()
+            && self.journal.is_empty()
+            && self.replacements.is_empty()
+            && self.source_access.is_empty()
     }
 }

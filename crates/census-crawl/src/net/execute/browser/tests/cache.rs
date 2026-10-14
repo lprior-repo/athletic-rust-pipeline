@@ -26,7 +26,7 @@ fn a_failure_is_graded_as_the_transport_graded_it() -> TestResult {
                 "the transport's own retryable verdict survives the seat: {retryable:?}"
             );
             check!(
-                fetcher.access_conditions().await.is_empty(),
+                fetcher.access_conditions().await?.is_empty(),
                 "a transport fault is not an observation about the host"
             );
 
@@ -38,7 +38,7 @@ fn a_failure_is_graded_as_the_transport_graded_it() -> TestResult {
                 Ok(_) => return Err("a failure is not evidence".into()),
             };
             check!(!unavailable.retryable());
-            let rows = fetcher.access_conditions().await;
+            let rows = fetcher.access_conditions().await?;
             check!(eq; rows.len(), 1);
             check!(eq; rows[0].kind, AccessBlockKind::BrowserUnavailable);
 
@@ -61,7 +61,7 @@ fn a_failure_is_graded_as_the_transport_graded_it() -> TestResult {
                 Ok(_) => return Err("a failure is not evidence".into()),
             };
             check!(!human.retryable());
-            let rows = fetcher.access_conditions().await;
+            let rows = fetcher.access_conditions().await?;
             check!(eq; rows.len(), 2);
             let human_row = rows
                 .iter()

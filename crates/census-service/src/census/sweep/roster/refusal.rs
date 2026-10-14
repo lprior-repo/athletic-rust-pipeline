@@ -8,16 +8,22 @@ use super::super::rosters_phase;
 use super::super::units::RosterRun;
 use super::counts::Counts;
 use super::journal::{roster_journal, roster_operation, Journal};
+use super::Failure;
 
-pub(in crate::census::sweep) fn retain_error(
+pub(in crate::census::sweep) async fn retain_error(
+    fetcher: &census_crawl::net::Fetcher,
     store: &Store,
     team: &TeamRef,
     run: &RosterRun<'_>,
     error: CrawlError,
-) -> CrawlError {
-    match retain_refusal(store, team, run, &error) {
-        Ok(_) => error,
-        Err(persistence) => combined(error, persistence),
+) -> Failure {
+    let conditions = match fetcher.access_conditions().await {
+        Ok(conditions) => conditions,
+        Err(access) => return Failure::retention(error, access),
+    };
+    match retain_refusal(store, team, run, &error, &conditions) {
+        Ok(_) => Failure::Primary(error),
+        Err(access) => Failure::retention(error, access),
     }
 }
 
@@ -39,6 +45,7 @@ pub(crate) fn retain_refusal(
     team: &TeamRef,
     run: &RosterRun<'_>,
     error: &CrawlError,
+    conditions: &[census_domain::model::SourceAccessCondition],
 ) -> CrawlResult<Application> {
     let mut journal = match super::prior(store, team, run)? {
         Some(journal) => journal,
@@ -46,7 +53,7 @@ pub(crate) fn retain_refusal(
     };
     journal.refusal = Some(error.to_string());
     journal.disposition = disposition(error);
-    persist(store, team, run, &journal)
+    persist(store, team, run, &journal, conditions)
 }
 
 fn captured(
@@ -66,7 +73,7 @@ fn captured(
     let reason = error.to_string();
     journal.refusal = Some(reason.as_str());
     journal.disposition = disposition(error);
-    persist(store, team, run, &journal)
+    persist(store, team, run, &journal, &[])
 }
 
 fn persist(
@@ -74,6 +81,7 @@ fn persist(
     team: &TeamRef,
     run: &RosterRun<'_>,
     journal: &impl Serialize,
+    conditions: &[census_domain::model::SourceAccessCondition],
 ) -> CrawlResult<Application> {
     let digest = serialized_digest(journal).map_err(|source| CrawlError::Canonical {
         table: "milesplit_roster".to_string(),
@@ -87,10 +95,14 @@ fn persist(
     let phase = rosters_phase(run.site.jurisdiction(), run.school_year, run.revision);
     let key = format!("{state}:{}", team.id);
     let mut batch = store.write_batch();
+    super::super::access::stage(&mut batch, conditions)?;
     batch.journal_done(&phase, &key, journal)?;
     let application = batch.commit_once(&operation, &digest)?;
     if !application.written() {
-        store.journal_done(&phase, &key, journal)?;
+        let mut batch = store.write_batch();
+        super::super::access::stage(&mut batch, conditions)?;
+        batch.journal_done(&phase, &key, journal)?;
+        batch.commit()?;
     }
     Ok(application)
 }

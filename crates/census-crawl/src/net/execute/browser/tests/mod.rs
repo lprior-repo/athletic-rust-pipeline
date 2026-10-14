@@ -135,7 +135,7 @@ fn a_challenge_capture_is_archived_and_never_cached_as_the_source_answer() -> Te
         "the challenge page is retained as a refusal capture, byte for byte"
     );
 
-    let rows = fetcher.access_conditions().await;
+    let rows = fetcher.access_conditions().await?;
     check!(eq; rows.len(), 1, "one refusal, one row");
     check!(eq; rows[0].kind, AccessBlockKind::HumanRequired);
     check!(eq; rows[0].host, HOST);
@@ -207,7 +207,7 @@ fn a_capture_mints_the_evidence_an_http_body_would() -> TestResult {
                 u64::try_from(body.len())?,
             );
             check!(
-                fetcher.access_conditions().await.is_empty(),
+                fetcher.access_conditions().await?.is_empty(),
                 "a capture is the source's answer, not an observation about the host"
             );
             Ok(())
@@ -268,7 +268,7 @@ fn a_browser_refusal_status_is_archived_without_replacing_a_success() -> TestRes
             check!(eq; meta.status, 200);
             check!(eq; served, success);
             check!(eq;
-                fetcher.access_conditions().await.len(),
+                fetcher.access_conditions().await?.len(),
                 1,
                 "a throttled capture leaves one access condition"
             );
@@ -384,7 +384,7 @@ fn a_non_get_is_an_invariant_not_a_source_observation() -> TestResult {
                 "expected the routing fault, got {error:?}"
             );
             check!(
-                fetcher.access_conditions().await.is_empty(),
+                fetcher.access_conditions().await?.is_empty(),
                 "a routing fault is not an observation about the host"
             );
             Ok(())
@@ -418,7 +418,7 @@ fn a_host_with_no_lane_is_refused_by_name() -> TestResult {
                 }
                 other => return Err(format!("expected a lane refusal, got {other:?}").into()),
             }
-            let rows = fetcher.access_conditions().await;
+            let rows = fetcher.access_conditions().await?;
             check!(eq; rows.len(), 1, "one refusal, one row");
             check!(eq; rows[0].kind, AccessBlockKind::BrowserUnavailable);
             check!(eq; rows[0].host, HOST);
@@ -462,7 +462,7 @@ fn a_capture_whose_final_document_is_foreign_is_refused_before_evidence() -> Tes
                 "a refused capture is never cached as the source's answer"
             );
             check!(
-                fetcher.access_conditions().await.is_empty(),
+                fetcher.access_conditions().await?.is_empty(),
                 "a foreign document is not an observation about the host"
             );
 

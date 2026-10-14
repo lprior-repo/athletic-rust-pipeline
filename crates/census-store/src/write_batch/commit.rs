@@ -36,13 +36,14 @@ impl<'store> StoreBatch<'store> {
     }
 
     pub fn commit_once_with_effects(
-        self,
+        mut self,
         operation: &str,
         digest: &str,
         effects: Vec<ConditionalBatch<'store, '_>>,
     ) -> StoreResult<Application> {
         receipt::refuse_over_operation(operation, digest)?;
         conditional::admit(&self, &effects, operation)?;
+        self.conditional_byte_limit = Some(conditional::MAX_STAGED_BYTES);
         self.commit_inner(Some((operation, digest)), None, effects)?
             .ok_or_else(|| StoreError::Invariant {
                 detail: format!("conditional operation {operation} produced no receipt"),
@@ -77,14 +78,23 @@ impl<'store> StoreBatch<'store> {
         mut batch: OwnedWriteBatch,
     ) -> StoreResult<Option<Application>> {
         let store = self.store;
-        let (pages, journal, replacements) = (self.pages, self.journal, self.replacements);
+        self.admit_source_access()?;
+        let access_capacity = conditional::source_access_capacity(&self)?;
+        let (pages, journal, replacements, source_access) = (
+            self.pages,
+            self.journal,
+            self.replacements,
+            self.source_access,
+        );
         let written = once
             .map(|identity| first_application(store, identity, count_rows(&pages)?, &mut batch))
             .transpose()?;
         let reservations = plan_reservations(&pages, store)?;
         write_pages_staged(&pages, &reservations, store, &mut batch)?;
         write_journal(journal, store, &mut batch);
-        let generation = stage_generation(&pages, &replacements, store, &mut batch)?;
+        let access_rows =
+            super::source_access::stage(source_access, &pages, store, &mut batch, access_capacity)?;
+        let generation = stage_generation(&pages, &replacements, access_rows, store, &mut batch)?;
         write_replacements(replacements, store, &mut batch)?;
         #[cfg(feature = "native-fault-injection")]
         if let Some(Application::Written(receipt)) = &written {
@@ -120,10 +130,11 @@ impl<'store> StoreBatch<'store> {
 fn stage_generation(
     pages: &[Page],
     replacements: &[Replacement],
+    access_rows: usize,
     store: &Store,
     batch: &mut OwnedWriteBatch,
 ) -> StoreResult<Option<u64>> {
-    if pages.is_empty() && replacements.is_empty() {
+    if pages.is_empty() && replacements.is_empty() && access_rows == 0 {
         return Ok(None);
     }
     let generation = store.generations.next_entities()?;

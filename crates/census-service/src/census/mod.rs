@@ -28,6 +28,8 @@ pub use state::{
     Phase, RetainedFindings, SealCounts, SealError, SealEvidence, SealedCensus, SourceObject,
     Verification, WorkbookCheck,
 };
+pub(crate) use sweep::access;
+pub use sweep::access::{combined_failure as access_failure, SourceAccessFailure};
 pub(crate) use sweep::index::{inspect_rosters, RosterIndexEvidence};
 
 pub use sweep::index::team_index_report;
