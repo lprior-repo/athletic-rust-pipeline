@@ -182,6 +182,12 @@ tasks:
     env: *iterationEnvironment
     inputs: *rustCacheInputs
     options: *manualRustTask
+  run-scoped:
+    command: 'tools/moon-cargo --config .cargo/fast-iteration.toml run --all-features --locked --offline'
+    toolchains: [system]
+    env: *iterationEnvironment
+    inputs: *rustCacheInputs
+    options: *manualRustTask
   fetch:
     command: 'tools/moon-cargo fetch --locked --target x86_64-unknown-linux-gnu'
     toolchains: [system]

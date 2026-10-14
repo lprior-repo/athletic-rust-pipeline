@@ -279,6 +279,47 @@ compilation without changing profile bytes or identity.
 
 Home regression: `env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-domain --test profile_execution --no-tests fail`.
 
+## Representative-school postal readback alignment
+
+Changed files: `workbook/verify/postal.rs` and `workbook/recruiting/tests/postal.rs` plus
+its `postal/{aliases,captured,ownership}.rs` modules. Independent readback now selects the
+same displayed athlete school that the writer already selected under supported policies 18/19.
+The superseded alias-school pooling helper is removed. An alias's known address cannot fill the
+representative school's unknown address. School claims and historical performance affiliations
+are unchanged; this does not establish accepted current affiliation at an as-of cutoff.
+
+- PASS: Git applicability/whitespace checks and independent historical writer/source review.
+- Static review rejected an initial fixture that relabeled policy-19 input as policy 18 without
+  changing workbook Run Metrics. That invalid loop was removed; genuine historical replay remains
+  a separate obligation. This was a source-derived defect, not an executed failure.
+- Two proposed regressions use opposing athlete/school identity order and require exact XLSX/CSV
+  school, address and coach values, a blank unknown address, and retained separate Schools claims.
+  The split preserves all eight postal entrypoints and 23 assertions; existing ordering tests remain.
+- NOT RUN: expected-red/green execution, formatting, compilation, focused suite and genuine retained
+  policy-18 artifact verification for this change. Heavy checks remain resource-admission blocked.
+- Review: functional-core selection, DDD school ownership, historical compatibility, independent
+  assertion strength and source-size concerns reviewed. No async production surface changed.
+
+Focused home verification (not run for this slice):
+
+```sh
+env -u CI tools/moon-local run pipeline:fmt
+env -u CI tools/moon-local run pipeline:check -- --jobs 1
+env -u CI tools/moon-local run pipeline:lint-src
+env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-report --lib -E 'test(workbook::recruiting::tests::postal::) | test(export::postal::tests::) | test(bests::tests::historical_affiliation::) | test(bests::tests::historical_parent_scope::)' --no-capture --no-tests fail
+```
+
+A missing executable Moon route was found during command review. `pipeline:run-scoped` now
+uses the existing Cargo wrapper/environment/mutex to run the retained-reference verifier;
+there is no second verification implementation. This task and the following invocation are NOT RUN.
+From the repository root, substitute the original retained artifact paths and exact source pin:
+
+```sh
+env -u CI tools/moon-local run pipeline:run-scoped -- --jobs 1 -p census-report --example policy18_reference -- verify "$ORIGINAL_WORKBOOK" "$ORIGINAL_REFERENCE_JSON" "$ORIGINAL_SOURCE_PIN_SHA256"
+```
+
+Do not regenerate the policy-18 reference or retag a current workbook as historical.
+
 ## Canonical Cargo job override
 
 `tools/moon-cargo` accepts optional positive-decimal `MOON_RUST_BUILD_JOBS`, overriding Moon's
@@ -296,7 +337,46 @@ build engine/task was added. `xtask/README.md` documents task-hash identity and 
 Focused home checks (not run for this slice):
 
 ```sh
-env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p xtask --test moon_cargo --test-threads 1 --no-tests fail
+env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p xtask --test moon_cargo --no-capture --no-tests fail
 env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src
+env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:gate -- --release
+```
+
+### Postal repair qualification after recovery, October 14
+
+The recovered report delta at `8c4481db` passed the focused Moon selector above:
+**39 passed, 0 failed, 656 skipped**, Nextest
+`52bc3f2d-c814-44dc-b8b8-94da35b98b94`; test time 12.184 s, total task 8m26s.
+This includes opposing alias/representative school ordering, blank unknown address,
+postal provenance tampering and historical affiliation/parent scope. It supersedes
+only the focused-execution NOT RUN status above. Genuine retained policy-18 artifact
+verification, source Clippy and the full release/fault/fuzz/resource lanes remain NOT RUN.
+
+The delta was then reapplied as `ea370614` atop merged PR41 `cdd1bd4f`; the new
+`census-service/tests/offline_postal_worksheet.rs` target and its support modules
+exercise retained WIAA result bytes, offline collection/replay, NCES postal replay,
+XLSX/CSV checks and independent frozen-generation verification. At source `4ae4f835`, the new target PASSED: 1 passed, 0 failed, 0 skipped;
+Nextest `5b200194-9639-4fed-ae53-18ed1e3446e5`, 3.727 s test time,
+8m27s total task. Final combined-tree Moon formatting PASSED (8.955 s)
+and workspace all-target/all-feature check PASSED (2m0.528s). Source Clippy,
+full release/fault/fuzz/resource qualification remain NOT RUN.
+
+Fixture limits: archive links, name-based school seeds and the exact cache timestamp
+are test scaffolding. Three source-owned records represent two named people, with
+zero accepted aliases. The authentic NCES claim belongs to Albertville, Alabama;
+Wisconsin athlete addresses remain blank. This regression does not qualify real
+school discovery, exact WIAA acquisition time, deduplicated identities, current-school
+at-cutoff selection, the eight normalized output families or the selected UP/five-state
+profile. It never substitutes the comparison spreadsheet for discovery authority.
+
+Review covered fixture provenance, independent expected marks/locators, mutation
+sensitivity of postal readback, functional selection and school ownership. No new
+production async path is introduced; original historical artifacts remain unchanged.
+
+```sh
+env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-service --test offline_postal_worksheet --no-capture --no-tests fail
+env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:fmt
+env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:check -- --jobs 1
+env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:lint-src
 env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:gate -- --release
 ```
