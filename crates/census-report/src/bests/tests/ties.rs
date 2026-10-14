@@ -4,6 +4,7 @@ use crate::bests::{should_replace, tie_break_preferred, Measure};
 
 pub(super) mod fixture;
 mod selection;
+mod supporting;
 mod workbook;
 
 const ORDERS: [[usize; 4]; 24] = [

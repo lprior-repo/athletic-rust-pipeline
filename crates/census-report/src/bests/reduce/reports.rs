@@ -3,8 +3,8 @@ use super::super::selection::Conflict;
 use super::super::Measure;
 use super::{Candidate, Parents};
 use crate::report::EventAdmission;
-use census_domain::model::CanonicalPerformance;
-use std::collections::BTreeSet;
+use census_domain::model::{CanonicalPerformance, PerformanceId};
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct CompetitionContext<'a> {
@@ -73,6 +73,7 @@ pub(super) struct ReportGroup<'a> {
     meet_name: &'a str,
     marks: BTreeSet<String>,
     state: ReportState<'a>,
+    candidates: BTreeMap<&'a PerformanceId, i64>,
 }
 
 enum ReportState<'a> {
@@ -89,6 +90,12 @@ impl<'a> ReportGroup<'a> {
                 ContextIntegrity::Clear => ReportState::Uncontested(candidate),
                 ContextIntegrity::RetainedConflict => ReportState::Contested,
             },
+            candidates: match integrity {
+                ContextIntegrity::Clear => {
+                    BTreeMap::from([(&candidate.performance.id, candidate.value)])
+                }
+                ContextIntegrity::RetainedConflict => BTreeMap::new(),
+            },
         }
     }
 
@@ -96,14 +103,26 @@ impl<'a> ReportGroup<'a> {
         self.marks.insert(mark_text(&candidate.performance.mark));
         if integrity == ContextIntegrity::RetainedConflict {
             self.state = ReportState::Contested;
+        }
+        let ReportState::Uncontested(incumbent) = &mut self.state else {
+            self.candidates.clear();
+            return;
+        };
+        if observed_value(&candidate) != observed_value(incumbent) {
+            self.state = ReportState::Contested;
+            self.candidates.clear();
             return;
         }
-        if let ReportState::Uncontested(incumbent) = &mut self.state {
-            if observed_value(&candidate) != observed_value(incumbent) {
-                self.state = ReportState::Contested;
-            } else if candidate.wins_over(incumbent) {
-                *incumbent = candidate;
-            }
+        self.candidates
+            .entry(&candidate.performance.id)
+            .and_modify(|value| {
+                if candidate.measure.better(candidate.value, *value) {
+                    *value = candidate.value;
+                }
+            })
+            .or_insert(candidate.value);
+        if candidate.wins_over(incumbent) {
+            *incumbent = candidate;
         }
     }
 
@@ -112,6 +131,18 @@ impl<'a> ReportGroup<'a> {
             ReportState::Uncontested(candidate) => Some(candidate),
             ReportState::Contested => None,
         }
+    }
+
+    pub(super) fn supporting_tied_candidates(
+        &self,
+        value: i64,
+    ) -> impl Iterator<Item = &'a PerformanceId> + '_ {
+        let eligible = self.eligible().is_some();
+        self.candidates
+            .iter()
+            .filter_map(move |(id, candidate_value)| {
+                (eligible && *candidate_value == value).then_some(*id)
+            })
     }
 
     pub(super) fn conflict(self) -> Option<Conflict> {

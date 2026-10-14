@@ -2,6 +2,7 @@ use crate::report::{ReportError, ReportResult};
 use std::path::Path;
 
 mod files;
+mod generation;
 mod historical;
 mod population;
 

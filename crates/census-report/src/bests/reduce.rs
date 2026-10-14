@@ -1,6 +1,7 @@
 mod combined;
 mod reports;
 mod row;
+mod support;
 
 use reports::{CompetitionContext, ContextIntegrity, ReportGroup, RetainedContexts};
 
@@ -32,6 +33,7 @@ pub(crate) fn build_admitted(
         options.grad_year,
         &options.jurisdictions,
     );
+    support::admit(derivation.performances())?;
     let parents = Parents::of(&derivation);
     let retained = RetainedContexts::of(derivation.performances(), &parents, admission);
     let mut slots: HashMap<PrKey, PrSlot<'_>> = HashMap::new();
@@ -227,6 +229,14 @@ fn close(
     row.tied_performance_ids.sort();
     row.tied_performance_ids.dedup();
     row.tied_performance_count = row.tied_performance_ids.len();
+    row.supporting_tied_candidate_ids = slot
+        .reports
+        .values()
+        .flat_map(|group| group.supporting_tied_candidates(candidate.value))
+        .cloned()
+        .collect();
+    row.supporting_tied_candidate_ids.sort();
+    row.supporting_tied_candidate_ids.dedup();
     row.population = Population {
         marks: slot.marks,
         sources: slot.sources.len(),
@@ -257,6 +267,7 @@ fn make_row(
         eligible_candidate_count: 0,
         tied_performance_count: 0,
         tied_performance_ids: Vec::new(),
+        supporting_tied_candidate_ids: Vec::new(),
     }
 }
 

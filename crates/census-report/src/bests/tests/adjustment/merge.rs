@@ -204,3 +204,30 @@ fn retained_context_conflict_leaves_distinct_converted_competition_contexts_elig
             Ok(())
         })
 }
+
+#[test]
+fn repeated_id_with_equal_originals_retains_winning_support_in_every_order() -> TestResult {
+    let mut dataset = indoor_400()?;
+    let slower = converted(
+        &dataset,
+        "same_id_conversion",
+        Some(seconds("51.00")?),
+        seconds("50.00")?,
+    );
+    let mut faster = converted(
+        &dataset,
+        "same_id_conversion_fast",
+        Some(seconds("51.00")?),
+        seconds("49.00")?,
+    );
+    faster.id = slower.id.clone();
+    dataset.performances = vec![slower, faster.clone()];
+    let first = selected(&dataset)?;
+    dataset.performances.reverse();
+    let second = selected(&dataset)?;
+    check!(eq; first, second);
+    let winner = first.first().ok_or("missing converted winner")?;
+    check!(eq; winner.result.value, 49_000_000_000);
+    check!(eq; winner.supporting_tied_candidate_ids(), std::slice::from_ref(&faster.id));
+    Ok(())
+}
