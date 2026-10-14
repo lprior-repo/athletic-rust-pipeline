@@ -11,16 +11,39 @@ pub(super) const GLOBAL_ROWS: u64 = 3_211_264;
 pub(super) const GLOBAL_BYTES: u64 = 1_073_741_824;
 pub(super) const VECTOR_CHUNK: usize = 256;
 
+mod spill;
+pub(super) use spill::{DiskLease, ScratchPermit, SpillAdmission};
+
+pub(super) const SPILL_FILES: usize = 51;
+pub(super) const SPILL_BUFFER_BYTES: usize = 64 * 1024;
+pub(super) const SPILL_RECORD_BYTES: usize = 6 * census_store::MAX_OBSERVATION_RECORD_BYTES + 4096;
+pub(super) const SPILL_SCRATCH_BYTES: u64 = 64 * 1024 * 1024;
+pub(super) const SOURCE_SCAN_SCRATCH_BYTES: u64 = 32 * 1024 * 1024;
+pub(super) const SPILL_DECODE_SCRATCH_BYTES: u64 = 25 * 1024 * 1024;
+pub(super) const SPILL_METADATA_BYTES: u64 = 1024 * 1024;
+pub(super) const SPILL_WRITE_CALLS: u64 = CAPTURE_BYTES / 4096 + 52_224;
+
 #[derive(Default)]
 pub(super) struct Admission {
     rows: AtomicU64,
     bytes: AtomicU64,
+    pub(super) spill: Arc<SpillAdmission>,
 }
 
 pub(super) struct Permit {
     admission: Arc<Admission>,
     rows: u64,
     bytes: u64,
+}
+
+impl Admission {
+    #[cfg(test)]
+    pub(super) fn selected_usage(&self) -> (u64, u64) {
+        (
+            self.rows.load(Ordering::Acquire),
+            self.bytes.load(Ordering::Acquire),
+        )
+    }
 }
 
 impl Permit {

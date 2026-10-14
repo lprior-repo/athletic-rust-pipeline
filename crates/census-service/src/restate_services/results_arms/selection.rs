@@ -4,6 +4,7 @@ use census_domain::model::SourceMeetRef;
 use census_store::{Store, StoreError, StoreResult};
 use chrono::Datelike;
 use restate_sdk::prelude::HandlerError;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
 
 pub(super) struct Selected {
@@ -24,10 +25,12 @@ pub(super) async fn select(
         .acquire_owned()
         .await
         .map_err(|_| jobs::invariant("result capture worker closed"))?;
+    let cancel = Arc::new(AtomicBool::new(false));
+    let _cancel_on_drop = CancelOnDrop(Arc::clone(&cancel));
     let store = Arc::clone(store);
     let (selected, measurement) = tokio::task::spawn_blocking(move || {
         let _permit = permit;
-        select_captured(&store, scope)
+        select_captured(&store, scope, &cancel)
     })
     .await
     .map_err(|error| jobs::invariant(&format!("result capture worker failed: {error}")))?
@@ -38,22 +41,38 @@ pub(super) async fn select(
         encoded_bytes = measurement.capture.encoded_bytes,
         partition_visits = measurement.partition_visits,
         retained_bytes = measurement.retained_bytes,
+        spill_decoded_rows = measurement.spill_decoded_rows,
+        spill_read_bytes = measurement.spill_read_bytes,
+        spill_read_calls = measurement.spill_read_calls,
+        spill_disk_bytes = measurement.spill_disk_bytes,
+        spill_write_calls = measurement.spill_write_calls,
+        spill_written_bytes = measurement.spill_written_bytes,
+        spill_peak_scratch_bytes = measurement.spill_peak_scratch_bytes,
         capture_attempts = measurement.capture_attempts,
         "results selection"
     );
     Ok(selected)
 }
 
+struct CancelOnDrop(Arc<AtomicBool>);
+
+impl Drop for CancelOnDrop {
+    fn drop(&mut self) {
+        self.0.store(true, Ordering::Release);
+    }
+}
+
 fn select_captured(
     store: &Arc<Store>,
     scope: HistoricalStageScope,
+    cancel: &AtomicBool,
 ) -> StoreResult<(Selected, capture::Measurement)> {
     static CACHE: LazyLock<Mutex<capture::Cache>> =
         LazyLock::new(|| Mutex::new(capture::Cache::default()));
     let mut cache = CACHE.lock().map_err(|_| StoreError::Refused {
         detail: "result capture lock poisoned".to_string(),
     })?;
-    cache.select(store, scope)
+    cache.select(store, scope, cancel)
 }
 
 pub(super) fn selection_error(error: StoreError) -> super::super::JobError {
@@ -69,34 +88,28 @@ pub(super) fn selection_error(error: StoreError) -> super::super::JobError {
 }
 
 pub(super) fn partition(
-    rows: &[SourceMeetRef],
     scope: HistoricalStageScope,
     admission: Arc<budget::Admission>,
     dataset: Arc<capture::Dataset>,
-) -> StoreResult<(Selected, u64)> {
+    cancel: &AtomicBool,
+) -> StoreResult<(Selected, capture::Visits)> {
     let mut permit = budget::Permit::new(admission);
     permit.reserve(0, budget::slots::<Selected>(1)?)?;
     let mut meets = Vec::new();
     let mut pending = Vec::new();
-    let mut visits = 0_u64;
-    for row in rows {
-        visits = visits.checked_add(1).ok_or(StoreError::CounterOverflow)?;
+    let visits = dataset.visit(scope.jurisdiction, cancel, |row, charge| {
+        capture::check_cancel(cancel)?;
         match assess(row, scope) {
-            Admission::Admitted => {
-                append(&mut meets, budget::heap_bytes(row)?, &mut permit, || {
-                    budget::copy_meet(row)
-                })?
-            }
-            Admission::Unknown => append(
-                &mut pending,
-                u64::try_from(row.results_url.capacity())
-                    .map_err(|_| StoreError::CounterOverflow)?,
-                &mut permit,
-                || budget::copy(&row.results_url),
-            )?,
+            Admission::Admitted => append(&mut meets, charge.meet_heap, &mut permit, || {
+                budget::copy_meet(row)
+            })?,
+            Admission::Unknown => append(&mut pending, charge.pending_heap, &mut permit, || {
+                budget::copy(&row.results_url)
+            })?,
             Admission::Excluded => (),
         }
-    }
+        Ok(())
+    })?;
     pending.sort();
     pending.dedup();
     Ok((

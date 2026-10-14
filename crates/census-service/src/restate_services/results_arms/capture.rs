@@ -1,12 +1,15 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Weak};
 
-use census_domain::{model::SourceMeetRef, UsJurisdiction};
 use census_store::read::{ReadBudget, ReadCounts};
 use census_store::{Store, StoreError, StoreResult, Table, MAX_OBSERVATION_RECORD_BYTES};
 
 use super::super::history_stage::HistoricalStageScope;
 use super::budget::{self, Admission};
 use super::selection::Selected;
+
+mod spill;
+pub(super) use spill::{Dataset, Visits};
 
 #[derive(Default)]
 pub(super) struct Cache {
@@ -21,15 +24,17 @@ struct Captured {
     dataset: Arc<Dataset>,
 }
 
-pub(super) struct Dataset {
-    partitions: [(UsJurisdiction, Vec<SourceMeetRef>); 51],
-    decoded_bytes: u64,
-}
-
 #[derive(Debug, Default)]
 pub(super) struct Measurement {
     pub capture: ReadCounts,
     pub partition_visits: u64,
+    pub spill_decoded_rows: u64,
+    pub spill_read_bytes: u64,
+    pub spill_read_calls: u64,
+    pub spill_disk_bytes: u64,
+    pub spill_write_calls: u64,
+    pub spill_written_bytes: u64,
+    pub spill_peak_scratch_bytes: u64,
     pub retained_bytes: u64,
     pub capture_attempts: u64,
 }
@@ -39,28 +44,46 @@ impl Cache {
         &mut self,
         store: &Arc<Store>,
         scope: HistoricalStageScope,
+        cancel: &AtomicBool,
     ) -> StoreResult<(Selected, Measurement)> {
-        let (dataset, capture) = self.dataset(store)?;
-        let rows = dataset.partition(scope.jurisdiction)?;
-        let (selected, partition_visits) = super::selection::partition(
-            rows,
+        check_cancel(cancel)?;
+        let (dataset, capture) = self.dataset(store, cancel)?;
+        let (selected, visits) = super::selection::partition(
             scope,
             Arc::clone(&self.admission),
             Arc::clone(&dataset),
+            cancel,
         )?;
+        check_cancel(cancel)?;
         self.check_generation(store)?;
+        let (spill_write_calls, spill_written_bytes) = if capture.key_visits == 0 {
+            (0, 0)
+        } else {
+            dataset.writes()
+        };
         Ok((
             selected,
             Measurement {
                 capture,
-                partition_visits,
-                retained_bytes: dataset.decoded_bytes,
+                partition_visits: visits.rows,
+                spill_decoded_rows: visits.rows,
+                spill_read_bytes: visits.bytes,
+                spill_read_calls: visits.read_calls,
+                spill_disk_bytes: dataset.disk_bytes,
+                spill_write_calls,
+                spill_written_bytes,
+                spill_peak_scratch_bytes: dataset.peak_scratch(),
+                retained_bytes: dataset.retained_bytes,
                 capture_attempts: self.capture_attempts,
             },
         ))
     }
 
-    fn dataset(&mut self, store: &Arc<Store>) -> StoreResult<(Arc<Dataset>, ReadCounts)> {
+    fn dataset(
+        &mut self,
+        store: &Arc<Store>,
+        cancel: &AtomicBool,
+    ) -> StoreResult<(Arc<Dataset>, ReadCounts)> {
         let snapshot = store.snapshot();
         let generation = snapshot.evidence_generation();
         if let Some(captured) = &self.captured {
@@ -76,21 +99,40 @@ impl Cache {
             }
         }
         self.captured = None;
-        let mut dataset = Dataset::new()?;
-        self.capture_attempts = self
+        self.build(store, snapshot, generation, cancel)
+    }
+
+    fn build(
+        &mut self,
+        store: &Arc<Store>,
+        snapshot: census_store::StoreSnapshot<'_>,
+        generation: u64,
+        cancel: &AtomicBool,
+    ) -> StoreResult<(Arc<Dataset>, ReadCounts)> {
+        let attempt = self
             .capture_attempts
             .checked_add(1)
             .ok_or(StoreError::CounterOverflow)?;
-        let counts = snapshot.for_each_merged_bounded(
+        let mut scratch = budget::ScratchPermit::new(Arc::clone(&self.admission.spill));
+        scratch.reserve(budget::SOURCE_SCAN_SCRATCH_BYTES)?;
+        let mut build = spill::Build::new(store.root(), Arc::clone(&self.admission.spill))?;
+        self.capture_attempts = attempt;
+        let result = snapshot.for_each_merged_bounded(
             Table::SourceMeets,
             ReadBudget {
                 rows: budget::CAPTURE_ROWS,
                 bytes: budget::CAPTURE_BYTES,
                 record_bytes: MAX_OBSERVATION_RECORD_BYTES,
             },
-            |row, encoded| dataset.push(row, encoded),
-        )?;
-        dataset.total_bytes(counts.encoded_bytes)?;
+            |row, _encoded| build.push(row, cancel),
+        );
+        let counts = match result {
+            Ok(counts) => counts,
+            Err(primary) => return Err(build.abort(primary)),
+        };
+        let dataset = build.finish(cancel)?;
+        drop(scratch);
+        check_cancel(cancel)?;
         check_generation(store, generation)?;
         let dataset = Arc::new(dataset);
         self.captured = Some(Captured {
@@ -107,81 +149,13 @@ impl Cache {
     }
 }
 
-impl Dataset {
-    fn new() -> StoreResult<Self> {
-        Ok(Self {
-            partitions: UsJurisdiction::ALL.map(|jurisdiction| (jurisdiction, Vec::new())),
-            decoded_bytes: budget::slots::<Self>(1)?,
-        })
+pub(super) fn check_cancel(cancel: &AtomicBool) -> StoreResult<()> {
+    if cancel.load(Ordering::Acquire) {
+        return Err(StoreError::Refused {
+            detail: "results capture or selection cancelled".to_string(),
+        });
     }
-
-    fn push(&mut self, row: SourceMeetRef, encoded: u64) -> StoreResult<()> {
-        let rows = self
-            .partitions
-            .iter_mut()
-            .find(|(jurisdiction, _)| *jurisdiction == row.jurisdiction)
-            .map(|(_, rows)| rows)
-            .ok_or_else(budget::allocation)?;
-        let growth = if rows.len() == rows.capacity() {
-            budget::VECTOR_CHUNK
-        } else {
-            0
-        };
-        let heap = budget::heap_bytes(&row)?;
-        let added = heap
-            .checked_add(budget::slots::<SourceMeetRef>(growth)?)
-            .ok_or(StoreError::CounterOverflow)?;
-        let decoded = self
-            .decoded_bytes
-            .checked_add(added)
-            .ok_or(StoreError::CounterOverflow)?;
-        budget::charge(
-            decoded,
-            encoded,
-            budget::CAPTURE_BYTES,
-            "results captured working bytes",
-        )?;
-        let old_capacity = rows.capacity();
-        if growth != 0 {
-            rows.try_reserve_exact(growth)
-                .map_err(|_| budget::allocation())?;
-        }
-        let actual_growth = rows
-            .capacity()
-            .checked_sub(old_capacity)
-            .ok_or(StoreError::CounterOverflow)?;
-        let actual_slots = budget::slots::<SourceMeetRef>(actual_growth)?;
-        self.decoded_bytes = self
-            .decoded_bytes
-            .checked_add(heap)
-            .and_then(|bytes| bytes.checked_add(actual_slots))
-            .ok_or(StoreError::CounterOverflow)?;
-        budget::charge(
-            self.decoded_bytes,
-            encoded,
-            budget::CAPTURE_BYTES,
-            "results captured working bytes",
-        )?;
-        rows.push(row);
-        Ok(())
-    }
-
-    fn total_bytes(&self, encoded: u64) -> StoreResult<u64> {
-        budget::charge(
-            self.decoded_bytes,
-            encoded,
-            budget::CAPTURE_BYTES,
-            "results captured working bytes",
-        )
-    }
-
-    fn partition(&self, jurisdiction: UsJurisdiction) -> StoreResult<&[SourceMeetRef]> {
-        self.partitions
-            .iter()
-            .find(|(owner, _)| *owner == jurisdiction)
-            .map(|(_, rows)| rows.as_slice())
-            .ok_or_else(budget::allocation)
-    }
+    Ok(())
 }
 
 fn check_generation(store: &Store, expected: u64) -> StoreResult<()> {

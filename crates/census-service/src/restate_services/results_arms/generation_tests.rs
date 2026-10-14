@@ -7,6 +7,7 @@ use crate::restate_services::{
     jurisdiction,
     wire::{JurisdictionRequest, JurisdictionState},
 };
+use census_domain::UsJurisdiction;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -20,7 +21,11 @@ fn advancing_evidence_returns_transient_without_recapture_and_keeps_results_owed
         &meet(jurisdiction, "1", Some("2024-04-01")),
     )?;
     let mut cache = Cache::default();
-    let (held, first) = cache.select(&store, scope(jurisdiction)?)?;
+    let (held, first) = cache.select(
+        &store,
+        scope(jurisdiction)?,
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
     check!(eq; first.capture.decoded_rows, 1);
     let request = JurisdictionRequest {
         jurisdiction,
@@ -43,7 +48,11 @@ fn advancing_evidence_returns_transient_without_recapture_and_keeps_results_owed
             &meet(jurisdiction, &index.to_string(), None),
         )?;
         let started = std::time::Instant::now();
-        let result = cache.select(&store, scope(jurisdiction)?);
+        let result = cache.select(
+            &store,
+            scope(jurisdiction)?,
+            &std::sync::atomic::AtomicBool::new(false),
+        );
         let error = match result {
             Err(error) => selection::selection_error(error),
             Ok(_) => return Err("an advancing generation served a stale capture".into()),
@@ -65,9 +74,45 @@ fn advancing_evidence_returns_transient_without_recapture_and_keeps_results_owed
         println!("generation advance={index} transient={expected_message}; capture_attempts={} new_capture_attempts=0 owed=results elapsed={:?}", cache.capture_attempts, started.elapsed());
     }
     drop(held);
-    let (latest, measured) = cache.select(&store, scope(jurisdiction)?)?;
+    let (latest, measured) = cache.select(
+        &store,
+        scope(jurisdiction)?,
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
     check!(eq; measured.capture_attempts, 2);
     check!(eq; measured.capture.decoded_rows, 4);
     check!(eq; latest.pending.len(), 3);
+    Ok(())
+}
+
+#[test]
+fn evidence_move_before_publication_closes_sealed_descriptors_and_releases_admission() -> TestResult
+{
+    let dir = tempfile::tempdir()?;
+    let store = Arc::new(Store::open(dir.path())?);
+    store.append(
+        Table::SourceMeets,
+        &meet(UsJurisdiction::Wisconsin, "1", None),
+    )?;
+    let snapshot = store.snapshot();
+    let generation = snapshot.evidence_generation();
+    store.append(
+        Table::SourceMeets,
+        &meet(UsJurisdiction::Wisconsin, "2", None),
+    )?;
+    let mut cache = Cache::default();
+    let cancel = std::sync::atomic::AtomicBool::new(false);
+    let error = cache
+        .build(&store, snapshot, generation, &cancel)
+        .err()
+        .ok_or("stale evidence published")?;
+    check!(
+        matches!(error, StoreError::EvidenceMoved { expected, actual, .. }
+        if expected == generation && actual == store.snapshot().evidence_generation())
+    );
+    check!(cache.captured.is_none());
+    check!(!dir.path().join(".results-source-spill").exists());
+    check!(eq; cache.admission.spill.reserved_bytes()?, 0);
+    drop(cache.admission.spill.claim()?);
     Ok(())
 }
