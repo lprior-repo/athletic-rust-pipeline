@@ -38,10 +38,14 @@ pub(crate) async fn submit_national(
         Ok(submitted) => {
             if matches!(submitted.send_status(), SendStatus::PreviouslyAccepted) {
                 println!(
-                    "note: {} already had a run — restate deduplicated this submission, so a changed \
-                     parameter was not applied; use a new --resume ordinal to re-drive owed work \
-                     without changing --revision or resetting source attempts",
-                    identity.as_str()
+                    "WARNING: {} already has a run, so Restate deduplicated this submission and\n\
+                     WARNING: EVERY CHANGED PARAMETER ON THIS COMMAND WAS IGNORED (rate, delay, states, limit).\n\
+                     WARNING: The existing run is being observed as-is. To re-drive owed work after an\n\
+                     WARNING: interrupted or paused parent, either use --drive, or run the same command with a\n\
+                     WARNING: NEW --resume ordinal while keeping --revision: e.g. --resume {}, then {}, and so on.",
+                    identity.as_str(),
+                    2,
+                    3
                 );
             }
             submitted.invocation_handle()
@@ -80,53 +84,81 @@ fn school_address_request(args: &NationalArgs) -> Result<Option<SchoolAddressJoi
 pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     let (season, revision) = (args.flags.season()?, args.flags.revision());
     let jurisdictions = crate::cli::within_census_scope(&args.states)?;
-    let identity = resume::identity(season, revision, &jurisdictions, args.resume);
     let origin = cli.service_origin("national", args.flags.ingress())?;
     let ingestion = ingress::client(origin)?;
-    let history = if args.resume.is_some() {
-        resume::history(&ingestion, season, revision, &jurisdictions).await?
-    } else {
-        census_service::restate_services::HistoryWindow::cohort(
-            &chrono::Utc::now().date_naive().to_string(),
-        )
-        .map_err(anyhow::Error::msg)?
-    };
-    let request = NationalRequest {
-        season,
-        revision,
-        history,
-        jurisdictions: jurisdictions.clone(),
-        refresh: args.refresh,
-        limit_per_state: args.limit_per_state,
-        concurrency: args.concurrency,
-        observed_on: None,
-        authorized_hosts: cli.authorized_hosts.clone(),
-        source_parallelism: cli.source_parallelism,
-        school_address: school_address_request(args)?,
-        pass_budget: args.pass_budget,
-        pass_delay_seconds: args.pass_delay_seconds,
-    };
-    let handle = submit_national(&ingestion, &identity, request).await?;
-    println!(
-        "{} invocation {}",
-        identity.as_str(),
-        handle.invocation_id()
-    );
-    if args.detach {
-        return Ok(());
-    }
     let watched = admitted_scope(&jurisdictions);
-    let report = observe(Watch {
-        handle: &handle,
-        ingestion: &ingestion,
-        jurisdictions: &watched,
-        season,
-        revision,
-        rounds: args.flags.rounds(),
-    })
-    .await?;
-    print_national(&report, args.flags.json)?;
-    failure_exit(&report)
+    let cycles = if args.drive { super::DRIVE_CYCLES } else { 1 };
+    let mut ordinal = args.resume;
+    for cycle in 1..=cycles {
+        let identity = resume::identity(season, revision, &jurisdictions, ordinal);
+        let history = if ordinal.is_some() {
+            resume::history(&ingestion, season, revision, &jurisdictions).await?
+        } else {
+            census_service::restate_services::HistoryWindow::cohort(
+                &chrono::Utc::now().date_naive().to_string(),
+            )
+            .map_err(anyhow::Error::msg)?
+        };
+        let request = NationalRequest {
+            season,
+            revision,
+            history,
+            jurisdictions: jurisdictions.clone(),
+            refresh: args.refresh,
+            limit_per_state: args.limit_per_state,
+            concurrency: args.concurrency,
+            observed_on: None,
+            authorized_hosts: cli.authorized_hosts.clone(),
+            source_parallelism: cli.source_parallelism,
+            school_address: school_address_request(args)?,
+            pass_budget: args.pass_budget,
+            pass_delay_seconds: args.pass_delay_seconds,
+        };
+        let handle = submit_national(&ingestion, &identity, request).await?;
+        println!(
+            "{} invocation {}",
+            identity.as_str(),
+            handle.invocation_id()
+        );
+        if args.detach {
+            return Ok(());
+        }
+        match observe(Watch {
+            handle: &handle,
+            ingestion: &ingestion,
+            jurisdictions: &watched,
+            season,
+            revision,
+            rounds: args.flags.rounds(),
+        })
+        .await
+        {
+            Ok(report) => {
+                print_national(&report, args.flags.json)?;
+                return failure_exit(&report);
+            }
+            Err(error) if cycle < cycles => {
+                let next = match ordinal {
+                    None => 2,
+                    Some(current) => current
+                        .get()
+                        .checked_add(1)
+                        .context("resume ordinal exhausted")?,
+                };
+                ordinal =
+                    Some(std::num::NonZeroU32::new(next).context("resume ordinal wrapped")?);
+                println!(
+                    "drive cycle {cycle}: the run is still owed work ({error:#}); re-driving under resume ordinal {next}"
+                );
+            }
+            Err(error) => {
+                return Err(error).context("drive cycles exhausted with the run still owed work")
+            }
+        }
+    }
+    Err(anyhow::anyhow!(
+        "drive finished without a completed run report"
+    ))
 }
 #[tracing::instrument(skip_all, fields(command = "jurisdiction"))]
 pub(crate) async fn run_jurisdiction(cli: &Cli, args: &JurisdictionArgs) -> Result<()> {

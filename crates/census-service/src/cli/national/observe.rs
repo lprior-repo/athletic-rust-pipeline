@@ -74,7 +74,8 @@ pub(crate) async fn drive_jurisdiction(
     );
     if matches!(submitted.send_status(), SendStatus::PreviouslyAccepted) {
         eprintln!(
-            "note: {} already had a run — restate deduplicated this submission",
+            "WARNING: {} already has a run, so Restate deduplicated this submission and EVERY CHANGED \
+             PARAMETER WAS IGNORED; to re-drive owed work use --drive, or a NEW --resume ordinal",
             identity.as_str()
         );
     }

@@ -90,6 +90,54 @@ Starting a fresh run:
    observe it through the admin query API and `census-service open-work`, never by opening the store
    from a second process.
 
+## Reloading a deployed census after new code lands
+
+A store is bound to exactly one census run. Submitting a different `--revision` against an existing
+store is refused ("a fresh census needs its own store root"), and re-submitting the *same* run is
+deduplicated by Restate, so **every changed parameter is silently ignored** — including
+`--source-parallelism` and `--delay-ms`. Those flags only take effect on a new invocation, which is
+what a new `--resume` ordinal provides. `--states`, `--refresh`, `--limit` and `--concurrency` are
+equally inert on a deduplicated submission.
+
+To run new code over a census already in flight:
+
+1. `env -u CI tools/moon-local run pipeline:build-portable`.
+2. `kill -TERM <census-serve pid>` and wait for exit. Read the certificate appended to the run:
+   `drained: accepted=<n> completed=<n> cancelled=<n> timed_out=<n> aborted=<n> panicked=<n>`, and
+   confirm `accepted = completed + cancelled + aborted + panicked` with no remaining work.
+3. Start `census-serve` again on the **same** `--data-dir` and a new `--listen` port, then
+   re-register that URI (`POST /deployments`). Every service rebinds to the newest deployment. The
+   superseded deployment cannot be deleted (its `DELETE` returns 501) but binds nothing, so it is
+   inert; confirm with `GET /services` that each service names the new `deployment_id`.
+4. Re-drive with `census-service national --ingress <origin> --drive`. `--drive` reattaches under a
+   fresh `--resume` ordinal whenever the run is still owed work and returns only when the run
+   reports completion; `--resume <n>` alone reattaches for one bounded observation.
+
+### The drain pauses the parent — it must be killed, not cancelled
+
+Draining makes the in-flight `NationalCensus` parent retry against a stopping endpoint. It exhausts
+its attempts and pauses (`on_max_attempts: "Pause"`) while `pinned_deployment_id` still names the
+replaced deployment. That parent then **blocks later submissions**: every jurisdiction stays
+`running` with `unstarted 0` and no stage advances, however many new resume ordinals are submitted,
+because the paused invocation retains ownership.
+
+A paused invocation pinned to an unreachable deployment **cannot be cancelled** — `PATCH
+/invocations/<id>/cancel` returns 202 and does nothing. The documented remedy, which works, is
+`curl -X PATCH http://127.0.0.1:<admin>/invocations/<id>/kill` (`docs/restate/invocation.md`).
+Resume `?deployment=<new-id>` is the alternative when the pinned deployment is still reachable.
+
+### Diagnose through the admin API, never the store
+
+```sh
+curl -sS -X POST http://127.0.0.1:<admin>/query -H 'content-type: application/json' \
+  -d '{"query":"SELECT status, count(*) FROM sys_invocation GROUP BY status"}'
+```
+
+`sys_invocation` exposes `target_service_name`, `target_service_key`, `status`, `pinned_deployment_id`,
+`journal_size` and `modified_at` per invocation; `SELECT service_key FROM state WHERE service_name =
+'JurisdictionCensus'` lists the bound jurisdictions. A `paused` row is the signal described above; a
+`status` of `running` with no progress is the same condition seen from the other side.
+
 ## Ownership
 
 [Architecture §4](ARCHITECTURE.md#4-crate-layout-17) defines crate responsibilities. Main owns

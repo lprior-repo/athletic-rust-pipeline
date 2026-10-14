@@ -8,6 +8,7 @@ use clap::Args;
 use std::time::Duration;
 
 const POLL: Duration = Duration::from_secs(10);
+pub(super) const DRIVE_CYCLES: u32 = 96;
 
 const PROGRESS_EVERY: u64 = 6;
 
@@ -94,6 +95,11 @@ pub(super) struct NationalArgs {
     )]
     #[arg(long, value_name = "ORDINAL")]
     resume: Option<std::num::NonZeroU32>,
+    #[arg(
+        long,
+        help = "Drive the fan-out to completion instead of observing one attach: whenever the run is still owed work, reattach under the next --resume ordinal and re-drive it, until the run finishes or the cycle budget is spent. This is the supported way to finish a national census; do not poll by hand. Incompatible with --detach."
+    )]
+    drive: bool,
     #[arg(
         help = "Jurisdictions to cover. Absent means the 48 contiguous states and the District of Columbia (49 jurisdictions)"
     )]
