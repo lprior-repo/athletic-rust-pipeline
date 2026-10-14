@@ -58,6 +58,7 @@ fn context<'a>(
     recording: Option<&'a Recording>,
 ) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         store,
         fetcher,
         recording,

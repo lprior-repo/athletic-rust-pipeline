@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use crate::hytek::{parse_field_mark, parse_time};
 use crate::{CrawlError, CrawlResult};
-use census_domain::model::{EventKind, Mark};
+use census_domain::model::{parse_result_status, EventKind, Mark};
 
 use super::docs::value_u64;
 
@@ -77,12 +77,12 @@ impl StandingRow {
     }
 
     pub fn canonical_mark(&self, kind: &EventKind) -> Option<Mark> {
-        if let Some(token) = [self.mark.as_deref(), self.raw_time.as_deref()]
+        if let Some(status) = [self.mark.as_deref(), self.raw_time.as_deref()]
             .into_iter()
             .flatten()
-            .find_map(crate::result_status::invalid_token)
+            .find_map(parse_result_status)
         {
-            return Some(Mark::Raw(token.into()));
+            return Some(Mark::Raw(status.token().into()));
         }
         let (first, second) = if kind.is_field() {
             (self.mark.as_deref(), self.raw_time.as_deref())
@@ -101,10 +101,10 @@ impl StandingRow {
     }
 
     pub(crate) fn mark_contradiction(&self, kind: &EventKind) -> Option<&str> {
-        let token = [self.mark.as_deref(), self.raw_time.as_deref()]
+        let status = [self.mark.as_deref(), self.raw_time.as_deref()]
             .into_iter()
             .flatten()
-            .find_map(crate::result_status::invalid_token)?;
+            .find_map(parse_result_status)?;
         let numeric = [self.mark.as_deref(), self.raw_time.as_deref()]
             .into_iter()
             .flatten()
@@ -115,7 +115,7 @@ impl StandingRow {
                     parse_time(raw).is_some()
                 }
             });
-        numeric.then_some(token)
+        numeric.then_some(status.token())
     }
 }
 

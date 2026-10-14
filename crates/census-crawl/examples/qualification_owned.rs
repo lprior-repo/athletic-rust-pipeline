@@ -1,4 +1,4 @@
-use census_crawl::milesplit::{parse_owned_meet, OwnedMeetVerdict};
+use census_crawl::milesplit::parse_owned_meet;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -19,11 +19,8 @@ fn main() -> Result<()> {
         return Err("actual captured body SHA differs".into());
     }
     let summary = provider_summary(&body)?;
-    let verdict = parse_owned_meet(&body, 725218);
+    let page = parse_owned_meet(&body, 725218)?;
     let mut rejection_counts = BTreeMap::<String, usize>::new();
-    let OwnedMeetVerdict::Parsed(page) = &verdict else {
-        return Err(format!("actual capture parse failed: {verdict:?}").into());
-    };
     for rejected in &page.rejected {
         increment(
             rejection_counts

@@ -39,6 +39,8 @@ url = { version = "2.5", features = ["serde"] }
 indexmap = { version = "2", features = ["serde"] }
 
 [dev-dependencies]
+tokio-rustls = { version = "=0.26.4", default-features = false, features = ["aws_lc_rs", "tls12"] }
+rustls-pki-types = "=1.15.1"
 anyhow = "1"
 tempfile = "3"
 # The net layer's tests drive paused-time deadlines (`tokio::time::advance`), which needs the test

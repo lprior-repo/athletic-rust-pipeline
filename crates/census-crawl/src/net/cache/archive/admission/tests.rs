@@ -1,4 +1,5 @@
 use super::super::super::{content_digest, CacheMeta};
+use super::super::lock::ARCHIVE_LOCK_NAME;
 use super::super::{replay_preserved_cache, write_preserved_cache, write_preserved_capture};
 use super::*;
 use std::ffi::OsString;
@@ -25,10 +26,10 @@ fn check_configuration_error(error: FetchError) -> TestResult {
 
 #[test]
 fn pure_capacity_parser_accepts_every_positive_u64_boundary() -> TestResult {
-    check!(eq; capacity_of(None)?, DEFAULT_ARCHIVE_BYTES);
-    check!(eq; capacity_of(Some("1".to_string()))?, 1);
-    check!(eq; capacity_of(Some(" 4096 \n".to_string()))?, 4096);
-    check!(eq; capacity_of(Some(u64::MAX.to_string()))?, u64::MAX);
+    check!(eq; capacity_of(None)?.get(), DEFAULT_ARCHIVE_BYTES);
+    check!(eq; capacity_of(Some("1".to_string()))?.get(), 1);
+    check!(eq; capacity_of(Some(" 4096 \n".to_string()))?.get(), 4096);
+    check!(eq; capacity_of(Some(u64::MAX.to_string()))?.get(), u64::MAX);
     Ok(())
 }
 
@@ -46,7 +47,7 @@ fn pure_capacity_parser_refuses_explicit_invalid_values() -> TestResult {
     .into_iter()
     .try_for_each(|value| match capacity_of(Some(value.to_string())) {
         Err(error) => check_configuration_error(error),
-        Ok(capacity) => Err(format!("invalid value {value:?} admitted {capacity} bytes").into()),
+        Ok(capacity) => Err(format!("invalid value {value:?} admitted {capacity:?} bytes").into()),
     })
 }
 
@@ -56,7 +57,7 @@ fn explicit_zero_capacity_refuses_before_creating_any_files() -> TestResult {
     let witness = root.path().join("retained.body");
     std::fs::write(&witness, b"retained capture")?;
     let archive = root.path().join("archive");
-    match ArchiveAdmission::begin_with_capacity(root.path(), &archive, 0) {
+    match ArchiveCapacity::new(0, &archive) {
         Err(error) => check_configuration_error(error)?,
         Ok(_) => return Err("zero capacity must refuse admission".into()),
     }
@@ -71,7 +72,7 @@ fn explicit_zero_capacity_refuses_before_creating_any_files() -> TestResult {
 fn explicit_zero_capacity_refuses_before_opening_a_missing_root() -> TestResult {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("not-created");
-    match ArchiveAdmission::begin_with_capacity(&root, &root.join("archive"), 0) {
+    match ArchiveCapacity::new(0, &root.join("archive")) {
         Err(error) => check_configuration_error(error)?,
         Ok(_) => return Err("zero capacity must refuse admission".into()),
     }
@@ -116,11 +117,23 @@ fn check_invalid_entrypoints() -> TestResult {
     check!(eq; std::fs::read(&body_path)?, body);
     check!(eq; std::fs::read(&meta_path)?, encoded);
     check!(eq; std::fs::read_dir(root.path())?.count(), 2);
+    let eligible = super::super::super::archive_io::lock_cache(&meta_path)?;
+    for outcome in [
+        write_preserved_cache(&body_path, &meta_path, body, &meta),
+        replay_preserved_cache(&body_path, &meta_path, &meta).map(|_| ()),
+    ] {
+        match outcome {
+            Err(error) => check_configuration_error(error)?,
+            Ok(()) => return Err("configuration refusal must precede busy eligible".into()),
+        }
+    }
+    check!(!root.path().join(ARCHIVE_LOCK_NAME).exists());
+    drop(eligible);
     Ok(())
 }
 
 fn check_valid_environment(expected: u64) -> TestResult {
-    check!(eq; archive_capacity()?, expected);
+    check!(eq; archive_capacity()?.get(), expected);
     let root = tempfile::tempdir()?;
     let body = b"valid source bytes";
     let meta = metadata(body);

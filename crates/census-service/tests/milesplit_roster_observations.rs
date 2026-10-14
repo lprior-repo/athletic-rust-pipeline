@@ -139,7 +139,8 @@ fn a_synthetic_owned_roster_pass_files_an_observation_per_published_athlete() ->
             let published: BTreeMap<String, (&str, &str)> = roster
                 .athletes
                 .iter()
-                .map(|athlete| {
+                .map(|member| {
+                    let athlete = member.athlete();
                     (
                         athlete.athlete_id.clone(),
                         (athlete.name.as_str(), athlete.profile_url.as_str()),

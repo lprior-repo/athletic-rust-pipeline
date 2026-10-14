@@ -3,6 +3,8 @@ use crate::admission::{
     DepartureReason, Reservation, TryResult, MAX_BYPASSES, MAX_ORIGIN_WAITERS, WORK_CLASS_NORMAL,
     WORK_CLASS_STAGE,
 };
+use crate::spawn::Spawner;
+use census_store::Store;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 

@@ -40,7 +40,7 @@ impl<'a> Commit<'a> {
 
     pub(super) async fn window(
         &self,
-        records: Option<&Records>,
+        records: Option<&Records<'_>>,
         counts: &Counts,
         offset: usize,
         terminal: bool,
@@ -71,7 +71,7 @@ impl<'a> Commit<'a> {
 
     fn journal<'b>(
         &'b self,
-        records: Option<&'b Records>,
+        records: Option<&'b Records<'_>>,
         counts: &'b Counts,
         terminal: bool,
         prior: Option<&'b journal::Journal>,

@@ -198,10 +198,9 @@ fn reserve_then_push(
                     Err(error) => Err(error),
                 }
             }
-            PreAdmitted::Blocking(permit) => {
-                Ok(spawner
-                    .push_blocking(move |_counters| ran.store(true, Ordering::SeqCst), permit))
-            }
+            PreAdmitted::Blocking(permit) => Ok(runtime.block_on(
+                spawner.push_blocking(move |_counters| ran.store(true, Ordering::SeqCst), permit),
+            )),
         }
     })
 }

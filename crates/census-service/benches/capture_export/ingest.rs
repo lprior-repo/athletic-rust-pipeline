@@ -100,6 +100,7 @@ fn target(event: &Event) -> MeetTarget {
 
 fn collect_one(store: &Store, runtime: &Runtime, fetcher: &Fetcher, event: &Event) -> Result<()> {
     let context = AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,

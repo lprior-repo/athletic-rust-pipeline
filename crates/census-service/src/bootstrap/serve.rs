@@ -1,6 +1,5 @@
 use std::future::Future;
 use std::net::SocketAddr;
-use std::path::PathBuf;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Arc;
 
@@ -8,7 +7,6 @@ use anyhow::Result;
 use restate_sdk::http_server::HttpServer;
 
 use crate::ingress;
-use crate::outcome::{DrainState, Outcome};
 use crate::restate_services;
 use crate::spawn::Spawner;
 use census_crawl::net::bridge::BrowserLane;
@@ -21,6 +19,7 @@ use super::drain::{
 use super::error::BootstrapError;
 use super::options::ServeOptions;
 use super::stop::{await_stop, StopOutcome, StopReason};
+use crate::restate_services::CaptureExecution;
 
 pub async fn serve(options: ServeOptions) -> Result<DrainReport> {
     serve_until(options, std::future::pending::<()>()).await
@@ -42,7 +41,8 @@ pub(super) async fn supervise(
 ) -> Result<DrainReport, BootstrapError> {
     init_tracing();
     let region = Arc::new(Spawner::new());
-    let store = open_store(&region, options.data_dir.clone()).await?;
+    let (store, capture) =
+        super::store::open(&region, options.data_dir.clone(), options.capture_protocol).await?;
     let (listener, bound) = bind_listener(&options).await?;
     let lane = lane_client(&options)?;
 
@@ -51,7 +51,8 @@ pub(super) async fn supervise(
     }
     let reason = Arc::new(AtomicU8::new(StopReason::ServerExit.to_raw()));
     let over_budget = Arc::new(tokio::sync::Notify::new());
-    let (cancel, endpoint_done) = spawn_endpoint(&region, &store, &options, listener, lane)?;
+    let (cancel, endpoint_done) =
+        spawn_endpoint(&region, &store, capture, &options, listener, lane)?;
     region
         .spawn(super::guard::watch_memory(
             options.memory_budget_bytes,
@@ -133,6 +134,7 @@ async fn bind_listener(
 fn spawn_endpoint(
     region: &Arc<Spawner>,
     store: &Arc<Store>,
+    capture: CaptureExecution,
     options: &ServeOptions,
     listener: tokio::net::TcpListener,
     lane: Option<BrowserLane>,
@@ -150,6 +152,7 @@ fn spawn_endpoint(
     };
     let endpoint = restate_services::build_endpoint(
         store.clone(),
+        capture,
         options.max_concurrent,
         Arc::clone(region),
         options.lane.clone(),
@@ -188,37 +191,6 @@ fn spawn_endpoint(
         })
         .map_err(count_error)?;
     Ok((cancel, endpoint_done))
-}
-
-#[tracing::instrument(skip_all)]
-async fn open_store(region: &Spawner, data_dir: PathBuf) -> Result<Arc<Store>, BootstrapError> {
-    let outcome = region
-        .blocking(move || {
-            census_store::fs::create_dir_all_synced(&data_dir).map_err(|source| {
-                BootstrapError::CreateDir {
-                    path: data_dir.clone(),
-                    source,
-                }
-            })?;
-            let store = Store::open(&data_dir).map_err(|source| BootstrapError::StoreOpen {
-                path: data_dir,
-                source: Box::new(source),
-            })?;
-            Ok(Arc::new(store))
-        })
-        .await;
-    match outcome {
-        Outcome::Ok(store) => Ok(store),
-        Outcome::Err(e) => Err(e),
-        Outcome::Panicked => Err(BootstrapError::StoreTask {
-            state: DrainState::Panicked,
-            reason: "task panicked".to_string(),
-        }),
-        Outcome::Cancelled => Err(BootstrapError::StoreTask {
-            state: DrainState::Cancelled,
-            reason: "task cancelled".to_string(),
-        }),
-    }
 }
 
 pub fn init_tracing() {
@@ -273,3 +245,11 @@ async fn wait_for_trigger(_path: std::path::PathBuf) {}
 #[cfg(test)]
 #[path = "serve_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "../../tests/installation/bootstrap.rs"]
+mod installation_tests;
+
+#[cfg(test)]
+#[path = "capture_tests.rs"]
+mod capture_tests;

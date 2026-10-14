@@ -23,7 +23,12 @@ pub(super) fn client_builder(
         .no_proxy()
         .dns_resolver(Arc::new(GuardedResolver(destination)))
         .redirect(reqwest::redirect::Policy::none())
+        .retry(reqwest::retry::never())
 }
+
+#[cfg(test)]
+#[path = "client_retry_tests.rs"]
+mod retry_tests;
 
 pub(super) struct HostState {
     pub(super) gate: Arc<Mutex<()>>,
@@ -83,6 +88,10 @@ impl Fetcher {
             .map_err(|source| FetchError::Client { source })?;
         Ok(Self {
             client,
+            effective_user_agent: user_agent,
+            capture_clock: super::time::CaptureClock::System,
+            #[cfg(test)]
+            capture_interrupt: super::acquisition::CaptureInterruption::None,
             destination,
             cache_dir,
             default_delay,

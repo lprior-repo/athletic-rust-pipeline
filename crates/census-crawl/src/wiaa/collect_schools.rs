@@ -177,6 +177,7 @@ mod tests {
                 write_cache(&body_path, &meta_path, body, &meta)?;
                 let year = SchoolYear::new(2031).ok_or("run season")?;
                 let ctx = AdapterContext {
+                    capture: crate::CaptureContext::LegacyMetadata,
                     fetcher: &fetcher,
                     store: &store,
                     refresh: false,

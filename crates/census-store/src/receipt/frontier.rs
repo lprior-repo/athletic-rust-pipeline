@@ -86,6 +86,9 @@ impl Store {
             let (key, raw) = guard
                 .into_inner()
                 .map_err(|source| StoreError::Read { source })?;
+            if key.starts_with(b"source_acquisition_attempt_") {
+                continue;
+            }
             let receipt: Receipt =
                 serde_json::from_slice(raw.as_ref()).map_err(|source| StoreError::Decode {
                     key: format!("receipts/{}", String::from_utf8_lossy(&key)),

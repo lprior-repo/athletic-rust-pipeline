@@ -131,11 +131,18 @@ fn bound_token_preserves_the_complete_manifest_bytes_digest_and_jurisdiction_ord
     check!(eq; token.run_manifest_digest, Some(serialized_digest(&bound)?));
     let encoded = serialized_bytes(&token)?;
     let golden_token = format!(
-        "{{\"protocol\":3,\"store_identity\":\"{identity}\",\"run_manifest_digest\":\"{}\",\"store_schema\":2,\"key_format\":1,\"logical_schema\":3,\"semantic_policy\":17,\"input_root\":\"{}\",\"snapshot_sequence\":{},\"as_of\":\"2026-10-13\"}}",
+        "{{\"protocol\":3,\"store_identity\":\"{identity}\",\"run_manifest_digest\":\"{}\",\"store_schema\":2,\"key_format\":1,\"logical_schema\":3,\"semantic_policy\":18,\"input_root\":\"{}\",\"snapshot_sequence\":{},\"as_of\":\"2026-10-13\"}}",
         serialized_digest(&bound)?, lineage.source_digest, snapshot.sequence()
     );
     check!(eq; encoded, golden_token.as_bytes());
     check!(eq; token.digest()?, super::super::codec::sha256_hex(golden_token.as_bytes()));
+    let mut historical = token.clone();
+    historical.semantic_policy = 17;
+    let historical_golden =
+        golden_token.replace("\"semantic_policy\":18,", "\"semantic_policy\":17,");
+    check!(eq; serialized_bytes(&historical)?, historical_golden.as_bytes());
+    check!(eq; historical.digest()?, super::super::codec::sha256_hex(historical_golden.as_bytes()));
+    check!(ne; token.digest()?, historical.digest()?);
     let mut reordered = bound.clone();
     reordered.jurisdictions.swap(0, 1);
     check!(ne; serialized_digest(&reordered)?, serialized_digest(&bound)?);

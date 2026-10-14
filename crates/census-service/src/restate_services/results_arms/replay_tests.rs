@@ -31,6 +31,7 @@ fn school(name: &str, owner: &str) -> CanonicalSchool {
 
 fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         store,
         fetcher,
         refresh: false,

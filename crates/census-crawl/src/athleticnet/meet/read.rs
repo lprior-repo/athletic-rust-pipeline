@@ -1,7 +1,7 @@
 use super::super::parse::{metric_bare, parse_mark, published_date, published_token};
 use super::wire::{EventDivisions, PublishedEvent, PublishedLeg};
 use crate::hytek::{parse_field_mark, parse_time};
-use census_domain::model::{EventKind, Grade, Mark, Sport};
+use census_domain::model::{parse_result_status, EventKind, Grade, Mark, Sport};
 use census_domain::UsJurisdiction;
 use std::collections::BTreeMap;
 
@@ -38,7 +38,7 @@ pub(super) fn meet_mark(
     published: &str,
     event_type: Option<&str>,
 ) -> Option<(Mark, bool)> {
-    if crate::result_status::invalid_token(published).is_some() {
+    if parse_result_status(published).is_some() {
         return Some((Mark::Raw(published.to_string()), false));
     }
     if !matches!(kind, EventKind::Unmapped { .. }) {

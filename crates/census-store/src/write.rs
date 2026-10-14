@@ -107,6 +107,7 @@ impl Store {
         key: &str,
         payload: &T,
     ) -> StoreResult<()> {
+        crate::acquisition::codec::reject_generic_phase(phase)?;
         let entry = serde_json::json!({
             "key": key,
             "at": SystemClock.today_iso8601(),

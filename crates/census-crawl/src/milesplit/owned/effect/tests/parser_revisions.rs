@@ -34,10 +34,7 @@ fn seed_history(
     reference: &ResultSetRef,
     capture: FetchOutcome,
 ) -> TestResult {
-    let mut page = match parse_owned_meet(&capture.body, 725218) {
-        OwnedMeetVerdict::Parsed(page) => page,
-        other => return Err(format!("XC owned fixture: {other:?}").into()),
-    };
+    let mut page = parse_owned_meet(&capture.body, 725218)?;
     check!(eq; page.rows.len(), 1);
     page.rows.first_mut().ok_or("owned row")?.event_kind = EventKind::Track5000m;
     let recording = crate::recording::Recording::new();
@@ -49,10 +46,7 @@ fn seed_history(
     record_outcome(
         &staged,
         reference,
-        &OwnedMeetOutcome {
-            capture,
-            verdict: OwnedMeetVerdict::Parsed(page),
-        },
+        &OwnedMeetOutcome::historical_fixture(capture, OwnedMeetVerdict::Parsed(page)),
     )?;
     let mut batch = store.write_batch();
     for entry in recording.drain().journal {
@@ -77,7 +71,9 @@ fn xc_interpretation_allocates_v4_and_preserves_v3_rows_and_v1_capture() -> Test
             let body = xc_body()?;
             seed(&fetcher, &reference, &body)?;
             let ctx = context(&store, &fetcher)?;
-            let capture = fetch_owned_capture(&fetcher, &reference, &ctx.fetch_options()).await?;
+            let capture = fetch_owned_capture(&ctx, &reference, &ctx.fetch_options())
+                .await?
+                .into_capture();
             seed_history(&store, &ctx, &reference, capture)?;
             let history = snapshot(&store, HISTORICAL_PHASE)?;
             let raw = snapshot(&store, OWNED_CAPTURE_PHASE)?;
@@ -102,7 +98,7 @@ fn xc_interpretation_allocates_v4_and_preserves_v3_rows_and_v1_capture() -> Test
             drop(store);
             let store = Store::open(dir.path().join("store"))?;
             let replay = read_owned_meet(&context(&store, &fetcher)?, &reference).await?;
-            check!(eq; replay.verdict, current.verdict);
+            check!(eq; replay.verdict(), current.verdict());
             check!(eq; snapshot(&store, OWNED_MEET_PHASE)?, interpreted);
             check!(eq; snapshot(&store, HISTORICAL_PHASE)?, history);
             check!(eq; snapshot(&store, OWNED_CAPTURE_PHASE)?, raw);

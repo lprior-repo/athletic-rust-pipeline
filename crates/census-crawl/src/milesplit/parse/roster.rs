@@ -1,7 +1,7 @@
 use super::super::roster::{
     RosterQuarantine, RosterRejection, RosterRejectionKind, RosterVerdict, SourceRowLocator,
 };
-use super::super::wire::{Roster, RosterAthlete, TeamRef};
+use super::super::wire::{LocatedRosterAthlete, Roster, RosterAthlete, TeamRef};
 use super::{
     athlete_link_regex, athlete_row_regex, gender_cell_regex, grad_cell_regex, html_unescape,
     season_cell_regex,
@@ -34,7 +34,7 @@ pub fn parse_roster(html: &str, team: TeamRef) -> CrawlResult<RosterVerdict> {
 
 #[derive(Default)]
 struct Parsed {
-    athletes: Vec<RosterAthlete>,
+    athletes: Vec<LocatedRosterAthlete>,
     rejected: Vec<RosterRejection>,
     unfinished: Option<SourceRowLocator>,
 }
@@ -89,7 +89,8 @@ impl Parsed {
         match value {
             Ok(athlete) => {
                 reserve(&mut self.athletes)?;
-                self.athletes.push(athlete);
+                self.athletes
+                    .push(LocatedRosterAthlete::new(athlete, locator));
             }
             Err(rejection) => {
                 reserve(&mut self.rejected)?;

@@ -1,8 +1,8 @@
+use super::{narrow, Ledger, Region, SpawnError, Spawner, TaskReport};
+use census_store::clock::{Clock, SystemClock};
 use std::time::Duration;
 
-use census_store::clock::{Clock, SystemClock};
-
-use super::{narrow, narrow_bound, Ledger, Region, SpawnError, Spawner, TaskReport};
+const THREAD_REAP_INTERVAL: Duration = Duration::from_millis(10);
 
 struct Draining<'a> {
     owner: &'a Spawner,
@@ -31,7 +31,7 @@ impl<'a> Draining<'a> {
 
 impl Drop for Draining<'_> {
     fn drop(&mut self) {
-        let remaining = narrow_bound(self.region.tasks.len());
+        let remaining = self.region.remaining_hint();
         self.region.ledger.set_remaining(remaining);
         *self.owner.lock() = std::mem::take(&mut self.region);
     }
@@ -48,6 +48,7 @@ impl Spawner {
             abort_and_reap(region).await?;
         }
         drain_until(region, deadline).await?;
+        region.ledger.set_remaining(narrow(region.pending()?)?);
         drop(region.adopted.take());
         let report = region.ledger.report();
         region.ledger = Ledger::default();
@@ -60,45 +61,49 @@ async fn drain_until(
     region: &mut Region,
     deadline: Option<tokio::time::Instant>,
 ) -> Result<(), SpawnError> {
-    while !region.tasks.is_empty() {
-        let joined = match deadline {
+    region.reap_finished();
+    while !region.is_empty() {
+        match deadline {
             Some(deadline) => {
-                match tokio::time::timeout_at(deadline, region.tasks.join_next_with_id()).await {
-                    Ok(joined) => joined,
-                    Err(_) => return abort_and_reap(region).await,
+                if tokio::time::timeout_at(deadline, wait_for_progress(region))
+                    .await
+                    .is_err()
+                {
+                    return abort_and_reap(region).await;
                 }
             }
-            None => region.tasks.join_next_with_id().await,
-        };
-        match joined {
-            Some(joined) => {
-                region.ledger.classify_join(joined);
-                region.ledger.set_remaining(narrow(region.tasks.len())?);
-            }
-            None => break,
+            None => wait_for_progress(region).await,
         }
+        region.ledger.set_remaining(narrow(region.pending()?)?);
     }
     Ok(())
 }
 
+async fn wait_for_progress(region: &mut Region) {
+    tokio::select! {
+        joined = region.tasks.join_next_with_id(), if !region.tasks.is_empty() => {
+            if let Some(joined) = joined { region.ledger.classify_join(joined); }
+        }
+        () = tokio::time::sleep(THREAD_REAP_INTERVAL), if !region.threads.is_empty() => {}
+    }
+    region.reap_finished();
+}
+
 async fn abort_and_reap(region: &mut Region) -> Result<(), SpawnError> {
+    region.reap_finished();
     if !region.aborting {
-        let remaining = narrow(region.tasks.len())?;
+        let remaining = narrow(region.pending()?)?;
         tracing::warn!(
             remaining,
-            "drain grace deadline reached; aborting async work and reaping blocking effects"
+            "drain grace deadline reached; aborting async work and reaping owned effects"
         );
         region.ledger.note_deadline(remaining);
         region.aborting = true;
         region.tasks.abort_all();
     }
-    reap(region).await
-}
-
-async fn reap(region: &mut Region) -> Result<(), SpawnError> {
-    while let Some(joined) = region.tasks.join_next_with_id().await {
-        region.ledger.classify_join(joined);
-        region.ledger.set_remaining(narrow(region.tasks.len())?);
+    while !region.is_empty() {
+        wait_for_progress(region).await;
+        region.ledger.set_remaining(narrow(region.pending()?)?);
     }
     Ok(())
 }

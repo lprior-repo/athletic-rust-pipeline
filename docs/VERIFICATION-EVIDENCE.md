@@ -1355,3 +1355,11 @@ allocation_count 1,344,479 → 1,427,442 (+6.2%) and `census/merge/coaches_scan`
 (`read/mod.rs`, `read/view/legacy*.rs`, `JournalReadBudget`, `format/existing.rs`); the tail-time
 number is load-contaminated (the run printed repeated `Unable to complete 100 samples in 5.0s`
 warnings). Both require a quiet re-measure before any conclusion.
+
+
+## 2026-10-14 PR #29 focused implementation history
+
+The [concise PR #29 record](verification/2026-10-14-pr29-summary.md) retains scoped test
+results, earlier failures, current qualification limits and the Git snapshot for the original
+logs and reports. PR #29 remains open. Passing focused/basic lanes do not certify release,
+native faults, reusable production, full-spec completion or recruiting publication.

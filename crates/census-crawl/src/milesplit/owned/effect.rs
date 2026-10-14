@@ -1,5 +1,8 @@
+#[cfg(test)]
+use super::{parse_owned_meet, OwnedMeetParseError};
 use super::{
-    parse_owned_meet, OwnedMeetOutcome, OwnedMeetVerdict, OWNED_CAPTURE_PHASE, OWNED_MEET_PHASE,
+    OwnedCaptureResourceFailure, OwnedMeetOutcome, OwnedMeetVerdict, OwnedParseResourceFailure,
+    OwnedResourceReceipt, OWNED_CAPTURE_PHASE, OWNED_MEET_PHASE,
 };
 use crate::milesplit::fetch::{fetch_owned_capture, owned_meet_id, owned_meet_url};
 use crate::milesplit::wire::ResultSetRef;
@@ -29,8 +32,8 @@ pub(crate) async fn read_owned_meet(
     ctx: &AdapterContext<'_>,
     reference: &ResultSetRef,
 ) -> CrawlResult<OwnedMeetOutcome> {
-    let capture = match fetch_owned_capture(ctx.fetcher, reference, &ctx.fetch_options()).await {
-        Ok(capture) => capture,
+    let acquired = match fetch_owned_capture(ctx, reference, &ctx.fetch_options()).await {
+        Ok(acquired) => acquired,
         Err(error) => {
             if !error.retryable() {
                 record_failure(ctx, reference, &error)?;
@@ -38,18 +41,22 @@ pub(crate) async fn read_owned_meet(
             return Err(error);
         }
     };
-    let verdict = if capture.status == 200 {
-        parse_owned_meet(&capture.body, owned_meet_id(reference)?)
-    } else {
-        OwnedMeetVerdict::Refused {
-            status: capture.status,
-        }
-    };
-    let outcome = OwnedMeetOutcome { capture, verdict };
+    let outcome =
+        match OwnedMeetOutcome::interpret(acquired, owned_meet_id(reference)?, ctx.capture)? {
+            super::OwnedInterpretationOutcome::Interpreted(outcome) => outcome,
+            super::OwnedInterpretationOutcome::Resource { capture, failure } => {
+                return retain_limited_capture(
+                    ctx,
+                    reference,
+                    capture.into_capture(),
+                    failure.into(),
+                );
+            }
+        };
     match record_outcome(ctx, reference, &outcome) {
         Ok(()) => Ok(outcome),
         Err(error @ CrawlError::Resource { .. }) => {
-            retain_limited_capture(ctx, reference, outcome, &error)
+            retain_limited_capture(ctx, reference, outcome.into_capture(), error)
         }
         Err(error) => Err(error),
     }
@@ -64,52 +71,82 @@ fn record_outcome(
     reference: &ResultSetRef,
     outcome: &OwnedMeetOutcome,
 ) -> CrawlResult<()> {
-    let key = content_key(reference, &outcome.capture);
-    let manifest = acquisition_manifest_key(owned_meet_id(reference)?, &outcome.capture)?;
-    capture::archive(ctx, &key, &manifest, &outcome.capture)?;
+    let key = content_key(reference, outcome.capture());
+    let manifest = acquisition_manifest_key(owned_meet_id(reference)?, outcome.capture())?;
+    capture::archive(ctx, &key, &manifest, outcome.capture())?;
     interpretation::record(ctx, &key, &manifest, outcome)
 }
 
 fn retain_limited_capture(
     ctx: &AdapterContext<'_>,
     reference: &ResultSetRef,
-    mut outcome: OwnedMeetOutcome,
-    error: &CrawlError,
+    capture: FetchOutcome,
+    error: CrawlError,
 ) -> CrawlResult<OwnedMeetOutcome> {
-    let archived = immutable_body(ctx, &outcome.capture)?;
-    let mut detail = format!(
-        "{error}; owned capture {} remains unfinished; immutable bytes: {}",
-        outcome.capture.content_digest,
-        archived.display()
-    );
+    let key = content_key(reference, &capture);
+    let manifest = acquisition_manifest_key(owned_meet_id(reference)?, &capture)?;
+    match capture::archive(ctx, &key, &manifest, &capture) {
+        Ok(()) | Err(CrawlError::Resource { .. }) => {}
+        Err(error) => return Err(error),
+    }
+    let archived = immutable_body(ctx.fetcher, &capture)?;
+    let locator = match &error {
+        CrawlError::OwnedParseResource(failure) => failure.locator().to_string(),
+        _ => "data".into(),
+    };
+    let origin = match &error {
+        CrawlError::OwnedParseResource(failure) => failure.stable_origin().to_string(),
+        _ => error.to_string(),
+    };
+    let body_locator = format!("archive/bodies/{}.body", capture.content_digest);
     let payload = serde_json::json!({
-        "capture": outcome.capture, "disposition": "resource_limit", "unfinished": true,
-        "capture_available": true, "immutable_body": archived, "unfinished_locator": "data",
-        "resource_error": error.to_string(),
+        "capture": &capture, "disposition": "resource_limit", "unfinished": true,
+        "capture_available": true, "immutable_body": body_locator, "unfinished_locator": locator,
+        "resource_error": &origin,
     });
     let key = format!(
-        "partial/resource/{}/{}",
+        "partial/resource-v2/{}/{}",
         reference.meet_id,
-        journal::digest(&payload)?
+        journal::digest(&(manifest, &origin))?
     );
     let mut batch = ctx.write_batch();
     let staged = journal::stage_capture(ctx, &mut batch, OWNED_MEET_PHASE, &key, &payload)
         .and_then(|changed| if changed { batch.commit() } else { Ok(()) });
-    match staged {
-        Ok(()) => {}
-        Err(CrawlError::Resource { .. }) => detail.push_str("; recording cannot retain the partial receipt; immutable capture locator is report-only"),
+    let receipt = match staged {
+        Ok(()) => OwnedResourceReceipt::Retained,
+        Err(CrawlError::Resource { .. }) => OwnedResourceReceipt::ReportOnly,
         Err(error) => return Err(error),
-    }
-    outcome.verdict = OwnedMeetVerdict::Malformed { detail };
-    Ok(outcome)
+    };
+    Err(match error {
+        CrawlError::OwnedParseResource(failure) => {
+            failure.retain(capture, archived, receipt).into()
+        }
+        CrawlError::Resource {
+            resource,
+            requested,
+            limit,
+        } => {
+            OwnedCaptureResourceFailure::new(resource, requested, limit, capture, archived, receipt)
+                .into()
+        }
+        error => error,
+    })
+}
+
+pub(crate) fn retained_parse_resource(
+    fetcher: &crate::net::Fetcher,
+    capture: FetchOutcome,
+    failure: OwnedParseResourceFailure,
+) -> CrawlResult<OwnedParseResourceFailure> {
+    let archived = immutable_body(fetcher, &capture)?;
+    Ok(failure.retain(capture, archived, OwnedResourceReceipt::NotRequested))
 }
 
 fn immutable_body(
-    ctx: &AdapterContext<'_>,
+    fetcher: &crate::net::Fetcher,
     capture: &FetchOutcome,
 ) -> CrawlResult<std::path::PathBuf> {
-    let path = ctx
-        .fetcher
+    let path = fetcher
         .cache_dir()
         .join("archive")
         .join("bodies")

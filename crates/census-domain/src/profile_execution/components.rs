@@ -48,7 +48,7 @@ pub(super) fn components_v1(
         ContractRoleV1::Participation => Ok(PolicyComponentsV1::Participation),
         ContractRoleV1::Publication => Ok(PolicyComponentsV1::Publication {
             logical_schema: 3,
-            semantic_revision: 17,
+            semantic_revision: 18,
         }),
         ContractRoleV1::SourcePlan => Ok(PolicyComponentsV1::SourcePlan),
         ContractRoleV1::Completion => Ok(PolicyComponentsV1::Completion),

@@ -6,7 +6,7 @@ use tokio::sync::oneshot;
 use super::{Counters, Spawner};
 use crate::outcome::Outcome;
 
-enum Completion<T, E> {
+pub(super) enum Completion<T, E> {
     Returned(Result<T, E>),
     Panicked,
 }
@@ -51,7 +51,7 @@ impl Spawner {
                 }
             }
         };
-        if !self.push_blocking(run, permit) {
+        if !self.push_blocking(run, permit).await {
             return Outcome::Cancelled;
         }
         match rx.await {
@@ -61,9 +61,58 @@ impl Spawner {
             Err(_) => Outcome::Cancelled,
         }
     }
+
+    pub(super) async fn push_blocking<F>(
+        &self,
+        job: F,
+        permit: tokio::sync::OwnedSemaphorePermit,
+    ) -> bool
+    where
+        F: FnOnce(Arc<Counters>) + Send + 'static,
+    {
+        loop {
+            {
+                let mut region = self.lock();
+                if region.closed {
+                    return false;
+                }
+                region.reap_finished();
+                match region.worker_has_room(self.capacity) {
+                    Ok(true) => {
+                        let counters = Arc::new(Counters::default());
+                        let witness = Arc::clone(&counters);
+                        let task = region.tasks.spawn_blocking(move || {
+                            let _permit = permit;
+                            job(counters);
+                        });
+                        region.ledger.track_blocking(task.id(), witness);
+                        region.ledger.accept();
+                        return true;
+                    }
+                    Ok(false) => {}
+                    Err(error) => {
+                        tracing::error!(%error, "worker descriptor accounting refused an unstarted effect");
+                        return false;
+                    }
+                }
+            }
+            self.wait_worker_reap().await;
+        }
+    }
+
+    pub(super) async fn wait_worker_reap(&self) {
+        let mut stopping = self.stopping();
+        if *stopping.borrow() {
+            return;
+        }
+        tokio::select! {
+            _ = stopping.changed() => {},
+            () = tokio::time::sleep(std::time::Duration::from_millis(10)) => {},
+        }
+    }
 }
 
-fn publish<T, E>(tx: oneshot::Sender<Completion<T, E>>, completion: Completion<T, E>) {
+pub(super) fn publish<T, E>(tx: oneshot::Sender<Completion<T, E>>, completion: Completion<T, E>) {
     if tx.send(completion).is_err() {
         tracing::debug!("a region job finished with no caller waiting for its value");
     }

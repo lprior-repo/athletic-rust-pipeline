@@ -5,6 +5,9 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
+#[cfg(test)]
+mod http_retry_fixture;
+
 pub const CONCURRENCY_BOUND: usize = 8;
 
 pub const FLUSH_UNITS: usize = 64;
@@ -13,6 +16,8 @@ pub const SCHOOL_BINDINGS: usize = 65_536;
 
 #[derive(Debug, thiserror::Error)]
 pub enum CrawlError {
+    #[error(transparent)]
+    Capture(#[from] crate::net::CaptureTransportError),
     #[error(transparent)]
     Fetch(#[from] crate::net::FetchError),
     #[error("regex {pattern} failed to compile: {source}")]
@@ -55,6 +60,10 @@ pub enum CrawlError {
         requested: usize,
         limit: usize,
     },
+    #[error(transparent)]
+    OwnedParseResource(#[from] crate::milesplit::OwnedParseResourceFailure),
+    #[error(transparent)]
+    OwnedCaptureResource(#[from] crate::milesplit::OwnedCaptureResourceFailure),
     #[error("converter {command} exceeded its {deadline:?} deadline and was killed")]
     ConverterDeadline {
         command: String,
@@ -132,7 +141,6 @@ pub mod raceday;
 pub mod recording;
 pub mod registry;
 pub mod result_file;
-mod result_status;
 pub mod riil;
 pub mod row_hygiene;
 pub mod school_sites;
@@ -154,7 +162,8 @@ pub use registry::{
 
 pub use athlete_observations::athlete_observations_of;
 pub use context::{
-    assess_performance_date, school_observations_of, AdapterContext, PerformanceDateAssessment,
+    assess_performance_date, school_observations_of, AdapterContext, CaptureContext,
+    PerformanceDateAssessment, ResultsCaptureContext,
 };
 pub use recording::{PreparedRecorded, Recorded, RecordedBatch, RecordedJournal, Recording};
 

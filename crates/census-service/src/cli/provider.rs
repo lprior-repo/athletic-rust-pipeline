@@ -84,6 +84,7 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         None => census_crawl::net::today_iso(),
     };
     let context = census_crawl::AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store,
         refresh: args.refresh,

@@ -1,4 +1,5 @@
-use super::super::archive::{initialize_archive, preserve_capture, ArchiveAdmission};
+use super::super::archive::admission::ArchiveCapacity;
+use super::super::archive::{initialize_archive, preserve_capture, ArchiveAdmission, ArchiveLock};
 use super::*;
 use std::sync::{Arc, Barrier};
 
@@ -21,7 +22,10 @@ fn archive_once(
     capture: &capture::Capture,
     capacity: u64,
 ) -> TestResult {
-    let mut admission = ArchiveAdmission::begin_with_capacity(root, archive, capacity)?;
+    let capacity_admission = ArchiveCapacity::new(capacity, archive)?;
+    let archive_lock_admission = ArchiveLock::acquire(root)?;
+    let mut admission =
+        ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
     let stage = test_stage(root, &format!("stage-{stage_name}"))?;
     preserve_capture(archive, &stage, "new", body, capture, &mut admission)?;
     Ok(())
@@ -76,8 +80,12 @@ fn published_capture_with_stale_reservation_is_recovered_on_restart() -> TestRes
     let first_needed = first_body.len() as u64 + first.encoded.len() as u64;
     let second_needed = second_body.len() as u64 + second.encoded.len() as u64;
     let capacity = first_needed + second_needed;
-    let mut first_admission =
-        ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
+    let capacity_first_admission = ArchiveCapacity::new(capacity, &archive)?;
+    let archive_lock_first_admission = ArchiveLock::acquire(root.path())?;
+    let mut first_admission = ArchiveAdmission::begin_with_capacity(
+        &archive_lock_first_admission,
+        capacity_first_admission,
+    )?;
     let first_stage = test_stage(root.path(), "stage-first")?;
     preserve_capture(
         &archive,
@@ -88,7 +96,11 @@ fn published_capture_with_stale_reservation_is_recovered_on_restart() -> TestRes
         &mut first_admission,
     )?;
     drop(first_admission);
-    let mut abandoned = ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
+    drop(archive_lock_first_admission);
+    let capacity_abandoned = ArchiveCapacity::new(capacity, &archive)?;
+    let archive_lock_abandoned = ArchiveLock::acquire(root.path())?;
+    let mut abandoned =
+        ArchiveAdmission::begin_with_capacity(&archive_lock_abandoned, capacity_abandoned)?;
     abandoned.reserve_capture_sizes(
         &first.meta.content_digest,
         &content_digest(&first.encoded),
@@ -96,8 +108,13 @@ fn published_capture_with_stale_reservation_is_recovered_on_restart() -> TestRes
         Some(first.encoded.len() as u64),
     )?;
     drop(abandoned);
-    let mut second_admission =
-        ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
+    drop(archive_lock_abandoned);
+    let capacity_second_admission = ArchiveCapacity::new(capacity, &archive)?;
+    let archive_lock_second_admission = ArchiveLock::acquire(root.path())?;
+    let mut second_admission = ArchiveAdmission::begin_with_capacity(
+        &archive_lock_second_admission,
+        capacity_second_admission,
+    )?;
     let second_stage = test_stage(root.path(), "stage-second")?;
     preserve_capture(
         &archive,
@@ -125,8 +142,12 @@ fn reserved_bytes_are_counted_and_refuse_competing_captures() -> TestResult {
     let first_meta_digest = content_digest(&first.encoded);
     let second_digest = second.meta.content_digest.clone();
     let second_meta_digest = content_digest(&second.encoded);
-    let mut first_admission =
-        ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
+    let capacity_first_admission = ArchiveCapacity::new(capacity, &archive)?;
+    let archive_lock_first_admission = ArchiveLock::acquire(root.path())?;
+    let mut first_admission = ArchiveAdmission::begin_with_capacity(
+        &archive_lock_first_admission,
+        capacity_first_admission,
+    )?;
     first_admission.reserve_capture_sizes(
         &first_digest,
         &first_meta_digest,
@@ -140,6 +161,7 @@ fn reserved_bytes_are_counted_and_refuse_competing_captures() -> TestResult {
         Some(second.encoded.len() as u64),
     );
     drop(first_admission);
+    drop(archive_lock_first_admission);
     match result {
         Err(FetchError::ArchiveCapacity { .. }) => Ok(()),
         Ok(_) => Err("second reservation was admitted despite insufficient capacity".into()),
@@ -159,7 +181,10 @@ fn repeated_in_flight_archive_key_reserves_its_bytes_only_once() -> TestResult {
         .checked_add(meta_bytes)
         .ok_or("capacity overflow")?;
     let digest = content_digest(&capture.encoded);
-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
+    let capacity_admission = ArchiveCapacity::new(capacity, &archive)?;
+    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
+    let mut admission =
+        ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
     admission.reserve_capture_sizes(
         &capture.meta.content_digest,
         &digest,
@@ -187,7 +212,10 @@ fn failed_staged_write_releases_reservation_before_admission_is_dropped() -> Tes
     let capacity = u64::try_from(body.len())?
         .checked_add(u64::try_from(capture.encoded.len())?)
         .ok_or("capacity overflow")?;
-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, capacity)?;
+    let capacity_admission = ArchiveCapacity::new(capacity, &archive)?;
+    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
+    let mut admission =
+        ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
     let stage = test_stage(root.path(), "stage-obstructed")?;
     let obstruction = stage.join("new.body");
     std::fs::write(&obstruction, b"retained interrupted bytes")?;

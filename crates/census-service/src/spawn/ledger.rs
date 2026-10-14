@@ -45,6 +45,10 @@ impl Ledger {
         self.blocking.insert(id, counters);
     }
 
+    pub(super) fn tracked_blocking_count(&self) -> usize {
+        self.blocking.len()
+    }
+
     pub(super) fn accept(&mut self) {
         bump(&mut self.report.accepted, 1);
     }
@@ -65,6 +69,16 @@ impl Ledger {
             self.classify(state);
         }
         if witness.is_some_and(|task| task.failed.load(Ordering::Acquire)) {
+            bump(&mut self.report.failed, 1);
+        }
+    }
+
+    pub(super) fn classify_thread(&mut self, joined: std::thread::Result<()>, witness: &Counters) {
+        self.classify(match joined {
+            Ok(()) => DrainState::Completed,
+            Err(_) => DrainState::Panicked,
+        });
+        if witness.failed.load(Ordering::Acquire) {
             bump(&mut self.report.failed, 1);
         }
     }

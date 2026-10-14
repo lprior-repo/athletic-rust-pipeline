@@ -100,7 +100,7 @@ pub(super) fn blocked(
     let payload = serde_json::json!({
         "meet": input.reference.meet_id, "rsid": input.reference.rsid, "source_url": input.reference.url,
         "performance_as_of": input.performance_as_of,
-        "capture": capture::provenance(&input.acquired.outcome.capture),
+        "capture": capture::provenance(input.acquired.outcome.capture()),
         "raw_metadata_capture": capture::provenance(metadata),
         "locator": locator.map(|row| row.locator.as_str()), "resume_from_owned_index": index,
         "disposition": "resource_limit", "unfinished": true, "resource_error": error.to_string(),

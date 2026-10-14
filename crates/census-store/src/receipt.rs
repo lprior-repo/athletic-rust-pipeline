@@ -104,6 +104,9 @@ impl Store {
 }
 
 pub(super) fn refuse_over_operation(operation: &str, digest: &str) -> StoreResult<()> {
+    if operation.starts_with("source_acquisition_attempt_") {
+        return Err(crate::CaptureError::CaptureQualificationOptInRequired.into());
+    }
     if operation.is_empty() {
         return Err(StoreError::Refused {
             detail: "operation id must not be empty: a receipt keyed by nothing records nothing"

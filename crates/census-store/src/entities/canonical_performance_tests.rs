@@ -9,6 +9,9 @@ use census_domain::model::{
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+#[path = "canonical_performance_tests/result_status.rs"]
+mod result_status;
+
 fn performance(source_key: &str, identity: SourceIdentity) -> TestResult<CanonicalPerformance> {
     let school = CanonicalSchool::mint(
         UsJurisdiction::Wisconsin,

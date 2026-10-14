@@ -58,6 +58,7 @@ impl FixtureRun {
 
     async fn collect(&self) -> Result<crate::AdapterReport, Box<dyn std::error::Error>> {
         let context = AdapterContext {
+            capture: crate::CaptureContext::LegacyMetadata,
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

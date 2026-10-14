@@ -15,6 +15,7 @@ pub(super) async fn gather_athleticnet(
     let season =
         SchoolYear::new(2026).ok_or_else(|| anyhow::anyhow!("2026 is not a valid school year"))?;
     let context = census_crawl::AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store,
         refresh: args.refresh,

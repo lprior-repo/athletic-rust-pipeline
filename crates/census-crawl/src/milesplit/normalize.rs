@@ -1,4 +1,4 @@
-use super::wire::{RosterAthlete, Site, TeamRef};
+use super::wire::{LocatedRosterAthlete, RosterAthlete, Site, TeamRef};
 use crate::{CrawlError, CrawlResult};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, Gender,
@@ -35,7 +35,7 @@ struct Projection<'a> {
 
 pub fn roster_entities(
     team: &TeamRef,
-    entries: &[RosterAthlete],
+    entries: &[LocatedRosterAthlete],
     school_year: SchoolYear,
     observed_on: &str,
     site: &Site,
@@ -54,7 +54,8 @@ pub fn roster_entities(
         at: observed_on,
         site,
     };
-    let programs = entries.iter().try_fold(0u16, |programs, entry| {
+    let programs = entries.iter().try_fold(0u16, |programs, member| {
+        let entry = member.athlete();
         athletes.push(roster_athlete_entity(entry, &projection)?);
         Ok::<_, CrawlError>(sport_iter(entry).fold(programs, |mask, sport| {
             mask | program_bit(sport, entry.gender)
@@ -63,7 +64,7 @@ pub fn roster_entities(
     Ok((school, athletes, roster_teams(programs, &projection)?))
 }
 
-fn admit(team: &TeamRef, entries: &[RosterAthlete], at: &str) -> CrawlResult<()> {
+fn admit(team: &TeamRef, entries: &[LocatedRosterAthlete], at: &str) -> CrawlResult<()> {
     if entries.len() > MAX_WINDOW_ROWS {
         return Err(resource(
             "roster projection rows",
@@ -80,7 +81,8 @@ fn admit(team: &TeamRef, entries: &[RosterAthlete], at: &str) -> CrawlResult<()>
     ]
     .into_iter()
     .try_fold(at.len(), |total, value| add(total, value.len()))?;
-    let bytes = entries.iter().try_fold(initial, |total, row| {
+    let bytes = entries.iter().try_fold(initial, |total, member| {
+        let row = member.athlete();
         [
             &row.name,
             &row.roster_name,

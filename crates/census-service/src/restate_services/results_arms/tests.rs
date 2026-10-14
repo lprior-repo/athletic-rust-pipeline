@@ -5,6 +5,8 @@ use census_domain::model::SourceMeetRef;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+#[path = "tests/dedicated_worker.rs"]
+mod dedicated_worker;
 #[path = "tests/ihsa.rs"]
 mod ihsa;
 
@@ -153,6 +155,7 @@ fn an_unselected_milesplit_source_performs_no_acquisition() -> TestResult {
                 scope(2024)?,
                 SourceSelection::parse(&["coach_directories".to_string()])
                     .map_err(crate::restate_services::tests::sdk_error)?,
+                ResultsCaptureExecution::LegacyFresh,
             )
             .await
             .map_err(crate::restate_services::tests::sdk_error)?;
@@ -202,6 +205,7 @@ fn malformed_owned_meet_locator_is_quarantined_instead_of_silently_filtered() ->
                 &store,
                 &fetcher,
                 (std::slice::from_ref(&meet), scope(2024)?),
+                &ResultsCaptureExecution::LegacyFresh,
             )
             .await
             .map_err(crate::restate_services::tests::sdk_error)?;

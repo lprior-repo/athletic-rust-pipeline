@@ -429,3 +429,21 @@ references before any consumer derives rows. A changed profile/policy/input has 
 and publication identity; existing historical frozen/publication records retain their exact
 meanings and current read/refusal behavior. No automatic migration, destructive cleanup, corpus
 adoption or current-runtime acceptance follows from this documentation amendment.
+
+### 2026-10-14: explicit result-status contradictions and policy 18
+
+Policy 18 conservatively retains a scalar contradiction when an explicit terminal result
+status and a numeric mark share a natural result identity. The shared domain classification
+preserves source parser status precedence and distinguishes explicit DQ/DNF/DNS/NH/FOUL/NM/NT/SCR
+from ambiguous X/-- placeholders. Contested contexts cannot supply best marks; compatible
+retained alternatives remain eligible. This does not adjudicate source withdrawal authority.
+
+The cutover preserves schema 3, codec/token 3, manifest 2, Store schema 2 and key format 1.
+Policy-17 artifacts and receipts join the existing unsupported historical policies: retain
+original bytes and refuse current semantic reuse before retirement, cancellation or mutation.
+New policy-18 generation/token/recipe identities cannot return policy-17 Published receipts.
+The configuration-only publication descriptor now names policy 18, with a new exact content
+digest and unchanged descriptor version/revision. Retain the exact policy-17 descriptor fixture
+and reject its old reference without rewriting the raw profile. Current selected execution
+remains unqualified. The dated result-status verification document records actual evidence
+separately from this architectural decision.

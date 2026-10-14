@@ -20,10 +20,17 @@ const DEFAULT_BROWSER_EXECUTABLE: &str = "chromium";
 const LANE_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const LANE_CHALLENGE_WAIT: Duration = Duration::from_secs(30);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ServeCaptureProtocol {
+    LegacyFresh,
+    FreshQualificationV1,
+}
+
 #[derive(Debug, Clone)]
 pub struct ServeOptions {
     pub listen: SocketAddr,
     pub data_dir: PathBuf,
+    pub capture_protocol: ServeCaptureProtocol,
     pub max_concurrent: usize,
     pub drain_timeout: Duration,
     pub memory_budget_bytes: u64,
@@ -35,6 +42,7 @@ impl Default for ServeOptions {
         Self {
             listen: SocketAddr::from(([127, 0, 0, 1], 9080)),
             data_dir: PathBuf::from("var/census-service"),
+            capture_protocol: ServeCaptureProtocol::LegacyFresh,
             max_concurrent: DEFAULT_MAX_CONCURRENT,
             drain_timeout: DEFAULT_DRAIN_TIMEOUT,
             memory_budget_bytes: DEFAULT_MEMORY_BUDGET_BYTES,
@@ -106,6 +114,9 @@ fn apply_flag<I: Iterator<Item = String>>(
     match flag {
         "--listen" => parse_listen(value("--listen")?, options)?,
         "--data-dir" => options.data_dir = PathBuf::from(value("--data-dir")?),
+        "--capture-protocol" => {
+            options.capture_protocol = parse_capture_protocol(value("--capture-protocol")?)?;
+        }
         "--max-concurrent" => parse_max_concurrent(value("--max-concurrent")?, options)?,
         "--drain-timeout" => parse_drain_timeout(value("--drain-timeout")?, options)?,
         "--memory-budget-gib" => parse_memory_budget(value("--memory-budget-gib")?, options)?,
@@ -120,6 +131,13 @@ fn apply_flag<I: Iterator<Item = String>>(
         }
     }
     Ok(())
+}
+
+fn parse_capture_protocol(raw: String) -> Result<ServeCaptureProtocol, BootstrapError> {
+    match raw.as_str() {
+        "fresh-qualification-v1" => Ok(ServeCaptureProtocol::FreshQualificationV1),
+        _ => Err(BootstrapError::CaptureProtocolUnsupported { raw }),
+    }
 }
 
 fn parse_listen(raw: String, options: &mut ServeOptions) -> Result<(), BootstrapError> {

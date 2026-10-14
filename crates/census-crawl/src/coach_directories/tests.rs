@@ -629,6 +629,7 @@ fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache() -> Te
         Vec::new(),
     )?;
     let ctx = crate::AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,

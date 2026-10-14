@@ -1,4 +1,4 @@
-use census_crawl::milesplit::RosterAthlete;
+use census_crawl::milesplit::LocatedRosterAthlete;
 use census_crawl::{CrawlError, CrawlResult};
 use census_domain::model::{CanonicalTeam, Gender, GradYear, Sport};
 use std::collections::HashSet;
@@ -30,11 +30,12 @@ impl Counts {
 
     pub(super) fn include(
         &mut self,
-        rows: &[RosterAthlete],
+        rows: &[LocatedRosterAthlete],
         teams: &[CanonicalTeam],
     ) -> CrawlResult<()> {
         self.athletes = add(self.athletes, rows.len())?;
         rows.iter()
+            .map(LocatedRosterAthlete::athlete)
             .filter(|row| row.grad_year == GradYear::CO2027)
             .try_for_each(|row| {
                 self.co2027 = add(self.co2027, 1)?;

@@ -45,7 +45,7 @@ fn reconstructed_revision_one_policy_thirteen_inventory_survives_new_atomic_swit
         .ok_or("new digest")?;
     check!(eq; current, Root::Bundle(Digest::parse(digest)?));
     check!(eq; current_manifest.pointer("/lineage/schema_revision").and_then(Value::as_u64), Some(3));
-    check!(eq; current_manifest.pointer("/lineage/policy_revision").and_then(Value::as_u64), Some(17));
+    check!(eq; current_manifest.pointer("/lineage/policy_revision").and_then(Value::as_u64), Some(18));
     check!(eq; reconstructed::bytes(&legacy)?, historical);
     super::super::manifest::verify_directory(&legacy)?;
     super::super::manifest::verify_published(&published)?;

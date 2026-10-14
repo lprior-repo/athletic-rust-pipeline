@@ -4,8 +4,8 @@ use std::io::Write;
 use std::path::Path;
 
 mod args;
-mod error;
-mod input;
+pub(in crate::cli) mod error;
+pub(in crate::cli) mod input;
 mod operation;
 mod output;
 

@@ -201,6 +201,7 @@ fn context<'a>(
     at: &str,
 ) -> Result<AdapterContext<'a>, JobError> {
     Ok(AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         store,
         fetcher,
         refresh: false,

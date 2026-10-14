@@ -44,7 +44,10 @@ pub fn classify_error(error: &CrawlError) -> (&'static str, String) {
             FetchError::Decode { .. } => "json",
             FetchError::Policy { .. } | FetchError::OriginHeld { .. } => "policy",
             FetchError::Offline { .. } => "offline",
-            FetchError::Cache { .. }
+            FetchError::CaptureStore(_)
+            | FetchError::CaptureDomain(_)
+            | FetchError::Capture(_)
+            | FetchError::Cache { .. }
             | FetchError::InvalidUrl { .. }
             | FetchError::Encode { .. }
             | FetchError::OriginLockIo { .. }
@@ -55,13 +58,16 @@ pub fn classify_error(error: &CrawlError) -> (&'static str, String) {
         CrawlError::Schema { .. } => "schema",
         CrawlError::Store(_) => "store",
         CrawlError::Io { .. } => "io",
-        CrawlError::RegexInit { .. }
+        CrawlError::Capture(_)
+        | CrawlError::RegexInit { .. }
         | CrawlError::Encode { .. }
         | CrawlError::Canonical { .. }
         | CrawlError::Domain(_)
         | CrawlError::Arithmetic { .. }
         | CrawlError::Directory(_)
         | CrawlError::Resource { .. }
+        | CrawlError::OwnedParseResource(_)
+        | CrawlError::OwnedCaptureResource(_)
         | CrawlError::ConverterDeadline { .. }
         | CrawlError::EventIdentity(_)
         | CrawlError::Specification(_)

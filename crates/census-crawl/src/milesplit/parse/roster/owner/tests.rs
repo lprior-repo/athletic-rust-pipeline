@@ -46,6 +46,7 @@ fn ownerless_historical_fragment_cannot_establish_roster_affiliations() -> TestR
             .athletes
             .first()
             .ok_or("captured athlete missing")?
+            .athlete()
             .athlete_id,
         "14399169"
     );
@@ -72,6 +73,7 @@ fn matching_published_owner_admits_historical_rows_without_fabricating_final_pro
             .athletes
             .first()
             .ok_or("captured athlete missing")?
+            .athlete()
             .athlete_id,
         "14399169"
     );

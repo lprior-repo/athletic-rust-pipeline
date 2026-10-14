@@ -30,7 +30,8 @@ async fn exercise(handler: &str) -> TestResult {
         Arc::clone(&store),
         Arc::new(SystemClock),
         None,
-        Arc::clone(&region),
+        crate::restate_services::CaptureExecution::LegacyFresh,
+        Jobs::new(Arc::clone(&store), Arc::clone(&region)),
     );
     let source =
         super::super::TeamsSource::new(owner, Jobs::new(Arc::clone(&store), Arc::clone(&region)));

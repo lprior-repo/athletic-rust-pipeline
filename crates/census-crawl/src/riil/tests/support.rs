@@ -90,6 +90,7 @@ pub(super) fn context<'a>(
     evaluation: &str,
 ) -> anyhow::Result<AdapterContext<'a>> {
     Ok(AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,

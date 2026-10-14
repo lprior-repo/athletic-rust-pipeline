@@ -10,10 +10,15 @@ pub(super) struct Historical {
     pub(super) receipt: Digest,
 }
 
-pub(super) fn install(store: &Store, root: &Path, options: &Options) -> TestResult<Historical> {
+pub(super) fn install(
+    store: &Store,
+    root: &Path,
+    options: &Options,
+    policy: u32,
+) -> TestResult<Historical> {
     let mut dataset = ExportDataset::load(store)?;
-    check!(eq; dataset.lineage.policy_revision, 17);
-    dataset.lineage.policy_revision = 16;
+    check!(eq; dataset.lineage.policy_revision, 18);
+    dataset.lineage.policy_revision = policy;
     dataset.lineage.input_generation = serialized_digest(&(
         &dataset.lineage.store_identity,
         &dataset.lineage.source_digest,
@@ -21,10 +26,10 @@ pub(super) fn install(store: &Store, root: &Path, options: &Options) -> TestResu
         &dataset.lineage.generated_on,
         &dataset.lineage.export_job,
         3_u32,
-        16_u32,
+        policy,
     ))?;
     let namespace = binding::namespace(root)?;
-    let stage = root.join("synthetic-policy16-integrity-fixture");
+    let stage = root.join(format!("synthetic-policy{policy}-integrity-fixture"));
     std::fs::create_dir_all(root.join("generations"))?;
     std::fs::create_dir(&stage)?;
     write_inventory(&stage, &dataset, options)?;

@@ -97,6 +97,7 @@ impl FixtureRun {
 
     async fn run(&self) -> TestResult<crate::AdapterReport> {
         let context = AdapterContext {
+            capture: crate::CaptureContext::LegacyMetadata,
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

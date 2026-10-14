@@ -147,7 +147,7 @@ impl Run<'_> {
             self.ctx.school_year,
         )
         .map_err(|error| match error {
-            super::super::map::SummaryError::Coaches(error) => error,
+            super::super::map::SummaryError::Coaches(error) => *error,
             error => crate::CrawlError::Schema {
                 url: capture.url.to_owned(),
                 detail: error.to_string(),

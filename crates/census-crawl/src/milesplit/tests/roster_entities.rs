@@ -24,9 +24,9 @@ fn roster_names_decode_numeric_entities_without_recursively_decoding_escaped_tex
         let RosterVerdict::Complete { roster } = parse_roster(&body, team.clone())? else {
             return Err("a readable roster row must remain complete".into());
         };
-        check!(eq; roster.athletes[0].name, expected);
-        check!(eq; roster.athletes[0].athlete_id, "42");
-        check!(eq; roster.athletes[0].grad_year.get(), 2027);
+        check!(eq; roster.athletes[0].athlete().name, expected);
+        check!(eq; roster.athletes[0].athlete().athlete_id, "42");
+        check!(eq; roster.athletes[0].athlete().grad_year.get(), 2027);
     }
     Ok(())
 }
@@ -49,8 +49,8 @@ fn provider_owned_athlete_hosts_preserve_profile_urls_and_roster_identity() -> T
             )
             .into());
         };
-        check!(eq; roster.athletes[0].athlete_id, "42");
-        check!(eq; roster.athletes[0].profile_url, url);
+        check!(eq; roster.athletes[0].athlete().athlete_id, "42");
+        check!(eq; roster.athletes[0].athlete().profile_url, url);
         check!(eq; roster.team, team);
     }
     Ok(())

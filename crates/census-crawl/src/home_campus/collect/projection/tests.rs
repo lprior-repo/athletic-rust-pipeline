@@ -36,6 +36,7 @@ fn project_capture(body: &str, section_id: u32, school_id: u64) -> TestResult {
     )?
     .with_offline(true);
     let context = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,

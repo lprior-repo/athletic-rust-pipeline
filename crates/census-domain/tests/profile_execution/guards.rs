@@ -172,3 +172,18 @@ fn exact_policy_sixteen_publication_reference_is_refused_without_rewriting_profi
     refused_role(compile_profile(&profile), ContractRoleV1::Publication)?;
     equal(serialized_bytes(&profile)?, retained)
 }
+
+#[test]
+fn exact_policy_seventeen_publication_reference_is_refused_without_rewriting_profile() -> TestResult
+{
+    let bytes = include_bytes!("fixtures/publication-policy17.canonical.json");
+    let expected = "f6f117d062c64da3c3bcfcdb2a315fde00427105c6bde7e38b625b8d738a83e6";
+    use sha2::{Digest, Sha256};
+    equal(format!("{:x}", Sha256::digest(bytes)).as_str(), expected)?;
+    let mut raw = input()?;
+    raw.policies.publication = ContractRefV1::new(1, 1, expected)?;
+    let profile = QueryProfileV1::new(raw)?;
+    let retained = serialized_bytes(&profile)?;
+    refused_role(compile_profile(&profile), ContractRoleV1::Publication)?;
+    equal(serialized_bytes(&profile)?, retained)
+}

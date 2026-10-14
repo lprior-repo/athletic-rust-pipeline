@@ -280,7 +280,8 @@ interchangeable with geographic scope or cohort eligibility.
 Publication policy revision 6 requires typed direct graduation-year or compatible dated-grade
 support for requested cohort membership after accepted-alias evidence union; unsupported or
 contradictory members and unresolved result subjects are excluded from requested-cohort projections.
-Same-context numeric conflicts disqualify that context from PR selection; a clean compatible
+Same-context numeric conflicts, including a numeric mark contradicted by an explicit terminal
+result status under policy 18, disqualify that context from PR selection; a clean compatible
 context may still supply the best. All-contested slots have no published best. Unfiltered archives
 retain original observations. Older policy-1/2/3/4/5 frozen inputs are retained but refused, never
 reinterpreted or overwritten; accepted-alias, postal-field and full-cell summary rules remain in force.
@@ -300,8 +301,13 @@ relay result is retained as a typed relay result — team, event, published mark
 and the member order the source published — and never decomposed into individual legs or attributed
 to an individual event. Preserve published automatic/hand timing qualifiers when normalizing numeric
 times. An append-only correction may
-refine a raw mark and unknown timing for the same natural identity, source owner, event and team;
-it must not downgrade measured marks, override known timing or delete original observations.
+refine an unknown or ambiguous raw mark and unknown timing for the same natural identity, source
+owner, event and team. An explicit DQ/DNF/DNS/NH/FOUL/NM/NT/SCR token and a numeric mark retain
+a conflict in either arrival order; X and -- alone remain ambiguous placeholders. Unequal
+optional provider namespace/ID authority, including absent versus present ownership, retains a
+context conflict instead of silently enriching ownership, even for equal marks. URL spelling
+is not owner identity. A correction must not downgrade measured marks, override known timing
+or delete original observations.
 
 Wind data is not returned by the MileSplit meet-performances API for outdoor sprint/hurdle marks; all wind readings are currently Unknown or NotApplicable. This is a source limitation, not an adapter defect.
 A published recruiter contact requires one claim binding a school-scoped role and program to a
@@ -400,13 +406,14 @@ load/resource measurements, and actual CLI/Restate/export execution.
 [tools/gate.sh](tools/gate.sh) `--release` executes the format, check, strict Clippy, doc, test,
 zero-comment, architecture-contract, panic-extraction, production-scan/size-budget,
 domain-integrity, purity, module-seam, debt-ratchet, dependency-advisory, feature-powerset,
-bench-presence and pre-release performance lanes; it does not itself execute the native fault
-scenarios or a parser-fuzz campaign, so a passing gate alone is not the whole release acceptance.
-Those obligations remain separately executed and dated: the scenarios through the manual
-`pipeline:durability` wrappers and the fuzz targets in the `fuzz/` workspace, with results recorded
-in [VERIFICATION-EVIDENCE.md](docs/VERIFICATION-EVIDENCE.md). Giving the gate that coverage would
-take a release-only lane invoking `tools/durability/run.sh` over the
-[catalogued fault scenarios](docs/NATIONAL-CENSUS-FAULTS.md) and a bounded `cargo fuzz` smoke per
+bench-presence and pre-release performance lanes. In release mode its durability lane also invokes
+`pipeline:durability` over the [catalogued fault scenarios](docs/NATIONAL-CENSUS-FAULTS.md), with
+owned scratch and the endpoint, receipt-oracle and VM wiring documented in the
+[native harness](tools/durability/README.md). It does not itself execute a parser-fuzz campaign,
+so a passing gate alone is not the whole release acceptance. Native scenario results and separate
+campaigns for the targets in the `fuzz/` workspace must be executed and dated in
+[VERIFICATION-EVIDENCE.md](docs/VERIFICATION-EVIDENCE.md); prerequisites or skipped scenarios do not
+certify fault coverage. Adding parser-fuzz coverage to the gate would require a bounded smoke per
 target. Mutation testing of critical logic was retired by owner decision
 (bead `5rtr`, tombstone in [tools/gate.sh](tools/gate.sh)), so its absence is not a release
 blocker. License **enforcement and cargo-vet are excluded by owner direction**; security checks

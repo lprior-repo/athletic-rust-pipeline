@@ -88,6 +88,7 @@ fn a_journalled_school_is_skipped_on_the_next_run() -> TestResult {
 
 fn context<'a>(fetcher: &'a Fetcher, store: &'a Store) -> TestResult<crate::AdapterContext<'a>> {
     Ok(crate::AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,

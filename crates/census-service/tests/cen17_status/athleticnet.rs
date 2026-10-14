@@ -79,6 +79,7 @@ async fn execute(surface: Option<Value>, status: Option<&str>, numeric_best: boo
     )?;
     let year = SchoolYear::new(2025).ok_or("captured school year")?;
     let context = AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         store: &store,
         fetcher: &fetcher,
         refresh: false,

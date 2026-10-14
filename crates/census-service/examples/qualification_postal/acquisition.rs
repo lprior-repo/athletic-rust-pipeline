@@ -113,6 +113,7 @@ fn seed_capture(fetcher: &Fetcher, url: &str, body: &[u8]) -> Result<Value> {
 #[tracing::instrument(skip(store, fetcher))]
 async fn acquire(store: &Store, fetcher: &Fetcher, observed: &str) -> Result<AdapterReport> {
     let context = AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,

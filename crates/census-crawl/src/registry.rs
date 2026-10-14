@@ -5,7 +5,7 @@ use std::num::NonZeroUsize;
 
 pub use table::descriptors;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub enum TransportKind {
     StructuredApi,
     StaticJson,
@@ -17,7 +17,7 @@ pub enum TransportKind {
     Browser,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub struct SourceCapabilities {
     pub athlete_discovery: bool,
     pub athlete_profile: bool,
@@ -46,14 +46,14 @@ impl SourceCapabilities {
     };
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
 pub struct SourceAdmission {
     pub origin: &'static str,
     pub target_requests_per_second: f64,
     pub maximum_in_flight: NonZeroUsize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
 pub struct SourceDescriptor {
     pub slug: &'static str,
     pub provider: &'static str,
@@ -62,7 +62,7 @@ pub struct SourceDescriptor {
     pub admission: SourceAdmission,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub enum AccessClass {
     Open,
     Artifact,

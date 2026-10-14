@@ -68,7 +68,9 @@ fn relay_interpretation_replays_beside_unchanged_v1_history_and_capture_archive(
             seed(&fetcher, &reference, &body)?;
             let original_ctx = context(&store, &fetcher)?;
             let capture =
-                fetch_owned_capture(&fetcher, &reference, &original_ctx.fetch_options()).await?;
+                fetch_owned_capture(&original_ctx, &reference, &original_ctx.fetch_options())
+                    .await?
+                    .into_capture();
             let key = content_key(&reference, &capture);
             let prior =
                 serde_json::json!({"disposition":"partial","owned_rows":3,"rejected_rows":3});
@@ -105,7 +107,7 @@ fn relay_interpretation_replays_beside_unchanged_v1_history_and_capture_archive(
             assert_mixed_receipt(&store)?;
             let interpreted = store.journal_payloads(OWNED_MEET_PHASE)?;
             let replay = read_owned_meet(&context(&store, &fetcher)?, &reference).await?;
-            check!(eq; replay.verdict, outcome.verdict);
+            check!(eq; replay.verdict(), outcome.verdict());
             check!(eq;
                 store.journal_payloads(OWNED_MEET_PHASE)?,
                 interpreted

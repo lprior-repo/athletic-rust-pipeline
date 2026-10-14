@@ -97,6 +97,7 @@ impl Harness {
         as_of: &str,
     ) -> TestResult<AdapterReport> {
         let ctx = AdapterContext {
+            capture: crate::CaptureContext::LegacyMetadata,
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

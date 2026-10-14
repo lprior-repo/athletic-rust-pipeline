@@ -1,5 +1,6 @@
 mod budget;
 mod capture;
+mod capture_scope;
 mod collection;
 mod meet_pages;
 pub(in crate::restate_services) mod outcomes;
@@ -17,6 +18,7 @@ use serde::{Deserialize, Serialize};
 
 use super::job_error;
 use super::jobs::{assert_some_stage_arms, collect_error};
+use super::jurisdiction::capture_admission::ResultsCaptureExecution;
 use super::{history_stage::HistoricalStageScope, source_selection::SourceSelection};
 use outcomes::{delegated_source, source_complete};
 
@@ -104,6 +106,7 @@ pub(super) async fn results_stage(
     fetcher: Arc<Fetcher>,
     scope: HistoricalStageScope,
     sources: SourceSelection,
+    capture: ResultsCaptureExecution,
 ) -> Result<Json<ResultsStageOutcome>, HandlerError> {
     use futures::{stream, StreamExt, TryStreamExt};
     let selected = selection::select(&store, scope).await?;
@@ -118,11 +121,11 @@ pub(super) async fn results_stage(
                 required.push(slug.to_string());
                 Ok::<_, HandlerError>(required)
             })?;
-    let (store, fetcher, meets) = (&store, &fetcher, selected.meets.as_slice());
+    let (store, fetcher, meets, capture) = (&store, &fetcher, selected.meets.as_slice(), &capture);
     let per_source = stream::iter(sources.iter().filter_map(required_slug))
         .map(Ok::<_, HandlerError>)
         .try_fold(Vec::new(), |mut rows, slug| async move {
-            let row = collect_source(slug, store, fetcher, meets, scope).await?;
+            let row = collect_source(slug, store, fetcher, meets, scope, capture).await?;
             rows.try_reserve(1)
                 .map_err(|_| super::jobs::invariant("result source allocation"))?;
             rows.push(row);
@@ -150,17 +153,19 @@ async fn collect_source(
     fetcher: &Arc<Fetcher>,
     selected: &[SourceMeetRef],
     scope: HistoricalStageScope,
+    capture: &ResultsCaptureExecution,
 ) -> Result<ResultsSourceRows, HandlerError> {
     let Some(arm) = arm_for(slug) else {
         assert_some_stage_arms(slug)?;
         return Ok(delegated_source(slug));
     };
-    collection::collect(slug, arm, store, fetcher, (selected, scope)).await
+    collection::collect(slug, arm, store, fetcher, (selected, scope), capture).await
 }
 
 async fn milesplit_results(
     context: &AdapterContext<'_>,
     meet: &SourceMeetRef,
+    capture: &ResultsCaptureExecution,
 ) -> Result<(usize, AdapterReport), HandlerError> {
     let page = census_crawl::milesplit::MeetPage {
         results_url: meet.results_url.clone(),
@@ -174,7 +179,18 @@ async fn milesplit_results(
     .await
     .map_err(|error| job_error(collect_error(error)))?;
     let options = meet_pages::options(&pages)?;
-    let report = census_crawl::milesplit::collect_result_sets(context, &options)
+    let admitted = capture_scope::admit(context.store, capture, meet, &options)?;
+    let context = AdapterContext {
+        fetcher: context.fetcher,
+        store: context.store,
+        refresh: context.refresh,
+        school_year: context.school_year,
+        observed_on: context.observed_on.clone(),
+        performance_as_of: context.performance_as_of,
+        recording: context.recording,
+        capture: admitted.context(),
+    };
+    let report = census_crawl::milesplit::collect_result_sets(&context, &options)
         .await
         .map_err(|error| job_error(collect_error(error)))?;
     let mut report = meet_pages::record_quarantines(report, pages.quarantined)?;

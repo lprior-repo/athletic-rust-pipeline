@@ -42,7 +42,7 @@ fn accepted_names(body: &str, team: &milesplit::TeamRef) -> TestResult<Vec<Strin
             roster
                 .athletes
                 .iter()
-                .map(|athlete| athlete.name.clone())
+                .map(|member| member.athlete().name.clone())
                 .collect::<Vec<_>>()
         })
         .map_or(Default::default(), core::convert::identity);

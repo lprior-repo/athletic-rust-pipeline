@@ -57,6 +57,7 @@ async fn run_artifact_fixture(labels: FixtureLabels) -> TestResult {
         Vec::new(),
     )?;
     let context = AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         store: &store,
         fetcher: &fetcher,
         refresh: false,

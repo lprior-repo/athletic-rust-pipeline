@@ -7,6 +7,12 @@ use super::MAX_BODY_BYTES;
 
 #[derive(Debug, Error)]
 pub enum FetchError {
+    #[error(transparent)]
+    CaptureStore(Box<census_store::StoreError>),
+    #[error(transparent)]
+    CaptureDomain(#[from] census_domain::model::CaptureDomainError),
+    #[error(transparent)]
+    Capture(#[from] super::CaptureTransportError),
     #[error("http status {status} for {url}")]
     Http { status: u16, url: String },
     #[error("http 429 for {url} (retry-after: {retry_after_secs:?}s)")]
@@ -86,6 +92,12 @@ pub enum FetchError {
     Offline { url: String },
 }
 
+impl From<census_store::StoreError> for FetchError {
+    fn from(error: census_store::StoreError) -> Self {
+        Self::CaptureStore(Box::new(error))
+    }
+}
+
 impl FetchError {
     pub fn retryable(&self) -> bool {
         match self {
@@ -94,8 +106,14 @@ impl FetchError {
             | Self::RateLimited { .. }
             | Self::Cooldown { .. } => true,
             Self::BrowserLane { retryable, .. } => *retryable,
-            Self::Http { status, .. } => *status >= 500 || *status == 429,
-            Self::TooLarge { .. }
+            Self::Http { status, .. } => matches!(
+                census_domain::model::CaptureDispositionV1::for_http_status(*status),
+                Ok(census_domain::model::CaptureDispositionV1::RetryableResponse)
+            ),
+            Self::CaptureStore(_)
+            | Self::CaptureDomain(_)
+            | Self::Capture(_)
+            | Self::TooLarge { .. }
             | Self::Cache { .. }
             | Self::OriginHeld { .. }
             | Self::OriginLockIo { .. }
@@ -234,3 +252,6 @@ pub(crate) fn host_of(url: &str) -> String {
         Err(_) => url.to_string(),
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -46,6 +46,7 @@ impl FixtureRun {
         recording: Option<&Recording>,
     ) -> anyhow::Result<AdapterReport> {
         let context = AdapterContext {
+            capture: crate::CaptureContext::LegacyMetadata,
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

@@ -173,6 +173,7 @@ fn withheld_grade_history_and_rejections_survive_the_same_batch_and_reopen() -> 
                     Vec::new(),
                 )?;
                 let ctx = crate::AdapterContext {
+                    capture: crate::CaptureContext::LegacyMetadata,
                     fetcher: &fetcher,
                     store: &store,
                     refresh: false,

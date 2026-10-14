@@ -1,5 +1,9 @@
 use restate_sdk::prelude::*;
 
+mod capture_execution;
+mod work_admission;
+pub use capture_execution::CaptureExecution;
+
 use crate::census::CollectOptions;
 
 pub(crate) fn run_key(job: &str, parts: &[&str], generation: &ExportGeneration) -> String {

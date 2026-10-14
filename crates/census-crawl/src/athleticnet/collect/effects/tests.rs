@@ -66,6 +66,7 @@ fn prior_profile_effect_retains_its_receipt_while_current_xc_projection_remains_
     )?
     .with_offline(true);
     let ctx = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,

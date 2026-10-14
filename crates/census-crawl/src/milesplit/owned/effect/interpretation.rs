@@ -29,7 +29,7 @@ fn summary(
     key: &str,
     outcome: &OwnedMeetOutcome,
 ) -> CrawlResult<(&'static str, serde_json::Value)> {
-    match &outcome.verdict {
+    match outcome.verdict() {
         OwnedMeetVerdict::Parsed(page) => {
             record_rows(ctx, key, page)?;
             let disposition = if page.individual_parse_complete() {
@@ -41,7 +41,7 @@ fn summary(
         }
         verdict => Ok((
             "partial",
-            serde_json::json!({ "capture": &outcome.capture, "verdict": verdict }),
+            serde_json::json!({ "capture": outcome.capture(), "verdict": verdict }),
         )),
     }
 }
@@ -98,7 +98,7 @@ fn parsed_summary(outcome: &OwnedMeetOutcome, page: &OwnedMeetPage) -> serde_jso
         .count();
     serde_json::json!({
         "disposition": if complete { "parsed" } else { "partial" },
-        "capture": &outcome.capture, "published_rows": page.published_rows,
+        "capture": outcome.capture(), "published_rows": page.published_rows,
         "owned_rows": page.rows.len(), "team_relay_rows": team_relays,
         "rejected_individual_rows": page.rejected.len().saturating_sub(team_relays),
         "individual_parse_complete": complete,

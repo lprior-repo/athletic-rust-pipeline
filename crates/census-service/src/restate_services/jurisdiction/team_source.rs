@@ -1,7 +1,5 @@
 use restate_sdk::prelude::*;
-use std::collections::HashMap;
-use std::sync::{Arc, Weak};
-use tokio::sync::Mutex;
+use std::sync::Arc;
 
 use census_reconcile::identity::WorkflowIdentity;
 
@@ -30,16 +28,11 @@ pub(crate) mod tests;
 pub struct TeamsSource {
     owner: JurisdictionCensus,
     jobs: Jobs,
-    gates: Arc<Mutex<HashMap<String, Weak<Mutex<()>>>>>,
 }
 
 impl TeamsSource {
     pub fn new(owner: JurisdictionCensus, jobs: Jobs) -> Self {
-        Self {
-            owner,
-            jobs,
-            gates: Arc::new(Mutex::new(HashMap::new())),
-        }
+        Self { owner, jobs }
     }
 
     async fn register(

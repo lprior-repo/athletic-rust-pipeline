@@ -137,6 +137,7 @@ fn context<'a>(
     observed_on: &str,
 ) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,

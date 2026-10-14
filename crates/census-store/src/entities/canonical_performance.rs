@@ -1,5 +1,7 @@
 use super::{collision, record, union_vec, CanonicalPerformance, Entity, RetainedConflict};
-use census_domain::model::{Mark, TimingMethod};
+use census_domain::model::{
+    parse_result_status, Mark, ResultStatus, ResultStatusKind, SourceNamespace, TimingMethod,
+};
 
 impl Entity for CanonicalPerformance {
     fn entity_id(&self) -> &str {
@@ -9,7 +11,8 @@ impl Entity for CanonicalPerformance {
     fn merge(&mut self, other: Self) {
         let found = collision(self.id.as_str(), self, &other);
         let scalar_conflict = if found.is_none() {
-            performance_conflict(self, &other)
+            performance_context_conflict(self, &other)
+                .or_else(|| performance_conflict(self, &other))
         } else {
             None
         };
@@ -26,8 +29,7 @@ impl Entity for CanonicalPerformance {
             union_vec(&mut self.evidence, other.evidence);
             return;
         }
-        if matches!(self.mark, Mark::Raw(_))
-            && !matches!(other.mark, Mark::Raw(_))
+        if refines_mark(&self.mark, &other.mark)
             && self.event == other.event
             && self.team == other.team
         {
@@ -57,9 +59,6 @@ impl Entity for CanonicalPerformance {
         {
             self.timing = other.timing;
         }
-        if self.source_athlete.is_none() {
-            self.source_athlete = other.source_athlete;
-        }
         union_vec(&mut self.evidence, other.evidence);
     }
 }
@@ -70,9 +69,7 @@ fn performance_conflict(
 ) -> Option<RetainedConflict> {
     let timing =
         |value: Option<TimingMethod>| value.filter(|value| *value != TimingMethod::Unknown);
-    let contradictory = (left.mark != right.mark
-        && !matches!(left.mark, Mark::Raw(_))
-        && !matches!(right.mark, Mark::Raw(_)))
+    let contradictory = contradictory_marks(&left.mark, &right.mark)
         || timing(left.timing)
             .zip(timing(right.timing))
             .is_some_and(|(left, right)| left != right)
@@ -111,4 +108,79 @@ fn performance_conflict(
             statements.join(" versus ")
         ),
     ))
+}
+
+fn contradictory_marks(left: &Mark, right: &Mark) -> bool {
+    match (left, right) {
+        (Mark::Raw(_), Mark::Raw(_)) => false,
+        (Mark::Raw(_), _) | (_, Mark::Raw(_)) => {
+            explicit_terminal(left) || explicit_terminal(right)
+        }
+        _ => left != right,
+    }
+}
+
+fn explicit_terminal(mark: &Mark) -> bool {
+    match mark {
+        Mark::Raw(raw) => matches!(
+            parse_result_status(raw).map(ResultStatus::kind),
+            Some(ResultStatusKind::ExplicitTerminal)
+        ),
+        _ => false,
+    }
+}
+
+fn refines_mark(left: &Mark, right: &Mark) -> bool {
+    matches!(left, Mark::Raw(_))
+        && !explicit_terminal(left)
+        && (!matches!(right, Mark::Raw(_)) || explicit_terminal(right))
+}
+
+fn source_owner(performance: &CanonicalPerformance) -> Option<(&SourceNamespace, &str)> {
+    performance
+        .source_athlete
+        .as_ref()
+        .map(|owner| (&owner.namespace, owner.id.as_str()))
+}
+
+fn performance_context_conflict(
+    left: &CanonicalPerformance,
+    right: &CanonicalPerformance,
+) -> Option<RetainedConflict> {
+    let owner = source_owner(left);
+    if owner == source_owner(right)
+        && !explicit_terminal(&left.mark)
+        && !explicit_terminal(&right.mark)
+    {
+        return None;
+    }
+    if left.event == right.event
+        && left.team == right.team
+        && owner == source_owner(right)
+        && (owner.is_some() || left.mark == right.mark)
+    {
+        return None;
+    }
+    let mut statements = [context_statement(left), context_statement(right)];
+    statements.sort();
+    Some(RetainedConflict::new(
+        "Individual result context",
+        left.id.as_str(),
+        "event, team, source_athlete",
+        format!(
+            "unresolved or contradictory individual result contexts: {}",
+            statements.join(" versus ")
+        ),
+    ))
+}
+
+fn context_statement(performance: &CanonicalPerformance) -> String {
+    format!(
+        "{:?}",
+        (
+            &performance.event,
+            &performance.team,
+            source_owner(performance),
+        )
+    )
 }

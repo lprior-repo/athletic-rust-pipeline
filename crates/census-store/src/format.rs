@@ -5,14 +5,15 @@ use std::path::Path;
 use super::clock::{Clock, SystemClock};
 use super::{generation, meta, Store, StoreError, StoreResult};
 
-mod existing;
+pub(crate) mod existing;
 mod migrate;
 
 pub use migrate::MigrationReport;
 
 pub const STORE_SCHEMA_VERSION: u32 = 2;
 pub const KEY_FORMAT_VERSION: u32 = 1;
-pub const LIFECYCLE_REVISION: u32 = 2;
+pub const LIFECYCLE_REVISION: u32 = 4;
+const FRESH_LIFECYCLE_REVISION: u32 = 2;
 
 pub const DEFAULT_CACHE_BYTES: u64 = 1024 * 1024 * 1024;
 
@@ -61,10 +62,41 @@ pub(super) fn open_format(
         initialize(db, meta_keyspace)?;
         return read_format(meta_keyspace);
     }
-    require_current(root, format)
+    let format = require_current(root, format)?;
+    let [_, journal, receipts] = data;
+    let capture = crate::acquisition::validate_format(
+        root,
+        &db.snapshot(),
+        meta_keyspace,
+        journal,
+        receipts,
+        &format,
+    )?;
+    crate::acquisition::require_legacy(&capture)?;
+    crate::installation::validate_format(
+        &db.snapshot(),
+        meta_keyspace,
+        journal,
+        format.lifecycle_revision,
+    )?;
+    Ok(format)
 }
 
-fn require_current(root: &Path, format: StoreFormat) -> StoreResult<StoreFormat> {
+pub(crate) fn require_semantic_format(
+    root: &Path,
+    db: &Database,
+    meta: &Keyspace,
+    journal: &Keyspace,
+) -> StoreResult<StoreFormat> {
+    let format = require_current(root, read_format(meta)?)?;
+    let capture =
+        crate::acquisition::qualification::declaration(&db.snapshot(), meta, journal, &format)?;
+    crate::acquisition::require_legacy(&capture)?;
+    crate::installation::validate_format(&db.snapshot(), meta, journal, format.lifecycle_revision)?;
+    Ok(format)
+}
+
+pub(crate) fn require_current(root: &Path, format: StoreFormat) -> StoreResult<StoreFormat> {
     match classify(&format) {
         Verdict::Current => Ok(format),
         Verdict::Newer {
@@ -102,7 +134,7 @@ fn fresh_directory(
         })
 }
 
-pub(super) fn read_format(meta_keyspace: &Keyspace) -> StoreResult<StoreFormat> {
+pub(crate) fn read_format(meta_keyspace: &Keyspace) -> StoreResult<StoreFormat> {
     Ok(StoreFormat {
         schema_version: meta::get_u32(meta_keyspace, STORE_VERSION)?,
         key_format: meta::get_u32(meta_keyspace, KEY_FORMAT)?,
@@ -184,89 +216,44 @@ fn classify_versioned(format: &StoreFormat, version: u32, key_format: u32) -> Ve
 
 fn initialize(db: &Database, meta_keyspace: &Keyspace) -> StoreResult<()> {
     let mut batch = db.batch();
-    meta::put_text(
-        &mut batch,
-        meta_keyspace,
-        STORE_VERSION,
-        &STORE_SCHEMA_VERSION.to_string(),
-    );
-    meta::put_text(
-        &mut batch,
-        meta_keyspace,
-        KEY_FORMAT,
-        &KEY_FORMAT_VERSION.to_string(),
-    );
-    meta::put_text(
-        &mut batch,
-        meta_keyspace,
-        LIFECYCLE_REVISION_KEY,
-        &LIFECYCLE_REVISION.to_string(),
-    );
-    meta::put_text(
-        &mut batch,
-        meta_keyspace,
-        CREATED_BY,
-        env!("CARGO_PKG_VERSION"),
-    );
-    meta::put_text(
-        &mut batch,
-        meta_keyspace,
-        CREATED_AT,
-        &SystemClock.today_iso8601(),
-    );
-    generation::write_seed(&mut batch, meta_keyspace, 0, 0, 1, 1);
+    stage_initialization(&mut batch, meta_keyspace, FRESH_LIFECYCLE_REVISION);
     batch
         .durability(Some(PersistMode::SyncData))
         .commit()
         .map_err(|source| StoreError::Write { source })
 }
 
-impl Store {
-    pub fn format(root: impl AsRef<Path>) -> StoreResult<StoreFormat> {
-        let (db, _entities, _journal, meta_keyspace, _receipts) =
-            super::open_keyspaces(root.as_ref(), DEFAULT_CACHE_BYTES)?;
-        let format = read_format(&meta_keyspace)?;
-        drop(db);
-        Ok(format)
-    }
-
-    pub fn open(root: impl AsRef<Path>) -> StoreResult<Self> {
-        Self::open_with(root, DEFAULT_CACHE_BYTES)
-    }
-
-    pub fn open_with(root: impl AsRef<Path>, cache_bytes: u64) -> StoreResult<Self> {
-        let root = root.as_ref().to_path_buf();
-        super::ensure_dirs(&root)?;
-        let (db, entities, journal, meta_keyspace, receipts) =
-            super::open_keyspaces(&root, cache_bytes)?;
-        open_format(&root, &db, [&entities, &journal, &receipts], &meta_keyspace)?;
-        Self::recover_opened(root, db, entities, journal, meta_keyspace, receipts)
-    }
-
-    fn recover_opened(
-        root: std::path::PathBuf,
-        db: Database,
-        entities: Keyspace,
-        journal: Keyspace,
-        meta_keyspace: Keyspace,
-        receipts: Keyspace,
-    ) -> StoreResult<Self> {
-        super::read::sweep_stale_temporaries(&root, &meta_keyspace)?;
-        let generations = generation::Generations::seeded(&meta_keyspace)?;
-        let sequences = super::sequences::Counters::seeded(&db, &entities, &meta_keyspace)?;
-        let store = Self {
-            root,
-            db,
-            entities,
-            journal,
-            meta: meta_keyspace,
-            receipts,
-            sequences: std::sync::Arc::new(sequences),
-            generations: std::sync::Arc::new(generations),
-            appends: std::sync::Arc::new(std::sync::Mutex::new(())),
-            staging: std::sync::Arc::new(std::sync::Mutex::new(())),
-        };
-        store.seed_row_marks()?;
-        Ok(store)
-    }
+pub(crate) fn stage_initialization(
+    batch: &mut fjall::OwnedWriteBatch,
+    meta_keyspace: &Keyspace,
+    lifecycle: u32,
+) {
+    meta::put_text(
+        batch,
+        meta_keyspace,
+        STORE_VERSION,
+        &STORE_SCHEMA_VERSION.to_string(),
+    );
+    meta::put_text(
+        batch,
+        meta_keyspace,
+        KEY_FORMAT,
+        &KEY_FORMAT_VERSION.to_string(),
+    );
+    meta::put_text(
+        batch,
+        meta_keyspace,
+        LIFECYCLE_REVISION_KEY,
+        &lifecycle.to_string(),
+    );
+    meta::put_text(batch, meta_keyspace, CREATED_BY, env!("CARGO_PKG_VERSION"));
+    meta::put_text(
+        batch,
+        meta_keyspace,
+        CREATED_AT,
+        &SystemClock.today_iso8601(),
+    );
+    generation::write_seed(batch, meta_keyspace, 0, 0, 1, 1);
 }
+
+mod open;

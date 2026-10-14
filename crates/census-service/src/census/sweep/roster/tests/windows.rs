@@ -46,7 +46,7 @@ async fn persist_prefix(store: &Store, run: &RosterRun<'_>, read: &RosterOutcome
     let commit = Commit::new(store, &roster.team, run, read)?;
     let records = Records::of(&first, &run.site, run.school_year)?;
     let mut counts = Counts::new()?;
-    counts.include(first.athletes(), records.teams())?;
+    counts.include(records.members(), records.teams())?;
     commit.window(Some(&records), &counts, 0, false).await?;
     check!(eq; athletes(store)?, (0..prefix).map(|index| format!("Person{index:04} Runner")).collect::<Vec<_>>());
     Ok(())

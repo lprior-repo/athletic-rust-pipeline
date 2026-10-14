@@ -48,6 +48,7 @@ fn uhsaa_retained_capture_readback_keeps_owned_address_and_unknown_tenure() -> T
         seed(&fetcher, PROFILE, BODY)?;
         let school_year = SchoolYear::new(2026).ok_or("school year")?;
         let context = AdapterContext {
+            capture: crate::CaptureContext::LegacyMetadata,
             fetcher: &fetcher, store: &store, refresh: false, school_year,
             observed_on: "2026-10-12".to_string(),
             performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 10, 12).ok_or("date")?,

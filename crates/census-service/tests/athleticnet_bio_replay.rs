@@ -131,6 +131,7 @@ impl Harness {
 
     async fn run(&self, options: &Options) -> Result<census_crawl::AdapterReport> {
         let ctx = AdapterContext {
+            capture: census_crawl::CaptureContext::LegacyMetadata,
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

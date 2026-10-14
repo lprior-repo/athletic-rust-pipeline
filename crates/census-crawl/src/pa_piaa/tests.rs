@@ -184,6 +184,7 @@ async fn collect_from_cache(
         Vec::new(),
     )?;
     let ctx = crate::AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -278,6 +279,7 @@ fn unchanged_capture_under_larger_horizon_retains_fact_counts_and_owed_targets()
             )?
             .with_offline(true);
             let context = crate::AdapterContext {
+                capture: crate::CaptureContext::LegacyMetadata,
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,

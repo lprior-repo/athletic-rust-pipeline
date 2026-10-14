@@ -45,7 +45,7 @@ fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters(
             .ok_or("roster fixture carries no readable athletes")?
             .athletes
             .iter()
-            .filter(|athlete| athlete.grad_year == GradYear::CO2027)
+            .filter(|athlete| athlete.athlete().grad_year == GradYear::CO2027)
             .count();
         check!(per_roster > 0, "the roster fixture carries Co2027 athletes");
         let walk = Walk {

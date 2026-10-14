@@ -15,6 +15,7 @@ const URL: &str = "https://api.ihsa.org/v1/track-field/meets/2026/events?gender=
 
 fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,

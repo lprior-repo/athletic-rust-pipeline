@@ -10,6 +10,9 @@ fn credit_key(endpoint: &str) -> String {
 
 impl Store {
     pub fn credit_observations(&self, endpoint: &str, operation: &str) -> StoreResult<Credit> {
+        if operation.starts_with("source_acquisition_attempt_") {
+            return Err(crate::CaptureError::CaptureQualificationOptInRequired.into());
+        }
         if endpoint.is_empty() {
             return Err(StoreError::Refused {
                 detail: "crediting an unnamed endpoint would total into nothing".to_string(),

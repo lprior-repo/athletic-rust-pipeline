@@ -3,11 +3,8 @@ use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 
-use crate::spawn::Spawner;
-use crate::spawn::{Reservation, WORK_CLASS_CONTROL, WORK_CLASS_STAGE};
 use census_domain::model::SchoolYear;
 use census_report::{bests, workbook};
-use census_store::Store;
 
 #[cfg(not(feature = "native-fault-injection"))]
 use super::jobs::consolidate_tables;
@@ -22,41 +19,8 @@ use super::{
     blocking, job_error, normalize_jurisdictions, resolve_scope, resolve_tables, JobError,
 };
 
-#[derive(Clone)]
-pub struct Jobs {
-    store: Arc<Store>,
-    region: Arc<Spawner>,
-}
-
-impl Jobs {
-    pub fn new(store: Arc<Store>, region: Arc<Spawner>) -> Self {
-        Self { store, region }
-    }
-
-    pub(super) fn store(&self) -> &Arc<Store> {
-        &self.store
-    }
-
-    pub(super) fn region(&self) -> &Arc<Spawner> {
-        &self.region
-    }
-
-    pub(super) async fn permit(&self) -> Result<Reservation, TerminalError> {
-        self.region
-            .coordinator()
-            .reserve(WORK_CLASS_STAGE)
-            .await
-            .map_err(|error| TerminalError::new(format!("stage admission: {error}")))
-    }
-
-    pub(super) async fn permit_control(&self) -> Result<Reservation, TerminalError> {
-        self.region
-            .coordinator()
-            .reserve(WORK_CLASS_CONTROL)
-            .await
-            .map_err(|error| TerminalError::new(format!("control admission: {error}")))
-    }
-}
+mod runtime;
+pub use runtime::Jobs;
 
 #[derive(Clone)]
 pub struct Consolidate {

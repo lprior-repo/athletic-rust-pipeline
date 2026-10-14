@@ -154,7 +154,7 @@ impl Writer<'_, '_> {
             &mut projected,
             self.input.reference,
             self.input.page,
-            &self.input.acquired.outcome.capture,
+            self.input.acquired.outcome.capture(),
             self.metadata,
         )?;
         receipt::identify_retained(&mut projected)?;

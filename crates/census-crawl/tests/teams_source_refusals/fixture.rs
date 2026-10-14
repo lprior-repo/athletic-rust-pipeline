@@ -33,6 +33,7 @@ impl Fixture {
 
     pub(super) fn context(&self) -> TestResult<AdapterContext<'_>> {
         Ok(AdapterContext {
+            capture: census_crawl::CaptureContext::LegacyMetadata,
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

@@ -53,6 +53,7 @@ fn configure_stages(region: &Spawner, max_concurrent: usize) -> Result<(), Concu
 #[tracing::instrument(skip_all, fields(max_concurrent))]
 pub fn build_endpoint(
     store: Arc<Store>,
+    capture: super::CaptureExecution,
     max_concurrent: usize,
     region: Arc<Spawner>,
     serves_lane: Option<BrowserSettings>,
@@ -66,7 +67,8 @@ pub fn build_endpoint(
         Arc::clone(&store),
         Arc::clone(&clock),
         uses_lane,
-        Arc::clone(&region),
+        capture,
+        jobs.clone(),
     );
     let mut builder = Endpoint::builder()
         .bind(census_service(Census::new(

@@ -46,6 +46,7 @@ fn context<'a>(
         .run_manifest()?
         .map_or(SchoolYear::DEFAULT, |manifest| manifest.run.season());
     Ok(AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: args.refresh,

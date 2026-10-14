@@ -19,7 +19,8 @@ async fn teams_source_ledger_work_runs_on_the_blocking_region() -> TestResult {
         Arc::clone(&store),
         Arc::new(SystemClock),
         None,
-        Arc::new(crate::spawn::Spawner::new()),
+        crate::restate_services::CaptureExecution::LegacyFresh,
+        Jobs::new(Arc::clone(&store), Arc::new(crate::spawn::Spawner::new())),
     );
     let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&region));
     let source = TeamsSource::new(owner, jobs);
@@ -92,7 +93,8 @@ async fn offloaded_ledger_errors_retain_the_synchronous_error_and_release_admiss
         Arc::clone(&store),
         Arc::new(SystemClock),
         None,
-        Arc::new(crate::spawn::Spawner::new()),
+        crate::restate_services::CaptureExecution::LegacyFresh,
+        Jobs::new(Arc::clone(&store), Arc::new(crate::spawn::Spawner::new())),
     );
     let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&region));
     let source = TeamsSource::new(owner, jobs);
@@ -161,7 +163,8 @@ async fn inspection_reads_run_on_the_control_class_while_the_work_plane_is_satur
         Arc::clone(&store),
         Arc::new(SystemClock),
         None,
-        Arc::new(crate::spawn::Spawner::new()),
+        crate::restate_services::CaptureExecution::LegacyFresh,
+        Jobs::new(Arc::clone(&store), Arc::new(crate::spawn::Spawner::new())),
     );
     let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&region));
     let source = TeamsSource::new(owner, jobs);

@@ -4,10 +4,10 @@ use std::path::PathBuf;
 
 use super::input::InputKind;
 
-pub(super) type ProfileCliResult<T> = Result<T, ProfileCliError>;
+pub(in crate::cli) type ProfileCliResult<T> = Result<T, ProfileCliError>;
 
 #[derive(Debug, thiserror::Error)]
-pub(super) enum ProfileCliError {
+pub(in crate::cli) enum ProfileCliError {
     #[error("profile commands require explicit --store and a stopped census-serve owner")]
     StoreRequired,
     #[error("profile select requires exactly one of --id or --selection")]
@@ -55,11 +55,11 @@ pub(super) enum ProfileCliError {
 }
 
 impl ProfileCliError {
-    pub(super) fn output_failed(&self) -> bool {
+    pub(in crate::cli) fn output_failed(&self) -> bool {
         matches!(self, Self::OutputJson(_) | Self::OutputIo(_))
     }
 
-    pub(super) fn code(&self) -> &'static str {
+    pub(in crate::cli) fn code(&self) -> &'static str {
         match self {
             Self::StoreRequired => "explicit_store_required",
             Self::SelectionArguments => "selection_arguments_invalid",

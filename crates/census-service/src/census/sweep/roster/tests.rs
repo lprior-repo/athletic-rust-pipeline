@@ -10,6 +10,7 @@ use census_store::Table;
 use sha2::{Digest, Sha256};
 use std::num::NonZeroU32;
 
+mod locators;
 mod windows;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;

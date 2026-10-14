@@ -16,6 +16,7 @@ fn context<'a>(
     fetcher: &'a crate::net::Fetcher,
 ) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,

@@ -107,8 +107,5 @@ fn validate_relays(body: &str) -> Result<()> {
 }
 
 fn owned_page(body: &[u8]) -> Result<milesplit::OwnedMeetPage> {
-    match milesplit::parse_owned_meet(body, 725218) {
-        milesplit::OwnedMeetVerdict::Parsed(page) => Ok(page),
-        verdict => anyhow::bail!("authentic Troy owned capture was not parsed: {verdict:?}"),
-    }
+    Ok(milesplit::parse_owned_meet(body, 725218)?)
 }

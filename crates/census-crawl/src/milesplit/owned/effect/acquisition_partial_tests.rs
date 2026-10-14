@@ -26,6 +26,7 @@ fn setup() -> TestResult<(tempfile::TempDir, Store, Fetcher, ResultSetRef)> {
 
 fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,
@@ -36,26 +37,28 @@ fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterCont
     })
 }
 
-fn partial_outcome(reference: &ResultSetRef) -> TestResult<OwnedMeetOutcome> {
+fn partial_capture(reference: &ResultSetRef) -> TestResult<FetchOutcome> {
     let mut document: serde_json::Value =
         serde_json::from_slice(include_bytes!("../fixtures/troy_725218.json"))?;
     document["data"][0]["athleteId"] = serde_json::Value::Null;
     let body = serde_json::to_vec(&document)?;
-    Ok(OwnedMeetOutcome {
-        verdict: parse_owned_meet(&body, 725218),
-        capture: FetchOutcome {
-            url: owned_meet_url(reference)?,
-            response_url: None,
-            method: "GET".into(),
-            status: 200,
-            content_digest: content_digest(&body),
-            bytes: body.len(),
-            body,
-            fetched_at: "2026-10-01T23:44:16Z".into(),
-            from_cache: false,
-            content_type: Some("application/json".into()),
-        },
+    Ok(FetchOutcome {
+        url: owned_meet_url(reference)?,
+        response_url: None,
+        method: "GET".into(),
+        status: 200,
+        content_digest: content_digest(&body),
+        bytes: body.len(),
+        body,
+        fetched_at: "2026-10-01T23:44:16Z".into(),
+        from_cache: false,
+        content_type: Some("application/json".into()),
     })
+}
+
+fn partial_outcome(capture: FetchOutcome) -> TestResult<OwnedMeetOutcome> {
+    let verdict = OwnedMeetVerdict::Parsed(parse_owned_meet(&capture.body, 725218)?);
+    Ok(OwnedMeetOutcome::historical_fixture(capture, verdict))
 }
 
 fn snapshot(store: &Store, phase: &str) -> TestResult<BTreeMap<String, serde_json::Value>> {
@@ -74,7 +77,7 @@ fn snapshot(store: &Store, phase: &str) -> TestResult<BTreeMap<String, serde_jso
 #[test]
 fn partial_persistence_network_metadata_to_cache_replay_is_an_exact_noop() -> TestResult {
     let (_dir, store, fetcher, reference) = setup()?;
-    let mut outcome = partial_outcome(&reference)?;
+    let outcome = partial_outcome(partial_capture(&reference)?)?;
     record_outcome(&context(&store, &fetcher)?, &reference, &outcome)?;
     let originals = snapshot(&store, OWNED_MEET_PHASE)?;
     let captures = snapshot(&store, OWNED_CAPTURE_PHASE)?;
@@ -85,7 +88,9 @@ fn partial_persistence_network_metadata_to_cache_replay_is_an_exact_noop() -> Te
     check!(eq; summary["capture"]["from_cache"], false);
     check!(eq; summary["owned_rows"], 2);
     check!(eq; summary["rejected_individual_rows"], 1);
-    outcome.capture.from_cache = true;
+    let mut replay = partial_capture(&reference)?;
+    replay.from_cache = true;
+    let outcome = partial_outcome(replay)?;
     let recording = crate::recording::Recording::new();
     let ctx = AdapterContext {
         recording: Some(&recording),
@@ -103,12 +108,14 @@ fn partial_persistence_network_metadata_to_cache_replay_is_an_exact_noop() -> Te
 fn partial_persistence_retains_new_acquisition_without_restaging_identical_source_rows(
 ) -> TestResult {
     let (_dir, store, fetcher, reference) = setup()?;
-    let mut outcome = partial_outcome(&reference)?;
+    let outcome = partial_outcome(partial_capture(&reference)?)?;
     record_outcome(&context(&store, &fetcher)?, &reference, &outcome)?;
     let originals = snapshot(&store, OWNED_MEET_PHASE)?;
     let captures = snapshot(&store, OWNED_CAPTURE_PHASE)?;
-    outcome.capture.fetched_at = "2026-10-02T00:00:00Z".into();
-    outcome.capture.response_url = Some(outcome.capture.url.clone());
+    let mut next = partial_capture(&reference)?;
+    next.fetched_at = "2026-10-02T00:00:00Z".into();
+    next.response_url = Some(next.url.clone());
+    let outcome = partial_outcome(next)?;
     let recording = crate::recording::Recording::new();
     let ctx = AdapterContext {
         recording: Some(&recording),

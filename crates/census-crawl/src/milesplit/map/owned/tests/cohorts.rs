@@ -86,9 +86,7 @@ fn missing_or_invalid_owned_years_leave_constructor_and_note_only_cohorts_unknow
         let mut source = document()?;
         source["data"][0]["gradYear"] = token;
         let body = serde_json::to_vec(&source)?;
-        let OwnedMeetVerdict::Parsed(page) = parse_owned_meet(&body, 725218) else {
-            return Err("retained source-owned rows".into());
-        };
+        let page = parse_owned_meet(&body, 725218)?;
         let row = &page.rows[0];
         let bound = school("Spann school", "38332");
         let mut athlete = CanonicalAthlete::new(
@@ -110,10 +108,8 @@ fn missing_or_invalid_owned_years_leave_constructor_and_note_only_cohorts_unknow
 }
 
 #[test]
-fn owned_year_without_published_status_cannot_become_a_published_claim() {
-    let OwnedMeetVerdict::Parsed(page) = parse_owned_meet(TROY, 725218) else {
-        panic!("authentic source-owned rows")
-    };
+fn owned_year_without_published_status_cannot_become_a_published_claim() -> TestResult {
+    let page = parse_owned_meet(TROY, 725218)?;
     let bound = school("Spann school", "38332");
     for cohort in [
         crate::milesplit::owned::OwnedCohort::Missing,
@@ -133,4 +129,5 @@ fn owned_year_without_published_status_cannot_become_a_published_claim() {
         assert_eq!(athlete.observed_grades, Vec::new());
         assert_eq!(athlete.derived_cohort_confidence(), None);
     }
+    Ok(())
 }

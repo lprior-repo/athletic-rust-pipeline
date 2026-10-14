@@ -52,9 +52,9 @@ fn project(
     raw: RawPage,
 ) -> TestResult<(Accumulator, Stats)> {
     let body = serde_json::to_vec(&document)?;
-    let outcome = OwnedMeetOutcome {
-        verdict: parse_owned_meet(&body, 725218),
-        capture: FetchOutcome {
+    let verdict = OwnedMeetVerdict::Parsed(parse_owned_meet(&body, 725218)?);
+    let outcome = OwnedMeetOutcome::historical_fixture(
+        FetchOutcome {
             url: "https://al.milesplit.com/api/v1/meets/725218/performances".into(),
             response_url: None,
             method: "GET".into(),
@@ -66,8 +66,9 @@ fn project(
             content_type: Some("application/json".into()),
             body,
         },
-    };
-    let OwnedMeetVerdict::Parsed(page) = &outcome.verdict else {
+        verdict,
+    );
+    let OwnedMeetVerdict::Parsed(page) = outcome.verdict() else {
         return Err("parsed fixture".into());
     };
     let indices: Vec<_> = page
@@ -86,7 +87,7 @@ fn project(
         &raw,
         &reference,
         OwnedResultSet {
-            capture: &outcome.capture,
+            capture: outcome.capture(),
             page,
             indices: &indices,
             performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 9, 22)

@@ -35,7 +35,8 @@ impl Writer<'_, '_> {
         let index = self.window.indices.first().copied();
         self.stats.resource_stop = crate::milesplit::results::ResourceStop::Unfinished(format!(
             "{}; owned capture {}; first pending owned row index {index:?}; {error}",
-            self.input.reference.url, self.input.acquired.outcome.capture.content_digest
+            self.input.reference.url,
+            self.input.acquired.outcome.capture().content_digest
         ));
         let entry = journal::blocked(self.input, self.metadata, index, error)?;
         match journal::commit(ctx, &entry) {

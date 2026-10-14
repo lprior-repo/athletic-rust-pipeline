@@ -32,7 +32,7 @@ fn parses_roster_rows_with_grad_year_and_seasons() -> TestResult {
         .roster()
         .ok_or("the fixture has readable roster rows")?;
     check!(eq; roster.athletes.len(), 25);
-    let first = &roster.athletes[0];
+    let first = roster.athletes[0].athlete();
     check!(eq; first.name, "Julian Aguilera");
     check!(eq; first.roster_name, "Aguilera, Julian");
     check!(eq; first.grad_year, GradYear::CO2027);
@@ -45,10 +45,10 @@ fn parses_roster_rows_with_grad_year_and_seasons() -> TestResult {
     let all_sports = roster
         .athletes
         .iter()
-        .find(|athlete| athlete.roster_name.starts_with("Altamirano"))
+        .find(|athlete| athlete.athlete().roster_name.starts_with("Altamirano"))
         .ok_or("Altamirano row present in fixture")?;
     check!(eq;
-        all_sports.sports(),
+        all_sports.athlete().sports(),
         vec![Sport::IndoorTrack, Sport::OutdoorTrack, Sport::CrossCountry]
     );
     Ok(())
@@ -183,13 +183,13 @@ fn oh_roster_pins_319_graded_rows_and_96_class_of_2027() -> TestResult {
     let co2027 = roster
         .athletes
         .iter()
-        .filter(|athlete| athlete.grad_year == GradYear::CO2027)
+        .filter(|athlete| athlete.athlete().grad_year == GradYear::CO2027)
         .count();
     check!(eq; co2027, 96);
     check!(roster
         .athletes
         .iter()
-        .all(|athlete| (2027..=2030).contains(&athlete.grad_year.get())));
+        .all(|athlete| (2027..=2030).contains(&athlete.athlete().grad_year.get())));
     Ok(())
 }
 
@@ -226,6 +226,7 @@ fn raw_result_set_body_pins_80_rows_in_two_sections() -> TestResult {
     check!(matches!(first.mark, Mark::TimeSeconds(_)));
     Ok(())
 }
+mod located_roster;
 mod parsing;
 mod roster;
 mod roster_entities;
@@ -258,7 +259,7 @@ fn rejected_rows_keep_their_provider_identity_and_exact_utf8_span() -> TestResul
     check!(roster
         .athletes
         .iter()
-        .all(|athlete| athlete.athlete_id != id));
+        .all(|athlete| athlete.athlete().athlete_id != id));
     check!(eq;
         locator.ordinal as usize + 1,
         body[..locator.byte_offset]

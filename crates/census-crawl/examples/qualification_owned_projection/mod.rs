@@ -80,6 +80,7 @@ async fn collect(store: &Store) -> Result<Attempt> {
     let fetcher = preserve::fetcher(store)?;
     let started = census_crawl::net::now_iso8601();
     let ctx = AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store,
         refresh: false,

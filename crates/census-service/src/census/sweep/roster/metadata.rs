@@ -1,4 +1,4 @@
-use census_crawl::milesplit::{Roster, RosterAthlete, TeamRef};
+use census_crawl::milesplit::{LocatedRosterAthlete, Roster, RosterAthlete, TeamRef};
 use census_crawl::{CrawlError, CrawlResult};
 use std::ops::ControlFlow;
 
@@ -8,7 +8,7 @@ const MAX_WINDOW_ROWS: usize = 64;
 
 pub(super) struct Window<'a> {
     team: &'a TeamRef,
-    athletes: &'a [RosterAthlete],
+    athletes: &'a [LocatedRosterAthlete],
     observed_on: &'a str,
 }
 
@@ -34,7 +34,7 @@ impl<'a> Window<'a> {
     pub(super) fn team(&self) -> &'a TeamRef {
         self.team
     }
-    pub(super) fn athletes(&self) -> &'a [RosterAthlete] {
+    pub(super) fn athletes(&self) -> &'a [LocatedRosterAthlete] {
         self.athletes
     }
     pub(super) fn observed_on(&self) -> &'a str {
@@ -63,13 +63,13 @@ fn common(team: &TeamRef, observed_on: &str) -> CrawlResult<usize> {
     })
 }
 
-fn window_len(rows: &[RosterAthlete], common: usize) -> CrawlResult<usize> {
+fn window_len(rows: &[LocatedRosterAthlete], common: usize) -> CrawlResult<usize> {
     let initial = add(scale(common, 32)?, 16 * 1024)?;
     let outcome =
         rows.iter()
             .take(MAX_WINDOW_ROWS)
             .try_fold((initial, 0_usize), |(used, count), row| {
-                match row_bytes(row, common).and_then(|bytes| add(used, bytes)) {
+                match row_bytes(row.athlete(), common).and_then(|bytes| add(used, bytes)) {
                     Ok(next) if next <= MAX_PROJECTED => match count.checked_add(1) {
                         Some(count) => ControlFlow::Continue((next, count)),
                         None => ControlFlow::Break(Err(arithmetic())),

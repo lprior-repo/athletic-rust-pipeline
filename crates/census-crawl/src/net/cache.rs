@@ -8,6 +8,14 @@ use std::path::{Path, PathBuf};
 mod archive;
 mod archive_io;
 mod capture;
+mod eligible;
+mod envelope;
+#[cfg(test)]
+pub(in crate::net) use archive::lock_tests as archive_lock_test;
+pub(crate) use capture::Capture;
+pub(crate) use eligible::{publish_eligible, read_eligible, PinnedEligibleCache};
+pub(in crate::net) use eligible::{publish_eligible_held, with_archive_eligible_fence};
+pub(crate) use envelope::EligibleCacheV2;
 mod quarantine;
 
 const MAX_META_BYTES: usize = 64 * 1024;
@@ -125,8 +133,9 @@ pub(crate) fn read_cache(
     let Some(meta_bytes) = read_cache_file(meta_path, MAX_META_BYTES, None)? else {
         return Ok(None);
     };
-    let meta: CacheMeta = match serde_json::from_slice(&meta_bytes) {
-        Ok(meta) => meta,
+    let meta = match envelope::decode(&meta_bytes, meta_path) {
+        Ok(document) => document.metadata(),
+        Err(error @ FetchError::Capture(_)) => return Err(error),
         Err(_) => return Ok(None),
     };
     if meta.method != method || meta.url != url || &meta.representation != representation {

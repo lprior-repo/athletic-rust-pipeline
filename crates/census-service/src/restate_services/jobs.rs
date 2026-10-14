@@ -188,6 +188,7 @@ pub(super) fn adapter_context<'a>(
     recording: Option<&'a Recording>,
 ) -> AdapterContext<'a> {
     AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher: fetcher.as_ref(),
         store: store.as_ref(),
         refresh: scope.refresh,
@@ -257,10 +258,13 @@ pub fn collect_error(error: CrawlError) -> JobError {
         CrawlError::Schema { .. }
         | CrawlError::Decode { .. }
         | CrawlError::Canonical { .. }
+        | CrawlError::Capture(..)
         | CrawlError::Domain(..)
         | CrawlError::Directory(..)
         | CrawlError::Arithmetic { .. }
         | CrawlError::Resource { .. }
+        | CrawlError::OwnedParseResource(..)
+        | CrawlError::OwnedCaptureResource(_)
         | CrawlError::ConverterDeadline { .. }
         | CrawlError::EventIdentity(..)
         | CrawlError::Specification(..)

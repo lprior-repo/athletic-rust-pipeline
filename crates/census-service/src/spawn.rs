@@ -7,79 +7,23 @@ use tokio::task::JoinSet;
 pub use crate::admission::{
     Charged, Reservation, WORK_CLASS_CONTROL, WORK_CLASS_INGEST, WORK_CLASS_STAGE,
 };
-use crate::admission::{Coordinator, DepartureReason, TryResult, WorkClass, WORK_CLASS_NORMAL};
+use crate::admission::{Coordinator, TryResult, WorkClass, WORK_CLASS_NORMAL};
 #[cfg(test)]
 use crate::outcome::Outcome;
 #[cfg(test)]
 use tokio::sync::oneshot;
 
 mod blocking;
+mod dedicated;
 mod drain;
+mod region;
+mod types;
+use region::Region;
+pub use types::{SpawnError, TaskReport};
 mod ledger;
 use ledger::{Counters, Ledger};
 
 pub const DEFAULT_CAPACITY: usize = 500;
-
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct TaskReport {
-    pub accepted: u64,
-    pub completed: u64,
-    pub cancelled: u64,
-    pub aborted: u64,
-    pub panicked: u64,
-    pub failed: u64,
-    pub still_running: u64,
-    pub timed_out: u64,
-    pub remaining: u64,
-}
-
-impl TaskReport {
-    pub fn disjoint_total(&self) -> u64 {
-        self.completed
-            .saturating_add(self.cancelled)
-            .saturating_add(self.aborted)
-            .saturating_add(self.panicked)
-            .saturating_add(self.still_running)
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum SpawnError {
-    #[error("task count does not fit u64")]
-    TaskCountOverflow,
-    #[error("the task region already supervises its {capacity} tasks")]
-    RegionFull { capacity: usize },
-    #[error("the task region's capacity is closed")]
-    RegionClosed,
-    #[error("admission refused: {0}")]
-    Admission(DepartureReason),
-}
-
-impl From<DepartureReason> for SpawnError {
-    fn from(reason: DepartureReason) -> Self {
-        match reason {
-            DepartureReason::RegionClosed => Self::RegionClosed,
-            reason => Self::Admission(reason),
-        }
-    }
-}
-
-#[derive(Default)]
-struct Region {
-    tasks: JoinSet<()>,
-    ledger: Ledger,
-    closed: bool,
-    aborting: bool,
-    adopted: Option<Reservation>,
-}
-
-impl Region {
-    fn reap_finished(&mut self) {
-        while let Some(joined) = self.tasks.try_join_next_with_id() {
-            self.ledger.classify_join(joined);
-        }
-    }
-}
 
 pub struct Spawner {
     capacity: usize,
@@ -141,6 +85,7 @@ impl Spawner {
             blocking: Arc::new(Semaphore::new(capacity)),
             region: Mutex::new(Region {
                 tasks,
+                threads: dedicated::DedicatedThreads::default(),
                 ledger: Ledger::holding(held),
                 closed: false,
                 aborting: false,
@@ -207,7 +152,7 @@ impl Spawner {
             }
             TryResult::Refused(reason) => return Err(reason.into()),
         };
-        self.push_async(build(), reservation, None)
+        self.push_async_with(build, reservation, None)
     }
 
     fn push_async<F>(
@@ -219,35 +164,28 @@ impl Spawner {
     where
         F: Future<Output = ()> + Send + 'static,
     {
+        self.push_async_with(|| task, slot, permit)
+    }
+
+    fn push_async_with<F, B>(
+        &self,
+        build: B,
+        slot: Reservation,
+        permit: Option<tokio::sync::OwnedSemaphorePermit>,
+    ) -> Result<(), SpawnError>
+    where
+        F: Future<Output = ()> + Send + 'static,
+        B: FnOnce() -> F,
+    {
         let mut region = self.lock();
         if region.closed {
             return Err(SpawnError::RegionClosed);
         }
         region.reap_finished();
-        region.tasks.spawn(supervised(slot, task, permit));
+        region.require_async_room(self.capacity)?;
+        region.tasks.spawn(supervised(slot, build(), permit));
         region.ledger.accept();
         Ok(())
-    }
-
-    fn push_blocking<F>(&self, job: F, permit: tokio::sync::OwnedSemaphorePermit) -> bool
-    where
-        F: FnOnce(Arc<Counters>) + Send + 'static,
-    {
-        let mut region = self.lock();
-        if region.closed {
-            tracing::warn!("the task region is closed; the blocking job was not run");
-            return false;
-        }
-        region.reap_finished();
-        let counters = Arc::new(Counters::default());
-        let witness = Arc::clone(&counters);
-        let task = region.tasks.spawn_blocking(move || {
-            let _permit = permit;
-            job(counters);
-        });
-        region.ledger.track_blocking(task.id(), witness);
-        region.ledger.accept();
-        true
     }
 
     fn lock(&self) -> MutexGuard<'_, Region> {
@@ -282,6 +220,8 @@ fn narrow_bound(permits: usize) -> u64 {
 mod accounting_tests;
 #[cfg(test)]
 mod admission_tests;
+#[cfg(test)]
+mod descriptor_tests;
 #[cfg(all(feature = "loom", test))]
 mod loom_tests;
 #[cfg(test)]

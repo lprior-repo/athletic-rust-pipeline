@@ -1,5 +1,6 @@
+use super::super::archive::admission::ArchiveCapacity;
 use super::super::archive::admission::{capacity_of, DEFAULT_ARCHIVE_BYTES};
-use super::super::archive::{preserve_capture, ArchiveAdmission};
+use super::super::archive::{preserve_capture, ArchiveAdmission, ArchiveLock};
 use super::*;
 
 fn archive_dirs(root: &Path) -> TestResult<PathBuf> {
@@ -26,9 +27,9 @@ fn needed_bytes(body: &[u8], capture: &capture::Capture) -> u64 {
 
 #[test]
 fn configured_capacity_of_honors_positive_integers_and_defaults_only_when_unset() -> TestResult {
-    check!(eq; capacity_of(Some("2048".to_string()))?, 2048);
-    check!(eq; capacity_of(Some("  4096 \n".to_string()))?, 4096);
-    check!(eq; capacity_of(None)?, DEFAULT_ARCHIVE_BYTES);
+    check!(eq; capacity_of(Some("2048".to_string()))?.get(), 2048);
+    check!(eq; capacity_of(Some("  4096 \n".to_string()))?.get(), 4096);
+    check!(eq; capacity_of(None)?.get(), DEFAULT_ARCHIVE_BYTES);
     check!(capacity_of(Some("0".to_string())).is_err());
     check!(capacity_of(Some("twelve".to_string())).is_err());
     check!(capacity_of(Some("".to_string())).is_err());
@@ -42,7 +43,10 @@ fn a_capture_over_capacity_is_refused_before_any_object_is_published() -> TestRe
     let body = b"capture body";
     let capture = capture_of(root.path(), body)?;
     let needed = needed_bytes(body, &capture);
-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed - 1)?;
+    let capacity_admission = ArchiveCapacity::new(needed - 1, &archive)?;
+    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
+    let mut admission =
+        ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
     let stage = archive_stage(root.path(), "stage-refused")?;
     let outcome = preserve_capture(&archive, &stage, "new", body, &capture, &mut admission);
     let Err(error) = outcome else {
@@ -68,12 +72,18 @@ fn a_capture_that_fits_is_published_and_settles_the_reservation() -> TestResult 
     let body = b"capture body";
     let capture = capture_of(root.path(), body)?;
     let needed = needed_bytes(body, &capture);
-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
+    let capacity_admission = ArchiveCapacity::new(needed, &archive)?;
+    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
+    let mut admission =
+        ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
     let stage = archive_stage(root.path(), "stage-fits")?;
     preserve_capture(&archive, &stage, "new", body, &capture, &mut admission)?;
     assert_capture(root.path(), body, &capture.meta)?;
     drop(admission);
-    let mut replay = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
+    drop(archive_lock_admission);
+    let capacity_replay = ArchiveCapacity::new(needed, &archive)?;
+    let archive_lock_replay = ArchiveLock::acquire(root.path())?;
+    let mut replay = ArchiveAdmission::begin_with_capacity(&archive_lock_replay, capacity_replay)?;
     let replay_stage = archive_stage(root.path(), "stage-replay")?;
     preserve_capture(&archive, &replay_stage, "new", body, &capture, &mut replay)?;
     Ok(())
@@ -86,11 +96,16 @@ fn an_archived_capture_settles_without_a_second_reservation() -> TestResult {
     let body = b"shared raw body";
     let capture = capture_of(root.path(), body)?;
     let needed = needed_bytes(body, &capture);
-    let mut first = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
+    let capacity_first = ArchiveCapacity::new(needed, &archive)?;
+    let archive_lock_first = ArchiveLock::acquire(root.path())?;
+    let mut first = ArchiveAdmission::begin_with_capacity(&archive_lock_first, capacity_first)?;
     let first_stage = archive_stage(root.path(), "stage-first")?;
     preserve_capture(&archive, &first_stage, "new", body, &capture, &mut first)?;
     drop(first);
-    let mut second = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
+    drop(archive_lock_first);
+    let capacity_second = ArchiveCapacity::new(needed, &archive)?;
+    let archive_lock_second = ArchiveLock::acquire(root.path())?;
+    let mut second = ArchiveAdmission::begin_with_capacity(&archive_lock_second, capacity_second)?;
     let second_stage = archive_stage(root.path(), "stage-second")?;
     preserve_capture(&archive, &second_stage, "old", body, &capture, &mut second)?;
     check!(
@@ -105,7 +120,9 @@ fn invalid_archive_entries_refuse_capacity_accounting() -> TestResult {
     let root = tempfile::tempdir()?;
     let archive = archive_dirs(root.path())?;
     std::os::unix::fs::symlink("bodies", archive.join("linked"))?;
-    let outcome = ArchiveAdmission::begin_with_capacity(root.path(), &archive, 1 << 20);
+    let capacity_outcome = ArchiveCapacity::new(1 << 20, &archive)?;
+    let archive_lock_outcome = ArchiveLock::acquire(root.path())?;
+    let outcome = ArchiveAdmission::begin_with_capacity(&archive_lock_outcome, capacity_outcome);
     let Err(error) = outcome else {
         return Err("accounting over a symbolic link should be refused".into());
     };
@@ -142,8 +159,12 @@ fn concurrent_publishers_share_one_capacity_budget() -> TestResult {
             let root = root.path();
             let archive = archive.clone();
             scope.spawn(move || {
-                let mut admission =
-                    ArchiveAdmission::begin_with_capacity(root, &archive, capacity)?;
+                let capacity_admission = ArchiveCapacity::new(capacity, &archive)?;
+                let archive_lock_admission = ArchiveLock::acquire(root)?;
+                let mut admission = ArchiveAdmission::begin_with_capacity(
+                    &archive_lock_admission,
+                    capacity_admission,
+                )?;
                 preserve_capture(&archive, &stage, "new", body, capture, &mut admission)
             })
         })
@@ -181,15 +202,21 @@ fn a_retained_stage_charges_archive_capacity_so_the_cap_still_refuses() -> TestR
     let body = b"first capture body";
     let capture = capture_of(root.path(), body)?;
     let needed = needed_bytes(body, &capture);
-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
+    let capacity_admission = ArchiveCapacity::new(needed, &archive)?;
+    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
+    let mut admission =
+        ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
     let stage = archive_stage(root.path(), "stage-first")?;
     preserve_capture(&archive, &stage, "new", body, &capture, &mut admission)?;
     drop(admission);
+    drop(archive_lock_admission);
     let second_body = b"second capture body that will fail to publish";
     let second = capture_of(root.path(), second_body)?;
     let second_needed = needed_bytes(second_body, &second);
+    let capacity_admission2 = ArchiveCapacity::new(needed + second_needed, &archive)?;
+    let archive_lock_admission2 = ArchiveLock::acquire(root.path())?;
     let mut admission2 =
-        ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed + second_needed)?;
+        ArchiveAdmission::begin_with_capacity(&archive_lock_admission2, capacity_admission2)?;
     let second_stage = archive_stage(root.path(), "stage-fail")?;
     let stage_body = second_stage.join("new.body");
     std::fs::write(&stage_body, second_body)?;
@@ -200,10 +227,13 @@ fn a_retained_stage_charges_archive_capacity_so_the_cap_still_refuses() -> TestR
         "0000000000000000000000000000000000000000000000000000000000000000",
     )?;
     drop(admission2);
+    drop(archive_lock_admission2);
     let third_body = b"third body";
     let third = capture_of(root.path(), third_body)?;
+    let capacity_admission3 = ArchiveCapacity::new(needed + second_needed, &archive)?;
+    let archive_lock_admission3 = ArchiveLock::acquire(root.path())?;
     let mut admission3 =
-        ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed + second_needed)?;
+        ArchiveAdmission::begin_with_capacity(&archive_lock_admission3, capacity_admission3)?;
     let third_stage = archive_stage(root.path(), "stage-third")?;
     let outcome = preserve_capture(
         &archive,
@@ -230,7 +260,10 @@ fn a_stage_under_capacity_is_still_admitted_and_published() -> TestResult {
     let body = b"under capacity body";
     let capture = capture_of(root.path(), body)?;
     let needed = needed_bytes(body, &capture);
-    let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed * 2)?;
+    let capacity_admission = ArchiveCapacity::new(needed * 2, &archive)?;
+    let archive_lock_admission = ArchiveLock::acquire(root.path())?;
+    let mut admission =
+        ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
     let stage = archive_stage(root.path(), "stage-admitted")?;
     preserve_capture(&archive, &stage, "new", body, &capture, &mut admission)?;
     assert_capture(root.path(), body, &capture.meta)?;
@@ -246,12 +279,21 @@ fn capacity_accounting_is_exact_across_repeated_cycles_without_drift_or_double_c
     let capture = capture_of(root.path(), body)?;
     let needed = needed_bytes(body, &capture);
     for cycle in 0..3 {
-        let mut admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
+        let capacity_admission = ArchiveCapacity::new(needed, &archive)?;
+        let archive_lock_admission = ArchiveLock::acquire(root.path())?;
+        let mut admission =
+            ArchiveAdmission::begin_with_capacity(&archive_lock_admission, capacity_admission)?;
         let stage = archive_stage(root.path(), &format!("stage-cycle-{cycle}"))?;
         preserve_capture(&archive, &stage, "new", body, &capture, &mut admission)?;
         drop(admission);
+        drop(archive_lock_admission);
     }
-    let mut final_admission = ArchiveAdmission::begin_with_capacity(root.path(), &archive, needed)?;
+    let capacity_final_admission = ArchiveCapacity::new(needed, &archive)?;
+    let archive_lock_final_admission = ArchiveLock::acquire(root.path())?;
+    let mut final_admission = ArchiveAdmission::begin_with_capacity(
+        &archive_lock_final_admission,
+        capacity_final_admission,
+    )?;
     let final_stage = archive_stage(root.path(), "stage-final")?;
     let extra_body = b"extra capture";
     let extra = capture_of(root.path(), extra_body)?;

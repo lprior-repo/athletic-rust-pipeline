@@ -1,6 +1,7 @@
 use super::{OwnedCohort, OwnedPerformance, OwnedRejectionKind};
 use census_domain::model::{
-    person_key, EventKind, Gender, GradYear, Mark, SourceIdentity, SourceNamespace,
+    parse_result_status, person_key, EventKind, Gender, GradYear, Mark, SourceIdentity,
+    SourceNamespace,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -88,11 +89,8 @@ pub(super) fn parse_row(
         ));
     }
     let gender = admitted_gender(row.gender, &event_kind)?;
-    let (mark, timing) = match row
-        .status_code
-        .and_then(crate::result_status::invalid_token)
-    {
-        Some(status) => (Mark::Raw(status.into()), None),
+    let (mark, timing) = match row.status_code.and_then(parse_result_status) {
+        Some(status) => (Mark::Raw(status.token().into()), None),
         None => parsed_mark(&event_kind, row.mark)?,
     };
     let (grad_year, cohort) = cohort(row.grad_year.as_ref());
@@ -218,15 +216,11 @@ fn cohort(raw: Option<&Scalar<'_>>) -> (Option<GradYear>, OwnedCohort) {
     }
 }
 
-pub(super) fn no_mark(raw: &str) -> bool {
-    crate::result_status::invalid_token(raw).is_some()
-}
-
 fn parsed_mark(
     kind: &EventKind,
     raw: &str,
 ) -> Result<(Mark, Option<census_domain::model::TimingMethod>), (OwnedRejectionKind, String)> {
-    if no_mark(raw) {
+    if parse_result_status(raw).is_some() {
         return Ok((Mark::Raw(raw.to_string()), None));
     }
     let parsed = match kind {

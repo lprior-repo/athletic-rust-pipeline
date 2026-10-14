@@ -105,6 +105,7 @@ impl Harness {
             Vec::new(),
         )?;
         let ctx = AdapterContext {
+            capture: crate::CaptureContext::LegacyMetadata,
             fetcher: &fetcher,
             store: &self.store,
             refresh: false,

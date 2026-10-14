@@ -657,6 +657,7 @@ fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache() -> Te
     )
     ?.with_offline(true);
     let ctx = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,

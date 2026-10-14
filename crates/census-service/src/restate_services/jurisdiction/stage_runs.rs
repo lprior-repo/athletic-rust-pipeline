@@ -5,7 +5,6 @@ use restate_sdk::prelude::*;
 use super::super::{history_stage::HistoricalStageScope, source_selection::SourceSelection};
 
 use crate::census::{CollectOptions, MeetCensus, StateProgress};
-use crate::restate_services::results_arms::ResultsStageOutcome;
 use census_crawl::net::Fetcher;
 use census_domain::UsJurisdiction;
 
@@ -27,21 +26,6 @@ impl JurisdictionCensus {
             .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
         Ok(progress)
-    }
-
-    pub(super) async fn results_stage(
-        &self,
-        ctx: &ObjectContext<'_>,
-        fetcher: Arc<Fetcher>,
-        scope: HistoricalStageScope,
-        sources: SourceSelection,
-    ) -> Result<ResultsStageOutcome, HandlerError> {
-        let store = Arc::clone(&self.store);
-        let Json(outcome) = ctx
-            .run(move || jobs::results_stage(store, fetcher, scope, sources))
-            .retry_policy(RunRetryPolicy::new().max_attempts(1))
-            .await?;
-        Ok(outcome)
     }
 
     pub(super) async fn meets_stage(

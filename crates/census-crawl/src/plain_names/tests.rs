@@ -1079,6 +1079,7 @@ fn collect_skips_providers_it_was_not_asked_for() -> TestResult {
                 Vec::new(),
             )?;
             let ctx = AdapterContext {
+                capture: crate::CaptureContext::LegacyMetadata,
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,

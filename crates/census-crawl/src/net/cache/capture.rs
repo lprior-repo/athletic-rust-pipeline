@@ -7,13 +7,13 @@ use std::io::{self, Write};
 use std::path::Path;
 
 #[derive(Clone)]
-pub(super) struct Capture {
-    pub(super) meta: CacheMeta,
-    pub(super) encoded: Vec<u8>,
+pub(crate) struct Capture {
+    pub(crate) meta: CacheMeta,
+    pub(crate) encoded: Vec<u8>,
 }
 
 impl Capture {
-    pub(super) fn from_meta(meta: &CacheMeta, path: &Path) -> Result<Self, FetchError> {
+    pub(crate) fn from_meta(meta: &CacheMeta, path: &Path) -> Result<Self, FetchError> {
         let fields = [
             meta.url.as_str(),
             meta.response_url.as_deref().map_or("", |value| value),
@@ -38,7 +38,7 @@ impl Capture {
         Self::from_value(&value, path)
     }
 
-    pub(super) fn from_bytes(bytes: &[u8], path: &Path) -> Result<Self, FetchError> {
+    pub(crate) fn from_bytes(bytes: &[u8], path: &Path) -> Result<Self, FetchError> {
         let mut value: serde_json::Value =
             serde_json::from_slice(bytes).map_err(|source| FetchError::Decode {
                 target: path.display().to_string(),
@@ -73,7 +73,7 @@ impl Capture {
         })
     }
 
-    pub(super) fn verify_body(&self, body: &[u8], path: &Path) -> Result<(), FetchError> {
+    pub(crate) fn verify_body(&self, body: &[u8], path: &Path) -> Result<(), FetchError> {
         if body.len() != self.meta.bytes || content_digest(body) != self.meta.content_digest {
             return Err(invalid(
                 path,

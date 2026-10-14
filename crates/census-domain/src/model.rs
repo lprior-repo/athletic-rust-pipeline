@@ -40,6 +40,7 @@ mod identity_decision;
 mod identity_index;
 mod identity_projection;
 mod identity_validation;
+mod installation;
 mod meet;
 mod natural_key;
 mod normalization;
@@ -48,12 +49,17 @@ mod profile;
 mod provenance;
 mod records;
 mod relay_result;
+mod result_status;
 mod review;
 mod run;
 mod school;
 mod school_address;
 mod school_contact;
 mod store_identity;
+pub use installation::{
+    InstallationCapabilityV1, InstallationConfigId, InstallationConfigV1, InstallationDomainError,
+    InstallationEnrollmentV1, ServiceResourceProfileV1,
+};
 
 pub use profile::{
     ContractRefV1, DiscoveryPriorityV1, PerformanceWindowV1, ProfileDate, ProfileDateRangeV1,
@@ -149,6 +155,7 @@ pub use records::{
     UNRESOLVED_VENUE_FAMILY, UNSUPPORTED_GRADUATION_FAMILY,
 };
 pub use relay_result::{RelayMember, RelayResult};
+pub use result_status::{parse_result_status, ResultStatus, ResultStatusKind};
 pub use review::{
     ReviewCaseFact, ReviewEvidenceFact, ReviewPacket, ReviewVerdict, ReviewVerdictKind,
     ReviewVerdictRecord, VerdictBatch,
@@ -188,3 +195,8 @@ pub use recruiting_catalog::{
     RecruitingCatalogV1, CATALOG_V1_MAX_AGGREGATE_LABEL_BYTES, CATALOG_V1_MAX_LABEL_BYTES,
     CATALOG_V1_MAX_SOURCE_LABELS,
 };
+
+mod history;
+pub use history::{HistoryError, HistoryWindow};
+mod source_acquisition;
+pub use source_acquisition::*;
