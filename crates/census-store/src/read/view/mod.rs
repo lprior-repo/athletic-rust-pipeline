@@ -2,6 +2,7 @@ use crate::keys::{self, Layout};
 use crate::{Store, StoreError, StoreResult, Table};
 use fjall::{Readable, Snapshot};
 
+mod acquisition;
 mod bounded;
 #[path = "../keyed.rs"]
 mod keyed;
@@ -25,6 +26,7 @@ pub struct StoreSnapshot<'s> {
     snapshot: Snapshot,
     entities: &'s fjall::Keyspace,
     journal: &'s fjall::Keyspace,
+    receipts: &'s fjall::Keyspace,
     meta: &'s fjall::Keyspace,
     root: &'s std::path::Path,
     derived_generation: u64,
@@ -43,6 +45,7 @@ impl<'s> StoreSnapshot<'s> {
             snapshot,
             entities: &store.entities,
             journal: &store.journal,
+            receipts: &store.receipts,
             meta: &store.meta,
             root: &store.root,
             derived_generation,

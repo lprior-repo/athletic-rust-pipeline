@@ -10,7 +10,7 @@ mod attempts;
 mod closure;
 mod retained;
 mod selection;
-use retained::verify_reference;
+pub(crate) use retained::verify_reference;
 pub(super) use retained::{last_response, reusable_body_reference, verify_result};
 pub use selection::ExistingRecoveryRoute;
 
@@ -82,28 +82,9 @@ impl Store {
         reference: &AcquisitionOccurrenceRefV1,
         budget: &mut AcquisitionReadBudget,
     ) -> StoreResult<VerifiedRetainedOccurrence> {
-        budget.begin_operation();
         let _writes = self.lock_appends();
-        let snapshot = self.db.snapshot();
-        let declaration = super::qualification::declaration(
-            &snapshot,
-            &self.meta,
-            &self.journal,
-            &self.store_format()?,
-        )?
-        .ok_or(CaptureError::CaptureCapabilityMissing)?;
-        if declaration.store_identity() != reference.attempt().store_identity() {
-            return Err(CaptureError::CaptureCapabilityForeignStore.into());
-        }
-        verify_reference(
-            self.root(),
-            &snapshot,
-            &self.journal,
-            &self.receipts,
-            reference,
-            budget,
-            declaration.protocol(),
-        )
+        self.snapshot_locked()
+            .read_retained_acquisition_v1(reference, budget)
     }
 }
 

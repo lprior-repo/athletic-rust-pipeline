@@ -5,7 +5,7 @@ use census_domain::model::*;
 use fjall::{Keyspace, Snapshot};
 use std::path::Path;
 
-pub(in crate::acquisition) fn verify_reference(
+pub(crate) fn verify_reference(
     root: &Path,
     snapshot: &Snapshot,
     journal: &Keyspace,
