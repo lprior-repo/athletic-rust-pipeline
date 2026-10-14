@@ -25,6 +25,7 @@ fn fetcher(cache: &Path) -> Result<Fetcher> {
 
 fn context<'a>(fetcher: &'a Fetcher, store: &'a Store) -> Result<AdapterContext<'a>> {
     Ok(AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,

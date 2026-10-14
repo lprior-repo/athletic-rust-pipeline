@@ -8,6 +8,8 @@ use super::USAGE;
 
 #[derive(Debug, thiserror::Error)]
 pub enum BootstrapError {
+    #[error("unsupported capture protocol {raw:?}; expected fresh-qualification-v1")]
+    CaptureProtocolUnsupported { raw: String },
     #[error("installation {identity} with config {config_id} supports enrollment only; production serving remains unsupported", identity = .store_identity.as_str())]
     EnrollmentOnlyUnsupported {
         store_identity: census_domain::model::StoreIdentity,

@@ -45,6 +45,7 @@ async fn replay_capture(body: &[u8], relay: bool) -> Result<()> {
     .with_offline(true);
     let options = seed_captures(&fetcher, body)?;
     let context = AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,

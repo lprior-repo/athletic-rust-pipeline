@@ -20,6 +20,7 @@ fn changed_event_grammar_has_fresh_context_and_preserves_prior_completion() -> T
     .with_source("wiaa_results")
     .with_offline(true);
     let ctx = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,

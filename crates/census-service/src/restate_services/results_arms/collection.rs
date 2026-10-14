@@ -2,7 +2,10 @@ use super::super::{
     history_stage::HistoricalStageScope,
     jobs::{self, adapter_context, AdapterScope},
 };
-use super::{delegated_source, failed_source, source_rows, ResultsArm, ResultsSourceRows};
+use super::{
+    delegated_source, failed_source, source_rows, ResultsArm, ResultsCaptureExecution,
+    ResultsSourceRows,
+};
 use census_crawl::{net::Fetcher, CollectionDisposition, ResolutionCounters, UnresolvedCounters};
 use census_domain::model::SourceMeetRef;
 use census_store::Store;
@@ -16,6 +19,7 @@ pub(super) async fn collect(
     store: &Arc<Store>,
     fetcher: &Arc<Fetcher>,
     input: (&[SourceMeetRef], HistoricalStageScope),
+    capture: &ResultsCaptureExecution,
 ) -> Result<ResultsSourceRows, HandlerError> {
     let (selected, scope) = input;
     match arm {
@@ -25,7 +29,7 @@ pub(super) async fn collect(
     stream::iter(selected.iter().filter(|meet| eligible(arm, meet)))
         .map(Ok::<_, HandlerError>)
         .try_fold(delegated_source(slug), |aggregate, meet| async move {
-            let row = one(slug, arm, store, fetcher, (meet, scope)).await?;
+            let row = one(slug, arm, store, fetcher, (meet, scope), capture).await?;
             merge(aggregate, row)
         })
         .await
@@ -51,6 +55,7 @@ async fn one(
     store: &Arc<Store>,
     fetcher: &Arc<Fetcher>,
     input: (&SourceMeetRef, HistoricalStageScope),
+    capture: &ResultsCaptureExecution,
 ) -> Result<ResultsSourceRows, HandlerError> {
     let (meet, scope) = input;
     let at = scope.observed_on.to_string();
@@ -62,7 +67,7 @@ async fn one(
     };
     let context = adapter_context(store, fetcher, adapter, None);
     let result = match arm {
-        ResultsArm::MilesplitResults => super::milesplit_results(&context, meet).await,
+        ResultsArm::MilesplitResults => super::milesplit_results(&context, meet, capture).await,
         ResultsArm::AthleticnetMeets => {
             super::athleticnet_meets(
                 &context,

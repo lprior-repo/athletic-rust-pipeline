@@ -59,6 +59,7 @@ fn wayzata_frozen_cursor_restores_original_body_without_rereading_mutable_schedu
             )?;
             let recording = Recording::spooled(store.clone(), "wayzata-frozen/0".into())?;
             let ctx = AdapterContext {
+                capture: crate::CaptureContext::LegacyMetadata,
                 fetcher: &fetcher,
                 store: &store,
                 recording: Some(&recording),

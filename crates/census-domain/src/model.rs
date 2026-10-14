@@ -195,3 +195,8 @@ pub use recruiting_catalog::{
     RecruitingCatalogV1, CATALOG_V1_MAX_AGGREGATE_LABEL_BYTES, CATALOG_V1_MAX_LABEL_BYTES,
     CATALOG_V1_MAX_SOURCE_LABELS,
 };
+
+mod history;
+pub use history::{HistoryError, HistoryWindow};
+mod source_acquisition;
+pub use source_acquisition::*;

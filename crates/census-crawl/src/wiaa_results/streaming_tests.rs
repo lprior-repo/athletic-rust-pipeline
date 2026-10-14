@@ -12,6 +12,7 @@ fn context<'a>(
     recording: &'a Recording,
 ) -> Result<AdapterContext<'a>, Box<dyn std::error::Error>> {
     Ok(AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         store,
         fetcher,
         recording: Some(recording),

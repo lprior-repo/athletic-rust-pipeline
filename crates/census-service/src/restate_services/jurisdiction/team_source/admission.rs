@@ -1,18 +1,13 @@
 use std::sync::Arc;
 
-use crate::spawn::Reservation;
 use census_store::Store;
 use restate_sdk::prelude::TerminalError;
-use tokio::sync::{Mutex, OwnedMutexGuard};
 
 use super::{ledger, TeamsSource};
 use crate::restate_services::wire::TeamsSourceRequest;
 use crate::restate_services::JobError;
 
-pub(super) struct WorkAdmission {
-    _work: Reservation,
-    _source: OwnedMutexGuard<()>,
-}
+pub(super) use crate::restate_services::work_admission::WorkAdmission;
 
 pub(super) fn registration_worker(
     admission: Arc<WorkAdmission>,
@@ -28,22 +23,6 @@ pub(super) fn registration_worker(
 
 impl TeamsSource {
     pub(super) async fn admit(&self, key: &str) -> Result<WorkAdmission, TerminalError> {
-        let work = self.jobs.permit().await?;
-        let source = {
-            let mut gates = self.gates.lock().await;
-            gates.retain(|_, gate| gate.strong_count() > 0);
-            match gates.get(key).and_then(std::sync::Weak::upgrade) {
-                Some(gate) => gate,
-                None => {
-                    let gate = Arc::new(Mutex::new(()));
-                    gates.insert(key.to_string(), Arc::downgrade(&gate));
-                    gate
-                }
-            }
-        };
-        Ok(WorkAdmission {
-            _work: work,
-            _source: source.lock_owned().await,
-        })
+        self.jobs.admit_work(key).await
     }
 }

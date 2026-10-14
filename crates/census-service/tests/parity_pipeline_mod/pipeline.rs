@@ -45,6 +45,7 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
     .context("building a fetcher over the store's own cache")?
     .with_offline(true);
     let context = AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,

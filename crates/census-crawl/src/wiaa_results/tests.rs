@@ -194,6 +194,7 @@ fn a_fresh_store_binds_schools_without_a_consolidated_jsonl() -> TestResult {
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Middleton", "middleton", None);
     store.append(census_store::Table::Schools, &school)?;
     let context = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -220,6 +221,7 @@ fn a_fresh_store_binds_schools_without_a_consolidated_jsonl() -> TestResult {
     .with_source("wiaa_results")
     .with_offline(true);
     let empty_context = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &empty_fetcher,
         store: &empty_store,
         refresh: false,
@@ -268,6 +270,7 @@ fn overlapping_archives_process_one_logical_result_once() -> TestResult {
         include_bytes!("../../tests/fixtures/wiaa_results/d1boysstateresults-dash.htm"),
     )?;
     let context = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -335,6 +338,7 @@ fn state_title_rows_preserve_per_row_timing_classes() -> TestResult {
         seed_result_cache(&fetcher, archive_url, html.as_bytes())?;
     }
     let context = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -419,6 +423,7 @@ fn relay_entry_slots_do_not_become_unstated_running_legs() -> TestResult {
         include_bytes!("../../tests/fixtures/wiaa_results/d1boysstateresults-sections.htm"),
     )?;
     let context = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -567,6 +572,7 @@ fn an_ambiguous_school_label_mints_no_team_or_performance() -> TestResult {
         include_bytes!("../../tests/fixtures/wiaa_results/d1boysstateresults-sections.htm"),
     )?;
     let context = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,

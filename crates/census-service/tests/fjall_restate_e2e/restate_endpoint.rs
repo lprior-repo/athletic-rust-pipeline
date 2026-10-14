@@ -1,7 +1,8 @@
 use crate::TestResult;
 use athleticnet_browser::BrowserSettings;
 use census_service::bootstrap::{
-    serve_until, DrainReport, ServeOptions, StopReason, DEFAULT_MEMORY_BUDGET_BYTES,
+    serve_until, DrainReport, ServeCaptureProtocol, ServeOptions, StopReason,
+    DEFAULT_MEMORY_BUDGET_BYTES,
 };
 use census_store::Store;
 use std::net::{SocketAddr, TcpListener};
@@ -134,6 +135,7 @@ fn restate_endpoint_advertises_services_and_drains_on_request() -> TestResult {
             let listen = free_local_address()?;
             let data_dir = dir.path().join("data");
             let options = ServeOptions {
+                capture_protocol: ServeCaptureProtocol::LegacyFresh,
                 listen,
                 data_dir: data_dir.clone(),
                 max_concurrent: 4,
@@ -190,6 +192,7 @@ fn restate_endpoint_advertises_the_lane_when_it_serves_one() -> TestResult {
             let dir = tempfile::tempdir()?;
             let listen = free_local_address()?;
             let options = ServeOptions {
+                capture_protocol: ServeCaptureProtocol::LegacyFresh,
                 listen,
                 data_dir: dir.path().join("data"),
                 max_concurrent: 4,
@@ -248,6 +251,7 @@ fn an_unrequested_stop_does_not_end_the_endpoint_at_the_drain_deadline() -> Test
             let dir = tempfile::tempdir()?;
             let listen = free_local_address()?;
             let options = ServeOptions {
+                capture_protocol: ServeCaptureProtocol::LegacyFresh,
                 listen,
                 data_dir: dir.path().join("data"),
                 max_concurrent: 4,

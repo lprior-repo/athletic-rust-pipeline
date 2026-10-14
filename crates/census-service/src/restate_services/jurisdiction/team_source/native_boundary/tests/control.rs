@@ -25,7 +25,8 @@ pub(super) fn runtime() -> Result<Runtime, Box<dyn Error>> {
         Arc::clone(&store),
         Arc::new(SystemClock),
         None,
-        Arc::new(crate::spawn::Spawner::new()),
+        crate::restate_services::CaptureExecution::LegacyFresh,
+        Jobs::new(Arc::clone(&store), Arc::new(crate::spawn::Spawner::new())),
     );
     let jobs = Jobs::new(store, Arc::clone(&region));
     let source = TeamsSource::new(owner, jobs.clone());

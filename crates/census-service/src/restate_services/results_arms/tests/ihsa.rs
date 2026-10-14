@@ -104,6 +104,7 @@ impl Harness {
             historical,
             SourceSelection::parse(&["ihsa".to_string()])
                 .map_err(crate::restate_services::tests::sdk_error)?,
+            ResultsCaptureExecution::LegacyFresh,
         )
         .await
         .map_err(crate::restate_services::tests::sdk_error)?;

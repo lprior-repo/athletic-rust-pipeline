@@ -23,8 +23,10 @@ mod athleticlive;
 mod athleticlive_tests;
 #[cfg(test)]
 mod binding_tests;
+pub(in crate::restate_services) mod capture_admission;
 mod pipeline;
 mod report;
+mod results_work;
 mod stage_runs;
 mod stages;
 mod state;
@@ -53,6 +55,8 @@ pub struct JurisdictionCensus {
     pacing: Arc<PacingState>,
     source_parallelism: Arc<OnceLock<usize>>,
     region: Arc<Spawner>,
+    capture: super::CaptureExecution,
+    jobs: super::Jobs,
 }
 
 impl JurisdictionCensus {
@@ -60,16 +64,19 @@ impl JurisdictionCensus {
         store: Arc<Store>,
         clock: Arc<dyn Clock>,
         lane: Option<BrowserLane>,
-        region: Arc<Spawner>,
+        capture: super::CaptureExecution,
+        jobs: super::Jobs,
     ) -> Self {
         Self {
             store,
             clock,
             lane,
+            capture,
             fetcher: Arc::new(Mutex::new(None)),
             pacing: Arc::new(PacingState::new()),
             source_parallelism: Arc::new(OnceLock::new()),
-            region,
+            region: Arc::clone(jobs.region()),
+            jobs,
         }
     }
 
@@ -129,6 +136,8 @@ impl JurisdictionCensus {
         let manifest = self.store.run_manifest().map_err(|error| {
             jobs::invariant(&format!("the store run manifest is unreadable: {error}"))
         })?;
+        capture_admission::require_bound_manifest(&self.capture, manifest.as_ref(), request)
+            .map_err(capture_admission::handler_error)?;
         match bound_run_refusal(manifest.as_ref(), request.season, request.revision) {
             Some(refusal) => Err(TerminalError::new(refusal).into()),
             None => Ok(()),

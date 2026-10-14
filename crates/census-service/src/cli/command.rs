@@ -26,6 +26,10 @@ use std::path::PathBuf;
 #[derive(Subcommand, Debug)]
 pub(super) enum Command {
     #[command(
+        about = "Initialize or inspect fresh capture qualification; explicit --store and a stopped owner required"
+    )]
+    CaptureProtocol(super::capture_protocol::CaptureProtocolArgs),
+    #[command(
         about = "Enroll or inspect an explicitly stopped empty installation; reusable acquisition and publication remain unsupported"
     )]
     Installation(super::installation::InstallationArgs),

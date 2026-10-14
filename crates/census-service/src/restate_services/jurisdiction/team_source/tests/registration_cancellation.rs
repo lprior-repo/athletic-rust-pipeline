@@ -28,7 +28,8 @@ fn fixture() -> Result<Fixture, Box<dyn Error>> {
         Arc::clone(&store),
         Arc::new(SystemClock),
         None,
-        Arc::new(crate::spawn::Spawner::new()),
+        crate::restate_services::CaptureExecution::LegacyFresh,
+        Jobs::new(Arc::clone(&store), Arc::new(crate::spawn::Spawner::new())),
     );
     let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&region));
     Ok(Fixture {
