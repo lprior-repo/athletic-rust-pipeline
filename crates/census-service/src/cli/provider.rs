@@ -1,4 +1,5 @@
 use anyhow::{bail, Context, Result};
+use census_crawl::net::Fetcher;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use census_store::Store;
@@ -8,6 +9,9 @@ use super::{build_fetcher, Cli};
 
 mod arms;
 mod capture_metadata;
+
+#[cfg(test)]
+mod offline_tests;
 
 #[derive(Args, Debug)]
 pub(super) struct ProviderArgs {
@@ -61,6 +65,13 @@ pub(super) struct ProviderArgs {
     #[arg(help = "Ignore cached HTTP bodies and re-fetch")]
     #[arg(long)]
     refresh: bool,
+    #[arg(
+        long,
+        requires = "store",
+        conflicts_with = "refresh",
+        help = "Use eligible cached source bytes only; no HTTP or browser requests. Requires explicit --store with its owner stopped; missing cache remains an explicit refusal"
+    )]
+    offline: bool,
     #[arg(help = "ISO date stamped into evidence (defaults to today)")]
     #[arg(long)]
     observed_on: Option<String>,
@@ -78,7 +89,7 @@ impl ProviderArgs {
 }
 
 pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) -> Result<()> {
-    let fetcher = build_fetcher(cli, store)?.with_source(args.name.clone());
+    let fetcher = build_provider_fetcher(cli, store, args)?;
     let observed_on = match args.observed_on.clone() {
         Some(value) => value,
         None => census_crawl::net::today_iso(),
@@ -103,6 +114,12 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
     let report = outcome.with_context(|| format!("adapter {}", args.name))?;
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
+}
+
+fn build_provider_fetcher(cli: &Cli, store: &Store, args: &ProviderArgs) -> Result<Fetcher> {
+    Ok(build_fetcher(cli, store)?
+        .with_source(args.name.clone())
+        .with_offline(args.offline))
 }
 
 async fn dispatch(
