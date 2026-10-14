@@ -278,3 +278,25 @@ compilation without changing profile bytes or identity.
   profile support requires a separately versioned coherent contract.
 
 Home regression: `env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-domain --test profile_execution --no-tests fail`.
+
+## Canonical Cargo job override
+
+`tools/moon-cargo` accepts optional positive-decimal `MOON_RUST_BUILD_JOBS`, overriding Moon's
+fixed task-level Cargo job count immediately before the existing Cargo exec. Unset defaults,
+selected-Cargo guard, literal arguments and exit propagation are unchanged. No alternate serial
+build engine/task was added. `xtask/README.md` documents task-hash identity and inherited children.
+
+- PASS: patch applicability/whitespace checks and static wrapper/child-process review.
+- NOT RUN: six actual-wrapper integration regressions in `xtask/tests/moon_cargo.rs`, formatting,
+  compilation and gate execution. Their mock Cargo makes environment/argument/exit checks explicit.
+- This limits Cargo compilation jobs only. Explicit CLI job flags retain precedence; Nextest test
+  threads, rustc internal threads and other runtime/native pools remain separately controlled.
+  It is not a whole-process memory cap or resource-admission waiver.
+
+Focused home checks (not run for this slice):
+
+```sh
+env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p xtask --test moon_cargo --test-threads 1 --no-tests fail
+env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src
+env -u CI MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:gate -- --release
+```
