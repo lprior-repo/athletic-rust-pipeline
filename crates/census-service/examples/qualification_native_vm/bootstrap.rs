@@ -25,7 +25,7 @@ impl Seed {
         let seed = root.join("seed");
         std::fs::create_dir(&seed)?;
         let config = format!(
-            "#cloud-config\ndisable_root: false\nssh_pwauth: false\nusers:\n  - name: root\n    lock_passwd: true\n    ssh_authorized_keys:\n      - {key}\nbootcmd:\n  - [systemctl, mask, --now, systemd-timesyncd.service, systemd-time-wait-sync.service, pacman-init.service]\npackage_update: false\npackage_upgrade: false\n"
+            "#cloud-config\ndisable_root: false\nssh_pwauth: false\nusers:\n  - name: root\n    lock_passwd: true\n    ssh_authorized_keys:\n      - {key}\nwrite_files:\n  - path: /etc/ssh/sshd_config.d/10-qualification.conf\n    permissions: '0644'\n    content: |\n      MaxStartups 200:0:400\n      LoginGraceTime 20\n      MaxSessions 200\nbootcmd:\n  - [systemctl, mask, --now, systemd-timesyncd.service, systemd-time-wait-sync.service, pacman-init.service]\npackage_update: false\npackage_upgrade: false\n"
         );
         artifacts::write(&seed.join("user-data"), config.as_bytes())?;
         artifacts::write(
