@@ -1,0 +1,10 @@
+{
+  "root_report": "Seven E0308 test expectations: Store::journal_keys returns HashSet<String>, not Vec<String>.",
+  "observed_live_vec_count": 0,
+  "path": "crates/census-crawl/src/milesplit/owned/outcome/tests.rs",
+  "before_sha256": "376eeee42a5406f1e0147f554a188cb37681c6599ff9964881bab56c836c3da4",
+  "after_sha256": "4ac406d1b4e3719b3805f222dd55c724cba828f505fdbe73abb306d95bf71a8c",
+  "patch_sha256": "6b81c436ef73da969cb7bab283b1926b5a471a83c8e2d2bb5cc747aa299ebfbb",
+  "source_baseline": "Root-integrated and formatted f5b3988 after M1 commit 0cde4e29",
+  "worker_execution": "No build/test/live edits; detached repair record only"
+}

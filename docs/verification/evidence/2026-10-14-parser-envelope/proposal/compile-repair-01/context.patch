@@ -1,0 +1,47 @@
+--- a/crates/census-crawl/src/milesplit/owned/outcome/tests.rs
++++ b/crates/census-crawl/src/milesplit/owned/outcome/tests.rs
+@@ -108,7 +108,7 @@
+     check!(eq; raw.body, body);
+     check!(eq; serde_json::to_vec(&raw)?, metadata);
+     check!(eq; fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?, before);
+-    check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, Vec::<String>::new());
++    check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, std::collections::HashSet::<String>::new());
+     check!(eq; fixture.count(), 1);
+     Ok(())
+ }
+@@ -128,8 +128,8 @@
+         ))
+     ));
+     check!(eq; fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?, before);
+-    check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, Vec::<String>::new());
+-    check!(eq; fixture.store.journal_keys(super::super::OWNED_CAPTURE_PHASE)?, Vec::<String>::new());
++    check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, std::collections::HashSet::<String>::new());
++    check!(eq; fixture.store.journal_keys(super::super::OWNED_CAPTURE_PHASE)?, std::collections::HashSet::<String>::new());
+     check!(eq; fixture.count(), 1);
+     Ok(())
+ }
+@@ -147,8 +147,8 @@
+         ))
+     ));
+     check!(eq; fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?, before);
+-    check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, Vec::<String>::new());
+-    check!(eq; fixture.store.journal_keys(super::super::OWNED_CAPTURE_PHASE)?, Vec::<String>::new());
++    check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, std::collections::HashSet::<String>::new());
++    check!(eq; fixture.store.journal_keys(super::super::OWNED_CAPTURE_PHASE)?, std::collections::HashSet::<String>::new());
+     check!(eq; fixture.count(), 1);
+     Ok(())
+ }
+@@ -196,8 +196,8 @@
+         ))
+     ));
+     check!(eq; fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?, before);
+-    check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, Vec::<String>::new());
+-    check!(eq; fixture.store.journal_keys(super::super::OWNED_CAPTURE_PHASE)?, Vec::<String>::new());
+-    check!(eq; fixture.count(), 1);
+-    Ok(())
+-}
++    check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, std::collections::HashSet::<String>::new());
++    check!(eq; fixture.store.journal_keys(super::super::OWNED_CAPTURE_PHASE)?, std::collections::HashSet::<String>::new());
++    check!(eq; fixture.count(), 1);
++    Ok(())
++}
