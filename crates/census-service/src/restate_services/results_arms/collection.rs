@@ -35,7 +35,7 @@ pub(super) async fn collect(
         .await
 }
 
-fn eligible(arm: ResultsArm, meet: &SourceMeetRef) -> bool {
+pub(super) fn eligible(arm: ResultsArm, meet: &SourceMeetRef) -> bool {
     match arm {
         ResultsArm::MilesplitResults => {
             meet.source == super::MILESPLIT

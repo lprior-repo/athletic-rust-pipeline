@@ -7,6 +7,8 @@ use census_crawl::net::Fetcher;
 use restate_sdk::prelude::*;
 use std::sync::Arc;
 
+mod v2;
+
 enum ResultsWork {
     Legacy,
     Admitted(crate::restate_services::work_admission::WorkAdmission),
@@ -22,12 +24,17 @@ impl JurisdictionCensus {
         capture: super::capture_admission::ResultsCaptureExecution,
     ) -> Result<ResultsStageOutcome, HandlerError> {
         use super::capture_admission::ResultsCaptureExecution;
+        if v2::selected(&capture) {
+            return self
+                .results_stage_v2(ctx, fetcher, scope, sources, capture)
+                .await;
+        }
         let store = Arc::clone(&self.store);
         let region = self.region();
         let work = match &capture {
             ResultsCaptureExecution::LegacyFresh => ResultsWork::Legacy,
             ResultsCaptureExecution::UnadoptedSources
-            | ResultsCaptureExecution::FreshQualificationV1 { .. } => {
+            | ResultsCaptureExecution::FreshQualification { .. } => {
                 ResultsWork::Admitted(self.jobs.admit_work(ctx.key()).await?)
             }
         };

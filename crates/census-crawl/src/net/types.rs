@@ -10,6 +10,8 @@ pub enum FetchError {
     #[error(transparent)]
     CaptureStore(Box<census_store::StoreError>),
     #[error(transparent)]
+    RecoveryCleanup(Box<super::RecoveryCleanupFailure>),
+    #[error(transparent)]
     CaptureDomain(#[from] census_domain::model::CaptureDomainError),
     #[error(transparent)]
     Capture(#[from] super::CaptureTransportError),
@@ -111,6 +113,7 @@ impl FetchError {
                 Ok(census_domain::model::CaptureDispositionV1::RetryableResponse)
             ),
             Self::CaptureStore(_)
+            | Self::RecoveryCleanup(_)
             | Self::CaptureDomain(_)
             | Self::Capture(_)
             | Self::TooLarge { .. }

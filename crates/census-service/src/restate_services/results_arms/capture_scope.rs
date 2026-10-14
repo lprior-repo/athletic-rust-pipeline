@@ -33,7 +33,7 @@ pub(super) fn admit(
                 "capture role was excluded by the retained source plan",
             ));
         }
-        ResultsCaptureExecution::FreshQualificationV1 {
+        ResultsCaptureExecution::FreshQualification {
             writer,
             owner,
             grants,
@@ -64,7 +64,7 @@ pub(super) fn admit(
 }
 
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
-enum TargetAdmissionError {
+pub(super) enum TargetAdmissionError {
     #[error("capture result-set frontier exceeds 4096")]
     FrontierLimit,
     #[error("capture result-set target differs from the selected whole meet")]
@@ -75,7 +75,7 @@ enum TargetAdmissionError {
     Unparseable,
 }
 
-fn checked_target(
+pub(super) fn checked_target(
     meet: &SourceMeetRef,
     options: &ResultSetOptions,
 ) -> Result<ResultSetRef, TargetAdmissionError> {

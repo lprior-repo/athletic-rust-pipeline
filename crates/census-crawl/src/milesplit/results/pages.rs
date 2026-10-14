@@ -3,6 +3,9 @@ use crate::net::{FetchOptions, Fetcher};
 use crate::{CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
 
+pub(in crate::milesplit) mod bounded;
+pub use bounded::{read_meet_pages_bounded, BoundedMeetPages, MeetPageLimits};
+
 pub const MISMATCH_LIMIT: usize = 25;
 
 const MILESPLIT_HOST: &str = "milesplit.com";

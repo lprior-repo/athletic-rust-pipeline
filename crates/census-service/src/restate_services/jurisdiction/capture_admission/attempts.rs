@@ -18,7 +18,7 @@ fn original_owner_pass_continuations_keep_one_slot_and_lifetime_cap() -> TestRes
     bind(&f)?;
     let mut original = None;
     for expected in 1..=3 {
-        let ResultsCaptureExecution::FreshQualificationV1 { writer, owner, .. } = admit(&f)? else {
+        let ResultsCaptureExecution::FreshQualification { writer, owner, .. } = admit(&f)? else {
             return Err("capture owner missing".into());
         };
         let work = owner.for_owned_meet(
@@ -49,10 +49,10 @@ fn original_owner_pass_continuations_keep_one_slot_and_lifetime_cap() -> TestRes
             .store
             .fail_acquisition_dispatch(armed.into_observation(), AcquisitionFailureV1::Transport)?;
         check!(
-            matches!(terminal.terminal(), census_store::AcquisitionTerminalV1::OutcomeUnknown { checkpoint: census_store::AcquisitionCheckpointV1::Armed { hop }, cause: census_domain::model::InterruptionCauseV1::TransportFailed } if hop.get() == 0)
+            matches!(terminal.terminal(), census_store::AcquisitionTerminal::OutcomeUnknown { checkpoint: census_store::AcquisitionCheckpointV1::Armed { hop }, cause: census_domain::model::InterruptionCauseV1::TransportFailed } if hop.get() == 0)
         );
     }
-    let ResultsCaptureExecution::FreshQualificationV1 { writer, owner, .. } = admit(&f)? else {
+    let ResultsCaptureExecution::FreshQualification { writer, owner, .. } = admit(&f)? else {
         return Err("capture owner missing".into());
     };
     let work = owner.for_owned_meet(
@@ -80,7 +80,7 @@ fn original_owner_pass_continuations_keep_one_slot_and_lifetime_cap() -> TestRes
 fn same_original_owner_cannot_reset_allowance_by_changing_refresh_or_history() -> TestResult {
     let mut f = fixture()?;
     bind(&f)?;
-    let ResultsCaptureExecution::FreshQualificationV1 { writer, owner, .. } = admit(&f)? else {
+    let ResultsCaptureExecution::FreshQualification { writer, owner, .. } = admit(&f)? else {
         return Err("capture owner missing".into());
     };
     let work = owner.for_owned_meet(
@@ -92,7 +92,7 @@ fn same_original_owner_cannot_reset_allowance_by_changing_refresh_or_history() -
         writer.continuation_for_owned_meet(&f.store, &owner, UsJurisdiction::Michigan, "123")?;
     drop(f.store.register_acquisition_work(&owner, work, grant)?);
     f.request.refresh = true;
-    let ResultsCaptureExecution::FreshQualificationV1 { writer, owner, .. } = admit(&f)? else {
+    let ResultsCaptureExecution::FreshQualification { writer, owner, .. } = admit(&f)? else {
         return Err("capture owner missing".into());
     };
     let changed = owner.for_owned_meet(
@@ -135,7 +135,7 @@ fn observed_retryable_response_failures_exhaust_the_original_owner_lifetime_cap(
             .fail_acquisition_response(observed, AcquisitionFailureV1::BodyIncomplete)?;
         check!(matches!(
             terminal.terminal(),
-            census_store::AcquisitionTerminalV1::FailedUncaptured {
+            census_store::AcquisitionTerminal::FailedUncaptured {
                 checkpoint: census_store::AcquisitionCheckpointV1::ResponseObserved { hop },
                 failure: AcquisitionFailureV1::BodyIncomplete,
             } if hop.get() == 0
@@ -159,7 +159,7 @@ fn observed_retryable_response_failures_exhaust_the_original_owner_lifetime_cap(
 }
 
 fn registered(f: &Fixture) -> TestResult<OwnedAcquisitionWork> {
-    let ResultsCaptureExecution::FreshQualificationV1 { writer, owner, .. } = admit(f)? else {
+    let ResultsCaptureExecution::FreshQualification { writer, owner, .. } = admit(f)? else {
         return Err("capture owner missing".into());
     };
     let work = owner.for_owned_meet(

@@ -26,13 +26,14 @@ pub(super) async fn open(
                 Ok((Arc::new(store), CaptureExecution::LegacyFresh))
             }
             ServeCaptureProtocol::FreshQualificationV1 => {
-                let admitted = Store::open_capture_qualification_v1(&data_dir)
-                    .map_err(|source| store_open_error(data_dir, source))?;
-                let (store, writer) = admitted.into_parts();
-                Ok((
-                    Arc::new(store),
-                    CaptureExecution::FreshQualificationV1(Arc::new(writer)),
-                ))
+                Store::open_capture_qualification_v1(&data_dir)
+                    .map(capture_parts)
+                    .map_err(|source| store_open_error(data_dir, source))
+            }
+            ServeCaptureProtocol::FreshQualificationV2 => {
+                Store::open_capture_qualification_v2(&data_dir)
+                    .map(capture_parts)
+                    .map_err(|source| store_open_error(data_dir, source))
             }
         })
         .await;
@@ -48,6 +49,16 @@ pub(super) async fn open(
             reason: "task cancelled".to_string(),
         }),
     }
+}
+
+fn capture_parts(
+    admitted: census_store::CaptureQualificationStore,
+) -> (Arc<Store>, CaptureExecution) {
+    let (store, writer) = admitted.into_parts();
+    (
+        Arc::new(store),
+        CaptureExecution::FreshQualification(Arc::new(writer)),
+    )
 }
 
 fn store_open_error(path: PathBuf, source: census_store::StoreError) -> BootstrapError {

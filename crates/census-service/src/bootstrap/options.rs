@@ -24,6 +24,7 @@ const LANE_CHALLENGE_WAIT: Duration = Duration::from_secs(30);
 pub enum ServeCaptureProtocol {
     LegacyFresh,
     FreshQualificationV1,
+    FreshQualificationV2,
 }
 
 #[derive(Debug, Clone)]
@@ -136,6 +137,7 @@ fn apply_flag<I: Iterator<Item = String>>(
 fn parse_capture_protocol(raw: String) -> Result<ServeCaptureProtocol, BootstrapError> {
     match raw.as_str() {
         "fresh-qualification-v1" => Ok(ServeCaptureProtocol::FreshQualificationV1),
+        "fresh-qualification-v2" => Ok(ServeCaptureProtocol::FreshQualificationV2),
         _ => Err(BootstrapError::CaptureProtocolUnsupported { raw }),
     }
 }

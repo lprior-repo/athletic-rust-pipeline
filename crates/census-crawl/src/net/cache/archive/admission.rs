@@ -95,9 +95,7 @@ impl<'lock> ArchiveAdmission<'lock> {
     fn check_capacity(&self, additional: u64) -> Result<(), FetchError> {
         let used = archive_bytes_used(self.lock.root(), &self.archive)?;
         let reserved = reservation_bytes(&self.archive)?;
-        let projected = used
-            .checked_add(reserved)
-            .and_then(|sum| sum.checked_add(additional))
+        let projected = capacity_projection(used, reserved, additional)
             .ok_or_else(|| invalid(&self.archive, "archive capacity accounting overflowed"))?;
         if projected > self.capacity {
             return Err(FetchError::ArchiveCapacity {
@@ -121,6 +119,15 @@ impl<'lock> ArchiveAdmission<'lock> {
             metadata_digest,
         )?)
     }
+}
+
+pub(in crate::net::cache) fn capacity_projection(
+    used: u64,
+    reserved: u64,
+    additional: u64,
+) -> Option<u64> {
+    used.checked_add(reserved)
+        .and_then(|sum| sum.checked_add(additional))
 }
 
 pub(in crate::net::cache) fn archive_capacity() -> Result<ArchiveCapacity, FetchError> {

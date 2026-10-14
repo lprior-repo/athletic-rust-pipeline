@@ -169,6 +169,15 @@ pub(super) fn owned_meet_url(reference: &ResultSetRef) -> CrawlResult<String> {
     ))
 }
 
+pub fn owned_meet_request(
+    fetcher: &Fetcher,
+    reference: &ResultSetRef,
+    options: &FetchOptions,
+) -> CrawlResult<census_domain::model::RequestRepresentationV1> {
+    let url = owned_meet_url(reference)?;
+    Ok(fetcher.acquisition_request(&url, options)?)
+}
+
 #[tracing::instrument(skip(ctx, options))]
 pub(super) async fn fetch_owned_capture(
     ctx: &crate::AdapterContext<'_>,
@@ -188,7 +197,12 @@ pub(super) async fn fetch_owned_capture(
             ))
         }
         crate::CaptureContext::DurableV1(owner) => {
-            let request = ctx.fetcher.acquisition_request(&url, &options)?;
+            if let Some(captured) =
+                owner.take_prepared_recovery(reference.site.jurisdiction(), &reference.meet_id)?
+            {
+                return Ok(captured.accepted(&options)?);
+            }
+            let request = owned_meet_request(ctx.fetcher, reference, &options)?;
             let work = owner.register(
                 ctx.store,
                 ctx.fetcher,

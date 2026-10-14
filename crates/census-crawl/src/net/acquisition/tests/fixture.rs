@@ -21,6 +21,8 @@ const CERT: &[u8] = include_bytes!("fixtures/mi-milesplit-public-test-cert.der")
 const KEY: &[u8] = include_bytes!("fixtures/mi-milesplit-public-test-key.der");
 pub(crate) const HOST: &str = "mi.milesplit.com";
 
+mod protocol;
+
 pub(crate) struct Fixture {
     pub(crate) root: tempfile::TempDir,
     pub(crate) store: Store,
@@ -31,39 +33,11 @@ pub(crate) struct Fixture {
 
 impl Fixture {
     pub(crate) fn new(listener: &TcpListener) -> TestResult<Self> {
-        let root = tempfile::tempdir()?;
-        Store::create_capture_qualification_v1(root.path().join("store"))?;
-        let (store, writer) =
-            Store::open_capture_qualification_v1(root.path().join("store"))?.into_parts();
-        let manifest = RunManifest {
-            store_identity: writer.store_identity().as_str().to_owned(),
-            run: CensusRun::new(SchoolYear::new(2026).ok_or("year")?, 1).ok_or("run")?,
-            cohort: GradYear::CO2027,
-            jurisdictions: vec![UsJurisdiction::Michigan],
-        };
-        store.bind_run(&manifest)?;
-        let mut fetcher = Fetcher::new(
-            store.http_cache_dir(),
-            None,
-            Duration::ZERO,
-            HashMap::new(),
-            vec![HOST.into()],
-        )?;
-        let mut destination =
-            crate::net::destination_guard::DestinationGuard::new(vec![HOST.into()]);
-        destination.fixture_resolution = Some((HOST.into(), listener.local_addr()?));
-        fetcher.destination = Arc::new(destination);
-        fetcher.client = crate::net::client::client_builder(Arc::clone(&fetcher.destination), None)
-            .tls_certs_only([reqwest::Certificate::from_der(CERT)?])
-            .build()?;
-        fetcher.capture_clock = crate::net::time::CaptureClock::Injected(Arc::new(FixedClock));
-        Ok(Self {
-            root,
-            store,
-            writer,
-            fetcher,
-            requests: Arc::new(AtomicUsize::new(0)),
-        })
+        Self::new_with_protocol(listener, CaptureProtocolVersion::V1)
+    }
+
+    pub(crate) fn new_v2(listener: &TcpListener) -> TestResult<Self> {
+        Self::new_with_protocol(listener, CaptureProtocolVersion::V2)
     }
 
     pub(crate) fn reopen(self) -> TestResult<Self> {
@@ -74,10 +48,17 @@ impl Fixture {
             fetcher,
             requests,
         } = self;
+        let protocol = writer.protocol();
         drop(writer);
         drop(store);
-        let (store, writer) =
-            Store::open_capture_qualification_v1(root.path().join("store"))?.into_parts();
+        let (store, writer) = match protocol {
+            CaptureProtocolVersion::V1 => {
+                Store::open_capture_qualification_v1(root.path().join("store"))?.into_parts()
+            }
+            CaptureProtocolVersion::V2 => {
+                Store::open_capture_qualification_v2(root.path().join("store"))?.into_parts()
+            }
+        };
         Ok(Self {
             root,
             store,

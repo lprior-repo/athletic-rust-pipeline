@@ -2,11 +2,12 @@ use super::*;
 use crate::restate_services::results_arms::ResultsSourceRows;
 use crate::spawn::TaskReport;
 use census_domain::model::{AcquisitionFailureV1, SOURCE_ACQUISITION_PHASE};
-use census_store::{AcquisitionTerminalV1, ImmutableAttemptResult};
+use census_store::{AcquisitionTerminal, ImmutableAttemptResult};
 use std::time::Duration;
 
 mod fixture;
 mod protocol;
+mod v2;
 use fixture::Fixture;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -148,7 +149,7 @@ fn require_not_dispatched(fixture: &Fixture) -> TestResult {
         .ok_or("capture terminal missing")?;
     let terminal: ImmutableAttemptResult = serde_json::from_value(value)?;
     check!(eq; terminal.attempt().ordinal().get(), 1);
-    check!(eq; terminal.terminal(), &AcquisitionTerminalV1::NotDispatched {
+    check!(eq; terminal.terminal(), &AcquisitionTerminal::NotDispatched {
         failure: AcquisitionFailureV1::AdmissionRefused,
     });
     Ok(())

@@ -1,6 +1,13 @@
 use super::CaptureDomainError;
 use serde::{Deserialize, Serialize};
 
+pub(super) fn try_text(value: &str) -> Result<String, std::collections::TryReserveError> {
+    let mut copy = String::new();
+    copy.try_reserve_exact(value.len())?;
+    copy.push_str(value);
+    Ok(copy)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "u8", into = "u8")]
 pub(super) struct VersionOne;
@@ -43,6 +50,9 @@ impl From<VersionTwo> for u8 {
 #[serde(try_from = "String", into = "String")]
 pub struct AcquisitionDigest(String);
 impl AcquisitionDigest {
+    pub fn try_clone(&self) -> Result<Self, std::collections::TryReserveError> {
+        try_text(&self.0).map(Self)
+    }
     pub fn parse(value: &str) -> Result<Self, CaptureDomainError> {
         if value.len() != 64
             || !value
@@ -78,6 +88,9 @@ impl std::fmt::Display for AcquisitionDigest {
 #[serde(transparent)]
 pub struct AcquisitionSlotId(AcquisitionDigest);
 impl AcquisitionSlotId {
+    pub fn try_clone(&self) -> Result<Self, std::collections::TryReserveError> {
+        self.0.try_clone().map(Self)
+    }
     pub fn parse(value: &str) -> Result<Self, CaptureDomainError> {
         AcquisitionDigest::parse(value).map(Self)
     }
@@ -95,6 +108,9 @@ impl std::fmt::Display for AcquisitionSlotId {
 #[serde(transparent)]
 pub struct AcquisitionWorkId(AcquisitionDigest);
 impl AcquisitionWorkId {
+    pub fn try_clone(&self) -> Result<Self, std::collections::TryReserveError> {
+        self.0.try_clone().map(Self)
+    }
     pub fn parse(value: &str) -> Result<Self, CaptureDomainError> {
         AcquisitionDigest::parse(value).map(Self)
     }

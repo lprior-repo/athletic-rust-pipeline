@@ -77,6 +77,12 @@ pub(super) fn observation_of(
 
 pub(super) fn failure_of(error: &FetchError) -> AcquisitionFailureV1 {
     match error {
+        FetchError::RecoveryCleanup(error) => match error.primary() {
+            crate::net::RecoveryFailurePrimary::Capture(
+                CaptureTransportError::CacheOccurrenceMismatch,
+            ) => AcquisitionFailureV1::CacheChanged,
+            _ => AcquisitionFailureV1::AdmissionRefused,
+        },
         FetchError::Timeout { .. } => AcquisitionFailureV1::Timeout,
         FetchError::Transport { .. } => AcquisitionFailureV1::Transport,
         FetchError::TooLarge { .. } => AcquisitionFailureV1::BodyTooLarge,

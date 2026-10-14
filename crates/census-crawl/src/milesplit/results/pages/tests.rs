@@ -11,7 +11,7 @@ const OH_MEET_RESULTS_URL: &str =
     "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results";
 const FOREIGN_PAGE: &str = "<html><body><h1>Schedule</h1><p>Not a results page.</p></body></html>";
 
-fn scratch() -> TestResult<(tempfile::TempDir, Fetcher)> {
+pub(super) fn scratch() -> TestResult<(tempfile::TempDir, Fetcher)> {
     let dir = tempfile::tempdir()?;
     let fetcher = Fetcher::new(
         dir.path().join("http"),
@@ -23,7 +23,7 @@ fn scratch() -> TestResult<(tempfile::TempDir, Fetcher)> {
     Ok((dir, fetcher))
 }
 
-fn options() -> FetchOptions {
+pub(super) fn options() -> FetchOptions {
     FetchOptions {
         refresh: false,
         allow_not_found: false,
@@ -31,7 +31,12 @@ fn options() -> FetchOptions {
     }
 }
 
-fn seed_cache(cache_dir: &std::path::Path, url: &str, status: u16, body: &str) -> TestResult {
+pub(super) fn seed_cache(
+    cache_dir: &std::path::Path,
+    url: &str,
+    status: u16,
+    body: &str,
+) -> TestResult {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(b"GET");

@@ -1,38 +1,36 @@
 use super::super::archive_io::io_error;
 use super::super::FetchError;
-use std::fs::{File, OpenOptions};
-use std::path::{Path, PathBuf};
+use census_store::{ArchiveWriteFence, StoreError};
+use std::path::Path;
 
+#[cfg(test)]
 pub(in crate::net::cache) const ARCHIVE_LOCK_NAME: &str = "archive-capacity.lock";
 
 pub(in crate::net) struct ArchiveLock {
-    _file: File,
-    root: PathBuf,
+    fence: ArchiveWriteFence,
 }
 
 impl ArchiveLock {
     pub(in crate::net::cache) fn acquire(root: &Path) -> Result<Self, FetchError> {
+        #[cfg(test)]
         let path = root.join(ARCHIVE_LOCK_NAME);
         #[cfg(test)]
         tests::checkpoint(&path, tests::LockEvent::BeforeAcquire)?;
-        let file = OpenOptions::new()
-            .create(true)
-            .truncate(false)
-            .read(true)
-            .write(true)
-            .open(&path)
-            .map_err(|error| io_error(&path, error))?;
-        file.lock().map_err(|error| io_error(&path, error))?;
+        let fence = ArchiveWriteFence::acquire(root).map_err(fence_error)?;
         #[cfg(test)]
         tests::checkpoint(&path, tests::LockEvent::Acquired)?;
-        Ok(Self {
-            _file: file,
-            root: root.to_path_buf(),
-        })
+        Ok(Self { fence })
     }
 
     pub(in crate::net::cache) fn root(&self) -> &Path {
-        &self.root
+        self.fence.root()
+    }
+}
+
+fn fence_error(error: StoreError) -> FetchError {
+    match error {
+        StoreError::Io { path, source } => io_error(&path, source),
+        other => other.into(),
     }
 }
 

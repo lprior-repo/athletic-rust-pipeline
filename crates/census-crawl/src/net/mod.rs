@@ -13,11 +13,16 @@ pub mod bridge;
 mod acquisition;
 pub mod cache;
 mod capture_error;
+mod recovery_error;
+pub use recovery_error::{RecoveryCleanupFailure, RecoveryCleanupLeaf, RecoveryFailurePrimary};
 mod client;
 #[cfg(test)]
 pub(crate) use acquisition::tests::fixture as capture_fixture;
 pub(crate) use acquisition::CaptureProvenance;
-pub use acquisition::{CaptureProvenanceView, CapturedFetch};
+pub use acquisition::{
+    CaptureProvenanceView, CapturedFetch, EligiblePublicationOutcome, EligiblePublicationSkip,
+    PreparedRecoveryOutcome,
+};
 pub use capture_error::CaptureTransportError;
 mod destination_guard;
 mod execute;

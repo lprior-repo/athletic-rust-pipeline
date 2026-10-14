@@ -114,7 +114,7 @@ pub(super) static MEET_ROW_VENUE_REGEX: LazyLock<Result<Regex, regex::Error>> =
 
 mod entities;
 
-pub(super) mod meet_index;
+pub(in crate::milesplit) mod meet_index;
 
 pub use meet_index::{has_next_page, parse_meet_index, parse_meet_result_files};
 

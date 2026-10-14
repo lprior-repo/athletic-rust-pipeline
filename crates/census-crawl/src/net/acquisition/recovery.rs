@@ -1,0 +1,162 @@
+use super::{CaptureProvenance, CapturedFetch};
+use crate::net::cache::recovery::{publish_recovered_eligible_held, restore_exact_prepared_held};
+use crate::net::{FetchError, FetchOutcome, Fetcher};
+use census_domain::model::{AcquisitionOccurrenceRefV1, PreparedRecoveryTarget};
+use census_store::{
+    CommittedRetainedBody, ExactBodySource, ImmutableAttemptResult, PreparedBackingAssessment,
+    PreparedRecoveryBudget, PreparedRecoveryRead, Receipt, ResultsCaptureOwnerV1,
+    RetainedCaptureParts, Store,
+};
+
+pub use crate::net::cache::recovery::{EligiblePublicationOutcome, EligiblePublicationSkip};
+
+pub enum PreparedRecoveryOutcome {
+    Retained {
+        captured: CapturedFetch,
+        terminal: ImmutableAttemptResult,
+        receipt: Receipt,
+        eligible: EligiblePublicationOutcome,
+    },
+    RetainedUnavailable {
+        occurrence: AcquisitionOccurrenceRefV1,
+        terminal: ImmutableAttemptResult,
+        receipt: Receipt,
+        consumption_error: FetchError,
+    },
+    RetentionFailed {
+        terminal: ImmutableAttemptResult,
+        receipt: Receipt,
+    },
+}
+
+impl CapturedFetch {
+    pub(crate) fn from_prepared_recovery(
+        retained: CommittedRetainedBody<'_>,
+    ) -> (Self, ImmutableAttemptResult, Receipt) {
+        let RetainedCaptureParts {
+            url,
+            response_url,
+            method,
+            status,
+            content_digest,
+            bytes,
+            fetched_at,
+            content_type,
+            body,
+            occurrence,
+            original_occurrence,
+            prepared: _,
+            terminal,
+            receipt,
+        } = retained.into_parts();
+        let capture = FetchOutcome {
+            url,
+            response_url,
+            method,
+            status,
+            content_digest,
+            bytes,
+            fetched_at,
+            content_type,
+            body,
+            from_cache: true,
+        };
+        let captured = Self {
+            capture,
+            provenance: CaptureProvenance::retained(occurrence, original_occurrence),
+        };
+        (captured, terminal, receipt)
+    }
+}
+
+impl Fetcher {
+    pub fn recover_prepared_target(
+        &self,
+        store: &Store,
+        owner: &ResultsCaptureOwnerV1,
+        target: &PreparedRecoveryTarget,
+        budget: &mut PreparedRecoveryBudget,
+        source: ExactBodySource<'_>,
+    ) -> Result<PreparedRecoveryOutcome, FetchError> {
+        if !store.matches_http_cache_root(self.cache_dir()) {
+            return Err(census_store::CaptureError::CacheRootMismatch.into());
+        }
+        let capacity = super::super::cache::recovery::archive_capacity()?;
+        let read = store
+            .begin_prepared_recovery(owner, target, budget)?
+            .read_backing()?;
+        match read {
+            PreparedRecoveryRead::Retained(retained) => Ok(retained_outcome(retained, capacity)),
+            PreparedRecoveryRead::RetainedUnavailable {
+                occurrence,
+                terminal,
+                receipt,
+                consumption_error,
+            } => Ok(PreparedRecoveryOutcome::RetainedUnavailable {
+                occurrence,
+                terminal,
+                receipt,
+                consumption_error: consumption_error.into(),
+            }),
+            PreparedRecoveryRead::RetentionFailed(failure) => {
+                let (terminal, receipt) = failure.into_parts();
+                Ok(PreparedRecoveryOutcome::RetentionFailed { terminal, receipt })
+            }
+            PreparedRecoveryRead::Unresolved(session) => {
+                resolve_unresolved(session, source, capacity)
+            }
+        }
+    }
+}
+
+pub(super) fn resolve_unresolved(
+    mut session: census_store::PreparedRecoverySession<'_, '_>,
+    source: ExactBodySource<'_>,
+    capacity: u64,
+) -> Result<PreparedRecoveryOutcome, FetchError> {
+    match session.assessment()? {
+        PreparedBackingAssessment::Exact => {
+            return Ok(retained_outcome(session.finish()?, capacity))
+        }
+        PreparedBackingAssessment::RestorationRequired => {
+            session.prepare_restore(ExactBodySource::NoneSupplied)?;
+        }
+        PreparedBackingAssessment::MissingBody(_) => match source {
+            ExactBodySource::NoneSupplied => {
+                let decision = session.missing_decision()?;
+                let (terminal, receipt) = session.close_missing(&decision)?.into_parts();
+                return Ok(PreparedRecoveryOutcome::RetentionFailed { terminal, receipt });
+            }
+            ExactBodySource::SuppliedLocalCopy(path) => {
+                session.prepare_restore(ExactBodySource::SuppliedLocalCopy(path))?;
+            }
+        },
+    }
+    {
+        let (fence, prepared, body, io) = session.restoration_io()?;
+        restore_exact_prepared_held(fence, prepared, body, capacity, io)?;
+    }
+    session.verify_restored()?;
+    Ok(retained_outcome(session.finish()?, capacity))
+}
+
+fn retained_outcome(
+    mut retained: CommittedRetainedBody<'_>,
+    capacity: u64,
+) -> PreparedRecoveryOutcome {
+    let eligible = match retained.publication_io() {
+        Ok((fence, prepared, occurrence, io)) => {
+            publish_recovered_eligible_held(fence, prepared, occurrence, capacity, io)
+        }
+        Err(error) => {
+            EligiblePublicationOutcome::Skipped(EligiblePublicationSkip::NotAdmitted(error))
+        }
+    };
+    let (captured, terminal, receipt) = CapturedFetch::from_prepared_recovery(retained);
+    PreparedRecoveryOutcome::Retained {
+        captured,
+        terminal,
+        receipt,
+        eligible,
+    }
+}

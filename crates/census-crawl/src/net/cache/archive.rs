@@ -18,7 +18,7 @@ pub(in crate::net) use lock::ArchiveLock;
 
 mod inventory;
 mod publication;
-mod reservations;
+pub(super) mod reservations;
 pub(super) use publication::preserve_capture;
 fn archived_body_path(archive: &Path, content_digest: &str) -> PathBuf {
     archive

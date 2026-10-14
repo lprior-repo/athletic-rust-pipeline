@@ -2,6 +2,7 @@ mod cache;
 mod failures;
 pub(crate) mod fixture;
 mod grants;
+mod prepared_v2;
 mod recovery;
 use fixture::*;
 use std::sync::Arc;

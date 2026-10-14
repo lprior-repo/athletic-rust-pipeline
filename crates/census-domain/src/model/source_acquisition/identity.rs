@@ -133,6 +133,13 @@ pub struct AcquisitionAttemptId {
     ordinal: AttemptOrdinal,
 }
 impl AcquisitionAttemptId {
+    pub fn try_clone(&self) -> Result<Self, std::collections::TryReserveError> {
+        Ok(Self {
+            store_identity: self.store_identity.try_clone()?,
+            work_id: self.work_id.try_clone()?,
+            ordinal: self.ordinal,
+        })
+    }
     pub fn new(
         store_identity: StoreIdentity,
         work_id: AcquisitionWorkId,
@@ -179,6 +186,13 @@ pub struct AcquisitionOccurrenceRefV1 {
     terminal_digest: AcquisitionDigest,
 }
 impl AcquisitionOccurrenceRefV1 {
+    pub fn try_clone(&self) -> Result<Self, std::collections::TryReserveError> {
+        Ok(Self {
+            version: self.version,
+            attempt: self.attempt.try_clone()?,
+            terminal_digest: self.terminal_digest.try_clone()?,
+        })
+    }
     pub fn new(attempt: AcquisitionAttemptId, terminal_digest: AcquisitionDigest) -> Self {
         Self {
             version: VersionOne,

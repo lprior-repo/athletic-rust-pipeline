@@ -51,7 +51,7 @@ fn fixture() -> TestResult<Fixture> {
     Ok(Fixture {
         _root: root,
         store,
-        execution: CaptureExecution::FreshQualificationV1(Arc::new(writer)),
+        execution: CaptureExecution::FreshQualification(Arc::new(writer)),
         request,
         state,
     })
@@ -101,7 +101,7 @@ fn capture_owner_requires_the_actual_retained_manifest_key_and_window() -> TestR
     bind(&f)?;
     check!(matches!(
         admit(&f)?,
-        ResultsCaptureExecution::FreshQualificationV1 { .. }
+        ResultsCaptureExecution::FreshQualification { .. }
     ));
     let original = f.state.identity.clone();
     f.state.identity = "jurisdiction:WI:2026-27:1".into();

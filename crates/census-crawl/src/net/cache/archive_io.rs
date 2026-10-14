@@ -92,6 +92,19 @@ pub(super) fn with_stage<T>(
 }
 
 pub(super) fn new_directory(root: &Path, prefix: &str) -> Result<PathBuf, FetchError> {
+    let (sequence, nanos) = stage_identity(root)?;
+    let path = root.join(format!(
+        "{prefix}-{}-{}-{sequence}",
+        std::process::id(),
+        nanos
+    ));
+    fs::create_dir(&path).map_err(|error| io_error(&path, error))?;
+    sync_directory(&path)?;
+    sync_directory(root)?;
+    Ok(path)
+}
+
+pub(super) fn stage_identity(root: &Path) -> Result<(u64, u128), FetchError> {
     let sequence = NEXT_STAGE
         .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
             value.checked_add(1)
@@ -100,15 +113,7 @@ pub(super) fn new_directory(root: &Path, prefix: &str) -> Result<PathBuf, FetchE
     let time = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|error| io_error(root, io::Error::other(error)))?;
-    let path = root.join(format!(
-        "{prefix}-{}-{}-{sequence}",
-        std::process::id(),
-        time.as_nanos()
-    ));
-    fs::create_dir(&path).map_err(|error| io_error(&path, error))?;
-    sync_directory(&path)?;
-    sync_directory(root)?;
-    Ok(path)
+    Ok((sequence, time.as_nanos()))
 }
 
 fn new_stage(root: &Path) -> Result<PathBuf, FetchError> {

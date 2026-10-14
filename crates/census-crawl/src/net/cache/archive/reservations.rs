@@ -3,7 +3,7 @@ use super::super::{is_valid_hex64, read_cache_file, FetchError};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const MAX_RECORD_BYTES: usize = 41;
+pub(in crate::net::cache) const MAX_RECORD_BYTES: usize = 41;
 
 pub(super) fn record_path(
     archive: &Path,
@@ -29,26 +29,27 @@ pub(super) fn read_record(path: &Path) -> Result<(u64, u64), FetchError> {
         .ok_or_else(|| invalid(path, "reservation record exceeds its limit or changed"))?;
     let text = std::str::from_utf8(&encoded)
         .map_err(|_| invalid(path, "reservation record is not UTF8"))?;
+    parse_record(text).map_err(|detail| invalid(path, detail))
+}
+
+pub(in crate::net::cache) fn parse_record(text: &str) -> Result<(u64, u64), &'static str> {
     let (body, metadata) = text
         .split_once('\n')
-        .ok_or_else(|| invalid(path, "reservation record requires exactly two byte counts"))?;
-    let bytes = (parse_bytes(path, body)?, parse_bytes(path, metadata)?);
+        .ok_or("reservation record requires exactly two byte counts")?;
+    let bytes = (parse_count(body)?, parse_count(metadata)?);
     bytes
         .0
         .checked_add(bytes.1)
-        .ok_or_else(|| invalid(path, "reservation byte accounting overflowed"))?;
+        .ok_or("reservation byte accounting overflowed")?;
     Ok(bytes)
 }
 
-fn parse_bytes(path: &Path, text: &str) -> Result<u64, FetchError> {
+fn parse_count(text: &str) -> Result<u64, &'static str> {
     if text.is_empty() || !text.bytes().all(|byte| byte.is_ascii_digit()) {
-        return Err(invalid(
-            path,
-            "reservation byte count is not an unsigned decimal integer",
-        ));
+        return Err("reservation byte count is not an unsigned decimal integer");
     }
     text.parse()
-        .map_err(|_| invalid(path, "reservation byte count exceeds its accounting range"))
+        .map_err(|_| "reservation byte count exceeds its accounting range")
 }
 
 pub(super) fn write_record(path: &Path, bytes: (u64, u64)) -> Result<(), FetchError> {

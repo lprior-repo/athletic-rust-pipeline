@@ -41,7 +41,7 @@ pub(in crate::restate_services) use grants::GrantedTargets;
 pub(in crate::restate_services) enum ResultsCaptureExecution {
     LegacyFresh,
     UnadoptedSources,
-    FreshQualificationV1 {
+    FreshQualification {
         writer: Arc<CaptureWriterV1>,
         owner: ResultsCaptureOwnerV1,
         grants: GrantedTargets,
@@ -57,7 +57,7 @@ pub(super) fn require_bound_manifest(
     manifest: Option<&RunManifest>,
     request: &JurisdictionRequest,
 ) -> Result<(), CaptureAdmissionError> {
-    let CaptureExecution::FreshQualificationV1(writer) = execution else {
+    let CaptureExecution::FreshQualification(writer) = execution else {
         return Ok(());
     };
     let manifest = manifest.ok_or(CaptureAdmissionError::RunManifestMissing)?;
@@ -82,7 +82,7 @@ pub(super) fn admit_results_owner(
     state: &JurisdictionState,
     selected: (u16, SourceSelection),
 ) -> Result<ResultsCaptureExecution, CaptureAdmissionError> {
-    let CaptureExecution::FreshQualificationV1(writer) = execution else {
+    let CaptureExecution::FreshQualification(writer) = execution else {
         return Ok(ResultsCaptureExecution::LegacyFresh);
     };
     let identity =
@@ -119,7 +119,7 @@ pub(super) fn admit_results_owner(
         &plan.fingerprint,
     )?;
     let owner = writer.results_owner(store, scope)?;
-    Ok(ResultsCaptureExecution::FreshQualificationV1 {
+    Ok(ResultsCaptureExecution::FreshQualification {
         writer: Arc::clone(writer),
         owner,
         grants: GrantedTargets::default(),

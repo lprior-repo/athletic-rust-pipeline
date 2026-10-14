@@ -5,6 +5,8 @@ use census_domain::model::{
 use census_store::{AcquireDecision, AcquisitionReadBudget, OwnedAcquisitionWork, Store};
 
 mod observation;
+mod recovery;
+pub use recovery::{EligiblePublicationOutcome, EligiblePublicationSkip, PreparedRecoveryOutcome};
 mod read;
 mod retention;
 mod session;
@@ -88,6 +90,10 @@ impl CapturedFetch {
         }
     }
 
+    pub(crate) fn accepted(self, options: &FetchOptions) -> Result<Self, FetchError> {
+        accepted(self, options)
+    }
+
     pub fn capture(&self) -> &FetchOutcome {
         &self.capture
     }
@@ -152,6 +158,9 @@ impl Fetcher {
                 accepted(read::replay(store, &reference)?, options)
             }
             AcquireDecision::FinishPrepared(_) => {
+                if work.protocol() == census_domain::model::CaptureProtocolVersion::V2 {
+                    return Err(census_store::CaptureError::PreparedTargetMismatch.into());
+                }
                 accepted(self.recover_prepared(store, work)?, options)
             }
             AcquireDecision::RecoveryRequired(_) => {

@@ -51,6 +51,16 @@ pub struct SourceAdmissionV1 {
     durable_role: DurableRole,
 }
 impl SourceAdmissionV1 {
+    pub fn try_clone(&self) -> Result<Self, std::collections::TryReserveError> {
+        Ok(Self {
+            kind: self.kind,
+            state_key: self.state_key,
+            plan_fingerprint: self.plan_fingerprint.try_clone()?,
+            selected_source: self.selected_source,
+            selected_arm: self.selected_arm,
+            durable_role: self.durable_role,
+        })
+    }
     pub fn milesplit_results(plan_fingerprint: &str) -> Result<Self, CaptureDomainError> {
         Ok(Self {
             kind: AdmissionKind::LegacyRestateSourceSelectionV1,
@@ -101,6 +111,18 @@ pub struct ResultsCaptureScopeV1 {
     cache_intent: CaptureCacheIntent,
 }
 impl ResultsCaptureScopeV1 {
+    pub fn try_clone(&self) -> Result<Self, std::collections::TryReserveError> {
+        Ok(Self {
+            owner_key: super::scalar::try_text(&self.owner_key)?,
+            jurisdiction: self.jurisdiction,
+            run: self.run,
+            run_manifest_digest: self.run_manifest_digest.try_clone()?,
+            history: self.history,
+            historical_year: self.historical_year,
+            source_admission: self.source_admission.try_clone()?,
+            cache_intent: self.cache_intent,
+        })
+    }
     pub fn new(
         owner_key: &str,
         jurisdiction: UsJurisdiction,

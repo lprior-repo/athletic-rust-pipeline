@@ -14,6 +14,7 @@ pub(crate) fn fetch(error: &FetchError) -> Outcome {
         } => Outcome::Blocked,
         FetchError::TooLarge { .. } => Outcome::Partial,
         FetchError::CaptureStore(_)
+        | FetchError::RecoveryCleanup(_)
         | FetchError::CaptureDomain(_)
         | FetchError::Capture(_)
         | FetchError::Transport { .. }

@@ -2,7 +2,9 @@ use crate::{CrawlError, CrawlResult};
 use regex::Regex;
 use std::sync::LazyLock;
 
+mod bounded;
 mod rows;
+pub(in crate::milesplit) use bounded::parse_bounded;
 
 use super::super::wire::{MeetRef, MeetResultFile};
 use super::{
@@ -43,10 +45,15 @@ fn meet_result_files_regex() -> CrawlResult<&'static Regex> {
 }
 
 fn legacy_option(option_html: &str) -> Option<(i64, String)> {
+    let (id, name) = legacy_fields(option_html)?;
+    Some((id, name.to_string()))
+}
+
+fn legacy_fields(option_html: &str) -> Option<(i64, &str)> {
     let re = LEGACY_OPTION_REGEX.as_ref().ok()?;
     let cap = re.captures(option_html)?;
     let id: i64 = cap.get(1)?.as_str().parse().ok()?;
-    let name = cap.get(2)?.as_str().trim().to_string();
+    let name = cap.get(2)?.as_str().trim();
     (!name.is_empty() && id > 0).then_some((id, name))
 }
 
