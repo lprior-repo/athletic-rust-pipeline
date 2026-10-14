@@ -134,7 +134,7 @@ impl AcquisitionReadBudget {
             })?;
         Ok(())
     }
-    pub(super) fn begin_operation(&mut self) {
+    pub(crate) fn begin_operation(&mut self) {
         if self.recovery.is_recovery() {
             return;
         }

@@ -21,3 +21,6 @@ mod selection;
 mod version_family;
 
 mod allocation_envelope;
+
+mod snapshot;
+mod snapshot_budget;
