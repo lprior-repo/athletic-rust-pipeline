@@ -22,7 +22,7 @@ held locks are not used as the independent zero-dispatch oracle.
 ```sh
 env -u CI tools/moon-local run pipeline:fmt
 env -u CI tools/moon-local run pipeline:check -- --jobs 1
-env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-service --bin census-service -E 'test(cli::provider::offline_tests::)' --test-threads 1 --no-tests fail
+env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-service --bin census-service -E 'test(cli::provider::offline_tests::)' --no-capture --no-tests fail
 env -u CI tools/moon-local run pipeline:check pipeline:lint-src
 env -u CI tools/moon-local run pipeline:gate -- --release
 ```
@@ -30,3 +30,7 @@ env -u CI tools/moon-local run pipeline:gate -- --release
 This does not select arbitrary archived occurrences, resume completed Restate interpretations,
 certify freshness/coverage, or change the existing CLI school-year context. Store recovery and
 append-only interpretation writes remain possible. No live provider command was run.
+
+Command review: Nextest already receives `--test-threads=16` from Moon. The focused
+recipe uses its established `--no-capture` serial mode, avoiding a duplicate thread
+flag rejected by the pinned runner. This correction is source/log-reviewed, not a test run.
