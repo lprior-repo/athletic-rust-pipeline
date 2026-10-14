@@ -12,6 +12,7 @@ use census_store::Store;
 type TestResult = Result<(), Box<dyn Error>>;
 
 mod durable_attempts;
+mod gobound_policy;
 pub(crate) mod national_resume;
 mod registration;
 mod registration_cancellation;

@@ -1,7 +1,7 @@
 mod strategies;
 use census_crawl::applicability::applicable_sources;
 use census_crawl::net::Fetcher;
-use census_crawl::registry::{AccessClass, SourceDescriptor};
+use census_crawl::registry::{AccessClass, AcquisitionPolicyRefusal, SourceDescriptor};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::Revision;
@@ -129,6 +129,18 @@ pub fn owed(dispositions: &[UnitDisposition]) -> Vec<Refusal> {
 }
 
 fn classify(descriptor: &'static SourceDescriptor, lane: BrowserLaneState) -> UnitDisposition {
+    if let Some(refusal) = census_crawl::registry::acquisition_policy_for_source(descriptor.slug) {
+        let kind = match refusal {
+            AcquisitionPolicyRefusal::AccessBlocked { .. } => RefusalKind::AccessBlocked,
+            AcquisitionPolicyRefusal::Terms { .. } => RefusalKind::Terms,
+        };
+        return UnitDisposition::Refused(Refusal {
+            slug: descriptor.slug,
+            access: descriptor.access_class(),
+            reason: refusal.reason(),
+            kind,
+        });
+    }
     if let strategies::SourceStrategy::Gap(reason) = strategies::strategy(descriptor.slug) {
         return UnitDisposition::Refused(Refusal {
             slug: descriptor.slug,
@@ -200,4 +212,8 @@ pub fn compute_plan_fingerprint(
 }
 
 #[cfg(test)]
+mod policy_tests;
+#[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tfrrs_policy_tests;

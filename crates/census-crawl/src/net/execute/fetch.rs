@@ -50,6 +50,11 @@ impl Fetcher {
         }
 
         let (host, origin) = request_target(url)?;
+        if let Some(reason) = crate::registry::acquisition_refusal_for_host(&host) {
+            return Err(FetchError::Policy {
+                detail: reason.to_string(),
+            });
+        }
         self.origin_locks.ensure(&origin)?;
         if let Some(refusal) = self.refused_admission(&host, url).await {
             return Err(refusal);
@@ -149,3 +154,11 @@ impl Fetcher {
 #[cfg(test)]
 #[path = "fetch_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "acquisition_policy_tests.rs"]
+mod acquisition_policy_tests;
+
+#[cfg(test)]
+#[path = "tfrrs_policy_tests.rs"]
+mod tfrrs_policy_tests;
