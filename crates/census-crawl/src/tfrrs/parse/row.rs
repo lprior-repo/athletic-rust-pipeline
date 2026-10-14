@@ -1,4 +1,4 @@
-use super::date::{published_date, PublishedDate};
+use super::date::PublishedDate;
 use super::html::{cell, links, text_of};
 use super::mark::{conversion_note, converted_metres, published_mark, wind_mps, ParsedMark};
 use super::route::{athlete_id, href_name, meet_id, parse_team_path};
@@ -73,7 +73,7 @@ pub(super) fn parse_row(body: &str) -> ParsedRow {
         conv_metres: cell(body, "Conv").and_then(converted_metres),
         converted_note: mark_cell.and_then(conversion_note),
         meet: cell(body, "Meet").and_then(single_meet),
-        date: cell(body, "Meet Date").and_then(published_date),
+        date: super::date_cell::published_date(body),
         wind: cell(body, "Wind").map(text_of).and_then(wind_mps),
     }
 }

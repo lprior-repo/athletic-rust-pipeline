@@ -4,7 +4,7 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::io::Write;
 
-pub(super) const PHASE: &str = "tfrrs_projection_v4";
+pub(super) const PHASE: &str = "tfrrs_projection_v5";
 
 pub(super) fn context(
     ctx: &AdapterContext<'_>,
