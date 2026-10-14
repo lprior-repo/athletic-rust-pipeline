@@ -1,8 +1,0 @@
-{
-  "version": "capture-bounds-clock-race-v1",
-  "patch_sha256": "8e3531f3391d4a8c0230339bfabc88421866cdfd3b4be146805cd471190fa6be",
-  "base_sha256": "62b39f81615673b43f08005dfc7910bf0dba6100f05d30924d463174c458e261",
-  "source_sha256": "010a6944d54a866f75e74558ce46cbd4034fbb9be2ddee5a41baff7fedb04c06",
-  "path": "crates/census-store/src/acquisition/tests/bounds.rs",
-  "executed": false
-}

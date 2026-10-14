@@ -1,7 +1,0 @@
-[ WARN 00:26:31.724] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
-▮▮▮▮ pipeline:fmt-write (4956fad1)
-▮▮▮▮ pipeline:fmt-write (7s 589ms, 4956fad1)
-
-Tasks: 1 completed
- Time: 8s 295ms
-

@@ -1,7 +1,0 @@
-crates/census-crawl/examples/qualification_bound_projection/binding.rs:49:    if outcome.capture.body != original.body
-crates/census-crawl/examples/qualification_bound_projection/binding.rs:50:        || outcome.capture.fetched_at != original.metadata.fetched_at
-crates/census-crawl/examples/qualification_bound_projection/binding.rs:51:        || outcome.capture.url != original.metadata.url
-crates/census-crawl/examples/qualification_bound_projection/binding.rs:52:        || outcome.capture.status != 200
-crates/census-crawl/examples/qualification_bound_projection/binding.rs:53:        || outcome.capture.content_digest != original.metadata.content_digest
-crates/census-crawl/examples/qualification_bound_projection/binding.rs:59:        &outcome.verdict,
-crates/census-service/src/coachverify/output.rs:165:        for outcome in outcomes.iter().filter(|outcome| outcome.verdict.shipped()) {

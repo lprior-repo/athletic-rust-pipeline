@@ -1,2 +1,0 @@
-[ WARN 2026-10-14 04:36:26.824] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
-▮▮▮▮ pipeline:xtask (0765e169)

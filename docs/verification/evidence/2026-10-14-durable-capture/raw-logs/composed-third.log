@@ -1,9 +1,0 @@
-[ WARN 2026-10-14 02:06:05.664] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
-▮▮▮▮ pipeline:tests-scoped (35526b01)
-   Compiling census-domain v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-domain)
-   Compiling census-store v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-store)
-▮▮▮▮ pipeline:tests-scoped (running for 30s)
-   Compiling census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
-▮▮▮▮ pipeline:tests-scoped (running for 60s)
-▮▮▮▮ pipeline:tests-scoped (running for 90s)
-   Compiling census-review v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-review)

@@ -1,3 +1,0 @@
-831f75f3cf0867daef4df6ae89b8a59dfeaf2f8a723b4905f8c5a5844a6592b7  probe.patch
-9c137f526aff505080bd2aa3d10653f77bdd445123c7ea5ab136e221ee0ff386  proposal/crates/census-service/src/census/sweep/roster/journal/legacy_probe.rs
-e3284572ce5314f173f2889604bb0f3f63fcca82333293d767364ece0f9d9ec5  proposal/crates/census-service/src/census/sweep/roster/journal.rs

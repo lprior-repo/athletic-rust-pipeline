@@ -1,7 +1,0 @@
-[
-  {
-    "path": "crates/census-crawl/src/milesplit/tests/located_roster.rs",
-    "first_sha256": "fd83dc01f4809fc226bdea20a4447f32c4638cbc7230b20257f092418f5e8f47",
-    "final_sha256": "ec835f8b5b60b0a94999e05df1e257ae95f00862b00667e5d39f847bf68c5433"
-  }
-]
