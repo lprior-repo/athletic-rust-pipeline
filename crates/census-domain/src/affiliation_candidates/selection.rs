@@ -32,7 +32,22 @@ pub fn select_candidates<'a>(
     assertions: &'a [LocallyCheckedAssertion<'a>],
     changes: &'a [LocallyCheckedChange<'a>],
 ) -> Result<CandidateSelection<'a>, AffiliationCandidateError> {
-    let pair_work = check_query(&query, assertions.len(), changes.len())?;
+    select_with_envelope(query, assertions, changes, TemporalEnvelope::LegacyCompiler)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum TemporalEnvelope {
+    LegacyCompiler,
+    IndependentEffectiveAndKnownTime,
+}
+
+pub(super) fn select_with_envelope<'a>(
+    query: CandidateQuery<'a>,
+    assertions: &'a [LocallyCheckedAssertion<'a>],
+    changes: &'a [LocallyCheckedChange<'a>],
+    envelope: TemporalEnvelope,
+) -> Result<CandidateSelection<'a>, AffiliationCandidateError> {
+    let pair_work = check_query(&query, assertions.len(), changes.len(), envelope)?;
     super::material_work::check(&query, assertions, changes, pair_work)?;
     let mut positive = copy_refs(assertions)?;
     let mut negative = copy_refs(changes)?;
@@ -71,6 +86,7 @@ fn check_query(
     query: &CandidateQuery<'_>,
     assertions: usize,
     changes: usize,
+    envelope: TemporalEnvelope,
 ) -> Result<usize, AffiliationCandidateError> {
     if query.sport == Sport::Unknown {
         return Err(AffiliationCandidateError::UnknownSport);
@@ -80,7 +96,9 @@ fn check_query(
     }
     let effective_day = NaiveDate::parse_from_str(query.as_of.as_str(), "%Y-%m-%d")
         .map_err(|_| AffiliationCandidateError::CurrentCompilerEnvelopeViolated)?;
-    if query.acquisition_cutoff.date_naive() > effective_day {
+    if envelope == TemporalEnvelope::LegacyCompiler
+        && query.acquisition_cutoff.date_naive() > effective_day
+    {
         return Err(AffiliationCandidateError::CurrentCompilerEnvelopeViolated);
     }
     check_limit(Resource::Assertions, assertions, query.grant.assertions)?;

@@ -3,6 +3,7 @@
 
 mod bounds;
 mod changes;
+pub mod current;
 mod equality;
 mod evidence;
 mod material_work;
