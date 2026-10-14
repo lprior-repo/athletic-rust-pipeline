@@ -1,7 +1,7 @@
 # Dated affiliation candidates and bounded capture evidence
 
 Date: 2026-10-14 UTC. Baseline: PR #27 merge
-`ca247d173ef0f36765a1d021ac681575abe861e1`. Code commit: `89e9fa67de617e736c673ee18578254b16263f82`. Integration evidence is still being collected.
+`ca247d173ef0f36765a1d021ac681575abe861e1`. Code commit: `89e9fa67de617e736c673ee18578254b16263f82`. Final evidence for the original 55-file tree is recorded below; subsequent reader tests are a separately identified delta.
 Exact path/blob coverage is in the adjacent `2026-10-14-candidate-and-capture-files.json`.
 No live census, production Store or production service is used by this change.
 
@@ -78,9 +78,9 @@ This mapping narrows the contribution of this change; it does not close complete
 | 5: stable and reversible identities | Candidate references preserve supplied IDs | Stable forward allocation and reversible accepted binding producer/consumer |
 | 6: capture/interpretation identity | Candidate occurrence/material distinction; bounded namespace inventories | Source-neutral retained closure, exact parser/config/member versions and required-family activation |
 | 8: dated affiliations | Pure candidate temporal/owner/person/co-op/withdrawal rules | Qualified official roster/accepted identity and participation bridge, current contact/affiliation publication |
-| 9, 12: bounded durable reads and recovery | One-view raw/member reads, exact physical admission, unchanged history | Backing-object/decoded resource qualification; unresolved combined recovery-test stall |
+| 9, 12: bounded durable reads and recovery | One-view raw/member reads, exact physical admission, unchanged history | Backing-object/decoded resource qualification; historical stall cause remains unknown after a passing unchanged-source repeat |
 | 13: consistent workbook and normalized snapshot | Existing frozen capture now uses shared admission and preserves writer errors | Checked selected view, eight normalized families, independent readback and atomic shared generation |
-| 16: verification | Scoped tests and changed-surface reviews with exact results | Current final basic gates, whole release, all 17 native faults, bounded fuzz, independent oracle and representative resource/performance evidence |
+| 16: verification | Scoped tests and changed-surface reviews with exact results | Whole release, all 17 native faults, bounded fuzz, independent oracle and representative resource/performance evidence |
 | 1, 3, 4, 7, 10, 11, 15, 19 | No completed acceptance claimed by this batch | Continue existing full-spec implementation and first five-state/UP qualification |
 
 ## Home verification
@@ -101,3 +101,37 @@ parser-fuzz and representative-corpus resource/performance qualifications. Their
 Moon commands remain in `xtask/README.md`, `docs/NATIONAL-CENSUS-FAULTS.md` and the existing plan.
 No unexecuted lane is marked passed. Current Beads export is unavailable (`bd` absent); historical
 interaction records are not treated as the current backlog.
+
+## Final original-tree results and subsequent test delta
+
+The exact source tree at `1fedf05009e3d44e30506724929c90014f9738d6`
+(`38b9403c8f6312ed696698a900989217cb95167b`) passed the combined focused lane:
+Nextest `81ff5889-bd8c-4625-9803-421e54565266`, 250 passed, 0 failed,
+1474 skipped, 24.935 test seconds. The Moon task exited 0. Format, all-target/all-feature
+check and source lint also exited 0: three completed tasks, 132.953 seconds total.
+
+Preserve the earlier combined run `8f407b36-a3e7-461b-84d7-c0703fad62fb` as
+247 passed, 0 failed and 3 incomplete when interrupted with exit 130. Its three
+resource-preservation cases passed in isolation (`1b334ebd-74d2-4521-bb5f-5996f652b844`,
+3/3, 3.102 test seconds), then in the unchanged-source 250-test repeat above.
+No production fix occurred between the interrupted and passing runs. These results
+establish terminal scoped execution; they do not diagnose the earlier stalls or certify
+latency, deadlock freedom, full release or selected-runtime resource qualification.
+
+A subsequent, separately reviewed test-only delta adds eleven raw-reader boundary cases
+and strengthens the merged writer bridge fixture to fail during scanning before a later
+malformed row is decoded. The exact error, provisional callback sequence, physical byte
+coordinates, old-snapshot isolation and absence of a completed failed stream are asserted.
+Nextest `152a8823-4643-419d-ba75-6073351d3f68` passed all 13 selected tests, with
+1242 skipped, 2.628 test seconds and Moon exit 0. That delta was not present in the original
+55-file publication tree and must be tracked in its own following commit coverage.
+
+Independent changed-surface review closed the narrow R1–R5 reader/bridge regression gaps.
+Backend pre-materialization and separately ungranted decoded allocation remain selected-runtime
+blockers. Full release, all seventeen native faults, fuzzing, representative performance and
+end-to-end full-spec acceptance remain unexecuted or unverified for this delivery.
+
+The subsequent test-only delta also passed `pipeline:fmt`, `pipeline:check` and
+`pipeline:lint-src` together with exit 0 (three tasks, 22.164 seconds). The check lane
+compiled all workspace targets/features. The prior original-tree result and this delta
+result remain separate evidence records.

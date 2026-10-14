@@ -1,0 +1,183 @@
+{
+  "scope": "Focused execution; original failing attempts retained. Full delivery not verified.",
+  "logs": [
+    {
+      "log": "enrollment-status-core-repaired.log",
+      "sha256": "ee75cf9c70ae22e97a6d5b5c4ed1f1aa1d320244a63c2fbf34486008dafc8563",
+      "bytes": 46076,
+      "nextest_run_ids": [
+        "feaa35f3-2d38-41d3-bdba-178167723c8c"
+      ],
+      "summary_lines": [
+        "Summary [  16.434s] 303 tests run: 303 passed, 1442 skipped",
+        "Tasks: 1 completed",
+        "Time: 36s 570ms"
+      ]
+    },
+    {
+      "log": "enrollment-service-focused.log",
+      "sha256": "e51f5c5bbe68a7f2bdfe44f2f299e0397f387e6610c97ffaf690774d2746c6d9",
+      "bytes": 8020,
+      "nextest_run_ids": [
+        "4a7aaa2a-c726-476f-b850-2f664260bf62"
+      ],
+      "summary_lines": [
+        "Summary [   0.314s] 43 tests run: 43 passed, 883 skipped",
+        "Tasks: 1 completed",
+        "Time: 2m 19s 310ms"
+      ]
+    },
+    {
+      "log": "policy18-descriptor-final.log",
+      "sha256": "40144168098fd02bdc6086d17768ad26555128f2e4c59a5dbfacbd824f1f8d33",
+      "bytes": 3402,
+      "nextest_run_ids": [
+        "f0e7eabb-4979-4f03-926c-acc1a49f2041"
+      ],
+      "summary_lines": [
+        "Summary [   0.138s] 17 tests run: 17 passed, 0 skipped",
+        "Tasks: 1 completed",
+        "Time: 13s 924ms"
+      ]
+    },
+    {
+      "log": "result-status-crawl-final.log",
+      "sha256": "6ed492b220150b65bbb81f7a02774584a1722d5d6b606d4b0ed34bdd29bf97c8",
+      "bytes": 1807,
+      "nextest_run_ids": [
+        "3fbdf753-8894-47fe-aebc-50b248091427"
+      ],
+      "summary_lines": [
+        "Summary [   0.030s] 3 tests run: 3 passed, 1310 skipped",
+        "Tasks: 1 completed",
+        "Time: 1m 56s 797ms"
+      ]
+    },
+    {
+      "log": "enrollment-status-basic-repaired.log",
+      "sha256": "a6617f485c227db6dd9bedde64fe7718cdd1ae611ed4e1a3b6e00d10f48b0a4c",
+      "bytes": 2646,
+      "nextest_run_ids": [],
+      "summary_lines": [
+        "Tasks: 3 completed",
+        "Time: 2m 19s 390ms"
+      ]
+    },
+    {
+      "log": "enrollment-status-core-green.log",
+      "sha256": "02841d67e4371a3069e742cdd585b482b9c39952261ab9b4dce53b2d47a89e18",
+      "bytes": 48144,
+      "nextest_run_ids": [
+        "0bc4bcdf-c680-41fe-9073-263dbe710524"
+      ],
+      "summary_lines": [
+        "FAIL [   0.040s] (141/304) census-store backup_tests::backup_refuses_a_socket_in_the_store_tree",
+        "FAIL [   0.163s] (227/304) census-store format::migrate::exact_tests::admission::future_lifecycle_revision_refuses_every_schema_and_supported_marker_without_writes",
+        "Summary [  21.618s] 304 tests run: 302 passed, 2 failed, 1441 skipped",
+        "FAIL [   0.040s] (141/304) census-store backup_tests::backup_refuses_a_socket_in_the_store_tree",
+        "FAIL [   0.163s] (227/304) census-store format::migrate::exact_tests::admission::future_lifecycle_revision_refuses_every_schema_and_supported_marker_without_writes",
+        "error: test run failed"
+      ]
+    },
+    {
+      "log": "enrollment-status-basic-final.log",
+      "sha256": "8e55960f7dbc5c1f26ec32511fc56b3872a1cf482d6c16c8ccb8563c8c940543",
+      "bytes": 2593,
+      "nextest_run_ids": [],
+      "summary_lines": [
+        "pipeline:lint-src | error: manual implementation of `.is_multiple_of()`",
+        "pipeline:lint-src | error: could not compile `census-domain` (lib) due to 1 previous error"
+      ]
+    },
+    {
+      "log": "result-status-authority-red-executed.log",
+      "sha256": "c69458762c979e8f7125020b0b3a079013c8291adaf62fec2065bdfc43b9f3db",
+      "bytes": 16433,
+      "nextest_run_ids": [
+        "19aa37ca-f7b3-4597-8b87-e80841f7a9c7"
+      ],
+      "summary_lines": [
+        "FAIL [   0.010s] ( 1/12) census-store entities::canonical::performance_tests::result_status::owner_resolution::missing_to_present_owner_result_status_triplet_is_a_canonical_replay_fixed_point",
+        "FAIL [   0.017s] ( 6/12) census-store entities::canonical::performance_tests::result_status::authority::equal_numeric_marks_do_not_authorize_missing_or_foreign_owner_enrichment_in_either_order",
+        "FAIL [   0.026s] ( 7/12) census-store entities::canonical::performance_tests::result_status::owner_resolution::stored_missing_to_present_owner_result_status_triplet_is_stable_after_replay_and_reopen",
+        "FAIL [   0.036s] ( 8/12) census-store entities::canonical::performance_tests::result_status::authority::stored_equal_numeric_authority_conflicts_preserve_originals_after_replay_and_reopen",
+        "Summary [  11.142s] 12 tests run: 8 passed, 4 failed, 1261 skipped",
+        "FAIL [   0.010s] ( 1/12) census-store entities::canonical::performance_tests::result_status::owner_resolution::missing_to_present_owner_result_status_triplet_is_a_canonical_replay_fixed_point",
+        "FAIL [   0.017s] ( 6/12) census-store entities::canonical::performance_tests::result_status::authority::equal_numeric_marks_do_not_authorize_missing_or_foreign_owner_enrichment_in_either_order",
+        "FAIL [   0.026s] ( 7/12) census-store entities::canonical::performance_tests::result_status::owner_resolution::stored_missing_to_present_owner_result_status_triplet_is_stable_after_replay_and_reopen",
+        "FAIL [   0.036s] ( 8/12) census-store entities::canonical::performance_tests::result_status::authority::stored_equal_numeric_authority_conflicts_preserve_originals_after_replay_and_reopen",
+        "error: test run failed"
+      ]
+    },
+    {
+      "log": "result-status-triplet-red-compiled.log",
+      "sha256": "a7aaedc103dfc9a8f4c9455c1c5e52bb48e2a957d0a1a14a5f05efb6b130bafb",
+      "bytes": 7581,
+      "nextest_run_ids": [
+        "0edeae56-9643-4456-ad6e-c3d1da30deb6"
+      ],
+      "summary_lines": [
+        "FAIL [   0.007s] ( 1/10) census-store entities::canonical::performance_tests::result_status::triplets::terminal_status_refines_unresolved_raw_and_never_downgrades_in_either_order",
+        "FAIL [   0.010s] ( 2/10) census-store entities::canonical::performance_tests::result_status::triplets::every_result_status_triplet_permutation_retains_conflict_during_canonical_replay",
+        "FAIL [   0.010s] ( 4/10) census-store entities::canonical::performance_tests::result_status::contexts::terminal_context_mismatch_or_missing_owner_retains_conflict_without_refinement_both_orders",
+        "FAIL [   0.015s] ( 6/10) census-store entities::canonical::performance_tests::result_status::contexts::terminal_refinement_ignores_url_only_owner_changes_and_keeps_provider_authority",
+        "FAIL [   0.021s] ( 7/10) census-store entities::canonical::performance_tests::result_status::contexts::stored_terminal_context_conflict_survives_later_numeric_observation_replay_and_reopen",
+        "FAIL [   0.020s] ( 8/10) census-store entities::canonical::performance_tests::result_status::triplets::stored_result_status_triplets_keep_original_observations_after_replay_and_reopen",
+        "Summary [   6.531s] 10 tests run: 4 passed, 6 failed, 1262 skipped",
+        "FAIL [   0.007s] ( 1/10) census-store entities::canonical::performance_tests::result_status::triplets::terminal_status_refines_unresolved_raw_and_never_downgrades_in_either_order",
+        "FAIL [   0.010s] ( 2/10) census-store entities::canonical::performance_tests::result_status::triplets::every_result_status_triplet_permutation_retains_conflict_during_canonical_replay",
+        "FAIL [   0.010s] ( 4/10) census-store entities::canonical::performance_tests::result_status::contexts::terminal_context_mismatch_or_missing_owner_retains_conflict_without_refinement_both_orders",
+        "FAIL [   0.015s] ( 6/10) census-store entities::canonical::performance_tests::result_status::contexts::terminal_refinement_ignores_url_only_owner_changes_and_keeps_provider_authority",
+        "FAIL [   0.021s] ( 7/10) census-store entities::canonical::performance_tests::result_status::contexts::stored_terminal_context_conflict_survives_later_numeric_observation_replay_and_reopen",
+        "FAIL [   0.020s] ( 8/10) census-store entities::canonical::performance_tests::result_status::triplets::stored_result_status_triplets_keep_original_observations_after_replay_and_reopen",
+        "error: test run failed"
+      ]
+    },
+    {
+      "log": "enrollment-status-integrated.log",
+      "sha256": "68abc02f09975ec54e7b2025d30643900f2fd21f9ec050c6fd33021a671b5529",
+      "bytes": 5539,
+      "nextest_run_ids": [],
+      "summary_lines": [
+        "error: could not compile `census-store` (lib test) due to 3 previous errors",
+        "error: command `/workspace/shared/athletic-recovery-20261013-2203/toolchain/rustup/toolchains/nightly-2026-04-27-x86_64-unknown-linux-gnu/bin/cargo test --no-run --message-format json-render-diagnostics --package census-domain --package census-store --package census-report --package census-service --all-features --locked --offline --config .cargo/fast-iteration.toml` exited with code 101"
+      ]
+    },
+    {
+      "log": "enrollment-status-integrated-repaired.log",
+      "sha256": "ff3923943eda63e99c85c30d64ee9560162826af495b34f8609657e3e59337c4",
+      "bytes": 1730,
+      "nextest_run_ids": [],
+      "summary_lines": []
+    },
+    {
+      "log": "enrollment-reader-resource-final.log",
+      "sha256": "359e25cd7788c09087af71b7e10871d24cb11bfe5ef939cf1c56d1583a344cfa",
+      "bytes": 4252,
+      "nextest_run_ids": [
+        "86c5185e-1c0e-4dd0-888d-2ce4b08d199a"
+      ],
+      "summary_lines": [
+        "Summary [   2.810s] 20 tests run: 20 passed, 1725 skipped",
+        "Tasks: 1 completed",
+        "Time: 1m 51s 553ms"
+      ]
+    }
+  ],
+  "environment_blocker": {
+    "test": "backup_tests::backup_refuses_a_socket_in_the_store_tree",
+    "observed": "Unix socket fixture setup EPERM; excluded from subsequent 303-test core selection",
+    "escalated_attempt": "Sandbox launcher failed before command execution (exit101); no executed test result"
+  },
+  "not_run_or_unqualified": [
+    "complete workspace test suite",
+    "release gate",
+    "17 native fault obligations",
+    "actual predecessor reader",
+    "enrollment crash/restart batch qualification",
+    "property/fuzz campaign",
+    "source coverage and mutation campaign",
+    "performance/resource measurements",
+    "full selected workbook/normalized snapshot end-to-end acceptance"
+  ]
+}

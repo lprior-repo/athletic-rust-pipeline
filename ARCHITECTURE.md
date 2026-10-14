@@ -280,7 +280,8 @@ interchangeable with geographic scope or cohort eligibility.
 Publication policy revision 6 requires typed direct graduation-year or compatible dated-grade
 support for requested cohort membership after accepted-alias evidence union; unsupported or
 contradictory members and unresolved result subjects are excluded from requested-cohort projections.
-Same-context numeric conflicts disqualify that context from PR selection; a clean compatible
+Same-context numeric conflicts, including a numeric mark contradicted by an explicit terminal
+result status under policy 18, disqualify that context from PR selection; a clean compatible
 context may still supply the best. All-contested slots have no published best. Unfiltered archives
 retain original observations. Older policy-1/2/3/4/5 frozen inputs are retained but refused, never
 reinterpreted or overwritten; accepted-alias, postal-field and full-cell summary rules remain in force.
@@ -300,8 +301,13 @@ relay result is retained as a typed relay result — team, event, published mark
 and the member order the source published — and never decomposed into individual legs or attributed
 to an individual event. Preserve published automatic/hand timing qualifiers when normalizing numeric
 times. An append-only correction may
-refine a raw mark and unknown timing for the same natural identity, source owner, event and team;
-it must not downgrade measured marks, override known timing or delete original observations.
+refine an unknown or ambiguous raw mark and unknown timing for the same natural identity, source
+owner, event and team. An explicit DQ/DNF/DNS/NH/FOUL/NM/NT/SCR token and a numeric mark retain
+a conflict in either arrival order; X and -- alone remain ambiguous placeholders. Unequal
+optional provider namespace/ID authority, including absent versus present ownership, retains a
+context conflict instead of silently enriching ownership, even for equal marks. URL spelling
+is not owner identity. A correction must not downgrade measured marks, override known timing
+or delete original observations.
 
 Wind data is not returned by the MileSplit meet-performances API for outdoor sprint/hurdle marks; all wind readings are currently Unknown or NotApplicable. This is a source limitation, not an adapter defect.
 A published recruiter contact requires one claim binding a school-scoped role and program to a

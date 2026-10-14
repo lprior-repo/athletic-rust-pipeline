@@ -26,7 +26,7 @@ missing raw field is refused. The descriptors bind evidence meaning, not field n
 - Affiliation: resolved school at the effective cutoff, distinct from historical result affiliation.
 - Contact: same-capture mailbox, role, program and selected current school year.
 - Participation: source-owned individual results or explicit ordered relay members; no inferred legs.
-- Publication: one frozen generation, shared derivation, scoped Coverage and verified atomic bundle; schema 3/policy 17 components.
+- Publication: one frozen generation, shared derivation, scoped Coverage and verified atomic bundle; schema 3/policy 18 components.
 - Source plan: qualified source obligations bound to scope, season and acquisition window.
 - Completion: exact profile scope/revision and verified terminal source evidence; unknown is not complete.
 
@@ -61,3 +61,11 @@ Spec v2 sections 4 and 14 remain incomplete until selected profiles are bound in
 retained evidence generation and every publication consumer. Dated current affiliation,
 qualified profile-bound source graphs, completion fences, UP qualification and the matching
 workbook/eight-file normalized snapshot are not certified by this module.
+
+## Enrollment-only lifecycle
+
+The explicit installation controls now bind a retained profile and bounded resources into an
+immutable lifecycle-3 enrollment. They reuse this configuration compiler and do not broaden
+its supported envelope. Generic execution of an enrolled installation is refused before
+recovery or serving. Fresh qualification keeps lifecycle 2; historical data is never
+implicitly enrolled. See [installation evidence and remaining qualification](verification/2026-10-14-installation-enrollment.md).
