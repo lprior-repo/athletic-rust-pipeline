@@ -1,0 +1,16 @@
+{
+  "status": "EXACT_BYTES_MATCH",
+  "review_scope": "Approved for exact-delta static/behavior-suite review; broader integration/compiler/lint/format lanes remain Root-owned.",
+  "current_finding_dispositions": [
+    {
+      "id": "LR01",
+      "classification": "test coverage gap, not production defect",
+      "status": "fixed_with_evidence",
+      "files": [
+        "crates/census-crawl/src/milesplit/tests/located_roster.rs"
+      ],
+      "evidence": "Both new LP04 tests passed in final 75/75 scoped run; Nextest 28275d6e-95c9-49a2-9a9d-835204327fd8, outer exit 0."
+    }
+  ],
+  "timing_note": "The final review closed LR01 using the 75-test run before later integration/compiler/lint/format lanes completed. Its pending-lane language is historical; this package supplies later Root terminal receipts separately. No review verdict is rewritten."
+}

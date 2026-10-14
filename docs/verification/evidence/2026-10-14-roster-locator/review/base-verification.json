@@ -1,0 +1,74 @@
+[
+  {
+    "path": "crates/census-crawl/src/milesplit/normalize.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-crawl/src/milesplit/parse/roster.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-crawl/src/milesplit/tests/roster_entities.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-crawl/src/milesplit/wire.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-crawl/src/milesplit.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-service/src/census/sweep/roster/commit.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-service/src/census/sweep/roster/counts.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-service/src/census/sweep/roster/journal.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-service/src/census/sweep/roster/metadata.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-service/src/census/sweep/roster/tests/windows.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-service/src/census/sweep/roster/tests.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-service/src/census/sweep/roster.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-service/tests/milesplit_roster_observations/outcomes.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-service/tests/milesplit_roster_observations.rs",
+    "base_matches_3708d6ba": true
+  },
+  {
+    "path": "crates/census-service/tests/recovery_mod/jurisdiction_replay.rs",
+    "base_matches_3708d6ba": true
+  }
+]

@@ -1,0 +1,27 @@
+[ WARN 2026-10-14 02:51:44.943] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:tests-scoped (ae864db3)
+   Compiling census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+▮▮▮▮ pipeline:tests-scoped (running for 30s)
+   Compiling census-report v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-report)
+▮▮▮▮ pipeline:tests-scoped (running for 60s)
+   Compiling census-reconcile v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-reconcile)
+   Compiling census-service v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-service)
+▮▮▮▮ pipeline:tests-scoped (running for 90s)
+▮▮▮▮ pipeline:tests-scoped (running for 120s)
+▮▮▮▮ pipeline:tests-scoped (running for 150s)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 33s
+────────────
+ Nextest run ID 4c84f81f-55ec-4836-9dfe-289eebad05ea with nextest profile: default
+    Starting 5 tests across 2 binaries (8 tests skipped)
+        PASS [   0.160s] (1/5) census-service::milesplit_roster_observations outcomes::conflicting_requested_jurisdiction_never_admits_athletes_or_completion
+        PASS [   0.246s] (2/5) census-service::milesplit_roster_observations provenance::an_authentic_ownerless_fragment_remains_parseable_but_cannot_commit_an_acquired_roster
+        PASS [   0.289s] (3/5) census-service::milesplit_roster_observations a_synthetic_owned_roster_pass_files_an_observation_per_published_athlete
+        PASS [   0.486s] (4/5) census-service::milesplit_roster_observations outcomes::partial_and_quarantined_rosters_preserve_source_facts_and_remain_resumable
+        PASS [   3.781s] (5/5) census-service::recovery jurisdiction_replay::jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters
+────────────
+     Summary [   3.784s] 5 tests run: 5 passed, 8 skipped
+▮▮▮▮ pipeline:tests-scoped (2m 38s 583ms, ae864db3)
+
+Tasks: 1 completed
+ Time: 2m 39s 267ms
+

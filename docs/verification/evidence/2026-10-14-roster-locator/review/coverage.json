@@ -1,0 +1,111 @@
+{
+  "scope": "Narrow in-memory positive roster coordinate preservation",
+  "reviewer_execution": "None: all runtime results are observed Root-owned logs",
+  "status": "Approved for exact-delta static/behavior-suite review; broader integration/compiler/lint/format lanes remain Root-owned.",
+  "finding_dispositions": [
+    {
+      "id": "LR01",
+      "classification": "test coverage gap, not production defect",
+      "status": "fixed_with_evidence",
+      "files": [
+        "crates/census-crawl/src/milesplit/tests/located_roster.rs"
+      ],
+      "evidence": "Both new LP04 tests passed in final 75/75 scoped run; Nextest 28275d6e-95c9-49a2-9a9d-835204327fd8, outer exit 0."
+    }
+  ],
+  "coverage": [
+    {
+      "contract": "LP01",
+      "tests": [
+        "positive_roster_locator_preserves_exact_utf8_bytes_and_unchanged_payload"
+      ],
+      "evidence": "Root final scoped run: 75/75 PASS, 3205 skipped; Nextest 28275d6e-95c9-49a2-9a9d-835204327fd8; outer exit 0.",
+      "limits": "Exact literal inner span, checked UTF-8 slice and all payload fields."
+    },
+    {
+      "contract": "LP02",
+      "tests": [
+        "partial_roster_keeps_global_ordinals_and_duplicate_occurrence_positions"
+      ],
+      "evidence": "Root final scoped run: 75/75 PASS, 3205 skipped; Nextest 28275d6e-95c9-49a2-9a9d-835204327fd8; outer exit 0.",
+      "limits": "Positive ordinals 0/2 and rejected ordinal 1; rejected provider ID, kind and span."
+    },
+    {
+      "contract": "LP03",
+      "tests": [
+        "partial_roster_keeps_global_ordinals_and_duplicate_occurrence_positions"
+      ],
+      "evidence": "Root final scoped run: 75/75 PASS, 3205 skipped; Nextest 28275d6e-95c9-49a2-9a9d-835204327fd8; outer exit 0.",
+      "limits": "Equal payloads at distinct exact positions remain two occurrences; normalization traversal is unchanged in source."
+    },
+    {
+      "contract": "LP04",
+      "tests": [
+        "positive_roster_locator_capacity_keeps_only_the_existing_bounded_prefix",
+        "positive_roster_row_byte_boundary_preserves_the_following_locator",
+        "positive_roster_field_limits_preserve_bounded_rejection_identity_and_positions"
+      ],
+      "evidence": "Root final scoped run: 75/75 PASS, 3205 skipped; Nextest 28275d6e-95c9-49a2-9a9d-835204327fd8; outer exit 0.",
+      "limits": "20,000/20,001 boundary under body cap; added exact row threshold and bounded rejection identity. No forced allocation failure test."
+    },
+    {
+      "contract": "LP05",
+      "tests": [
+        "positive_roster_windows_and_records_borrow_the_same_global_members",
+        "actual_roster_apply_keeps_partial_window_counts_and_legacy_replay"
+      ],
+      "evidence": "Root final scoped run: 75/75 PASS, 3205 skipped; Nextest 28275d6e-95c9-49a2-9a9d-835204327fd8; outer exit 0.",
+      "limits": "Original slice pointer and length identity; Records outlives local Window; actual Counts/cursor path; 66 members over two windows."
+    },
+    {
+      "contract": "LP06",
+      "tests": [
+        "canonical_roster_projection_is_unchanged_by_positive_locator_offsets",
+        "roster_entities_are_canonical_and_source_independent",
+        "published_roster_year_is_high_without_inventing_grade_from_the_supplied_season",
+        "positive_roster_preserves_prechange_canonical_journal_and_effect_bytes"
+      ],
+      "evidence": "Root final scoped run: 75/75 PASS, 3205 skipped; Nextest 28275d6e-95c9-49a2-9a9d-835204327fd8; outer exit 0.",
+      "limits": "Prefix invariance plus independent old-code golden, not just two new-code serializer paths."
+    },
+    {
+      "contract": "LP07",
+      "tests": [
+        "positive_roster_preserves_prechange_canonical_journal_and_effect_bytes"
+      ],
+      "evidence": "Root final scoped run: 75/75 PASS, 3205 skipped; Nextest 28275d6e-95c9-49a2-9a9d-835204327fd8; outer exit 0.",
+      "limits": "Exact five-family canonical JSON, Journal, facts/effect digests. Golden has rejected row and unfinished=null; nonempty unfinished Journal serialization is static-only."
+    },
+    {
+      "contract": "LP08",
+      "tests": [
+        "partial_roster_survives_reopen_and_corrected_body_adds_only_missing_facts",
+        "thousands_of_rows_resume_after_one_atomic_window_without_duplicate_facts",
+        "resource_refusal_retains_current_capture_and_prior_accepted_facts",
+        "failed_retry_and_quarantine_preserve_accepted_prefix_and_owed_counts",
+        "completion_requires_scoped_capture_without_refusal_quarantine_or_rejections",
+        "journal_without_explicit_completion_remains_resumable"
+      ],
+      "evidence": "Root final scoped run: 75/75 PASS, 3205 skipped; Nextest 28275d6e-95c9-49a2-9a9d-835204327fd8; outer exit 0.",
+      "limits": "Reopen/receipt/facts/counts behavior only; no positive locator readback from historical Journal."
+    },
+    {
+      "contract": "LP09",
+      "tests": [
+        "milesplit::parse::roster::owner::tests",
+        "milesplit::parse::roster::ownership_tests"
+      ],
+      "evidence": "Relevant owner tests PASS in final 75/75 scoped run. Static caller inventory complete; all-target compilation and affected external integration suites pending Root evidence.",
+      "limits": "Contextual offset-aware equality preserves owner outcomes. Separate TFRRS remains untouched."
+    }
+  ],
+  "exclusions": [
+    "durable positive locator recovery",
+    "accepted affiliation",
+    "source authority/HS participation",
+    "source research/census/publication",
+    "new lifecycle",
+    "benchmarks or allocation-free performance claims",
+    "broader release qualification"
+  ]
+}

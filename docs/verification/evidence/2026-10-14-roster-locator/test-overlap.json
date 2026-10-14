@@ -1,0 +1,95 @@
+{
+  "counting_rule": "Unique (binary, fully-qualified test) in final-candidate successful lanes only. Historical probes and first-candidate reruns are excluded.",
+  "final_lanes": [
+    "tests-second",
+    "integration-first",
+    "boundary-parity-first"
+  ],
+  "final_distinct_tests": 83,
+  "per_lane_counts": {
+    "baseline-probe": 1,
+    "baseline-probe-v2": 1,
+    "tests-first": 73,
+    "tests-second": 75,
+    "integration-first": 5,
+    "boundary-parity-first": 3
+  },
+  "pairwise_overlap": [
+    {
+      "a": "baseline-probe",
+      "b": "baseline-probe-v2",
+      "count": 1
+    },
+    {
+      "a": "baseline-probe",
+      "b": "tests-first",
+      "count": 0
+    },
+    {
+      "a": "baseline-probe",
+      "b": "tests-second",
+      "count": 0
+    },
+    {
+      "a": "baseline-probe",
+      "b": "integration-first",
+      "count": 0
+    },
+    {
+      "a": "baseline-probe",
+      "b": "boundary-parity-first",
+      "count": 0
+    },
+    {
+      "a": "baseline-probe-v2",
+      "b": "tests-first",
+      "count": 0
+    },
+    {
+      "a": "baseline-probe-v2",
+      "b": "tests-second",
+      "count": 0
+    },
+    {
+      "a": "baseline-probe-v2",
+      "b": "integration-first",
+      "count": 0
+    },
+    {
+      "a": "baseline-probe-v2",
+      "b": "boundary-parity-first",
+      "count": 0
+    },
+    {
+      "a": "tests-first",
+      "b": "tests-second",
+      "count": 73
+    },
+    {
+      "a": "tests-first",
+      "b": "integration-first",
+      "count": 0
+    },
+    {
+      "a": "tests-first",
+      "b": "boundary-parity-first",
+      "count": 0
+    },
+    {
+      "a": "tests-second",
+      "b": "integration-first",
+      "count": 0
+    },
+    {
+      "a": "tests-second",
+      "b": "boundary-parity-first",
+      "count": 0
+    },
+    {
+      "a": "integration-first",
+      "b": "boundary-parity-first",
+      "count": 0
+    }
+  ],
+  "historical_first_selected": 73
+}

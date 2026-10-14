@@ -1,0 +1,1582 @@
+[
+  {
+    "status": "PASS",
+    "duration_raw": "0.035s",
+    "ordinal": 1,
+    "selected_total": 1,
+    "binary": "census-service",
+    "test": "census::sweep::roster::journal::legacy_probe::positive_roster_legacy_bytes_probe",
+    "lane": "baseline-probe",
+    "source_state": "baseline-old-production-test-probe"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.052s",
+    "ordinal": 1,
+    "selected_total": 1,
+    "binary": "census-service",
+    "test": "census::sweep::roster::journal::legacy_probe::positive_roster_legacy_bytes_probe",
+    "lane": "baseline-probe-v2",
+    "source_state": "baseline-old-production-test-probe"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.036s",
+    "ordinal": 1,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_canonical_foreign_host_overrides_matching_observed_final_url",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.053s",
+    "ordinal": 2,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_canonical_foreign_team_overrides_matching_observed_final_url",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.078s",
+    "ordinal": 3,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::noscript_markup_cannot_establish_historical_roster_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.108s",
+    "ordinal": 4,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_open_graph_foreign_host_overrides_matching_observed_final_url",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.112s",
+    "ordinal": 5,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::quoted_attribute_markup_cannot_establish_historical_roster_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.121s",
+    "ordinal": 6,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::comments_and_script_strings_cannot_establish_historical_roster_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.131s",
+    "ordinal": 7,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_open_graph_foreign_team_overrides_matching_observed_final_url",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.151s",
+    "ordinal": 8,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_foreign_declarations_cannot_hide_behind_matching_historical_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.159s",
+    "ordinal": 9,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::template_markup_cannot_establish_historical_roster_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.160s",
+    "ordinal": 10,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::matching_comment_and_script_strings_cannot_replace_actual_foreign_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.177s",
+    "ordinal": 11,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::style_canonical_text_cannot_establish_historical_roster_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.127s",
+    "ordinal": 12,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::title_canonical_text_cannot_establish_historical_roster_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.090s",
+    "ordinal": 13,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::every_authoritative_owner_must_match_and_comments_cannot_prove_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.052s",
+    "ordinal": 14,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::ownership_tests::conflicting_canonical_owner_cannot_project_abbotsford_affiliations",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.219s",
+    "ordinal": 15,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::ownerless_authentic_rows_remain_available_to_pure_parser_only",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.107s",
+    "ordinal": 16,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::final_owner_binding_rejects_foreign_identity_and_jurisdiction",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.058s",
+    "ordinal": 17,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::a_missing_name_does_not_erase_a_readable_provider_identity",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.170s",
+    "ordinal": 18,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::xmp_canonical_text_cannot_establish_historical_roster_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.219s",
+    "ordinal": 19,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::textarea_canonical_text_cannot_establish_historical_roster_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.105s",
+    "ordinal": 20,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::unrelated_foreign_roster_navigation_and_embedded_entities_do_not_change_document_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.049s",
+    "ordinal": 21,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::encoded_foreign_locations_refuse_like_their_literal_country",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.093s",
+    "ordinal": 22,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::an_empty_known_roster_is_a_named_gap_not_negative_identity_evidence",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.293s",
+    "ordinal": 23,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::actual_encoded_canonical_establishes_historical_roster_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.163s",
+    "ordinal": 24,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::ownerless_historical_fragment_cannot_establish_roster_affiliations",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.036s",
+    "ordinal": 25,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parses_team_index_rows",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.079s",
+    "ordinal": 26,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::located_roster::positive_roster_locator_preserves_exact_utf8_bytes_and_unchanged_payload",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.079s",
+    "ordinal": 27,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::a_meet_row_without_an_id_is_not_a_meet",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.216s",
+    "ordinal": 28,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::ownership_tests::captured_foreign_canonical_owner_admits_no_abbotsford_roster",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.081s",
+    "ordinal": 29,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::an_inline_results_page_is_its_own_one_result_set",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.376s",
+    "ordinal": 30,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_matching_declaration_inside_raw_text_still_cannot_establish_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.257s",
+    "ordinal": 31,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::matching_published_owner_admits_historical_rows_without_fabricating_final_provenance",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.054s",
+    "ordinal": 32,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::captured_nc_wrapped_round_keeps_its_event_and_finisher",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.387s",
+    "ordinal": 33,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::actual_encoded_open_graph_establishes_historical_roster_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.029s",
+    "ordinal": 34,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::legacy_select_with_only_all_is_empty",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.026s",
+    "ordinal": 35,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::www_host_is_rejected_by_parse_but_accepted_by_parse_with_jurisdiction",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.041s",
+    "ordinal": 36,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::the_results_index_url_is_the_published_query_shape",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.043s",
+    "ordinal": 37,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::unknown_host_is_rejected_by_both_parse_methods",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.205s",
+    "ordinal": 38,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::located_roster::partial_roster_keeps_global_ordinals_and_duplicate_occurrence_positions",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.054s",
+    "ordinal": 39,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::neither_template_is_a_schema_error",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.169s",
+    "ordinal": 40,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parses_roster_rows_with_grad_year_and_seasons",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.017s",
+    "ordinal": 41,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster::result_set_urls_are_checked_and_disallowed_routes_are_never_built",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.198s",
+    "ordinal": 42,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::malformed_html_fails_loudly",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.041s",
+    "ordinal": 43,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster::a_results_page_lists_the_result_files_the_raw_route_serves",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.071s",
+    "ordinal": 44,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::raw_result_set_body_pins_80_rows_in_two_sections",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.138s",
+    "ordinal": 45,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::dc_legacy_fixture_parses_result_file_entries",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.060s",
+    "ordinal": 46,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster::a_page_without_a_file_list_is_a_schema_mismatch",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.036s",
+    "ordinal": 47,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster_entities::provider_owned_athlete_hosts_preserve_profile_urls_and_roster_identity",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.063s",
+    "ordinal": 48,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster::an_empty_file_list_is_a_state_not_a_failure",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.099s",
+    "ordinal": 49,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster::raw_row_that_does_not_fit_the_column_map_is_reported",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.143s",
+    "ordinal": 50,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::rejected_rows_keep_their_provider_identity_and_exact_utf8_span",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.110s",
+    "ordinal": 51,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster_entities_are_canonical_and_source_independent",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.368s",
+    "ordinal": 52,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::located_roster::canonical_roster_projection_is_unchanged_by_positive_locator_offsets",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.158s",
+    "ordinal": 53,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster_entities::lookalike_hosts_cannot_supply_roster_identity",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.435s",
+    "ordinal": 54,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::al_teams_index_admits_the_rebranded_state_ownership_and_rows",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.173s",
+    "ordinal": 55,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster_entities::published_roster_year_is_high_without_inventing_grade_from_the_supplied_season",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.285s",
+    "ordinal": 56,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::parses_a_state_results_index_into_requestable_meets",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.244s",
+    "ordinal": 57,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster_entities::roster_names_decode_numeric_entities_without_recursively_decoding_escaped_text",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.208s",
+    "ordinal": 58,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::locators::positive_roster_windows_and_records_borrow_the_same_global_members",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.260s",
+    "ordinal": 59,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::journal_without_explicit_completion_remains_resumable",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.181s",
+    "ordinal": 60,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::windows::disappeared_partial_team_restores_exact_retained_input_and_stays_owed",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.333s",
+    "ordinal": 61,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::existing_application_receipt_does_not_pin_later_failed_progress",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.329s",
+    "ordinal": 62,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::failed_retry_and_quarantine_preserve_accepted_prefix_and_owed_counts",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.278s",
+    "ordinal": 63,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::partial_roster_survives_reopen_and_corrected_body_adds_only_missing_facts",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.888s",
+    "ordinal": 64,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::foreign_comment_and_script_strings_cannot_replace_actual_matching_owner",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.420s",
+    "ordinal": 65,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::team_index_row_count_pins_a_whole_state_in_one_body",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.276s",
+    "ordinal": 66,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::stopped_admission_records_a_durable_zero_prefix_that_stays_owed",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.440s",
+    "ordinal": 67,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::journal::legacy_compatibility::positive_roster_preserves_prechange_canonical_journal_and_effect_bytes",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.429s",
+    "ordinal": 68,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::completion_requires_scoped_capture_without_refusal_quarantine_or_rejections",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.297s",
+    "ordinal": 69,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::windows::resource_refusal_retains_current_capture_and_prior_accepted_facts",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.482s",
+    "ordinal": 70,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::locators::actual_roster_apply_keeps_partial_window_counts_and_legacy_replay",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "1.231s",
+    "ordinal": 71,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::oh_roster_pins_319_graded_rows_and_96_class_of_2027",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "9.800s",
+    "ordinal": 72,
+    "selected_total": 73,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::located_roster::positive_roster_locator_capacity_keeps_only_the_existing_bounded_prefix",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "11.179s",
+    "ordinal": 73,
+    "selected_total": 73,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::windows::thousands_of_rows_resume_after_one_atomic_window_without_duplicate_facts",
+    "lane": "tests-first",
+    "source_state": "candidate-first"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.061s",
+    "ordinal": 1,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_canonical_foreign_host_overrides_matching_observed_final_url",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.066s",
+    "ordinal": 2,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_canonical_foreign_team_overrides_matching_observed_final_url",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.066s",
+    "ordinal": 3,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_open_graph_foreign_team_overrides_matching_observed_final_url",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.076s",
+    "ordinal": 4,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::noscript_markup_cannot_establish_historical_roster_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.078s",
+    "ordinal": 5,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_open_graph_foreign_host_overrides_matching_observed_final_url",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.089s",
+    "ordinal": 6,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::quoted_attribute_markup_cannot_establish_historical_roster_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.090s",
+    "ordinal": 7,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_foreign_declarations_cannot_hide_behind_matching_historical_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.112s",
+    "ordinal": 8,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::matching_comment_and_script_strings_cannot_replace_actual_foreign_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.109s",
+    "ordinal": 9,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::style_canonical_text_cannot_establish_historical_roster_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.115s",
+    "ordinal": 10,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::template_markup_cannot_establish_historical_roster_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.058s",
+    "ordinal": 11,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::final_owner_binding_rejects_foreign_identity_and_jurisdiction",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.079s",
+    "ordinal": 12,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::textarea_canonical_text_cannot_establish_historical_roster_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.150s",
+    "ordinal": 13,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::actual_encoded_canonical_establishes_historical_roster_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.088s",
+    "ordinal": 14,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::xmp_canonical_text_cannot_establish_historical_roster_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.088s",
+    "ordinal": 15,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::every_authoritative_owner_must_match_and_comments_cannot_prove_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.166s",
+    "ordinal": 16,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::comments_and_script_strings_cannot_establish_historical_roster_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.035s",
+    "ordinal": 17,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::a_missing_name_does_not_erase_a_readable_provider_identity",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.172s",
+    "ordinal": 18,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::ownerless_authentic_rows_remain_available_to_pure_parser_only",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.118s",
+    "ordinal": 19,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::title_canonical_text_cannot_establish_historical_roster_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.066s",
+    "ordinal": 20,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::ownership_tests::conflicting_canonical_owner_cannot_project_abbotsford_affiliations",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.073s",
+    "ordinal": 21,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::unrelated_foreign_roster_navigation_and_embedded_entities_do_not_change_document_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.033s",
+    "ordinal": 22,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::encoded_foreign_locations_refuse_like_their_literal_country",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.191s",
+    "ordinal": 23,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::encoded_matching_declaration_inside_raw_text_still_cannot_establish_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.059s",
+    "ordinal": 24,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::an_empty_known_roster_is_a_named_gap_not_negative_identity_evidence",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.044s",
+    "ordinal": 25,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::located_roster::positive_roster_field_limits_preserve_bounded_rejection_identity_and_positions",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.029s",
+    "ordinal": 26,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::a_meet_row_without_an_id_is_not_a_meet",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.135s",
+    "ordinal": 27,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::ownership_tests::captured_foreign_canonical_owner_admits_no_abbotsford_roster",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.088s",
+    "ordinal": 28,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::located_roster::partial_roster_keeps_global_ordinals_and_duplicate_occurrence_positions",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.083s",
+    "ordinal": 29,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::malformed_html_fails_loudly",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.084s",
+    "ordinal": 30,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::located_roster::positive_roster_locator_preserves_exact_utf8_bytes_and_unchanged_payload",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.061s",
+    "ordinal": 31,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parses_team_index_rows",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.043s",
+    "ordinal": 32,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::an_inline_results_page_is_its_own_one_result_set",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.039s",
+    "ordinal": 33,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::captured_nc_wrapped_round_keeps_its_event_and_finisher",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.082s",
+    "ordinal": 34,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parses_roster_rows_with_grad_year_and_seasons",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.226s",
+    "ordinal": 35,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::ownerless_historical_fragment_cannot_establish_roster_affiliations",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.029s",
+    "ordinal": 36,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::unknown_host_is_rejected_by_both_parse_methods",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.052s",
+    "ordinal": 37,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::legacy_select_with_only_all_is_empty",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.052s",
+    "ordinal": 38,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::neither_template_is_a_schema_error",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.067s",
+    "ordinal": 39,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::dc_legacy_fixture_parses_result_file_entries",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.034s",
+    "ordinal": 40,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::the_results_index_url_is_the_published_query_shape",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.038s",
+    "ordinal": 41,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::www_host_is_rejected_by_parse_but_accepted_by_parse_with_jurisdiction",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.015s",
+    "ordinal": 42,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster::result_set_urls_are_checked_and_disallowed_routes_are_never_built",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.254s",
+    "ordinal": 43,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::matching_published_owner_admits_historical_rows_without_fabricating_final_provenance",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.027s",
+    "ordinal": 44,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster::a_page_without_a_file_list_is_a_schema_mismatch",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.028s",
+    "ordinal": 45,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster::an_empty_file_list_is_a_state_not_a_failure",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.041s",
+    "ordinal": 46,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster::a_results_page_lists_the_result_files_the_raw_route_serves",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.025s",
+    "ordinal": 47,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster_entities::roster_names_decode_numeric_entities_without_recursively_decoding_escaped_text",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.121s",
+    "ordinal": 48,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::parsing::parses_a_state_results_index_into_requestable_meets",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.094s",
+    "ordinal": 49,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::raw_result_set_body_pins_80_rows_in_two_sections",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.091s",
+    "ordinal": 50,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster::raw_row_that_does_not_fit_the_column_map_is_reported",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.082s",
+    "ordinal": 51,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster_entities_are_canonical_and_source_independent",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.102s",
+    "ordinal": 52,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster_entities::lookalike_hosts_cannot_supply_roster_identity",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.102s",
+    "ordinal": 53,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster_entities::provider_owned_athlete_hosts_preserve_profile_urls_and_roster_identity",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.107s",
+    "ordinal": 54,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::roster_entities::published_roster_year_is_high_without_inventing_grade_from_the_supplied_season",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.156s",
+    "ordinal": 55,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::rejected_rows_keep_their_provider_identity_and_exact_utf8_span",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.352s",
+    "ordinal": 56,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::located_roster::canonical_roster_projection_is_unchanged_by_positive_locator_offsets",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.340s",
+    "ordinal": 57,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::located_roster::positive_roster_row_byte_boundary_preserves_the_following_locator",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.527s",
+    "ordinal": 58,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::actual_encoded_open_graph_establishes_historical_roster_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.129s",
+    "ordinal": 59,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::existing_application_receipt_does_not_pin_later_failed_progress",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.140s",
+    "ordinal": 60,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::completion_requires_scoped_capture_without_refusal_quarantine_or_rejections",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.108s",
+    "ordinal": 61,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::journal_without_explicit_completion_remains_resumable",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.116s",
+    "ordinal": 62,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::failed_retry_and_quarantine_preserve_accepted_prefix_and_owed_counts",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.170s",
+    "ordinal": 63,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::journal::legacy_compatibility::positive_roster_preserves_prechange_canonical_journal_and_effect_bytes",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.101s",
+    "ordinal": 64,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::partial_roster_survives_reopen_and_corrected_body_adds_only_missing_facts",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.058s",
+    "ordinal": 65,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::windows::resource_refusal_retains_current_capture_and_prior_accepted_facts",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.134s",
+    "ordinal": 66,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::locators::positive_roster_windows_and_records_borrow_the_same_global_members",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.452s",
+    "ordinal": 67,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::al_teams_index_admits_the_rebranded_state_ownership_and_rows",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.072s",
+    "ordinal": 68,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::windows::disappeared_partial_team_restores_exact_retained_input_and_stays_owed",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.096s",
+    "ordinal": 69,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::stopped_admission_records_a_durable_zero_prefix_that_stays_owed",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.264s",
+    "ordinal": 70,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::team_index_row_count_pins_a_whole_state_in_one_body",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.201s",
+    "ordinal": 71,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::locators::actual_roster_apply_keeps_partial_window_counts_and_legacy_replay",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.682s",
+    "ordinal": 72,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::parse::roster::owner::tests::contextual::foreign_comment_and_script_strings_cannot_replace_actual_matching_owner",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.669s",
+    "ordinal": 73,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::oh_roster_pins_319_graded_rows_and_96_class_of_2027",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "6.234s",
+    "ordinal": 74,
+    "selected_total": 75,
+    "binary": "census-service",
+    "test": "census::sweep::roster::tests::windows::thousands_of_rows_resume_after_one_atomic_window_without_duplicate_facts",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "10.058s",
+    "ordinal": 75,
+    "selected_total": 75,
+    "binary": "census-crawl",
+    "test": "milesplit::tests::located_roster::positive_roster_locator_capacity_keeps_only_the_existing_bounded_prefix",
+    "lane": "tests-second",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.160s",
+    "ordinal": 1,
+    "selected_total": 5,
+    "binary": "census-service::milesplit_roster_observations",
+    "test": "outcomes::conflicting_requested_jurisdiction_never_admits_athletes_or_completion",
+    "lane": "integration-first",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.246s",
+    "ordinal": 2,
+    "selected_total": 5,
+    "binary": "census-service::milesplit_roster_observations",
+    "test": "provenance::an_authentic_ownerless_fragment_remains_parseable_but_cannot_commit_an_acquired_roster",
+    "lane": "integration-first",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.289s",
+    "ordinal": 3,
+    "selected_total": 5,
+    "binary": "census-service::milesplit_roster_observations",
+    "test": "a_synthetic_owned_roster_pass_files_an_observation_per_published_athlete",
+    "lane": "integration-first",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.486s",
+    "ordinal": 4,
+    "selected_total": 5,
+    "binary": "census-service::milesplit_roster_observations",
+    "test": "outcomes::partial_and_quarantined_rosters_preserve_source_facts_and_remain_resumable",
+    "lane": "integration-first",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "3.781s",
+    "ordinal": 5,
+    "selected_total": 5,
+    "binary": "census-service::recovery",
+    "test": "jurisdiction_replay::jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters",
+    "lane": "integration-first",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.012s",
+    "ordinal": 1,
+    "selected_total": 3,
+    "binary": "census-service::parity_pipeline",
+    "test": "artifacts::catalog_generation_is_identity_but_catalog_facts_remain_semantics",
+    "lane": "boundary-parity-first",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "0.193s",
+    "ordinal": 2,
+    "selected_total": 3,
+    "binary": "census-crawl::boundary_points",
+    "test": "fetch_roster_fires_all_boundary_points_in_order",
+    "lane": "boundary-parity-first",
+    "source_state": "candidate-final"
+  },
+  {
+    "status": "PASS",
+    "duration_raw": "9.562s",
+    "ordinal": 3,
+    "selected_total": 3,
+    "binary": "census-service::parity_pipeline",
+    "test": "rebuilding_the_fixture_store_reproduces_semantics_not_publication_identity",
+    "lane": "boundary-parity-first",
+    "source_state": "candidate-final"
+  }
+]

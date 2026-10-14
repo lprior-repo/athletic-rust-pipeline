@@ -1,0 +1,56 @@
+# Located-roster exact-delta review
+
+Status: STATIC_REVIEW_COMPLETE_FOR_INITIAL_CANDIDATE; one test-coverage finding pending Root's follow-on patch. This is not execution approval, release approval or proof of production acceptance. Reviewer ran no builds, tests, formatter, browser, network, census, publication or production operation and changed no repository/candidate source.
+
+## Finding LR01: LP04 overlong-row coverage is missing
+
+Disposition: blocker for claiming complete LP04 coverage; Root accepted repair at 2026-10-14 07:44 UTC. No production defect is asserted.
+
+`milesplit/tests/located_roster.rs` initially tests exact positive spans, invalid-year rejection, duplicates and the 20,000-row boundary. A scoped Rust search of roster tests finds no `RowTooLarge` or `FieldTooLarge` assertion. The unchanged parser rejects inner rows over 65,536 bytes before field extraction, with `athlete_id: None`; a later positive must retain original ordinal 2. A raw name over 4,096 bytes is `FieldTooLarge` and preserves a short provider ID; a provider ID over 4,096 bytes is `FieldTooLarge` but omitted by the bounded rejection record. Root is adding exact tests rather than changing production limits.
+
+## Exact reviewed scope
+
+Initial integrated candidate: 22 files, 18 modified existing and 4 new, on documentation-only HEAD `5ecad4e42525165be8a45a3f7ea9411347c35334`. All 18 retained base files match Rust commit `3708d6bab0b08c390887c562a89e8c6714255a5d` byte-for-byte. Full paths, SHA256 values and physical line counts are in `reviewed-files-initial.json` and `reviewed-files-initial.sha256`. Detached patch SHA256 is `5a4864e5ed8e6d11490c9b69d88f644852208acf2bf6de232c427d0c238193bb`; its 22 manifest file hashes match the detached files. Final live vs detached differences inspected are formatter line wrapping and test-module ordering only.
+
+The nine production files are exactly the contract's expected wire/re-export/parser/normalizer/Window/Counts/Records/apply/Commit locations. No modification is present to Store, domain, report, Cargo manifests/lock, `milesplit/roster.rs`, `fetch.rs` or `parse/mod.rs`. New files are test modules and a golden JSON fixture. TFRRS is untouched.
+
+## Contract findings on production paths
+
+1. `wire.rs:105–121`: `LocatedRosterAthlete` owns one unchanged `RosterAthlete` and one existing `SourceRowLocator`, both private. The module-scoped constructor moves these values. `athlete()` borrows the payload; `locator()` copies the Copy DTO. Derives are exactly Debug/Clone/PartialEq/Eq, with no serde or Deref. `Roster.athletes` is the single located vector and the wrapper is re-exported.
+2. `parse/roster.rs:47–96`: one existing matcher enumerates original capture occurrences. Capture group 1's byte start/length supplies the same local locator used for rejections/unfinished rows and now the positive wrapper. The success branch retains fallible reserve before push. Rejected rows do not compact the source ordinal; ordinal 20,000 still becomes unfinished. All matching, owner validation, rejection and capacity branches otherwise remain unchanged.
+3. `normalize.rs:36–96`: the sole projection/admission API accepts the located slice. Both loops borrow `member.athlete()`; payload projection, sport iteration, all output types, order and row/byte admission remain unchanged. No temporary payload vector or alternate API exists.
+4. `metadata.rs:9–40,66–100`: `Window<'a>` slices the original located vector and exposes that exact lifetime. The byte-accounting helper borrows the unchanged payload, so canonical projection limits and 64-row windows retain their former meaning. It does not rebase coordinates.
+5. `journal.rs:18–44,76–78`: `Records<'a>` holds the source slice directly. `Records::of(window: &Window<'a>, ...)` does not require the stack-local Window borrow itself to last for `'a`; the accessor returns the original source lifetime. Owned canonical school/team/athlete/observations remain separate. This is an input slice, not 1:1 provenance for aggregate outputs.
+6. `counts.rs:31–49` and `roster.rs:124–142`: production counting borrows payload values through the wrapper; production checked cursor advancement and Counts inclusion use `records.members()`. Terminal comparison remains against the original positive vector length. This makes the accessor part of real execution, not dead test-only storage.
+7. `journal.rs:46–73,120–245` and `commit.rs:41–92`: staging remains Schools, Teams, Athletes, school SourceObservation, athlete SourceObservations in the same order. Journal fields and bodies of roster_journal/digest/operation are unchanged except lifetime spelling. Members do not serialize. Commit effect identity, journal-before-commit, dedup receipt behavior and both await boundaries are unchanged.
+8. `roster.rs:34–57`: the owned fetched `RosterOutcome` remains alive through `apply(..., &read).await`; Records borrows it through the sequential stream. No task is spawned/detached and no borrow crosses a new owner boundary. The new field introduces no additional async transition or cancellation obligation.
+
+## Test quality and evidence boundaries
+
+The four parser tests use independently constructed literal/source-string lengths and checked UTF-8 slicing, not the production row regex as the oracle. The duplicate test compares equal payloads but exact distinct coordinates. The capacity test constructs 5,400,304 UTF-8 bytes for 20,001 rows, below the unchanged 8,388,608-byte body cap, so it reaches row capacity rather than body refusal.
+
+The service test checks two actual windows `[0..64]` and `[64..66]`, source ordinal gap 31 and later first ordinal 65. Slice pointer equality includes both pointer and slice length; the returned Records survives the local Window's scope. Its actual apply test uses the real Store/apply path twice and checks exact canonical count, mixed cohort counts, team count, Partial state and rejection ordinal. Those tests do not establish durable positive-locator storage.
+
+The prefix invariance test alone would be inadequate historical evidence because both sides use new projection code. The separate golden provides old-code evidence: the v2 baseline probe changed only a cfg(test) module attachment in old production journal.rs. Root's log records one actual passing test with Nextest ID `445729b4-0a11-472d-896d-8054ba1bb501`. Root's command receipt states outer exit 0, scope and exact command; the reviewer observed the retained log rather than running that command.
+
+The v2 exported JSON is 4,971 bytes with SHA256 `5dce866cca6bab85495c5dc46d9e9e6610d7eda53e63305374153b6e88827fed`. The checked-in fixture is exactly those bytes plus one terminal LF, SHA256 `7dcb2f41bc3c18d1a4a658674e795cce7252c0d2c10cc3e1d07d3238523d6848`. That outer-file newline does not change any serialized comparison string. Its canonical tuple has all five families, two teams, two athletes and two athlete observations. The golden also pins the rejected locator `(ordinal=1, offset=407, length=108)`, exact Journal bytes, staged facts digest `88705e91281e9a03c240922ef271fc5c96ee9f0145a2fb68c690934a6e001b8e`, and effect digest `38c5756c242886c5c79bb6289a70d08a7f4534de15ccd5ad3392bc4480adc5a9`.
+
+The golden's unfinished value is null. Exact nonempty unfinished coordinates are covered at the parser capacity boundary, and unchanged Journal serialization is statically inspected; no new executed nonempty-unfinished Journal golden is claimed. Existing reopen tests recover canonical state and reapply a supplied/resident RosterOutcome; they do not recover positive source coordinates from historical Journal.
+
+## Caller closure
+
+Direct payload accesses were migrated in crawl fixture tests, roster_entities tests, owner/contextual tests, service observation/outcomes tests, and jurisdiction-replay cohort filters. The contextual equality replacement is necessary: shifted input bytes must change locators, so it now asserts unchanged Complete outcome, team, count and payloads plus exact prefix-byte shift. It does not weaken owner validation or expected authority outcomes.
+
+Read-only scoped symbol/parse caller inventory inspected the unchanged empty-slice and chunks projection example, native-VM captures/record examples, parity fixture builder, fetch boundary tests, bench fixture lengths, provenance/outcome consumers and ownership tests. None require a payload clone or compatibility shim. All-target compilation remains Root's authority for unresolved compiler/type errors; static grep alone is not compilation evidence.
+
+## Resource, style and doctrine scope
+
+All nine modified production files remain below 300 physical lines: 51, 72, 93, 135, 210, 217, 248, 278 and 288. All changed production callables remain below the 60-line hard ceiling by source inspection; Root's trusted AST/size gate is still required for formal certification. Larger test-module files are not production source under Architecture §10.
+
+Power-of-Ten checks affected: simple existing bounded loops (Rule 1/2), retained fallible reserve and declared fixed locator growth (3/7), small accessor/type changes (4/6), checked existing cursor/window arithmetic (5/7), no new macro/pointer/unsafe mechanism (8/9), and Root-owned compiler/lint/test gates (10). There is no added payload clone, materialized payload collection, heap-owned body, parallel vector, synchronization primitive, new dependency or dynamic dispatch. The vector's elements do become larger by one fixed-size locator; no ABI-size, allocation-free, speed or memory-performance claim is made. No benchmark was run.
+
+Reviewed doctrine files: recovered rust-contract, holzman-rust, async-rust-reviewer, scott-ddd-refactor, test-planner, test-reviewer and architectural-drift SKILL.md; Holzman references nasa-jpl-standards.md, zero-cost-abstractions.md, relevant latency-throughput-playbook.md and runtime-performance-architecture.md sections; async references spawn-discipline.md, send-sync-ownership.md and cancellation-safety.md; Scott checklist.md; test-planner testing-philosophy.md; test-reviewer behavior-test-rubric.md and determinism-and-mutation.md. Repository AGENTS.md/ARCHITECTURE.md and the explicit no-build/no-edit assignment control execution and scope; generic skill commands were not run.
+
+## Remaining requirements
+
+Root must finish LR01's narrow tests and return the exact patch/source snapshot; reviewer will check that delta and replace the final manifest. Root must preserve nonzero focused tests, affected integration suites and all-target/lint/format evidence against the final candidate. Broader release, native fault, authority, durable interpretation and publication obligations remain outside this review. Valid eventual completion wording is limited to positive roster locators preserved through parsing and the in-memory service projection boundary.

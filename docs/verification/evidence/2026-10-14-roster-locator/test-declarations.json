@@ -1,0 +1,682 @@
+{
+  "raw_row_that_does_not_fit_the_column_map_is_reported": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/roster.rs",
+      "line": 4,
+      "source_sha256": "87654e3487239569e055507157d37ac30d6ab69fcbdb2fdbf2b77b128d3d5333",
+      "candidate_snapshot": false
+    }
+  ],
+  "oh_roster_pins_319_graded_rows_and_96_class_of_2027": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 171,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "rejected_rows_keep_their_provider_identity_and_exact_utf8_span": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 235,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "neither_template_is_a_schema_error": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/parsing.rs",
+      "line": 88,
+      "source_sha256": "c0b36eed96a5e78564d1087caf5d2810c7acd8681820f440c3b9209cc8da6a28",
+      "candidate_snapshot": false
+    }
+  ],
+  "encoded_foreign_locations_refuse_like_their_literal_country": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 300,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "actual_encoded_open_graph_establishes_historical_roster_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 227,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "unknown_host_is_rejected_by_both_parse_methods": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/parsing.rs",
+      "line": 81,
+      "source_sha256": "c0b36eed96a5e78564d1087caf5d2810c7acd8681820f440c3b9209cc8da6a28",
+      "candidate_snapshot": false
+    }
+  ],
+  "journal_without_explicit_completion_remains_resumable": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/tests.rs",
+      "line": 196,
+      "source_sha256": "b1487c82d7eab83fe0b0ec032b24f30dce3aa03766659b2d2180e0c07a7922c2",
+      "candidate_snapshot": true
+    }
+  ],
+  "matching_published_owner_admits_historical_rows_without_fabricating_final_provenance": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests.rs",
+      "line": 57,
+      "source_sha256": "29f0cccecbf9a8b61e5adbc17c6f16ad817cd32fafb82fab1a6c0b8d0d07326f",
+      "candidate_snapshot": true
+    }
+  ],
+  "a_results_page_lists_the_result_files_the_raw_route_serves": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/roster.rs",
+      "line": 53,
+      "source_sha256": "87654e3487239569e055507157d37ac30d6ab69fcbdb2fdbf2b77b128d3d5333",
+      "candidate_snapshot": false
+    }
+  ],
+  "positive_roster_field_limits_preserve_bounded_rejection_identity_and_positions": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/located_roster.rs",
+      "line": 253,
+      "source_sha256": "ec835f8b5b60b0a94999e05df1e257ae95f00862b00667e5d39f847bf68c5433",
+      "candidate_snapshot": true
+    }
+  ],
+  "roster_names_decode_numeric_entities_without_recursively_decoding_escaped_text": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/roster_entities.rs",
+      "line": 10,
+      "source_sha256": "9b8c7b91fa4b47755db778753a816c23e95a0d77749e7d0114deed6054154f18",
+      "candidate_snapshot": true
+    }
+  ],
+  "positive_roster_legacy_bytes_probe": [
+    {
+      "artifact": "inputs/baseline-probe/proposal/crates/census-service/src/census/sweep/roster/journal/legacy_probe.rs",
+      "line": 82,
+      "source_sha256": "71c58f340887666dc04206bfb42b45e96c56d1d33c707436b5d41014c61f4c49",
+      "source_state": "baseline-probe",
+      "candidate_snapshot": false
+    },
+    {
+      "artifact": "inputs/baseline-probe-v2/proposal/crates/census-service/src/census/sweep/roster/journal/legacy_probe.rs",
+      "line": 93,
+      "source_sha256": "9c137f526aff505080bd2aa3d10653f77bdd445123c7ea5ab136e221ee0ff386",
+      "source_state": "baseline-probe-v2",
+      "candidate_snapshot": false
+    }
+  ],
+  "foreign_comment_and_script_strings_cannot_replace_actual_matching_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 140,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "roster_entities_are_canonical_and_source_independent": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 58,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "thousands_of_rows_resume_after_one_atomic_window_without_duplicate_facts": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/tests/windows.rs",
+      "line": 56,
+      "source_sha256": "511c2fa38ac66136c765efbd1485a5316c88a082e2e0ef4f68c245bb6d002a49",
+      "candidate_snapshot": true
+    }
+  ],
+  "encoded_canonical_foreign_team_overrides_matching_observed_final_url": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 176,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "positive_roster_locator_preserves_exact_utf8_bytes_and_unchanged_payload": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/located_roster.rs",
+      "line": 45,
+      "source_sha256": "ec835f8b5b60b0a94999e05df1e257ae95f00862b00667e5d39f847bf68c5433",
+      "candidate_snapshot": true
+    }
+  ],
+  "dc_legacy_fixture_parses_result_file_entries": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/parsing.rs",
+      "line": 4,
+      "source_sha256": "c0b36eed96a5e78564d1087caf5d2810c7acd8681820f440c3b9209cc8da6a28",
+      "candidate_snapshot": false
+    }
+  ],
+  "provider_owned_athlete_hosts_preserve_profile_urls_and_roster_identity": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/roster_entities.rs",
+      "line": 35,
+      "source_sha256": "9b8c7b91fa4b47755db778753a816c23e95a0d77749e7d0114deed6054154f18",
+      "candidate_snapshot": true
+    }
+  ],
+  "raw_result_set_body_pins_80_rows_in_two_sections": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 197,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "final_owner_binding_rejects_foreign_identity_and_jurisdiction": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests.rs",
+      "line": 84,
+      "source_sha256": "29f0cccecbf9a8b61e5adbc17c6f16ad817cd32fafb82fab1a6c0b8d0d07326f",
+      "candidate_snapshot": true
+    }
+  ],
+  "conflicting_requested_jurisdiction_never_admits_athletes_or_completion": [
+    {
+      "path": "crates/census-service/tests/milesplit_roster_observations/outcomes.rs",
+      "line": 115,
+      "source_sha256": "d82c051781cd200b26a77eddf06f87196285e15835078aaea490e6fed280489d",
+      "candidate_snapshot": true
+    }
+  ],
+  "a_page_without_a_file_list_is_a_schema_mismatch": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/roster.rs",
+      "line": 63,
+      "source_sha256": "87654e3487239569e055507157d37ac30d6ab69fcbdb2fdbf2b77b128d3d5333",
+      "candidate_snapshot": false
+    }
+  ],
+  "the_results_index_url_is_the_published_query_shape": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/parsing.rs",
+      "line": 171,
+      "source_sha256": "c0b36eed96a5e78564d1087caf5d2810c7acd8681820f440c3b9209cc8da6a28",
+      "candidate_snapshot": false
+    }
+  ],
+  "an_authentic_ownerless_fragment_remains_parseable_but_cannot_commit_an_acquired_roster": [
+    {
+      "path": "crates/census-service/tests/milesplit_roster_observations/provenance.rs",
+      "line": 15,
+      "source_sha256": "669234ff2fae9245f2dff9b26550bf213314f6ea47515df500e796b100849b37",
+      "candidate_snapshot": false
+    }
+  ],
+  "www_host_is_rejected_by_parse_but_accepted_by_parse_with_jurisdiction": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/parsing.rs",
+      "line": 63,
+      "source_sha256": "c0b36eed96a5e78564d1087caf5d2810c7acd8681820f440c3b9209cc8da6a28",
+      "candidate_snapshot": false
+    }
+  ],
+  "existing_application_receipt_does_not_pin_later_failed_progress": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/tests.rs",
+      "line": 173,
+      "source_sha256": "b1487c82d7eab83fe0b0ec032b24f30dce3aa03766659b2d2180e0c07a7922c2",
+      "candidate_snapshot": true
+    }
+  ],
+  "title_canonical_text_cannot_establish_historical_roster_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 89,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "actual_roster_apply_keeps_partial_window_counts_and_legacy_replay": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/tests/locators.rs",
+      "line": 103,
+      "source_sha256": "eee0c5d2ce355bd0ca3366d3396b47f12f3f5a042f18731e7bee4f43c72e8d8a",
+      "candidate_snapshot": true
+    }
+  ],
+  "al_teams_index_admits_the_rebranded_state_ownership_and_rows": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 159,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "a_meet_row_without_an_id_is_not_a_meet": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/parsing.rs",
+      "line": 143,
+      "source_sha256": "c0b36eed96a5e78564d1087caf5d2810c7acd8681820f440c3b9209cc8da6a28",
+      "candidate_snapshot": false
+    }
+  ],
+  "positive_roster_preserves_prechange_canonical_journal_and_effect_bytes": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/journal/legacy_compatibility.rs",
+      "line": 107,
+      "source_sha256": "13e768b019011bd52957bf86bf5b0fa8938e4cd84ddd6c8bd5c5e175335323b8",
+      "candidate_snapshot": true
+    }
+  ],
+  "conflicting_canonical_owner_cannot_project_abbotsford_affiliations": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/ownership_tests.rs",
+      "line": 44,
+      "source_sha256": "8a4142731e25d6a2782ad6f574a9a19e79e7ef10919cb2e372e8708b279961b8",
+      "candidate_snapshot": false
+    }
+  ],
+  "style_canonical_text_cannot_establish_historical_roster_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 75,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "failed_retry_and_quarantine_preserve_accepted_prefix_and_owed_counts": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/tests.rs",
+      "line": 121,
+      "source_sha256": "b1487c82d7eab83fe0b0ec032b24f30dce3aa03766659b2d2180e0c07a7922c2",
+      "candidate_snapshot": true
+    }
+  ],
+  "every_authoritative_owner_must_match_and_comments_cannot_prove_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests.rs",
+      "line": 112,
+      "source_sha256": "29f0cccecbf9a8b61e5adbc17c6f16ad817cd32fafb82fab1a6c0b8d0d07326f",
+      "candidate_snapshot": true
+    }
+  ],
+  "team_index_row_count_pins_a_whole_state_in_one_body": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 134,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "captured_foreign_canonical_owner_admits_no_abbotsford_roster": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/ownership_tests.rs",
+      "line": 53,
+      "source_sha256": "8a4142731e25d6a2782ad6f574a9a19e79e7ef10919cb2e372e8708b279961b8",
+      "candidate_snapshot": false
+    }
+  ],
+  "partial_roster_keeps_global_ordinals_and_duplicate_occurrence_positions": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/located_roster.rs",
+      "line": 74,
+      "source_sha256": "ec835f8b5b60b0a94999e05df1e257ae95f00862b00667e5d39f847bf68c5433",
+      "candidate_snapshot": true
+    }
+  ],
+  "ownerless_historical_fragment_cannot_establish_roster_affiliations": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests.rs",
+      "line": 34,
+      "source_sha256": "29f0cccecbf9a8b61e5adbc17c6f16ad817cd32fafb82fab1a6c0b8d0d07326f",
+      "candidate_snapshot": true
+    }
+  ],
+  "parses_team_index_rows": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 18,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "catalog_generation_is_identity_but_catalog_facts_remain_semantics": [
+    {
+      "path": "crates/census-service/tests/parity_pipeline_mod/artifacts.rs",
+      "line": 125,
+      "source_sha256": "5abbf738e0bba41db323e083ad4f2f95ab0abf10bb5c89b4d6a7308800a55016",
+      "candidate_snapshot": false
+    }
+  ],
+  "positive_roster_row_byte_boundary_preserves_the_following_locator": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/located_roster.rs",
+      "line": 225,
+      "source_sha256": "ec835f8b5b60b0a94999e05df1e257ae95f00862b00667e5d39f847bf68c5433",
+      "candidate_snapshot": true
+    }
+  ],
+  "matching_comment_and_script_strings_cannot_replace_actual_foreign_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 155,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "positive_roster_windows_and_records_borrow_the_same_global_members": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/tests/locators.rs",
+      "line": 46,
+      "source_sha256": "eee0c5d2ce355bd0ca3366d3396b47f12f3f5a042f18731e7bee4f43c72e8d8a",
+      "candidate_snapshot": true
+    }
+  ],
+  "an_empty_file_list_is_a_state_not_a_failure": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/roster.rs",
+      "line": 76,
+      "source_sha256": "87654e3487239569e055507157d37ac30d6ab69fcbdb2fdbf2b77b128d3d5333",
+      "candidate_snapshot": false
+    }
+  ],
+  "encoded_canonical_foreign_host_overrides_matching_observed_final_url": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 182,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "malformed_html_fails_loudly": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 97,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "encoded_open_graph_foreign_host_overrides_matching_observed_final_url": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 198,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "lookalike_hosts_cannot_supply_roster_identity": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/roster_entities.rs",
+      "line": 60,
+      "source_sha256": "9b8c7b91fa4b47755db778753a816c23e95a0d77749e7d0114deed6054154f18",
+      "candidate_snapshot": true
+    }
+  ],
+  "template_markup_cannot_establish_historical_roster_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 112,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "partial_and_quarantined_rosters_preserve_source_facts_and_remain_resumable": [
+    {
+      "path": "crates/census-service/tests/milesplit_roster_observations/outcomes.rs",
+      "line": 67,
+      "source_sha256": "d82c051781cd200b26a77eddf06f87196285e15835078aaea490e6fed280489d",
+      "candidate_snapshot": true
+    }
+  ],
+  "positive_roster_locator_capacity_keeps_only_the_existing_bounded_prefix": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/located_roster.rs",
+      "line": 116,
+      "source_sha256": "ec835f8b5b60b0a94999e05df1e257ae95f00862b00667e5d39f847bf68c5433",
+      "candidate_snapshot": true
+    }
+  ],
+  "parses_a_state_results_index_into_requestable_meets": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/parsing.rs",
+      "line": 110,
+      "source_sha256": "c0b36eed96a5e78564d1087caf5d2810c7acd8681820f440c3b9209cc8da6a28",
+      "candidate_snapshot": false
+    }
+  ],
+  "completion_requires_scoped_capture_without_refusal_quarantine_or_rejections": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/tests.rs",
+      "line": 251,
+      "source_sha256": "b1487c82d7eab83fe0b0ec032b24f30dce3aa03766659b2d2180e0c07a7922c2",
+      "candidate_snapshot": true
+    }
+  ],
+  "disappeared_partial_team_restores_exact_retained_input_and_stays_owed": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/tests/windows.rs",
+      "line": 105,
+      "source_sha256": "511c2fa38ac66136c765efbd1485a5316c88a082e2e0ef4f68c245bb6d002a49",
+      "candidate_snapshot": true
+    }
+  ],
+  "legacy_select_with_only_all_is_empty": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/parsing.rs",
+      "line": 22,
+      "source_sha256": "c0b36eed96a5e78564d1087caf5d2810c7acd8681820f440c3b9209cc8da6a28",
+      "candidate_snapshot": false
+    }
+  ],
+  "parses_roster_rows_with_grad_year_and_seasons": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 28,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "encoded_matching_declaration_inside_raw_text_still_cannot_establish_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 236,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "stopped_admission_records_a_durable_zero_prefix_that_stays_owed": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/tests.rs",
+      "line": 215,
+      "source_sha256": "b1487c82d7eab83fe0b0ec032b24f30dce3aa03766659b2d2180e0c07a7922c2",
+      "candidate_snapshot": true
+    }
+  ],
+  "rebuilding_the_fixture_store_reproduces_semantics_not_publication_identity": [
+    {
+      "path": "crates/census-service/tests/parity_pipeline.rs",
+      "line": 37,
+      "source_sha256": "5b817199410d47e74a7c4fa9a9cdefe3a110ea465208448d8731590fa6ddf592",
+      "candidate_snapshot": false
+    }
+  ],
+  "published_roster_year_is_high_without_inventing_grade_from_the_supplied_season": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/roster_entities.rs",
+      "line": 85,
+      "source_sha256": "9b8c7b91fa4b47755db778753a816c23e95a0d77749e7d0114deed6054154f18",
+      "candidate_snapshot": true
+    }
+  ],
+  "captured_nc_wrapped_round_keeps_its_event_and_finisher": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/parsing.rs",
+      "line": 181,
+      "source_sha256": "c0b36eed96a5e78564d1087caf5d2810c7acd8681820f440c3b9209cc8da6a28",
+      "candidate_snapshot": false
+    }
+  ],
+  "resource_refusal_retains_current_capture_and_prior_accepted_facts": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/tests/windows.rs",
+      "line": 84,
+      "source_sha256": "511c2fa38ac66136c765efbd1485a5316c88a082e2e0ef4f68c245bb6d002a49",
+      "candidate_snapshot": true
+    }
+  ],
+  "xmp_canonical_text_cannot_establish_historical_roster_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 95,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters": [
+    {
+      "path": "crates/census-service/tests/recovery_mod/jurisdiction_replay.rs",
+      "line": 9,
+      "source_sha256": "aa51295d4dc32b34a2397e2e20218e732ed9b7c9299414c75825195d97478a87",
+      "candidate_snapshot": true
+    }
+  ],
+  "partial_roster_survives_reopen_and_corrected_body_adds_only_missing_facts": [
+    {
+      "path": "crates/census-service/src/census/sweep/roster/tests.rs",
+      "line": 85,
+      "source_sha256": "b1487c82d7eab83fe0b0ec032b24f30dce3aa03766659b2d2180e0c07a7922c2",
+      "candidate_snapshot": true
+    }
+  ],
+  "result_set_urls_are_checked_and_disallowed_routes_are_never_built": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/roster.rs",
+      "line": 23,
+      "source_sha256": "87654e3487239569e055507157d37ac30d6ab69fcbdb2fdbf2b77b128d3d5333",
+      "candidate_snapshot": false
+    }
+  ],
+  "an_empty_known_roster_is_a_named_gap_not_negative_identity_evidence": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 290,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "an_inline_results_page_is_its_own_one_result_set": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/parsing.rs",
+      "line": 34,
+      "source_sha256": "c0b36eed96a5e78564d1087caf5d2810c7acd8681820f440c3b9209cc8da6a28",
+      "candidate_snapshot": false
+    }
+  ],
+  "quoted_attribute_markup_cannot_establish_historical_roster_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 101,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "actual_encoded_canonical_establishes_historical_roster_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 221,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "canonical_roster_projection_is_unchanged_by_positive_locator_offsets": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/located_roster.rs",
+      "line": 153,
+      "source_sha256": "ec835f8b5b60b0a94999e05df1e257ae95f00862b00667e5d39f847bf68c5433",
+      "candidate_snapshot": true
+    }
+  ],
+  "textarea_canonical_text_cannot_establish_historical_roster_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 82,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "noscript_markup_cannot_establish_historical_roster_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 120,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "a_synthetic_owned_roster_pass_files_an_observation_per_published_athlete": [
+    {
+      "path": "crates/census-service/tests/milesplit_roster_observations.rs",
+      "line": 91,
+      "source_sha256": "d6d381007d2d4076544536d17fa8be3310c52fe31a09fe1669c7b79e72ee5f5c",
+      "candidate_snapshot": true
+    }
+  ],
+  "ownerless_authentic_rows_remain_available_to_pure_parser_only": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 248,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "encoded_foreign_declarations_cannot_hide_behind_matching_historical_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 208,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "a_missing_name_does_not_erase_a_readable_provider_identity": [
+    {
+      "path": "crates/census-crawl/src/milesplit/tests/mod.rs",
+      "line": 273,
+      "source_sha256": "063f32ae8b6c615159a3b02af907f9543770f86afa5ab4a2b00912dfc8c8ea69",
+      "candidate_snapshot": true
+    }
+  ],
+  "encoded_open_graph_foreign_team_overrides_matching_observed_final_url": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 188,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "comments_and_script_strings_cannot_establish_historical_roster_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests/contextual.rs",
+      "line": 127,
+      "source_sha256": "c4420293c63d214e6c3fb2745f12714bc6f903564dcf3dd2e69d5ba29ccb8867",
+      "candidate_snapshot": true
+    }
+  ],
+  "unrelated_foreign_roster_navigation_and_embedded_entities_do_not_change_document_owner": [
+    {
+      "path": "crates/census-crawl/src/milesplit/parse/roster/owner/tests.rs",
+      "line": 148,
+      "source_sha256": "29f0cccecbf9a8b61e5adbc17c6f16ad817cd32fafb82fab1a6c0b8d0d07326f",
+      "candidate_snapshot": true
+    }
+  ],
+  "fetch_roster_fires_all_boundary_points_in_order": [
+    {
+      "path": "crates/census-crawl/tests/boundary_points.rs",
+      "line": 77,
+      "source_sha256": "3caf8e7daf79a253da23d5f0bc4f163c8cb07489efccc33441091b0eea732144",
+      "candidate_snapshot": false
+    }
+  ]
+}
