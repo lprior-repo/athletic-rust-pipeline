@@ -44,7 +44,10 @@ curl -X POST http://127.0.0.1:18095/NationalCensus/national:<year>:<plan>:<revis
   -H 'content-type: application/json' -d '{"source_parallelism":4}'
 ```
 Explicit `--store <dir>` selects an offline route where supported and requires the endpoint owner
-stopped. Service-only commands reject it. The endpoint itself is loopback HTTP/2, conventionally
+stopped. This is a store-access choice, not a network-off switch. Provider commands may acquire
+on cache misses unless `provider --offline` is also selected; see
+[cached-source provider execution](#cached-source-provider-execution). Service-only commands
+reject `--store`. The endpoint itself is loopback HTTP/2, conventionally
 9080; the Restate admin API is conventionally 19095. Do not expose an unauthenticated endpoint.
 
 Inspecting a run's server-side state needs the admin API's JSON accept header; without it the query
@@ -1083,6 +1086,50 @@ Serialized canonical meet/performance records independently own their identifier
 their ownership-boundary copies are not a claim of free cloning or measured performance.
 No latency, throughput, allocation-count or memory improvement is certified by these source changes.
 
+
+## Cached-source provider execution
+
+Stop the store owner before using `provider --offline`; use an isolated store copy for
+qualification. The flag requires an explicit `--store` and cannot be combined with `--refresh`:
+
+```sh
+census-service --store <stopped-store> provider tfrrs --offline \
+  --school-names 'https://indiana.tfrrs.org/lists/5489/HSR_All_School_Performance_List/2026/i' \
+  --as-of 2026-10-07
+
+census-service --store <stopped-store> provider milesplit_results --offline \
+  --states MI --season-year 2026 --as-of 2026-10-07
+```
+
+These are command shapes, not evidence that those inputs are present or qualified. TFRRS's
+existing `--school-names` option supplies page URLs; MileSplit result selection still uses stored
+meet locators and requires the corresponding cached meet pages, owned results and raw metadata.
+Pass the existing adapter-specific selection options and an explicit performance cutoff for the
+intended interpretation. The provider CLI retains its existing school-year context of 2026.
+
+The same provider dispatch and current collectors run with the existing Fetcher offline guard.
+Eligible cache hits preserve the original acquisition metadata; a missing, corrupt or ineligible
+cache entry cannot fall back to HTTP GET/POST or browser acquisition. The existing typed refusal,
+error or unfinished report remains visible. Inspect the report's errors and unfinished work;
+command exit success alone is not source completeness. Local input adapters still require their
+ordinary retained input and provenance. This option permits the collector's normal append-only
+store writes and store-open recovery; it is not a read-only operation.
+
+This is limited to input already reachable through the current collector/cache selection. It does
+not select arbitrary frozen archives, replace the latest cache binding, resume a completed Restate
+`ctx.run` step, change workflow/retry identities, or reset exhausted source budgets. An existing
+completion receipt can still apply under its current dependency contract. This flag does not
+force a parser revision or certify current-source freshness, complete historical reinterpretation,
+correction/publication eligibility or recruiting coverage. Historical receipts and artifacts retain
+their existing identities; reinterpreting cached evidence does not create a new physical acquisition.
+
+Offline regression coverage uses isolated stores and origin-lock directories. Direct GET, JSON POST
+and form POST are checked against an explicitly authorized loopback listener; browser requests use
+the existing BrowserLane with loopback ingress. Network-capable controls must reach those observers.
+Fetcher counters alone do not establish that no transport dispatched. The production-shaped TFRRS
+fixture retains its source URL and capture time; its held local origin lock is only an external-network
+safety fence, not the zero-dispatch oracle. These scoped checks do not qualify all providers or replace
+the canonical format, compile, source-lint and release gates.
 
 ## Retained capture verification
 
