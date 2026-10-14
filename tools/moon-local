@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-root=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
+root=$(CDPATH= cd -P "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 # Moon injects MOON_TARGET into every task process; re-entering this wrapper from inside a task starts
 # a second Moon whose tool fingerprint lands too late for the outer run's task hashes. Only the gate
@@ -18,6 +18,19 @@ if [[ -n "${RUSTC:-}" ]]; then
 fi
 export RUSTC="$rustc_bin"
 export MOON_RUST_CARGO="$cargo_bin"
+if command -v sha256sum >/dev/null 2>&1; then
+  sha256=(sha256sum)
+else
+  sha256=(shasum -a 256)
+fi
+cargo_version=$("$cargo_bin" -vV)
+rustc_version=$("$rustc_bin" -vV)
+rustc_host=
+while IFS= read -r line; do
+  case "$line" in
+    'host: '*) rustc_host=${line#host: } ;;
+  esac
+done <<< "$rustc_version"
 nextest_bin=${CARGO_HOME:-$HOME/.cargo}/bin/cargo-nextest
 if [[ ! -x "$nextest_bin" ]]; then
   nextest_bin=$(command -v cargo-nextest)
@@ -26,12 +39,55 @@ moon_bin=$(command -v moon)
 cc_bin=$(command -v "${CC:-cc}")
 cxx_bin=$(command -v "${CXX:-c++}")
 ar_bin=$(command -v "${AR:-ar}")
-export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$cc_bin"
+sysroot=$("$rustc_bin" --print sysroot)
+case "$rustc_host" in
+  x86_64-unknown-linux-gnu)
+    export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$cc_bin"
+    linker_bin=$sysroot/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld/ld.lld
+    ar_version=$("$ar_bin" --version)
+    ;;
+  aarch64-apple-darwin|x86_64-apple-darwin)
+    resolve_apple_tool() {
+      local selected
+      case "$1" in
+        */*) selected=$1 ;;
+        *) selected=$(command -v "$1") || return ;;
+      esac
+      case "$selected" in
+        /usr/bin/*) xcrun --find "${selected##*/}" ;;
+        *) printf '%s\n' "$selected" ;;
+      esac
+    }
+    cc_bin=$(resolve_apple_tool "$cc_bin")
+    cxx_bin=$(resolve_apple_tool "$cxx_bin")
+    ar_bin=$(resolve_apple_tool "$ar_bin")
+    case "$rustc_host" in
+      aarch64-apple-darwin) export CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER="$cc_bin" ;;
+      x86_64-apple-darwin) export CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER="$cc_bin" ;;
+    esac
+    linker_name=$("$cc_bin" -print-prog-name=ld)
+    linker_bin=$(resolve_apple_tool "$linker_name")
+    apple_ar_bin=$(xcrun --find ar)
+    if [[ "$ar_bin" == "$apple_ar_bin" ]]; then
+      ar_version='Apple ar has no version option; identity is its executable SHA256'
+    else
+      ar_version=$("$ar_bin" --version)
+    fi
+    ;;
+  *)
+    printf 'tools/moon-local: unsupported rustc host: %s\n' "$rustc_host" >&2
+    exit 2
+    ;;
+esac
+if [[ ! -f "$linker_bin" || ! -x "$linker_bin" ]]; then
+  printf 'tools/moon-local: selected linker is not executable: %s\n' "$linker_bin" >&2
+  exit 2
+fi
 wrapper_hashes=
 for selected in "${RUSTC_WRAPPER:-}" "${RUSTC_WORKSPACE_WRAPPER:-}"; do
   if [[ -n "$selected" ]]; then
     resolved=$(command -v "$selected")
-    wrapper_hashes+="$(sha256sum "$resolved")"$'\n'
+    wrapper_hashes+="$("${sha256[@]}" "$resolved")"$'\n'
   fi
 done
 build_config=$("$cargo_bin" -Z unstable-options config get build --format json 2>&1) || {
@@ -52,17 +108,12 @@ profile_config=$("$cargo_bin" -Z unstable-options config get profile --format js
     exit 1
   fi
 }
-sysroot=$("$rustc_bin" --print sysroot)
-bundled_linker=$sysroot/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld/ld.lld
-cargo_version=$("$cargo_bin" -vV)
-rustc_version=$("$rustc_bin" -vV)
 native_features=$("$rustc_bin" --print cfg -C target-cpu=native)
 nextest_version=$("$nextest_bin" --version)
 moon_version=$("$moon_bin" --version)
 cc_version=$("$cc_bin" --version)
 cxx_version=$("$cxx_bin" --version)
-ar_version=$("$ar_bin" --version)
-executable_hashes=$(sha256sum "$cargo_bin" "$rustc_bin" "$nextest_bin" "$moon_bin" "$cc_bin" "$cxx_bin" "$ar_bin" "$bundled_linker")
+executable_hashes=$("${sha256[@]}" "$cargo_bin" "$rustc_bin" "$nextest_bin" "$moon_bin" "$cc_bin" "$cxx_bin" "$ar_bin" "$linker_bin")
 fingerprint=$(jq -n \
   --arg source_root "$root" \
   --arg cargo "$cargo_version" \

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 : "${MOON_RUST_CARGO:?Run through tools/moon-local to select and fingerprint Cargo}"
-if [[ -v MOON_RUST_BUILD_JOBS ]]; then
+if [[ ${MOON_RUST_BUILD_JOBS+x} ]]; then
   if [[ ! "$MOON_RUST_BUILD_JOBS" =~ ^[1-9][0-9]*$ ]]; then
     printf 'tools/moon-cargo: MOON_RUST_BUILD_JOBS must be a positive decimal integer without leading zeros\n' >&2
     exit 2
