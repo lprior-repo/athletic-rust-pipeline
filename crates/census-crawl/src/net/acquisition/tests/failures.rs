@@ -2,7 +2,7 @@ use super::*;
 use census_domain::model::{
     AcquisitionFailureV1, ResponseCheckpointRefusalV1, SOURCE_ACQUISITION_PHASE,
 };
-use census_store::{AcquisitionCheckpointV1, AcquisitionTerminalV1, ImmutableAttemptResult};
+use census_store::{AcquisitionCheckpointV1, AcquisitionTerminal, ImmutableAttemptResult};
 
 fn terminals(fixture: &Fixture) -> TestResult<Vec<ImmutableAttemptResult>> {
     let rows = fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?;
@@ -46,7 +46,7 @@ async fn actual_overbound_response_header_keeps_typed_status_and_url_checkpoint_
         crate::milesplit::OWNED_FIELDS
     );
     check!(rows.iter().any(|row| matches!(row.terminal(),
-        AcquisitionTerminalV1::FailedUncaptured {
+        AcquisitionTerminal::FailedUncaptured {
             checkpoint: AcquisitionCheckpointV1::Armed { .. },
             failure: AcquisitionFailureV1::ResponseCheckpointRefused {
                 status, response_url, reason: ResponseCheckpointRefusalV1::UnrepresentableResponse,
@@ -125,7 +125,7 @@ async fn actual_truncated_bodies_reopen_with_observed_failures_and_three_attempt
                 .any(|row| row.attempt().ordinal().get() == ordinal
                     && matches!(
                         row.terminal(),
-                        AcquisitionTerminalV1::FailedUncaptured {
+                        AcquisitionTerminal::FailedUncaptured {
                             checkpoint: AcquisitionCheckpointV1::ResponseObserved { .. },
                             failure: AcquisitionFailureV1::Transport,
                         }

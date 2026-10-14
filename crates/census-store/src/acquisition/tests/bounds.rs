@@ -63,7 +63,7 @@ fn maximal_body_work(
     retained.ok_or_else(|| "missing original".into())
 }
 
-fn five_dispatch_response(
+pub(super) fn five_dispatch_response(
     store: &Store,
     writer: &CaptureWriterV1,
     owner: &ResultsCaptureOwnerV1,
@@ -110,6 +110,16 @@ fn retain_response(
     observed: ObservedResponse,
     status: u16,
 ) -> TestResult<AcquisitionOccurrenceRefV1> {
+    let (prepared, body) = prepare_response(store, observed, status)?;
+    publish(store, &prepared, &body)?;
+    Ok(store.finish_acquisition_capture(prepared)?)
+}
+
+pub(super) fn prepare_response(
+    store: &Store,
+    observed: ObservedResponse,
+    status: u16,
+) -> TestResult<(PreparedCapture, Vec<u8>)> {
     let body = b"bounded original";
     let digest = format!("{:x}", Sha256::digest(body));
     let redirects: Vec<_> = (1..=4)
@@ -123,8 +133,7 @@ fn retain_response(
         PreparedCaptureInputV1::new(&digest, u64::try_from(body.len())?, metadata)?,
         CaptureDispositionV1::for_http_status(status)?,
     )?;
-    publish(store, &prepared, body)?;
-    Ok(store.finish_acquisition_capture(prepared)?)
+    Ok((prepared, body.to_vec()))
 }
 
 #[derive(serde::Serialize)]
