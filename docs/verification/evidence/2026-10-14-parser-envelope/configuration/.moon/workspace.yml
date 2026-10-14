@@ -1,0 +1,22 @@
+projects:
+  pipeline: '.'
+versionConstraint: '=2.2.4'
+telemetry: false
+hasher:
+  optimization: accuracy
+  walkStrategy: glob
+pipeline:
+  installDependencies: false
+  syncWorkspace: true
+  syncProjects: false
+  syncProjectDependencies: false
+vcs:
+  client: git
+  defaultBranch: main
+remote:
+  host: 'grpc://127.0.0.1:9092'
+  cache:
+    compression: zstd
+    instanceName: athletic-rust-pipeline
+    verifyIntegrity: true
+    localReadOnly: false
