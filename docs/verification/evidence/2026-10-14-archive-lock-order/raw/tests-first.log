@@ -1,0 +1,125 @@
+[ WARN 2026-10-14 03:14:46.788] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:tests-scoped (b169f8fe)
+   Compiling census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+▮▮▮▮ pipeline:tests-scoped (running for 30s)
+   Compiling census-report v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-report)
+▮▮▮▮ pipeline:tests-scoped (running for 60s)
+   Compiling census-reconcile v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-reconcile)
+   Compiling census-service v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-service)
+▮▮▮▮ pipeline:tests-scoped (running for 90s)
+▮▮▮▮ pipeline:tests-scoped (running for 120s)
+▮▮▮▮ pipeline:tests-scoped (running for 150s)
+▮▮▮▮ pipeline:tests-scoped (running for 180s)
+▮▮▮▮ pipeline:tests-scoped (running for 210s)
+▮▮▮▮ pipeline:tests-scoped (running for 240s)
+▮▮▮▮ pipeline:tests-scoped (running for 270s)
+▮▮▮▮ pipeline:tests-scoped (running for 300s)
+▮▮▮▮ pipeline:tests-scoped (running for 330s)
+▮▮▮▮ pipeline:tests-scoped (running for 360s)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6m 24s
+────────────
+ Nextest run ID 783d417a-ef14-4fbf-9071-bb75e22ee330 with nextest profile: default
+    Starting 96 tests across 4 binaries (3200 tests skipped)
+        PASS [   0.118s] ( 1/96) census-crawl net::acquisition::tests::grants::lifecycle_four_legacy_context_refuses_owned_role_before_http
+        PASS [   0.314s] ( 2/96) census-crawl net::acquisition::tests::grants::target_bound_linear_grant_refuses_foreign_meet_then_consumed_reuse
+        PASS [   0.326s] ( 3/96) census-crawl net::acquisition::tests::failures::actual_malformed_429_preserves_source_cooldown_and_blocks_new_work_before_http
+        PASS [   0.332s] ( 4/96) census-crawl net::acquisition::tests::grants::adopted_foreign_cache_root_refuses_before_grant_or_http
+        PASS [   0.035s] ( 5/96) census-crawl net::acquisition::tests::lock_order::archive_lock_order_missing_prepared_invalid_capacity_child
+        PASS [   0.433s] ( 6/96) census-crawl net::acquisition::tests::actual_https_success_and_replay_without_eligible_cache_have_one_dispatch
+        PASS [   0.432s] ( 7/96) census-crawl net::acquisition::tests::failures::actual_overbound_response_header_keeps_typed_status_and_url_checkpoint_refusal
+        PASS [   0.485s] ( 8/96) census-crawl net::acquisition::tests::cache::eligible_cache_reuse_finishes_new_work_without_new_attempt_or_date
+        PASS [   0.530s] ( 9/96) census-crawl net::acquisition::tests::cache::historical_or_unsupported_cache_is_a_pre_http_gap_without_fallback
+        PASS [   0.552s] (10/96) census-crawl net::acquisition::tests::lock_order::archive_lock_order_busy_prepared_recovery_keeps_original_unfinished_facts
+        PASS [   0.557s] (11/96) census-crawl net::acquisition::tests::cache::mismatched_eligible_metadata_cannot_publish_a_work_result
+        PASS [   0.236s] (12/96) census-crawl net::acquisition::tests::lock_order::archive_lock_order_publisher_uses_one_guard_and_preserves_busy_precedence
+        PASS [   0.548s] (13/96) census-crawl net::acquisition::tests::lock_order::archive_lock_order_missing_prepared_defers_invalid_capacity_in_isolated_process
+        PASS [   0.015s] (14/96) census-crawl net::cache::archive::admission::tests::archive_capacity_environment_child
+        PASS [   0.026s] (15/96) census-crawl net::cache::archive::admission::tests::explicit_zero_capacity_refuses_before_creating_any_files
+        PASS [   0.398s] (16/96) census-crawl net::acquisition::tests::lock_order::archive_lock_order_non200_prepared_recovery_never_runs_archive_admission
+        PASS [   0.724s] (17/96) census-crawl net::acquisition::tests::actual_equal_byte_same_second_dispatches_keep_distinct_occurrences
+        PASS [   0.019s] (18/96) census-crawl net::cache::archive::admission::tests::explicit_zero_capacity_refuses_before_opening_a_missing_root
+        PASS [   0.386s] (19/96) census-crawl net::acquisition::tests::lock_order::archive_lock_order_publisher_encoding_and_link_errors_release_guards
+        PASS [   0.021s] (20/96) census-crawl net::cache::archive::admission::tests::pure_capacity_parser_accepts_every_positive_u64_boundary
+        PASS [   0.016s] (21/96) census-crawl net::cache::archive::admission::tests::pure_capacity_parser_refuses_explicit_invalid_values
+        PASS [   0.029s] (22/96) census-crawl net::cache::archive::admission::tests::nonunicode_capacity_environment_is_refused_in_an_isolated_process
+        PASS [   0.225s] (23/96) census-crawl net::acquisition::tests::recovery::observed_interruption_requires_separate_original_owner_continuation
+        PASS [   0.012s] (24/96) census-crawl net::cache::archive_tests::capacity::a_capture_over_capacity_is_refused_before_any_object_is_published
+        PASS [   0.021s] (25/96) census-crawl net::cache::archive_tests::body_storage_is_shared_read_only_and_replacement_never_mutates_the_old_inode
+        PASS [   0.015s] (26/96) census-crawl net::cache::archive_tests::capacity::a_capture_that_fits_is_published_and_settles_the_reservation
+        PASS [   0.096s] (27/96) census-crawl net::cache::archive::admission::tests::archive_capacity_environment_is_checked_in_isolated_processes
+        PASS [   0.014s] (28/96) census-crawl net::cache::archive_tests::capacity::capacity_accounting_is_exact_across_repeated_cycles_without_drift_or_double_charge
+        PASS [   0.019s] (29/96) census-crawl net::cache::archive_tests::capacity::a_retained_stage_charges_archive_capacity_so_the_cap_still_refuses
+        PASS [   0.021s] (30/96) census-crawl net::cache::archive_tests::capacity::an_archived_capture_settles_without_a_second_reservation
+        PASS [   0.013s] (31/96) census-crawl net::cache::archive_tests::capacity::invalid_archive_entries_refuse_capacity_accounting
+        PASS [   0.024s] (32/96) census-crawl net::cache::archive_tests::capacity::concurrent_publishers_share_one_capacity_budget
+        PASS [   0.031s] (33/96) census-crawl net::cache::archive_tests::capacity::a_stage_under_capacity_is_still_admitted_and_published
+        PASS [   0.025s] (34/96) census-crawl net::cache::archive_tests::capacity::configured_capacity_of_honors_positive_integers_and_defaults_only_when_unset
+        PASS [   0.016s] (35/96) census-crawl net::cache::archive_tests::failures::archive_io_failure_keeps_the_verified_old_mutable_cache_unreplaced
+        PASS [   0.244s] (36/96) census-crawl net::acquisition::tests::recovery::prepared_archive_recovers_through_real_owned_parser_with_zero_new_requests
+        PASS [   0.021s] (37/96) census-crawl net::cache::archive_tests::failures::body_only_archive_publication_resumes_but_another_runs_stage_is_never_removed
+        PASS [   0.023s] (38/96) census-crawl net::cache::archive_tests::failures::corrupt_existing_archive_body_and_metadata_each_refuse_false_success
+        PASS [   0.015s] (39/96) census-crawl net::cache::archive_tests::failures::metadata_publication_io_failure_leaves_no_complete_archive_or_cache
+        PASS [   0.016s] (40/96) census-crawl net::cache::archive_tests::failures::invalid_new_digest_length_and_oversized_metadata_do_not_publish_any_capture
+        PASS [   0.029s] (41/96) census-crawl net::cache::archive_tests::failures::incomplete_old_capture_recovers_without_claiming_false_preservation
+        PASS [   0.020s] (42/96) census-crawl net::cache::archive_tests::failures::mismatched_old_body_is_never_archived_under_its_declared_hash
+        PASS [   0.019s] (43/96) census-crawl net::cache::archive_tests::identical_bodies_retain_distinct_source_method_status_and_capture_time
+        PASS [   0.015s] (44/96) census-crawl net::cache::archive_tests::lock_order::archive_lock_order_admission_refusal_precedes_busy_writer_but_replay_defers
+        PASS [   0.019s] (45/96) census-crawl net::cache::archive_tests::lock_order::archive_lock_order_busy_cache_preserves_incoming_archive_and_exact_error
+        PASS [   0.012s] (46/96) census-crawl net::cache::archive_tests::lock_order::archive_lock_order_callback_unwind_releases_both_actual_guards
+        PASS [   0.017s] (47/96) census-crawl net::cache::archive_tests::lock_order::archive_lock_order_existing_symlink_root_alias_keeps_legacy_behavior
+        PASS [   0.032s] (48/96) census-crawl net::cache::archive_tests::identical_replay_preserves_the_original_audit_files_without_duplicates
+        PASS [   0.013s] (49/96) census-crawl net::cache::archive_tests::lock_order::archive_lock_order_replay_miss_and_mismatch_defer_archive_initialization
+        PASS [   0.032s] (50/96) census-crawl net::cache::archive_tests::lock_order::archive_lock_order_callback_errors_release_both_actual_guards
+        PASS [   0.025s] (51/96) census-crawl net::cache::archive_tests::lock_order::archive_lock_order_legacy_replay_and_writer_do_not_reverse_resources
+        PASS [   0.044s] (52/96) census-crawl net::cache::archive_tests::lock_order::archive_lock_order_lock_open_refusal_precedes_busy_eligible
+        PASS [   0.035s] (53/96) census-crawl net::cache::archive_tests::migrating_an_identical_compact_capture_does_not_manufacture_an_audit_record
+        PASS [   0.043s] (54/96) census-crawl net::cache::archive_tests::migration_preserves_verified_old_non_success_capture_and_unknown_metadata
+        PASS [   0.044s] (55/96) census-crawl net::cache::archive_tests::quarantine_crashes::crash_before_reason_publication_does_not_block_recovery_or_remove_orphan_evidence
+        PASS [   0.021s] (56/96) census-crawl net::cache::archive_tests::quarantine_crashes::occupied_quarantine_destination_is_an_error_and_never_replaced
+        PASS [   0.024s] (57/96) census-crawl net::cache::archive_tests::races::an_in_progress_cache_writer_retains_the_response_without_retry_or_partial_replacement
+        PASS [   0.042s] (58/96) census-crawl net::cache::archive_tests::quarantine_crashes::interrupted_mutable_metadata_rename_does_not_hide_immutable_archive_corruption
+        PASS [   0.060s] (59/96) census-crawl net::cache::archive_tests::quarantine_crashes::every_durable_quarantine_boundary_allows_fresh_publication_without_evidence_loss
+        PASS [   0.024s] (60/96) census-crawl net::cache::archive_tests::races::simultaneous_identical_and_different_bodies_keep_each_metadata_binding_exact
+        PASS [   0.028s] (61/96) census-crawl net::cache::archive_tests::races::same_cache_races_never_bind_one_writers_body_to_another_writers_metadata
+        PASS [   0.024s] (62/96) census-crawl net::cache::archive_tests::recovery::interrupted_body_replacement_recovers_and_retains_all_three_verified_captures
+        PASS [   0.024s] (63/96) census-crawl net::cache::archive_tests::recovery::malformed_and_invalid_integrity_metadata_recovers_with_exact_untrusted_evidence
+        PASS [   0.925s] (64/96) census-crawl net::acquisition::tests::cache::actual_304_keeps_original_occurrence_date_and_eligible_pointer
+        PASS [   0.026s] (65/96) census-crawl net::cache::archive_tests::recovery::oversized_sparse_mutable_body_is_renamed_without_copying_or_false_archival
+        PASS [   0.027s] (66/96) census-crawl net::cache::archive_tests::recovery::repeated_damage_creates_distinct_evidence_without_replacing_prior_quarantine
+        PASS [   0.028s] (67/96) census-crawl net::cache::archive_tests::recovery::quarantine_io_failure_preserves_damaged_mutable_evidence_and_refuses_publication
+        PASS [   0.607s] (68/96) census-crawl net::acquisition::tests::lock_order::archive_lock_order_prepared_missing_or_corrupt_backing_defers_admission
+        PASS [   0.939s] (69/96) census-crawl net::acquisition::tests::cache::actual_304_cache_compare_fence_rejects_changed_metadata_without_refetch
+        PASS [   0.032s] (70/96) census-crawl net::cache::archive_tests::refresh_retains_both_raw_captures_and_serves_the_replacement
+        PASS [   0.034s] (71/96) census-crawl net::cache::archive_tests::reservations::concurrent_identical_reservations_are_deduplicated
+        PASS [   0.016s] (72/96) census-crawl net::cache::archive_tests::reservations::recovery::interrupted_body_publication_recovers_exact_usage_and_keeps_staged_evidence
+        PASS [   0.029s] (73/96) census-crawl net::cache::archive_tests::reservations::failed_staged_write_releases_reservation_before_admission_is_dropped
+        PASS [   0.020s] (74/96) census-crawl net::cache::archive_tests::reservations::recovery::abandoned_unpublished_reservation_recovers_without_charging_absent_objects
+        PASS [   0.024s] (75/96) census-crawl net::cache::archive_tests::reservations::repeated_in_flight_archive_key_reserves_its_bytes_only_once
+        PASS [   0.406s] (76/96) census-crawl net::acquisition::tests::recovery::prepared_without_archive_refuses_recovery_without_hidden_refetch
+        PASS [   0.030s] (77/96) census-crawl net::cache::archive_tests::reservations::recovery::symbolic_link_reservations_refuse_accounting_without_following_the_link
+        PASS [   0.041s] (78/96) census-crawl net::cache::archive_tests::reservations::published_capture_with_stale_reservation_is_recovered_on_restart
+        PASS [   0.024s] (79/96) census-crawl net::cache::archive_tests::reservations::reserved_bytes_are_counted_and_refuse_competing_captures
+        PASS [   0.044s] (80/96) census-crawl net::cache::archive_tests::reservations::recovery::malformed_or_oversized_reservations_refuse_recovery_without_deleting_evidence
+        PASS [   0.058s] (81/96) census-service spawn::dedicated::tests::dedicated_worker_survives_caller_cancellation_and_releases_lane_after_completion
+        PASS [   0.066s] (82/96) census-service spawn::dedicated::tests::dedicated_worker_inherits_the_submitting_span_and_dispatcher
+        PASS [   0.049s] (83/96) census-service spawn::dedicated::tests::thread_start_failure_restores_lane_and_creates_no_accepted_unowned_work
+        PASS [   0.069s] (84/96) census-service spawn::dedicated::tests::dedicated_domain_error_and_panic_have_distinct_region_accounting
+        PASS [   0.089s] (85/96) census-service restate_services::work_admission::tests::cancelled_results_caller_keeps_original_owner_fenced_until_worker_drains
+        PASS [   0.077s] (86/96) census-service spawn::dedicated::tests::published_result_does_not_release_region_owned_thread_before_actual_exit
+        PASS [   0.092s] (87/96) census-service spawn::dedicated::tests::mixed_async_and_dedicated_deadline_is_counted_once_across_drain_reentry
+        PASS [   0.189s] (88/96) census-service restate_services::jurisdiction::results_work::replay_tests::replayed_capture_results_failure_preserves_error_and_releases_original_owner_admission
+        PASS [   1.143s] (89/96) census-crawl net::acquisition::tests::lock_order::archive_lock_order_current_v1_recovery_publishes_under_one_archive_guard
+        PASS [   0.754s] (90/96) census-crawl net::acquisition::tests::recovery::armed_interruption_records_no_local_execute_and_never_reuses_the_arm
+        PASS [   1.247s] (91/96) census-crawl net::acquisition::tests::actual_retryable_responses_keep_one_original_slot_and_three_attempt_limit
+        PASS [   0.762s] (92/96) census-crawl net::acquisition::tests::recovery::injected_prearm_timeout_reopens_reserved_without_consuming_attempt
+        PASS [   1.252s] (93/96) census-crawl net::acquisition::tests::failures::actual_truncated_bodies_reopen_with_observed_failures_and_three_attempt_limit
+        PASS [   0.315s] (94/96) census-service restate_services::jurisdiction::results_work::replay_tests::capture_results_stage_finalizes_offline_attempt_with_only_stage_permit_then_replays
+        PASS [   0.318s] (95/96) census-service restate_services::jurisdiction::results_work::replay_tests::replayed_capture_results_run_releases_unused_original_owner_admission
+        PASS [   0.768s] (96/96) census-crawl net::cache::archive_tests::captured_smoke::captured_nc_directory_and_summary_fixtures_survive_synthetic_cache_refresh
+────────────
+     Summary [   1.543s] 96 tests run: 96 passed, 3200 skipped
+▮▮▮▮ pipeline:tests-scoped (6m 26s 925ms, b169f8fe)
+
+Tasks: 1 completed
+ Time: 6m 27s 574ms
+
