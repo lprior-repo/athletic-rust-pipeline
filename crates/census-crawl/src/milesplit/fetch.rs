@@ -133,7 +133,19 @@ pub async fn fetch_owned_meet(
     let capture = fetch_owned_capture(fetcher, reference, options).await?;
     let meet_id = owned_meet_id(reference)?;
     let verdict = if capture.status == 200 {
-        super::owned::parse_owned_meet(&capture.body, meet_id)
+        match super::owned::parse_owned_meet(&capture.body, meet_id) {
+            Ok(page) => super::owned::OwnedMeetVerdict::Parsed(page),
+            Err(super::owned::OwnedMeetParseError::Malformed(failure)) => {
+                super::owned::OwnedMeetVerdict::Malformed {
+                    detail: failure.to_string(),
+                }
+            }
+            Err(super::owned::OwnedMeetParseError::Resource(failure)) => {
+                return Err(
+                    super::owned::retained_parse_resource(fetcher, capture, failure)?.into(),
+                );
+            }
+        }
     } else {
         super::owned::OwnedMeetVerdict::Refused {
             status: capture.status,

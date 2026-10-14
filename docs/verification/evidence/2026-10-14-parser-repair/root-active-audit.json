@@ -1,0 +1,159 @@
+{
+  "checked_source_files": 46,
+  "source_hashes_all_match": true,
+  "source_scope_exact": true,
+  "unexpected_source_paths": [],
+  "removed_named_tests_not_found_elsewhere_in_slice": [],
+  "old_named_tests": 73,
+  "new_named_tests": 97,
+  "forbidden_pattern_matches_requiring_classification": [
+    {
+      "path": "crates/census-crawl/src/milesplit/map/owned/tests/cohorts.rs",
+      "line": 128,
+      "text": "assert_eq!(athlete.published_graduations, Vec::new());"
+    },
+    {
+      "path": "crates/census-crawl/src/milesplit/map/owned/tests/cohorts.rs",
+      "line": 129,
+      "text": "assert_eq!(athlete.observed_grades, Vec::new());"
+    },
+    {
+      "path": "crates/census-crawl/src/milesplit/map/owned/tests/cohorts.rs",
+      "line": 130,
+      "text": "assert_eq!(athlete.derived_cohort_confidence(), None);"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 49,
+      "text": "panic!(\"boom\");"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 670,
+      "text": "assert_eq!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 690,
+      "text": "assert_eq!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 695,
+      "text": "assert_eq!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 699,
+      "text": "assert_eq!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 704,
+      "text": "assert!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 709,
+      "text": "assert!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 714,
+      "text": "assert_eq!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 719,
+      "text": "assert!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 730,
+      "text": "assert_eq!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 741,
+      "text": "assert!(FetchError::Timeout {"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 747,
+      "text": "assert!(FetchError::RateLimited {"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 753,
+      "text": "assert!(FetchError::Http {"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 759,
+      "text": "assert!(FetchError::Http {"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 765,
+      "text": "assert!(FetchError::BrowserLane {"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 776,
+      "text": "assert!(matches!(timeout, JobError::Transient { .. }));"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 782,
+      "text": "assert!(matches!(rate_limited, JobError::Transient { .. }));"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 788,
+      "text": "assert!(matches!(http_500, JobError::Transient { .. }));"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 794,
+      "text": "assert!(matches!(http_429, JobError::Transient { .. }));"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 801,
+      "text": "assert!(matches!(browser_retryable, JobError::Transient { .. }));"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 944,
+      "text": "assert!(matches!(error, JobError::Transient { .. }));"
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 1192,
+      "text": "assert!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 1200,
+      "text": "assert!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 1216,
+      "text": "assert!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 1225,
+      "text": "assert!("
+    },
+    {
+      "path": "crates/census-service/src/restate_services/tests.rs",
+      "line": 1234,
+      "text": "assert!("
+    }
+  ],
+  "scope": "changed source only; lexical scan is not complete panic proof",
+  "executor": "root active command",
+  "head": "87df6a681f19b6e2c2995ac44010a9617f687f73"
+}

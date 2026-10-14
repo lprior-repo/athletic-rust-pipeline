@@ -4,9 +4,7 @@ use super::*;
 fn foreign_owned_meet_or_result_set_indices_are_refused_before_any_projection_mutation(
 ) -> TestResult {
     let body = serde_json::to_vec(&document()?)?;
-    let OwnedMeetVerdict::Parsed(page) = parse_owned_meet(&body, 725218) else {
-        return Err("source fixture".into());
-    };
+    let page = parse_owned_meet(&body, 725218)?;
     let reference =
         ResultSetRef::parse("https://al.milesplit.com/meets/725218/results/1266814/raw")
             .ok_or("Troy reference")?;

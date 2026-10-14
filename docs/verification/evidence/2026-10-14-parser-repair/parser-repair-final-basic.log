@@ -1,0 +1,32 @@
+[ WARN 00:52:17.772] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:lint-src (36307292)
+pipeline:lint-src |     Checking census-domain v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-domain)
+pipeline:lint-src |     Checking census-store v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-store)
+pipeline:lint-src |     Checking census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+pipeline:lint-src |     Checking census-review v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-review)
+▮▮▮▮ pipeline:lint-src (running for 30s)
+pipeline:lint-src |     Checking census-report v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-report)
+pipeline:lint-src |     Checking census-reconcile v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-reconcile)
+pipeline:lint-src |     Checking census-service v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-service)
+pipeline:lint-src |     Checking xtask v0.1.0 (/workspace/shared/athletic-rebuild-20261013/xtask)
+▮▮▮▮ pipeline:lint-src (running for 60s)
+pipeline:lint-src |     Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 05s
+▮▮▮▮ pipeline:lint-src (1m 5s 693ms, 36307292)
+▮▮▮▮ pipeline:check (8998513d)
+   pipeline:check |     Checking census-domain v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-domain)
+   pipeline:check |     Checking census-store v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-store)
+   pipeline:check |     Checking census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+   pipeline:check |     Checking census-review v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-review)
+   pipeline:check |     Checking census-report v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-report)
+   pipeline:check |     Checking census-reconcile v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-reconcile)
+   pipeline:check |     Checking census-service v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-service)
+▮▮▮▮ pipeline:check (running for 30s)
+   pipeline:check |     Checking xtask v0.1.0 (/workspace/shared/athletic-rebuild-20261013/xtask)
+   pipeline:check |     Finished `dev` profile [unoptimized + debuginfo] target(s) in 55.86s
+▮▮▮▮ pipeline:check (56s 291ms, 8998513d)
+▮▮▮▮ pipeline:fmt (4594b1e9)
+▮▮▮▮ pipeline:fmt (8s 187ms, 4594b1e9)
+
+Tasks: 3 completed
+ Time: 2m 10s 590ms
+

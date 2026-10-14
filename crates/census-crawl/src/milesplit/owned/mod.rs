@@ -5,13 +5,18 @@ use serde::{Deserialize, Serialize};
 mod context;
 mod effect;
 mod parse;
+mod resource_error;
 mod retained;
 mod row;
 #[cfg(test)]
 mod tests;
 
-pub(crate) use effect::{acquisition_manifest_key, read_owned_meet};
-pub use parse::parse_owned_meet;
+pub(crate) use effect::{acquisition_manifest_key, read_owned_meet, retained_parse_resource};
+pub use parse::{
+    parse_owned_meet, OwnedCaptureResourceFailure, OwnedCaptureRetention, OwnedDocumentFailure,
+    OwnedMeetParseError, OwnedParseArithmetic, OwnedParseLocator, OwnedParseResource,
+    OwnedParseResourceFailure, OwnedResourceReceipt,
+};
 pub use retained::{
     read_retained_acquisition, CaptureReadBudget, CaptureWitnessError, OwnedAcquisitionRef,
     VerifiedOwnedAcquisition,

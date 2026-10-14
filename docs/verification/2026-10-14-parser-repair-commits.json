@@ -1,0 +1,409 @@
+{
+  "schema": "parser-repair-commit-coverage/v1",
+  "base_commit": "c0607be06a4e35c07e7c9d6f8751ac7bee6b5d4b",
+  "implementation_commits": [
+    {
+      "commit": "87df6a681f19b6e2c2995ac44010a9617f687f73",
+      "tree": "d52cc401c92c52c98850c248880ad679a0d3b71b",
+      "files": [
+        {
+          "path": "crates/census-crawl/src/net/client.rs",
+          "git_blob": "89becfc4512f979c26c95c6867f55bd6babd60f3",
+          "sha256": "f3e82a2428cba0692aa9eff7c0a3db8bd9dfb7f784544acaf1000f3da8028f02"
+        },
+        {
+          "path": "crates/census-crawl/src/net/client_retry_tests.rs",
+          "git_blob": "585fce8de30cb83023bd5c0f4b94d63e85a7f3db",
+          "sha256": "3a40f12314f2606a3e56b1c42938ec8f6cf9ff1ecf305035c1ebcdaa9d8ff2fb"
+        },
+        {
+          "path": "docs/verification/2026-10-14-transport-retry.md",
+          "git_blob": "f8f15a58f6c7abb4a307a076c980d3a1e4d24857",
+          "sha256": "847bf535ae1641ab7d2b8dc9b743d9f0b9c9885da81b5565d5a3a8fc8f6034a7"
+        }
+      ]
+    },
+    {
+      "commit": "16c2bc99f399b56f8a5cde99540ee31474950187",
+      "tree": "49f4c63ae3fe1726f338263485fdb431ce70b2be",
+      "files": [
+        {
+          "path": "crates/census-crawl/examples/qualification_bound_projection/input.rs",
+          "git_blob": "95a4eae737a9e7359cd10d14200caa620aa9a5af",
+          "sha256": "9ede286f8b7b955feb93f18e70d6b2c6badb02e26759e2aef5f6bfeb7df78e78"
+        },
+        {
+          "path": "crates/census-crawl/examples/qualification_owned.rs",
+          "git_blob": "222877a9ab3d7bd9ede3dd7540238148a29041f0",
+          "sha256": "7306a92f6cd44c03dbcfd6aa3e08adcc275a21f82e2709e92629ee139fbaefc5"
+        },
+        {
+          "path": "crates/census-crawl/examples/qualification_owned_projection/input.rs",
+          "git_blob": "c404030a5d9eb8a06063fc0cf53afbe1f141ad39",
+          "sha256": "ee7070f0abdda2c0339e92cafb90fce9632c6ea0e2d197f91ad275359bf20a7c"
+        },
+        {
+          "path": "crates/census-crawl/src/coach_directories/probe_utils.rs",
+          "git_blob": "3b02dc9ab875e98083e195bc0380bb4202e8ce50",
+          "sha256": "a237fb7837c31dfa318dd6802ad6c1ab5774630233aae4f5598c86c71f348929"
+        },
+        {
+          "path": "crates/census-crawl/src/coach_directories/research_failure.rs",
+          "git_blob": "ee0f00247dbd8d6c6b02bb26467a735054388306",
+          "sha256": "1aa3fa4a2edf5133bb7793f00390ec76f03080bbd72b6b0f62e0f47978ff90cf"
+        },
+        {
+          "path": "crates/census-crawl/src/geocode/transport.rs",
+          "git_blob": "6e34900df7b04ce238c50b5c28799b73a3022857",
+          "sha256": "16cef8f48382afc846302f94cce37ff277022215777c3e5c55b2092139a59356"
+        },
+        {
+          "path": "crates/census-crawl/src/geocode/transport_retry_tests.rs",
+          "git_blob": "d04d7401a83d9359095d83362e7dacdb03c46853",
+          "sha256": "c61d6e0701f3f1778e3261f6daff7ca321f48386d723a6936e478b3dc51c9d23"
+        },
+        {
+          "path": "crates/census-crawl/src/http_retry_fixture.rs",
+          "git_blob": "47c75a7ed8021a254ee0578d5bf9559eeafd5b9b",
+          "sha256": "690a3df19449dc17a914a4f8fd7aea82dd3ebf7bd01e541f516756860105d21a"
+        },
+        {
+          "path": "crates/census-crawl/src/lib.rs",
+          "git_blob": "b9ce50ad24fee7b86d78792fd3ada446aa5fca9c",
+          "sha256": "34c81957bc93397e3df6547fbfbfec8b734481510320881f0cc84b0918631da2"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit.rs",
+          "git_blob": "2fef9f1afda00b5181c3fe8cc3332c80ac6b2701",
+          "sha256": "7c065ed73675b027a01d3eb9656fe5d33f975ca768f7ff422b294d26e586e7ea"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/fetch.rs",
+          "git_blob": "dc9b20b17eaf9b14e302b0fbd2f5dafdd8f52bb7",
+          "sha256": "0f9e0b8e30b4a4d91515c9da21204fb45322bcb0ef2cd99fa6371445b8f62683"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/map/owned/tests.rs",
+          "git_blob": "42877aeafdc8073a0a4730a21440f659b655d2c2",
+          "sha256": "a082781f3e6a0a8d5556a758592983ee0d3ab72a2caaffdff61d1f84673736d0"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/map/owned/tests/binding.rs",
+          "git_blob": "e8fe4c3ed7f97d814733c17765c6b7f5149bb88a",
+          "sha256": "239b2226a842a8efae1ed8a4f39b15c715f40773157bff4be1be7b6c52d2223e"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/map/owned/tests/cohorts.rs",
+          "git_blob": "60bf21fe58367898d008ae1d9d47cb5bf85de118",
+          "sha256": "807db7839a7d9745f01e951a82f9f67744fe850f7a37e56bb6a1232a4f0441cb"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/map_rows_tests.rs",
+          "git_blob": "347aafa162e201c9bc606663b39194e649e3472e",
+          "sha256": "d0b943b4ba1e22cd65d73bb08bf59def4c1fd5218276a8d33191953fc301d171"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/admission.rs",
+          "git_blob": "49735fc5628cca431a8a9d543aaddeae14b9d1d5",
+          "sha256": "eb7b0132ee1d93db6698bfe40bac100e15b87984282fe7a16f454f5b00f58050"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/effect.rs",
+          "git_blob": "65d91a1661524298af5217ab3d89163ece49f61d",
+          "sha256": "d2bbe2cdf426886221f3527a6dbc9c092e0cdabe33bf54f949403512b5bb7768"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/effect/acquisition_partial_tests.rs",
+          "git_blob": "544cc0117ad5a9c1470836c7311111d06d12f769",
+          "sha256": "e7191ef5c84e93fb5b7803158c2dba6037f54a5d762edbcfd8c716068608174c"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/effect/tests.rs",
+          "git_blob": "a59b4bbb3685353172db25518f17664480e30a75",
+          "sha256": "9df4fd33e53c647b4faa312ef85c39b80026a6f1c398dca91d574fba28b4f02d"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/effect/tests/capture_outcomes.rs",
+          "git_blob": "831c119f90fc50f1f614054c110f6941444dfcf5",
+          "sha256": "c9947217ea4e37bcdb871333ee2eb59bb33330d89f3d3dc4b4b7a8ea195b48fb"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/effect/tests/parser_revisions.rs",
+          "git_blob": "ac35a4c166b5dbb461b6146d71fa214f97cb0f72",
+          "sha256": "cc9cf98823941d553f1ffa86f37148672617c5ebda01afdec47b908f98dc69a4"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/effect/tests/resource_errors.rs",
+          "git_blob": "385b68c71cb9f8cb2419f7d0c543a4e5050ab2a9",
+          "sha256": "0150d9bbcb5abd83cebfb95bc5eec07ee82fb3dd69ecaaf93c7f5467debee85b"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/mod.rs",
+          "git_blob": "231b0b9c1bd19ff0d1fec6026c68b5bfe81e0e34",
+          "sha256": "a777e3cd09578e72e86f4fa37b2204f4a9d906172f18313ead9663c4e801d5cb"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/parse.rs",
+          "git_blob": "f5c1f2fd5b6bdba9feb2edac31b343e739bef5ad",
+          "sha256": "cbb13e1d46944bf0d30326d75aefc2d94410888345ef1747faabe836ba3ec3a1"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/parse/admission_tests.rs",
+          "git_blob": "6a855886f431dc2d3d2324fa20ef4597b6575d53",
+          "sha256": "8d53503d641fc9e04da3c386a7e10f4e4238cf2d2d2b44c3bcd9345aefd24d95"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/parse/error.rs",
+          "git_blob": "533288345b310f55aafc6b59bf4961c919502679",
+          "sha256": "d891ed83a0d7f3fd037a3ce1a96b318f03396075960cc9d0c543accf64deabe9"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/parse/recording.rs",
+          "git_blob": "04d082a72a36a7412543d04f9a61206f9dac1481",
+          "sha256": "68be841dc3c0d7a81190e83fb5c5773992228b65aa1cbf2d705dc23a09c5c192"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/resource_error.rs",
+          "git_blob": "6f737bfefccd736542c7bd08cb12691f8529fd63",
+          "sha256": "0fb367ee15ee2c3f38ab9d5cd7ee4adc59f5f06e16206bdfadb90d30f57f2f1f"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/tests.rs",
+          "git_blob": "ae231127973d97c264b2f5e18404c94ec8dbf25c",
+          "sha256": "cd251aefb6a6c19b2878425751c36b1ad561d048de67ad602cfb3b5efc931087"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/tests/physical_bounds.rs",
+          "git_blob": "e8907d063a9bb53400db0d96ab50218d76fe930c",
+          "sha256": "73253289b18fc908365b572d740611da8b7f78fe1b1db6adde65a1e2860b219e"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/owned/tests/resource_errors.rs",
+          "git_blob": "f6584b72d74b4f94d684edeffe9581a6fa88a784",
+          "sha256": "54df38d9472b100ff9265cda569db709b250d25ad38ca0accaf0c5a9089f96ca"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/results/run.rs",
+          "git_blob": "fc54bcafe07b61fdf690c9c83760bbe437bf2fbe",
+          "sha256": "eeeaf474af22dd32184256a781c61a9cb573ded9b1b38ebd93e7a65fa985925b"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/results/run/owned_tests/resource_recovery.rs",
+          "git_blob": "1dc6f5e38a4721b0eaf2656d4115a66a30fff1c3",
+          "sha256": "522f13ce25edf5722a2b735e55d179545a32b61e515e0b3f222006a5ebff09d6"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/results/run/owned_tests/resource_recovery/historical.rs",
+          "git_blob": "41052e83ab9119a285d516b5ed471fc36d2a0aeb",
+          "sha256": "f0ce701e33408d384d5cced4709868b060b4d68571a8ee5307c8713a486eabe0"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/results/run/owned_tests/resource_recovery/legacy_resource.rs",
+          "git_blob": "d88e5a272207331bc99abf317a3b4825c450050a",
+          "sha256": "2183bebc26ef7cfb05922c4c756be0a8ff4ddaf5fff68d1de672244363512dfe"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/results/run/owned_tests/resource_recovery/parse_admission.rs",
+          "git_blob": "3d2acc2e59c6ddeab4fbd90b4877ae7d161c5fa0",
+          "sha256": "f53b5478464c886fb13b13ead2e932ff1448dc61a2ca3141565e8f9e1e576ba8"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/results/run/owned_tests/resource_recovery/recording_pressure.rs",
+          "git_blob": "665491c4596f7b5759a055dd10cd1f0f42d94d0b",
+          "sha256": "4fc58daad51c559c25ec41246989d15e90e6eab5df4e7c3b0775bc3d17f78138"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/results/run/owned_tests/resource_recovery/relocation.rs",
+          "git_blob": "cea7c9413257a7d26f3147f7fb191cc031b09d8c",
+          "sha256": "96de735dcb01c19d0b4b52413f2931b0cce61a57b7f6d3543f4df7007fd03243"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/results/run/owned_tests/resource_recovery/stable_origins.rs",
+          "git_blob": "fe801d54e2fa5cc6810170565e1dcf77095af89f",
+          "sha256": "9ade252ceb4c30dc43ad090b29d9a118d849b5b5ca213d94e8e036568d7d6cf0"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/results/run/receipt/tests.rs",
+          "git_blob": "ad98759edb95af676e67c32d9d82eeb3653ba984",
+          "sha256": "5930d931b1141a33ee03c6d4b0d2b9ff8753a269d36f2e65ed4abe982061af19"
+        },
+        {
+          "path": "crates/census-crawl/src/milesplit/results/run/resource.rs",
+          "git_blob": "a8cebbf5cc29cd943b71e0d897b619e4523258af",
+          "sha256": "f9857f862d66107eda7a24c342f3425a024b0a1961ada0e780fa7a2472f8bba0"
+        },
+        {
+          "path": "crates/census-crawl/src/net/client_retry_tests.rs",
+          "git_blob": "f0e9cc365b89d1b9b4cf65f36dd7af0dced86d1f",
+          "sha256": "a5b1c38b2a2b697d640d4ae9ba5fc44faa3e20abdb0e17c0e86a40b78ff443e1"
+        },
+        {
+          "path": "crates/census-service/src/restate_services/jobs.rs",
+          "git_blob": "76ff91bf805ee03cb60297bcebadf564f02998f1",
+          "sha256": "ea9742ca6357e1931ee513ce70315339b4d4b451b430dae7915d511f3a740d1d"
+        },
+        {
+          "path": "crates/census-service/src/restate_services/tests.rs",
+          "git_blob": "a8a95eca55cb7d422e1435dd2024ba3c3517692b",
+          "sha256": "cb72b973dfe739ec2c888e4638428bfa4114cef05cea1179340dfdf1679be8ab"
+        },
+        {
+          "path": "crates/census-service/src/restate_services/tests/owned_resource_errors.rs",
+          "git_blob": "dbe7f6c55a8d12c3949d22fea72ec36dfe817da4",
+          "sha256": "2e6d2bb1cf211e86284ce4f599b7ee4f5231fa0ac893317ba00f1d112af105ce"
+        },
+        {
+          "path": "crates/census-service/tests/parity_pipeline_mod/milesplit_fixtures.rs",
+          "git_blob": "6bc77b719ef5b1d6d1053693211663ec8a7599b3",
+          "sha256": "46adb7325e915f8d20cc03b668c35f6f890174b6e70b3a319f6e385e52b34555"
+        },
+        {
+          "path": "docs/verification/2026-10-14-parser-repair-files.json",
+          "git_blob": "61abfad5b868f28dab0a0ba17ab3e2c35aa7c7a8",
+          "sha256": "9c1bf32af6792c749b047718a094c0f8d8547290df04729e2f3a5ad0c8a60c00"
+        },
+        {
+          "path": "docs/verification/2026-10-14-parser-repair.md",
+          "git_blob": "dfb58215789f6b5023b969d1ca8dc1e38bfd8f5a",
+          "sha256": "24fa999e8d135a4a3cc0218a3fbcaa5b3475806372ab29c664f81161e2792878"
+        },
+        {
+          "path": "docs/verification/2026-10-14-transport-retry.md",
+          "git_blob": "db24b013f138e16fb13188dc26388ebae139ce29",
+          "sha256": "2c91b1bb4e9004fa74080238be52a1a302265369f15c7d5814c1fa145a35ef91"
+        },
+        {
+          "path": "docs/verification/2026-10-14-typed-owned-parser-resources.md",
+          "git_blob": "407528bce52bacafd90f6276468ae349f8cd1715",
+          "sha256": "8e951281f9e94092d07e42122e0b01e34e1046e1584bb3eee8cc4cf8960de413"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/geocode-retry-green.log",
+          "git_blob": "b1df2069d7b346e7bc3b00cb0096782a56e9dbff",
+          "sha256": "0e6176102cf02317c4d1f759d35006656dfa0ab68aaf89239e77ced34d8cd5db"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/geocode-retry-red.log",
+          "git_blob": "9cc8c5e49fdacef37d428382a22881d9650e8395",
+          "sha256": "223eb68713ce4eed838e170c229ec14ff014d11f948917625f8a0c5370c74ac7"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/parser-geocode-basic.log",
+          "git_blob": "01174bcc03b12aac483946e96acb6b84d210ebe4",
+          "sha256": "d9dfb870b2d359f80584f067e97b2b1bc09e3439b533ed541e6771517234233d"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/parser-geocode-format-write.log",
+          "git_blob": "1ee8f35b2096dbf910319fd4d1a8d4eb036f6c29",
+          "sha256": "de88160ff6ccbdabe3c3f27334586670afde37a4b2c1efda6a598f79dba5c6a6"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/parser-repair-final-basic.log",
+          "git_blob": "50d9e5ac59102b7ff4cd5462f44aaa86f54769ea",
+          "sha256": "2645ed0ab653df10568d3c92461ae3e5083678abda34bb9960020a21a8c1aa62"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/parser-repair-final-parity.log",
+          "git_blob": "e11a59185df6fd5e89bc415de35b35093e863e33",
+          "sha256": "85300a8c99e3322f1a60c648c614723b0329189d1587b21c99816c4c3c9d49e9"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/resource-relocation-format.log",
+          "git_blob": "12b2ed352a1310b6b29ac69b8fb99d89441358e7",
+          "sha256": "50cd0d1ffd0abe13f9feba467c707e20fc45e7b8e06999c5bfd97bbefb5c12b9"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/resource-relocation-green-repeat.log",
+          "git_blob": "ee4d94d1ef57193eef523a2633696bc9781ed81b",
+          "sha256": "4c7fadc34895bdd258c0b18a24b2345cf6294951061121fb3b550b6987735d09"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/resource-relocation-green-serial.log",
+          "git_blob": "9a73cda2c984d1a401c57b003ffe1ff502b33869",
+          "sha256": "683cd55b5fe8c932dd9d1ecceb9940e9f0b8455c5b11ecc3c0eeab27b7ea22c9"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/resource-relocation-green.log",
+          "git_blob": "b30f2f2a5d3c76a173a8d2e95d45489df597facd",
+          "sha256": "016d3abb1e52ac6b41bcf49545d982eea3c9418184b18e99b04e0e82ff7b369c"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/resource-relocation-red.log",
+          "git_blob": "0206c6ae2bf2487d8bcbff93e67e25b2cfa3cfbe",
+          "sha256": "94c410b8ae72598e7407a6b51e9196042f552d78831f00f068ecca9e7335755f"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/resource-relocation-replay-isolated-matched.log",
+          "git_blob": "e6d9e1bcdf4e08622f2eed0ebba01b69d0357cfc",
+          "sha256": "3b20d97600c30c4e9a87f37b2e36bcf6bcdbc5b12b92ac61f852edcded965447"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/resource-relocation-replay-isolated.log",
+          "git_blob": "69c4c9d675aa6656a8d23aab33ee101a3523e0af",
+          "sha256": "bef990d818f824eef33678829716137ed11ac67911776947d5784f033a81f6bb"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/root-active-audit.json",
+          "git_blob": "6ea09a8e5d84cca91e4fa057ca10bb9aa64bcc8f",
+          "sha256": "408140a3c720146c04968a9638720cc8d4577275dd2cf10278dcdaa441168e9d"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/transport-retry-admission.log",
+          "git_blob": "3b3a91e953af8a4782640ccd6461d6c10912ee55",
+          "sha256": "f34ac6e4c8849e09903525c97352abd6d886c3c844dc0378f62d582386b3d63b"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/transport-retry-basic.log",
+          "git_blob": "b401ef515e37f49df09ab446b078feeefb8bad2f",
+          "sha256": "a1c0d9d6e68c22a26b62fde42d5b4555af65a0dde52903caf6fece45ee0cb686"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/transport-retry-fmt-write.log",
+          "git_blob": "0613663c1080362e5b6399a7e14fd8907efb95cc",
+          "sha256": "4c7f74d7a18e8444b181d0c30c6527ad1bc1e4f93118013a361ba4ba88042829"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/transport-retry-format-final.log",
+          "git_blob": "3d202db3cb91a2a64a9f8198b865b9546b89c9ed",
+          "sha256": "0fefab0ce765c06f706278f9bacf90f4e64839367d70c711324e55cfbc75277d"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/transport-retry-format-repaired.log",
+          "git_blob": "c8919d4b029691dec5fb95125f5950be83ffa168",
+          "sha256": "c19cc2f24fd174a1078cac64133b3032e6f678d6c8a6ced28f2db326c80f3b05"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/transport-retry-green.log",
+          "git_blob": "ba5cd1bee730cc4661c162933ac9563db83b1dc8",
+          "sha256": "7c5fb19e023c044d8a2d19d2c10c45b8c94f6e98db77f0ce4265585f5d58d7c5"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/transport-retry-red.log",
+          "git_blob": "d412372fee37c01841b429a133830d6ac998452c",
+          "sha256": "69028c73e653b5ba54df4086d6b887971363beb5ede7e7bc447b7ae73875a7f6"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/typed-parser-check.log",
+          "git_blob": "7346e150f9b490a8b9d716218cb89466c2f8d381",
+          "sha256": "c8f45672cb2e30a30365832d84dc1e7346e9d7de60ef5010472dbf635fc10f43"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/typed-parser-focused.log",
+          "git_blob": "5fe039b08feb5627dcf529fa7b977db0d204934a",
+          "sha256": "9756f7c20dc8bb335680f585d2511a81cbeb98bb9fb5e8db8692265707596521"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/typed-parser-format-write.log",
+          "git_blob": "9eb24647666b3dee084fbf3693cc16f58b461f0b",
+          "sha256": "1b382adde5ff56a6ac5cf0cd037ce197b64b9ebb7fc77fabd0866e3ed758d7a4"
+        },
+        {
+          "path": "docs/verification/evidence/2026-10-14-parser-repair/typed-parser-parity.log",
+          "git_blob": "35acc50d6bd4936eb2f5ffaf5e12b5b0aafe4736",
+          "sha256": "f6ed4d98c2cb3bd16bceebcaf545d0d87bb2ba8ee1da9a2b35b76d0af475d871"
+        }
+      ]
+    }
+  ],
+  "note": "This later metadata record documents immutable implementation commits. Raw logs retain original renderer whitespace; unrestricted git diff --check flags that evidence-only whitespace. Code and prose whitespace checks pass. No configured build/test/lint gate was disabled."
+}

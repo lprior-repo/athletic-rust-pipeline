@@ -33,14 +33,17 @@ pub struct HttpTransport {
 
 impl HttpTransport {
     pub fn new() -> Result<Self, TransportFailure> {
-        let client = reqwest::Client::builder()
-            .user_agent(USER_AGENT)
-            .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
-            .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
-            .build()
-            .map_err(sanitize)?;
+        let client = client_builder().build().map_err(sanitize)?;
         Ok(Self { client })
     }
+}
+
+fn client_builder() -> reqwest::ClientBuilder {
+    reqwest::Client::builder()
+        .user_agent(USER_AGENT)
+        .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+        .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
+        .retry(reqwest::retry::never())
 }
 
 fn sanitize(error: reqwest::Error) -> TransportFailure {
@@ -73,3 +76,7 @@ impl Transport for HttpTransport {
         body_text(response).await
     }
 }
+
+#[cfg(test)]
+#[path = "transport_retry_tests.rs"]
+mod retry_tests;

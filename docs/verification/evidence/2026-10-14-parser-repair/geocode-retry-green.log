@@ -1,0 +1,37 @@
+[ WARN 00:24:33.683] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:tests-scoped (afaa0e41)
+   Compiling census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+▮▮▮▮ pipeline:tests-scoped (running for 30s)
+▮▮▮▮ pipeline:tests-scoped (running for 60s)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 11s
+────────────
+ Nextest run ID 748d26b2-af0d-4fbf-9f84-9d269af560ef with nextest profile: default
+    Starting 21 tests across 1 binary (1314 tests skipped)
+        PASS [   0.013s] ( 1/21) census-crawl geocode::tests::documented_google_statuses_map_to_distinct_outcomes
+        PASS [   0.017s] ( 2/21) census-crawl geocode::tests::documented_usps_address_body_yields_typed_fields
+        PASS [   0.018s] ( 3/21) census-crawl geocode::tests::unrecognized_google_status_is_reported_not_fabricated
+        PASS [   0.022s] ( 4/21) census-crawl geocode::tests::google_request_carries_the_composed_address_and_the_key
+        PASS [   0.021s] ( 5/21) census-crawl geocode::tests::usps_request_carries_the_bearer_token_and_the_address_query
+        PASS [   0.022s] ( 6/21) census-crawl geocode::tests::empty_usps_address_fields_are_unparsed_not_validated
+        PASS [   0.027s] ( 7/21) census-crawl geocode::tests::google_transport_failure_never_echoes_the_key
+        PASS [   0.027s] ( 8/21) census-crawl geocode::tests::documented_ok_status_yields_typed_coordinates
+        PASS [   0.020s] ( 9/21) census-crawl geocode::tests::ok_without_a_geometry_location_is_unusable
+        PASS [   0.027s] (10/21) census-crawl geocode::tests::documented_usps_error_body_yields_a_rejection
+        PASS [   0.027s] (11/21) census-crawl geocode::tests::secret_key_debug_is_redacted
+        PASS [   0.030s] (12/21) census-crawl geocode::tests::missing_credential_refusal_names_the_variable_once
+        PASS [   0.034s] (13/21) census-crawl geocode::tests::usps_transport_failure_never_echoes_the_token
+        PASS [   0.030s] (14/21) census-crawl geocode::tests::usps_body_without_address_or_error_is_unparsed
+        PASS [   0.058s] (15/21) census-crawl geocode::transport_tests::http_transport_sends_the_recorded_request_and_returns_the_body
+        PASS [   0.089s] (16/21) census-crawl geocode::transport_tests::a_vendor_error_status_becomes_a_failure_without_the_url_or_credential
+        PASS [   0.084s] (17/21) census-crawl net::client::retry_tests::reqwest_default_retries_refused_stream
+        PASS [   0.106s] (18/21) census-crawl geocode::transport_tests::a_refused_connection_reports_without_the_url_or_credential
+        PASS [   0.121s] (19/21) census-crawl geocode::transport::retry_tests::geocode_transport_does_not_retry_refused_stream
+        PASS [   0.101s] (20/21) census-crawl net::client::retry_tests::http_transport_does_not_retry_refused_stream
+        PASS [  10.093s] (21/21) census-crawl geocode::transport_tests::http_transport_times_out_against_a_listener_that_never_answers
+────────────
+     Summary [  10.115s] 21 tests run: 21 passed, 1314 skipped
+▮▮▮▮ pipeline:tests-scoped (1m 22s 558ms, afaa0e41)
+
+Tasks: 1 completed
+ Time: 1m 23s 642ms
+

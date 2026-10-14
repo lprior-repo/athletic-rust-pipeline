@@ -16,10 +16,7 @@ pub(super) const TEAM_RELAYS: &[u8] =
 mod relay_tests;
 
 fn page(body: &[u8]) -> TestResult<OwnedMeetPage> {
-    match parse_owned_meet(body, 725218) {
-        OwnedMeetVerdict::Parsed(page) => Ok(page),
-        other => Err(format!("expected parsed rows, got {other:?}").into()),
-    }
+    Ok(parse_owned_meet(body, 725218)?)
 }
 
 fn document() -> TestResult<Value> {
@@ -206,7 +203,7 @@ fn malformed_document_and_foreign_empty_envelope_are_not_parsed_success() -> Tes
     ] {
         check!(matches!(
             parse_owned_meet(body, 725218),
-            OwnedMeetVerdict::Malformed { .. }
+            Err(OwnedMeetParseError::Malformed(_))
         ));
     }
     let empty = page(b"{\"_meta\":{\"status_code\":200},\"data\":[]}")?;
@@ -240,3 +237,6 @@ fn an_owned_result_without_a_published_person_name_is_rejected_at_its_locator() 
     );
     Ok(())
 }
+
+mod physical_bounds;
+mod resource_errors;

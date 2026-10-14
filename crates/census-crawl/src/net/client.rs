@@ -23,7 +23,12 @@ pub(super) fn client_builder(
         .no_proxy()
         .dns_resolver(Arc::new(GuardedResolver(destination)))
         .redirect(reqwest::redirect::Policy::none())
+        .retry(reqwest::retry::never())
 }
+
+#[cfg(test)]
+#[path = "client_retry_tests.rs"]
+mod retry_tests;
 
 pub(super) struct HostState {
     pub(super) gate: Arc<Mutex<()>>,

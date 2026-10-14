@@ -21,10 +21,12 @@ pub use mark::{parse_published_metric_distance, parse_published_time};
 pub use normalize::roster_entities;
 pub use owned::{
     parse_owned_meet, read_retained_acquisition, CaptureReadBudget, CaptureWitnessError,
-    OwnedAcquisitionRef, OwnedCohort, OwnedCompleteness, OwnedMeetOutcome, OwnedMeetPage,
-    OwnedMeetVerdict, OwnedPerformance, OwnedRejection, OwnedRejectionKind,
-    VerifiedOwnedAcquisition, MAX_OWNED_BODY_BYTES, OWNED_CAPTURE_PHASE, OWNED_FIELDS,
-    OWNED_MEET_PHASE,
+    OwnedAcquisitionRef, OwnedCaptureResourceFailure, OwnedCaptureRetention, OwnedCohort,
+    OwnedCompleteness, OwnedDocumentFailure, OwnedMeetOutcome, OwnedMeetPage, OwnedMeetParseError,
+    OwnedMeetVerdict, OwnedParseArithmetic, OwnedParseLocator, OwnedParseResource,
+    OwnedParseResourceFailure, OwnedPerformance, OwnedRejection, OwnedRejectionKind,
+    OwnedResourceReceipt, VerifiedOwnedAcquisition, MAX_OWNED_BODY_BYTES, OWNED_CAPTURE_PHASE,
+    OWNED_FIELDS, OWNED_MEET_PHASE,
 };
 pub use parse::{
     has_next_page, parse_meet_index, parse_meet_result_files, parse_roster, parse_team_index,

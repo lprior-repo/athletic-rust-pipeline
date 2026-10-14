@@ -109,45 +109,9 @@ fn a_recording_limit_between_actual_projection_windows_preserves_prefix_and_resu
     })
 }
 
-#[test]
-fn decoded_json_growth_is_refused_before_rows_are_allocated_but_raw_capture_remains() -> TestResult
-{
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            let (_dir, store, fetcher, reference) = setup()?;
-            let mut source = document(725218, 1, 1)?;
-            source["providerExtension"] = json!(vec![0; 20_001]);
-            let body = serde_json::to_vec(&source)?;
-            seed_owned(&fetcher, &reference, &body)?;
-            seed_metadata(&fetcher, &reference)?;
-            let report = crate::milesplit::collect_result_sets(
-                &context(&store, &fetcher)?,
-                &options(&reference),
-            )
-            .await?;
-            check!(eq; report.rows, 0);
-            check!(report.errors > 0);
-            check!(eq; store.walk_table(Table::Performances)?.rows, 0);
-            let receipts = store.journal_payloads(crate::milesplit::OWNED_MEET_PHASE)?;
-            check!(receipts
-                .iter()
-                .any(|row| row["verdict"]["disposition"] == "malformed"
-                    && row["verdict"]["detail"]
-                        .as_str()
-                        .is_some_and(|detail| detail.contains("owned array values"))));
-            let captures = store.journal_payloads(crate::milesplit::OWNED_CAPTURE_PHASE)?;
-            check!(captures
-                .iter()
-                .any(|row| row["raw_base64"].as_str().is_some()));
-            check!(!store
-                .journal_payloads(crate::milesplit::RESULT_SET_PHASE)?
-                .iter()
-                .any(|row| row["disposition"] == "projection_applied"));
-            Ok(())
-        })
-}
+mod historical;
+mod parse_admission;
+mod recording_pressure;
 
 #[test]
 fn raw_metadata_allocation_refusal_archives_exact_capture_and_stops_further_intake() -> TestResult {
@@ -177,3 +141,38 @@ fn raw_metadata_allocation_refusal_archives_exact_capture_and_stops_further_inta
         Ok(())
     })
 }
+
+fn journal_snapshot(
+    store: &Store,
+    phase: &str,
+) -> TestResult<std::collections::BTreeMap<String, serde_json::Value>> {
+    store
+        .journal_keys(phase)?
+        .into_iter()
+        .map(|key| {
+            let payload = store
+                .journal_payload(phase, &key)?
+                .ok_or("retained journal payload")?;
+            Ok((key, payload))
+        })
+        .collect()
+}
+
+fn no_canonical_effects(store: &Store) -> TestResult {
+    for table in [
+        Table::Meets,
+        Table::Events,
+        Table::Teams,
+        Table::Athletes,
+        Table::Performances,
+        Table::SourceObservations,
+    ] {
+        check!(eq; store.walk_table(table)?.rows, 0, "{table:?}");
+    }
+    Ok(())
+}
+
+mod legacy_resource;
+mod stable_origins;
+
+mod relocation;

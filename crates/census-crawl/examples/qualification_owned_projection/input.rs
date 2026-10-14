@@ -1,7 +1,6 @@
 use super::{io, Result};
 use census_crawl::milesplit::{
-    parse_owned_meet, parse_raw, OwnedCompleteness, OwnedMeetVerdict, OwnedRejectionKind,
-    ResultSetRef, OWNED_FIELDS,
+    parse_owned_meet, parse_raw, OwnedCompleteness, OwnedRejectionKind, ResultSetRef, OWNED_FIELDS,
 };
 use census_domain::model::{CanonicalSchool, SourceNamespace, Sport};
 use census_domain::UsJurisdiction;
@@ -150,10 +149,7 @@ fn read_capture(
 }
 
 fn owned_facts(bytes: &[u8]) -> Result<Value> {
-    let verdict = parse_owned_meet(bytes, 725218);
-    let OwnedMeetVerdict::Parsed(page) = verdict else {
-        return Err(format!("complete original API capture not parsed: {verdict:?}").into());
-    };
+    let page = parse_owned_meet(bytes, 725218)?;
     let relays = page
         .rejected
         .iter()

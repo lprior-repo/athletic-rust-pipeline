@@ -1,0 +1,22 @@
+[ WARN 00:12:41.223] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:fmt (cf9118ca)
+      pipeline:fmt | Diff in /workspace/shared/athletic-rebuild-20261013/crates/census-crawl/src/net/client_retry_tests.rs:40:
+      pipeline:fmt |      })
+      pipeline:fmt |  }
+      pipeline:fmt |  
+      pipeline:fmt | -async fn refuse_frame(
+      pipeline:fmt | -    socket: &mut TcpStream,
+      pipeline:fmt | -    frame: Frame,
+      pipeline:fmt | -    requests: &mut Vec<u32>,
+      pipeline:fmt | -) -> TestResult {
+      pipeline:fmt | +async fn refuse_frame(socket: &mut TcpStream, frame: Frame, requests: &mut Vec<u32>) -> TestResult {
+      pipeline:fmt |      match frame.kind {
+      pipeline:fmt |          1 => {
+      pipeline:fmt |              check!(frame.stream > 0 && frame.stream % 2 == 1);
+▮▮▮▮ pipeline:fmt (6s 81ms, cf9118ca)
+▮▮▮▮ pipeline:fmt-write (90f862d1)
+Error: task_runner::run_failed
+
+  × Task pipeline:fmt failed to run.
+  ╰─▶ Process tools/moon-cargo failed: exit code 1
+

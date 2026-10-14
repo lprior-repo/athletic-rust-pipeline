@@ -1,0 +1,107 @@
+[ WARN 00:43:10.475] moon_remote::remote_service  Failed to connect to gRPC host. Disabling remote service! 
+▮▮▮▮ pipeline:tests-scoped (de6813f8)
+   Compiling census-crawl v0.1.0 (/workspace/shared/athletic-rebuild-20261013/crates/census-crawl)
+▮▮▮▮ pipeline:tests-scoped (running for 30s)
+▮▮▮▮ pipeline:tests-scoped (running for 60s)
+▮▮▮▮ pipeline:tests-scoped (running for 90s)
+▮▮▮▮ pipeline:tests-scoped (running for 120s)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 27s
+────────────
+ Nextest run ID 8f9ae9ff-d77a-42c1-bcb3-6f6b09e01277 with nextest profile: default
+    Starting 90 tests across 2 binaries (2027 tests skipped)
+        PASS [   0.163s] ( 1/90) census-crawl milesplit::owned::effect::acquisition_partial_tests::partial_persistence_retains_new_acquisition_without_restaging_identical_source_rows
+        PASS [   0.252s] ( 2/90) census-crawl milesplit::owned::effect::retained_tests::ownership::occurrence_cannot_redirect_to_another_shared_content_owner_or_prefix
+        PASS [   0.257s] ( 3/90) census-crawl milesplit::owned::effect::retained_tests::ownership::repeated_chunk_metadata_binds_immutable_content_but_keeps_actual_occurrence_time
+        PASS [   0.295s] ( 4/90) census-crawl milesplit::owned::effect::retained_tests::corruptions::retained_reader_refuses_tampering_and_reordering_even_when_lengths_match
+        PASS [   0.329s] ( 5/90) census-crawl milesplit::owned::effect::retained_tests::corruptions::oversized_source_chunk_uses_the_chunk_journal_envelope_grant
+        PASS [   0.386s] ( 6/90) census-crawl milesplit::owned::effect::retained_tests::corruptions::retained_reader_refuses_unsupported_codec_and_wrong_chunk_counts
+        PASS [   0.256s] ( 7/90) census-crawl milesplit::owned::effect::retained_tests::positives::captured_http_refusal_and_non_json_bytes_are_verified_without_parser_claims
+        PASS [   0.427s] ( 8/90) census-crawl milesplit::owned::effect::retained_tests::corruptions::retained_reader_refuses_unknown_or_missing_capture_metadata_without_fallback
+        PASS [   0.072s] ( 9/90) census-crawl milesplit::owned::effect::retained_tests::positives::retained_reader_uses_one_pinned_view_when_current_content_changes
+        PASS [   0.036s] (10/90) census-crawl milesplit::owned::effect::retained_tests::references::exact_acquisition_reference_rejects_other_phases_paths_and_invalid_ids
+        PASS [   0.210s] (11/90) census-crawl milesplit::owned::effect::retained_tests::positives::retained_reader_reopens_actual_troy_capture_without_changing_writer_bytes
+        PASS [   0.550s] (12/90) census-crawl milesplit::owned::effect::retained_tests::ownership::invalid_captured_sha_method_and_http_status_are_corrupt
+        PASS [   0.108s] (13/90) census-crawl milesplit::owned::effect::retained_tests::references::malicious_declared_body_size_refuses_without_allocating_that_body
+        PASS [   0.150s] (14/90) census-crawl milesplit::owned::effect::retained_tests::references::capture_read_budget_checks_nonzero_and_existing_ceiling
+        PASS [   0.122s] (15/90) census-crawl milesplit::owned::effect::retained_tests::references::retained_capture_body_limit_refuses_before_chunk_lookup_without_rewriting
+        PASS [   0.597s] (16/90) census-crawl milesplit::owned::effect::retained_tests::corruptions::retained_reader_refuses_wrong_chunk_indices_base64_and_decoded_lengths
+        PASS [   0.655s] (17/90) census-crawl milesplit::owned::effect::retained_tests::corruptions::retained_reader_checks_shared_manifest_shape_layout_and_metadata
+        PASS [   0.402s] (18/90) census-crawl milesplit::owned::effect::retained_tests::positives::identical_content_with_new_status_type_and_site_keeps_new_occurrence_metadata
+        PASS [   0.133s] (19/90) census-crawl milesplit::owned::effect::tests::capture_outcomes::a_recorded_cooldown_refuses_the_meet_without_closing_it
+        PASS [   0.137s] (20/90) census-crawl milesplit::owned::effect::tests::empty_success_is_capture_parse_success_with_unknown_population
+        PASS [   0.457s] (21/90) census-crawl milesplit::owned::effect::retained_tests::positives::later_occurrence_returns_actual_metadata_while_sharing_older_capture_metadata
+        PASS [   0.740s] (22/90) census-crawl milesplit::owned::effect::retained_tests::corruptions::retained_reader_reports_each_missing_occurrence_content_manifest_and_chunk
+        PASS [   0.246s] (23/90) census-crawl milesplit::owned::effect::retained_tests::references::retained_metadata_uses_a_bounded_journal_envelope_grant
+        PASS [   0.178s] (24/90) census-crawl milesplit::owned::effect::tests::malformed_partial_and_refused_captures_never_receive_parse_success_receipts
+        PASS [   0.797s] (25/90) census-crawl milesplit::owned::effect::acquisition_partial_tests::partial_persistence_network_metadata_to_cache_replay_is_an_exact_noop
+        PASS [   0.142s] (26/90) census-crawl milesplit::owned::effect::tests::replay::relay_interpretation_replays_beside_unchanged_v1_history_and_capture_archive
+        PASS [   0.795s] (27/90) census-crawl milesplit::owned::effect::retained_tests::ownership::acquisition_metadata_must_reproduce_requested_occurrence_key
+        PASS [   0.200s] (28/90) census-crawl milesplit::owned::effect::tests::parser_revisions::xc_interpretation_allocates_v4_and_preserves_v3_rows_and_v1_capture
+        PASS [   0.051s] (29/90) census-crawl milesplit::owned::parse::admission::tests::arithmetic_counter_refusals_keep_the_originating_resource_and_locator
+        PASS [   0.052s] (30/90) census-crawl milesplit::owned::parse::admission::tests::json_depth_admission_accepts_its_boundary_and_returns_the_exact_first_denied_byte
+        PASS [   0.053s] (31/90) census-crawl milesplit::owned::parse::admission::tests::decoded_byte_arithmetic_and_exact_limit_boundaries_are_checked
+        PASS [   0.858s] (32/90) census-crawl milesplit::owned::effect::retained_tests::ownership::shared_manifest_and_chunk_independently_refuse_foreign_response_ownership
+        PASS [   0.060s] (33/90) census-crawl milesplit::owned::parse::admission::tests::reservation_refusal_keeps_its_allocation_cause_without_allocating_rows
+        PASS [   0.030s] (34/90) census-crawl milesplit::owned::parse::admission::tests::work_admission_accepts_at_the_token_bound_and_reports_the_next_origin
+        PASS [   0.036s] (35/90) census-crawl milesplit::owned::tests::captured_provider_time_uses_the_existing_mark_conversion
+        PASS [   0.040s] (36/90) census-crawl milesplit::owned::tests::an_owned_result_without_a_published_person_name_is_rejected_at_its_locator
+        PASS [   0.220s] (37/90) census-crawl milesplit::owned::effect::tests::resource_errors::fetch_and_owned_reader_agree_on_resource_origin_and_preserve_the_acquired_body
+        PASS [   0.262s] (38/90) census-crawl milesplit::owned::effect::tests::replay::individual_owner_failure_remains_partial_without_attributing_relay_splits
+        PASS [   0.155s] (39/90) census-crawl milesplit::owned::effect::tests::uncaptured::uncaptured_transport_failure_is_explicit_and_does_not_seal_the_meet
+        PASS [   0.360s] (40/90) census-crawl milesplit::owned::effect::tests::capture_outcomes::recording_route_retains_all_capture_chunks_before_source_receipts_are_applied
+        PASS [   0.056s] (41/90) census-crawl milesplit::owned::tests::event_scores::ordinary_owned_fields_still_parse_metric_and_imperial_distances
+        PASS [   0.050s] (42/90) census-crawl milesplit::owned::tests::malformed_and_duplicate_rows_keep_their_capture_locators
+        PASS [   0.077s] (43/90) census-crawl milesplit::owned::tests::event_scores::qualified_owned_hurdles_preserve_kind_time_and_provider_json
+        PASS [   0.108s] (44/90) census-crawl milesplit::owned::tests::event_scores::combined_owned_totals_are_points_with_no_invented_timing_or_provider_changes
+        PASS [   0.062s] (45/90) census-crawl milesplit::owned::tests::foreign_meet_and_conflicting_profile_are_located_without_dropping_other_rows
+        PASS [   0.053s] (46/90) census-crawl milesplit::owned::tests::malformed_document_and_foreign_empty_envelope_are_not_parsed_success
+        PASS [   0.229s] (47/90) census-crawl milesplit::owned::effect::tests::uncaptured::uncaptured_access_refusal_is_not_a_transport_failure_or_fabricated_capture
+        PASS [   0.053s] (48/90) census-crawl milesplit::owned::tests::missing_or_invalid_cohort_does_not_manufacture_a_graduation_year
+        PASS [   0.021s] (49/90) census-crawl milesplit::owned::tests::relay_tests::accounted_relays_do_not_supply_a_missing_total_or_hide_accounting_mismatch
+        PASS [   0.284s] (50/90) census-crawl milesplit::owned::effect::tests::resource_errors::genuine_malformed_fetch_and_owned_read_keep_exact_historical_verdict_bytes
+        PASS [   0.028s] (51/90) census-crawl milesplit::owned::tests::relay_tests::captured_team_relays_are_accounted_without_individual_marks_or_total_claims
+        PASS [   0.033s] (52/90) census-crawl milesplit::owned::tests::provider_result_ids_own_distinct_adelyn_field_performances
+        PASS [   0.031s] (53/90) census-crawl milesplit::owned::tests::relay_tests::all_existing_relay_event_kinds_remain_team_results_for_published_time_or_no_mark
+        PASS [   0.142s] (54/90) census-crawl milesplit::owned::tests::event_scores::combined_owned_no_mark_outcomes_remain_raw
+        PASS [   0.030s] (55/90) census-crawl milesplit::owned::tests::relay_tests::missing_individual_owner_and_null_nonrelay_names_are_not_relay_dispositions
+        PASS [   0.023s] (56/90) census-crawl milesplit::owned::tests::resource_errors::envelope_diagnostic_budget_preserves_exact_bytes_below_and_at_the_bound
+        PASS [   0.152s] (57/90) census-crawl milesplit::owned::tests::event_scores::malformed_owned_scores_are_located_rejections_without_losing_other_results
+        PASS [   0.058s] (58/90) census-crawl milesplit::owned::tests::relay_tests::named_nonrelay_small_positive_owners_remain_individuals_with_unknown_cohort
+        PASS [   0.049s] (59/90) census-crawl milesplit::owned::tests::resource_errors::malformed_document_errors_keep_typed_original_locators_and_exact_legacy_bytes
+        PASS [   0.312s] (60/90) census-crawl milesplit::owned::effect::tests::successful_receipt_returns_current_owner_and_marks_for_downstream_replay
+        PASS [   0.060s] (61/90) census-crawl milesplit::owned::tests::relay_tests::relay_subject_does_not_depend_on_person_names_owner_tokens_or_profile_urls
+        PASS [   0.080s] (62/90) census-crawl milesplit::owned::tests::relay_tests::missing_relay_structural_fields_cannot_be_counted_as_team_results
+        PASS [   0.096s] (63/90) census-crawl milesplit::owned::tests::relay_tests::relay_context_errors_are_real_rejections_not_individuals_or_accounted_relays
+        PASS [   0.058s] (64/90) census-crawl milesplit::owned::tests::resource_errors::public_parser_depth_boundary_agrees_with_the_pinned_json_decoder
+        PASS [   0.084s] (65/90) census-crawl milesplit::owned::tests::resource_errors::large_envelope_diagnostics_refuse_resources_with_exact_encoded_need
+        PASS [   0.373s] (66/90) census-crawl milesplit::owned::effect::tests::resource_errors::resource_capture_network_metadata_to_cache_replay_preserves_every_original_payload
+        PASS [   0.041s] (67/90) census-crawl milesplit::owned::tests::result_status::unrecognized_status_leaves_owned_numeric_channel_unchanged
+        PASS [   0.032s] (68/90) census-crawl milesplit::owned::tests::status_precedence::cen17_owned_numeric_control_retains_precision_and_person_when_status_is_absent
+        PASS [   0.033s] (69/90) census-crawl milesplit::owned::tests::status_precedence::cen17_owned_invalid_published_status_overrides_stale_numeric_mark_without_losing_person
+        PASS [   0.058s] (70/90) census-crawl milesplit::owned::tests::result_status::raw_mark_status_tokens_keep_original_whitespace_without_explicit_status_channel
+        PASS [   0.083s] (71/90) census-crawl milesplit::owned::tests::result_status::every_status_token_overrides_numeric_channel_with_published_trimmed_spelling
+        PASS [   0.172s] (72/90) census-crawl milesplit::results::run::owned_tests::resource_recovery::raw_metadata_allocation_refusal_archives_exact_capture_and_stops_further_intake
+        PASS [   0.955s] (73/90) census-crawl milesplit::owned::effect::retained_tests::positives::retained_reader_roundtrips_actual_writer_empty_boundary_and_multichunk_bytes
+        PASS [   0.393s] (74/90) census-crawl milesplit::results::run::owned_tests::resource_recovery::historical::historical_resource_misclassified_as_malformed_never_suppresses_the_real_collector_stop
+        PASS [   0.458s] (75/90) census-crawl milesplit::owned::tests::resource_errors::structured_row_boundary_keeps_row_rejections_and_refuses_the_first_unadmitted_value
+        PASS [   0.232s] (76/90) census-crawl milesplit::results::run::owned_tests::resource_recovery::stable_origins::plain_generic_resource_keeps_its_exact_legacy_payload_and_root
+        PASS [   0.454s] (77/90) census-crawl milesplit::results::run::owned_tests::resource_recovery::legacy_resource::old_absolute_resource_receipts_survive_v2_collection_and_physical_relocation
+        PASS [   0.476s] (78/90) census-crawl milesplit::results::run::owned_tests::resource_recovery::historical::historical_large_malformed_envelope_bytes_survive_the_new_diagnostic_resource_bound
+        PASS [   0.469s] (79/90) census-crawl milesplit::results::run::owned_tests::resource_recovery::parse_admission::decoded_json_growth_is_refused_before_rows_are_allocated_but_raw_capture_remains
+        PASS [   1.574s] (80/90) census-crawl milesplit::owned::effect::retained_tests::ownership::exact_request_and_response_urls_refuse_foreign_meets_hosts_and_shapes
+        PASS [   0.104s] (81/90) census-service restate_services::tests::owned_resource_errors::typed_owned_parser_resource_failures_are_terminal_without_losing_their_origin
+▮▮▮▮ pipeline:tests-scoped (running for 150s)
+        PASS [   0.491s] (82/90) census-crawl milesplit::results::run::owned_tests::resource_recovery::stable_origins::typed_origin_roots_preserve_every_cause_and_ignore_all_retention_states
+        PASS [   0.734s] (83/90) census-crawl milesplit::results::run::owned_tests::resource_recovery::relocation::actual_collector_resource_replay_survives_physical_store_and_cache_relocation
+        PASS [   0.874s] (84/90) census-crawl milesplit::results::run::owned_tests::resource_recovery::oversized_source_row_is_rejected_before_projection_growth_and_later_rows_survive
+        PASS [   1.305s] (85/90) census-crawl milesplit::owned::tests::physical_bounds::public_parser_work_limit_preserves_the_first_original_byte_and_exact_budget
+        PASS [   2.629s] (86/90) census-crawl milesplit::owned::tests::resource_errors::oversized_body_and_decoded_growth_are_resource_errors_even_before_json_decoding
+        PASS [   3.419s] (87/90) census-crawl milesplit::results::run::owned_tests::resource_recovery::recording_pressure::acquired_recording_refusal_keeps_exact_resource_fields_and_report_only_body_locator
+        PASS [  15.342s] (88/90) census-crawl milesplit::results::run::owned_tests::resource_recovery::a_recording_limit_between_actual_projection_windows_preserves_prefix_and_resumes_once
+        PASS [  19.420s] (89/90) census-crawl milesplit::owned::tests::physical_bounds::body_byte_boundary_admits_capture_size_before_the_independent_decoded_budget_refuses
+▮▮▮▮ pipeline:tests-scoped (running for 180s)
+        SLOW [> 60.000s] (─────) census-crawl milesplit::owned::effect::retained_tests::positives::cache_replay_alone_keeps_original_occurrence_and_does_not_mint_a_reference
+▮▮▮▮ pipeline:tests-scoped (running for 210s)
+▮▮▮▮ pipeline:tests-scoped (running for 240s)
+        SLOW [>120.000s] (─────) census-crawl milesplit::owned::effect::retained_tests::positives::cache_replay_alone_keeps_original_occurrence_and_does_not_mint_a_reference
+▮▮▮▮ pipeline:tests-scoped (running for 270s)

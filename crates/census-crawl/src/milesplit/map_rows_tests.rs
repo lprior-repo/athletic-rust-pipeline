@@ -1,5 +1,5 @@
 use super::*;
-use crate::milesplit::owned::{parse_owned_meet, OwnedMeetVerdict};
+use crate::milesplit::owned::parse_owned_meet;
 use crate::milesplit::results::{Accumulator, Stats};
 use census_domain::model::{CentiMetres, SourceIdentity, SourceNamespace};
 
@@ -8,9 +8,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 #[test]
 fn same_identity_milesplit_rows_preserve_distinct_marks_and_source_observations() -> TestResult {
     let body = include_bytes!("owned/fixtures/troy_725218.json");
-    let OwnedMeetVerdict::Parsed(page) = parse_owned_meet(body, 725218) else {
-        return Err("parsed owned fixture".into());
-    };
+    let page = parse_owned_meet(body, 725218)?;
     let first = page.rows.first().ok_or("individual fixture row")?;
     let mut second = first.clone();
     second.mark = census_domain::model::Mark::DistanceMetres(CentiMetres::new(500));

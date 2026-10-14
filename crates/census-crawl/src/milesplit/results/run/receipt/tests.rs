@@ -1,5 +1,5 @@
 use super::*;
-use crate::milesplit::owned::{parse_owned_meet, OwnedMeetOutcome};
+use crate::milesplit::owned::{parse_owned_meet, OwnedMeetOutcome, OwnedMeetVerdict};
 use census_domain::model::{CanonicalSchool, SourceIdentity, SourceNamespace};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -33,7 +33,7 @@ fn receipt(
         ResultSetRef::parse("https://al.milesplit.com/meets/725218/results/1266814/raw")
             .ok_or("owned source unit")?;
     let acquired = AcquiredMeet::new(OwnedMeetOutcome {
-        verdict: parse_owned_meet(&owned.body, 725218),
+        verdict: OwnedMeetVerdict::Parsed(parse_owned_meet(&owned.body, 725218)?),
         capture: owned,
     })?;
     let page = super::super::metadata::parse_capture(metadata, &reference)?;
@@ -197,7 +197,7 @@ fn contradictory_observed_owned_response_refuses_projection_of_matching_body_row
         ResultSetRef::parse("https://al.milesplit.com/meets/725218/results/1266814/raw")
             .ok_or("Troy reference")?;
     let acquired = AcquiredMeet::new(OwnedMeetOutcome {
-        verdict: parse_owned_meet(&owned.body, 725218),
+        verdict: OwnedMeetVerdict::Parsed(parse_owned_meet(&owned.body, 725218)?),
         capture: owned,
     })?;
     let page = super::super::metadata::parse_capture(&metadata, &reference)?;

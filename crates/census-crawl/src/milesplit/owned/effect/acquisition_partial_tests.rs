@@ -42,7 +42,7 @@ fn partial_outcome(reference: &ResultSetRef) -> TestResult<OwnedMeetOutcome> {
     document["data"][0]["athleteId"] = serde_json::Value::Null;
     let body = serde_json::to_vec(&document)?;
     Ok(OwnedMeetOutcome {
-        verdict: parse_owned_meet(&body, 725218),
+        verdict: OwnedMeetVerdict::Parsed(parse_owned_meet(&body, 725218)?),
         capture: FetchOutcome {
             url: owned_meet_url(reference)?,
             response_url: None,

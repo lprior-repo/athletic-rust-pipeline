@@ -34,10 +34,7 @@ fn seed_history(
     reference: &ResultSetRef,
     capture: FetchOutcome,
 ) -> TestResult {
-    let mut page = match parse_owned_meet(&capture.body, 725218) {
-        OwnedMeetVerdict::Parsed(page) => page,
-        other => return Err(format!("XC owned fixture: {other:?}").into()),
-    };
+    let mut page = parse_owned_meet(&capture.body, 725218)?;
     check!(eq; page.rows.len(), 1);
     page.rows.first_mut().ok_or("owned row")?.event_kind = EventKind::Track5000m;
     let recording = crate::recording::Recording::new();

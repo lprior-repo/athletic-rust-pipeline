@@ -1,6 +1,6 @@
 use super::{io, Result};
 use census_crawl::milesplit::{
-    parse_owned_meet, parse_raw, OwnedMeetPage, OwnedMeetVerdict, ResultSetRef, OWNED_FIELDS,
+    parse_owned_meet, parse_raw, OwnedMeetPage, ResultSetRef, OWNED_FIELDS,
 };
 use census_domain::model::Sport;
 use census_domain::UsJurisdiction;
@@ -101,9 +101,7 @@ pub(super) fn load(args: &Arguments) -> Result<Inputs> {
         .collect::<Result<Vec<_>>>()?;
     let captures: [Capture; 4] = captures.try_into().map_err(|_| "four captures required")?;
     let [api, raw, index, roster] = &captures;
-    let OwnedMeetVerdict::Parsed(owned) = parse_owned_meet(&api.body, 725218) else {
-        return Err("authentic structured capture did not parse".into());
-    };
+    let owned = parse_owned_meet(&api.body, 725218)?;
     if owned.published_rows > io::MAX_ROWS || owned.rows.is_empty() {
         return Err("structured rows absent or exceed smoke bound".into());
     }

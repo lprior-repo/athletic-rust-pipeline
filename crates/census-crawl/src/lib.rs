@@ -5,6 +5,9 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
+#[cfg(test)]
+mod http_retry_fixture;
+
 pub const CONCURRENCY_BOUND: usize = 8;
 
 pub const FLUSH_UNITS: usize = 64;
@@ -55,6 +58,10 @@ pub enum CrawlError {
         requested: usize,
         limit: usize,
     },
+    #[error(transparent)]
+    OwnedParseResource(#[from] crate::milesplit::OwnedParseResourceFailure),
+    #[error(transparent)]
+    OwnedCaptureResource(#[from] crate::milesplit::OwnedCaptureResourceFailure),
     #[error("converter {command} exceeded its {deadline:?} deadline and was killed")]
     ConverterDeadline {
         command: String,
