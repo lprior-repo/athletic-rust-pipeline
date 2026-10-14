@@ -10,10 +10,28 @@ pub(super) fn fixture() -> TestResult<(
     CaptureWriterV1,
     ResultsCaptureOwnerV1,
 )> {
+    fixture_for(CaptureProtocolVersion::V1)
+}
+pub(super) fn fixture_for(
+    protocol: CaptureProtocolVersion,
+) -> TestResult<(
+    tempfile::TempDir,
+    Store,
+    CaptureWriterV1,
+    ResultsCaptureOwnerV1,
+)> {
     let temporary = tempfile::tempdir()?;
     let root = temporary.path().join("store");
-    Store::create_capture_qualification_v1(&root)?;
-    let (store, writer) = Store::open_capture_qualification_v1(&root)?.into_parts();
+    let (store, writer) = match protocol {
+        CaptureProtocolVersion::V1 => {
+            Store::create_capture_qualification_v1(&root)?;
+            Store::open_capture_qualification_v1(&root)?.into_parts()
+        }
+        CaptureProtocolVersion::V2 => {
+            Store::create_capture_qualification_v2(&root)?;
+            Store::open_capture_qualification_v2(&root)?.into_parts()
+        }
+    };
     let run = CensusRun::new(SchoolYear::DEFAULT, 1).ok_or("run")?;
     store.bind_run(&RunManifest {
         store_identity: writer.store_identity().as_str().to_string(),

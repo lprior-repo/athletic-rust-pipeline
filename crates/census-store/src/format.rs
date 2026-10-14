@@ -256,4 +256,6 @@ pub(crate) fn stage_initialization(
     generation::write_seed(batch, meta_keyspace, 0, 0, 1, 1);
 }
 
+mod capture;
 mod open;
+pub(crate) use capture::read_capture_format;

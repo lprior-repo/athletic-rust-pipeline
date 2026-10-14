@@ -12,6 +12,7 @@ pub(in crate::acquisition) fn verify_reference(
     receipts: &Keyspace,
     reference: &AcquisitionOccurrenceRefV1,
     budget: &mut AcquisitionReadBudget,
+    protocol: CaptureProtocolVersion,
 ) -> StoreResult<VerifiedRetainedOccurrence> {
     let facts = read_work(
         snapshot,
@@ -19,6 +20,7 @@ pub(in crate::acquisition) fn verify_reference(
         receipts,
         reference.attempt().work_id(),
         budget,
+        protocol,
     )?;
     verify_from_facts(root, snapshot, journal, receipts, &facts, reference, budget)
 }
@@ -40,6 +42,7 @@ pub(in crate::acquisition) fn verify_result(
             receipts,
             reference.attempt().work_id(),
             budget,
+            facts.protocol,
         )?;
         if original.work.request() != facts.work.request()
             || reference.attempt().store_identity() != facts.work.slot().store_identity()
@@ -75,10 +78,10 @@ fn verify_from_facts(
         return Err(CaptureError::CacheOccurrenceMismatch.into());
     }
     match terminal.terminal() {
-        AcquisitionTerminalV1::ResponseRetained { .. } => {
+        AcquisitionTerminal::ResponseRetained { .. } => {
             retained_body(root, facts, attempt, reference, budget)
         }
-        AcquisitionTerminalV1::ValidatedNotModified { original, .. } => {
+        AcquisitionTerminal::ValidatedNotModified { original, .. } => {
             if original.attempt().work_id() == reference.attempt().work_id() {
                 return Err(CaptureError::CorruptClosure.into());
             }
@@ -88,6 +91,7 @@ fn verify_from_facts(
                 receipts,
                 original.attempt().work_id(),
                 budget,
+                facts.protocol,
             )?;
             if original_facts.work.request() != facts.work.request()
                 || original.attempt().store_identity() != facts.work.slot().store_identity()
@@ -156,7 +160,7 @@ pub(in crate::acquisition) fn reusable_body_reference(
         .ok_or(CaptureError::RecoveryRequired)?;
     if !matches!(
         terminal.terminal(),
-        AcquisitionTerminalV1::ResponseRetained {
+        AcquisitionTerminal::ResponseRetained {
             disposition: CaptureDispositionV1::ReusableResponse,
             ..
         }

@@ -37,7 +37,7 @@ fn explicit_capture_init_and_open_preserve_existing_store_identity() -> TestResu
         ))
     ));
     let control = Store::capture_qualification_control_existing(&root)?;
-    check!(eq; control.show()?, created.clone());
+    check!(eq; control.show()?, CaptureQualification::V1(created.clone()));
     drop(control);
     let (store, writer) = Store::open_capture_qualification_v1(&root)?.into_parts();
     check!(eq; store.store_identity()?, created.store_identity().clone());

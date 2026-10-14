@@ -1,0 +1,16 @@
+pub(in crate::acquisition) const ROOTS: u64 = 42;
+pub(in crate::acquisition) const ENCODED: u64 = 3_122_688;
+pub(in crate::acquisition) const RECEIPTS: u64 = 3;
+pub(in crate::acquisition) const BODY: u64 = 33_554_432;
+pub(in crate::acquisition) const METADATA: u64 = 65_536;
+pub(in crate::acquisition) const SCRATCH: u64 = 32_768;
+pub(in crate::acquisition) const NONBODY: u64 = 67_108_864;
+pub(in crate::acquisition) const PAYLOAD: u64 = RECOVERY_PAYLOAD + PUBLICATION_PAYLOAD;
+pub(in crate::acquisition) const RECOVERY_PAYLOAD: u64 = 3 * BODY + 3 * METADATA;
+pub(in crate::acquisition) const PUBLICATION_PAYLOAD: u64 = 2 * BODY + 2 * METADATA;
+pub(in crate::acquisition) const TRAVERSAL: u64 = 4_096;
+pub(in crate::acquisition) const RESERVATION_PAYLOAD: u64 = 167_936;
+pub(in crate::acquisition) const ADMISSION: u64 = 3_350_552;
+pub(in crate::acquisition) const PATH: u64 = 4_096;
+pub(in crate::acquisition) const DIAGNOSTICS: u64 = 8_192;
+pub(in crate::acquisition) const ASSESSMENT: u64 = 4_096;

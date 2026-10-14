@@ -37,7 +37,7 @@ pub(super) fn inventory(
     snapshot: &Snapshot,
     journal: &Keyspace,
     receipts: &Keyspace,
-    declaration: &CaptureQualificationV1,
+    declaration: &CaptureQualification,
     budget: &mut AcquisitionReadBudget,
 ) -> StoreResult<()> {
     let http = root.join("http");
@@ -63,20 +63,9 @@ pub(super) fn inventory(
         }
         let path = entry.path();
         let raw = read_metadata(&path, budget)?;
-        let probe: serde_json::Value =
-            serde_json::from_slice(&raw).map_err(|source| StoreError::Decode {
-                key: name.to_string(),
-                source,
-            })?;
-        if !is_envelope(&probe) {
+        let Some(envelope) = parse_eligible(&raw, name)? else {
             continue;
-        }
-        let envelope: EligibleEnvelope =
-            serde_json::from_slice(&raw).map_err(|source| StoreError::Decode {
-                key: name.to_string(),
-                source,
-            })?;
-        let VersionTwo = envelope.version;
+        };
         if envelope.original_occurrence.attempt().store_identity() != declaration.store_identity() {
             return Err(CaptureError::CaptureCapabilityForeignStore.into());
         }
@@ -86,22 +75,11 @@ pub(super) fn inventory(
             receipts,
             envelope.original_occurrence.attempt().work_id(),
             budget,
+            declaration.protocol(),
         )?;
         let verified =
             read::reusable_body_reference(root, &facts, &envelope.original_occurrence, budget)?;
-        let mut metadata = envelope.metadata;
-        if !metadata.is_object() {
-            return Err(CaptureError::CacheEnvelopeUnsupported.into());
-        }
-        metadata.sort_all_objects();
-        let canonical =
-            serde_json::to_vec_pretty(&metadata).map_err(|source| StoreError::Json {
-                detail: "checking eligible metadata identity".to_string(),
-                source,
-            })?;
-        if canonical != verified.prepared().metadata_bytes() {
-            return Err(CaptureError::CacheOccurrenceMismatch.into());
-        }
+        match_metadata(envelope.metadata, verified.prepared())?;
         let key = name
             .strip_suffix(".meta.json")
             .ok_or(CaptureError::CacheEnvelopeUnsupported)?;
@@ -111,6 +89,41 @@ pub(super) fn inventory(
             verified.prepared().content_digest(),
             budget,
         )?;
+    }
+    Ok(())
+}
+
+fn parse_eligible(raw: &[u8], name: &str) -> StoreResult<Option<EligibleEnvelope>> {
+    let probe: serde_json::Value =
+        serde_json::from_slice(raw).map_err(|source| StoreError::Decode {
+            key: name.to_string(),
+            source,
+        })?;
+    if !is_envelope(&probe) {
+        return Ok(None);
+    }
+    let envelope: EligibleEnvelope =
+        serde_json::from_slice(raw).map_err(|source| StoreError::Decode {
+            key: name.to_string(),
+            source,
+        })?;
+    let VersionTwo = envelope.version;
+    Ok(Some(envelope))
+}
+fn match_metadata(
+    mut metadata: serde_json::Value,
+    prepared: &PreparedCaptureInputV1,
+) -> StoreResult<()> {
+    if !metadata.is_object() {
+        return Err(CaptureError::CacheEnvelopeUnsupported.into());
+    }
+    metadata.sort_all_objects();
+    let canonical = serde_json::to_vec_pretty(&metadata).map_err(|source| StoreError::Json {
+        detail: "checking eligible metadata identity".to_string(),
+        source,
+    })?;
+    if canonical != prepared.metadata_bytes() {
+        return Err(CaptureError::CacheOccurrenceMismatch.into());
     }
     Ok(())
 }

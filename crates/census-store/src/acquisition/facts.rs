@@ -21,37 +21,43 @@ impl From<VersionOne> for u8 {
     }
 }
 
+pub(super) trait FactDecode: serde::de::DeserializeOwned {
+    type Historical: serde::de::DeserializeOwned;
+    fn from_historical(value: Self::Historical) -> Self;
+}
+mod wire;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct SlotBinding {
-    pub version: VersionOne,
+pub(super) struct SlotBinding<V = CaptureProtocolVersion> {
+    pub version: V,
     pub slot: AcquisitionSlotV1,
     pub work_id: AcquisitionWorkId,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Reservation {
-    pub version: VersionOne,
+pub(super) struct Reservation<V = CaptureProtocolVersion> {
+    pub version: V,
     pub attempt: AcquisitionAttemptId,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Armed {
-    pub version: VersionOne,
+pub(super) struct Armed<V = CaptureProtocolVersion> {
+    pub version: V,
     pub dispatch: AcquisitionDispatchId,
     pub request: DispatchRequestV1,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Observed {
-    pub version: VersionOne,
+pub(super) struct Observed<V = CaptureProtocolVersion> {
+    pub version: V,
     pub dispatch: AcquisitionDispatchId,
     pub response: ResponseObservationV1,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Prepared {
-    pub version: VersionOne,
+pub(super) struct Prepared<V = CaptureProtocolVersion> {
+    pub version: V,
     pub attempt: AcquisitionAttemptId,
     pub dispatch: AcquisitionDispatchId,
     pub capture: PreparedCaptureInputV1,
@@ -59,94 +65,18 @@ pub(super) struct Prepared {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct WorkResult {
-    pub version: VersionOne,
+pub(super) struct WorkResult<V = CaptureProtocolVersion> {
+    pub version: V,
     pub occurrence: AcquisitionOccurrenceRefV1,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AcquisitionCheckpointV1 {
-    Reserved,
-    Armed { hop: HopOrdinal },
-    ResponseObserved { hop: HopOrdinal },
-}
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
-pub enum AcquisitionTerminalV1 {
-    ResponseRetained {
-        prepared_digest: AcquisitionDigest,
-        disposition: CaptureDispositionV1,
-    },
-    ValidatedNotModified {
-        dispatch: AcquisitionDispatchId,
-        original: AcquisitionOccurrenceRefV1,
-    },
-    NotDispatched {
-        failure: AcquisitionFailureV1,
-    },
-    FailedUncaptured {
-        checkpoint: AcquisitionCheckpointV1,
-        failure: AcquisitionFailureV1,
-    },
-    OutcomeUnknown {
-        checkpoint: AcquisitionCheckpointV1,
-        cause: InterruptionCauseV1,
-    },
-}
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ImmutableAttemptResult {
-    version: VersionOne,
-    attempt: AcquisitionAttemptId,
-    terminal: AcquisitionTerminalV1,
-}
-impl ImmutableAttemptResult {
-    pub(super) fn new(attempt: AcquisitionAttemptId, terminal: AcquisitionTerminalV1) -> Self {
-        Self {
-            version: VersionOne,
-            attempt,
-            terminal,
-        }
-    }
-    pub fn attempt(&self) -> &AcquisitionAttemptId {
-        &self.attempt
-    }
-    pub fn terminal(&self) -> &AcquisitionTerminalV1 {
-        &self.terminal
-    }
-    pub fn occurrence(&self) -> Result<AcquisitionOccurrenceRefV1, CaptureError> {
-        if !matches!(
-            self.terminal,
-            AcquisitionTerminalV1::ResponseRetained { .. }
-                | AcquisitionTerminalV1::ValidatedNotModified { .. }
-        ) {
-            return Err(CaptureError::TransitionRefused);
-        }
-        Ok(AcquisitionOccurrenceRefV1::new(
-            self.attempt.clone(),
-            digest(self)?,
-        ))
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AcquireDecision {
-    Ready,
-    ResumeReserved(AcquisitionAttemptId),
-    FinishPrepared(AcquisitionAttemptId),
-    Replay(AcquisitionOccurrenceRefV1),
-    RetryOwed(ImmutableAttemptResult),
-    RecoveryRequired(AcquisitionAttemptId),
-    Settled(ImmutableAttemptResult),
-    Exhausted,
-    Interrupted,
-}
-
-pub(super) fn digest<T: Serialize>(value: &T) -> Result<AcquisitionDigest, CaptureError> {
-    let encoded =
-        serialized_digest(value).map_err(|e| CaptureDomainError::Encoding(e.to_string()))?;
-    AcquisitionDigest::parse(&encoded).map_err(CaptureError::Domain)
-}
+mod terminal;
+pub(super) use terminal::digest;
+pub use terminal::{
+    AcquireDecision, AcquisitionCheckpointV1, AcquisitionTerminal, ImmutableAttemptResult,
+};
+mod terminal_v1;
+pub use terminal_v1::AcquisitionTerminalV1;
 
 #[derive(Debug)]
 pub(super) struct AttemptFacts {
@@ -154,6 +84,15 @@ pub(super) struct AttemptFacts {
     pub dispatches: Vec<(Armed, Option<Observed>)>,
     pub prepared: Option<Prepared>,
     pub terminal: Option<ImmutableAttemptResult>,
+    pub receipt: ReceiptWitness,
+}
+#[derive(Debug)]
+pub(super) enum ReceiptWitness {
+    Absent,
+    Present {
+        receipt: crate::Receipt,
+        raw: Vec<u8>,
+    },
 }
 impl AttemptFacts {
     pub fn checkpoint(&self) -> AcquisitionCheckpointV1 {
@@ -170,49 +109,77 @@ impl AttemptFacts {
 }
 #[derive(Debug)]
 pub(super) struct WorkFacts {
+    pub protocol: CaptureProtocolVersion,
     pub work: AcquisitionWorkV1,
     pub attempts: Vec<AttemptFacts>,
     pub result: Option<WorkResult>,
 }
 impl WorkFacts {
     pub fn decision(&self) -> AcquireDecision {
+        match self.decision_view() {
+            DecisionView::Ready => AcquireDecision::Ready,
+            DecisionView::ResumeReserved(value) => AcquireDecision::ResumeReserved(value.clone()),
+            DecisionView::FinishPrepared(value) => AcquireDecision::FinishPrepared(value.clone()),
+            DecisionView::Replay(value) => AcquireDecision::Replay(value.clone()),
+            DecisionView::RetryOwed(value) => AcquireDecision::RetryOwed(value.clone()),
+            DecisionView::RecoveryRequired(value) => {
+                AcquireDecision::RecoveryRequired(value.clone())
+            }
+            DecisionView::Settled(value) => AcquireDecision::Settled(value.clone()),
+            DecisionView::Exhausted => AcquireDecision::Exhausted,
+            DecisionView::Interrupted => AcquireDecision::Interrupted,
+        }
+    }
+    pub fn decision_view(&self) -> DecisionView<'_> {
         if let Some(result) = &self.result {
-            return AcquireDecision::Replay(result.occurrence.clone());
+            return DecisionView::Replay(&result.occurrence);
         }
         let Some(last) = self.attempts.last() else {
-            return AcquireDecision::Ready;
+            return DecisionView::Ready;
         };
         if let Some(terminal) = &last.terminal {
             match terminal.terminal() {
-                AcquisitionTerminalV1::NotDispatched { .. } => {
-                    return AcquireDecision::Settled(terminal.clone())
+                AcquisitionTerminal::NotDispatched { .. } => {
+                    return DecisionView::Settled(terminal)
                 }
-                AcquisitionTerminalV1::FailedUncaptured { failure, .. }
+                AcquisitionTerminal::FailedUncaptured { failure, .. }
                     if !failure.allows_continuation() =>
                 {
-                    return AcquireDecision::Settled(terminal.clone())
+                    return DecisionView::Settled(terminal)
                 }
                 _ => {}
             }
             if self.attempts.len() == 3 {
                 return if self.attempts.iter().any(|a| {
                     a.terminal.as_ref().is_some_and(|t| {
-                        matches!(t.terminal(), AcquisitionTerminalV1::OutcomeUnknown { .. })
+                        matches!(t.terminal(), AcquisitionTerminal::OutcomeUnknown { .. })
                     })
                 }) {
-                    AcquireDecision::Interrupted
+                    DecisionView::Interrupted
                 } else {
-                    AcquireDecision::Exhausted
+                    DecisionView::Exhausted
                 };
             }
-            return AcquireDecision::RetryOwed(terminal.clone());
+            return DecisionView::RetryOwed(terminal);
         }
         if last.prepared.is_some() {
-            return AcquireDecision::FinishPrepared(last.reservation.attempt.clone());
+            return DecisionView::FinishPrepared(&last.reservation.attempt);
         }
         if last.dispatches.is_empty() {
-            return AcquireDecision::ResumeReserved(last.reservation.attempt.clone());
+            return DecisionView::ResumeReserved(&last.reservation.attempt);
         }
-        AcquireDecision::RecoveryRequired(last.reservation.attempt.clone())
+        DecisionView::RecoveryRequired(&last.reservation.attempt)
     }
+}
+
+pub(super) enum DecisionView<'a> {
+    Ready,
+    ResumeReserved(&'a AcquisitionAttemptId),
+    FinishPrepared(&'a AcquisitionAttemptId),
+    Replay(&'a AcquisitionOccurrenceRefV1),
+    RetryOwed(&'a ImmutableAttemptResult),
+    RecoveryRequired(&'a AcquisitionAttemptId),
+    Settled(&'a ImmutableAttemptResult),
+    Exhausted,
+    Interrupted,
 }

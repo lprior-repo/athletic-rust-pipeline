@@ -8,8 +8,10 @@ use std::path::{Path, PathBuf};
 
 mod closure;
 mod retained;
+mod selection;
 use retained::verify_reference;
 pub(super) use retained::{last_response, reusable_body_reference, verify_result};
+pub use selection::ExistingRecoveryRoute;
 
 pub struct VerifiedRetainedOccurrence {
     pub(super) reference: AcquisitionOccurrenceRefV1,
@@ -50,7 +52,14 @@ impl Store {
         let _writes = self.lock_appends();
         work.verify(self)?;
         let snapshot = self.db.snapshot();
-        let facts = read_work(&snapshot, &self.journal, &self.receipts, &work.id, budget)?;
+        let facts = read_work(
+            &snapshot,
+            &self.journal,
+            &self.receipts,
+            &work.id,
+            budget,
+            work.owner.protocol(),
+        )?;
         if facts.work != work.work {
             return Err(CaptureError::ObligationConflict.into());
         }
@@ -92,6 +101,7 @@ impl Store {
             &self.receipts,
             reference,
             budget,
+            declaration.protocol(),
         )
     }
 }
@@ -102,9 +112,93 @@ pub(super) fn read_work(
     receipts: &Keyspace,
     id: &AcquisitionWorkId,
     budget: &mut AcquisitionReadBudget,
+    protocol: CaptureProtocolVersion,
 ) -> StoreResult<WorkFacts> {
     let prefix = format!("work/{id}/");
-    let physical_prefix = Store::journal_key(SOURCE_ACQUISITION_PHASE, &prefix);
+    let mut rows = work_rows(snapshot, journal, &prefix, budget, protocol)?;
+    let work: AcquisitionWorkV1 = take(&mut rows, &format!("{prefix}identity"), budget)?
+        .ok_or(CaptureError::SlotWorkMismatch)?;
+    if work.id().map_err(CaptureError::Domain)? != *id {
+        return Err(CaptureError::WorkDigestMismatch.into());
+    }
+    let slot_key = format!(
+        "slot/{}/binding",
+        work.slot().id().map_err(CaptureError::Domain)?
+    );
+    let binding: SlotBinding = codec::get_fact(snapshot, journal, &slot_key, budget, protocol)?
+        .ok_or(CaptureError::SlotWorkMismatch)?;
+    if binding.version != protocol {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
+    if binding.slot != *work.slot() || binding.work_id != *id {
+        return Err(CaptureError::SlotWorkMismatch.into());
+    }
+    budget.reserve_recovery_owned(3 * std::mem::size_of::<AttemptFacts>() + 384)?;
+    let mut attempts = Vec::new();
+    attempts
+        .try_reserve_exact(3)
+        .map_err(|_| CaptureError::ReadBudgetExceeded {
+            resource: "allocation",
+        })?;
+    for ordinal in 1..=3 {
+        let ordinal = AttemptOrdinal::new(ordinal).map_err(CaptureError::Domain)?;
+        let (identity, work_id) = match protocol {
+            CaptureProtocolVersion::V1 => (work.slot().store_identity().clone(), id.clone()),
+            CaptureProtocolVersion::V2 => (
+                work.slot().store_identity().try_clone().map_err(|_| {
+                    CaptureError::ReadBudgetExceeded {
+                        resource: "allocation",
+                    }
+                })?,
+                id.try_clone()
+                    .map_err(|_| CaptureError::ReadBudgetExceeded {
+                        resource: "allocation",
+                    })?,
+            ),
+        };
+        let attempt = AcquisitionAttemptId::new(identity, work_id, ordinal);
+        let Some(mut facts) = closure::attempt(&mut rows, &attempt, protocol, budget)? else {
+            break;
+        };
+        facts.receipt = closure::receipt(snapshot, receipts, &facts, budget, protocol)?;
+        attempts.push(facts);
+    }
+    let result = take_fact(&mut rows, &format!("{prefix}result"), protocol, budget)?;
+    if !rows.is_empty() {
+        return Err(CaptureError::UnsupportedRoot.into());
+    }
+    let facts = WorkFacts {
+        protocol,
+        work,
+        attempts,
+        result,
+    };
+    for attempt in facts.attempts.iter().take(3) {
+        if attempt.terminal.as_ref().is_some_and(|terminal| {
+            matches!(
+                terminal.terminal(),
+                AcquisitionTerminal::PreparedRetentionFailed { .. }
+            )
+        }) {
+            let prepared = attempt
+                .prepared
+                .as_ref()
+                .ok_or(CaptureError::CorruptClosure)?;
+            codec::reserve_decode(prepared.capture.metadata_bytes(), budget)?;
+        }
+    }
+    closure::work(&facts)?;
+    Ok(facts)
+}
+
+fn work_rows(
+    snapshot: &Snapshot,
+    journal: &Keyspace,
+    prefix: &str,
+    budget: &mut AcquisitionReadBudget,
+    protocol: CaptureProtocolVersion,
+) -> StoreResult<BTreeMap<String, Vec<u8>>> {
+    let physical_prefix = Store::journal_key(protocol.phase(), &prefix);
     let mut rows = BTreeMap::new();
     for (position, guard) in snapshot
         .prefix(journal, &physical_prefix)
@@ -118,8 +212,14 @@ pub(super) fn read_work(
         if physical.len() > crate::MAX_JOURNAL_KEY_BYTES {
             return Err(CaptureError::UnsupportedRoot.into());
         }
+        budget.reserve_recovery_owned(
+            physical
+                .len()
+                .checked_add(1024)
+                .ok_or(StoreError::CounterOverflow)?,
+        )?;
         let logical = physical
-            .strip_prefix(Store::journal_key(SOURCE_ACQUISITION_PHASE, "").as_slice())
+            .strip_prefix(Store::journal_key(protocol.phase(), "").as_slice())
             .ok_or(CaptureError::UnsupportedRoot)?;
         let key = std::str::from_utf8(logical)
             .map_err(|_| CaptureError::UnsupportedRoot)?
@@ -127,63 +227,42 @@ pub(super) fn read_work(
         if key.as_bytes().contains(&0) || key.as_bytes().contains(&1) {
             return Err(CaptureError::UnsupportedRoot.into());
         }
-        let raw =
-            codec::raw(snapshot, journal, &key, budget)?.ok_or(CaptureError::CorruptClosure)?;
+        let raw = codec::raw(snapshot, journal, &key, budget, protocol)?
+            .ok_or(CaptureError::CorruptClosure)?;
         rows.insert(key, raw);
     }
-    let work: AcquisitionWorkV1 =
-        take(&mut rows, &format!("{prefix}identity"))?.ok_or(CaptureError::SlotWorkMismatch)?;
-    if work.id().map_err(CaptureError::Domain)? != *id {
-        return Err(CaptureError::WorkDigestMismatch.into());
-    }
-    let slot_key = format!(
-        "slot/{}/binding",
-        work.slot().id().map_err(CaptureError::Domain)?
-    );
-    let binding: SlotBinding =
-        codec::get(snapshot, journal, &slot_key, budget)?.ok_or(CaptureError::SlotWorkMismatch)?;
-    if binding.slot != *work.slot() || binding.work_id != *id {
-        return Err(CaptureError::SlotWorkMismatch.into());
-    }
-    let mut attempts = Vec::new();
-    attempts
-        .try_reserve_exact(3)
-        .map_err(|_| CaptureError::ReadBudgetExceeded {
-            resource: "allocation",
-        })?;
-    for ordinal in 1..=3 {
-        let ordinal = AttemptOrdinal::new(ordinal).map_err(CaptureError::Domain)?;
-        let attempt =
-            AcquisitionAttemptId::new(work.slot().store_identity().clone(), id.clone(), ordinal);
-        let Some(facts) = closure::attempt(&mut rows, &attempt)? else {
-            break;
-        };
-        closure::receipt(snapshot, receipts, &facts, budget)?;
-        attempts.push(facts);
-    }
-    let result = take(&mut rows, &format!("{prefix}result"))?;
-    if !rows.is_empty() {
-        return Err(CaptureError::UnsupportedRoot.into());
-    }
-    let facts = WorkFacts {
-        work,
-        attempts,
-        result,
-    };
-    closure::work(&facts)?;
-    Ok(facts)
+    Ok(rows)
 }
 
 pub(super) fn take<T: DeserializeOwned>(
     rows: &mut BTreeMap<String, Vec<u8>>,
     key: &str,
+    budget: &mut AcquisitionReadBudget,
 ) -> StoreResult<Option<T>> {
     rows.remove(key)
-        .map(|raw| codec::decode(key, &raw))
+        .map(|raw| {
+            let result = codec::decode_held(key, &raw, budget);
+            budget.release_recovery_owned(raw.len())?;
+            result
+        })
         .transpose()
 }
 pub(super) fn attempt_prefix(id: &AcquisitionAttemptId) -> String {
     format!("work/{}/attempt/{}", id.work_id(), id.ordinal().get())
+}
+pub(super) fn take_fact<T: FactDecode>(
+    rows: &mut BTreeMap<String, Vec<u8>>,
+    key: &str,
+    protocol: CaptureProtocolVersion,
+    budget: &mut AcquisitionReadBudget,
+) -> StoreResult<Option<T>> {
+    rows.remove(key)
+        .map(|raw| {
+            let result = codec::decode_fact_held(key, &raw, protocol, budget);
+            budget.release_recovery_owned(raw.len())?;
+            result
+        })
+        .transpose()
 }
 pub(super) fn dispatch_prefix(id: &AcquisitionDispatchId) -> String {
     format!(
@@ -192,6 +271,9 @@ pub(super) fn dispatch_prefix(id: &AcquisitionDispatchId) -> String {
         id.hop().get()
     )
 }
-pub(super) fn terminal_operation(id: &AcquisitionAttemptId) -> String {
-    format!("{SOURCE_ACQUISITION_PHASE}/{}/terminal", attempt_prefix(id))
+pub(super) fn terminal_operation(
+    id: &AcquisitionAttemptId,
+    protocol: CaptureProtocolVersion,
+) -> String {
+    format!("{}/{}/terminal", protocol.phase(), attempt_prefix(id))
 }

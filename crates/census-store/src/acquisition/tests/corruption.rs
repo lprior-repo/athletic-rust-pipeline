@@ -70,7 +70,7 @@ fn retained_reference_and_receipt_corruption_fail_with_no_identity_remint() -> T
     for damage in ["receipt-missing", "receipt-huge", "receipt-digest", "body"] {
         let (_dir, store, writer, owner) = fixture()?;
         let occurrence = retained(&store, &writer, &owner, 200)?;
-        let operation = read::terminal_operation(occurrence.attempt());
+        let operation = read::terminal_operation(occurrence.attempt(), CaptureProtocolVersion::V1);
         match damage {
             "receipt-missing" => {
                 store.receipts.remove(&operation)?;
