@@ -34,6 +34,7 @@ pub struct EventAdmission<'a> {
     rows: Vec<AdmittedEvent<'a>>,
     counts: EventCounts,
     digest: String,
+    semantics: census_domain::model::EventSemantics,
 }
 
 #[derive(Serialize)]
@@ -46,8 +47,8 @@ pub struct EventAudit<'a, 'd> {
 
 impl<'a> EventAdmission<'a> {
     pub fn of(dataset: &'a ExportDataset) -> ReportResult<Self> {
-        dataset.ensure_semantic_policy()?;
-        let catalog = RecruitingCatalogV1::new();
+        let semantics = dataset.semantic_policy()?;
+        let catalog = RecruitingCatalogV1::with_policy(semantics);
         let meets = meet_sports(dataset)?;
         let mut rows = Vec::new();
         reserve::<AdmittedEvent<'_>>(dataset.events.len())?;
@@ -79,7 +80,12 @@ impl<'a> EventAdmission<'a> {
             rows,
             counts,
             digest,
+            semantics,
         })
+    }
+
+    pub fn semantics(&self) -> census_domain::model::EventSemantics {
+        self.semantics
     }
 
     pub fn dataset(&self) -> &'a ExportDataset {

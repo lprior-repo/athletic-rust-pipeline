@@ -44,7 +44,15 @@ pub(crate) fn build_admitted(
     Ok(super::selection::publish(
         slots
             .into_iter()
-            .filter_map(|(key, slot)| close(key, slot, &parents, derivation.scope()))
+            .filter_map(|(key, slot)| {
+                close(
+                    key,
+                    slot,
+                    &parents,
+                    derivation.scope(),
+                    admission.semantics(),
+                )
+            })
             .collect(),
         options.limit,
     ))
@@ -88,8 +96,15 @@ impl<'a> Candidate<'a> {
         let meet = parents.meet(performance.meet.as_str());
         let event = parents.canonical_event(performance.event.as_str())?;
         let disposition = admission.disposition(&event.id)?;
-        let key =
-            PrKey::from_admitted(performance, event, meet, measure, &athlete.id, disposition)?;
+        let key = PrKey::from_admitted(
+            performance,
+            event,
+            meet,
+            measure,
+            &athlete.id,
+            disposition,
+            admission.semantics(),
+        )?;
         Some((
             key,
             Self {
@@ -147,7 +162,7 @@ fn fold<'a>(
         return;
     };
     let integrity = retained.integrity(&candidate);
-    let course_key = key.same_course(candidate.event);
+    let course_key = key.same_course(candidate.event, admission.semantics());
     if let Some(course_key) = course_key {
         candidate.record(
             slots.entry(course_key).or_insert_with(PrSlot::empty),
@@ -163,9 +178,13 @@ fn close(
     slot: PrSlot<'_>,
     parents: &Parents<'_>,
     scope: Scope,
+    semantics: census_domain::model::EventSemantics,
 ) -> Option<SharedSelection> {
     let candidate = winning_candidate(&slot)?;
-    let specification = candidate.event.resolved_specification().ok()?;
+    let specification = candidate
+        .event
+        .resolved_specification_with_policy(semantics)
+        .ok()?;
     let mut winner = make_row(key, candidate, parents, scope, specification);
     let sources_count = slot.sources.len();
     let conflicts = slot

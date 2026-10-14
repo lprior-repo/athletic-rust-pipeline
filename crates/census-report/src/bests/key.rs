@@ -78,8 +78,16 @@ impl PrKey {
         event: &CanonicalEvent,
         meet: Option<&CanonicalMeet>,
         measure: crate::bests::Measure,
+        semantics: census_domain::model::EventSemantics,
     ) -> Result<Option<Self>, CatalogError> {
-        Self::from_athlete(performance, event, meet, measure, &performance.athlete)
+        Self::from_athlete(
+            performance,
+            event,
+            meet,
+            measure,
+            &performance.athlete,
+            semantics,
+        )
     }
 
     pub(super) fn from_athlete(
@@ -88,9 +96,11 @@ impl PrKey {
         meet: Option<&CanonicalMeet>,
         measure: crate::bests::Measure,
         athlete: &census_domain::model::AthleteId,
+        semantics: census_domain::model::EventSemantics,
     ) -> Result<Option<Self>, CatalogError> {
         let surface = meet.map_or(SurfaceClass::Unresolved, SurfaceClass::resolve);
-        let disposition = RecruitingCatalogV1::new().classify(event, catalog::sport(surface))?;
+        let disposition =
+            RecruitingCatalogV1::with_policy(semantics).classify(event, catalog::sport(surface))?;
         Ok(Self::from_admitted(
             performance,
             event,
@@ -98,6 +108,7 @@ impl PrKey {
             measure,
             athlete,
             &disposition,
+            semantics,
         ))
     }
 
@@ -108,6 +119,7 @@ impl PrKey {
         measure: crate::bests::Measure,
         athlete: &census_domain::model::AthleteId,
         disposition: &EventDisposition,
+        semantics: census_domain::model::EventSemantics,
     ) -> Option<Self> {
         let meet = meet?;
         let surface = SurfaceClass::resolve(meet);
@@ -118,7 +130,15 @@ impl PrKey {
         {
             return None;
         }
-        catalog::included_key(performance, event, surface, measure, athlete, disposition)
+        catalog::included_key(
+            performance,
+            event,
+            surface,
+            measure,
+            athlete,
+            disposition,
+            semantics,
+        )
     }
 
     fn base(

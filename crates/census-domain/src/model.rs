@@ -29,6 +29,7 @@ mod engine_valid;
 mod event_identity;
 mod event_ontology;
 mod event_performance;
+mod event_semantics;
 mod event_specification;
 mod fixed_mark;
 mod identifiers;
@@ -113,6 +114,7 @@ pub use engine_valid::{
 pub use event_identity::{EventIdentity, EventIdentityError};
 pub use event_ontology::{EventKind, SourceEventLabel};
 pub use event_performance::{CanonicalEvent, CanonicalPerformance, Mark, TimingMethod};
+pub use event_semantics::EventSemantics;
 pub use event_specification::{
     CompetitionCategory, CourseIdentity, CourseMeasurement, CrossCountryContext, DistanceUnit,
     EventSpecification, HurdleSpecification, ImplementMass, IndoorTrackSpecification,

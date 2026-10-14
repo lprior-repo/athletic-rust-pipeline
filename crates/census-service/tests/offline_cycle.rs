@@ -5,6 +5,9 @@ mod fallible_checks;
 #[path = "offline_cycle_mod/readback.rs"]
 mod readback;
 
+#[path = "offline_cycle_mod/cross_source.rs"]
+mod cross_source;
+
 use calamine::Reader;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,

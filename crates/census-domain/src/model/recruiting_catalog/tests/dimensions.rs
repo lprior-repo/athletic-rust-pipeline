@@ -90,7 +90,7 @@ fn typed_context_never_hides_unknown_words_extra_races_or_missing_markers() -> T
         (
             "Boys 1000m (200m banked) 300m",
             EventKind::Track1000m,
-            EventResolutionReason::UnsupportedScholasticVariant,
+            EventResolutionReason::ContradictoryDeclarations,
         ),
         (
             "Boys 1000m (200m)",
@@ -193,14 +193,17 @@ fn contradictory_owned_dimensions_and_subgroups_survive_label_order() -> TestRes
 }
 
 #[test]
-fn unsupported_ontology_distances_do_not_become_facility_only_inclusions() -> TestResult {
+fn flat_event_distances_without_dimension_separators_remain_contradictory() -> TestResult {
     for label in [
         "Boys 300m banked track",
         "Boys 500m flat track",
         "Boys 600m banked track",
     ] {
         let event = owned(unmapped(label), &[label])?;
-        check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::UnsupportedScholasticVariant));
+        check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::ContradictoryDeclarations));
     }
     Ok(())
 }
+
+#[path = "dimensions/placement.rs"]
+mod placement;

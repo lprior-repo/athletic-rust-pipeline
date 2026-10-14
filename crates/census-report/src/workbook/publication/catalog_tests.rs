@@ -9,6 +9,7 @@ use serde_json::Value;
 use std::path::{Path, PathBuf};
 
 mod fixture;
+mod flat_readback;
 mod mutate;
 mod readback;
 mod scope;

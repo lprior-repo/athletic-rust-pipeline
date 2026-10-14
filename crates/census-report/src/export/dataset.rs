@@ -263,6 +263,14 @@ impl ExportDataset {
         frozen::archive_digest(self)
     }
 
+    pub fn semantic_policy(&self) -> ReportResult<census_domain::model::EventSemantics> {
+        frozen::semantic_policy(&self.lineage)
+    }
+
+    pub fn ensure_current_policy(&self) -> ReportResult<()> {
+        frozen::ensure_current_policy(&self.lineage)
+    }
+
     pub fn ensure_semantic_policy(&self) -> ReportResult<()> {
         frozen::ensure_semantic_policy(&self.lineage)
     }

@@ -114,6 +114,7 @@ fn cen10_unknown_category_never_merges_with_published_boys() -> TestResult {
             event,
             Some(meet),
             crate::bests::Measure::Time,
+            census_domain::model::EventSemantics::FlatEvents19,
         )?;
         match event.gender {
             Gender::Boys => {

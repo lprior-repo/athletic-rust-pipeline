@@ -188,3 +188,74 @@ env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census
 env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-report --lib -E 'test(recruiting::tests::postal::) | test(recruiting::tests::summaries::)' --no-tests fail --no-capture
 env -u CI tools/moon-local run pipeline:gate -- --release
 ```
+
+
+## Exact flat-event worksheet and historical replay follow-on
+
+Base: PR #35 merge `27bb8edd`; user update `06dcf66c` retained by normal merge
+`dcaad265`. Reference harness `c205059e`, semantic/worksheet change `ba97ece7`;
+their diffs provide exact file coverage. Policy 19 admits exact 300m, 500m, 600m,
+2-mile, 2000m and 10000m flat races without distance conversions. Policy 18 retains
+its catalog bytes and comparison semantics for historical decoding and verification.
+Historical input does not become eligible for a new current-policy publication.
+
+- PASS before the user-update merge: 67 focused domain/report tests, 1127 skipped;
+  1m8.585s task. Initial 45/46 run exposed an obsolete negative 2000m fixture after
+  that event became supported; replaced with the already specified unsupported
+  `10,000m` spelling and expanded publication coverage to all six additions.
+- PASS before that merge: both offline CLI worksheet tests, zero skipped, nextest
+  `60ce37f5-3197-4e2e-9b90-847fbcc037c1` (6.890s task). Independent XLSX/CSV checks
+  require ten athletes, thirty exact PR winners and all forty observation IDs;
+  faster cross-source 100m wins, indoor/outdoor 400m stay distinct, and capture
+  timestamps differ from the asserted competition dates. Canonical identities are
+  supplied by this fixture; discovery/reconciliation and postal coverage are separate.
+- PASS: rebuilt policy-19 reference verifier reopened the genuine policy-18 generation,
+  preserved all fourteen artifact hashes and the original catalog/audit identities.
+  The original reference SHA256 stayed
+  `518b75fcc311a44f7ba7f946c0aafcfc42165b9fab60c964c987fa94f3636f60`.
+  New-policy capture correctly refused to regenerate that reference (exit 1).
+- FAILED then repaired: independent review found facility-first race labels rejected.
+  Three new regression tests first failed, nextest `baa08fef-d2a5-438a-bbe9-0fee1a0472b5`;
+  the bounded non-dimension declaration repair passed all three, 501 skipped,
+  `c0ea19db-5346-41bc-948a-5c85837ca049` (27.915s task). Competing distances and
+  facility-only labels remain refused; policy-18 behavior remains explicit.
+- FAILED then repaired: expanded merged-source suite ran 250 tests: 248 passed, two
+  failed, 948 skipped (`460eb1b6-3a4a-4592-bfc9-e29077f8a924`, 3m54.989s task).
+  Both failures were additional obsolete 2000m-negative fixtures in `bests/tests/catalog.rs`;
+  the existing unsupported `10,000m` spelling preserves refusal assertions. Repeat PASS:
+  250/250, 948 skipped, `53807dc5-9452-4103-a7b0-c3710b5ef054` (2m11.245s task).
+- PASS on the final merged implementation: offline CLI 2/2, zero skipped,
+  `ab6bd6c2-849c-465c-b2de-6fd225b21610` (2m21.770s task).
+- PASS after the mechanical regression-module split: 7/7 flat-semantics tests,
+  687 skipped, `212794ae-66f4-4ce5-8ba3-b8b50c2b5a33` (50.044s task).
+  Independent reconstruction matched all original 503 lines and 24 assertions exactly;
+  the new modules are 67/154/233/56 lines. Three unrelated user-update files received
+  formatter-only changes; their semantics are retained.
+- INTERRUPTED/UNKNOWN: first merged-main all-target check lost its executor before
+  an exit receipt. It is not a pass. The replacement final merged-source all-target /
+  all-feature check PASSED (4m21.251s). Source lint exited 0 (1m20.901s), retaining
+  two forced `too_many_arguments` warnings from user-update acquisition helpers
+  (`cache.rs::process_eligible_entry`, `qualification/inventory.rs::process_root`);
+  a follow-on refactor is pending, and no lint allowance was added.
+- PASS on the final merged tree: formatting (9.367s task), rebuilt historical
+  reference verifier (30.432s task) and verification of the unchanged original
+  policy-18 reference (exit 0).
+- Review: changed domain, historical dispatch and worksheet assertions reviewed with
+  Holzman Rust, Scott DDD, functional Rust and test-review guidance. No new async
+  execution path. Remaining whole-export memory work and end-to-end pilot are separate.
+- Acceptance mapping: spec comparable PRs, cross-source provenance and historical
+  compatibility partially exercised; full source discovery, reusable production,
+  national coverage/RSS, complete security/fuzz/durability/release gates NOT RUN.
+
+Home verification for this follow-on, from the repository root:
+
+```sh
+env -u CI tools/moon-local run pipeline:fmt
+env -u CI tools/moon-local run pipeline:check -- --jobs 1
+env -u CI tools/moon-local run pipeline:lint-src
+env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-domain -p census-report --lib -E 'test(recruiting_catalog) | test(event_ontology) | test(bests::) | test(policy_cutover) | test(policy_merge) | test(catalog_tests) | test(historical_policy_tests) | test(semantic_policy_tests)' --no-tests fail
+env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-service --test offline_cycle --no-tests fail
+env -u CI tools/moon-local run pipeline:gate -- --release
+```
+
+The release command is the full home gate, not a claim that this run executed it.

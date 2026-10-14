@@ -1,3 +1,4 @@
+use super::EventSemantics;
 use super::{
     serialized_digest, write_serialized, CanonicalEvent, CanonicalJsonError, EventKind,
     SourceEventLabel, Sport,
@@ -9,6 +10,7 @@ mod coherence;
 mod context;
 use coherence::{coherent_components, coherent_pairs, distance_quantity, excluded_coherence};
 mod disposition;
+mod legacy_policy;
 mod policy;
 
 pub use disposition::{
@@ -22,6 +24,7 @@ pub const CATALOG_V1_MAX_AGGREGATE_LABEL_BYTES: usize = 262_144;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RecruitingCatalogV1 {
     version: CatalogVersion,
+    semantics: EventSemantics,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -38,8 +41,13 @@ impl Default for RecruitingCatalogV1 {
 
 impl RecruitingCatalogV1 {
     pub const fn new() -> Self {
+        Self::with_policy(EventSemantics::FlatEvents19)
+    }
+
+    pub const fn with_policy(semantics: EventSemantics) -> Self {
         Self {
             version: CatalogVersion::V1,
+            semantics,
         }
     }
 
@@ -54,17 +62,29 @@ impl RecruitingCatalogV1 {
     fn identity(&self) -> CatalogIdentity<'static> {
         CatalogIdentity {
             version: self.version,
-            grammar: "ascii_delimited_tokens_typed_context_xc_anchors_v3",
+            policy_revision: match self.semantics {
+                EventSemantics::Legacy18 => None,
+                EventSemantics::FlatEvents19 => Some(2),
+            },
+            grammar: match self.semantics {
+                EventSemantics::Legacy18 => "ascii_delimited_tokens_typed_context_xc_anchors_v3",
+                EventSemantics::FlatEvents19 => {
+                    "ascii_delimited_tokens_typed_context_xc_anchors_v4"
+                }
+            },
             coherence: "all_owned_assertions_canonical_kind_sport_category_v1",
             max_source_labels: CATALOG_V1_MAX_SOURCE_LABELS,
             max_label_bytes: CATALOG_V1_MAX_LABEL_BYTES,
             max_aggregate_label_bytes: CATALOG_V1_MAX_AGGREGATE_LABEL_BYTES,
-            included: policy::INCLUDED,
+            included: policy::included(self.semantics),
             exclusions: policy::EXCLUSIONS,
             pairs: policy::PAIRS,
             terrain: policy::TERRAIN,
             ambiguous: policy::AMBIGUOUS,
-            missing: policy::MISSING,
+            missing: match self.semantics {
+                EventSemantics::Legacy18 => legacy_policy::MISSING,
+                EventSemantics::FlatEvents19 => policy::MISSING,
+            },
             qualifiers: policy::QUALIFIERS,
             units: policy::UNITS,
             separators: policy::SEPARATORS,
@@ -94,12 +114,14 @@ impl RecruitingCatalogV1 {
         let declarations = event.source_labels.iter().try_fold(
             disposition::Declarations::new(),
             |declarations, label| {
-                Ok::<_, CatalogError>(declarations.add(aliases::classify(label)?))
+                Ok::<_, CatalogError>(declarations.add(aliases::classify(label, self.semantics)?))
             },
         )?;
         match declarations.finish() {
-            EventDisposition::Included(kind) => disposition::qualify(event, sport, kind),
-            EventDisposition::Excluded(reason) => excluded_coherence(event, reason),
+            EventDisposition::Included(kind) => {
+                disposition::qualify(event, sport, kind, self.semantics)
+            }
+            EventDisposition::Excluded(reason) => excluded_coherence(event, reason, self.semantics),
             other => Ok(other),
         }
     }
@@ -108,6 +130,8 @@ impl RecruitingCatalogV1 {
 #[derive(Serialize)]
 struct CatalogIdentity<'a> {
     version: CatalogVersion,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    policy_revision: Option<u32>,
     grammar: &'a str,
     coherence: &'a str,
     max_source_labels: usize,

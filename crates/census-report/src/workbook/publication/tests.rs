@@ -30,7 +30,7 @@ fn changed_conflict_policy_has_a_distinct_publication_recipe() -> TestResult {
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         jurisdictions: Vec::new(),
     };
-    check!(eq; current.lineage.policy_revision, 18);
+    check!(eq; current.lineage.policy_revision, 19);
     check!(ne; binding::recipe(&current.lineage, &options)?, binding::recipe(&previous, &options)?);
     previous.policy_revision = 8;
     check!(ne; binding::recipe(&current.lineage, &options)?, binding::recipe(&previous, &options)?);

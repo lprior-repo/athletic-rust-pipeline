@@ -1,5 +1,5 @@
 use super::super::{DatasetLineage, ExportDataset, Loaded};
-use super::{generation, hex_digest, invalid, io, ReportResult, POLICY_REVISION, SCHEMA_REVISION};
+use super::{generation, hex_digest, invalid, io, ReportResult, SCHEMA_REVISION};
 use crate::report::io_error;
 use serde::Deserialize;
 use std::io::Seek;
@@ -44,7 +44,7 @@ pub(super) fn reopen(
 
 fn validate(lineage: &DatasetLineage) -> ReportResult<()> {
     if lineage.schema_revision != SCHEMA_REVISION
-        || lineage.policy_revision != POLICY_REVISION
+        || census_domain::model::EventSemantics::from_revision(lineage.policy_revision).is_none()
         || !hex_digest(&lineage.store_identity)
         || !hex_digest(&lineage.source_digest)
         || !hex_digest(&lineage.input_digest)

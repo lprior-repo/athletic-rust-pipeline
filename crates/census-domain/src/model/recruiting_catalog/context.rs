@@ -1,10 +1,13 @@
 use super::aliases::{self, tokens};
 use super::{CatalogError, EventKind};
+use crate::model::EventSemantics;
 use crate::model::{EventSpecification, HurdleSpecification, IndoorTrackSpecification};
 
 pub(super) struct ContextualLabel<'a> {
     label: &'a str,
+    semantics: EventSemantics,
     dimensions: [Option<DimensionSpan>; 2],
+    dimension_free_kind: Option<EventKind>,
 }
 
 #[derive(Clone, Copy)]
@@ -23,12 +26,18 @@ impl<'a> LabelToken<'a> {
 }
 
 impl<'a> ContextualLabel<'a> {
-    pub(super) fn parse(label: &'a str, kind: &EventKind) -> Result<Self, CatalogError> {
+    pub(super) fn parse(
+        label: &'a str,
+        kind: &EventKind,
+        semantics: EventSemantics,
+    ) -> Result<Self, CatalogError> {
         let mut parsed = Self {
             label,
+            semantics,
             dimensions: [None, None],
+            dimension_free_kind: None,
         };
-        if !super::policy::INCLUDED.contains(kind) {
+        if !super::policy::included(semantics).contains(kind) {
             return Ok(parsed);
         }
         let specification = match EventSpecification::from_published_label(label, kind) {
@@ -50,7 +59,8 @@ impl<'a> ContextualLabel<'a> {
             let next = tail
                 .split(specification_separator)
                 .find(|word| !word.is_empty());
-            if let Some(dimension) = recognized_dimension(raw, next, prefix, kind, &specification)?
+            if let Some(dimension) =
+                recognized_dimension(raw, next, prefix, kind, &specification, semantics)?
             {
                 let slot = match dimension {
                     Dimension::Hurdles(_) => parsed.dimensions.first_mut(),
@@ -62,7 +72,46 @@ impl<'a> ContextualLabel<'a> {
             bytes = after;
             words = end;
         }
+        if semantics == EventSemantics::FlatEvents19
+            && parsed.dimensions.iter().any(Option::is_some)
+        {
+            parsed.dimension_free_kind = Some(parsed.resolve_dimension_free_kind()?);
+        }
         Ok(parsed)
+    }
+
+    pub(super) fn resolve(&self, label: &str) -> EventKind {
+        EventKind::from_source_label_with_policy(label, self.semantics)
+    }
+
+    pub(super) fn semantics(&self) -> EventSemantics {
+        self.semantics
+    }
+
+    pub(super) fn dimensions_match(&self, kind: &EventKind) -> bool {
+        if self.semantics == EventSemantics::Legacy18 {
+            return true;
+        }
+        self.dimension_free_kind
+            .as_ref()
+            .is_none_or(|race| race == kind)
+    }
+
+    fn resolve_dimension_free_kind(&self) -> Result<EventKind, CatalogError> {
+        let mut declarations = String::new();
+        declarations
+            .try_reserve(self.label.len())
+            .map_err(|_| CatalogError::ResourceExhausted)?;
+        for token in self.tokens() {
+            let Some(word) = token.declaration() else {
+                continue;
+            };
+            if !declarations.is_empty() {
+                declarations.push(' ');
+            }
+            declarations.push_str(word);
+        }
+        Ok(self.resolve(&declarations))
     }
 
     pub(super) fn tokens(&self) -> impl Iterator<Item = LabelToken<'a>> + Clone + '_ {
@@ -125,6 +174,7 @@ pub(super) fn recognized_dimension(
     prefix: &str,
     kind: &EventKind,
     specification: &EventSpecification,
+    semantics: EventSemantics,
 ) -> Result<Option<Dimension>, CatalogError> {
     if !raw.bytes().next().is_some_and(|byte| byte.is_ascii_digit()) {
         return Ok(None);
@@ -138,7 +188,7 @@ pub(super) fn recognized_dimension(
         }
     }
     if let Some(expected) = specification.hurdles {
-        if EventKind::from_source_label(prefix) == *kind {
+        if EventKind::from_source_label_with_policy(prefix, semantics) == *kind {
             for unit in [None, next] {
                 let candidate = context_probe("hurdles ", raw, unit, "", kind)?;
                 if candidate.is_some_and(|value| value.hurdles == Some(expected)) {
