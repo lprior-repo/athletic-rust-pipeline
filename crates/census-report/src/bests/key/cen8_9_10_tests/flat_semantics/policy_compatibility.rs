@@ -132,19 +132,19 @@ fn direct_pr_construction_requires_the_callers_semantic_policy() -> TestResult {
             .iter()
             .find(|row| row.id == event.meet)
             .ok_or("meet")?;
-        let old = crate::bests::PrKey::from_performance(
+        let old = census_domain::model::performance_comparison::PrKey::from_performance(
             performance,
             event,
             Some(meet),
-            crate::bests::Measure::Time,
+            census_domain::model::performance_comparison::Measure::Time,
             EventSemantics::Legacy18,
         )?;
         check!(eq; old, None);
-        let new = crate::bests::PrKey::from_performance(
+        let new = census_domain::model::performance_comparison::PrKey::from_performance(
             performance,
             event,
             Some(meet),
-            crate::bests::Measure::Time,
+            census_domain::model::performance_comparison::Measure::Time,
             EventSemantics::FlatEvents19,
         )?
         .ok_or("current flat-event key")?;

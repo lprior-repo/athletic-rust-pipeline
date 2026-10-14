@@ -3,8 +3,9 @@ use super::{
     rows::{self, Row},
     schema,
 };
-use crate::bests::{Measure, SharedSelection};
+use crate::bests::SharedSelection;
 use crate::report::ReportResult;
+use census_domain::model::performance_comparison::Measure;
 use std::collections::BTreeMap;
 use std::path::Path;
 

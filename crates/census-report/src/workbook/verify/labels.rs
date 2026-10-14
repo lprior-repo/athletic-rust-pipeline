@@ -1,4 +1,5 @@
-use crate::bests::{SharedSelection, SurfaceClass};
+use crate::bests::SharedSelection;
+use census_domain::model::performance_comparison::SurfaceClass;
 
 use athlete_headers::Schema;
 

@@ -65,9 +65,9 @@ observation timeout is not a job failure: `national` observes for `--timeout-sec
 172800) and the run continues either way, so a submission that printed `Terminal error [500]: the
 invocation stream was closed after the 'abort timeout' (1h) fired` may have completed server-side —
 confirm through the admin API before concluding a jurisdiction failed. A submission whose run
-identity already exists is deduplicated, not restarted: reattaching returns the existing invocation,
-and starting a different run needs a revision bump, which remains the documented way to invalidate
-completed work and must not be used merely to reset an exhausted attempt budget.
+identity already exists is deduplicated, not restarted: reattaching returns the existing invocation.
+Retain that binding and its exhausted budgets. A genuinely new qualification run needs an explicitly
+qualified identity/store transition; a revision bump is not a recovery or annual-refresh mechanism.
 
 Roster progress is not roster acquisition. Every indexed team is in exactly one roster bucket and
 `committed + skipped + remaining == rosters_total`. `committed` counts teams whose captured roster
@@ -106,9 +106,9 @@ jurisdiction through `run` once a round makes no stage progress, and then record
 of driving it again. `run` keeps its strict contract: it reports a jurisdiction only when every stage
 is complete, so partial or refused work is never published as a finished census. A report's `owed`
 rows name each unfinished identity, the stages that ran, the stages still owed and their reasons, and
-`national-report` exits non-zero while any jurisdiction is owed. Revision 2 on an existing store is
-the supported way to give every settled source a fresh attempt budget; a re-drive round does not
-reset an exhausted budget by itself.
+`national-report` exits non-zero while any jurisdiction is owed. Re-drive rounds do not reset
+exhausted source budgets. Do not submit revision 2 or another identity to evade exhaustion;
+preserve the original obligations and use only an explicitly qualified continuation transition.
 
 The national workflow runs school-site contact acquisition for every requested jurisdiction after
 the school-address join has attached source-backed official websites, and before consolidation.
@@ -427,15 +427,29 @@ not a wall-clock bound on shutdown. The shipped unit uses `TimeoutStopSec=infini
 Retain the certificate:
 
 ```text
-drained: accepted=<n> completed=<n> cancelled=<n> timed_out=<n> aborted=<n> panicked=<n>
+drained: accepted=<n> completed=<n> cancelled=<n> timed_out=<n> aborted=<n> panicked=<n> failed=<n> still_running=<n> remaining=<n> attempts_reserved=<n> attempts_recorded=<n> attempts_unknown=<n> sources=<n> sources_settled=<n> attempt_ceiling=<n>
 ```
 
 A stop request is broadcast to cooperative region tasks before the drain begins. A non-zero
 `timed_out` counts tasks still owned at the grace deadline; it overlaps terminal outcomes and is not
 an additional completion bucket. Async survivors are aborted and reaped; started blocking effects
-are awaited even beyond the deadline. Successful drain reports satisfy
-`accepted = completed + cancelled + aborted + panicked`, with no remaining owned tasks.
-Cancelled drain callers retain the region for a subsequent drain; admission never reopens.
+are awaited even beyond the deadline. Terminal accounting satisfies
+`accepted = completed + cancelled + aborted + panicked`; `failed` is diagnostic, not another bucket.
+CLI success additionally requires a requested/signal stop, completed endpoint shutdown and zero
+aborted, panicked, timed-out, still-running and remaining work. Resource-accounting failure exits
+nonzero even after a balanced drain. Cancelled drain callers retain the region; admission never reopens.
+
+### Memory accounting
+
+Default accounting is engine RSS only, not a whole-deployment envelope. On Linux,
+`--memory-cgroup /census.slice` selects an explicit cgroup-v2 hierarchy ancestor. Before store open,
+it requires membership beneath that scope, finite `memory.max` within `--memory-budget-gib`,
+zero `memory.swap.max`, and readable bounded current/peak counters. The watcher drains on missing
+counters, observed high-water regression, changed membership/limit, swap allowance or exceeded capacity; it never falls back to RSS.
+The shipped slice places endpoint, owned Chromium, Restate and the legacy collector beneath one
+48-GiB cap. Install only through the stopped-owner handoff; never move or resize a running census.
+This is RAM containment, not disk/headroom, source-coverage or reusable-production qualification.
+
 ## Admission coordinator
 
 The `Coordinator` grants an atomic envelope of retained bytes, work units, slots, and work class.

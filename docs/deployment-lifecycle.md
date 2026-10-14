@@ -41,6 +41,7 @@ necessarily does, and a paused invocation is not proof of journal corruption.
 |---|---|
 | `deploy/restate.toml` | Native node config; conventional loopback ingress 18095/admin 19095 |
 | `deploy/systemd/restate-server.service` | Node and its separate durable state |
+| `deploy/systemd/census.slice` | Shared 48-GiB, zero-swap RAM cap for node, endpoint/browser and historical collector |
 | `deploy/systemd/census-serve@.service` | Endpoint per release, binary under `/opt/athletic-rust-pipeline/releases/<release>/bin/census-serve` |
 | `deploy/endpoint.env.example` | Per-release listen address environment |
 | `deploy/systemd/census-service-collect.service` and `.timer` | Historical weekly staging collection; not the fresh census's canonical workflow |
@@ -50,6 +51,13 @@ That prevents lock sharing by default but does **not** migrate an existing run's
 bind the intended run/store before using a new instance; do not silently direct replay into a new
 empty release root. The unit grants writable access to its declared data root, so any override must
 also reconcile filesystem permissions and sandbox paths.
+
+Install the slice with all matching service units before selecting `--memory-cgroup /census.slice`.
+Changing placement requires endpoint drain followed by orderly node shutdown and retained cold
+artifacts; preserve the same store, node directories, identities and registrations. Never move or
+resize a running census to retrofit this cap. The finite-group smoke in the
+[review evidence](verification/2026-10-14-deep-codebase-review.md#subsequent-r9r15-working-tree-evidence)
+exercised an isolated endpoint only, not installed templates or a qualified whole-workload envelope.
 
 ## Planned same-store handoff
 

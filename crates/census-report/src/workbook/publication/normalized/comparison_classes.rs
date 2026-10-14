@@ -1,7 +1,8 @@
 use super::{digest, encode, write_csv};
-use crate::bests::{Measure, SharedSelection};
+use crate::bests::SharedSelection;
 use crate::export::ExportDataset;
 use crate::report::ReportResult;
+use census_domain::model::performance_comparison::Measure;
 use std::collections::BTreeMap;
 use std::path::Path;
 

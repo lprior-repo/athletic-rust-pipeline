@@ -41,6 +41,7 @@ pub(super) async fn supervise(
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> Result<DrainReport, BootstrapError> {
     init_tracing();
+    let memory = super::guard::MemoryReader::prepare(&options)?;
     let region = Arc::new(Spawner::new());
     let (store, capture) =
         super::store::open(&region, options.data_dir.clone(), options.capture_protocol).await?;
@@ -56,7 +57,7 @@ pub(super) async fn supervise(
         spawn_endpoint(&region, &store, capture, &options, listener, lane)?;
     region
         .spawn(super::guard::watch_memory(
-            options.memory_budget_bytes,
+            memory,
             Arc::clone(&over_budget),
             region.stopping(),
         ))

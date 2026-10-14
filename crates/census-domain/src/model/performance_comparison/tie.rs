@@ -48,7 +48,7 @@ pub fn tie_break_preferred(candidate: MarkOrdering<'_>, incumbent: MarkOrdering<
         .is_lt()
 }
 
-pub(crate) fn should_replace_impl(
+pub fn should_replace(
     candidate_value: i64,
     incumbent_value: i64,
     candidate: MarkOrdering<'_>,

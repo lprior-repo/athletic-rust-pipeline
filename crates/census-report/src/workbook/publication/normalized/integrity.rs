@@ -1,6 +1,7 @@
 use super::{comparison_classes, defect, PerformanceIndex};
-use crate::bests::{Parents, PrKey, SharedSelection};
+use crate::bests::{Parents, SharedSelection};
 use crate::report::{Derivation, EventAdmission, ReportResult};
+use census_domain::model::performance_comparison::PrKey;
 use census_domain::model::CanonicalPerformance;
 use std::collections::BTreeSet;
 

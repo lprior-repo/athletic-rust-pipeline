@@ -1,8 +1,8 @@
 use super::super::mark_text;
 use super::super::selection::Conflict;
-use super::super::Measure;
 use super::{Candidate, Parents};
 use crate::report::EventAdmission;
+use census_domain::model::performance_comparison::Measure;
 use census_domain::model::{CanonicalPerformance, PerformanceId};
 use std::collections::{BTreeMap, BTreeSet};
 

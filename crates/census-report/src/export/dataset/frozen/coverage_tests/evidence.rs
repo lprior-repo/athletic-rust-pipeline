@@ -2,6 +2,7 @@ use super::super::fixtures::{seeded_store_with_source_athlete, SeededStore, Test
 use crate::bests::{self, SharedSelection};
 use crate::export::ExportDataset;
 use crate::report::{coverage_report, CoverageReport, Scope};
+use census_domain::model::performance_comparison::SurfaceClass;
 use census_domain::model::{
     serialized_bytes, serialized_digest, CanonicalAthlete, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CoachLaneObligation, Confidence, CoverageRow, CoverageScope, EventKind,
@@ -219,7 +220,7 @@ pub(super) fn check_shape(dataset: &ExportDataset, shape: EvidenceShape) -> Test
     check!(eq; selection.result.normalized, Some(45.72));
     check!(eq; selection.result.value, 45_720_000);
     check!(eq; selection.key.event_kind, EventKind::Discus);
-    check!(eq; selection.key.surface, bests::SurfaceClass::Outdoor);
+    check!(eq; selection.key.surface, SurfaceClass::Outdoor);
     check!(eq; selection.athlete.grad_year, 2027);
     check!(eq; selection.source.result_url, RESULT_URL);
     check!(eq; selection.source.source_athlete, "1");

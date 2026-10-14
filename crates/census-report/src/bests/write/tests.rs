@@ -1,7 +1,9 @@
 use super::write;
 use crate::bests::{
-    ComparisonPolicy, Measure, Population, PrKey, SelectionAthlete, SelectionMeet, SelectionResult,
-    SelectionSource, SharedSelection, SurfaceClass, TimingClass, WindClass,
+    Population, SelectionAthlete, SelectionMeet, SelectionResult, SelectionSource, SharedSelection,
+};
+use census_domain::model::performance_comparison::{
+    ComparisonPolicy, Measure, PrKey, SurfaceClass, TimingClass, WindClass,
 };
 use census_domain::model::{
     EventKind, EventSpecification, ExactSeconds, Gender, Id, Mark, SourceRef, TimingMethod,

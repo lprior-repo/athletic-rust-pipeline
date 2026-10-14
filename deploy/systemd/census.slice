@@ -1,0 +1,8 @@
+[Unit]
+Description=Census endpoint, browser, Restate and collector memory envelope
+Documentation=file:/opt/athletic-rust-pipeline/docs/OPERATIONS.md
+
+[Slice]
+MemoryAccounting=true
+MemoryMax=48G
+MemorySwapMax=0

@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::bests::{SharedSelection, SurfaceClass};
+use crate::bests::SharedSelection;
+use census_domain::model::performance_comparison::SurfaceClass;
 use census_domain::model::{CanonicalAthlete, EventKind, ObservedGrade, SchoolYear};
 
 use super::super::canonical::Value;

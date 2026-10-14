@@ -1,7 +1,7 @@
 use super::{ReportError, ReportResult};
-use crate::bests::SurfaceClass;
 use crate::export::ExportDataset;
 use crate::grouping::{Admission, GroupingError};
+use census_domain::model::performance_comparison::SurfaceClass;
 use census_domain::model::{
     CanonicalEvent, EventDisposition, EventExclusionReason, EventId, EventKind,
     EventResolutionReason, MeetId, RecruitingCatalogV1, Sport,

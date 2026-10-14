@@ -164,14 +164,15 @@ rebase preserved local work without new conflicts. Preservation stashes and live
 - R4/R5/R6: policy 20, checked combined-event completion, distinct eligible/tied inventories,
   eight normalized CSV families and artifact revision 3. Original policies 18/19 remain read-only
   under their original encodings/layouts. Source qualification and remaining lineage gaps stay open.
-- R9: shared `EventKind::is_relay`; comparison-policy ownership is still unresolved.
+- R9: shared `EventKind::is_relay`; comparison keys, measures, catalog classification and tie policy
+  now belong to `census-domain::model::performance_comparison`. Report callers migrated; no shim.
 - Archive: finite 20 GiB default and attributed capacity-refusal logging. Controlled admission/replay
   is covered; no product capture-rate field or national-scale acceptance is claimed.
 - Post-PR38/37 integration: explicit offline-store validation runs before store access without
   rejecting valid global-argument placement; build-job validation accepts ASCII decimal digits only.
 - Browser correlation, bounded CSV parsing, historical-school tamper detection and module-size
-  repairs are integrated. Actual browser execution and bootstrap/transport 403/429 gate consistency
-  remain open.
+  repairs are integrated. Bare 403/429 no longer revokes the challenge gate; explicit challenge
+  evidence still does. Current real Chromium and transport evidence is recorded below.
 
 ### Executed evidence
 
@@ -259,3 +260,29 @@ regressions. R5 still needs complete metadata and broader positive fixtures. R6'
 context-based duplicate-count policy needs identity justification; normalized
 provenance still enumerates exported tied IDs rather than every supporting source ID.
 Neither review item is fully closed by these focused repairs.
+
+### Subsequent R9–R15 working-tree evidence
+
+These exercised repairs follow checkpoint `8005d33f`; they are not a full release certificate.
+
+| Surface | Executed evidence | Boundary |
+|---|---|---|
+| R9 comparison ownership | `tests-scoped` / `2d0135aa`: 851 focused passes; `bench -- --bench capture_export -- --test` / `2b80b844`: 185 canonical rows, 60 cohort members, authoritative XLSX/CSV/JSONL readback | Captured corpus; no speed or national-coverage claim |
+| R10 fallible construction | Actual `store_smoke` seed; empty name exit 1 / `EmptyName`; independent reopen/readback / `0acad89c` verified the exact athlete, school and 2027 claim | Isolated synthetic fixture, not population intake |
+| R14 browser boundary | Actual Chromium / `5087be2e`: normal 200, 33,554,433-byte refusal, bare-403 recovery, 429/Retry-After recovery, explicit challenge; clean manager drain | Loopback transport smoke, not source entitlement |
+| R14 unavailable accounting | Actual masked-proc smoke first exposed exit 0 after resource drain; two CLI-policy regressions / `42ad8a63` passed; actual repeat exited 1 with accepted=completed=3 | Engine accounting failure, not whole-group qualification |
+| R13 parser/registry and R14 cgroup | `tests-scoped` / `ef0459d9`: 62 passes, including real 755-row official text, 1-MiB admitted registry payload, pinned reads, corruption refusal and cold backup/restore | Official PDF has 40 physical pages, 20 blank trailing pages; no UP/sport inference |
+| R14 strict CLI | Build / `b4a699f6`; actual unbounded-group refusal exited 1 before creating the store; separate finite 1-GiB/zero-swap systemd unit admitted and exited 0 after SIGTERM, accepted=completed=3 | Isolated endpoint only; Restate/browser/global disk envelope unqualified |
+| R15 runtime/wire ownership | `tests-scoped` / `9085a8a0`: 14 producer/consumer and policy cases passed after removing three incidental tests | ADR-007 preserves the intentional effect-boundary representations |
+
+The real official-text case failed with `MissingHeader` before repair (`bca4278b`): the PDF contains
+blank trailing physical pages. Admission still counts every physical page before trailing layout
+normalization; malformed interior pages remain errors. The original capture is retained under
+`crates/census-crawl/tests/fixtures/mhsaa_enrollment/`, SHA-256
+`9a68ae75835a3e69b7a8abc68cef77e7dadb716d8ae9aceaf2a90bffc596300a`.
+It is enrollment research, not qualified pipeline capture or complete five-state discovery.
+
+Strict-mode smoke evidence: `var/r14-memory-mode-C9wsAWJm/finite-smoke.json`.
+Browser and constructor harness/readback evidence: `var/review-r9-r15-20261014/`.
+R11 semantic witnesses, R12 reusable execution, R13 qualified denominators, R14 whole-workload
+resource proof, native 03/12 and the full release gate remain open. No live installation was changed.

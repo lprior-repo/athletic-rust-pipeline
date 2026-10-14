@@ -1,5 +1,8 @@
 use super::*;
-use crate::bests::{Measure, PrKey, SharedSelection, SurfaceClass, TimingClass, WindClass};
+use crate::bests::SharedSelection;
+use census_domain::model::performance_comparison::{
+    Measure, PrKey, SurfaceClass, TimingClass, WindClass,
+};
 use std::collections::BTreeMap;
 
 mod context_refusal;

@@ -23,13 +23,14 @@ pub const MEMORY_BUDGET_CEILING_GIB: u64 = 1024;
 pub use census_store::clock::{Clock, SystemClock};
 
 pub use drain::{DrainReport, EndpointShutdown};
-pub use options::{ServeCaptureProtocol, ServeOptions};
+pub use options::{MemoryAccounting, ServeCaptureProtocol, ServeOptions};
 pub use serve::{init_tracing, serve, serve_until};
 pub use stop::StopReason;
 
 const USAGE: &str = "census-serve [--listen ADDR] [--data-dir DIR] \
                      [--capture-protocol fresh-qualification-v1|fresh-qualification-v2] \
                      [--max-concurrent N] [--drain-timeout SECONDS] [--memory-budget-gib GIB] \
+                     [--memory-cgroup HIERARCHY_PATH] \
                      [--browser-profile DIR] [--browser-executable PATH] [--browser-headless] [--help]";
 
 #[cfg(test)]

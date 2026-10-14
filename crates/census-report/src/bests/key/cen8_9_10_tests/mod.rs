@@ -1,4 +1,4 @@
-use super::ComparisonPolicy;
+use census_domain::model::performance_comparison::ComparisonPolicy;
 use census_domain::model::*;
 
 mod boundaries;

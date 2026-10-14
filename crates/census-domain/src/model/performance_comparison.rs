@@ -1,13 +1,16 @@
 mod catalog;
 mod classification;
 mod compatibility;
+mod labels;
+mod measure;
 mod tie;
 
 pub use classification::{classify_wind, is_wind_sensitive, resolve_timing};
 pub use compatibility::ComparisonPolicy;
-pub use tie::{tie_break_preferred, MarkOrdering};
+pub use measure::{field_micrometres, mark_unit, Measure};
+pub use tie::{should_replace, tie_break_preferred, MarkOrdering};
 
-use census_domain::model::{
+use crate::model::{
     CanonicalEvent, CanonicalMeet, CanonicalPerformance, CatalogError, EventDisposition, EventId,
     EventKind, EventSpecification, RecruitingCatalogV1, Sport,
 };
@@ -54,18 +57,18 @@ pub enum TimingClass {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct KeyAdjustment {
-    pub kind: census_domain::model::AdjustmentKind,
-    pub basis: census_domain::model::AdjustmentBasis,
+    pub kind: crate::model::AdjustmentKind,
+    pub basis: crate::model::AdjustmentBasis,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
 pub struct PrKey {
-    pub athlete_id: census_domain::model::AthleteId,
+    pub athlete_id: crate::model::AthleteId,
     pub event_kind: EventKind,
     pub surface: SurfaceClass,
     pub wind_class: WindClass,
     pub timing: TimingClass,
-    pub measure: crate::bests::Measure,
+    pub measure: Measure,
     pub context: Option<EventId>,
     pub specification: EventSpecification,
     pub comparison: ComparisonPolicy,
@@ -77,8 +80,8 @@ impl PrKey {
         performance: &CanonicalPerformance,
         event: &CanonicalEvent,
         meet: Option<&CanonicalMeet>,
-        measure: crate::bests::Measure,
-        semantics: census_domain::model::EventSemantics,
+        measure: Measure,
+        semantics: crate::model::EventSemantics,
     ) -> Result<Option<Self>, CatalogError> {
         Self::from_athlete(
             performance,
@@ -90,13 +93,13 @@ impl PrKey {
         )
     }
 
-    pub(super) fn from_athlete(
+    fn from_athlete(
         performance: &CanonicalPerformance,
         event: &CanonicalEvent,
         meet: Option<&CanonicalMeet>,
-        measure: crate::bests::Measure,
-        athlete: &census_domain::model::AthleteId,
-        semantics: census_domain::model::EventSemantics,
+        measure: Measure,
+        athlete: &crate::model::AthleteId,
+        semantics: crate::model::EventSemantics,
     ) -> Result<Option<Self>, CatalogError> {
         let surface = meet.map_or(SurfaceClass::Unresolved, SurfaceClass::resolve);
         let disposition =
@@ -112,14 +115,14 @@ impl PrKey {
         ))
     }
 
-    pub(super) fn from_admitted(
+    pub fn from_admitted(
         performance: &CanonicalPerformance,
         event: &CanonicalEvent,
         meet: Option<&CanonicalMeet>,
-        measure: crate::bests::Measure,
-        athlete: &census_domain::model::AthleteId,
+        measure: Measure,
+        athlete: &crate::model::AthleteId,
         disposition: &EventDisposition,
-        semantics: census_domain::model::EventSemantics,
+        semantics: crate::model::EventSemantics,
     ) -> Option<Self> {
         let meet = meet?;
         let surface = SurfaceClass::resolve(meet);
@@ -145,8 +148,8 @@ impl PrKey {
         performance: &CanonicalPerformance,
         kind: &EventKind,
         surface: SurfaceClass,
-        measure: crate::bests::Measure,
-        athlete: &census_domain::model::AthleteId,
+        measure: Measure,
+        athlete: &crate::model::AthleteId,
     ) -> Self {
         Self {
             athlete_id: athlete.clone(),
@@ -184,22 +187,3 @@ impl std::fmt::Display for PrKey {
         )
     }
 }
-
-pub fn should_replace(
-    candidate_value: i64,
-    incumbent_value: i64,
-    candidate: MarkOrdering<'_>,
-    incumbent: MarkOrdering<'_>,
-    better: impl Fn(i64, i64) -> bool,
-) -> bool {
-    tie::should_replace_impl(
-        candidate_value,
-        incumbent_value,
-        candidate,
-        incumbent,
-        better,
-    )
-}
-
-#[cfg(test)]
-mod cen8_9_10_tests;

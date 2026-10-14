@@ -1,7 +1,7 @@
 mod merge;
 
 use super::*;
-use crate::bests::{ComparisonPolicy, SurfaceClass};
+use census_domain::model::performance_comparison::{ComparisonPolicy, SurfaceClass};
 use census_domain::model::{Adjustment, AdjustmentBasis, AdjustmentKind, SourceRef};
 
 const TRACK_SIZE_NOTE: &str = "Converted from 9:22.21 for Track Size. ";

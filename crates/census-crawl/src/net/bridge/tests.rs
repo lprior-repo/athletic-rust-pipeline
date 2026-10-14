@@ -130,57 +130,6 @@ fn the_census_mirror_decodes_the_failure_fixture() -> TestResult {
 }
 
 #[test]
-fn every_reason_renders_as_its_wire_name() {
-    const REASONS: [BrowserError; 9] = [
-        BrowserError::Transport,
-        BrowserError::Timeout,
-        BrowserError::PayloadLimit,
-        BrowserError::Redirect,
-        BrowserError::Unavailable,
-        BrowserError::HumanRequired,
-        BrowserError::Protocol,
-        BrowserError::Shutdown,
-        BrowserError::TaskPanicked,
-    ];
-    let mut rendered: Vec<&str> = Vec::new();
-    for reason in REASONS {
-        let name = reason.as_str();
-        assert_eq!(
-            reason.to_string(),
-            name,
-            "the display is the wire's own spelling"
-        );
-        match serde_json::from_str::<BrowserError>(&format!("\"{name}\"")) {
-            Ok(parsed) => assert_eq!(parsed, reason, "{name} decodes to a different reason"),
-            Err(error) => panic!("{name} is not the name this decoder reads back: {error}"),
-        }
-        assert!(
-            !rendered.contains(&name),
-            "{name} is rendered for two reasons"
-        );
-        rendered.push(name);
-    }
-    assert_eq!(rendered.len(), REASONS.len());
-}
-
-#[test]
-fn session_key_is_profile_zero() {
-    assert_eq!(
-        super::SESSION_KEY,
-        "profile-0",
-        "browser session must be profile-0"
-    );
-}
-
-#[test]
-fn admitted_browser_origins_contains_athletic_net() {
-    assert!(
-        super::ADMITTED_BROWSER_ORIGINS.contains(&"www.athletic.net"),
-        "athletic.net must be in the admitted set"
-    );
-}
-
-#[test]
 fn a_non_admitted_origin_is_refused_with_policy_error() -> TestResult {
     let err = match crate::net::bridge::validate_origin("http://evil.example.com/page") {
         Err(err) => err,

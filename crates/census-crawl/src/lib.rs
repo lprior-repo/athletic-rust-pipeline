@@ -137,6 +137,7 @@ pub mod hytek;
 pub mod ihsa;
 pub mod ingress;
 pub mod ks;
+pub mod mhsaa_enrollment;
 pub mod milesplit;
 pub mod mpa;
 pub mod mshsl;

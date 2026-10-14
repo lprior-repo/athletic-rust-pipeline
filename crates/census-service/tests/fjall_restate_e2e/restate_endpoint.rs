@@ -1,7 +1,7 @@
 use crate::TestResult;
 use athleticnet_browser::BrowserSettings;
 use census_service::bootstrap::{
-    serve_until, DrainReport, ServeCaptureProtocol, ServeOptions, StopReason,
+    serve_until, DrainReport, MemoryAccounting, ServeCaptureProtocol, ServeOptions, StopReason,
     DEFAULT_MEMORY_BUDGET_BYTES,
 };
 use census_store::Store;
@@ -140,6 +140,7 @@ fn restate_endpoint_advertises_services_and_drains_on_request() -> TestResult {
                 data_dir: data_dir.clone(),
                 max_concurrent: 4,
                 memory_budget_bytes: DEFAULT_MEMORY_BUDGET_BYTES,
+                memory_accounting: MemoryAccounting::ProcessRss,
                 drain_timeout: Duration::from_secs(5),
                 lane: None,
             };
@@ -197,6 +198,7 @@ fn restate_endpoint_advertises_the_lane_when_it_serves_one() -> TestResult {
                 data_dir: dir.path().join("data"),
                 max_concurrent: 4,
                 memory_budget_bytes: DEFAULT_MEMORY_BUDGET_BYTES,
+                memory_accounting: MemoryAccounting::ProcessRss,
                 drain_timeout: Duration::from_secs(5),
                 lane: Some(BrowserSettings {
                     cdp_endpoint: None,
@@ -256,6 +258,7 @@ fn an_unrequested_stop_does_not_end_the_endpoint_at_the_drain_deadline() -> Test
                 data_dir: dir.path().join("data"),
                 max_concurrent: 4,
                 memory_budget_bytes: DEFAULT_MEMORY_BUDGET_BYTES,
+                memory_accounting: MemoryAccounting::ProcessRss,
                 drain_timeout: Duration::from_millis(250),
                 lane: None,
             };

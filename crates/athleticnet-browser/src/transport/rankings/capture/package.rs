@@ -5,6 +5,9 @@ use crate::{gate::ProfileGate, BrowserError};
 use chromiumoxide::cdp::browser_protocol::network::EventResponseReceived;
 use chromiumoxide::cdp::js_protocol::runtime::EventBindingCalled;
 
+#[cfg(test)]
+mod tests;
+
 pub(super) fn binding_package(
     event: &EventBindingCalled,
     context: &CaptureContext<'_>,
@@ -84,18 +87,16 @@ pub(super) fn observe_response_event(
     }) {
         return;
     }
-    let Ok(status) = u16::try_from(event.response.status) else {
+    let Ok(_status) = u16::try_from(event.response.status) else {
         return;
     };
-    if status == 403
-        || status == 429
-        || event
-            .response
-            .headers
-            .inner()
-            .get("cf-mitigated")
-            .and_then(|value| value.as_str())
-            == Some("challenge")
+    if event
+        .response
+        .headers
+        .inner()
+        .get("cf-mitigated")
+        .and_then(|value| value.as_str())
+        == Some("challenge")
     {
         gate.revoke();
     }

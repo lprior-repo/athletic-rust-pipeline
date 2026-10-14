@@ -1,0 +1,21 @@
+HTTP/2 200 
+date: Wed, 14 Oct 2026 21:43:15 GMT
+content-type: application/pdf
+content-length: 551687
+etag: "69b43f44-86b07"
+last-modified: Fri, 13 Mar 2026 16:45:56 GMT
+server: cloudflare
+strict-transport-security: max-age=31622400; includeSubDomains; preload
+x-pantheon-styx-hostname: styx-us-a-fbbcf58dd-64qgn
+x-styx-req-id: 34f4b0d4-c818-11f1-8a43-06a4dd687484
+x-served-by: cache-chi-klot8100119-CHI
+x-cache: MISS
+x-cache-hits: 0
+x-timer: S1792014172.826818,VS0,VE123
+age: 23
+accept-ranges: bytes
+via: 1.1 varnish
+cache-control: max-age=14400
+cf-cache-status: HIT
+cf-ray: a4a9c2324f6e57fd-ORD
+

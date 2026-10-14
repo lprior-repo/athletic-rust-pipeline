@@ -7,6 +7,7 @@ Requires=restate-server.service
 
 [Service]
 Type=simple
+Slice=census.slice
 User=midwest
 Group=midwest
 # %i is the release identity: the short commit being served. Each release gets its own binary, its
@@ -23,7 +24,9 @@ ExecStart=/opt/athletic-rust-pipeline/releases/%i/bin/census-serve \
   --listen ${CENSUS_LISTEN} \
   --data-dir /var/lib/census-service/%i \
   --max-concurrent 8 \
-  --drain-timeout 30
+  --drain-timeout 30 \
+  --memory-budget-gib 48 \
+  --memory-cgroup /census.slice
 Restart=on-failure
 RestartSec=5
 # The deadline is an async grace period. Started blocking effects must finish before the store

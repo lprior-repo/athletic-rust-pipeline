@@ -1,4 +1,7 @@
 use super::TestResult;
+use census_domain::model::performance_comparison::{
+    ComparisonPolicy, Measure, SurfaceClass, TimingClass, WindClass,
+};
 use census_domain::model::*;
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -145,13 +148,13 @@ impl Population {
         };
         let class = census_domain::model::serialized_digest(&(
             EventKind::Track400m,
-            crate::bests::SurfaceClass::Outdoor,
-            crate::bests::WindClass::NotApplicable,
-            crate::bests::TimingClass::Fat,
-            crate::bests::Measure::Time,
+            SurfaceClass::Outdoor,
+            WindClass::NotApplicable,
+            TimingClass::Fat,
+            Measure::Time,
             None::<EventId>,
             &specification,
-            crate::bests::ComparisonPolicy::Standard,
+            ComparisonPolicy::Standard,
             None::<()>,
             Gender::Girls,
         ))?;

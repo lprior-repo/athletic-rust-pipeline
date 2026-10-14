@@ -1,6 +1,6 @@
 mod notation;
 
-use census_domain::model::Mark;
+use crate::model::Mark;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]

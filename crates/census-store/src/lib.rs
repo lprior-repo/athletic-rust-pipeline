@@ -49,6 +49,7 @@ mod profiles;
 pub mod read;
 mod receipt;
 mod records;
+mod regions;
 mod rows;
 mod run;
 mod sequences;
@@ -80,6 +81,7 @@ pub use records::{
     BuildRecord, BuildState, FailureKind, InputRecord, InputState, LeaseMode, LeaseRecord,
     PublishRecord, PublishState, Transitioned, UnitRecord, UnitState,
 };
+pub use regions::{RegionRegistration, RegionRegistryError, MAX_REGION_RECORD_BYTES};
 pub use rows::TableWalk;
 pub use table::{
     Entity, StorageMode, Table, MAX_ID_BYTES, MAX_JOURNAL_KEY_BYTES, MAX_JOURNAL_VALUE_BYTES,

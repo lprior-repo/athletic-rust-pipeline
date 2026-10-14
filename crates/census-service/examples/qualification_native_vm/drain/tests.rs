@@ -3,8 +3,7 @@ use super::*;
 use serde_json::json;
 use std::process::Command;
 
-const VALID: &str =
-    "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0\n";
+const VALID: &str = "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2\n";
 
 #[test]
 fn offline_read_rejects_old_certificate_after_same_boot_endpoint_restart() -> Result<()> {
@@ -60,14 +59,14 @@ fn balanced_terminal_counts_are_accepted_and_unfinished_or_bad_outcomes_are_refu
         json!({"accepted":3,"completed":2,"cancelled":1,"timed_out":0,"aborted":0,"panicked":0})
     );
     [
-        "prefix drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0",
-        "drained: accepted=3 completed=1 cancelled=1 timed_out=0 aborted=0 panicked=0",
-        "drained: accepted=3 completed=2 cancelled=1 timed_out=1 aborted=0 panicked=0",
-        "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=1 panicked=0",
-        "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=1",
-        "drained: accepted=0 completed=18446744073709551615 cancelled=1 timed_out=0 aborted=0 panicked=0",
-        "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 extra=1",
-        "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0\ndrained: accepted=0 completed=0 cancelled=0 timed_out=0 aborted=0 panicked=0",
+        "prefix drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2",
+        "drained: accepted=3 completed=1 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2",
+        "drained: accepted=3 completed=2 cancelled=1 timed_out=1 aborted=0 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2",
+        "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=1 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2",
+        "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=1 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2",
+        "drained: accepted=0 completed=18446744073709551615 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2",
+        "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2 extra=1",
+        "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2\ndrained: accepted=0 completed=0 cancelled=0 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=0 sources_settled=0 attempt_ceiling=0",
     ].into_iter().for_each(|input| assert!(parse(input).is_err(), "{input}"));
     Ok(())
 }
@@ -103,5 +102,67 @@ fn same_label_command_outputs_are_isolated_between_incarnations() -> Result<()> 
     )?;
     assert_eq!(first, "first");
     assert_eq!(second, "second");
+    Ok(())
+}
+
+#[test]
+fn real_fifteen_field_production_drain_with_failed_is_accepted() -> Result<()> {
+    let log = "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=1 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2\n";
+    let counts = parse(log)?;
+    assert_eq!(counts.accepted, 3);
+    assert_eq!(counts.completed, 2);
+    assert_eq!(counts.cancelled, 1);
+    Ok(())
+}
+
+#[test]
+fn truncated_six_field_current_log_is_rejected() -> Result<()> {
+    let log = "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0\n";
+    assert!(parse(log).is_err(), "six-field log should be rejected");
+    Ok(())
+}
+
+#[test]
+fn incomplete_diagnostics_missing_later_fields_are_rejected() -> Result<()> {
+    let log = "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=0\n";
+    assert!(
+        parse(log).is_err(),
+        "missing attempts fields should be rejected"
+    );
+    Ok(())
+}
+
+#[test]
+fn nonzero_inflight_still_running_is_rejected() -> Result<()> {
+    let log = "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=1 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2\n";
+    assert!(
+        parse(log).is_err(),
+        "nonzero still_running should be rejected"
+    );
+    Ok(())
+}
+
+#[test]
+fn nonzero_inflight_remaining_is_rejected() -> Result<()> {
+    let log = "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=1 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2\n";
+    assert!(parse(log).is_err(), "nonzero remaining should be rejected");
+    Ok(())
+}
+
+#[test]
+fn attempt_ceiling_overflow_beyond_u8_is_rejected() -> Result<()> {
+    let log = "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=256\n";
+    assert!(
+        parse(log).is_err(),
+        "ceiling exceeding u8 range should be rejected"
+    );
+    Ok(())
+}
+
+#[test]
+fn attempt_ceiling_at_u8_boundary_is_accepted() -> Result<()> {
+    let log = "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=255\n";
+    let counts = parse(log)?;
+    assert_eq!(counts.accepted, 3);
     Ok(())
 }

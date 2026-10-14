@@ -14,6 +14,8 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod adjustment;
 mod catalog;
+#[path = "key/cen8_9_10_tests/mod.rs"]
+mod cen8_9_10_tests;
 mod classification;
 mod combined_events;
 mod conflicts;

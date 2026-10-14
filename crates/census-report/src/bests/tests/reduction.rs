@@ -1,4 +1,7 @@
 use super::*;
+use census_domain::model::performance_comparison::{
+    should_replace, MarkOrdering, Measure, PrKey, TimingClass, WindClass,
+};
 
 #[test]
 fn reduction_selects_the_faster_result_without_inventing_a_team_school() -> TestResult {
@@ -77,19 +80,19 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() -> Test
 
 #[test]
 fn reduce_equal_value_picks_earlier_exact_date() {
-    assert!(crate::bests::key::should_replace(
+    assert!(should_replace(
         1094,
         1094,
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
-        crate::bests::key::MarkOrdering::new("2025-06-15", "perf_2"),
-        move |c, i| crate::bests::Measure::Time.better(c, i),
+        MarkOrdering::new("2025-03-15", "perf_1"),
+        MarkOrdering::new("2025-06-15", "perf_2"),
+        move |c, i| Measure::Time.better(c, i),
     ));
-    assert!(!crate::bests::key::should_replace(
+    assert!(!should_replace(
         1094,
         1094,
-        crate::bests::key::MarkOrdering::new("2025-06-15", "perf_2"),
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
-        move |c, i| crate::bests::Measure::Time.better(c, i),
+        MarkOrdering::new("2025-06-15", "perf_2"),
+        MarkOrdering::new("2025-03-15", "perf_1"),
+        move |c, i| Measure::Time.better(c, i),
     ));
 }
 
@@ -121,22 +124,22 @@ fn key_separates_timing_methods_at_one_meet() -> TestResult {
     perf_fat.event = event.id.clone();
     perf_hand.event = event.id.clone();
 
-    let result_fat = crate::bests::PrKey::from_performance(
+    let result_fat = PrKey::from_performance(
         &perf_fat,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?;
-    let result_hand = crate::bests::PrKey::from_performance(
+    let result_hand = PrKey::from_performance(
         &perf_hand,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?;
-    check!(eq; result_fat.ok_or("missing FAT key")?.timing, crate::bests::TimingClass::Fat);
-    check!(eq; result_hand.ok_or("missing hand key")?.timing, crate::bests::TimingClass::Hand);
+    check!(eq; result_fat.ok_or("missing FAT key")?.timing, TimingClass::Fat);
+    check!(eq; result_hand.ok_or("missing hand key")?.timing, TimingClass::Hand);
     Ok(())
 }
 
@@ -168,22 +171,22 @@ fn key_separates_wind_assisted_and_legal_results() -> TestResult {
     perf_legal.event = event.id.clone();
     perf_assisted.event = event.id.clone();
 
-    let result_legal = crate::bests::PrKey::from_performance(
+    let result_legal = PrKey::from_performance(
         &perf_legal,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?;
-    let result_assisted = crate::bests::PrKey::from_performance(
+    let result_assisted = PrKey::from_performance(
         &perf_assisted,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?;
-    check!(eq; result_legal.ok_or("missing legal key")?.wind_class, crate::bests::WindClass::Legal);
-    check!(eq; result_assisted.ok_or("missing assisted key")?.wind_class, crate::bests::WindClass::Assisted);
+    check!(eq; result_legal.ok_or("missing legal key")?.wind_class, WindClass::Legal);
+    check!(eq; result_assisted.ok_or("missing assisted key")?.wind_class, WindClass::Assisted);
     Ok(())
 }
 
@@ -215,18 +218,18 @@ fn same_meet_different_dates_retain_the_same_comparison_key() -> TestResult {
     perf_earlier.event = event.id.clone();
     perf_later.event = event.id.clone();
 
-    let result_earlier = crate::bests::PrKey::from_performance(
+    let result_earlier = PrKey::from_performance(
         &perf_earlier,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?;
-    let result_later = crate::bests::PrKey::from_performance(
+    let result_later = PrKey::from_performance(
         &perf_later,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?;
     check!(
@@ -266,18 +269,18 @@ fn reduce_different_events_different_keys() -> TestResult {
     perf_100m.event = event_100m.id.clone();
     perf_200m.event = event_200m.id.clone();
 
-    let result_100m = crate::bests::PrKey::from_performance(
+    let result_100m = PrKey::from_performance(
         &perf_100m,
         &event_100m,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?;
-    let result_200m = crate::bests::PrKey::from_performance(
+    let result_200m = PrKey::from_performance(
         &perf_200m,
         &event_200m,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?;
     check!(eq; result_100m.ok_or("missing 100m key")?.event_kind, EventKind::Track100m);

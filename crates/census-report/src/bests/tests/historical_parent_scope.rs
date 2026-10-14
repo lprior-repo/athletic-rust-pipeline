@@ -1,6 +1,9 @@
 use super::*;
 use crate::report::Derivation;
 use crate::workbook::PerformanceProjection;
+use census_domain::model::performance_comparison::{
+    ComparisonPolicy, Measure, SurfaceClass, TimingClass, WindClass,
+};
 use census_domain::{JurisdictionBucket, MeetState};
 
 mod artifacts;
@@ -34,13 +37,13 @@ fn assert_result(row: &SharedSelection, fixture: &Fixture) -> TestResult {
     check!(eq; row.athlete.athlete_school.as_str(), fixture.case.school_text());
     check!(eq; row.athlete.athlete_state, fixture.case.school_bucket());
     check!(eq; row.key.event_kind, EventKind::Track400m);
-    check!(eq; row.key.surface, crate::bests::SurfaceClass::Outdoor);
-    check!(eq; row.key.wind_class, crate::bests::WindClass::NotApplicable);
-    check!(eq; row.key.timing, crate::bests::TimingClass::Fat);
-    check!(eq; row.key.measure, crate::bests::Measure::Time);
+    check!(eq; row.key.surface, SurfaceClass::Outdoor);
+    check!(eq; row.key.wind_class, WindClass::NotApplicable);
+    check!(eq; row.key.timing, TimingClass::Fat);
+    check!(eq; row.key.measure, Measure::Time);
     check!(eq; row.key.context, None);
     check!(eq; row.key.specification, expected_specification());
-    check!(eq; row.key.comparison, crate::bests::ComparisonPolicy::Standard);
+    check!(eq; row.key.comparison, ComparisonPolicy::Standard);
     check!(eq; row.result.mark, Mark::TimeSeconds(ExactSeconds::parse("48.55")?));
     check!(eq; row.result.value, MARK_VALUE);
     check!(eq; row.result.normalized, Some(48.55));

@@ -3,10 +3,10 @@ Description=Midwest census Restate server (journal, ingress, admin)
 Documentation=file:/opt/athletic-rust-pipeline/docs/OPERATIONS.md
 After=network-online.target
 Wants=network-online.target
-Before=census-serve@.service
 
 [Service]
 Type=simple
+Slice=census.slice
 User=midwest
 Group=midwest
 WorkingDirectory=/opt/athletic-rust-pipeline

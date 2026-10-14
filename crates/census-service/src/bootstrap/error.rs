@@ -43,6 +43,8 @@ pub enum BootstrapError {
     MemoryBudgetIsZero,
     #[error("--memory-budget-gib {value} is outside 1..={ceiling}")]
     MemoryBudgetTooLarge { value: u64, ceiling: u64 },
+    #[error("memory accounting admission failed: {detail}")]
+    MemoryAccountingUnavailable { detail: String },
     #[error("{raw} is not a number of seconds")]
     DrainTimeoutNotASeconds {
         raw: String,

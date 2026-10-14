@@ -1,5 +1,4 @@
-use crate::bests::key::{PrKey, SurfaceClass, TimingClass, WindClass};
-use crate::bests::Measure;
+use census_domain::model::performance_comparison::{mark_unit, Measure, PrKey, SurfaceClass};
 use census_domain::model::{
     AthleteId, EventSpecification, Gender, Mark, PerformanceId, SourceRef, TimingMethod,
 };
@@ -133,7 +132,7 @@ impl SharedSelection {
     }
 
     pub fn unit(&self) -> Option<&'static str> {
-        crate::bests::mark_unit(&self.result.mark)
+        mark_unit(&self.result.mark)
     }
 
     fn order_key(&self) -> OrderKey<'_> {
@@ -155,46 +154,4 @@ pub(crate) fn publish(
         rows.truncate(limit);
     }
     rows
-}
-
-impl SurfaceClass {
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::Indoor => "indoor",
-            Self::Outdoor => "outdoor",
-            Self::CrossCountry => "xc",
-            Self::Unresolved => "unresolved",
-        }
-    }
-
-    pub const fn season_label(self) -> &'static str {
-        match self {
-            Self::Indoor => "Winter",
-            Self::Outdoor => "Spring",
-            Self::CrossCountry => "Fall",
-            Self::Unresolved => "Unresolved",
-        }
-    }
-}
-
-impl WindClass {
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::Legal => "legal",
-            Self::Assisted => "assisted",
-            Self::Unknown => "unknown",
-            Self::NotApplicable => "na",
-        }
-    }
-}
-
-impl TimingClass {
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::Fat => "fat",
-            Self::Hand => "hand",
-            Self::Unknown => "unknown",
-            Self::NonTime => "non_time",
-        }
-    }
 }

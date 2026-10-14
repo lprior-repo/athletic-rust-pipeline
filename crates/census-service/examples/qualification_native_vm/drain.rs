@@ -32,6 +32,15 @@ impl Counts {
         Ok(())
     }
 }
+fn field(fields: &mut std::str::SplitWhitespace<'_>, expected: &str) -> Result<u64> {
+    let token = fields.next().context("missing drain accounting field")?;
+    let value = token
+        .strip_prefix(expected)
+        .context("unexpected drain accounting field order")?;
+    value
+        .parse::<u64>()
+        .with_context(|| format!("malformed drain value for {expected}"))
+}
 
 pub fn parse(log: &str) -> Result<Counts> {
     let mut lines = log
@@ -53,24 +62,27 @@ pub fn parse(log: &str) -> Result<Counts> {
         aborted: field(&mut fields, "aborted=")?,
         panicked: field(&mut fields, "panicked=")?,
     };
+    let _failed = field(&mut fields, "failed=")?;
+    let still_running = field(&mut fields, "still_running=")?;
+    let remaining = field(&mut fields, "remaining=")?;
+    let _reserved = field(&mut fields, "attempts_reserved=")?;
+    let _recorded = field(&mut fields, "attempts_recorded=")?;
+    let _unknown = field(&mut fields, "attempts_unknown=")?;
+    let _sources = field(&mut fields, "sources=")?;
+    let _settled = field(&mut fields, "sources_settled=")?;
+    let ceiling = field(&mut fields, "attempt_ceiling=")?;
+    ensure!(
+        u8::try_from(ceiling).is_ok(),
+        "attempt_ceiling exceeds u8 production type range"
+    );
     ensure!(
         fields.next().is_none(),
         "unexpected drain accounting fields"
     );
+    ensure!(still_running == 0, "in-flight work remains after drain");
+    ensure!(remaining == 0, "queued work remains after drain");
     counts.validate()?;
     Ok(counts)
-}
-
-fn field<'a>(fields: &mut impl Iterator<Item = &'a str>, prefix: &str) -> Result<u64> {
-    let value = fields
-        .next()
-        .and_then(|field| field.strip_prefix(prefix))
-        .context("missing or unordered drain accounting field")?;
-    ensure!(
-        !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()),
-        "invalid drain count"
-    );
-    Ok(value.parse()?)
 }
 
 pub fn verify(root: &Path, boot: &str) -> Result<Value> {

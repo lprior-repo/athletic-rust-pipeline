@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::model::performance_comparison::{Measure, PrKey};
 use census_domain::model::{
     CatalogError, EventDisposition, EventExclusionReason, EventResolutionReason, Evidence,
     RecruitingCatalogV1, SourceEventLabel, SourceRef,
@@ -104,11 +105,11 @@ fn checked_public_key_admits_only_the_positive_event_for_one_athlete() -> TestRe
         let event = catalog_event(kind, label, &meet.id)?;
         let performance = catalog_performance(&event, label, &athlete)?;
         check!(eq; RecruitingCatalogV1::new().classify(&event, Sport::OutdoorTrack)?, expected);
-        if let Some(key) = crate::bests::PrKey::from_performance(
+        if let Some(key) = PrKey::from_performance(
             &performance,
             &event,
             Some(&meet),
-            crate::bests::Measure::Time,
+            Measure::Time,
             census_domain::model::EventSemantics::FlatEvents19,
         )? {
             keys.push(key);
@@ -133,11 +134,11 @@ fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_key
             &meet.id,
         )?;
         let performance = catalog_performance(&event, label, &athlete_id())?;
-        check!(crate::bests::PrKey::from_performance(
+        check!(PrKey::from_performance(
             &performance,
             &event,
             Some(&meet),
-            crate::bests::Measure::Time,
+            Measure::Time,
             census_domain::model::EventSemantics::FlatEvents19,
         )?
         .is_none());
@@ -145,11 +146,11 @@ fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_key
     let mut event = catalog_event(EventKind::Track100m, "100m", &meet.id)?;
     let performance = catalog_performance(&event, "missing_owner", &athlete_id())?;
     event.evidence.clear();
-    check!(crate::bests::PrKey::from_performance(
+    check!(PrKey::from_performance(
         &performance,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?
     .is_none());
@@ -165,11 +166,11 @@ fn numeric_unmapped_missing_ownership_and_conflicting_labels_do_not_enter_pr_key
         label: "100m Wheelchair".into(),
     });
     let performance = catalog_performance(&event, "mixed_labels", &athlete_id())?;
-    check!(crate::bests::PrKey::from_performance(
+    check!(PrKey::from_performance(
         &performance,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?
     .is_none());
@@ -186,7 +187,7 @@ fn catalog_input_failure_is_a_typed_public_key_error() -> TestResult {
         .first_mut()
         .ok_or("fixture label")?
         .label = "x".repeat(4097);
-    check!(eq; crate::bests::PrKey::from_performance(&performance, &event, Some(&meet), crate::bests::Measure::Time, census_domain::model::EventSemantics::FlatEvents19), Err(CatalogError::LabelBytesExceeded));
+    check!(eq; PrKey::from_performance(&performance, &event, Some(&meet), Measure::Time, census_domain::model::EventSemantics::FlatEvents19), Err(CatalogError::LabelBytesExceeded));
     Ok(())
 }
 
@@ -283,11 +284,11 @@ fn catalog_readback(dataset: &ExportDataset) -> TestResult {
             .iter()
             .find(|meet| meet.id == event.meet)
             .ok_or("meet")?;
-        if let Some(key) = crate::bests::PrKey::from_performance(
+        if let Some(key) = PrKey::from_performance(
             performance,
             event,
             Some(meet),
-            crate::bests::Measure::Time,
+            Measure::Time,
             census_domain::model::EventSemantics::FlatEvents19,
         )? {
             keys.push(key);

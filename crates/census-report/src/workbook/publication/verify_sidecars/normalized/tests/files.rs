@@ -1,5 +1,6 @@
 use super::super::schema;
 use super::{population::Population, TestResult};
+use census_domain::model::performance_comparison::{TimingClass, WindClass};
 use std::path::Path;
 
 pub(super) fn write(given: &Population, directory: &Path) -> TestResult {
@@ -217,8 +218,8 @@ fn contacts(given: &Population, directory: &Path) -> TestResult {
 
 fn classes(given: &Population, directory: &Path) -> TestResult {
     let conditions = json(&(
-        crate::bests::TimingClass::Fat,
-        crate::bests::WindClass::NotApplicable,
+        TimingClass::Fat,
+        WindClass::NotApplicable,
         &given.specification,
     ))?;
     let specification = json(&given.specification)?;

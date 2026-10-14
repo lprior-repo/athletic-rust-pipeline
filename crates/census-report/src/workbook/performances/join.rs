@@ -1,6 +1,7 @@
 use super::rows::PerformanceRow;
-use crate::bests::{mark_text, sport_of, Measure};
+use crate::bests::{mark_text, sport_of};
 use crate::report::{Derivation, Scope};
+use census_domain::model::performance_comparison::Measure;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, Evidence, Mark, MEET_STATE_UNRESOLVED,

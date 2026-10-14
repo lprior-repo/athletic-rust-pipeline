@@ -27,6 +27,12 @@ pub enum ServeCaptureProtocol {
     FreshQualificationV2,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MemoryAccounting {
+    ProcessRss,
+    CgroupV2 { scope: PathBuf },
+}
+
 #[derive(Debug, Clone)]
 pub struct ServeOptions {
     pub listen: SocketAddr,
@@ -35,6 +41,7 @@ pub struct ServeOptions {
     pub max_concurrent: usize,
     pub drain_timeout: Duration,
     pub memory_budget_bytes: u64,
+    pub memory_accounting: MemoryAccounting,
     pub lane: Option<BrowserSettings>,
 }
 
@@ -47,6 +54,7 @@ impl Default for ServeOptions {
             max_concurrent: DEFAULT_MAX_CONCURRENT,
             drain_timeout: DEFAULT_DRAIN_TIMEOUT,
             memory_budget_bytes: DEFAULT_MEMORY_BUDGET_BYTES,
+            memory_accounting: MemoryAccounting::ProcessRss,
             lane: None,
         }
     }
@@ -121,6 +129,11 @@ fn apply_flag<I: Iterator<Item = String>>(
         "--max-concurrent" => parse_max_concurrent(value("--max-concurrent")?, options)?,
         "--drain-timeout" => parse_drain_timeout(value("--drain-timeout")?, options)?,
         "--memory-budget-gib" => parse_memory_budget(value("--memory-budget-gib")?, options)?,
+        "--memory-cgroup" => {
+            options.memory_accounting = MemoryAccounting::CgroupV2 {
+                scope: PathBuf::from(value("--memory-cgroup")?),
+            };
+        }
         "--browser-profile" | "--browser-executable" | "--browser-headless" => {
             apply_browser_flag(flag, args, lane)?;
         }

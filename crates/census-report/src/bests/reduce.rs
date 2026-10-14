@@ -5,10 +5,11 @@ mod support;
 
 use reports::{CompetitionContext, ContextIntegrity, ReportGroup, RetainedContexts};
 
-use super::key::{should_replace, MarkOrdering, PrKey};
 use super::selection::{Population, SharedSelection};
-use super::{Measure, Options, Parents};
+use super::{Options, Parents};
 use crate::report::{Derivation, EventAdmission, ReportResult, Scope};
+use census_domain::model::performance_comparison::Measure;
+use census_domain::model::performance_comparison::{should_replace, MarkOrdering, PrKey};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventSpecification,
     SourceIdentity,

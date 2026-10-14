@@ -1,9 +1,10 @@
 use super::super::super::cells::{row, Cell};
 use super::super::columns::{flag, published};
 use super::rules::PR_EVENTS;
-use crate::bests::{SharedSelection, SurfaceClass};
+use crate::bests::SharedSelection;
 use crate::workbook::recruiting::profiles::Profiles;
 use crate::workbook::ReportResult;
+use census_domain::model::performance_comparison::SurfaceClass;
 use census_domain::model::{CanonicalAthlete, EventKind, Sport};
 
 pub(super) fn participation_flags(athlete: &CanonicalAthlete) -> Vec<Cell> {

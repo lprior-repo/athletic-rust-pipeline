@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::model::performance_comparison::{SurfaceClass, TimingClass};
 use census_domain::{JurisdictionBucket, MeetState};
 
 mod artifacts;
@@ -51,8 +52,8 @@ fn assert_result(row: &SharedSelection, fixture: &Fixture) -> TestResult {
     let expected = &fixture.performance;
     check!(eq; row.athlete_id(), &fixture.athlete.id);
     check!(eq; row.key.event_kind, EventKind::Track400m);
-    check!(eq; row.key.surface, crate::bests::SurfaceClass::Outdoor);
-    check!(eq; row.key.timing, crate::bests::TimingClass::Fat);
+    check!(eq; row.key.surface, SurfaceClass::Outdoor);
+    check!(eq; row.key.timing, TimingClass::Fat);
     check!(eq; row.result.mark, expected.mark);
     check!(eq; row.result.value, MARK_VALUE);
     check!(eq; row.result.normalized, Some(48.55));

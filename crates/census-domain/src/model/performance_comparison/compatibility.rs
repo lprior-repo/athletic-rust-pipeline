@@ -1,5 +1,5 @@
 use super::*;
-use census_domain::model::{AdjustmentBasis, CourseMeasurement};
+use crate::model::{AdjustmentBasis, CourseMeasurement};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -22,15 +22,10 @@ impl ComparisonPolicy {
 }
 
 impl PrKey {
-    #[cfg(test)]
-    pub(super) fn qualify(self, event: &CanonicalEvent) -> Option<Self> {
-        self.qualify_with_policy(event, census_domain::model::EventSemantics::CURRENT)
-    }
-
     pub(super) fn qualify_with_policy(
         mut self,
         event: &CanonicalEvent,
-        semantics: census_domain::model::EventSemantics,
+        semantics: crate::model::EventSemantics,
     ) -> Option<Self> {
         self.specification = event.resolved_specification_with_policy(semantics).ok()?;
         if !self.compatible_fields() {
@@ -72,7 +67,7 @@ impl PrKey {
     pub fn same_course(
         &self,
         event: &CanonicalEvent,
-        semantics: census_domain::model::EventSemantics,
+        semantics: crate::model::EventSemantics,
     ) -> Option<Self> {
         if self.surface != SurfaceClass::CrossCountry
             || self.comparison == ComparisonPolicy::SameCourse

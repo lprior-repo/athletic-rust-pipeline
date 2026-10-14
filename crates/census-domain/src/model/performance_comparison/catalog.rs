@@ -1,5 +1,5 @@
 use super::{PrKey, SurfaceClass};
-use census_domain::model::{
+use crate::model::{
     AthleteId, CanonicalEvent, CanonicalPerformance, EventDisposition, EventKind, Sport,
 };
 
@@ -16,10 +16,10 @@ pub(super) fn included_key(
     performance: &CanonicalPerformance,
     event: &CanonicalEvent,
     surface: SurfaceClass,
-    measure: crate::bests::Measure,
+    measure: super::Measure,
     athlete: &AthleteId,
     disposition: &EventDisposition,
-    semantics: census_domain::model::EventSemantics,
+    semantics: crate::model::EventSemantics,
 ) -> Option<PrKey> {
     match disposition {
         EventDisposition::Included(kind) if !matches!(kind, EventKind::Unmapped { .. }) => {

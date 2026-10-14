@@ -2,8 +2,6 @@ use crate::report::Scope;
 
 pub(crate) mod context;
 mod events;
-mod key;
-mod measure;
 mod notation;
 mod parents;
 mod reduce;
@@ -11,12 +9,8 @@ mod selection;
 mod write;
 
 pub use events::sport_of;
-pub use key::{
-    classify_wind, is_wind_sensitive, resolve_timing, should_replace, tie_break_preferred,
-    ComparisonPolicy, PrKey, SurfaceClass, TimingClass, WindClass,
-};
-pub use measure::{field_micrometres, mark_unit, Measure};
 pub use notation::{disagreement, format_time, mark_text};
+
 pub(crate) use reduce::build_admitted;
 pub use reduce::build_from_dataset;
 pub use selection::{

@@ -1,4 +1,4 @@
-use census_domain::model::{EventKind, Mark, TimingMethod};
+use crate::model::{EventKind, Mark, TimingMethod};
 
 use super::{SurfaceClass, TimingClass, WindClass};
 

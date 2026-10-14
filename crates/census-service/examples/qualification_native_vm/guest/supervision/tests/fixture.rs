@@ -1,7 +1,7 @@
 use super::*;
 use std::path::PathBuf;
 
-const DRAIN: &str = "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0";
+const DRAIN: &str = "drained: accepted=3 completed=2 cancelled=1 timed_out=0 aborted=0 panicked=0 failed=0 still_running=0 remaining=0 attempts_reserved=0 attempts_recorded=0 attempts_unknown=0 sources=2 sources_settled=2 attempt_ceiling=2";
 
 #[test]
 fn shutdown_schedule_fixture() -> Result<()> {

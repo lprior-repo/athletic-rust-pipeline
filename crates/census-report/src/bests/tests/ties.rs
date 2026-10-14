@@ -1,6 +1,6 @@
 use super::TestResult;
-use crate::bests::key::MarkOrdering;
-use crate::bests::{should_replace, tie_break_preferred, Measure};
+use census_domain::model::performance_comparison::MarkOrdering;
+use census_domain::model::performance_comparison::{should_replace, tie_break_preferred, Measure};
 
 pub(super) mod fixture;
 mod selection;

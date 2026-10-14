@@ -46,6 +46,7 @@ mod installation;
 mod meet;
 mod natural_key;
 mod normalization;
+pub mod performance_comparison;
 mod performance_identity;
 mod profile;
 mod provenance;

@@ -27,6 +27,9 @@ use fetch_loop::{drive_capture, subscribe_fetch};
 use fetch_state::{complete_fetch, FetchCapture};
 pub(super) use rankings::fetch_rankings;
 
+#[cfg(test)]
+mod tests;
+
 pub(crate) async fn subscribe<T: IntoEventKind>(
     page: &Page,
 ) -> Result<EventStream<T>, BrowserError> {
@@ -122,9 +125,6 @@ fn record_response(
         .map_err(|_| BrowserError::Protocol)?;
     if (300..400).contains(&status) {
         return Err(BrowserError::Redirect);
-    }
-    if status == 403 || status == 429 {
-        gate.revoke();
     }
     let headers = response_headers(event)?;
     if cf_header_challenge(&headers) {

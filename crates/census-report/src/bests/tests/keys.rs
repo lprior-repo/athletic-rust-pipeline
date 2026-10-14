@@ -1,4 +1,8 @@
 use super::*;
+use census_domain::model::performance_comparison::{
+    field_micrometres, should_replace, MarkOrdering, Measure, PrKey, SurfaceClass, TimingClass,
+    WindClass,
+};
 
 #[test]
 fn key_construction_outdoor() -> TestResult {
@@ -10,11 +14,11 @@ fn key_construction_outdoor() -> TestResult {
         Some(1.2),
         "2025-03-15",
     );
-    let measure = crate::bests::Measure::Time;
+    let measure = Measure::Time;
     let event = test_event(EventKind::Track100m, &meet.id)?;
     perf.event = event.id.clone();
 
-    let result = crate::bests::PrKey::from_performance(
+    let result = PrKey::from_performance(
         &perf,
         &event,
         Some(&meet),
@@ -22,15 +26,9 @@ fn key_construction_outdoor() -> TestResult {
         census_domain::model::EventSemantics::FlatEvents19,
     )?;
     let key = result.ok_or("outdoor performance has no PR key")?;
-    check!(matches!(
-        key.surface,
-        crate::bests::key::SurfaceClass::Outdoor
-    ));
-    check!(matches!(
-        key.wind_class,
-        crate::bests::key::WindClass::Legal
-    ));
-    check!(matches!(key.timing, crate::bests::key::TimingClass::Fat));
+    check!(matches!(key.surface, SurfaceClass::Outdoor));
+    check!(matches!(key.wind_class, WindClass::Legal));
+    check!(matches!(key.timing, TimingClass::Fat));
     check!(eq; key.context, None);
     Ok(())
 }
@@ -48,11 +46,11 @@ fn key_excluded_unresolved_surface() -> TestResult {
     let event = test_event(EventKind::Track100m, &meet.id)?;
     perf.event = event.id.clone();
 
-    let result = crate::bests::PrKey::from_performance(
+    let result = PrKey::from_performance(
         &perf,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?;
     check!(result.is_none());
@@ -71,11 +69,11 @@ fn key_no_meet_is_excluded() -> TestResult {
     let event = test_event(EventKind::Track100m, &perf.meet)?;
     perf.event = event.id.clone();
 
-    let result = crate::bests::PrKey::from_performance(
+    let result = PrKey::from_performance(
         &perf,
         &event,
         None,
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?;
     check!(result.is_none());
@@ -115,11 +113,11 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
         specification.clone(),
     )?);
     perf.event = event.id.clone();
-    let first = crate::bests::PrKey::from_performance(
+    let first = PrKey::from_performance(
         &perf,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?
     .ok_or("first distance key")?;
@@ -142,11 +140,11 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
         specification,
     )?);
     perf.event = event.id.clone();
-    let second = crate::bests::PrKey::from_performance(
+    let second = PrKey::from_performance(
         &perf,
         &event,
         Some(&meet),
-        crate::bests::Measure::Time,
+        Measure::Time,
         census_domain::model::EventSemantics::FlatEvents19,
     )?
     .ok_or("second distance key")?;
@@ -160,11 +158,11 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
     check!(
         eq;
         Some(second),
-        crate::bests::PrKey::from_performance(
+        PrKey::from_performance(
             &perf,
             &event,
             Some(&meet),
-            crate::bests::Measure::Time,
+            Measure::Time,
             census_domain::model::EventSemantics::FlatEvents19,
         )?
     );
@@ -173,67 +171,67 @@ fn cross_country_keys_separate_courses_but_share_measured_distance() -> TestResu
 
 #[test]
 fn should_replace_strictly_better() {
-    assert!(crate::bests::key::should_replace(
+    assert!(should_replace(
         10_800_000_000,
         10_940_000_000,
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
-        move |c, i| crate::bests::Measure::Time.better(c, i),
+        MarkOrdering::new("2025-03-15", "perf_1"),
+        MarkOrdering::new("2025-03-15", "perf_1"),
+        move |c, i| Measure::Time.better(c, i),
     ));
 }
 
 #[test]
 fn should_replace_worse_value() {
-    assert!(!crate::bests::key::should_replace(
+    assert!(!should_replace(
         11_000_000_000,
         10_940_000_000,
-        crate::bests::key::MarkOrdering::new("2025-06-15", "perf_2"),
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
-        move |c, i| crate::bests::Measure::Time.better(c, i),
+        MarkOrdering::new("2025-06-15", "perf_2"),
+        MarkOrdering::new("2025-03-15", "perf_1"),
+        move |c, i| Measure::Time.better(c, i),
     ));
 }
 
 #[test]
 fn should_replace_equal_value_earlier_exact_date_wins() {
-    assert!(crate::bests::key::should_replace(
+    assert!(should_replace(
         10_940_000_000,
         10_940_000_000,
-        crate::bests::key::MarkOrdering::new("2025-01-01", "perf_1"),
-        crate::bests::key::MarkOrdering::new("2025-06-15", "perf_1"),
-        move |c, i| crate::bests::Measure::Time.better(c, i),
+        MarkOrdering::new("2025-01-01", "perf_1"),
+        MarkOrdering::new("2025-06-15", "perf_1"),
+        move |c, i| Measure::Time.better(c, i),
     ));
 }
 
 #[test]
 fn should_replace_equal_value_later_exact_date_loses() {
-    assert!(!crate::bests::key::should_replace(
+    assert!(!should_replace(
         10_940_000_000,
         10_940_000_000,
-        crate::bests::key::MarkOrdering::new("2025-06-15", "perf_2"),
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
-        move |c, i| crate::bests::Measure::Time.better(c, i),
+        MarkOrdering::new("2025-06-15", "perf_2"),
+        MarkOrdering::new("2025-03-15", "perf_1"),
+        move |c, i| Measure::Time.better(c, i),
     ));
 }
 
 #[test]
 fn should_replace_equal_value_same_date_and_id_never_replaces_itself() {
-    assert!(!crate::bests::key::should_replace(
+    assert!(!should_replace(
         10_940_000_000,
         10_940_000_000,
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
-        move |c, i| crate::bests::Measure::Time.better(c, i),
+        MarkOrdering::new("2025-03-15", "perf_1"),
+        MarkOrdering::new("2025-03-15", "perf_1"),
+        move |c, i| Measure::Time.better(c, i),
     ));
 }
 
 #[test]
 fn should_replace_equal_value_same_date_ascending_performance_id_wins() {
-    assert!(crate::bests::key::should_replace(
+    assert!(should_replace(
         10_940_000_000,
         10_940_000_000,
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_2"),
-        move |c, i| crate::bests::Measure::Time.better(c, i),
+        MarkOrdering::new("2025-03-15", "perf_1"),
+        MarkOrdering::new("2025-03-15", "perf_2"),
+        move |c, i| Measure::Time.better(c, i),
     ));
 }
 
@@ -248,26 +246,26 @@ fn imperial_boundaries_preserve_exact_units_or_refuse_the_mark() {
         ("5-13.00", None),
         ("9223372036854775807", None),
     ] {
-        assert_eq!(crate::bests::field_micrometres(input), expected, "{input}");
+        assert_eq!(field_micrometres(input), expected, "{input}");
     }
 }
 
 #[test]
 fn canary_five_third_decimal_times_remain_distinct_and_strictly_ordered(
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let faster = crate::bests::Measure::Time
+    let faster = Measure::Time
         .value(&Mark::TimeSeconds(ExactSeconds::parse("60.001")?))
         .ok_or("faster time")?;
-    let slower = crate::bests::Measure::Time
+    let slower = Measure::Time
         .value(&Mark::TimeSeconds(ExactSeconds::parse("60.002")?))
         .ok_or("slower time")?;
     check!(faster != slower);
-    check!(crate::bests::key::should_replace(
+    check!(should_replace(
         faster,
         slower,
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
-        crate::bests::key::MarkOrdering::new("2025-03-15", "perf_1"),
-        move |candidate, incumbent| crate::bests::Measure::Time.better(candidate, incumbent),
+        MarkOrdering::new("2025-03-15", "perf_1"),
+        MarkOrdering::new("2025-03-15", "perf_1"),
+        move |candidate, incumbent| Measure::Time.better(candidate, incumbent),
     ));
     Ok(())
 }
