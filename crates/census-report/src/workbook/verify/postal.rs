@@ -2,41 +2,19 @@ use crate::export::ExportDataset;
 use crate::report::{ReportError, ReportResult};
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, SchoolPostalAddress};
 use census_domain::school_directory::AddressKind;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 pub(in crate::workbook) fn athlete_address_index(
     dataset: &ExportDataset,
     athletes: &[CanonicalAthlete],
 ) -> ReportResult<BTreeMap<String, String>> {
-    let groups = address_affiliations(dataset, athletes);
-    groups
-        .into_iter()
-        .map(|(canonical, schools)| {
-            address_line(schools.into_iter().filter_map(|id| dataset.schools.get(id)))
-                .map(|line| (canonical.to_owned(), line))
+    athletes
+        .iter()
+        .map(|athlete| {
+            address_line(dataset.schools.get(&athlete.school))
+                .map(|line| (athlete.id.as_str().to_owned(), line))
         })
         .collect()
-}
-
-fn address_affiliations<'a>(
-    dataset: &'a ExportDataset,
-    athletes: &'a [CanonicalAthlete],
-) -> BTreeMap<&'a str, BTreeSet<&'a census_domain::model::SchoolId>> {
-    let selected = athletes
-        .iter()
-        .map(|row| row.id.as_str())
-        .collect::<BTreeSet<_>>();
-    let mut groups = BTreeMap::<&str, BTreeSet<&census_domain::model::SchoolId>>::new();
-    dataset.athletes.iter().chain(athletes).for_each(|row| {
-        let canonical = dataset
-            .canonical_aliases
-            .get(row.id.as_str())
-            .map_or(row.id.as_str(), String::as_str);
-        if selected.contains(canonical) {
-            groups.entry(canonical).or_default().insert(&row.school);
-        }
-    });
-    groups
 }
 
 fn address_line<'a>(
