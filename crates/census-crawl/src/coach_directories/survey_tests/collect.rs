@@ -28,6 +28,7 @@ fn failed_summary_does_not_hide_recovered_public_contact() -> TestResult {
                 fixture("coach_directories/probe/WY/directory-1.json")?.as_bytes(),
             )?;
             let ctx = AdapterContext {
+                capture: crate::CaptureContext::LegacyMetadata,
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,
@@ -112,6 +113,7 @@ fn a_rejected_directory_row_is_retained_without_failing_the_source() -> TestResu
                 page.to_string().as_bytes(),
             )?;
             let ctx = AdapterContext {
+                capture: crate::CaptureContext::LegacyMetadata,
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,

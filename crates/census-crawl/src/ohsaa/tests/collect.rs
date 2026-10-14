@@ -86,6 +86,7 @@ impl FixtureRun {
         recording: Option<&'a Recording>,
     ) -> anyhow::Result<AdapterContext<'a>> {
         Ok(AdapterContext {
+            capture: crate::CaptureContext::LegacyMetadata,
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

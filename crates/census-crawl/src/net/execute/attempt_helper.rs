@@ -1,8 +1,5 @@
-use crate::net::request::build_request;
-use crate::net::{FetchError, Fetcher};
 use census_domain::model::AccessBlockKind;
 use chrono::{DateTime, Utc};
-use std::time::Duration;
 use tracing::warn;
 
 pub(super) const MAX_RETRY_AFTER_SECONDS: u64 = 86_400;
@@ -146,57 +143,4 @@ fn parse_http_date(value: &str) -> Option<DateTime<Utc>> {
             .ok()
             .map(|parsed| parsed.and_utc())
     })
-}
-
-use crate::net::execute::attempt::FetchPlan;
-
-impl Fetcher {
-    pub(super) async fn dispatch_at(
-        &self,
-        url: &str,
-        host: &str,
-        plan: &FetchPlan<'_>,
-    ) -> Result<reqwest::Response, FetchError> {
-        super::representation::canonical_request(url, &plan.options.headers)?;
-        let request = build_request(
-            &self.client,
-            plan.method,
-            url,
-            plan.payload,
-            &plan.options.headers,
-            plan.cached,
-            plan.options.refresh,
-        )?
-        .build()
-        .map_err(|source| FetchError::Transport {
-            url: url.to_string(),
-            source,
-        })?;
-        self.count_attempt(host).await;
-        let response = tokio::time::timeout(
-            Duration::from_secs(plan.timeout_secs),
-            self.client.execute(request),
-        )
-        .await
-        .map_err(|_| FetchError::Timeout {
-            url: url.to_string(),
-            timeout_secs: plan.timeout_secs,
-        })?
-        .map_err(|source| FetchError::Transport {
-            url: url.to_string(),
-            source,
-        })?;
-        Ok(response)
-    }
-    pub(super) async fn status_error(&self, status: u16, plan: &FetchPlan<'_>) -> FetchError {
-        {
-            let mut stats = self.stats.lock().await;
-            stats.errors = stats.errors.saturating_add(1);
-        }
-        warn!(status, url = plan.url, "non-success response");
-        FetchError::Http {
-            status,
-            url: plan.url.to_string(),
-        }
-    }
 }

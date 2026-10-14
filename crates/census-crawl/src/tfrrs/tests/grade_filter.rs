@@ -67,6 +67,7 @@ fn collect_snapshot(url: &str) -> TestResult<CohortSnapshot> {
             )?
             .with_offline(true);
             let context = AdapterContext {
+                capture: crate::CaptureContext::LegacyMetadata,
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,

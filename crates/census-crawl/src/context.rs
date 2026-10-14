@@ -6,8 +6,12 @@ use census_domain::model::{
 };
 use census_store::Store;
 
+mod capture;
+pub use capture::{CaptureContext, ResultsCaptureContext};
+
 pub struct AdapterContext<'a> {
     pub fetcher: &'a Fetcher,
+    pub capture: CaptureContext<'a>,
     pub store: &'a Store,
     pub refresh: bool,
     pub school_year: census_domain::model::SchoolYear,

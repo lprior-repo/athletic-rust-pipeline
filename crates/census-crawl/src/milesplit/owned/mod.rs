@@ -31,6 +31,7 @@ pub const MAX_OWNED_ROWS: usize = 20_000;
 #[derive(Debug)]
 pub struct OwnedMeetOutcome {
     pub capture: FetchOutcome,
+    pub provenance: crate::net::CaptureProvenance,
     pub verdict: OwnedMeetVerdict,
 }
 

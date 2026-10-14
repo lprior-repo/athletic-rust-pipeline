@@ -13,8 +13,7 @@ fn fetch_and_owned_reader_agree_on_resource_origin_and_preserve_the_acquired_bod
             seed(&fetcher, &reference, &body)?;
             let ctx = context(&store, &fetcher)?;
             let fetched =
-                crate::milesplit::fetch_owned_meet(&fetcher, &reference, &ctx.fetch_options())
-                    .await;
+                crate::milesplit::fetch_owned_meet(&ctx, &reference, &ctx.fetch_options()).await;
             let read = read_owned_meet(&ctx, &reference).await;
             for (outcome, receipt) in [
                 (fetched, OwnedResourceReceipt::NotRequested),
@@ -74,7 +73,7 @@ fn genuine_malformed_fetch_and_owned_read_keep_exact_historical_verdict_bytes() 
             seed(&fetcher, &reference, body)?;
             let ctx = context(&store, &fetcher)?;
             let expected = b"{\"disposition\":\"malformed\",\"detail\":\"expected a JSON object with a data array\"}";
-            let fetched = crate::milesplit::fetch_owned_meet(&fetcher, &reference, &ctx.fetch_options()).await?;
+            let fetched = crate::milesplit::fetch_owned_meet(&ctx, &reference, &ctx.fetch_options()).await?;
             let read = read_owned_meet(&ctx, &reference).await?;
             check!(eq; serde_json::to_vec(&fetched.verdict)?, expected);
             check!(eq; serde_json::to_vec(&read.verdict)?, expected);
@@ -101,8 +100,9 @@ fn resource_capture_network_metadata_to_cache_replay_preserves_every_original_pa
             )?;
             seed(&fetcher, &reference, &body)?;
             let ctx = context(&store, &fetcher)?;
-            let mut capture =
-                fetch_owned_capture(&fetcher, &reference, &ctx.fetch_options()).await?;
+            let mut capture = fetch_owned_capture(&ctx, &reference, &ctx.fetch_options())
+                .await?
+                .capture;
             capture.from_cache = false;
             let failure = match parse_owned_meet(&body, 725218) {
                 Err(OwnedMeetParseError::Resource(failure)) => failure,

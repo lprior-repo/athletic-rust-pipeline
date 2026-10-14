@@ -73,6 +73,7 @@ async fn evaluate(
     option_date: &str,
 ) -> Result<census_crawl::AdapterReport> {
     let ctx = AdapterContext {
+        capture: census_crawl::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,

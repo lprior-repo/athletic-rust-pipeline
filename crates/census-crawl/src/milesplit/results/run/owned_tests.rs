@@ -11,6 +11,7 @@ mod acquisition_ledger;
 mod binding;
 mod bounded_buffers;
 mod changed_capture;
+mod durable_capture;
 mod fixture;
 mod frozen_frontier;
 mod horizon;
@@ -186,8 +187,10 @@ fn a_signed_meet_identifier_cannot_rebind_a_public_owned_capture() -> TestResult
                 include_bytes!("../../owned/fixtures/troy_725218.json"),
             )?;
             reference.meet_id = "+725218".to_string();
+            let store = Store::open(dir.path().join("store"))?;
+            let ctx = context(&store, &fetcher)?;
             match crate::milesplit::fetch_owned_meet(
-                &fetcher,
+                &ctx,
                 &reference,
                 &crate::net::FetchOptions::default(),
             )

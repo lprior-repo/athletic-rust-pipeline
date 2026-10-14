@@ -33,6 +33,7 @@ fn receipt(
         ResultSetRef::parse("https://al.milesplit.com/meets/725218/results/1266814/raw")
             .ok_or("owned source unit")?;
     let acquired = AcquiredMeet::new(OwnedMeetOutcome {
+        provenance: crate::net::CaptureProvenance::HistoricalAttemptUnknown,
         verdict: OwnedMeetVerdict::Parsed(parse_owned_meet(&owned.body, 725218)?),
         capture: owned,
     })?;
@@ -197,6 +198,7 @@ fn contradictory_observed_owned_response_refuses_projection_of_matching_body_row
         ResultSetRef::parse("https://al.milesplit.com/meets/725218/results/1266814/raw")
             .ok_or("Troy reference")?;
     let acquired = AcquiredMeet::new(OwnedMeetOutcome {
+        provenance: crate::net::CaptureProvenance::HistoricalAttemptUnknown,
         verdict: OwnedMeetVerdict::Parsed(parse_owned_meet(&owned.body, 725218)?),
         capture: owned,
     })?;

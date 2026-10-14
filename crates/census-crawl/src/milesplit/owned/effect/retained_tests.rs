@@ -48,6 +48,7 @@ fn archive(store: &Store, capture: &FetchOutcome) -> TestResult<OwnedAcquisition
     )?
     .with_offline(true);
     let ctx = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store,
         refresh: false,

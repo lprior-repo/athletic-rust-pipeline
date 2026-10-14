@@ -124,13 +124,14 @@ pub async fn fetch_meet_result_files(
     parse_meet_result_files(&outcome.url, &outcome.text())
 }
 
-#[tracing::instrument(skip(fetcher, options))]
+#[tracing::instrument(skip(ctx, options))]
 pub async fn fetch_owned_meet(
-    fetcher: &Fetcher,
+    ctx: &crate::AdapterContext<'_>,
     reference: &ResultSetRef,
     options: &FetchOptions,
 ) -> CrawlResult<super::owned::OwnedMeetOutcome> {
-    let capture = fetch_owned_capture(fetcher, reference, options).await?;
+    let acquired = fetch_owned_capture(ctx, reference, options).await?;
+    let capture = acquired.capture;
     let meet_id = owned_meet_id(reference)?;
     let verdict = if capture.status == 200 {
         match super::owned::parse_owned_meet(&capture.body, meet_id) {
@@ -142,7 +143,7 @@ pub async fn fetch_owned_meet(
             }
             Err(super::owned::OwnedMeetParseError::Resource(failure)) => {
                 return Err(
-                    super::owned::retained_parse_resource(fetcher, capture, failure)?.into(),
+                    super::owned::retained_parse_resource(ctx.fetcher, capture, failure)?.into(),
                 );
             }
         }
@@ -151,7 +152,11 @@ pub async fn fetch_owned_meet(
             status: capture.status,
         }
     };
-    Ok(super::owned::OwnedMeetOutcome { capture, verdict })
+    Ok(super::owned::OwnedMeetOutcome {
+        capture,
+        verdict,
+        provenance: acquired.provenance,
+    })
 }
 
 pub(super) fn owned_meet_id(reference: &ResultSetRef) -> CrawlResult<u64> {
@@ -179,20 +184,38 @@ pub(super) fn owned_meet_url(reference: &ResultSetRef) -> CrawlResult<String> {
     ))
 }
 
-#[tracing::instrument(skip(fetcher, options))]
+#[tracing::instrument(skip(ctx, options))]
 pub(super) async fn fetch_owned_capture(
-    fetcher: &Fetcher,
+    ctx: &crate::AdapterContext<'_>,
     reference: &ResultSetRef,
     options: &FetchOptions,
-) -> CrawlResult<crate::net::FetchOutcome> {
+) -> CrawlResult<crate::net::CapturedFetch> {
     let url = owned_meet_url(reference)?;
-    Ok(fetcher
-        .get(
-            &url,
-            &FetchOptions {
-                allow_not_found: true,
-                ..options.clone()
-            },
-        )
-        .await?)
+    let options = FetchOptions {
+        allow_not_found: true,
+        ..options.clone()
+    };
+    match ctx.capture {
+        crate::CaptureContext::LegacyMetadata => {
+            ctx.store.require_legacy_structured_capture()?;
+            Ok(crate::net::CapturedFetch {
+                capture: ctx.fetcher.get(&url, &options).await?,
+                provenance: crate::net::CaptureProvenance::HistoricalAttemptUnknown,
+            })
+        }
+        crate::CaptureContext::DurableV1(owner) => {
+            let request = ctx.fetcher.acquisition_request(&url, &options)?;
+            let work = owner.register(
+                ctx.store,
+                ctx.fetcher,
+                reference.site.jurisdiction(),
+                &reference.meet_id,
+                request,
+            )?;
+            Ok(ctx
+                .fetcher
+                .get_acquisition(ctx.store, work, &options)
+                .await?)
+        }
+    }
 }

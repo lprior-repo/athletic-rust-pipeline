@@ -41,7 +41,13 @@ pub(in super::super) enum SummaryError {
     #[error("summary jurisdiction or exact source owner does not match directory school")]
     Association,
     #[error("coach mapping failed: {0}")]
-    Coaches(#[from] crate::CrawlError),
+    Coaches(#[source] Box<crate::CrawlError>),
+}
+
+impl From<crate::CrawlError> for SummaryError {
+    fn from(error: crate::CrawlError) -> Self {
+        Self::Coaches(Box::new(error))
+    }
 }
 
 pub(in super::super) struct SummaryEmission {
@@ -206,3 +212,6 @@ fn parse_zip(raw: &str) -> Result<ZipCode, PostalReview> {
     }
     ZipCode::parse(raw).map_err(|_| PostalReview::Zip)
 }
+
+#[cfg(test)]
+mod tests;

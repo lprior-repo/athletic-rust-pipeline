@@ -53,6 +53,7 @@ fn project(
 ) -> TestResult<(Accumulator, Stats)> {
     let body = serde_json::to_vec(&document)?;
     let outcome = OwnedMeetOutcome {
+        provenance: crate::net::CaptureProvenance::HistoricalAttemptUnknown,
         verdict: OwnedMeetVerdict::Parsed(parse_owned_meet(&body, 725218)?),
         capture: FetchOutcome {
             url: "https://al.milesplit.com/api/v1/meets/725218/performances".into(),

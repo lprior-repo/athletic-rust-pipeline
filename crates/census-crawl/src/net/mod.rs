@@ -10,8 +10,14 @@ use destination_guard::DestinationGuard;
 
 pub mod bridge;
 
+mod acquisition;
 pub mod cache;
+mod capture_error;
 mod client;
+#[cfg(test)]
+pub(crate) use acquisition::tests::fixture as capture_fixture;
+pub use acquisition::{CaptureProvenance, CapturedFetch};
+pub use capture_error::CaptureTransportError;
 mod destination_guard;
 mod execute;
 mod latency;
@@ -57,6 +63,10 @@ const DEFAULT_SOURCE: &str = "unknown";
 
 pub struct Fetcher {
     client: reqwest::Client,
+    effective_user_agent: String,
+    capture_clock: time::CaptureClock,
+    #[cfg(test)]
+    capture_interrupt: acquisition::CaptureInterruption,
     destination: Arc<DestinationGuard>,
     cache_dir: PathBuf,
     default_delay: Duration,

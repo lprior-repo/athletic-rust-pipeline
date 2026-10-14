@@ -88,6 +88,10 @@ impl Fetcher {
             .map_err(|source| FetchError::Client { source })?;
         Ok(Self {
             client,
+            effective_user_agent: user_agent,
+            capture_clock: super::time::CaptureClock::System,
+            #[cfg(test)]
+            capture_interrupt: super::acquisition::CaptureInterruption::None,
             destination,
             cache_dir,
             default_delay,

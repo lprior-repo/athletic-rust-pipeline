@@ -29,6 +29,7 @@ fn setup() -> TestResult<(tempfile::TempDir, Store, Fetcher, ResultSetRef)> {
 
 fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,
@@ -183,7 +184,15 @@ fn malformed_partial_and_refused_captures_never_receive_parse_success_receipts()
                 } else {
                     OwnedMeetVerdict::Refused { status }
                 };
-                record_outcome(&ctx, &reference, &OwnedMeetOutcome { capture, verdict })?;
+                record_outcome(
+                    &ctx,
+                    &reference,
+                    &OwnedMeetOutcome {
+                        provenance: crate::net::CaptureProvenance::HistoricalAttemptUnknown,
+                        capture,
+                        verdict,
+                    },
+                )?;
                 let digest = content_digest(body);
                 let summaries = store.journal_payloads(OWNED_MEET_PHASE)?;
                 let summary = summaries

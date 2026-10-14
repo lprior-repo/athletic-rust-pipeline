@@ -31,8 +31,8 @@ pub(crate) async fn read_owned_meet(
     ctx: &AdapterContext<'_>,
     reference: &ResultSetRef,
 ) -> CrawlResult<OwnedMeetOutcome> {
-    let capture = match fetch_owned_capture(ctx.fetcher, reference, &ctx.fetch_options()).await {
-        Ok(capture) => capture,
+    let acquired = match fetch_owned_capture(ctx, reference, &ctx.fetch_options()).await {
+        Ok(acquired) => acquired,
         Err(error) => {
             if !error.retryable() {
                 record_failure(ctx, reference, &error)?;
@@ -40,6 +40,7 @@ pub(crate) async fn read_owned_meet(
             return Err(error);
         }
     };
+    let capture = acquired.capture;
     let verdict = if capture.status == 200 {
         match parse_owned_meet(&capture.body, owned_meet_id(reference)?) {
             Ok(page) => OwnedMeetVerdict::Parsed(page),
@@ -55,7 +56,11 @@ pub(crate) async fn read_owned_meet(
             status: capture.status,
         }
     };
-    let outcome = OwnedMeetOutcome { capture, verdict };
+    let outcome = OwnedMeetOutcome {
+        capture,
+        verdict,
+        provenance: acquired.provenance,
+    };
     match record_outcome(ctx, reference, &outcome) {
         Ok(()) => Ok(outcome),
         Err(error @ CrawlError::Resource { .. }) => {

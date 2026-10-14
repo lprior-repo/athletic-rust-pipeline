@@ -37,6 +37,23 @@ impl AcquiredMeet {
         })
     }
 
+    pub(super) fn require_capture_context(
+        &self,
+        context: crate::CaptureContext<'_>,
+    ) -> CrawlResult<()> {
+        match (context, &self.outcome.provenance) {
+            (
+                crate::CaptureContext::LegacyMetadata,
+                crate::net::CaptureProvenance::HistoricalAttemptUnknown,
+            )
+            | (
+                crate::CaptureContext::DurableV1(_),
+                crate::net::CaptureProvenance::Retained { .. },
+            ) => Ok(()),
+            _ => Err(crate::net::CaptureTransportError::CacheOccurrenceMismatch.into()),
+        }
+    }
+
     pub(super) fn release_body(&mut self) {
         self.outcome.capture.body = Vec::new();
     }

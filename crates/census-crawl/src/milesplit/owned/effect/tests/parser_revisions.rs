@@ -47,6 +47,7 @@ fn seed_history(
         &staged,
         reference,
         &OwnedMeetOutcome {
+            provenance: crate::net::CaptureProvenance::HistoricalAttemptUnknown,
             capture,
             verdict: OwnedMeetVerdict::Parsed(page),
         },
@@ -74,7 +75,9 @@ fn xc_interpretation_allocates_v4_and_preserves_v3_rows_and_v1_capture() -> Test
             let body = xc_body()?;
             seed(&fetcher, &reference, &body)?;
             let ctx = context(&store, &fetcher)?;
-            let capture = fetch_owned_capture(&fetcher, &reference, &ctx.fetch_options()).await?;
+            let capture = fetch_owned_capture(&ctx, &reference, &ctx.fetch_options())
+                .await?
+                .capture;
             seed_history(&store, &ctx, &reference, capture)?;
             let history = snapshot(&store, HISTORICAL_PHASE)?;
             let raw = snapshot(&store, OWNED_CAPTURE_PHASE)?;

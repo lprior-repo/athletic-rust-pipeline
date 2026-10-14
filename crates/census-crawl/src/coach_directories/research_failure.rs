@@ -13,7 +13,10 @@ pub(crate) fn fetch(error: &FetchError) -> Outcome {
             retryable: false, ..
         } => Outcome::Blocked,
         FetchError::TooLarge { .. } => Outcome::Partial,
-        FetchError::Transport { .. }
+        FetchError::CaptureStore(_)
+        | FetchError::CaptureDomain(_)
+        | FetchError::Capture(_)
+        | FetchError::Transport { .. }
         | FetchError::Cache { .. }
         | FetchError::OriginLockIo { .. }
         | FetchError::Timeout { .. }
@@ -51,7 +54,8 @@ pub(super) fn crawl(error: &crate::CrawlError) -> Outcome {
         | CrawlError::Invariant { .. }
         | CrawlError::Performance(_)
         | CrawlError::PerformanceDateUnknown { .. } => Outcome::Ambiguous,
-        CrawlError::RegexInit { .. }
+        CrawlError::Capture(_)
+        | CrawlError::RegexInit { .. }
         | CrawlError::Decode { .. }
         | CrawlError::Encode { .. }
         | CrawlError::Canonical { .. }
@@ -63,3 +67,6 @@ pub(super) fn crawl(error: &crate::CrawlError) -> Outcome {
         | CrawlError::DirectoryArtifact { .. } => Outcome::Failed,
     }
 }
+
+#[cfg(test)]
+mod tests;

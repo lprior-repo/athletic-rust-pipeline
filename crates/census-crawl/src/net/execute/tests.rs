@@ -1,5 +1,5 @@
 use super::*;
-use crate::net::{Fetcher, PacingState};
+use crate::net::{FetchOptions, Fetcher, PacingState};
 use census_domain::model::AccessBlockKind;
 use std::collections::HashMap;
 use std::time::Duration;

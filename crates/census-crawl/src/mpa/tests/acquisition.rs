@@ -90,6 +90,7 @@ async fn evaluate(
     option_date: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,

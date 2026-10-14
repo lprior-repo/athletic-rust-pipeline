@@ -21,3 +21,19 @@ pub fn instant_iso8601(millis: u64) -> Option<String> {
     chrono::DateTime::from_timestamp_millis(millis)
         .map(|instant| instant.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
 }
+
+pub(super) enum CaptureClock {
+    System,
+    #[cfg(test)]
+    Injected(std::sync::Arc<dyn Clock>),
+}
+
+impl CaptureClock {
+    pub(super) fn observed_at(&self) -> String {
+        match self {
+            Self::System => SystemClock.today_iso8601(),
+            #[cfg(test)]
+            Self::Injected(clock) => clock.today_iso8601(),
+        }
+    }
+}

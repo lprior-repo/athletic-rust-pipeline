@@ -36,6 +36,7 @@ impl Harness {
 
     fn fail(&self, page: &str, failure: PageFailure) -> anyhow::Result<(AdapterReport, Tally)> {
         let ctx = AdapterContext {
+            capture: crate::CaptureContext::LegacyMetadata,
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

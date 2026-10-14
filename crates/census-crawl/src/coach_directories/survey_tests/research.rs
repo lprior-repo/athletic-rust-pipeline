@@ -41,6 +41,7 @@ async fn assess(
         seed(&fetcher, &summary_url("ZCUM49"), summary, acquired_at)?;
     }
     let ctx = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,

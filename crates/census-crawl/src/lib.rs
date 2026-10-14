@@ -17,6 +17,8 @@ pub const SCHOOL_BINDINGS: usize = 65_536;
 #[derive(Debug, thiserror::Error)]
 pub enum CrawlError {
     #[error(transparent)]
+    Capture(#[from] crate::net::CaptureTransportError),
+    #[error(transparent)]
     Fetch(#[from] crate::net::FetchError),
     #[error("regex {pattern} failed to compile: {source}")]
     RegexInit {
@@ -160,7 +162,8 @@ pub use registry::{
 
 pub use athlete_observations::athlete_observations_of;
 pub use context::{
-    assess_performance_date, school_observations_of, AdapterContext, PerformanceDateAssessment,
+    assess_performance_date, school_observations_of, AdapterContext, CaptureContext,
+    PerformanceDateAssessment, ResultsCaptureContext,
 };
 pub use recording::{PreparedRecorded, Recorded, RecordedBatch, RecordedJournal, Recording};
 

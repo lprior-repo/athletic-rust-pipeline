@@ -190,7 +190,16 @@ fn read_previous(body_path: &Path, meta_path: &Path) -> Result<Previous, FetchEr
     let Some(encoded) = read_cache_file(meta_path, MAX_META_BYTES, None)? else {
         return Ok(Err(Damage::MetadataLimitOrChanged));
     };
-    let capture = match Capture::from_bytes(&encoded, meta_path) {
+    let decoded =
+        super::envelope::decode(&encoded, meta_path).and_then(|document| match document {
+            super::envelope::CacheDocument::Historical(_) => {
+                Capture::from_bytes(&encoded, meta_path)
+            }
+            super::envelope::CacheDocument::Eligible(envelope) => {
+                Capture::from_meta(&envelope.metadata, meta_path)
+            }
+        });
+    let capture = match decoded {
         Ok(capture) => capture,
         Err(FetchError::Decode { .. } | FetchError::Encode { .. }) => {
             return Ok(Err(Damage::InvalidMetadata));
@@ -224,4 +233,16 @@ fn verified_body(path: &Path, capture: &Capture) -> Result<Vec<u8>, FetchError> 
         })?;
     capture.verify_body(&body, path)?;
     Ok(body)
+}
+
+pub(super) fn preserve_eligible_previous(
+    root: &Path,
+    stage: &Path,
+    body_path: &Path,
+    meta_path: &Path,
+) -> Result<(), FetchError> {
+    let archive = initialize_archive(root)?;
+    let mut admission =
+        ArchiveAdmission::begin_with_capacity(root, &archive, admission::archive_capacity()?)?;
+    preserve_previous(&archive, stage, body_path, meta_path, &mut admission)
 }

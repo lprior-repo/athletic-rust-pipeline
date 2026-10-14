@@ -1,6 +1,7 @@
 use super::attempt::FetchPlan;
 use super::body_reader::read_checked_body;
-use crate::net::cache::{write_archive, write_cache, CacheMeta};
+use crate::net::acquisition::CaptureSession;
+use crate::net::cache::CacheMeta;
 use crate::net::{now_iso8601, FetchError, FetchOutcome, FetchStats, RedirectHop};
 use std::path::Path;
 use tokio::sync::Mutex;
@@ -10,6 +11,7 @@ pub(super) async fn record_response(
     plan: &FetchPlan<'_>,
     status: u16,
     redirects: &[RedirectHop],
+    session: &mut CaptureSession<'_>,
 ) -> Result<FetchOutcome, crate::net::FetchError> {
     let url = plan.url;
     let meta_path = plan.meta_path;
@@ -18,7 +20,12 @@ pub(super) async fn record_response(
     let last_modified = header_value(&response, reqwest::header::LAST_MODIFIED, meta_path)?;
     let content_type = header_value(&response, reqwest::header::CONTENT_TYPE, meta_path)?;
     let response_url = Some(response.url().as_str().to_owned());
+    let observed_at = session.observed_at()?.map(str::to_owned);
     let (body_vec, content_hex) = read_checked_body(response, url).await?;
+    let fetched_at = match observed_at {
+        Some(observed) => observed,
+        None => now_iso8601(),
+    };
     let meta = CacheMeta {
         redirects: redirects.to_vec(),
         url: url.to_string(),
@@ -28,16 +35,12 @@ pub(super) async fn record_response(
         status,
         content_digest: content_hex,
         bytes: body_vec.len(),
-        fetched_at: now_iso8601(),
+        fetched_at,
         etag,
         last_modified,
         content_type,
     };
-    if status == 200 {
-        write_cache(body_path, meta_path, &body_vec, &meta)?;
-    } else {
-        write_archive(body_path, meta_path, &body_vec, &meta)?;
-    }
+    session.retain(body_path, meta_path, &body_vec, &meta)?;
     Ok(FetchOutcome {
         url: meta.url,
         response_url: meta.response_url,
@@ -58,8 +61,9 @@ pub(super) async fn cache_and_record(
     status: u16,
     stats: &Mutex<FetchStats>,
     redirects: &[RedirectHop],
+    session: &mut CaptureSession<'_>,
 ) -> Result<FetchOutcome, crate::net::FetchError> {
-    let outcome = record_response(response, plan, status, redirects).await?;
+    let outcome = record_response(response, plan, status, redirects, session).await?;
     let downloaded = u64::try_from(outcome.bytes).map_or(u64::MAX, |value| value);
     record_download_stats(
         stats,
@@ -206,7 +210,15 @@ mod tests {
                         representation: &representation,
                         timeout_secs: 45,
                     };
-                    let outcome = cache_and_record(response, &plan, status, &stats, &[]).await?;
+                    let outcome = cache_and_record(
+                        response,
+                        &plan,
+                        status,
+                        &stats,
+                        &[],
+                        &mut CaptureSession::Legacy,
+                    )
+                    .await?;
                     check!(eq; outcome.status, status);
                     check!(eq; outcome.body, raw);
                     check!(eq; outcome.response_url.as_deref(), Some(response_url.as_str()));

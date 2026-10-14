@@ -168,6 +168,7 @@ impl Run {
         }
         self.owned = None;
         let mut meet = AcquiredMeet::new(read_owned_meet(ctx, reference).await?)?;
+        meet.require_capture_context(ctx.capture)?;
         self.stats.peak_capture_bytes = self
             .stats
             .peak_capture_bytes

@@ -82,6 +82,7 @@ fn scratch() -> TestResult<(tempfile::TempDir, Store, Fetcher)> {
 
 fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher,
         store,
         refresh: false,

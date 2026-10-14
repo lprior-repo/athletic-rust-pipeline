@@ -549,6 +549,7 @@ fn a_short_member_page_below_the_reported_total_is_a_recorded_failure() -> TestR
     let fetcher = Fetcher::new(&cache, None, Duration::from_millis(1), HashMap::new(), Vec::new())?.with_offline(true);
     let observed_on = OBSERVED_ON.to_string();
     let context = crate::AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher, store: &store, refresh: false,
         school_year: SchoolYear::new(2026).ok_or("2026 is a season")?,
         performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
@@ -588,6 +589,7 @@ fn a_full_member_page_is_written_before_the_next_page_is_fetched() -> TestResult
     let fetcher = Fetcher::new(&cache, None, Duration::from_millis(1), HashMap::new(), Vec::new())?.with_offline(true);
     let observed_on = OBSERVED_ON.to_string();
     let context = crate::AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher, store: &store, refresh: false,
         school_year: SchoolYear::new(2026).ok_or("2026 is a season")?,
         performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
@@ -624,6 +626,7 @@ fn a_coach_walk_stopped_by_the_page_bound_records_a_failure() -> TestResult {
     let fetcher = Fetcher::new(&cache, None, Duration::from_millis(1), HashMap::new(), Vec::new())?.with_offline(true);
     let observed_on = OBSERVED_ON.to_string();
     let context = crate::AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher, store: &store, refresh: false,
         school_year: SchoolYear::new(2026).ok_or("2026 is a season")?,
         performance_as_of: chrono::NaiveDate::parse_from_str(OBSERVED_ON, "%Y-%m-%d")?,
@@ -707,6 +710,7 @@ fn the_token_is_never_replayed_from_the_cache() -> TestResult {
             .with_offline(true);
             let observed_on = OBSERVED_ON.to_string();
             let context = crate::AdapterContext {
+                capture: crate::CaptureContext::LegacyMetadata,
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,

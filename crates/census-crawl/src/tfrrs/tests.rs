@@ -52,6 +52,7 @@ fn a_fresh_store_binds_schools_without_a_consolidated_jsonl() -> TestResult {
     let (school, _) = CanonicalSchool::new(UsJurisdiction::Indiana, "Pembroke", "pembroke", None);
     store.append(census_store::Table::Schools, &school)?;
     let context = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,

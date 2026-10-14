@@ -6,7 +6,7 @@ pub(super) fn is_validator(name: &str) -> bool {
     name.eq_ignore_ascii_case("if-none-match") || name.eq_ignore_ascii_case("if-modified-since")
 }
 
-pub(super) fn canonical_request(
+pub(in crate::net) fn canonical_request(
     url: &str,
     headers: &[(String, String)],
 ) -> Result<RepresentationHeaders, FetchError> {
@@ -37,7 +37,7 @@ pub(super) fn canonical_request(
     RepresentationHeaders::for_request(url, &selected)
 }
 
-pub(super) fn cache_extra(
+pub(in crate::net) fn cache_extra(
     body: Option<&(String, RequestBody)>,
     headers: &RepresentationHeaders,
 ) -> String {

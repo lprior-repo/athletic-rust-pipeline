@@ -30,6 +30,7 @@ fn physical_csv_capture_admits_published_past_and_retains_future_debt(
     };
     let options = Options::for_input(input.to_string_lossy(), metadata.clone());
     let ctx = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -85,6 +86,7 @@ fn csv_capture_refuses_declared_body_over_32_mib() -> Result<(), Box<dyn std::er
         ..CacheMeta::default()
     };
     let ctx = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -137,6 +139,7 @@ fn csv_capture_refuses_physical_body_over_32_mib() -> Result<(), Box<dyn std::er
         ..CacheMeta::default()
     };
     let ctx = AdapterContext {
+        capture: crate::CaptureContext::LegacyMetadata,
         fetcher: &fetcher,
         store: &store,
         refresh: false,
