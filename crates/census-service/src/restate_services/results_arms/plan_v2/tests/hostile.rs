@@ -103,15 +103,37 @@ fn sdk_rejects_thirteen_pins_during_bounded_sequence_decode() -> TestResult {
 }
 
 #[test]
-fn sdk_rejects_nested_option_growth_past_frontier_limit() -> TestResult {
+fn sdk_rejects_nested_option_growth_at_decode_allocation_limit() -> TestResult {
+    let discovery = serde_json::json!([{"ready": nested_options(4097)}]);
+    let mut bytes = fixture::mutate("discovery", discovery)?;
+    limit(decode(&mut bytes), "decode allocation")
+}
+
+#[test]
+fn nested_option_wire_preserves_frontier_limit_and_refuses_one_more() -> TestResult {
+    let encoded = serde_json::to_vec(&nested_options(4096))?;
+    let ready: ReadyDiscovery = serde_json::from_slice(&encoded)?;
+    check!(eq; ready.options.urls.len(), 4096);
+    check!(ready.options.urls.iter().all(|request| {
+        request.url == "https://mi.milesplit.com/meets/1/results"
+            && request.jurisdiction == census_domain::UsJurisdiction::Michigan
+    }));
+    let encoded = serde_json::to_vec(&nested_options(4097))?;
+    match serde_json::from_slice::<ReadyDiscovery>(&encoded) {
+        Err(error) => {
+            check!(error.to_string().contains("sequence limit"));
+            Ok(())
+        }
+        Ok(_) => Err("nested option wire accepted more than 4096 requests".into()),
+    }
+}
+
+fn nested_options(count: usize) -> serde_json::Value {
     let options = vec![
         serde_json::json!({"url":"https://mi.milesplit.com/meets/1/results", "jurisdiction":"MI"});
-        4097
+        count
     ];
-    let discovery =
-        serde_json::json!([{"ready":{"options":{"urls":options},"pages_read":1,"quarantines":[]}}]);
-    let mut bytes = fixture::mutate("discovery", discovery)?;
-    json_error(decode(&mut bytes), "sequence limit")
+    serde_json::json!({"options":{"urls":options},"pages_read":1,"quarantines":[]})
 }
 
 #[test]

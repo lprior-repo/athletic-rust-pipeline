@@ -54,7 +54,7 @@ fn aggregate_bytes_refuse_the_first_extra_byte_without_leaking_row_admission() -
 }
 
 #[test]
-fn per_selection_rows_and_capture_working_bytes_are_checked_at_exact_boundaries() -> TestResult {
+fn per_selection_rows_and_spill_disk_bytes_are_checked_at_exact_boundaries() -> TestResult {
     let admission = Arc::new(Admission::default());
     let mut permit = Permit::new(Arc::clone(&admission));
     permit.reserve(SELECTION_ROWS, 0)?;
@@ -66,20 +66,19 @@ fn per_selection_rows_and_capture_working_bytes_are_checked_at_exact_boundaries(
             available: 65_536
         })
     ));
-    check!(eq; charge(CAPTURE_BYTES, 0, CAPTURE_BYTES, "results captured working bytes")?, CAPTURE_BYTES);
+    let spill = Arc::new(SpillAdmission::default());
+    let lease = spill.claim()?;
+    spill.charge(CAPTURE_BYTES)?;
     check!(matches!(
-        charge(
-            CAPTURE_BYTES,
-            1,
-            CAPTURE_BYTES,
-            "results captured working bytes"
-        ),
+        spill.charge(1),
         Err(StoreError::BudgetExceeded {
-            what: "results captured working bytes",
+            what: "results spill bytes",
             needed: 13_958_643_713,
-            available: 13_958_643_712
+            available: 13_958_643_712,
         })
     ));
+    drop(lease);
+    check!(eq; spill.reserved_bytes()?, 0);
     check!(matches!(
         charge(u64::MAX, 1, u64::MAX, "overflow"),
         Err(StoreError::CounterOverflow)

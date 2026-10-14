@@ -2,12 +2,15 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
+#[path = "offline_cycle_mod/readback.rs"]
+mod readback;
+
 use calamine::Reader;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventIdentity, EventKind, EventSpecification,
-    Evidence, ExactSeconds, Gender, GradYear, Id, Mark, SchoolYear, SourceIdentity,
-    SourceNamespace, SourceRef, Sport, TimingMethod,
+    Evidence, ExactSeconds, Gender, GradYear, Id, Mark, SchoolYear, SourceEventLabel,
+    SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -17,11 +20,16 @@ use std::process::{Command, Stdio};
 use tempfile::TempDir;
 
 const MEET_DATE: &str = "2026-05-02";
+const SOURCE_URL: &str = "https://example.test/offline-cycle/results";
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 const ATHLETES_PER_SCHOOL: usize = 5;
 
+fn source_ref() -> SourceRef {
+    SourceRef::new("offline_cycle_fixture", Some(SOURCE_URL.to_string()))
+}
+
 fn evidence() -> Evidence {
-    Evidence::parsed(SourceRef::id("mshsl_results"), MEET_DATE)
+    Evidence::parsed(source_ref(), MEET_DATE)
 }
 
 struct Corpus {
@@ -76,12 +84,15 @@ fn build_corpus(schools: usize) -> TestResult<Corpus> {
             evidence: vec![evidence()],
             retained_conflicts: Vec::new(),
         });
-        let meet = CanonicalMeet::new(
+        let mut meet = CanonicalMeet::new(
             Some(UsJurisdiction::Wisconsin),
             format!("Offline Cycle Meet {index}"),
             MEET_DATE,
             CompetitionLevel::Invitational,
         );
+        meet.sports.push(Sport::OutdoorTrack);
+        meet.source_urls.push(SOURCE_URL.to_string());
+        meet.evidence.push(evidence());
         let meet_id = meet.id.clone();
         corpus.meets.push(meet);
         corpus.schools.push(school);
@@ -101,10 +112,10 @@ fn build_corpus(schools: usize) -> TestResult<Corpus> {
                 .published_graduations
                 .push(census_domain::model::PublishedGraduation {
                     grad_year: GradYear::CO2027,
-                    source: SourceRef::id("mshsl_results"),
+                    source: source_ref(),
                 });
             let athlete_id = athlete.id.clone();
-            let event = CanonicalEvent::new(
+            let mut event = CanonicalEvent::new(
                 EventIdentity {
                     meet: &meet_id,
                     kind: EventKind::Track100m,
@@ -114,6 +125,11 @@ fn build_corpus(schools: usize) -> TestResult<Corpus> {
                 },
                 EventSpecification::default(),
             )?;
+            event.source_labels.push(SourceEventLabel {
+                source: source_ref(),
+                label: "100 Meter Dash".to_string(),
+            });
+            event.evidence.push(evidence());
             let event_id = event.id.clone();
             corpus.events.push(event);
             corpus.athletes.push(athlete);
@@ -210,6 +226,7 @@ fn the_offline_cycle_publishes_each_cohort_athlete_once_in_a_verified_bundle() -
 
     let corpus = build_corpus(2)?;
     let expected = corpus.athletes.len();
+    check!(eq; expected, 10, "the synthetic fixture contains ten Class-of-2027 athletes");
     {
         let store = Store::open(&data_dir)?;
         corpus.append(&store)?;
@@ -237,7 +254,9 @@ fn the_offline_cycle_publishes_each_cohort_athlete_once_in_a_verified_bundle() -
         .map(|athlete| athlete.id.to_string())
         .collect();
     check!(eq; ids, expected_ids,
-    "each source-backed cohort subject appears exactly once");
+    "each synthetic cohort subject appears exactly once");
+
+    readback::assert_prs_and_csv(&published, &corpus)?;
 
     let status = verify(&data_dir, &published)?;
     check!(

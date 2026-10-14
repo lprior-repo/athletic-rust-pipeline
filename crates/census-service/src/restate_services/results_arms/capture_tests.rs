@@ -55,8 +55,16 @@ fn results_stage_reads_only_its_jurisdiction_meets() -> TestResult {
         )?;
     }
     let mut cache = Cache::default();
-    let (wi, first) = cache.select(&store, scope(UsJurisdiction::Wisconsin)?)?;
-    let (il, second) = cache.select(&store, scope(UsJurisdiction::Illinois)?)?;
+    let (wi, first) = cache.select(
+        &store,
+        scope(UsJurisdiction::Wisconsin)?,
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
+    let (il, second) = cache.select(
+        &store,
+        scope(UsJurisdiction::Illinois)?,
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
     println!(
         "capture first={:?} second={:?}; partition visits wi={} il={}",
         first.capture, second.capture, first.partition_visits, second.partition_visits
@@ -110,7 +118,8 @@ fn captured_results_match_existing_merged_selection_and_unfinished_accounting() 
     })?;
     pending.sort();
     pending.dedup();
-    let (selected, _) = Cache::default().select(&store, scope)?;
+    let (selected, _) =
+        Cache::default().select(&store, scope, &std::sync::atomic::AtomicBool::new(false))?;
     check!(eq; selected.meets, admitted);
     check!(eq; selected.pending, pending);
     check!(eq; selected.meets.len(), 1);
@@ -127,13 +136,21 @@ fn advancing_generation_refuses_a_second_live_capture_then_rebuilds_after_releas
         &meet(UsJurisdiction::Wisconsin, "1", Some("2024-04-01")),
     )?;
     let mut cache = Cache::default();
-    let (old, _) = cache.select(&store, scope(UsJurisdiction::Wisconsin)?)?;
+    let (old, _) = cache.select(
+        &store,
+        scope(UsJurisdiction::Wisconsin)?,
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
     store.append(
         Table::SourceMeets,
         &meet(UsJurisdiction::Wisconsin, "2", None),
     )?;
     check!(matches!(
-        cache.select(&store, scope(UsJurisdiction::Wisconsin)?),
+        cache.select(
+            &store,
+            scope(UsJurisdiction::Wisconsin)?,
+            &std::sync::atomic::AtomicBool::new(false)
+        ),
         Err(census_store::StoreError::BudgetExceeded {
             what: "results live captures",
             needed: 2,
@@ -141,7 +158,11 @@ fn advancing_generation_refuses_a_second_live_capture_then_rebuilds_after_releas
         })
     ));
     drop(old);
-    let (current, measured) = cache.select(&store, scope(UsJurisdiction::Wisconsin)?)?;
+    let (current, measured) = cache.select(
+        &store,
+        scope(UsJurisdiction::Wisconsin)?,
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
     check!(eq; measured.capture.decoded_rows, 2);
     check!(eq; current.meets, vec![meet(UsJurisdiction::Wisconsin, "1", Some("2024-04-01"))]);
     check!(eq; current.pending, vec![meet(UsJurisdiction::Wisconsin, "2", None).results_url]);
@@ -164,9 +185,17 @@ fn captured_partitions_never_cross_store_owners_with_equal_generations() -> Test
     )?;
     check!(eq; left.snapshot().evidence_generation(), right.snapshot().evidence_generation());
     let mut cache = Cache::default();
-    let (selected, _) = cache.select(&left, scope(UsJurisdiction::Wisconsin)?)?;
+    let (selected, _) = cache.select(
+        &left,
+        scope(UsJurisdiction::Wisconsin)?,
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
     drop(selected);
-    let (selected, measured) = cache.select(&right, scope(UsJurisdiction::Wisconsin)?)?;
+    let (selected, measured) = cache.select(
+        &right,
+        scope(UsJurisdiction::Wisconsin)?,
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
     check!(eq; measured.capture.decoded_rows, 1);
     check!(eq; selected.pending, vec![meet(UsJurisdiction::Wisconsin, "2", None).results_url]);
     Ok(())
@@ -203,7 +232,11 @@ fn national_fanout_decodes_one_capture_and_visits_only_49_owned_partitions() -> 
     let mut refusals = 0_u64;
     let started = std::time::Instant::now();
     for jurisdiction in UsJurisdiction::CENSUS_SCOPE {
-        let (partition, measured) = match cache.select(&store, scope(jurisdiction)?) {
+        let (partition, measured) = match cache.select(
+            &store,
+            scope(jurisdiction)?,
+            &std::sync::atomic::AtomicBool::new(false),
+        ) {
             Ok(selected) => selected,
             Err(census_store::StoreError::BudgetExceeded {
                 what: "results live captures",
@@ -242,4 +275,15 @@ fn national_fanout_decodes_one_capture_and_visits_only_49_owned_partitions() -> 
     check!(eq; selected.len(), 49);
     check!(eq; refusals, 0);
     Ok(())
+}
+
+#[path = "capture_qualification.rs"]
+mod qualification;
+
+pub(super) fn qualification_select(
+    cache: &mut Cache,
+    store: &Arc<Store>,
+    stage: HistoricalStageScope,
+) -> census_store::StoreResult<(selection::Selected, super::capture::Measurement)> {
+    cache.select(store, stage, &std::sync::atomic::AtomicBool::new(false))
 }

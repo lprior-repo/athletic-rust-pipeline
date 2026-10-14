@@ -124,3 +124,67 @@ env -u CI tools/moon-local run pipeline:tests-scoped -- -p census-store --lib --
 env -u CI tools/moon-local run pipeline:tests-scoped -- -p census-service --lib --bin census-service --build-jobs 1 -E 'test(team_source::) | test(census::sweep::) | test(census::tests::collection_access::) | test(restate_services::jobs::source_access::) | test(cli::tests::teams::)'
 env -u CI tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib --build-jobs 1 -E 'test(net::access_conditions::tests)'
 ```
+
+## Bounded source-capture follow-on
+
+Base: PR #34, merge `6419181c8f5ca3cf77169464f8c2019115c16349`.
+Fixtures: `e61605dc`; implementation: `bb5981f5`; flush batching: `d8eccee0`. Their commit diffs give exact file coverage.
+The single SourceMeets capture now streams into owned Unix read-only temporary partitions;
+selection semantics, historical record ordering, Store generation fencing and pending obligations
+remain unchanged. The previous resident capture backend is removed. This is not whole-export
+streaming: resident ExportDataset, population copies and verification indexes remain open work.
+
+- PASS: final results_arms 107/107, 835 skipped; nextest
+  `b325727c-1a82-4f61-92e6-11f73cbee3c7` (1m55.109s task).
+  Flush batching retains byte/digest parity, admission-before-write and failed-write charges.
+  First repeat was 106/107: a fixture cloned strings before measuring capacity; corrected to
+  serialize and move the same rows, retaining exact byte assertions. No production limit weakened.
+- PASS: final source lint (30.332s) and formatting (9.159s). Initial fixture format failed;
+  Moon fmt-write corrected it before the passing checks. Initial shell lacked restored toolchain
+  PATH and executed no checks; sourced the existing toolchain environment and retried.
+- PASS: final all-target/all-feature serial check (1m36.301s task).
+- PASS: offline CLI publication and captured-fixture pipeline/readback, 3/3, zero skipped;
+  nextest `cf6f4d2a-ef51-4df2-949d-9ec25d3879c0` (1m11.583s task).
+  These isolated synthetic/captured fixtures do not certify current live-source discovery.
+- PASS: strengthened offline CLI cycle 1/1, zero skipped; nextest
+  `4d67326a-5ce1-4e1f-b104-0917fa9a6a7a` (1m5.674s task). Independently reads
+  exactly ten athlete/result identities, 12-second Track100m PRs, date and source URL in XLSX,
+  and matching fixed CSV values (fixture commit `c5d49f50`); empty PR output now fails. Earlier fixture lacked eligible event
+  ownership and could pass without any PR rows. Production selection rules were unchanged.
+- PASS: address/provenance and PR-summary regressions 17/17, 668 skipped; nextest
+  `6b818e42-ac3d-4a61-988b-34a456f9e1fa` (3m16.430s task).
+- FAILED then repaired: module path/import errors and a redundant closure; first expanded suite
+  97/98 passed. The SDK oversized-frontier fixture now expects the existing earlier allocation
+  guard; a separate direct-wire 4096/4097 test preserves exact frontier-boundary coverage.
+- Measured debug synthetic 100,000 rows × 1,024 payload bytes, two accepted trials each:
+  old child peak RSS 348,307,456 / 348,483,584 bytes; candidate 198,156,288 / 199,294,976.
+  Setup plus capture child wall: old 20.217 / 21.668s; candidate 45.969 / 44.823s.
+  Capture/selection plus oracle: old 4.009 / 4.257s; candidate 28.505 / 27.692s.
+  Both selected exactly 1,000 admitted and 1,000 pending across 49 jurisdictions with identical
+  selected-record SHA256 `dc68427c7464cdb5c5e32d4057fead3b25c2cc64fc8fdfe2b6cc0215e969bfd9`.
+  Final batched candidate peak RSS: 199,229,440 / 199,094,272 bytes; child wall
+  32.591 / 40.193s; capture/selection plus oracle 20.459 / 21.928s, with the same exact parity.
+  These are debug observations, not an isolated release speedup; setup timing also varied.
+  RSS includes fixture/Fjall setup; conservative scratch counters are not RSS. This trades
+  memory for additional serialization/I/O and is not a release-throughput or 64-GB fix claim.
+- Excluded instrumentation trials: concurrent discovery lock refusal before tests; one shell
+  collection failure after a passing test. Fresh replacements passed and verified receipts.
+- Review: Holzman resource/fault boundaries, Scott DDD and functional-core separation, async
+  cancellation/generation ownership, architectural drift and independent assertion review applied
+  to the changed files. No national acceptance or complete proof campaign claimed.
+- Acceptance: specification bounded incremental discovery and consistent projection are partially
+  exercised here; resident export/derivation/readback memory and source-profile qualification remain
+  open. Existing historical specification and artifacts retained; bd CLI unavailable.
+- NOT RUN: representative national RSS, eight-year replay throughput, production execution,
+  complete release/security/fuzz/durability gates. Reusable/profile acceptance remains pending.
+
+Home focused commands (repository root):
+
+```sh
+env -u CI tools/moon-local run pipeline:fmt pipeline:lint-src
+env -u CI tools/moon-local run pipeline:check -- --jobs 1
+env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-service --lib -E 'test(restate_services::results_arms)' --no-capture
+env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-service --test parity_pipeline --test offline_cycle --no-capture
+env -u CI tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-report --lib -E 'test(recruiting::tests::postal::) | test(recruiting::tests::summaries::)' --no-tests fail --no-capture
+env -u CI tools/moon-local run pipeline:gate -- --release
+```
