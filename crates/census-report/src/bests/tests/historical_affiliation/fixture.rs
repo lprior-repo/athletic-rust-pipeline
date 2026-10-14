@@ -202,7 +202,7 @@ fn named_athlete(
     name: &str,
     source_owner: &str,
 ) -> TestResult<CanonicalAthlete> {
-    let mut row = CanonicalAthlete::new_checked(
+    let mut row = CanonicalAthlete::new(
         school,
         name,
         GradYear::CO2027,

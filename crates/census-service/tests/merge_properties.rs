@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 
 use census_domain::model::{
-    published_email, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel, Confidence, EventIdentity,
-    EventKind, EventSpecification, Evidence, Gender, GradYear, Grade, MailboxKind, ObservedGrade,
-    SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    published_email, AthleteConstructionError, CanonicalAthlete, CanonicalCoach, CanonicalEvent,
+    CanonicalMeet, CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel, Confidence,
+    EventIdentity, EventKind, EventSpecification, Evidence, Gender, GradYear, Grade, MailboxKind,
+    ObservedGrade, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::Entity;
@@ -171,7 +171,7 @@ fn coach_with_email(address: String) -> CanonicalCoach {
     coach
 }
 
-fn athlete() -> impl Strategy<Value = CanonicalAthlete> {
+fn athlete() -> impl Strategy<Value = Result<CanonicalAthlete, AthleteConstructionError>> {
     (
         school(),
         word(20),
@@ -184,11 +184,11 @@ fn athlete() -> impl Strategy<Value = CanonicalAthlete> {
                 SourceNamespace::Other("fixture".to_string()),
                 format!("athlete-{name}"),
             );
-            let mut athlete = CanonicalAthlete::new(&school.id, name, grad_year, gender, source);
+            let mut athlete = CanonicalAthlete::new(&school.id, name, grad_year, gender, source)?;
             sports.sort();
             sports.dedup();
             athlete.sports = sports;
-            athlete
+            Ok(athlete)
         })
 }
 

@@ -132,7 +132,7 @@ fn retained_conflict_does_not_quarantine_another_athlete_in_the_same_context() -
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1002"),
-    );
+    )?;
     other.published_graduations = original.published_graduations.clone();
     let mut clean = duplicate_of(&pair[1]);
     clean.athlete = other.id.clone();

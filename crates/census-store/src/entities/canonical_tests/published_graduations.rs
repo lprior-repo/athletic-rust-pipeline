@@ -1,16 +1,16 @@
 use super::*;
 use census_domain::model::PublishedGraduation;
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-fn subject() -> CanonicalAthlete {
-    CanonicalAthlete::new(
+fn subject() -> TestResult<CanonicalAthlete> {
+    Ok(CanonicalAthlete::new(
         &school(),
         "Published Cohort Runner",
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
-    )
+    )?)
 }
 
 fn published(year: GradYear, source: &str) -> PublishedGraduation {
@@ -34,7 +34,7 @@ fn read_subject(
 #[test]
 fn a_published_graduation_added_to_an_existing_subject_survives_merge_and_reopen() -> TestResult {
     let directory = tempfile::tempdir()?;
-    let mut expected = subject();
+    let mut expected = subject()?;
     let claim = published(GradYear::CO2027, "owned-api");
     {
         let store = Store::open(directory.path())?;
@@ -43,7 +43,7 @@ fn a_published_graduation_added_to_an_existing_subject_survives_merge_and_reopen
         expected.published_graduations.push(claim.clone());
         store.append_many(Table::Athletes, &[expected.clone(), expected.clone()])?;
         let retained = read_subject(&store, &expected)?;
-        check!(eq; retained.published_graduations, vec![claim]);
+        check!(eq; retained.published_graduations, vec![claim.clone()]);
         check!(eq; retained.observed_grades, Vec::new());
         check!(eq; retained.derived_cohort_confidence(), Some(Confidence::HIGH));
     }
@@ -56,7 +56,7 @@ fn a_published_graduation_added_to_an_existing_subject_survives_merge_and_reopen
 fn merging_retains_conflicting_years_and_same_year_claims_from_distinct_sources_once() -> TestResult
 {
     let directory = tempfile::tempdir()?;
-    let mut first = subject();
+    let mut first = subject()?;
     let initial = published(GradYear::CO2027, "owned-api");
     first.published_graduations.push(initial.clone());
     let matching_other_source = published(GradYear::CO2027, "other-api");
@@ -64,7 +64,7 @@ fn merging_retains_conflicting_years_and_same_year_claims_from_distinct_sources_
         GradYear::new(2028).ok_or("invalid fixture year")?,
         "owned-api",
     );
-    let mut incoming = subject();
+    let mut incoming = subject()?;
     incoming.published_graduations = vec![
         initial,
         matching_other_source.clone(),
@@ -97,15 +97,15 @@ fn merging_retains_conflicting_years_and_same_year_claims_from_distinct_sources_
 }
 
 #[test]
-fn a_natural_key_collision_does_not_attach_another_subjects_published_claim() {
-    let mut retained = subject();
+fn a_natural_key_collision_does_not_attach_another_subjects_published_claim() -> TestResult {
+    let mut retained = subject()?;
     let mut other = CanonicalAthlete::new(
         &second_school(),
         "Different Runner",
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "2002"),
-    );
+    )?;
     other.id = retained.id.clone();
     other
         .published_graduations
@@ -118,4 +118,5 @@ fn a_natural_key_collision_does_not_attach_another_subjects_published_claim() {
         retained.retained_conflicts[0].family,
         CANONICAL_ID_COLLISION_FAMILY
     );
+    Ok(())
 }

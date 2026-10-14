@@ -65,7 +65,7 @@ fn an_uncollected_source_value_publishes_an_empty_csv_field() -> TestResult {
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "no-profile-runner"),
-    );
+    )?;
     let claim = PublishedGraduation {
         grad_year: GradYear::CO2027,
         source: SourceRef::new(
@@ -120,7 +120,7 @@ fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() -> Te
         GradYear::CO2027,
         Gender::Boys,
         source,
-    );
+    )?;
     athlete.sports = vec![Sport::OutdoorTrack];
     let claim = PublishedGraduation {
         grad_year: GradYear::CO2027,

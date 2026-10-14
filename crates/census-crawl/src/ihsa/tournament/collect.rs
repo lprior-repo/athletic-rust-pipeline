@@ -139,7 +139,7 @@ impl<'a> Run<'a> {
         let meet = self.mapper.meet(row, &date, last.as_deref(), &url);
         let (events, complete) = self
             .walk_events(&envelope.data, (row.meet_id, &url), &meet, &date)
-            .await;
+            .await?;
         if complete {
             self.journal
                 .meet(row, &url, (events, self.ctx.performance_as_of));

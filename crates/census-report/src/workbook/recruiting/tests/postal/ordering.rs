@@ -63,7 +63,7 @@ fn displaced_athlete_rows_cannot_hide_a_forged_school_address_from_full_verifica
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399170"),
-    );
+    )?;
     second.evidence = first.evidence.clone();
     publish_fixture_cohort(&mut second, "nchsaa", "displaced-postal-row", CAPTURE_DAY);
     store.append(Table::Athletes, &second)?;

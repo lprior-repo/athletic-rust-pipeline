@@ -105,7 +105,7 @@ fn rows_that_disagree_on_the_class_are_flagged_and_never_called_an_agreement() -
         "Jordan Smith",
         Gender::Boys,
         GradYear::new(2028).ok_or("2028")?,
-    );
+    )?;
     observed(&mut later, 10, 2025)?;
     let kinds: Vec<FlagKind> = flags(&boys, &later)
         .into_iter()
@@ -121,8 +121,8 @@ fn rows_that_disagree_on_the_class_are_flagged_and_never_called_an_agreement() -
 
 #[test]
 fn unsupported_inference_survives_the_model_packet() -> TestResult {
-    let mut first = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
-    let mut second = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
+    let mut first = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027)?;
+    let mut second = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027)?;
     observed(&mut first, 11, 2025)?;
     observed(&mut second, 11, 2025)?;
     first.observed_grades.push(ObservedGrade {
@@ -153,8 +153,8 @@ fn unsupported_inference_survives_the_model_packet() -> TestResult {
 
 #[test]
 fn girls_unknown_pair_carries_no_gender_differs_flag() -> TestResult {
-    let girls = athlete("Jordan Smith", Gender::Girls, GradYear::CO2027);
-    let unknown = athlete("Jordan Smith", Gender::Unknown, GradYear::CO2027);
+    let girls = athlete("Jordan Smith", Gender::Girls, GradYear::CO2027)?;
+    let unknown = athlete("Jordan Smith", Gender::Unknown, GradYear::CO2027)?;
     let kinds: Vec<FlagKind> = flags(&girls, &unknown)
         .into_iter()
         .map(|flag| flag.kind)
@@ -168,8 +168,8 @@ fn girls_unknown_pair_carries_no_gender_differs_flag() -> TestResult {
 
 #[test]
 fn boys_girls_pair_carries_gender_differs_flag() -> TestResult {
-    let boys = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
-    let girls = athlete("Jordan Smith", Gender::Girls, GradYear::CO2027);
+    let boys = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027)?;
+    let girls = athlete("Jordan Smith", Gender::Girls, GradYear::CO2027)?;
     let kinds: Vec<FlagKind> = flags(&boys, &girls)
         .into_iter()
         .map(|flag| flag.kind)
@@ -183,8 +183,8 @@ fn boys_girls_pair_carries_gender_differs_flag() -> TestResult {
 
 #[test]
 fn boys_unknown_pair_carries_no_gender_differs_flag() -> TestResult {
-    let boys = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
-    let unknown = athlete("Jordan Smith", Gender::Unknown, GradYear::CO2027);
+    let boys = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027)?;
+    let unknown = athlete("Jordan Smith", Gender::Unknown, GradYear::CO2027)?;
     let kinds: Vec<FlagKind> = flags(&boys, &unknown)
         .into_iter()
         .map(|flag| flag.kind)

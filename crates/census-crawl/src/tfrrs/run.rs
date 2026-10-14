@@ -120,7 +120,12 @@ impl<'a> Run<'a> {
             Route::Team(team) => {
                 let parsed = parse_team_page(&body);
                 let context = RosterContext { page, team: &team };
-                self.absorb.absorb_roster(&context, &parsed);
+                if let Err(error) = self.absorb.absorb_roster(&context, &parsed) {
+                    self.failures
+                        .push(format!("{url}: {error}; projection remains unfinished"));
+                    self.unfinished.push(url.to_string());
+                    return;
+                }
                 let rows = u64::try_from(parsed.athletes.len()).map_or(u64::MAX, |value| value);
                 ("team", rows)
             }

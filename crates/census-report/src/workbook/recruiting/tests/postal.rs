@@ -17,7 +17,7 @@ fn seed(store: &Store) -> TestResult<(CanonicalSchool, CanonicalAthlete)> {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "postal-runner"),
-    );
+    )?;
     athlete.sports = vec![Sport::OutdoorTrack];
     athlete.evidence = evidence("nchsaa", Some(SUMMARY_URL));
     publish_fixture_cohort(&mut athlete, "nchsaa", "captured-postal", CAPTURE_DAY);
@@ -132,7 +132,7 @@ fn a_director_only_published_email_counts_as_a_cohort_contact_email() -> TestRes
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "director-contact-runner"),
-    );
+    )?;
     athlete.sports = vec![Sport::OutdoorTrack];
     athlete.evidence = evidence("nchsaa", Some(SUMMARY_URL));
     publish_fixture_cohort(&mut athlete, "nchsaa", "captured-director", CAPTURE_DAY);
@@ -274,9 +274,9 @@ fn accepted_alias_school_affiliations_preserve_their_source_owned_postal_claims(
         GradYear::CO2027,
         Gender::Boys,
         source.clone(),
-    );
+    )?;
     let mut second =
-        CanonicalAthlete::new(&other, "A. Runner", GradYear::CO2027, Gender::Boys, source);
+        CanonicalAthlete::new(&other, "A. Runner", GradYear::CO2027, Gender::Boys, source)?;
     for member in [&mut first, &mut second] {
         member.evidence = vec![Evidence::parsed(
             SourceRef::new("milesplit", Some(profile.into())),
@@ -333,7 +333,7 @@ fn a_same_named_school_without_a_claim_does_not_inherit_another_schools_postal_a
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "unrelated"),
-    );
+    )?;
     publish_fixture_cohort(&mut athlete, "wiaa_results", "unrelated-school-postal", DAY);
     store.append(Table::Athletes, &athlete)?;
     let (path, _, _) = published(&store)?;
@@ -433,7 +433,7 @@ fn unresolved_same_named_athletes_keep_postal_affiliations_distinct_in_workbook_
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "distinct-postal-homonym"),
-    );
+    )?;
     publish_fixture_cohort(&mut second, "wiaa_results", "postal-homonym", DAY);
     store.append(Table::Athletes, &second)?;
     let (path, dataset, _) = published(&store)?;

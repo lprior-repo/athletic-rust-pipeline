@@ -75,7 +75,7 @@ fn athlete(
         GradYear::new(year).ok_or("fixture cohort")?,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, name),
-    );
+    )?;
     athlete.evidence.push(evidence());
     for year in published {
         athlete.published_graduations.push(PublishedGraduation {

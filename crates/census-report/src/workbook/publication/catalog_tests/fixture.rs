@@ -29,7 +29,7 @@ pub(super) fn fixture() -> TestResult<Fixture> {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "catalog_runner"),
-    );
+    )?;
     athlete.published_graduations.push(PublishedGraduation {
         grad_year: GradYear::CO2027,
         source: source("catalog_roster"),

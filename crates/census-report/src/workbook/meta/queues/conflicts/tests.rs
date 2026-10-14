@@ -29,7 +29,7 @@ fn athlete(
     );
     Ok(CanonicalAthlete::new(
         &school.id, name, grad_year, gender, source,
-    ))
+    )?)
 }
 
 fn cases() -> TestResult<Vec<(&'static str, Vec<CanonicalAthlete>)>> {

@@ -18,7 +18,7 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() -> 
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("oh-core"),
-    );
+    )?;
     core_athlete.evidence.push(evidence("ohsaa_results"));
     store.append(Table::Athletes, &core_athlete)?;
     let mut mirror_athlete = CanonicalAthlete::new(
@@ -27,7 +27,7 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() -> 
         GradYear::CO2027,
         Gender::Girls,
         fixture_source("oh-mirror"),
-    );
+    )?;
     mirror_athlete
         .evidence
         .push(evidence("athleticlive_results"));
@@ -42,7 +42,7 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() -> 
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("ak-runner"),
-    );
+    )?;
     ak_athlete.evidence.push(evidence("athleticlive_athletes"));
     store.append(Table::Athletes, &ak_athlete)?;
     let ak_coach = CanonicalCoach::new(

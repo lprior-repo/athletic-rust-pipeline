@@ -39,7 +39,7 @@ pub(super) fn map_identity(
     school_id: &SchoolId,
     identity: &RowIdentity<'_>,
     row_index: usize,
-) -> Option<Mapped> {
+) -> crate::CrawlResult<Option<Mapped>> {
     let gender = match identity.gender {
         Gender::Unknown => context.gender,
         published => published,
@@ -49,13 +49,16 @@ pub(super) fn map_identity(
         note_team_ids(entry, context, identity, writer.stats);
         entry.id.clone()
     };
-    let (athlete, source) =
-        record_athlete(writer, context, school_id, identity, gender, row_index)?;
-    Some(Mapped {
+    let Some((athlete, source)) =
+        record_athlete(writer, context, school_id, identity, gender, row_index)?
+    else {
+        return Ok(None);
+    };
+    Ok(Some(Mapped {
         athlete,
         team,
         source_athlete: source,
-    })
+    }))
 }
 
 fn admit_athlete(
@@ -103,27 +106,28 @@ fn record_athlete(
     identity: &RowIdentity<'_>,
     gender: Gender,
     row_index: usize,
-) -> Option<(AthleteId, SourceIdentity)> {
+) -> crate::CrawlResult<Option<(AthleteId, SourceIdentity)>> {
     let admitted = admit_athlete(writer, context, identity, gender, row_index);
     let Some((grad_year, observation, source)) = admitted else {
         writer.stats.rows_skipped_unsupported_cohort = writer
             .stats
             .rows_skipped_unsupported_cohort
             .saturating_add(1);
-        return None;
+        return Ok(None);
     };
     let athlete_id = CanonicalAthlete::mint(school_id, identity.name, grad_year, gender, &source);
+    let mut athlete =
+        CanonicalAthlete::new(school_id, identity.name, grad_year, gender, source.clone())
+            .map_err(|e| crate::CrawlError::Invariant {
+                detail: e.to_string(),
+            })?;
+    athlete.sports.push(context.sport);
+    athlete.evidence.push(context.evidence.clone());
     let entry = writer
         .accumulator
         .athletes
         .entry(athlete_id.as_str().to_string())
-        .or_insert_with(|| {
-            let mut athlete =
-                CanonicalAthlete::new(school_id, identity.name, grad_year, gender, source.clone());
-            athlete.sports.push(context.sport);
-            athlete.evidence.push(context.evidence.clone());
-            athlete
-        });
+        .or_insert(athlete);
     if !entry.sports.contains(&context.sport) {
         entry.sports.push(context.sport);
     }
@@ -141,7 +145,7 @@ fn record_athlete(
             entry.public_profile_urls.push(profile_url);
         }
     }
-    Some((athlete_id, source))
+    Ok(Some((athlete_id, source)))
 }
 
 fn note_team_ids(

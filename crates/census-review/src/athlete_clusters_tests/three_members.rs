@@ -10,7 +10,7 @@ fn first_empty_cohort_cannot_hide_contradictory_later_members_of_one_provider_ob
         let mut rows = schools
             .iter()
             .map(|school| athlete(&school.id, "Jordan Smith", Gender::Boys, "14399169"))
-            .collect::<Vec<_>>();
+            .collect::<TestResult<Vec<_>>>()?;
         rows.sort_by(|first, second| first.id.cmp(&second.id));
         grade(&mut rows[1], 11, 2025)?;
         if mixed_baseline {

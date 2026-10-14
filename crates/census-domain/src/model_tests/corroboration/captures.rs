@@ -26,8 +26,8 @@ pub(super) fn captured_claim(
 
 pub(super) fn independent_pair() -> Result<[CanonicalAthlete; 2], Box<dyn std::error::Error>> {
     let key = tfrrs("999");
-    let mut linked = observed("School A", milesplit("111"), std::slice::from_ref(&key));
-    let mut owner = observed("School B", key.clone(), &[]);
+    let mut linked = observed("School A", milesplit("111"), std::slice::from_ref(&key))?;
+    let mut owner = observed("School B", key.clone(), &[])?;
     linked.identity_attestations.push(captured_claim(
         &key,
         "official-roster-fixture",

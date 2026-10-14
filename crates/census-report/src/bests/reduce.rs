@@ -5,7 +5,7 @@ use reports::{CompetitionContext, ContextIntegrity, ReportGroup, RetainedContext
 
 use super::key::{should_replace, MarkOrdering, PrKey};
 use super::selection::{Population, SharedSelection};
-use super::{is_relay, Measure, Options, Parents};
+use super::{Measure, Options, Parents};
 use crate::report::{Derivation, EventAdmission, ReportResult, Scope};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventSpecification,
@@ -234,7 +234,7 @@ fn eligible_measure(
     performance: &CanonicalPerformance,
     kind: &census_domain::model::EventKind,
 ) -> Option<(Measure, i64)> {
-    if is_relay(kind) || !performance.mark_compatible(kind) {
+    if kind.is_relay() || !performance.mark_compatible(kind) {
         return None;
     }
     let measure = Measure::of(&performance.mark)?;

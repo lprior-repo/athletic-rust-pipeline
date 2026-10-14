@@ -29,14 +29,18 @@ pub(crate) fn school(name: &str) -> CanonicalSchool {
     CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name.to_lowercase(), None).0
 }
 
-pub(crate) fn athlete(school: &SchoolId, name: &str, provider_id: &str) -> CanonicalAthlete {
-    CanonicalAthlete::new(
+pub(crate) fn athlete(
+    school: &SchoolId,
+    name: &str,
+    provider_id: &str,
+) -> TestResult<CanonicalAthlete> {
+    Ok(CanonicalAthlete::new(
         school,
         name,
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, provider_id),
-    )
+    )?)
 }
 
 pub(crate) fn coach(school: &SchoolId, name: &str) -> CanonicalCoach {
@@ -128,8 +132,8 @@ pub(crate) fn seeded_store() -> TestResult<SeededStore> {
         None,
     );
     store.append(Table::Schools, &school)?;
-    let athlete_a = athlete(&school_id, "Ada Runner", "1");
-    let athlete_b = athlete(&school_id, "Bea Runner", "2");
+    let athlete_a = athlete(&school_id, "Ada Runner", "1")?;
+    let athlete_b = athlete(&school_id, "Bea Runner", "2")?;
     store.append(Table::Athletes, &athlete_a)?;
     store.append(Table::Athletes, &athlete_b)?;
     let season = SchoolYear::new(2026).ok_or("fixture season")?;

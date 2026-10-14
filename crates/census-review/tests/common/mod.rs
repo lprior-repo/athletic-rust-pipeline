@@ -81,7 +81,7 @@ pub fn athlete_row(
     grade: u8,
 ) -> TestResult<CanonicalAthlete> {
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, object);
-    let mut athlete = CanonicalAthlete::new(school, name, GradYear::CO2027, gender, source);
+    let mut athlete = CanonicalAthlete::new(school, name, GradYear::CO2027, gender, source)?;
     athlete
         .evidence
         .push(census_domain::model::Evidence::parsed(

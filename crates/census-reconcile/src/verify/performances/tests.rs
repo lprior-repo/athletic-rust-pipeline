@@ -34,7 +34,7 @@ fn fixture() -> TestResult<Fixture> {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::athletic_net("athlete"), "101"),
-    );
+    )?;
     store.append(Table::Athletes, &athlete)?;
     for date in ["2026-05-01", "2026-05-02"] {
         let meet = CanonicalMeet::new(

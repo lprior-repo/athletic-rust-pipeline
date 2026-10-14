@@ -20,7 +20,7 @@ fn school() -> CanonicalSchool {
     school
 }
 
-fn athlete(school: &CanonicalSchool) -> CanonicalAthlete {
+fn athlete(school: &CanonicalSchool) -> TestResult<CanonicalAthlete> {
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
     let mut athlete = CanonicalAthlete::new(
         &school.id,
@@ -28,14 +28,14 @@ fn athlete(school: &CanonicalSchool) -> CanonicalAthlete {
         GradYear::CO2027,
         Gender::Girls,
         source,
-    );
+    )?;
     athlete.add_identity(SourceIdentity::new(
         SourceNamespace::AthleticNet {
             kind: "athlete".to_string(),
         },
         "987654",
     ));
-    athlete
+    Ok(athlete)
 }
 
 fn unplaced_meet() -> CanonicalMeet {
@@ -53,7 +53,7 @@ fn source_object_identities_keep_provider_ids_verbatim_and_name_their_table() ->
     let store = Store::open(dir.path())?;
     let school = school();
     store.append(Table::Schools, &school)?;
-    store.append(Table::Athletes, &athlete(&school))?;
+    store.append(Table::Athletes, &athlete(&school)?)?;
     let dataset = census_report::export::ExportDataset::load(&store)?;
     let rows = canonical_pass(&dataset).identities;
     let ids: Vec<&str> = rows.iter().map(|row| row.id.as_str()).collect();
@@ -82,7 +82,7 @@ fn the_jurisdiction_row_carries_its_measured_denominators() -> TestResult {
     let store = Store::open(dir.path())?;
     let school = school();
     store.append(Table::Schools, &school)?;
-    store.append(Table::Athletes, &athlete(&school))?;
+    store.append(Table::Athletes, &athlete(&school)?)?;
     let dataset = census_report::export::ExportDataset::load(&store)?;
     let identities = canonical_pass(&dataset).identities;
     let rows = coverage_rows(&dataset, &identities)?;
@@ -104,7 +104,7 @@ fn source_rows_count_what_each_namespace_contributes_per_table() -> TestResult {
     let store = Store::open(dir.path())?;
     let school = school();
     store.append(Table::Schools, &school)?;
-    store.append(Table::Athletes, &athlete(&school))?;
+    store.append(Table::Athletes, &athlete(&school)?)?;
     let dataset = census_report::export::ExportDataset::load(&store)?;
     let identities = canonical_pass(&dataset).identities;
     let rows = super::coverage::source_coverage(&identities);
@@ -135,7 +135,7 @@ fn a_pass_appends_every_index_and_a_snapshot_of_the_store() -> TestResult {
     let store = Store::open(dir.path())?;
     let school = school();
     store.append(Table::Schools, &school)?;
-    store.append(Table::Athletes, &athlete(&school))?;
+    store.append(Table::Athletes, &athlete(&school)?)?;
     let meet = unplaced_meet();
     store.append(Table::Meets, &meet)?;
     let report = derive(&store, "index", "2026-09-22", season()?)?;
@@ -223,7 +223,10 @@ fn a_review_decision_survives_the_next_derivation() {
     assert_eq!(pending.state, ReviewState::Pending);
 }
 
-fn other_subject_under_one_id(school: &CanonicalSchool, id: &AthleteId) -> CanonicalAthlete {
+fn other_subject_under_one_id(
+    school: &CanonicalSchool,
+    id: &AthleteId,
+) -> TestResult<CanonicalAthlete> {
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14407777");
     let mut row = CanonicalAthlete::new(
         &school.id,
@@ -231,9 +234,9 @@ fn other_subject_under_one_id(school: &CanonicalSchool, id: &AthleteId) -> Canon
         GradYear::CO2027,
         Gender::Girls,
         source,
-    );
+    )?;
     row.id = id.clone();
-    row
+    Ok(row)
 }
 
 #[test]
@@ -242,8 +245,8 @@ fn a_canonical_id_collision_reaches_the_conflict_queue() -> TestResult {
     let store = Store::open(dir.path())?;
     let school = school();
     store.append(Table::Schools, &school)?;
-    let jane = athlete(&school);
-    let marta = other_subject_under_one_id(&school, &jane.id);
+    let jane = athlete(&school)?;
+    let marta = other_subject_under_one_id(&school, &jane.id)?;
     store.append(Table::Athletes, &jane)?;
     store.append(Table::Athletes, &marta)?;
     let report = derive(&store, "index", "2026-09-22", season()?)?;
@@ -323,7 +326,7 @@ fn a_cohort_claim_the_rules_decide_is_stored_retained() -> TestResult {
     let store = Store::open(dir.path())?;
     let school = school();
     store.append(Table::Schools, &school)?;
-    let athlete = athlete(&school);
+    let athlete = athlete(&school)?;
     store.append(Table::Athletes, &athlete)?;
     derive(&store, "index", "2026-09-22", season()?)?;
     let unverified = store

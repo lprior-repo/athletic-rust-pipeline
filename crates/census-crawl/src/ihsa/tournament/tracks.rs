@@ -58,17 +58,18 @@ impl<'a> Mapper<'a> {
         summary: &EventSummary,
         context: &EventContext<'_>,
         url: &str,
-    ) {
+    ) -> crate::CrawlResult<()> {
         let relay_event = context.event.kind.is_relay() || summary.event_type == "RelayEvent";
         for (row_index, row) in summary.finishers.iter().enumerate() {
             self.stats.rows = self.stats.rows.saturating_add(1);
             let named = finisher_name(row).is_some_and(|name| !name.trim().is_empty());
             if row.members.is_empty() && (named || !relay_event) {
-                self.individual(row, context, url, row_index);
+                self.individual(row, context, url, row_index)?;
             } else {
-                self.relay(row, context, url, row_index);
+                self.relay(row, context, url, row_index)?;
             }
         }
+        Ok(())
     }
 
     fn individual(
@@ -77,11 +78,11 @@ impl<'a> Mapper<'a> {
         context: &EventContext<'_>,
         url: &str,
         row_index: usize,
-    ) {
+    ) -> crate::CrawlResult<()> {
         let Some(school) =
             self.school(row.ihsa_school_id.as_deref(), row.team_name.as_deref(), url)
         else {
-            return;
+            return Ok(());
         };
         let reference = row.athlete.as_ref();
         let name = finisher_name(row);
@@ -99,15 +100,17 @@ impl<'a> Mapper<'a> {
                 source_key: format!("{url}:row:{row_index}"),
             },
             self.origin.evidence(url),
-        ) else {
+        )?
+        else {
             self.stats.rows_no_grade = self.stats.rows_no_grade.saturating_add(1);
-            return;
+            return Ok(());
         };
         let Some(mark) = row.mark.as_deref().and_then(parse_mark) else {
             self.stats.rows_no_mark = self.stats.rows_no_mark.saturating_add(1);
-            return;
+            return Ok(());
         };
         self.place(&school, subject, mark, row, context, url);
+        Ok(())
     }
 
     fn place(
@@ -149,11 +152,11 @@ impl<'a> Mapper<'a> {
         context: &EventContext<'_>,
         url: &str,
         row_index: usize,
-    ) {
+    ) -> crate::CrawlResult<()> {
         let Some(school) =
             self.school(row.ihsa_school_id.as_deref(), row.team_name.as_deref(), url)
         else {
-            return;
+            return Ok(());
         };
         let team = self.team(
             &school,
@@ -163,10 +166,10 @@ impl<'a> Mapper<'a> {
             row.team.as_ref(),
             url,
         );
-        let members = self.relay_members(row, context, url, row_index, &school);
+        let members = self.relay_members(row, context, url, row_index, &school)?;
         let Some(mark) = row.mark.as_deref().and_then(parse_mark) else {
             self.stats.rows_no_mark = self.stats.rows_no_mark.saturating_add(1);
-            return;
+            return Ok(());
         };
         let mut relay = RelayResult::new(
             &team,
@@ -188,6 +191,7 @@ impl<'a> Mapper<'a> {
             .relay_results
             .entry(relay.id.as_str().to_owned())
             .or_insert(relay);
+        Ok(())
     }
 
     fn relay_members(
@@ -197,7 +201,7 @@ impl<'a> Mapper<'a> {
         url: &str,
         row_index: usize,
         school: &SchoolId,
-    ) -> Vec<RelayMember> {
+    ) -> crate::CrawlResult<Vec<RelayMember>> {
         let mut members = Vec::new();
         for (leg_index, member) in row.members.iter().enumerate() {
             let Some(leg) = member.athlete.as_ref() else {
@@ -225,7 +229,7 @@ impl<'a> Mapper<'a> {
                     source_key: format!("{url}:row:{row_index}:leg:{leg_index}"),
                 },
                 self.origin.evidence(url),
-            );
+            )?;
             match stored {
                 Some((athlete_id, _)) => {
                     self.stats.legs = self.stats.legs.saturating_add(1);
@@ -237,7 +241,7 @@ impl<'a> Mapper<'a> {
             }
             members.push(published);
         }
-        members
+        Ok(members)
     }
 }
 

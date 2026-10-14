@@ -32,15 +32,15 @@ fn athlete(
     gender: Gender,
     namespace: SourceNamespace,
     source: &str,
-) -> CanonicalAthlete {
+) -> TestResult<CanonicalAthlete> {
     let identity = SourceIdentity::new(namespace, source);
-    let mut row = CanonicalAthlete::new(&school(), name, GradYear::CO2027, gender, identity);
+    let mut row = CanonicalAthlete::new(&school(), name, GradYear::CO2027, gender, identity)?;
     row.id = id.clone();
-    row
+    Ok(row)
 }
 
 #[test]
-fn two_observations_of_one_athlete_merge_as_before() {
+fn two_observations_of_one_athlete_merge_as_before() -> TestResult {
     let id = CanonicalAthlete::mint(
         &school(),
         "Julian Aguilera",
@@ -54,7 +54,7 @@ fn two_observations_of_one_athlete_merge_as_before() {
         Gender::Boys,
         SourceNamespace::MilesplitAthlete,
         "111",
-    );
+    )?;
     kept.add_identity(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "222"));
     let mut seen_again = athlete(
         &id,
@@ -62,22 +62,24 @@ fn two_observations_of_one_athlete_merge_as_before() {
         Gender::Boys,
         SourceNamespace::MilesplitAthlete,
         "111",
-    );
+    )?;
     seen_again.add_identity(SourceIdentity::new(
         SourceNamespace::MilesplitAthlete,
         "333",
     ));
-    assert_eq!(seen_again.id, id, "the same material mints the same id");
+    check!(eq; seen_again.id, id, "the same material mints the same id");
     kept.merge(seen_again);
-    assert!(
+    check!(
         kept.retained_conflicts.is_empty(),
         "one subject observed twice is not a collision"
     );
-    assert_eq!(
+    check!(
+        eq;
         kept.identities().count(),
         3,
         "all provider identities are absorbed: primary plus two source_links"
     );
+    Ok(())
 }
 
 #[test]
@@ -95,14 +97,14 @@ fn one_id_from_two_natural_keys_keeps_the_row_and_retains_the_collision() -> Tes
         Gender::Boys,
         SourceNamespace::MilesplitAthlete,
         "111",
-    );
+    )?;
     let mut other = athlete(
         &id,
         "Jordan Bell",
         Gender::Girls,
         SourceNamespace::TfrrsAthlete,
         "222",
-    );
+    )?;
     other
         .public_profile_urls
         .push("https://tfrrs.org/athletes/222".to_string());
@@ -139,7 +141,7 @@ fn one_id_from_two_natural_keys_keeps_the_row_and_retains_the_collision() -> Tes
 }
 
 #[test]
-fn merging_a_repeated_subject_preserves_incoming_conflicts_once() {
+fn merging_a_repeated_subject_preserves_incoming_conflicts_once() -> TestResult {
     let identity = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111");
     let mut kept = CanonicalAthlete::new(
         &school(),
@@ -147,7 +149,7 @@ fn merging_a_repeated_subject_preserves_incoming_conflicts_once() {
         GradYear::CO2027,
         Gender::Boys,
         identity,
-    );
+    )?;
     let conflict = census_domain::model::RetainedConflict::new(
         CANONICAL_ID_COLLISION_FAMILY,
         kept.id.as_str(),
@@ -158,7 +160,8 @@ fn merging_a_repeated_subject_preserves_incoming_conflicts_once() {
     incoming.retained_conflicts.push(conflict.clone());
     kept.merge(incoming.clone());
     kept.merge(incoming);
-    assert_eq!(kept.retained_conflicts, vec![conflict]);
+    check!(eq; kept.retained_conflicts, vec![conflict]);
+    Ok(())
 }
 
 #[test]
@@ -174,14 +177,14 @@ fn same_owner_url_variants_merge_claims_and_keep_both_locators() -> TestResult {
         GradYear::CO2027,
         Gender::Girls,
         identity(Some("https://milesplit.com/athletes/111")),
-    );
+    )?;
     let mut incoming = CanonicalAthlete::new(
         &school(),
         "Jane Doe",
         GradYear::CO2027,
         Gender::Girls,
         identity(Some("https://www.milesplit.com/athletes/111")),
-    );
+    )?;
     check!(eq; kept.id, incoming.id, "a URL variant mints the same subject");
     incoming.sports.push(Sport::OutdoorTrack);
     incoming
@@ -237,14 +240,14 @@ fn a_different_provider_id_or_namespace_remains_a_collision() -> TestResult {
         Gender::Boys,
         SourceNamespace::MilesplitAthlete,
         "111",
-    );
+    )?;
     let mut other_id = athlete(
         &kept.id.clone(),
         "Julian Aguilera",
         Gender::Boys,
         SourceNamespace::MilesplitAthlete,
         "112",
-    );
+    )?;
     other_id.sports.push(Sport::OutdoorTrack);
     kept.merge(other_id);
     check!(eq; kept.retained_conflicts.len(), 1, "a distinct provider id is a real mismatch");
@@ -258,7 +261,7 @@ fn a_different_provider_id_or_namespace_remains_a_collision() -> TestResult {
         Gender::Boys,
         SourceNamespace::TfrrsAthlete,
         "111",
-    );
+    )?;
     other_namespace.sports.push(Sport::CrossCountry);
     kept.merge(other_namespace);
     check!(eq; kept.retained_conflicts.len(), 2, "a distinct namespace is a real mismatch");
@@ -334,7 +337,7 @@ fn one_agreeing_observation_derives_high_cohort_confidence() -> TestResult {
         Gender::Boys,
         SourceNamespace::MilesplitAthlete,
         "111",
-    );
+    )?;
     observing(&mut row, 11, 2025)?;
     check!(eq; row.derived_cohort_confidence(), Some(Confidence::HIGH), "a grade level that agrees with the cohort derives HIGH immediately");
     Ok(())
@@ -355,7 +358,7 @@ fn an_observation_that_disagrees_derives_low_cohort_confidence() -> TestResult {
         Gender::Boys,
         SourceNamespace::MilesplitAthlete,
         "111",
-    );
+    )?;
     observing(&mut row, 11, 2024)?;
     row.publish();
     check!(eq; row.grad_year, GradYear::CO2027);

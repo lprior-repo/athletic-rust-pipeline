@@ -34,7 +34,7 @@ fn athlete(store: &Store, school: &SchoolId, name: &str) -> TestResult<AthleteId
         GradYear::CO2027,
         Gender::Boys,
         fixture_source(name),
-    );
+    )?;
     let id = row.id.clone();
     row.evidence.push(observation());
     store.append(Table::Athletes, &row)?;

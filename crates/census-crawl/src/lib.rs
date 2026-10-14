@@ -6,6 +6,7 @@
 mod fallible_checks;
 
 #[cfg(test)]
+#[path = "net/http_retry_fixture.rs"]
 mod http_retry_fixture;
 
 pub const CONCURRENCY_BOUND: usize = 8;
@@ -93,6 +94,14 @@ pub enum CrawlError {
         path: std::path::PathBuf,
         detail: String,
     },
+}
+
+impl From<census_domain::model::AthleteConstructionError> for CrawlError {
+    fn from(error: census_domain::model::AthleteConstructionError) -> Self {
+        Self::Invariant {
+            detail: error.to_string(),
+        }
+    }
 }
 
 pub type CrawlResult<T> = std::result::Result<T, CrawlError>;

@@ -65,7 +65,7 @@ fn append_subject(
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, &provider_id),
-    );
+    )?;
     athlete.observed_grades.push(supported.clone());
     batch.append_many(Table::Athletes, std::slice::from_ref(&athlete))?;
     let raw = SourceObservation::Athlete(

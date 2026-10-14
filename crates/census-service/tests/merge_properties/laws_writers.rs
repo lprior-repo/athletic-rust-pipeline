@@ -178,7 +178,11 @@ proptest! {
     }
 
     #[test]
-    fn athlete_merge_unions_known_names_under_one_natural_key(base in athlete(), alias in word(20)) {
+    fn athlete_merge_unions_known_names_under_one_natural_key(
+        base in athlete(),
+        alias in word(20),
+    ) {
+        let base = base.map_err(|e| TestCaseError::fail(format!("athlete construction failed: {e}")))?;
         let mut athlete = base.clone();
         let canonical = athlete.canonical_name.clone();
         let mut incoming = base;
@@ -196,6 +200,7 @@ proptest! {
         base in athlete(),
         other_name in word(20),
     ) {
+        let base = base.map_err(|e| TestCaseError::fail(format!("athlete construction failed: {e}")))?;
         let mut incoming = base.clone();
         incoming.canonical_name = other_name.clone();
         incoming.known_names = vec![other_name.clone()];
@@ -255,6 +260,7 @@ proptest! {
         year in school_year(),
         base in athlete(),
     ) {
+        let base = base.map_err(|e| TestCaseError::fail(format!("athlete construction failed: {e}")))?;
         let observation = ObservedGrade {
             grade,
             school_year: year,
@@ -282,6 +288,7 @@ proptest! {
         other_year in school_year(),
         base in athlete(),
     ) {
+        let base = base.map_err(|e| TestCaseError::fail(format!("athlete construction failed: {e}")))?;
         let observation = |grade, school_year, source| ObservedGrade {
             grade,
             school_year,

@@ -169,7 +169,7 @@ fn append_catalog_meet(store: &Store) -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "catalog_runner"),
-    );
+    )?;
     athlete
         .published_graduations
         .push(census_domain::model::PublishedGraduation {

@@ -65,7 +65,7 @@ fn recruiting_csv_selects_current_contacts_for_each_gender() -> TestResult {
                 SourceNamespace::Other("fixture".into()),
                 format!("{name}-runner"),
             ),
-        );
+        )?;
         athlete.sports = vec![Sport::OutdoorTrack];
         athlete
             .published_graduations
@@ -159,7 +159,7 @@ fn unresolved_same_name_candidates_remain_individually_addressable() -> TestResu
                 GradYear::CO2027,
                 Gender::Boys,
                 SourceIdentity::new(SourceNamespace::Other("fixture".into()), source_row),
-            );
+            )?;
             athlete.sports = vec![Sport::OutdoorTrack];
             athlete
                 .published_graduations

@@ -20,7 +20,7 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() -> Test
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
-    );
+    )?;
     athlete
         .published_graduations
         .push(census_domain::model::PublishedGraduation {
@@ -278,17 +278,6 @@ fn reduce_different_events_different_keys() -> TestResult {
 }
 
 #[test]
-fn reduce_relay_excluded() {
-    let kind = EventKind::Relay4x100;
-    assert!(crate::bests::is_relay(&kind));
-}
-
-#[test]
-fn reduce_non_relay_included() {
-    let kind = EventKind::Track100m;
-    assert!(!crate::bests::is_relay(&kind));
-}
-#[test]
 fn f08_transfers_retain_performance_time_affiliation() -> TestResult {
     use crate::report::Scope;
     use census_domain::model::GradYear;
@@ -313,7 +302,7 @@ fn f08_transfers_retain_performance_time_affiliation() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "2001"),
-    );
+    )?;
     athlete
         .published_graduations
         .push(census_domain::model::PublishedGraduation {
@@ -408,7 +397,7 @@ fn f09_prelim_final_attempt_facts_are_retained() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "3001"),
-    );
+    )?;
     athlete
         .published_graduations
         .push(census_domain::model::PublishedGraduation {
@@ -510,7 +499,7 @@ fn canary22_no_invented_individual_pr_from_relay_membership() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "4001"),
-    );
+    )?;
     athlete
         .published_graduations
         .push(census_domain::model::PublishedGraduation {

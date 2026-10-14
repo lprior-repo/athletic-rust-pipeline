@@ -48,7 +48,7 @@ fn seed(store: &Store, school: &CanonicalSchool) -> TestResult {
             SourceNamespace::Other("fixture".to_owned()),
             "contact-runner",
         ),
-    );
+    )?;
     athlete.sports = vec![Sport::OutdoorTrack];
     athlete
         .evidence

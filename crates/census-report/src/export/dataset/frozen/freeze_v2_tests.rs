@@ -58,7 +58,7 @@ fn freeze_v2_streams_bounded_chunks_in_encounter_order() -> TestResult {
             &anchor.id,
             &format!("Huge Runner {index}"),
             &format!("huge-{index}"),
-        );
+        )?;
         row.canonical_name = "x".repeat(HUGE_ROW_BYTES);
         store.append(Table::Athletes, &row)?;
         appended = appended.checked_add(1).ok_or("row count overflow")?;

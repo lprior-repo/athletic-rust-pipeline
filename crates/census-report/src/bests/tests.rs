@@ -167,7 +167,7 @@ fn selection_dataset(kind: EventKind) -> TestResult<ExportDataset> {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
-    );
+    )?;
     athlete
         .published_graduations
         .push(census_domain::model::PublishedGraduation {

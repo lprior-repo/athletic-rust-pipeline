@@ -7,14 +7,14 @@ use census_domain::UsJurisdiction;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-fn subject(school: &SchoolId, source: &str, name: &str) -> CanonicalAthlete {
-    CanonicalAthlete::new(
+fn subject(school: &SchoolId, source: &str, name: &str) -> TestResult<CanonicalAthlete> {
+    Ok(CanonicalAthlete::new(
         school,
         name,
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, source),
-    )
+    )?)
 }
 
 #[test]
@@ -22,8 +22,8 @@ fn captured_generation_excludes_later_subjects() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let school = SchoolId::mint("sch", &["snapshot-fixture"]);
-    let first = subject(&school, "1001", "Alice Example");
-    let second = subject(&school, "1002", "Beth Example");
+    let first = subject(&school, "1001", "Alice Example")?;
+    let second = subject(&school, "1002", "Beth Example")?;
     store.append(Table::Athletes, &first)?;
     let captured = store.snapshot();
     store.append(Table::Athletes, &second)?;
@@ -41,8 +41,8 @@ fn identity_projection_uses_the_captured_subject_generation() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let school = SchoolId::mint("sch", &["projection-fixture"]);
-    let first = subject(&school, "2001", "Cara Example");
-    let second = subject(&school, "2002", "Dana Example");
+    let first = subject(&school, "2001", "Cara Example")?;
+    let second = subject(&school, "2002", "Dana Example")?;
     store.append(Table::Athletes, &first)?;
     let captured = store.snapshot();
     store.append(Table::Athletes, &second)?;
@@ -62,10 +62,10 @@ fn consolidation_publishes_only_the_captured_generation() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let school = SchoolId::mint("sch", &["consolidation-fixture"]);
-    let first = subject(&school, "3001", "Erin Example");
+    let first = subject(&school, "3001", "Erin Example")?;
     store.append(Table::Athletes, &first)?;
     let captured = store.snapshot();
-    store.append(Table::Athletes, &subject(&school, "3002", "Fran Example"))?;
+    store.append(Table::Athletes, &subject(&school, "3002", "Fran Example")?)?;
     let path = dir.path().join("captured.jsonl");
     let result = captured.consolidate::<CanonicalAthlete>(Table::Athletes, &path)?;
     check!(eq; result.rows, 1);
@@ -81,14 +81,14 @@ fn one_generation_keeps_school_and_athlete_tables_coherent() -> TestResult {
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "First Fixture", "first", None);
     let (second_school, second_id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Second Fixture", "second", None);
-    let first = subject(&first_id, "4001", "Gail Example");
+    let first = subject(&first_id, "4001", "Gail Example")?;
     store.append(Table::Schools, &first_school)?;
     store.append(Table::Athletes, &first)?;
     let captured = store.snapshot();
     store.append(Table::Schools, &second_school)?;
     store.append(
         Table::Athletes,
-        &subject(&second_id, "4002", "Hope Example"),
+        &subject(&second_id, "4002", "Hope Example")?,
     )?;
     check!(eq; captured.scan::<CanonicalSchool>(Table::Schools)?, vec![first_school]);
     check!(eq; captured.scan::<CanonicalAthlete>(Table::Athletes)?, vec![first]);
@@ -105,7 +105,7 @@ fn a_payload_cannot_impersonate_the_identity_in_its_storage_key() -> TestResult 
         &SchoolId::mint("sch", &["corruption-fixture"]),
         "5001",
         "Iris Example",
-    );
+    )?;
     let key = crate::keys::observation_key(Table::Athletes, "another-subject", 1);
     store.entities.insert(key, serde_json::to_vec(&athlete)?)?;
     check!(matches!(
@@ -172,7 +172,7 @@ fn later_unsupported_raw_grade_lowers_cohort_without_rewriting_canonical_or_froz
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
     let school = SchoolId::mint("sch", &["raw-grade"]);
-    let mut athlete = subject(&school, "1001", "Alice Example");
+    let mut athlete = subject(&school, "1001", "Alice Example")?;
     athlete.observed_grades.push(grade(2026, 12)?);
     store.append(Table::Athletes, &athlete)?;
     store.append(
@@ -200,7 +200,7 @@ fn raw_cohort_evidence_never_claims_advisory_aliases_or_mints_namesakes() -> Tes
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
     let school = SchoolId::mint("sch", &["raw-grade-alias"]);
-    let mut athlete = subject(&school, "1002", "Alice Example");
+    let mut athlete = subject(&school, "1002", "Alice Example")?;
     athlete.add_identity(SourceIdentity::new(
         SourceNamespace::MilesplitAthlete,
         "1001",
@@ -220,8 +220,8 @@ fn contradictory_raw_grade_reaches_every_primary_owner_without_merging_them() ->
     use census_domain::model::Confidence;
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
-    let first = subject(&SchoolId::mint("sch", &["first"]), "1001", "Alice Example");
-    let second = subject(&SchoolId::mint("sch", &["second"]), "1001", "Alice Example");
+    let first = subject(&SchoolId::mint("sch", &["first"]), "1001", "Alice Example")?;
+    let second = subject(&SchoolId::mint("sch", &["second"]), "1001", "Alice Example")?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
     store.append(
         Table::SourceObservations,
@@ -242,7 +242,7 @@ fn an_inherited_retained_conflict_survives_append_scan_and_identity_status() -> 
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let school = SchoolId::mint("sch", &["inherited-conflict"]);
-    let clean = subject(&school, "3001", "Alice Example");
+    let clean = subject(&school, "3001", "Alice Example")?;
     let mut conflicting = clean.clone();
     conflicting.retained_conflicts.push(RetainedConflict::new(
         CANONICAL_ID_COLLISION_FAMILY,

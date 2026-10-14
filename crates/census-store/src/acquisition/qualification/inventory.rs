@@ -29,24 +29,17 @@ pub(super) fn inventory(
         }
         let physical = guard.key().map_err(|source| StoreError::Read { source })?;
         let key = inventory_key(&physical, &prefix, &mut budget)?;
-        let parts: Vec<&str> = key.split('/').take(8).collect();
-        match parts.as_slice() {
-            ["slot", slot, "binding"] => {
-                inventory_slot(snapshot, journal, key, slot, declaration, &mut budget)?;
-            }
-            ["work", id, "identity"] => {
-                let id = AcquisitionWorkId::parse(id).map_err(CaptureError::Domain)?;
-                let facts =
-                    read::read_work(snapshot, journal, receipts, &id, &mut budget, protocol)?;
-                validate_manifest(declaration, &facts, manifest.as_ref())?;
-                validate_backing(root, snapshot, journal, receipts, &facts, &mut budget)?;
-            }
-            ["work", id, ..] => {
-                let id = AcquisitionWorkId::parse(id).map_err(CaptureError::Domain)?;
-                require_work_identity(snapshot, journal, &id, protocol)?;
-            }
-            _ => return Err(CaptureError::UnsupportedRoot.into()),
-        }
+        process_root(
+            root,
+            snapshot,
+            journal,
+            receipts,
+            declaration,
+            key,
+            manifest.as_ref(),
+            &mut budget,
+            protocol,
+        )?;
     }
     inventory_receipts(snapshot, journal, receipts, &mut budget, protocol)?;
     crate::acquisition::cache::inventory(
@@ -74,6 +67,36 @@ fn inventory_key<'a>(
     std::str::from_utf8(logical).map_err(|_| CaptureError::UnsupportedRoot.into())
 }
 
+fn process_root(
+    root: &Path,
+    snapshot: &Snapshot,
+    journal: &Keyspace,
+    receipts: &Keyspace,
+    declaration: &CaptureQualification,
+    key: &str,
+    manifest: Option<&(RunManifest, AcquisitionDigest)>,
+    budget: &mut AcquisitionReadBudget,
+    protocol: CaptureProtocolVersion,
+) -> StoreResult<()> {
+    let parts: Vec<&str> = key.split('/').take(8).collect();
+    match parts.as_slice() {
+        ["slot", slot, "binding"] => {
+            inventory_slot(snapshot, journal, key, slot, declaration, budget)?;
+        }
+        ["work", id, "identity"] => {
+            let id = AcquisitionWorkId::parse(id).map_err(CaptureError::Domain)?;
+            let facts = read::read_work(snapshot, journal, receipts, &id, budget, protocol)?;
+            validate_manifest(declaration, &facts, manifest)?;
+            validate_backing(root, snapshot, journal, receipts, &facts, budget)?;
+        }
+        ["work", id, ..] => {
+            let id = AcquisitionWorkId::parse(id).map_err(CaptureError::Domain)?;
+            require_work_identity(snapshot, journal, &id, protocol)?;
+        }
+        _ => return Err(CaptureError::UnsupportedRoot.into()),
+    }
+    Ok(())
+}
 fn inventory_slot(
     snapshot: &Snapshot,
     journal: &Keyspace,

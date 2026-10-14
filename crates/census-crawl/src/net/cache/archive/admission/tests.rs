@@ -26,7 +26,6 @@ fn check_configuration_error(error: FetchError) -> TestResult {
 
 #[test]
 fn pure_capacity_parser_accepts_every_positive_u64_boundary() -> TestResult {
-    check!(eq; capacity_of(None)?.get(), DEFAULT_ARCHIVE_BYTES);
     check!(eq; capacity_of(Some("1".to_string()))?.get(), 1);
     check!(eq; capacity_of(Some(" 4096 \n".to_string()))?.get(), 4096);
     check!(eq; capacity_of(Some(u64::MAX.to_string()))?.get(), u64::MAX);
@@ -79,6 +78,28 @@ fn explicit_zero_capacity_refuses_before_opening_a_missing_root() -> TestResult 
     check!(!root.exists());
     check!(eq; std::fs::read_dir(directory.path())?.count(), 0);
     Ok(())
+}
+
+fn check_national_growth_default() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let retained = root.path().join("archive/bodies/retained-orphan.body");
+    std::fs::create_dir_all(retained.parent().ok_or("retained body directory")?)?;
+    let retained_bytes = 100_u64 * 1024 * 1024 + 1;
+    std::fs::File::create(&retained)?.set_len(retained_bytes)?;
+    let body_path = root.path().join("new-source.body");
+    let meta_path = root.path().join("new-source.meta.json");
+    let body = b"newly acquired public source bytes";
+    let meta = metadata(body);
+    write_preserved_cache(&body_path, &meta_path, body, &meta)?;
+    check!(eq; std::fs::metadata(&retained)?.len(), retained_bytes);
+    check!(eq; std::fs::read(&body_path)?, body);
+    check!(eq; replay_preserved_cache(&body_path, &meta_path, &meta)?, Some(body.to_vec()));
+    Ok(())
+}
+
+#[test]
+fn default_capacity_admits_new_captures_after_the_former_national_limit() -> TestResult {
+    run_environment_child("national-growth", None)
 }
 
 fn metadata(body: &[u8]) -> CacheMeta {
@@ -153,6 +174,7 @@ fn archive_capacity_environment_child() -> TestResult {
     };
     match case.to_str().ok_or("invalid child case")? {
         "unset" => check_valid_environment(DEFAULT_ARCHIVE_BYTES),
+        "national-growth" => check_national_growth_default(),
         "positive" => check_valid_environment(4096),
         "empty" | "zero" | "negative" | "overflow" | "nonunicode" => check_invalid_entrypoints(),
         other => Err(format!("unknown archive capacity child case {other}").into()),

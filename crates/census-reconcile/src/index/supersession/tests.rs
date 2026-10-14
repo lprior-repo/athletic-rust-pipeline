@@ -19,7 +19,7 @@ fn fixture(store: &Store) -> TestResult<Vec<AthleteCandidateId>> {
             GradYear::CO2027,
             Gender::Girls,
             SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111"),
-        );
+        )?;
         athlete.evidence.push(Evidence::parsed(
             SourceRef::new("fixture", Some("https://example.test/results".to_owned())),
             AT,
@@ -136,19 +136,19 @@ fn athlete_with(
     school: &CanonicalSchool,
     native_id: &str,
     grad_year: GradYear,
-) -> CanonicalAthlete {
+) -> TestResult<CanonicalAthlete> {
     let mut athlete = CanonicalAthlete::new(
         &school.id,
         "Synthetic Runner",
         grad_year,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, native_id),
-    );
+    )?;
     athlete.evidence.push(Evidence::parsed(
         SourceRef::new("fixture", Some("https://example.test/results".to_owned())),
         AT,
     ));
-    athlete
+    Ok(athlete)
 }
 
 fn contradicted_pair(second_native_id: &str, second_year: GradYear) -> TestResult {
@@ -158,8 +158,8 @@ fn contradicted_pair(second_native_id: &str, second_year: GradYear) -> TestResul
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
     let (school_b, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
-    let first = athlete_with(&school_a, "111", GradYear::CO2027);
-    let second = athlete_with(&school_b, second_native_id, second_year);
+    let first = athlete_with(&school_a, "111", GradYear::CO2027)?;
+    let second = athlete_with(&school_b, second_native_id, second_year)?;
     store.append(Table::Schools, &school_a)?;
     store.append(Table::Schools, &school_b)?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;

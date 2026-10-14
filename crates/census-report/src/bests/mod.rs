@@ -10,7 +10,7 @@ mod reduce;
 mod selection;
 mod write;
 
-pub use events::{is_relay, sport_of};
+pub use events::sport_of;
 pub use key::{
     classify_wind, is_wind_sensitive, resolve_timing, should_replace, tie_break_preferred,
     ComparisonPolicy, PrKey, SurfaceClass, TimingClass, WindClass,

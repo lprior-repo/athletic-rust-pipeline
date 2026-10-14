@@ -27,7 +27,7 @@ pub fn build_entities(
     targets: &HashMap<u64, &MeetTarget>,
     observed_on: &str,
     fallback_year: SchoolYear,
-) -> BatchEntities {
+) -> crate::CrawlResult<BatchEntities> {
     let mut out = BatchEntities::default();
     let mut minted = Minted::default();
 
@@ -40,13 +40,13 @@ pub fn build_entities(
             fallback_year,
             &mut minted,
             &mut out,
-        );
+        )?;
     }
 
     out.schools = minted.schools.into_values().collect();
     out.teams = minted.teams.into_values().collect();
     out.athletes = minted.athletes.into_values().collect();
-    out
+    Ok(out)
 }
 
 #[derive(Default)]
@@ -118,14 +118,15 @@ fn absorb_hit(
     fallback_year: SchoolYear,
     minted: &mut Minted,
     out: &mut BatchEntities,
-) {
+) -> crate::CrawlResult<()> {
     let Some(row) = decode_row(hit, targets, observed_on, fallback_year, out) else {
-        return;
+        return Ok(());
     };
     let school_id = row_school(&mut minted.schools, &row);
     let team_entry = row_team(&mut minted.teams, &school_id, &row);
     note_team_ids(row.team, row.target, team_entry, &mut out.rows_with_team_id);
-    absorb_athlete(hit, &row, &school_id, minted, out);
+    absorb_athlete(hit, &row, &school_id, minted, out)?;
+    Ok(())
 }
 
 fn absorb_athlete(
@@ -134,27 +135,29 @@ fn absorb_athlete(
     school_id: &SchoolId,
     minted: &mut Minted,
     out: &mut BatchEntities,
-) {
-    let Some(grade) = row.grade else { return };
+) -> crate::CrawlResult<()> {
+    let Some(grade) = row.grade else {
+        return Ok(());
+    };
     out.rows_with_grade = out.rows_with_grade.saturating_add(1);
     let Some(grad_year) = GradYear::of(grade, row.school_year) else {
-        return;
+        return Ok(());
     };
     let Some(source) = source_identity(hit, &row.target.tenant, row.source.url.as_deref()) else {
         out.rows_without_subject_id = out.rows_without_subject_id.saturating_add(1);
-        return;
+        return Ok(());
     };
     let athlete_id = CanonicalAthlete::mint(school_id, row.name, grad_year, row.gender, &source);
+    let mut athlete = CanonicalAthlete::new(school_id, row.name, grad_year, row.gender, source)
+        .map_err(|e| crate::CrawlError::Invariant {
+            detail: e.to_string(),
+        })?;
+    athlete.sports.push(row.sport);
+    athlete.evidence.push(row.evidence.clone());
     let entry = minted
         .athletes
         .entry(athlete_id.as_str().to_string())
-        .or_insert_with(|| {
-            let mut athlete =
-                CanonicalAthlete::new(school_id, row.name, grad_year, row.gender, source);
-            athlete.sports.push(row.sport);
-            athlete.evidence.push(row.evidence.clone());
-            athlete
-        });
+        .or_insert(athlete);
     if !entry.sports.contains(&row.sport) {
         entry.sports.push(row.sport);
     }
@@ -167,6 +170,7 @@ fn absorb_athlete(
         entry.observed_grades.push(observation);
     }
     note_athlete_ids(entry, hit, &mut out.rows_with_athlete_id);
+    Ok(())
 }
 
 fn row_school(schools: &mut BTreeMap<String, CanonicalSchool>, row: &RowFacts<'_>) -> SchoolId {

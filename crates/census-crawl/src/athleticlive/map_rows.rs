@@ -50,7 +50,7 @@ pub(super) fn record_row(
     let Some(school_id) = resolve_school(writer, context, identity.school_name) else {
         return Ok(false);
     };
-    let Some(mapped) = map_identity(writer, context, &school_id, &identity, row_index) else {
+    let Some(mapped) = map_identity(writer, context, &school_id, &identity, row_index)? else {
         return Ok(false);
     };
     writer.stats.rows_mapped = writer.stats.rows_mapped.saturating_add(1);
@@ -92,7 +92,7 @@ pub(super) fn record_standing(
     let Some(school_id) = resolve_school(writer, context, identity.school_name) else {
         return Ok(false);
     };
-    let Some(mapped) = map_identity(writer, context, &school_id, &identity, row_index) else {
+    let Some(mapped) = map_identity(writer, context, &school_id, &identity, row_index)? else {
         return Ok(false);
     };
     writer.stats.rows_mapped = writer.stats.rows_mapped.saturating_add(1);

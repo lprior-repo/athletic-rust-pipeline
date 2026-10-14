@@ -13,7 +13,7 @@ use std::path::Path;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-fn seed(store: &Store, name: &str) -> ReportResult<()> {
+fn seed(store: &Store, name: &str) -> TestResult {
     let (mut school, id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name.to_lowercase(), None);
     let evidence = Evidence::parsed(
@@ -31,7 +31,7 @@ fn seed(store: &Store, name: &str) -> ReportResult<()> {
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1234"),
-    );
+    )?;
     athlete
         .published_graduations
         .push(census_domain::model::PublishedGraduation {

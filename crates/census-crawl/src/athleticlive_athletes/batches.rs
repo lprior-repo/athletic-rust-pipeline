@@ -174,7 +174,7 @@ impl PageWalk<'_> {
             &by_id,
             stamp,
             self.ctx.school_year,
-        );
+        )?;
         if entities.athletes.is_empty() {
             owe(&mut self.report, &locator)?;
         }

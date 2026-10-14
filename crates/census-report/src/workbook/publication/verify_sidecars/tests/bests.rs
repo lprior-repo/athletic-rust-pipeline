@@ -35,7 +35,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "verify-1001"),
-    );
+    )?;
     athlete.published_graduations.push(PublishedGraduation {
         grad_year: GradYear::CO2027,
         source: SourceRef::new(

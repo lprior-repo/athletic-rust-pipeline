@@ -53,7 +53,7 @@ fn contested_store() -> TestResult<(tempfile::TempDir, Store)> {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("contested"),
-    );
+    )?;
     athlete.evidence.push(evidence("wiaa_results"));
     athlete
         .observed_grades
@@ -267,7 +267,7 @@ fn unresolvable_marks_report_missing_pr_support() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("unresolvable"),
-    );
+    )?;
     athlete.evidence.push(evidence("wiaa_results"));
     athlete
         .observed_grades

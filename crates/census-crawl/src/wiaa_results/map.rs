@@ -86,7 +86,7 @@ fn project_event(
         .enumerate()
         .try_fold(0usize, |count, (index, row)| {
             census_store::ObservationBudget::record_bytes(row)?;
-            let added = record_row(writer, &context, row, index);
+            let added = record_row(writer, &context, row, index)?;
             writer.flush()?;
             count
                 .checked_add(added)

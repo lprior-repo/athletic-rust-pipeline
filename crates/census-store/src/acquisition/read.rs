@@ -6,6 +6,7 @@ use serde::de::DeserializeOwned;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
+mod attempts;
 mod closure;
 mod retained;
 mod selection;
@@ -133,22 +134,8 @@ pub(super) fn read_work(
     if binding.slot != *work.slot() || binding.work_id != *id {
         return Err(CaptureError::SlotWorkMismatch.into());
     }
-    budget.reserve_recovery_owned(3 * std::mem::size_of::<AttemptFacts>() + 384)?;
-    let mut attempts = Vec::new();
-    attempts
-        .try_reserve_exact(3)
-        .map_err(|_| CaptureError::ReadBudgetExceeded {
-            resource: "allocation",
-        })?;
-    for ordinal in 1..=3 {
-        let ordinal = AttemptOrdinal::new(ordinal).map_err(CaptureError::Domain)?;
-        let attempt = read_attempt_id(&work, id, ordinal, protocol)?;
-        let Some(mut facts) = closure::attempt(&mut rows, &attempt, protocol, budget)? else {
-            break;
-        };
-        facts.receipt = closure::receipt(snapshot, receipts, &facts, budget, protocol)?;
-        attempts.push(facts);
-    }
+    let attempts =
+        attempts::reconstruct(&mut rows, &work, id, snapshot, receipts, budget, protocol)?;
     let result = take_fact(&mut rows, &format!("{prefix}result"), protocol, budget)?;
     if !rows.is_empty() {
         return Err(CaptureError::UnsupportedRoot.into());
@@ -159,35 +146,12 @@ pub(super) fn read_work(
         attempts,
         result,
     };
-    reserve_failed_retention_metadata(&facts, budget)?;
+    charge_prepared_metadata(&facts, budget)?;
     closure::work(&facts)?;
     Ok(facts)
 }
 
-fn read_attempt_id(
-    work: &AcquisitionWorkV1,
-    id: &AcquisitionWorkId,
-    ordinal: AttemptOrdinal,
-    protocol: CaptureProtocolVersion,
-) -> StoreResult<AcquisitionAttemptId> {
-    let (identity, work_id) = match protocol {
-        CaptureProtocolVersion::V1 => (work.slot().store_identity().clone(), id.clone()),
-        CaptureProtocolVersion::V2 => (
-            work.slot().store_identity().try_clone().map_err(|_| {
-                CaptureError::ReadBudgetExceeded {
-                    resource: "allocation",
-                }
-            })?,
-            id.try_clone()
-                .map_err(|_| CaptureError::ReadBudgetExceeded {
-                    resource: "allocation",
-                })?,
-        ),
-    };
-    Ok(AcquisitionAttemptId::new(identity, work_id, ordinal))
-}
-
-fn reserve_failed_retention_metadata(
+fn charge_prepared_metadata(
     facts: &WorkFacts,
     budget: &mut AcquisitionReadBudget,
 ) -> StoreResult<()> {

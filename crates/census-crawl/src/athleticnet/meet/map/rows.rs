@@ -60,7 +60,8 @@ impl MeetCtx<'_> {
             grade,
             block.gender,
             &source_key,
-        ) else {
+        )?
+        else {
             self.counts.rows_unsupported_cohort =
                 self.counts.rows_unsupported_cohort.saturating_add(1);
             return Ok(());
@@ -141,7 +142,7 @@ impl MeetCtx<'_> {
         };
         let source_key = format!("athleticnet:{provider_id}-{}:leg{position}", row.result_id);
         let Some((athlete_id, source_athlete)) =
-            self.athlete_of(provider_id, school, name, grade, block.gender, &source_key)
+            self.athlete_of(provider_id, school, name, grade, block.gender, &source_key)?
         else {
             self.counts.legs_unsupported_cohort =
                 self.counts.legs_unsupported_cohort.saturating_add(1);
@@ -190,7 +191,7 @@ impl MeetCtx<'_> {
         grade: Grade,
         gender: Gender,
         source_row: &str,
-    ) -> Option<(AthleteId, SourceIdentity)> {
+    ) -> crate::CrawlResult<Option<(AthleteId, SourceIdentity)>> {
         athlete(
             self.accumulated,
             self.source,

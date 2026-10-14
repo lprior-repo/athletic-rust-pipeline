@@ -66,14 +66,14 @@ struct RawHolder {
     payload: Raw,
 }
 
-fn athlete_fixture() -> CanonicalAthlete {
-    CanonicalAthlete::new(
+fn athlete_fixture() -> Result<CanonicalAthlete, Box<dyn std::error::Error>> {
+    Ok(CanonicalAthlete::new(
         &SchoolId::mint("sch", &["canonical-json-fixture"]),
         "Synthetic Runner",
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
-    )
+    )?)
 }
 
 fn verdict_fixture() -> ReviewVerdictRecord {
@@ -226,7 +226,7 @@ fn nested_domain_shaped_payload_matches_serde_json() -> Result<(), Box<dyn std::
 fn production_payloads_match_serde_json() -> Result<(), Box<dyn std::error::Error>> {
     let verdicts = vec![verdict_fixture()];
     let cases = vec![case_fixture()];
-    assert_matches(&athlete_fixture())?;
+    assert_matches(&athlete_fixture()?)?;
     assert_matches(&verdicts)?;
     assert_matches(&cases)?;
     assert_matches(&(&verdicts, &cases))?;
@@ -236,7 +236,7 @@ fn production_payloads_match_serde_json() -> Result<(), Box<dyn std::error::Erro
 
 #[test]
 fn production_payload_digests_are_pinned() -> Result<(), Box<dyn std::error::Error>> {
-    let athlete = athlete_fixture();
+    let athlete = athlete_fixture()?;
     let verdicts = vec![verdict_fixture()];
     let cases = vec![case_fixture()];
     let observations = observations_fixture();

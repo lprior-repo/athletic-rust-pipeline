@@ -30,7 +30,7 @@ pub(in crate::workbook::verify) fn publication(
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "oracle-1"),
-    );
+    )?;
     athlete.published_graduations.push(PublishedGraduation {
         grad_year: GradYear::CO2027,
         source: SourceRef::new(

@@ -7,7 +7,7 @@ fn opposite_or_unspecified_sides_never_supply_athlete_contact_columns() -> TestR
         coach.professional_email = Some("wrong-side@example.invalid".into());
         bind(&mut coach);
         let contacts = contacts(&[coach], year()?);
-        let athlete = athlete();
+        let athlete = athlete()?;
         let scope = scoped(contacts.get(school().as_str()), &athlete);
         check!(eq; scope.preferred().state,
         ContactState::ContactResearchUnknown);
@@ -40,7 +40,7 @@ fn indoor_outdoor_and_cross_country_contacts_keep_their_programmes() -> TestResu
     .collect::<TestResult<Vec<_>>>()?;
     let contacts = contacts(&rows, year()?);
     for coach in &rows {
-        let mut athlete = athlete();
+        let mut athlete = athlete()?;
         athlete.sports = vec![coach.sport.ok_or("fixture coach has no sport")?];
         let scope = scoped(contacts.get(school().as_str()), &athlete);
         check!(eq; scope.preferred().name, coach.name);
@@ -67,7 +67,7 @@ fn unknown_sport_or_role_does_not_mean_school_wide_head_coach() -> TestResult {
         let mut coach = person("Unqualified scope", sport, Gender::Mixed, role)?;
         coach.professional_email = Some("unknown@example.invalid".into());
         let contacts = contacts(&[coach], year()?);
-        let athlete = athlete();
+        let athlete = athlete()?;
         let scope = scoped(contacts.get(school().as_str()), &athlete);
         check!(eq; scope.preferred().state,
         ContactState::ContactResearchUnknown);
@@ -88,7 +88,7 @@ fn the_specific_team_coach_is_selected_before_mailbox_preference() -> TestResult
     mixed.professional_email = Some("general@example.invalid".into());
     bind(&mut mixed);
     let contacts = contacts(&[boys, mixed], year()?);
-    let athlete = athlete();
+    let athlete = athlete()?;
     let scope = scoped(contacts.get(school().as_str()), &athlete);
     check!(eq; scope.preferred().name, "Boys coach");
     check!(eq; scope.preferred().state, ContactState::CoachNameOnly);
@@ -100,7 +100,7 @@ fn the_specific_team_coach_is_selected_before_mailbox_preference() -> TestResult
 fn a_school_index_entry_cannot_be_applied_to_another_school() -> TestResult {
     let coach = head("Current coach", Sport::OutdoorTrack, Gender::Boys)?;
     let contacts = contacts(&[coach], year()?);
-    let mut athlete = athlete();
+    let mut athlete = athlete()?;
     athlete.school = SchoolId::mint("sch", &["different synthetic school"]);
     let scope = scoped(contacts.get(school().as_str()), &athlete);
     check!(eq; scope.preferred().state,
@@ -141,7 +141,7 @@ fn assistants_require_current_matching_programme_and_side_without_becoming_head_
         rows.push(coach);
     }
     let contacts = contacts(&rows, year()?);
-    let athlete = athlete();
+    let athlete = athlete()?;
     let scope = scoped(contacts.get(school().as_str()), &athlete);
     check!(eq; scope.all_emails(), "Relevant-assistant@example.invalid");
     check!(eq; scope.professional_coach_email(), None);

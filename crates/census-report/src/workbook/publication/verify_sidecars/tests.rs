@@ -73,7 +73,7 @@ fn seed(store: &Store) -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "ada-runner"),
-    );
+    )?;
     athlete.published_graduations.push(PublishedGraduation {
         grad_year: GradYear::CO2027,
         source: SourceRef::new(
@@ -318,7 +318,7 @@ fn seed_complete(store: &Store) -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         source.clone(),
-    );
+    )?;
     athlete.sports = vec![Sport::OutdoorTrack];
     athlete.published_graduations.push(PublishedGraduation {
         grad_year: GradYear::CO2027,

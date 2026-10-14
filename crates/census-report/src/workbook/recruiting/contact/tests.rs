@@ -111,16 +111,16 @@ fn director() -> TestResult<CanonicalCoach> {
     )
 }
 
-fn athlete() -> CanonicalAthlete {
+fn athlete() -> TestResult<CanonicalAthlete> {
     let mut athlete = CanonicalAthlete::new(
         &school(),
         "Synthetic runner",
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::Other("fixture".into()), "runner"),
-    );
+    )?;
     athlete.sports = vec![Sport::OutdoorTrack];
-    athlete
+    Ok(athlete)
 }
 
 struct SelectionSnapshot {
@@ -162,7 +162,7 @@ fn current_program_name_outranks_former_other_sport_email() -> TestResult {
         last_school_year: SchoolYear::new(2025),
     })];
     former.professional_email = Some("former@example.invalid".into());
-    let result = selected(&[current, former], &athlete())?;
+    let result = selected(&[current, former], &athlete()?)?;
     check!(eq; result.name, "Current coach");
     check!(eq; result.email, "");
     check!(eq; result.state, ContactState::CoachNameOnly);
@@ -185,7 +185,7 @@ fn qualified_coach_mailboxes_outrank_director_without_becoming_professional() ->
         bind(&mut coach);
         bind(&mut ad);
         let contacts = contacts(&[coach, ad], year()?);
-        let athlete = athlete();
+        let athlete = athlete()?;
         let scope = scoped(contacts.get(school().as_str()), &athlete);
         let result = scope.preferred();
         check!(eq; result.name, "Current coach");
@@ -202,15 +202,15 @@ fn qualified_director_is_an_explicit_address_fallback_not_a_head_coach() -> Test
     let mut ad = director()?;
     ad.professional_email = Some("director@example.invalid".into());
     bind(&mut ad);
-    let result = selected(&[coach.clone(), ad.clone()], &athlete())?;
+    let result = selected(&[coach.clone(), ad.clone()], &athlete()?)?;
     check!(eq; result.name, "Current director");
     check!(eq; result.email, "director@example.invalid");
     check!(eq; result.state, ContactState::ProfessionalAdEmail);
     ad.professional_email = None;
-    let result = selected(&[coach, ad.clone()], &athlete())?;
+    let result = selected(&[coach, ad.clone()], &athlete()?)?;
     check!(eq; result.name, "Named coach");
     check!(eq; result.state, ContactState::CoachNameOnly);
-    let result = selected(&[ad], &athlete())?;
+    let result = selected(&[ad], &athlete()?)?;
     check!(eq; result.name, "Current director");
     check!(eq; result.state, ContactState::AdNameOnly);
     Ok(())
@@ -222,7 +222,7 @@ fn personal_director_address_never_enters_a_professional_coach_column() -> TestR
     ad.personal_email = Some("director@outlook.com".into());
     bind(&mut ad);
     let contacts = contacts(&[ad], year()?);
-    let athlete = athlete();
+    let athlete = athlete()?;
     let scope = scoped(contacts.get(school().as_str()), &athlete);
     let result = scope.preferred();
     check!(eq; result.email, "director@outlook.com");
@@ -234,7 +234,7 @@ fn personal_director_address_never_enters_a_professional_coach_column() -> TestR
 
 #[test]
 fn research_outcomes_distinguish_empty_blocked_and_unattempted() -> TestResult {
-    let athlete = athlete();
+    let athlete = athlete()?;
     for (outcome, expected) in [
         (
             ContactResearchOutcome::CompletedEmpty,
@@ -314,7 +314,7 @@ fn researched_school(outcome: ContactResearchOutcome) -> TestResult<CanonicalSch
 
 #[test]
 fn missing_coach_rows_do_not_invent_a_research_attempt_or_a_negative_finding() -> TestResult {
-    let athlete = athlete();
+    let athlete = athlete()?;
     check!(eq; scoped(None, &athlete).preferred().state,
     ContactState::ContactResearchUnknown);
     let assistant = person(

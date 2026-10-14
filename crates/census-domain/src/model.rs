@@ -72,7 +72,7 @@ pub use profile::{
 pub use store_identity::{StoreIdentity, StoreIdentityError};
 
 pub use adjustment::{Adjustment, AdjustmentBasis, AdjustmentKind};
-pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
+pub use athlete::{AthleteCandidateKey, AthleteConstructionError, CanonicalAthlete};
 pub use canonical_json::{
     serialized_bytes, serialized_digest, write_serialized, CanonicalJsonError,
 };

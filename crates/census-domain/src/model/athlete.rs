@@ -4,6 +4,14 @@ use std::cmp::Ordering;
 mod persisted;
 use persisted::PersistedAthlete;
 
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub enum AthleteConstructionError {
+    #[error("athlete name must not be empty")]
+    EmptyName,
+    #[error("athlete school id {school} does not validate as a school identifier")]
+    InvalidSchool { school: SchoolId },
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct AthleteCandidateKey {
     pub school: SchoolId,
@@ -166,48 +174,15 @@ impl CanonicalAthlete {
         grad_year: GradYear,
         gender: Gender,
         source: SourceIdentity,
-    ) -> Self {
-        let canonical_name: String = name.into();
-        debug_assert!(!canonical_name.is_empty(), "athlete name must not be empty");
-        debug_assert!(
-            school.validate("sch"),
-            "athlete school id {school} does not validate as a school identifier"
-        );
-        let id = CanonicalAthlete::mint(school, &canonical_name, grad_year, gender, &source);
-        Self {
-            id,
-            canonical_name: canonical_name.clone(),
-            known_names: vec![canonical_name],
-            grad_year,
-            school: school.clone(),
-            gender,
-            sports: Vec::new(),
-            observed_grades: Vec::new(),
-            published_graduations: Vec::new(),
-            public_profile_urls: Vec::new(),
-            source: Some(source),
-            source_links: Vec::new(),
-            identity_attestations: Vec::new(),
-            evidence: Vec::new(),
-            retained_conflicts: Vec::new(),
-        }
-    }
-
-    pub fn new_checked(
-        school: &SchoolId,
-        name: impl Into<String>,
-        grad_year: GradYear,
-        gender: Gender,
-        source: SourceIdentity,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, AthleteConstructionError> {
         let canonical_name: String = name.into();
         if canonical_name.is_empty() {
-            return Err("athlete name must not be empty".to_string());
+            return Err(AthleteConstructionError::EmptyName);
         }
         if !school.validate("sch") {
-            return Err(format!(
-                "athlete school id {school} does not validate as a school identifier"
-            ));
+            return Err(AthleteConstructionError::InvalidSchool {
+                school: school.clone(),
+            });
         }
         let id = CanonicalAthlete::mint(school, &canonical_name, grad_year, gender, &source);
         Ok(Self {

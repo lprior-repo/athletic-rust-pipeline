@@ -1,6 +1,7 @@
 use crate::model::{
-    CanonicalAthlete, Confidence, Evidence, Gender, GradYear, Grade, ObservedGrade,
-    PublishedGraduation, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
+    AthleteConstructionError, CanonicalAthlete, Confidence, Evidence, Gender, GradYear, Grade,
+    ObservedGrade, PublishedGraduation, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
+    SourceRef,
 };
 use serde_json::Value;
 
@@ -10,14 +11,14 @@ fn school() -> SchoolId {
     SchoolId::mint("sch", &["athlete-decode-fixture"])
 }
 
-fn athlete() -> CanonicalAthlete {
-    CanonicalAthlete::new(
+fn athlete() -> Result<CanonicalAthlete, Box<dyn std::error::Error>> {
+    Ok(CanonicalAthlete::new(
         &school(),
         "Cooper Robinson",
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
-    )
+    )?)
 }
 
 fn persisted_before_the_cutover(
@@ -41,7 +42,7 @@ fn identity(namespace: SourceNamespace, id: &str) -> Result<Value, Box<dyn std::
 #[test]
 fn a_row_persisted_before_the_source_cutover_decodes_with_its_first_identity_as_owner() -> TestResult
 {
-    let expected = athlete();
+    let expected = athlete()?;
     let source = identity(SourceNamespace::MilesplitAthlete, "1001")?;
     let encoded = persisted_before_the_cutover(&expected, vec![source])?;
     let decoded: CanonicalAthlete = serde_json::from_value(encoded)?;
@@ -54,7 +55,7 @@ fn further_legacy_identities_become_links() -> TestResult {
     let first = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001");
     let second = SourceIdentity::new(SourceNamespace::TfrrsAthlete, "2002");
     let encoded = persisted_before_the_cutover(
-        &athlete(),
+        &athlete()?,
         vec![
             serde_json::to_value(&first)?,
             serde_json::to_value(&second)?,
@@ -70,7 +71,7 @@ fn further_legacy_identities_become_links() -> TestResult {
 fn a_legacy_identity_repeated_in_the_links_is_listed_once() -> TestResult {
     let first = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001");
     let encoded = persisted_before_the_cutover(
-        &athlete(),
+        &athlete()?,
         vec![serde_json::to_value(&first)?, serde_json::to_value(&first)?],
     )?;
     let decoded: CanonicalAthlete = serde_json::from_value(encoded)?;
@@ -81,7 +82,7 @@ fn a_legacy_identity_repeated_in_the_links_is_listed_once() -> TestResult {
 
 #[test]
 fn a_row_without_any_identity_decodes_without_an_owner() -> TestResult {
-    let encoded = persisted_before_the_cutover(&athlete(), Vec::new())?;
+    let encoded = persisted_before_the_cutover(&athlete()?, Vec::new())?;
     let decoded: CanonicalAthlete = serde_json::from_value(encoded)?;
     check!(eq; decoded.source, None);
     check!(decoded.source_links.is_empty());
@@ -91,7 +92,7 @@ fn a_row_without_any_identity_decodes_without_an_owner() -> TestResult {
 
 #[test]
 fn the_current_shape_encodes_the_owner_and_links_without_the_legacy_list() -> TestResult {
-    let mut expected = athlete();
+    let mut expected = athlete()?;
     expected.add_identity(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "2002"));
     let encoded = serde_json::to_value(&expected)?;
     let object = encoded
@@ -123,7 +124,7 @@ fn grade(value: u8, year: i16) -> Result<ObservedGrade, Box<dyn std::error::Erro
 #[test]
 fn matching_published_graduation_confirms_the_cohort_with_or_without_an_agreeing_grade(
 ) -> TestResult {
-    let mut row = athlete();
+    let mut row = athlete()?;
     row.published_graduations
         .push(published(GradYear::CO2027, "owned-api"));
     check!(eq; row.observed_grades, Vec::new());
@@ -139,7 +140,7 @@ fn matching_published_graduation_confirms_the_cohort_with_or_without_an_agreeing
 fn a_disagreeing_direct_or_grade_claim_lowers_confidence_without_rewriting_the_cohort() -> TestResult
 {
     let other_year = GradYear::new(2028).ok_or("invalid fixture graduation year")?;
-    let mut matching_direct = athlete();
+    let mut matching_direct = athlete()?;
     matching_direct
         .published_graduations
         .push(published(GradYear::CO2027, "owned-api"));
@@ -153,12 +154,12 @@ fn a_disagreeing_direct_or_grade_claim_lowers_confidence_without_rewriting_the_c
     direct_conflict
         .published_graduations
         .push(published(other_year, "other-api"));
-    let mut matching_grade = athlete();
+    let mut matching_grade = athlete()?;
     matching_grade.observed_grades.push(grade(11, 2025)?);
     matching_grade
         .published_graduations
         .push(published(other_year, "owned-api"));
-    let mut only_disagreeing_direct = athlete();
+    let mut only_disagreeing_direct = athlete()?;
     only_disagreeing_direct
         .published_graduations
         .push(published(other_year, "owned-api"));
@@ -179,7 +180,7 @@ fn a_disagreeing_direct_or_grade_claim_lowers_confidence_without_rewriting_the_c
 #[test]
 fn missing_typed_claims_leave_confidence_unknown_even_when_a_note_mentions_a_year(
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut row = athlete();
+    let mut row = athlete()?;
     check!(eq; row.derived_cohort_confidence(), None);
     row.evidence.push(Evidence::derived(
         SourceRef::id("owned-api"),
@@ -196,7 +197,7 @@ fn missing_typed_claims_leave_confidence_unknown_even_when_a_note_mentions_a_yea
 #[test]
 fn historical_rows_without_the_field_do_not_synthesize_claims_from_the_canonical_year_or_notes(
 ) -> TestResult {
-    let mut row = athlete();
+    let mut row = athlete()?;
     row.evidence.push(Evidence::derived(
         SourceRef::id("owned-api"),
         "2026-10-02",
@@ -220,7 +221,7 @@ fn historical_rows_without_the_field_do_not_synthesize_claims_from_the_canonical
 
 #[test]
 fn published_claims_roundtrip_with_their_conflicting_years_and_source_ownership() -> TestResult {
-    let mut row = athlete();
+    let mut row = athlete()?;
     row.published_graduations = vec![
         published(GradYear::CO2027, "owned-api"),
         published(
@@ -231,5 +232,50 @@ fn published_claims_roundtrip_with_their_conflicting_years_and_source_ownership(
     let decoded: CanonicalAthlete = serde_json::from_value(serde_json::to_value(&row)?)?;
     check!(eq; decoded, row);
     check!(eq; decoded.derived_cohort_confidence(), Some(Confidence::LOW));
+    Ok(())
+}
+
+#[test]
+fn an_empty_name_is_refused_as_a_typed_construction_error() -> TestResult {
+    let result = CanonicalAthlete::new(
+        &school(),
+        "",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
+    );
+    check!(eq; result, Err(AthleteConstructionError::EmptyName));
+    Ok(())
+}
+
+#[test]
+fn a_school_identifier_without_the_school_prefix_is_refused_with_its_value() -> TestResult {
+    let school = SchoolId::mint("bogus", &["not-a-school"]);
+    let result = CanonicalAthlete::new(
+        &school,
+        "Cooper Robinson",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
+    );
+    check!(eq; result, Err(AthleteConstructionError::InvalidSchool { school: school.clone() }));
+    Ok(())
+}
+
+#[test]
+fn a_valid_construction_keeps_its_stable_identity_and_serialized_bytes() -> TestResult {
+    let school = school();
+    let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001");
+    let row = CanonicalAthlete::new(
+        &school,
+        "Cooper Robinson",
+        GradYear::CO2027,
+        Gender::Boys,
+        source.clone(),
+    )?;
+    check!(eq; row.id, CanonicalAthlete::mint(&school, "Cooper Robinson", GradYear::CO2027, Gender::Boys, &source));
+    check!(eq; row.school, school);
+    check!(eq; row.known_names, vec!["Cooper Robinson".to_string()]);
+    check!(eq; serde_json::from_value::<CanonicalAthlete>(serde_json::to_value(&row)?)?, row);
     Ok(())
 }

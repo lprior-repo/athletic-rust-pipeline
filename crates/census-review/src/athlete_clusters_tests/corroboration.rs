@@ -40,12 +40,12 @@ pub(super) fn admits_one_identity(
 fn cen14_distinct_document_urls_without_capture_lineage_stay_pending() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
-    let mut linked = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let mut linked = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169")?;
     linked.add_identity(
         SourceIdentity::new(SourceNamespace::TfrrsAthlete, "991114")
             .with_url("https://wi.milesplit.com/teams/123/roster"),
     );
-    let mut owner = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
+    let mut owner = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
     owner.source = Some(
         SourceIdentity::new(SourceNamespace::TfrrsAthlete, "991114")
             .with_url("https://www.tfrrs.org/athletes/991114.html"),
@@ -65,9 +65,9 @@ fn cen14_distinct_document_urls_without_capture_lineage_stay_pending() -> TestRe
 fn a_link_without_a_retained_document_stays_pending() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
-    let mut linked = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let mut linked = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169")?;
     linked.add_identity(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "991114"));
-    let mut owner = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
+    let mut owner = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
     owner.source = Some(
         SourceIdentity::new(SourceNamespace::TfrrsAthlete, "991114")
             .with_url("https://www.tfrrs.org/athletes/991114.html"),

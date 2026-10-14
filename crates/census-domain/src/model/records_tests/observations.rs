@@ -67,7 +67,7 @@ fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one(
         grad_year,
         Gender::Girls,
         source.clone(),
-    );
+    )?;
     athlete.observed_grades.push(ObservedGrade {
         grade: Grade::new(10).ok_or("invalid grade fixture")?,
         school_year: SchoolYear::new(2025).ok_or("invalid season fixture")?,
@@ -103,7 +103,7 @@ Some(grad_year),);
         grad_year,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::TfrrsAthlete, "tfrrs-999"),
-    );
+    )?;
     check!(eq; SourceAthleteObservation::of_athlete(
     &SourceNamespace::MilesplitAthlete,
     &no_match,

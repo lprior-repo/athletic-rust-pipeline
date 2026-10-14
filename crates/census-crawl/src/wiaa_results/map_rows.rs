@@ -18,12 +18,12 @@ pub(super) fn record_row(
     context: &MeetContext<'_>,
     row: &ParsedRow,
     row_index: usize,
-) -> usize {
+) -> crate::CrawlResult<usize> {
     if !account_row(writer, row) {
-        return 0;
+        return Ok(0);
     }
     let Some(school_id) = resolve_school(row, writer.index, writer.resolved, writer.stats) else {
-        return 0;
+        return Ok(0);
     };
 
     let team_id = team_for(
@@ -61,12 +61,12 @@ fn record_individual(
     row_index: usize,
     school_id: &SchoolId,
     team_id: &TeamId,
-) -> usize {
+) -> crate::CrawlResult<usize> {
     let Some(grade) = row.grade else {
-        return 0;
+        return Ok(0);
     };
     if row.name.trim().is_empty() {
-        return 0;
+        return Ok(0);
     }
     let key = source_key(context.artifact, context.event, row_index, None);
     let Some((athlete_id, source_athlete)) = record_athlete(
@@ -77,8 +77,9 @@ fn record_individual(
         grade,
         &key,
         &row.school,
-    ) else {
-        return 0;
+    )?
+    else {
+        return Ok(0);
     };
     record_performance(
         writer,
@@ -92,7 +93,7 @@ fn record_individual(
             grade,
         },
     );
-    1
+    Ok(1)
 }
 
 fn record_relay_team(
@@ -102,7 +103,7 @@ fn record_relay_team(
     row_index: usize,
     school_id: &SchoolId,
     team_id: &TeamId,
-) -> usize {
+) -> crate::CrawlResult<usize> {
     let mut relay = RelayResult::new(
         team_id,
         context.event_id,
@@ -136,7 +137,7 @@ fn record_relay_team(
                 grade,
                 &leg_key,
                 &row.school,
-            ) {
+            )? {
                 athlete_rows = athlete_rows.saturating_add(1);
                 member = member.with_athlete(athlete_id);
             }
@@ -148,7 +149,7 @@ fn record_relay_team(
         .relay_results
         .entry(relay.source_key.clone())
         .or_insert(relay);
-    athlete_rows
+    Ok(athlete_rows)
 }
 
 fn resolve_school(
@@ -222,9 +223,12 @@ fn record_athlete(
     grade: Grade,
     source_key: &str,
     school_name: &str,
-) -> Option<(AthleteId, SourceIdentity)> {
-    let (grad_year, observation, source) =
-        admit_athlete(writer, context, member_name, grade, source_key, school_name)?;
+) -> crate::CrawlResult<Option<(AthleteId, SourceIdentity)>> {
+    let Some((grad_year, observation, source)) =
+        admit_athlete(writer, context, member_name, grade, source_key, school_name)
+    else {
+        return Ok(None);
+    };
     let athlete_id = CanonicalAthlete::mint(
         school_id,
         member_name,
@@ -232,21 +236,20 @@ fn record_athlete(
         context.event.gender,
         &source,
     );
+    let new_athlete = CanonicalAthlete::new(
+        school_id,
+        member_name,
+        grad_year,
+        context.event.gender,
+        source.clone(),
+    )?;
+    let mut new_athlete = new_athlete;
+    new_athlete.sports.push(context.sport);
     let entry = writer
         .accumulator
         .athletes
         .entry(athlete_id.as_str().to_string())
-        .or_insert_with(|| {
-            let mut athlete = CanonicalAthlete::new(
-                school_id,
-                member_name,
-                grad_year,
-                context.event.gender,
-                source.clone(),
-            );
-            athlete.sports.push(context.sport);
-            athlete
-        });
+        .or_insert(new_athlete);
     if !entry.sports.contains(&context.sport) {
         entry.sports.push(context.sport);
     }
@@ -260,7 +263,7 @@ fn record_athlete(
     {
         entry.evidence.push(context.evidence.clone());
     }
-    Some((athlete_id, source))
+    Ok(Some((athlete_id, source)))
 }
 
 fn round_label(round: &Option<String>) -> &str {

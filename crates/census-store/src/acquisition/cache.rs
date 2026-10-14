@@ -61,36 +61,58 @@ pub(super) fn inventory(
         if !name.ends_with(".meta.json") {
             continue;
         }
-        let path = entry.path();
-        let raw = read_metadata(&path, budget)?;
-        let Some(envelope) = parse_eligible(&raw, name)? else {
-            continue;
-        };
-        if envelope.original_occurrence.attempt().store_identity() != declaration.store_identity() {
-            return Err(CaptureError::CaptureCapabilityForeignStore.into());
-        }
-        let facts = read::read_work(
+        process_eligible_entry(
+            root,
             snapshot,
             journal,
             receipts,
-            envelope.original_occurrence.attempt().work_id(),
-            budget,
-            declaration.protocol(),
-        )?;
-        let verified =
-            read::reusable_body_reference(root, &facts, &envelope.original_occurrence, budget)?;
-        match_metadata(envelope.metadata, verified.prepared())?;
-        let key = name
-            .strip_suffix(".meta.json")
-            .ok_or(CaptureError::CacheEnvelopeUnsupported)?;
-        super::backing::verify_file(
-            &http.join(format!("{key}.body")),
-            verified.prepared().content_bytes(),
-            verified.prepared().content_digest(),
+            declaration,
+            &http,
+            &entry.path(),
+            name,
             budget,
         )?;
     }
     Ok(())
+}
+fn process_eligible_entry(
+    root: &Path,
+    snapshot: &Snapshot,
+    journal: &Keyspace,
+    receipts: &Keyspace,
+    declaration: &CaptureQualification,
+    http: &Path,
+    path: &Path,
+    name: &str,
+    budget: &mut AcquisitionReadBudget,
+) -> StoreResult<()> {
+    let raw = read_metadata(path, budget)?;
+    let Some(envelope) = parse_eligible(&raw, name)? else {
+        return Ok(());
+    };
+    if envelope.original_occurrence.attempt().store_identity() != declaration.store_identity() {
+        return Err(CaptureError::CaptureCapabilityForeignStore.into());
+    }
+    let facts = read::read_work(
+        snapshot,
+        journal,
+        receipts,
+        envelope.original_occurrence.attempt().work_id(),
+        budget,
+        declaration.protocol(),
+    )?;
+    let verified =
+        read::reusable_body_reference(root, &facts, &envelope.original_occurrence, budget)?;
+    match_metadata(envelope.metadata, verified.prepared())?;
+    let key = name
+        .strip_suffix(".meta.json")
+        .ok_or(CaptureError::CacheEnvelopeUnsupported)?;
+    super::backing::verify_file(
+        &http.join(format!("{key}.body")),
+        verified.prepared().content_bytes(),
+        verified.prepared().content_digest(),
+        budget,
+    )
 }
 
 fn parse_eligible(raw: &[u8], name: &str) -> StoreResult<Option<EligibleEnvelope>> {

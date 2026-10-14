@@ -6,13 +6,13 @@ use census_domain::model::{AttestationQualification, IdentityAttestation};
 
 #[test]
 fn canary_11_swapping_which_subject_owns_the_cohort_fact_changes_review_identity() -> TestResult {
-    let mut owns_2027 = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
+    let mut owns_2027 = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027)?;
     observed(&mut owns_2027, 11, 2025)?;
     let mut owns_2026 = athlete(
         "Jordan Smith",
         Gender::Boys,
         GradYear::new(2026).ok_or("a grad year in range")?,
-    );
+    )?;
     observed(&mut owns_2026, 12, 2025)?;
     check!(ne; owns_2027.id, owns_2026.id, "the two sides are distinct rows");
     let mut group = vec![owns_2027.id.to_string(), owns_2026.id.to_string()];
@@ -42,8 +42,8 @@ fn reordered_fact_set(reverse: bool) -> TestResult<(CanonicalAthlete, CanonicalA
         GradYear::CO2027,
         Gender::Boys,
         primary,
-    );
-    let mut peer = athlete("Jordan Smith", Gender::Girls, GradYear::CO2027);
+    )?;
+    let mut peer = athlete("Jordan Smith", Gender::Girls, GradYear::CO2027)?;
     let mut observations = vec![(10, 2024), (11, 2025)];
     let mut links = vec![
         (SourceNamespace::TfrrsAthlete, "77", None),

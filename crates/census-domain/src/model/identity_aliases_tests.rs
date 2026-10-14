@@ -98,7 +98,7 @@ fn a_corrupt_parent_chain_is_refused_instead_of_merging() {
 fn component_member(
     school: &str,
     source: super::super::SourceIdentity,
-) -> super::super::CanonicalAthlete {
+) -> Result<super::super::CanonicalAthlete, Box<dyn std::error::Error>> {
     use super::super::*;
     let school = SchoolId::mint("sch", &["WI", school]);
     let mut athlete = CanonicalAthlete::new(
@@ -107,12 +107,12 @@ fn component_member(
         GradYear::CO2027,
         Gender::Girls,
         source,
-    );
+    )?;
     athlete.evidence.push(Evidence::parsed(
         SourceRef::new("fixture", Some(format!("https://fixture.test/{school}"))),
         "2026-10-07",
     ));
-    athlete
+    Ok(athlete)
 }
 
 fn component_review(
@@ -193,7 +193,7 @@ fn component_chain(
         "School A",
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1")
             .with_url("https://milesplit.test/1"),
-    );
+    )?;
     first.add_identity(
         SourceIdentity::new(SourceNamespace::TfrrsAthlete, "9")
             .with_url("https://milesplit.test/1"),
@@ -201,8 +201,8 @@ fn component_chain(
     let mut middle = component_member(
         "School B",
         SourceIdentity::new(SourceNamespace::TfrrsAthlete, "9").with_url("https://tfrrs.test/9"),
-    );
-    let mut last = component_member("School C", last);
+    )?;
+    let mut last = component_member("School C", last)?;
     last.add_identity(
         SourceIdentity::new(SourceNamespace::TfrrsAthlete, "9")
             .with_url("https://fixture.test/last"),

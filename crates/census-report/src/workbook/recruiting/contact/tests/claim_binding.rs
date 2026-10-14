@@ -10,7 +10,7 @@ fn a_mailbox_bound_to_the_current_role_program_claim_publishes() -> TestResult {
         .as_mut()
         .ok_or("missing binding")?;
     binding.mailbox = Some("bound@example.invalid".into());
-    let result = selected(&[coach], &athlete())?;
+    let result = selected(&[coach], &athlete()?)?;
     check!(eq; result.state, ContactState::ProfessionalCoachEmail);
     check!(eq; result.name, "Bound coach");
     check!(eq; result.email, "bound@example.invalid");
@@ -22,7 +22,7 @@ fn an_unbound_mailbox_with_current_tenure_resolves_unknown() -> TestResult {
     let mut coach = head("Unbound coach", Sport::OutdoorTrack, Gender::Boys)?;
     coach.professional_email = Some("unbound@example.invalid".into());
     coach.tenure_evidence[0].claim = None;
-    let result = selected(&[coach], &athlete())?;
+    let result = selected(&[coach], &athlete()?)?;
     check!(eq; result.state, ContactState::ContactResearchUnknown);
     check!(eq; result.name, "");
     check!(eq; result.email, "");
@@ -33,7 +33,7 @@ fn an_unbound_mailbox_with_current_tenure_resolves_unknown() -> TestResult {
 fn a_name_only_claim_never_binds_a_present_mailbox() -> TestResult {
     let mut coach = head("Name only", Sport::OutdoorTrack, Gender::Boys)?;
     coach.professional_email = Some("unbound@example.invalid".into());
-    let result = selected(&[coach], &athlete())?;
+    let result = selected(&[coach], &athlete()?)?;
     check!(eq; result.state, ContactState::ContactResearchUnknown);
     check!(eq; result.email, "");
     Ok(())
@@ -66,7 +66,7 @@ fn each_person_school_role_and_program_component_must_match() -> TestResult {
                 };
             }
         }
-        let result = selected(&[coach], &athlete())?;
+        let result = selected(&[coach], &athlete()?)?;
         check!(eq; result.state, ContactState::ContactResearchUnknown);
         check!(eq; result.email, "");
     }
@@ -91,7 +91,7 @@ fn professional_and_personal_mailboxes_require_independent_bindings() -> TestRes
                 .is_some_and(|binding| binding.mailbox.as_deref() == Some(expected))
         });
         let contacts = contacts(&[coach], year()?);
-        let athlete = athlete();
+        let athlete = athlete()?;
         let scope = scoped(contacts.get(school().as_str()), &athlete);
         check!(eq; scope.all_emails(), expected);
         check!(eq; scope.professional_coach_email(),
@@ -115,7 +115,7 @@ fn a_name_only_current_fact_cannot_borrow_a_mailbox_from_another_season() -> Tes
         school_year: SchoolYear::new(2025).ok_or("invalid season")?,
     };
     coach.tenure_evidence.push(name_only);
-    let result = selected(&[coach], &athlete())?;
+    let result = selected(&[coach], &athlete()?)?;
     check!(eq; result.state, ContactState::ContactResearchUnknown);
     check!(eq; result.email, "");
     Ok(())
@@ -126,7 +126,7 @@ fn a_school_athletics_director_mailbox_publishes_without_a_team() -> TestResult 
     let mut coach = director()?;
     coach.professional_email = Some("director@example.invalid".into());
     bind(&mut coach);
-    let result = selected(&[coach], &athlete())?;
+    let result = selected(&[coach], &athlete()?)?;
     check!(eq; result.state, ContactState::ProfessionalAdEmail);
     check!(eq; result.email, "director@example.invalid");
     Ok(())
@@ -142,7 +142,7 @@ fn a_different_mailbox_in_the_same_role_claim_does_not_publish() -> TestResult {
         .as_mut()
         .ok_or("missing binding")?
         .mailbox = Some("other@example.invalid".into());
-    let result = selected(&[coach], &athlete())?;
+    let result = selected(&[coach], &athlete()?)?;
     check!(eq; result.state, ContactState::ContactResearchUnknown);
     check!(eq; result.email, "");
     Ok(())
@@ -157,7 +157,7 @@ fn a_current_unbound_observation_cannot_replace_a_bound_mailbox() -> TestResult 
     unbound.professional_email = Some("unbound@example.invalid".into());
     unbound.tenure_evidence[0].claim = None;
     for rows in [vec![bound.clone(), unbound.clone()], vec![unbound, bound]] {
-        let result = selected(&rows, &athlete())?;
+        let result = selected(&rows, &athlete()?)?;
         check!(eq; result.state, ContactState::ProfessionalCoachEmail);
         check!(eq; result.email, "bound@example.invalid");
     }

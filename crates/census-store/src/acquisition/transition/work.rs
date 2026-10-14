@@ -16,11 +16,12 @@ impl Store {
         owner.verify_work(self, &work)?;
         grant.owner.verify(self)?;
         let slot_id = work.slot().id().map_err(CaptureError::Domain)?;
-        if grant.owner.scope != owner.scope || grant.slot != slot_id {
+        let protocol = owner.protocol();
+        let grant_slot = grant.slot.clone();
+        if grant.owner.scope != owner.scope || grant_slot != slot_id {
             return Err(CaptureError::SlotWorkMismatch.into());
         }
         let id = work.id().map_err(CaptureError::Domain)?;
-        let protocol = owner.protocol();
         let slot_key = format!("slot/{slot_id}/binding");
         let work_key = format!("work/{id}/identity");
         let snapshot = self.db.snapshot();
@@ -50,15 +51,7 @@ impl Store {
                 id,
             });
         }
-        let binding = SlotBinding {
-            version: protocol,
-            slot: work.slot().clone(),
-            work_id: id.clone(),
-        };
-        let mut batch = self.db.batch();
-        codec::stage(self, &mut batch, &slot_key, &binding, protocol)?;
-        codec::stage(self, &mut batch, &work_key, &work, protocol)?;
-        codec::commit(batch)?;
+        store_new_registration(self, &work, &id, &slot_key, &work_key, protocol)?;
         Ok(OwnedAcquisitionWork {
             owner: owner.clone(),
             work,
@@ -79,6 +72,26 @@ impl Store {
         let facts = current(self, &work, &snapshot, &mut budget)?;
         reserve_facts(self, work, &facts)
     }
+}
+
+fn store_new_registration(
+    store: &Store,
+    work: &AcquisitionWorkV1,
+    id: &AcquisitionWorkId,
+    slot_key: &str,
+    work_key: &str,
+    protocol: CaptureProtocolVersion,
+) -> StoreResult<()> {
+    let binding = SlotBinding {
+        version: protocol,
+        slot: work.slot().clone(),
+        work_id: id.clone(),
+    };
+    let mut batch = store.db.batch();
+    codec::stage(store, &mut batch, slot_key, &binding, protocol)?;
+    codec::stage(store, &mut batch, work_key, work, protocol)?;
+    codec::commit(batch)?;
+    Ok(())
 }
 
 fn registration(

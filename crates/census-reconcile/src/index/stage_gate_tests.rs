@@ -5,7 +5,7 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn season() -> Result<census_domain::model::SchoolYear, Box<dyn std::error::Error>> {
     census_domain::model::SchoolYear::new(2026).ok_or_else(|| "invalid fixture season".into())
@@ -19,21 +19,21 @@ fn school(name: &str, slug: &str) -> CanonicalSchool {
     school
 }
 
-fn athlete(school: &CanonicalSchool, native_id: &str) -> CanonicalAthlete {
-    CanonicalAthlete::new(
+fn athlete(school: &CanonicalSchool, native_id: &str) -> TestResult<CanonicalAthlete> {
+    Ok(CanonicalAthlete::new(
         &school.id,
         "Synthetic Runner",
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, native_id),
-    )
+    )?)
 }
 
 fn fixture(dir: &tempfile::TempDir) -> Result<Store, Box<dyn std::error::Error>> {
     let store = Store::open(dir.path())?;
     let school = school("School", "school");
     store.append(Table::Schools, &school)?;
-    store.append(Table::Athletes, &athlete(&school, "111"))?;
+    store.append(Table::Athletes, &athlete(&school, "111")?)?;
     Ok(store)
 }
 
@@ -47,7 +47,7 @@ fn a_changed_input_publishes_a_new_generation_holding_the_whole_row_set() -> Tes
     check!(published > 0, "the pass publishes a derived generation");
     let school = school("Second School", "second-school");
     store.append(Table::Schools, &school)?;
-    store.append(Table::Athletes, &athlete(&school, "222"))?;
+    store.append(Table::Athletes, &athlete(&school, "222")?)?;
 
     let second = derive(&store, "index", "2026-09-23", season()?)?;
     check!(eq; second.source_identities,

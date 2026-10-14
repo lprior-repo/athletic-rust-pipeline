@@ -118,10 +118,7 @@ pub(crate) fn declaration_admitted(
         }
         return Ok(None);
     }
-    if format.schema_version != Some(2)
-        || format.key_format != Some(1)
-        || format.migration_target.is_some()
-    {
+    if declaration_format_unsupported(format) {
         return Err(CaptureError::CaptureMarkerMismatch.into());
     }
     meter.probe()?;
@@ -141,6 +138,11 @@ pub(crate) fn declaration_admitted(
         _ => return Err(CaptureError::CaptureCapabilityForeignStore.into()),
     }
     Ok(Some(record))
+}
+fn declaration_format_unsupported(format: &StoreFormat) -> bool {
+    format.schema_version != Some(2)
+        || format.key_format != Some(1)
+        || format.migration_target.is_some()
 }
 
 fn load_declaration(

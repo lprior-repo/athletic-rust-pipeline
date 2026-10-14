@@ -104,7 +104,7 @@ fn exercise(mode: &str, step: usize) -> TestResult {
     store.append(Table::Schools, &added)?;
     store.append(
         Table::Athletes,
-        &athlete(&added.id, "After Crash Runner", "after-crash"),
+        &athlete(&added.id, "After Crash Runner", "after-crash")?,
     )?;
     let new = super::super::super::super::ExportDataset::load(&store)?;
     let root = freeze_v2(&store, JOB)?;

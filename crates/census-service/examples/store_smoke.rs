@@ -102,7 +102,7 @@ fn seed_athlete(
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, &athlete_name),
-    );
+    )?;
     athlete.sports = vec![Sport::OutdoorTrack];
     let source = SourceRef::new(
         "store-smoke",

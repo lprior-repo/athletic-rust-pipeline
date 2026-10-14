@@ -144,28 +144,28 @@ mod tests {
         GradYear, PublishedGraduation, SchoolId, SourceIdentity, SourceNamespace, SourceRef,
     };
 
-    type TestResult = Result<(), Box<dyn std::error::Error>>;
+    type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-    fn athlete(id: &str) -> CanonicalAthlete {
-        CanonicalAthlete::new(
+    fn athlete(id: &str) -> TestResult<CanonicalAthlete> {
+        Ok(CanonicalAthlete::new(
             &SchoolId::mint("sch", &["cohort-review-fixture"]),
             "Published Cohort Runner",
             GradYear::CO2027,
             census_domain::model::Gender::Girls,
             SourceIdentity::new(SourceNamespace::MilesplitAthlete, id),
-        )
+        )?)
     }
 
     #[test]
     fn only_unknown_and_contradictory_cohorts_remain_in_review_when_direct_claims_are_retained(
     ) -> TestResult {
-        let unknown = athlete("1001");
-        let mut confirmed = athlete("1002");
+        let unknown = athlete("1001")?;
+        let mut confirmed = athlete("1002")?;
         confirmed.published_graduations.push(PublishedGraduation {
             grad_year: GradYear::CO2027,
             source: SourceRef::id("owned-api"),
         });
-        let mut conflicted = athlete("1003");
+        let mut conflicted = athlete("1003")?;
         conflicted.published_graduations = vec![
             PublishedGraduation {
                 grad_year: GradYear::CO2027,
@@ -192,13 +192,13 @@ mod tests {
 
     #[test]
     fn parity_grouping_review_rows_keep_the_cohort_input_ordinals_of_each_finding() -> TestResult {
-        let first = athlete("2001");
-        let mut confirmed = athlete("2002");
+        let first = athlete("2001")?;
+        let mut confirmed = athlete("2002")?;
         confirmed.published_graduations.push(PublishedGraduation {
             grad_year: GradYear::CO2027,
             source: SourceRef::id("owned-api"),
         });
-        let last = athlete("2003");
+        let last = athlete("2003")?;
         let expected = vec![first.id.to_string(), last.id.to_string()];
         let family = cohort_unverified(&[first, confirmed, last], &HashMap::new());
         check!(eq; family.findings, 2, "one finding per unverified input");

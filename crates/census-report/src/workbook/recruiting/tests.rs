@@ -84,7 +84,7 @@ fn julian(store: &Store, school: &SchoolId) -> TestResult<(AthleteId, SourceIden
             GradYear::CO2027,
             Gender::Boys,
             source.clone(),
-        );
+        )?;
         athlete.observed_grades.push(ObservedGrade {
             grade: Grade::new(11).ok_or("invalid fixture grade")?,
             school_year: SchoolYear::new(2025).ok_or("invalid fixture season")?,
@@ -109,7 +109,7 @@ fn nadia(store: &Store, school: &SchoolId) -> TestResult<AthleteId> {
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::Other("fixture".to_owned()), "nadia"),
-    );
+    )?;
     athlete.sports = vec![Sport::CrossCountry];
     athlete.evidence = evidence("mshsl_results", None);
     publish_fixture_cohort(&mut athlete, "mshsl_results", "identity-only", DAY);
@@ -124,7 +124,7 @@ fn younger(store: &Store, school: &SchoolId) -> TestResult {
         GradYear::new(2028).ok_or("invalid fixture graduation year")?,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::Other("fixture".to_owned()), "younger"),
-    );
+    )?;
     athlete.evidence = evidence("wiaa_results", None);
     store.append(Table::Athletes, &athlete)?;
     Ok(())
@@ -721,7 +721,7 @@ fn the_recruiting_xlsx_keeps_formula_looking_text_as_literal_string_cells() -> T
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "xlsx-safety"),
-    );
+    )?;
     athlete.sports = vec![Sport::OutdoorTrack];
     publish_fixture_cohort(&mut athlete, "wiaa_results", "xlsx-safety", DAY);
     store.append(Table::Athletes, &athlete)?;
@@ -800,7 +800,7 @@ fn an_athlete_without_a_grade_observation_publishes_the_season_of_their_capture(
             GradYear::CO2027,
             Gender::Boys,
             SourceIdentity::new(SourceNamespace::MilesplitAthlete, name),
-        );
+        )?;
         athlete.sports = vec![Sport::OutdoorTrack];
         publish_fixture_cohort(
             &mut athlete,
@@ -849,7 +849,7 @@ fn an_absent_value_publishes_a_blank_cell_while_counts_publish_zero() -> TestRes
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "bare-runner"),
-    );
+    )?;
     publish_fixture_cohort(&mut athlete, "milesplit_roster", "blank", DAY);
     store.append(Table::Athletes, &athlete)?;
 
@@ -928,7 +928,7 @@ fn a_schools_research_outcome_reaches_the_athletes_contact_coverage_state() -> T
             GradYear::CO2027,
             Gender::Boys,
             SourceIdentity::new(SourceNamespace::MilesplitAthlete, "research-state"),
-        );
+        )?;
         athlete.sports = vec![Sport::OutdoorTrack];
         publish_fixture_cohort(&mut athlete, "wiaa_results", "research-state", DAY);
         store.append(Table::Athletes, &athlete)?;
@@ -1077,7 +1077,7 @@ fn every_sheet_publishes_hostile_source_text_as_literal_cells() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "hostile-text"),
-    );
+    )?;
     athlete.sports = vec![Sport::OutdoorTrack];
     publish_fixture_cohort(&mut athlete, "wiaa_results", "hostile-text", DAY);
     store.append(Table::Athletes, &athlete)?;
@@ -1169,7 +1169,7 @@ fn a_provider_adjusted_track_size_mark_retains_published_and_adjusted_distinctly
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "tsr-1"),
-    );
+    )?;
     athlete.observed_grades.push(ObservedGrade {
         grade: Grade::new(11).ok_or("grade")?,
         school_year: SchoolYear::new(2025).ok_or("season")?,
@@ -1308,7 +1308,7 @@ fn a_legacy_performance_without_adjustment_provenance_publishes_blank_conversion
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "legacy-1"),
-    );
+    )?;
     athlete.observed_grades.push(ObservedGrade {
         grade: Grade::new(11).ok_or("grade")?,
         school_year: SchoolYear::new(2025).ok_or("season")?,

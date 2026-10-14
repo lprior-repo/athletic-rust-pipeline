@@ -11,7 +11,7 @@ fn only_the_queried_academic_year_qualifies_a_current_claim() -> TestResult {
         })];
         bind(&mut coach);
         let contacts = contacts(&[coach], year()?);
-        let athlete = athlete();
+        let athlete = athlete()?;
         let scope = scoped(contacts.get(school().as_str()), &athlete);
         if declared == 2026 {
             check!(eq; scope.preferred().state,
@@ -43,7 +43,7 @@ fn a_recently_fetched_legacy_row_without_tenure_is_not_current() -> TestResult {
         .is_some());
     let legacy: CanonicalCoach = serde_json::from_value(encoded)?;
     let contacts = contacts(&[legacy], year()?);
-    let athlete = athlete();
+    let athlete = athlete()?;
     let scope = scoped(contacts.get(school().as_str()), &athlete);
     check!(eq; scope.preferred().state,
     ContactState::ContactResearchUnknown);
@@ -59,7 +59,7 @@ fn an_undated_observation_cannot_lend_an_address_to_a_current_name() -> TestResu
     undated.tenure_evidence.clear();
     undated.professional_email = Some("undated@example.invalid".into());
     let contacts = contacts(&[current, undated], year()?);
-    let athlete = athlete();
+    let athlete = athlete()?;
     let scope = scoped(contacts.get(school().as_str()), &athlete);
     check!(eq; scope.preferred().name, "Same coach");
     check!(eq; scope.preferred().state, ContactState::CoachNameOnly);
@@ -78,7 +78,7 @@ fn conflicting_tenure_across_observations_is_retained_in_either_order() -> TestR
     })];
     for rows in [vec![current.clone(), former.clone()], vec![former, current]] {
         let contacts = contacts(&rows, year()?);
-        let athlete = athlete();
+        let athlete = athlete()?;
         let scope = scoped(contacts.get(school().as_str()), &athlete);
         check!(eq; scope.preferred().state, ContactState::ContactTenureConflict);
         check!(eq; scope.all_emails(), "");
@@ -95,7 +95,7 @@ fn incomplete_tenure_metadata_refuses_selection_but_remains_a_distinct_state() -
     coach.professional_email = Some("coach@example.invalid".into());
     coach.tenure_evidence[0].source_sha256.clear();
     let contacts = contacts(&[coach], year()?);
-    let athlete = athlete();
+    let athlete = athlete()?;
     let scope = scoped(contacts.get(school().as_str()), &athlete);
     check!(eq; scope.preferred().state,
     ContactState::ContactEvidenceInvalid);

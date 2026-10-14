@@ -209,6 +209,9 @@ pub(super) fn check_shape(dataset: &ExportDataset, shape: EvidenceShape) -> Test
     check!(serialized_bytes(dataset)?.ends_with(expected.as_bytes()));
     check_report(dataset, shape)?;
     let interpreted = interpretation(dataset)?;
+    if interpreted.selections.is_empty() {
+        eprintln!("frozen-coverage diagnostic: {}", serde_json::to_string(dataset)?);
+    }
     check!(eq; interpreted.selections.len(), 1);
     let selection = interpreted
         .selections

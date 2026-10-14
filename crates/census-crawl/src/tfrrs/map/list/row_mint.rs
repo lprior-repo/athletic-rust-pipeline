@@ -112,7 +112,7 @@ impl<'a> Absorb<'a> {
         );
         let meet_id = self.meet_for(context.page, facts.meet, facts.date, facts.sport)?;
         let (event, _) = self.event_for(context.page, section, &meet_id, gender)?;
-        let (athlete_id, source_athlete) = self.athlete_for(
+        let Some((athlete_id, source_athlete)) = self.athlete_for(
             context.page,
             AthleteFacts {
                 school,
@@ -123,7 +123,10 @@ impl<'a> Absorb<'a> {
                 source,
                 observed_grade: Some(observation),
             },
-        );
+        )?
+        else {
+            return Ok(None);
+        };
         Ok(Some(RowMints {
             team,
             meet: meet_id,

@@ -51,7 +51,7 @@ fn athlete(
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::Other("fixture".to_owned()), "hostile"),
-    );
+    )?;
     athlete.sports = vec![census_domain::model::Sport::OutdoorTrack];
     let claim = PublishedGraduation {
         grad_year: GradYear::CO2027,
@@ -393,7 +393,7 @@ fn seed_partition_store(store: &Store, fixture: &PartitionFixture) -> TestResult
             SourceNamespace::Other("fixture".to_owned()),
             fixture.source_id,
         ),
-    );
+    )?;
     athlete
         .evidence
         .push(Evidence::parsed(SourceRef::new("wiaa_results", None), DAY));

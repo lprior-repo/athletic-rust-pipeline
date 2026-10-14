@@ -215,7 +215,7 @@ fn default_scope_retains_noncontinental_evidence_and_outside_gap_notes() -> Test
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "alaska-retained"),
-    );
+    )?;
     athlete.published_graduations.push(PublishedGraduation {
         grad_year: GradYear::CO2027,
         source: SourceRef::id("asaaa_results"),

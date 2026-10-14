@@ -58,7 +58,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169"),
-    );
+    )?;
     wi_core.evidence.push(evidence("milesplit_roster"));
     wi_core
         .public_profile_urls
@@ -75,7 +75,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         GradYear::CO2027,
         Gender::Girls,
         fixture_source("wi-mirror"),
-    );
+    )?;
     wi_mirror.evidence.push(evidence("athleticlive_athletes"));
     store.append(Table::Athletes, &wi_mirror)?;
 
@@ -85,7 +85,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         GradYear::CO2027,
         Gender::Girls,
         fixture_source("mn-runner"),
-    );
+    )?;
     mn_athlete.evidence.push(evidence("delphi_timing"));
     store.append(Table::Athletes, &mn_athlete)?;
     let mut mn_off_cohort = CanonicalAthlete::new(
@@ -94,7 +94,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         GradYear::new(2028).ok_or("invalid graduation year")?,
         Gender::Boys,
         fixture_source("mn-younger"),
-    );
+    )?;
     mn_off_cohort.evidence.push(evidence("delphi_timing"));
     store.append(Table::Athletes, &mn_off_cohort)?;
 
@@ -107,7 +107,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         GradYear::new(2028).ok_or("invalid graduation year")?,
         Gender::Girls,
         fixture_source("ks-younger"),
-    );
+    )?;
     ks_off_cohort.evidence.push(evidence("kshsaa_results"));
     store.append(Table::Athletes, &ks_off_cohort)?;
 
@@ -117,7 +117,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("il-runner"),
-    );
+    )?;
     il_athlete.evidence.push(evidence("ihsa_results"));
     il_athlete
         .observed_grades
@@ -130,7 +130,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("unplaced"),
-    );
+    )?;
     unplaced.evidence.push(evidence("ohsaa_results"));
     store.append(Table::Athletes, &unplaced)?;
 
@@ -230,7 +230,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("never-stored"),
-    );
+    )?;
     let orphan = performance(
         &never_stored,
         &missing_event.id,

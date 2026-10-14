@@ -8,7 +8,7 @@ use super::reservations::{
 use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
 
-pub(in crate::net::cache) const DEFAULT_ARCHIVE_BYTES: u64 = 100 * 1024 * 1024;
+pub(in crate::net::cache) const DEFAULT_ARCHIVE_BYTES: u64 = 20 * 1024 * 1024 * 1024;
 const ARCHIVE_CAPACITY_ENV: &str = "CENSUS_ARCHIVE_CAPACITY_BYTES";
 #[derive(Debug, PartialEq, Eq)]
 pub(in crate::net::cache) struct ArchiveCapacity(NonZeroU64);
@@ -98,6 +98,16 @@ impl<'lock> ArchiveAdmission<'lock> {
         let projected = capacity_projection(used, reserved, additional)
             .ok_or_else(|| invalid(&self.archive, "archive capacity accounting overflowed"))?;
         if projected > self.capacity {
+            tracing::error!(
+                archive = %self.archive.display(),
+                used_bytes = used,
+                reserved_bytes = reserved,
+                requested_bytes = additional,
+                capacity_bytes = self.capacity,
+                projected_bytes = projected,
+                configuration = ARCHIVE_CAPACITY_ENV,
+                "source capture refused: archive capacity exhausted"
+            );
             return Err(FetchError::ArchiveCapacity {
                 archive: self.archive.clone(),
                 used,

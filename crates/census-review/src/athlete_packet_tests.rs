@@ -24,9 +24,15 @@ fn school() -> SchoolId {
     .id
 }
 
-fn athlete(name: &str, gender: Gender, grad_year: GradYear) -> CanonicalAthlete {
+fn athlete(name: &str, gender: Gender, grad_year: GradYear) -> TestResult<CanonicalAthlete> {
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
-    CanonicalAthlete::new(&school(), name, grad_year, gender, source)
+    Ok(CanonicalAthlete::new(
+        &school(),
+        name,
+        grad_year,
+        gender,
+        source,
+    )?)
 }
 
 fn observed(athlete: &mut CanonicalAthlete, grade: u8, school_year: i16) -> TestResult {
@@ -53,7 +59,7 @@ fn known_as(
 }
 
 fn rows() -> TestResult<(CanonicalAthlete, CanonicalAthlete, CanonicalAthlete)> {
-    let mut boys = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
+    let mut boys = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027)?;
     observed(&mut boys, 11, 2025)?;
     known_as(
         &mut boys,
@@ -62,7 +68,7 @@ fn rows() -> TestResult<(CanonicalAthlete, CanonicalAthlete, CanonicalAthlete)> 
         Some("https://wi.milesplit.com/athletes/14399169/jordan-smith"),
     );
     known_as(&mut boys, SourceNamespace::TfrrsAthlete, "77", None);
-    let mut girls = athlete("Jordan Smith", Gender::Girls, GradYear::CO2027);
+    let mut girls = athlete("Jordan Smith", Gender::Girls, GradYear::CO2027)?;
     observed(&mut girls, 10, 2025)?;
     known_as(
         &mut girls,
@@ -78,7 +84,7 @@ fn rows() -> TestResult<(CanonicalAthlete, CanonicalAthlete, CanonicalAthlete)> 
         "998877",
         Some("https://www.athletic.net/athlete/998877/track-and-field"),
     );
-    let mut other = athlete("Sam Rivers", Gender::Girls, GradYear::CO2027);
+    let mut other = athlete("Sam Rivers", Gender::Girls, GradYear::CO2027)?;
     observed(&mut other, 11, 2025)?;
     Ok((boys, girls, other))
 }

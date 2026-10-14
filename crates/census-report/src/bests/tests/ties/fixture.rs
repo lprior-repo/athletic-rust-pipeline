@@ -66,7 +66,7 @@ impl TieFixture {
         );
         let evidence = Evidence::parsed(source.clone(), "2026-10-07");
         school.evidence = vec![evidence.clone()];
-        let mut athlete = CanonicalAthlete::new_checked(
+        let mut athlete = CanonicalAthlete::new(
             &school_id,
             "Tie fixture runner",
             GradYear::CO2027,

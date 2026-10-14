@@ -14,13 +14,13 @@ fn accepted_alias_published_cohort_survives_collapse_and_publication() -> TestRe
             "Published Cohort Runner",
             Gender::Boys,
             "https://wi.milesplit.com/athletes/9001001",
-        ),
+        )?,
         member(
             &school,
             "P. Cohort Runner",
             Gender::Boys,
             "https://mn.milesplit.com/athletes/9001001",
-        ),
+        )?,
     ];
     members.sort_by(|left, right| left.id.cmp(&right.id));
     let [representative, alias] = &mut members;

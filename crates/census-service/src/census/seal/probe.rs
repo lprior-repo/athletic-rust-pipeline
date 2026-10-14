@@ -46,7 +46,7 @@ fn populated_store(path: &Path) -> TestResult<Store> {
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1234"),
-    );
+    )?;
     athlete
         .published_graduations
         .push(census_domain::model::PublishedGraduation {

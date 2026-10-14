@@ -107,7 +107,7 @@ fn build_corpus(schools: usize) -> TestResult<Corpus> {
                 GradYear::CO2027,
                 Gender::Boys,
                 source.clone(),
-            );
+            )?;
             athlete
                 .published_graduations
                 .push(census_domain::model::PublishedGraduation {

@@ -140,7 +140,7 @@ fn roster_athlete_entity(
     entry: &RosterAthlete,
     projection: &Projection<'_>,
 ) -> CrawlResult<CanonicalAthlete> {
-    let mut athlete = CanonicalAthlete::new_checked(
+    let mut athlete = CanonicalAthlete::new(
         projection.school,
         entry.name.clone(),
         entry.grad_year,
@@ -148,7 +148,9 @@ fn roster_athlete_entity(
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, entry.athlete_id.clone())
             .with_url(entry.profile_url.clone()),
     )
-    .map_err(|detail| CrawlError::Invariant { detail })?;
+    .map_err(|error| CrawlError::Invariant {
+        detail: error.to_string(),
+    })?;
     reserve_athlete(&mut athlete)?;
     if entry.roster_name != entry.name {
         athlete.known_names.push(entry.roster_name.clone());

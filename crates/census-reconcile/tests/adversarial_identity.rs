@@ -120,7 +120,7 @@ fn canonical_id_collision_is_retained() -> TestResult {
         GradYear::CO2027,
         Gender::Girls,
         source,
-    );
+    )?;
     marta.id = jane.id.clone();
     store.append(Table::Athletes, &marta)?;
 
@@ -157,7 +157,7 @@ fn second_provider_identity_does_not_double_count() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "smith-1"),
-    );
+    )?;
     athlete.add_identity(SourceIdentity::new(
         SourceNamespace::AthleticNet {
             kind: "athlete".to_string(),

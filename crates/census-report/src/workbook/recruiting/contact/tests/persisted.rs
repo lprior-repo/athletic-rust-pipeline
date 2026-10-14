@@ -21,7 +21,7 @@ fn persisted_currentness_cannot_attach_an_undated_address_in_either_append_order
             store.append(Table::Coaches, record)?;
         }
         let observations = coaches(&store)?;
-        let result = selected(&observations, &athlete())?;
+        let result = selected(&observations, &athlete()?)?;
         check!(eq; result.name, "Same owner");
         check!(eq; result.email, "");
         check!(eq; result.state, ContactState::CoachNameOnly);
@@ -50,7 +50,7 @@ fn differing_tenure_interpretations_of_one_capture_survive_the_store_merge() -> 
     check!(eq; merged[0].tenure_state(year()?),
     Err(census_domain::model::TenureAssessmentError::Conflict));
     let observations = coaches(&store)?;
-    check!(eq; selected(&observations, &athlete())?.state,
+    check!(eq; selected(&observations, &athlete()?)?.state,
     ContactState::ContactTenureConflict);
     Ok(())
 }
@@ -68,7 +68,7 @@ fn conflicting_persisted_addresses_do_not_collapse_to_the_first_mailbox() -> Tes
     store.append(Table::Coaches, &first)?;
     store.append(Table::Coaches, &second)?;
     let after = coaches(&store)?;
-    let result = selected(&after, &athlete())?;
+    let result = selected(&after, &athlete()?)?;
     check!(eq; result.state, ContactState::ContactConflict);
     check!(eq; result.email, "");
     Ok(())

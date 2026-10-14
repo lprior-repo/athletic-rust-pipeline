@@ -179,14 +179,16 @@ fn new_athlete(
     subject: (&SchoolId, &str, GradYear),
     row: &OwnedPerformance,
 ) -> CrawlResult<CanonicalAthlete> {
-    let mut athlete = CanonicalAthlete::new_checked(
+    let mut athlete = CanonicalAthlete::new(
         subject.0,
         subject.1,
         subject.2,
         row.gender,
         row.source_athlete.clone(),
     )
-    .map_err(|detail| CrawlError::Invariant { detail })?;
+    .map_err(|error| CrawlError::Invariant {
+        detail: error.to_string(),
+    })?;
     athlete
         .public_profile_urls
         .extend(row.source_athlete.url.clone());

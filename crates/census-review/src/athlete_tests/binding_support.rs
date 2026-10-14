@@ -54,7 +54,7 @@ pub(super) fn rows() -> TestResult<Vec<CanonicalAthlete>> {
                 GradYear::CO2027,
                 Gender::Boys,
                 SourceIdentity::new(SourceNamespace::MilesplitAthlete, id),
-            );
+            )?;
             row.add_identity(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "77"));
             row.observed_grades.push(ObservedGrade {
                 grade: Grade::new(11).ok_or("supported grade")?,

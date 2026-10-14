@@ -50,7 +50,7 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         source_a,
-    );
+    )?;
     let source_b = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
     let mut b = CanonicalAthlete::new(
         &school_b,
@@ -58,7 +58,7 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         source_b,
-    );
+    )?;
     a.evidence.push(census_domain::model::Evidence::parsed(
         census_domain::model::SourceRef::new(
             "milesplit_roster",
@@ -117,14 +117,14 @@ fn deterministic_identity_decisions_are_not_submitted_for_model_advice() -> Test
                 GradYear::CO2027,
                 Gender::Boys,
                 SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169"),
-            );
+            )?;
             let b = CanonicalAthlete::new(
                 &school_b,
                 "Jordan Smith",
                 GradYear::CO2027,
                 Gender::Boys,
                 SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169"),
-            );
+            )?;
             store.append_many(
                 Table::Athletes,
                 &[with_profile_evidence(a), with_profile_evidence(b)],

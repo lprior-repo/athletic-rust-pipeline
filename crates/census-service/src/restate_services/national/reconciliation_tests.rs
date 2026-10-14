@@ -67,14 +67,14 @@ async fn r2ox_supersession(reversed: bool) -> TestResult {
             GradYear::CO2027,
             Gender::Girls,
             shared.clone(),
-        ),
+        )?,
         census_domain::model::CanonicalAthlete::new(
             &school.id,
             "Alex Morgan",
             GradYear::CO2027,
             Gender::Unknown,
             shared.clone(),
-        ),
+        )?,
     ];
     for athlete in &mut athletes {
         athlete.evidence.push(Evidence::parsed(
@@ -184,14 +184,14 @@ async fn q3pt_boys_girls_still_blocks_identity_resolution() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         shared.clone(),
-    );
+    )?;
     let girls = census_domain::model::CanonicalAthlete::new(
         &school.id,
         "Alex Morgan",
         GradYear::CO2027,
         Gender::Girls,
         shared.clone(),
-    );
+    )?;
 
     store.append(Table::Schools, &school)?;
     store.append_many(Table::Athletes, &[boys.clone(), girls.clone()])?;

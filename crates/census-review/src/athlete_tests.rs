@@ -43,14 +43,14 @@ impl Fixture {
             GradYear::CO2027,
             Gender::Boys,
             SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169"),
-        );
+        )?;
         let girls = CanonicalAthlete::new(
             &school,
             "Jordan Smith",
             GradYear::CO2027,
             Gender::Girls,
             SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169"),
-        );
+        )?;
         store.append_many(Table::Athletes, &[boys.clone(), girls.clone()])?;
         let detail = format!(
             "same school, name and cohort as every id here: {}, {}",
@@ -246,14 +246,14 @@ fn dual_same_person_agreement_never_promotes_name_school_and_cohort_alone() -> T
                 GradYear::CO2027,
                 Gender::Boys,
                 SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
-            );
+            )?;
             let second_athlete = CanonicalAthlete::new(
                 &school,
                 "Jordan Smith",
                 GradYear::CO2027,
                 Gender::Boys,
                 SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1002"),
-            );
+            )?;
             store.append_many(
                 Table::Athletes,
                 &[first_athlete.clone(), second_athlete.clone()],

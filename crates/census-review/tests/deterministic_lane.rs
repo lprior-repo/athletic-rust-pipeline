@@ -119,7 +119,7 @@ fn alias_rows_file_without_deciding_and_dry_run_writes_nothing() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
-    );
+    )?;
     athlete.add_identity(SourceIdentity::new(
         SourceNamespace::MilesplitAthlete,
         "1002",
@@ -156,7 +156,7 @@ fn alias_rows_file_without_deciding_and_dry_run_writes_nothing() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
-    );
+    )?;
     dry_athlete.add_identity(SourceIdentity::new(
         SourceNamespace::MilesplitAthlete,
         "1002",

@@ -33,14 +33,14 @@ fn an_explicitly_filed_pair_binds_across_two_schools() -> TestResult {
     .0
     .id;
     let source = || SourceIdentity::new(SourceNamespace::MilesplitAthlete, "16324342");
-    let east = CanonicalAthlete::new(&school(), "Vera Strub", grad_year, Gender::Girls, source());
+    let east = CanonicalAthlete::new(&school(), "Vera Strub", grad_year, Gender::Girls, source())?;
     let west = CanonicalAthlete::new(
         &west_school,
         "Vera Strub",
         grad_year,
         Gender::Girls,
         source(),
-    );
+    )?;
     let index = AthleteIndex::read(vec![east.clone(), west.clone()]);
     let members: Vec<AthleteCandidateId> = vec![east.id.cast(), west.id.cast()];
     let (subject, other, candidates) = index

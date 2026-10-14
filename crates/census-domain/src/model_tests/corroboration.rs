@@ -17,7 +17,11 @@ fn tfrrs(id: &str) -> SourceIdentity {
         .with_url(format!("https://tfrrs.test/{id}"))
 }
 
-fn observed(school: &str, source: SourceIdentity, links: &[SourceIdentity]) -> CanonicalAthlete {
+fn observed(
+    school: &str,
+    source: SourceIdentity,
+    links: &[SourceIdentity],
+) -> Result<CanonicalAthlete, Box<dyn std::error::Error>> {
     let school = SchoolId::mint("sch", &["WI", school]);
     let mut athlete = CanonicalAthlete::new(
         &school,
@@ -25,7 +29,7 @@ fn observed(school: &str, source: SourceIdentity, links: &[SourceIdentity]) -> C
         GradYear::CO2027,
         Gender::Girls,
         source,
-    );
+    )?;
     athlete.evidence.push(Evidence::parsed(
         SourceRef::new("fixture", Some(format!("https://fixture.test/{school}"))),
         "2026-10-07T12:00:00Z",
@@ -33,7 +37,7 @@ fn observed(school: &str, source: SourceIdentity, links: &[SourceIdentity]) -> C
     for link in links {
         athlete.add_identity(link.clone());
     }
-    athlete
+    Ok(athlete)
 }
 
 #[test]
@@ -58,7 +62,7 @@ fn a_link_shared_pair_without_attestation_stays_review() -> Result<(), Box<dyn s
 #[test]
 fn two_ids_from_one_provider_withhold() -> Result<(), Box<dyn std::error::Error>> {
     let [first, owner] = independent_pair()?;
-    let mut second = observed("School C", milesplit("222"), &[tfrrs("999")]);
+    let mut second = observed("School C", milesplit("222"), &[tfrrs("999")])?;
     second.identity_attestations.push(captured_claim(
         &tfrrs("999"),
         "other-roster-fixture",
@@ -83,7 +87,7 @@ fn a_contradictory_third_member_withholds() -> Result<(), Box<dyn std::error::Er
     let rows = independent_pair()?;
     check!(admits(&rows)?);
     let [linked, owner] = rows;
-    let mut third = observed("School C", tfrrs("777"), &[]);
+    let mut third = observed("School C", tfrrs("777"), &[])?;
     third.gender = Gender::Boys;
     check!(!admits(&[linked, owner, third])?);
     Ok(())
@@ -93,8 +97,8 @@ fn a_contradictory_third_member_withholds() -> Result<(), Box<dyn std::error::Er
 fn name_school_and_cohort_agreement_alone_is_not_positive_evidence(
 ) -> Result<(), Box<dyn std::error::Error>> {
     check!(!admits(&[
-        observed("School A", milesplit("111"), &[]),
-        observed("School A", milesplit("222"), &[]),
+        observed("School A", milesplit("111"), &[])?,
+        observed("School A", milesplit("222"), &[])?,
     ])?);
     Ok(())
 }
@@ -195,7 +199,7 @@ fn union_component_provider_conflict_withholds_aliases_in_either_application_ord
     let [first, mut owner] = independent_pair()?;
     owner.add_identity(milesplit("111").with_url("https://tfrrs.test/999"));
     let key = tfrrs("999");
-    let mut second = observed("School C", milesplit("222"), std::slice::from_ref(&key));
+    let mut second = observed("School C", milesplit("222"), std::slice::from_ref(&key))?;
     second.identity_attestations.push(captured_claim(
         &key,
         "other-roster-fixture",
@@ -241,7 +245,7 @@ fn compatible_provider_chain_component_publishes_one_verified_person(
     let [first, mut owner] = independent_pair()?;
     owner.add_identity(milesplit("111").with_url("https://tfrrs.test/999"));
     let key = tfrrs("999");
-    let mut mirror = observed("School D", milesplit("111"), std::slice::from_ref(&key));
+    let mut mirror = observed("School D", milesplit("111"), std::slice::from_ref(&key))?;
     mirror.identity_attestations.push(captured_claim(
         &key,
         "compatible-roster-fixture",

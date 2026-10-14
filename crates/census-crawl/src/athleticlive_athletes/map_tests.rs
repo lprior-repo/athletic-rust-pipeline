@@ -47,7 +47,7 @@ fn roster_homonyms_keep_distinct_owners_and_missing_subjects_do_not_fall_back_to
         &targets,
         "2026-04-02",
         SchoolYear::new(2026).ok_or("2026 school year")?,
-    );
+    )?;
     check!(eq; entities.rows, 5);
     check!(eq; entities.rows_without_subject_id, 1);
     check!(eq; entities.athletes.len(), 3);
@@ -72,8 +72,8 @@ fn the_same_roster_row_number_from_different_providers_does_not_merge() -> TestR
     let second = target("timer-b");
     let hits = [hit(Some(1), None)];
     let year = SchoolYear::new(2026).ok_or("2026 school year")?;
-    let first = build_entities(&hits, &HashMap::from([(42, &first)]), "2026-04-02", year);
-    let second = build_entities(&hits, &HashMap::from([(42, &second)]), "2026-04-02", year);
+    let first = build_entities(&hits, &HashMap::from([(42, &first)]), "2026-04-02", year)?;
+    let second = build_entities(&hits, &HashMap::from([(42, &second)]), "2026-04-02", year)?;
     check!(eq; first.athletes.len(), 1);
     check!(eq; second.athletes.len(), 1);
     check!(eq;

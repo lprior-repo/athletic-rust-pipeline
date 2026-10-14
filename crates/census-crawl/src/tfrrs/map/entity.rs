@@ -55,7 +55,7 @@ impl<'a> Absorb<'a> {
         &mut self,
         page: Page<'_>,
         facts: AthleteFacts<'_>,
-    ) -> (AthleteId, SourceIdentity) {
+    ) -> crate::CrawlResult<Option<(AthleteId, SourceIdentity)>> {
         let source = facts.source;
         let id = CanonicalAthlete::mint(
             facts.school,
@@ -64,23 +64,25 @@ impl<'a> Absorb<'a> {
             facts.gender,
             &source,
         );
+        let new_athlete = CanonicalAthlete::new(
+            facts.school,
+            facts.name,
+            facts.grad_year,
+            facts.gender,
+            source.clone(),
+        )
+        .map_err(|e| crate::CrawlError::Invariant {
+            detail: e.to_string(),
+        })?;
+        let mut new_athlete = new_athlete;
+        new_athlete
+            .evidence
+            .push(Evidence::parsed(page.source.clone(), page.observed_on));
         let athlete = self
             .accumulator
             .athletes
             .entry(id.as_str().to_string())
-            .or_insert_with(|| {
-                let mut athlete = CanonicalAthlete::new(
-                    facts.school,
-                    facts.name,
-                    facts.grad_year,
-                    facts.gender,
-                    source.clone(),
-                );
-                athlete
-                    .evidence
-                    .push(Evidence::parsed(page.source.clone(), page.observed_on));
-                athlete
-            });
+            .or_insert(new_athlete);
         if !athlete.sports.contains(&facts.sport) {
             athlete.sports.push(facts.sport);
         }
@@ -89,7 +91,7 @@ impl<'a> Absorb<'a> {
                 athlete.observed_grades.push(grade);
             }
         }
-        (id, source)
+        Ok(Some((id, source)))
     }
 }
 

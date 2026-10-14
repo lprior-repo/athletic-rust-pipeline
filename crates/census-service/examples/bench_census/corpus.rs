@@ -159,7 +159,7 @@ fn athlete_of(
         GradYear::CO2027,
         gender,
         source,
-    );
+    )?;
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.observed_grades.push(observed_grade()?);
     athlete.evidence.push(evidence());

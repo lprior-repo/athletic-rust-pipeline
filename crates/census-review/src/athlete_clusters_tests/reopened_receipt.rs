@@ -8,8 +8,8 @@ fn same_timestamp_reconcile_refuses_receipted_decision_when_case_was_explicitly_
 ) -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
-    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
-    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
+    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169")?;
     let (_dir, store) = store_of(&[lakeland, west], &[first, second])?;
     let observed_at = "2026-10-01";
     let report = reconcile_athletes(&store, observed_at, false)?;
@@ -47,8 +47,8 @@ fn same_timestamp_reconcile_refuses_receipted_decision_when_case_was_explicitly_
 fn exact_reconcile_repetition_preserves_standing_case_verdict_and_receipt() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
-    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
-    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
+    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169")?;
     let (_dir, store) = store_of(&[lakeland, west], &[first, second])?;
     let observed_at = "2026-10-01";
     let report = reconcile_athletes(&store, observed_at, false)?;

@@ -9,32 +9,32 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn season() -> Result<census_domain::model::SchoolYear, Box<dyn std::error::Error>> {
     census_domain::model::SchoolYear::new(2026).ok_or_else(|| "invalid fixture season".into())
 }
 
-fn athlete(school: &CanonicalSchool, native_id: &str) -> CanonicalAthlete {
+fn athlete(school: &CanonicalSchool, native_id: &str) -> TestResult<CanonicalAthlete> {
     let mut athlete = CanonicalAthlete::new(
         &school.id,
         "Synthetic Runner",
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, native_id),
-    );
+    )?;
     athlete.evidence.push(Evidence::parsed(
         SourceRef::new("fixture", Some("https://example.test/results".to_owned())),
         "2026-09-26",
     ));
-    athlete
+    Ok(athlete)
 }
 
 #[test]
 fn derive_applies_source_binding_once_and_preserves_history_after_reopen() -> TestResult {
     let directory = tempfile::tempdir()?;
     let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "School", "school", None);
-    let mut athlete = athlete(&school, "111");
+    let mut athlete = athlete(&school, "111")?;
     let original;
     {
         let store = Store::open(directory.path())?;
@@ -86,8 +86,8 @@ fn derive_does_not_promote_or_merge_provider_owned_homonyms() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
     let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "School", "school", None);
-    let first = athlete(&school, "111");
-    let second = athlete(&school, "222");
+    let first = athlete(&school, "111")?;
+    let second = athlete(&school, "222")?;
     store.append(Table::Schools, &school)?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
     check!(eq; super::derive(&store, "fixture", "2026-09-26", season()?)?.identity_applications,
@@ -119,8 +119,8 @@ fn reviewed_case(
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
     let (school_b, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
-    let first = athlete(&school_a, "111");
-    let second = athlete(&school_b, second_native_id);
+    let first = athlete(&school_a, "111")?;
+    let second = athlete(&school_b, second_native_id)?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
     let members = vec![first.id.cast(), second.id.cast()];
     let subject = "Synthetic Runner";
@@ -327,8 +327,8 @@ fn supersede_obsolete_retained_identity_case_when_new_policy_resolves_cluster() 
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
     let (school_b, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
-    let first = athlete(&school_a, "111");
-    let second = athlete(&school_b, "111");
+    let first = athlete(&school_a, "111")?;
+    let second = athlete(&school_b, "111")?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
 
     let members = vec![first.id.cast(), second.id.cast()];
@@ -423,8 +423,8 @@ fn supersession_is_idempotent_across_repeated_apply() -> TestResult {
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
     let (school_b, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
-    let first = athlete(&school_a, "111");
-    let second = athlete(&school_b, "111");
+    let first = athlete(&school_a, "111")?;
+    let second = athlete(&school_b, "111")?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
 
     let members = vec![first.id.cast(), second.id.cast()];
@@ -512,8 +512,8 @@ fn supersession_case_in_order(reversed: bool) -> TestResult {
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
     let (school_b, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
-    let first = athlete(&school_a, "111");
-    let second = athlete(&school_b, "111");
+    let first = athlete(&school_a, "111")?;
+    let second = athlete(&school_b, "111")?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
 
     let members = vec![first.id.cast(), second.id.cast()];
@@ -626,9 +626,9 @@ fn genuine_gender_conflict_still_blocks_supersession() -> TestResult {
     let (school_b, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
 
-    let mut first = athlete(&school_a, "111");
+    let mut first = athlete(&school_a, "111")?;
     first.gender = Gender::Boys;
-    let mut second = athlete(&school_b, "111");
+    let mut second = athlete(&school_b, "111")?;
     second.gender = Gender::Girls;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
 
@@ -732,8 +732,8 @@ fn supersession_records_durable_transition_provenance() -> TestResult {
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
     let (school_b, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
-    let first = athlete(&school_a, "111");
-    let second = athlete(&school_b, "111");
+    let first = athlete(&school_a, "111")?;
+    let second = athlete(&school_b, "111")?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
 
     let members = vec![first.id.cast(), second.id.cast()];
@@ -819,8 +819,8 @@ fn operator_retained_case_in_same_cluster_is_not_superseded() -> TestResult {
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School A", "school a", None);
     let (school_b, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "School B", "school b", None);
-    let first = athlete(&school_a, "111");
-    let second = athlete(&school_b, "111");
+    let first = athlete(&school_a, "111")?;
+    let second = athlete(&school_b, "111")?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
 
     let members = vec![first.id.cast(), second.id.cast()];

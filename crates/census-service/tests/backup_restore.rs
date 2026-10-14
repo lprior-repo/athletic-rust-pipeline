@@ -178,7 +178,7 @@ fn add_athlete(
         GradYear::CO2027,
         gender,
         source.clone(),
-    );
+    )?;
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.observed_grades.push(ObservedGrade {
         grade: Grade::new(11).ok_or("invalid fixture grade")?,

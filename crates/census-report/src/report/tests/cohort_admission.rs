@@ -8,9 +8,9 @@ use census_domain::model::{
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-fn athlete(name: &str, year: GradYear) -> CanonicalAthlete {
+fn athlete(name: &str, year: GradYear) -> TestResult<CanonicalAthlete> {
     let (_, school) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Fixture", "fixture", None);
-    let mut row = CanonicalAthlete::new(&school, name, year, Gender::Girls, fixture_source(name));
+    let mut row = CanonicalAthlete::new(&school, name, year, Gender::Girls, fixture_source(name))?;
     row.evidence.push(Evidence::parsed(
         SourceRef::new(
             "published-roster",
@@ -18,7 +18,7 @@ fn athlete(name: &str, year: GradYear) -> CanonicalAthlete {
         ),
         "2026-10-02",
     ));
-    row
+    Ok(row)
 }
 
 fn published(year: GradYear, owner: &str) -> PublishedGraduation {
@@ -77,7 +77,7 @@ fn performance(subject: &CanonicalAthlete, key: &str) -> TestResult<CanonicalPer
 
 #[test]
 fn requested_cohort_excludes_stored_year_without_typed_support() -> TestResult {
-    let mut unsupported = athlete("Unsupported", GradYear::CO2027);
+    let mut unsupported = athlete("Unsupported", GradYear::CO2027)?;
     unsupported.evidence.push(Evidence::derived(
         SourceRef::id("cohort-query"),
         "2026-10-02",
@@ -94,7 +94,7 @@ fn requested_cohort_excludes_stored_year_without_typed_support() -> TestResult {
 #[test]
 fn requested_cohort_keeps_direct_year_provenance_without_results_or_invented_grades() -> TestResult
 {
-    let mut supported = athlete("Direct", GradYear::CO2027);
+    let mut supported = athlete("Direct", GradYear::CO2027)?;
     supported
         .published_graduations
         .push(published(GradYear::CO2027, "Direct"));
@@ -108,7 +108,7 @@ fn requested_cohort_keeps_direct_year_provenance_without_results_or_invented_gra
 #[test]
 fn requested_cohort_keeps_compatible_grades_in_their_published_academic_year() -> TestResult {
     for observation in [grade(11, "2026-05-01")?, grade(12, "2026-09-01")?] {
-        let mut supported = athlete("Grade", GradYear::CO2027);
+        let mut supported = athlete("Grade", GradYear::CO2027)?;
         supported.observed_grades.push(observation);
         let input = dataset(std::slice::from_ref(&supported))?;
         let requested = Derivation::of(&input, Scope::AllSources, Some(2027), &[]);
@@ -120,7 +120,7 @@ fn requested_cohort_keeps_compatible_grades_in_their_published_academic_year() -
 #[test]
 fn requested_cohort_excludes_direct_grade_and_uninferable_grade_contradictions() -> TestResult {
     let other_year = GradYear::new(2028).ok_or("invalid fixture graduation year")?;
-    let mut supported = athlete("Contradiction", GradYear::CO2027);
+    let mut supported = athlete("Contradiction", GradYear::CO2027)?;
     supported
         .published_graduations
         .push(published(GradYear::CO2027, "Contradiction"));
@@ -153,7 +153,7 @@ fn requested_cohort_excludes_direct_grade_and_uninferable_grade_contradictions()
 #[test]
 fn requested_cohort_requires_the_stored_year_to_match_supported_evidence() -> TestResult {
     let other_year = GradYear::new(2028).ok_or("invalid fixture graduation year")?;
-    let mut off_cohort = athlete("Other Cohort", other_year);
+    let mut off_cohort = athlete("Other Cohort", other_year)?;
     off_cohort
         .published_graduations
         .push(published(other_year, "Other Cohort"));
@@ -168,8 +168,8 @@ fn requested_cohort_requires_the_stored_year_to_match_supported_evidence() -> Te
 #[test]
 fn accepted_alias_support_admits_the_canonical_member_and_preserves_result_ownership() -> TestResult
 {
-    let canonical = athlete("Canonical", GradYear::CO2027);
-    let mut alias = athlete("Alias", GradYear::CO2027);
+    let canonical = athlete("Canonical", GradYear::CO2027)?;
+    let mut alias = athlete("Alias", GradYear::CO2027)?;
     alias
         .published_graduations
         .push(published(GradYear::CO2027, "Alias"));
@@ -201,15 +201,15 @@ fn accepted_alias_support_admits_the_canonical_member_and_preserves_result_owner
 #[test]
 fn aliased_conflicts_remain_archived_but_exclude_requested_members() -> TestResult {
     let other_year = GradYear::new(2028).ok_or("invalid fixture graduation year")?;
-    let mut canonical = athlete("Canonical", GradYear::CO2027);
+    let mut canonical = athlete("Canonical", GradYear::CO2027)?;
     canonical
         .published_graduations
         .push(published(GradYear::CO2027, "Canonical"));
-    let mut direct_alias = athlete("Direct Alias", other_year);
+    let mut direct_alias = athlete("Direct Alias", other_year)?;
     direct_alias
         .published_graduations
         .push(published(other_year, "Direct Alias"));
-    let mut grade_alias = athlete("Grade Alias", GradYear::CO2027);
+    let mut grade_alias = athlete("Grade Alias", GradYear::CO2027)?;
     grade_alias.observed_grades.push(grade(10, "2026-05-01")?);
     for alias in [direct_alias, grade_alias] {
         let mut input = dataset(&[canonical.clone(), alias.clone()])?;
@@ -249,17 +249,17 @@ fn aliased_conflicts_remain_archived_but_exclude_requested_members() -> TestResu
 #[test]
 fn requested_results_exclude_unknown_joins_but_unfiltered_archive_preserves_them() -> TestResult {
     let other_year = GradYear::new(2028).ok_or("invalid fixture graduation year")?;
-    let mut admitted = athlete("Admitted", GradYear::CO2027);
+    let mut admitted = athlete("Admitted", GradYear::CO2027)?;
     admitted
         .published_graduations
         .push(published(GradYear::CO2027, "Admitted"));
-    let mut off_cohort = athlete("Off Cohort", other_year);
+    let mut off_cohort = athlete("Off Cohort", other_year)?;
     off_cohort
         .published_graduations
         .push(published(other_year, "Off Cohort"));
-    let unmatched = athlete("Unmatched", GradYear::CO2027);
-    let dangling = athlete("Dangling", GradYear::CO2027);
-    let missing = athlete("Absent Target", GradYear::CO2027);
+    let unmatched = athlete("Unmatched", GradYear::CO2027)?;
+    let dangling = athlete("Dangling", GradYear::CO2027)?;
+    let missing = athlete("Absent Target", GradYear::CO2027)?;
     let mut input = dataset(&[admitted.clone(), off_cohort.clone()])?;
     input
         .canonical_aliases

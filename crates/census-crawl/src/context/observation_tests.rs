@@ -23,7 +23,7 @@ fn buffered_page<'a>(ctx: &'a AdapterContext<'_>) -> TestResult<RowBatch<'a>> {
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "12345"),
-    );
+    )?;
     let mut page = ctx.write_batch();
     page.append_many(Table::Schools, std::slice::from_ref(&school))?;
     page.append_many(Table::Athletes, std::slice::from_ref(&athlete))?;

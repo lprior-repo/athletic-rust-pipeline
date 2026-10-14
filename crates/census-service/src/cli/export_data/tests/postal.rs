@@ -72,7 +72,7 @@ fn captured_zcum49_postal_claim_publishes_on_school_metadata_and_recruiting_csv(
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "postal-capture-consumer"),
-    );
+    )?;
     athlete
         .published_graduations
         .push(census_domain::model::PublishedGraduation {

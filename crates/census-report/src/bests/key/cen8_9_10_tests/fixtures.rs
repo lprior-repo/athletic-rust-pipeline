@@ -16,7 +16,7 @@ pub(super) fn dataset() -> TestResult<ExportDataset> {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
-    );
+    )?;
     athlete.published_graduations.push(PublishedGraduation {
         grad_year: GradYear::CO2027,
         source: SourceRef::new(

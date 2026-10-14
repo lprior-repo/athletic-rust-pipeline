@@ -19,7 +19,7 @@ fn athlete_fixture() -> Result<(TempDir, Store, CanonicalAthlete), Box<dyn std::
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("published-cohort"),
-    );
+    )?;
     Ok((dir, store, athlete))
 }
 

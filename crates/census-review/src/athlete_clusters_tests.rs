@@ -15,9 +15,14 @@ fn school(name: &str) -> CanonicalSchool {
     school
 }
 
-fn athlete(school: &SchoolId, name: &str, gender: Gender, provider_id: &str) -> CanonicalAthlete {
+fn athlete(
+    school: &SchoolId,
+    name: &str,
+    gender: Gender,
+    provider_id: &str,
+) -> TestResult<CanonicalAthlete> {
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, provider_id);
-    let mut row = CanonicalAthlete::new(school, name, GradYear::CO2027, gender, source);
+    let mut row = CanonicalAthlete::new(school, name, GradYear::CO2027, gender, source)?;
     row.evidence.push(census_domain::model::Evidence::parsed(
         SourceRef::new(
             "captured_roster",
@@ -25,7 +30,7 @@ fn athlete(school: &SchoolId, name: &str, gender: Gender, provider_id: &str) -> 
         ),
         "2026-09-23",
     ));
-    row
+    Ok(row)
 }
 
 fn grade(row: &mut CanonicalAthlete, value: u8, year: i16) -> TestResult {
@@ -64,8 +69,8 @@ fn verdicts(store: &Store) -> TestResult<Vec<ReviewVerdictRecord>> {
 fn a_provider_object_on_two_schools_is_one_athlete() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
-    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
-    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
+    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169")?;
     let (_dir, store) = store_of(&[lakeland, west], &[first, second])?;
     let report = reconcile_athletes(&store, "2026-09-23", false)?;
     check!(eq; report.decided, 1, "the agreement rule decides one finding");
@@ -90,8 +95,8 @@ fn a_provider_object_on_two_schools_is_one_athlete() -> TestResult {
 fn the_deterministic_lane_does_not_merge_contradictory_rows() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
-    let mut boys = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
-    let mut girls = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let mut boys = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
+    let mut girls = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169")?;
     grade(&mut boys, 11, 2025)?;
     grade(&mut girls, 10, 2025)?;
     let (_dir, store) = store_of(&[lakeland, west], &[boys, girls])?;
@@ -109,8 +114,8 @@ fn the_deterministic_lane_does_not_merge_contradictory_rows() -> TestResult {
 #[test]
 fn the_deterministic_lane_does_not_merge_gender_contradictory_rows() -> TestResult {
     let lakeland = school("Lakeland");
-    let boys = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
-    let girls = athlete(&lakeland.id, "Jordan Smith", Gender::Girls, "14399169");
+    let boys = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
+    let girls = athlete(&lakeland.id, "Jordan Smith", Gender::Girls, "14399169")?;
     let (_dir, store) = store_of(&[lakeland], &[boys, girls])?;
     let report = reconcile_athletes(&store, "2026-09-23", false)?;
     check!(eq; report.pending, 1);
@@ -123,7 +128,7 @@ fn the_deterministic_lane_does_not_merge_gender_contradictory_rows() -> TestResu
 #[test]
 fn a_row_naming_two_objects_of_one_provider_is_filed() -> TestResult {
     let lakeland = school("Lakeland");
-    let mut row = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
+    let mut row = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
     row.add_identity(SourceIdentity::new(
         SourceNamespace::MilesplitAthlete,
         "14407777",
@@ -148,8 +153,8 @@ fn a_row_naming_two_objects_of_one_provider_is_filed() -> TestResult {
 fn a_decision_that_lands_mid_read_refuses_the_stale_write() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
-    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
-    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
+    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169")?;
     let (_dir, store) = store_of(&[lakeland, west], &[first, second])?;
 
     let snapshot = store.snapshot();
@@ -202,8 +207,8 @@ fn a_decision_that_lands_mid_read_refuses_the_stale_write() -> TestResult {
 fn a_second_pass_leaves_a_decided_case_alone() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
-    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
-    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
+    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169")?;
     let (_dir, store) = store_of(&[lakeland, west], &[first, second])?;
     reconcile_athletes(&store, "2026-09-23", false)?;
     let decided = cases(&store)?;
@@ -220,8 +225,8 @@ fn a_second_pass_leaves_a_decided_case_alone() -> TestResult {
 fn the_case_does_not_depend_on_append_order() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
-    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
-    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
+    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169")?;
     let (_dir, forwards) = store_of(
         &[lakeland.clone(), west.clone()],
         &[first.clone(), second.clone()],
@@ -240,16 +245,16 @@ fn the_case_does_not_depend_on_append_order() -> TestResult {
 fn a_later_pass_on_the_same_date_applies_its_own_payload() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
-    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
-    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
+    let second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169")?;
     let (_dir, store) = store_of(&[lakeland, west], &[first, second])?;
     let morning = reconcile_athletes(&store, "2026-09-25", false)?;
     check!(eq; morning.decided, 1, "the first pair is decided");
     let standing = verdicts(&store)?;
     let east = school("East");
     let north = school("North");
-    let third = athlete(&east.id, "Riley Chen", Gender::Boys, "22001144");
-    let fourth = athlete(&north.id, "Riley Chen", Gender::Boys, "22001144");
+    let third = athlete(&east.id, "Riley Chen", Gender::Boys, "22001144")?;
+    let fourth = athlete(&north.id, "Riley Chen", Gender::Boys, "22001144")?;
     for school_row in [east, north] {
         store.append(Table::Schools, &school_row)?;
     }
@@ -276,8 +281,8 @@ fn a_later_pass_on_the_same_date_applies_its_own_payload() -> TestResult {
 fn unsupported_grade_observation_blocks_shared_provider_acceptance() -> TestResult {
     let lakeland = school("Lakeland");
     let west = school("Madison West");
-    let mut first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
-    let mut second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    let mut first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169")?;
+    let mut second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169")?;
     grade(&mut first, 11, 2025)?;
     grade(&mut second, 11, 2025)?;
     first.observed_grades.push(ObservedGrade {

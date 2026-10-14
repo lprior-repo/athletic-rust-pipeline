@@ -228,7 +228,7 @@ fn school(state: UsJurisdiction, name: &str) -> CanonicalSchool {
 }
 
 fn athlete(school: &CanonicalSchool, case: Case) -> TestResult<CanonicalAthlete> {
-    let mut row = CanonicalAthlete::new_checked(
+    let mut row = CanonicalAthlete::new(
         &school.id,
         case.athlete_name(),
         GradYear::CO2027,

@@ -31,7 +31,7 @@ pub fn athlete_in(
     object: &str,
 ) -> TestResult<CanonicalAthlete> {
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, object);
-    let athlete = CanonicalAthlete::new(school, name, year, gender, source);
+    let athlete = CanonicalAthlete::new(school, name, year, gender, source)?;
     store.append(Table::Athletes, &athlete)?;
     Ok(athlete)
 }

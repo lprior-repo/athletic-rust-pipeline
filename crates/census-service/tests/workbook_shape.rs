@@ -34,7 +34,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::Other("fixture".to_string()), "athlete-1"),
-    );
+    )?;
     athlete
         .evidence
         .push(Evidence::parsed(SourceRef::new("wiaa_results", None), day));

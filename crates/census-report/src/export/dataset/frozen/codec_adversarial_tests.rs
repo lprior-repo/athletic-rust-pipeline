@@ -12,10 +12,10 @@ use census_domain::model::CanonicalAthlete;
 #[test]
 fn frozen_codec_oversize_record_refuses_typed_and_keeps_the_writer_usable() -> TestResult {
     let school = school("Oversize High");
-    let mut huge = athlete(&school.id, "Huge Runner", "huge");
+    let mut huge = athlete(&school.id, "Huge Runner", "huge")?;
     huge.canonical_name = "x".repeat(700 * 1024);
     huge.known_names = vec![huge.canonical_name.clone()];
-    let normal = athlete(&school.id, "Normal Runner", "normal");
+    let normal = athlete(&school.id, "Normal Runner", "normal")?;
     let mut writer = ChunkWriter::new(StreamKind::Athletes);
     let error = refusal(writer.push(0, &huge))?;
     check!(matches!(error, FrozenCodecError::RowTooLarge { .. }));
@@ -79,7 +79,7 @@ fn frozen_codec_wide_object_refuses_typed_before_allocation() -> TestResult {
 #[test]
 fn frozen_codec_chunk_reader_refuses_blank_lines_and_missing_newline() -> TestResult {
     let school = school("Reader High");
-    let runner = athlete(&school.id, "Ada Runner", "1");
+    let runner = athlete(&school.id, "Ada Runner", "1")?;
     let line = encode_line(0, &runner)?;
     let mut blank = line.clone();
     blank.push(b'\n');
@@ -105,8 +105,8 @@ fn frozen_codec_chunk_reader_refuses_invalid_utf8() -> TestResult {
 #[test]
 fn frozen_codec_chunk_reader_refuses_ordinal_gaps_and_identity_regression() -> TestResult {
     let school = school("Gap High");
-    let first = athlete(&school.id, "First Runner", "1");
-    let second = athlete(&school.id, "Second Runner", "2");
+    let first = athlete(&school.id, "First Runner", "1")?;
+    let second = athlete(&school.id, "Second Runner", "2")?;
     let (greater, smaller) = if first.id.as_str() > second.id.as_str() {
         (first, second)
     } else {
@@ -140,7 +140,7 @@ fn frozen_codec_chunk_reader_refuses_ordinal_gaps_and_identity_regression() -> T
 #[test]
 fn frozen_codec_inventory_refuses_unsupported_revisions_and_index_gaps() -> TestResult {
     let school = school("Inventory High");
-    let runner = athlete(&school.id, "Ada Runner", "1");
+    let runner = athlete(&school.id, "Ada Runner", "1")?;
     let bundle = bundle(StreamKind::Athletes, std::slice::from_ref(&runner))?;
     let encoded = String::from_utf8(bundle.inventory.encode()?)?;
     let stale = encoded.replacen("\"codec_revision\":3", "\"codec_revision\":4", 1);

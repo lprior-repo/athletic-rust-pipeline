@@ -29,7 +29,7 @@ fn store_round_trip_merges_observations_and_reports_stats() -> TestResult {
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::Other("fixture".to_string()), "athlete-1"),
-    );
+    )?;
     store.append_many(Table::Athletes, &[athlete])?;
     store.flush()?;
     drop(store);

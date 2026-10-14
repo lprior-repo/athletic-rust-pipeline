@@ -13,7 +13,7 @@ fn source_backed_postal_sidecar_rejects_a_tampered_school_address() -> TestResul
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "postal-sidecar"),
-    );
+    )?;
     athlete.published_graduations.push(PublishedGraduation {
         grad_year: GradYear::CO2027,
         source: SourceRef::new(

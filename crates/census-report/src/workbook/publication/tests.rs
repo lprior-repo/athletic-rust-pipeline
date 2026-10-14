@@ -59,7 +59,10 @@ fn seed(store: &Store, name: &str) -> crate::report::ReportResult<()> {
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::Other("fixture".to_string()), name),
-    );
+    )
+    .map_err(|error| crate::report::ReportError::Invariant {
+        detail: format!("invalid fixture athlete: {error}"),
+    })?;
     athlete.evidence.push(evidence);
     store.append(Table::Athletes, &athlete)?;
     Ok(())
@@ -329,7 +332,7 @@ fn seed_contact_age(store: &Store, name: &str, season: i16, mailbox: &str) -> Te
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::Other("fixture".to_string()), name),
-    );
+    )?;
     athlete.sports = vec![Sport::CrossCountry];
     let claim = PublishedGraduation {
         grad_year: GradYear::CO2027,

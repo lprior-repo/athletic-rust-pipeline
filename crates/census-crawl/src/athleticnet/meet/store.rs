@@ -87,7 +87,7 @@ pub(super) fn athlete(
     source: &SourceRef,
     observed_on: &str,
     row: AthleteRow<'_>,
-) -> Option<(AthleteId, SourceIdentity)> {
+) -> crate::CrawlResult<Option<(AthleteId, SourceIdentity)>> {
     let key = format!("{}:{}", row.provider_id, row.school.as_str());
     let observation = ObservedGrade {
         grade: row.grade,
@@ -100,7 +100,7 @@ pub(super) fn athlete(
         id: row.provider_id.to_string(),
         url: profile.clone(),
     };
-    let (grad_year, observation, identity) =
+    let Some((grad_year, observation, identity)) =
         accumulated
             .unsupported
             .admit(observation, identity, |identity| {
@@ -113,10 +113,13 @@ pub(super) fn athlete(
                 )
                 .with_gender(row.gender)
                 .with_profile_url(identity.url)
-            })?;
+            })
+    else {
+        return Ok(None);
+    };
     if let Some(athlete) = accumulated.athletes.get_mut(&key) {
         reconcile_athlete(athlete, observation, row.sport);
-        return Some((athlete.id.clone(), identity));
+        return Ok(Some((athlete.id.clone(), identity)));
     }
     let mut athlete = CanonicalAthlete::new(
         row.school,
@@ -124,20 +127,20 @@ pub(super) fn athlete(
         grad_year,
         row.gender,
         identity.clone(),
-    );
+    )
+    .map_err(|e| crate::CrawlError::Invariant {
+        detail: e.to_string(),
+    })?;
     if let Some(url) = profile {
         athlete.public_profile_urls.push(url);
     }
-    if let Some(sport) = row.sport {
-        athlete.sports.push(sport);
-    }
-    athlete.observed_grades.push(observation);
+    reconcile_athlete(&mut athlete, observation, row.sport);
     athlete
         .evidence
         .push(Evidence::parsed(source.clone(), observed_on));
     let subject = (athlete.id.clone(), identity);
     accumulated.athletes.insert(key, athlete);
-    Some(subject)
+    Ok(Some(subject))
 }
 
 fn reconcile_athlete(

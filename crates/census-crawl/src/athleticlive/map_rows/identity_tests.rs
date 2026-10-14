@@ -81,7 +81,7 @@ fn shared_names_keep_row_owners_separate_and_reuse_only_the_same_native_owner() 
             accumulator: &mut accumulator,
         };
         owners.push(
-            map_identity(&mut writer, &context, &school.id, &identity, row)
+            map_identity(&mut writer, &context, &school.id, &identity, row)?
                 .ok_or("mapped row owner")?
                 .athlete,
         );

@@ -76,7 +76,7 @@ fn seed_population(store: &Store) -> TestResult {
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "coverage-1"),
-    );
+    )?;
     athlete.evidence.push(evidence.clone());
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.published_graduations.push(PublishedGraduation {

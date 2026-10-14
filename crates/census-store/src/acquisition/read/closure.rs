@@ -19,9 +19,7 @@ pub(super) fn attempt(
     else {
         return Ok(None);
     };
-    if reservation.version != protocol {
-        return Err(CaptureError::CaptureProtocolUnsupported.into());
-    }
+    validate_reservation_protocol(&reservation, protocol)?;
     if &reservation.attempt != id {
         return Err(CaptureError::CorruptClosure.into());
     }
@@ -30,15 +28,7 @@ pub(super) fn attempt(
         take_fact(rows, &format!("{prefix}/prepared"), protocol, budget)?;
     let terminal: Option<ImmutableAttemptResult> =
         take_fact(rows, &format!("{prefix}/terminal"), protocol, budget)?;
-    if prepared
-        .as_ref()
-        .is_some_and(|prepared| prepared.version != protocol)
-        || terminal
-            .as_ref()
-            .is_some_and(|terminal| terminal.protocol() != protocol)
-    {
-        return Err(CaptureError::CaptureProtocolUnsupported.into());
-    }
+    validate_terminal_protocols(&prepared, &terminal, protocol)?;
     let facts = AttemptFacts {
         reservation,
         dispatches,
@@ -48,6 +38,27 @@ pub(super) fn attempt(
     };
     validate(&facts)?;
     Ok(Some(facts))
+}
+fn validate_reservation_protocol(
+    reservation: &Reservation,
+    protocol: CaptureProtocolVersion,
+) -> StoreResult<()> {
+    if reservation.version != protocol {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
+    Ok(())
+}
+fn validate_terminal_protocols(
+    prepared: &Option<Prepared>,
+    terminal: &Option<ImmutableAttemptResult>,
+    protocol: CaptureProtocolVersion,
+) -> StoreResult<()> {
+    if prepared.as_ref().is_some_and(|p| p.version != protocol)
+        || terminal.as_ref().is_some_and(|t| t.protocol() != protocol)
+    {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
+    Ok(())
 }
 fn dispatches(
     rows: &mut BTreeMap<String, Vec<u8>>,

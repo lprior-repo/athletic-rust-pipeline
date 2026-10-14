@@ -6,17 +6,22 @@ use census_domain::model::{
 
 mod published_cohort;
 
-fn member(school: &SchoolId, name: &str, gender: Gender, url: &str) -> CanonicalAthlete {
+fn member(
+    school: &SchoolId,
+    name: &str,
+    gender: Gender,
+    url: &str,
+) -> TestResult<CanonicalAthlete> {
     let mut athlete = CanonicalAthlete::new(
         school,
         name,
         GradYear::CO2027,
         gender,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "9001001").with_url(url),
-    );
+    )?;
     athlete.public_profile_urls.push(url.to_owned());
     athlete.evidence = evidence("wiaa_results", Some(url));
-    athlete
+    Ok(athlete)
 }
 
 pub(super) fn accept(store: &Store, members: &[CanonicalAthlete]) -> TestResult {
@@ -133,13 +138,13 @@ fn accepted_aliases_publish_one_person_with_all_events_profiles_and_supported_me
         "Synthetic Runner",
         Gender::Unknown,
         "https://wi.milesplit.com/athletes/9001001",
-    );
+    )?;
     let mut second = member(
         &school,
         "S. Runner",
         Gender::Boys,
         "https://mn.milesplit.com/athletes/9001001",
-    );
+    )?;
     first.public_profile_urls = vec!["https://profiles.test/first".into()];
     second.public_profile_urls = vec!["https://profiles.test/second".into()];
     first.sports = vec![Sport::OutdoorTrack];
@@ -265,14 +270,14 @@ fn same_name_provider_owned_people_remain_separate_and_unresolved_status_is_expl
         "Synthetic Runner",
         Gender::Boys,
         "https://wi.milesplit.com/athletes/9001001",
-    );
+    )?;
     let mut second = CanonicalAthlete::new(
         &school,
         "Synthetic Runner",
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "other-person"),
-    );
+    )?;
     second.evidence = evidence("wiaa_results", Some("https://wiaa.test/other/results"));
     publish_fixture_cohort(&mut first, "wiaa_results", "provider-homonym-first", DAY);
     publish_fixture_cohort(&mut second, "wiaa_results", "provider-homonym-second", DAY);
@@ -335,21 +340,21 @@ fn provider_member(
     source: SourceIdentity,
     links: &[SourceIdentity],
     claim: IdentityAttestation,
-) -> CanonicalAthlete {
+) -> TestResult<CanonicalAthlete> {
     let mut athlete = CanonicalAthlete::new(
         school,
         "Synthetic Runner",
         GradYear::CO2027,
         Gender::Girls,
         source,
-    );
+    )?;
     athlete.public_profile_urls.push(url.to_owned());
     athlete.evidence = evidence("wiaa_results", Some(url));
     athlete.identity_attestations.push(claim);
     for link in links {
         athlete.add_identity(link.clone());
     }
-    athlete
+    Ok(athlete)
 }
 
 #[test]
@@ -367,14 +372,14 @@ fn conflicted_component_keeps_every_member_unmerged_in_both_orders() -> TestResu
                 .with_url("https://wi.milesplit.com/athletes/9001111"),
             std::slice::from_ref(&key),
             attestation(&key, "first-fixture", 'a')?,
-        );
+        )?;
         let mut owner = provider_member(
             &school,
             "https://profiles.test/owner",
             key.clone(),
             &[],
             attestation(&key, "owner-fixture", 'b')?,
-        );
+        )?;
         let mut last = provider_member(
             &school,
             "https://profiles.test/last",
@@ -382,7 +387,7 @@ fn conflicted_component_keeps_every_member_unmerged_in_both_orders() -> TestResu
                 .with_url("https://mn.milesplit.com/athletes/9002222"),
             std::slice::from_ref(&key),
             attestation(&key, "last-fixture", 'c')?,
-        );
+        )?;
         for (member, purpose) in [
             (&mut first, "first"),
             (&mut owner, "owner"),

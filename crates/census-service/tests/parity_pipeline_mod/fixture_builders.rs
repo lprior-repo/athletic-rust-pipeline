@@ -141,7 +141,7 @@ pub fn athleticlive_athletes(corpus: &mut Corpus) -> Result<()> {
         &by_id,
         constants::OBSERVED_ON,
         constants::SCHOOL_YEAR,
-    );
+    )?;
     ensure!(
         entities.rows == hits.len(),
         "the adapter examined {} of {} athlete rows",

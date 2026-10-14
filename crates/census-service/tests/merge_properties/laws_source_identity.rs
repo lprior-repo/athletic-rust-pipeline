@@ -24,6 +24,7 @@ proptest! {
         left in peer_identity(SourceNamespace::MilesplitAthlete),
         right in peer_identity(SourceNamespace::TfrrsAthlete),
     ) {
+        let base = base.map_err(|e| TestCaseError::fail(format!("athlete construction failed: {e}")))?;
         let mut first = base.clone();
         first.add_identity(left);
         let mut second = base;
@@ -82,6 +83,7 @@ proptest! {
         left in peer_identity(SourceNamespace::MilesplitAthlete),
         right in peer_identity(SourceNamespace::TfrrsAthlete),
     ) {
+        let base = base.map_err(|e| TestCaseError::fail(format!("athlete construction failed: {e}")))?;
         let mut first = base.clone();
         first.add_identity(left);
         let mut second = base;
@@ -115,6 +117,7 @@ proptest! {
         left in peer_identity(SourceNamespace::MilesplitAthlete),
         right in peer_identity(SourceNamespace::TfrrsAthlete),
     ) {
+        let base = base.map_err(|e| TestCaseError::fail(format!("athlete construction failed: {e}")))?;
         let mut first = base.clone();
         first.add_identity(left);
         let mut incoming = base;
@@ -160,6 +163,7 @@ proptest! {
         left in peer_identity(SourceNamespace::MilesplitAthlete),
         right in peer_identity(SourceNamespace::MilesplitAthlete),
     ) {
+        let base = base.map_err(|e| TestCaseError::fail(format!("athlete construction failed: {e}")))?;
         prop_assume!(left != right);
         let mut first = base.clone();
         first.add_identity(left.clone());

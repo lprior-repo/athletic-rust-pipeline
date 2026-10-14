@@ -7,14 +7,14 @@ use census_store::{Store, Table};
 use crate::consensus::tests::support::{audit, batch, client, lane, row, state, TestResult};
 use crate::{run_lanes, ReviewFamily, ReviewOptions};
 
-fn athlete(school: &census_domain::model::SchoolId, id: &str) -> CanonicalAthlete {
-    CanonicalAthlete::new(
+fn athlete(school: &census_domain::model::SchoolId, id: &str) -> TestResult<CanonicalAthlete> {
+    Ok(CanonicalAthlete::new(
         school,
         "Jordan Smith",
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, id),
-    )
+    )?)
 }
 
 fn options() -> ReviewOptions {
@@ -48,8 +48,8 @@ fn shared_nonperson_and_invalid_person_links_cannot_authorize_same_person_advice
                 )
                 .0
                 .id;
-                let mut first = athlete(&school, "1001");
-                let mut second = athlete(&school, "1002");
+                let mut first = athlete(&school, "1001")?;
+                let mut second = athlete(&school, "1002")?;
                 first.add_identity(SourceIdentity::new(namespace.clone(), id));
                 second.add_identity(SourceIdentity::new(namespace, id));
                 store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
@@ -120,11 +120,10 @@ fn group_advice_is_not_requested_when_only_two_of_three_members_would_be_reviewe
                 )
                 .0
                 .id;
-                let rows = [
-                    athlete(&school, "1001"),
-                    athlete(&school, "1002"),
-                    athlete(&school, "1003"),
-                ];
+                let first = athlete(&school, "1001")?;
+                let second = athlete(&school, "1002")?;
+                let third = athlete(&school, "1003")?;
+                let rows = [first, second, third];
                 store.append_many(Table::Athletes, &rows)?;
                 let mut case = ReviewCase::pending(
                     ATHLETE_IDENTITY_FAMILY,
@@ -181,11 +180,10 @@ fn an_explicit_nonfirst_pair_reviews_a_and_c_without_substituting_b() -> TestRes
             )
             .0
             .id;
-            let mut rows = [
-                athlete(&school, "1001"),
-                athlete(&school, "1002"),
-                athlete(&school, "1003"),
-            ];
+            let a = athlete(&school, "1001")?;
+            let b = athlete(&school, "1002")?;
+            let c = athlete(&school, "1003")?;
+            let mut rows = [a, b, c];
             rows.sort_by(|first, second| first.id.cmp(&second.id));
             store.append_many(Table::Athletes, &rows)?;
             let mut case = ReviewCase::pending(

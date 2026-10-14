@@ -35,7 +35,7 @@ fn core_scope_keeps_only_non_athletic_net_evidence() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("mirror-only"),
-    );
+    )?;
     mirrored.evidence.push(Evidence::parsed(
         census_domain::model::SourceRef::new("athleticlive_athletes", None),
         "2026-09-20",
@@ -46,7 +46,7 @@ fn core_scope_keeps_only_non_athletic_net_evidence() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("host-only"),
-    );
+    )?;
     host.evidence.push(Evidence::parsed(
         census_domain::model::SourceRef::new("athleticnet", None),
         "2026-09-20",
@@ -57,7 +57,7 @@ fn core_scope_keeps_only_non_athletic_net_evidence() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("core-athlete"),
-    );
+    )?;
     core_athlete.evidence.push(Evidence::parsed(
         census_domain::model::SourceRef::new("athleticlive_athletes", None),
         "2026-09-20",
@@ -90,7 +90,7 @@ fn census_counts_class_of_2027_with_evidence() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169"),
-    );
+    )?;
     athlete
         .public_profile_urls
         .push("https://wi.milesplit.com/athletes/14399169-julian-aguilera".to_string());
@@ -135,7 +135,7 @@ fn census_reads_merged_observations_without_consolidating() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("julian-aguilera"),
-    );
+    )?;
     store.append(Table::Athletes, &athlete)?;
     store.append(Table::Athletes, &athlete)?;
 
@@ -202,14 +202,14 @@ fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("in-scope"),
-    );
+    )?;
     let out_of_scope_athlete = CanonicalAthlete::new(
         &out_of_scope_id,
         "Out Of Scope",
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("out-of-scope"),
-    );
+    )?;
     store.append(Table::Athletes, &in_scope_athlete)?;
     store.append(Table::Athletes, &out_of_scope_athlete)?;
 

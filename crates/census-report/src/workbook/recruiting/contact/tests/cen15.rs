@@ -57,7 +57,7 @@ fn cen15_mailbox_keeps_its_capture_when_newer_generic_name_evidence_exists() -> 
         check!(eq; mailbox.tenure().source_sha256, "a".repeat(64));
         check!(eq; mailbox.tenure().retrieved_at, ACQUIRED_A);
         check!(eq; admitted.name_only().ok_or("name evidence")?.source.url.as_deref(), Some(CAPTURE_B));
-        let result = selected(&[coach.clone()], &athlete())?;
+        let result = selected(&[coach.clone()], &athlete()?)?;
         check!(eq; result.email, MAILBOX_A);
         check!(eq; result.coach_id, coach.id.as_str());
         check!(eq; result.source_url, CAPTURE_A);
@@ -80,7 +80,7 @@ fn cen15_professional_personal_and_name_claims_keep_distinct_captures() -> TestR
     coach.tenure_evidence.push(personal);
     for _ in 0..2 {
         let facts = contacts(&[coach.clone()], year()?);
-        let athlete = athlete();
+        let athlete = athlete()?;
         let scope = scoped(facts.get(school().as_str()), &athlete);
         let rows: Vec<_> = scope
             .mailboxes()
@@ -112,13 +112,13 @@ fn cen15_name_only_observation_cannot_replace_mailbox_provenance_in_either_order
         .tenure_evidence
         .retain(|fact| fact.source.url.as_deref() == Some(CAPTURE_B));
     for rows in [[bound.clone(), named.clone()], [named.clone(), bound]] {
-        let result = selected(&rows, &athlete())?;
+        let result = selected(&rows, &athlete()?)?;
         check!(eq; result.email, MAILBOX_A);
         check!(eq; result.source_url, CAPTURE_A);
         check!(eq; result.source_sha256, "a".repeat(64));
         check!(eq; result.observed_on, ACQUIRED_A);
     }
-    let result = selected(&[named], &athlete())?;
+    let result = selected(&[named], &athlete()?)?;
     check!(eq; result.state, ContactState::CoachNameOnly);
     check!(eq; result.email, "");
     check!(eq; result.source_url, CAPTURE_B);
@@ -142,7 +142,7 @@ fn cen15_conflicting_mailboxes_withhold_contact_and_capture_in_either_order() ->
     fact.claim.as_mut().ok_or("second binding")?.mailbox = second.professional_email.clone();
     for rows in [[first.clone(), second.clone()], [second, first]] {
         let facts = contacts(&rows, year()?);
-        let athlete = athlete();
+        let athlete = athlete()?;
         let scope = scoped(facts.get(school().as_str()), &athlete);
         let result = scope.preferred();
         check!(eq; result.state, ContactState::ContactConflict);
@@ -171,7 +171,7 @@ fn cen15_conflicting_claims_inside_one_merged_row_are_not_silently_discarded() -
             current_coach_contacts(&coach, year()?),
             Err(ContactSelectionError::MailboxConflict)
         ));
-        check!(eq; selected(&[coach.clone()], &athlete())?.state, ContactState::ContactConflict);
+        check!(eq; selected(&[coach.clone()], &athlete()?)?.state, ContactState::ContactConflict);
         coach.tenure_evidence.reverse();
     }
     Ok(())
@@ -185,7 +185,7 @@ fn cen15_repeated_mailbox_claims_select_one_exact_capture_independently_of_order
     second.source_sha256 = "c".repeat(64);
     coach.tenure_evidence.push(second);
     for _ in 0..2 {
-        let result = selected(&[coach.clone()], &athlete())?;
+        let result = selected(&[coach.clone()], &athlete()?)?;
         check!(eq; result.email, MAILBOX_A);
         check!(eq; result.source_url, "https://example.invalid/mailbox-z");
         check!(eq; result.source_sha256, "c".repeat(64));
@@ -208,7 +208,7 @@ fn cen15_missing_mailbox_capture_url_cannot_borrow_a_generic_evidence_url() -> T
         current_coach_contacts(&coach, year()?),
         Err(ContactSelectionError::MissingCaptureUrl)
     ));
-    let result = selected(&[coach], &athlete())?;
+    let result = selected(&[coach], &athlete()?)?;
     check!(eq; result.state, ContactState::ContactEvidenceInvalid);
     check!(eq; result.email, "");
     check!(eq; result.source_url, "");

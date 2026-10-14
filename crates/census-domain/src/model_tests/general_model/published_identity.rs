@@ -7,14 +7,14 @@ use crate::model::{
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-fn athlete() -> CanonicalAthlete {
+fn athlete() -> Result<CanonicalAthlete, Box<dyn std::error::Error>> {
     let mut row = CanonicalAthlete::new(
         &SchoolId::mint("sch", &["published-identity-fixture"]),
         "Published Cohort Runner",
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
-    );
+    )?;
     row.published_graduations.push(published("owned-api"));
     row.evidence.push(Evidence::parsed(
         SourceRef::new(
@@ -23,7 +23,7 @@ fn athlete() -> CanonicalAthlete {
         ),
         "2026-10-02",
     ));
-    row
+    Ok(row)
 }
 
 fn published(source: &str) -> PublishedGraduation {
@@ -64,7 +64,7 @@ fn current_application(
 #[test]
 fn changing_typed_published_claims_invalidates_identity_applications_and_case_evidence(
 ) -> TestResult {
-    let original = athlete();
+    let original = athlete()?;
     let (application, evidence) = current_application(&original)?;
     let mut replaced_source = original.clone();
     replaced_source.published_graduations = vec![published("other-api")];

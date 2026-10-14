@@ -10,7 +10,7 @@ fn two_same_named_athletes_from_different_schools_stay_two_rows() -> TestResult 
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111"),
-    );
+    )?;
     abbotsford
         .source_links
         .push(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "333"));
@@ -20,7 +20,7 @@ fn two_same_named_athletes_from_different_schools_stay_two_rows() -> TestResult 
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "222"),
-    );
+    )?;
     marshall
         .source_links
         .push(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "444"));
@@ -64,7 +64,7 @@ fn an_athlete_observed_once_reads_back_with_derived_confidence() -> TestResult {
         Gender::Boys,
         SourceNamespace::MilesplitAthlete,
         "111",
-    );
+    )?;
     observing(&mut row, 11, 2025)?;
     store.append_many(Table::Athletes, &[row])?;
     let rows = store.scan::<CanonicalAthlete>(Table::Athletes)?;

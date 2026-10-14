@@ -15,7 +15,7 @@ fn subject(school: &SchoolId, native_id: &str) -> TestResult<CanonicalAthlete> {
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, native_id),
-    );
+    )?;
     athlete.observed_grades.push(ObservedGrade {
         grade: Grade::new(11).ok_or("valid fixture grade")?,
         school_year: SchoolYear::new(2025).ok_or("valid fixture year")?,

@@ -230,7 +230,7 @@ impl<'a> Ctx<'a> {
                     grad_year,
                     gender,
                     self.source_athlete.clone(),
-                );
+                )?;
                 athlete
                     .public_profile_urls
                     .push(profile_url(self.target.athlete_id));

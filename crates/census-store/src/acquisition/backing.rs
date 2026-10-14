@@ -41,33 +41,47 @@ pub(super) fn validate_metadata(
             key: "original capture metadata bindings".to_string(),
             source,
         })?;
-    if metadata.url != work.request().original_url()
-        || metadata.response_url.as_deref() != Some(response.response_url())
-        || metadata.method != "GET"
-        || metadata.representation != work.request().representation_headers()
-        || metadata.status != response.status()
-        || metadata.content_digest != capture.content_digest().as_str()
-        || metadata.bytes != capture.content_bytes()
-        || metadata.fetched_at != response.observed_at()
-    {
+    if !response_fields_match(work, response, &metadata, capture) {
         return Err(CaptureError::BackingIntegrity.into());
     }
+    validate_response_headers(response, &metadata)?;
+    validate_redirects(attempt, &metadata.redirects)
+}
+fn response_fields_match(
+    work: &AcquisitionWorkV1,
+    response: &ResponseObservationV1,
+    metadata: &ArchiveBindings,
+    capture: &PreparedCaptureInputV1,
+) -> bool {
+    metadata.url == work.request().original_url()
+        && metadata.response_url.as_deref() == Some(response.response_url())
+        && metadata.method == "GET"
+        && metadata.representation == work.request().representation_headers()
+        && metadata.status == response.status()
+        && metadata.content_digest == capture.content_digest().as_str()
+        && metadata.bytes == capture.content_bytes()
+        && metadata.fetched_at == response.observed_at()
+}
+fn validate_response_headers(
+    response: &ResponseObservationV1,
+    metadata: &ArchiveBindings,
+) -> StoreResult<()> {
     for (name, value) in [
-        ("etag", metadata.etag),
-        ("last-modified", metadata.last_modified),
-        ("content-type", metadata.content_type),
+        ("etag", metadata.etag.as_deref()),
+        ("last-modified", metadata.last_modified.as_deref()),
+        ("content-type", metadata.content_type.as_deref()),
     ] {
         if response
             .headers()
             .iter()
             .find(|(held, _)| held == name)
             .map(|(_, value)| value.as_str())
-            != value.as_deref()
+            != value
         {
             return Err(CaptureError::BackingIntegrity.into());
         }
     }
-    validate_redirects(attempt, &metadata.redirects)
+    Ok(())
 }
 
 fn validate_redirects(attempt: &AttemptFacts, retained: &[RedirectBinding]) -> StoreResult<()> {

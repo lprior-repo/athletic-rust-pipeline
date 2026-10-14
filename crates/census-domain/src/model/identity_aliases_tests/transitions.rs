@@ -10,9 +10,9 @@ fn context() -> TestResult<(
 )> {
     let owner = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001");
     let mut rows = [
-        component_member("School A", owner.clone()),
-        component_member("School B", owner.clone()),
-        component_member("School C", owner),
+        component_member("School A", owner.clone())?,
+        component_member("School B", owner.clone())?,
+        component_member("School C", owner)?,
     ];
     rows.sort_by(|left, right| left.id.cmp(&right.id));
     let index = index(&rows)?;

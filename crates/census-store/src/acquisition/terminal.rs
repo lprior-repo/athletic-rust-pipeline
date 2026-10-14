@@ -139,6 +139,7 @@ impl Store {
         settle(self, terminal, Some(&occurrence))?;
         Ok(occurrence)
     }
+
 }
 
 fn prepared_attempt<'a>(
@@ -212,7 +213,12 @@ fn settle(
     batch.insert(
         &store.receipts,
         operation.as_bytes(),
-        crate::records::codec::encode_canonical(&receipt)?,
+        serde_json::to_string(&receipt)
+            .map_err(|source| StoreError::Json {
+                detail: "terminal receipt".to_string(),
+                source,
+            })?
+            .as_bytes(),
     );
     codec::commit(batch)?;
     Ok(terminal)

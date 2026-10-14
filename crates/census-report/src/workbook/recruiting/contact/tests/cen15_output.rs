@@ -28,7 +28,7 @@ fn seed_population(store: &Store) -> TestResult<SchoolId> {
         GradYear::CO2027,
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::Other("fixture".into()), "cen15-runner"),
-    );
+    )?;
     athlete.sports = vec![Sport::OutdoorTrack];
     athlete
         .evidence

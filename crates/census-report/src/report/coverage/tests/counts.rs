@@ -71,7 +71,7 @@ fn a_mirror_result_plane_row_is_counted_but_never_core() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("oh-core"),
-    );
+    )?;
     core_athlete.evidence.push(evidence("ohsaa_results"));
     store.append(Table::Athletes, &core_athlete)?;
     let mut mirror_athlete = CanonicalAthlete::new(
@@ -80,7 +80,7 @@ fn a_mirror_result_plane_row_is_counted_but_never_core() -> TestResult {
         GradYear::CO2027,
         Gender::Girls,
         fixture_source("oh-mirror"),
-    );
+    )?;
     mirror_athlete
         .evidence
         .push(evidence("athleticlive_results"));
@@ -209,7 +209,7 @@ fn conversion_people(
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("converted"),
-    );
+    )?;
     converted_athlete.evidence.push(evidence("wiaa_results"));
     converted_athlete
         .observed_grades
@@ -221,7 +221,7 @@ fn conversion_people(
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("native"),
-    );
+    )?;
     native_athlete.evidence.push(evidence("wiaa_results"));
     native_athlete
         .observed_grades

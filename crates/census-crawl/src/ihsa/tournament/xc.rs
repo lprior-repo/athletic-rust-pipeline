@@ -79,7 +79,7 @@ impl Route<'_, '_> {
             gender: tournament.gender,
             school_year,
         };
-        self.mapper.absorb_qualifiers(&envelope, &rows, &url);
+        self.mapper.absorb_qualifiers(&envelope, &rows, &url)?;
         self.journal.list(&key, &url, &envelope);
         Ok(())
     }
@@ -115,7 +115,7 @@ impl<'a> Mapper<'a> {
         envelope: &QualifiersEnvelope,
         list: &XcList<'_>,
         url: &str,
-    ) {
+    ) -> CrawlResult<()> {
         let qualifiers = envelope
             .team_qualifiers
             .iter()
@@ -140,9 +140,10 @@ impl<'a> Mapper<'a> {
                 );
             }
             for (row_index, athlete) in qualifier.athletes.iter().enumerate() {
-                self.qualifier(&school, athlete, list, url, row_index);
+                self.qualifier(&school, athlete, list, url, row_index)?;
             }
         }
+        Ok(())
     }
 
     fn qualifier(
@@ -152,7 +153,7 @@ impl<'a> Mapper<'a> {
         list: &XcList<'_>,
         url: &str,
         row_index: usize,
-    ) {
+    ) -> CrawlResult<()> {
         self.stats.qualifier_rows = self.stats.qualifier_rows.saturating_add(1);
         let name = joined_name(row.first_name.as_deref(), row.last_name.as_deref());
         let grade = parse_grade(row.year_in_school.as_deref());
@@ -182,9 +183,10 @@ impl<'a> Mapper<'a> {
                 source_key: format!("{url}:school:{school}:row:{row_index}"),
             },
             evidence,
-        );
+        )?;
         if stored.is_some() {
             self.stats.qualifier_graded = self.stats.qualifier_graded.saturating_add(1);
         }
+        Ok(())
     }
 }

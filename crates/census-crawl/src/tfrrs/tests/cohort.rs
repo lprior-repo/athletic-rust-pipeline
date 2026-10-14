@@ -79,7 +79,7 @@ fn unsupported_roster_cohort_keeps_published_grade_and_school_for_review() -> Te
         team: &team,
     };
     let mut absorb = Absorb::new(&index);
-    absorb.absorb_roster(&context, &roster);
+    absorb.absorb_roster(&context, &roster)?;
     check!(eq; absorb.stats.roster_rows_absorbed, 0);
     check!(absorb.accumulator.athletes.is_empty());
     let (cases, observations) = absorb.accumulator.unsupported.into_parts();

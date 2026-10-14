@@ -21,8 +21,10 @@ impl Mapper<'_> {
         &mut self,
         row: AthleteRow<'_>,
         evidence: Evidence,
-    ) -> Option<(AthleteId, SourceIdentity)> {
-        let admitted = self.admit_row(&row, &evidence)?;
+    ) -> crate::CrawlResult<Option<(AthleteId, SourceIdentity)>> {
+        let Some(admitted) = self.admit_row(&row, &evidence) else {
+            return Ok(None);
+        };
         let id = CanonicalAthlete::mint(
             row.school,
             admitted.name,
@@ -30,19 +32,21 @@ impl Mapper<'_> {
             row.gender,
             &admitted.source,
         );
+        let new_athlete = CanonicalAthlete::new(
+            row.school,
+            admitted.name,
+            admitted.grad_year,
+            row.gender,
+            admitted.source.clone(),
+        )
+        .map_err(|e| crate::CrawlError::Invariant {
+            detail: e.to_string(),
+        })?;
         let athlete = self
             .accumulated
             .athletes
             .entry(id.as_str().to_owned())
-            .or_insert_with(|| {
-                CanonicalAthlete::new(
-                    row.school,
-                    admitted.name,
-                    admitted.grad_year,
-                    row.gender,
-                    admitted.source.clone(),
-                )
-            });
+            .or_insert(new_athlete);
         append_claim(
             athlete,
             &admitted.source,
@@ -56,7 +60,7 @@ impl Mapper<'_> {
             athlete.add_identity(identity);
         });
         push_once(&mut athlete.evidence, evidence);
-        Some((id, admitted.source))
+        Ok(Some((id, admitted.source)))
     }
 
     fn admit_row<'a>(&mut self, row: &AthleteRow<'a>, evidence: &Evidence) -> Option<Admitted<'a>> {

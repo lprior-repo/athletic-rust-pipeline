@@ -16,7 +16,7 @@ use census_domain::UsJurisdiction;
 #[test]
 fn frozen_codec_line_round_trips_typed_payload_and_entity_id() -> TestResult {
     let school = school("Round Trip High");
-    let runner = athlete(&school.id, "Ada Runner", "1");
+    let runner = athlete(&school.id, "Ada Runner", "1")?;
     let line = encode_line(7, &runner)?;
     check!(contains(&line, "{\"ordinal\":7,\"entity_id\":\""));
     let decoded: DecodedLine<CanonicalAthlete> = decode_line(&line)?;
@@ -29,7 +29,7 @@ fn frozen_codec_line_round_trips_typed_payload_and_entity_id() -> TestResult {
 #[test]
 fn frozen_codec_line_refuses_a_payload_id_that_disagrees_with_entity_id() -> TestResult {
     let school = school("Mismatch High");
-    let runner = athlete(&school.id, "Ada Runner", "1");
+    let runner = athlete(&school.id, "Ada Runner", "1")?;
     let line = String::from_utf8(encode_line(0, &runner)?)?;
     let foreign = line.replacen(
         &format!("\"entity_id\":\"{}\"", runner.id.as_str()),
@@ -45,7 +45,7 @@ fn frozen_codec_line_refuses_a_payload_id_that_disagrees_with_entity_id() -> Tes
 #[test]
 fn frozen_codec_line_pins_ordinal_field_order_and_exact_decimal() -> TestResult {
     let school = school("Fixture Union High");
-    let runner = athlete(&school.id, "Ada Runner", "1");
+    let runner = athlete(&school.id, "Ada Runner", "1")?;
     let meet = CanonicalMeet::new_checked(
         Some(UsJurisdiction::Wisconsin),
         "Fixture Invite",
@@ -113,12 +113,13 @@ fn frozen_codec_chunk_writer_never_splits_a_record_and_round_trips_order() -> Te
                 &school.id,
                 &format!("Runner {index:02}"),
                 &format!("{index}"),
-            );
+            )
+            .map_err(|e| format!("athlete construction: {e}"))?;
             row.canonical_name = "n".repeat(200 * 1024);
             row.known_names = vec![row.canonical_name.clone()];
-            row
+            Ok(row)
         })
-        .collect();
+        .collect::<Result<Vec<_>, String>>()?;
     rows.sort_by(|left, right| left.id.as_str().cmp(right.id.as_str()));
     let bundle = bundle(StreamKind::Athletes, &rows)?;
     check!(bundle.objects.len() >= 2);
@@ -159,8 +160,8 @@ fn frozen_codec_coach_observations_keep_repeated_ids_in_scan_order() -> TestResu
 #[test]
 fn frozen_codec_canonical_streams_refuse_duplicate_and_decreasing_ids() -> TestResult {
     let school = school("Order High");
-    let first = athlete(&school.id, "First Runner", "1");
-    let second = athlete(&school.id, "Second Runner", "2");
+    let first = athlete(&school.id, "First Runner", "1")?;
+    let second = athlete(&school.id, "Second Runner", "2")?;
     let (greater, smaller) = if first.id.as_str() > second.id.as_str() {
         (first, second)
     } else {

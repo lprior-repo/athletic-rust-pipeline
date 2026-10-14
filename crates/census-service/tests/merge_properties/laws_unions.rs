@@ -47,6 +47,7 @@ proptest! {
 
     #[test]
     fn athlete_merge_is_idempotent(athlete in athlete()) {
+        let athlete = athlete.map_err(|e| TestCaseError::fail(format!("athlete construction failed: {e}")))?;
         let mut merged = athlete.clone();
         merged.merge(athlete.clone());
         prop_assert_eq!(merged, athlete);
@@ -156,6 +157,7 @@ proptest! {
         right in peer_identity(SourceNamespace::TfrrsAthlete),
         other_sport in sport(),
     ) {
+        let base = base.map_err(|e| TestCaseError::fail(format!("athlete construction failed: {e}")))?;
         let mut first = base.clone();
         first.known_names = vec![other_name];
         first.source_links.push(left);

@@ -36,7 +36,7 @@ pub(crate) fn two_chunk_fixture(job: &str) -> TestResult<Fixture> {
             &anchor.id,
             &format!("Huge Runner {index}"),
             &format!("huge-{index}"),
-        );
+        )?;
         row.canonical_name = "x".repeat(HUGE_ROW_BYTES);
         seeded.store.append(Table::Athletes, &row)?;
     }

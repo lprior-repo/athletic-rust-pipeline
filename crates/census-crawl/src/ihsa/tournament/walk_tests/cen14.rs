@@ -63,7 +63,7 @@ fn mirror_withholds(row: &CanonicalAthlete, claim: &IdentityAttestation) -> Test
             SourceNamespace::Other("ihsa-row".into()),
             &claim.subject_locator,
         ),
-    );
+    )?;
     linked.add_identity(subject.clone());
     linked.identity_attestations.push(claim.clone());
     linked.evidence = row.evidence.clone();

@@ -127,7 +127,9 @@ impl Decode<'_> {
             );
             return;
         };
-        let Some(decoded) = self.chunk_bytes(&subject, index, data, OBJECT_CHUNK_BYTES) else {
+        let Some(decoded) =
+            super::decode_chunks::chunk_bytes(self, &subject, index, data, OBJECT_CHUNK_BYTES)
+        else {
             return;
         };
         let size_check = self.validate_object_chunk_size(&mut subject, index, &decoded, declared);

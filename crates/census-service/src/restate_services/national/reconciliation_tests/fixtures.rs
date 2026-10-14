@@ -47,7 +47,7 @@ pub fn seed(store: &Store) -> TestResult<Vec<CanonicalAthlete>> {
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169")
             .with_url("https://roster.test/athletes/14399169"),
-    );
+    )?;
     first.add_identity(shared.clone());
     let mut second = CanonicalAthlete::new(
         &school.id,
@@ -55,7 +55,7 @@ pub fn seed(store: &Store) -> TestResult<Vec<CanonicalAthlete>> {
         GradYear::CO2027,
         Gender::Girls,
         shared.clone(),
-    );
+    )?;
     bind(&mut first, &shared, "roster", "official_roster")?;
     bind(&mut second, &shared, "timer", "independent_timer")?;
     store.append(Table::Schools, &school)?;
@@ -80,7 +80,7 @@ pub fn seed_transfer(store: &Store) -> TestResult<Vec<CanonicalAthlete>> {
         GradYear::CO2027,
         Gender::Girls,
         owner.clone(),
-    );
+    )?;
     bind(&mut transferred, &owner, "transfer", "independent_timer")?;
     store.append(Table::Schools, &school)?;
     store.append(Table::Athletes, &transferred)?;

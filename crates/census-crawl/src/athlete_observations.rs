@@ -34,6 +34,8 @@ mod tests {
     use census_domain::UsJurisdiction;
     use std::collections::BTreeSet;
 
+    type TestResult<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
+
     fn school() -> CanonicalSchool {
         CanonicalSchool::new(
             UsJurisdiction::Wisconsin,
@@ -44,7 +46,10 @@ mod tests {
         .0
     }
 
-    fn athlete(school: &CanonicalSchool, source: SourceIdentity) -> CanonicalAthlete {
+    fn athlete(
+        school: &CanonicalSchool,
+        source: SourceIdentity,
+    ) -> crate::CrawlResult<CanonicalAthlete> {
         CanonicalAthlete::new(
             &school.id,
             "Alex Rivera",
@@ -52,18 +57,21 @@ mod tests {
             Gender::Boys,
             source,
         )
+        .map_err(|e| crate::CrawlError::Invariant {
+            detail: e.to_string(),
+        })
     }
 
     #[test]
-    fn primary_observations_preserve_provider_homonyms_despite_advisory_links() {
+    fn primary_observations_preserve_provider_homonyms_despite_advisory_links() -> TestResult {
         let school = school();
         let first_source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "11111");
-        let mut first = athlete(&school, first_source.clone());
+        let mut first = athlete(&school, first_source.clone())?;
         first.add_identity(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "99999"));
         let mut second = athlete(
             &school,
             SourceIdentity::new(SourceNamespace::MilesplitAthlete, "22222"),
-        );
+        )?;
         second.add_identity(first_source);
         let rows = athlete_observations_of(&[first, second], [&school], "2026-09-26");
         let identities: BTreeSet<_> = rows
@@ -78,15 +86,16 @@ mod tests {
             .collect();
         assert_eq!(identities, BTreeSet::from(["11111", "22222"]));
         assert_eq!(rows.len(), identities.len());
+        Ok(())
     }
 
     #[test]
-    fn a_result_row_remains_row_owned_despite_a_linked_person_identifier() {
+    fn a_result_row_remains_row_owned_despite_a_linked_person_identifier() -> TestResult {
         let school = school();
         let namespace = SourceNamespace::Other("timer_result_row".to_owned());
         let source = SourceIdentity::new(namespace.clone(), "meet:5:event:2:row:9")
             .with_url("https://example.test/meet/5/event/2");
-        let mut row = athlete(&school, source);
+        let mut row = athlete(&school, source)?;
         row.add_identity(SourceIdentity::new(
             SourceNamespace::MilesplitAthlete,
             "11111",
@@ -101,5 +110,6 @@ mod tests {
             observation.source_row_key,
             "https://example.test/meet/5/event/2"
         );
+        Ok(())
     }
 }

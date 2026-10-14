@@ -166,7 +166,7 @@ fn the_sheets_render_the_rows_the_store_retains() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("julian-aguilera"),
-    );
+    )?;
     conflicted.evidence.push(evidence.clone());
     for (grade, year) in [(11_u8, 2025_i16), (10, 2025)] {
         conflicted.observed_grades.push(ObservedGrade {
@@ -184,7 +184,7 @@ fn the_sheets_render_the_rows_the_store_retains() -> TestResult {
         GradYear::CO2027,
         Gender::Girls,
         fixture_source("nora-brandt"),
-    );
+    )?;
     unverified.evidence.push(evidence.clone());
     let unverified_id = unverified.id.clone();
     store.append(Table::Athletes, &unverified)?;
@@ -517,7 +517,7 @@ fn scope_divergence_is_published_in_the_coverage_sheet() -> TestResult {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source("julian-aguilera"),
-    );
+    )?;
     athlete.evidence.push(core_evidence.clone());
     store.append(Table::Athletes, &athlete)?;
 
@@ -527,7 +527,7 @@ fn scope_divergence_is_published_in_the_coverage_sheet() -> TestResult {
         GradYear::CO2027,
         Gender::Girls,
         fixture_source("maya-okafor"),
-    );
+    )?;
     other_athlete.evidence.push(other_evidence.clone());
     store.append(Table::Athletes, &other_athlete)?;
 

@@ -131,7 +131,7 @@ fn athlete(
         grad_year,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, name),
-    );
+    )?;
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.evidence.push(evidence(source));
     if year.is_some() {

@@ -18,16 +18,16 @@ impl<'a> Absorb<'a> {
         &mut self,
         context: &RosterContext<'_>,
         roster: &ParsedRoster,
-    ) {
+    ) -> crate::CrawlResult<()> {
         self.stats.rosters_seen = self.stats.rosters_seen.saturating_add(1);
         let Some(season) = self.page_season(context, roster) else {
-            return;
+            return Ok(());
         };
         let Some(school_name) = roster.school.as_deref() else {
-            return;
+            return Ok(());
         };
         let Some(school) = self.school_for(context.page, school_name) else {
-            return;
+            return Ok(());
         };
         self.team_for(
             context.page,
@@ -41,8 +41,9 @@ impl<'a> Absorb<'a> {
             },
         );
         for (row_index, athlete) in roster.athletes.iter().enumerate() {
-            self.absorb_roster_row(context, &school, school_name, season, athlete, row_index);
+            self.absorb_roster_row(context, &school, school_name, season, athlete, row_index)?;
         }
+        Ok(())
     }
 
     fn page_season(
@@ -112,17 +113,17 @@ impl<'a> Absorb<'a> {
         season: PageSeason,
         athlete: &RosterAthlete,
         row_index: usize,
-    ) {
+    ) -> crate::CrawlResult<()> {
         self.stats.roster_rows_seen = self.stats.roster_rows_seen.saturating_add(1);
         let Some(name) = athlete.full_name() else {
             self.stats.roster_rows_without_name =
                 self.stats.roster_rows_without_name.saturating_add(1);
-            return;
+            return Ok(());
         };
         let Some(grade) = athlete.year.and_then(YearToken::grade) else {
             self.stats.roster_rows_without_year =
                 self.stats.roster_rows_without_year.saturating_add(1);
-            return;
+            return Ok(());
         };
         let Some((grad_year, observation, source)) = self.admit_roster_athlete(
             context,
@@ -132,7 +133,7 @@ impl<'a> Absorb<'a> {
             row_index,
             (name, grade),
         ) else {
-            return;
+            return Ok(());
         };
         let _ = self.athlete_for(
             context.page,
@@ -145,7 +146,8 @@ impl<'a> Absorb<'a> {
                 source,
                 observed_grade: Some(observation),
             },
-        );
+        )?;
         self.stats.roster_rows_absorbed = self.stats.roster_rows_absorbed.saturating_add(1);
+        Ok(())
     }
 }

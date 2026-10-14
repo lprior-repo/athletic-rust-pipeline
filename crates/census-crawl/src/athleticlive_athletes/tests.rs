@@ -97,7 +97,7 @@ fn rows_become_canonical_entities_with_athletic_net_seeds() -> TestResult {
         &by_id,
         "2026-09-20",
         SchoolYear::new(2026).ok_or("2026 is a season")?,
-    );
+    )?;
 
     check!(eq; entities.rows, hits.len());
     check!(
@@ -163,7 +163,7 @@ fn one_athlete_seen_at_two_meets_stays_one_athlete() -> TestResult {
         &by_id,
         "2026-09-20",
         SchoolYear::new(2026).ok_or("2026 is a season")?,
-    );
+    )?;
     check!(eq; entities.rows, 2);
     check!(eq;
         entities.athletes.len(),
@@ -280,7 +280,7 @@ fn empty_and_malformed_hits_yield_nothing_instead_of_panicking() -> TestResult {
         &by_id,
         "2026-09-20",
         SchoolYear::new(2026).ok_or("2026 is a season")?,
-    );
+    )?;
     check!(eq; entities.rows, 0);
     check!(entities.athletes.is_empty());
 
@@ -293,7 +293,7 @@ fn empty_and_malformed_hits_yield_nothing_instead_of_panicking() -> TestResult {
         &by_id,
         "2026-09-20",
         SchoolYear::new(2026).ok_or("2026 is a season")?,
-    );
+    )?;
     check!(eq; entities.rows, 1);
     check!(
         entities.athletes.is_empty(),
@@ -307,7 +307,7 @@ fn empty_and_malformed_hits_yield_nothing_instead_of_panicking() -> TestResult {
         &by_id,
         "2026-09-20",
         SchoolYear::new(2026).ok_or("2026 is a season")?,
-    );
+    )?;
     check!(eq; entities.rows_without_school, 1);
     check!(entities.athletes.is_empty());
     Ok(())

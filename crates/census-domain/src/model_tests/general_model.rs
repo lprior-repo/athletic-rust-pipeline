@@ -54,7 +54,7 @@ fn unsupported_grade_evidence_never_certifies_a_canonical_cohort(
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "boundary-runner"),
-    );
+    )?;
     check!(eq; athlete.derived_cohort_confidence(), None);
     athlete.observed_grades.push(ObservedGrade {
         grade: Grade::new(12).ok_or("invalid grade fixture")?,

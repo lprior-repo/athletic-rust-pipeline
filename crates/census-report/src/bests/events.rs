@@ -1,17 +1,5 @@
 use census_domain::model::EventKind;
 
-pub const fn is_relay(kind: &EventKind) -> bool {
-    matches!(
-        kind,
-        EventKind::Relay4x100
-            | EventKind::Relay4x200
-            | EventKind::Relay4x400
-            | EventKind::Relay4x800
-            | EventKind::SprintMedley
-            | EventKind::DistanceMedley
-    )
-}
-
 pub const fn sport_of(kind: &EventKind) -> &'static str {
     match kind {
         EventKind::CrossCountry => "CrossCountry",

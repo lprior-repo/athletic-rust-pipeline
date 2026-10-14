@@ -95,7 +95,7 @@ fn missing_or_invalid_owned_years_leave_constructor_and_note_only_cohorts_unknow
             GradYear::CO2027,
             row.gender,
             row.source_athlete.clone(),
-        );
+        )?;
         let mut evidence = Evidence::parsed(capture_source(), "2026-10-01T23:44:16Z");
         evidence.note = Some(json!({"published_grad_year": 2027}).to_string());
         athlete.evidence.push(evidence);
@@ -123,7 +123,7 @@ fn owned_year_without_published_status_cannot_become_a_published_claim() -> Test
             GradYear::CO2027,
             row.gender,
             row.source_athlete.clone(),
-        );
+        )?;
         record_published_graduation(&mut athlete, &row, &capture_source());
         assert_eq!(athlete.published_graduations, Vec::new());
         assert_eq!(athlete.observed_grades, Vec::new());

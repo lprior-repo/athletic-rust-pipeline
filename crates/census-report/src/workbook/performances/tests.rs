@@ -110,7 +110,7 @@ fn seed(store: &Store, fixture: &Fixture) -> TestResult<String> {
         GradYear::CO2027,
         Gender::Boys,
         fixture_source(fixture.source_id),
-    );
+    )?;
     athlete.evidence.push(observation());
     store.append(Table::Athletes, &athlete)?;
 
