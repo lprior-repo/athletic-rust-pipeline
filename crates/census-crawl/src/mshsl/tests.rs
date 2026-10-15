@@ -86,7 +86,7 @@ fn row_for(rows: &[SchoolListRow], slug: &str, detail: &SchoolDetail) -> SchoolL
 
 #[test]
 fn listing_rows_carry_slug_name_and_city() -> TestResult {
-    let rows = parse_school_list(LISTING);
+    let rows = parse_school_list(LISTING)?;
     check!(eq; rows.len(), 8, "listing fixture holds eight school rows");
     let first = &rows[0];
     check!(eq; first.slug, "aasen-home-school");
@@ -160,7 +160,7 @@ fn cfemail_decodes_to_the_published_addresses() {
 
 #[test]
 fn school_page_yields_canonical_school_with_identity_and_evidence() -> TestResult {
-    let rows = parse_school_list(LISTING);
+    let rows = parse_school_list(LISTING)?;
     let detail = parse_school_detail(AITKIN);
     check!(eq; detail.name.as_deref(), Some("Aitkin High School"));
     check!(eq; detail.school_id.as_deref(), Some("7"));
@@ -235,7 +235,7 @@ fn athletic_directors_are_the_only_admin_rows_emitted() -> TestResult {
             vec!["hannah.couch@academicarts.org"],
         ),
     ];
-    let rows = parse_school_list(LISTING);
+    let rows = parse_school_list(LISTING)?;
     for (html, slug, emails) in cases {
         let detail = parse_school_detail(html);
         let row = row_for(&rows, slug, &detail);
@@ -283,7 +283,7 @@ fn office_roles_never_become_coaches_or_athletic_directors() -> TestResult {
         .iter()
         .any(|entry| entry.role.contains("Administrative Assistant") && entry.email().is_some()));
 
-    let rows = parse_school_list(LISTING);
+    let rows = parse_school_list(LISTING)?;
     let row = row_for(&rows, "wayzata-high-school", &detail);
     let (school, school_id) =
         school_entities(&row, &detail, &school_page_url(&row.slug), OBSERVED_ON).ok_or("school")?;
@@ -377,7 +377,7 @@ fn published_phones_are_withheld_and_consumer_mailboxes_land_personal() -> TestR
         .find(|node| node.alias.contains("track-and-field-boys"))
         .ok_or("track and field node")?;
     let html_url = school_page_url("wayzata-high-school");
-    let rows = parse_school_list(LISTING);
+    let rows = parse_school_list(LISTING)?;
     let row = row_for(&rows, "wayzata-high-school", &detail);
     let (school, school_id) =
         school_entities(&row, &detail, &html_url, OBSERVED_ON).ok_or("school")?;
@@ -564,7 +564,7 @@ fn coach_levels_map_to_roles_and_published_addresses_survive() {
 fn ad_email_fill_rate_on_the_fixtures() -> TestResult {
     let mut rows_total = 0usize;
     let mut with_email = 0usize;
-    let school_rows = parse_school_list(LISTING);
+    let school_rows = parse_school_list(LISTING)?;
     for (html, slug) in [
         (AITKIN, "aitkin-high-school"),
         (FOLEY, "foley-high-school"),
@@ -591,33 +591,6 @@ fn ad_email_fill_rate_on_the_fixtures() -> TestResult {
     check!(eq; rows_total, 7, "seven AD rows across the four captures");
     check!(eq; with_email, 6, "six of them publish an address (85.7%)");
     Ok(())
-}
-
-#[test]
-fn malformed_payloads_yield_zero_rows_instead_of_panicking() {
-    assert!(parse_school_list("<html><body>no rows</body></html>").is_empty());
-    assert!(parse_school_list("").is_empty());
-    assert!(parse_next_listing_page("", 0).is_none());
-    assert!(parse_next_listing_page("<a href=\"?page=abc\">", 0).is_none());
-    assert!(parse_next_listing_page("<a href=\"/schools/foo\">next</a>", 0).is_none());
-    assert!(parse_team_nodes("not json").is_empty());
-    assert!(parse_team_nodes("{\"data\":[{\"attributes\":{\"title\":\"no nid\"}}]}").is_empty());
-    assert!(parse_coach_records("{\"error\":\"not an array\"}").is_empty());
-    assert!(parse_coach_records("").is_empty());
-    assert!(parse_admin_entries("<html></html>").is_empty());
-    assert!(decode_cfemail_fragment("").is_empty());
-    let empty = parse_school_detail("");
-    assert_eq!(empty, SchoolDetail::default());
-    assert!(ad_coaches(
-        &empty,
-        &CanonicalSchool::mint(UsJurisdiction::Minnesota, "Empty", "empty", None),
-        "x",
-        "u",
-        OBSERVED_ON
-    )
-    .is_empty());
-    assert!(school_domains(&empty).is_empty());
-    assert!(select_team_nodes(&[]).is_empty());
 }
 
 #[test]

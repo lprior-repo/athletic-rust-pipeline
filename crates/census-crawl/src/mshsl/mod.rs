@@ -37,6 +37,7 @@ pub const SCHOOL_URL_PREFIX: &str = "https://www.mshsl.org/schools/";
 pub const TEAMS_VIEW_URL: &str = "https://www.mshsl.org/jsonapi/views/teams/list_school";
 pub const COACH_API_PREFIX: &str = "https://www.mshsl.org/api/coaches/";
 const MAX_LISTING_PAGES: usize = 64;
+const MAX_LISTING_BYTES: usize = 32 * 1024 * 1024;
 const MAX_TEAMS_PER_SCHOOL: usize = 4;
 const MAX_CFEMAIL_HEX: usize = 512;
 

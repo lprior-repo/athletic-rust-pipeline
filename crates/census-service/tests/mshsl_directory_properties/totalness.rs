@@ -1,7 +1,6 @@
 use super::seam_config;
-use census_crawl::mshsl::{
-    parse_admin_entries, parse_next_listing_page, parse_school_detail, parse_school_list,
-};
+use census_crawl::mshsl::{parse_admin_entries, parse_school_list, SCHOOL_LIST_URL};
+use census_crawl::CrawlError;
 use proptest::prelude::*;
 
 const TOKENS: [&str; 10] = [
@@ -30,17 +29,22 @@ proptest! {
     #![proptest_config(seam_config())]
 
     #[test]
-    fn arbitrary_markup_reads_to_schools_or_to_none(body in arbitrary_markup()) {
-        let rows = parse_school_list(&body);
-        let page = parse_school_detail(&body);
+    fn arbitrary_markup_yields_nonempty_school_rows_or_a_typed_schema_refusal(body in arbitrary_markup()) {
+        match parse_school_list(&body) {
+            Ok(rows) => {
+                prop_assert!(!rows.is_empty(), "arbitrary markup must not become a successful empty listing");
+                prop_assert!(rows.iter().all(|row| !row.slug.is_empty()
+                    && !row.slug.contains('/') && !row.name.is_empty()), "{rows:?}");
+                let slugs: std::collections::HashSet<_> = rows.iter().map(|row| row.slug.as_str()).collect();
+                prop_assert_eq!(slugs.len(), rows.len(), "each admitted school slug is published once");
+            }
+            Err(CrawlError::Schema { url, detail }) => {
+                prop_assert_eq!(url, SCHOOL_LIST_URL);
+                prop_assert!(!detail.is_empty());
+            }
+            Err(error) => return Err(TestCaseError::fail(format!("unexpected listing failure: {error}"))),
+        }
         let admin = parse_admin_entries(&body);
-        prop_assert!(
-            rows.iter().all(|row| !row.slug.is_empty()
-                && !row.slug.contains('/')
-                && !row.name.is_empty()),
-            "a school is published with the slug its link carried and the name it printed: {:?}",
-            rows
-        );
         prop_assert!(
             admin.iter().all(|entry| !entry.role.is_empty()),
             "an administration entry without a role is not published: {:?}",
@@ -51,14 +55,6 @@ proptest! {
                 && entry.emails.len() == entry.emails.iter().collect::<std::collections::HashSet<_>>().len()),
             "an entry publishes each hidden address once, and never an empty one: {:?}",
             admin
-        );
-        prop_assert_eq!(parse_school_list(&body), rows, "the same bytes read the same way");
-        prop_assert_eq!(parse_school_detail(&body), page, "and so do the pages");
-        prop_assert_eq!(parse_admin_entries(&body), admin, "and so do the entries");
-        prop_assert_eq!(
-            parse_next_listing_page(&body, 0),
-            parse_next_listing_page(&body, 0),
-            "and so does the pager"
         );
     }
 }

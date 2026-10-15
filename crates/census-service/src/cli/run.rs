@@ -11,6 +11,9 @@ use clap::Parser;
 pub(crate) fn run() -> Result<()> {
     init_tracing();
     let cli = Cli::parse();
+    if let Command::CompareReference(args) = &cli.command {
+        super::compare_reference::run(args);
+    }
     if let Command::CaptureProtocol(args) = &cli.command {
         return capture_protocol::run(&cli, args);
     }
@@ -37,7 +40,8 @@ async fn run_async(cli: Cli) -> Result<()> {
         args.validate_offline_store(cli.store.as_deref())?;
     }
     match &cli.command {
-        Command::CaptureProtocol(_)
+        Command::CompareReference(_)
+        | Command::CaptureProtocol(_)
         | Command::Installation(_)
         | Command::Profile(_)
         | Command::VerifyRetainedCapture(_) => {

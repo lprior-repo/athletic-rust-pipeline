@@ -3,7 +3,7 @@ use calamine::DataRef;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
-pub(super) enum Value {
+pub(in crate::workbook) enum Value {
     Empty,
     Text(String),
     Number(f64),

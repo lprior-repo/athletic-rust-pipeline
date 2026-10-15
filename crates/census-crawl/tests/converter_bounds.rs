@@ -2,17 +2,29 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
-use census_crawl::convert::{converter_files_capped, converter_stdout_capped, read_file_capped};
+use census_crawl::convert::read_file_capped;
+#[cfg(target_os = "linux")]
+use census_crawl::convert::{converter_files_capped, converter_stdout_capped};
 use census_crawl::CrawlError;
-use std::path::{Path, PathBuf};
+#[cfg(target_os = "linux")]
+use std::path::Path;
+use std::path::PathBuf;
+#[cfg(target_os = "linux")]
 use std::time::{Duration, Instant};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+#[path = "converter_bounds/file.rs"]
+mod file;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[path = "converter_bounds/lifecycle.rs"]
+mod lifecycle;
 
 fn scratch_path(tag: &str) -> PathBuf {
     std::env::temp_dir().join(format!("converter-bounds-{}-{tag}", std::process::id()))
 }
 
+#[cfg(target_os = "linux")]
 fn read_pid(path: &Path, deadline: Duration) -> TestResult<i32> {
     let started = Instant::now();
     loop {
@@ -28,6 +40,7 @@ fn read_pid(path: &Path, deadline: Duration) -> TestResult<i32> {
     }
 }
 
+#[cfg(target_os = "linux")]
 fn assert_reaped(pid: i32) -> TestResult {
     check!(
         !PathBuf::from(format!("/proc/{pid}")).exists(),
@@ -36,6 +49,7 @@ fn assert_reaped(pid: i32) -> TestResult {
     Ok(())
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn pdftotext_output_over_cap_is_killed_and_reaped() -> TestResult {
     let pid_file = scratch_path("over-cap.pid");
@@ -66,6 +80,7 @@ fn pdftotext_output_over_cap_is_killed_and_reaped() -> TestResult {
     Ok(())
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn a_converter_that_stalls_is_killed_and_reaped() -> TestResult {
     let pid_file = scratch_path("stall.pid");
@@ -93,8 +108,9 @@ fn a_converter_that_stalls_is_killed_and_reaped() -> TestResult {
     Ok(())
 }
 
+#[cfg(target_os = "linux")]
 #[test]
-fn an_early_exiting_converter_reports_its_status_with_a_joined_writer() -> TestResult {
+fn an_early_exiting_converter_retains_status_and_pending_writer_failure() -> TestResult {
     let payload = vec![b'x'; 4 * 1024 * 1024];
     let started = Instant::now();
     let outcome = converter_stdout_capped(
@@ -105,7 +121,13 @@ fn an_early_exiting_converter_reports_its_status_with_a_joined_writer() -> TestR
         4096,
     );
     check!(
-        matches!(&outcome, Err(CrawlError::Io { .. })),
+        matches!(&outcome, Err(CrawlError::Io { .. }))
+            || matches!(
+                &outcome,
+                Err(CrawlError::ConverterLifecycle(
+                    census_crawl::convert::ConverterLifecycleError::Multiple { .. }
+                ))
+            ),
         "a converter that exits non-zero must fail: {outcome:?}"
     );
     check!(
@@ -119,6 +141,7 @@ fn an_early_exiting_converter_reports_its_status_with_a_joined_writer() -> TestR
     Ok(())
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn a_file_converter_over_its_watch_cap_is_killed_and_refused() -> TestResult {
     let output = scratch_path("watch.txt");
@@ -135,9 +158,37 @@ fn a_file_converter_over_its_watch_cap_is_killed_and_refused() -> TestResult {
         Duration::from_secs(60),
         4096,
     );
+    let primary = match outcome {
+        Err(CrawlError::ConverterLifecycle(
+            census_crawl::convert::ConverterLifecycleError::Multiple { primary, secondary },
+        )) => {
+            check!(
+                matches!(
+                    *secondary,
+                    CrawlError::ConverterLifecycle(
+                        census_crawl::convert::ConverterLifecycleError::Unproven {
+                            obligation: census_crawl::convert::ConverterObligation::GroupAbsent,
+                            ..
+                        }
+                    )
+                ),
+                "unexpected cleanup failure: {secondary:?}"
+            );
+            *primary
+        }
+        Err(error) => error,
+        Ok(()) => return Err("over-cap file converter reported success".into()),
+    };
     check!(
-        matches!(&outcome, Err(CrawlError::Resource { .. })),
-        "a watched output file over the cap must be a typed resource refusal: {outcome:?}"
+        matches!(
+            &primary,
+            CrawlError::Resource {
+                resource: "converter output bytes",
+                requested: 4097,
+                limit: 4096,
+            }
+        ),
+        "the primary failure must retain the exact byte-cap refusal: {primary:?}"
     );
     check!(
         started.elapsed() < Duration::from_secs(20),

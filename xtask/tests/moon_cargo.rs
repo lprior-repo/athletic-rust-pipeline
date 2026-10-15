@@ -32,6 +32,8 @@ fn cargo_case() -> Result<(tempfile::TempDir, Command), Box<dyn std::error::Erro
         .env("MOON_RUST_CARGO", &cargo)
         .env_remove("CARGO_BUILD_JOBS")
         .env_remove("MOON_RUST_BUILD_JOBS")
+        .env_remove("MOON_RUST_SCOPED_TEST_FEATURES")
+        .env_remove("MOON_TARGET")
         .env_remove("BASH_ENV")
         .env_remove("ENV");
     Ok((root, command))
@@ -133,5 +135,195 @@ fn nested_wrapper_reapplies_override_after_task_defaults() -> TestResult {
     check!(eq; fields.next(), Some("1"));
     check!(eq; fields.next(), Some("1"));
     check!(output.stderr.is_empty());
+    Ok(())
+}
+
+const SCOPED_PREFIX: [&str; 9] = [
+    "nextest",
+    "run",
+    "--config",
+    ".cargo/fast-iteration.toml",
+    "--all-features",
+    "--locked",
+    "--offline",
+    "--no-fail-fast",
+    "--test-threads=16",
+];
+
+#[test]
+fn scoped_feature_prefix_matches_the_single_canonical_task() -> TestResult {
+    let source = include_str!("../../moon.yml");
+    let task = source
+        .split_once("  tests-scoped:\n")
+        .ok_or("task absent")?
+        .1;
+    let expected = format!(
+        "    command: 'tools/moon-cargo {}'",
+        SCOPED_PREFIX.join(" ")
+    );
+    check!(eq; task.lines().next(), Some(expected.as_str()));
+    Ok(())
+}
+
+#[test]
+fn unset_and_all_modes_preserve_exact_scoped_arguments() -> TestResult {
+    for mode in [None, Some("all")] {
+        let (_root, mut command) = cargo_case()?;
+        command.env("MOON_TARGET", "pipeline:tests-scoped");
+        if let Some(mode) = mode {
+            command.env("MOON_RUST_SCOPED_TEST_FEATURES", mode);
+        }
+        let arguments = SCOPED_PREFIX.into_iter().chain([
+            "--features=loom",
+            "--no-default-features",
+            "-E",
+            "test(a) | test(b)",
+            "",
+        ]);
+        let arguments = arguments.collect::<Vec<_>>();
+        let output = command.args(&arguments).output()?;
+        check!(eq; output.status.code(), Some(37));
+        check!(eq; String::from_utf8(output.stdout)?, format!("<unset>\0<unset>\0{}\0", arguments.join("\0")));
+        check!(output.stderr.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
+fn default_mode_removes_only_owned_all_features_and_retains_build_limits() -> TestResult {
+    let (_root, mut command) = cargo_case()?;
+    let arguments = SCOPED_PREFIX
+        .into_iter()
+        .chain([
+            "-p",
+            "census-service",
+            "--lib",
+            "-E",
+            "test(a) | test(b)",
+            "--no-tests",
+            "fail",
+            "",
+        ])
+        .collect::<Vec<_>>();
+    let output = command
+        .env("MOON_TARGET", "pipeline:tests-scoped")
+        .env("MOON_RUST_SCOPED_TEST_FEATURES", "default")
+        .env("CARGO_BUILD_JOBS", "16")
+        .env("MOON_RUST_BUILD_JOBS", "1")
+        .args(&arguments)
+        .output()?;
+    let expected = arguments
+        .iter()
+        .enumerate()
+        .filter_map(|(index, value)| (index != 4).then_some(*value))
+        .collect::<Vec<_>>();
+    check!(eq; output.status.code(), Some(37));
+    check!(eq; String::from_utf8(output.stdout)?, format!("{}\0{}\0{}\0", 1, 1, expected.join("\0")));
+    check!(output.stderr.is_empty());
+    Ok(())
+}
+
+#[test]
+fn invalid_feature_modes_or_wrong_tasks_refuse_before_cargo() -> TestResult {
+    for mode in [
+        "",
+        "none",
+        "Default",
+        " default",
+        "default ",
+        "default\n",
+        "$(echo default)",
+    ] {
+        let (_root, mut command) = cargo_case()?;
+        let output = command
+            .env("MOON_TARGET", "pipeline:tests-scoped")
+            .env("MOON_RUST_SCOPED_TEST_FEATURES", mode)
+            .args(SCOPED_PREFIX)
+            .output()?;
+        check!(eq; output.status.code(), Some(2));
+        check!(output.stdout.is_empty());
+    }
+    for mode in ["all", "default"] {
+        for target in [
+            "",
+            "pipeline:tests",
+            "pipeline:gate",
+            "pipeline:build-scoped",
+        ] {
+            let (_root, mut command) = cargo_case()?;
+            let output = command
+                .env("MOON_TARGET", target)
+                .env("MOON_RUST_SCOPED_TEST_FEATURES", mode)
+                .args(SCOPED_PREFIX)
+                .output()?;
+            check!(eq; output.status.code(), Some(2));
+            check!(output.stdout.is_empty());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn changed_or_truncated_scoped_prefix_refuses_before_cargo() -> TestResult {
+    for mode in ["all", "default"] {
+        for index in 0..SCOPED_PREFIX.len() {
+            let mut arguments = SCOPED_PREFIX;
+            arguments[index] = "changed";
+            for arguments in [arguments.as_slice(), &SCOPED_PREFIX[..index]] {
+                let (_root, mut command) = cargo_case()?;
+                let output = command
+                    .env("MOON_TARGET", "pipeline:tests-scoped")
+                    .env("MOON_RUST_SCOPED_TEST_FEATURES", mode)
+                    .args(arguments)
+                    .output()?;
+                check!(eq; output.status.code(), Some(2));
+                check!(output.stdout.is_empty());
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn default_mode_refuses_conflicting_caller_feature_controls() -> TestResult {
+    for flag in [
+        "--all-features",
+        "--all-features=true",
+        "--features",
+        "--features=native-fault-injection",
+        "-F",
+        "-Fnative-fault-injection",
+        "--no-default-features",
+        "--no-default-features=true",
+    ] {
+        let (_root, mut command) = cargo_case()?;
+        let output = command
+            .env("MOON_TARGET", "pipeline:tests-scoped")
+            .env("MOON_RUST_SCOPED_TEST_FEATURES", "default")
+            .args(SCOPED_PREFIX)
+            .arg(flag)
+            .output()?;
+        check!(eq; output.status.code(), Some(2));
+        check!(output.stdout.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
+fn default_mode_keeps_selected_cargo_and_build_job_guards() -> TestResult {
+    for missing_cargo in [false, true] {
+        let (_root, mut command) = cargo_case()?;
+        command
+            .env("MOON_TARGET", "pipeline:tests-scoped")
+            .env("MOON_RUST_SCOPED_TEST_FEATURES", "default");
+        if missing_cargo {
+            command.env_remove("MOON_RUST_CARGO");
+        } else {
+            command.env("MOON_RUST_BUILD_JOBS", "0");
+        }
+        let output = command.args(SCOPED_PREFIX).output()?;
+        check!(!output.status.success());
+        check!(output.stdout.is_empty());
+    }
     Ok(())
 }

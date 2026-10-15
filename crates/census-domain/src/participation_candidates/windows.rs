@@ -72,8 +72,7 @@ fn competing_boundary(
         .try_fold(false, |found, other| {
             Ok(found
                 || (fact.identity == other.identity
-                    && fact.interval != other.interval
-                    && (fact.interval.contains(date) || other.interval.contains(date))
+                    && fact.interval.contains(date) != other.interval.contains(date)
                     && applicable(query, observation, other)?))
         })
 }

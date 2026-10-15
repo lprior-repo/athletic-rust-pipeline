@@ -8,6 +8,8 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 mod artifact;
+mod comparison;
+pub(in crate::workbook) use comparison::comparison_input;
 mod counts;
 #[cfg(test)]
 pub(in crate::workbook::publication) mod historical_fixture;
@@ -15,7 +17,7 @@ pub(in crate::workbook::publication) mod historical_fixture;
 pub(super) use counts::retained as retained_counts;
 mod directory;
 #[cfg(test)]
-mod tests;
+pub(in crate::workbook) mod tests;
 mod validate;
 mod verify;
 use artifact::{artifact_names, hash_artifact, Artifact};
