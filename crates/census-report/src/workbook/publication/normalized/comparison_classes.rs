@@ -47,10 +47,11 @@ pub(super) fn write(
     directory: &Path,
     dataset: &ExportDataset,
     bests: &[SharedSelection],
-) -> ReportResult<()> {
-    let catalog = census_domain::model::RecruitingCatalogV1::new()
-        .digest()
-        .map_err(|error| super::defect(format!("encoding catalog: {error}")))?;
+) -> ReportResult<u64> {
+    let catalog =
+        census_domain::model::RecruitingCatalogV1::with_policy(dataset.semantic_policy()?)
+            .digest()
+            .map_err(|error| super::defect(format!("encoding catalog: {error}")))?;
     let mut classes = BTreeMap::new();
     let mut budget = crate::grouping::Admission::new("normalized comparison classes");
     for best in bests {

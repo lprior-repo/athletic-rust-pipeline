@@ -95,7 +95,8 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     faster.date = "2026-05-03".to_string();
     store.append(Table::Performances, &faster)?;
 
-    let dataset = ExportDataset::load(&store)?;
+    let mut dataset = ExportDataset::load(&store)?;
+    dataset.lineage.policy_revision = 20;
     let options = Options {
         grad_year: Some(2027),
         out: None,
@@ -109,11 +110,11 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     let inputs = Inputs::new(&dataset, &options)?;
 
     let output = directory.path().join("bests");
-    write(&output, &rows, "co2027")?;
-    super::super::bests::verify(&output, &inputs, 3)?;
+    write(&output, &rows, "co2027", dataset.semantic_policy()?)?;
+    super::super::bests::verify(&output, &inputs, 3, &rows)?;
 
     rewrite_cell(&output.join("best-results-co2027.csv"), "best_value", "999")?;
-    let error = match super::super::bests::verify(&output, &inputs, 3) {
+    let error = match super::super::bests::verify(&output, &inputs, 3, &rows) {
         Err(error) => error,
         Ok(()) => return Err("forged best value accepted".into()),
     };
@@ -123,11 +124,11 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     );
 
     let jsonl_output = directory.path().join("bests-jsonl");
-    write(&jsonl_output, &rows, "co2027")?;
+    write(&jsonl_output, &rows, "co2027", dataset.semantic_policy()?)?;
     let jsonl = jsonl_output.join("best-results-co2027.jsonl");
     let line = std::fs::read_to_string(&jsonl)?;
     std::fs::write(&jsonl, format!("{line}{line}"))?;
-    let error = match super::super::bests::verify(&jsonl_output, &inputs, 3) {
+    let error = match super::super::bests::verify(&jsonl_output, &inputs, 3, &rows) {
         Err(error) => error,
         Ok(()) => return Err("duplicate best-results record accepted".into()),
     };

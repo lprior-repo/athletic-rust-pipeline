@@ -1,8 +1,10 @@
 use super::*;
 use census_store::publish::{Root, State};
-use std::io::{Read, Write};
+use std::io::Write;
 use std::os::unix::process::ExitStatusExt;
 use std::process::{Command, Stdio};
+mod harness;
+
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 #[test]
@@ -60,7 +62,8 @@ fn crash(window: &str, selection: RootSelection, termination: Termination) -> Te
     let socket_directory = tempfile::tempdir_in("/tmp")?;
     let socket_path = socket_directory.path().join("crash.sock");
     let listener = std::os::unix::net::UnixListener::bind(&socket_path)?;
-    let mut child = Command::new(std::env::current_exe()?)
+    let mut command = Command::new(std::env::current_exe()?);
+    command
         .args([
             "--exact",
             "workbook::publication::crash_tests::native_publication_worker",
@@ -78,14 +81,16 @@ fn crash(window: &str, selection: RootSelection, termination: Termination) -> Te
             },
         )
         .stdout(Stdio::null())
-        .stderr(Stdio::inherit())
-        .spawn()?;
-    let mut checkpoint = wait_checkpoint(listener, &socket_path, &mut child, window)?;
-    match termination {
-        Termination::Killed => child.kill()?,
-        Termination::Aborted => checkpoint.write_all(&[1])?,
-    }
-    let status = child.wait()?;
+        .stderr(Stdio::inherit());
+    let status = harness::with_child(command, |child| {
+        let mut checkpoint =
+            harness::wait_checkpoint(listener, child, window, harness::WaitBudget::REAL)?;
+        match termination {
+            Termination::Killed => child.kill()?,
+            Termination::Aborted => checkpoint.write_all(&[1])?,
+        }
+        Ok(child.wait()?)
+    })?;
     let signal = match termination {
         Termination::Killed => 9,
         Termination::Aborted => 6,
@@ -142,34 +147,4 @@ fn bundle_bytes(directory: &Path) -> TestResult<std::collections::BTreeMap<PathB
             Ok((entry.file_name().into(), std::fs::read(entry.path())?))
         })
         .collect()
-}
-
-fn wait_checkpoint(
-    listener: std::os::unix::net::UnixListener,
-    socket: &Path,
-    child: &mut std::process::Child,
-    window: &str,
-) -> TestResult<std::os::unix::net::UnixStream> {
-    let (tx, rx) = std::sync::mpsc::sync_channel(1);
-    let waiter = std::thread::spawn(move || {
-        tx.send(listener.accept())
-            .map_err(|error| error.to_string())
-    });
-    let accepted = rx.recv_timeout(std::time::Duration::from_secs(30));
-    if accepted.is_err() {
-        child.kill()?;
-        std::os::unix::net::UnixStream::connect(socket)?;
-    }
-    waiter
-        .join()
-        .map_err(|_| "checkpoint listener panicked")?
-        .map_err(|error| format!("listener send: {error}"))?;
-    let (mut stream, _) = accepted??;
-    stream.set_read_timeout(Some(std::time::Duration::from_secs(10)))?;
-    let mut bytes = [0_u8; 7];
-    let length = window.len();
-    let slice = bytes.get_mut(..length).ok_or("checkpoint name too long")?;
-    stream.read_exact(slice)?;
-    check!(eq; slice, window.as_bytes());
-    Ok(stream)
 }

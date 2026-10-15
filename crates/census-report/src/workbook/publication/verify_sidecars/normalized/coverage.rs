@@ -14,7 +14,7 @@ enum Coverage<'a> {
     Access(&'a SourceAccessCondition),
 }
 
-pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> {
+pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<u64> {
     let dataset = inputs.dataset;
     let metrics = dataset
         .coverage_evidence

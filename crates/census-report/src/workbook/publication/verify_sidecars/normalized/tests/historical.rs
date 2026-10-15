@@ -2,6 +2,8 @@ use super::{files, population::Population, TestResult};
 use census_domain::model::SchoolId;
 use std::path::Path;
 
+mod catalog;
+
 fn expected(given: &Population, historical: &SchoolId) -> Vec<String> {
     [
         historical.as_str(),
@@ -63,7 +65,7 @@ fn given_unretained_historical_school_when_manual_families_are_read_then_exact_r
     write(&given, &historical, directory.path())?;
     check!(eq; super::value(directory.path(), "best_marks.csv", 0, "school_at_performance")?, historical.as_str());
     check!(eq; super::value(directory.path(), "best_marks.csv", 0, "school_at_performance_status")?, "performance_team_school");
-    super::super::verify(directory.path(), &given.inputs()?)?;
+    super::super::verify(directory.path(), &given.inputs()?, 3)?;
     Ok(())
 }
 
@@ -80,9 +82,9 @@ fn given_manual_unresolved_reference_when_status_name_evidence_or_id_is_tampered
         ("address_evidence_refs", "[\"invented-address-evidence\"]"),
     ] {
         write(&given, &historical, directory.path())?;
-        super::super::verify(directory.path(), &given.inputs()?)?;
+        super::super::verify(directory.path(), &given.inputs()?, 3)?;
         tamper(directory.path(), &historical, column, replacement)?;
-        match super::super::verify(directory.path(), &given.inputs()?) {
+        match super::super::verify(directory.path(), &given.inputs()?, 3) {
             Err(crate::report::ReportError::Invariant { .. }) => {}
             other => {
                 return Err(

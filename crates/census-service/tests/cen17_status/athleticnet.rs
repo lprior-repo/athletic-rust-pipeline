@@ -135,7 +135,12 @@ async fn execute(surface: Option<Value>, status: Option<&str>, numeric_best: boo
         );
         check!(athlete.sports.is_empty());
     }
-    let (jsonl, csv) = bests::write(&directory.path().join("bests"), &bests, "2027")?;
+    let (jsonl, csv) = bests::write(
+        &directory.path().join("bests"),
+        &bests,
+        "2027",
+        census_domain::model::EventSemantics::CURRENT,
+    )?;
     assert_bests_files(&jsonl, &csv, &expected_ids)?;
     let path = workbook::build(
         &store,

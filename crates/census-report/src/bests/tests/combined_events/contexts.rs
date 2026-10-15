@@ -58,9 +58,9 @@ fn assert_selection(
     let row = rows.first().ok_or("missing expected winner")?;
     check!(eq; row.source.performance_id, expected.id);
     check!(eq; row.result.mark, expected.mark);
-    check!(eq; row.eligible_candidate_count, eligible);
-    check!(eq; row.tied_performance_count, 1);
-    check!(eq; row.tied_performance_ids, vec![expected.id.clone()]);
+    check!(eq; row.inventory.eligible_group_count(), eligible);
+    check!(eq; row.inventory.tied_group_count(), 1);
+    check!(eq; row.inventory.tied_representative_ids(), vec![expected.id.clone()]);
     Ok(())
 }
 

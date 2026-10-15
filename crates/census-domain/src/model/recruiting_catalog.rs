@@ -65,11 +65,13 @@ impl RecruitingCatalogV1 {
             policy_revision: match self.semantics {
                 EventSemantics::Legacy18 => None,
                 EventSemantics::FlatEvents19 => Some(2),
-                EventSemantics::CombinedEvents20 => Some(3),
+                EventSemantics::CombinedEvents20 | EventSemantics::ResultGroups21 => Some(3),
             },
             grammar: match self.semantics {
                 EventSemantics::Legacy18 => "ascii_delimited_tokens_typed_context_xc_anchors_v3",
-                EventSemantics::FlatEvents19 | EventSemantics::CombinedEvents20 => {
+                EventSemantics::FlatEvents19
+                | EventSemantics::CombinedEvents20
+                | EventSemantics::ResultGroups21 => {
                     "ascii_delimited_tokens_typed_context_xc_anchors_v4"
                 }
             },
@@ -88,7 +90,9 @@ impl RecruitingCatalogV1 {
             ambiguous: policy::AMBIGUOUS,
             missing: match self.semantics {
                 EventSemantics::Legacy18 => legacy_policy::MISSING,
-                EventSemantics::FlatEvents19 | EventSemantics::CombinedEvents20 => policy::MISSING,
+                EventSemantics::FlatEvents19
+                | EventSemantics::CombinedEvents20
+                | EventSemantics::ResultGroups21 => policy::MISSING,
             },
             qualifiers: policy::QUALIFIERS,
             units: policy::UNITS,

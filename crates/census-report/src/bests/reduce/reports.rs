@@ -1,10 +1,13 @@
 use super::super::mark_text;
 use super::super::selection::Conflict;
+use super::grouping::ReportGroupKey;
 use super::{Candidate, Parents};
 use crate::report::EventAdmission;
 use census_domain::model::performance_comparison::Measure;
 use census_domain::model::{CanonicalPerformance, PerformanceId};
 use std::collections::{BTreeMap, BTreeSet};
+
+mod provenance;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct CompetitionContext<'a> {
@@ -33,7 +36,7 @@ pub(super) enum ContextIntegrity {
     RetainedConflict,
 }
 
-pub(super) struct RetainedContexts<'a>(BTreeSet<(&'a str, CompetitionContext<'a>)>);
+pub(super) struct RetainedContexts<'a>(BTreeSet<(&'a str, ReportGroupKey<'a>)>);
 
 impl<'a> RetainedContexts<'a> {
     pub(super) fn of(
@@ -47,20 +50,27 @@ impl<'a> RetainedContexts<'a> {
                 .copied()
                 .filter(|performance| {
                     !performance.retained_conflicts.is_empty()
-                        || super::combined::explicit_terminal(performance, admission)
+                        || super::grouping::terminal(performance, admission)
                 })
                 .filter_map(|performance| {
                     let athlete = parents.athlete(performance.athlete.as_str())?;
-                    Some((athlete.id.as_str(), CompetitionContext::of(performance)))
+                    Some((
+                        athlete.id.as_str(),
+                        ReportGroupKey::of(performance, admission.semantics()),
+                    ))
                 })
                 .collect(),
         )
     }
 
-    pub(super) fn integrity(&self, candidate: &Candidate<'a>) -> ContextIntegrity {
+    pub(super) fn integrity(
+        &self,
+        candidate: &Candidate<'a>,
+        policy: census_domain::model::EventSemantics,
+    ) -> ContextIntegrity {
         if self.0.contains(&(
             candidate.athlete.id.as_str(),
-            CompetitionContext::of(candidate.performance),
+            ReportGroupKey::of(candidate.performance, policy),
         )) {
             ContextIntegrity::RetainedConflict
         } else {
@@ -99,7 +109,12 @@ impl<'a> ReportGroup<'a> {
         }
     }
 
-    pub(super) fn record(&mut self, candidate: Candidate<'a>, integrity: ContextIntegrity) {
+    pub(super) fn record(
+        &mut self,
+        candidate: Candidate<'a>,
+        integrity: ContextIntegrity,
+        policy: census_domain::model::EventSemantics,
+    ) {
         self.marks.insert(mark_text(&candidate.performance.mark));
         if integrity == ContextIntegrity::RetainedConflict {
             self.state = ReportState::Contested;
@@ -108,7 +123,10 @@ impl<'a> ReportGroup<'a> {
             self.candidates.clear();
             return;
         };
-        if observed_value(&candidate) != observed_value(incumbent) {
+        let completion_conflict = policy == census_domain::model::EventSemantics::ResultGroups21
+            && candidate.performance.combined_completion
+                != incumbent.performance.combined_completion;
+        if completion_conflict || observed_value(&candidate) != observed_value(incumbent) {
             self.state = ReportState::Contested;
             self.candidates.clear();
             return;
@@ -121,7 +139,12 @@ impl<'a> ReportGroup<'a> {
                 }
             })
             .or_insert(candidate.value);
-        if candidate.wins_over(incumbent) {
+        if candidate.wins_over(incumbent)
+            || (policy == census_domain::model::EventSemantics::ResultGroups21
+                && candidate.value == incumbent.value
+                && candidate.performance.id == incumbent.performance.id
+                && provenance::compare(candidate.performance, incumbent.performance).is_lt())
+        {
             *incumbent = candidate;
         }
     }

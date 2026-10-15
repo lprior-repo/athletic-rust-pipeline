@@ -8,6 +8,7 @@ mod binding;
 mod checkpoint;
 mod incident;
 mod install;
+pub(super) mod inventory;
 mod lifecycle;
 mod manifest;
 pub(super) mod normalized;
@@ -18,6 +19,7 @@ mod seal;
 mod sidecars;
 mod stage;
 mod verify_sidecars;
+mod versions;
 pub use manifest::{
     current_workbook, open_publication, open_publication_for_seal, verify_published,
     OpenedPublication, VerifiedPublication,
@@ -26,6 +28,8 @@ pub use protocol::{PublicationError, RecoveryOutcome};
 pub use recovery::recover_publication;
 pub(super) use sidecars::{write_json, write_sidecars};
 pub(super) use stage::Stage;
+
+const ARTIFACT_REVISION: u32 = 6;
 
 fn staging_nonce(store_identity: &str) -> ReportResult<String> {
     let time = std::time::SystemTime::now()

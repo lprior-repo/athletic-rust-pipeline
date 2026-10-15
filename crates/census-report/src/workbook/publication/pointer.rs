@@ -70,7 +70,7 @@ pub(super) fn validate_binding(
     let manifest = manifest::verify_directory(directory)?;
     if manifest.lineage.store_identity != input.lineage.as_str()
         || super::binding::input_token(&manifest.lineage)? != input.token
-        || super::binding::recipe(&manifest.lineage, &manifest.selection()?)? != input.recipe
+        || manifest.recipe()? != input.recipe
     {
         return Err(PublicationError::InputFenceRefused {
             detail: "verified bundle differs from persisted lineage, token or recipe".into(),

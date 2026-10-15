@@ -83,7 +83,7 @@ fn current_policy_cannot_reuse_historical_published_receipts() -> TestResult {
     [Some(2027), Some(2028), None]
         .into_iter()
         .try_for_each(|year| {
-            [19, 18, 17, 16]
+            [20, 19, 18, 17, 16]
                 .into_iter()
                 .try_for_each(|policy| cutover(year, policy))
         })
@@ -92,13 +92,15 @@ fn current_policy_cannot_reuse_historical_published_receipts() -> TestResult {
 fn historical_input_is_read_only(old: &historical::Historical) -> TestResult {
     let directory = old.workbook.parent().ok_or("historical directory")?;
     manifest::verify_directory(directory)?;
-    if matches!(old.lineage.policy_revision, 18 | 19) {
+    if matches!(old.lineage.policy_revision, 18 | 19 | 20) {
         let dataset = ExportDataset::reopen_frozen(&directory.join("frozen-input.json"))?;
         check!(eq; dataset.lineage, old.lineage);
         let semantics = if old.lineage.policy_revision == 18 {
             census_domain::model::EventSemantics::Legacy18
-        } else {
+        } else if old.lineage.policy_revision == 19 {
             census_domain::model::EventSemantics::FlatEvents19
+        } else {
+            census_domain::model::EventSemantics::CombinedEvents20
         };
         check!(eq; dataset.semantic_policy()?, semantics);
         check!(matches!(

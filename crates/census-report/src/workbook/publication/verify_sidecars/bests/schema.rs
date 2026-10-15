@@ -43,25 +43,41 @@ const HEADERS: [&str; 36] = [
 pub(super) enum Schema {
     Historical,
     CandidateInventory,
+    ResultGroups,
 }
 
 impl Schema {
     pub(super) fn parse(artifact_revision: u32) -> ReportResult<Self> {
         match artifact_revision {
             1 | 2 => Ok(Self::Historical),
-            3 => Ok(Self::CandidateInventory),
+            3..=5 => Ok(Self::CandidateInventory),
+            6 => Ok(Self::ResultGroups),
             _ => Err(defect(format!(
                 "unsupported publication artifact revision: {artifact_revision}"
             ))),
         }
     }
 
-    pub(super) fn headers(self) -> ReportResult<&'static [&'static str]> {
+    pub(super) fn headers(self) -> ReportResult<Vec<&'static str>> {
         match self {
             Self::Historical => HEADERS
                 .get(..33)
+                .map(|headers| headers.to_vec())
                 .ok_or_else(|| defect("historical best-results schema is incomplete".into())),
-            Self::CandidateInventory => Ok(&HEADERS),
+            Self::CandidateInventory => Ok(HEADERS.to_vec()),
+            Self::ResultGroups => Ok(HEADERS
+                .iter()
+                .take(33)
+                .copied()
+                .chain([
+                    "eligible_result_group_count",
+                    "tied_result_group_count",
+                    "tied_result_group_representative_ids",
+                    "result_group_basis",
+                    "physical_performance_count_status",
+                    "selection_policy_version",
+                ])
+                .collect()),
         }
     }
 

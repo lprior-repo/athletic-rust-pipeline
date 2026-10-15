@@ -6,7 +6,7 @@ use super::super::{cancel_freeze_v2, generation, INPUT_TABLES};
 use super::*;
 use crate::export::ExportDataset;
 
-const PRIOR_POLICIES: [u32; 12] = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+const PRIOR_POLICIES: [u32; 13] = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 const PRIOR_STATES: [Option<InputState>; 5] = [
     None,
     Some(InputState::Requested),
@@ -18,7 +18,7 @@ const PRIOR_STATES: [Option<InputState>; 5] = [
 fn prior_manifest(current: &FrozenManifest, policy: u32) -> TestResult<FrozenManifest> {
     let mut prior = current.clone();
     prior.lineage.policy_revision = policy;
-    if matches!(policy, 14..=19) {
+    if matches!(policy, 14..=20) {
         prior.lineage.schema_revision = 3;
         prior.codec = "census-frozen-jsonl-v3".into();
         prior.codec_revision = 3;
@@ -28,7 +28,7 @@ fn prior_manifest(current: &FrozenManifest, policy: u32) -> TestResult<FrozenMan
     prior.lineage.input_generation = generation(&prior.lineage)?;
     prior.input_token.semantic_policy = policy;
     prior.input_token.validate_against(&prior.lineage)?;
-    if matches!(policy, 15..=19) {
+    if matches!(policy, 15..=20) {
         check!(eq; prior.streams.len(), 15);
         check!(eq; prior.source_fingerprints.len(), 16);
         for kind in [
@@ -51,7 +51,7 @@ fn install_prior_policy(
     state: Option<InputState>,
 ) -> TestResult<Retained> {
     let encoded = serialized_bytes(manifest)?;
-    if matches!(manifest.lineage.policy_revision, 18 | 19) {
+    if matches!(manifest.lineage.policy_revision, 18 | 19 | 20) {
         check!(eq; FrozenManifest::decode(&encoded)?, *manifest);
     } else {
         let expected = format!("policy revision {}", manifest.lineage.policy_revision);
@@ -96,7 +96,7 @@ fn refused_prior_cancellation(store: &Store, job: &str, policy: u32) -> TestResu
 }
 
 fn check_refusal<T>(result: Result<T, ReportError>, policy: u32) -> TestResult {
-    if matches!(policy, 18 | 19) {
+    if matches!(policy, 18 | 19 | 20) {
         check!(matches!(
             result,
             Err(ReportError::Invariant { ref detail })
@@ -144,8 +144,7 @@ fn policy_preserved(policy: u32, state: Option<InputState>) -> TestResult {
 }
 
 #[test]
-fn historical_policies_eight_through_nineteen_are_preserved_in_every_retained_state() -> TestResult
-{
+fn historical_policies_eight_through_twenty_are_preserved_in_every_retained_state() -> TestResult {
     PRIOR_POLICIES.into_iter().try_for_each(|policy| {
         PRIOR_STATES
             .into_iter()
@@ -165,7 +164,7 @@ fn prior_archive(
     policy: u32,
     coverage: PriorCoverage,
 ) -> TestResult<Vec<u8>> {
-    if matches!(policy, 14..=19) {
+    if matches!(policy, 14..=20) {
         let data = serialized_bytes(dataset)?;
         let mut lineage = dataset.lineage.clone();
         lineage.schema_revision = 3;
@@ -229,13 +228,13 @@ fn archive_preserved(policy: u32, coverage: PriorCoverage) -> TestResult {
     let seeded = schema_three::seed(policy)?;
     let store = seeded.store;
     let dataset = ExportDataset::load(&store)?;
-    if matches!(policy, 15..=19) {
+    if matches!(policy, 15..=20) {
         check!(eq; dataset.relays.len(), 1);
         check!(eq; dataset.coverage_evidence.rows.len(), 1);
         check!(eq; dataset.coverage_evidence.coach_lanes.len(), 1);
     }
     let retained = prior_archive(&dataset, &store, policy, coverage)?;
-    if matches!(policy, 14..=19) {
+    if matches!(policy, 14..=20) {
         let shape: serde_json::Value = serde_json::from_slice(&retained)?;
         check!(eq; shape.pointer("/lineage/schema_revision"), Some(&serde_json::json!(3)));
         check!(eq; shape.pointer("/lineage/policy_revision"), Some(&serde_json::json!(policy)));
@@ -268,7 +267,7 @@ fn historical_full_coverage_archives_are_preserved_without_rewriting_their_bytes
 }
 
 fn check_archive(path: &Path, store: &Store, policy: u32, retained: &[u8]) -> TestResult {
-    if matches!(policy, 18 | 19) {
+    if matches!(policy, 18 | 19 | 20) {
         let dataset = ExportDataset::reopen_frozen(path)?;
         check!(eq; dataset.lineage.policy_revision, policy);
         check!(eq; dataset.relays.len(), 1);

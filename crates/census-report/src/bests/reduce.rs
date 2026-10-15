@@ -1,70 +1,30 @@
+mod build;
 mod combined;
+mod grouping;
+mod identity;
 mod reports;
 mod row;
 mod support;
 
-use reports::{CompetitionContext, ContextIntegrity, ReportGroup, RetainedContexts};
+pub(crate) use build::build_admitted_outcome;
+pub use build::{build_from_dataset, build_with_exclusions};
+
+use grouping::ReportGroupKey;
+use reports::{ContextIntegrity, ReportGroup, RetainedContexts};
 
 use super::selection::{Population, SharedSelection};
-use super::{Options, Parents};
-use crate::report::{Derivation, EventAdmission, ReportResult, Scope};
-use census_domain::model::performance_comparison::Measure;
-use census_domain::model::performance_comparison::{should_replace, MarkOrdering, PrKey};
+use super::{CombinedExclusionReason, Parents};
+use crate::report::{EventAdmission, Scope};
+use census_domain::model::performance_comparison::{should_replace, MarkOrdering, Measure, PrKey};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventSpecification,
     SourceIdentity,
 };
 use std::collections::{BTreeMap, HashMap};
 
-pub fn build_from_dataset(
-    dataset: &crate::export::ExportDataset,
-    options: &Options,
-) -> ReportResult<Vec<SharedSelection>> {
-    let admission = EventAdmission::of(dataset)?;
-    build_admitted(&admission, options)
-}
-
-pub(crate) fn build_admitted(
-    admission: &EventAdmission<'_>,
-    options: &Options,
-) -> ReportResult<Vec<SharedSelection>> {
-    let derivation = Derivation::of(
-        admission.dataset(),
-        options.scope,
-        options.grad_year,
-        &options.jurisdictions,
-    );
-    support::admit(derivation.performances())?;
-    let parents = Parents::of(&derivation);
-    let retained = RetainedContexts::of(derivation.performances(), &parents, admission);
-    let mut slots: HashMap<PrKey, PrSlot<'_>> = HashMap::new();
-    derivation
-        .performances()
-        .iter()
-        .copied()
-        .for_each(|performance| {
-            fold(&mut slots, performance, &parents, &retained, admission);
-        });
-    Ok(super::selection::publish(
-        slots
-            .into_iter()
-            .filter_map(|(key, slot)| {
-                close(
-                    key,
-                    slot,
-                    &parents,
-                    derivation.scope(),
-                    admission.semantics(),
-                )
-            })
-            .collect(),
-        options.limit,
-    ))
-}
-
 struct PrSlot<'a> {
     sources: Vec<&'a SourceIdentity>,
-    reports: BTreeMap<CompetitionContext<'a>, ReportGroup<'a>>,
+    reports: BTreeMap<ReportGroupKey<'a>, ReportGroup<'a>>,
     marks: usize,
 }
 
@@ -93,26 +53,16 @@ impl<'a> Candidate<'a> {
         performance: &'a CanonicalPerformance,
         parents: &Parents<'a>,
         admission: &EventAdmission<'_>,
-    ) -> Option<(PrKey, Self)> {
+    ) -> Option<Result<(PrKey, Self), CombinedExclusionReason>> {
         let athlete = parents.athlete(performance.athlete.as_str())?;
-        let kind = admission.included_kind(&performance.event)?;
+        let event = parents.canonical_event(performance.event.as_str())?;
+        let Some(kind) = admission.included_kind(&performance.event) else {
+            return combined::unresolved_specification(performance, event, admission).map(Err);
+        };
         let (measure, value) = eligible_measure(performance, kind)?;
         let meet = parents.meet(performance.meet.as_str());
-        let event = parents.canonical_event(performance.event.as_str())?;
-        if admission.semantics().requires_completed_combined()
-            && matches!(
-                kind,
-                census_domain::model::EventKind::Pentathlon
-                    | census_domain::model::EventKind::Heptathlon
-                    | census_domain::model::EventKind::Decathlon
-            )
-            && performance.combined_eligibility(
-                &event
-                    .resolved_specification_with_policy(admission.semantics())
-                    .ok()?,
-            ) != census_domain::model::CombinedEligibility::Eligible
-        {
-            return None;
+        if let Err(reason) = combined::admit(performance, event, kind, admission.semantics()) {
+            return Some(Err(reason));
         }
         let disposition = admission.disposition(&event.id)?;
         let key = PrKey::from_admitted(
@@ -124,7 +74,7 @@ impl<'a> Candidate<'a> {
             disposition,
             admission.semantics(),
         )?;
-        Some((
+        Some(Ok((
             key,
             Self {
                 event,
@@ -134,23 +84,28 @@ impl<'a> Candidate<'a> {
                 measure,
                 value,
             },
-        ))
+        )))
     }
 
-    fn record(self, entry: &mut PrSlot<'a>, integrity: ContextIntegrity) {
+    fn record(
+        self,
+        entry: &mut PrSlot<'a>,
+        integrity: ContextIntegrity,
+        policy: census_domain::model::EventSemantics,
+    ) {
         entry.marks = entry.marks.saturating_add(1);
         if let Some(owner) = owner_of(self.performance, self.athlete) {
             if !entry.sources.contains(&owner) {
                 entry.sources.push(owner);
             }
         }
-        let context = CompetitionContext::of(self.performance);
+        let context = ReportGroupKey::of(self.performance, policy);
         match entry.reports.entry(context) {
             std::collections::btree_map::Entry::Vacant(vacant) => {
                 vacant.insert(ReportGroup::new(self, integrity));
             }
             std::collections::btree_map::Entry::Occupied(mut occupied) => {
-                occupied.get_mut().record(self, integrity);
+                occupied.get_mut().record(self, integrity, policy);
             }
         }
     }
@@ -170,26 +125,34 @@ impl<'a> Candidate<'a> {
     }
 }
 
+enum Folded {
+    Ignored,
+    Eligible,
+}
+
 fn fold<'a>(
     slots: &mut HashMap<PrKey, PrSlot<'a>>,
     performance: &'a CanonicalPerformance,
     parents: &Parents<'a>,
     retained: &RetainedContexts<'a>,
     admission: &EventAdmission<'_>,
-) {
-    let Some((key, candidate)) = Candidate::resolve(performance, parents, admission) else {
-        return;
+) -> Result<Folded, CombinedExclusionReason> {
+    let Some(candidate) = Candidate::resolve(performance, parents, admission) else {
+        return Ok(Folded::Ignored);
     };
-    let integrity = retained.integrity(&candidate);
+    let (key, candidate) = candidate?;
+    let integrity = retained.integrity(&candidate, admission.semantics());
     let course_key = key.same_course(candidate.event, admission.semantics());
     if let Some(course_key) = course_key {
         candidate.record(
             slots.entry(course_key).or_insert_with(PrSlot::empty),
             integrity,
+            admission.semantics(),
         );
     }
     let entry = slots.entry(key).or_insert_with(PrSlot::empty);
-    candidate.record(entry, integrity);
+    candidate.record(entry, integrity, admission.semantics());
+    Ok(Folded::Eligible)
 }
 
 fn close(
@@ -214,22 +177,20 @@ fn close(
         .event
         .resolved_specification_with_policy(semantics)
         .ok()?;
-    let mut row = make_row(key, candidate, parents, scope, specification);
-    row.eligible_candidate_count = slot
+    let mut row = make_row(key, candidate, parents, scope, specification, semantics);
+    let eligible = slot
         .reports
         .values()
         .filter_map(ReportGroup::eligible)
         .count();
-    row.tied_performance_ids = slot
+    let representatives = slot
         .reports
         .values()
         .filter_map(ReportGroup::eligible)
         .filter(|value| value.value == candidate.value)
         .map(|value| value.performance.id.clone())
         .collect();
-    row.tied_performance_ids.sort();
-    row.tied_performance_ids.dedup();
-    row.tied_performance_count = row.tied_performance_ids.len();
+    row.inventory = super::SelectionInventory::from_groups(semantics, eligible, representatives);
     row.supporting_tied_candidate_ids = slot
         .reports
         .values()
@@ -256,6 +217,7 @@ fn make_row(
     parents: &Parents<'_>,
     scope: Scope,
     specification: EventSpecification,
+    semantics: census_domain::model::EventSemantics,
 ) -> SharedSelection {
     SharedSelection {
         key,
@@ -265,9 +227,7 @@ fn make_row(
         athlete: candidate.athlete(parents),
         population: Population::default(),
         conflicts: Vec::new(),
-        eligible_candidate_count: 0,
-        tied_performance_count: 0,
-        tied_performance_ids: Vec::new(),
+        inventory: super::SelectionInventory::from_groups(semantics, 0, Vec::new()),
         supporting_tied_candidate_ids: Vec::new(),
     }
 }

@@ -8,6 +8,7 @@ use std::path::Path;
 mod athletes;
 mod best_marks;
 mod coach_contacts;
+mod combined_exclusions;
 mod comparison_classes;
 mod coverage;
 mod identity_aliases;
@@ -27,7 +28,8 @@ pub(in crate::workbook) fn write(
     dataset: &ExportDataset,
     options: &Options,
     bests: &[SharedSelection],
-) -> ReportResult<()> {
+    exclusions: &[crate::bests::CombinedExclusion],
+) -> ReportResult<super::inventory::RowCounts> {
     let admission = EventAdmission::of(dataset)?;
     let derivation = Derivation::of(
         dataset,
@@ -39,26 +41,57 @@ pub(in crate::workbook) fn write(
     let schools = schools::included(&derivation, bests, &performances)?;
     census_store::fs::create_dir_all_synced(directory)
         .map_err(|source| crate::report::io_error(directory, source))?;
-    athletes::write(directory, &derivation, bests)?;
-    best_marks::write(directory, &derivation, bests, &performances)?;
-    schools::write(directory, &schools, &dataset.lineage.input_generation)?;
-    coach_contacts::write(directory, &derivation, options.school_year)?;
-    comparison_classes::write(directory, dataset, bests)?;
-    provenance::write(directory, &derivation, &schools, bests, &performances)?;
-    coverage::write(directory, dataset)?;
-    identity_aliases::write(directory, &derivation)
+    Ok(std::collections::BTreeMap::from([
+        (
+            "athletes.csv".into(),
+            athletes::write(directory, &derivation, bests)?,
+        ),
+        (
+            "best_marks.csv".into(),
+            best_marks::write(directory, &derivation, bests, &performances)?,
+        ),
+        (
+            "schools.csv".into(),
+            schools::write(directory, &schools, &dataset.lineage.input_generation)?,
+        ),
+        (
+            "coach_contacts.csv".into(),
+            coach_contacts::write(directory, &derivation, options.school_year)?,
+        ),
+        (
+            "comparison_classes.csv".into(),
+            comparison_classes::write(directory, dataset, bests)?,
+        ),
+        (
+            "provenance.csv".into(),
+            provenance::write(directory, &derivation, &schools, bests, &performances)?,
+        ),
+        ("coverage.csv".into(), coverage::write(directory, dataset)?),
+        (
+            "identity_aliases.csv".into(),
+            identity_aliases::write(directory, &derivation)?,
+        ),
+        (
+            "combined_exclusions.csv".into(),
+            combined_exclusions::write(directory, dataset, exclusions, &performances)?,
+        ),
+    ]))
 }
 
 fn write_csv(
     path: &Path,
     header: &[&str],
     body: impl FnOnce(&mut Rows<'_>) -> ReportResult<()>,
-) -> ReportResult<()> {
+) -> ReportResult<u64> {
+    let mut count = 0;
     let mut failure = None;
     let published = census_store::read::publish_atomically(path, |temporary| {
         let result = write_body(temporary, header, body);
         match result {
-            Ok(()) => Ok(()),
+            Ok(rows) => {
+                count = rows;
+                Ok(())
+            }
             Err(error) => {
                 let detail = error.to_string();
                 failure = Some(error);
@@ -68,7 +101,7 @@ fn write_csv(
     });
     match failure {
         Some(error) => Err(error),
-        None => published.map_err(ReportError::from),
+        None => published.map(|()| count).map_err(ReportError::from),
     }
 }
 
@@ -76,7 +109,7 @@ fn write_body(
     path: &Path,
     header: &[&str],
     body: impl FnOnce(&mut Rows<'_>) -> ReportResult<()>,
-) -> ReportResult<()> {
+) -> ReportResult<u64> {
     let writer = csv::WriterBuilder::new()
         .has_headers(false)
         .from_path(path)
@@ -85,6 +118,7 @@ fn write_body(
         writer,
         path,
         admission: crate::grouping::Admission::new("normalized CSV"),
+        count: 0,
     };
     rows.writer
         .write_record(header)
@@ -92,10 +126,12 @@ fn write_body(
     body(&mut rows)?;
     rows.writer
         .flush()
-        .map_err(|source| crate::report::io_error(path, source))
+        .map_err(|source| crate::report::io_error(path, source))?;
+    Ok(rows.count)
 }
 
 struct Rows<'a> {
+    count: u64,
     writer: csv::Writer<std::fs::File>,
     path: &'a Path,
     admission: crate::grouping::Admission,
@@ -104,6 +140,19 @@ struct Rows<'a> {
 impl Rows<'_> {
     fn push<const N: usize>(&mut self, fields: [String; N]) -> ReportResult<()> {
         self.admission.record(&fields.as_slice())?;
+        self.write_fields(fields)
+    }
+
+    fn push_vec(&mut self, fields: Vec<String>) -> ReportResult<()> {
+        self.admission.record(&fields.as_slice())?;
+        self.write_fields(fields)
+    }
+
+    fn write_fields(&mut self, fields: impl IntoIterator<Item = String>) -> ReportResult<()> {
+        let count = self
+            .count
+            .checked_add(1)
+            .ok_or_else(|| defect("normalized CSV row counter overflow"))?;
         for field in fields {
             let field = crate::csv_safety::protect_owned(field)
                 .map_err(|error| defect(format!("protecting CSV field: {error}")))?;
@@ -114,6 +163,7 @@ impl Rows<'_> {
         self.writer
             .write_record(std::iter::empty::<&str>())
             .map_err(|error| csv_failure(self.path, error))?;
+        self.count = count;
         Ok(())
     }
 }

@@ -58,6 +58,32 @@ pub(super) fn recipe(
     lineage: &crate::export::DatasetLineage,
     options: &Options,
 ) -> ReportResult<Digest> {
+    recipe_for_artifact(lineage, options, super::ARTIFACT_REVISION)
+}
+
+pub(super) fn recipe_for_artifact(
+    lineage: &crate::export::DatasetLineage,
+    options: &Options,
+    artifact_revision: u32,
+) -> ReportResult<Digest> {
+    super::versions::validate_policy(artifact_revision, lineage.policy_revision)?;
+    match artifact_revision {
+        1..=3 => historical_recipe(lineage, options),
+        4..=6 => digest(&(
+            "athletic-publication-artifact-recipe-v1",
+            artifact_revision,
+            historical_recipe(lineage, options)?,
+        )),
+        _ => Err(super::invariant(format!(
+            "unsupported publication recipe artifact revision {artifact_revision}"
+        ))),
+    }
+}
+
+fn historical_recipe(
+    lineage: &crate::export::DatasetLineage,
+    options: &Options,
+) -> ReportResult<Digest> {
     let mut jurisdictions: Vec<&str> = options
         .jurisdictions
         .iter()

@@ -3,16 +3,18 @@ pub enum EventSemantics {
     Legacy18,
     FlatEvents19,
     CombinedEvents20,
+    ResultGroups21,
 }
 
 impl EventSemantics {
-    pub const CURRENT: Self = Self::CombinedEvents20;
+    pub const CURRENT: Self = Self::ResultGroups21;
 
     pub const fn revision(self) -> u32 {
         match self {
             Self::Legacy18 => 18,
             Self::FlatEvents19 => 19,
             Self::CombinedEvents20 => 20,
+            Self::ResultGroups21 => 21,
         }
     }
 
@@ -21,6 +23,7 @@ impl EventSemantics {
             18 => Some(Self::Legacy18),
             19 => Some(Self::FlatEvents19),
             20 => Some(Self::CombinedEvents20),
+            21 => Some(Self::ResultGroups21),
             _ => None,
         }
     }
@@ -28,14 +31,14 @@ impl EventSemantics {
     pub const fn requires_completed_combined(self) -> bool {
         match self {
             Self::Legacy18 | Self::FlatEvents19 => false,
-            Self::CombinedEvents20 => true,
+            Self::CombinedEvents20 | Self::ResultGroups21 => true,
         }
     }
 
     pub(super) const fn supports_flat_extensions(self) -> bool {
         match self {
             Self::Legacy18 => false,
-            Self::FlatEvents19 | Self::CombinedEvents20 => true,
+            Self::FlatEvents19 | Self::CombinedEvents20 | Self::ResultGroups21 => true,
         }
     }
 

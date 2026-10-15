@@ -15,7 +15,7 @@ pub(in crate::workbook::publication) fn verify_directory(
     let path = directory.join("manifest.json");
     let head: RevisionHead = sidecars::read_json(&path)?;
     match head.schema_revision {
-        1..=3 => {}
+        1..=6 => {}
         _ => {
             return Err(invariant(
                 "unsupported publication artifact revision".into(),
@@ -30,7 +30,15 @@ pub(in crate::workbook::publication) fn verify_directory(
             "unsupported or corrupt generation manifest".to_string(),
         ));
     }
+    super::super::versions::validate_policy(
+        manifest.schema_revision,
+        manifest.lineage.policy_revision,
+    )?;
     manifest.selection.options()?;
+    super::super::inventory::validate(
+        manifest.schema_revision,
+        manifest.normalized_csv_rows.as_ref(),
+    )?;
     let expected = artifact_names(manifest.schema_revision, manifest.selection.grad_year)?;
     if manifest.artifacts.keys().cloned().collect::<Vec<_>>() != expected {
         return Err(invariant(

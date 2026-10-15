@@ -1,8 +1,8 @@
 use super::super::input::Inputs;
-use super::{rows, schema, schools::Schools};
+use super::{revision::Revision, rows, schema, schools::Schools};
 use crate::bests::SharedSelection;
 use crate::report::ReportResult;
-use census_domain::model::{CanonicalCoach, Evidence, SourceRef};
+use census_domain::model::{CanonicalCoach, CanonicalPerformance, Evidence, SourceRef};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
@@ -38,6 +38,7 @@ pub(super) fn inventory<'a>(
     schools: &Schools<'a>,
     coaches: &'a [CanonicalCoach],
     bests: &[SharedSelection],
+    revision: Revision,
 ) -> ReportResult<Facts<'a>> {
     let mut facts = Facts {
         facts: BTreeMap::new(),
@@ -46,7 +47,7 @@ pub(super) fn inventory<'a>(
     inventory_athletes(inputs, &mut facts)?;
     inventory_schools(schools, &mut facts)?;
     inventory_coaches(coaches, &mut facts)?;
-    inventory_bests(inputs, bests, &mut facts)?;
+    inventory_bests(inputs, bests, &mut facts, revision)?;
     Ok(facts)
 }
 
@@ -90,6 +91,7 @@ fn inventory_bests<'a>(
     inputs: &'a Inputs<'_>,
     bests: &[SharedSelection],
     facts: &mut Facts<'a>,
+    revision: Revision,
 ) -> ReportResult<()> {
     let performances: BTreeMap<_, _> = inputs
         .derivation
@@ -97,23 +99,49 @@ fn inventory_bests<'a>(
         .iter()
         .map(|performance| (&performance.id, *performance))
         .collect();
-    let ids: BTreeSet<_> = bests
+    bests
         .iter()
-        .flat_map(|best| best.tied_performance_ids.iter())
-        .collect();
-    ids.into_iter().try_for_each(|id| {
-        let performance = performances
-            .get(id)
-            .ok_or_else(|| rows::missing("evidence performance", id.as_str()))?;
-        facts.evidence("performance", id.as_str(), &performance.evidence)?;
-        if let Some(identity) = &performance.source_athlete {
-            facts.identity(id.as_str(), identity)?;
-        }
-        Ok::<_, crate::report::ReportError>(())
-    })
+        .flat_map(|best| revision.ids(best))
+        .try_for_each(|id| {
+            let performance = performances
+                .get(id)
+                .ok_or_else(|| rows::missing("evidence performance", id.as_str()))?;
+            if revision.has_supporting() {
+                facts.performance_reference(performance)?;
+            }
+            facts.evidence("performance", id.as_str(), &performance.evidence)?;
+            if let Some(identity) = &performance.source_athlete {
+                facts.identity(id.as_str(), identity)?;
+            }
+            Ok::<_, crate::report::ReportError>(())
+        })
 }
 
 impl<'a> Facts<'a> {
+    fn performance_reference(&mut self, performance: &'a CanonicalPerformance) -> ReportResult<()> {
+        let retained = serde_json::json!({
+            "performance_id": performance.id,
+            "source_key": performance.source_key,
+            "athlete_id": performance.athlete,
+            "event_id": performance.event,
+            "meet_id": performance.meet,
+        });
+        let kind = "retained_performance_reference";
+        self.insert(
+            rows::digest(&(kind, performance.id.as_str(), &retained))?,
+            Fact {
+                entity: "performance",
+                owner: performance.id.to_string(),
+                namespace: "unavailable".into(),
+                url: None,
+                reference: &performance.source_key,
+                observed: "unavailable",
+                kind: kind.into(),
+                retained,
+            },
+        )
+    }
+
     fn insert(&mut self, id: String, fact: Fact<'a>) -> ReportResult<()> {
         if self.facts.contains_key(&id) {
             return Ok(());
@@ -197,7 +225,11 @@ fn json(value: &impl serde::Serialize) -> ReportResult<serde_json::Value> {
     serde_json::to_value(value).map_err(|error| super::super::defect(error.to_string()))
 }
 
-pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>, facts: &Facts<'_>) -> ReportResult<()> {
+pub(super) fn verify(
+    directory: &Path,
+    inputs: &Inputs<'_>,
+    facts: &Facts<'_>,
+) -> ReportResult<u64> {
     rows::table(
         directory,
         ("provenance.csv", schema::PROVENANCE),

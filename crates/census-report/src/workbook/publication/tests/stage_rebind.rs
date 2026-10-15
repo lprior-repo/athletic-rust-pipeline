@@ -147,7 +147,8 @@ fn rebound_requested_stage_still_refuses_changed_evidence_and_keeps_prior_bundle
     check!(eq; rebound.state, State::Requested);
     let censuses = crate::workbook::Censuses::of(&f.dataset, &f.store.out_dir(), &[]);
     let result = stage.publish(&f.dataset, &f.options, |directory| {
-        crate::workbook::write_artifacts(directory, &f.dataset, &f.options, &censuses)?;
+        let counts =
+            crate::workbook::write_artifacts(directory, &f.dataset, &f.options, &censuses)?;
         let (school, _) = CanonicalSchool::new(
             UsJurisdiction::Wisconsin,
             "Late School",
@@ -155,7 +156,7 @@ fn rebound_requested_stage_still_refuses_changed_evidence_and_keeps_prior_bundle
             None,
         );
         f.store.append(Table::Schools, &school)?;
-        Ok(())
+        Ok(counts)
     });
     check!(matches!(
         result,

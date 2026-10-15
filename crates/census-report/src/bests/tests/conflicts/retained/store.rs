@@ -16,14 +16,16 @@ pub(super) fn reloaded_dataset(
     store.append_many(Table::Meets, &seed.meets)?;
     store.append_many(Table::Events, &seed.events)?;
     store.append_many(Table::Performances, observations)?;
-    let before = ExportDataset::load(&store)?;
+    let mut before = ExportDataset::load(&store)?;
+    before.lineage.policy_revision = seed.lineage.policy_revision;
     let selection = selected(&before)?;
     original_observations(&store, observations)?;
     store.flush()?;
     drop(store);
 
     let reopened = Store::open(directory.path())?;
-    let after = ExportDataset::load(&reopened)?;
+    let mut after = ExportDataset::load(&reopened)?;
+    after.lineage.policy_revision = seed.lineage.policy_revision;
     check!(eq; after.performances, before.performances);
     check!(eq; selected(&after)?, selection);
     original_observations(&reopened, observations)?;

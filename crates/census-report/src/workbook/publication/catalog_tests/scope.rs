@@ -154,7 +154,7 @@ fn render(
     let recruiting = crate::workbook::recruiting::Recruiting::of(
         &derivation,
         options.school_year,
-        selected,
+        selected.selections,
         &admission,
     )?;
     let censuses = crate::workbook::Censuses::of(dataset, directory, &options.jurisdictions);

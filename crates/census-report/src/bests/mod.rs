@@ -2,6 +2,7 @@ use crate::report::Scope;
 
 pub(crate) mod context;
 mod events;
+mod exclusions;
 mod notation;
 mod parents;
 mod reduce;
@@ -9,13 +10,13 @@ mod selection;
 mod write;
 
 pub use events::sport_of;
+pub use exclusions::{CombinedExclusion, CombinedExclusionReason, SelectionOutcome};
 pub use notation::{disagreement, format_time, mark_text};
-
-pub(crate) use reduce::build_admitted;
-pub use reduce::build_from_dataset;
+pub(crate) use reduce::build_admitted_outcome;
+pub use reduce::{build_from_dataset, build_with_exclusions};
 pub use selection::{
-    Conflict, Population, SelectionAthlete, SelectionMeet, SelectionResult, SelectionSource,
-    SharedSelection,
+    Conflict, HistoricalInventory, Population, ResultGroupInventory, SelectionAthlete,
+    SelectionInventory, SelectionMeet, SelectionResult, SelectionSource, SharedSelection,
 };
 pub use write::write;
 

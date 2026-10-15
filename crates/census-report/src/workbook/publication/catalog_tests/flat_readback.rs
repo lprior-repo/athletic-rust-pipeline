@@ -30,7 +30,7 @@ fn current_six_event_publication_reopens_and_independently_verifies() -> TestRes
         check!(eq; selected.iter().filter(|row| row.key.event_kind == kind).count(), 1);
     }
     check!(eq; std::fs::read(directory.join("frozen-input.json"))?, before);
-    for policy in [18, 19] {
+    for policy in [18, 19, 20] {
         let mut historical = ExportDataset::reopen_frozen(&directory.join("frozen-input.json"))?;
         historical.lineage.policy_revision = policy;
         let refused_root = fixture

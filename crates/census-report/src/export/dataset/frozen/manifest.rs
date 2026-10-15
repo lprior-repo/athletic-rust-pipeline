@@ -200,7 +200,7 @@ impl FrozenManifest {
 }
 
 fn check_lineage(lineage: &DatasetLineage) -> FrozenCodecResult<()> {
-    let supported = format!("schema revision {SCHEMA_REVISION} policy revisions 18 or 19");
+    let supported = format!("schema revision {SCHEMA_REVISION} policy revisions 18, 19, 20 or 21");
     if lineage.schema_revision != SCHEMA_REVISION
         || census_domain::model::EventSemantics::from_revision(lineage.policy_revision).is_none()
     {

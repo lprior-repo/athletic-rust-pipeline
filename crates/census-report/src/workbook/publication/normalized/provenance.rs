@@ -1,6 +1,8 @@
 use super::{digest, encode, text, write_csv, Rows};
 use crate::report::{Derivation, ReportResult};
-use census_domain::model::{CanonicalAthlete, Evidence, SourceIdentity, SourceRef};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalPerformance, Evidence, SourceIdentity, SourceRef,
+};
 use std::collections::BTreeSet;
 use std::path::Path;
 
@@ -68,7 +70,7 @@ pub(super) fn write(
     schools: &super::schools::Schools<'_>,
     bests: &[crate::bests::SharedSelection],
     performances: &super::PerformanceIndex<'_>,
-) -> ReportResult<()> {
+) -> ReportResult<u64> {
     write_csv(&directory.join("provenance.csv"), &HEADER, |writer| {
         let mut provenance = Provenance {
             writer,
@@ -96,25 +98,25 @@ pub(super) fn write(
         for coach in super::coach_contacts::claims(derivation)? {
             provenance.evidence("coach", coach.id.as_str(), &coach.evidence)?;
         }
-        let ids: BTreeSet<_> = bests
+        bests
             .iter()
-            .flat_map(|best| best.tied_performance_ids.iter())
-            .collect();
-        for id in ids {
-            let performance = performances
-                .get(id)
-                .copied()
-                .ok_or_else(|| super::defect(format!("missing provenance performance {id}")))?;
-            provenance.evidence(
-                "performance",
-                performance.id.as_str(),
-                &performance.evidence,
-            )?;
-            if let Some(source) = &performance.source_athlete {
-                provenance.identity(performance.id.as_str(), source)?;
-            }
-        }
-        Ok(())
+            .flat_map(|best| best.supporting_tied_candidate_ids())
+            .try_for_each(|id| {
+                let performance = performances
+                    .get(id)
+                    .copied()
+                    .ok_or_else(|| super::defect(format!("missing provenance performance {id}")))?;
+                provenance.performance_reference(performance)?;
+                provenance.evidence(
+                    "performance",
+                    performance.id.as_str(),
+                    &performance.evidence,
+                )?;
+                if let Some(source) = &performance.source_athlete {
+                    provenance.identity(performance.id.as_str(), source)?;
+                }
+                Ok(())
+            })
     })
 }
 
@@ -126,6 +128,38 @@ struct Provenance<'a, 'w> {
 }
 
 impl Provenance<'_, '_> {
+    fn performance_reference(&mut self, performance: &CanonicalPerformance) -> ReportResult<()> {
+        let fact = serde_json::json!({
+            "performance_id": performance.id,
+            "source_key": performance.source_key,
+            "athlete_id": performance.athlete,
+            "event_id": performance.event,
+            "meet_id": performance.meet,
+        });
+        let kind = "retained_performance_reference";
+        let id = digest(&(kind, performance.id.as_str(), &fact))?;
+        if self.admit(&id)? {
+            self.writer.push([
+                id,
+                "performance".into(),
+                performance.id.to_string(),
+                "unavailable".into(),
+                "unavailable".into(),
+                text(Some(&performance.source_key)),
+                "unavailable".into(),
+                "unavailable".into(),
+                "unavailable".into(),
+                kind.into(),
+                "unavailable".into(),
+                "capture_link_not_retained".into(),
+                "interpretation_version_not_retained".into(),
+                self.generation.into(),
+                encode(&fact)?,
+            ])?;
+        }
+        Ok(())
+    }
+
     fn evidence(&mut self, kind: &str, owner: &str, facts: &[Evidence]) -> ReportResult<()> {
         for fact in facts {
             let id = digest(&(kind, owner, fact))?;

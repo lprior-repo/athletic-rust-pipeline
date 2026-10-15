@@ -129,7 +129,8 @@ pub(super) fn build_bests(store: &Store, options: &bests::Options) -> ReportResu
     let dataset = ExportDataset::load(store)?;
     let rows = bests::build_from_dataset(&dataset, options)?;
     let cohort = cohort_label(options.grad_year);
-    let (jsonl, csv_path) = bests::write(&store.out_dir(), &rows, &cohort)?;
+    let (jsonl, csv_path) =
+        bests::write(&store.out_dir(), &rows, &cohort, dataset.semantic_policy()?)?;
     Ok(BestsReply {
         cohort,
         rows: rows.len(),

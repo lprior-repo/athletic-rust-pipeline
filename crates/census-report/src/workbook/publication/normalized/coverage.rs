@@ -24,7 +24,7 @@ const HEADER: [&str; 17] = [
     "retained_record",
 ];
 
-pub(super) fn write(directory: &Path, dataset: &ExportDataset) -> ReportResult<()> {
+pub(super) fn write(directory: &Path, dataset: &ExportDataset) -> ReportResult<u64> {
     write_csv(&directory.join("coverage.csv"), &HEADER, |writer| {
         for coverage in &dataset.coverage_evidence.rows {
             writer.push(metrics(dataset, coverage)?)?;

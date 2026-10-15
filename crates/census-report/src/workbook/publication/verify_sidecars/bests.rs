@@ -21,26 +21,22 @@ pub(super) fn verify(
     directory: &Path,
     inputs: &Inputs<'_>,
     artifact_revision: u32,
+    rows: &[selections::SharedSelection],
 ) -> ReportResult<()> {
-    let schema = Schema::parse(artifact_revision)?;
-    let rows = selections::build_from_dataset(
-        inputs.dataset,
-        &selections::Options {
-            scope: inputs.options.scope,
-            grad_year: inputs.options.grad_year,
-            limit: inputs.options.limit,
-            jurisdictions: inputs.options.jurisdictions.clone(),
-        },
+    super::super::versions::validate_policy(
+        artifact_revision,
+        inputs.dataset.lineage.policy_revision,
     )?;
+    let schema = Schema::parse(artifact_revision)?;
     let cohort = cohort(inputs.options.grad_year);
     verify_csv(
         &directory.join(format!("best-results-{cohort}.csv")),
-        &rows,
+        rows,
         schema,
     )?;
     verify_jsonl(
         &directory.join(format!("best-results-{cohort}.jsonl")),
-        &rows,
+        rows,
         schema,
     )
 }
@@ -54,7 +50,7 @@ fn verify_csv(
     let mut position = 0usize;
     let total = read::csv(path, LIMITS, "best-results CSV", |index, record| {
         if index == 1 {
-            return read::headers(path, record, headers);
+            return read::headers(path, record, &headers);
         }
         verify_csv_row(path, index, record, rows, &mut position, schema)
     })?;
@@ -175,8 +171,15 @@ fn cells(
             .chain(result_cells(row))
             .chain(specification_cells(path, row)?),
     );
-    if let Schema::CandidateInventory = schema {
+    if matches!(schema, Schema::CandidateInventory | Schema::ResultGroups) {
         cells.extend(inventory_cells(row));
+    }
+    if matches!(schema, Schema::ResultGroups) {
+        cells.extend([
+            Cell::text("canonical_performance_id"),
+            Cell::text("unknown"),
+            Cell::integer(row.inventory.policy().revision().to_string()),
+        ]);
     }
     Ok(cells)
 }
@@ -207,15 +210,15 @@ fn specification_cells(path: &Path, row: &selections::SharedSelection) -> Report
 
 fn inventory_cells(row: &selections::SharedSelection) -> [Cell; 3] {
     let mut tied_ids = String::new();
-    for id in &row.tied_performance_ids {
+    for id in row.inventory.tied_representative_ids() {
         if !tied_ids.is_empty() {
             tied_ids.push(';');
         }
         tied_ids.push_str(id.as_str());
     }
     [
-        Cell::integer(row.eligible_candidate_count.to_string()),
-        Cell::integer(row.tied_performance_count.to_string()),
+        Cell::integer(row.inventory.eligible_group_count().to_string()),
+        Cell::integer(row.inventory.tied_group_count().to_string()),
         Cell::text(tied_ids),
     ]
 }

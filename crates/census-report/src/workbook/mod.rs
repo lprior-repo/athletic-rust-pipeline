@@ -83,27 +83,42 @@ fn write_artifacts(
     dataset: &crate::export::ExportDataset,
     options: &Options,
     censuses: &Censuses,
-) -> ReportResult<()> {
+) -> ReportResult<publication::inventory::RowCounts> {
     let admission = crate::report::EventAdmission::of(dataset)?;
-    let bests = select_bests(&admission, options)?;
+    let outcome = select_bests(&admission, options)?;
+    let bests = &outcome.selections;
     let cohort = match options.grad_year.map(|year| format!("co{year}")) {
         Some(value) => value,
         None => "all".to_string(),
     };
-    bests::write(directory, &bests, &cohort)?;
-    publication::normalized::write(directory, dataset, options, &bests)?;
+    bests::write(directory, bests, &cohort, dataset.semantic_policy()?)?;
+    let counts = publication::normalized::write(
+        directory,
+        dataset,
+        options,
+        bests,
+        &outcome.combined_exclusions,
+    )?;
     dataset.save_frozen(&directory.join("frozen-input.json"))?;
 
     publication::write_json(&directory.join("event-catalog.json"), &admission.audit())?;
-    render_artifacts(directory, dataset, options, censuses, bests, &admission)
+    render_artifacts(
+        directory,
+        dataset,
+        options,
+        censuses,
+        outcome.selections,
+        &admission,
+    )?;
+    Ok(counts)
 }
 
 fn select_bests(
     admission: &crate::report::EventAdmission<'_>,
     options: &Options,
-) -> ReportResult<Vec<bests::SharedSelection>> {
+) -> ReportResult<bests::SelectionOutcome> {
     let started = Instant::now();
-    let rows = bests::build_admitted(
+    let outcome = bests::build_admitted_outcome(
         admission,
         &bests::Options {
             scope: options.scope,
@@ -113,11 +128,11 @@ fn select_bests(
         },
     )?;
     tracing::info!(
-        rows = rows.len(),
+        rows = outcome.selections.len(),
         ms = millis(started),
         "workbook build step: bests"
     );
-    Ok(rows)
+    Ok(outcome)
 }
 
 fn render_artifacts(

@@ -1,3 +1,4 @@
+mod result_groups;
 use super::write;
 use crate::bests::{
     Population, SelectionAthlete, SelectionMeet, SelectionResult, SelectionSource, SharedSelection,
@@ -36,9 +37,11 @@ fn selection(
             sources: 2,
         },
         conflicts: Vec::new(),
-        eligible_candidate_count: 3,
-        tied_performance_count: 1,
-        tied_performance_ids: vec![Id::mint("perf", &["csv_safety"])],
+        inventory: crate::bests::SelectionInventory::from_groups(
+            census_domain::model::EventSemantics::CURRENT,
+            3,
+            vec![Id::mint("perf", &["csv_safety"])],
+        ),
         supporting_tied_candidate_ids: vec![Id::mint("perf", &["csv_safety"])],
     }
 }
@@ -124,7 +127,12 @@ fn csv_text_is_literalized_while_the_raw_jsonl_is_preserved() -> TestResult {
         Mark::Raw(FORMULA_MARK.to_string()),
         Some(-1.4),
     )];
-    let (jsonl, csv) = write(directory.path(), &rows, "co2027")?;
+    let (jsonl, csv) = write(
+        directory.path(),
+        &rows,
+        "co2027",
+        census_domain::model::EventSemantics::CURRENT,
+    )?;
 
     let mut reader = csv::Reader::from_path(&csv)?;
     let header = reader.headers()?.clone();
@@ -163,7 +171,12 @@ fn ordinary_text_and_negative_numerics_publish_unchanged() -> TestResult {
         Mark::TimeSeconds(ExactSeconds::parse("10.94")?),
         Some(-2.3),
     )];
-    let (_, csv) = write(directory.path(), &rows, "co2027")?;
+    let (_, csv) = write(
+        directory.path(),
+        &rows,
+        "co2027",
+        census_domain::model::EventSemantics::CURRENT,
+    )?;
 
     let text = std::fs::read_to_string(&csv)?;
     check!(text.contains("Ordinary Runner,Ordinary School"));
@@ -201,7 +214,12 @@ fn converted_marks_publish_note_and_source_beside_kind_and_basis() -> TestResult
         "tfrrs_in",
         Some("https://indiana.tfrrs.org".to_string()),
     ));
-    let (jsonl, csv) = write(directory.path(), &[converted], "co2027")?;
+    let (jsonl, csv) = write(
+        directory.path(),
+        &[converted],
+        "co2027",
+        census_domain::model::EventSemantics::CURRENT,
+    )?;
     let mut reader = csv::Reader::from_path(&csv)?;
     let header = reader.headers()?.clone();
     let row = reader.records().next().ok_or("missing CSV data row")??;

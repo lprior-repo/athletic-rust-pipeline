@@ -1,8 +1,51 @@
+use crate::bests::CombinedExclusionReason;
 use crate::report::EventAdmission;
 use census_domain::model::{
-    parse_result_status, CanonicalEvent, CanonicalPerformance, CombinedComponentResult, EventKind,
-    Mark, ResultStatusKind,
+    parse_result_status, CanonicalEvent, CanonicalPerformance, CombinedComponentResult,
+    CombinedEligibility, EventKind, EventSemantics, Mark, ResultStatusKind,
 };
+
+pub(super) fn admit(
+    performance: &CanonicalPerformance,
+    event: &CanonicalEvent,
+    kind: &EventKind,
+    semantics: EventSemantics,
+) -> Result<(), CombinedExclusionReason> {
+    if !semantics.requires_completed_combined() || !is_combined(kind) {
+        return Ok(());
+    }
+    let specification = event
+        .resolved_specification_with_policy(semantics)
+        .map_err(CombinedExclusionReason::UnresolvedSpecification)?;
+    match performance.combined_eligibility(&specification) {
+        CombinedEligibility::Eligible => Ok(()),
+        reason => Err(CombinedExclusionReason::Eligibility(reason)),
+    }
+}
+
+pub(super) fn unresolved_specification(
+    performance: &CanonicalPerformance,
+    event: &CanonicalEvent,
+    admission: &EventAdmission<'_>,
+) -> Option<CombinedExclusionReason> {
+    if !admission.semantics().requires_completed_combined()
+        || !is_combined(&event.kind)
+        || super::eligible_measure(performance, &event.kind).is_none()
+    {
+        return None;
+    }
+    event
+        .resolved_specification_with_policy(admission.semantics())
+        .err()
+        .map(CombinedExclusionReason::UnresolvedSpecification)
+}
+
+fn is_combined(kind: &EventKind) -> bool {
+    matches!(
+        kind,
+        EventKind::Pentathlon | EventKind::Heptathlon | EventKind::Decathlon
+    )
+}
 
 pub(super) fn explicit_terminal(
     performance: &CanonicalPerformance,

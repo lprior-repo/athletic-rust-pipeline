@@ -38,7 +38,7 @@ fn assert_all_orders(
         .try_for_each(|order| -> TestResult {
             let directory = tempfile::tempdir()?;
             let store = fixture.store_with_replay(directory.path(), &order)?;
-            let mut dataset = ExportDataset::load(&store)?;
+            let mut dataset = super::historical_dataset(&store)?;
             let row = assert_winner(&dataset, expected)?;
             dataset.performances.reverse();
             check!(eq; assert_winner(&dataset, expected)?, row);
@@ -63,7 +63,7 @@ fn shared_selection_ties_choose_earliest_exact_date_for_every_measure() -> TestR
         assert_all_orders(&fixture, &observations, earliest)?;
         let directory = tempfile::tempdir()?;
         let store = fixture.store_with_replay(directory.path(), &observations)?;
-        let row = assert_winner(&ExportDataset::load(&store)?, earliest)?;
+        let row = assert_winner(&super::historical_dataset(&store)?, earliest)?;
         check!(eq; row.result.value, case.value);
         check!(eq; row.population.marks, 3);
         check!(eq; row.conflicts.len(), 0);
@@ -281,7 +281,7 @@ fn shared_selection_tie_preference_cannot_revive_a_retained_conflict_context() -
             .try_for_each(|order| -> TestResult {
                 let directory = tempfile::tempdir()?;
                 let store = fixture.store_with_replay(directory.path(), &order)?;
-                let mut dataset = ExportDataset::load(&store)?;
+                let mut dataset = super::historical_dataset(&store)?;
                 let retained = dataset
                     .performances
                     .iter()
@@ -311,9 +311,9 @@ fn assert_inventory(
     let row = assert_winner(dataset, winner)?;
     let mut expected = ids.to_vec();
     expected.sort();
-    check!(eq; row.eligible_candidate_count, eligible);
-    check!(eq; row.tied_performance_count, expected.len());
-    check!(eq; row.tied_performance_ids, expected);
+    check!(eq; row.inventory.eligible_group_count(), eligible);
+    check!(eq; row.inventory.tied_group_count(), expected.len());
+    check!(eq; row.inventory.tied_representative_ids(), expected);
     Ok(())
 }
 
@@ -341,7 +341,7 @@ fn tie_inventory_counts_distinct_eligible_and_tied_performances() -> TestResult 
             directory.path(),
             &[preferred.clone(), duplicate, later.clone(), inferior],
         )?;
-        let dataset = ExportDataset::load(&store)?;
+        let dataset = super::historical_dataset(&store)?;
         assert_inventory(
             &dataset,
             &preferred,
@@ -368,7 +368,7 @@ fn tie_inventory_deduplicates_replayed_publications() -> TestResult {
         ];
         let directory = tempfile::tempdir()?;
         let store = fixture.store_with_replay(directory.path(), &observations)?;
-        let dataset = ExportDataset::load(&store)?;
+        let dataset = super::historical_dataset(&store)?;
         assert_inventory(
             &dataset,
             &earlier,
@@ -388,7 +388,7 @@ fn tie_inventory_conflicting_best_falls_back_to_clean_candidate() -> TestResult 
         let observations = [contested, revision, clean.clone()];
         let directory = tempfile::tempdir()?;
         let store = fixture.store_with_replay(directory.path(), &observations)?;
-        let dataset = ExportDataset::load(&store)?;
+        let dataset = super::historical_dataset(&store)?;
         let row = assert_winner(&dataset, &clean)?;
         check!(eq; row.result.value, case.value);
         check!(eq; row.conflicts.len(), 1);
@@ -422,7 +422,7 @@ fn tie_inventory_precision_equivalent_marks_tie() -> TestResult {
         directory.path(),
         &[preferred.clone(), duplicate, later.clone()],
     )?;
-    let dataset = ExportDataset::load(&store)?;
+    let dataset = super::historical_dataset(&store)?;
     assert_inventory(
         &dataset,
         &preferred,
@@ -447,7 +447,7 @@ fn tie_inventory_is_permutation_invariant() -> TestResult {
             .try_for_each(|order| -> TestResult {
                 let directory = tempfile::tempdir()?;
                 let store = fixture.store_with_replay(directory.path(), &order)?;
-                let dataset = ExportDataset::load(&store)?;
+                let dataset = super::historical_dataset(&store)?;
                 assert_inventory(
                     &dataset,
                     &preferred,

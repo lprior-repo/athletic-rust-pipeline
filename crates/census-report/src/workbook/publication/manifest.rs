@@ -8,12 +8,17 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 mod artifact;
+mod counts;
+#[cfg(test)]
+pub(in crate::workbook::publication) mod historical_fixture;
+#[cfg(test)]
+pub(super) use counts::retained as retained_counts;
 mod directory;
 #[cfg(test)]
 mod tests;
 mod validate;
 mod verify;
-use artifact::{hash_artifact, Artifact};
+use artifact::{artifact_names, hash_artifact, Artifact};
 pub(super) use directory::verify_directory;
 pub(super) use verify::verify_prepared;
 
@@ -84,10 +89,20 @@ pub(super) struct Manifest {
     pub(super) lineage: DatasetLineage,
     selection: Selection,
     artifacts: BTreeMap<String, Artifact>,
+    #[serde(
+        default,
+        deserialize_with = "counts::decode",
+        skip_serializing_if = "Option::is_none"
+    )]
+    normalized_csv_rows: Option<super::inventory::RowCounts>,
     pub(super) generation_digest: String,
 }
 
 impl Manifest {
+    pub(super) fn recipe(&self) -> ReportResult<census_store::publish::Digest> {
+        super::binding::recipe_for_artifact(&self.lineage, &self.selection()?, self.schema_revision)
+    }
+
     pub(super) fn selection(&self) -> ReportResult<Options> {
         self.selection.options()
     }
@@ -96,32 +111,63 @@ impl Manifest {
         directory: &Path,
         dataset: &ExportDataset,
         options: &Options,
+        normalized_csv_rows: super::inventory::RowCounts,
     ) -> ReportResult<Self> {
+        super::versions::validate_policy(
+            super::ARTIFACT_REVISION,
+            dataset.lineage.policy_revision,
+        )?;
+        super::inventory::validate(super::ARTIFACT_REVISION, Some(&normalized_csv_rows))?;
         let selection = Selection::of(options);
-        let names = artifact_names(3, options.grad_year)?;
+        let names = artifact_names(super::ARTIFACT_REVISION, options.grad_year)?;
         let artifacts = names
             .into_iter()
             .map(|name| hash_artifact(&directory.join(&name)).map(|artifact| (name, artifact)))
             .collect::<ReportResult<BTreeMap<_, _>>>()?;
         let mut manifest = Self {
-            schema_revision: 3,
+            schema_revision: super::ARTIFACT_REVISION,
             lineage: dataset.lineage.clone(),
             selection,
             artifacts,
+            normalized_csv_rows: Some(normalized_csv_rows),
             generation_digest: String::new(),
         };
         manifest.generation_digest = manifest.digest()?;
         Ok(manifest)
     }
 
+    #[cfg(test)]
+    pub(in crate::workbook::publication) fn recapture(
+        directory: &Path,
+        dataset: &ExportDataset,
+        options: &Options,
+    ) -> ReportResult<Self> {
+        Self::capture(directory, dataset, options, counts::retained(directory)?)
+    }
+
     fn digest(&self) -> ReportResult<String> {
-        census_domain::model::serialized_digest(&(
-            self.schema_revision,
-            &self.lineage,
-            &self.selection,
-            &self.artifacts,
-        ))
-        .map_err(|error| invariant(format!("encoding generation manifest: {error}")))
+        super::inventory::validate(self.schema_revision, self.normalized_csv_rows.as_ref())?;
+        let result = match self.schema_revision {
+            1..=4 => census_domain::model::serialized_digest(&(
+                self.schema_revision,
+                &self.lineage,
+                &self.selection,
+                &self.artifacts,
+            )),
+            5 | 6 => census_domain::model::serialized_digest(&(
+                self.schema_revision,
+                &self.lineage,
+                &self.selection,
+                &self.artifacts,
+                &self.normalized_csv_rows,
+            )),
+            _ => {
+                return Err(invariant(
+                    "unsupported publication artifact revision".into(),
+                ))
+            }
+        };
+        result.map_err(|error| invariant(format!("encoding generation manifest: {error}")))
     }
 }
 
@@ -208,56 +254,4 @@ pub fn open_publication_for_seal(
         generation_digest: manifest.generation_digest,
         workbook,
     })
-}
-
-fn artifact_names(revision: u32, grad_year: Option<i16>) -> ReportResult<Vec<String>> {
-    let cohort = match grad_year.map(|year| format!("co{year}")) {
-        Some(value) => value,
-        None => "all".to_string(),
-    };
-    let mut names = vec![
-        "audit.json".to_string(),
-        format!("best-results-{cohort}.csv"),
-        format!("best-results-{cohort}.jsonl"),
-        "census-all-sources.json".to_string(),
-        "census-core.json".to_string(),
-        "frozen-input.json".to_string(),
-        "recruiting.csv".to_string(),
-        "school-contacts.csv".to_string(),
-        "contact-research.csv".to_string(),
-        "workbook.xlsx".to_string(),
-    ];
-    match revision {
-        1 => {}
-        2 | 3 => names.extend(
-            [
-                "event-catalog.json",
-                "relay-dispositions.json",
-                "relays.jsonl",
-            ]
-            .map(str::to_string),
-        ),
-        _ => {
-            return Err(invariant(
-                "unsupported publication artifact revision".into(),
-            ))
-        }
-    }
-    if revision == 3 {
-        names.extend(
-            [
-                "athletes.csv",
-                "best_marks.csv",
-                "schools.csv",
-                "coach_contacts.csv",
-                "comparison_classes.csv",
-                "provenance.csv",
-                "coverage.csv",
-                "identity_aliases.csv",
-            ]
-            .map(str::to_string),
-        );
-    }
-    names.sort_unstable();
-    Ok(names)
 }

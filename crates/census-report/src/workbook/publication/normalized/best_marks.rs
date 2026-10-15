@@ -3,7 +3,7 @@ use crate::bests::SharedSelection;
 use crate::report::{Derivation, ReportResult};
 use std::path::Path;
 
-const HEADER: [&str; 35] = [
+const HEADER: [&str; 36] = [
     "athlete_id",
     "comparison_class_id",
     "performance_id",
@@ -39,6 +39,7 @@ const HEADER: [&str; 35] = [
     "source_decimal_precision",
     "result_evidence_status",
     "source_url_status",
+    "supporting_tied_candidate_ids",
 ];
 
 pub(super) fn write(
@@ -46,20 +47,24 @@ pub(super) fn write(
     derivation: &Derivation<'_>,
     bests: &[SharedSelection],
     performances: &super::PerformanceIndex<'_>,
-) -> ReportResult<()> {
-    write_csv(&directory.join("best_marks.csv"), &HEADER, |writer| {
-        for best in bests {
-            writer.push(row(best, derivation, performances)?)?;
-        }
-        Ok(())
-    })
+) -> ReportResult<u64> {
+    write_csv(
+        &directory.join("best_marks.csv"),
+        &header(derivation.dataset().semantic_policy()?),
+        |writer| {
+            for best in bests {
+                writer.push_vec(row(best, derivation, performances)?)?;
+            }
+            Ok(())
+        },
+    )
 }
 
 fn row(
     best: &SharedSelection,
     derivation: &Derivation<'_>,
     performances: &super::PerformanceIndex<'_>,
-) -> ReportResult<[String; 35]> {
+) -> ReportResult<Vec<String>> {
     let dataset = derivation.dataset();
     let performance = performances
         .get(&best.source.performance_id)
@@ -72,7 +77,8 @@ fn row(
         .teams
         .get(&performance.team)
         .map(|team| team.school.as_str());
-    Ok([
+    let mut fields = Vec::with_capacity(38);
+    fields.extend([
         best.athlete_id().to_string(),
         comparison_classes::id(best)?,
         best.source.performance_id.to_string(),
@@ -102,9 +108,9 @@ fn row(
             performance.id.as_str(),
             &performance.evidence,
         )?,
-        best.tied_performance_count.to_string(),
-        best.eligible_candidate_count.to_string(),
-        encode(&best.tied_performance_ids)?,
+        best.inventory.tied_group_count().to_string(),
+        best.inventory.eligible_group_count().to_string(),
+        encode(&best.inventory.tied_representative_ids())?,
         dataset.lineage.policy_revision.to_string(),
         best.key.surface.label().into(),
         dataset.lineage.input_generation.clone(),
@@ -112,7 +118,28 @@ fn row(
         source_decimal_precision(&performance.mark),
         evidence_status(&performance.evidence),
         source_url_status(&best.source.result_url),
-    ])
+        encode(&best.supporting_tied_candidate_ids())?,
+    ]);
+    if dataset.semantic_policy()? == census_domain::model::EventSemantics::ResultGroups21 {
+        fields.extend(["canonical_performance_id".into(), "unknown".into()]);
+    }
+    Ok(fields)
+}
+
+fn header(policy: census_domain::model::EventSemantics) -> Vec<&'static str> {
+    if policy != census_domain::model::EventSemantics::ResultGroups21 {
+        return HEADER.to_vec();
+    }
+    HEADER
+        .iter()
+        .map(|name| match *name {
+            "eligible_candidate_count" => "eligible_result_group_count",
+            "tied_performance_count" => "tied_result_group_count",
+            "tied_performance_ids" => "tied_result_group_representative_ids",
+            other => other,
+        })
+        .chain(["result_group_basis", "physical_performance_count_status"])
+        .collect()
 }
 
 fn raw_mark_value(mark: &census_domain::model::Mark) -> String {

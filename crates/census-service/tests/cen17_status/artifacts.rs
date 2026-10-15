@@ -222,7 +222,12 @@ fn assert_artifacts(
     let winner = bests.first().ok_or("best field control")?;
     check!(eq; winner.source.performance_id, valid.id);
     check!(eq; winner.athlete.name.as_str(), "Brooklyn Brown");
-    let (jsonl, csv_path) = bests::write(&root.join("bests"), &bests, "2027")?;
+    let (jsonl, csv_path) = bests::write(
+        &root.join("bests"),
+        &bests,
+        "2027",
+        census_domain::model::EventSemantics::CURRENT,
+    )?;
     let best_json: Value = serde_json::from_str(std::fs::read_to_string(jsonl)?.trim())?;
     check!(eq; best_json.get("performance_id"), Some(&json!(valid.id)));
     let mut csv = csv::Reader::from_path(csv_path)?;

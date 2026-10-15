@@ -30,13 +30,15 @@ fn changed_conflict_policy_has_a_distinct_publication_recipe() -> TestResult {
         school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         jurisdictions: Vec::new(),
     };
-    check!(ne; binding::recipe(&current.lineage, &options)?, binding::recipe(&previous, &options)?);
-    previous.policy_revision = 8;
-    check!(ne; binding::recipe(&current.lineage, &options)?, binding::recipe(&previous, &options)?);
-    previous.policy_revision = 9;
-    check!(ne; binding::recipe(&current.lineage, &options)?, binding::recipe(&previous, &options)?);
-    previous.policy_revision = 10;
-    check!(ne; binding::recipe(&current.lineage, &options)?, binding::recipe(&previous, &options)?);
+    let current_recipe = binding::recipe(&current.lineage, &options)?;
+    let mut recipes = std::collections::BTreeSet::new();
+    for policy in [7, 8, 9, 10, 18, 19, 20] {
+        previous.policy_revision = policy;
+        check!(binding::recipe(&previous, &options).is_err());
+        let historical = binding::recipe_for_artifact(&previous, &options, 5)?;
+        check!(ne; current_recipe, historical);
+        check!(recipes.insert(historical.as_str().to_owned()));
+    }
     Ok(())
 }
 
@@ -138,7 +140,9 @@ fn a_failed_generation_keeps_the_previous_publication() -> TestResult {
     let published = crate::workbook::build(&store, &options)?;
     let dataset = ExportDataset::load(&store)?;
     let stage = Stage::begin(&dataset, &store, &options)?;
-    check!(stage.publish(&dataset, &options, |_| Ok(())).is_err());
+    check!(stage
+        .publish(&dataset, &options, |_| Ok(Default::default()))
+        .is_err());
     check!(eq; current_workbook(&store.out_dir().join("publication"))?,
     published);
     verify_published(&published)?;
@@ -226,9 +230,9 @@ fn source_advance_during_render_cannot_switch_the_publication_pointer() -> TestR
     let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
     let stage = Stage::begin(&dataset, &store, &options)?;
     let error = match stage.publish(&dataset, &options, |path| {
-        crate::workbook::write_artifacts(path, &dataset, &options, &censuses)?;
+        let counts = crate::workbook::write_artifacts(path, &dataset, &options, &censuses)?;
         seed(&store, "Arrived During Render")?;
-        Ok(())
+        Ok(counts)
     }) {
         Err(error) => error,
         Ok(_) => return Err("stale render publication accepted".into()),

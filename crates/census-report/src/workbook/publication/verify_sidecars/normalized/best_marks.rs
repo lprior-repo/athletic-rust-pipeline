@@ -1,8 +1,8 @@
 use super::super::input::Inputs;
+use super::revision::Revision;
 use super::{
     classes, facts,
     rows::{self, Row},
-    schema,
 };
 use crate::bests::SharedSelection;
 use crate::report::ReportResult;
@@ -16,7 +16,8 @@ pub(super) fn verify(
     directory: &Path,
     inputs: &Inputs<'_>,
     bests: &[SharedSelection],
-) -> ReportResult<()> {
+    revision: Revision,
+) -> ReportResult<u64> {
     let expected = bests
         .iter()
         .map(|best| Ok(((best.athlete_id().to_string(), classes::id(best)?), best)))
@@ -29,7 +30,7 @@ pub(super) fn verify(
         .collect();
     rows::table(
         directory,
-        ("best_marks.csv", schema::BESTS),
+        ("best_marks.csv", &revision.best_headers()),
         expected.len(),
         &["athlete_id", "comparison_class_id"],
         |row| {
@@ -46,7 +47,7 @@ pub(super) fn verify(
                 .copied()
                 .ok_or_else(|| rows::missing("performance", performance_id))?;
             selected(row, inputs, best, performance)?;
-            inventory(row, best, &performances)?;
+            inventory(row, best, &performances, revision)?;
             source(row, inputs, performance)?;
             row.number(
                 "selection_policy_version",
@@ -132,11 +133,33 @@ fn inventory(
     row: &Row<'_>,
     best: &SharedSelection,
     performances: &Performances<'_>,
+    revision: Revision,
 ) -> ReportResult<()> {
-    row.number("eligible_candidate_count", best.eligible_candidate_count)?;
-    row.number("tied_performance_count", best.tied_performance_count)?;
-    row.json("tied_performance_ids", &best.tied_performance_ids)?;
-    best.tied_performance_ids.iter().try_for_each(|id| {
+    let (eligible, tied, ids) = if matches!(revision, Revision::ResultGroups) {
+        row.text("result_group_basis", "canonical_performance_id")?;
+        row.text("physical_performance_count_status", "unknown")?;
+        (
+            "eligible_result_group_count",
+            "tied_result_group_count",
+            "tied_result_group_representative_ids",
+        )
+    } else {
+        (
+            "eligible_candidate_count",
+            "tied_performance_count",
+            "tied_performance_ids",
+        )
+    };
+    row.number(eligible, best.inventory.eligible_group_count())?;
+    row.number(tied, best.inventory.tied_group_count())?;
+    row.json(ids, &best.inventory.tied_representative_ids())?;
+    if revision.has_supporting() {
+        row.json(
+            "supporting_tied_candidate_ids",
+            &best.supporting_tied_candidate_ids(),
+        )?;
+    }
+    revision.ids(best).iter().try_for_each(|id| {
         let performance = performances
             .get(id.as_str())
             .ok_or_else(|| rows::missing("tied performance", id.as_str()))?;

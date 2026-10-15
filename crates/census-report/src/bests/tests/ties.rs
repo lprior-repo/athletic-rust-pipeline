@@ -3,6 +3,7 @@ use census_domain::model::performance_comparison::MarkOrdering;
 use census_domain::model::performance_comparison::{should_replace, tie_break_preferred, Measure};
 
 pub(super) mod fixture;
+mod result_groups;
 mod selection;
 mod supporting;
 mod workbook;
@@ -272,4 +273,12 @@ fn time_distance_and_points_rank_numeric_quality_before_every_tie_preference() -
         ));
         Ok(())
     })
+}
+
+fn historical_dataset(
+    store: &census_store::Store,
+) -> super::TestResult<crate::export::ExportDataset> {
+    let mut dataset = crate::export::ExportDataset::load(store)?;
+    dataset.lineage.policy_revision = 20;
+    Ok(dataset)
 }

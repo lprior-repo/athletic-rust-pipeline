@@ -286,3 +286,48 @@ Strict-mode smoke evidence: `var/r14-memory-mode-C9wsAWJm/finite-smoke.json`.
 Browser and constructor harness/readback evidence: `var/review-r9-r15-20261014/`.
 R11 semantic witnesses, R12 reusable execution, R13 qualified denominators, R14 whole-workload
 resource proof, native 03/12 and the full release gate remain open. No live installation was changed.
+
+### Focused R4/R5/R6 publication packaging — 2026-10-14 23:17 UTC
+
+This package takes the committed report artifacts and three event-policy model files
+from cloud source `a041adcf`, relative to published base `9d4e03a0`. It retains one
+canonical workbook path. Four existing service best-results writers only gain the
+explicit selection-policy argument; managed-publication routing commit `95b27801`,
+its wire/workflow changes, and pending source edits are outside this package.
+
+Observed source-tree evidence: with CI unset, the command
+`MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-report --lib -E 'test(bests::) | test(export::dataset::frozen::) | (test(workbook::publication::) & !test(workbook::publication::crash_tests::))' --no-capture --no-tests fail`
+passed 601 tests, 0 failed, 276 skipped; Nextest
+`7af28a54-b435-4ca4-a298-3082b84f352f`, 196.603s tests / 5m10.460s Moon total,
+exit 0. Retained log: `/tmp/report-transition-20261014-2304.log`, SHA256
+`ad096d336b8d00efbf9792ba05cc6b398b126f37b98f2d757561f7e7ea1a8cec`.
+This is evidence for that source tree, not execution of this focused package.
+
+R4 now retains bounded combined-event exclusion reasons; R5 includes normalized
+row-count commitments and populated independent readback fixtures; R6 carries all
+supporting provenance and explicit policy21 result-group inventories in artifact6,
+with historical policy/artifact readers retained. R4/R5/R6 remain acceptance-open:
+the deterministic policy21 equal-value provenance tie repair is not included or
+qualified here. Focused-tree tests, that tie repair, changed-tree all-target check,
+strict source lint/full release, and native Mac validation are NOT RUN. Actual
+publication crash-window cases, representative peak memory, and final runtime
+acceptance remain pending. Earlier Mac cleanup-harness 10-pass evidence covered its
+earlier candidate only and does not qualify actual publication crash recovery.
+The full specification is unchanged (SHA256
+`a3b687cc06952dbceaeda2f21300e4769acb96130570fc1174ff70210a09f11e`).
+
+Policy21 deterministic provenance follow-up: cloud commit `94f89039` passed 29 focused
+identity/result-group tests, 0 failed, 853 skipped; Nextest
+`314538d0-bac7-4eb4-b28b-22df39f4c657`, 2.059s tests / 2m14.621s task.
+Command: `env -u CI CARGO_INCREMENTAL=0 MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-report --lib -E 'test(bests::reduce::identity::) | test(bests::tests::ties::result_groups::)' --no-capture --no-tests fail`.
+Same-ID equal-value provenance is stable across input order; historical policies retain
+their previous behavior. Full-row admission is 1 MiB per row and 256 MiB per stage plus
+reference accounting. This is no physical-performance count or peak-memory qualification.
+Focused-tree all-target/lint and combined 606-case report rerun remain pending.
+
+Focused-package rebase onto `87178d3a`: the incoming centralized comparison implementation
+from `5bb37152` remains the sole owner of comparison keys, measures, labels and mark ties.
+The report result-group and exclusion changes consume those domain APIs; report-local
+comparison modules are not restored. Both prior review-history sections above are retained.
+Formatting and patch checks do not qualify this rebased tree: compilation, focused report
+tests, all-target/source lint, native crash windows and release acceptance remain pending.

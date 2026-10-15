@@ -64,3 +64,45 @@ fn accumulate_bytes(total: u64, read: usize) -> ReportResult<u64> {
     }
     Ok(total)
 }
+
+pub(super) fn artifact_names(revision: u32, grad_year: Option<i16>) -> ReportResult<Vec<String>> {
+    let cohort = match grad_year.map(|year| format!("co{year}")) {
+        Some(value) => value,
+        None => "all".to_string(),
+    };
+    let mut names = vec![
+        "audit.json".to_string(),
+        format!("best-results-{cohort}.csv"),
+        format!("best-results-{cohort}.jsonl"),
+        "census-all-sources.json".to_string(),
+        "census-core.json".to_string(),
+        "frozen-input.json".to_string(),
+        "recruiting.csv".to_string(),
+        "school-contacts.csv".to_string(),
+        "contact-research.csv".to_string(),
+        "workbook.xlsx".to_string(),
+    ];
+    match revision {
+        1 => {}
+        2..=6 => names.extend(
+            [
+                "event-catalog.json",
+                "relay-dispositions.json",
+                "relays.jsonl",
+            ]
+            .map(str::to_string),
+        ),
+        _ => {
+            return Err(invariant(
+                "unsupported publication artifact revision".into(),
+            ))
+        }
+    }
+    names.extend(
+        super::super::inventory::names(revision)?
+            .iter()
+            .map(|name| (*name).to_owned()),
+    );
+    names.sort_unstable();
+    Ok(names)
+}

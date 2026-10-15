@@ -13,6 +13,9 @@ use std::path::Path;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod normalized_rows;
+mod supporting;
+
 fn seed(store: &Store, name: &str) -> TestResult {
     let (mut school, id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name.to_lowercase(), None);

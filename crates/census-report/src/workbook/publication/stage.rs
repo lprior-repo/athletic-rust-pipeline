@@ -73,22 +73,26 @@ impl<'s> Stage<'s> {
         self,
         dataset: &ExportDataset,
         options: &Options,
-        render: impl FnOnce(&Path) -> ReportResult<()>,
+        render: impl FnOnce(&Path) -> ReportResult<super::inventory::RowCounts>,
     ) -> ReportResult<PathBuf> {
-        let result = render(&self.directory)
-            .and_then(|()| {
-                self.store
-                    .publication_lease_renew(
-                        &self.request.request.identity,
-                        self.request.request.lease_epoch,
-                    )
-                    .map_err(Into::into)
-            })
-            .and_then(|()| self.commit(dataset, options));
+        let result = render(&self.directory).and_then(|counts| {
+            self.store
+                .publication_lease_renew(
+                    &self.request.request.identity,
+                    self.request.request.lease_epoch,
+                )
+                .map_err(crate::report::ReportError::from)?;
+            self.commit(dataset, options, counts)
+        });
         lifecycle::finish(result, &self.root, &self.directory)
     }
 
-    fn commit(&self, dataset: &ExportDataset, options: &Options) -> ReportResult<PathBuf> {
+    fn commit(
+        &self,
+        dataset: &ExportDataset,
+        options: &Options,
+        counts: super::inventory::RowCounts,
+    ) -> ReportResult<PathBuf> {
         dataset.ensure_current_policy()?;
         {
             let snapshot = self.store.snapshot();
@@ -96,7 +100,7 @@ impl<'s> Stage<'s> {
                 .ensure_snapshot(&snapshot)
                 .map_err(binding::input_refused)?;
         }
-        let manifest = manifest::Manifest::capture(&self.directory, dataset, options)?;
+        let manifest = manifest::Manifest::capture(&self.directory, dataset, options, counts)?;
         sidecars::write_json(&self.directory.join("manifest.json"), &manifest)?;
         install::finalize(&self.directory)?;
         manifest::verify_prepared(&self.directory, dataset, options)?;

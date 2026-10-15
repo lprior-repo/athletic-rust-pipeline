@@ -5,6 +5,8 @@ use census_domain::model::performance_comparison::PrKey;
 use census_domain::model::CanonicalPerformance;
 use std::collections::BTreeSet;
 
+mod ties;
+
 pub(super) fn validate<'a>(
     derivation: &Derivation<'a>,
     admission: &EventAdmission<'_>,
@@ -25,6 +27,7 @@ pub(super) fn validate<'a>(
     let mut keys = BTreeSet::new();
     for best in bests {
         budget.record(best)?;
+        budget.record(&best.supporting_tied_candidate_ids())?;
         validate_best(best, derivation, admission, &performances, &parents)?;
         let key = (best.athlete_id().as_str(), comparison_classes::id(best)?);
         if !keys.insert(key) {
@@ -161,7 +164,7 @@ fn validate_best(
         )));
     }
     historical_affiliation(best, performance, dataset)?;
-    ties(best, derivation, admission, performances, parents)
+    ties::validate(best, derivation, admission, performances, parents)
 }
 
 fn historical_affiliation(
@@ -245,46 +248,4 @@ fn source_matches(
         && parents
             .meet(performance.meet.as_str())
             .is_some_and(|meet| meet.name == best.meet.name))
-}
-
-fn ties(
-    best: &SharedSelection,
-    derivation: &Derivation<'_>,
-    admission: &EventAdmission<'_>,
-    performances: &PerformanceIndex<'_>,
-    parents: &Parents<'_>,
-) -> ReportResult<()> {
-    if best.eligible_candidate_count == 0
-        || best.tied_performance_count == 0
-        || best.tied_performance_count > best.eligible_candidate_count
-        || best.tied_performance_count != best.tied_performance_ids.len()
-        || !best
-            .tied_performance_ids
-            .contains(&best.source.performance_id)
-    {
-        return Err(defect("invalid shared best candidate/tie inventory"));
-    }
-    unique(
-        best.tied_performance_ids.iter().map(|id| id.as_str()),
-        "tied performance",
-    )?;
-    for id in &best.tied_performance_ids {
-        let performance = performances
-            .get(id)
-            .copied()
-            .ok_or_else(|| defect(format!("tie references unavailable candidate {id}")))?;
-        if derivation
-            .dataset()
-            .identities()
-            .canonical_id(performance.athlete.as_str())
-            != best.athlete_id().as_str()
-            || best.measure().value(&performance.mark) != Some(best.result.value)
-            || !matches_key(performance, best, admission, parents)?
-        {
-            return Err(defect(format!(
-                "tie {id} differs from selected athlete, class or mark"
-            )));
-        }
-    }
-    Ok(())
 }

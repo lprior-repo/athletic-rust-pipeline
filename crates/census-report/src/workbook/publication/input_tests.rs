@@ -15,7 +15,7 @@ fn publication_fence_evidence_changed_during_render_refuses_intent() -> TestResu
     let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
     let stage = Stage::begin(&dataset, &store, &options)?;
     let result = stage.publish(&dataset, &options, |directory| {
-        crate::workbook::write_artifacts(directory, &dataset, &options, &censuses)?;
+        let counts = crate::workbook::write_artifacts(directory, &dataset, &options, &censuses)?;
         let (school, _) = CanonicalSchool::new(
             UsJurisdiction::Wisconsin,
             "Late School",
@@ -23,7 +23,7 @@ fn publication_fence_evidence_changed_during_render_refuses_intent() -> TestResu
             None,
         );
         store.append(Table::Schools, &school)?;
-        Ok(())
+        Ok(counts)
     });
     check!(matches!(
         result,
@@ -120,7 +120,8 @@ fn publication_fence_visible_requested_bundle_still_fences_new_intent() -> TestR
     let stage = Stage::begin(&dataset, &store, &options)?;
     let result = stage.publish(&dataset, &options, |directory| {
         stage_artifacts(&root.join("generations").join(desired.as_str()), directory)?;
-        let captured = manifest::Manifest::capture(directory, &dataset, &options)?;
+        let counts = manifest::retained_counts(&root.join("generations").join(desired.as_str()))?;
+        let captured = manifest::Manifest::capture(directory, &dataset, &options, counts.clone())?;
         if captured.generation_digest != desired.as_str() {
             return Err(invariant(
                 "fixture must render the already-visible bundle".into(),
@@ -133,7 +134,7 @@ fn publication_fence_visible_requested_bundle_still_fences_new_intent() -> TestR
             None,
         );
         store.append(Table::Schools, &school)?;
-        Ok(())
+        Ok(counts)
     });
     match &result {
         Err(ReportError::Publication(PublicationError::InputFenceRefused { .. })) => {}

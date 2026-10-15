@@ -20,7 +20,7 @@ fn given_exact_frozen_generation_when_every_family_is_read_then_all_generation_c
             check!(eq; record.get(column), Some(&given.dataset.lineage.input_generation));
         }
     }
-    super::super::verify(directory.path(), &given.inputs()?)?;
+    super::super::verify(directory.path(), &given.inputs()?, 3)?;
     Ok(())
 }
 
@@ -31,7 +31,7 @@ fn given_foreign_generation_in_any_family_when_read_then_semantic_generation_bin
     let directory = tempfile::tempdir()?;
     for family in super::FAMILIES {
         files::write(&given, directory.path())?;
-        super::super::verify(directory.path(), &given.inputs()?)?;
+        super::super::verify(directory.path(), &given.inputs()?, 3)?;
         super::change(
             directory.path(),
             family,
@@ -39,7 +39,7 @@ fn given_foreign_generation_in_any_family_when_read_then_semantic_generation_bin
             "foreign-generation",
         )?;
         super::rejected(
-            super::super::verify(directory.path(), &given.inputs()?),
+            super::super::verify(directory.path(), &given.inputs()?, 3),
             family,
             "foreign-generation",
         )?;
@@ -54,7 +54,7 @@ fn given_missing_or_unavailable_alias_generation_when_read_then_exact_frozen_bin
     let directory = tempfile::tempdir()?;
     for replacement in ["", "unavailable", "foreign-generation"] {
         files::write(&given, directory.path())?;
-        super::super::verify(directory.path(), &given.inputs()?)?;
+        super::super::verify(directory.path(), &given.inputs()?, 3)?;
         super::change(
             directory.path(),
             "identity_aliases.csv",
@@ -62,7 +62,7 @@ fn given_missing_or_unavailable_alias_generation_when_read_then_exact_frozen_bin
             replacement,
         )?;
         alias_refused(
-            super::super::verify(directory.path(), &given.inputs()?),
+            super::super::verify(directory.path(), &given.inputs()?, 3),
             directory.path(),
             &given.dataset.lineage.input_generation,
             replacement,
@@ -74,7 +74,7 @@ fn given_missing_or_unavailable_alias_generation_when_read_then_exact_frozen_bin
 #[test]
 fn given_recaptured_manifest_hashes_when_alias_generation_changes_then_both_readback_paths_refuse(
 ) -> TestResult {
-    let given = Population::new()?;
+    let given = Population::current()?;
     let store = census_store::Store::open(given.directory.path().join("store"))?;
     let censuses = crate::workbook::Censuses::of(
         &given.dataset,
@@ -93,7 +93,7 @@ fn given_recaptured_manifest_hashes_when_alias_generation_changes_then_both_read
         "input_generation",
         "foreign-generation",
     )?;
-    let recaptured = manifest::Manifest::capture(&changed, &given.dataset, &given.options)?;
+    let recaptured = manifest::Manifest::recapture(&changed, &given.dataset, &given.options)?;
     check!(ne; recaptured.generation_digest, accepted.generation_digest);
     std::fs::remove_file(changed.join("manifest.json"))?;
     publication::write_json(&changed.join("manifest.json"), &recaptured)?;
