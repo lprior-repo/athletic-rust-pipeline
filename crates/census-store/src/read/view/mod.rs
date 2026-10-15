@@ -23,7 +23,7 @@ pub use public_identity::AcceptedPublicIdentitySnapshot;
 mod regions;
 mod run;
 
-pub use bounded::{ReadBudget, ReadCounts};
+pub use bounded::{decode_physical_observation, ReadBudget, ReadCounts};
 pub use membership::{JournalNamespace, JournalNamespaceFingerprint, JournalNamespaceInventory};
 pub use object::{JournalDigest, JournalEntry, JournalObject, JournalRecord, JournalRecords};
 

@@ -1,12 +1,10 @@
 use super::{
-    codec, is_qualification_lifecycle, witness, PublicIdentityError, DECLARATION, HEAD, HISTORY,
-    LIFECYCLE, MAX_PUBLIC_IDENTITY_HISTORY_BYTES, RETAINED_CONTEXT_LIFECYCLE,
+    codec, is_qualification_lifecycle, PublicIdentityError, DECLARATION, HEAD, HISTORY, LIFECYCLE,
+    MAX_PUBLIC_IDENTITY_HISTORY_BYTES, RETAINED_CONTEXT_LIFECYCLE,
 };
 use crate::{Store, StoreError, StoreFormat, StoreResult};
 use census_domain::model::StoreIdentity;
-use census_domain::public_identity_history::{
-    DecodedCandidateHistory, PublicResolution, RegistryHead,
-};
+use census_domain::public_identity_history::{DecodedCandidateHistory, RegistryHead};
 use census_domain::public_identity_qualification::{
     PublicIdentityQualification, PublicIdentityQualificationVersion,
 };
@@ -14,6 +12,7 @@ use fjall::{Keyspace, Readable, Snapshot};
 use std::sync::{Arc, Mutex};
 
 mod preservation;
+pub(super) mod witnesses;
 pub(crate) use preservation::{preflight_keyspaces, validate_preservation};
 
 pub struct PublicIdentityQualificationStore {
@@ -165,60 +164,21 @@ pub(crate) fn validate(
     let raw = codec::load(snapshot, meta, HISTORY, MAX_PUBLIC_IDENTITY_HISTORY_BYTES)?
         .ok_or(PublicIdentityError::Corrupt("missing history"))?;
     let history = codec::history(&raw, declaration.store_identity(), &head)?;
-    super::inventory::validate(snapshot, entities, meta, history.records().len())?;
-    validate_witnesses(
+    let accepted = super::operation::accepted_decisions(snapshot, journal, history.records())?;
+    super::inventory::validate(snapshot, entities, meta, history.records().len(), accepted)?;
+    witnesses::validate(
         snapshot,
         entities,
         meta,
         journal,
         receipts,
         &history,
-        declaration.version(),
+        &declaration,
     )?;
     Ok(Some(Ledger {
         declaration,
         history,
     }))
-}
-
-fn validate_witnesses(
-    snapshot: &Snapshot,
-    entities: &Keyspace,
-    meta: &Keyspace,
-    journal: &Keyspace,
-    receipts: &Keyspace,
-    history: &DecodedCandidateHistory,
-    version: PublicIdentityQualificationVersion,
-) -> StoreResult<()> {
-    witness::verify_count(snapshot, journal, history.records().len())?;
-    witness::verify_count(snapshot, receipts, history.records().len())?;
-    for record in history.records() {
-        let census_domain::public_identity_history::HistoryRequest::Establish { binding, evidence } =
-            &record.request
-        else {
-            return Err(PublicIdentityError::Corrupt("unsupported acceptance operation").into());
-        };
-        let PublicResolution::Canonical(resolved) = history
-            .projection()
-            .resolve_candidate(&binding.candidate)
-            .map_err(PublicIdentityError::from)?
-        else {
-            return Err(
-                PublicIdentityError::Corrupt("unsupported public identity resolution").into(),
-            );
-        };
-        let key = witness::key(record.sequence);
-        let raw = codec::load(snapshot, journal, &key, 65_536)?
-            .ok_or(PublicIdentityError::Corrupt("missing commit witness"))?;
-        let held: witness::Witness = codec::decode(&key, &raw)?;
-        held.require_qualification_version(version)?;
-        held.validate(record, &resolved.public_id)?;
-        super::inventory::validate_witness_revision(snapshot, meta, &held)?;
-        witness::verify_rows(
-            snapshot, entities, journal, receipts, &held, evidence, binding,
-        )?;
-    }
-    Ok(())
 }
 
 fn validate_keys(snapshot: &Snapshot, meta: &Keyspace) -> StoreResult<()> {

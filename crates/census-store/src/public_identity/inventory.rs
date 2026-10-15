@@ -6,6 +6,7 @@ pub(super) fn validate(
     snapshot: &Snapshot,
     entities: &Keyspace,
     meta: &Keyspace,
+    operations: usize,
     expected: usize,
 ) -> StoreResult<()> {
     Table::ALL.into_iter().try_for_each(|table| {
@@ -23,7 +24,8 @@ pub(super) fn validate(
     let next = number(snapshot, meta, crate::generation::DERIVED_NEXT)?;
     let reclaim = number(snapshot, meta, crate::generation::DERIVED_RECLAIM_FROM)?;
     let expected_u64 = u64::try_from(expected).map_err(|_| StoreError::CounterOverflow)?;
-    if evidence < expected_u64 || next <= current || reclaim > next {
+    let operations = u64::try_from(operations).map_err(|_| StoreError::CounterOverflow)?;
+    if evidence < operations || next <= current || reclaim > next {
         return Err(PublicIdentityError::Corrupt("generation marks").into());
     }
     let table = Table::AthleteIdentityDecisions;
@@ -41,26 +43,12 @@ pub(super) fn validate(
     Ok(())
 }
 
-fn number(snapshot: &Snapshot, meta: &Keyspace, key: &str) -> StoreResult<u64> {
+pub(super) fn number(snapshot: &Snapshot, meta: &Keyspace, key: &str) -> StoreResult<u64> {
     let raw = codec::load(snapshot, meta, key, 32)?
         .ok_or(PublicIdentityError::Corrupt("missing retained counter"))?;
     let text =
         std::str::from_utf8(&raw).map_err(|_| PublicIdentityError::Corrupt("counter encoding"))?;
     crate::meta::parse_u64(key, text)
-}
-
-pub(super) fn validate_witness_revision(
-    snapshot: &Snapshot,
-    meta: &Keyspace,
-    witness: &super::witness::Witness,
-) -> StoreResult<()> {
-    if number(snapshot, meta, crate::generation::ENTITIES)? <= witness.evidence_generation
-        || number(snapshot, meta, crate::generation::DERIVED_CURRENT)? < witness.derived_generation
-        || snapshot.seqno() <= witness.snapshot_sequence
-    {
-        return Err(PublicIdentityError::Corrupt("commit revision exceeds retained state").into());
-    }
-    Ok(())
 }
 
 fn validate_observation_marks(

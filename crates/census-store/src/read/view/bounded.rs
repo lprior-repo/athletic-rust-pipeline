@@ -18,6 +18,14 @@ pub struct ReadCounts {
     pub merged_rows: u64,
 }
 
+pub fn decode_physical_observation<T: Entity>(
+    table: Table,
+    key: &[u8],
+    raw: &[u8],
+) -> StoreResult<T> {
+    merge::decode(table, key, raw)
+}
+
 impl StoreSnapshot<'_> {
     pub fn for_each_merged_bounded<T: Entity>(
         &self,
@@ -47,6 +55,17 @@ impl StoreSnapshot<'_> {
         budget: ReadBudget,
         mut visit: impl FnMut(T, u64) -> StoreResult<()>,
     ) -> StoreResult<ReadCounts> {
+        self.for_each_physical_observation_bounded(table, budget, |row, _, _, bytes| {
+            visit(row, bytes)
+        })
+    }
+
+    pub fn for_each_physical_observation_bounded<T: Entity>(
+        &self,
+        table: Table,
+        budget: ReadBudget,
+        mut visit: impl FnMut(T, &[u8], &[u8], u64) -> StoreResult<()>,
+    ) -> StoreResult<ReadCounts> {
         let mut counts = ReadCounts::default();
         let prefix = self.layout().prefix(table);
         for guard in self.snapshot.prefix(self.entities, &prefix) {
@@ -61,12 +80,12 @@ impl StoreSnapshot<'_> {
                     .get(self.entities, &key)
                     .map_err(|source| StoreError::Read { source })
             })?;
-            let row = merge::decode(table, &key, &raw)?;
+            let row = decode_physical_observation(table, &key, &raw)?;
             counts.decoded_rows = counts
                 .decoded_rows
                 .checked_add(1)
                 .ok_or(StoreError::CounterOverflow)?;
-            visit(row, counts.encoded_bytes)?;
+            visit(row, &key, &raw, counts.encoded_bytes)?;
         }
         Ok(counts)
     }
@@ -127,3 +146,7 @@ fn charge(current: u64, added: u64, available: u64, what: &'static str) -> Store
 #[cfg(test)]
 #[path = "bounded_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "physical_observation_tests.rs"]
+mod physical_observation_tests;

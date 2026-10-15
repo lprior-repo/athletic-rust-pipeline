@@ -1,12 +1,17 @@
 use super::{wire, Inputs, BUDGET};
-use crate::journal::context::{stage_context_object, ContextRecordSink, StagedContextObject};
+use crate::journal::context::{
+    measure_context_object, stage_context_object, ContextRecordSink, StagedContextObject,
+};
 use crate::{Store, StoreError, StoreResult};
 use census_domain::model::StoreIdentity;
 use serde::Serialize;
 
 pub(super) const RETAINED_SECTION_BYTES: u64 = 16 * 1024 * 1024;
 
-pub(super) fn charge_section_bytes(current: u64, added: usize) -> StoreResult<u64> {
+pub(in crate::public_identity) fn charge_section_bytes(
+    current: u64,
+    added: usize,
+) -> StoreResult<u64> {
     let added = u64::try_from(added).map_err(|_| StoreError::CounterOverflow)?;
     let needed = current
         .checked_add(added)
@@ -27,6 +32,21 @@ impl Inputs {
         store: &Store,
         lineage: &StoreIdentity,
     ) -> StoreResult<StagedContextObject> {
+        stage_context_object(store, |sink| self.emit_context(sink, lineage))
+    }
+
+    pub(in crate::public_identity) fn measure_context(
+        &self,
+        lineage: &StoreIdentity,
+    ) -> StoreResult<String> {
+        measure_context_object(|sink| self.emit_context(sink, lineage))
+    }
+
+    fn emit_context(
+        &self,
+        sink: &mut ContextRecordSink<'_>,
+        lineage: &StoreIdentity,
+    ) -> StoreResult<()> {
         let header = wire::Header {
             version: 1,
             authority_policy: 1,
@@ -39,13 +59,11 @@ impl Inputs {
                 self.verdicts.len(),
             ],
         };
-        stage_context_object(store, |sink| {
-            emit(sink, "header", "header", &header)?;
-            emit_rows(sink, "athlete", &self.athletes)?;
-            emit_rows(sink, "observation", &self.observations)?;
-            emit_rows(sink, "case", &self.cases)?;
-            emit_rows(sink, "verdict", &self.verdicts)
-        })
+        emit(sink, "header", "header", &header)?;
+        emit_rows(sink, "athlete", &self.athletes)?;
+        emit_rows(sink, "observation", &self.observations)?;
+        emit_rows(sink, "case", &self.cases)?;
+        emit_rows(sink, "verdict", &self.verdicts)
     }
 }
 

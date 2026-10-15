@@ -1,5 +1,5 @@
 use super::{codec, IdentityCommitOutcomeV1, PublicIdentityError, OPERATION_PREFIX};
-use crate::{StoreError, StoreResult, Table};
+use crate::{StoreError, StoreResult};
 use census_domain::model::{
     serialized_digest, AppliedAthleteIdentity, AthleteCandidateId, StoreIdentity,
 };
@@ -135,16 +135,15 @@ impl Witness {
 }
 
 pub(super) fn verify_rows(
-    snapshot: &Snapshot,
-    entities: &Keyspace,
-    journal: &Keyspace,
-    receipts: &Keyspace,
+    reader: &impl super::retained::Read,
+    identity: &StoreIdentity,
     witness: &Witness,
     evidence: &census_domain::public_identity_history::CandidateDecisionReference,
     binding: &census_domain::public_identity_history::BindingClaim,
 ) -> StoreResult<()> {
     let key = receipt_key(&witness.operation);
-    let raw = codec::load(snapshot, receipts, &key, 65_536)?
+    let raw = reader
+        .row(super::retained::Rows::Receipt, &key)?
         .ok_or(PublicIdentityError::Corrupt("missing commit receipt"))?;
     let receipt: crate::Receipt = codec::decode(&key, &raw)?;
     if receipt.operation != key
@@ -154,21 +153,8 @@ pub(super) fn verify_rows(
     {
         return Err(PublicIdentityError::Corrupt("commit receipt binding").into());
     }
-    let key = crate::keys::observation_key(
-        Table::AthleteIdentityDecisions,
-        &witness.decision_id,
-        crate::keys::DERIVED_SEQUENCE,
-    );
-    let size = snapshot
-        .size_of(entities, &key)
-        .map_err(|source| StoreError::Read { source })?
-        .ok_or(PublicIdentityError::Corrupt("missing accepted decision"))?;
-    if size > 65_536 {
-        return Err(PublicIdentityError::Corrupt("oversized accepted decision").into());
-    }
-    let raw = snapshot
-        .get(entities, key)
-        .map_err(|source| StoreError::Read { source })?
+    let raw = reader
+        .row(super::retained::Rows::Decision, &witness.decision_id)?
         .ok_or(PublicIdentityError::Corrupt("missing accepted decision"))?;
     let decision: AppliedAthleteIdentity = codec::decode(&witness.decision_id, &raw)?;
     if receipt.at != decision.observed_at
@@ -184,7 +170,8 @@ pub(super) fn verify_rows(
         return Err(PublicIdentityError::Corrupt("accepted decision digest").into());
     }
     if let Some(root) = &witness.authority_context {
-        let source = super::context::verify_retained(snapshot, journal, root, &decision)?;
+        let inputs = reader.context(root, identity)?;
+        let source = super::context::verify_source_inputs(&inputs, &decision)?;
         let expected =
             super::commit::source_binding(&binding.candidate, source, &witness.request_digest);
         if binding != &expected {

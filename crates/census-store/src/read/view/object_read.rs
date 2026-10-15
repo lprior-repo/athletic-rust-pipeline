@@ -246,3 +246,27 @@ impl JournalObject<'_> {
         )
     }
 }
+
+impl JournalObject<'_> {
+    pub(crate) fn retained_bytes(&self, maximum: usize) -> StoreResult<Vec<u8>> {
+        if self.total_bytes() > maximum {
+            return Err(StoreError::RowTooLarge {
+                bytes: self.total_bytes(),
+                max: maximum,
+            });
+        }
+        let mut bytes = Vec::new();
+        bytes
+            .try_reserve_exact(self.total_bytes())
+            .map_err(|error| StoreError::Refused {
+                detail: format!("retained object byte allocation: {error}"),
+            })?;
+        for index in 0..self.chunk_count() {
+            bytes.extend_from_slice(&self.read_chunk(index)?);
+        }
+        if bytes.len() != self.total_bytes() {
+            return Err(self.path().refusal("retained object byte length mismatch"));
+        }
+        Ok(bytes)
+    }
+}

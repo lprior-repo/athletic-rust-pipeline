@@ -38,6 +38,10 @@ pub(super) enum Command {
     )]
     VerifyRetainedCapture(super::retained_capture::RetainedCaptureArgs),
     #[command(
+        about = "Inspect or explicitly adjudicate retained identities in an existing offline V2 qualification store; stopped owner and interactive digest approval required for a split"
+    )]
+    LocalIdentityAdjudication(super::local_adjudication::LocalAdjudicationArgs),
+    #[command(
         about = "Manage immutable query-profile configuration and prepare checked selection documents; explicit --store and a stopped store owner required"
     )]
     Profile(ProfileArgs),

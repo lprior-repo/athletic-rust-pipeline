@@ -9,6 +9,8 @@ mod fallible_checks;
 mod controller;
 #[path = "public_identity_crash/fixture.rs"]
 mod fixture;
+#[path = "public_identity_crash/manual.rs"]
+mod manual;
 #[path = "public_identity_crash/oracle.rs"]
 mod oracle;
 #[path = "public_identity_crash/physical.rs"]

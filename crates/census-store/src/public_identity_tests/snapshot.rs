@@ -46,6 +46,7 @@ fn public_identity_snapshot_keeps_its_head_and_resolution_after_later_establishm
         .ok_or("qualification snapshot lacks accepted history")?;
     check!(eq; accepted.store_identity(), writer.store_identity());
     check!(eq; accepted.head(), first_commit.head());
+    check!(eq; accepted.public_ids().collect::<Vec<_>>(), vec![first_commit.public_id()]);
     canonical(&accepted, &first.id.cast(), &first_commit)?;
     check!(eq; accepted.resolve_candidate(&second.id.cast())?, PublicResolution::Unknown);
     let current = store
@@ -57,7 +58,11 @@ fn public_identity_snapshot_keeps_its_head_and_resolution_after_later_establishm
     check!(ne; current.head(), accepted.head());
     canonical(&current, &first.id.cast(), &first_commit)?;
     canonical(&current, &second.id.cast(), &second_commit)?;
+    let mut expected = vec![first_commit.public_id(), second_commit.public_id()];
+    expected.sort();
+    check!(eq; current.public_ids().collect::<Vec<_>>(), expected);
     check!(eq; accepted.head(), first_commit.head());
+    check!(eq; accepted.public_ids().collect::<Vec<_>>(), vec![first_commit.public_id()]);
     check!(eq; accepted.resolve_candidate(&second.id.cast())?, PublicResolution::Unknown);
     check!(eq; retained_state(&store)?, before);
     Ok(())
@@ -133,7 +138,7 @@ fn public_identity_snapshot_refuses_a_missing_witness_without_changing_the_pinne
     let before = retained_state(&store)?;
     check!(matches!(
         refused(store.snapshot().accepted_public_identity_snapshot())?,
-        StoreError::PublicIdentity(PublicIdentityError::Corrupt("commit namespace cardinality"))
+        StoreError::PublicIdentity(PublicIdentityError::Corrupt("missing inventory witness"))
     ));
     let accepted = held
         .accepted_public_identity_snapshot()?

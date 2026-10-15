@@ -4,6 +4,8 @@ use crate::model::{
 };
 use serde::{Deserialize, Serialize};
 
+mod correction;
+
 use super::{HistoryError, ReplayLimits};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -47,6 +49,13 @@ impl CandidateDecisionReference {
             AppliedIdentityKind::SamePerson => CandidateEvidenceKind::SamePerson,
             AppliedIdentityKind::DifferentPerson => return Err(HistoryError::EvidenceMismatch),
         };
+        Self::from_kind(record, kind)
+    }
+
+    fn from_kind(
+        record: &AppliedAthleteIdentity,
+        kind: CandidateEvidenceKind,
+    ) -> Result<Self, HistoryError> {
         Ok(Self {
             application_id: record.id.clone(),
             evidence_digest: serialized_digest(&(
