@@ -118,4 +118,3 @@ fn invalid(detail: &str) -> StoreError {
         detail: detail.into(),
     }
 }
-
