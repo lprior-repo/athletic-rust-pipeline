@@ -16,7 +16,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 mod normalized_rows;
 mod supporting;
 
-fn seed(store: &Store, name: &str) -> TestResult {
+pub(in crate::workbook) fn seed(store: &Store, name: &str) -> TestResult {
     let (mut school, id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name.to_lowercase(), None);
     let evidence = Evidence::parsed(
@@ -46,7 +46,7 @@ fn seed(store: &Store, name: &str) -> TestResult {
     Ok(())
 }
 
-fn options() -> TestResult<Options> {
+pub(in crate::workbook) fn options() -> TestResult<Options> {
     Ok(Options {
         grad_year: Some(2027),
         out: None,

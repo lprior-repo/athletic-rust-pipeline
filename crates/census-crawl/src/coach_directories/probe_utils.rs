@@ -70,6 +70,7 @@ pub fn classify_error(error: &CrawlError) -> (&'static str, String) {
         | CrawlError::OwnedParseResource(_)
         | CrawlError::OwnedCaptureResource(_)
         | CrawlError::ConverterDeadline { .. }
+        | CrawlError::ConverterLifecycle(_)
         | CrawlError::EventIdentity(_)
         | CrawlError::Specification(_)
         | CrawlError::Performance(_)

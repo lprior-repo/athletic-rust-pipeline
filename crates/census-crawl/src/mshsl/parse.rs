@@ -1,15 +1,12 @@
 use regex::Regex;
-use std::collections::HashSet;
 use std::sync::LazyLock;
 
 use super::text::{clean, decode_cfemail_fragment};
 use super::{SCHOOL_LIST_URL, SCHOOL_URL_PREFIX};
 
-static LIST_ROW: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::new(r##"<a href="/schools/([^"#?]+)" class="school-teaser__title">([^<]*)</a>"##).ok()
-});
-static LOCALITY: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r#"<span class="locality">([^<]*)</span>"#).ok());
+mod listing;
+pub use listing::parse_school_list;
+
 static PAGE_LINK: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::new(r#"href=["']\?page=([0-9]+)["']"#).ok());
 static PAGER_NEXT: LazyLock<Option<Regex>> =
@@ -57,42 +54,6 @@ pub struct SchoolDetail {
     pub enrollment: Option<u32>,
     pub website: Option<String>,
     pub admin: Vec<AdminEntry>,
-}
-
-pub fn parse_school_list(html: &str) -> Vec<SchoolListRow> {
-    let (Some(rows), Some(locality)) = (LIST_ROW.as_ref(), LOCALITY.as_ref()) else {
-        return Vec::new();
-    };
-    const ROW_MARKER: &str = "<div class=\"views-row\">";
-    let mut chunks: Vec<&str> = html.split(ROW_MARKER).skip(1).collect();
-    if chunks.is_empty() {
-        chunks.push(html);
-    }
-    let mut school_rows: Vec<SchoolListRow> = Vec::new();
-    let mut seen: HashSet<String> = HashSet::new();
-    for chunk in chunks {
-        let Some(capture) = rows.captures(chunk) else {
-            continue;
-        };
-        let (Some(slug), Some(name)) = (capture.get(1), capture.get(2)) else {
-            continue;
-        };
-        let slug = slug.as_str().trim().to_string();
-        let name = clean(name.as_str());
-        if slug.is_empty() || slug.contains('/') || name.is_empty() {
-            continue;
-        }
-        if !seen.insert(slug.clone()) {
-            continue;
-        }
-        let city = locality
-            .captures(chunk)
-            .and_then(|capture| capture.get(1))
-            .map(|value| clean(value.as_str()))
-            .filter(|value| !value.is_empty());
-        school_rows.push(SchoolListRow { slug, name, city });
-    }
-    school_rows
 }
 
 pub fn parse_next_listing_page(html: &str, current: usize) -> Option<usize> {

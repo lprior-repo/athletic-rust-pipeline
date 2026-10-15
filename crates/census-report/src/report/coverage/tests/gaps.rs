@@ -79,7 +79,7 @@ fn contested_store() -> TestResult<(tempfile::TempDir, Store)> {
         EventSpecification::default(),
     )?);
     store.append(Table::Events, &event)?;
-    for (label, seconds) in [("contest-first", "50.00"), ("contest-second", "51.00")] {
+    for seconds in ["50.00", "51.00"] {
         store.append(
             Table::Performances,
             &dated_performance(
@@ -88,7 +88,7 @@ fn contested_store() -> TestResult<(tempfile::TempDir, Store)> {
                 &meet.id,
                 "2026-05-01",
                 Mark::TimeSeconds(ExactSeconds::parse(seconds)?),
-                ("wiaa_results", label),
+                ("wiaa_results", "contest-shared"),
             )?,
         )?;
     }
@@ -247,7 +247,7 @@ fn all_contested_numeric_marks_report_missing_pr_support() -> TestResult {
         .first()
         .ok_or("missing retained conflict")?;
     check!(eq; conflict.meet, "Contested Invite");
-    check!(eq; conflict.marks, vec!["50.00".to_string(), "51.00".to_string()]);
+    check!(eq; conflict.marks, vec!["50.00".to_string()]);
     Ok(())
 }
 

@@ -45,7 +45,7 @@ fn mshsl_collection_retains_published_coaches_and_physical_capture_evidence() ->
         let detail_body = common::fixture("mshsl", "school_detail_aitkin-high-school.html")?;
         let teams_body = common::fixture("mshsl", "team_nodes_aitkin.json")?;
         let detail = mshsl::parse_school_detail(&detail_body);
-        let rows = mshsl::parse_school_list(&listing);
+        let rows = mshsl::parse_school_list(&listing)?;
         let row = rows.iter().find(|row| row.slug == "aitkin-high-school").context("Aitkin listing")?;
         let key = mshsl::provider_key(row, &detail);
         let teams_url = format!("{TEAMS_VIEW_URL}?views-argument%5B%5D={key}&fields%5Bnode--participant%5D=title,path,drupal_internal__nid");
@@ -92,6 +92,50 @@ fn mshsl_collection_retains_published_coaches_and_physical_capture_evidence() ->
         ensure!(reopened.scan::<CanonicalSchool>(Table::Schools)? == schools);
         ensure!(reopened.scan::<CanonicalCoach>(Table::Coaches)? == coaches);
         ensure!(reopened.stats()?.tables == physical);
+        seed_cache(&cache, &mshsl::listing_page_url(0), &format!("{listing}{listing}"))?;
+        let duplicate_report = mshsl::collect(&context(&fetcher, &reopened)?, &options).await?;
+        ensure!(duplicate_report.errors == 0 && duplicate_report.rows == 0, "{duplicate_report:?}");
+        ensure!(duplicate_report.disposition == census_crawl::CollectionDisposition::Complete, "{duplicate_report:?}");
+        ensure!(duplicate_report.unfinished.is_empty(), "{duplicate_report:?}");
+        ensure!(reopened.scan::<CanonicalSchool>(Table::Schools)? == schools);
+        ensure!(reopened.scan::<CanonicalCoach>(Table::Coaches)? == coaches);
+        ensure!(reopened.stats()?.tables == physical);
+        Ok(())
+    })
+}
+
+#[test]
+fn mshsl_listing_refusals_retain_the_capture_and_stop_the_failed_frontier() -> Result<()> {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let malformed = "<div class=\"views-row\"><a href=\"/schools\" class=\"school-teaser__title\">Missing Slug</a></div>";
+        let first = "<div class=\"views-row\"><a href=\"/schools/owner\" class=\"school-teaser__title\">First</a></div>";
+        let conflict = "<div class=\"views-row\"><a href=\"/schools/owner\" class=\"school-teaser__title\">Second</a></div>";
+        for source in [
+            String::new(),
+            "<html><body>no rows</body></html>".to_string(),
+            malformed.to_string(),
+            format!("{first}{conflict}"),
+        ] {
+            let dir = tempfile::tempdir()?;
+            let cache = dir.path().join("http");
+            let url = mshsl::listing_page_url(0);
+            let body = format!("{source}<a rel=\"next\" href=\"?page=1\">Next</a>");
+            seed_cache(&cache, &url, &body)?;
+            seed_cache(&cache, &mshsl::listing_page_url(1), "<html>must not be visited</html>")?;
+            let store = Store::open(dir.path().join("store"))?;
+            let fetcher = fetcher(&cache)?;
+            let report = mshsl::collect(&context(&fetcher, &store)?, &mshsl::Options::default()).await?;
+            ensure!(report.errors == 1 && report.rows == 0, "{report:?}");
+            ensure!(report.requests == 0 && report.from_cache == 1, "{report:?}");
+            ensure!(report.disposition == census_crawl::CollectionDisposition::Partial, "{report:?}");
+            ensure!(report.unfinished == vec![url.clone()], "{report:?}");
+            ensure!(report.notes.len() == 1 && report.notes.iter().all(|note| note.contains(&url)));
+            ensure!(store.scan::<CanonicalSchool>(Table::Schools)?.is_empty());
+            ensure!(store.scan::<CanonicalCoach>(Table::Coaches)?.is_empty());
+            let retained = fetcher.get(&url, &census_crawl::net::FetchOptions::default()).await?;
+            ensure!(retained.from_cache && retained.body.as_slice() == body.as_bytes());
+            ensure!(retained.fetched_at == CAPTURED_AT);
+        }
         Ok(())
     })
 }

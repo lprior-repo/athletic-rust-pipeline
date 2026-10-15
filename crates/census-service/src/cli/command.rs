@@ -97,6 +97,10 @@ pub(super) enum Command {
     )]
     Verify(VerifyArgs),
     #[command(
+        about = "Compare a verified publication with a digest-bound external reference; aggregate-only and no store writes"
+    )]
+    CompareReference(super::compare_reference::CompareReferenceArgs),
+    #[command(
         about = "Run the whole cycle in one command: gather the authorized registry, consolidate, publish both census scopes, reduce best marks, and write the workbook"
     )]
     Run(RunArgs),

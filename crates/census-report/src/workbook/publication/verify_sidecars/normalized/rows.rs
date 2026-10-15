@@ -10,7 +10,7 @@ mod stream;
 #[cfg(test)]
 mod tests;
 
-pub(super) struct Row<'a> {
+pub(in crate::workbook) struct Row<'a> {
     path: &'a Path,
     index: usize,
     header: &'a [&'a str],
@@ -18,7 +18,7 @@ pub(super) struct Row<'a> {
 }
 
 impl Row<'_> {
-    pub(super) fn get(&self, name: &str) -> ReportResult<&str> {
+    pub(in crate::workbook) fn get(&self, name: &str) -> ReportResult<&str> {
         let column = self.column(name)?;
         self.record.get(column).ok_or_else(|| {
             defect(format!(
@@ -84,7 +84,7 @@ pub(super) fn table(
     })
 }
 
-fn read_table(
+pub(super) fn read_table(
     path: &Path,
     header: &[&str],
     expected: usize,

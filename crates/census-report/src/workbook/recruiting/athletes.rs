@@ -17,7 +17,9 @@ use cells::{
 };
 use census_domain::model::CanonicalAthlete;
 
-pub(super) fn rows(dataset: &Dataset) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + '_ {
+pub(super) fn rows<'a>(
+    dataset: &'a Dataset<'a>,
+) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + 'a {
     let mut ordered: Vec<(&CanonicalAthlete, (String, String, String))> = dataset
         .athletes
         .iter()
@@ -32,7 +34,7 @@ pub(super) fn rows(dataset: &Dataset) -> impl Iterator<Item = ReportResult<Vec<C
     )
 }
 
-fn display_key(dataset: &Dataset, athlete: &CanonicalAthlete) -> (String, String, String) {
+fn display_key(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> (String, String, String) {
     let school = athlete.school.as_str();
     (
         dataset.school_state(school),
@@ -41,7 +43,7 @@ fn display_key(dataset: &Dataset, athlete: &CanonicalAthlete) -> (String, String
     )
 }
 
-fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Cell>> {
+fn row_for(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> ReportResult<Vec<Cell>> {
     let school = athlete.school.as_str();
     let tally = dataset.tallies.get(athlete.id.as_str());
     let prs: Vec<&SharedSelection> = dataset.prs_of(athlete.id.as_str()).collect();
@@ -94,7 +96,7 @@ fn append_staff_cells(cells: &mut Vec<Cell>, contacts: &ScopedContacts<'_>) {
     cells.push(published(director.and_then(|d| d.email.clone())));
 }
 
-fn address_cell(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Cell> {
+fn address_cell(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> ReportResult<Cell> {
     match dataset.school_address.get(athlete.id.as_str()) {
         Some(address) if address.is_empty() => Ok(Cell::Empty),
         Some(address) => Ok(Cell::text(address.clone())),
@@ -104,7 +106,7 @@ fn address_cell(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<C
     }
 }
 
-fn identity_cells(dataset: &Dataset, athlete: &CanonicalAthlete) -> Vec<Cell> {
+fn identity_cells(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> Vec<Cell> {
     let school = athlete.school.as_str();
     let school_id = dataset
         .schools
@@ -125,7 +127,7 @@ fn identity_cells(dataset: &Dataset, athlete: &CanonicalAthlete) -> Vec<Cell> {
     )
 }
 
-fn school_athletics_url(dataset: &Dataset, school: &str) -> Vec<Cell> {
+fn school_athletics_url(dataset: &Dataset<'_>, school: &str) -> Vec<Cell> {
     let url = dataset
         .schools
         .get(school)
@@ -134,7 +136,7 @@ fn school_athletics_url(dataset: &Dataset, school: &str) -> Vec<Cell> {
 }
 
 fn audit_cells(
-    dataset: &Dataset,
+    dataset: &Dataset<'_>,
     athlete: &CanonicalAthlete,
     tally: Option<&AthleteTally>,
     prs: &[&SharedSelection],

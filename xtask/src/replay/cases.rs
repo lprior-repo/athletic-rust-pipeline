@@ -67,7 +67,7 @@ fn wiaa(capture: &Capture<'_>) -> Result<String> {
 fn mshsl(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     if file.starts_with("schools_listing") {
-        let schools = mshsl::parse_school_list(body);
+        let schools = mshsl::parse_school_list(body)?;
         ensure_rows(file, schools.len(), "listing rows")?;
         let next = mshsl::parse_next_listing_page(body, 0);
         return Ok(format!(

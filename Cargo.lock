@@ -350,6 +350,7 @@ dependencies = [
  "reqwest",
  "restate-sdk",
  "rustls-pki-types",
+ "rustix",
  "serde",
  "serde_json",
  "sha2 0.10.9",

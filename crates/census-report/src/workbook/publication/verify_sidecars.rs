@@ -11,7 +11,7 @@ mod census;
 mod contacts;
 mod diff;
 mod input;
-mod normalized;
+pub(in crate::workbook) mod normalized;
 mod read;
 mod recruiting;
 #[cfg(test)]

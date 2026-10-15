@@ -168,6 +168,13 @@ Ready --challenge--> HumanRequired --operator resolution--> Ready
 A challenge closes new admission and issued requests drain. A source stop (§69) is persisted while
 other sources continue. Athlete personal contact data and inferred GPA are outside the product (§36).
 
+Converters admit byte/deadline limits before opening files or spawning. Supported Unix conversion
+owns a process group, signals before reaping its leader and reports unproven cleanup explicitly.
+Operation and cleanup budgets are separate; neither process groups nor sampled output-file sizes
+certify a whole-workload RAM/disk envelope. Bounded regular-file reads remain platform-independent.
+Caller scratch must be privately owned; coach PDF extraction instead uses supervised stdin/stdout
+and creates no caller scratch files.
+
 ## 7. Store (§29-§31)
 
 Fjall is the sole evidence store under [ADR-001](docs/adr/ADR-001-fjall-primary-store.md).
