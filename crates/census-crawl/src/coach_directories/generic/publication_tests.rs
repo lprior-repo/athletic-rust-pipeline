@@ -59,7 +59,7 @@ fn three_source_mailbox_purposes_never_substitute_for_each_other() -> TestResult
     crate::school_sites::apply_contact_capture(&mut school, year, &captured)?;
     check!(eq; school_mailbox(&school, Purpose::SchoolOffice, year)?.map(|claim| claim.mailbox.as_str()), Some("office@school.example"));
     check!(eq; school_mailbox(&school, Purpose::AthleticsOffice, year)?.map(|claim| claim.mailbox.as_str()), Some("athletics@school.example"));
-    check!(eq; director.tenure_state(year)?, CoachTenure::Current { school_year: year });
+    check!(eq; director.tenure_state(year)?, CoachTenure::Unknown);
     let evidence = director
         .tenure_evidence
         .first()

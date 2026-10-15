@@ -133,7 +133,7 @@ mod tests {
     use census_domain::model::{CanonicalCoach, CoachRole, CoachTenure, SchoolYear};
 
     #[test]
-    fn ec1i_wiaa_recorded_fixture_emits_current_role_mailbox_evidence(
+    fn wiaa_unscoped_cached_listing_retains_mailbox_without_inventing_current_season(
     ) -> Result<(), Box<dyn std::error::Error>> {
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -176,7 +176,7 @@ mod tests {
                     fetcher.cache_paths(&crate::net::Fetcher::key_for("GET", &url, ""));
                 write_cache(&body_path, &meta_path, body, &meta)?;
                 let year = SchoolYear::new(2031).ok_or("run season")?;
-                let ctx = AdapterContext {
+                let mut ctx = AdapterContext {
                     capture: crate::CaptureContext::LegacyMetadata,
                     fetcher: &fetcher,
                     store: &store,
@@ -194,7 +194,8 @@ mod tests {
                 check!(eq; director.role, CoachRole::AthleticDirector);
                 check!(eq; director.professional_email.as_deref(), Some("alarson@abbotsford.k12.wi.us"));
                 let fact = director.tenure_evidence.first().ok_or("page-bound tenure evidence")?;
-                check!(eq; fact.tenure, CoachTenure::Current { school_year: year });
+                check!(eq; fact.tenure, CoachTenure::Unknown);
+                check!(eq; director.tenure_state(year)?, CoachTenure::Unknown);
                 check!(eq; fact.source.url.as_deref(), Some(url.as_str()));
                 check!(eq; fact.source_sha256, digest);
                 check!(eq; fact.retrieved_at, stamp);
@@ -204,6 +205,8 @@ mod tests {
                 check!(eq; claim.mailbox.as_deref(), director.professional_email.as_deref());
                 check!(eq; report.errors, 0);
                 let before = store.walk_table(Table::Coaches)?;
+                ctx.school_year = SchoolYear::new(2032).ok_or("later run season")?;
+                ctx.observed_on = "2032-10-12".into();
                 process_school(&ctx, &Options::default(), &entry, (&mut report, &mut 0)).await?;
                 check!(eq; store.walk_table(Table::Coaches)?, before);
                 drop(store);

@@ -19,6 +19,11 @@ pub struct Options {
     pub school_names: Vec<String>,
 }
 
+struct DirectoryCapture {
+    rows: Vec<MemberSchool>,
+    fetched_at: String,
+}
+
 struct Run<'a> {
     ctx: &'a AdapterContext<'a>,
     options: &'a Options,
@@ -28,7 +33,7 @@ struct Run<'a> {
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let before = ctx.fetcher.stats().await;
-    let mut run = Run {
+    let run = Run {
         ctx,
         options,
         report: AdapterReport::new(SOURCE_ID, "schools"),
@@ -37,14 +42,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Colorado) {
         return Ok(run.report);
     }
-    let records = run.directory().await?;
-    let mut run = stream::iter(records.iter().enumerate())
-        .map(Ok::<_, CrawlError>)
-        .try_fold(run, |mut run, (index, row)| async move {
-            run.school(index, row).await?;
-            Ok(run)
-        })
-        .await?;
+    let mut run = run.schools().await?;
     if run.report.unfinished.is_empty() {
         run.report.finish_frontier();
     }
@@ -57,29 +55,56 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 }
 
 impl Run<'_> {
-    async fn directory(&mut self) -> CrawlResult<Vec<MemberSchool>> {
+    async fn schools(mut self) -> CrawlResult<Self> {
+        let Some(capture) = self.directory().await? else {
+            return Ok(self);
+        };
+        let (run, _) = stream::iter(capture.rows.into_iter().enumerate())
+            .map(Ok::<_, CrawlError>)
+            .try_fold(
+                (self, capture.fetched_at),
+                |(mut run, fetched_at), (index, row)| async move {
+                    run.school(index, &row, &fetched_at).await?;
+                    Ok((run, fetched_at))
+                },
+            )
+            .await?;
+        Ok(run)
+    }
+
+    async fn directory(&mut self) -> CrawlResult<Option<DirectoryCapture>> {
         let fetch = crate::net::FetchOptions {
             refresh: self.ctx.refresh || self.options.refresh,
             ..self.ctx.fetch_options()
         };
         let result = match self.ctx.fetcher.get(DIRECTORY_URL, &fetch).await {
-            Ok(capture) => text(&capture).and_then(parse_directory),
+            Ok(capture) => text(&capture)
+                .and_then(parse_directory)
+                .map(|rows| DirectoryCapture {
+                    rows,
+                    fetched_at: capture.fetched_at,
+                }),
             Err(error) => Err(error.into()),
         };
         match result {
-            Ok(rows) if !rows.is_empty() => Ok(rows),
+            Ok(capture) if !capture.rows.is_empty() => Ok(Some(capture)),
             Ok(_) => {
                 owe(&mut self.report, DIRECTORY_URL)?;
-                Ok(Vec::new())
+                Ok(None)
             }
             Err(error) => {
                 fail(&mut self.report, DIRECTORY_URL, error)?;
-                Ok(Vec::new())
+                Ok(None)
             }
         }
     }
 
-    async fn school(&mut self, index: usize, row: &MemberSchool) -> CrawlResult<()> {
+    async fn school(
+        &mut self,
+        index: usize,
+        row: &MemberSchool,
+        directory_stamp: &str,
+    ) -> CrawlResult<()> {
         if !self.options.school_names.is_empty()
             && !row.name.as_deref().is_some_and(|name| {
                 self.options
@@ -106,7 +131,7 @@ impl Run<'_> {
             Ok(capture) => capture,
             Err(error) => return fail(&mut self.report, &url, error),
         };
-        self.emit_school(index, row, &url, &capture)
+        self.emit_school(index, row, &url, &capture, directory_stamp)
     }
 
     fn emit_school(
@@ -115,8 +140,9 @@ impl Run<'_> {
         row: &MemberSchool,
         url: &str,
         capture: &crate::net::FetchOutcome,
+        directory_stamp: &str,
     ) -> CrawlResult<()> {
-        let Some((school, id)) = map_directory_row(row, DIRECTORY_URL, &capture.fetched_at) else {
+        let Some((school, id)) = map_directory_row(row, DIRECTORY_URL, directory_stamp) else {
             self.report.rejections = self.report.rejections.saturating_add(1);
             return owe(&mut self.report, format!("{DIRECTORY_URL}#row={index}"));
         };
@@ -126,7 +152,7 @@ impl Run<'_> {
             (
                 &SourceNamespace::association_school(SOURCE_ID),
                 &school,
-                &capture.fetched_at,
+                directory_stamp,
             ),
             &mut self.report,
         )?;
