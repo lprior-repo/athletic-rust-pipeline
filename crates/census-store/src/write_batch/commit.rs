@@ -104,6 +104,7 @@ impl<'store> StoreBatch<'store> {
         let access_rows =
             super::source_access::stage(source_access, &pages, store, &mut batch, access_capacity)?;
         let generation = stage_generation(&pages, &replacements, access_rows, store, &mut batch)?;
+        super::input_revisions::stage(&pages, &replacements, store, &mut batch)?;
         write_replacements(replacements, store, &mut batch)?;
         #[cfg(feature = "native-fault-injection")]
         if let Some(Application::Written(receipt)) = &written {

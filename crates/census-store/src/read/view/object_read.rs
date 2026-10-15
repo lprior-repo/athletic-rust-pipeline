@@ -36,20 +36,36 @@ pub(crate) fn read_context_object<'s>(
     journal: &'s fjall::Keyspace,
     root: &str,
 ) -> StoreResult<JournalObject<'s>> {
+    read_context_object_bounded(
+        snapshot,
+        journal,
+        root,
+        ContextReadLimits {
+            bytes: crate::journal::context::CONTEXT_TOTAL_BYTES,
+            records: crate::journal::context::CONTEXT_RECORDS,
+            record_bytes: crate::journal::context::CONTEXT_RECORD_BYTES,
+        },
+    )
+}
+
+#[derive(Clone, Copy)]
+pub(crate) struct ContextReadLimits {
+    pub(crate) bytes: usize,
+    pub(crate) records: usize,
+    pub(crate) record_bytes: usize,
+}
+
+pub(crate) fn read_context_object_bounded<'s>(
+    snapshot: &fjall::Snapshot,
+    journal: &'s fjall::Keyspace,
+    root: &str,
+    limits: ContextReadLimits,
+) -> StoreResult<JournalObject<'s>> {
     let path = JournalPath {
         phase: "authority_context_v1",
         key: root,
     };
-    read_object_root(
-        snapshot,
-        journal,
-        path,
-        root,
-        Some((
-            crate::journal::context::CONTEXT_TOTAL_BYTES,
-            crate::journal::context::CONTEXT_RECORDS,
-        )),
-    )
+    read_object_root(snapshot, journal, path, root, Some(limits))
 }
 
 fn read_object_root<'s>(
@@ -57,7 +73,7 @@ fn read_object_root<'s>(
     journal: &'s fjall::Keyspace,
     path: JournalPath<'_>,
     object: &str,
-    budget: Option<(usize, usize)>,
+    budget: Option<ContextReadLimits>,
 ) -> StoreResult<JournalObject<'s>> {
     let manifest_key = object_manifest_key(object)?;
     let raw = read_row(snapshot, journal, path, &manifest_key)?.ok_or_else(|| {
@@ -68,8 +84,8 @@ fn read_object_root<'s>(
         }
     })?;
     let bounds = manifest_bounds(path, object, raw.as_ref())?;
-    if let Some((bytes, records)) = budget {
-        if bounds.total_bytes > bytes || bounds.records > records {
+    if let Some(limits) = budget {
+        if bounds.total_bytes > limits.bytes || bounds.records > limits.records {
             return Err(path.refusal("authority context exceeds retained input limits"));
         }
     }
@@ -81,8 +97,8 @@ fn read_object_root<'s>(
         snapshot.clone(),
         journal,
     );
-    if budget.is_some() {
-        reader.record_byte_limit = crate::journal::context::CONTEXT_RECORD_BYTES;
+    if let Some(limits) = budget {
+        reader.record_byte_limit = limits.record_bytes;
     }
     reader.verify()?;
     Ok(reader)

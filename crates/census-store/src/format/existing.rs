@@ -128,6 +128,7 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
     require_keyspaces(&db)?;
     let (db, entities, journal, meta, receipts) = crate::keyspaces(db)?;
     let format = super::require_current(root, super::read_format(&meta)?)?;
+    crate::input_revisions::validate_format(&db.snapshot(), &meta, &format)?;
     let identity = crate::public_identity::validate(
         &db.snapshot(),
         &entities,

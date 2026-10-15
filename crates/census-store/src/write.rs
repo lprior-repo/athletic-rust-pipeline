@@ -57,6 +57,7 @@ impl Store {
         self.put_mark(&mut batch, table, reserved.mark);
         self.put_row_mark(&mut batch, table, rows);
         generation::write_entities(&mut batch, &self.meta, generation);
+        crate::input_revisions::stage(self, &mut batch, [table])?;
         batch
             .durability(Some(PersistMode::SyncData))
             .commit()
@@ -90,6 +91,7 @@ impl Store {
         refuse_over_bound(table, rows)?;
         self.put_row_mark(&mut batch, table, rows);
         generation::write_entities(&mut batch, &self.meta, generation);
+        crate::input_revisions::stage(self, &mut batch, [table])?;
         batch
             .durability(Some(PersistMode::SyncData))
             .commit()

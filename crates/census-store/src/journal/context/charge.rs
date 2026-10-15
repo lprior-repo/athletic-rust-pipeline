@@ -1,3 +1,4 @@
+use super::physical_ref::{ContextPhysicalPlan, ContextPhysicalRef, PhysicalRows};
 use super::{persist, refused, run_pass, wire, ContextRecordSink, IndexEntry, ObjectPlan, Pass};
 use crate::journal::{object_chunk_key, object_index_key, object_manifest_key};
 use crate::{Store, StoreError, StoreResult};
@@ -15,6 +16,7 @@ pub(super) struct ChargeTarget<'a> {
     root: &'a str,
     ready: bool,
     bytes: &'a mut u64,
+    physical: &'a mut PhysicalRows,
 }
 
 impl ChargeTarget<'_> {
@@ -36,17 +38,15 @@ impl ChargeTarget<'_> {
     }
 
     pub(super) fn chunk(&mut self, index: usize, bytes: &[u8], digest: &str) -> StoreResult<()> {
-        self.row(
-            &object_chunk_key(self.root, index)?,
-            &wire::chunk(self.root, index, bytes, digest)?,
-        )
+        let value = wire::chunk(self.root, index, bytes, digest)?;
+        self.row(&object_chunk_key(self.root, index)?, &value)?;
+        self.physical.chunk(index, &value)
     }
 
     pub(super) fn page(&mut self, page: usize, entries: &[IndexEntry]) -> StoreResult<()> {
-        self.row(
-            &object_index_key(self.root, page)?,
-            &wire::page(self.root, page, entries)?,
-        )
+        let value = wire::page(self.root, page, entries)?;
+        self.row(&object_index_key(self.root, page)?, &value)?;
+        self.physical.page(page, &value)
     }
 }
 
@@ -54,11 +54,23 @@ pub(crate) fn charge_context_object<F>(store: &Store, emit: F) -> StoreResult<Co
 where
     F: Fn(&mut ContextRecordSink<'_>) -> StoreResult<()>,
 {
+    Ok(measure_context_physical(store, emit)?
+        .incremental_charge()
+        .clone())
+}
+
+pub(crate) fn measure_context_physical<F>(
+    store: &Store,
+    emit: F,
+) -> StoreResult<ContextPhysicalPlan>
+where
+    F: Fn(&mut ContextRecordSink<'_>) -> StoreResult<()>,
+{
     let plan = run_pass(Pass::Measure, &emit)?;
     charge_plan(store, plan, emit)
 }
 
-fn charge_plan<F>(store: &Store, plan: ObjectPlan, emit: F) -> StoreResult<ContextCharge>
+fn charge_plan<F>(store: &Store, plan: ObjectPlan, emit: F) -> StoreResult<ContextPhysicalPlan>
 where
     F: Fn(&mut ContextRecordSink<'_>) -> StoreResult<()>,
 {
@@ -71,22 +83,28 @@ where
     }
     let ready = existing.is_some();
     let mut bytes = 0;
+    let mut physical = PhysicalRows::new(&plan, &value)?;
     let mut target = ChargeTarget {
         store,
         root: &plan.staged.object,
         ready,
         bytes: &mut bytes,
+        physical: &mut physical,
     };
     target.row(&key, &value)?;
     let observed = run_pass(Pass::Charge(target), &emit)?;
     if observed != plan {
         return Err(refused("charged context changed between passes"));
     }
-    Ok(ContextCharge {
-        root: plan.staged.object,
+    let charge = ContextCharge {
+        root: plan.staged.object.clone(),
         bytes: if ready { 0 } else { bytes },
         roots: u64::from(!ready),
-    })
+    };
+    let physical = ContextPhysicalRef::from_plan(plan, physical, bytes)?;
+    let result = ContextPhysicalPlan::new(physical, charge);
+    result.audit(store)?;
+    Ok(result)
 }
 
 pub(crate) fn verify_retained_charge(store: &Store, charge: &ContextCharge) -> StoreResult<()> {

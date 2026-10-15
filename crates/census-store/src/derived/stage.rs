@@ -236,6 +236,7 @@ impl<'s> DerivedStage<'s> {
         let next_entities = self.store.generations.next_entities()?;
         generation::write_entities(&mut batch, &self.store.meta, next_entities);
         generation::write_derived_current(&mut batch, &self.store.meta, self.generation);
+        crate::input_revisions::stage(self.store, &mut batch, [Table::ReviewCases])?;
         batch.insert(
             &self.store.receipts,
             operation.as_bytes(),

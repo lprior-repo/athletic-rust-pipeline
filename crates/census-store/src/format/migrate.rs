@@ -80,6 +80,7 @@ fn migrate_stopped(root: &Path, cache_bytes: u64) -> StoreResult<(StoreFormat, b
         .map_err(|source| StoreError::Open { source })?;
     crate::acquisition::qualification::preflight_keyspaces(&db)?;
     crate::public_identity::preflight_keyspaces(&db)?;
+    crate::input_revisions::preflight_keyspaces(root, &db)?;
     let (db, entities, journal, meta, receipts) = crate::keyspaces(db)?;
     let format = read_format(&meta)?;
     crate::public_identity::require_legacy(&db.snapshot(), &meta, &journal, &receipts, &format)?;

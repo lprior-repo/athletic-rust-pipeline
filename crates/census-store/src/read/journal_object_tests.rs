@@ -1,3 +1,5 @@
+mod raw_generation;
+
 use serde_json::{json, Value};
 
 use crate::journal::{

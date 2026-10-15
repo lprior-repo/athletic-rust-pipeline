@@ -5,11 +5,15 @@ use crate::{Store, StoreError, StoreResult};
 
 mod charge;
 mod encode;
-pub(crate) use charge::{charge_context_object, verify_retained_charge, ContextCharge};
+pub(crate) use charge::{
+    charge_context_object, measure_context_physical, verify_retained_charge, ContextCharge,
+};
 mod persist;
+mod physical_ref;
 mod stream;
 mod wire;
 
+pub(crate) use physical_ref::{ContextPhysicalPlan, ContextPhysicalRef};
 pub(crate) use stream::ContextRecordSink;
 
 pub(crate) const CONTEXT_RECORD_BYTES: usize = 1024 * 1024;

@@ -1,4 +1,6 @@
 mod decision;
+pub(in crate::public_identity) mod graph;
+mod graph_wire;
 mod persist;
 mod retry;
 use crate::journal::context::ContextCharge;
@@ -101,6 +103,16 @@ fn audit_row(
     let row_key = std::str::from_utf8(row_key).map_err(|_| invalid())?;
     let raw = codec::load(snapshot, &store.journal, row_key, MAX_JOURNAL_VALUE_BYTES)?
         .ok_or_else(invalid)?;
+    #[derive(Deserialize)]
+    struct Version {
+        version: u8,
+    }
+    let version: Version = codec::decode(row_key, &raw)?;
+    match version.version {
+        3 => return graph::audit(store, row_key, &raw, identity),
+        2 => (),
+        _ => return Err(invalid()),
+    }
     let reservation: Reservation = codec::decode(row_key, &raw)?;
     validate(&reservation, identity)?;
     for charge in &reservation.charges {
@@ -214,12 +226,24 @@ fn verify_namespace(store: &Store, reservations: u64) -> StoreResult<()> {
 pub(crate) struct Permit<'s> {
     store: &'s Store,
     root: String,
+    ready_required: bool,
 }
 
 impl Permit<'_> {
     pub(crate) fn root_for(&self, store: &Store) -> StoreResult<&str> {
         if !std::ptr::eq(self.store, store) {
             return Err(invalid());
+        }
+        if self.ready_required {
+            let manifest = crate::journal::object_manifest_key(&self.root)?;
+            if !store
+                .db
+                .snapshot()
+                .contains_key(&store.journal, &manifest)
+                .map_err(|source| StoreError::Read { source })?
+            {
+                return Err(invalid());
+            }
         }
         Ok(&self.root)
     }
@@ -230,6 +254,7 @@ impl Reservation {
         self.charges.each_ref().map(|charge| Permit {
             store,
             root: charge.root.clone(),
+            ready_required: charge.roots == 0,
         })
     }
 }

@@ -265,3 +265,22 @@ reasons while preserving all three source-free views and witness equality, and a
 the independently reviewed capture-day Current Roster reader. Execution of that
 new reader and combined checkpoint remains pending. No summer policy is relaxed;
 the five positive eligibility obligations above remain OPEN.
+
+### Isolated R3 composition — October 15, 19:58 UTC
+
+The paged codec, raw adapter, six-table input revision counters, graph context
+admission and pinned raw capture are composed in an isolated source checkpoint.
+The production capture covers athletes, source observations, review cases, identity
+verdicts, performances and relay results. Its explicit Captured/HistoricalReplay
+outcome is retained raw evidence, not accepted identity authority. No reader/writer
+cutover, schema rollout, increased resource limit or production activation follows.
+
+Static review found no unresolved capture correctness defect; integration preserves
+registration unions and extracts graph builder helpers without changing ordering.
+Formatting and source-size inspection are complete; compilation and runtime checks
+remain pending. Six-table, byte-split, fence-matrix and directory tests are authored
+only. The 257-page directory test exercises a seam, not full on-disk capture.
+Deterministic public concurrent mutation, same-operation retry and crash after seal
+but before return remain unverified. Existing chunk observation returns an error
+without a resume handshake; the identity-commit marker belongs to another operation.
+Sequential private fence tests are not evidence for those public concurrent schedules.

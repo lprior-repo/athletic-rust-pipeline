@@ -11,6 +11,7 @@ pub use local_adjudication::{
 };
 pub(crate) mod frozen;
 mod init;
+mod input_revisions;
 mod inventory;
 mod membership;
 mod membership_withholding;
@@ -20,6 +21,7 @@ pub use membership_withholding::{
     PreparedMembershipWithholdingV1,
 };
 mod operation;
+pub mod paged_generation;
 pub(crate) mod qualification;
 mod retained;
 mod witness;

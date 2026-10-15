@@ -1,3 +1,7 @@
+#[path = "object_raw.rs"]
+mod raw;
+pub(crate) use raw::JournalRawRecords;
+
 use serde::Deserialize;
 use serde_json::Value;
 

@@ -31,7 +31,10 @@ mod format;
 pub mod fs;
 mod generation;
 mod identity;
+mod input_revisions;
+pub use input_revisions::{PublicIdentityInputRevisionTokenV2, PublicIdentityInputRevisionsV2};
 mod public_identity;
+pub use public_identity::paged_generation;
 pub use public_identity::{
     replay_frozen_public_identity_v1, FrozenPublicIdentityBundleV1, IdentityCommitOutcomeV1,
     LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1,
@@ -158,6 +161,7 @@ fn open_keyspaces(
         .map_err(|source| StoreError::Open { source })?;
     acquisition::qualification::preflight_keyspaces(&db)?;
     public_identity::preflight_keyspaces(&db)?;
+    input_revisions::preflight_keyspaces(root, &db)?;
     keyspaces(db)
 }
 

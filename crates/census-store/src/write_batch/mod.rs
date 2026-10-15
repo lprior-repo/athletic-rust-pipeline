@@ -4,6 +4,7 @@ mod budget;
 mod byte_tests;
 mod commit;
 mod conditional;
+mod input_revisions;
 mod journal;
 mod revision;
 mod source_access;
