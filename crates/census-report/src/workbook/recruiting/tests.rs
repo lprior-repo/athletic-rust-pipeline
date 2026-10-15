@@ -17,6 +17,7 @@ use rust_xlsxwriter::Workbook;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod borrowing;
 mod identity;
 mod postal;
 mod summaries;
@@ -427,21 +428,20 @@ fn fixture() -> TestResult<Fixture> {
     })
 }
 
-fn recruiting(store: &Store, scope: Scope, grad_year: Option<i16>) -> TestResult<Recruiting> {
-    let dataset = crate::export::ExportDataset::load(store)?;
-    let derivation = crate::report::Derivation::of(&dataset, scope, grad_year, &[]);
+fn recruiting<'a>(derivation: &'a Derivation<'_>) -> TestResult<Recruiting<'a>> {
+    let dataset = derivation.dataset();
     let prs = bests::build_from_dataset(
-        &dataset,
+        dataset,
         &bests::Options {
-            scope,
-            grad_year,
+            scope: derivation.scope(),
+            grad_year: derivation.grad_year(),
             limit: None,
-            jurisdictions: Vec::new(),
+            jurisdictions: derivation.jurisdictions().to_vec(),
         },
     )?;
-    let admission = crate::report::EventAdmission::of(&dataset)?;
+    let admission = crate::report::EventAdmission::of(dataset)?;
     Ok(Recruiting::of(
-        &derivation,
+        derivation,
         SchoolYear::new(2026).ok_or("invalid fixture season")?,
         prs,
         &admission,
@@ -474,7 +474,9 @@ fn written_scope(
     fixture: &Fixture,
     scope: Scope,
 ) -> TestResult<(Xlsx<std::io::BufReader<std::fs::File>>, std::path::PathBuf)> {
-    let projection = recruiting(&fixture.store, scope, Some(2027))?;
+    let projection_input = crate::export::ExportDataset::load(&fixture.store)?;
+    let projection_view = Derivation::of(&projection_input, scope, Some(2027), &[]);
+    let projection = recruiting(&projection_view)?;
     let path = fixture.dir.path().join("recruiting.xlsx");
     let mut book = Workbook::new();
     projection.write_athletes(&mut book, &path)?;
@@ -701,7 +703,9 @@ fn the_prs_sheet_retains_a_same_result_conflict_beside_the_winner() -> TestResul
     let conflict = winner.conflicts.first().ok_or("missing conflict")?;
     check!(eq; conflict.meet, "WIAA Division 3 State");
     check!(eq; conflict.marks, vec!["49.71".to_string()]);
-    let projection = recruiting(&store, Scope::Core, Some(2027))?;
+    let projection_input = crate::export::ExportDataset::load(&store)?;
+    let projection_view = Derivation::of(&projection_input, Scope::Core, Some(2027), &[]);
+    let projection = recruiting(&projection_view)?;
     let path = dir.path().join("recruiting.xlsx");
     let mut book = Workbook::new();
     projection.write_prs(&mut book, &path)?;
@@ -787,7 +791,9 @@ fn an_unrelated_programmes_personal_address_is_retained_only_in_raw_coach_histor
 #[test]
 fn the_run_audits_every_sheet_against_the_store_counts_behind_it() -> TestResult {
     let fixture = fixture()?;
-    let projection = recruiting(&fixture.store, Scope::Core, Some(2027))?;
+    let projection_input = crate::export::ExportDataset::load(&fixture.store)?;
+    let projection_view = Derivation::of(&projection_input, Scope::Core, Some(2027), &[]);
+    let projection = recruiting(&projection_view)?;
     let audit = projection.dataset.audit();
     check!(eq; audit.store_athletes, 3);
     check!(eq; audit.cohort_athletes, 2);
@@ -835,7 +841,9 @@ fn the_recruiting_xlsx_keeps_formula_looking_text_as_literal_string_cells() -> T
         FORMULA_EMAIL,
     )?;
 
-    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let projection_input = crate::export::ExportDataset::load(&store)?;
+    let projection_view = Derivation::of(&projection_input, Scope::AllSources, Some(2027), &[]);
+    let projection = recruiting(&projection_view)?;
     let path = dir.path().join("recruiting.xlsx");
     let mut book = Workbook::new();
     projection.write_athletes(&mut book, &path)?;
@@ -912,7 +920,9 @@ fn an_athlete_without_a_grade_observation_publishes_the_season_of_their_capture(
         store.append(Table::Athletes, &athlete)?;
     }
 
-    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let projection_input = crate::export::ExportDataset::load(&store)?;
+    let projection_view = Derivation::of(&projection_input, Scope::AllSources, Some(2027), &[]);
+    let projection = recruiting(&projection_view)?;
     let path = dir.path().join("observed.xlsx");
     let mut book = Workbook::new();
     projection.write_athletes(&mut book, &path)?;
@@ -954,7 +964,9 @@ fn an_absent_value_publishes_a_blank_cell_while_counts_publish_zero() -> TestRes
     publish_fixture_cohort(&mut athlete, "milesplit_roster", "blank", DAY);
     store.append(Table::Athletes, &athlete)?;
 
-    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let projection_input = crate::export::ExportDataset::load(&store)?;
+    let projection_view = Derivation::of(&projection_input, Scope::AllSources, Some(2027), &[]);
+    let projection = recruiting(&projection_view)?;
     let path = dir.path().join("blank.xlsx");
     let mut book = Workbook::new();
     projection.write_athletes(&mut book, &path)?;
@@ -1034,7 +1046,9 @@ fn a_schools_research_outcome_reaches_the_athletes_contact_coverage_state() -> T
         publish_fixture_cohort(&mut athlete, "wiaa_results", "research-state", DAY);
         store.append(Table::Athletes, &athlete)?;
 
-        let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+        let projection_input = crate::export::ExportDataset::load(&store)?;
+        let projection_view = Derivation::of(&projection_input, Scope::AllSources, Some(2027), &[]);
+        let projection = recruiting(&projection_view)?;
         let path = dir.path().join("recruiting.xlsx");
         let mut book = Workbook::new();
         projection.write_athletes(&mut book, &path)?;
@@ -1071,7 +1085,9 @@ fn duplicate_coach_observations_publish_one_row() -> TestResult {
     );
     fixture.store.append(Table::Coaches, &first)?;
     fixture.store.append(Table::Coaches, &second)?;
-    let projection = recruiting(&fixture.store, Scope::Core, Some(2027))?;
+    let projection_input = crate::export::ExportDataset::load(&fixture.store)?;
+    let projection_view = Derivation::of(&projection_input, Scope::Core, Some(2027), &[]);
+    let projection = recruiting(&projection_view)?;
     check!(eq; projection.dataset.published_coaches.len(), 4);
     let duplicate_ids: Vec<_> = projection
         .dataset
@@ -1105,7 +1121,9 @@ fn merged_coach_email_routes_into_published_row() -> TestResult {
     let mut second = second;
     second.professional_email = Some("merge-later@example.test".to_string());
     fixture.store.append(Table::Coaches, &second)?;
-    let projection = recruiting(&fixture.store, Scope::Core, Some(2027))?;
+    let projection_input = crate::export::ExportDataset::load(&fixture.store)?;
+    let projection_view = Derivation::of(&projection_input, Scope::Core, Some(2027), &[]);
+    let projection = recruiting(&projection_view)?;
     let merged = projection
         .dataset
         .published_coaches
@@ -1135,7 +1153,9 @@ fn distinct_coach_ids_produce_distinct_published_rows() -> TestResult {
         CoachRole::HeadCoach,
     );
     fixture.store.append(Table::Coaches, &second)?;
-    let projection = recruiting(&fixture.store, Scope::Core, Some(2027))?;
+    let projection_input = crate::export::ExportDataset::load(&fixture.store)?;
+    let projection_view = Derivation::of(&projection_input, Scope::Core, Some(2027), &[]);
+    let projection = recruiting(&projection_view)?;
     let distinct_names: Vec<_> = projection
         .dataset
         .published_coaches
@@ -1350,7 +1370,9 @@ fn a_provider_adjusted_track_size_mark_retains_published_and_adjusted_distinctly
         },
     )?;
 
-    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let projection_input = crate::export::ExportDataset::load(&store)?;
+    let projection_view = Derivation::of(&projection_input, Scope::AllSources, Some(2027), &[]);
+    let projection = recruiting(&projection_view)?;
     let path = dir.path().join("track-size.xlsx");
     let mut book = Workbook::new();
     projection.write_prs(&mut book, &path)?;
@@ -1480,7 +1502,9 @@ fn a_legacy_performance_without_adjustment_provenance_publishes_blank_conversion
         },
     )?;
 
-    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
+    let projection_input = crate::export::ExportDataset::load(&store)?;
+    let projection_view = Derivation::of(&projection_input, Scope::AllSources, Some(2027), &[]);
+    let projection = recruiting(&projection_view)?;
     let path = dir.path().join("legacy.xlsx");
     let mut book = Workbook::new();
     projection.write_prs(&mut book, &path)?;

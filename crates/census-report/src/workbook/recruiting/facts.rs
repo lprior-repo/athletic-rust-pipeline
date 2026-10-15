@@ -12,12 +12,10 @@ pub(super) struct AthleteTally {
     pub(super) events: BTreeSet<String>,
 }
 
-pub(super) fn school_index(
-    schools: &[CanonicalSchool],
-) -> BTreeMap<census_domain::model::SchoolId, CanonicalSchool> {
+pub(super) fn school_index(schools: &[CanonicalSchool]) -> BTreeMap<&str, &CanonicalSchool> {
     schools
         .iter()
-        .map(|school| (school.id.clone(), school.clone()))
+        .map(|school| (school.id.as_str(), school))
         .collect()
 }
 
