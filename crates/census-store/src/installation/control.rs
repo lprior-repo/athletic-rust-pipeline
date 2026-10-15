@@ -85,6 +85,13 @@ fn check(
     config: &InstallationConfigV1,
 ) -> StoreResult<Option<InstallationEnrollmentV1>> {
     let snapshot = store.db.snapshot();
+    crate::public_identity::require_legacy(
+        &snapshot,
+        &store.meta,
+        &store.journal,
+        &store.receipts,
+        &store.store_format()?,
+    )?;
     let state = read::validate_format(
         &snapshot,
         &store.meta,

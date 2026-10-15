@@ -8,6 +8,7 @@ pub(crate) fn validate_backup(
     db: &Database,
     meta: &Keyspace,
     journal: &Keyspace,
+    receipts: &Keyspace,
 ) -> StoreResult<()> {
     let snapshot = db.snapshot();
     let records = match snapshot.prefix(meta, b"installation:").next() {
@@ -27,7 +28,7 @@ pub(crate) fn validate_backup(
     if !records && lifecycle != Some(super::PRODUCTION_LIFECYCLE) {
         return Ok(());
     }
-    let format = crate::format::require_semantic_format(root, db, meta, journal)?;
+    let format = crate::format::require_semantic_format(root, db, meta, journal, receipts)?;
     if format.schema_version != Some(crate::format::STORE_SCHEMA_VERSION)
         || format.key_format != Some(crate::format::KEY_FORMAT_VERSION)
     {

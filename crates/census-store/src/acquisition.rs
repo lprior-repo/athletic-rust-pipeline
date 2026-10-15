@@ -6,7 +6,7 @@ mod capability;
 pub(crate) mod codec;
 mod error;
 mod facts;
-mod init;
+pub(crate) mod init;
 pub(crate) mod qualification;
 mod read;
 mod recovery;

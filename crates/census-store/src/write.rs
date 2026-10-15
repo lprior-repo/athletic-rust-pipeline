@@ -71,6 +71,7 @@ impl Store {
     }
 
     pub fn replace_many<T: Serialize>(&self, table: Table, records: &[T]) -> StoreResult<()> {
+        crate::public_identity::refuse_identity_write(self, table)?;
         refuse_observation_replacement(table)?;
         if records.is_empty() {
             return Ok(());
@@ -117,7 +118,9 @@ impl Store {
         key: &str,
         payload: &T,
     ) -> StoreResult<()> {
+        crate::lineage::refuse_qualification_write(self, phase)?;
         crate::acquisition::codec::reject_generic_phase(phase)?;
+        crate::public_identity::refuse_reserved(phase)?;
         let entry = serde_json::json!({
             "key": key,
             "at": SystemClock.today_iso8601(),

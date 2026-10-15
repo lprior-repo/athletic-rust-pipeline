@@ -79,8 +79,10 @@ fn migrate_stopped(root: &Path, cache_bytes: u64) -> StoreResult<(StoreFormat, b
         .open()
         .map_err(|source| StoreError::Open { source })?;
     crate::acquisition::qualification::preflight_keyspaces(&db)?;
+    crate::public_identity::preflight_keyspaces(&db)?;
     let (db, entities, journal, meta, receipts) = crate::keyspaces(db)?;
     let format = read_format(&meta)?;
+    crate::public_identity::require_legacy(&db.snapshot(), &meta, &journal, &receipts, &format)?;
     let capture =
         crate::acquisition::qualification::declaration(&db.snapshot(), &meta, &journal, &format)?;
     crate::acquisition::require_legacy(&capture)?;
@@ -90,23 +92,7 @@ fn migrate_stopped(root: &Path, cache_bytes: u64) -> StoreResult<(StoreFormat, b
         journal: &journal,
         meta: &meta,
     };
-    if !matches!(classify(&format), Verdict::Newer { .. }) {
-        let state = crate::installation::validate_format(
-            &db.snapshot(),
-            &meta,
-            &journal,
-            format.lifecycle_revision,
-        )?;
-        if matches!(&state, crate::InstallationState::Enrolled { .. }) {
-            if format.schema_version != Some(STORE_SCHEMA_VERSION)
-                || format.key_format != Some(KEY_FORMAT_VERSION)
-                || format.migration_target.is_some()
-            {
-                return Err(StoreError::SchemaUnknown { detail: "enrollment-only records require schema 2/key format 1 and cannot enter legacy migration".to_string() });
-            }
-            crate::installation::require_legacy_execution(&state)?;
-        }
-    }
+    refuse_enrolled_migration(&context, &format)?;
     let already_current = matches!(classify(&format), Verdict::Current);
     let rewritten = match classify(&format) {
         Verdict::Current => Rewritten::default(),
@@ -132,6 +118,30 @@ fn migrate_stopped(root: &Path, cache_bytes: u64) -> StoreResult<(StoreFormat, b
         }
     };
     Ok((format, already_current, rewritten))
+}
+
+fn refuse_enrolled_migration(context: &time::Context<'_>, format: &StoreFormat) -> StoreResult<()> {
+    if matches!(classify(format), Verdict::Newer { .. }) {
+        return Ok(());
+    }
+    let state = crate::installation::validate_format(
+        &context.db.snapshot(),
+        context.meta,
+        context.journal,
+        format.lifecycle_revision,
+    )?;
+    if matches!(&state, crate::InstallationState::Enrolled { .. }) {
+        if format.schema_version != Some(STORE_SCHEMA_VERSION)
+            || format.key_format != Some(KEY_FORMAT_VERSION)
+            || format.migration_target.is_some()
+        {
+            return Err(StoreError::SchemaUnknown {
+                detail: "enrollment-only records require schema 2/key format 1 and cannot enter legacy migration".to_string(),
+            });
+        }
+        crate::installation::require_legacy_execution(&state)?;
+    }
+    Ok(())
 }
 
 fn upgrade(context: &time::Context<'_>, format: &StoreFormat) -> StoreResult<Rewritten> {

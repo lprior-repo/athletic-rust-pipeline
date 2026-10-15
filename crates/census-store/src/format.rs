@@ -12,7 +12,7 @@ pub use migrate::MigrationReport;
 
 pub const STORE_SCHEMA_VERSION: u32 = 2;
 pub const KEY_FORMAT_VERSION: u32 = 1;
-pub const LIFECYCLE_REVISION: u32 = 4;
+pub const LIFECYCLE_REVISION: u32 = 5;
 const FRESH_LIFECYCLE_REVISION: u32 = 2;
 
 pub const DEFAULT_CACHE_BYTES: u64 = 1024 * 1024 * 1024;
@@ -64,6 +64,13 @@ pub(super) fn open_format(
     }
     let format = require_current(root, format)?;
     let [_, journal, receipts] = data;
+    crate::public_identity::require_legacy(
+        &db.snapshot(),
+        meta_keyspace,
+        journal,
+        receipts,
+        &format,
+    )?;
     let capture = crate::acquisition::validate_format(
         root,
         &db.snapshot(),
@@ -87,8 +94,10 @@ pub(crate) fn require_semantic_format(
     db: &Database,
     meta: &Keyspace,
     journal: &Keyspace,
+    receipts: &Keyspace,
 ) -> StoreResult<StoreFormat> {
     let format = require_current(root, read_format(meta)?)?;
+    crate::public_identity::require_legacy(&db.snapshot(), meta, journal, receipts, &format)?;
     let capture =
         crate::acquisition::qualification::declaration(&db.snapshot(), meta, journal, &format)?;
     crate::acquisition::require_legacy(&capture)?;

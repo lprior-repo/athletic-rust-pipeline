@@ -65,6 +65,7 @@ impl StoreBatch<'_> {
     }
 
     pub fn replace_many<T: Serialize>(&mut self, table: Table, records: &[T]) -> StoreResult<()> {
+        crate::public_identity::refuse_identity_write(self.store, table)?;
         refuse_observation_replacement(table)?;
         if records.is_empty() {
             return Ok(());

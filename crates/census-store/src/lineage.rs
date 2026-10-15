@@ -27,6 +27,19 @@ pub enum StoreLineageError {
     OversizedEnvelope { bytes: usize, max: usize },
 }
 
+pub(crate) fn refuse_qualification_write(store: &Store, phase: &str) -> StoreResult<()> {
+    let in_namespace = phase == PHASE
+        || phase
+            .strip_prefix(PHASE)
+            .is_some_and(|suffix| suffix.starts_with('\0'));
+    if in_namespace
+        && store.store_format()?.lifecycle_revision == Some(crate::public_identity::LIFECYCLE)
+    {
+        return Err(crate::PublicIdentityError::ReservedWrite.into());
+    }
+    Ok(())
+}
+
 pub(crate) enum RetainedIdentity {
     Absent,
     Present(StoreIdentity),
@@ -38,8 +51,13 @@ impl Store {
         match read(&self.db.snapshot(), &self.journal)? {
             RetainedIdentity::Present(identity) => Ok(identity),
             RetainedIdentity::Absent
-                if self.store_format()?.lifecycle_revision
-                    == Some(census_domain::model::CAPTURE_QUALIFICATION_LIFECYCLE) =>
+                if self
+                    .store_format()?
+                    .lifecycle_revision
+                    .is_some_and(|revision| {
+                        revision == census_domain::model::CAPTURE_QUALIFICATION_LIFECYCLE
+                            || revision == crate::public_identity::LIFECYCLE
+                    }) =>
             {
                 Err(StoreLineageError::Missing.into())
             }

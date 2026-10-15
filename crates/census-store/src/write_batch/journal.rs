@@ -19,6 +19,7 @@ impl StoreBatch<'_> {
         key: &str,
         payload: &T,
     ) -> StoreResult<()> {
+        crate::lineage::refuse_qualification_write(self.store, phase)?;
         let (row_key, value) = encode_entry(phase, key, payload)?;
         if value.len() <= MAX_JOURNAL_VALUE_BYTES {
             self.journal.push((row_key, value));
@@ -71,6 +72,7 @@ pub(crate) fn encode_entry<T: Serialize>(
 
 fn checked_key(phase: &str, key: &str) -> StoreResult<Vec<u8>> {
     crate::acquisition::codec::reject_generic_phase(phase)?;
+    crate::public_identity::refuse_reserved(phase)?;
     let bytes = phase
         .len()
         .checked_add(key.len())

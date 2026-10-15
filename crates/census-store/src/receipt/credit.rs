@@ -10,6 +10,7 @@ fn credit_key(endpoint: &str) -> String {
 
 impl Store {
     pub fn credit_observations(&self, endpoint: &str, operation: &str) -> StoreResult<Credit> {
+        crate::public_identity::refuse_reserved(operation)?;
         if operation.starts_with("source_acquisition_attempt_") {
             return Err(crate::CaptureError::CaptureQualificationOptInRequired.into());
         }

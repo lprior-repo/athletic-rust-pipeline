@@ -1,6 +1,8 @@
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
     #[error(transparent)]
+    PublicIdentity(#[from] crate::PublicIdentityError),
+    #[error(transparent)]
     Capture(#[from] crate::CaptureError),
     #[error(transparent)]
     Installation(#[from] crate::InstallationError),

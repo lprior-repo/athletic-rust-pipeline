@@ -104,6 +104,7 @@ impl Store {
 }
 
 pub(super) fn refuse_over_operation(operation: &str, digest: &str) -> StoreResult<()> {
+    crate::public_identity::refuse_reserved(operation)?;
     if operation.starts_with("source_acquisition_attempt_") {
         return Err(crate::CaptureError::CaptureQualificationOptInRequired.into());
     }

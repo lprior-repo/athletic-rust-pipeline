@@ -133,6 +133,7 @@ impl<'s> DerivedStage<'s> {
         key: &str,
         payload: &T,
     ) -> StoreResult<()> {
+        crate::lineage::refuse_qualification_write(self.store, phase)?;
         self.journals.stage(phase, key, payload)
     }
 

@@ -51,26 +51,16 @@ impl StoreSnapshot<'_> {
         let prefix = self.layout().prefix(table);
         for guard in self.snapshot.prefix(self.entities, &prefix) {
             counts.key_visits = charge(counts.key_visits, 1, budget.rows, "capture physical rows")?;
-            let (key, raw) = guard
-                .into_inner()
+            let key = guard.key().map_err(|source| StoreError::Read { source })?;
+            let size = self
+                .snapshot
+                .size_of(self.entities, &key)
                 .map_err(|source| StoreError::Read { source })?;
-            if raw.len() > budget.record_bytes {
-                return Err(StoreError::RowTooLarge {
-                    bytes: raw.len(),
-                    max: budget.record_bytes,
-                });
-            }
-            let bytes = raw
-                .len()
-                .checked_add(key.len())
-                .ok_or(StoreError::CounterOverflow)?;
-            let bytes = u64::try_from(bytes).map_err(|_| StoreError::CounterOverflow)?;
-            counts.encoded_bytes = charge(
-                counts.encoded_bytes,
-                bytes,
-                budget.bytes,
-                "capture encoded bytes",
-            )?;
+            let raw = read_admitted(key.len(), size, &mut counts, budget, || {
+                self.snapshot
+                    .get(self.entities, &key)
+                    .map_err(|source| StoreError::Read { source })
+            })?;
             let row = merge::decode(table, &key, &raw)?;
             counts.decoded_rows = counts
                 .decoded_rows
@@ -79,6 +69,44 @@ impl StoreSnapshot<'_> {
             visit(row, counts.encoded_bytes)?;
         }
         Ok(counts)
+    }
+}
+
+fn read_admitted(
+    key_bytes: usize,
+    size: Option<u32>,
+    counts: &mut ReadCounts,
+    budget: ReadBudget,
+    load: impl FnOnce() -> StoreResult<Option<fjall::UserValue>>,
+) -> StoreResult<fjall::UserValue> {
+    let size = size.ok_or_else(|| invariant("bounded observation size is missing"))?;
+    let size = usize::try_from(size).map_err(|_| StoreError::CounterOverflow)?;
+    if size > budget.record_bytes {
+        return Err(StoreError::RowTooLarge {
+            bytes: size,
+            max: budget.record_bytes,
+        });
+    }
+    let bytes = size
+        .checked_add(key_bytes)
+        .ok_or(StoreError::CounterOverflow)?;
+    let bytes = u64::try_from(bytes).map_err(|_| StoreError::CounterOverflow)?;
+    counts.encoded_bytes = charge(
+        counts.encoded_bytes,
+        bytes,
+        budget.bytes,
+        "capture encoded bytes",
+    )?;
+    let raw = load()?.ok_or_else(|| invariant("admitted bounded observation is missing"))?;
+    if raw.len() != size {
+        return Err(invariant("admitted bounded observation size changed"));
+    }
+    Ok(raw)
+}
+
+fn invariant(detail: &'static str) -> StoreError {
+    StoreError::Invariant {
+        detail: detail.into(),
     }
 }
 

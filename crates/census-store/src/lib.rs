@@ -31,8 +31,15 @@ mod format;
 pub mod fs;
 mod generation;
 mod identity;
+mod public_identity;
+pub use public_identity::{
+    IdentityCommitOutcomeV1, PublicIdentityError, PublicIdentityQualificationStore,
+    PublicIdentityWriterV1, MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
+};
 mod inspect;
 mod installation;
+#[cfg(test)]
+mod public_identity_tests;
 pub use installation::{
     HistoricalStateKind, InstallationControl, InstallationEnrollmentOutcome, InstallationError,
     InstallationState, MAX_INSTALLATION_RECORD_BYTES,
@@ -71,7 +78,10 @@ pub use lineage::StoreLineageError;
 #[cfg(feature = "native-fault-injection")]
 pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
 pub use profiles::{ProfileRegistration, ProfileRegistryError, MAX_PROFILE_RECORD_BYTES};
-pub use read::{build_athlete_identity_projection, JournalReadBudget, StoreSnapshot};
+pub use read::{
+    build_athlete_identity_projection, AcceptedPublicIdentitySnapshot, JournalReadBudget,
+    StoreSnapshot,
+};
 pub use receipt::{
     Application, Credit, Pruned, Receipt, ReplayFrontier, ReplayWitness, MAX_DIGEST_BYTES,
     MAX_FRONTIER_WITNESSES, MAX_OPERATION_BYTES,
@@ -141,6 +151,7 @@ fn open_keyspaces(
         .open()
         .map_err(|source| StoreError::Open { source })?;
     acquisition::qualification::preflight_keyspaces(&db)?;
+    public_identity::preflight_keyspaces(&db)?;
     keyspaces(db)
 }
 

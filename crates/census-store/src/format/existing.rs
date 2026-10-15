@@ -7,12 +7,35 @@ use crate::{Store, StoreError, StoreResult};
 #[derive(Clone, Copy)]
 pub(crate) enum OpenPurpose {
     LegacyExecution,
+    PublicIdentityExecution,
     InstallationControl,
     CaptureControl,
     CaptureExecution(census_domain::model::CaptureProtocolVersion),
 }
 
 impl Store {
+    pub fn open_public_identity_qualification_v1(
+        root: impl AsRef<Path>,
+    ) -> StoreResult<crate::PublicIdentityQualificationStore> {
+        let store = existing(
+            root.as_ref(),
+            OpenPurpose::PublicIdentityExecution,
+            super::DEFAULT_CACHE_BYTES,
+        )?;
+        let ledger = crate::public_identity::validate(
+            &store.db.snapshot(),
+            &store.entities,
+            &store.meta,
+            &store.journal,
+            &store.receipts,
+            &store.store_format()?,
+        )?
+        .ok_or(crate::PublicIdentityError::OptInRequired)?;
+        Ok(crate::PublicIdentityQualificationStore::new(
+            store,
+            ledger.declaration.store_identity().clone(),
+        ))
+    }
     pub fn open_existing(root: impl AsRef<Path>) -> StoreResult<Self> {
         existing(
             root.as_ref(),
@@ -86,6 +109,22 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
     require_keyspaces(&db)?;
     let (db, entities, journal, meta, receipts) = crate::keyspaces(db)?;
     let format = super::require_current(root, super::read_format(&meta)?)?;
+    let identity = crate::public_identity::validate(
+        &db.snapshot(),
+        &entities,
+        &meta,
+        &journal,
+        &receipts,
+        &format,
+    )?;
+    match purpose {
+        OpenPurpose::PublicIdentityExecution if identity.is_none() => {
+            return Err(crate::PublicIdentityError::OptInRequired.into())
+        }
+        OpenPurpose::PublicIdentityExecution => {}
+        _ if identity.is_some() => return Err(crate::PublicIdentityError::OptInRequired.into()),
+        _ => {}
+    }
     let capture = crate::acquisition::validate_format(
         root,
         &db.snapshot(),
@@ -95,9 +134,9 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
         &format,
     )?;
     match purpose {
-        OpenPurpose::LegacyExecution | OpenPurpose::InstallationControl => {
-            crate::acquisition::require_legacy(&capture)?
-        }
+        OpenPurpose::LegacyExecution
+        | OpenPurpose::InstallationControl
+        | OpenPurpose::PublicIdentityExecution => crate::acquisition::require_legacy(&capture)?,
         OpenPurpose::CaptureControl | OpenPurpose::CaptureExecution(_) if capture.is_none() => {
             return Err(crate::CaptureError::CaptureCapabilityMissing.into())
         }
@@ -164,13 +203,17 @@ fn finish_existing(
         format.lifecycle_revision,
     )?;
     match purpose {
-        OpenPurpose::LegacyExecution | OpenPurpose::CaptureExecution(_) => {
+        OpenPurpose::LegacyExecution
+        | OpenPurpose::CaptureExecution(_)
+        | OpenPurpose::PublicIdentityExecution => {
             crate::installation::require_legacy_execution(&state)?
         }
         OpenPurpose::InstallationControl | OpenPurpose::CaptureControl => {}
     }
     match purpose {
-        OpenPurpose::LegacyExecution | OpenPurpose::CaptureExecution(_) => {
+        OpenPurpose::LegacyExecution
+        | OpenPurpose::CaptureExecution(_)
+        | OpenPurpose::PublicIdentityExecution => {
             crate::ensure_dirs(root)?;
             Store::recover_opened(root.to_path_buf(), db, entities, journal, meta, receipts)
         }
