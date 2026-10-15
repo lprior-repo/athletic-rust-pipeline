@@ -12,6 +12,7 @@ pub(super) struct Fixture {
 impl Fixture {
     pub(super) async fn prepare(body: &[u8]) -> TestResult<Self> {
         let (dir, store, fetcher, reference) = setup()?;
+        store.store_identity()?;
         seed_owned(&fetcher, &reference, body)?;
         seed_metadata(&fetcher, &reference)?;
         let report = crate::milesplit::collect_result_sets(

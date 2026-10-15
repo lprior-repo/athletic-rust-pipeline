@@ -78,6 +78,7 @@ async fn raw_and_owned_objects_must_exist_together_in_the_same_snapshot() -> Tes
     let view = fixture.store.snapshot();
     let owned = read_retained_owned_result(&view, &fixture.owned, "data[0]", budget()?)?;
     let (_dir, foreign, fetcher, reference) = setup()?;
+    foreign.store_identity()?;
     let capture = raw_capture(FEMALE_RAW, &reference, None);
     super::super::capture::archive_metadata(&context(&foreign, &fetcher)?, &reference, &capture)?;
     assert!(matches!(
