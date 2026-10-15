@@ -225,7 +225,7 @@ pub(in crate::public_identity) fn review_inputs(
     Ok((case, verdict))
 }
 
-pub(super) fn binding_id(store: &Store, sequence: u64) -> TestResult<String> {
+pub(in crate::public_identity) fn binding_id(store: &Store, sequence: u64) -> TestResult<String> {
     let key = crate::public_identity::witness::key(sequence);
     let raw = store.journal.get(key)?.ok_or("source witness")?;
     let held = crate::public_identity::graph_witness::HeldGraphWitness::decode(

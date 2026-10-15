@@ -36,8 +36,10 @@ fn graph_contract_references_are_successors_with_exact_strict_participation() ->
 fn current_and_historical_profiles_refuse_each_others_contract_family() -> TestResult {
     let old = QueryProfileV1::new(tests::input()?)?;
     let new = QueryProfileV1::new(current()?)?;
-    validate_selected_qualification_profile_v1(&old)?;
-    validate_selected_qualification_profile_v2(&new)?;
+    let historical = validate_selected_qualification_profile_v1(&old)?;
+    check!(eq; historical.profile(), &old);
+    let current = validate_selected_qualification_profile_v2(&new)?;
+    check!(eq; current.profile(), &new);
     check!(validate_selected_qualification_profile_v2(&old).is_err());
     check!(validate_selected_qualification_profile_v1(&new).is_err());
     Ok(())

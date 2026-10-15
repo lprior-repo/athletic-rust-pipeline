@@ -121,5 +121,6 @@ impl HeldGraphWitness {
             ReplayLimits::SMALL,
         )
         .map_err(PublicIdentityError::from)
+        .map_err(Into::into)
     }
 }

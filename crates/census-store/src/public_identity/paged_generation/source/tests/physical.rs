@@ -19,7 +19,7 @@ fn physical_rows(
         graph_physical_rows(&snapshot, &store.journal, object, |key, value| {
             if let Some(previous) = rows.insert(key.to_vec(), value.to_vec()) {
                 if previous.as_slice() != value {
-                    return Err(super::super::super::super::invalid(
+                    return Err(crate::public_identity::paged_generation::invalid(
                         "physical fixture duplicate mismatch",
                     ));
                 }

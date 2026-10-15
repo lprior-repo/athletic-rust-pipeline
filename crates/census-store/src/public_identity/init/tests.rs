@@ -83,7 +83,8 @@ fn graph_open_does_not_create_and_creation_does_not_adopt_artifacts() -> TestRes
 }
 
 #[test]
-fn qualification_lifecycle_classification_includes_current_graph_and_historical_families() {
+fn qualification_lifecycle_classification_includes_current_graph_and_historical_families(
+) -> TestResult {
     for revision in [5, 6, 7] {
         check!(crate::public_identity::is_qualification_lifecycle(Some(
             revision
@@ -94,6 +95,7 @@ fn qualification_lifecycle_classification_includes_current_graph_and_historical_
             revision
         ));
     }
+    Ok(())
 }
 
 #[test]

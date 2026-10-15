@@ -50,6 +50,7 @@ impl ChargeTarget<'_> {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn charge_context_object<F>(store: &Store, emit: F) -> StoreResult<ContextCharge>
 where
     F: Fn(&mut ContextRecordSink<'_>) -> StoreResult<()>,

@@ -9,11 +9,10 @@ use crate::journal::context::ContextCharge;
 use crate::public_identity::{codec, PublicIdentityError};
 use crate::{Store, StoreError, StoreResult, MAX_JOURNAL_VALUE_BYTES};
 use census_domain::model::StoreIdentity;
+#[cfg(test)]
 pub(in crate::public_identity) use decision::Binding;
 use decision::Decision;
 use fjall::Readable;
-#[cfg(test)]
-pub(in crate::public_identity) use persist::{reserve, reserve_withholding};
 use serde::{Deserialize, Serialize};
 
 const PREFIX: &str = "manual-context-admission-v1\0";

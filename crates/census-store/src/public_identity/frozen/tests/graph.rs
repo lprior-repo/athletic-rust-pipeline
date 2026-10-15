@@ -25,8 +25,11 @@ pub(super) fn inspect(
         .and_then(serde_json::Value::as_array)
         .ok_or("graph objects")?
     {
-        let reference: ObjectRefV2 =
-            serde_json::from_value(object.get("reference").ok_or("graph reference")?.clone())?;
+        let raw = serde_json::to_vec(object.get("reference").ok_or("graph reference")?)?;
+        let mut parser = serde_json::Deserializer::from_slice(&raw);
+        let reference =
+            crate::public_identity::paged_generation::admission::decode_object(&mut parser)?;
+        parser.end()?;
         let root = reference.root().as_str().to_owned();
         check!(objects.insert(root, reference).is_none());
     }

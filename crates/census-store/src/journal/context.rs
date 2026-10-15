@@ -5,9 +5,9 @@ use crate::{Store, StoreError, StoreResult};
 
 mod charge;
 mod encode;
-pub(crate) use charge::{
-    charge_context_object, measure_context_physical, verify_retained_charge, ContextCharge,
-};
+#[cfg(test)]
+pub(crate) use charge::charge_context_object;
+pub(crate) use charge::{measure_context_physical, verify_retained_charge, ContextCharge};
 mod persist;
 mod physical_ref;
 mod stream;
