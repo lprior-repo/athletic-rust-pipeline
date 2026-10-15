@@ -210,9 +210,7 @@ fn accepted_aliases_publish_one_person_with_all_events_profiles_and_supported_me
     check!(eq; jurisdiction.with_performance, 1);
     check!(eq; jurisdiction.performances, 2);
     check!(eq; jurisdiction.athletes_core, 1);
-    let projection_input = crate::export::ExportDataset::load(&store)?;
-    let projection_view = Derivation::of(&projection_input, Scope::AllSources, Some(2027), &[]);
-    let projection = recruiting(&projection_view)?;
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
     let path = dir.path().join("accepted.xlsx");
     let mut book = Workbook::new();
     projection.write_athletes(&mut book, &path)?;
@@ -299,9 +297,7 @@ fn same_name_provider_owned_people_remain_separate_and_unresolved_status_is_expl
     IdentityStatus::Unverified);
     check!(eq; dataset.identities().status(second.id.as_str())?,
     IdentityStatus::Pending);
-    let projection_input = crate::export::ExportDataset::load(&store)?;
-    let projection_view = Derivation::of(&projection_input, Scope::AllSources, Some(2027), &[]);
-    let projection = recruiting(&projection_view)?;
+    let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
     let path = dir.path().join("homonyms.xlsx");
     let mut book = Workbook::new();
     projection.write_athletes(&mut book, &path)?;
@@ -431,9 +427,7 @@ fn conflicted_component_keeps_every_member_unmerged_in_both_orders() -> TestResu
         let derivation =
             crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
         check!(eq; derivation.athletes().len(), 3);
-        let projection_input = crate::export::ExportDataset::load(&store)?;
-        let projection_view = Derivation::of(&projection_input, Scope::AllSources, Some(2027), &[]);
-        let projection = recruiting(&projection_view)?;
+        let projection = recruiting(&store, Scope::AllSources, Some(2027))?;
         let path = dir.path().join("conflicted.xlsx");
         let mut book = Workbook::new();
         projection.write_athletes(&mut book, &path)?;

@@ -18,13 +18,13 @@ pub(super) struct Reconciliation {
     pub(super) contact_conflicts: usize,
 }
 
-pub(super) struct Dataset<'a> {
+pub(super) struct Dataset {
     pub(super) scope: Scope,
     pub(super) grad_year: Option<i16>,
     pub(super) school_year: census_domain::model::SchoolYear,
-    pub(super) athletes: &'a [CanonicalAthlete],
+    pub(super) athletes: Vec<CanonicalAthlete>,
     pub(super) identities: std::sync::Arc<census_domain::model::AthleteIdentityProjection>,
-    pub(super) schools: BTreeMap<&'a str, &'a CanonicalSchool>,
+    pub(super) schools: BTreeMap<census_domain::model::SchoolId, CanonicalSchool>,
     pub(super) published_coaches: Vec<CanonicalCoach>,
     pub(super) coach_spellings: BTreeMap<String, String>,
     pub(super) contacts: BTreeMap<String, SchoolContacts>,
@@ -35,18 +35,18 @@ pub(super) struct Dataset<'a> {
     audit: Reconciliation,
 }
 
-impl<'a> Dataset<'a> {
-    pub(super) fn of<'d>(
-        derivation: &'a Derivation<'d>,
+impl Dataset {
+    pub(super) fn of(
+        derivation: &Derivation<'_>,
         school_year: census_domain::model::SchoolYear,
         prs: Vec<SharedSelection>,
-        admission: &crate::report::EventAdmission<'d>,
+        admission: &crate::report::EventAdmission<'_>,
     ) -> ReportResult<Self> {
         admission.ensure_dataset(derivation.dataset())?;
         crate::grouping::Admission::new("recruiting schools").rows(derivation.schools())?;
-        let athletes = derivation.athletes();
+        let athletes = derivation.athletes().to_vec();
         let school_address =
-            crate::export::postal::athlete_address_index(derivation.dataset(), athletes)?;
+            crate::export::postal::athlete_address_index(derivation.dataset(), &athletes)?;
         let inputs = Inputs::new(derivation, school_year, prs, admission);
         let mut contacts = bounded_contacts(
             derivation.coach_observations(),
@@ -68,8 +68,8 @@ impl<'a> Dataset<'a> {
     }
 
     fn assemble(
-        inputs: Inputs<'a, '_, '_>,
-        athletes: &'a [CanonicalAthlete],
+        inputs: Inputs<'_, '_>,
+        athletes: Vec<CanonicalAthlete>,
         school_address: BTreeMap<String, String>,
         contacts: BTreeMap<String, SchoolContacts>,
         published_coaches: Vec<CanonicalCoach>,
@@ -85,7 +85,7 @@ impl<'a> Dataset<'a> {
             coach_spellings: super::coach_spelling::spellings(
                 inputs.derivation.coach_observations(),
             ),
-            tallies: tallies_of(inputs.derivation, athletes, inputs.admission),
+            tallies: tallies_of(inputs.derivation, &athletes, inputs.admission),
             athletes,
             contacts,
             pr_index: pr_index(&inputs.prs),
@@ -128,19 +128,19 @@ impl<'a> Dataset<'a> {
     }
 }
 
-struct Inputs<'a, 'd, 'e> {
+struct Inputs<'a, 'd> {
     derivation: &'a Derivation<'d>,
     school_year: SchoolYear,
     prs: Vec<SharedSelection>,
-    admission: &'e crate::report::EventAdmission<'d>,
+    admission: &'a crate::report::EventAdmission<'d>,
 }
 
-impl<'a, 'd, 'e> Inputs<'a, 'd, 'e> {
+impl<'a, 'd> Inputs<'a, 'd> {
     fn new(
         derivation: &'a Derivation<'d>,
         school_year: SchoolYear,
         prs: Vec<SharedSelection>,
-        admission: &'e crate::report::EventAdmission<'d>,
+        admission: &'a crate::report::EventAdmission<'d>,
     ) -> Self {
         Self {
             derivation,

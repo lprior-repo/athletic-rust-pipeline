@@ -30,16 +30,16 @@ mod tests;
 pub(in crate::workbook) use contact::{disagreements, Disagreement};
 pub use csv::{write_recruiting_csv, RecruitingCsvCounts};
 
-pub(super) struct Recruiting<'a> {
-    dataset: Dataset<'a>,
+pub(super) struct Recruiting {
+    dataset: Dataset,
 }
 
-impl<'a> Recruiting<'a> {
-    pub(super) fn of<'d>(
-        derivation: &'a Derivation<'d>,
+impl Recruiting {
+    pub(super) fn of(
+        derivation: &Derivation<'_>,
         school_year: census_domain::model::SchoolYear,
         prs: Vec<bests::SharedSelection>,
-        admission: &crate::report::EventAdmission<'d>,
+        admission: &crate::report::EventAdmission<'_>,
     ) -> ReportResult<Self> {
         Ok(Self {
             dataset: Dataset::of(derivation, school_year, prs, admission)?,

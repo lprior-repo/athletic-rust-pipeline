@@ -42,9 +42,7 @@ pub(super) const WIDTHS: [u16; 29] = [
 ];
 type SortKey = (String, String, String, String, String);
 
-pub(super) fn rows<'a>(
-    dataset: &'a Dataset<'a>,
-) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + 'a {
+pub(super) fn rows(dataset: &Dataset) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + '_ {
     let names = &dataset.coach_spellings;
     let mut ordered: Vec<_> = dataset
         .published_coaches
@@ -60,7 +58,7 @@ pub(super) fn rows<'a>(
     )
 }
 
-fn sort_key(dataset: &Dataset<'_>, coach: &CanonicalCoach) -> SortKey {
+fn sort_key(dataset: &Dataset, coach: &CanonicalCoach) -> SortKey {
     (
         dataset.school_state(coach.school.as_str()),
         dataset.school_name(coach.school.as_str()),
@@ -71,7 +69,7 @@ fn sort_key(dataset: &Dataset<'_>, coach: &CanonicalCoach) -> SortKey {
 }
 
 fn row_for(
-    dataset: &Dataset<'_>,
+    dataset: &Dataset,
     coach: &CanonicalCoach,
     names: &std::collections::BTreeMap<String, String>,
 ) -> Vec<Cell> {
@@ -126,7 +124,7 @@ fn optional_text(value: Option<&str>) -> Cell {
     Cell::text(value.map_or("", core::convert::identity))
 }
 
-fn identity_cells(dataset: &Dataset<'_>, coach: &CanonicalCoach, name: &str) -> Vec<Cell> {
+fn identity_cells(dataset: &Dataset, coach: &CanonicalCoach, name: &str) -> Vec<Cell> {
     [
         coach.school.to_string(),
         dataset.school_name(coach.school.as_str()),
