@@ -15,10 +15,9 @@ pub mod participation_candidates;
 pub mod profile_execution;
 pub mod public_identity_history;
 pub mod public_identity_qualification;
-pub mod school_directory;
 pub mod school_index;
 
 pub use core_scope::{is_core_source, NON_CORE_SOURCE_IDS};
 pub use error::DomainError;
 pub use jurisdiction::{JurisdictionBucket, MeetState, UsJurisdiction};
-pub use school_index::{SchoolIndex, SchoolMatch};
+pub use school_index::{SchoolIndex, SchoolIndexBuildError, SchoolMatch};
