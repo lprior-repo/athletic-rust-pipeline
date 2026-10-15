@@ -15,9 +15,13 @@ mod assertions;
 #[path = "../../common/capture_cache.rs"]
 mod cache;
 
-const OWNED: &[u8] =
+pub(crate) const OWNED: &[u8] =
     include_bytes!("../../../../census-crawl/src/milesplit/owned/fixtures/troy_725218.json");
-const ACQUIRED_AT: &str = "2026-10-01T23:44:16Z";
+pub(crate) const ACQUIRED_AT: &str = "2026-10-01T23:44:16Z";
+pub(crate) const RAW_CAPTURES: [(&str, &str, &str); 2] = [
+    (RAW_FILES[0], "1266814", "2026-09-28T10:11:24Z"),
+    (RAW_FILES[1], "1266815", "2026-09-28T10:11:13Z"),
+];
 const PHASE: &str = milesplit::RESULT_SET_PHASE;
 
 pub async fn replay_owned_captures() -> Result<()> {
@@ -73,17 +77,14 @@ async fn replay_capture(body: &[u8], relay: bool) -> Result<()> {
     assertions::assert_retention(&store, body, relay)
 }
 
-fn seed_captures(fetcher: &Fetcher, body: &[u8]) -> Result<milesplit::ResultSetOptions> {
+pub(crate) fn seed_captures(fetcher: &Fetcher, body: &[u8]) -> Result<milesplit::ResultSetOptions> {
     let owned_url = format!(
         "https://al.milesplit.com/api/v1/meets/725218/performances?isMeetPro=0&fields={}",
         milesplit::OWNED_FIELDS
     );
     cache::seed(fetcher.cache_dir(), &owned_url, body, ACQUIRED_AT, &[])?;
     let mut urls = Vec::new();
-    for (file, rsid, acquired_at) in [
-        (RAW_FILES[0], "1266814", "2026-09-28T10:11:24Z"),
-        (RAW_FILES[1], "1266815", "2026-09-28T10:11:13Z"),
-    ] {
+    for (file, rsid, acquired_at) in RAW_CAPTURES {
         let url = format!("{TROY_URL}/{rsid}/raw");
         cache::seed(
             fetcher.cache_dir(),
