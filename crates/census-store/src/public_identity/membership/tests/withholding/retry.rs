@@ -91,3 +91,29 @@ fn withholding_reservation_retries_exactly_after_journal_growth_and_blocks_split
     check!(eq; outcome.withheld_memberships(), original.request.expected_withheld_memberships.as_slice());
     Ok(())
 }
+
+#[test]
+fn concurrent_withholding_preparations_adopt_original_timestamp_record_and_approval() -> TestResult
+{
+    use crate::public_identity::graph_operation::preparation_concurrency::{
+        exercise, PreparedBytes,
+    };
+    let fixture = ready()?;
+    let request = request(&fixture, "withholding-distinct-timestamps")?;
+    let Fixture { store, writer, .. } = &fixture;
+    let head = writer.head(store)?;
+    exercise(store, "withholding-distinct-timestamps", || {
+        let prepared = writer.prepare_membership_withholding(
+            store,
+            "withholding-distinct-timestamps",
+            request.clone(),
+            store.snapshot().revision(),
+            &head,
+        )?;
+        Ok(PreparedBytes {
+            record: serde_json::to_vec(prepared.record())?,
+            approval: prepared.approval_bytes()?,
+            digest: prepared.approval_digest()?,
+        })
+    })
+}

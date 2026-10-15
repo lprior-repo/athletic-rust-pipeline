@@ -293,10 +293,12 @@ fn superseded_exact_case_cannot_automatically_remerge_manual_successors() -> Tes
         .writer
         .apply_local_adjudication(&fixture.store, prepared, bytes, digest)?;
     let ids = split.introduced_public_ids();
+    let mut members = ids.to_vec();
+    members.sort();
     let request = crate::ReviewedIdentityRequestV1::Merge {
         case_id: fixture.request.case_id().into(),
         canonical: ids.first().ok_or("successor")?.clone(),
-        members: ids.to_vec(),
+        members,
     };
     stage_inventory(&fixture, "synthetic-forbidden-remerge")?;
     let before = retained_state(&fixture.store)?;
@@ -307,12 +309,13 @@ fn superseded_exact_case_cannot_automatically_remerge_manual_successors() -> Tes
         fixture.store.snapshot().revision(),
         split.head(),
     );
-    assert!(matches!(
-        result,
+    match result {
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "graph authority superseded by local adjudication"
-        )))
-    ));
+            "graph authority superseded by local adjudication",
+        ))) => {}
+        Err(error) => return Err(format!("unexpected remerge refusal: {error:?}").into()),
+        Ok(_) => return Err("superseded graph authority unexpectedly committed".into()),
+    }
     assert_eq!(retained_state(&fixture.store)?, before);
     assert_eq!(fixture.writer.head(&fixture.store)?, *split.head());
     Ok(())

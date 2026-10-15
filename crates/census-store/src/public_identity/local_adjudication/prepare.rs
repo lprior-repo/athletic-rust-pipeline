@@ -46,7 +46,9 @@ impl PublicIdentityWriterV1 {
         head: &RegistryHead,
     ) -> StoreResult<PreparedLocalAdjudicationV1<'s>> {
         let digest = request_digest(&self.identity, operation, &request)?;
-        let capture = graph_operation::begin(self, store, operation, &digest, expected, head)?;
+        let mut capture = graph_operation::begin(self, store, operation, &digest, expected, head)?;
+        #[cfg(test)]
+        graph_operation::preparation_gate::checkpoint(&capture)?;
         let snapshot = store.snapshot();
         let view =
             VerifiedRawGraph::verify(&snapshot, capture.graph.capture(), capture.graph.seal())?;
@@ -59,6 +61,12 @@ impl PublicIdentityWriterV1 {
             head,
             &capture.graph,
         )?;
+        if let Some(prior) = graph_operation::current_preparation(
+            store, operation, &digest, expected, head, &capture,
+        )? {
+            capture.observed_at.clone_from(&prior.observed_at);
+            capture.reserved = Some(prior);
+        }
         let members = graph::members(&view, ledger.history.projection(), &request.canonical)?;
         let binding = capture.graph.capture();
         let record = LocalIdentityAdjudicationRecordV3 {

@@ -50,7 +50,9 @@ impl PublicIdentityWriterV1 {
         head: &RegistryHead,
     ) -> StoreResult<PreparedMembershipWithholdingV1<'s>> {
         let digest = request_digest(&self.identity, operation, &request)?;
-        let capture = graph_operation::begin(self, store, operation, &digest, expected, head)?;
+        let mut capture = graph_operation::begin(self, store, operation, &digest, expected, head)?;
+        #[cfg(test)]
+        graph_operation::preparation_gate::checkpoint(&capture)?;
         let snapshot = store.snapshot();
         let view =
             VerifiedRawGraph::verify(&snapshot, capture.graph.capture(), capture.graph.seal())?;
@@ -63,6 +65,12 @@ impl PublicIdentityWriterV1 {
             head,
             &capture.graph,
         )?;
+        if let Some(prior) = graph_operation::current_preparation(
+            store, operation, &digest, expected, head, &capture,
+        )? {
+            capture.observed_at.clone_from(&prior.observed_at);
+            capture.reserved = Some(prior);
+        }
         let members = graph::members(&view, ledger.history.projection(), &request.canonical)?;
         let inventory = graph::membership_inventory(
             &view,
@@ -70,22 +78,9 @@ impl PublicIdentityWriterV1 {
             ledger.history.projection(),
             ledger.history.records(),
         )?;
-        let binding = capture.graph.capture();
-        let record = LocalMembershipWithholdingRecordV2 {
-            version: 2,
-            policy: LOCAL_MEMBERSHIP_WITHHOLDING_GRAPH_POLICY.into(),
-            store: self.identity.clone(),
-            operation: operation.into(),
-            expected_head: head.clone(),
-            evidence_generation: binding.evidence_generation(),
-            derived_generation: binding.derived_generation(),
-            snapshot_sequence: binding.snapshot_sequence(),
-            graph: capture.graph.domain_reference()?,
-            members,
-            dispositions: dispositions(&request, &inventory)?,
-            request,
-            observed_at: capture.observed_at.clone(),
-        };
+        let record = withholding_record(
+            self, operation, request, head, &capture, members, &inventory,
+        )?;
         let history = rebuild_history(store, &capture.graph, &record, &ledger)?;
         let witness = approval_witness(operation, &capture, &record, &history)?;
         graph_operation::reserve(store, operation, &digest, expected, head, &capture, witness)?;
@@ -98,6 +93,33 @@ impl PublicIdentityWriterV1 {
         })
     }
 }
+fn withholding_record(
+    writer: &PublicIdentityWriterV1,
+    operation: &str,
+    request: LocalMembershipWithholdV1,
+    head: &RegistryHead,
+    capture: &graph_operation::Capture,
+    members: Vec<census_domain::model::AthleteCandidateId>,
+    inventory: &[RetainedClaimV1],
+) -> StoreResult<LocalMembershipWithholdingRecordV2> {
+    let binding = capture.graph.capture();
+    Ok(LocalMembershipWithholdingRecordV2 {
+        version: 2,
+        policy: LOCAL_MEMBERSHIP_WITHHOLDING_GRAPH_POLICY.into(),
+        store: writer.identity.clone(),
+        operation: operation.into(),
+        expected_head: head.clone(),
+        evidence_generation: binding.evidence_generation(),
+        derived_generation: binding.derived_generation(),
+        snapshot_sequence: binding.snapshot_sequence(),
+        graph: capture.graph.domain_reference()?,
+        members,
+        dispositions: dispositions(&request, inventory)?,
+        request,
+        observed_at: capture.observed_at.clone(),
+    })
+}
+
 pub(super) fn request_digest(
     identity: &census_domain::model::StoreIdentity,
     operation: &str,

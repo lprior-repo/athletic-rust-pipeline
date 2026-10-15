@@ -88,7 +88,7 @@ pub(super) fn begin(
     VerifiedRawGraph::verify(&snapshot, graph.capture(), graph.seal())?;
     let observed_at = match &reserved {
         Some(prior) => prior.observed_at.clone(),
-        None => SystemClock.today_iso8601(),
+        None => observed_at(),
     };
     Ok(Capture {
         graph,
@@ -237,3 +237,49 @@ pub(super) fn require_available_live(
 
 #[cfg(test)]
 mod exhaustion_tests;
+
+fn observed_at() -> String {
+    #[cfg(test)]
+    if let Some(value) = preparation_gate::observed_at() {
+        return value;
+    }
+    SystemClock.today_iso8601()
+}
+
+pub(super) fn current_preparation(
+    store: &Store,
+    operation: &str,
+    digest: &str,
+    expected: StoreRevision<'_>,
+    head: &RegistryHead,
+    capture: &Capture,
+) -> StoreResult<Option<Preparation>> {
+    let prior = preparation::load(store, capture.graph.capture().store_identity(), operation)?;
+    let Some(prior) = prior else {
+        if capture.reserved.is_some() {
+            return Err(PublicIdentityError::Corrupt("retained preparation disappeared").into());
+        }
+        return Ok(None);
+    };
+    prior.require_request(
+        capture.graph.capture().store_identity(),
+        operation,
+        digest,
+        expected,
+        head,
+    )?;
+    if prior.graph != capture.graph {
+        return Err(PublicIdentityError::OperationConflict.into());
+    }
+    if let Some(original) = &capture.reserved {
+        if serialized_digest(original)? != serialized_digest(&prior)? {
+            return Err(PublicIdentityError::OperationConflict.into());
+        }
+    }
+    Ok(Some(prior))
+}
+
+#[cfg(test)]
+pub(super) mod preparation_concurrency;
+#[cfg(test)]
+pub(super) mod preparation_gate;
