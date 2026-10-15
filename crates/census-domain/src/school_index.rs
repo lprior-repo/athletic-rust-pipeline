@@ -32,86 +32,6 @@ enum LabelLookup {
     Absent,
 }
 
-/// Fallible construction error for SchoolIndex.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SchoolIndexBuildError {
-    /// Capacity calculation overflowed.
-    CapacityOverflow,
-    /// Allocation failed while building the index.
-    AllocationFailed,
-}
-
-impl std::fmt::Display for SchoolIndexBuildError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SchoolIndexBuildError::CapacityOverflow => write!(f, "school index capacity overflow"),
-            SchoolIndexBuildError::AllocationFailed => write!(f, "school index allocation failed"),
-        }
-    }
-}
-
-/// Precomputed capacity plan for building a SchoolIndex.
-///
-/// Must be computed before construction and passed to
-/// `try_from_schools` to gate allocation growth.
-pub struct SchoolIndexCapacity {
-    names_entries: usize,
-    aliases_entries: usize,
-    by_state_schools: usize,
-    by_state_entries: usize,
-}
-
-impl SchoolIndexCapacity {
-    /// Compute the exact capacity required to build an index
-    /// from the given schools.
-    ///
-    /// Accounts for:
-    /// - One names entry per school (normalized name)
-    /// - One aliases entry per alias
-    /// - One by_state entry per school
-    /// - HashMap growth factors
-    pub fn compute(schools: &[CanonicalSchool]) -> SchoolIndexCapacity {
-        let mut names_entries = 0;
-        let mut aliases_entries = 0;
-        let mut by_state_schools = 0;
-
-        for school in schools {
-            if school.state.is_some() {
-                names_entries = names_entries
-                    .checked_add(1)
-                    .expect("names_entries overflow");
-                aliases_entries = aliases_entries
-                    .checked_add(school.aliases.len())
-                    .expect("aliases_entries overflow");
-                by_state_schools = by_state_schools
-                    .checked_add(1)
-                    .expect("by_state_schools overflow");
-            }
-        }
-
-        // HashMap growth: hashbrown uses power-of-2 buckets.
-        // Reserve ceiling to next power of 2 / load factor (0.71).
-        // Simple over-reservation: reserve 2x the entry count.
-        let names_entries = names_entries
-            .checked_mul(2)
-            .expect("names capacity overflow");
-        let aliases_entries = aliases_entries
-            .checked_mul(2)
-            .expect("aliases capacity overflow");
-
-        // by_state is HashMap<UsJurisdiction, Vec<Entry>>
-        // One Vec per state; reserve for worst case (one state).
-        let by_state_entries = 2; // at least 2 buckets for HashMap
-
-        SchoolIndexCapacity {
-            names_entries,
-            aliases_entries,
-            by_state_schools,
-            by_state_entries,
-        }
-    }
-}
-
 const ABBREVIATIONS: [(&str, &str); 6] = [
     ("milw.", "milwaukee"),
     ("univ.", "university"),
@@ -152,10 +72,6 @@ fn unique(ids: &BTreeSet<SchoolId>) -> LabelLookup {
 }
 
 impl SchoolIndex {
-    /// Build an infallible index from schools.
-    ///
-    /// Use `try_from_schools` when allocation failure must be handled
-    /// or when growth must be gated by a capacity plan.
     pub fn from_schools(schools: &[CanonicalSchool]) -> Self {
         let mut names = HashMap::new();
         let mut aliases = HashMap::new();
@@ -182,46 +98,6 @@ impl SchoolIndex {
             aliases,
             by_state,
         }
-    }
-
-    /// Build a fallible index from schools using a precomputed
-    /// capacity plan to gate allocation growth.
-    ///
-    /// The caller must retain the row guards for the entire duration
-    /// of the index's lifetime. The index container charge is
-    /// accounted for separately from the row guards.
-    pub fn try_from_schools(
-        schools: &[CanonicalSchool],
-        capacity: &SchoolIndexCapacity,
-    ) -> Result<Self, SchoolIndexBuildError> {
-        let mut names = HashMap::with_capacity(capacity.names_entries);
-        let mut aliases = HashMap::with_capacity(capacity.aliases_entries);
-        let mut by_state: HashMap<UsJurisdiction, Vec<Entry>> =
-            HashMap::with_capacity(capacity.by_state_entries);
-
-        for school in schools {
-            let Some(state) = school.state else {
-                continue;
-            };
-            record_label(
-                &mut names,
-                (state, school.normalized_name.clone()),
-                &school.id,
-            );
-            for alias in &school.aliases {
-                record_label(&mut aliases, (state, normalize_name(alias)), &school.id);
-            }
-            by_state.entry(state).or_default().push(Entry {
-                normalized: school.normalized_name.clone(),
-                id: school.id.clone(),
-            });
-        }
-
-        Ok(Self {
-            names,
-            aliases,
-            by_state,
-        })
     }
 
     pub fn school_count(&self) -> usize {

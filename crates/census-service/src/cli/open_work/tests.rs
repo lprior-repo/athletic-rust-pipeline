@@ -123,3 +123,30 @@ fn reversed_overlapping_and_zero_duration_samples_never_make_a_rate() -> TestRes
     });
     Ok(())
 }
+
+#[test]
+fn given_out_of_range_capture_sample_when_parsing_then_validation_refuses() -> TestResult {
+    use clap::Parser;
+    for seconds in ["0", "61"] {
+        let flag = format!("--capture-sample-seconds={seconds}");
+        let error = crate::cli::Cli::try_parse_from(["census-service", "open-work", &flag])
+            .err()
+            .ok_or("out-of-range archive sampling interval admitted")?;
+        check!(eq; error.kind(), clap::error::ErrorKind::ValueValidation);
+    }
+    Ok(())
+}
+
+#[test]
+fn given_capture_sample_boundaries_when_parsing_then_interval_is_retained() -> TestResult {
+    use clap::Parser;
+    for (seconds, expected) in [("1", 1_u64), ("60", 60)] {
+        let flag = format!("--capture-sample-seconds={seconds}");
+        let cli = crate::cli::Cli::try_parse_from(["census-service", "open-work", &flag])?;
+        let crate::cli::command::Command::OpenWork(args) = cli.command else {
+            return Err("archive sampling command was not selected".into());
+        };
+        check!(eq; args.capture_sample_seconds, Some(expected));
+    }
+    Ok(())
+}

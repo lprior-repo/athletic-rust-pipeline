@@ -21,14 +21,22 @@ Main owns public contracts and final integration; narrow adapters own source dif
 requires an actual responsibility/consumer need, not a repeat of the superseded migration inventory.
 The only unfinished delivery ordering lives in [the active plan](../NATIONAL-CENSUS-PLAN.md).
 
-## Boundary clarification — 2026-10-14
+## Browser ownership amendment — 2026-10-15
 
-The browser bridge deliberately separates the JSON consumer contract (`census-crawl` wire DTOs)
-from browser runtime outcomes (`athleticnet-browser`). HTTP status/header objects and owned body
-bytes are not the consumer's integer status, header pairs and base64 representation. Neither crate
-imports the other's runtime outcome types; shared wire fixtures verify encoding/decoding parity.
-This is an effect-boundary representation, not a second domain model or acquisition engine.
+The October 14 JSON/runtime separation is superseded for current physical acquisition. An RPC
+disconnect can leave the remote browser job running after its caller releases resource reservations.
 
-Do not extract a shared crate merely to remove these DTOs. Change the wire contract coherently at
-both endpoints and retain unknown-variant/field refusal. Qualification remains execution evidence,
-not this architectural decision.
+Use one in-process bounded actor shared by acquisition and browser controls. Before enqueue,
+transfer the real prepared token, armed dispatch guard and same-grant reservations. The actor's
+issued slot retains them outside the job future until response transfer or completed physical
+cleanup and reaping, including panic and cancellation. Move response bytes; do not serialize live
+capabilities or add a second budget.
+
+Allow `athleticnet-browser` → Store resource-ownership types and `census-crawl` → browser actor.
+No Store → browser dependency. Remove the superseded physical RPC bridge and migrate every caller;
+retain historical bytes without executing a fallback. This is an ownership requirement, not DTO
+deduplication or a new acquisition engine.
+
+Status: accepted target amendment; integration and runtime qualification remain open. Acceptance
+requires real dispatch-before-network, same-grant lifetime and cancel/panic/drain evidence; source
+inspection or a generic panic-result test is insufficient.

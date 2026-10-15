@@ -1363,3 +1363,80 @@ The [concise PR #29 record](verification/2026-10-14-pr29-summary.md) retains sco
 results, earlier failures, current qualification limits and the Git snapshot for the original
 logs and reports. PR #29 remains open. Passing focused/basic lanes do not certify release,
 native faults, reusable production, full-spec completion or recruiting publication.
+
+## 2026-10-15 — current-only integration checkpoint
+
+- Isolated Domain checkpoint: `pipeline:tests-scoped -- -p census-domain`, task `05368025`,
+  Nextest `5c82e0e4-fda8-45c7-be5f-c8c482038794`: **803 passed, zero skipped**. Subsequent
+  Domain/Store assembly is unverified; this result does not certify the combined pipeline.
+- Rejected GPU3090 edits crossed assigned file boundaries and broke Root compilation
+  (`35744e41`). The three files were preserved under `var/review-gpu-boundary-20261015/`;
+  surgical recovery restored `lib.rs#C692`, `school_index.rs#AA56` and its tests `#F46B`.
+  The subsequent Moon Domain example build `7339111e` passed.
+- That executed public-API smoke reproduced both lexical cooldown defects: at `10:00Z`,
+  `11:00+02:00` incorrectly blocked and `09:30-02:00` incorrectly allowed. Probe source and
+  observations: `var/review-source-eligibility-20261015/`. The typed replacement still requires
+  integrated passing-after evidence.
+
+R11–R14, current browser ownership, native faults, release and workbook acceptance remain open.
+Local source proposals and architectural amendments are not runtime qualification.
+
+## 2026-10-15 — current profile contract integration and runtime smoke
+
+Scope: isolated `var/current-v2-integration-20261015`; not merged or deployed.
+
+- Moon task `eb19ca16`: 916 Domain tests passed, zero skipped, after repairing original
+  review-record digest order and explicit member retention. Historical fixtures were not repinned.
+- Current Event/catalog and managed Publication contracts then integrated. Moon task `83ceb055`,
+  Nextest `599215db-ae21-4e14-92c6-0629c35184dd`: 920 passed, zero skipped.
+- Actual `pipeline:run-scoped -- -p census-domain --example review_current_profile`,
+  task `6ab8be6c`, accepted cohorts 2027/2028 with effective date `2026-10-13` and independent
+  acquisition window `2026-10-14..2026-10-20`. Catalog reported version/revision `1/3`;
+  Event and Publication reference revisions were `2`. Retained bytes were unchanged and the
+  exact retired Event reference was refused. Probe source: `var/review-profile-current-20261015/`.
+- Four obsolete roster-helper warnings remain. Store integration, source execution, durable
+  publication, native faults and the national workbook remain unqualified. No implementation
+  push or release acceptance is claimed.
+
+## 2026-10-15 — main-checkout recovery verification
+
+Remote commit `450ca907` contained the three unverified GPU school-index additions.
+The local recovery removes those additions; it does not land the current-only integration.
+Main executed `pipeline:tests-scoped -- -p census-domain`, task `2a395ac8`, Nextest
+`9b506464-b5d3-4c42-93bf-09eb68940ef7`: **772 passed, zero skipped**.
+Workspace `pipeline:check` (`fac928f8`), `pipeline:fmt` (`e124b2e9`) and
+`pipeline:lint-src` (`69320c09`) passed. Lint emitted three existing arity advisories
+in browser rankings capture and Store acquisition cache/inventory; no suppression was added.
+These results qualify the recovery scope only, not release or the national run.
+
+## 2026-10-15 — archive readback CLI boundary regression
+
+- Root Moon `942faed7`, Nextest `9c9baf21-f2e0-4d65-bdf9-13e56dd2b041`: two
+  capture-sampling parser regressions passed; 202 unrelated binary tests were filtered out.
+  Values `0` and `61` require `ValueValidation`; `1` and `60` retain their parsed intervals.
+- Root CLI build `ccf576a4` and formatting `f86245bf` passed. The actual built binary
+  returned exit `0` for `open-work --help` and exit `2` for each invalid interval, with
+  actionable range errors and no stack traces. Raw command/output/exit records:
+  `var/review-archive-cli-20261015/observed.json`. No serving store or live endpoint was opened.
+- Earlier Root runs `bef61cdb` and `54f60ded` failed after seven report edits targeted
+  the wrong checkout. All seven were preserved and transferred to the untouched private
+  destinations, then Root was restored to its committed preimages before the passing runs.
+  Recovery source: `local://service-scope-recovery-20261015/`. Private edits now require
+  fully qualified worktree paths in edit headers, not only in reads.
+- This closes the CLI boundary evidence gap only. Archive activity measures immutable
+  metadata/body growth, not physical request counts or national completeness.
+
+## 2026-10-15 — private bounded-index integration checkpoint
+
+- Private `current-v2-integration-20261015` Moon `4d7520a1`, Nextest
+  `c6181942-a2a8-4839-a247-72654715e183`: 944 Domain tests passed, none skipped.
+  This followed a failed checkpoint (`c3663e88`): the resource-test module path and
+  borrowed constructor lifetime were corrected; no assertions were weakened.
+- Actual consumer run `5def11ea` used bounded school construction and standalone
+  quota leases: three schools, correct abbreviation resolution, ambiguous same-name
+  schools in different cities, and explicit admission refusal. Retained bytes were
+  1,606; all standalone leases released to zero. Smoke source:
+  `var/review-bounded-index-20261015/smoke.rs`; throwaway example removed.
+- Four unused roster-helper warnings remain for caller cutover. These results do
+  not establish Service admission, integrated Store behavior, release qualification,
+  or national readiness. The implementation remains private and unmerged.

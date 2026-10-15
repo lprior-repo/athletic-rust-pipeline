@@ -114,12 +114,13 @@ implementation work, not permission to create duplicate domain rules or mirrored
 [ADR-007](docs/adr/ADR-007-crate-boundaries.md) and [ADR-012](docs/adr/ADR-012-single-acquisition-plane.md)
 record the completed crate cut. `fuzz/` is a separate cargo-fuzz workspace; `fixtures/` is shared data.
 
-Browser DTOs cross a JSON service boundary, not a shared runtime object boundary.
-`census-crawl/src/net/bridge/wire.rs` owns the consumer wire contract;
-`athleticnet-browser/src/outcome.rs` owns browser runtime values and encoding.
-Keep their representation differences explicit and prove shared-fixture parity; do not add a
-cross-crate runtime dependency solely to unify these DTOs. [ADR-007](docs/adr/ADR-007-crate-boundaries.md)
-records this distinction.
+The current cutover uses one in-process bounded browser actor shared by acquisition and service
+controls. Its issued slot retains the genuine dispatch guard and resource reservations through
+cancellation, panic, physical cleanup and reaping; dropping an RPC caller is not proof of cleanup.
+`athleticnet-browser` may depend on Store resource-ownership types; `census-crawl` uses that actor.
+Store must not depend on the browser. Retire the physical JSON/base64 bridge and its callers
+atomically, not through a compatibility path. This decision is required, not runtime-qualified;
+[ADR-007](docs/adr/ADR-007-crate-boundaries.md) records its supersession and acceptance boundary.
 
 ## 5. Workflow backbone (§7-§9)
 
