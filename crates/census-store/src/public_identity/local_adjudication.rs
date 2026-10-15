@@ -1,3 +1,4 @@
+pub(in crate::public_identity) mod affected;
 mod claims;
 mod consume;
 pub(in crate::public_identity) mod fence;
@@ -6,30 +7,38 @@ pub(in crate::public_identity) use consume::{consume, ApprovedLocalAdjudicationV
 
 use crate::StoreRevision;
 use census_domain::public_identity_history::local_adjudication::{
-    LocalIdentityAdjudicationRecordV1, RetainedClaimV1,
+    LocalIdentityAdjudicationRecordV2, RetainedClaimV1,
 };
 use census_domain::public_identity_history::PreparedHistoryRecord;
 
 pub struct PreparedLocalAdjudicationV1<'store> {
-    record: LocalIdentityAdjudicationRecordV1,
+    record: LocalIdentityAdjudicationRecordV2,
     expected: StoreRevision<'store>,
     history: PreparedHistoryRecord,
 }
 
 impl PreparedLocalAdjudicationV1<'_> {
-    pub fn record(&self) -> &LocalIdentityAdjudicationRecordV1 {
+    pub fn record(&self) -> &LocalIdentityAdjudicationRecordV2 {
         &self.record
     }
 }
 
 pub struct LocalAdjudicationInventoryV1 {
     authority_context: String,
+    affected_context: String,
+    affected_record_keys: Vec<String>,
     claims: Vec<RetainedClaimV1>,
 }
 
 impl LocalAdjudicationInventoryV1 {
     pub fn authority_context(&self) -> &str {
         &self.authority_context
+    }
+    pub fn affected_context(&self) -> &str {
+        &self.affected_context
+    }
+    pub fn affected_record_keys(&self) -> &[String] {
+        &self.affected_record_keys
     }
     pub fn claims(&self) -> &[RetainedClaimV1] {
         &self.claims

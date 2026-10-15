@@ -129,6 +129,9 @@ impl<'a> Retained<'a> {
                     ))?
                     .to_owned(),
             );
+            if let Some(root) = held.affected_context() {
+                required.insert(root.to_owned());
+            }
         }
         Ok(required)
     }
@@ -148,6 +151,15 @@ impl Read for Retained<'_> {
             "missing frozen authority context",
         ))?;
         context::from_bytes(bytes.as_bytes(), root, identity)
+    }
+    fn affected_context(
+        &self,
+        root: &str,
+    ) -> StoreResult<crate::public_identity::local_adjudication::affected::Inputs> {
+        let bytes = self.contexts.get(root).ok_or(PublicIdentityError::Corrupt(
+            "missing frozen affected context",
+        ))?;
+        crate::public_identity::local_adjudication::affected::from_bytes(bytes.as_bytes(), root)
     }
     fn revision(&self) -> StoreResult<Revision> {
         Ok(self.revision)

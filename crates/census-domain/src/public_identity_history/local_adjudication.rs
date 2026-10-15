@@ -9,7 +9,7 @@ use super::{
 mod codec;
 mod validate;
 
-pub const LOCAL_ADJUDICATION_POLICY: &str = "local-operator-retained-identity-review/v1";
+pub const LOCAL_ADJUDICATION_POLICY: &str = "local-operator-retained-identity-review/v2";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -63,7 +63,7 @@ pub struct LocalIdentitySplitV1 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct LocalIdentityAdjudicationRecordV1 {
+pub struct LocalIdentityAdjudicationRecordV2 {
     pub version: u32,
     pub policy: String,
     pub store: StoreIdentity,
@@ -73,6 +73,7 @@ pub struct LocalIdentityAdjudicationRecordV1 {
     pub derived_generation: u64,
     pub snapshot_sequence: u64,
     pub authority_context: String,
+    pub affected_context: String,
     pub members: Vec<AthleteCandidateId>,
     pub request: LocalIdentitySplitV1,
     pub observed_at: String,
@@ -84,7 +85,7 @@ pub enum LocalEvidenceBasisV1 {
     RetainedObservationOnly,
 }
 
-impl LocalIdentityAdjudicationRecordV1 {
+impl LocalIdentityAdjudicationRecordV2 {
     pub fn history_request(
         &self,
         claims: &[RetainedClaimV1],

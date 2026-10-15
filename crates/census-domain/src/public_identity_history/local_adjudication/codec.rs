@@ -17,6 +17,7 @@ struct Record {
     derived_generation: u64,
     snapshot_sequence: u64,
     authority_context: String,
+    affected_context: String,
     #[serde(deserialize_with = "members")]
     members: Vec<AthleteCandidateId>,
     request: LocalIdentitySplitV1,
@@ -80,7 +81,7 @@ impl<'de> Deserialize<'de> for LocalIdentitySplitV1 {
     }
 }
 
-impl<'de> Deserialize<'de> for LocalIdentityAdjudicationRecordV1 {
+impl<'de> Deserialize<'de> for LocalIdentityAdjudicationRecordV2 {
     fn deserialize<D: Deserializer<'de>>(parser: D) -> Result<Self, D::Error> {
         let row = Record::deserialize(parser)?;
         Ok(Self {
@@ -96,6 +97,7 @@ impl<'de> Deserialize<'de> for LocalIdentityAdjudicationRecordV1 {
             derived_generation: row.derived_generation,
             snapshot_sequence: row.snapshot_sequence,
             authority_context: row.authority_context,
+            affected_context: row.affected_context,
             members: row.members,
             request: row.request,
             observed_at: row.observed_at,

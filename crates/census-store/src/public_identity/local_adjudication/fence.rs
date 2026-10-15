@@ -4,7 +4,7 @@ use crate::public_identity::{
     witness, PublicIdentityError,
 };
 use crate::{Store, StoreResult};
-use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV1;
+use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2;
 use census_domain::public_identity_history::HistoryRecord;
 
 pub(in crate::public_identity) fn require_available(
@@ -53,7 +53,7 @@ pub(in crate::public_identity) fn require_available(
 
 pub(super) fn validate_superseded(
     reader: &impl Read,
-    record: &LocalIdentityAdjudicationRecordV1,
+    record: &LocalIdentityAdjudicationRecordV2,
 ) -> StoreResult<()> {
     for prior in &record.request.supersedes {
         if prior.sequence > record.expected_head.sequence {
@@ -79,7 +79,7 @@ pub(super) fn validate_superseded(
 
 pub(super) fn validate_live(
     store: &Store,
-    record: &LocalIdentityAdjudicationRecordV1,
+    record: &LocalIdentityAdjudicationRecordV2,
 ) -> StoreResult<()> {
     let snapshot = store.db.snapshot();
     validate_superseded(
@@ -110,7 +110,7 @@ pub(in crate::public_identity) fn reviewed_material(
 
 pub(in crate::public_identity) fn manual_material(
     reader: &impl Read,
-    record: &LocalIdentityAdjudicationRecordV1,
+    record: &LocalIdentityAdjudicationRecordV2,
 ) -> StoreResult<String> {
     let inputs = reader.context(&record.authority_context, &record.store)?;
     crate::public_identity::authority::identity_material(&inputs, &record.members)

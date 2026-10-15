@@ -114,7 +114,7 @@ fn frozen_reviewed_merge_keeps_historical_birth_ids_and_redirects() -> TestResul
     let frozen = fixture.store.snapshot().freeze_public_identity_v1()?;
     let replayed = frozen.replay()?;
     let bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
-    check!(eq; bundle.operations.len(), 3);
+    check!(eq; bundle.operations.len(), 4);
     let versions = bundle
         .operations
         .iter()
@@ -127,7 +127,7 @@ fn frozen_reviewed_merge_keeps_historical_birth_ids_and_redirects() -> TestResul
             Ok(u32::try_from(version)?)
         })
         .collect::<TestResult<Vec<_>>>()?;
-    check!(eq; versions, vec![2, 2, 3]);
+    check!(eq; versions, vec![2, 2, 2, 3]);
     check!(eq; replayed.head(), outcome.head());
     for birth in &fixture.births {
         check!(eq; replayed.resolve_public(birth.public_id())?, expected.resolve_public(birth.public_id())?);

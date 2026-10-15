@@ -12,21 +12,21 @@ pub(super) struct Header {
 }
 
 #[derive(Serialize)]
-pub(super) struct Entry<'a, T> {
+pub(in crate::public_identity) struct Entry<'a, T> {
     pub key: &'a str,
     pub at: &'a str,
     pub payload: Payload<'a, T>,
 }
 
 #[derive(Serialize)]
-pub(super) struct Payload<'a, T> {
+pub(in crate::public_identity) struct Payload<'a, T> {
     pub kind: &'a str,
     pub value: &'a T,
 }
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Decoded<T> {
+pub(in crate::public_identity) struct Decoded<T> {
     pub kind: String,
     pub value: T,
 }

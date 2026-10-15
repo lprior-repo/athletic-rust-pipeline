@@ -1,10 +1,10 @@
-use super::{claims, LocalAdjudicationInventoryV1, PreparedLocalAdjudicationV1};
+use super::{affected, claims, LocalAdjudicationInventoryV1, PreparedLocalAdjudicationV1};
 use crate::clock::{Clock, SystemClock};
 use crate::public_identity::{codec, context, PublicIdentityError, PublicIdentityWriterV1};
 use crate::{Store, StoreResult, StoreRevision};
 use census_domain::model::AthleteCandidateId;
 use census_domain::public_identity_history::local_adjudication::{
-    LocalEvidenceBasisV1, LocalIdentityAdjudicationRecordV1, LocalIdentitySplitV1,
+    LocalEvidenceBasisV1, LocalIdentityAdjudicationRecordV2, LocalIdentitySplitV1,
     LOCAL_ADJUDICATION_POLICY,
 };
 use census_domain::public_identity_history::{
@@ -21,13 +21,18 @@ impl PublicIdentityWriterV1 {
         let guard = store.lock_appends();
         let ledger = self.verified(store)?;
         self.require_current_qualification()?;
-        let inputs = context::Inputs::capture(&store.snapshot_locked())?;
+        let snapshot = store.snapshot_locked();
+        let inputs = context::Inputs::capture(&snapshot)?;
         let members = members(&inputs, ledger.history.projection(), canonical)?;
         let claims = claims::inventory(&inputs, &members)?;
+        let authority_context = inputs.measure_context(&self.identity)?;
+        let affected = affected::Inputs::capture(&snapshot, &self.identity, &authority_context)?;
+        let affected_record_keys = affected.record_keys(&inputs, &members)?;
         drop(guard);
-        let context = inputs.measure_context(&self.identity)?;
         Ok(LocalAdjudicationInventoryV1 {
-            authority_context: context,
+            authority_context,
+            affected_context: affected.measure_context()?,
+            affected_record_keys,
             claims,
         })
     }
@@ -54,10 +59,16 @@ impl PublicIdentityWriterV1 {
         let members = members(&inputs, ledger.history.projection(), &request.canonical)?;
         validate_case(&inputs, &request, &members)?;
         let claims = claims::inventory(&inputs, &members)?;
+        let authority_context = inputs.measure_context(&self.identity)?;
+        let affected = affected::Inputs::capture(&snapshot, &self.identity, &authority_context)?;
+        if affected.record_keys(&inputs, &members)? != request.affected_record_keys {
+            return Err(PublicIdentityError::Corrupt("manual affected record inventory").into());
+        }
         drop(guard);
         let authority_context = inputs.stage(store, &self.identity)?.object_id().to_owned();
-        let record = LocalIdentityAdjudicationRecordV1 {
-            version: 1,
+        let affected_context = affected.stage(store)?.object_id().to_owned();
+        let record = LocalIdentityAdjudicationRecordV2 {
+            version: 2,
             policy: LOCAL_ADJUDICATION_POLICY.into(),
             store: self.identity.clone(),
             operation: operation.into(),
@@ -66,6 +77,7 @@ impl PublicIdentityWriterV1 {
             derived_generation: snapshot.derived_generation(),
             snapshot_sequence: snapshot.sequence(),
             authority_context,
+            affected_context,
             members,
             request,
             observed_at: SystemClock.today_iso8601(),
@@ -73,12 +85,7 @@ impl PublicIdentityWriterV1 {
         };
         let history = prepare_history(&record, &claims, ledger.history.projection())?;
         preview_witness(&record, &history)?;
-        let _guard = store.lock_appends();
-        expected.ensure_current(store, operation)?;
-        if head != self.verified(store)?.history.projection().head() {
-            return Err(PublicIdentityError::HeadMoved.into());
-        }
-        super::fence::validate_live(store, &record)?;
+        validate_current(self, store, expected, &record)?;
         Ok(PreparedLocalAdjudicationV1 {
             record,
             expected,
@@ -172,7 +179,7 @@ fn validate_request(request: &LocalIdentitySplitV1) -> StoreResult<()> {
 }
 
 fn prepare_history(
-    record: &LocalIdentityAdjudicationRecordV1,
+    record: &LocalIdentityAdjudicationRecordV2,
     claims: &[census_domain::public_identity_history::local_adjudication::RetainedClaimV1],
     projection: &HistoryProjection,
 ) -> StoreResult<census_domain::public_identity_history::PreparedHistoryRecord> {
@@ -195,7 +202,7 @@ fn prepare_history(
 }
 
 fn preview_witness(
-    record: &LocalIdentityAdjudicationRecordV1,
+    record: &LocalIdentityAdjudicationRecordV2,
     history: &census_domain::public_identity_history::PreparedHistoryRecord,
 ) -> StoreResult<()> {
     let approved_bytes = super::consume::approval_bytes(record)?;
@@ -206,4 +213,18 @@ fn preview_witness(
     });
     codec::encode(&witness, super::MAX_WITNESS_BYTES)?;
     Ok(())
+}
+
+fn validate_current(
+    writer: &PublicIdentityWriterV1,
+    store: &Store,
+    expected: StoreRevision<'_>,
+    record: &LocalIdentityAdjudicationRecordV2,
+) -> StoreResult<()> {
+    let _guard = store.lock_appends();
+    expected.ensure_current(store, &record.operation)?;
+    if &record.expected_head != writer.verified(store)?.history.projection().head() {
+        return Err(PublicIdentityError::HeadMoved.into());
+    }
+    super::fence::validate_live(store, record)
 }

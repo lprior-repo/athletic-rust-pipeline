@@ -8,7 +8,7 @@ use serde::Deserialize;
 pub(super) enum HeldWitness {
     Source(witness::Witness),
     Reviewed(correction::ReviewedWitness),
-    Manual(local_adjudication::LocalAdjudicationWitnessV1),
+    Manual(Box<local_adjudication::LocalAdjudicationWitnessV1>),
 }
 
 impl HeldWitness {
@@ -24,7 +24,7 @@ impl HeldWitness {
             });
         }
         let version: StoreResult<Version> = codec::decode(key, bytes);
-        if bytes.len() > 65_536 && !matches!(&version, Ok(Version { version: 4 })) {
+        if bytes.len() > 65_536 && !matches!(&version, Ok(Version { version: 5 })) {
             return Err(crate::StoreError::RowTooLarge {
                 bytes: bytes.len(),
                 max: 65_536,
@@ -34,7 +34,7 @@ impl HeldWitness {
         match version.version {
             1 | 2 => codec::decode(key, bytes).map(Self::Source),
             3 => codec::decode(key, bytes).map(Self::Reviewed),
-            4 => codec::decode(key, bytes).map(Self::Manual),
+            5 => codec::decode(key, bytes).map(Box::new).map(Self::Manual),
             _ => Err(PublicIdentityError::Corrupt("unsupported identity witness version").into()),
         }
     }
@@ -57,6 +57,12 @@ impl HeldWitness {
             Self::Source(held) => held.authority_context.as_deref(),
             Self::Reviewed(held) => Some(&held.authority_context),
             Self::Manual(held) => Some(&held.adjudication.authority_context),
+        }
+    }
+    pub(super) fn affected_context(&self) -> Option<&str> {
+        match self {
+            Self::Manual(held) => Some(&held.adjudication.affected_context),
+            Self::Source(_) | Self::Reviewed(_) => None,
         }
     }
     fn request_digest(&self) -> &str {

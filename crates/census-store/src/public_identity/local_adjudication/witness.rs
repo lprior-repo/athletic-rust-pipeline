@@ -8,7 +8,7 @@ use crate::public_identity::{
 };
 use crate::StoreResult;
 use census_domain::model::{serialized_digest, StoreIdentity};
-use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV1;
+use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2;
 use census_domain::public_identity_history::{
     prepare_next, HistoryProjection, HistoryRecord, PreparedHistoryRecord, PublicAthleteId,
     RegistryHead, ReplayLimits,
@@ -23,7 +23,7 @@ pub(in crate::public_identity) struct LocalAdjudicationWitnessV1 {
     pub operation: String,
     pub request_digest: String,
     pub actor: LocalActor,
-    pub adjudication: LocalIdentityAdjudicationRecordV1,
+    pub adjudication: LocalIdentityAdjudicationRecordV2,
     pub record_digest: String,
 }
 
@@ -36,7 +36,7 @@ pub(in crate::public_identity) enum LocalActor {
 impl LocalAdjudicationWitnessV1 {
     pub(super) fn new(approved: ApprovedLocalAdjudicationV1) -> Self {
         Self {
-            version: 4,
+            version: 5,
             operation: approved.record.operation.clone(),
             request_digest: approved.approval_digest,
             actor: LocalActor::LocalOperator,
@@ -55,7 +55,7 @@ impl LocalAdjudicationWitnessV1 {
     ) -> StoreResult<()> {
         let record = &prepared.uncommitted_record;
         if version != PublicIdentityQualificationVersion::RetainedAuthorityContextV2
-            || self.version != 4
+            || self.version != 5
             || self.operation != self.adjudication.operation
             || self.record_digest != record.digest
             || self.adjudication.store != record.installation
@@ -104,6 +104,9 @@ impl LocalAdjudicationWitnessV1 {
         prepare::validate_case(&inputs, &record.request, &members)?;
         prepare::validate_prior(&record.request, records)?;
         super::fence::validate_superseded(reader, record)?;
+        reader
+            .affected_context(&record.affected_context)?
+            .validate(&inputs, record)?;
         let claims = claims::inventory(&inputs, &members)?;
         let request = record
             .history_request(&claims)

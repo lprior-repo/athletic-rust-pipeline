@@ -8,7 +8,10 @@ use serde::Serialize;
 
 pub(super) const RETAINED_SECTION_BYTES: u64 = 16 * 1024 * 1024;
 
-pub(super) fn charge_section_bytes(current: u64, added: usize) -> StoreResult<u64> {
+pub(in crate::public_identity) fn charge_section_bytes(
+    current: u64,
+    added: usize,
+) -> StoreResult<u64> {
     let added = u64::try_from(added).map_err(|_| StoreError::CounterOverflow)?;
     let needed = current
         .checked_add(added)

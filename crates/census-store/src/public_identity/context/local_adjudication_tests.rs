@@ -48,13 +48,14 @@ fn request(fixture: &ReviewedFixture) -> TestResult<LocalIdentitySplitV1> {
         case_id: fixture.request.case_id().into(), canonical: canonical.clone(),
         supersedes: vec![SupersededMergeV1 { sequence: head.sequence, digest: head.digest }],
         partitions, unresolved_bindings: Vec::new(),
-        affected_record_keys: vec!["synthetic-affected-result".into()], dispositions,
+        affected_record_keys: inventory.affected_record_keys().to_vec(), dispositions,
         rationale: "Synthetic reviewed correction retains original source facts and reverses their identity interpretation".into(),
     })
 }
 
 fn merged() -> TestResult<ReviewedFixture> {
     let fixture = ready_for_merge()?;
+    results::install(&fixture)?;
     fixture.writer.apply_reviewed_identity(
         &fixture.store,
         "synthetic-manual-prior-merge",
@@ -72,7 +73,7 @@ fn approval(
     struct Envelope<'a> {
         schema: &'static str,
         actor: &'static str,
-        prepared: &'a census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV1,
+        prepared: &'a census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2,
     }
     let bytes = serde_json::to_vec(&Envelope {
         schema: "local-identity-adjudication-approval/v1",
@@ -227,4 +228,9 @@ fn forged_retained_claim_value_cannot_prepare_even_when_its_digest_is_recomputed
     Ok(())
 }
 
+mod affected;
+mod affected_replay;
 mod durable;
+mod frozen_refusals;
+mod results;
+mod retained_validation;

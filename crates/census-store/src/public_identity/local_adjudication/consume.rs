@@ -3,7 +3,7 @@ use crate::public_identity::{
     codec, context, qualification::Ledger, PublicIdentityError, PublicIdentityWriterV1,
 };
 use crate::{Store, StoreResult};
-use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV1;
+use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2;
 use census_domain::public_identity_history::{prepare_next, PreparedHistoryRecord, ReplayLimits};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 const APPROVAL_SCHEMA: &str = "local-identity-adjudication-approval/v1";
 
 pub(in crate::public_identity) struct ApprovedLocalAdjudicationV1 {
-    pub record: LocalIdentityAdjudicationRecordV1,
+    pub record: LocalIdentityAdjudicationRecordV2,
     pub approval_digest: String,
     pub history: PreparedHistoryRecord,
 }
@@ -20,7 +20,7 @@ pub(in crate::public_identity) struct ApprovedLocalAdjudicationV1 {
 struct Envelope<'a> {
     schema: &'static str,
     actor: &'static str,
-    prepared: &'a LocalIdentityAdjudicationRecordV1,
+    prepared: &'a LocalIdentityAdjudicationRecordV2,
 }
 
 pub(in crate::public_identity) fn consume<R>(
@@ -81,6 +81,9 @@ fn replay_prepared(
         &prepared.record.authority_context,
         &prepared.record.store,
     )?;
+    let affected =
+        super::affected::read(&snapshot, &store.journal, &prepared.record.affected_context)?;
+    affected.validate(&inputs, &prepared.record)?;
     let claims = claims::inventory(&inputs, &prepared.record.members)?;
     let request = prepared
         .record
@@ -99,7 +102,7 @@ fn replay_prepared(
     Ok(replayed)
 }
 
-pub(super) fn approval_bytes(record: &LocalIdentityAdjudicationRecordV1) -> StoreResult<Vec<u8>> {
+pub(super) fn approval_bytes(record: &LocalIdentityAdjudicationRecordV2) -> StoreResult<Vec<u8>> {
     codec::encode(
         &Envelope {
             schema: APPROVAL_SCHEMA,

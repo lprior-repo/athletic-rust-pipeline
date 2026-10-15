@@ -138,7 +138,7 @@ fn public_identity_snapshot_refuses_a_missing_witness_without_changing_the_pinne
     let before = retained_state(&store)?;
     check!(matches!(
         refused(store.snapshot().accepted_public_identity_snapshot())?,
-        StoreError::PublicIdentity(PublicIdentityError::Corrupt("commit namespace cardinality"))
+        StoreError::PublicIdentity(PublicIdentityError::Corrupt("missing inventory witness"))
     ));
     let accepted = held
         .accepted_public_identity_snapshot()?

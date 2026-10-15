@@ -45,21 +45,45 @@ struct OwnedChild {
     directory: Option<tempfile::TempDir>,
 }
 
+pub(super) struct CrashCase {
+    pub child_name: &'static str,
+    pub operation: &'static str,
+    pub sequence: u64,
+}
+
 pub(super) fn interrupt(
     directory: tempfile::TempDir,
     root: &Path,
     boundary: Boundary,
 ) -> TestResult<(tempfile::TempDir, Reached)> {
+    interrupt_case(
+        directory,
+        root,
+        boundary,
+        CrashCase {
+            child_name: CHILD_NAME,
+            operation: OPERATION,
+            sequence: 1,
+        },
+    )
+}
+
+pub(super) fn interrupt_case(
+    directory: tempfile::TempDir,
+    root: &Path,
+    boundary: Boundary,
+    case: CrashCase,
+) -> TestResult<(tempfile::TempDir, Reached)> {
     let marker = directory.path().join("reached.json");
     let child = Command::new(std::env::current_exe()?)
         .args([
             "--exact",
-            CHILD_NAME,
+            case.child_name,
             "--ignored",
             "--nocapture",
             "--test-threads=1",
         ])
-        .env(CHILD_CASE, CHILD_NAME)
+        .env(CHILD_CASE, case.child_name)
         .env(CHILD_ROOT, root)
         .env("CENSUS_NATIVE_WORKER_BOUNDARY", boundary.phase())
         .env("CENSUS_NATIVE_WORKER_MARKER", &marker)
@@ -71,7 +95,7 @@ pub(super) fn interrupt(
         child,
         directory: Some(directory),
     };
-    let reached = wait_marker(&mut owned.child, &marker, boundary);
+    let reached = wait_marker(&mut owned.child, &marker, boundary, &case);
     let stopped = terminate_and_reap(&mut owned.child);
     let (reached, status) = finish(reached, stopped)?;
     check!(eq; status.signal(), Some(Signal::TERM.as_raw()));
@@ -82,7 +106,12 @@ pub(super) fn interrupt(
     Ok((directory, reached))
 }
 
-fn wait_marker(child: &mut Child, path: &Path, boundary: Boundary) -> TestResult<Reached> {
+fn wait_marker(
+    child: &mut Child,
+    path: &Path,
+    boundary: Boundary,
+    case: &CrashCase,
+) -> TestResult<Reached> {
     let started = Instant::now();
     for _ in 0..MARKER_POLLS {
         if let Some(status) = child.try_wait()? {
@@ -91,9 +120,9 @@ fn wait_marker(child: &mut Child, path: &Path, boundary: Boundary) -> TestResult
         if let Some(reached) = read_marker(path)? {
             check!(eq; reached.schema, 1);
             check!(eq; reached.pid, child.id());
-            check!(eq; reached.operation.as_str(), OPERATION);
+            check!(eq; reached.operation.as_str(), case.operation);
             check!(eq; reached.phase.as_str(), boundary.phase());
-            check!(eq; reached.sequence, 1);
+            check!(eq; reached.sequence, case.sequence);
             check!(
                 reached.input_digest.len() == 64
                     && reached

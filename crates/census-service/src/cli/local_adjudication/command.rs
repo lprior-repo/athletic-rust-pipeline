@@ -70,10 +70,12 @@ fn inspect(root: &Path, canonical: &PublicAthleteId) -> Result<()> {
     let (store, writer) = open(root)?;
     let inventory = writer.inspect_local_adjudication(&store, canonical)?;
     emit(&Inspection {
-        schema: "local-identity-adjudication-inventory/v1",
+        schema: "local-identity-adjudication-inventory/v2",
         canonical,
         head: writer.head(&store)?,
         authority_context: inventory.authority_context(),
+        affected_context: inventory.affected_context(),
+        affected_record_keys: inventory.affected_record_keys(),
         claims: inventory.claims(),
     })
 }
@@ -116,6 +118,8 @@ struct Inspection<'a> {
     canonical: &'a PublicAthleteId,
     head: RegistryHead,
     authority_context: &'a str,
+    affected_context: &'a str,
+    affected_record_keys: &'a [String],
     claims: &'a [RetainedClaimV1],
 }
 

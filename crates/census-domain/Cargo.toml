@@ -9,6 +9,7 @@ license = "MIT"
 workspace = true
 
 [dependencies]
+serde_json = "=1.0.151"
 rust_decimal = { version = "1.37", default-features = false }
 zmij = "=1.0.23"
 serde = { version = "1", features = ["derive"] }
@@ -16,7 +17,3 @@ sha2 = "0.10"
 thiserror = "2"
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 url = "2.5"
-
-[dev-dependencies]
-serde_json = "=1.0.151"
-

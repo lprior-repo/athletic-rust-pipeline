@@ -16,8 +16,7 @@ pub(super) fn accept_inputs(
     let source = inputs
         .athletes
         .iter()
-        .filter(|athlete| athlete.id.as_str() == candidate.as_str())
-        .next_back()
+        .rfind(|athlete| athlete.id.as_str() == candidate.as_str())
         .and_then(|athlete| athlete.source.clone())
         .ok_or(PublicIdentityError::NotSourceBound)?;
     let builder = IdentityProjectionBuilder::new(index, &bound, &inputs.verdicts)?;

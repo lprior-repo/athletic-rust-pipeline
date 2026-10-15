@@ -30,6 +30,16 @@ impl Read for Live<'_> {
     fn context(&self, root: &str, identity: &StoreIdentity) -> StoreResult<context::Inputs> {
         context::read_inputs(self.snapshot, self.journal, root, identity)
     }
+    fn affected_context(
+        &self,
+        root: &str,
+    ) -> StoreResult<crate::public_identity::local_adjudication::affected::Inputs> {
+        crate::public_identity::local_adjudication::affected::read(
+            self.snapshot,
+            self.journal,
+            root,
+        )
+    }
     fn revision(&self) -> StoreResult<Revision> {
         Ok(Revision {
             evidence_generation: inventory::number(

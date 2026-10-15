@@ -38,5 +38,9 @@ impl Revision {
 pub(super) trait Read {
     fn row(&self, rows: Rows, key: &str) -> StoreResult<Option<Vec<u8>>>;
     fn context(&self, root: &str, identity: &StoreIdentity) -> StoreResult<context::Inputs>;
+    fn affected_context(
+        &self,
+        root: &str,
+    ) -> StoreResult<super::local_adjudication::affected::Inputs>;
     fn revision(&self) -> StoreResult<Revision>;
 }

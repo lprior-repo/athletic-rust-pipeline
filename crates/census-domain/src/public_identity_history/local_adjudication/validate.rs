@@ -4,9 +4,9 @@ use std::collections::BTreeSet;
 const MAX_CLAIMS: usize = 4096;
 const MAX_RATIONALE: usize = 4096;
 
-impl LocalIdentityAdjudicationRecordV1 {
+impl LocalIdentityAdjudicationRecordV2 {
     pub fn validate(&self, claims: &[RetainedClaimV1]) -> Result<(), HistoryError> {
-        if self.version != 1 || self.policy != LOCAL_ADJUDICATION_POLICY {
+        if self.version != 2 || self.policy != LOCAL_ADJUDICATION_POLICY {
             return Err(HistoryError::Invalid("manual adjudication policy"));
         }
         text(&self.operation, 256)?;

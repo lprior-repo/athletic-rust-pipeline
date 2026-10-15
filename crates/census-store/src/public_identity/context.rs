@@ -1,6 +1,6 @@
 mod read;
-mod storage;
-mod wire;
+pub(in crate::public_identity) mod storage;
+pub(in crate::public_identity) mod wire;
 pub(super) use read::read as read_inputs;
 #[cfg(test)]
 pub(super) use read::verify_reviewed;

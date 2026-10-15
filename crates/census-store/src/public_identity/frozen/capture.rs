@@ -83,6 +83,9 @@ fn capture_operations(
                 ))?
                 .to_owned(),
         );
+        if let Some(root) = held.affected_context() {
+            roots.insert(root.to_owned());
+        }
         bundle.operations.try_reserve(1).map_err(allocation)?;
         bundle.operations.push(wire::Operation {
             sequence: record.sequence,

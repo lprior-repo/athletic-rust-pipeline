@@ -165,7 +165,7 @@ fn persisted_manual_decoder_refuses_unknown_fields_and_oversized_disposition_inv
         .as_object_mut()
         .ok_or("object")?
         .insert("actor_override".into(), serde_json::json!("model"));
-    assert!(serde_json::from_value::<census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV1>(unknown).is_err());
+    assert!(serde_json::from_value::<census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2>(unknown).is_err());
     let mut oversized = original;
     let request = oversized
         .get_mut("request")
@@ -182,7 +182,7 @@ fn persisted_manual_decoder_refuses_unknown_fields_and_oversized_disposition_inv
         "dispositions".into(),
         serde_json::Value::Array(vec![one; 4097]),
     );
-    let result = serde_json::from_value::<census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV1>(oversized);
+    let result = serde_json::from_value::<census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2>(oversized);
     assert!(result.is_err());
     Ok(())
 }
@@ -247,8 +247,24 @@ fn manual_witness_roundtrip_preserves_the_exact_record_and_legacy_witness_ceilin
     let crate::public_identity::operation::HeldWitness::Manual(manual) = held else {
         return Err("wrong witness kind".into());
     };
+    assert_eq!(manual.version, 5);
     assert_eq!(serde_json::to_value(&manual.adjudication)?, expected);
     assert_eq!(serde_json::to_vec(&manual)?, raw.to_vec());
+    let mut previous: serde_json::Value = serde_json::from_slice(&raw)?;
+    previous
+        .as_object_mut()
+        .ok_or("witness object")?
+        .insert("version".into(), 4.into());
+    let result = crate::public_identity::operation::HeldWitness::decode(
+        &key,
+        &serde_json::to_vec(&previous)?,
+    );
+    assert!(matches!(
+        result,
+        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
+            "unsupported identity witness version"
+        )))
+    ));
     let mut oversized = br#"{"version":3,"padding":""#.to_vec();
     oversized.extend(vec![b'x'; 65_536]);
     oversized.extend_from_slice(b"\"}");
@@ -371,8 +387,26 @@ fn material_fence_ignores_case_labels_and_model_metadata_but_binds_facts() -> Te
         crate::public_identity::authority::identity_material(&relabeled, &members)?,
         original
     );
-    let athlete = relabeled.athletes.first_mut().ok_or("athlete")?;
+    let unrelated = fixture.candidates.last().ok_or("unrelated candidate")?;
+    let athlete = relabeled
+        .athletes
+        .iter_mut()
+        .find(|athlete| athlete.id.as_str() == unrelated.as_str())
+        .ok_or("unrelated athlete")?;
+    athlete.canonical_name = "Changed unrelated source name".into();
+    athlete.known_names = vec![athlete.canonical_name.clone()];
+    assert_eq!(
+        crate::public_identity::authority::identity_material(&relabeled, &members)?,
+        original
+    );
+    let member = members.first().ok_or("requested member")?;
+    let athlete = relabeled
+        .athletes
+        .iter_mut()
+        .find(|athlete| athlete.id.as_str() == member.as_str())
+        .ok_or("requested athlete")?;
     athlete.canonical_name = "Changed synthetic source name".into();
+    athlete.known_names = vec![athlete.canonical_name.clone()];
     assert_ne!(
         crate::public_identity::authority::identity_material(&relabeled, &members)?,
         original
