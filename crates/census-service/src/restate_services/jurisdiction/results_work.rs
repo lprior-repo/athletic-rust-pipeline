@@ -43,12 +43,7 @@ impl JurisdictionCensus {
             .run(move || async move {
                 match work {
                     ResultsWork::Legacy => {
-                        legacy_results_work(&region, move || {
-                            handle.block_on(jobs::results_stage(
-                                store, fetcher, scope, sources, capture,
-                            ))
-                        })
-                        .await
+                        jobs::results_stage(store, fetcher, scope, sources, capture).await
                     }
                     ResultsWork::Admitted(admission) => {
                         let outcome = region
@@ -79,30 +74,6 @@ impl JurisdictionCensus {
         Ok(outcome)
     }
 }
-
-#[tracing::instrument(skip_all)]
-async fn legacy_results_work(
-    region: &crate::spawn::Spawner,
-    job: impl FnOnce() -> Result<Json<ResultsStageOutcome>, HandlerError> + Send + 'static,
-) -> Result<Json<ResultsStageOutcome>, HandlerError> {
-    let outcome = region
-        .dedicated((), job)
-        .await
-        .map_err(|error| jobs::invariant(&format!("capture worker admission: {error}")))?;
-    match outcome {
-        crate::outcome::Outcome::Ok(value) => Ok(value),
-        crate::outcome::Outcome::Err(error) => Err(error),
-        crate::outcome::Outcome::Panicked => {
-            Err(jobs::invariant("capture results worker panicked"))
-        }
-        crate::outcome::Outcome::Cancelled => {
-            Err(jobs::invariant("capture results worker cancelled"))
-        }
-    }
-}
-
-#[cfg(test)]
-mod legacy_worker_tests;
 
 #[cfg(test)]
 mod replay_tests;
