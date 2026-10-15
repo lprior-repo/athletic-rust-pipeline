@@ -274,6 +274,12 @@ These exercised repairs follow checkpoint `8005d33f`; they are not a full releas
 | R13 parser/registry and R14 cgroup | `tests-scoped` / `ef0459d9`: 62 passes, including real 755-row official text, 1-MiB admitted registry payload, pinned reads, corruption refusal and cold backup/restore | Official PDF has 40 physical pages, 20 blank trailing pages; no UP/sport inference |
 | R14 strict CLI | Build / `b4a699f6`; actual unbounded-group refusal exited 1 before creating the store; separate finite 1-GiB/zero-swap systemd unit admitted and exited 0 after SIGTERM, accepted=completed=3 | Isolated endpoint only; Restate/browser/global disk envelope unqualified |
 | R15 runtime/wire ownership | `tests-scoped` / `9085a8a0`: 14 producer/consumer and policy cases passed after removing three incidental tests | ADR-007 preserves the intentional effect-boundary representations |
+| R14 measurement integrity | Failing-before `14d85808`: two failures; passing-after `b27340b9`: three passes; final integrated parser/registry/guard run `2240ea2c`: 65 passes | Observed peak regression, peak below current usage and changed hard limits fail closed |
+| Rebased checkpoint `5bb37152` | `f6e30786`: 5,901 passes, four skipped; check `c4acb64b`, lint `d105b28d`, fmt `570eee66` passed | Three existing forced argument-count advisories; not a full release pass |
+| User snapshot PR `0ce5f405` | Check `fae3c990`, fmt `790f93b8` and ten snapshot/budget cases `0751b399` passed | Focused follow-on integration, not another full-workspace/native certificate |
+| Native reboot/midnight | `3245a342`: scenarios 03 and 12 passed, zero failed/skipped; candidate build `6cbc8b8a` at `5bb37152` | Original reserved invocation recovered; two FULL200 HTTPS acquisitions bracketed guest midnight. Not full national/all HTTP subphases or newer-main qualification |
+| Actual enrollment/registry API | `run-scoped` / `3500a5d2`: official-text cells/pages, pinned regional reads, unchanged evidence generations, cold backup/restore and exact repeat readback passed | Isolated public-text/synthetic-configuration smoke; harness/output fingerprints retained under `var/review-r9-r15-20261014/` |
+| Actual CLI help | Documented command first failed with exit 1 (`916c0065`); after repair, locked-store regression `6393cc0d` and actual `--help` command `5648cf2a` passed | Help exits 0 before runtime/store acquisition; malformed flags remain nonzero |
 
 The real official-text case failed with `MissingHeader` before repair (`bca4278b`): the PDF contains
 blank trailing physical pages. Admission still counts every physical page before trailing layout
@@ -284,8 +290,11 @@ It is enrollment research, not qualified pipeline capture or complete five-state
 
 Strict-mode smoke evidence: `var/r14-memory-mode-C9wsAWJm/finite-smoke.json`.
 Browser and constructor harness/readback evidence: `var/review-r9-r15-20261014/`.
-R11 semantic witnesses, R12 reusable execution, R13 qualified denominators, R14 whole-workload
-resource proof, native 03/12 and the full release gate remain open. No live installation was changed.
+Native evidence: `var/review-native-RDHKbzIf/native-vm-session-g5Zdspyr/native-vm`; preserved machine
+`/home/lewis/.cache/cen-native-vm/run-y2AWu8g7/machine/qualification-certificates.json`.
+R9, R10 and R15 are closed with scoped evidence. R11 semantic witnesses, R12 reusable execution,
+R13 qualified denominators, R14 whole-workload resources, latest-build/full-fault coverage and the
+full release gate remain open. The R11 draft is incomplete and unapplied. No live installation changed.
 
 ### Focused R4/R5/R6 publication packaging — 2026-10-14 23:17 UTC
 

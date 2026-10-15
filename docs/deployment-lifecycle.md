@@ -92,8 +92,8 @@ Use the installed server/CLI version's supported inspection and retirement opera
 `JurisdictionCensus` now kills on retry exhaustion; other definitions can pause. A paused virtual
 object can block subsequent calls behind its owned key. Preserve the failure, invocation IDs and
 receipts before an operator deliberately cancels/kills it. Do not create replacement revisions merely
-to evade blocked/exhausted work. Historical API retirement responses and timeout incidents are in
-the verification ledger (removed 2026-10-09), not guarantees about every server version.
+to evade blocked/exhausted work. [Dated evidence](VERIFICATION-EVIDENCE.md) owns historical incidents;
+removed-ledger claims are not guarantees about the installed server version.
 
 ### Local restart and continuation
 
