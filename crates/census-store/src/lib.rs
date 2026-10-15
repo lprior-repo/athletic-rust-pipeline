@@ -34,10 +34,12 @@ mod identity;
 mod public_identity;
 pub use public_identity::{
     replay_frozen_public_identity_v1, FrozenPublicIdentityBundleV1, IdentityCommitOutcomeV1,
-    LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1, PreparedLocalAdjudicationV1,
-    PublicIdentityError, PublicIdentityQualificationStore, PublicIdentityWriterV1,
-    ReviewedIdentityCommitOutcomeV1, ReviewedIdentityRequestV1, MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
-    MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
+    LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1,
+    MembershipWithholdingInventoryV1, MembershipWithholdingOutcomeV1, PreparedLocalAdjudicationV1,
+    PreparedMembershipWithholdingV1, PublicIdentityError, PublicIdentityQualificationStore,
+    PublicIdentityWriterV1, ReviewedIdentityCommitOutcomeV1, ReviewedIdentityRequestV1,
+    SourceCandidateMembershipOutcomeV1, SourceCandidateMembershipRequestV1,
+    MAX_FROZEN_PUBLIC_IDENTITY_BYTES, MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
 };
 mod inspect;
 mod installation;
@@ -83,7 +85,8 @@ pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
 pub use profiles::{ProfileRegistration, ProfileRegistryError, MAX_PROFILE_RECORD_BYTES};
 pub use read::{
     build_athlete_identity_projection, decode_physical_observation, AcceptedPublicIdentitySnapshot,
-    JournalReadBudget, ReadBudget, ReadCounts, StoreSnapshot,
+    JournalReadBudget, PhysicalObservationCursor, PhysicalObservationPage, ReadBudget, ReadCounts,
+    StoreSnapshot,
 };
 pub use receipt::{
     Application, Credit, Pruned, Receipt, ReplayFrontier, ReplayWitness, MAX_DIGEST_BYTES,

@@ -160,3 +160,5 @@ fn manifest_is_absent_until_all_callback_records_are_staged() -> TestResult {
     check!(store.journal.get(key)?.is_some());
     Ok(())
 }
+
+mod charge;

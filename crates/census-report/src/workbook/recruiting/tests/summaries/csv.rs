@@ -13,12 +13,7 @@ fn rows(fixture: &Fixture) -> TestResult<(::csv::StringRecord, Vec<::csv::String
             jurisdictions: Vec::new(),
         },
     )?;
-    let (_, path) = bests::write(
-        fixture.dir.path(),
-        &selected,
-        "xc-context-fixture",
-        census_domain::model::EventSemantics::CURRENT,
-    )?;
+    let (_, path) = bests::write(fixture.dir.path(), &selected, "xc-context-fixture", &data)?;
     let mut reader = ::csv::Reader::from_path(path)?;
     let header = reader.headers()?.clone();
     let records = reader.records().collect::<Result<_, _>>()?;

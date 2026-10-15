@@ -1,4 +1,5 @@
 use super::{acquisition_manifest_key, OWNED_CAPTURE_PHASE};
+use crate::milesplit::RetainedJournalView;
 use crate::net::cache::content_digest;
 use census_store::{JournalReadBudget, StoreSnapshot};
 use serde::de::DeserializeOwned;
@@ -17,6 +18,14 @@ const CHUNK_JOURNAL_BYTES: usize = 64 * 1024;
 
 pub fn read_retained_acquisition(
     view: &StoreSnapshot<'_>,
+    reference: &OwnedAcquisitionRef,
+    budget: CaptureReadBudget,
+) -> Result<VerifiedOwnedAcquisition, CaptureWitnessError> {
+    read_retained_acquisition_from(view, reference, budget)
+}
+
+pub fn read_retained_acquisition_from(
+    view: &impl RetainedJournalView,
     reference: &OwnedAcquisitionRef,
     budget: CaptureReadBudget,
 ) -> Result<VerifiedOwnedAcquisition, CaptureWitnessError> {
@@ -51,7 +60,11 @@ pub fn read_retained_acquisition(
     ))
 }
 
-fn read(view: &StoreSnapshot<'_>, key: &str, max: usize) -> Result<Value, CaptureWitnessError> {
+fn read(
+    view: &impl RetainedJournalView,
+    key: &str,
+    max: usize,
+) -> Result<Value, CaptureWitnessError> {
     let budget = JournalReadBudget::new(max).map_err(|source| CaptureWitnessError::Store {
         key: key.into(),
         source: Box::new(source),

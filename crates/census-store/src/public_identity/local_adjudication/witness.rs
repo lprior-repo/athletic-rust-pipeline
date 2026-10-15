@@ -107,7 +107,7 @@ impl LocalAdjudicationWitnessV1 {
         reader
             .affected_context(&record.affected_context)?
             .validate(&inputs, record)?;
-        let claims = claims::inventory(&inputs, &members)?;
+        let claims = claims::membership_inventory(&inputs, &members, previous, records)?;
         let request = record
             .history_request(&claims)
             .map_err(PublicIdentityError::from)?;

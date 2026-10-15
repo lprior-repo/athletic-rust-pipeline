@@ -83,6 +83,16 @@ impl<'a> StageTarget<'a> {
         let key = object_chunk_key(object, index)?;
         let value = wire::chunk(object, index, bytes, digest)?;
         persist_row(self.store, &key, &value, self.presence)?;
+        #[cfg(feature = "native-fault-injection")]
+        if matches!(self.presence, ObjectPresence::Staging) {
+            crate::native_worker_boundary::pause(
+                crate::native_worker_boundary::Position::JournalContextChunkCommittedBeforeNext {
+                    index,
+                },
+                object,
+                &object_digest(&value),
+            )?;
+        }
         self.physical.chunks.push(object_digest(&value));
         Ok(())
     }
@@ -158,7 +168,7 @@ fn persist_row_locked(
         .map_err(|source| StoreError::Write { source })
 }
 
-fn require_equal(key: &[u8], existing: &[u8], expected: &[u8]) -> StoreResult<()> {
+pub(super) fn require_equal(key: &[u8], existing: &[u8], expected: &[u8]) -> StoreResult<()> {
     if existing != expected {
         return Err(refused(&format!(
             "immutable physical row conflicts at {key:?}"
@@ -167,7 +177,7 @@ fn require_equal(key: &[u8], existing: &[u8], expected: &[u8]) -> StoreResult<()
     Ok(())
 }
 
-fn read_row(store: &Store, key: &[u8]) -> StoreResult<Option<fjall::Slice>> {
+pub(super) fn read_row(store: &Store, key: &[u8]) -> StoreResult<Option<fjall::Slice>> {
     let snapshot = store.db.snapshot();
     if let Some(length) = snapshot
         .size_of(&store.journal, key)
@@ -181,7 +191,7 @@ fn read_row(store: &Store, key: &[u8]) -> StoreResult<Option<fjall::Slice>> {
         .map_err(|source| StoreError::Read { source })
 }
 
-fn verify_namespace(store: &Store, plan: &ObjectPlan) -> StoreResult<()> {
+pub(super) fn verify_namespace(store: &Store, plan: &ObjectPlan) -> StoreResult<()> {
     let object = &plan.staged.object;
     [
         (object_chunk_prefix(object)?, plan.staged.chunks),

@@ -1,8 +1,9 @@
+pub(in crate::public_identity) mod admission;
 pub(in crate::public_identity) mod affected;
-mod claims;
+pub(in crate::public_identity) mod claims;
 mod consume;
 pub(in crate::public_identity) mod fence;
-mod prepare;
+pub(in crate::public_identity) mod prepare;
 pub(in crate::public_identity) use consume::{consume, ApprovedLocalAdjudicationV1};
 
 use crate::StoreRevision;

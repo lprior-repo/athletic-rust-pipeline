@@ -1,9 +1,8 @@
 use super::super::report::Findings;
-use census_domain::model::CanonicalAthlete;
 use std::collections::BTreeMap;
 
-pub(super) fn verify(ordered: &[&CanonicalAthlete], printed: &[String], findings: &mut Findings) {
-    let expected = count_ids(ordered.iter().map(|athlete| athlete.id.as_str()));
+pub(super) fn verify(ordered: &[String], printed: &[String], findings: &mut Findings) {
+    let expected = count_ids(ordered.iter().map(String::as_str));
     let actual = count_ids(printed.iter().map(String::as_str));
     report_excess(&expected, &actual, findings);
     report_missing(&expected, &actual, findings);

@@ -1,11 +1,14 @@
 use super::reads::Tables;
 use crate::export::ExportDataset;
+use crate::report::ReportResult;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     EventKind,
 };
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
+
+type AthletePopulation<'a> = (Cow<'a, [CanonicalAthlete]>, &'a HashMap<String, String>);
 
 pub(super) struct Scanned<'a> {
     pub(super) schools: Vec<CanonicalSchool>,
@@ -19,21 +22,19 @@ pub(super) struct Scanned<'a> {
 }
 
 impl<'a> Scanned<'a> {
-    pub(super) fn of(dataset: &'a ExportDataset) -> Self {
+    pub(super) fn of(dataset: &'a ExportDataset) -> ReportResult<Self> {
         let (event_ids, unmapped_event_ids) = event_indices(dataset);
-        Self {
+        let (athletes, aliases) = athlete_population(dataset)?;
+        Ok(Self {
             schools: dataset.schools.values().cloned().collect(),
             coaches: &dataset.coaches,
             meets: &dataset.meets,
-            athletes: super::super::derivation::borrowed_or_collapsed(
-                &dataset.athletes,
-                &dataset.canonical_aliases,
-            ),
-            aliases: &dataset.canonical_aliases,
+            athletes,
+            aliases,
             performances: &dataset.performances,
             event_ids,
             unmapped_event_ids,
-        }
+        })
     }
 
     pub(super) fn tables(&self) -> Tables<'_> {
@@ -46,6 +47,26 @@ impl<'a> Scanned<'a> {
             performances: self.performances,
         }
     }
+}
+
+pub(super) fn athlete_population(dataset: &ExportDataset) -> ReportResult<AthletePopulation<'_>> {
+    let Some(_) = dataset.selected_profile_id() else {
+        return Ok((
+            super::super::derivation::borrowed_or_collapsed(
+                &dataset.athletes,
+                &dataset.canonical_aliases,
+            ),
+            &dataset.canonical_aliases,
+        ));
+    };
+    let identities = dataset.verified_public_identities()?;
+    let aliases = identities.aliases();
+    let mut athletes = super::super::derivation::borrowed_or_collapsed(&dataset.athletes, aliases);
+    let accepted = |athlete: &CanonicalAthlete| identities.public_id(athlete.id.as_str()).is_some();
+    if !athletes.iter().all(accepted) {
+        athletes.to_mut().retain(accepted);
+    }
+    Ok((athletes, aliases))
 }
 
 fn event_indices(dataset: &ExportDataset) -> (HashSet<String>, HashSet<String>) {

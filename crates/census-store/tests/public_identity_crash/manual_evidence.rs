@@ -63,6 +63,7 @@ pub(super) fn install(store: &Store, writer: &PublicIdentityWriterV1) -> TestRes
     let request = split_request(store, writer, &case, canonical)?;
     check!(eq; request.affected_record_keys, results::expected_keys(&candidates)?);
     Ok(Plan {
+        snapshot_sequence: store.snapshot().sequence(),
         identity: store.store_identity()?,
         head: writer.head(store)?,
         candidates,

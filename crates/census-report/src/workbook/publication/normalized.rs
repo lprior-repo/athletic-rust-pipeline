@@ -1,4 +1,5 @@
 use crate::bests::SharedSelection;
+#[cfg(test)]
 use crate::export::ExportDataset;
 use crate::report::{Derivation, EventAdmission, ReportError, ReportResult};
 use crate::workbook::Options;
@@ -23,6 +24,7 @@ type PerformanceIndex<'a> = std::collections::BTreeMap<
     &'a census_domain::model::CanonicalPerformance,
 >;
 
+#[cfg(test)]
 pub(in crate::workbook) fn write(
     directory: &Path,
     dataset: &ExportDataset,
@@ -30,25 +32,90 @@ pub(in crate::workbook) fn write(
     bests: &[SharedSelection],
     exclusions: &[crate::bests::CombinedExclusion],
 ) -> ReportResult<super::inventory::RowCounts> {
-    let admission = EventAdmission::of(dataset)?;
+    if dataset.selected_profile_id().is_some() {
+        return Err(defect(
+            "selected participation policy requires verified frozen evidence",
+        ));
+    }
+    crate::bests::participation::ParticipationSelection::of(dataset)?;
     let derivation = Derivation::of(
         dataset,
         options.scope,
         options.grad_year,
         &options.jurisdictions,
-    );
-    let performances = integrity::validate(&derivation, &admission, bests)?;
-    let schools = schools::included(&derivation, bests, &performances)?;
+    )?;
+    write_rows(directory, &derivation, options, bests, exclusions)
+}
+
+pub(in crate::workbook) fn write_outcome(
+    directory: &Path,
+    derivation: &Derivation<'_>,
+    options: &Options,
+    outcome: &crate::bests::SelectionOutcome,
+) -> ReportResult<super::inventory::RowCounts> {
+    let dataset = derivation.dataset();
+    let revision = super::selected::revision(dataset)?;
+    derivation.ensure_selected_affiliation()?;
+    if derivation.scope() != options.scope
+        || derivation.grad_year() != options.grad_year
+        || derivation.jurisdictions() != options.jurisdictions
+    {
+        return Err(defect(
+            "normalized selection differs from its bound derivation",
+        ));
+    }
+    if revision != super::selected::REVISION && !outcome.participation_exclusions.is_empty() {
+        return Err(defect(
+            "historical output cannot discard participation exclusions",
+        ));
+    }
+    let mut counts = write_rows(
+        directory,
+        derivation,
+        options,
+        &outcome.selections,
+        &outcome.combined_exclusions,
+    )?;
+    if revision == super::selected::REVISION {
+        counts.insert(
+            "current_affiliations.csv".into(),
+            super::current_affiliations::write(directory, dataset)?,
+        );
+        counts.insert(
+            "participation_exclusions.csv".into(),
+            super::participation_exclusions::write(
+                directory,
+                dataset,
+                dataset.verified_participation()?,
+                outcome,
+            )?,
+        );
+    }
+    Ok(counts)
+}
+
+fn write_rows(
+    directory: &Path,
+    derivation: &Derivation<'_>,
+    options: &Options,
+    bests: &[SharedSelection],
+    exclusions: &[crate::bests::CombinedExclusion],
+) -> ReportResult<super::inventory::RowCounts> {
+    let dataset = derivation.dataset();
+    crate::workbook::public_identity::preflight(dataset, derivation.athletes())?;
+    let admission = EventAdmission::of(dataset)?;
+    let performances = integrity::validate(derivation, &admission, bests)?;
+    let schools = schools::included(derivation, bests, &performances)?;
     census_store::fs::create_dir_all_synced(directory)
         .map_err(|source| crate::report::io_error(directory, source))?;
     Ok(std::collections::BTreeMap::from([
         (
             "athletes.csv".into(),
-            athletes::write(directory, &derivation, bests)?,
+            athletes::write(directory, derivation, bests)?,
         ),
         (
             "best_marks.csv".into(),
-            best_marks::write(directory, &derivation, bests, &performances)?,
+            best_marks::write(directory, derivation, bests, &performances)?,
         ),
         (
             "schools.csv".into(),
@@ -56,7 +123,7 @@ pub(in crate::workbook) fn write(
         ),
         (
             "coach_contacts.csv".into(),
-            coach_contacts::write(directory, &derivation, options.school_year)?,
+            coach_contacts::write(directory, derivation, options.school_year)?,
         ),
         (
             "comparison_classes.csv".into(),
@@ -64,12 +131,12 @@ pub(in crate::workbook) fn write(
         ),
         (
             "provenance.csv".into(),
-            provenance::write(directory, &derivation, &schools, bests, &performances)?,
+            provenance::write(directory, derivation, &schools, bests, &performances)?,
         ),
         ("coverage.csv".into(), coverage::write(directory, dataset)?),
         (
             "identity_aliases.csv".into(),
-            identity_aliases::write(directory, &derivation)?,
+            identity_aliases::write(directory, derivation)?,
         ),
         (
             "combined_exclusions.csv".into(),
@@ -78,7 +145,7 @@ pub(in crate::workbook) fn write(
     ]))
 }
 
-fn write_csv(
+pub(in crate::workbook::publication) fn write_csv(
     path: &Path,
     header: &[&str],
     body: impl FnOnce(&mut Rows<'_>) -> ReportResult<()>,
@@ -130,7 +197,7 @@ fn write_body(
     Ok(rows.count)
 }
 
-struct Rows<'a> {
+pub(in crate::workbook::publication) struct Rows<'a> {
     count: u64,
     writer: csv::Writer<std::fs::File>,
     path: &'a Path,
@@ -138,7 +205,10 @@ struct Rows<'a> {
 }
 
 impl Rows<'_> {
-    fn push<const N: usize>(&mut self, fields: [String; N]) -> ReportResult<()> {
+    pub(in crate::workbook::publication) fn push<const N: usize>(
+        &mut self,
+        fields: [String; N],
+    ) -> ReportResult<()> {
         self.admission.record(&fields.as_slice())?;
         self.write_fields(fields)
     }

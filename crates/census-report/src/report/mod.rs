@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 mod error;
+pub(crate) mod file_digest;
 mod resource;
 pub(crate) use error::{artifact_corrupt, io_error, semantic_mismatch, verifier_input, xlsx_error};
 pub use error::{CorruptionClass, ReportError, ReportResult};
@@ -31,7 +32,7 @@ pub use coverage::{
     GapClass, JurisdictionCoverage, UNKNOWN_JURISDICTION,
 };
 pub(crate) use derivation::cohort_candidates;
-pub use derivation::Derivation;
+pub use derivation::{CurrentAffiliationExclusion, Derivation};
 pub use projection::build_census;
 pub use writer::write_census;
 
@@ -178,3 +179,6 @@ pub struct MeetCoverage {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(crate) use coverage::split_identity_fixture;

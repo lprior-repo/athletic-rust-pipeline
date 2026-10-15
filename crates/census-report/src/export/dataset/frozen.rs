@@ -1,11 +1,12 @@
 use super::{DatasetLineage, ExportDataset};
-use crate::report::{io_error, ExportResourceError, ReportError, ReportResult};
+use crate::report::{io_error, ReportError, ReportResult};
 use census_store::clock::{Clock, SystemClock};
 use census_store::{Store, StoreSnapshot, Table};
-use codec::FrozenCodecError;
+mod utility;
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+pub(super) use utility::{capture_lock, codec_error};
 
 mod io;
 pub(super) mod job;
@@ -30,6 +31,8 @@ mod materialize;
 mod objects;
 #[cfg(test)]
 mod pinned_run_metadata_tests;
+mod proof_inventory;
+pub(crate) mod proof_objects;
 mod reader;
 mod recover;
 mod references;
@@ -90,6 +93,8 @@ const INPUT_TABLES: [Table; 16] = [
 struct Frozen<'a> {
     lineage: &'a DatasetLineage,
     data: &'a ExportDataset,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    selected_proofs: Option<&'a super::selected_proofs::SelectedProofsV1>,
 }
 
 pub(super) fn freeze_v2(store: &Store, job: &str) -> ReportResult<FrozenRoot> {
@@ -164,6 +169,17 @@ pub(super) fn ensure_snapshot(
     dataset: &ExportDataset,
     snapshot: &StoreSnapshot<'_>,
 ) -> ReportResult<()> {
+    if dataset
+        .selection
+        .as_ref()
+        .is_some_and(|binding| binding.authority.is_some())
+    {
+        let authority = dataset.selected_authority()?;
+        let accepted = snapshot
+            .accepted_public_identity_snapshot()?
+            .ok_or_else(|| invalid("selected authority disappeared from the current snapshot"))?;
+        authority.ensure_identity(&accepted)?;
+    }
     if snapshot.tables_digest(&INPUT_TABLES)? != dataset.lineage.source_digest {
         return Err(invalid(
             "stale or foreign export input cannot publish changed source evidence",
@@ -176,10 +192,11 @@ pub(super) fn archive_digest(dataset: &ExportDataset) -> ReportResult<String> {
     digest(&Frozen {
         lineage: &dataset.lineage,
         data: dataset,
+        selected_proofs: dataset.selected_proofs.as_ref(),
     })
 }
 
-pub(super) fn save(dataset: &ExportDataset, path: &Path) -> ReportResult<()> {
+pub(super) fn ensure_binding(dataset: &ExportDataset) -> ReportResult<()> {
     if digest(dataset)? != dataset.lineage.input_digest
         || generation(&dataset.lineage)? != dataset.lineage.input_generation
     {
@@ -187,17 +204,41 @@ pub(super) fn save(dataset: &ExportDataset, path: &Path) -> ReportResult<()> {
             "export dataset changed after its input generation was captured",
         ));
     }
+    Ok(())
+}
+
+pub(super) fn save(dataset: &ExportDataset, path: &Path) -> ReportResult<()> {
+    ensure_binding(dataset)?;
+    if let Some(proofs) = &dataset.selected_proofs {
+        proofs.copy_objects(&proof_directory(path)?)?;
+    }
     io::write_json(
         path,
         &Frozen {
             lineage: &dataset.lineage,
             data: dataset,
+            selected_proofs: dataset.selected_proofs.as_ref(),
         },
     )
 }
 
 pub(super) fn reopen(path: &Path) -> ReportResult<ExportDataset> {
-    archive::reopen(path, |_| Ok(()))
+    archive::reopen(path, None, |_| Ok(()))
+}
+
+pub(super) fn reopen_bound(path: &Path, expected: &str) -> ReportResult<ExportDataset> {
+    archive::reopen(path, Some(expected), |_| Ok(()))
+}
+
+pub(super) fn proof_directory(path: &Path) -> ReportResult<PathBuf> {
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| invalid("frozen proof archive has no UTF-8 file name"))?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| invalid("frozen archive has no parent"))?;
+    Ok(parent.join(format!("{name}.proofs")))
 }
 
 fn generation(lineage: &DatasetLineage) -> ReportResult<String> {
@@ -225,55 +266,9 @@ fn hex_digest(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
-pub(super) fn capture_lock(lock_path: &Path) -> ReportResult<std::fs::File> {
-    let lock = std::fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(lock_path)
-        .map_err(|source| io_error(lock_path, source))?;
-    lock.try_lock().map_err(|error| {
-        let source = match error {
-            std::fs::TryLockError::WouldBlock => std::io::Error::new(
-                std::io::ErrorKind::WouldBlock,
-                "export input is already being captured",
-            ),
-            std::fs::TryLockError::Error(source) => source,
-        };
-        io_error(lock_path, source)
-    })?;
-    Ok(lock)
-}
-
 fn invalid(detail: &str) -> ReportError {
     ReportError::Invariant {
         detail: detail.to_string(),
-    }
-}
-
-fn codec_error(error: FrozenCodecError) -> ReportError {
-    match error {
-        FrozenCodecError::RowTooLarge { what, bytes, max } => {
-            ExportResourceError::RowTooLarge { what, bytes, max }.into()
-        }
-        FrozenCodecError::BudgetExceeded {
-            what,
-            needed,
-            available,
-        } => ExportResourceError::BudgetExceeded {
-            what,
-            needed,
-            available,
-        }
-        .into(),
-        FrozenCodecError::NeedsPartition { what, bytes, max } => {
-            ExportResourceError::NeedsPartition { what, bytes, max }.into()
-        }
-        other => ReportError::ArtifactCorrupt {
-            path: PathBuf::new(),
-            detail: format!("frozen codec: {other}"),
-        },
     }
 }
 

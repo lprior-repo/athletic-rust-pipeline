@@ -10,6 +10,7 @@ use crate::{CrawlError, CrawlResult};
 use census_domain::model::{flip_last_first, Gender, GradYear};
 use regex::Regex;
 
+mod current;
 mod owner;
 const MAX_BODY_BYTES: usize = 8 * 1024 * 1024;
 const MAX_ROWS: usize = 20_000;
@@ -23,13 +24,17 @@ pub fn parse_captured_roster(
 ) -> CrawlResult<RosterVerdict> {
     body_bound(html)?;
     owner::validate_capture(html, &team, capture)?;
-    parse_rows(html, team)
+    parse_rows(html, team, StatementAuthority::Owned)
 }
 
 pub fn parse_roster(html: &str, team: TeamRef) -> CrawlResult<RosterVerdict> {
     body_bound(html)?;
-    owner::validate_published(html, &team)?;
-    parse_rows(html, team)
+    let authority = if owner::validate_published(html, &team)? {
+        StatementAuthority::Owned
+    } else {
+        StatementAuthority::Unknown
+    };
+    parse_rows(html, team, authority)
 }
 
 #[derive(Default)]
@@ -39,14 +44,23 @@ struct Parsed {
     unfinished: Option<SourceRowLocator>,
 }
 
-fn parse_rows(html: &str, team: TeamRef) -> CrawlResult<RosterVerdict> {
+enum StatementAuthority {
+    Owned,
+    Unknown,
+}
+
+fn parse_rows(
+    html: &str,
+    team: TeamRef,
+    authority: StatementAuthority,
+) -> CrawlResult<RosterVerdict> {
     let fields = Fields {
         link: athlete_link_regex()?,
         gender: gender_cell_regex()?,
         graduation: grad_cell_regex()?,
         seasons: season_cell_regex()?,
     };
-    let parsed = athlete_row_regex()?
+    let mut parsed = athlete_row_regex()?
         .captures_iter(html)
         .take(MAX_ROWS + 1)
         .enumerate()
@@ -67,6 +81,9 @@ fn parse_rows(html: &str, team: TeamRef) -> CrawlResult<RosterVerdict> {
             }
             Ok::<_, CrawlError>(parsed)
         })?;
+    if matches!(authority, StatementAuthority::Owned) {
+        current::bind(html, &team, &mut parsed.athletes, &fields);
+    }
     Ok(verdict(html, team, parsed))
 }
 

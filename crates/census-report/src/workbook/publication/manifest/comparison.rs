@@ -7,6 +7,7 @@ pub(in crate::workbook) struct ComparisonInput {
     bytes: u64,
     digest: String,
     rows: usize,
+    artifact_revision: u32,
 }
 
 impl ComparisonInput {
@@ -16,6 +17,10 @@ impl ComparisonInput {
 
     pub(in crate::workbook) fn generation(&self) -> &str {
         &self.generation
+    }
+
+    pub(in crate::workbook) fn artifact_revision(&self) -> u32 {
+        self.artifact_revision
     }
 
     pub(in crate::workbook) fn binding(&self) -> (u64, &str, usize) {
@@ -53,6 +58,7 @@ pub(in crate::workbook) fn comparison_input(
         })?;
     Ok(ComparisonInput {
         directory,
+        artifact_revision: manifest.schema_revision,
         generation: manifest.generation_digest,
         bytes: artifact.bytes,
         digest: artifact.sha256.clone(),

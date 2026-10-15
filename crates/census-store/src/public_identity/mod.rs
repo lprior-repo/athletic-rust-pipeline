@@ -12,6 +12,13 @@ pub use local_adjudication::{
 pub(crate) mod frozen;
 mod init;
 mod inventory;
+mod membership;
+mod membership_withholding;
+pub use membership::{SourceCandidateMembershipOutcomeV1, SourceCandidateMembershipRequestV1};
+pub use membership_withholding::{
+    MembershipWithholdingInventoryV1, MembershipWithholdingOutcomeV1,
+    PreparedMembershipWithholdingV1,
+};
 mod operation;
 pub(crate) mod qualification;
 mod retained;
@@ -109,3 +116,5 @@ impl IdentityCommitOutcomeV1 {
         self.replayed
     }
 }
+
+pub(crate) use local_adjudication::admission::Permit as ManualContextPermit;

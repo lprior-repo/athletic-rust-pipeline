@@ -12,6 +12,7 @@ use tempfile::TempDir;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod counts;
+mod current_affiliation;
 mod gaps;
 mod lifecycle;
 mod published_cohort;
@@ -27,7 +28,7 @@ fn coverage_of(store: &Store, grad_year: Option<i16>) -> TestResult<CoverageRepo
 fn census_of(store: &Store, scope: crate::report::Scope) -> TestResult<crate::report::Census> {
     let dataset = crate::export::ExportDataset::load(store)?;
     Ok(crate::report::build_census(
-        &crate::report::Derivation::of(&dataset, scope, None, &[]),
+        &crate::report::Derivation::of(&dataset, scope, None, &[])?,
         &store.out_dir(),
     ))
 }
@@ -35,7 +36,11 @@ fn census_of(store: &Store, scope: crate::report::Scope) -> TestResult<crate::re
 fn fixture_store() -> TestResult<(TempDir, Store)> {
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
+    populate_fixture(&store, fixture_source)?;
+    Ok((dir, store))
+}
 
+fn populate_fixture(store: &Store, source: fn(&str) -> SourceIdentity) -> TestResult {
     let (school_a, school_a_id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford", None);
     store.append(Table::Schools, &school_a)?;
@@ -74,7 +79,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         "Rae Lindgren",
         GradYear::CO2027,
         Gender::Girls,
-        fixture_source("wi-mirror"),
+        source("wi-mirror"),
     )?;
     wi_mirror.evidence.push(evidence("athleticlive_athletes"));
     store.append(Table::Athletes, &wi_mirror)?;
@@ -84,7 +89,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         "Nora Halvorsen",
         GradYear::CO2027,
         Gender::Girls,
-        fixture_source("mn-runner"),
+        source("mn-runner"),
     )?;
     mn_athlete.evidence.push(evidence("delphi_timing"));
     store.append(Table::Athletes, &mn_athlete)?;
@@ -93,7 +98,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         "Older Halvorsen",
         GradYear::new(2028).ok_or("invalid graduation year")?,
         Gender::Boys,
-        fixture_source("mn-younger"),
+        source("mn-younger"),
     )?;
     mn_off_cohort.evidence.push(evidence("delphi_timing"));
     store.append(Table::Athletes, &mn_off_cohort)?;
@@ -106,7 +111,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         "Younger Kansan",
         GradYear::new(2028).ok_or("invalid graduation year")?,
         Gender::Girls,
-        fixture_source("ks-younger"),
+        source("ks-younger"),
     )?;
     ks_off_cohort.evidence.push(evidence("kshsaa_results"));
     store.append(Table::Athletes, &ks_off_cohort)?;
@@ -116,7 +121,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         "Theo Vance",
         GradYear::CO2027,
         Gender::Boys,
-        fixture_source("il-runner"),
+        source("il-runner"),
     )?;
     il_athlete.evidence.push(evidence("ihsa_results"));
     il_athlete
@@ -129,7 +134,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         "Unplaced Runner",
         GradYear::CO2027,
         Gender::Boys,
-        fixture_source("unplaced"),
+        source("unplaced"),
     )?;
     unplaced.evidence.push(evidence("ohsaa_results"));
     store.append(Table::Athletes, &unplaced)?;
@@ -229,7 +234,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
         "Never Stored",
         GradYear::CO2027,
         Gender::Boys,
-        fixture_source("never-stored"),
+        source("never-stored"),
     )?;
     let orphan = performance(
         &never_stored,
@@ -240,7 +245,7 @@ fn fixture_store() -> TestResult<(TempDir, Store)> {
     )?;
     store.append(Table::Performances, &orphan)?;
 
-    Ok((dir, store))
+    Ok(())
 }
 
 fn fixture_source(id: &str) -> SourceIdentity {

@@ -1,13 +1,37 @@
 use super::SharedSelection;
 use crate::csv_safety::Protected;
+use crate::export::current_school::CurrentSchoolFields;
+use crate::export::public_identity::output::AcceptedIdentityFields;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
 
-pub(super) struct Row<'a>(&'a SharedSelection);
+pub(super) struct Row<'a> {
+    selection: &'a SharedSelection,
+    identity: Option<AcceptedIdentityFields<'a>>,
+    current: Option<CurrentSchoolFields<'a>>,
+}
 
 impl<'a> From<&'a SharedSelection> for Row<'a> {
     fn from(row: &'a SharedSelection) -> Self {
-        Self(row)
+        Self {
+            selection: row,
+            identity: None,
+            current: None,
+        }
+    }
+}
+
+impl<'a> Row<'a> {
+    pub(super) fn selected(
+        selection: &'a SharedSelection,
+        identity: AcceptedIdentityFields<'a>,
+        current: CurrentSchoolFields<'a>,
+    ) -> Self {
+        Self {
+            selection,
+            identity: Some(identity),
+            current: Some(current),
+        }
     }
 }
 
@@ -16,21 +40,50 @@ impl Serialize for Row<'_> {
         let mut wire = serializer.serialize_struct(
             "best-result",
             33_usize
-                .checked_add(self.0.inventory.serialized_field_count())
+                .checked_add(self.selection.inventory.serialized_field_count())
+                .and_then(|count| count.checked_add(usize::from(self.identity.is_some())))
+                .and_then(|count| count.checked_add(if self.current.is_some() { 4 } else { 0 }))
                 .ok_or_else(|| {
                     <S::Error as serde::ser::Error>::custom("row field count overflow")
                 })?,
         )?;
-        identity(&mut wire, self.0)?;
-        result(&mut wire, self.0)?;
-        specifications(&mut wire, self.0)?;
-        inventory(&mut wire, self.0)?;
+        let athlete_id = self
+            .identity
+            .as_ref()
+            .map_or(self.selection.athlete_id().as_str(), |identity| {
+                identity.athlete_id().as_str()
+            });
+        identity(&mut wire, self.selection, athlete_id)?;
+        result(&mut wire, self.selection)?;
+        specifications(&mut wire, self.selection)?;
+        inventory(&mut wire, self.selection)?;
+        if let Some(identity) = &self.identity {
+            text(
+                &mut wire,
+                "canonical_candidate_id",
+                identity.canonical_candidate_id().as_str(),
+            )?;
+        }
+        if let Some(current) = self.current {
+            text(&mut wire, "current_school_id", current.current_school_id)?;
+            text(&mut wire, "current_school", current.current_school)?;
+            text(&mut wire, "current_state", current.current_state)?;
+            text(
+                &mut wire,
+                "current_school_as_of",
+                current.current_school_as_of,
+            )?;
+        }
         wire.end()
     }
 }
 
-fn identity<S: SerializeStruct>(wire: &mut S, row: &SharedSelection) -> Result<(), S::Error> {
-    text(wire, "athlete_id", row.key.athlete_id.as_str())?;
+fn identity<S: SerializeStruct>(
+    wire: &mut S,
+    row: &SharedSelection,
+    athlete_id: &str,
+) -> Result<(), S::Error> {
+    text(wire, "athlete_id", athlete_id)?;
     text(wire, "name", &row.athlete.name)?;
     wire.serialize_field("school", &row.athlete.school.as_deref().map(Protected))?;
     text(wire, "state", row.athlete.athlete_state.code())?;

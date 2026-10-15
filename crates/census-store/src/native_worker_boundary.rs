@@ -11,6 +11,7 @@ pub(crate) enum Position {
     SourceBatchStagedBeforeCommit { ordinal: u64 },
     SourceChunkCommittedBeforeNext { ordinal: u64 },
     DerivedBatchStagedBeforePublish { generation: u64 },
+    JournalContextChunkCommittedBeforeNext { index: usize },
     PublicIdentityStagedBeforeCommit { sequence: u64 },
     PublicIdentityCommittedBeforeReturn { sequence: u64 },
 }
@@ -21,6 +22,9 @@ impl Position {
             Self::SourceBatchStagedBeforeCommit { .. } => "source_batch_staged_before_commit",
             Self::SourceChunkCommittedBeforeNext { .. } => "source_chunk_committed_before_next",
             Self::DerivedBatchStagedBeforePublish { .. } => "derived_batch_staged_before_publish",
+            Self::JournalContextChunkCommittedBeforeNext { .. } => {
+                "journal_context_chunk_committed_before_next"
+            }
             Self::PublicIdentityStagedBeforeCommit { .. } => "public_identity_staged_before_commit",
             Self::PublicIdentityCommittedBeforeReturn { .. } => {
                 "public_identity_committed_before_return"
@@ -77,6 +81,7 @@ fn marker_path(position: Position) -> StoreResult<Option<PathBuf>> {
         "source_batch_staged_before_commit"
             | "source_chunk_committed_before_next"
             | "derived_batch_staged_before_publish"
+            | "journal_context_chunk_committed_before_next"
             | "public_identity_staged_before_commit"
             | "public_identity_committed_before_return"
     ) {

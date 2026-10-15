@@ -11,6 +11,8 @@ mod controller;
 mod fixture;
 #[path = "public_identity_crash/manual.rs"]
 mod manual;
+#[path = "public_identity_crash/membership.rs"]
+mod membership;
 #[path = "public_identity_crash/oracle.rs"]
 mod oracle;
 #[path = "public_identity_crash/physical.rs"]

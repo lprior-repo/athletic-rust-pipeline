@@ -17,6 +17,10 @@ pub(in crate::cli) struct LocalAdjudicationArgs {
 
 #[derive(Debug, Subcommand)]
 enum LocalCommand {
+    #[command(
+        about = "Explicitly enroll the bounded split/withholding context budget before the first identity operation"
+    )]
+    EnrollContextBudget,
     #[command(about = "Read the complete retained claim inventory for a public identity")]
     Inspect {
         #[arg(long, value_name = "PUBLIC_ID", value_parser = PublicAthleteId::parse)]
@@ -35,6 +39,35 @@ enum LocalCommand {
         )]
         file: PathBuf,
     },
+    #[command(
+        about = "Read the exact detached membership set and affected inventory without writing"
+    )]
+    PreviewMembership {
+        #[arg(long, value_parser = PublicAthleteId::parse)]
+        canonical: PublicAthleteId,
+        #[arg(long)]
+        sequence: u64,
+        #[arg(long)]
+        digest: String,
+        #[arg(long)]
+        membership_id: String,
+    },
+    #[command(
+        about = "Withhold one exact source-candidate attachment after complete local terminal review"
+    )]
+    WithholdMembership {
+        #[arg(long, value_name = "OPERATION_ID")]
+        operation: String,
+        #[arg(long, value_name = "JSON")]
+        file: PathBuf,
+    },
+    #[command(about = "Read an approved source-membership withholding receipt")]
+    MembershipReceipt {
+        #[arg(long, value_name = "OPERATION_ID")]
+        operation: String,
+        #[arg(long, value_name = "SHA256")]
+        approval_digest: String,
+    },
     #[command(about = "Read a previously committed operation with its exact approved digest")]
     Receipt {
         #[arg(long, value_name = "OPERATION_ID")]
@@ -47,8 +80,26 @@ enum LocalCommand {
 pub(in crate::cli) fn run(cli: &crate::cli::Cli, args: &LocalAdjudicationArgs) -> Result<()> {
     let root = require_root(cli.store.as_deref())?;
     match &args.command {
+        LocalCommand::EnrollContextBudget => {
+            let (store, writer) = open(root)?;
+            writer.enroll_manual_context_admission_v1(&store)?;
+            emit(&serde_json::json!({ "schema": "manual-context-admission/v2", "enrolled": true }))
+        }
         LocalCommand::Inspect { canonical } => inspect(root, canonical),
         LocalCommand::Split { operation, file } => split(root, operation, file),
+        LocalCommand::PreviewMembership {
+            canonical,
+            sequence,
+            digest,
+            membership_id,
+        } => super::membership::preview(root, canonical, *sequence, digest, membership_id),
+        LocalCommand::WithholdMembership { operation, file } => {
+            super::membership::withhold(root, operation, file)
+        }
+        LocalCommand::MembershipReceipt {
+            operation,
+            approval_digest,
+        } => super::membership::receipt(root, operation, approval_digest),
         LocalCommand::Receipt {
             operation,
             approval_digest,
@@ -60,7 +111,7 @@ fn require_root(root: Option<&Path>) -> Result<&Path> {
     root.context("local-identity-adjudication requires explicit --store and a stopped store owner")
 }
 
-fn open(root: &Path) -> Result<(Store, PublicIdentityWriterV1)> {
+pub(super) fn open(root: &Path) -> Result<(Store, PublicIdentityWriterV1)> {
     Ok(Store::open_public_identity_qualification_v2(root)
         .context("opening the existing V2 identity qualification store; stop its owner first")?
         .into_parts())
@@ -148,7 +199,7 @@ fn emit_outcome(
     })
 }
 
-fn emit(value: &impl Serialize) -> Result<()> {
+pub(super) fn emit(value: &impl Serialize) -> Result<()> {
     let mut output = std::io::stdout().lock();
     serde_json::to_writer(&mut output, value)
         .context("encoding local identity adjudication output")?;

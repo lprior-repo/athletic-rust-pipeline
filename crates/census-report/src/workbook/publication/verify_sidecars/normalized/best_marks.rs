@@ -5,12 +5,15 @@ use super::{
     rows::{self, Row},
 };
 use crate::bests::SharedSelection;
+use crate::export::public_identity::population::IdentityPopulation;
 use crate::report::ReportResult;
+use crate::workbook::verify::public_identity::{self, Expected};
 use census_domain::model::{CanonicalPerformance, Mark};
 use std::collections::BTreeMap;
 use std::path::Path;
 
 type Performances<'a> = BTreeMap<&'a str, &'a CanonicalPerformance>;
+type ExpectedBests<'a> = BTreeMap<(String, String), &'a SharedSelection>;
 
 pub(super) fn verify(
     directory: &Path,
@@ -18,10 +21,7 @@ pub(super) fn verify(
     bests: &[SharedSelection],
     revision: Revision,
 ) -> ReportResult<u64> {
-    let expected = bests
-        .iter()
-        .map(|best| Ok(((best.athlete_id().to_string(), classes::id(best)?), best)))
-        .collect::<ReportResult<BTreeMap<_, _>>>()?;
+    let expected = expected_bests(inputs, bests)?;
     let performances: Performances<'_> = inputs
         .derivation
         .performances()
@@ -30,7 +30,10 @@ pub(super) fn verify(
         .collect();
     rows::table(
         directory,
-        ("best_marks.csv", &revision.best_headers()),
+        (
+            "best_marks.csv",
+            &public_identity::headers(inputs.dataset, &revision.best_headers()),
+        ),
         expected.len(),
         &["athlete_id", "comparison_class_id"],
         |row| {
@@ -46,8 +49,13 @@ pub(super) fn verify(
                 .get(performance_id)
                 .copied()
                 .ok_or_else(|| rows::missing("performance", performance_id))?;
+            super::athletes::public::public_identity_row(
+                row,
+                inputs.dataset,
+                best.athlete_id().as_str(),
+            )?;
             selected(row, inputs, best, performance)?;
-            inventory(row, best, &performances, revision)?;
+            inventory(row, inputs, best, &performances, revision)?;
             source(row, inputs, performance)?;
             row.number(
                 "selection_policy_version",
@@ -58,6 +66,24 @@ pub(super) fn verify(
     )
 }
 
+fn expected_bests<'a>(
+    inputs: &Inputs<'_>,
+    bests: &'a [SharedSelection],
+) -> ReportResult<ExpectedBests<'a>> {
+    bests
+        .iter()
+        .map(|best| {
+            Ok((
+                (
+                    Expected::of(inputs.dataset, best.athlete_id().as_str())?.athlete_id,
+                    classes::id(best)?,
+                ),
+                best,
+            ))
+        })
+        .collect()
+}
+
 fn selected(
     row: &Row<'_>,
     inputs: &Inputs<'_>,
@@ -65,9 +91,9 @@ fn selected(
     performance: &CanonicalPerformance,
 ) -> ReportResult<()> {
     row.text("performance_id", best.source.performance_id.as_str())?;
-    let identities = inputs.dataset.identities();
-    let canonical = identities.canonical_id(performance.athlete.as_str());
-    if canonical != best.athlete_id().as_str()
+    let identities = IdentityPopulation::of(inputs.dataset)?;
+    if identities.canonical_candidate(performance.athlete.as_str())
+        != Some(best.athlete_id().as_str())
         || inputs.admission.included_kind(&performance.event).is_none()
     {
         return Err(rows::missing(
@@ -131,11 +157,12 @@ fn course(
 
 fn inventory(
     row: &Row<'_>,
+    inputs: &Inputs<'_>,
     best: &SharedSelection,
     performances: &Performances<'_>,
     revision: Revision,
 ) -> ReportResult<()> {
-    let (eligible, tied, ids) = if matches!(revision, Revision::ResultGroups) {
+    let (eligible, tied, ids) = if revision.has_result_groups() {
         row.text("result_group_basis", "canonical_performance_id")?;
         row.text("physical_performance_count_status", "unknown")?;
         (
@@ -159,11 +186,14 @@ fn inventory(
             &best.supporting_tied_candidate_ids(),
         )?;
     }
+    let identities = IdentityPopulation::of(inputs.dataset)?;
     revision.ids(best).iter().try_for_each(|id| {
         let performance = performances
             .get(id.as_str())
             .ok_or_else(|| rows::missing("tied performance", id.as_str()))?;
-        if best.measure().value(&performance.mark) == Some(best.result.value) {
+        if identities.same_group(performance.athlete.as_str(), best.athlete_id().as_str())
+            && best.measure().value(&performance.mark) == Some(best.result.value)
+        {
             Ok(())
         } else {
             Err(rows::missing("tied mark", id.as_str()))

@@ -113,7 +113,7 @@ fn a_stale_exporter_cannot_replace_a_newer_generation() -> TestResult {
         school_year: census_domain::model::SchoolYear::new(2026).ok_or("invalid fixture season")?,
         jurisdictions: Vec::new(),
     };
-    let censuses = crate::workbook::Censuses::of(&newer, &store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&newer, &store.out_dir(), &[])?;
     let published = crate::workbook::build_from(&newer, &store, &options, &censuses)?;
     let error = match Stage::begin(&older, &store, &options) {
         Err(error) => error,
@@ -227,7 +227,7 @@ fn source_advance_during_render_cannot_switch_the_publication_pointer() -> TestR
     };
     let published = crate::workbook::build(&store, &options)?;
     let dataset = ExportDataset::load(&store)?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let stage = Stage::begin(&dataset, &store, &options)?;
     let error = match stage.publish(&dataset, &options, |path| {
         let counts = crate::workbook::write_artifacts(path, &dataset, &options, &censuses)?;

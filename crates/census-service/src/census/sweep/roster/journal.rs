@@ -45,6 +45,28 @@ impl<'a> Records<'a> {
         })
     }
 
+    pub(super) fn bind(&mut self, binding: &super::provenance::Binding<'_>) -> CrawlResult<()> {
+        if self.members.len() != self.athletes.len()
+            || self.members.len() != self.athlete_observations.len()
+        {
+            return Err(CrawlError::Invariant {
+                detail: "roster projection cardinality changed".into(),
+            });
+        }
+        self.members
+            .iter()
+            .zip(&mut self.athletes)
+            .zip(&mut self.athlete_observations)
+            .try_for_each(|((member, athlete), observation)| {
+                let SourceObservation::Athlete(observation) = observation else {
+                    return Err(CrawlError::Invariant {
+                        detail: "roster athlete observation has wrong kind".into(),
+                    });
+                };
+                binding.attach(member, athlete, observation)
+            })
+    }
+
     pub(super) fn stage(&self, store: &Store, batch: &mut StoreBatch<'_>) -> CrawlResult<String> {
         let mut digest = Sha256::new();
         super::effects::stage(

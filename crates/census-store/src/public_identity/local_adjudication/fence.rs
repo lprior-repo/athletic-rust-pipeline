@@ -13,6 +13,9 @@ pub(in crate::public_identity) fn require_available(
     inputs: &crate::public_identity::context::Inputs,
     case_id: &str,
 ) -> StoreResult<()> {
+    crate::public_identity::membership_withholding::fence::require_available(
+        store, records, inputs, case_id,
+    )?;
     let case = inputs
         .cases
         .iter()
@@ -67,10 +70,14 @@ pub(super) fn validate_superseded(
             .ok_or(PublicIdentityError::Corrupt(
                 "missing superseded reviewed witness",
             ))?;
-        let HeldWitness::Reviewed(held) = HeldWitness::decode(&key, &raw)? else {
-            return Err(PublicIdentityError::Corrupt("manual superseded authority kind").into());
+        let (case_id, record_digest) = match HeldWitness::decode(&key, &raw)? {
+            HeldWitness::Reviewed(held) => (held.case_id, held.record_digest),
+            HeldWitness::Membership(held) => (held.request.case_id, held.record_digest),
+            _ => {
+                return Err(PublicIdentityError::Corrupt("manual superseded authority kind").into())
+            }
         };
-        if held.case_id != record.request.case_id || held.record_digest != prior.digest {
+        if case_id != record.request.case_id || record_digest != prior.digest {
             return Err(PublicIdentityError::Corrupt("manual superseded case binding").into());
         }
     }

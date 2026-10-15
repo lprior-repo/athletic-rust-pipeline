@@ -1,5 +1,8 @@
+pub(in crate::bests) mod public_identity;
+mod publication_binding;
 mod result_groups;
-use super::write;
+mod selected_authority;
+use super::write_rows as write;
 use crate::bests::{
     Population, SelectionAthlete, SelectionMeet, SelectionResult, SelectionSource, SharedSelection,
 };
@@ -244,3 +247,5 @@ fn converted_marks_publish_note_and_source_beside_kind_and_basis() -> TestResult
     check!(jsonl_text.contains("tfrrs_in"));
     Ok(())
 }
+
+mod current_affiliation;

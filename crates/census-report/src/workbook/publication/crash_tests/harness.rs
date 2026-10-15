@@ -7,14 +7,14 @@ use std::time::Duration;
 
 mod tests;
 
-pub(super) struct WaitBudget {
+pub(crate) struct WaitBudget {
     polls: usize,
     interval: Duration,
     read_timeout: Duration,
 }
 
 impl WaitBudget {
-    pub(super) const REAL: Self = Self {
+    pub(crate) const REAL: Self = Self {
         polls: 3000,
         interval: Duration::from_millis(10),
         read_timeout: Duration::from_secs(10),
@@ -56,31 +56,83 @@ impl std::error::Error for ChildFailure {
     }
 }
 
-struct OwnedChild(Option<Child>);
+#[derive(Clone, Copy)]
+enum CleanupMode {
+    Kill,
+    Terminate,
+}
+
+struct OwnedChild {
+    child: Option<Child>,
+    mode: CleanupMode,
+    directory: Option<tempfile::TempDir>,
+}
 
 impl Drop for OwnedChild {
     fn drop(&mut self) {
-        if let Some(mut child) = self.0.take() {
-            let cleanup = terminate_and_reap(&mut child);
+        if let Some(mut child) = self.child.take() {
+            let cleanup = terminate_and_reap(&mut child, self.mode);
             if !cleanup.succeeded() {
-                eprintln!("owned fixture child cleanup failed: {cleanup:?}");
+                let retained = self.directory.take().map(tempfile::TempDir::keep);
+                eprintln!(
+                    "owned fixture child cleanup failed: {cleanup:?}; retained: {retained:?}"
+                );
             }
         }
     }
 }
 
 pub(super) fn with_child<T>(
-    mut command: Command,
+    command: Command,
     run: impl FnOnce(&mut Child) -> TestResult<T>,
 ) -> TestResult<T> {
-    let mut guard = OwnedChild(Some(command.spawn()?));
+    with_cleanup(command, CleanupMode::Kill, None, run).map(|(value, _)| value)
+}
+
+pub(crate) fn with_terminated_child<T>(
+    command: Command,
+    directory: tempfile::TempDir,
+    run: impl FnOnce(&mut Child) -> TestResult<T>,
+) -> TestResult<(T, tempfile::TempDir)> {
+    let (value, directory) = with_cleanup(command, CleanupMode::Terminate, Some(directory), run)?;
+    Ok((value, directory.ok_or("owned fixture directory missing")?))
+}
+
+fn with_cleanup<T>(
+    mut command: Command,
+    mode: CleanupMode,
+    directory: Option<tempfile::TempDir>,
+    run: impl FnOnce(&mut Child) -> TestResult<T>,
+) -> TestResult<(T, Option<tempfile::TempDir>)> {
+    let mut guard = OwnedChild {
+        child: Some(command.spawn()?),
+        mode,
+        directory,
+    };
     let result = run(guard
-        .0
+        .child
         .as_mut()
         .ok_or("owned child missing before callback")?);
-    let mut child = guard.0.take().ok_or("owned child missing after callback")?;
-    let cleanup = terminate_and_reap(&mut child);
-    finish(result, cleanup)
+    let mut child = guard
+        .child
+        .take()
+        .ok_or("owned child missing after callback")?;
+    let cleanup = terminate_and_reap(&mut child, mode);
+    if !cleanup.succeeded() {
+        let retained = guard.directory.take().map(tempfile::TempDir::keep);
+        eprintln!("owned fixture cleanup unverified; retained: {retained:?}");
+    }
+    finish(result, cleanup).map(|value| (value, guard.directory.take()))
+}
+
+pub(crate) fn active_intent(
+    store: &census_store::Store,
+    root: &std::path::Path,
+) -> TestResult<census_store::publish::Intent> {
+    let namespace = super::super::binding::namespace(root)?;
+    store
+        .publication_active(&namespace)?
+        .ok_or_else(|| "durable publication intent missing".into())
 }
 
 fn finish<T>(result: TestResult<T>, cleanup: Cleanup) -> TestResult<T> {
@@ -94,7 +146,7 @@ fn finish<T>(result: TestResult<T>, cleanup: Cleanup) -> TestResult<T> {
     }
 }
 
-fn terminate_and_reap(child: &mut Child) -> Cleanup {
+fn terminate_and_reap(child: &mut Child, mode: CleanupMode) -> Cleanup {
     let inspection_error = match child.try_wait() {
         Ok(Some(status)) => {
             return Cleanup {
@@ -106,9 +158,20 @@ fn terminate_and_reap(child: &mut Child) -> Cleanup {
         Ok(None) => None,
         Err(error) => Some(error),
     };
-    let kill_error = child.kill().err();
+    let termination = match mode {
+        CleanupMode::Kill => child.kill(),
+        CleanupMode::Terminate => rustix::process::kill_process(
+            rustix::process::Pid::from_child(child),
+            rustix::process::Signal::TERM,
+        )
+        .map_err(io::Error::from),
+    };
+    let kill_error = termination.err();
     let status = if kill_error.is_none() {
-        child.wait()
+        match mode {
+            CleanupMode::Kill => child.wait(),
+            CleanupMode::Terminate => wait_terminated(child),
+        }
     } else {
         child.try_wait().and_then(|status| {
             status.ok_or_else(|| {
@@ -140,7 +203,7 @@ impl fmt::Display for WaitFailure {
 
 impl std::error::Error for WaitFailure {}
 
-pub(super) fn wait_checkpoint(
+pub(crate) fn wait_checkpoint(
     listener: UnixListener,
     child: &mut Child,
     window: &str,
@@ -191,4 +254,26 @@ fn poll_child(child: &mut Child, interval: Duration) -> Option<TestResult<UnixSt
             None
         }
     }
+}
+
+pub(crate) fn wait_aborted(child: &mut Child) -> TestResult<ExitStatus> {
+    Ok(wait_exit(
+        child,
+        3000,
+        "owned child did not exit after abort checkpoint",
+    )?)
+}
+
+fn wait_terminated(child: &mut Child) -> io::Result<ExitStatus> {
+    wait_exit(child, 200, "owned child was not reaped after SIGTERM")
+}
+
+fn wait_exit(child: &mut Child, polls: usize, detail: &'static str) -> io::Result<ExitStatus> {
+    for _ in 0..polls {
+        if let Some(status) = child.try_wait()? {
+            return Ok(status);
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    Err(io::Error::new(io::ErrorKind::TimedOut, detail))
 }

@@ -6,7 +6,9 @@ mod reports;
 mod row;
 mod support;
 
-pub(crate) use build::build_admitted_outcome;
+#[cfg(test)]
+pub(super) use build::build_outcome;
+pub(crate) use build::{build_admitted_outcome, build_from_derivation, build_selected_outcome};
 pub use build::{build_from_dataset, build_with_exclusions};
 
 use grouping::ReportGroupKey;

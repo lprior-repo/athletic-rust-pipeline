@@ -47,12 +47,12 @@ impl<'a> Expectations<'a> {
     pub(super) fn of(dataset: &'a ExportDataset, options: &Options) -> ReportResult<Self> {
         let admission = crate::report::EventAdmission::of(dataset)?;
         let school_year = options.school_year;
-        let derivation = Derivation::of(
+        let derivation = Derivation::for_publication(
             dataset,
             options.scope,
             options.grad_year,
             &options.jurisdictions,
-        );
+        )?;
         crate::grouping::Admission::new("recruiting schools").rows(derivation.schools())?;
         let school_address = super::postal::athlete_address_index(dataset, derivation.athletes())?;
         let bests = selected_bests(dataset, options)?;

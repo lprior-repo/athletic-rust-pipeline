@@ -13,7 +13,7 @@ pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> 
         inputs.dataset,
         &inputs.out_root,
         &inputs.options.jurisdictions,
-    );
+    )?;
     compare(directory, "census-core.json", &reports.core)?;
     compare(directory, "census-all-sources.json", &reports.all_sources)
 }

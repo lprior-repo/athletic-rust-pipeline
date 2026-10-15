@@ -105,7 +105,8 @@ fn compare_bound(
     staging::Staging::run(|stage| {
         let reference = stage.copy(request.reference, reference_bytes, reference_digest)?;
         let athletes = stage.copy(&publication.athletes(), bytes, digest)?;
-        let mut index = index::Index::read(&athletes, bytes, rows)?;
+        let mut index =
+            index::Index::read(&athletes, bytes, rows, publication.artifact_revision())?;
         let mut counts = reference::compare(
             &reference,
             reference_rows,

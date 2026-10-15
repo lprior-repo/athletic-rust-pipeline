@@ -10,6 +10,10 @@ mod raw;
 mod raw_issue;
 mod raw_rows;
 mod results;
+mod retained_view;
+pub use retained_view::{
+    FrozenRetainedJournal, RecordingRetainedJournal, RetainedJournalBundle, RetainedJournalView,
+};
 mod roster;
 mod wire;
 
@@ -20,15 +24,18 @@ pub use index::{fetch_meet_index, MeetIndexPage, MeetIndexRequest, PageContinuat
 pub use mark::{parse_published_metric_distance, parse_published_time};
 pub use normalize::roster_entities;
 pub use owned::{
-    parse_owned_meet, read_retained_acquisition, CaptureReadBudget, CaptureWitnessError,
-    OwnedAcquisitionRef, OwnedCaptureResourceFailure, OwnedCaptureRetention, OwnedCohort,
-    OwnedCompleteness, OwnedDocumentFailure, OwnedMeetOutcome, OwnedMeetPage, OwnedMeetParseError,
-    OwnedMeetVerdict, OwnedParseArithmetic, OwnedParseLocator, OwnedParseResource,
-    OwnedParseResourceFailure, OwnedPerformance, OwnedRejection, OwnedRejectionKind,
-    OwnedResourceReceipt, VerifiedOwnedAcquisition, MAX_OWNED_BODY_BYTES, OWNED_CAPTURE_PHASE,
-    OWNED_FIELDS, OWNED_MEET_PHASE,
+    parse_owned_meet, read_retained_acquisition, read_retained_acquisition_from, CaptureReadBudget,
+    CaptureWitnessError, OwnedAcquisitionRef, OwnedCaptureResourceFailure, OwnedCaptureRetention,
+    OwnedCohort, OwnedCompleteness, OwnedDocumentFailure, OwnedMeetOutcome, OwnedMeetPage,
+    OwnedMeetParseError, OwnedMeetVerdict, OwnedParseArithmetic, OwnedParseLocator,
+    OwnedParseResource, OwnedParseResourceFailure, OwnedPerformance, OwnedRejection,
+    OwnedRejectionKind, OwnedResourceReceipt, VerifiedOwnedAcquisition, MAX_OWNED_BODY_BYTES,
+    OWNED_CAPTURE_PHASE, OWNED_FIELDS, OWNED_MEET_PHASE,
 };
-pub use owned::{read_retained_owned_result, RetainedResultError, VerifiedRetainedOwnedResult};
+pub use owned::{
+    read_retained_owned_result, read_retained_owned_result_from, RetainedResultError,
+    VerifiedRetainedOwnedResult,
+};
 pub use parse::{
     has_next_page, parse_captured_roster, parse_meet_index, parse_meet_result_files, parse_roster,
     parse_team_index, TeamIndexRead,
@@ -45,14 +52,15 @@ pub use roster::{
     SourceRowLocator,
 };
 pub use wire::{
-    LocatedRosterAthlete, MeetRef, MeetResultFile, ResultSetRef, Roster, RosterAthlete, Season,
-    Site, TeamRef,
+    CurrentRosterAssertion, LocatedRosterAthlete, MeetRef, MeetResultFile, ResultSetRef, Roster,
+    RosterAthlete, RosterTemporalUnavailable, Season, Site, TeamRef,
 };
 
 #[cfg(test)]
 mod tests;
 
 pub use results::{
-    read_retained_result_metadata, RawMetadataArchiveRef, RetainedMetadataError,
-    RetainedPerformanceDate, RetainedResultDivision, VerifiedRetainedResultMetadata,
+    read_retained_result_metadata, read_retained_result_metadata_from, RawMetadataArchiveRef,
+    RetainedMetadataError, RetainedPerformanceDate, RetainedResultDivision, RetainedResultSession,
+    VerifiedRetainedResultMetadata,
 };

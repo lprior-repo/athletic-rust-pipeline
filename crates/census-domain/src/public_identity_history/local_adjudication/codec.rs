@@ -106,13 +106,27 @@ impl<'de> Deserialize<'de> for LocalIdentityAdjudicationRecordV2 {
     }
 }
 
-fn members<'de, D: Deserializer<'de>, T: Deserialize<'de>>(parser: D) -> Result<Vec<T>, D::Error> {
+pub(in crate::public_identity_history) fn members<
+    'de,
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+>(
+    parser: D,
+) -> Result<Vec<T>, D::Error> {
     bounded::<D, T, 128>(parser)
 }
-fn records<'de, D: Deserializer<'de>, T: Deserialize<'de>>(parser: D) -> Result<Vec<T>, D::Error> {
+pub(in crate::public_identity_history) fn records<
+    'de,
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+>(
+    parser: D,
+) -> Result<Vec<T>, D::Error> {
     bounded::<D, T, 1024>(parser)
 }
-fn claims<'de, D: Deserializer<'de>, T: Deserialize<'de>>(parser: D) -> Result<Vec<T>, D::Error> {
+pub(in crate::public_identity_history) fn claims<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+    parser: D,
+) -> Result<Vec<T>, D::Error> {
     bounded::<D, T, 4096>(parser)
 }
 fn bounded<'de, D: Deserializer<'de>, T: Deserialize<'de>, const N: usize>(

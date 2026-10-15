@@ -1,12 +1,16 @@
+mod affiliation_audit;
 use crate::report::{ReportError, ReportResult};
 use std::path::Path;
 
 mod combined_exclusions;
+mod current_affiliation;
 mod files;
 mod generation;
 mod historical;
+mod participation;
 mod population;
 mod positive;
+mod public_identity;
 mod result_groups;
 mod supporting;
 

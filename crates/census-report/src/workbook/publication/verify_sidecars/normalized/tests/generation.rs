@@ -80,7 +80,7 @@ fn given_recaptured_manifest_hashes_when_alias_generation_changes_then_both_read
         &given.dataset,
         &store.out_dir(),
         &given.options.jurisdictions,
-    );
+    )?;
     let workbook = crate::workbook::build_from(&given.dataset, &store, &given.options, &censuses)?;
     let original = workbook.parent().ok_or("missing generated directory")?;
     let accepted = publication::verify_published(&workbook)?;

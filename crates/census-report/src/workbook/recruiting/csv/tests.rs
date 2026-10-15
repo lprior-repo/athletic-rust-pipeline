@@ -80,7 +80,7 @@ fn an_uncollected_source_value_publishes_an_empty_csv_field() -> TestResult {
     store.append(Table::Athletes, &athlete)?;
 
     let dataset = ExportDataset::load(&store)?;
-    let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
+    let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[])?;
     let path = directory.path().join("no-website.csv");
     write_recruiting_csv(
         &derivation,
@@ -151,7 +151,7 @@ fn published_recruiting_csv_literalizes_source_text_without_rewriting_it() -> Te
     store.append(Table::Coaches, &coach)?;
 
     let dataset = ExportDataset::load(&store)?;
-    let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
+    let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[])?;
     let path = directory.path().join("recruiting.csv");
     let counts = write_recruiting_csv(
         &derivation,

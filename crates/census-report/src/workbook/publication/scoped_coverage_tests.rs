@@ -42,7 +42,7 @@ fn restricted_coverage_uses_shared_population_and_retains_whole_frozen_evidence(
     let dataset = ExportDataset::reopen_frozen(&archived)?;
     let before = serialized_bytes(&dataset)?;
     let global_before = serde_json::to_vec(&coverage_report(&dataset, Some(2027))?)?;
-    let derivation = Derivation::of(&dataset, options.scope, Some(2027), &options.jurisdictions);
+    let derivation = Derivation::of(&dataset, options.scope, Some(2027), &options.jurisdictions)?;
     let coverage = coverage_report_for_derivation(&derivation)?;
     let census = build_census(&derivation, &store.out_dir());
     check!(eq; coverage.read.schools, 2);
@@ -137,7 +137,7 @@ fn empty_jurisdictions_keep_national49_and_legacy_global_semantics() -> TestResu
         .ok_or("publication directory")?
         .join("frozen-input.json");
     let dataset = ExportDataset::reopen_frozen(&archived)?;
-    let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
+    let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[])?;
     let report = coverage_report_for_derivation(&derivation)?;
     check!(eq; report.jurisdictions.iter().filter(|row| row.jurisdiction.jurisdiction().is_some()).count(), 49);
     check!(eq; report.jurisdictions.len(), 50);
@@ -177,7 +177,7 @@ fn core_scope_excludes_noncore_population_without_erasing_raw_gap_counts() -> Te
         Scope::Core,
         Some(GradYear::CO2027.get()),
         &options.jurisdictions,
-    );
+    )?;
     let coverage = coverage_report_for_derivation(&derivation)?;
     check!(eq; coverage.read.athletes, 2);
     check!(eq; coverage.read.performances, 2);
@@ -243,7 +243,7 @@ fn default_scope_retains_noncontinental_evidence_and_outside_gap_notes() -> Test
         Scope::AllSources,
         Some(2027),
         &[],
-    ))?;
+    )?)?;
     check!(eq; report.jurisdictions.len(), 50);
     check!(eq; report.read.athletes, 4);
     check!(eq; report.raw_observations, 7);

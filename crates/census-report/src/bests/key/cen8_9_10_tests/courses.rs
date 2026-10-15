@@ -84,12 +84,7 @@ fn cen8_distance_fastest_and_same_course_cross_dates_are_separate_policies() -> 
     );
     check!(eq; a.population.marks, 2);
     let directory = tempfile::tempdir()?;
-    let (jsonl, _) = crate::bests::write(
-        directory.path(),
-        &rows,
-        "co2027",
-        census_domain::model::EventSemantics::CURRENT,
-    )?;
+    let (jsonl, _) = crate::bests::write(directory.path(), &rows, "co2027", &data)?;
     let text = std::fs::read_to_string(jsonl)?;
     let records: Vec<serde_json::Value> = text
         .lines()

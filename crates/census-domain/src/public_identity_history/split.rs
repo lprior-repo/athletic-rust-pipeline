@@ -156,17 +156,11 @@ impl HistoryProjection {
                 Ok(())
             })?;
         assignments.iter().try_for_each(|(binding, owner)| {
-            self.bindings
-                .get_mut(binding)
-                .ok_or(HistoryError::Unknown("partition binding"))?
-                .owner = Some(owner.clone());
+            self.assign_claim(binding, Some(owner.clone()))?;
             Ok::<_, HistoryError>(())
         })?;
         split.unresolved_bindings.iter().try_for_each(|binding| {
-            self.bindings
-                .get_mut(binding)
-                .ok_or(HistoryError::Unknown("unresolved binding"))?
-                .owner = None;
+            self.assign_claim(binding, None)?;
             Ok(())
         })
     }

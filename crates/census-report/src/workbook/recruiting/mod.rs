@@ -47,12 +47,13 @@ impl<'a> Recruiting<'a> {
     }
 
     pub(super) fn write_athletes(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
+        let widths = self.identity_widths(&athletes::WIDTHS);
         write_sheet_rows(
             book,
             path,
             SheetLayout {
                 name: athletes::TITLE,
-                widths: &athletes::WIDTHS,
+                widths: &widths,
                 chrome: SheetChrome::Filtered,
             },
             athletes::rows(&self.dataset),
@@ -60,16 +61,44 @@ impl<'a> Recruiting<'a> {
     }
 
     pub(super) fn write_prs(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
+        let schools = if self.dataset.source.selected_profile_id().is_some() {
+            Some(crate::export::current_school::SelectedSchools::of(
+                self.dataset.source,
+            )?)
+        } else {
+            None
+        };
+        let mut widths = self.identity_widths(&prs::WIDTHS);
+        if schools.is_some() {
+            widths.extend([30, 14, 22]);
+        }
         write_sheet_rows(
             book,
             path,
             SheetLayout {
                 name: prs::TITLE,
-                widths: &prs::WIDTHS,
+                widths: &widths,
                 chrome: SheetChrome::Filtered,
             },
-            prs::rows(&self.dataset.prs),
+            prs::rows(
+                &self.dataset.prs,
+                self.dataset.public_identities,
+                schools.as_ref(),
+            ),
         )
+    }
+
+    fn identity_widths(&self, widths: &[u16]) -> Vec<u16> {
+        widths
+            .iter()
+            .copied()
+            .chain(
+                self.dataset
+                    .public_identities
+                    .into_iter()
+                    .flat_map(|_| [24, 60]),
+            )
+            .collect()
     }
 
     pub(super) fn write_coaches(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {

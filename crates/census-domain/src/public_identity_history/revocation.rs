@@ -21,9 +21,7 @@ impl HistoryProjection {
         )?;
         let mut work = 0;
         self.check_revoked_edges(&request.revoke_merges, &affected, &mut work)?;
-        if !self.connected_after(&affected, &request.revoke_merges, &mut work)? {
-            return Err(HistoryError::SplitRequired);
-        }
+        let withheld = self.membership_detachment(&affected, &request.revoke_merges, &mut work)?;
         let predecessors = self.split_predecessors(&request.canonical)?;
         predecessors.iter().try_for_each(|id| {
             let entry = self
@@ -42,6 +40,10 @@ impl HistoryProjection {
                 .revoked_at = Some(sequence);
             Ok::<_, HistoryError>(())
         })?;
+        withheld
+            .iter()
+            .try_for_each(|id| self.assign_claim(id, None))?;
+        self.withheld.insert(sequence, withheld);
         self.affected
             .insert(sequence, request.affected_record_keys.clone());
         Ok(())
@@ -66,9 +68,8 @@ impl HistoryProjection {
         let members: BTreeSet<_> = affected
             .iter()
             .map(|id| {
-                self.bindings
-                    .get(id)
-                    .map(|entry| entry.claim.candidate.clone())
+                self.claim_candidate(id)
+                    .cloned()
                     .ok_or(HistoryError::Unknown("affected binding"))
             })
             .collect::<Result<_, _>>()?;

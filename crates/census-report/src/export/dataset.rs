@@ -13,7 +13,10 @@ use std::sync::Arc;
 
 mod frozen;
 mod read;
+pub(crate) mod selected;
+mod selected_proofs;
 
+pub(crate) use frozen::proof_objects;
 pub use frozen::{CancelOutcome, FrozenRoot};
 
 pub(crate) const MAX_FROZEN_INPUT_BYTES: u64 = 200 * 1024 * 1024 * 1024;
@@ -46,6 +49,8 @@ fn release_generation() {
     RESIDENT_GENERATIONS.fetch_sub(1, Ordering::Relaxed);
 }
 
+use selected::SelectedInputOrigin;
+
 #[derive(Serialize)]
 pub struct ExportDataset {
     pub athletes: Vec<CanonicalAthlete>,
@@ -61,13 +66,25 @@ pub struct ExportDataset {
     pub verdicts: Vec<ReviewVerdictRecord>,
     pub identity_decisions: Vec<AppliedAthleteIdentity>,
     #[serde(skip)]
-    pub canonical_aliases: HashMap<String, String>,
+    pub(crate) canonical_aliases: HashMap<String, String>,
     #[serde(skip)]
     pub lineage: DatasetLineage,
     pub coverage_evidence: CoverageEvidence,
     pub relays: Vec<RelayResult>,
     #[serde(skip)]
     identity_projection: Arc<AthleteIdentityProjection>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    selection: Option<super::qualification::SelectionBinding>,
+    #[serde(skip)]
+    verified_participation: Option<super::VerifiedParticipationView>,
+    #[serde(skip)]
+    verified_current_affiliations: Option<super::VerifiedCurrentAffiliations>,
+    #[serde(skip)]
+    verified_public_identities: Option<super::public_identity::VerifiedPublicIdentityView>,
+    #[serde(skip)]
+    selected_proofs: Option<selected_proofs::SelectedProofsV1>,
+    #[serde(skip)]
+    selected_input_origin: SelectedInputOrigin,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -135,6 +152,8 @@ struct Loaded {
     identity_decisions: Vec<AppliedAthleteIdentity>,
     coverage_evidence: CoverageEvidence,
     relays: Vec<RelayResult>,
+    #[serde(default)]
+    selection: Option<super::qualification::SelectionBinding>,
 }
 
 fn projection_of(loaded: &Loaded) -> ReportResult<Arc<AthleteIdentityProjection>> {
@@ -229,6 +248,12 @@ impl ExportDataset {
         let identity_projection = projection_of(&loaded)?;
         let canonical_aliases = aliases_of(&loaded.athletes, &identity_projection);
         let mut dataset = Self {
+            selection: loaded.selection,
+            verified_participation: None,
+            verified_current_affiliations: None,
+            verified_public_identities: None,
+            selected_proofs: None,
+            selected_input_origin: SelectedInputOrigin::Unqualified,
             athletes: loaded.athletes,
             canonical_aliases,
             schools: school_map(loaded.schools),
@@ -252,16 +277,8 @@ impl ExportDataset {
         Ok(dataset)
     }
 
-    pub fn save_frozen(&self, path: &std::path::Path) -> ReportResult<()> {
-        frozen::save(self, path)
-    }
-
     pub fn reopen_frozen(path: &std::path::Path) -> ReportResult<Self> {
         frozen::reopen(path)
-    }
-
-    pub(crate) fn archive_digest(&self) -> ReportResult<String> {
-        frozen::archive_digest(self)
     }
 
     pub fn semantic_policy(&self) -> ReportResult<census_domain::model::EventSemantics> {

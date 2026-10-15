@@ -2,6 +2,7 @@
 #![deny(unused_must_use)]
 
 mod bounds;
+pub mod capture_day;
 mod changes;
 pub mod current;
 mod equality;

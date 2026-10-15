@@ -14,7 +14,7 @@ pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> 
         inputs.options.scope,
         None,
         &inputs.options.jurisdictions,
-    );
+    )?;
     let [(_, mailboxes), (_, research)] =
         contacts::expected(population.schools(), inputs.school_year)?;
     verify_rows(&directory.join("school-contacts.csv"), mailboxes)?;

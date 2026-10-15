@@ -1,7 +1,8 @@
-use crate::milesplit::{RawPage, VerifiedRetainedOwnedResult};
+use crate::milesplit::{RawPage, ResultSetRef, VerifiedRetainedOwnedResult};
 use crate::net::FetchOutcome;
 use census_domain::model::{ProfileDate, StoreIdentity};
 use chrono::{DateTime, Utc};
+use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RawMetadataArchiveRef(String);
@@ -49,13 +50,19 @@ pub enum RetainedResultDivision {
 pub struct VerifiedRetainedResultMetadata {
     pub(super) store_identity: StoreIdentity,
     pub(super) snapshot_sequence: u64,
+    pub(super) parsed: Arc<ParsedMetadata>,
+    pub(super) result: VerifiedRetainedOwnedResult,
+    pub(super) division: RetainedResultDivision,
+}
+
+#[derive(Debug)]
+pub(super) struct ParsedMetadata {
+    pub(super) reference: ResultSetRef,
     pub(super) archive: RawMetadataArchiveRef,
     pub(super) capture: FetchOutcome,
     pub(super) acquired_at: DateTime<Utc>,
     pub(super) page: RawPage,
-    pub(super) result: VerifiedRetainedOwnedResult,
     pub(super) date: RetainedPerformanceDate,
-    pub(super) division: RetainedResultDivision,
 }
 
 impl VerifiedRetainedResultMetadata {
@@ -66,22 +73,22 @@ impl VerifiedRetainedResultMetadata {
         self.snapshot_sequence
     }
     pub fn archive(&self) -> &RawMetadataArchiveRef {
-        &self.archive
+        &self.parsed.archive
     }
     pub fn capture(&self) -> &FetchOutcome {
-        &self.capture
+        &self.parsed.capture
     }
     pub fn acquired_at(&self) -> DateTime<Utc> {
-        self.acquired_at
+        self.parsed.acquired_at
     }
     pub fn page(&self) -> &RawPage {
-        &self.page
+        &self.parsed.page
     }
     pub fn result(&self) -> &VerifiedRetainedOwnedResult {
         &self.result
     }
     pub fn date(&self) -> &RetainedPerformanceDate {
-        &self.date
+        &self.parsed.date
     }
     pub fn division(&self) -> RetainedResultDivision {
         self.division

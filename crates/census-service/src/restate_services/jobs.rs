@@ -114,7 +114,7 @@ pub(super) fn build_report(
     jurisdictions: &[census_domain::UsJurisdiction],
 ) -> ReportResult<ReportReply> {
     let dataset = ExportDataset::load(store)?;
-    let derivation = Derivation::of(&dataset, scope, None, jurisdictions);
+    let derivation = Derivation::of(&dataset, scope, None, jurisdictions)?;
     let census = report::build_census(&derivation, &store.out_dir());
     let (json_path, csv_path) = report::write_census(store, &census, scope)?;
     Ok(ReportReply {
@@ -132,8 +132,7 @@ pub(super) fn build_bests(store: &Store, options: &bests::Options) -> ReportResu
     let dataset = ExportDataset::load(store)?;
     let rows = bests::build_from_dataset(&dataset, options)?;
     let cohort = cohort_label(options.grad_year);
-    let (jsonl, csv_path) =
-        bests::write(&store.out_dir(), &rows, &cohort, dataset.semantic_policy()?)?;
+    let (jsonl, csv_path) = bests::write(&store.out_dir(), &rows, &cohort, &dataset)?;
     Ok(BestsReply {
         cohort,
         rows: rows.len(),
@@ -148,7 +147,7 @@ pub(super) fn build_workbook(
     job: &str,
 ) -> ReportResult<WorkbookReply> {
     let dataset = ExportDataset::for_job(store, job)?;
-    let censuses = workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions);
+    let censuses = workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions)?;
     let path = workbook::build_from(&dataset, store, options, &censuses)?;
     Ok(WorkbookReply {
         path: path.display().to_string(),

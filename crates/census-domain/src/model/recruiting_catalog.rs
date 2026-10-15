@@ -12,6 +12,7 @@ use coherence::{coherent_components, coherent_pairs, distance_quantity, excluded
 mod disposition;
 mod legacy_policy;
 mod policy;
+mod selected;
 
 pub use disposition::{
     CatalogError, EventDisposition, EventExclusionReason, EventResolutionReason,

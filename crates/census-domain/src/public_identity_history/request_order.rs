@@ -2,7 +2,9 @@ use super::{HistoryError, HistoryRequest};
 
 pub(super) fn normalize(mut request: HistoryRequest) -> Result<HistoryRequest, HistoryError> {
     match &mut request {
-        HistoryRequest::Establish { evidence, .. } | HistoryRequest::Bind { evidence, .. } => {
+        HistoryRequest::Establish { evidence, .. }
+        | HistoryRequest::Bind { evidence, .. }
+        | HistoryRequest::BindCandidateMembership { evidence, .. } => {
             ordered(&mut evidence.members, "evidence members")?;
         }
         HistoryRequest::EstablishMatchedGroup { bindings, evidence } => {

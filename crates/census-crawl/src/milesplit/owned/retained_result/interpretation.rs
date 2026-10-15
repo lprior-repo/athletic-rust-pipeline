@@ -1,14 +1,15 @@
 use super::{
-    JournalReadBudget, OwnedPerformance, RetainedResultError, StoreSnapshot,
-    VerifiedOwnedAcquisition, OWNED_MEET_PHASE,
+    JournalReadBudget, OwnedPerformance, RetainedResultError, VerifiedOwnedAcquisition,
+    OWNED_MEET_PHASE,
 };
+use crate::milesplit::RetainedJournalView;
 use census_domain::model::serialized_digest;
 use serde_json::Value;
 
 const MAX_INTERPRETATION_BYTES: usize = 4 * 1024 * 1024;
 
 pub(super) fn verify(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalView,
     acquisition: &VerifiedOwnedAcquisition,
     row: &OwnedPerformance,
 ) -> Result<String, RetainedResultError> {
@@ -29,7 +30,7 @@ pub(super) fn verify(
     }
 }
 
-fn read(view: &StoreSnapshot<'_>, key: &str) -> Result<Option<Value>, RetainedResultError> {
+fn read(view: &impl RetainedJournalView, key: &str) -> Result<Option<Value>, RetainedResultError> {
     let budget = JournalReadBudget::new(MAX_INTERPRETATION_BYTES)?;
     Ok(view.journal_payload_bounded(OWNED_MEET_PHASE, key, budget)?)
 }

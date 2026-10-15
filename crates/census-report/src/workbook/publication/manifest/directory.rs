@@ -15,7 +15,7 @@ pub(in crate::workbook::publication) fn verify_directory(
     let path = directory.join("manifest.json");
     let head: RevisionHead = sidecars::read_json(&path)?;
     match head.schema_revision {
-        1..=6 => {}
+        1..=8 => {}
         _ => {
             return Err(invariant(
                 "unsupported publication artifact revision".into(),
@@ -45,12 +45,15 @@ pub(in crate::workbook::publication) fn verify_directory(
             "generation has an invalid artifact set".to_string(),
         ));
     }
-    verify_artifacts(directory, &manifest)?;
+    let artifact_bytes = verify_artifacts(directory, &manifest)?;
     verify_inventory(directory, &manifest)?;
+    if matches!(manifest.schema_revision, 7 | 8) {
+        verify_frozen_proofs(directory, &manifest, artifact_bytes)?;
+    }
     Ok(manifest)
 }
 
-fn verify_artifacts(directory: &Path, manifest: &Manifest) -> ReportResult<()> {
+fn verify_artifacts(directory: &Path, manifest: &Manifest) -> ReportResult<u64> {
     let mut total = 0_u64;
     manifest.artifacts.iter().try_for_each(|(name, expected)| {
         let actual = hash_artifact(&directory.join(name))?;
@@ -64,7 +67,8 @@ fn verify_artifacts(directory: &Path, manifest: &Manifest) -> ReportResult<()> {
             return Err(invariant("generation exceeds its byte budget".to_string()));
         }
         Ok(())
-    })
+    })?;
+    Ok(total)
 }
 
 fn verify_inventory(directory: &Path, manifest: &Manifest) -> ReportResult<()> {
@@ -72,6 +76,16 @@ fn verify_inventory(directory: &Path, manifest: &Manifest) -> ReportResult<()> {
     entries.try_for_each(|entry| {
         let entry = entry.map_err(|source| io_error(directory, source))?;
         let name = entry.file_name();
+        if name == "frozen-input.json.proofs" && matches!(manifest.schema_revision, 7 | 8) {
+            let metadata = std::fs::symlink_metadata(entry.path())
+                .map_err(|source| io_error(&entry.path(), source))?;
+            if !metadata.file_type().is_dir() {
+                return Err(invariant(
+                    "selected proof inventory is not a directory".into(),
+                ));
+            }
+            return Ok(());
+        }
         if name != "manifest.json"
             && !manifest
                 .artifacts
@@ -84,4 +98,31 @@ fn verify_inventory(directory: &Path, manifest: &Manifest) -> ReportResult<()> {
         }
         Ok(())
     })
+}
+
+fn verify_frozen_proofs(
+    directory: &Path,
+    manifest: &Manifest,
+    artifact_bytes: u64,
+) -> ReportResult<()> {
+    let frozen_path = directory.join("frozen-input.json");
+    let proof_bytes = crate::export::ExportDataset::verify_frozen_proof_objects(&frozen_path)?;
+    if artifact_bytes
+        .checked_add(proof_bytes)
+        .is_none_or(|total| total > MAX_BUNDLE_BYTES)
+    {
+        return Err(invariant(
+            "selected generation exceeds its aggregate byte budget".into(),
+        ));
+    }
+    let retained = manifest
+        .artifacts
+        .get("frozen-input.json")
+        .ok_or_else(|| invariant("selected generation lacks frozen input".into()))?;
+    if hash_artifact(&frozen_path)? != *retained {
+        return Err(invariant(
+            "frozen proof inventory changed during verification".into(),
+        ));
+    }
+    Ok(())
 }

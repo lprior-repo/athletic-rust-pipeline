@@ -20,12 +20,7 @@ pub(super) fn assert_artifacts(
         return Err("best is not a time".into());
     };
     check!(eq; time.precision(), precision);
-    let (jsonl, csv_path) = crate::bests::write(
-        out,
-        &rows,
-        "co2027",
-        census_domain::model::EventSemantics::CURRENT,
-    )?;
+    let (jsonl, csv_path) = crate::bests::write(out, &rows, "co2027", &dataset)?;
     let value: serde_json::Value = serde_json::from_str(std::fs::read_to_string(jsonl)?.trim())?;
     check!(eq; value.pointer("/mark/TimeSeconds/nanoseconds"), Some(&serde_json::json!(nanos)));
     check!(eq; value.pointer("/mark/TimeSeconds/precision"), Some(&serde_json::json!(precision)));

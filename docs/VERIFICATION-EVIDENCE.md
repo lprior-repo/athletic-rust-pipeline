@@ -1440,3 +1440,39 @@ These results qualify the recovery scope only, not release or the national run.
 - Four unused roster-helper warnings remain for caller cutover. These results do
   not establish Service admission, integrated Store behavior, release qualification,
   or national readiness. The implementation remains private and unmerged.
+
+
+## 2026-10-15 — R1/R2/R3 selected checkpoints
+
+The [acceptance mapping](verification/2026-10-14-deep-codebase-review.md#r1r2r3-selected-acceptance-mapping--2026-10-15)
+keeps **R1, R2 and R3 OPEN**. Results below are checkpoint-specific; source correspondence,
+authored regressions and compilation are not selected-publication runtime acceptance.
+
+| Exact checkpoint | Observed evidence |
+|---|---|
+| Focused `8750a2160bde030f35e356fe9b49f0e56819d523`, tree `de1b0f18bf637d52dc1336767ee84be6cefd0759`, based on `450ca907` | Omarchy format/check/source lint passed with three nonfatal arity advisories; Store 81 + 60, native 4 and CLI 22 tests passed. |
+| Combined `6b4637a32288f6481671ab3f7da89065d813b792` | Public-identity Domain history: 126 passed. This is not a report-consumer pass. |
+| Combined `2f52105044f0698901a7cecb4e998b486d060407` | Store 167 passed / 831 skipped; identity native 8 passed / three owned child entries skipped. Report test build blocked by compiler query depth; selected publication runtime not executed. |
+| Combined `67e9ac71c42230dce9f2a6ebd422a364d29e80e9`, tree `d6c7d8552faf6eab118e52dc838dc252851d8a97` | Format and full all-target/all-feature check passed; Store 167 passed / 831 skipped; identity native 8 passed / three owned child entries skipped; manual-admission recovery 2 passed / one owned child entry skipped. |
+
+At `67e9ac71`, report Nextest code generation still failed at query depth 130 in
+`census_crawl::milesplit::results::collect`: **selected report/publication, crash and frozen
+consumer tests NOT RUN**. No source-lint rerun or aggregate release pass is inferred from
+this checkpoint. Real-population output parity, retained-source proof limitations, the
+8,192-row typed authority-context cap/raw-input closure, and representative peak RSS remain
+acceptance dependencies in the mapping. Skips are not additional test passes.
+
+Main `482e79f0` preserved the archive CLI regressions; later `d5949db` is documentation-only.
+As of 2026-10-15 17:33 UTC, PR #72 remains open at `d2584d30`; these candidate results and this
+isolated documentation patch do not establish a new push, deployment or publication approval.
+
+### Focused PR72 branch update — October 15, 17:43 UTC
+
+Parent verified PR72 head `982e35317044a3d5dee99f69d4b5ea3fc1ed952b`, open,
+non-draft and mergeable against main `d5949db13845366d7ffc51b19bcbce1c88a93f18`.
+The ancestry-preserving merge and repair push succeeded; exact focused formatting
+and workspace check passed on Omarchy. The normal merge and title/body update
+operations each returned HTTP403, `Resource not accessible by integration`.
+No alternate route or retry was used. Manual merge is pending; this is not a main
+landing or full selected-publication acceptance result. Earlier historical status
+and test records above remain unchanged.

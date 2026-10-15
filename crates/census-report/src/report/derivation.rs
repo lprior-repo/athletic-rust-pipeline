@@ -10,11 +10,16 @@ use std::collections::{HashMap, HashSet};
 
 mod aliases;
 mod cohort;
+mod current_affiliation;
 mod historical;
+#[cfg(test)]
+mod participation_reducer_fixture;
 mod population;
 mod selection;
+use crate::export::CurrentAffiliationView;
 pub(super) use aliases::{borrowed_or_collapsed, collapse_athletes};
 pub(crate) use cohort::candidates as cohort_candidates;
+pub use current_affiliation::CurrentAffiliationExclusion;
 
 pub(crate) fn in_run_scope(bucket: JurisdictionBucket, jurisdictions: &[UsJurisdiction]) -> bool {
     match bucket.jurisdiction() {
@@ -58,10 +63,33 @@ pub struct Derivation<'a> {
     performances: Vec<&'a CanonicalPerformance>,
     athlete_aliases: &'a HashMap<String, String>,
     dropped_rows: usize,
+    current_affiliations: CurrentAffiliationView<'a>,
+    affiliation_exclusions:
+        std::collections::BTreeMap<census_domain::model::AthleteId, CurrentAffiliationExclusion>,
 }
 
 impl<'a> Derivation<'a> {
     pub fn of(
+        dataset: &'a ExportDataset,
+        scope: Scope,
+        grad_year: Option<i16>,
+        jurisdictions: &[UsJurisdiction],
+    ) -> super::ReportResult<Self> {
+        if dataset.selected_profile_id().is_some() {
+            dataset.verified_public_identities()?;
+            dataset.verified_participation()?;
+            return Self::selected(
+                dataset,
+                scope,
+                grad_year,
+                jurisdictions,
+                dataset.verified_current_affiliations()?,
+            );
+        }
+        Ok(Self::historical(dataset, scope, grad_year, jurisdictions))
+    }
+
+    fn historical(
         dataset: &'a ExportDataset,
         scope: Scope,
         grad_year: Option<i16>,

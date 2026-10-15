@@ -9,7 +9,7 @@ fn assert_case(case: AffiliationCase) -> TestResult {
     [Scope::Core, Scope::AllSources]
         .into_iter()
         .try_for_each(|scope| -> TestResult {
-            let derivation = Derivation::of(&dataset, scope, Some(2027), &[]);
+            let derivation = Derivation::of(&dataset, scope, Some(2027), &[])?;
             check!(eq; derivation.athletes(), std::slice::from_ref(&fixture.athlete));
             check!(eq; derivation.performances(), &[&fixture.performance]);
             assert_selection(&dataset, &fixture, scope)?;
@@ -138,7 +138,7 @@ fn mixed_historical_affiliation_order_and_limits_keep_known_and_unknown_rows_in_
     [Scope::Core, Scope::AllSources]
         .into_iter()
         .try_for_each(|scope| -> TestResult {
-            check!(eq; Derivation::of(&dataset, scope, Some(2027), &[]).athletes().len(), 3);
+            check!(eq; Derivation::of(&dataset, scope, Some(2027), &[])?.athletes().len(), 3);
             let complete = build_from_dataset(&dataset, &options(scope))?;
             assert_mixed_order(&complete, &expected)?;
             [0_usize, 1, 2, 3, 4]

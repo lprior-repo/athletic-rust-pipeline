@@ -7,6 +7,7 @@ mod evidence;
 mod fixture;
 mod metadata;
 mod policy;
+mod strict_policy;
 mod windows;
 
 use fixture::{day, outcome, range, Fixture};

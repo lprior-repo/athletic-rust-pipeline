@@ -9,6 +9,7 @@ use super::read::{self, Limits};
 use super::{cohort, defect, diff};
 
 mod schema;
+mod selected;
 
 use schema::Schema;
 
@@ -27,8 +28,11 @@ pub(super) fn verify(
         artifact_revision,
         inputs.dataset.lineage.policy_revision,
     )?;
-    let schema = Schema::parse(artifact_revision)?;
     let cohort = cohort(inputs.options.grad_year);
+    if super::super::selected::binding(artifact_revision, inputs.dataset)?.is_some() {
+        return selected::verify(directory, &cohort, rows, inputs.dataset);
+    }
+    let schema = Schema::parse(artifact_revision)?;
     verify_csv(
         &directory.join(format!("best-results-{cohort}.csv")),
         rows,

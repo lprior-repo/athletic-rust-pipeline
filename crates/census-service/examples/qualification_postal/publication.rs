@@ -28,7 +28,7 @@ pub(super) fn publish_and_readback(
         jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).context("unsupported school year")?,
     };
-    let censuses = Censuses::of(dataset, &store.out_dir(), &[]);
+    let censuses = Censuses::of(dataset, &store.out_dir(), &[])?;
     let path = workbook::build_from(dataset, store, &options, &censuses)?;
     let verified = workbook::verify::verify_frozen(&path, dataset, &options)?;
     let publication = workbook::publication::verify_published(&path)?;

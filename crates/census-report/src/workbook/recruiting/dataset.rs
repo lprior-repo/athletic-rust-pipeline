@@ -23,7 +23,9 @@ pub(super) struct Dataset<'a> {
     pub(super) grad_year: Option<i16>,
     pub(super) school_year: census_domain::model::SchoolYear,
     pub(super) athletes: &'a [CanonicalAthlete],
-    pub(super) identities: std::sync::Arc<census_domain::model::AthleteIdentityProjection>,
+    pub(super) public_identities:
+        Option<&'a crate::export::public_identity::VerifiedPublicIdentityView>,
+    pub(super) source: &'a crate::export::ExportDataset,
     pub(super) schools: BTreeMap<&'a str, &'a CanonicalSchool>,
     pub(super) published_coaches: Vec<CanonicalCoach>,
     pub(super) coach_spellings: BTreeMap<String, String>,
@@ -42,6 +44,9 @@ impl<'a> Dataset<'a> {
         prs: Vec<SharedSelection>,
         admission: &crate::report::EventAdmission<'d>,
     ) -> ReportResult<Self> {
+        derivation.ensure_selected_affiliation()?;
+        crate::workbook::public_identity::preflight(derivation.dataset(), derivation.athletes())?;
+        crate::bests::participation::ParticipationSelection::of(derivation.dataset())?;
         admission.ensure_dataset(derivation.dataset())?;
         crate::grouping::Admission::new("recruiting schools").rows(derivation.schools())?;
         let athletes = derivation.athletes();
@@ -57,14 +62,14 @@ impl<'a> Dataset<'a> {
         let published_coaches =
             bounded_claims(derivation.coach_observations(), WORKBOOK_GROUP_BUDGET)?;
         let audit = inputs.audit(&contacts, published_coaches.len());
-        Ok(Self::assemble(
+        Self::assemble(
             inputs,
             athletes,
             school_address,
             contacts,
             published_coaches,
             audit,
-        ))
+        )
     }
 
     fn assemble(
@@ -74,12 +79,13 @@ impl<'a> Dataset<'a> {
         contacts: BTreeMap<String, SchoolContacts>,
         published_coaches: Vec<CanonicalCoach>,
         audit: Reconciliation,
-    ) -> Self {
-        Self {
+    ) -> ReportResult<Self> {
+        Ok(Self {
             scope: inputs.derivation.scope(),
             grad_year: inputs.derivation.grad_year(),
             school_year: inputs.school_year,
-            identities: inputs.derivation.dataset().identities(),
+            source: inputs.derivation.dataset(),
+            public_identities: crate::workbook::public_identity::view(inputs.derivation.dataset())?,
             schools: school_index(inputs.derivation.schools()),
             published_coaches,
             coach_spellings: super::coach_spelling::spellings(
@@ -92,7 +98,7 @@ impl<'a> Dataset<'a> {
             prs: inputs.prs,
             school_address,
             audit,
-        }
+        })
     }
 
     pub(super) fn audit(&self) -> Reconciliation {

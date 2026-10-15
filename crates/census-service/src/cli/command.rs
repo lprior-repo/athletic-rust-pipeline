@@ -25,6 +25,7 @@ use std::path::PathBuf;
 
 #[derive(Subcommand, Debug)]
 pub(super) enum Command {
+    SelectedPublication(super::selected_publication::SelectedPublicationArgs),
     #[command(
         about = "Initialize or inspect fresh capture qualification; explicit --store and a stopped owner required"
     )]

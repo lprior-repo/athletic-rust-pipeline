@@ -51,7 +51,12 @@ pub(in crate::public_identity) fn consume<R>(
     if &prepared.record.expected_head != ledger.history.projection().head() {
         return Err(PublicIdentityError::HeadMoved.into());
     }
-    let replayed = replay_prepared(store, &prepared)?;
+    let replayed = replay_prepared(
+        store,
+        &prepared,
+        ledger.history.projection(),
+        ledger.history.records(),
+    )?;
     ledger
         .history
         .projection()
@@ -72,6 +77,8 @@ pub(in crate::public_identity) fn consume<R>(
 fn replay_prepared(
     store: &Store,
     prepared: &PreparedLocalAdjudicationV1<'_>,
+    projection: &census_domain::public_identity_history::HistoryProjection,
+    records: &[census_domain::public_identity_history::HistoryRecord],
 ) -> StoreResult<PreparedHistoryRecord> {
     let snapshot = store.db.snapshot();
     super::fence::validate_live(store, &prepared.record)?;
@@ -84,7 +91,8 @@ fn replay_prepared(
     let affected =
         super::affected::read(&snapshot, &store.journal, &prepared.record.affected_context)?;
     affected.validate(&inputs, &prepared.record)?;
-    let claims = claims::inventory(&inputs, &prepared.record.members)?;
+    let claims =
+        claims::membership_inventory(&inputs, &prepared.record.members, projection, records)?;
     let request = prepared
         .record
         .history_request(&claims)

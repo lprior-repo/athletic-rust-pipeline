@@ -117,7 +117,10 @@ pub(super) fn births(request: &HistoryRequest) -> usize {
     match request {
         HistoryRequest::Establish { .. } | HistoryRequest::EstablishMatchedGroup { .. } => 1,
         HistoryRequest::Split(split) => split.partitions.len(),
-        HistoryRequest::Bind { .. } | HistoryRequest::Merge { .. } | HistoryRequest::Revoke(_) => 0,
+        HistoryRequest::Bind { .. }
+        | HistoryRequest::BindCandidateMembership { .. }
+        | HistoryRequest::Merge { .. }
+        | HistoryRequest::Revoke(_) => 0,
     }
 }
 

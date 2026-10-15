@@ -7,6 +7,7 @@ use super::bounded::{bounded_contacts, WORKBOOK_GROUP_BUDGET};
 use super::contact::{attach_research, scoped, SchoolContacts};
 use crate::csv_safety::protect_owned;
 use crate::report::{Derivation, ReportError, ReportResult};
+use crate::workbook::public_identity::{self, Identity};
 
 mod rows;
 
@@ -48,9 +49,11 @@ pub fn write_recruiting_csv(
     school_year: SchoolYear,
     path: &Path,
 ) -> ReportResult<RecruitingCsvCounts> {
+    derivation.ensure_selected_affiliation()?;
+    public_identity::preflight(derivation.dataset(), derivation.athletes())?;
     crate::report::EventAdmission::of(derivation.dataset())?;
     let projection = CsvProjection::new(derivation, school_year)?;
-    let mut writer = open_writer(path)?;
+    let mut writer = open_writer(path, projection.public_identities)?;
     let counts = write_athletes(derivation, &projection, &mut writer, path)?;
     writer
         .flush()
@@ -58,10 +61,13 @@ pub fn write_recruiting_csv(
     Ok(counts)
 }
 
-fn open_writer(path: &Path) -> ReportResult<csv::Writer<std::fs::File>> {
+fn open_writer(
+    path: &Path,
+    identities: Option<&crate::export::public_identity::VerifiedPublicIdentityView>,
+) -> ReportResult<csv::Writer<std::fs::File>> {
     let mut writer = csv::Writer::from_path(path).map_err(|error| csv_error(path, error))?;
     writer
-        .write_record(HEADERS)
+        .write_record(public_identity::headers(&HEADERS, identities))
         .map_err(|error| csv_error(path, error))?;
     Ok(writer)
 }
@@ -72,13 +78,13 @@ fn write_athletes(
     writer: &mut csv::Writer<std::fs::File>,
     path: &Path,
 ) -> ReportResult<RecruitingCsvCounts> {
-    let identities = derivation.dataset().identities();
     let mut counts = RecruitingCsvCounts {
         with_school_coach: 0,
         with_coach_email: 0,
     };
     for athlete in derivation.athletes() {
-        let (row, has_coach, has_email) = projection.identified_record(athlete, &identities)?;
+        let (row, has_coach, has_email) =
+            projection.identified_record(athlete, derivation.dataset())?;
         write_row(writer, row, path)?;
         counts.with_school_coach = increment(counts.with_school_coach, has_coach)?;
         counts.with_coach_email = increment(counts.with_coach_email, has_email)?;
@@ -100,6 +106,7 @@ fn researched_contacts(
 }
 
 struct CsvProjection<'a> {
+    public_identities: Option<&'a crate::export::public_identity::VerifiedPublicIdentityView>,
     schools: HashMap<&'a str, &'a CanonicalSchool>,
     contacts: BTreeMap<String, SchoolContacts>,
     school_address: BTreeMap<String, String>,
@@ -109,6 +116,7 @@ impl<'a> CsvProjection<'a> {
     fn new(derivation: &'a Derivation<'_>, school_year: SchoolYear) -> ReportResult<Self> {
         crate::grouping::Admission::new("recruiting schools").rows(derivation.schools())?;
         Ok(Self {
+            public_identities: public_identity::view(derivation.dataset())?,
             schools: derivation
                 .schools()
                 .iter()
@@ -125,12 +133,17 @@ impl<'a> CsvProjection<'a> {
     fn identified_record(
         &self,
         athlete: &CanonicalAthlete,
-        identities: &census_domain::model::AthleteIdentityProjection,
+        dataset: &crate::export::ExportDataset,
     ) -> ReportResult<(impl Iterator<Item = String> + use<>, bool, bool)> {
-        let status = identities
-            .status(athlete.id.as_str())
-            .map_err(census_store::StoreError::from)?;
-        self.record(athlete, status.as_str())
+        let status = match self.public_identities {
+            Some(_) => "accepted_public_identity",
+            None => dataset
+                .identities()
+                .status(athlete.id.as_str())
+                .map_err(census_store::StoreError::from)?
+                .as_str(),
+        };
+        self.record(athlete, status)
     }
 
     fn record(
@@ -138,12 +151,14 @@ impl<'a> CsvProjection<'a> {
         athlete: &CanonicalAthlete,
         status: &str,
     ) -> ReportResult<(impl Iterator<Item = String> + use<>, bool, bool)> {
+        let identity = Identity::of(self.public_identities, athlete.id.as_str())?;
         let contact = scoped(self.contacts.get(athlete.school.as_str()), athlete);
         let (row, has_coach, has_email) = rows::record(
             athlete,
             self.schools.get(athlete.school.as_str()).copied(),
             &contact,
             status,
+            identity.athlete_id(),
         )?;
         let address = self
             .school_address
@@ -151,7 +166,11 @@ impl<'a> CsvProjection<'a> {
             .ok_or_else(|| ReportError::Invariant {
                 detail: format!("athlete {} has no school address projection", athlete.id),
             })?;
-        Ok((row.chain([address.clone()]), has_coach, has_email))
+        Ok((
+            row.chain([address.clone()]).chain(identity.audit()?),
+            has_coach,
+            has_email,
+        ))
     }
 }
 

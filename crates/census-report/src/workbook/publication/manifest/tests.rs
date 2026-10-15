@@ -14,6 +14,7 @@ use std::path::Path;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod normalized_rows;
+mod selected;
 mod supporting;
 
 pub(in crate::workbook) fn seed(store: &Store, name: &str) -> TestResult {

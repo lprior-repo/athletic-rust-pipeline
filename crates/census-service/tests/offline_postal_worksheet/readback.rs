@@ -80,7 +80,7 @@ pub(super) fn assert_population(path: &Path, dataset: &ExportDataset) -> TestRes
         .map(|athlete| athlete.id.to_string())
         .collect();
     check!(eq; expected.len(), 3);
-    check!(eq; dataset.canonical_aliases.len(), 0);
+    check!(eq; dataset.canonical_aliases().len(), 0);
     for (rows, id, state, address) in [
         (
             sheet(path, "Athletes")?,

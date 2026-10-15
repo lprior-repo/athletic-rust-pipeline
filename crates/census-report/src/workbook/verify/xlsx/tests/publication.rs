@@ -15,7 +15,7 @@ fn verify_corrupt_failed_publication_emits_no_certificate_and_keeps_the_prior_pu
     let certificate = std::fs::read(generation.join("manifest.json"))?;
     let pointer = std::fs::read_link(root.join("current"))?;
     let before = generations(&root)?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let stage = Stage::begin(&dataset, &store, &options)?;
     let result = stage.publish(&dataset, &options, |artifacts: &Path| {
         let counts = crate::workbook::write_artifacts(artifacts, &dataset, &options, &censuses)?;

@@ -58,19 +58,18 @@ fn participation_v2_accepts_a_dated_explicit_scholastic_result_without_a_summer_
 }
 
 #[test]
-fn participation_historical_entry_point_keeps_its_window_requirement_for_every_reference(
-) -> TestResult {
-    for fixture in [Fixture::new()?, fixture()?] {
-        let case = direct_case(&fixture)?;
-        let expected = (
-            CandidateOutcome::Unresolved,
-            vec![Reason::SummerBoundaryUnresolved],
-        );
-        check!(eq; outcome(&fixture, &case)?, expected);
-        let observation = case.observation(&fixture);
-        let assessment = assess_historical_participation(fixture.query()?, &observation)?;
-        check!(eq; (assessment.outcome, assessment.reasons.iter().collect::<Vec<_>>()), expected);
-    }
+fn participation_historical_entry_point_keeps_its_explicit_legacy_window_requirement() -> TestResult
+{
+    let fixture = Fixture::new()?;
+    let case = direct_case(&fixture)?;
+    let expected = (
+        CandidateOutcome::Unresolved,
+        vec![Reason::SummerBoundaryUnresolved],
+    );
+    check!(eq; outcome(&fixture, &case)?, expected);
+    let observation = case.observation(&fixture);
+    let assessment = assess_historical_participation(fixture.query()?, &observation)?;
+    check!(eq; (assessment.outcome, assessment.reasons.iter().collect::<Vec<_>>()), expected);
     Ok(())
 }
 

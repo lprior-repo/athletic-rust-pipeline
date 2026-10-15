@@ -91,7 +91,7 @@ fn fixture() -> TestResult<Fixture> {
         store.append(Table::Performances, &performance)?;
     }
     let dataset = ExportDataset::load(&store)?;
-    let derivation = Derivation::of(&dataset, Scope::AllSources, None, &[]);
+    let derivation = Derivation::of(&dataset, Scope::AllSources, None, &[])?;
     let projection = PerformanceProjection::of(&derivation);
     let mut rows: Vec<Vec<String>> = derivation
         .performances()

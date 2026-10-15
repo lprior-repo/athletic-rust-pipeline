@@ -1,3 +1,4 @@
+use super::public_identity::{self, Expected};
 use crate::report::ReportResult;
 use census_domain::model::CanonicalAthlete;
 
@@ -26,6 +27,8 @@ pub(super) fn verify(
 struct Verifier<'a, 'd> {
     expectations: &'a Expectations<'d>,
     schema: Schema,
+    headers: Vec<&'static str>,
+    expected_ids: Vec<String>,
     ordered: Vec<&'a CanonicalAthlete>,
     printed: Vec<String>,
     seen: usize,
@@ -36,9 +39,38 @@ impl<'a, 'd> Verifier<'a, 'd> {
     fn new(expectations: &'a Expectations<'d>, findings: &'a mut Findings) -> ReportResult<Self> {
         let schema = Schema::of(expectations.dataset.semantic_policy()?);
         let ordered = ordered_athletes(expectations);
+        let headers = public_identity::sheet_headers(expectations.dataset, schema.headers())
+            .into_iter()
+            .map(
+                |header| match (expectations.dataset.selected_profile_id(), header) {
+                    (Some(_), "Conflict Flag") => "Retained Source Conflict",
+                    (Some(_), "Review Status") => "Identity Authority",
+                    _ => header,
+                },
+            )
+            .collect();
+        let expected_ids: Vec<_> = ordered
+            .iter()
+            .map(|athlete| {
+                Expected::of(expectations.dataset, athlete.id.as_str())
+                    .map(|identity| identity.athlete_id)
+            })
+            .collect::<ReportResult<_>>()?;
+        if expected_ids
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len()
+            != expected_ids.len()
+        {
+            return Err(crate::report::ReportError::Invariant {
+                detail: "workbook athlete inventory repeats a public identity".into(),
+            });
+        }
         Ok(Self {
             expectations,
             schema,
+            headers,
+            expected_ids,
             ordered,
             printed: Vec::new(),
             seen: 0_usize,
@@ -84,16 +116,11 @@ impl<'a, 'd> Verifier<'a, 'd> {
     }
 
     fn header(&mut self, row: &SparseRow) -> bool {
-        verify_width(
-            row,
-            labels::ATHLETES,
-            self.schema.headers().len(),
-            self.findings,
-        );
+        verify_width(row, labels::ATHLETES, self.headers.len(), self.findings);
         if row.index() != 0 {
             return false;
         }
-        verify_header(row, labels::ATHLETES, self.schema.headers(), self.findings);
+        verify_header(row, labels::ATHLETES, &self.headers, self.findings);
         true
     }
 
@@ -109,13 +136,16 @@ impl<'a, 'd> Verifier<'a, 'd> {
     }
 
     fn compare_row(&mut self, row: &SparseRow, athlete: &CanonicalAthlete) {
-        for (column, expected) in self.values(athlete).iter().enumerate() {
-            compare(row, labels::ATHLETES, column, expected, self.findings);
+        match self.values(athlete) {
+            Ok(values) => values.iter().enumerate().for_each(|(column, expected)| {
+                compare(row, labels::ATHLETES, column, expected, self.findings);
+            }),
+            Err(error) => self.findings.note(error.to_string()),
         }
     }
 
     fn membership(&mut self) {
-        membership::verify(&self.ordered, &self.printed, self.findings);
+        membership::verify(&self.expected_ids, &self.printed, self.findings);
     }
 }
 
@@ -137,3 +167,6 @@ fn ordered_athletes<'a>(expectations: &'a Expectations<'_>) -> Vec<&'a Canonical
     ordered.sort_by(|left, right| left.1.cmp(&right.1));
     ordered.into_iter().map(|(athlete, _)| athlete).collect()
 }
+
+#[cfg(test)]
+mod tests;

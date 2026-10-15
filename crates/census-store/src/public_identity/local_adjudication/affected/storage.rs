@@ -1,21 +1,44 @@
 use super::{Inputs, Physical};
-use crate::journal::context::{
-    measure_context_object, stage_context_object, ContextRecordSink, StagedContextObject,
-};
+use crate::journal::context::{measure_context_object, ContextRecordSink, StagedContextObject};
 use crate::public_identity::context::{storage::charge_section_bytes, wire};
 use crate::{Store, StoreError, StoreResult};
 use serde::Serialize;
 
 impl Inputs {
-    pub(in crate::public_identity) fn measure_context(&self) -> StoreResult<String> {
-        measure_context_object(|sink| self.emit_context(sink))
-    }
-
-    pub(in crate::public_identity) fn stage(
+    pub(in crate::public_identity) fn admission_charge(
         &self,
         store: &Store,
+    ) -> StoreResult<crate::journal::context::ContextCharge> {
+        crate::journal::context::charge_context_object(store, |sink| self.emit_context(sink))
+    }
+
+    pub(in crate::public_identity) fn stage_admitted(
+        &self,
+        store: &Store,
+        permit: &crate::public_identity::local_adjudication::admission::Permit<'_>,
     ) -> StoreResult<StagedContextObject> {
-        stage_context_object(store, |sink| self.emit_context(sink))
+        crate::journal::context::stage_reserved_context(store, permit, |sink| {
+            self.emit_context(sink)
+        })
+    }
+
+    pub(in crate::public_identity) fn restore_admission_binding(
+        &mut self,
+        binding: &super::super::admission::Binding<'_>,
+    ) -> StoreResult<()> {
+        if &self.header.store != binding.store
+            || self.header.authority_context != binding.authority_context
+            || self.header.evidence_generation != binding.evidence_generation
+            || self.header.derived_generation != binding.derived_generation
+        {
+            return Err(super::invalid("manual admission evidence moved"));
+        }
+        self.header.snapshot_sequence = binding.snapshot_sequence;
+        Ok(())
+    }
+
+    pub(in crate::public_identity) fn measure_context(&self) -> StoreResult<String> {
+        measure_context_object(|sink| self.emit_context(sink))
     }
 
     fn emit_context(&self, sink: &mut ContextRecordSink<'_>) -> StoreResult<()> {

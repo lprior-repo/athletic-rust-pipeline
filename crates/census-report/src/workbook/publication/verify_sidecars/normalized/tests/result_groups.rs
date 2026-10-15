@@ -11,7 +11,7 @@ fn recaptured_current_hashes_cannot_hide_forged_result_group_counts_or_physical_
         &given.dataset,
         &store.out_dir(),
         &given.options.jurisdictions,
-    );
+    )?;
     let workbook = crate::workbook::build_from(&given.dataset, &store, &given.options, &censuses)?;
     let original = workbook.parent().ok_or("current generation")?;
     let accepted = publication::verify_published(&workbook)?;
@@ -55,7 +55,7 @@ fn current_flat_sidecars_refuse_legacy_count_labels_after_hash_recapture() -> Te
         &given.dataset,
         &store.out_dir(),
         &given.options.jurisdictions,
-    );
+    )?;
     let workbook = crate::workbook::build_from(&given.dataset, &store, &given.options, &censuses)?;
     let original = workbook.parent().ok_or("current generation")?;
     for (index, extension) in ["csv", "jsonl"].into_iter().enumerate() {

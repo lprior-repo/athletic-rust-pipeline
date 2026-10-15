@@ -1,11 +1,12 @@
+use super::session::ParsedCapture;
 use super::{DateTime, OwnedPerformance, Utc, VerifiedOwnedAcquisition};
 use crate::milesplit::{CaptureWitnessError, OwnedMeetParseError};
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct VerifiedRetainedOwnedResult {
     snapshot_sequence: u64,
-    acquisition: VerifiedOwnedAcquisition,
-    acquired_at: DateTime<Utc>,
+    parsed: Arc<ParsedCapture>,
     row: OwnedPerformance,
     interpretation_key: String,
 }
@@ -13,15 +14,13 @@ pub struct VerifiedRetainedOwnedResult {
 impl VerifiedRetainedOwnedResult {
     pub(super) fn new(
         snapshot_sequence: u64,
-        acquisition: VerifiedOwnedAcquisition,
-        acquired_at: DateTime<Utc>,
+        parsed: Arc<ParsedCapture>,
         row: OwnedPerformance,
         interpretation_key: String,
     ) -> Self {
         Self {
             snapshot_sequence,
-            acquisition,
-            acquired_at,
+            parsed,
             row,
             interpretation_key,
         }
@@ -32,11 +31,15 @@ impl VerifiedRetainedOwnedResult {
     }
 
     pub fn acquisition(&self) -> &VerifiedOwnedAcquisition {
-        &self.acquisition
+        &self.parsed.acquisition
     }
 
     pub fn acquired_at(&self) -> DateTime<Utc> {
-        self.acquired_at
+        self.parsed.acquired_at
+    }
+
+    pub fn parsed_rows(&self) -> &[OwnedPerformance] {
+        &self.parsed.rows
     }
 
     pub fn row(&self) -> &OwnedPerformance {
@@ -68,6 +71,10 @@ pub enum RetainedResultError {
     MissingInterpretation { key: String },
     #[error("retained source result interpretation {key} differs from replayed capture bytes")]
     ChangedInterpretation { key: String },
+    #[error("retained result session exceeds sixteen resident owned captures")]
+    SessionBudget,
+    #[error("retained result row index allocation failed")]
+    Allocation(#[from] std::collections::TryReserveError),
     #[error(transparent)]
     Store(#[from] census_store::StoreError),
     #[error(transparent)]

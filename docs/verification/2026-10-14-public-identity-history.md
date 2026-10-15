@@ -122,3 +122,146 @@ After the test-only exact-sequence change, both SIGTERM controllers passed again
 PENDING: native Mac checks.
 NOT RUN: power-loss durability, frozen public-ID/archive parity, production reuse,
 correction operations and representative peak RSS. R3 remains OPEN.
+
+## Selected integration checkpoint — October 15, 15:35 UTC
+
+R1, R2 and R3 remain **OPEN**. Candidate checkpoint `f814138e4b39ae49a06272e6602ef8cf658e0070`
+is based on main `450ca90765e08d963597b283a1c15fc9541d594a`; it is a local integration
+checkpoint, not a pushed or runtime-qualified release. Subsequent fixture, coverage,
+manual-crash and public-API repairs are still being integrated. Earlier passing results
+above do not validate these later changes.
+
+- R1 implementation track: `export/qualification/participation/` and selected capture
+  bind source-backed outcomes to PR selection. The combined roster/second-meet context
+  repair preserves per-performance eligibility and retained unknown/conflicting evidence.
+  Acceptance still needs compiled composed regressions, real-source policy coverage,
+  and actual workbook/normalized winner and exclusion verification.
+- R2 implementation track: `export/qualification/current_affiliation/` and selected
+  derivation use accepted dated roster evidence. Cross-school transfer is not closed:
+  school-minted candidates sharing a provider subject cannot currently acquire the
+  required accepted public membership through the store writer. Four transfer/conflict
+  fixtures expose this domain/admission dependency; no fabricated identities qualify it.
+- R3 implementation track: `public_identity/local_adjudication/`, retained/frozen replay,
+  and report public-identity consumers. Manual V2/witness5 binds exact affected records;
+  its native crash replacement and consumer regressions are authored, not executed.
+  Public `Derivation::of` still permits historical projection from selected input at this
+  checkpoint; a fallible canonical dispatch repair is in progress. Candidate membership
+  extension/correction semantics and repeated-prepare staging capacity remain open.
+
+Forward patch/whitespace checks passed for the integrated composition, consumer,
+preflight, manual-authority and crash slices. Candidate Moon formatting passed.
+All-target compilation, focused tests, native crash execution, source lint and release
+qualification for the latest combined tree are **NOT RUN**. Mac access is connected and
+authorized, but task admission still fails; cloud code/review continues.
+
+Five physical tables now receive existing bounded admission before aggregate loading.
+Other materialized tables, source-observation enrichment, decoded amplification and
+lineage hashing still require bounded-memory acceptance. No representative peak-RSS
+measurement exists for this checkpoint; the historical 64-GB problem is not closed.
+
+### 2026-10-15 selected integration: school-index source comment scope
+
+Read-only inspection of `moon.yml`'s `pipeline:xtask`, `xtask/src/main.rs`,
+`xtask/src/comments.rs`, `xtask/src/comments/lexical.rs` and `tools/gate.sh`
+confirms that the zero-comment lane includes both school-index source and tests.
+The isolated current-main candidate removes only 25 documentation-comment lines
+from `school_index.rs` and three comment lines from its tests. No executable
+logic or assertions change. This is source inspection, not an executed trusted
+comment-gate result.
+
+This historical capacity repair was superseded by main `e68312bf`, which withdraws
+the unused capacity API and its tests. The reconciled candidate preserves that
+withdrawal; this earlier comment cleanup is retained only as provenance.
+The original four compile-fix SHA256s were verified before this explicit
+comment-only delta, and the two changed source hashes are recorded separately in
+the integration packet. Compiler and trusted source-gate validation remain open.
+
+## Focused identity verification — October 15, 16:58 UTC
+
+Omarchy verified commit `8750a2160bde030f35e356fe9b49f0e56819d523`, tree
+`de1b0f18bf637d52dc1336767ee84be6cefd0759`, based on main `450ca907`.
+This is the focused identity repair, not the subsequent selected integration.
+Moon 2.2.4, pinned nightly, task-local Cargo home, CI unset, incremental disabled,
+one build job: format, workspace all-target/all-feature check and source lint PASS.
+Three nonfatal forced arity warnings remain. Store selections PASS 81 and 60;
+native crash controllers PASS 4 (2 child fixtures invoked by controllers, skipped
+as standalone cases); CLI local-adjudication PASS 22, 202 unrelated tests skipped.
+
+Reproduction from the repository root with the pinned toolchain and Moon on PATH:
+
+```sh
+export CARGO_INCREMENTAL=0 MOON_RUST_BUILD_JOBS=1
+env -u CI tools/moon-local --concurrency 1 run pipeline:fmt
+env -u CI tools/moon-local --concurrency 1 run pipeline:check
+env -u CI tools/moon-local --concurrency 1 run pipeline:lint-src
+env -u CI tools/moon-local --concurrency 1 run pipeline:tests-scoped -- -p census-store --lib -E 'test(public_identity::)' --no-tests fail
+env -u CI tools/moon-local --concurrency 1 run pipeline:tests-scoped -- -p census-store --lib -E 'test(public_identity_tests::)' --no-tests fail
+env -u CI tools/moon-local --concurrency 1 run pipeline:tests-scoped -- -p census-store --test public_identity_crash --no-tests fail
+env -u CI tools/moon-local --concurrency 1 run pipeline:tests-scoped -- -p census-service --bin census-service -E 'test(cli::local_adjudication::)' --no-tests fail
+```
+
+Incoming main `e68312bf524ff2baf5986818246d2e309a8765cf` withdraws the unused
+school-index capacity API and supersedes the browser boundary contract. Those user
+changes are preserved in the next candidate; the passing results above do not
+validate that rebase or the later membership, selected exports, participation,
+transfer, paging and historical graph-budget corrections. Their runtime results
+are PENDING. R1/R2/R3 remain OPEN; independent public population comparison and
+representative peak-memory evidence are NOT RUN. No live census was started.
+
+Required Rust/domain/functional/drift/test skills are available in the connected
+skill repository. The black-hat response template is unavailable. Current Beads
+storage is unavailable (incomplete Dolt database/read-only home configuration);
+historical exports are not treated as current tracking authority.
+
+### Remaining independent scale limits — October 15, 17:45 UTC
+
+Current constants still bound each whole authority-table read to 8,192 rows / 16 MiB
+(1 MiB per record, Store `public_identity/context.rs`). History decoding uses
+`ReplayLimits::SMALL`: 4,096 records, 4,096 identities and 8,192 bindings
+(Domain `public_identity_history/types.rs`, Store `public_identity/codec.rs`),
+with a separate 16 MiB encoded-history cap (`public_identity/mod.rs`). The complete
+frozen identity bundle remains capped at 128 MiB (`public_identity/frozen.rs`).
+Manual lifetime admission independently caps charged bytes at 128 MiB, roots at 4,096
+and reservations at 4,096 (`public_identity/local_adjudication/admission.rs`).
+Raw physical paging does not remove these limits or make these whole-ledger and
+whole-bundle consumers streaming. National-scale readiness and representative
+peak-memory qualification remain unproved.
+
+### Strict current-profile acceptance — October 15, 19:14 UTC
+
+Current capture now binds checked qualification execution references, strict
+participation v3 and selected artifact 8. Strict participation requires independent
+high-school status and an explicit applicable versioned window, including summer;
+a policy reference or scholastic division label does not supply that evidence.
+The current test migration preserves retained source dates, identities, marks,
+transfer history, frozen replay and crash recovery, but asserts withholding where
+those inputs are absent. It does not establish the following positive obligations:
+
+- OPEN: composed eligible best selection after retained-source deletion.
+- OPEN: an eligible PR across workbook, normalized artifacts and sidecars.
+- OPEN: transfer to the current school while retaining the old-school eligible PR.
+- OPEN: a stronger ineligible mark loses to an independently eligible fallback.
+- OPEN: the configured performance-window winner remains eligible across artifacts.
+
+These five migrated cases currently prove strict withholding and replay only.
+Positive acceptance still needs actual source-backed status/window projection and
+execution of the positive cases. R2 additionally needs the reviewed source reader
+for an explicit capture-day Current Roster statement; generic roster presence is
+insufficient. That parser is not included while adversarial review remains open.
+Historical v2 replay evidence remains bound to its historical inputs and cannot
+qualify current v3 capture. Current CLI, full runtime and scale acceptance remain
+OPEN; this checkpoint records formatting and static integration, not test passes.
+
+### Strict checkpoint execution — October 15, 19:40 UTC
+
+On exact `53bf6e74762ec07c441e673e5ee79e76bf593f9e`, Omarchy reported format and
+full check PASS; selected tests 31/32 (one stale Eligible expectation), bridge 9/9,
+historical-v2 replay 1/1 and qualification CLI 9/9. A separate external historical
+artifact-7 probe passed current-consumer replay, preserved all 42 files and refused
+new publication without mutation. The external probe is distinct from the one
+in-repository historical replay test; neither proves current eligible-mark inputs.
+The next source checkpoint corrects that remaining oracle to exact strict unresolved
+reasons while preserving all three source-free views and witness equality, and adds
+the independently reviewed capture-day Current Roster reader. Execution of that
+new reader and combined checkpoint remains pending. No summer policy is relaxed;
+the five positive eligibility obligations above remain OPEN.

@@ -8,11 +8,16 @@ mod components;
 mod descriptor;
 mod policy;
 mod role;
+mod selected_qualification;
 
 pub use descriptor::{
     profile_contract_descriptor_v1, profile_contract_ref_v1, ContractDescriptorV1,
 };
 pub use role::ContractRoleV1;
+pub use selected_qualification::{
+    selected_qualification_contract_ref_v1, validate_selected_qualification_profile_v1,
+    SupportedQualificationProfileV1,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ProfileExecutionError {
@@ -60,6 +65,14 @@ pub fn compile_profile(
 }
 
 fn check_configuration(profile: &QueryProfileV1) -> Result<(), ProfileExecutionError> {
+    check_selection_configuration(profile)?;
+    if profile.input().acquisition_window.through() > &profile.input().as_of {
+        return Err(ProfileExecutionError::AcquisitionAfterAsOf);
+    }
+    Ok(())
+}
+
+fn check_selection_configuration(profile: &QueryProfileV1) -> Result<(), ProfileExecutionError> {
     let input = profile.input();
     for jurisdiction in &input.jurisdictions {
         if !UsJurisdiction::CENSUS_SCOPE.contains(jurisdiction) {
@@ -85,9 +98,6 @@ fn check_configuration(profile: &QueryProfileV1) -> Result<(), ProfileExecutionE
         ProvisionalInclusionV1::Include => {
             return Err(ProfileExecutionError::UnsupportedProvisionalInclusion);
         }
-    }
-    if input.acquisition_window.through() > &input.as_of {
-        return Err(ProfileExecutionError::AcquisitionAfterAsOf);
     }
     Ok(())
 }

@@ -231,14 +231,34 @@ fn normalized_csv_uses_shared_schema_row_count_and_bounded_decoder() -> TestResu
     writer.write_record(&row)?;
     writer.flush()?;
     let bytes = std::fs::metadata(&path)?.len();
-    let mut index = Index::read(&path, bytes, 1)?;
+    let mut index = Index::read(&path, bytes, 1, 6)?;
     let mut counts = ComparisonCounts::default();
     index.observe(1, "Example Runner", 2027, &mut counts)?;
     check!(counts.passed());
-    check!(Index::read(&path, bytes, 0).is_err());
-    check!(Index::read(&path, bytes, 2).is_err());
-    check!(Index::read(&path, 129 * 1024 * 1024, 1).is_err());
-    check!(Index::read(&path, bytes, 1_000_001).is_err());
+    check!(Index::read(&path, bytes, 0, 6).is_err());
+    check!(Index::read(&path, bytes, 2, 6).is_err());
+    check!(Index::read(&path, 129 * 1024 * 1024, 1, 6).is_err());
+    check!(Index::read(&path, bytes, 1_000_001, 6).is_err());
+    drop(writer);
+    let mut reader = csv::Reader::from_path(&path)?;
+    let headers = reader.headers()?.clone();
+    drop(reader);
+    let mut writer = csv::Writer::from_path(&path)?;
+    writer.write_record(
+        headers
+            .iter()
+            .chain(["canonical_candidate_id", "identity_resolution"]),
+    )?;
+    row.extend([
+        "synthetic-candidate".into(),
+        "{\"state\":\"canonical\"}".into(),
+    ]);
+    writer.write_record(&row)?;
+    writer.flush()?;
+    let bytes = std::fs::metadata(&path)?.len();
+    Index::read(&path, bytes, 1, 7)?;
+    check!(Index::read(&path, bytes, 1, 6).is_err());
+    check!(Index::read(&path, bytes, 1, 8).is_err());
     Ok(())
 }
 

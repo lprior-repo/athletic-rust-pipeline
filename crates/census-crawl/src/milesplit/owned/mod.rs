@@ -21,12 +21,14 @@ pub use parse::{
     OwnedParseResourceFailure, OwnedResourceReceipt,
 };
 pub use retained::{
-    read_retained_acquisition, CaptureReadBudget, CaptureWitnessError, OwnedAcquisitionRef,
-    VerifiedOwnedAcquisition,
+    read_retained_acquisition, read_retained_acquisition_from, CaptureReadBudget,
+    CaptureWitnessError, OwnedAcquisitionRef, VerifiedOwnedAcquisition,
 };
 pub use retained_result::{
-    read_retained_owned_result, RetainedResultError, VerifiedRetainedOwnedResult,
+    read_retained_owned_result, read_retained_owned_result_from, RetainedResultError,
+    VerifiedRetainedOwnedResult,
 };
+pub(in crate::milesplit) use retained_result::{OwnedResultSession, MAX_SESSION_CAPTURES};
 
 pub const OWNED_MEET_PHASE: &str = "milesplit_owned_meet_v4";
 pub const OWNED_CAPTURE_PHASE: &str = "milesplit_owned_capture_v1";

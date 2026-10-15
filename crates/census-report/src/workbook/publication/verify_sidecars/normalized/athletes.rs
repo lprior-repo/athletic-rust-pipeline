@@ -5,11 +5,16 @@ use super::{
     schema,
 };
 use crate::bests::SharedSelection;
+use crate::export::public_identity::population::IdentityPopulation;
 use crate::report::ReportResult;
+use crate::workbook::verify::public_identity::{self, Expected};
 use census_domain::model::{CanonicalAthlete, Confidence, Gender};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::Arc;
+
+pub(super) mod public;
+use public::{alias_headers, alias_public_identity, public_identity_row};
 
 pub(super) fn verify(
     directory: &Path,
@@ -20,12 +25,25 @@ pub(super) fn verify(
         .derivation
         .athletes()
         .iter()
-        .map(|row| (row.id.as_str(), row))
-        .collect();
+        .map(|row| {
+            Ok((
+                Expected::of(inputs.dataset, row.id.as_str())?.athlete_id,
+                row,
+            ))
+        })
+        .collect::<ReportResult<_>>()?;
+    if athletes.len() != inputs.derivation.athletes().len() {
+        return Err(super::super::defect(
+            "selected athlete inventory repeats a public identity".into(),
+        ));
+    }
     let marked: BTreeSet<_> = bests.iter().map(|row| row.athlete_id().as_str()).collect();
     rows::table(
         directory,
-        ("athletes.csv", schema::ATHLETES),
+        (
+            "athletes.csv",
+            &public_identity::headers(inputs.dataset, schema::ATHLETES),
+        ),
         athletes.len(),
         &["athlete_id"],
         |row| {
@@ -33,11 +51,12 @@ pub(super) fn verify(
             let athlete = athletes
                 .get(id)
                 .ok_or_else(|| rows::missing("athlete", id))?;
+            public_identity_row(row, inputs.dataset, athlete.id.as_str())?;
             identity(row, athlete, inputs)?;
             evidence(row, athlete)?;
             row.text(
                 "performance_availability",
-                if marked.contains(id) {
+                if marked.contains(athlete.id.as_str()) {
                     "eligible_selected_mark"
                 } else {
                     "no_eligible_selected_mark_in_snapshot"
@@ -71,25 +90,23 @@ fn identity(row: &Row<'_>, athlete: &CanonicalAthlete, inputs: &Inputs<'_>) -> R
         },
     )?;
     row.text("current_school_id", athlete.school.as_str())?;
-    let status = inputs
-        .dataset
-        .identities()
-        .status(athlete.id.as_str())
-        .map_err(census_store::StoreError::from)?;
-    row.text("identity_status", status.as_str())?;
+    let status = if inputs.dataset.selected_profile_id().is_some() {
+        Expected::of(inputs.dataset, athlete.id.as_str())?;
+        "accepted_public_identity"
+    } else {
+        inputs
+            .dataset
+            .identities()
+            .status(athlete.id.as_str())
+            .map_err(census_store::StoreError::from)?
+            .as_str()
+    };
+    row.text("identity_status", status)?;
     row.text("input_generation", &inputs.dataset.lineage.input_generation)?;
+    affiliation(row, athlete, inputs)?;
     row.literals(&[
-        (
-            "current_school_status",
-            "canonical_school_currentness_unavailable",
-        ),
         ("record_revision", "unavailable"),
         ("record_revision_status", "record_revision_not_retained"),
-        ("affiliation_evidence_refs", "unavailable"),
-        (
-            "affiliation_evidence_status",
-            "claim_level_affiliation_links_not_retained",
-        ),
     ])
 }
 
@@ -131,15 +148,24 @@ pub(super) fn aliases(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<u64
         .iter()
         .map(|athlete| athlete.id.as_str())
         .collect();
-    let projection = inputs.dataset.identities();
+    let headers: Vec<_> = alias_headers(inputs.dataset)
+        .into_iter()
+        .map(
+            |header| match (inputs.dataset.selected_profile_id(), header) {
+                (Some(_), "resolution_state") => "historical_automatic_identity_status",
+                _ => header,
+            },
+        )
+        .collect();
     rows::table(
         directory,
-        ("identity_aliases.csv", schema::ALIASES),
+        ("identity_aliases.csv", &headers),
         athletes.len(),
         &["original_id"],
         |row| {
             row.text("input_generation", &inputs.dataset.lineage.input_generation)?;
-            alias_row(row, &athletes, &members, &projection)
+            alias_public_identity(row, inputs.dataset)?;
+            alias_row(row, &athletes, &members, inputs)
         },
     )
 }
@@ -148,24 +174,33 @@ fn alias_row(
     row: &Row<'_>,
     athletes: &BTreeMap<&str, &CanonicalAthlete>,
     members: &BTreeSet<&str>,
-    projection: &Arc<census_domain::model::AthleteIdentityProjection>,
+    inputs: &Inputs<'_>,
 ) -> ReportResult<()> {
     let id = row.get("original_id")?;
     if !athletes.contains_key(id) {
         return Err(rows::missing("alias", id));
     }
-    let canonical = projection.canonical_id(id);
+    let identities = IdentityPopulation::of(inputs.dataset)?;
+    let canonical = identities
+        .canonical_candidate(id)
+        .ok_or_else(|| rows::missing("publication identity candidate", id))?;
     let included = members.contains(canonical);
     row.text(
         "canonical_id",
         if included { canonical } else { "unavailable" },
     )?;
     row.text("resolved_id", canonical)?;
+    let projection = inputs.dataset.identities();
     let status = projection
         .status(id)
         .map_err(census_store::StoreError::from)?;
-    row.text("resolution_state", status.as_str())?;
-    alias_transitions(row, id, projection)?;
+    let status_header = if inputs.dataset.selected_profile_id().is_some() {
+        "historical_automatic_identity_status"
+    } else {
+        "resolution_state"
+    };
+    row.text(status_header, status.as_str())?;
+    alias_transitions(row, id, &projection)?;
     row.text(
         "publication_membership",
         if included {
@@ -210,3 +245,34 @@ fn alias_literals(row: &Row<'_>) -> ReportResult<()> {
         ),
     ])
 }
+
+fn affiliation(row: &Row<'_>, athlete: &CanonicalAthlete, inputs: &Inputs<'_>) -> ReportResult<()> {
+    match inputs.derivation.current_affiliation(&athlete.id) {
+        None => row.literals(&[
+            (
+                "current_school_status",
+                "canonical_school_currentness_unavailable",
+            ),
+            ("affiliation_evidence_refs", "unavailable"),
+            (
+                "affiliation_evidence_status",
+                "claim_level_affiliation_links_not_retained",
+            ),
+        ]),
+        Some(resolution) => {
+            row.text("current_school_status", resolution.status())?;
+            row.json("affiliation_evidence_refs", &resolution.evidence_refs())?;
+            row.text(
+                "affiliation_evidence_status",
+                if resolution.evidence_refs().is_empty() {
+                    "no_retained_affiliation_evidence"
+                } else {
+                    "retained_selected_affiliation_evidence"
+                },
+            )
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests;

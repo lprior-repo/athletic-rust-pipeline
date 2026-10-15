@@ -28,6 +28,9 @@ use state::Outcome;
 #[cfg(test)]
 mod tests;
 
+#[cfg(test)]
+pub(crate) use retained::tests::correction::split as split_identity_fixture;
+
 pub use census_domain::model::AccessBlockKind;
 
 pub const UNKNOWN_JURISDICTION: &str = JurisdictionBucket::UNPLACED_CODE;
@@ -182,8 +185,12 @@ pub fn coverage_report(
     dataset: &ExportDataset,
     grad_year: Option<i16>,
 ) -> ReportResult<CoverageReport> {
+    if dataset.selected_profile_id().is_some() {
+        let derivation = super::Derivation::of(dataset, Scope::AllSources, grad_year, &[])?;
+        return scoped::report(&derivation);
+    }
     let admission = crate::report::EventAdmission::of(dataset)?;
-    let outcome = classify::run(dataset, grad_year);
+    let outcome = classify::run(dataset, grad_year)?;
     let state_counts = state_histogram(&outcome.jurisdictions);
     let mut report = CoverageReport {
         grad_year,

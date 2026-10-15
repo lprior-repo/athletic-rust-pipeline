@@ -26,6 +26,9 @@ pub enum EventExclusionReason {
     Triathlon,
     UnrelatedSport,
     MultipleExcludedDisciplines,
+    OutsideSelectedSport,
+    OutsideSelectedCompetitionCategory,
+    OutsideSelectedSportAndCompetitionCategory,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
@@ -201,15 +204,15 @@ pub(super) fn qualify(
         Err(_) => return unresolved(EventResolutionReason::UnresolvedCategoryOrContext),
     };
     match category(specification.category.as_ref(), event.gender) {
-        Ok(()) => Ok(EventDisposition::Included(kind)),
+        Ok(_) => Ok(EventDisposition::Included(kind)),
         Err(reason) => unresolved(reason),
     }
 }
 
-fn category(
+pub(super) fn category(
     category: Option<&CompetitionCategory>,
     gender: Gender,
-) -> Result<(), EventResolutionReason> {
+) -> Result<Gender, EventResolutionReason> {
     let explicit = match category {
         Some(CompetitionCategory::Boys) => Some(Gender::Boys),
         Some(CompetitionCategory::Girls) => Some(Gender::Girls),
@@ -229,6 +232,7 @@ fn category(
             Err(EventResolutionReason::ContradictoryDeclarations)
         }
         (None, Gender::Unknown) => Err(EventResolutionReason::UnresolvedCategoryOrContext),
-        _ => Ok(()),
+        (Some(explicit), _) => Ok(explicit),
+        (None, gender) => Ok(gender),
     }
 }

@@ -103,7 +103,7 @@ pub(in crate::workbook::publication) fn render_policy20(
     rebind(&mut dataset, 20)?;
     std::fs::create_dir_all(directory)?;
     let censuses =
-        crate::workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions);
+        crate::workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions)?;
     let counts = crate::workbook::write_artifacts(directory, &dataset, options, &censuses)?;
     historical_header(directory, revision)?;
     let counts = if revision == 5 {
@@ -184,6 +184,7 @@ fn capture(
         selection: Selection::of(options),
         artifacts,
         normalized_csv_rows: counts,
+        selected_profile: None,
         generation_digest: String::new(),
     };
     manifest.generation_digest = match revision {

@@ -7,6 +7,7 @@ use crate::report::ReportResult;
 use crate::workbook::recruiting::bounded::{bounded_contacts, WORKBOOK_GROUP_BUDGET};
 use crate::workbook::recruiting::contact::{self, SchoolContacts};
 use crate::workbook::recruiting::profiles::profiles_of;
+use crate::workbook::verify::public_identity::{self, Expected};
 
 use super::cells::Cell;
 use super::defect;
@@ -65,6 +66,20 @@ struct Projection<'a, 'd> {
 
 impl<'a, 'd> Projection<'a, 'd> {
     fn of(inputs: &'a Inputs<'d>) -> ReportResult<Self> {
+        let identities = inputs
+            .derivation
+            .athletes()
+            .iter()
+            .map(|athlete| {
+                Expected::of(inputs.dataset, athlete.id.as_str())
+                    .map(|identity| identity.athlete_id)
+            })
+            .collect::<ReportResult<BTreeSet<_>>>()?;
+        if identities.len() != inputs.derivation.athletes().len() {
+            return Err(defect(
+                "recruiting population repeats an accepted public identity".into(),
+            ));
+        }
         crate::grouping::Admission::new("recruiting schools").rows(inputs.derivation.schools())?;
         let schools = inputs
             .derivation
@@ -97,7 +112,11 @@ impl<'a, 'd> Projection<'a, 'd> {
         position: &mut usize,
     ) -> ReportResult<()> {
         if index == 1 {
-            return read::headers(path, record, &HEADERS);
+            return read::headers(
+                path,
+                record,
+                &public_identity::headers(self.inputs.dataset, &HEADERS),
+            );
         }
         let athlete = self.athlete(path, index, *position)?;
         let expected = cells(
@@ -158,8 +177,9 @@ fn cells(
 ) -> ReportResult<Vec<Cell>> {
     let school = schools.get(athlete.school.as_str()).copied();
     let scoped = contact::scoped(contacts.get(athlete.school.as_str()), athlete);
+    let identity = Expected::of(inputs.dataset, athlete.id.as_str())?;
     let status = identity_status(inputs, athlete)?;
-    let mut cells = athletic_cells(athlete, school, &scoped, status)?;
+    let mut cells = athletic_cells(athlete, school, &scoped, status, &identity.athlete_id)?;
     let address = school_address.get(athlete.id.as_str()).ok_or_else(|| {
         defect(format!(
             "athlete {} has no frozen school address projection",
@@ -169,10 +189,15 @@ fn cells(
     cells.push(Cell::optional(
         (!address.is_empty()).then_some(address.as_str()),
     ));
+    cells.extend(identity.audit.into_iter().flatten().map(Cell::text));
     Ok(cells)
 }
 
 fn identity_status(inputs: &Inputs<'_>, athlete: &CanonicalAthlete) -> ReportResult<String> {
+    if inputs.dataset.selected_profile_id().is_some() {
+        Expected::of(inputs.dataset, athlete.id.as_str())?;
+        return Ok("accepted_public_identity".into());
+    }
     let status = inputs
         .dataset
         .identities()
@@ -186,9 +211,10 @@ fn athletic_cells(
     school: Option<&CanonicalSchool>,
     scoped: &contact::ScopedContacts<'_>,
     status: String,
+    athlete_id: &str,
 ) -> ReportResult<Vec<Cell>> {
     let preferred = scoped.preferred();
-    let mut cells = athlete_cells(athlete, school);
+    let mut cells = athlete_cells(athlete, school, athlete_id);
     cells.extend(role_cells(scoped, school));
     cells.extend([
         Cell::text(preferred.source_url),
@@ -204,7 +230,11 @@ fn athletic_cells(
     Ok(cells)
 }
 
-fn athlete_cells(athlete: &CanonicalAthlete, school: Option<&CanonicalSchool>) -> Vec<Cell> {
+fn athlete_cells(
+    athlete: &CanonicalAthlete,
+    school: Option<&CanonicalSchool>,
+    athlete_id: &str,
+) -> Vec<Cell> {
     let profiles = profiles_of(athlete);
     let sports = athlete
         .sports
@@ -213,7 +243,7 @@ fn athlete_cells(athlete: &CanonicalAthlete, school: Option<&CanonicalSchool>) -
         .collect::<Vec<_>>()
         .join(";");
     vec![
-        Cell::text(athlete.id.as_str()),
+        Cell::text(athlete_id),
         Cell::text(athlete.canonical_name.as_str()),
         Cell::integer(athlete.grad_year.get().to_string()),
         Cell::text(athlete.gender.stable_key()),

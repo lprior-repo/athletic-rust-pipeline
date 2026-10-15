@@ -6,6 +6,8 @@ use std::collections::HashMap;
 
 use super::{header, Expect, Sheet};
 
+mod candidates;
+
 const CONFLICT_HEADERS: [&str; 5] = ["Family", "State", "Subject ID", "Subject", "Detail"];
 
 const REVIEW_HEADERS: [&str; 7] = [
@@ -106,9 +108,16 @@ pub(super) fn review(
     families: &[Family],
     verdicts: &[ReviewVerdictRecord],
     index: &Lookup<'_>,
-) -> Sheet {
+    dataset: &crate::export::ExportDataset,
+) -> crate::report::ReportResult<Sheet> {
     let mut rows = vec![header(&REVIEW_HEADERS)];
     for family in families {
+        if dataset.selected_profile_id().is_some()
+            && family.label == "Public identity candidate withheld"
+        {
+            rows.extend(candidates::expected(dataset)?);
+            continue;
+        }
         for retained in &family.rows {
             rows.push(vec![
                 Expect::text(family.label),
@@ -122,7 +131,7 @@ pub(super) fn review(
         }
     }
     rows.extend(verdicts.iter().map(|verdict| verdict_row(verdict, index)));
-    ("Review", rows)
+    Ok(("Review", rows))
 }
 
 fn verdict_row(verdict: &ReviewVerdictRecord, index: &Lookup<'_>) -> Vec<Expect> {

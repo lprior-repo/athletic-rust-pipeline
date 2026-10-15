@@ -51,6 +51,8 @@ pub struct HistoryProjection {
     pub(super) text_bytes: usize,
     pub(super) identities: BTreeMap<PublicAthleteId, IdentityEntry>,
     pub(super) bindings: BTreeMap<String, BindingEntry>,
+    pub(super) memberships: BTreeMap<String, super::membership::MembershipEntry>,
+    pub(super) withheld: BTreeMap<u64, Vec<String>>,
     pub(super) merges: BTreeMap<u64, MergeEntry>,
     pub(super) applications: BTreeSet<String>,
     pub(super) affected: BTreeMap<u64, Vec<String>>,
@@ -87,6 +89,8 @@ impl HistoryProjection {
             text_bytes: 0,
             identities: BTreeMap::new(),
             bindings: BTreeMap::new(),
+            memberships: BTreeMap::new(),
+            withheld: BTreeMap::new(),
             merges: BTreeMap::new(),
             applications: BTreeSet::new(),
             affected: BTreeMap::new(),
@@ -182,7 +186,8 @@ impl HistoryProjection {
             let total = self
                 .bindings
                 .len()
-                .checked_add(bindings.len())
+                .checked_add(self.memberships.len())
+                .and_then(|count| count.checked_add(bindings.len()))
                 .ok_or(HistoryError::CounterOverflow)?;
             if total > self.limits.bindings {
                 return Err(HistoryError::Limit("bindings"));
@@ -200,6 +205,7 @@ impl HistoryProjection {
             HistoryRequest::Establish { evidence, .. }
             | HistoryRequest::EstablishMatchedGroup { evidence, .. }
             | HistoryRequest::Bind { evidence, .. }
+            | HistoryRequest::BindCandidateMembership { evidence, .. }
             | HistoryRequest::Merge { evidence, .. } => evidence,
             HistoryRequest::Split(split) => &split.evidence,
             HistoryRequest::Revoke(revocation) => &revocation.evidence,
@@ -219,6 +225,11 @@ impl HistoryProjection {
                 binding,
                 evidence,
             } => self.bind(owner, binding, evidence, sequence),
+            HistoryRequest::BindCandidateMembership {
+                owner,
+                membership,
+                evidence,
+            } => self.bind_candidate_membership(owner, membership, evidence, sequence),
             HistoryRequest::Merge {
                 canonical,
                 members,

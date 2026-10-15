@@ -1,9 +1,12 @@
-use super::SharedSelection;
+use super::{SelectionOutcome, SharedSelection};
+use crate::export::ExportDataset;
+use crate::report::{Derivation, ReportError, ReportResult};
 use census_store::read::csv_failure;
 use census_store::{StoreError, StoreResult};
 use std::path::{Path, PathBuf};
 
 mod row;
+pub(super) mod selected;
 use row::Row;
 
 const HEADER: [&str; 36] = [
@@ -46,6 +49,50 @@ const HEADER: [&str; 36] = [
 ];
 
 pub fn write(
+    out_dir: &Path,
+    rows: &[SharedSelection],
+    cohort: &str,
+    dataset: &ExportDataset,
+) -> ReportResult<(PathBuf, PathBuf)> {
+    if dataset.selected_profile_id().is_some() {
+        return Err(ReportError::Invariant {
+            detail: "selected participation policy requires verified frozen evidence".into(),
+        });
+    }
+    super::participation::ParticipationSelection::of(dataset)?.ensure_dataset(dataset)?;
+    write_rows(out_dir, rows, cohort, dataset.semantic_policy()?).map_err(ReportError::from)
+}
+
+pub(crate) fn write_outcome(
+    out_dir: &Path,
+    derivation: &Derivation<'_>,
+    outcome: &SelectionOutcome,
+    cohort: &str,
+) -> ReportResult<(PathBuf, PathBuf)> {
+    let dataset = derivation.dataset();
+    derivation.ensure_selected_affiliation()?;
+    super::participation::ParticipationSelection::of(dataset)?.ensure_dataset(dataset)?;
+    if dataset.selected_profile_id().is_some() {
+        dataset.verified_participation()?;
+        dataset.verified_current_affiliations()?;
+        return selected::write(
+            out_dir,
+            &outcome.selections,
+            cohort,
+            dataset.semantic_policy()?,
+            dataset,
+        );
+    }
+    write_rows(
+        out_dir,
+        &outcome.selections,
+        cohort,
+        dataset.semantic_policy()?,
+    )
+    .map_err(ReportError::from)
+}
+
+fn write_rows(
     out_dir: &Path,
     rows: &[SharedSelection],
     cohort: &str,
@@ -121,4 +168,4 @@ fn header(policy: census_domain::model::EventSemantics) -> Vec<&'static str> {
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

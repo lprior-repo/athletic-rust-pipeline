@@ -22,6 +22,19 @@ pub(super) fn request(
             binding,
             evidence,
         } => budget.admit_bind(owner, binding, evidence)?,
+        HistoryRequest::BindCandidateMembership {
+            owner,
+            membership,
+            evidence,
+        } => {
+            budget.text(owner.as_str())?;
+            budget.text(&membership.id)?;
+            budget.text(membership.candidate.as_str())?;
+            budget.text(&membership.anchor_binding_id)?;
+            budget.text(&membership.source.identifier)?;
+            budget.namespace(&membership.source.namespace)?;
+            budget.evidence(evidence)?;
+        }
         HistoryRequest::Merge {
             canonical,
             members,
@@ -183,7 +196,11 @@ impl Budget {
         if let Some(prior) = &binding.supersedes {
             self.text(prior)?;
         }
-        match &binding.source.namespace {
+        self.namespace(&binding.source.namespace)
+    }
+
+    fn namespace(&mut self, namespace: &SourceNamespace) -> Result<(), HistoryError> {
+        match namespace {
             SourceNamespace::MilesplitAthlete
             | SourceNamespace::TfrrsAthlete
             | SourceNamespace::DirectAthleticsAthlete => Ok(()),

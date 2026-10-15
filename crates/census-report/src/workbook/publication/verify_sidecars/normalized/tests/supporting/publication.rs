@@ -11,7 +11,7 @@ fn artifact_v6_recaptured_hashes_do_not_hide_missing_or_forged_supporting_refere
         &given.dataset,
         &store.out_dir(),
         &given.options.jurisdictions,
-    );
+    )?;
     let workbook = crate::workbook::build_from(&given.dataset, &store, &given.options, &censuses)?;
     let original = workbook.parent().ok_or("missing published generation")?;
     let accepted = publication::verify_published(&workbook)?;

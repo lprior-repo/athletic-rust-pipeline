@@ -4,6 +4,8 @@ use fjall::{Readable, Snapshot};
 
 mod acquisition;
 mod bounded;
+mod bounded_page;
+pub use bounded_page::{PhysicalObservationCursor, PhysicalObservationPage};
 #[path = "../keyed.rs"]
 mod keyed;
 mod legacy;

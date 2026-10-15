@@ -2,8 +2,10 @@ use crate::bests::{Conflict, SharedSelection};
 use crate::report::ReportResult;
 
 use super::canonical::Value;
+use super::current_school::AffiliationExpectations;
 use super::expectations::Expectations;
 use super::labels;
+use super::public_identity::{self, Expected};
 use super::read::{
     compare, verify_header, verify_width, Book, Budget, Shape, SparseRow, EXCEL_COLUMNS_PER_SHEET,
     EXCEL_ROWS_PER_SHEET,
@@ -15,10 +17,15 @@ pub(super) fn verify(
     expectations: &Expectations<'_>,
     findings: &mut Findings,
 ) -> ReportResult<()> {
+    let schools = if expectations.dataset.selected_profile_id().is_some() {
+        Some(AffiliationExpectations::of(expectations.dataset)?)
+    } else {
+        None
+    };
     let prs = &expectations.bests;
     let mut seen = 0_usize;
     let mut visit = |row: &SparseRow| {
-        visit_row(row, prs, &mut seen, findings);
+        visit_row(row, expectations, schools.as_ref(), &mut seen, findings);
     };
     let budget = Budget {
         rows: EXCEL_ROWS_PER_SHEET,
@@ -36,8 +43,15 @@ pub(super) fn verify(
     Ok(())
 }
 
-fn visit_row(row: &SparseRow, prs: &[SharedSelection], seen: &mut usize, findings: &mut Findings) {
-    if header(row, findings) {
+fn visit_row(
+    row: &SparseRow,
+    expectations: &Expectations<'_>,
+    schools: Option<&AffiliationExpectations<'_>>,
+    seen: &mut usize,
+    findings: &mut Findings,
+) {
+    let prs = &expectations.bests;
+    if header(row, expectations, findings) {
         return;
     }
     let Some(pr) = expected_pr(row, prs, findings) else {
@@ -48,17 +62,31 @@ fn visit_row(row: &SparseRow, prs: &[SharedSelection], seen: &mut usize, finding
         return;
     }
     *seen = seen.saturating_add(1);
-    for (column, expected) in values(pr).enumerate() {
-        compare(row, labels::PRS, column, &expected, findings);
+    match values(pr, expectations, schools) {
+        Ok(values) => values.enumerate().for_each(|(column, expected)| {
+            compare(row, labels::PRS, column, &expected, findings);
+        }),
+        Err(error) => findings.note(error.to_string()),
     }
 }
 
-fn header(row: &SparseRow, findings: &mut Findings) -> bool {
-    verify_width(row, labels::PRS, labels::PR_HEADERS.len(), findings);
+fn header(row: &SparseRow, expectations: &Expectations<'_>, findings: &mut Findings) -> bool {
+    let mut headers = public_identity::sheet_headers(expectations.dataset, &labels::PR_HEADERS);
+    if expectations.dataset.selected_profile_id().is_some() {
+        for header in &mut headers {
+            *header = match *header {
+                "School" => "School at performance",
+                "State" => "State at performance",
+                other => other,
+            };
+        }
+        headers.extend(["Current school", "Current state", "Current school as-of"]);
+    }
+    verify_width(row, labels::PRS, headers.len(), findings);
     if row.index() != 0 {
         return false;
     }
-    verify_header(row, labels::PRS, &labels::PR_HEADERS, findings);
+    verify_header(row, labels::PRS, &headers, findings);
     true
 }
 
@@ -89,16 +117,27 @@ fn blank_pr(row: &SparseRow, pr: &SharedSelection, findings: &mut Findings) {
     ));
 }
 
-fn values(pr: &SharedSelection) -> impl Iterator<Item = Value> + use<> {
-    identity_values(pr)
+fn values(
+    pr: &SharedSelection,
+    expectations: &Expectations<'_>,
+    schools: Option<&AffiliationExpectations<'_>>,
+) -> ReportResult<impl Iterator<Item = Value> + use<>> {
+    let identity = Expected::of(expectations.dataset, pr.athlete_id().as_str())?;
+    let current = schools
+        .map(|schools| schools.values(pr.athlete_id().as_str()))
+        .transpose()?;
+    let current = current.map(|[_, name, state, as_of]| [name, state, as_of].map(Value::text));
+    Ok(identity_values(pr, &identity.athlete_id)
         .into_iter()
         .chain(result_values(pr))
         .chain(context_values(pr))
+        .chain(identity.audit.into_iter().flatten().map(Value::text))
+        .chain(current.into_iter().flatten()))
 }
 
-fn identity_values(pr: &SharedSelection) -> [Value; 9] {
+fn identity_values(pr: &SharedSelection, athlete_id: &str) -> [Value; 9] {
     [
-        Value::text(pr.athlete_id().as_str()),
+        Value::text(athlete_id),
         Value::text(&pr.athlete.name),
         Value::text(pr.athlete.gender.stable_key()),
         Value::optional(pr.athlete.school.as_deref()),
@@ -235,3 +274,6 @@ fn report_short_sheet(written: usize, prs: &[SharedSelection], findings: &mut Fi
 fn coordinate(sheet: &str, row: usize, column: usize) -> String {
     format!("{sheet}!{}", super::canonical::cell_reference(row, column))
 }
+
+#[cfg(test)]
+mod tests;

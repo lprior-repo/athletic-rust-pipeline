@@ -60,9 +60,8 @@ impl HistoryProjection {
         bindings.iter().try_for_each(|binding| {
             self.check_binding(binding)?;
             if self
-                .bindings
-                .values()
-                .any(|held| held.claim.candidate == binding.candidate)
+                .claims()
+                .any(|(_, candidate, _)| candidate == &binding.candidate)
             {
                 return Err(HistoryError::BindingConflict);
             }

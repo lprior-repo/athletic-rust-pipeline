@@ -11,6 +11,9 @@ pub fn assess_historical_participation<'a>(
     query: CandidateQuery<'a>,
     observation: &'a ParticipationObservation<'a>,
 ) -> Result<CandidateAssessment<'a>, ParticipationInputError> {
+    if query.binding.participation_rule.revision().get() != 1 {
+        return Err(ParticipationInputError::UnsupportedPolicy);
+    }
     assess(
         query,
         observation,
@@ -37,7 +40,7 @@ fn assess<'a>(
     cohort(query, observation, &mut reasons)?;
     contexts(query, observation, &mut reasons)?;
     if let Some(date) = performance_date(query, observation, &mut reasons) {
-        status(query, observation, date, &mut reasons)?;
+        status(query, observation, date, &mut reasons, policy)?;
         super::windows::assess(query, observation, date, &mut reasons, policy)?;
     }
     Ok(CandidateAssessment {
@@ -176,15 +179,17 @@ fn status(
     observation: &ParticipationObservation<'_>,
     date: &ProfileDate,
     reasons: &mut ParticipationReasons,
+    policy: ParticipationPolicy,
 ) -> Result<(), ParticipationInputError> {
-    let (seen, classes) = observation.high_school_status.iter().try_fold(
-        (false, 0_u8),
-        |(seen, classes), fact| {
+    let (seen, classes, observed) = observation.high_school_status.iter().try_fold(
+        (false, 0_u8, 0_u8),
+        |(seen, classes, observed), fact| {
             if !visible(query, fact.proof)? {
-                return Ok((seen, classes));
+                return Ok((seen, classes, observed));
             }
+            let admissible = policy.admits_status(fact.status, fact.basis);
             if !fact.interval.contains(date) {
-                return Ok((true, classes));
+                return Ok((seen || admissible, classes, observed));
             }
             let class = match fact.status {
                 StudentStatus::HighSchool => 1,
@@ -201,7 +206,12 @@ fn status(
                     8
                 }
             };
-            Ok::<_, ParticipationInputError>((true, classes | class))
+            let admitted_class = if admissible { class } else { 0 };
+            Ok::<_, ParticipationInputError>((
+                seen || admissible,
+                classes | admitted_class,
+                observed | class,
+            ))
         },
     )?;
     if !seen {
@@ -209,7 +219,7 @@ fn status(
     } else if classes == 0 {
         reasons.add(Reason::StatusNotEstablishedOnPerformanceDate);
     }
-    if classes.count_ones() > 1 {
+    if observed.count_ones() > 1 {
         reasons.add(Reason::ParticipationEvidenceConflict);
     }
     Ok(())

@@ -32,7 +32,8 @@ pub use snapshot::{csv_failure, publish_atomically, read_rows, write_snapshot_ro
 pub use view::{
     decode_physical_observation, AcceptedPublicIdentitySnapshot, JournalDigest, JournalEntry,
     JournalNamespace, JournalNamespaceFingerprint, JournalNamespaceInventory, JournalObject,
-    JournalRecord, JournalRecords, ReadBudget, ReadCounts, StoreSnapshot,
+    JournalRecord, JournalRecords, PhysicalObservationCursor, PhysicalObservationPage, ReadBudget,
+    ReadCounts, StoreSnapshot,
 };
 
 impl Store {

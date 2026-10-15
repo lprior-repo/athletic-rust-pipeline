@@ -103,7 +103,19 @@ impl<'a, 'd> Reader<'a, 'd> {
         let name = scope.name;
         verify_width(row, name, labels::PERFORMANCE_HEADERS.len(), self.findings);
         if row.index() == 0 {
-            verify_header(row, name, &labels::PERFORMANCE_HEADERS, self.findings);
+            let headers: Vec<_> = labels::PERFORMANCE_HEADERS
+                .iter()
+                .map(|label| {
+                    if self.expectations.dataset.selected_profile_id().is_some()
+                        && *label == "Athlete ID"
+                    {
+                        "Retained Candidate ID"
+                    } else {
+                        *label
+                    }
+                })
+                .collect();
+            verify_header(row, name, &headers, self.findings);
             return;
         }
         let position = scope.offset.saturating_add(row.index().saturating_sub(1));

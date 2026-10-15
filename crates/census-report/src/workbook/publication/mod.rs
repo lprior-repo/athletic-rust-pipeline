@@ -6,16 +6,19 @@ use std::path::{Path, PathBuf};
 
 mod binding;
 mod checkpoint;
+mod current_affiliations;
 mod incident;
 mod install;
 pub(super) mod inventory;
 mod lifecycle;
 pub(in crate::workbook) mod manifest;
 pub(super) mod normalized;
+mod participation_exclusions;
 mod pointer;
 mod protocol;
 mod recovery;
 mod seal;
+pub(in crate::workbook) mod selected;
 mod sidecars;
 mod stage;
 pub(in crate::workbook) mod verify_sidecars;
@@ -137,7 +140,7 @@ mod fence_tests;
 mod recovery_tests;
 
 #[cfg(test)]
-mod crash_tests;
+pub(crate) mod crash_tests;
 
 #[cfg(test)]
 mod input_tests;

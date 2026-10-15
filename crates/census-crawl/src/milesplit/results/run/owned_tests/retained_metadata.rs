@@ -10,6 +10,7 @@ use serde_json::Value;
 
 mod attacks;
 mod fixture;
+mod session;
 use fixture::*;
 
 #[tokio::test]

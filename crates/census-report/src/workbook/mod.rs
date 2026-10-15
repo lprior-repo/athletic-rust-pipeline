@@ -8,6 +8,7 @@ use std::time::Instant;
 
 mod cells;
 pub mod meta;
+mod public_identity;
 
 mod performances;
 mod relays;
@@ -41,11 +42,11 @@ impl Censuses {
         dataset: &crate::export::ExportDataset,
         out: &Path,
         jurisdictions: &[UsJurisdiction],
-    ) -> Self {
-        Self {
-            core: scope_census(dataset, Scope::Core, out, jurisdictions),
-            all_sources: scope_census(dataset, Scope::AllSources, out, jurisdictions),
-        }
+    ) -> ReportResult<Self> {
+        Ok(Self {
+            core: scope_census(dataset, Scope::Core, out, jurisdictions)?,
+            all_sources: scope_census(dataset, Scope::AllSources, out, jurisdictions)?,
+        })
     }
 }
 
@@ -54,16 +55,14 @@ fn scope_census(
     scope: Scope,
     out: &Path,
     jurisdictions: &[UsJurisdiction],
-) -> Census {
-    crate::report::build_census(
-        &crate::report::Derivation::of(dataset, scope, None, jurisdictions),
-        out,
-    )
+) -> ReportResult<Census> {
+    let derivation = Derivation::for_publication(dataset, scope, None, jurisdictions)?;
+    Ok(crate::report::build_census(&derivation, out))
 }
 
 pub fn build(store: &Store, options: &Options) -> ReportResult<PathBuf> {
     let dataset = crate::export::ExportDataset::load(store)?;
-    let censuses = Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions);
+    let censuses = Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions)?;
     build_from(&dataset, store, options, &censuses)
 }
 
@@ -73,6 +72,8 @@ pub fn build_from(
     options: &Options,
     censuses: &Censuses,
 ) -> ReportResult<PathBuf> {
+    publication::selected::ensure_current_options(dataset, options)?;
+    crate::bests::participation::ParticipationSelection::of(dataset)?;
     let stage = publication::Stage::begin(dataset, store, options)?;
     stage.publish(dataset, options, |directory| {
         write_artifacts(directory, dataset, options, censuses)
@@ -86,20 +87,19 @@ fn write_artifacts(
     censuses: &Censuses,
 ) -> ReportResult<publication::inventory::RowCounts> {
     let admission = crate::report::EventAdmission::of(dataset)?;
-    let outcome = select_bests(&admission, options)?;
-    let bests = &outcome.selections;
+    let derivation = Derivation::for_publication(
+        dataset,
+        options.scope,
+        options.grad_year,
+        &options.jurisdictions,
+    )?;
+    let outcome = select_bests(&derivation, &admission, options)?;
     let cohort = match options.grad_year.map(|year| format!("co{year}")) {
         Some(value) => value,
         None => "all".to_string(),
     };
-    bests::write(directory, bests, &cohort, dataset.semantic_policy()?)?;
-    let counts = publication::normalized::write(
-        directory,
-        dataset,
-        options,
-        bests,
-        &outcome.combined_exclusions,
-    )?;
+    bests::write_outcome(directory, &derivation, &outcome, &cohort)?;
+    let counts = publication::normalized::write_outcome(directory, &derivation, options, &outcome)?;
     dataset.save_frozen(&directory.join("frozen-input.json"))?;
 
     publication::write_json(&directory.join("event-catalog.json"), &admission.audit())?;
@@ -110,24 +110,18 @@ fn write_artifacts(
         censuses,
         outcome.selections,
         &admission,
+        &derivation,
     )?;
     Ok(counts)
 }
 
 fn select_bests(
+    derivation: &Derivation<'_>,
     admission: &crate::report::EventAdmission<'_>,
     options: &Options,
 ) -> ReportResult<bests::SelectionOutcome> {
     let started = Instant::now();
-    let outcome = bests::build_admitted_outcome(
-        admission,
-        &bests::Options {
-            scope: options.scope,
-            grad_year: options.grad_year,
-            limit: options.limit,
-            jurisdictions: options.jurisdictions.clone(),
-        },
-    )?;
+    let outcome = bests::build_from_derivation(derivation, admission, options.limit)?;
     tracing::info!(
         rows = outcome.selections.len(),
         ms = millis(started),
@@ -143,34 +137,29 @@ fn render_artifacts(
     censuses: &Censuses,
     bests: Vec<bests::SharedSelection>,
     admission: &crate::report::EventAdmission<'_>,
+    derivation: &Derivation<'_>,
 ) -> ReportResult<()> {
     let path = directory.join("workbook.xlsx");
-    let derivation = Derivation::of(
-        dataset,
-        options.scope,
-        options.grad_year,
-        &options.jurisdictions,
-    );
     let started = Instant::now();
-    let recruiting =
-        recruiting::Recruiting::of(&derivation, options.school_year, bests, admission)?;
+    let recruiting = recruiting::Recruiting::of(derivation, options.school_year, bests, admission)?;
     tracing::info!(ms = millis(started), "workbook build step: recruiting");
-    let population = Derivation::of(dataset, options.scope, None, &options.jurisdictions);
+    let population =
+        Derivation::for_publication(dataset, options.scope, None, &options.jurisdictions)?;
     let views = Views::of(
         censuses,
         &recruiting,
-        &derivation,
+        derivation,
         &population,
         options.school_year,
         admission,
     );
     write_workbook(&path, views)?;
-    relays::write_sidecars(directory, &derivation, admission)?;
+    relays::write_sidecars(directory, derivation, admission)?;
     publication::write_sidecars(
         directory,
         dataset,
         censuses,
-        &derivation,
+        derivation,
         &population,
         options.school_year,
     )

@@ -24,6 +24,7 @@ mod historical_affiliation;
 mod historical_parent_scope;
 mod keys;
 mod measures;
+mod participation;
 mod reduction;
 mod ties;
 mod units;

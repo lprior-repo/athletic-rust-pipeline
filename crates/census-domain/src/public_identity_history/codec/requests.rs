@@ -4,6 +4,7 @@ use serde::{Deserialize, Deserializer};
 use crate::model::ProfileDateRangeV1;
 
 use super::super::{BindingClaim, CandidateDecisionReference, EffectiveScope, HistoryRequest};
+use super::candidate_membership::MembershipBindNode;
 use super::claims::{BindingNode, EvidenceNode};
 use super::containers::{Bindings, ListNode, Meter, Node, NodeSeed};
 use super::corrections::{RevocationNode, SplitNode};
@@ -133,6 +134,7 @@ enum RequestVariant {
     Establish,
     EstablishMatchedGroup,
     Bind,
+    BindCandidateMembership,
     Merge,
     Split,
     Revoke,
@@ -151,6 +153,7 @@ impl Node for RequestNode {
                 "Establish",
                 "EstablishMatchedGroup",
                 "Bind",
+                "BindCandidateMembership",
                 "Merge",
                 "Split",
                 "Revoke",
@@ -178,6 +181,9 @@ impl<'de> Visitor<'de> for NodeSeed<'_, RequestNode> {
             }
             RequestVariant::Bind => {
                 variant.newtype_variant_seed(NodeSeed::<BindNode>::new(self.meter))
+            }
+            RequestVariant::BindCandidateMembership => {
+                variant.newtype_variant_seed(NodeSeed::<MembershipBindNode>::new(self.meter))
             }
             RequestVariant::Merge => {
                 variant.newtype_variant_seed(NodeSeed::<MergeNode>::new(self.meter))
