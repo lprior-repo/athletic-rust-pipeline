@@ -1,8 +1,8 @@
 # ADR-038 — Selected profiles over reusable production evidence
 
-Status: accepted forward architecture (2026-10-14); runtime qualification and production
-enrollment pending. Acceptance of this decision does not accept an implementation, enroll a
-store, execute a census or migrate bytes.
+Status: accepted target architecture (2026-10-14), amended for a new-only runtime cutover
+(2026-10-15). Implementation qualification and production enrollment remain pending.
+Acceptance does not enroll a store, execute a census or migrate bytes.
 
 ## Context and decision boundary
 
@@ -28,17 +28,17 @@ profile. The following names describe intended contracts, not existing serialize
 
 - **FreshQualification:** an isolated fresh store, unused durable run namespace/revision,
   explicit public-source obligations and no imported population, observations, decisions,
-  completion receipts or seals. The legacy 2027/49-jurisdiction national census is preserved
-  under this contract. Declared subsets remain qualification for that national target.
+  completion receipts or seals. The 2027/49-jurisdiction national obligations remain;
+  execute them through the current engine, not a retained legacy runtime.
 - **ReusableProduction:** one explicitly enrolled installation/store retains qualified public
   evidence, accepted decisions, unfinished work and stable entity IDs across synchronization
   sessions and profile projections. New acquisition is scheduled for due or missing evidence;
   eligible retained captures/interpretations are reused under their original provenance.
 
-A request declares its lifecycle, installation/store lineage and immutable query profile.
-No declaration, no enrollment, an unsupported execution capability or an unknown format must
-refuse before production work. Existing legacy requests retain their existing meaning and
-fresh-run default; a missing field never silently selects reusable production.
+A request explicitly declares its supported version, lifecycle, installation/store lineage and
+immutable query profile. Missing enrollment, unsupported execution or an unsupported format
+refuses before work or mutation. Historical requests retain their recorded meaning, not a
+compatibility execution path; missing fields never silently select a lifecycle.
 
 Main owns the versioned enrollment and runtime contracts. Profile registration/selection,
 store identity initialization, moving a directory, a new season and reopening a store do
@@ -46,6 +46,18 @@ not enroll it. Do not replace the current single-run binding with a mutable late
 New persistent installation and synchronization records must have explicit versioned
 contracts, separate from historical single-run records and logical keys, through the same
 existing service/store ownership and acquisition plane.
+
+### New-only runtime cutover — 2026-10-15
+
+One current runtime serves both lifecycle scopes. Migrate every caller and remove superseded
+execution paths, fallback decoders, historical-result variants, aliases and compatibility shims.
+An old receipt cannot become a new witness or execution capability. Preserve original stores,
+workflow journals, identities, captures, receipts and seals as history; preservation does not
+authorize current execution, automatic import or reinterpretation. No migration is implied.
+Qualify fresh runs against the new contracts, including same-invocation recovery and lost-ack
+replay. Historical passing runs do not qualify the replacement. Section 7 inventories the
+pre-cutover implementation; it is not a requirement to retain those paths.
+
 
 ## 2. Profile scope is immutable configuration
 

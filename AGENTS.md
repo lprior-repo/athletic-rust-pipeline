@@ -3,7 +3,7 @@
 Read `ARCHITECTURE.md` first: binding product, ownership, Rust and release rules.
 Final goal: [spec v2](docs/specifications/athletic-recruiting-end-vision-spec-v2.md)
 under [ADR-038](docs/adr/ADR-038-selected-profile-reusable-production-state.md).
-Architecture, configuration and enrollment do not certify runtime acceptance.
+One current runtime; no legacy execution or shims. Acceptance requires evidence.
 
 ## Startup and commands
 

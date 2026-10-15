@@ -4,6 +4,10 @@
 selected-profile reusable-production architecture. This document records current support only;
 its narrower compiler envelope does not reduce that target or enroll/migrate a production store.
 
+This is the pre-cutover implementation inventory, not a compatibility commitment.
+[ADR-038's new-only decision](adr/ADR-038-selected-profile-reusable-production-state.md#new-only-runtime-cutover--2026-10-15)
+requires its replacement and complete caller migration; that replacement is not yet qualified.
+
 This additive domain boundary checks a selected query profile against nine immutable,
 role-specific evidence-policy descriptors. It does not execute a recruiting publication,
 qualify a source, resolve an athlete, or certify completion.

@@ -39,6 +39,12 @@ under their original identities. No profile selection, store open or new season 
 production, migrates bytes or changes an old run's meaning. Intended architecture is not runtime
 qualification; [the capability boundary](docs/PROFILE-EXECUTION-V1.md) states current support.
 
+Owner decision, 2026-10-15: deliver one current versioned runtime, not a compatibility stack.
+Remove superseded execution paths, historical-result alternatives, fallback decoders and shims;
+migrate every caller. Qualification and production use the same engine with explicit scope.
+Unsupported old state refuses before work or mutation. Preserve its bytes and identities without
+implicitly importing, migrating or executing it. This cutover is required, not yet qualified.
+
 The former root acquisition package was removed on 2026-09-23. The virtual workspace below is the
 only product implementation; do not recreate the root pipeline or a parallel acquisition engine.
 
