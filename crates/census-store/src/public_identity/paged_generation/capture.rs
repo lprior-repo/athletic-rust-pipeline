@@ -78,7 +78,11 @@ impl PublicIdentityWriterV1 {
             None => reserve_graph(store, operation, plan)?,
         };
         drop(guard);
+        #[cfg(test)]
+        rendezvous::checkpoint(rendezvous::Phase::AfterReservation)?;
         stage(store, &held, &reserved)?;
+        #[cfg(test)]
+        rendezvous::checkpoint(rendezvous::Phase::AfterSeal)?;
         finish_current(store, &reserved).map(RawGenerationCaptureOutcomeV2::Captured)
     }
 }
@@ -143,3 +147,6 @@ fn completed(
 mod scan_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod rendezvous;

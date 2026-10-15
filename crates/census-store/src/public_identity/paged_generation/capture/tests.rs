@@ -4,8 +4,13 @@ use crate::public_identity_tests::support::{fixture, subject, TestResult};
 use crate::{Entity, Table};
 use fjall::PersistMode;
 
+mod concurrency;
 mod fences;
 mod layouts;
+#[cfg(unix)]
+mod owned_child;
+#[cfg(unix)]
+mod process_crash;
 mod recovery;
 mod refusal;
 
