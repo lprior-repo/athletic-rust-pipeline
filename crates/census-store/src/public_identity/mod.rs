@@ -1,4 +1,8 @@
+pub(crate) mod graph_operation;
+pub(crate) mod graph_reference;
+pub(crate) mod graph_witness;
 use census_domain::public_identity_history::{PublicAthleteId, RegistryHead};
+pub use graph_reference::GraphAuthorityReferenceV1;
 
 mod authority;
 mod codec;
@@ -30,6 +34,8 @@ pub(crate) const LIFECYCLE: u32 =
     census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_LIFECYCLE;
 pub(crate) const RETAINED_CONTEXT_LIFECYCLE: u32 =
     census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_V2_LIFECYCLE;
+pub(crate) const GRAPH_AUTHORITY_LIFECYCLE: u32 =
+    census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE;
 pub(crate) const OPERATION_PREFIX: &str = "public_identity_v1:";
 const DECLARATION: &str = "public_identity:v1:qualification";
 const HEAD: &str = "public_identity:v1:head";
@@ -38,14 +44,17 @@ pub const MAX_PUBLIC_IDENTITY_HISTORY_BYTES: usize = 16 * 1024 * 1024;
 
 pub use correction::{ReviewedIdentityCommitOutcomeV1, ReviewedIdentityRequestV1};
 pub use frozen::{
-    replay_frozen_public_identity_v1, FrozenPublicIdentityBundleV1,
-    MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
+    replay_frozen_public_identity_v1, replay_frozen_public_identity_v2,
+    FrozenPublicIdentityBundleV1, FrozenPublicIdentityBundleV2, MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
 };
 pub(crate) use qualification::{preflight_keyspaces, require_legacy, validate};
 pub use qualification::{PublicIdentityQualificationStore, PublicIdentityWriterV1};
 
 pub(crate) fn is_qualification_lifecycle(revision: Option<u32>) -> bool {
-    matches!(revision, Some(LIFECYCLE | RETAINED_CONTEXT_LIFECYCLE))
+    matches!(
+        revision,
+        Some(LIFECYCLE | RETAINED_CONTEXT_LIFECYCLE | GRAPH_AUTHORITY_LIFECYCLE)
+    )
 }
 
 pub(crate) fn refuse_reserved(value: &str) -> crate::StoreResult<()> {

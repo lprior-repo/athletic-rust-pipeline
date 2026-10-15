@@ -94,7 +94,7 @@ struct Frozen<'a> {
     lineage: &'a DatasetLineage,
     data: &'a ExportDataset,
     #[serde(skip_serializing_if = "Option::is_none")]
-    selected_proofs: Option<&'a super::selected_proofs::SelectedProofsV1>,
+    selected_proofs: Option<&'a super::selected_proofs::SelectedProofs>,
 }
 
 pub(super) fn freeze_v2(store: &Store, job: &str) -> ReportResult<FrozenRoot> {

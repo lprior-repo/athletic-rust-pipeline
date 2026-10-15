@@ -21,3 +21,6 @@ pub use dataset::{
 };
 pub(crate) use dataset::{proof_objects, MAX_FROZEN_INPUT_BYTES};
 pub use provenance::{athletic_net_meet_identity, coach_source};
+
+#[cfg(test)]
+pub(crate) use dataset::selected::tests::fixture as selected_test_fixture;

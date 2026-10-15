@@ -1,10 +1,14 @@
 use super::*;
-use crate::public_identity_tests::support::{fixture, retained_state, subject, TestResult};
+use crate::public_identity_tests::support::{
+    fixture, physical_state, retained_state, subject, TestResult,
+};
 use crate::{PublicIdentityError, Store, StoreError, Table};
 use census_domain::public_identity_history::PublicResolution;
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 
 mod budgets;
+mod graph;
+mod historical;
 mod tamper;
 
 fn two_births() -> TestResult<(
@@ -43,11 +47,23 @@ fn frozen_source_identity_replays_after_live_changes_and_store_close() -> TestRe
         .ok_or("accepted snapshot")?;
     let original = accepted.resolve_candidate(&first)?;
     let before = retained_state(&store)?;
-    let frozen = snapshot.freeze_public_identity_v1()?;
+    let frozen = snapshot.freeze_public_identity_v2()?;
     check!(eq; retained_state(&store)?, before);
-    let wire: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
-    check!(eq; wire.operations.len(), 2);
-    check!(eq; wire.contexts.len(), 1);
+    let (operations, objects) = graph::inspect(frozen.bytes())?;
+    check!(eq; operations.len(), 2);
+    check!(!objects.is_empty());
+    for operation in operations {
+        let held = crate::public_identity::graph_witness::HeldGraphWitness::decode(
+            "frozen graph source witness",
+            operation.witness.as_bytes(),
+        )?;
+        check!(eq; held.version, 8);
+        check!(matches!(
+            held.payload,
+            crate::public_identity::graph_witness::Payload::Source { .. }
+        ));
+    }
+    graph::assert_exact_inventory(&store, frozen.bytes())?;
     let later = subject("frozen-later", "503")?;
     store.append(Table::Athletes, &later)?;
     writer.establish_source_bound(
@@ -62,15 +78,15 @@ fn frozen_source_identity_replays_after_live_changes_and_store_close() -> TestRe
     drop(snapshot);
     drop(writer);
     drop(store);
-    let replayed = replay_frozen_public_identity_v1(frozen.bytes(), frozen.digest())?;
-    check!(eq; replayed.qualification_version(), PublicIdentityQualificationVersion::RetainedAuthorityContextV2);
+    let replayed = replay_frozen_public_identity_v2(frozen.bytes(), frozen.digest())?;
+    check!(eq; replayed.qualification_version(), PublicIdentityQualificationVersion::RetainedAuthorityGraphV3);
     check!(eq; replayed.store_identity(), accepted.store_identity());
     check!(eq; replayed.head(), accepted.head());
     check!(eq; replayed.snapshot_sequence(), accepted.snapshot_sequence());
     check!(eq; replayed.resolve_candidate(&first)?, original);
     check!(eq; replayed.resolve_candidate(&later.id.cast())?, PublicResolution::Unknown);
     let (store, writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     check!(eq; writer.head(&store)?.sequence, 3);
     check!(eq; frozen.replay()?.head().sequence, 2);
@@ -78,20 +94,20 @@ fn frozen_source_identity_replays_after_live_changes_and_store_close() -> TestRe
 }
 
 #[test]
-fn frozen_bundle_copies_only_referenced_contexts() -> TestResult {
-    let (_directory, store, _writer, _) = two_births()?;
-    let later = subject("unreferenced-context", "504")?;
+fn frozen_bundle_copies_only_referenced_graph_objects() -> TestResult {
+    let (_directory, store, writer, _) = two_births()?;
+    let later = subject("unreferenced-graph", "504")?;
     store.append(Table::Athletes, &later)?;
-    let inputs = crate::public_identity::context::Inputs::capture(&store.snapshot())?;
-    let orphan = inputs.stage(&store, &store.store_identity()?)?;
+    let operation = crate::public_identity::paged_generation::RawGenerationOperationIdV2::new(
+        "unreferenced-frozen-graph",
+    )?;
+    let orphan = writer.capture_raw_generation_v2(&store, &operation)?;
     let before = retained_state(&store)?;
-    let frozen = store.snapshot().freeze_public_identity_v1()?;
-    let bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
-    check!(eq; bundle.contexts.len(), 1);
-    check!(!bundle
-        .contexts
-        .iter()
-        .any(|context| context.root == orphan.object_id()));
+    let frozen = store.snapshot().freeze_public_identity_v2()?;
+    let (operations, objects) = graph::inspect(frozen.bytes())?;
+    check!(eq; operations.len(), 2);
+    check!(!objects.contains_key(orphan.retained().seal().root().as_str()));
+    graph::assert_exact_inventory(&store, frozen.bytes())?;
     check!(eq; retained_state(&store)?, before);
     Ok(())
 }
@@ -111,23 +127,33 @@ fn frozen_reviewed_merge_keeps_historical_birth_ids_and_redirects() -> TestResul
         .snapshot()
         .accepted_public_identity_snapshot()?
         .ok_or("merged snapshot")?;
-    let frozen = fixture.store.snapshot().freeze_public_identity_v1()?;
+    let frozen = fixture.store.snapshot().freeze_public_identity_v2()?;
     let replayed = frozen.replay()?;
-    let bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
-    check!(eq; bundle.operations.len(), 4);
-    let versions = bundle
-        .operations
+    let (operations, objects) = graph::inspect(frozen.bytes())?;
+    check!(eq; operations.len(), 4);
+    check!(!objects.is_empty());
+    let witnesses = operations
         .iter()
-        .map(|operation| -> TestResult<u32> {
-            let witness: serde_json::Value = serde_json::from_str(&operation.witness)?;
-            let version = witness
-                .get("version")
-                .and_then(serde_json::Value::as_u64)
-                .ok_or("version")?;
-            Ok(u32::try_from(version)?)
+        .map(|operation| {
+            crate::public_identity::graph_witness::HeldGraphWitness::decode(
+                "frozen graph reviewed witness",
+                operation.witness.as_bytes(),
+            )
         })
-        .collect::<TestResult<Vec<_>>>()?;
-    check!(eq; versions, vec![2, 2, 2, 3]);
+        .collect::<crate::StoreResult<Vec<_>>>()?;
+    check!(eq; witnesses.iter().map(|held| held.version).collect::<Vec<_>>(), vec![8, 8, 8, 9]);
+    for held in witnesses.iter().take(3) {
+        check!(matches!(
+            held.payload,
+            crate::public_identity::graph_witness::Payload::Source { .. }
+        ));
+    }
+    check!(matches!(
+        witnesses.last().ok_or("reviewed witness")?.payload,
+        crate::public_identity::graph_witness::Payload::Reviewed { .. }
+    ));
+    graph::assert_exact_inventory(&fixture.store, frozen.bytes())?;
+    expected.require_same_projection(&replayed)?;
     check!(eq; replayed.head(), outcome.head());
     for birth in &fixture.births {
         check!(eq; replayed.resolve_public(birth.public_id())?, expected.resolve_public(birth.public_id())?);
@@ -143,41 +169,64 @@ fn frozen_reviewed_merge_keeps_historical_birth_ids_and_redirects() -> TestResul
 }
 
 #[test]
-fn historical_v1_remains_readable_but_cannot_freeze_as_current_authority() -> TestResult {
+fn historical_v1_remains_readable_without_a_mutating_writer() -> TestResult {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("historical");
-    Store::create_public_identity_qualification_v1(&root)?;
-    let (store, _writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
-    let accepted = store
-        .snapshot()
-        .accepted_public_identity_snapshot()?
-        .ok_or("historical snapshot")?;
+    let declaration = crate::public_identity::init::create_historical_test_fixture(
+        &root,
+        PublicIdentityQualificationVersion::SourceBoundV1,
+    )?;
+    let before = physical_state(&root)?;
+    let accepted = Store::replay_historical_public_identity(&root)?;
     check!(eq; accepted.qualification_version(), PublicIdentityQualificationVersion::SourceBoundV1);
-    let before = retained_state(&store)?;
-    check!(matches!(
-        store.snapshot().freeze_public_identity_v1(),
-        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "frozen identity requires retained authority V2"
-        )))
-    ));
-    check!(eq; retained_state(&store)?, before);
+    check!(eq; accepted.store_identity(), declaration.store_identity());
+    check!(eq; accepted.head().sequence, 0);
+    for (result, found) in [
+        (
+            Store::open_public_identity_qualification_v1(&root),
+            PublicIdentityQualificationVersion::SourceBoundV1,
+        ),
+        (
+            Store::open_public_identity_qualification_v2(&root),
+            PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
+        ),
+        (
+            Store::open_public_identity_qualification_v3(&root),
+            PublicIdentityQualificationVersion::SourceBoundV1,
+        ),
+    ] {
+        check!(matches!(
+            result,
+            Err(StoreError::PublicIdentity(PublicIdentityError::QualificationVersionMismatch {
+                expected: PublicIdentityQualificationVersion::RetainedAuthorityGraphV3,
+                found: actual,
+            })) if actual == found
+        ));
+    }
+    check!(eq; physical_state(&root)?, before);
     Ok(())
 }
 
 #[test]
-fn current_empty_ledger_freezes_with_exact_empty_authority_inventory() -> TestResult {
+fn current_empty_graph_ledger_freezes_with_exact_empty_object_inventory() -> TestResult {
     let (_directory, store, _writer) = fixture()?;
     let snapshot = store.snapshot();
     let accepted = snapshot
         .accepted_public_identity_snapshot()?
         .ok_or("snapshot")?;
     let before = retained_state(&store)?;
-    let frozen = snapshot.freeze_public_identity_v1()?;
-    let bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
-    check!(bundle.operations.is_empty());
-    check!(bundle.contexts.is_empty());
+    let frozen = snapshot.freeze_public_identity_v2()?;
+    let (operations, objects) = graph::inspect(frozen.bytes())?;
+    check!(operations.is_empty());
+    check!(objects.is_empty());
     check!(eq; frozen.replay()?.head(), accepted.head());
     check!(eq; frozen.replay()?.snapshot_sequence(), accepted.snapshot_sequence());
+    check!(matches!(
+        snapshot.freeze_public_identity_v1(),
+        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
+            "frozen identity requires retained authority V2"
+        )))
+    ));
     check!(eq; retained_state(&store)?, before);
     Ok(())
 }

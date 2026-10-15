@@ -1,30 +1,28 @@
 use super::*;
+use crate::export::selected_test_fixture::Fixture as SelectedGraphFixture;
 use crate::workbook::publication::selected::fixture::Fixture as SelectedFixture;
 
-#[test]
-fn selected_recruiting_csv_and_sheets_publish_public_ids_with_explicit_candidate_audit(
+#[tokio::test]
+async fn selected_recruiting_csv_and_sheets_publish_public_ids_with_explicit_candidate_audit(
 ) -> TestResult {
-    let fixture = SelectedFixture::new()?;
-    let derivation = fixture.derivation()?;
-    let admission = crate::report::EventAdmission::of(&fixture.dataset)?;
-    let dataset = dataset::Dataset::of(
-        &derivation,
-        fixture.options.school_year,
-        Vec::new(),
-        &admission,
+    let fixture = SelectedGraphFixture::composed(true).await?;
+    let objects = tempfile::tempdir()?;
+    let captured = fixture.capture(objects.path())?;
+    let school_year = SchoolYear::new(2026).ok_or("school year")?;
+    let derivation = Derivation::of(
+        &captured,
+        Scope::AllSources,
+        Some(2027),
+        &[UsJurisdiction::Alabama, UsJurisdiction::Wisconsin],
     )?;
-    let candidate = fixture
-        .dataset
-        .athletes
-        .first()
-        .ok_or("candidate")?
-        .id
-        .as_str();
-    let public_id = fixture
-        .dataset
+    let admission = crate::report::EventAdmission::of(&captured)?;
+    let dataset = dataset::Dataset::of(&derivation, school_year, Vec::new(), &admission)?;
+    let candidate = fixture.roster_athlete.as_str();
+    let public_id = captured
         .verified_public_identities()?
         .public_id(candidate)
         .ok_or("public identity")?;
+    check!(ne; public_id.as_str(), candidate);
     let rows = athletes::rows(&dataset).collect::<Result<Vec<_>, _>>()?;
     check!(eq; rows.len(), 2);
     let header = rows.first().ok_or("athlete headers")?;
@@ -39,10 +37,12 @@ fn selected_recruiting_csv_and_sheets_publish_public_ids_with_explicit_candidate
     );
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("recruiting.csv");
-    write_recruiting_csv(&derivation, fixture.options.school_year, &path)?;
+    write_recruiting_csv(&derivation, school_year, &path)?;
     let mut reader = ::csv::Reader::from_path(&path)?;
     let headers = reader.headers()?.clone();
-    let record = reader.records().next().ok_or("recruiting row")??;
+    let mut records = reader.records();
+    let record = records.next().ok_or("recruiting row")??;
+    check!(records.next().transpose()?.is_none());
     check!(eq; record.get(0), Some(public_id.as_str()));
     let column = headers
         .iter()

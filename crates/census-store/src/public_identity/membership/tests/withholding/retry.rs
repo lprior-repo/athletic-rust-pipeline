@@ -4,7 +4,7 @@ use super::*;
 fn withholding_reservation_retries_exactly_after_journal_growth_and_blocks_split_reuse(
 ) -> TestResult {
     let fixture = ready()?;
-    let request = request(&fixture)?;
+    let request = request(&fixture, "shared-admission")?;
     let Fixture { store, writer, .. } = &fixture;
     let snapshot = store.snapshot();
     let head = writer.head(store)?;
@@ -16,6 +16,9 @@ fn withholding_reservation_retries_exactly_after_journal_growth_and_blocks_split
         &head,
     )?;
     let original = prepared.record().clone();
+    let graph = prepared.graph().clone();
+    let approval_bytes = prepared.approval_bytes()?;
+    let approval_hash = prepared.approval_digest()?;
     let mut batch = store.db.batch();
     batch.insert(
         &store.journal,
@@ -32,18 +35,25 @@ fn withholding_reservation_retries_exactly_after_journal_growth_and_blocks_split
         &head,
     )?;
     check!(eq; retried.record(), &original);
+    check!(eq; retried.graph(), &graph);
+    check!(eq; retried.approval_bytes()?, approval_bytes);
+    check!(eq; retried.approval_digest()?, approval_hash);
     check!(eq; retained_state(store)?, state);
     let mut changed = request.clone();
     changed.rationale.push_str(" changed");
-    check!(writer
-        .prepare_membership_withholding(
+    check!(matches!(
+        writer.prepare_membership_withholding(
             store,
             "shared-admission",
             changed,
             snapshot.revision(),
             &head
-        )
-        .is_err());
+        ),
+        Err(StoreError::PublicIdentity(
+            PublicIdentityError::OperationConflict
+        ))
+    ));
+    check!(eq; retained_state(store)?, state);
     use census_domain::public_identity_history::local_adjudication::{
         LocalIdentitySplitV1, SupersededMergeV1,
     };
@@ -70,11 +80,14 @@ fn withholding_reservation_retries_exactly_after_journal_growth_and_blocks_split
     check!(matches!(
         refused,
         Err(crate::StoreError::PublicIdentity(
-            crate::PublicIdentityError::Corrupt("manual admission missing, corrupt, or exhausted")
+            crate::PublicIdentityError::OperationConflict
         ))
     ));
     check!(eq; retained_state(store)?, state);
-    let (bytes, digest) = approval(retried.record())?;
-    writer.apply_membership_withholding(store, retried, bytes, digest)?;
+    let (bytes, digest) = approval(retried.record(), retried.graph())?;
+    let outcome = writer.apply_membership_withholding(store, retried, bytes, digest)?;
+    check!(!outcome.replayed());
+    check!(eq; outcome.head().sequence, 3);
+    check!(eq; outcome.withheld_memberships(), original.request.expected_withheld_memberships.as_slice());
     Ok(())
 }

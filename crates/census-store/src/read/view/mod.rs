@@ -14,15 +14,18 @@ mod legacy_wire;
 mod lineage;
 mod membership;
 mod merge;
+pub(crate) use merge::{accept as accept_merged_row, publish as publish_merged_row};
 mod object;
 mod object_measure;
 mod object_read;
+mod object_source;
 mod paged_generation;
 pub(crate) use object::JournalRawRecords;
 pub(crate) use object_read::read_context_object;
 mod object_wire;
 mod operations;
 pub(crate) use operations::enrich_retained_observations;
+pub(crate) use operations::RetainedEnrichment;
 mod public_identity;
 pub use public_identity::AcceptedPublicIdentitySnapshot;
 mod regions;
@@ -169,3 +172,7 @@ mod tests;
 
 #[cfg(test)]
 mod raw_physical_tests;
+
+pub(crate) use object_read::{
+    read_context_object_bounded, read_frozen_context_object_bounded, ContextReadLimits,
+};

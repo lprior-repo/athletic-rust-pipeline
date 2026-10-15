@@ -9,7 +9,7 @@ mod paths;
 
 #[derive(Debug, Args)]
 #[command(
-    about = "Publish a checked selected profile from an existing stopped V2 qualification store; qualification-only, not reusable production activation"
+    about = "Publish a checked selected profile from an existing stopped V3 qualification store; qualification-only, not reusable production activation"
 )]
 pub(super) struct SelectedPublicationArgs {
     #[arg(
@@ -33,14 +33,14 @@ pub(super) fn run(cli: &super::Cli, args: &SelectedPublicationArgs) -> Result<()
         .context("selected-publication requires explicit --store and a stopped owner")?;
     let selection = super::profile::input::read_selection(&args.selection)?;
     let output = paths::output(root, &args.out)?;
-    let (store, _writer) = Store::open_public_identity_qualification_v2(root)?.into_parts();
+    let (store, _writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
     let snapshot = store.snapshot();
     let profile = snapshot.selected_profile(&selection)?;
     let options = contract::options(&profile, &output)?;
     let authority = snapshot
         .accepted_public_identity_snapshot()?
         .context("selected-publication requires retained accepted authority")?;
-    anyhow::ensure!(authority.qualification_version() == census_domain::public_identity_qualification::PublicIdentityQualificationVersion::RetainedAuthorityContextV2, "selected-publication requires retained authority lifecycle 6");
+    anyhow::ensure!(authority.qualification_version() == census_domain::public_identity_qualification::PublicIdentityQualificationVersion::RetainedAuthorityGraphV3, "selected-publication requires retained authority lifecycle 7");
     drop(authority);
     let objects = paths::Scratch::create(&output)?;
     let dataset =
@@ -54,9 +54,9 @@ pub(super) fn run(cli: &super::Cli, args: &SelectedPublicationArgs) -> Result<()
     println!(
         "{}",
         serde_json::json!({
-            "schema": "selected_publication_qualification_v1",
+            "schema": "selected_publication_qualification_v2",
             "qualification_only": true,
-            "qualification_lifecycle": 6,
+            "qualification_lifecycle": 7,
             "profile_id": selection.profile_id(),
             "store_identity": selection.store_identity(),
             "as_of": profile.input().as_of,

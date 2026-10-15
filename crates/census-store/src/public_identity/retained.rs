@@ -4,7 +4,7 @@ use census_domain::model::StoreIdentity;
 use serde::{Deserialize, Serialize};
 
 mod live;
-pub(super) use live::Live;
+pub(in crate::public_identity) use live::Live;
 
 #[derive(Clone, Copy)]
 pub(super) enum Rows {
@@ -37,10 +37,44 @@ impl Revision {
 
 pub(super) trait Read {
     fn row(&self, rows: Rows, key: &str) -> StoreResult<Option<Vec<u8>>>;
+    fn revision(&self) -> StoreResult<Revision>;
+}
+
+pub(in crate::public_identity) trait HistoricalRead: Read {
     fn context(&self, root: &str, identity: &StoreIdentity) -> StoreResult<context::Inputs>;
     fn affected_context(
         &self,
         root: &str,
     ) -> StoreResult<super::local_adjudication::affected::Inputs>;
-    fn revision(&self) -> StoreResult<Revision>;
+}
+
+pub(in crate::public_identity) trait GraphRead:
+    Read + super::paged_generation::RawObjectSource
+{
+}
+
+impl<T: Read + super::paged_generation::RawObjectSource> GraphRead for T {}
+
+pub(in crate::public_identity) struct GraphReader<
+    'a,
+    R: Read,
+    S: super::paged_generation::RawObjectSource,
+> {
+    pub(in crate::public_identity) rows: &'a R,
+    pub(in crate::public_identity) source: &'a S,
+}
+
+impl<'a, R: Read, S: super::paged_generation::RawObjectSource> GraphReader<'a, R, S> {
+    pub(in crate::public_identity) fn new(rows: &'a R, source: &'a S) -> Self {
+        Self { rows, source }
+    }
+}
+
+impl<R: Read, S: super::paged_generation::RawObjectSource> Read for GraphReader<'_, R, S> {
+    fn row(&self, rows: Rows, key: &str) -> StoreResult<Option<Vec<u8>>> {
+        self.rows.row(rows, key)
+    }
+    fn revision(&self) -> StoreResult<Revision> {
+        self.rows.revision()
+    }
 }

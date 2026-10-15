@@ -16,6 +16,7 @@ use super::StoreSnapshot;
 #[path = "enrichment.rs"]
 mod enrichment;
 pub(crate) use enrichment::enrich_retained_observations;
+pub(crate) use enrichment::RetainedEnrichment;
 
 impl<'s> StoreSnapshot<'s> {
     pub fn for_each_observation<T: Entity>(

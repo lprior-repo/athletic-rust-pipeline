@@ -42,8 +42,8 @@ fn reviewed_witness_shape_kind_and_lifecycle_are_explicit() -> TestResult {
         .is_err());
     let raw = codec::encode(&held, 65_536)?;
     check!(matches!(
-        HeldWitness::decode("codec-only", &raw)?,
-        HeldWitness::Reviewed(_)
+        crate::public_identity::operation::HeldWitness::decode("codec-only", &raw)?,
+        crate::public_identity::operation::HeldWitness::Reviewed(_)
     ));
     check!(serde_json::from_slice::<witness::Witness>(&raw).is_err());
     let value = serde_json::to_value(&held)?;
@@ -104,14 +104,19 @@ fn source_witness_cannot_be_relabelled_as_reviewed() -> TestResult {
         .get(witness::key(1))?
         .ok_or("source witness")?;
     let original: serde_json::Value = serde_json::from_slice(&raw)?;
-    for version in [3, 4] {
+    for version in [3, 4, 9, 10, 11, 12] {
         let mut changed = original.clone();
         changed["version"] = serde_json::json!(version);
-        check!(HeldWitness::decode("relabelled", &serde_json::to_vec(&changed)?).is_err());
+        check!(matches!(
+            HeldGraphWitness::decode("relabelled", &serde_json::to_vec(&changed)?),
+            Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
+                "graph witness schema binding"
+            )))
+        ));
     }
     check!(matches!(
-        HeldWitness::decode("source", &raw)?,
-        HeldWitness::Source(_)
+        HeldGraphWitness::decode("source", &raw)?.payload,
+        Payload::Source { .. }
     ));
     Ok(())
 }

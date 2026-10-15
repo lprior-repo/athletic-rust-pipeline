@@ -1,11 +1,17 @@
+#[cfg(test)]
 use super::{
-    add, charge, codec, header, header_payload_limit, invalid, key, require_capacity, validate,
-    ContextCharge, Decision, Header, Reservation, Store, StoreError, StoreIdentity, StoreResult,
-    HEADER, HEADER_MARGIN, MAX_JOURNAL_VALUE_BYTES, POLICY, PREFIX,
+    add, charge, key, require_capacity, validate, ContextCharge, Decision, Reservation,
+    MAX_JOURNAL_VALUE_BYTES,
 };
+use super::{
+    codec, header, header_payload_limit, invalid, Header, Store, StoreError, StoreIdentity,
+    StoreResult, HEADER, HEADER_MARGIN, POLICY, PREFIX,
+};
+#[cfg(test)]
 use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2;
 use fjall::{PersistMode, Readable};
 
+#[cfg(test)]
 pub(in crate::public_identity) fn reserve(
     store: &Store,
     record: LocalIdentityAdjudicationRecordV2,
@@ -14,6 +20,7 @@ pub(in crate::public_identity) fn reserve(
     reserve_decision(store, Decision::SplitV2(record), charges)
 }
 
+#[cfg(test)]
 pub(in crate::public_identity) fn reserve_withholding(
     store: &Store,
     record: census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV1,
@@ -22,6 +29,7 @@ pub(in crate::public_identity) fn reserve_withholding(
     reserve_decision(store, Decision::MembershipWithholdingV1(record), charges)
 }
 
+#[cfg(test)]
 fn reserve_decision(
     store: &Store,
     decision: Decision,
@@ -64,7 +72,7 @@ fn reserve_decision(
     Ok(reservation)
 }
 
-fn enroll_empty(store: &Store, identity: &StoreIdentity) -> StoreResult<()> {
+pub(super) fn enroll_empty(store: &Store, identity: &StoreIdentity) -> StoreResult<()> {
     let snapshot = store.db.snapshot();
     if snapshot.prefix(&store.journal, PREFIX).next().is_some()
         || snapshot.prefix(&store.journal, b"j2\0").next().is_some()
@@ -89,13 +97,32 @@ fn enroll_empty(store: &Store, identity: &StoreIdentity) -> StoreResult<()> {
 }
 
 impl crate::PublicIdentityWriterV1 {
-    pub fn enroll_manual_context_admission_v1(&self, store: &Store) -> StoreResult<()> {
-        let _guard = store.lock_appends();
-        let ledger = self.verified(store)?;
-        self.require_current_qualification()?;
-        if ledger.history.projection().head().sequence != 0 {
-            return Err(invalid());
+    pub fn enroll_graph_admission_v1(
+        &self,
+        store: &Store,
+        expected: crate::StoreRevision<'_>,
+    ) -> StoreResult<crate::PublicIdentityInputRevisionTokenV2> {
+        {
+            let _guard = store.lock_appends();
+            expected.ensure_current(store, HEADER)?;
+            self.require_current_qualification()?;
+            let ledger = self.verified(store)?;
+            if codec::load(
+                &store.db.snapshot(),
+                &store.journal,
+                HEADER,
+                header_payload_limit()?,
+            )?
+            .is_some()
+            {
+                header(store, &self.identity)?;
+            } else {
+                if ledger.history.projection().head().sequence != 0 {
+                    return Err(invalid());
+                }
+                enroll_empty(store, &self.identity)?;
+            }
         }
-        enroll_empty(store, &self.identity)
+        self.enroll_public_identity_input_revisions_v2(store, expected)
     }
 }

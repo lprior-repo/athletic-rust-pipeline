@@ -1,52 +1,46 @@
 use super::{MembershipWithholdingInventoryV1, PreparedMembershipWithholdingV1};
-mod capture;
 use crate::public_identity::{
-    codec, context,
-    local_adjudication::{admission, affected, claims, prepare::members},
+    authority::graph,
+    codec, graph_operation,
+    graph_witness::{HeldGraphWitness, LocalActor, Payload},
+    paged_generation::VerifiedRawGraph,
     PublicIdentityError, PublicIdentityWriterV1,
 };
 use crate::{Store, StoreResult, StoreRevision};
+use census_domain::model::serialized_digest;
 use census_domain::public_identity_history::local_adjudication::{
     ClaimTreatmentV1, RetainedClaimDispositionV1, RetainedClaimV1, RetainedIdentitySectionV1,
 };
 use census_domain::public_identity_history::local_membership_withholding::{
-    LocalMembershipWithholdV1, LocalMembershipWithholdingRecordV1,
+    LocalMembershipWithholdV1, LocalMembershipWithholdingRecordV2,
+    LOCAL_MEMBERSHIP_WITHHOLDING_GRAPH_POLICY,
 };
 use census_domain::public_identity_history::{
     prepare_next, HistoryProjection, PreparedHistoryRecord, PublicAthleteId, RegistryHead,
     ReplayLimits,
 };
-
 impl PublicIdentityWriterV1 {
     pub fn inspect_membership_withholding(
         &self,
         store: &Store,
+        operation: &str,
         canonical: &PublicAthleteId,
     ) -> StoreResult<MembershipWithholdingInventoryV1> {
-        let guard = store.lock_appends();
-        let ledger = self.verified(store)?;
-        self.require_current_qualification()?;
-        let snapshot = store.snapshot_locked();
-        let inputs = context::Inputs::capture(&snapshot)?;
-        let members = members(&inputs, ledger.history.projection(), canonical)?;
-        let claims = claims::membership_inventory(
-            &inputs,
-            &members,
-            ledger.history.projection(),
-            ledger.history.records(),
-        )?;
-        let authority_context = inputs.measure_context(&self.identity)?;
-        let affected = affected::Inputs::capture(&snapshot, &self.identity, &authority_context)?;
-        let affected_record_keys = affected.record_keys(&inputs, &members)?;
-        drop(guard);
+        let (reference, ledger) = graph_operation::inspect(self, store, operation)?;
+        let snapshot = store.snapshot();
+        let view = VerifiedRawGraph::verify(&snapshot, reference.capture(), reference.seal())?;
+        let members = graph::members(&view, ledger.history.projection(), canonical)?;
         Ok(MembershipWithholdingInventoryV1 {
-            authority_context,
-            affected_context: affected.measure_context()?,
-            affected_record_keys,
-            claims,
+            affected_record_keys: graph::record_keys(&view, &members)?,
+            claims: graph::membership_inventory(
+                &view,
+                &members,
+                ledger.history.projection(),
+                ledger.history.records(),
+            )?,
+            graph: reference,
         })
     }
-
     pub fn prepare_membership_withholding<'s>(
         &self,
         store: &'s Store,
@@ -55,123 +49,69 @@ impl PublicIdentityWriterV1 {
         expected: StoreRevision<'s>,
         head: &RegistryHead,
     ) -> StoreResult<PreparedMembershipWithholdingV1<'s>> {
-        let reserved =
-            self.reserve_membership_withholding(store, operation, request, expected, head)?;
-        let [authority, affected] = &reserved.permits;
-        reserved
-            .inputs
-            .stage_admitted(store, &self.identity, authority)?;
-        reserved.affected.stage_admitted(store, affected)?;
-        let _guard = store.lock_appends();
-        expected.ensure_current(store, operation)?;
-        if &reserved.prepared.record.expected_head
-            != self.verified(store)?.history.projection().head()
-        {
-            return Err(PublicIdentityError::HeadMoved.into());
-        }
-        Ok(reserved.prepared)
-    }
-
-    fn reserve_membership_withholding<'s>(
-        &self,
-        store: &'s Store,
-        operation: &str,
-        request: LocalMembershipWithholdV1,
-        expected: StoreRevision<'s>,
-        head: &RegistryHead,
-    ) -> StoreResult<Reserved<'s>> {
-        codec::encode(&request, 1024 * 1024)?;
+        let digest = request_digest(&self.identity, operation, &request)?;
+        let capture = graph_operation::begin(self, store, operation, &digest, expected, head)?;
+        let snapshot = store.snapshot();
+        let view =
+            VerifiedRawGraph::verify(&snapshot, capture.graph.capture(), capture.graph.seal())?;
         let guard = store.lock_appends();
-        expected.ensure_current(store, operation)?;
-        let ledger = self.verified(store)?;
-        self.require_current_qualification()?;
-        if head != ledger.history.projection().head() {
-            return Err(PublicIdentityError::HeadMoved.into());
-        }
-        let reserved = admission::load(store, &self.identity, operation)?;
-        if let Some(reserved) = &reserved {
-            reserved.require_withholding_request(operation, &request, expected, head)?;
-        }
-        let snapshot = store.snapshot_locked();
-        let captured = capture::capture(
+        let ledger = graph_operation::require_current(
+            self,
             store,
-            &snapshot,
-            &self.identity,
-            &request,
-            &ledger,
-            reserved.as_ref(),
+            operation,
+            expected,
+            head,
+            &capture.graph,
         )?;
-        let record = match &reserved {
-            Some(reserved) => {
-                reserved.require_allowance(&captured.charges)?;
-                reserved.withholding_record()?.clone()
-            }
-            None => captured.fresh_record(&self.identity, operation, request, head, &snapshot)?,
+        let members = graph::members(&view, ledger.history.projection(), &request.canonical)?;
+        let inventory = graph::membership_inventory(
+            &view,
+            &members,
+            ledger.history.projection(),
+            ledger.history.records(),
+        )?;
+        let binding = capture.graph.capture();
+        let record = LocalMembershipWithholdingRecordV2 {
+            version: 2,
+            policy: LOCAL_MEMBERSHIP_WITHHOLDING_GRAPH_POLICY.into(),
+            store: self.identity.clone(),
+            operation: operation.into(),
+            expected_head: head.clone(),
+            evidence_generation: binding.evidence_generation(),
+            derived_generation: binding.derived_generation(),
+            snapshot_sequence: binding.snapshot_sequence(),
+            graph: capture.graph.domain_reference()?,
+            members,
+            dispositions: dispositions(&request, &inventory)?,
+            request,
+            observed_at: capture.observed_at.clone(),
         };
-        super::fence::validate_live(store, &record, ledger.history.records())?;
-        let history = prepare_history(&record, &captured.inventory, ledger.history.projection())?;
-        preview(&record, &history)?;
-        let capture::Captured {
-            inputs,
-            affected,
-            charges,
-            ..
-        } = captured;
-        let reservation = match reserved {
-            Some(reserved) => reserved,
-            None => admission::reserve_withholding(store, record.clone(), charges)?,
-        };
-        let permits = reservation.permits(store);
+        let history = rebuild_history(store, &capture.graph, &record, &ledger)?;
+        let witness = approval_witness(operation, &capture, &record, &history)?;
+        graph_operation::reserve(store, operation, &digest, expected, head, &capture, witness)?;
         drop(guard);
-        Ok(Reserved::new(
-            inputs, affected, record, expected, history, permits,
-        ))
+        Ok(PreparedMembershipWithholdingV1 {
+            record,
+            graph: capture.graph,
+            expected,
+            history,
+        })
     }
 }
-
-struct Reserved<'s> {
-    inputs: context::Inputs,
-    affected: affected::Inputs,
-    permits: [admission::Permit<'s>; 2],
-    prepared: PreparedMembershipWithholdingV1<'s>,
+pub(super) fn request_digest(
+    identity: &census_domain::model::StoreIdentity,
+    operation: &str,
+    request: &LocalMembershipWithholdV1,
+) -> StoreResult<String> {
+    graph_operation::raw_operation(identity, operation)?;
+    codec::encode(request, 1024 * 1024)?;
+    Ok(serialized_digest(&(
+        "local-source-membership-withholding-request/v2",
+        identity,
+        operation,
+        request,
+    ))?)
 }
-
-impl<'s> Reserved<'s> {
-    fn new(
-        inputs: context::Inputs,
-        affected: affected::Inputs,
-        record: LocalMembershipWithholdingRecordV1,
-        expected: StoreRevision<'s>,
-        history: PreparedHistoryRecord,
-        permits: [admission::Permit<'s>; 2],
-    ) -> Self {
-        Self {
-            inputs,
-            affected,
-            permits,
-            prepared: PreparedMembershipWithholdingV1 {
-                record,
-                expected,
-                history,
-            },
-        }
-    }
-}
-
-fn preview(
-    record: &LocalMembershipWithholdingRecordV1,
-    history: &PreparedHistoryRecord,
-) -> StoreResult<()> {
-    let approval = super::consume::approval_bytes(record)?;
-    let witness = super::MembershipWithholdingWitnessV1::new(
-        record.clone(),
-        history,
-        super::consume::approval_digest(&approval),
-    );
-    codec::encode(&witness, 1024 * 1024)?;
-    Ok(())
-}
-
 fn dispositions(
     request: &LocalMembershipWithholdV1,
     claims: &[RetainedClaimV1],
@@ -206,7 +146,7 @@ fn dispositions(
 }
 
 pub(super) fn prepare_history(
-    record: &LocalMembershipWithholdingRecordV1,
+    record: &census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV1,
     claims: &[RetainedClaimV1],
     projection: &HistoryProjection,
 ) -> StoreResult<PreparedHistoryRecord> {
@@ -232,4 +172,47 @@ pub(super) fn prepare_history(
         return Err(PublicIdentityError::Corrupt("withholding computed member set").into());
     }
     Ok(history)
+}
+
+pub(super) fn rebuild_history(
+    store: &Store,
+    graph: &crate::public_identity::graph_reference::GraphAuthorityReferenceV1,
+    record: &LocalMembershipWithholdingRecordV2,
+    ledger: &crate::public_identity::qualification::Ledger,
+) -> StoreResult<census_domain::public_identity_history::PreparedHistoryRecord> {
+    let retained = store.db.snapshot();
+    let reader = crate::public_identity::retained::Live {
+        snapshot: &retained,
+        entities: &store.entities,
+        meta: &store.meta,
+        journal: &store.journal,
+        receipts: &store.receipts,
+    };
+    crate::public_identity::graph_witness::manual::rebuild_withholding(
+        &reader,
+        graph,
+        record,
+        ledger.history.projection(),
+        ledger.history.records(),
+    )
+}
+
+fn approval_witness(
+    operation: &str,
+    capture: &graph_operation::Capture,
+    record: &LocalMembershipWithholdingRecordV2,
+    history: &census_domain::public_identity_history::PreparedHistoryRecord,
+) -> StoreResult<HeldGraphWitness> {
+    let approval = super::consume::graph_approval_bytes(record, &capture.graph)?;
+    HeldGraphWitness::new(
+        operation,
+        super::consume::graph_approval_digest(&approval),
+        capture.graph.clone(),
+        &capture.observed_at,
+        history,
+        Payload::Withholding {
+            actor: LocalActor::LocalOperator,
+            adjudication: record.clone(),
+        },
+    )
 }

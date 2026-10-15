@@ -6,8 +6,6 @@ use census_domain::public_identity_history::local_adjudication::{
 };
 use census_domain::public_identity_history::{BindingPartition, HistoryRequest, PublicResolution};
 use census_store::{PreparedLocalAdjudicationV1, ReviewedIdentityRequestV1};
-use serde::Serialize;
-use sha2::{Digest, Sha256};
 
 #[test]
 fn journal_only_local_identity_correction_invalidates_current_selection_and_preserves_prior_archive(
@@ -121,9 +119,11 @@ fn journal_only_local_identity_correction_invalidates_current_selection_and_pres
 fn request(fixture: &Fixture, case_id: &str) -> TestResult<LocalIdentitySplitV1> {
     let canonical = fixture.births.first().ok_or("first birth")?.public_id();
     let head = fixture.writer.head(&fixture.store)?;
-    let inventory = fixture
-        .writer
-        .inspect_local_adjudication(&fixture.store, canonical)?;
+    let inventory = fixture.writer.inspect_local_adjudication(
+        &fixture.store,
+        "selected-proof-local-split",
+        canonical,
+    )?;
     let dispositions = inventory.claims().iter().map(|claim| RetainedClaimDispositionV1 {
         claim: claim.clone(),
         treatment: if claim.claim_path.starts_with("/source_links/")
@@ -163,20 +163,5 @@ fn request(fixture: &Fixture, case_id: &str) -> TestResult<LocalIdentitySplitV1>
 }
 
 fn approval(prepared: &PreparedLocalAdjudicationV1<'_>) -> TestResult<(Vec<u8>, String)> {
-    #[derive(Serialize)]
-    struct Envelope<'a> {
-        schema: &'static str,
-        actor: &'static str,
-        prepared: &'a census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2,
-    }
-    let bytes = serde_json::to_vec(&Envelope {
-        schema: "local-identity-adjudication-approval/v1",
-        actor: "local_operator",
-        prepared: prepared.record(),
-    })?;
-    let mut digest = Sha256::new();
-    digest.update(b"local-identity-adjudication-approval/v1");
-    digest.update([0]);
-    digest.update(&bytes);
-    Ok((bytes, format!("{:x}", digest.finalize())))
+    Ok((prepared.approval_bytes()?, prepared.approval_digest()?))
 }

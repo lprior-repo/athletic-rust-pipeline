@@ -6,14 +6,18 @@ mod codec;
 mod tests;
 #[cfg(test)]
 mod tests_v2;
+#[cfg(test)]
+mod tests_v3;
 
 pub const PUBLIC_IDENTITY_QUALIFICATION_LIFECYCLE: u32 = 5;
 pub const PUBLIC_IDENTITY_QUALIFICATION_V2_LIFECYCLE: u32 = 6;
+pub const PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE: u32 = 7;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PublicIdentityQualificationVersion {
     SourceBoundV1,
     RetainedAuthorityContextV2,
+    RetainedAuthorityGraphV3,
 }
 
 impl PublicIdentityQualificationVersion {
@@ -21,6 +25,7 @@ impl PublicIdentityQualificationVersion {
         match self {
             Self::SourceBoundV1 => PUBLIC_IDENTITY_QUALIFICATION_LIFECYCLE,
             Self::RetainedAuthorityContextV2 => PUBLIC_IDENTITY_QUALIFICATION_V2_LIFECYCLE,
+            Self::RetainedAuthorityGraphV3 => PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE,
         }
     }
 
@@ -28,6 +33,7 @@ impl PublicIdentityQualificationVersion {
         match self {
             Self::SourceBoundV1 => 1,
             Self::RetainedAuthorityContextV2 => 2,
+            Self::RetainedAuthorityGraphV3 => 8,
         }
     }
 }
@@ -37,6 +43,7 @@ impl PublicIdentityQualificationVersion {
 pub enum PublicIdentityQualification {
     V1(PublicIdentityQualificationV1),
     V2(PublicIdentityQualificationV2),
+    V3(PublicIdentityQualificationV3),
 }
 
 impl PublicIdentityQualification {
@@ -44,6 +51,7 @@ impl PublicIdentityQualification {
         match self {
             Self::V1(declaration) => declaration.store_identity(),
             Self::V2(declaration) => declaration.store_identity(),
+            Self::V3(declaration) => declaration.store_identity(),
         }
     }
 
@@ -51,6 +59,7 @@ impl PublicIdentityQualification {
         match self {
             Self::V1(_) => PublicIdentityQualificationVersion::SourceBoundV1,
             Self::V2(_) => PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
+            Self::V3(_) => PublicIdentityQualificationVersion::RetainedAuthorityGraphV3,
         }
     }
 }
@@ -62,6 +71,10 @@ pub struct PublicIdentityQualificationV1(Declaration<1, IdentityAcceptance>);
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(transparent)]
 pub struct PublicIdentityQualificationV2(Declaration<2, RetainedAuthorityAcceptance>);
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(transparent)]
+pub struct PublicIdentityQualificationV3(Declaration<3, RetainedGraphAcceptance>);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -106,6 +119,19 @@ impl PublicIdentityQualificationV2 {
         Self(Declaration::new(
             store_identity,
             RetainedAuthorityAcceptance::RetainedAuthorityContextV2,
+        ))
+    }
+
+    pub fn store_identity(&self) -> &StoreIdentity {
+        &self.0.store_identity
+    }
+}
+
+impl PublicIdentityQualificationV3 {
+    pub fn new(store_identity: StoreIdentity) -> Self {
+        Self(Declaration::new(
+            store_identity,
+            RetainedGraphAcceptance::RetainedAuthorityGraphV3,
         ))
     }
 
@@ -163,3 +189,9 @@ impl<const VERSION: u8> From<FixedVersion<VERSION>> for u8 {
 #[derive(Debug, thiserror::Error)]
 #[error("unsupported public identity qualification version {0}")]
 struct UnsupportedVersion(u8);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum RetainedGraphAcceptance {
+    RetainedAuthorityGraphV3,
+}

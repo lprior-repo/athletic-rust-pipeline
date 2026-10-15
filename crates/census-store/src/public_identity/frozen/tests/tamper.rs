@@ -10,8 +10,8 @@ pub(super) fn corrupted(bundle: &wire::Bundle) -> TestResult<StoreError> {
 
 #[test]
 fn frozen_digest_and_exact_encoded_budget_are_checked_before_decode() -> TestResult {
-    let (_directory, store, _writer, _) = two_births()?;
-    let frozen = store.snapshot().freeze_public_identity_v1()?;
+    let historical = historical::two_births()?;
+    let frozen = &historical.frozen;
     let exact = replay::replay(frozen.bytes(), frozen.digest(), frozen.bytes().len())?;
     check!(eq; exact.head().sequence, 2);
     let smaller = frozen.bytes().len().checked_sub(1).ok_or("bundle length")?;
@@ -31,8 +31,8 @@ fn frozen_digest_and_exact_encoded_budget_are_checked_before_decode() -> TestRes
 
 #[test]
 fn frozen_context_missing_extra_duplicate_and_tampered_bytes_fail() -> TestResult {
-    let (_directory, store, _writer, _) = two_births()?;
-    let frozen = store.snapshot().freeze_public_identity_v1()?;
+    let historical = historical::two_births()?;
+    let frozen = &historical.frozen;
     let mut bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
     let context = bundle.contexts.pop().ok_or("context")?;
     check!(matches!(
@@ -81,8 +81,8 @@ fn frozen_context_missing_extra_duplicate_and_tampered_bytes_fail() -> TestResul
 
 #[test]
 fn frozen_receipt_decision_and_original_revision_remain_bound() -> TestResult {
-    let (_directory, store, _writer, _) = two_births()?;
-    let frozen = store.snapshot().freeze_public_identity_v1()?;
+    let historical = historical::two_births()?;
+    let frozen = &historical.frozen;
     let mut bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
     let operation = bundle.operations.first_mut().ok_or("operation")?;
     let mut receipt: crate::Receipt = serde_json::from_str(&operation.receipt)?;
@@ -115,8 +115,8 @@ fn frozen_receipt_decision_and_original_revision_remain_bound() -> TestResult {
 
 #[test]
 fn frozen_lineage_inventory_and_witness_kind_dispatch_are_strict() -> TestResult {
-    let (_directory, store, _writer, _) = two_births()?;
-    let frozen = store.snapshot().freeze_public_identity_v1()?;
+    let historical = historical::two_births()?;
+    let frozen = &historical.frozen;
     let mut bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
     bundle.revision.snapshot_sequence = 0;
     check!(matches!(
@@ -145,8 +145,9 @@ fn frozen_lineage_inventory_and_witness_kind_dispatch_are_strict() -> TestResult
 #[test]
 fn frozen_original_bytes_are_preserved_inside_bundle() -> TestResult {
     let (_directory, store, _writer, _) = two_births()?;
-    let frozen = store.snapshot().freeze_public_identity_v1()?;
-    let bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
+    let frozen = store.snapshot().freeze_public_identity_v2()?;
+    let (operations, _) = graph::inspect(frozen.bytes())?;
+    let bundle: serde_json::Value = serde_json::from_slice(frozen.bytes())?;
     let snapshot = store.db.snapshot();
     let reader = crate::public_identity::retained::Live {
         snapshot: &snapshot,
@@ -156,10 +157,10 @@ fn frozen_original_bytes_are_preserved_inside_bundle() -> TestResult {
         receipts: &store.receipts,
     };
     use crate::public_identity::retained::{Read, Rows};
-    for operation in &bundle.operations {
+    for operation in &operations {
         let key = crate::public_identity::witness::key(operation.sequence);
         check!(eq; reader.row(Rows::Witness, &key)?.ok_or("witness")?, operation.witness.as_bytes());
-        let held = crate::public_identity::operation::HeldWitness::decode(
+        let held = crate::public_identity::graph_witness::HeldGraphWitness::decode(
             &key,
             operation.witness.as_bytes(),
         )?;
@@ -167,10 +168,10 @@ fn frozen_original_bytes_are_preserved_inside_bundle() -> TestResult {
         check!(eq; reader.row(Rows::Receipt, &key)?.ok_or("receipt")?, operation.receipt.as_bytes());
         check!(eq; reader.row(Rows::Decision, held.decision_id().ok_or("decision ID")?)?.ok_or("decision")?, operation.decision.as_deref().ok_or("decision")?.as_bytes());
     }
-    for (key, held) in [
-        (crate::public_identity::DECLARATION, &bundle.declaration),
-        (crate::public_identity::HEAD, &bundle.head),
-        (crate::public_identity::HISTORY, &bundle.history),
+    for (key, field) in [
+        (crate::public_identity::DECLARATION, "declaration"),
+        (crate::public_identity::HEAD, "head"),
+        (crate::public_identity::HISTORY, "history"),
     ] {
         let raw = crate::public_identity::codec::load(
             &snapshot,
@@ -179,6 +180,10 @@ fn frozen_original_bytes_are_preserved_inside_bundle() -> TestResult {
             crate::MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
         )?
         .ok_or("metadata")?;
+        let held = bundle
+            .get(field)
+            .and_then(serde_json::Value::as_str)
+            .ok_or("frozen metadata")?;
         check!(eq; raw.as_ref(), held.as_bytes());
     }
     Ok(())

@@ -9,6 +9,8 @@ mod fallible_checks;
 mod controller;
 #[path = "public_identity_crash/fixture.rs"]
 mod fixture;
+#[path = "public_identity_crash/graph.rs"]
+mod graph;
 #[path = "public_identity_crash/manual.rs"]
 mod manual;
 #[path = "public_identity_crash/membership.rs"]
@@ -53,7 +55,7 @@ fn exercise(boundary: Boundary) -> TestResult {
     let recovered = physical::read(&fixture.root)?;
     let receipt_digest =
         oracle::committed_delta(&fixture, &recovered, &outcome, snapshot_sequence)?;
-    oracle::retained_context_unchanged(&fixture, &interrupted, &recovered)?;
+    oracle::retained_graph_unchanged(&fixture, &interrupted, &recovered)?;
     if boundary == Boundary::AfterCommit {
         check!(eq; recovered, interrupted);
         check!(eq; receipt_digest, reached.input_digest);
@@ -67,7 +69,7 @@ fn recover_and_replay(
     fixture: &Fixture,
     boundary: Boundary,
 ) -> TestResult<(IdentityCommitOutcomeV1, u64)> {
-    let (store, writer) = Store::open_public_identity_qualification_v2(&fixture.root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&fixture.root)?.into_parts();
     check!(eq; writer.store_identity(), &fixture.identity);
     let accepted = store
         .snapshot()
@@ -88,10 +90,7 @@ fn recover_and_replay(
     }
     let snapshot = store.snapshot();
     let revision = snapshot.revision();
-    let snapshot_sequence = match boundary {
-        Boundary::BeforeCommit => snapshot.sequence(),
-        Boundary::AfterCommit => fixture::read_precommit_sequence(&fixture.root)?,
-    };
+    let snapshot_sequence = fixture::read_precommit_sequence(&fixture.root)?;
     let first = writer.establish_source_bound(
         &store,
         OPERATION,
@@ -126,7 +125,7 @@ fn recover_and_replay(
 
 fn replay_without_mutation(fixture: &Fixture, committed: &IdentityCommitOutcomeV1) -> TestResult {
     let before = physical::read(&fixture.root)?;
-    let (store, writer) = Store::open_public_identity_qualification_v2(&fixture.root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&fixture.root)?.into_parts();
     let repeated = writer.establish_source_bound(
         &store,
         OPERATION,

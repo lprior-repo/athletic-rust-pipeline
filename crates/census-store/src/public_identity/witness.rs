@@ -1,11 +1,9 @@
-use super::{codec, IdentityCommitOutcomeV1, PublicIdentityError, OPERATION_PREFIX};
+use super::{codec, PublicIdentityError, OPERATION_PREFIX};
 use crate::{StoreError, StoreResult};
 use census_domain::model::{
     serialized_digest, AppliedAthleteIdentity, AthleteCandidateId, StoreIdentity,
 };
-use census_domain::public_identity_history::{
-    HistoryRecord, HistoryRequest, PublicAthleteId, RegistryHead,
-};
+use census_domain::public_identity_history::{HistoryRecord, HistoryRequest, PublicAthleteId};
 use fjall::{Keyspace, Readable, Snapshot};
 use serde::{Deserialize, Serialize};
 
@@ -73,49 +71,6 @@ impl Witness {
         }
     }
 
-    pub(super) fn new(
-        operation: &str,
-        candidate: &AthleteCandidateId,
-        digest: String,
-        snapshot: &crate::StoreSnapshot<'_>,
-        prepared: &census_domain::public_identity_history::PreparedHistoryRecord,
-        decision: &AppliedAthleteIdentity,
-        authority_context: &str,
-    ) -> StoreResult<Self> {
-        let [public_id] = prepared.established_ids.as_slice() else {
-            return Err(PublicIdentityError::Corrupt("establishment cardinality").into());
-        };
-        Ok(Self {
-            version: 2,
-            operation: operation.to_owned(),
-            candidate: candidate.to_string(),
-            request_digest: digest,
-            evidence_generation: snapshot.evidence_generation(),
-            derived_generation: snapshot.derived_generation(),
-            snapshot_sequence: snapshot.sequence(),
-            record_digest: prepared.uncommitted_record.digest.clone(),
-            decision_id: decision.id.clone(),
-            decision_digest: serialized_digest(decision)?,
-            public_id: public_id.as_str().to_owned(),
-            authority_context: Some(authority_context.to_owned()),
-        })
-    }
-
-    pub fn outcome(
-        &self,
-        record: &HistoryRecord,
-        replayed: bool,
-    ) -> StoreResult<IdentityCommitOutcomeV1> {
-        Ok(IdentityCommitOutcomeV1 {
-            public_id: PublicAthleteId::parse(&self.public_id)
-                .map_err(PublicIdentityError::from)?,
-            head: RegistryHead {
-                sequence: record.sequence,
-                digest: record.digest.clone(),
-            },
-            replayed,
-        })
-    }
     pub fn validate(&self, record: &HistoryRecord, public_id: &PublicAthleteId) -> StoreResult<()> {
         let HistoryRequest::Establish { binding, evidence } = &record.request else {
             return Err(PublicIdentityError::Corrupt("unsupported acceptance operation").into());
@@ -135,7 +90,7 @@ impl Witness {
 }
 
 pub(super) fn verify_rows(
-    reader: &impl super::retained::Read,
+    reader: &impl super::retained::HistoricalRead,
     identity: &StoreIdentity,
     witness: &Witness,
     evidence: &census_domain::public_identity_history::CandidateDecisionReference,

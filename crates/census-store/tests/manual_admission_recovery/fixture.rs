@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{evidence, membership, physical, TestResult};
 
-pub(super) const CHILD_NAME: &str = "manual_admission_partial_staging_child";
+pub(super) const CHILD_NAME: &str = "manual_admission_graph_recovery_child";
 pub(super) const CHILD_CASE: &str = "CENSUS_MANUAL_ADMISSION_CHILD_CASE";
 pub(super) const CHILD_ROOT: &str = "CENSUS_MANUAL_ADMISSION_CHILD_ROOT";
 const PLAN: &str = "manual-admission-recovery-plan.json";
@@ -49,8 +49,8 @@ impl Mode {
 
     pub fn kind(self) -> &'static str {
         match self {
-            Self::Split => "SplitV2",
-            Self::Withhold => "MembershipWithholdingV1",
+            Self::Split => "manual",
+            Self::Withhold => "withholding",
         }
     }
 }
@@ -74,28 +74,18 @@ impl Requests {
         let head = writer.head(store)?;
         let expected = store.snapshot().revision();
         match mode {
-            Mode::Split => Ok(serde_json::to_vec(
-                writer
-                    .prepare_local_adjudication(
-                        store,
-                        operation,
-                        self.split.clone(),
-                        expected,
-                        &head,
-                    )?
-                    .record(),
-            )?),
-            Mode::Withhold => Ok(serde_json::to_vec(
-                writer
-                    .prepare_membership_withholding(
-                        store,
-                        operation,
-                        self.withhold.clone(),
-                        expected,
-                        &head,
-                    )?
-                    .record(),
-            )?),
+            Mode::Split => Ok(writer
+                .prepare_local_adjudication(store, operation, self.split.clone(), expected, &head)?
+                .approval_bytes()?),
+            Mode::Withhold => Ok(writer
+                .prepare_membership_withholding(
+                    store,
+                    operation,
+                    self.withhold.clone(),
+                    expected,
+                    &head,
+                )?
+                .approval_bytes()?),
         }
     }
 
@@ -111,7 +101,6 @@ pub(super) struct Fixture {
     pub root: PathBuf,
     pub requests: Requests,
     pub mode: Mode,
-    pub context_root: String,
     pub before: physical::State,
     pub identity: StoreIdentity,
     pub head: RegistryHead,
@@ -123,15 +112,11 @@ impl Fixture {
     pub fn create(mode: Mode) -> TestResult<(tempfile::TempDir, Self)> {
         let directory = tempfile::tempdir()?;
         let root = directory.path().join("mixed-admission");
-        Store::create_public_identity_qualification_v2(&root)?;
-        let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
-        writer.enroll_manual_context_admission_v1(&store)?;
+        Store::create_public_identity_qualification_v3(&root)?;
+        let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+        writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
         let requests = requests(&store, &writer, mode)?;
         requests.prepare(&store, &writer, mode.other(), mode.other().operation())?;
-        let context_root = writer
-            .inspect_local_adjudication(&store, &requests.split.canonical)?
-            .affected_context()
-            .to_owned();
         write_plan(&root.join(PLAN), &requests)?;
         let identity = store.store_identity()?;
         let head = writer.head(&store)?;
@@ -147,7 +132,6 @@ impl Fixture {
                 root,
                 requests,
                 mode,
-                context_root,
                 before,
                 identity,
                 head,
@@ -178,7 +162,11 @@ fn requests(store: &Store, writer: &PublicIdentityWriterV1, mode: Mode) -> TestR
     store.replace_many(Table::ReviewCases, &cases)?;
     store.replace_many(Table::IdentityVerdicts, &verdicts)?;
     let withhold = membership::withholding(store, writer, &attachment)?;
-    let inventory = writer.inspect_local_adjudication(store, &split.request.canonical)?;
+    let inventory = writer.inspect_local_adjudication(
+        store,
+        "mixed-admission-split-inventory",
+        &split.request.canonical,
+    )?;
     split.request.affected_record_keys = inventory.affected_record_keys().to_vec();
     split.request.dispositions = inventory
         .claims()
@@ -227,7 +215,7 @@ pub(super) fn child() -> TestResult {
         .read_to_end(&mut bytes)?;
     check!(bytes.len() <= 1_048_576);
     let requests: Requests = serde_json::from_slice(&bytes)?;
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     requests.prepare(&store, &writer, requests.mode, requests.mode.operation())?;
-    Err("manual admission child returned without partial staging interruption".into())
+    Err("manual admission child returned without graph recovery interruption".into())
 }

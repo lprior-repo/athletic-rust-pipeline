@@ -3,7 +3,7 @@ use crate::public_identity::{
     codec, context,
     operation::HeldWitness,
     qualification,
-    retained::{Read, Revision, Rows},
+    retained::{HistoricalRead, Read, Revision, Rows},
     witness, PublicIdentityError,
 };
 use crate::{AcceptedPublicIdentitySnapshot, StoreResult};
@@ -146,6 +146,12 @@ impl Read for Retained<'_> {
         };
         Ok(values.get(key).map(|bytes| bytes.as_bytes().to_vec()))
     }
+    fn revision(&self) -> StoreResult<Revision> {
+        Ok(self.revision)
+    }
+}
+
+impl HistoricalRead for Retained<'_> {
     fn context(&self, root: &str, identity: &StoreIdentity) -> StoreResult<context::Inputs> {
         let bytes = self.contexts.get(root).ok_or(PublicIdentityError::Corrupt(
             "missing frozen authority context",
@@ -160,9 +166,6 @@ impl Read for Retained<'_> {
             "missing frozen affected context",
         ))?;
         crate::public_identity::local_adjudication::affected::from_bytes(bytes.as_bytes(), root)
-    }
-    fn revision(&self) -> StoreResult<Revision> {
-        Ok(self.revision)
     }
 }
 

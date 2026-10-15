@@ -1,13 +1,11 @@
 use census_store::{
-    AcceptedPublicIdentitySnapshot, FrozenPublicIdentityBundleV1, LocalAdjudicationCommitOutcomeV1,
+    AcceptedPublicIdentitySnapshot, FrozenPublicIdentityBundleV2, LocalAdjudicationCommitOutcomeV1,
     PublicIdentityError, Store, StoreError, Table,
 };
 
 use super::controller::{self, Boundary, CrashCase};
 use super::{physical, TestResult};
 
-#[path = "manual_context.rs"]
-mod context;
 #[path = "manual_evidence.rs"]
 mod evidence;
 #[path = "manual_fixture.rs"]
@@ -83,7 +81,7 @@ struct Recovered {
     approval: Approval,
     outcome: LocalAdjudicationCommitOutcomeV1,
     accepted: AcceptedPublicIdentitySnapshot,
-    frozen: FrozenPublicIdentityBundleV1,
+    frozen: FrozenPublicIdentityBundleV2,
 }
 
 fn recover(
@@ -91,7 +89,7 @@ fn recover(
     boundary: Boundary,
     child_approval: Approval,
 ) -> TestResult<Recovered> {
-    let (store, writer) = Store::open_public_identity_qualification_v2(&fixture.root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&fixture.root)?.into_parts();
     check!(eq; writer.store_identity(), &fixture.plan.identity);
     let (_, child_digest) = child_approval.encoded()?;
     let replay = writer.replay_local_adjudication(&store, OPERATION, &child_digest)?;
@@ -101,11 +99,13 @@ fn recover(
             resolution::merged(&fixture.plan, &snapshot(&store)?)?;
             resolution::merged(
                 &fixture.plan,
-                &store.snapshot().freeze_public_identity_v1()?.replay()?,
+                &store.snapshot().freeze_public_identity_v2()?.replay()?,
             )?;
             let prepared = fixture::prepare(&store, &writer, &fixture.plan)?;
-            let approval = Approval::new(prepared.record());
+            let approval = Approval::new(&prepared);
             let (bytes, digest) = approval.encoded()?;
+            check!(eq; prepared.approval_bytes()?, bytes);
+            check!(eq; prepared.approval_digest()?, digest);
             let outcome = writer.apply_local_adjudication(&store, prepared, bytes, digest)?;
             check!(!outcome.replayed());
             (approval, outcome)
@@ -119,7 +119,7 @@ fn recover(
     check!(eq; store.snapshot().scan::<census_domain::model::AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?.len(), 4);
     let accepted = snapshot(&store)?;
     resolution::split(&fixture.plan, &accepted, &outcome)?;
-    let frozen = store.snapshot().freeze_public_identity_v1()?;
+    let frozen = store.snapshot().freeze_public_identity_v2()?;
     store.flush()?;
     Ok(Recovered {
         approval,
@@ -131,7 +131,7 @@ fn recover(
 
 fn replay_without_mutation(fixture: &Fixture, recovered: &Recovered) -> TestResult {
     let before = physical::read(&fixture.root)?;
-    let (store, writer) = Store::open_public_identity_qualification_v2(&fixture.root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&fixture.root)?.into_parts();
     let sequence = store.snapshot().sequence();
     let (_, digest) = recovered.approval.encoded()?;
     for _ in 0..2 {

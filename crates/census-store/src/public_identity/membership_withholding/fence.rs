@@ -1,34 +1,14 @@
 use crate::public_identity::{
-    authority, codec, context,
+    authority,
     membership::SourceCandidateMembershipWitnessV1,
     operation::HeldWitness,
-    retained::{Live, Read, Rows},
+    retained::{HistoricalRead as Read, Rows},
     witness, PublicIdentityError,
 };
-use crate::{Store, StoreResult};
+use crate::StoreResult;
 use census_domain::model::StoreIdentity;
 use census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV1;
 use census_domain::public_identity_history::{HistoryRecord, HistoryRequest};
-
-pub(super) fn validate_live(
-    store: &Store,
-    record: &LocalMembershipWithholdingRecordV1,
-    records: &[HistoryRecord],
-) -> StoreResult<()> {
-    let snapshot = store.db.snapshot();
-    validate(
-        &Live {
-            snapshot: &snapshot,
-            entities: &store.entities,
-            meta: &store.meta,
-            journal: &store.journal,
-            receipts: &store.receipts,
-        },
-        record,
-        records,
-    )
-    .map(|_| ())
-}
 
 pub(super) fn validate(
     reader: &impl Read,
@@ -92,39 +72,4 @@ pub(in crate::public_identity) fn attachment_material(
         .find(|case| case.id == held.request.case_id)
         .ok_or(PublicIdentityError::NotReviewed)?;
     authority::identity_material(&inputs, &case.member_ids)
-}
-
-pub(in crate::public_identity) fn require_available(
-    store: &Store,
-    records: &[HistoryRecord],
-    inputs: &context::Inputs,
-    case_id: &str,
-) -> StoreResult<()> {
-    let case = inputs
-        .cases
-        .iter()
-        .find(|case| case.id == case_id)
-        .ok_or(PublicIdentityError::NotReviewed)?;
-    let current = authority::identity_material(inputs, &case.member_ids)?;
-    let snapshot = store.db.snapshot();
-    let reader = Live {
-        snapshot: &snapshot,
-        entities: &store.entities,
-        meta: &store.meta,
-        journal: &store.journal,
-        receipts: &store.receipts,
-    };
-    for record in records {
-        let key = witness::key(record.sequence);
-        let raw = codec::load(&snapshot, &store.journal, &key, 1024 * 1024)?
-            .ok_or(PublicIdentityError::Corrupt("missing withholding witness"))?;
-        if let HeldWitness::MembershipWithheld(held) = HeldWitness::decode(&key, &raw)? {
-            if material(&reader, &held.adjudication)? == current {
-                return Err(
-                    PublicIdentityError::Corrupt("membership authority locally withheld").into(),
-                );
-            }
-        }
-    }
-    Ok(())
 }

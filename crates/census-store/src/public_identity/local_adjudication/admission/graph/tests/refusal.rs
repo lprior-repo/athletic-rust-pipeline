@@ -128,7 +128,8 @@ fn changed_capture_duplicate_operation_and_unenrolled_store_refuse_without_write
     )?;
     assert!(reservation.require_plan(&changed).is_err());
     assert_eq!(retained_state(&store)?, before);
-    let (_directory, unopened, _writer) = fixture()?;
+    let (_directory, unopened, _writer) =
+        crate::public_identity_tests::support::unenrolled_fixture()?;
     let (_, plan) = Generation::new(&unopened, 0)?;
     let before = retained_state(&unopened)?;
     assert!(reserve(&unopened, "not-enrolled", plan).is_err());

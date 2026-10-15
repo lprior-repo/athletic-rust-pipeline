@@ -126,7 +126,11 @@ pub(super) fn withholding(
         digest: record.digest.clone(),
         membership_id: membership.id.clone(),
     };
-    let inventory = writer.inspect_membership_withholding(store, &attachment.owner)?;
+    let inventory = writer.inspect_membership_withholding(
+        store,
+        "admission-withhold-inventory",
+        &attachment.owner,
+    )?;
     Ok(LocalMembershipWithholdV1 {
         case_id: attachment.case_id.clone(),
         canonical: attachment.owner.clone(),

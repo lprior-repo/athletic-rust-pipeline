@@ -18,11 +18,15 @@ pub(in crate::cli) struct LocalAdjudicationArgs {
 #[derive(Debug, Subcommand)]
 enum LocalCommand {
     #[command(
-        about = "Explicitly enroll the bounded split/withholding context budget before the first identity operation"
+        about = "Explicitly enroll bounded graph admission and all six input revisions for a fresh V3 qualification store"
     )]
-    EnrollContextBudget,
-    #[command(about = "Read the complete retained claim inventory for a public identity")]
+    EnrollGraphAdmission,
+    #[command(
+        about = "Stage the bounded retained graph and read its complete claim inventory for an explicit logical operation"
+    )]
     Inspect {
+        #[arg(long, value_name = "OPERATION_ID")]
+        operation: String,
         #[arg(long, value_name = "PUBLIC_ID", value_parser = PublicAthleteId::parse)]
         canonical: PublicAthleteId,
     },
@@ -40,9 +44,11 @@ enum LocalCommand {
         file: PathBuf,
     },
     #[command(
-        about = "Read the exact detached membership set and affected inventory without writing"
+        about = "Stage the bounded retained graph and preview the exact detached membership set for an explicit logical operation"
     )]
     PreviewMembership {
+        #[arg(long, value_name = "OPERATION_ID")]
+        operation: String,
         #[arg(long, value_parser = PublicAthleteId::parse)]
         canonical: PublicAthleteId,
         #[arg(long)]
@@ -80,19 +86,31 @@ enum LocalCommand {
 pub(in crate::cli) fn run(cli: &crate::cli::Cli, args: &LocalAdjudicationArgs) -> Result<()> {
     let root = require_root(cli.store.as_deref())?;
     match &args.command {
-        LocalCommand::EnrollContextBudget => {
+        LocalCommand::EnrollGraphAdmission => {
             let (store, writer) = open(root)?;
-            writer.enroll_manual_context_admission_v1(&store)?;
-            emit(&serde_json::json!({ "schema": "manual-context-admission/v2", "enrolled": true }))
+            enroll_graph_admission(&store, &writer)?;
+            emit(&serde_json::json!({
+                "schema": "local-identity-graph-admission/v1",
+                "qualification_lifecycle": 7,
+                "manual_context_admission_version": 2,
+                "input_revisions_version": 2,
+                "enrolled": true,
+            }))
         }
-        LocalCommand::Inspect { canonical } => inspect(root, canonical),
+        LocalCommand::Inspect {
+            operation,
+            canonical,
+        } => inspect(root, operation, canonical),
         LocalCommand::Split { operation, file } => split(root, operation, file),
         LocalCommand::PreviewMembership {
+            operation,
             canonical,
             sequence,
             digest,
             membership_id,
-        } => super::membership::preview(root, canonical, *sequence, digest, membership_id),
+        } => {
+            super::membership::preview(root, operation, canonical, *sequence, digest, membership_id)
+        }
         LocalCommand::WithholdMembership { operation, file } => {
             super::membership::withhold(root, operation, file)
         }
@@ -107,25 +125,31 @@ pub(in crate::cli) fn run(cli: &crate::cli::Cli, args: &LocalAdjudicationArgs) -
     }
 }
 
+fn enroll_graph_admission(store: &Store, writer: &PublicIdentityWriterV1) -> Result<()> {
+    writer.enroll_graph_admission_v1(store, store.snapshot().revision())
+        .context("graph enrollment did not complete; resolve the reported error and retry enroll-graph-admission on the same store")?;
+    Ok(())
+}
+
 fn require_root(root: Option<&Path>) -> Result<&Path> {
     root.context("local-identity-adjudication requires explicit --store and a stopped store owner")
 }
 
 pub(super) fn open(root: &Path) -> Result<(Store, PublicIdentityWriterV1)> {
-    Ok(Store::open_public_identity_qualification_v2(root)
-        .context("opening the existing V2 identity qualification store; stop its owner first")?
+    Ok(Store::open_public_identity_qualification_v3(root)
+        .context("opening the existing V3 identity qualification store; stop its owner first")?
         .into_parts())
 }
 
-fn inspect(root: &Path, canonical: &PublicAthleteId) -> Result<()> {
+fn inspect(root: &Path, operation: &str, canonical: &PublicAthleteId) -> Result<()> {
     let (store, writer) = open(root)?;
-    let inventory = writer.inspect_local_adjudication(&store, canonical)?;
+    let inventory = writer.inspect_local_adjudication(&store, operation, canonical)?;
     emit(&Inspection {
-        schema: "local-identity-adjudication-inventory/v2",
+        schema: "local-identity-adjudication-inventory/v3",
+        operation,
         canonical,
         head: writer.head(&store)?,
-        authority_context: inventory.authority_context(),
-        affected_context: inventory.affected_context(),
+        graph: inventory.graph(),
         affected_record_keys: inventory.affected_record_keys(),
         claims: inventory.claims(),
     })
@@ -142,7 +166,7 @@ fn split(root: &Path, operation: &str, file: &Path) -> Result<()> {
         store.snapshot().revision(),
         &head,
     )?;
-    let approved = approve_prepared(prepared.record())?;
+    let approved = approve_prepared(prepared.approval_bytes()?, prepared.approval_digest()?)?;
     let (approved_bytes, approval_digest) = approved.into_approved_record();
     let outcome = writer.apply_local_adjudication(
         &store,
@@ -168,8 +192,8 @@ struct Inspection<'a> {
     schema: &'static str,
     canonical: &'a PublicAthleteId,
     head: RegistryHead,
-    authority_context: &'a str,
-    affected_context: &'a str,
+    operation: &'a str,
+    graph: &'a census_store::GraphAuthorityReferenceV1,
     affected_record_keys: &'a [String],
     claims: &'a [RetainedClaimV1],
 }

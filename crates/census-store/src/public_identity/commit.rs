@@ -1,37 +1,23 @@
+mod source;
+use source::{finish_source, prepare_source};
 mod decision;
 #[cfg(feature = "native-fault-injection")]
 mod native;
-
 use super::{
-    authority, codec, context, witness, IdentityCommitOutcomeV1, PublicIdentityError,
-    PublicIdentityWriterV1, HEAD, HISTORY, MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
+    authority::graph,
+    codec, graph_operation,
+    graph_witness::{Decision, HeldGraphWitness, Payload},
+    paged_generation::VerifiedRawGraph,
+    witness, IdentityCommitOutcomeV1, PublicIdentityError, PublicIdentityWriterV1, HEAD, HISTORY,
+    MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
 };
-use crate::clock::{Clock, SystemClock};
 use crate::{Store, StoreError, StoreResult, StoreRevision};
-use census_domain::model::{
-    serialized_digest, AcceptedAthleteIdentity, AthleteCandidateId, SourceIdentity, StoreIdentity,
-};
+use census_domain::model::{serialized_digest, AthleteCandidateId, StoreIdentity};
 use census_domain::public_identity_history::{
     prepare_next, BindingClaim, CandidateDecisionReference, EffectiveScope, HistoryRecord,
     HistoryRequest, PublicResolution, RegistryHead, ReplayLimits, SourceObjectKey,
 };
 use fjall::PersistMode;
-
-struct Pending<'a, 's> {
-    operation: &'a str,
-    candidate: &'a AthleteCandidateId,
-    digest: String,
-    expected: StoreRevision<'s>,
-    head: &'a RegistryHead,
-}
-
-struct Prepared<'s> {
-    snapshot: crate::StoreSnapshot<'s>,
-    accepted: AcceptedAthleteIdentity,
-    source: SourceIdentity,
-    context_root: String,
-    at: String,
-}
 
 impl PublicIdentityWriterV1 {
     pub fn establish_source_bound(
@@ -42,14 +28,14 @@ impl PublicIdentityWriterV1 {
         expected: StoreRevision<'_>,
         head: &RegistryHead,
     ) -> StoreResult<IdentityCommitOutcomeV1> {
-        let _guard = store.lock_appends();
+        let guard = store.lock_appends();
         expected.ensure_origin(store, operation)?;
+        self.require_current_qualification()?;
         let ledger = self.verified(store)?;
         let digest = witness::request_digest(&self.identity, operation, candidate)?;
         if let Some(outcome) = repeated(store, operation, &digest, &ledger)? {
             return Ok(outcome);
         }
-        self.require_current_qualification()?;
         expected.ensure_current(store, operation)?;
         if head != ledger.history.projection().head() {
             return Err(PublicIdentityError::HeadMoved.into());
@@ -64,114 +50,14 @@ impl PublicIdentityWriterV1 {
         ) {
             return Err(PublicIdentityError::AlreadyBound.into());
         }
-        drop(_guard);
-        self.commit_first(
-            store,
-            Pending {
-                operation,
-                candidate,
-                digest,
-                expected,
-                head,
-            },
-        )
-    }
-
-    fn prepare<'s>(
-        &self,
-        store: &'s Store,
-        candidate: &AthleteCandidateId,
-    ) -> StoreResult<Prepared<'s>> {
-        let snapshot = store.snapshot();
-        let inputs = context::Inputs::capture(&snapshot)?;
-        let at = SystemClock.today_iso8601();
-        let (accepted, source) = authority::accept_inputs(&inputs, candidate, &at)?;
-        let retained = inputs.stage(store, &self.identity)?;
-        Ok(Prepared {
-            snapshot,
-            accepted,
-            source,
-            context_root: retained.object_id().to_owned(),
-            at,
-        })
-    }
-
-    fn commit_first(
-        &self,
-        store: &Store,
-        pending: Pending<'_, '_>,
-    ) -> StoreResult<IdentityCommitOutcomeV1> {
-        let prepared = self.prepare(store, pending.candidate)?;
-        let _guard = store.lock_appends();
-        let ledger = self.verified(store)?;
-        if let Some(outcome) = repeated(store, pending.operation, &pending.digest, &ledger)? {
-            return Ok(outcome);
-        }
-        pending.expected.ensure_current(store, pending.operation)?;
-        if pending.head != ledger.history.projection().head() {
-            return Err(PublicIdentityError::HeadMoved.into());
-        }
-        self.commit_prepared(store, pending, prepared, ledger)
-    }
-
-    fn commit_prepared(
-        &self,
-        store: &Store,
-        pending: Pending<'_, '_>,
-        material: Prepared<'_>,
-        ledger: super::qualification::Ledger,
-    ) -> StoreResult<IdentityCommitOutcomeV1> {
-        let Prepared {
-            snapshot,
-            accepted,
-            source,
-            context_root,
-            at,
-        } = material;
-        let evidence = CandidateDecisionReference::from_accepted(&accepted, ReplayLimits::SMALL)
-            .map_err(PublicIdentityError::from)?;
-        let binding = source_binding(pending.candidate, source, &pending.digest);
-        let prepared = prepare_next(
-            &self.identity,
-            ledger.history.projection().head(),
-            HistoryRequest::Establish { binding, evidence },
-            ReplayLimits::SMALL,
-        )
-        .map_err(PublicIdentityError::from)?;
-        let (records, projection) = ledger.history.into_parts();
-        projection
-            .extend_candidate(&prepared.uncommitted_record)
-            .map_err(PublicIdentityError::from)?;
-        let witness = witness::Witness::new(
-            pending.operation,
-            pending.candidate,
-            pending.digest,
-            &snapshot,
-            &prepared,
-            accepted.record(),
-            &context_root,
-        )?;
-        let outcome = witness.outcome(&prepared.uncommitted_record, false)?;
-        let history = encode_next_history(
-            records,
-            prepared.uncommitted_record,
-            &self.identity,
-            &prepared.next_head,
-        )?;
-        persist(
-            store,
-            &witness,
-            &witness.operation,
-            DecisionWrite::Accepted(accepted.record()),
-            &prepared.next_head,
-            history,
-            &at,
-        )?;
-        Ok(outcome)
+        drop(guard);
+        let capture = graph_operation::begin(self, store, operation, &digest, expected, head)?;
+        let pending = prepare_source(self, store, operation, candidate, &digest, head, capture)?;
+        finish_source(self, store, operation, &digest, expected, head, pending)
     }
 }
 
-fn encode_next_history(
+pub(super) fn encode_next_history(
     mut records: Vec<HistoryRecord>,
     record: HistoryRecord,
     identity: &StoreIdentity,

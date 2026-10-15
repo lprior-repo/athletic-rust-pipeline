@@ -1,14 +1,14 @@
 use super::*;
 
 #[test]
-fn unclosed_nonvoid_inert_elements_remain_structurally_refused() -> TestResult {
-    for prefix in ["<template/>", "<div hidden/>"] {
-        let body = document(&format!("{prefix}{}", scoped(&member_html()?)));
-        check!(matches!(
-            parse_roster(&body, team()),
-            Err(crate::CrawlError::Schema { .. })
-        ));
-    }
+fn unclosed_inert_elements_never_admit_current_membership() -> TestResult {
+    let template = document(&format!("<template/>{}", scoped(&member_html()?)));
+    check!(
+        matches!(parse_roster(&template, team()), Err(crate::CrawlError::Schema { detail, .. })
+        if detail == "roster HTML nesting exceeds representation")
+    );
+    let hidden = document(&format!("<div hidden/>{}", scoped(&member_html()?)));
+    assert_unavailable(&hidden, Gap::InactiveMember)?;
     Ok(())
 }
 

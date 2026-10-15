@@ -63,7 +63,7 @@ fn owned_public_identity_consumer_keeps_original_resolution_through_later_inputs
     drop(writer);
     drop(store);
     let (store, writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let reopened = store
         .snapshot()
@@ -97,7 +97,7 @@ fn unestablished_candidates_never_become_public_identity_fallbacks_after_reopen(
     drop(writer);
     drop(store);
     let (store, writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let reopened = store
         .snapshot()
@@ -113,7 +113,7 @@ fn unestablished_candidates_never_become_public_identity_fallbacks_after_reopen(
 }
 
 #[test]
-fn consumer_snapshot_survives_context_corruption_while_current_and_reopened_reads_refuse(
+fn consumer_snapshot_survives_graph_corruption_while_current_and_reopened_reads_refuse(
 ) -> TestResult {
     let (directory, store, writer) = fixture()?;
     let inputs = full_inputs()?;
@@ -146,7 +146,7 @@ fn consumer_snapshot_survives_context_corruption_while_current_and_reopened_read
             check!(eq; object, root);
         }
         Err(error) => return Err(format!("unexpected current consumer refusal: {error:?}").into()),
-        Ok(_) => return Err("current consumer accepted missing retained context".into()),
+        Ok(_) => return Err("current consumer accepted missing retained graph".into()),
     }
     let reread = held
         .accepted_public_identity_snapshot()?
@@ -157,14 +157,14 @@ fn consumer_snapshot_survives_context_corruption_while_current_and_reopened_read
     drop(held);
     drop(writer);
     drop(store);
-    match Store::open_public_identity_qualification_v2(directory.path().join("identity")) {
+    match Store::open_public_identity_qualification_v3(directory.path().join("identity")) {
         Err(StoreError::JournalManifestMissing { phase, key, object }) => {
             check!(eq; phase, "authority_context_v1");
             check!(eq; key, root);
             check!(eq; object, root);
         }
         Err(error) => return Err(format!("unexpected reopened consumer refusal: {error:?}").into()),
-        Ok(_) => return Err("reopened store accepted missing retained context".into()),
+        Ok(_) => return Err("reopened store accepted missing retained graph".into()),
     }
     check!(eq; original.resolve_candidate(&candidate)?, expected);
     check!(eq; original.head(), committed.head());

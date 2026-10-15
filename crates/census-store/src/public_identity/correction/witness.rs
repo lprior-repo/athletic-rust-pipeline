@@ -1,10 +1,10 @@
-use super::{request, ReviewedIdentityCommitOutcomeV1, ReviewedIdentityRequestV1};
+use super::{request, ReviewedIdentityRequestV1};
 use crate::public_identity::PublicIdentityError;
 use crate::StoreResult;
-use census_domain::model::{serialized_digest, AppliedAthleteIdentity};
+
 use census_domain::public_identity_history::{
     CandidateDecisionReference, HistoryRecord, HistoryRequest, PreparedHistoryRecord,
-    PublicAthleteId, RegistryHead,
+    PublicAthleteId,
 };
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 use serde::{Deserialize, Serialize};
@@ -28,12 +28,13 @@ pub(in crate::public_identity) struct ReviewedWitness {
 }
 
 impl ReviewedWitness {
+    #[cfg(test)]
     pub(super) fn new(
         operation: &str,
         request: &ReviewedIdentityRequestV1,
         snapshot: &crate::StoreSnapshot<'_>,
         prepared: &PreparedHistoryRecord,
-        decision: &AppliedAthleteIdentity,
+        decision: &census_domain::model::AppliedAthleteIdentity,
         context: &str,
     ) -> StoreResult<Self> {
         Ok(Self {
@@ -51,7 +52,7 @@ impl ReviewedWitness {
             snapshot_sequence: snapshot.sequence(),
             record_digest: prepared.uncommitted_record.digest.clone(),
             decision_id: decision.id.clone(),
-            decision_digest: serialized_digest(decision)?,
+            decision_digest: census_domain::model::serialized_digest(decision)?,
             introduced_public_ids: prepared
                 .established_ids
                 .iter()
@@ -93,29 +94,9 @@ impl ReviewedWitness {
         Ok(())
     }
 
-    pub(in crate::public_identity) fn outcome(
-        &self,
-        record: &HistoryRecord,
-        replayed: bool,
-    ) -> StoreResult<ReviewedIdentityCommitOutcomeV1> {
-        let ids = self
-            .introduced_public_ids
-            .iter()
-            .map(|id| PublicAthleteId::parse(id).map_err(PublicIdentityError::from))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(ReviewedIdentityCommitOutcomeV1 {
-            introduced_public_ids: ids,
-            head: RegistryHead {
-                sequence: record.sequence,
-                digest: record.digest.clone(),
-            },
-            replayed,
-        })
-    }
-
     pub(in crate::public_identity) fn verify_rows(
         &self,
-        reader: &impl crate::public_identity::retained::Read,
+        reader: &impl crate::public_identity::retained::HistoricalRead,
         identity: &census_domain::model::StoreIdentity,
         record: &HistoryRecord,
     ) -> StoreResult<()> {

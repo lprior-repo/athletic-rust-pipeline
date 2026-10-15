@@ -30,7 +30,7 @@ fn physical_snapshot_freezes_and_replays_after_live_archives_and_store_change() 
     let (descriptor, proof) = capture(&dataset, &snapshot, &objects)?;
     let descriptor_digest = descriptor.digest()?;
     let original = proof.into_verified();
-    let identities = snapshot.freeze_public_identity_v1()?;
+    let identities = snapshot.freeze_public_identity_v2()?;
     let frozen_dataset = directory.path().join("dataset.json");
     dataset.save_frozen(&frozen_dataset)?;
     let mut reopened = ExportDataset::reopen_frozen(&frozen_dataset)?;
@@ -112,7 +112,7 @@ fn frozen_conflict_retains_both_capture_proofs_after_live_archive_removal() -> T
     let expected = snapshot.tables_digest(&[Table::Athletes])?;
     let (descriptor, _) = capture(&dataset, &snapshot, &objects)?;
     let descriptor_digest = descriptor.digest()?;
-    let identities = snapshot.freeze_public_identity_v1()?;
+    let identities = snapshot.freeze_public_identity_v2()?;
     let frozen_dataset = directory.path().join("conflicting-dataset.json");
     dataset.save_frozen(&frozen_dataset)?;
     let mut reopened = ExportDataset::reopen_frozen(&frozen_dataset)?;

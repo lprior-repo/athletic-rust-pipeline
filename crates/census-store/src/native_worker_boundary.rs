@@ -14,6 +14,7 @@ pub(crate) enum Position {
     JournalContextChunkCommittedBeforeNext { index: usize },
     PublicIdentityStagedBeforeCommit { sequence: u64 },
     PublicIdentityCommittedBeforeReturn { sequence: u64 },
+    PublicIdentityPreparationCommittedBeforeReturn { sequence: u64 },
 }
 
 impl Position {
@@ -28,6 +29,9 @@ impl Position {
             Self::PublicIdentityStagedBeforeCommit { .. } => "public_identity_staged_before_commit",
             Self::PublicIdentityCommittedBeforeReturn { .. } => {
                 "public_identity_committed_before_return"
+            }
+            Self::PublicIdentityPreparationCommittedBeforeReturn { .. } => {
+                "public_identity_preparation_committed_before_return"
             }
         }
     }
@@ -84,6 +88,7 @@ fn marker_path(position: Position) -> StoreResult<Option<PathBuf>> {
             | "journal_context_chunk_committed_before_next"
             | "public_identity_staged_before_commit"
             | "public_identity_committed_before_return"
+            | "public_identity_preparation_committed_before_return"
     ) {
         return Err(StoreError::Refused {
             detail: format!("unknown native worker boundary {selected}"),

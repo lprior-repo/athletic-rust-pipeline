@@ -1,9 +1,15 @@
+#[cfg(test)]
 use super::{wire, Inputs, BUDGET};
+#[cfg(test)]
 use crate::journal::context::{
     measure_context_object, stage_context_object, ContextRecordSink, StagedContextObject,
 };
-use crate::{Store, StoreError, StoreResult};
+#[cfg(test)]
+use crate::Store;
+use crate::{StoreError, StoreResult};
+#[cfg(test)]
 use census_domain::model::StoreIdentity;
+#[cfg(test)]
 use serde::Serialize;
 
 pub(super) const RETAINED_SECTION_BYTES: u64 = 16 * 1024 * 1024;
@@ -26,6 +32,7 @@ pub(in crate::public_identity) fn charge_section_bytes(
     Ok(needed)
 }
 
+#[cfg(test)]
 impl Inputs {
     pub(in crate::public_identity) fn admission_charge(
         &self,
@@ -88,6 +95,7 @@ impl Inputs {
     }
 }
 
+#[cfg(test)]
 fn emit_rows<T: Serialize>(
     sink: &mut ContextRecordSink<'_>,
     kind: &str,
@@ -115,6 +123,7 @@ fn emit_rows<T: Serialize>(
     Ok(())
 }
 
+#[cfg(test)]
 fn emit<T: Serialize>(
     sink: &mut ContextRecordSink<'_>,
     key: &str,

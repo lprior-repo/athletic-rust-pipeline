@@ -76,7 +76,7 @@ pub(super) fn append(store: &Store) -> TestResult<(AthleteId, SchoolId)> {
     Ok((athlete.id.clone(), school.id))
 }
 
-pub(super) fn retain(store: &Store, capture: &FetchOutcome) -> TestResult {
+pub(crate) fn retain(store: &Store, capture: &FetchOutcome) -> TestResult {
     let root = store.http_cache_dir().join("archive");
     let captures = root.join("captures").join(&capture.content_digest);
     std::fs::create_dir_all(root.join("bodies"))?;
@@ -98,6 +98,6 @@ pub(super) fn retain(store: &Store, capture: &FetchOutcome) -> TestResult {
     Ok(())
 }
 
-pub(super) fn hash(bytes: &[u8]) -> String {
+pub(crate) fn hash(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }

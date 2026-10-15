@@ -7,7 +7,10 @@ use super::{
 };
 
 pub(super) mod codec;
+mod graph_record;
 mod validate;
+pub use graph_record::LocalIdentityAdjudicationRecordV3;
+pub const LOCAL_ADJUDICATION_GRAPH_POLICY: &str = "local-operator-retained-identity-review/v3";
 
 pub const LOCAL_ADJUDICATION_POLICY: &str = "local-operator-retained-identity-review/v2";
 

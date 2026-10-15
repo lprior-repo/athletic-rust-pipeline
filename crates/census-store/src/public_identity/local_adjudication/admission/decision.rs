@@ -67,6 +67,7 @@ impl Decision {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(super) fn split(&self) -> StoreResult<&LocalIdentityAdjudicationRecordV2> {
         match self {
             Self::SplitV2(record) => Ok(record),
@@ -74,6 +75,7 @@ impl Decision {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn withholding(&self) -> StoreResult<&LocalMembershipWithholdingRecordV1> {
         match self {
             Self::MembershipWithholdingV1(record) => Ok(record),
@@ -82,6 +84,7 @@ impl Decision {
     }
 }
 
+#[cfg(test)]
 impl Binding<'_> {
     pub(super) fn require_current(
         &self,

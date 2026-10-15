@@ -15,13 +15,20 @@ mod historical;
 mod output;
 
 #[test]
-fn historical_v1_qualification_cannot_authorize_current_publication() -> TestResult {
-    invariant(
-        super::require_current_qualification(
-            super::PublicIdentityQualificationVersion::SourceBoundV1,
-        ),
-        "public identity publication requires retained-authority qualification V2",
-    )
+fn historical_qualifications_cannot_authorize_current_publication() -> TestResult {
+    for version in [
+        super::PublicIdentityQualificationVersion::SourceBoundV1,
+        super::PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
+    ] {
+        invariant(
+            super::require_current_qualification(version),
+            "public identity publication requires retained-graph qualification V3",
+        )?;
+    }
+    super::require_current_qualification(
+        super::PublicIdentityQualificationVersion::RetainedAuthorityGraphV3,
+    )?;
+    Ok(())
 }
 
 #[test]
@@ -109,7 +116,7 @@ fn real_reviewed_merge_maps_both_candidate_aliases_to_oldest_public_birth_across
     drop(writer);
     drop(store);
     let (store, _writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let (reopened, _) = capture(&store)?;
     let [first, second, _] = &athletes;

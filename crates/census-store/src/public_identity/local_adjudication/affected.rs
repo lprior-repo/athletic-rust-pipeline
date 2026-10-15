@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 mod capture;
 mod decode;
 mod keys;
+pub(in crate::public_identity) use keys::KeyInventory;
+#[cfg(test)]
 mod storage;
 
 pub(in crate::public_identity) use decode::{from_bytes, read};
@@ -35,7 +37,7 @@ struct Header {
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Physical {
+pub(in crate::public_identity) struct Physical {
     physical_key_base64: String,
     raw_json: String,
 }

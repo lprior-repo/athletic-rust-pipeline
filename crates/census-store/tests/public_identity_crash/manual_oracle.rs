@@ -3,7 +3,7 @@ use census_store::{LocalAdjudicationCommitOutcomeV1, Receipt};
 use serde::de::DeserializeSeed;
 use sha2::{Digest, Sha256};
 
-use super::context;
+use super::super::graph;
 use super::fixture::{Approval, Fixture, OPERATION};
 use super::physical::{Rows, State};
 use super::TestResult;
@@ -16,8 +16,8 @@ pub(super) fn committed(
     prepared_journal: &Rows,
 ) -> TestResult<String> {
     let record = &approval.prepared;
-    check!(eq; record.version, 2);
-    check!(eq; record.policy, "local-operator-retained-identity-review/v2");
+    check!(eq; record.version, 3);
+    check!(eq; record.policy, "local-operator-retained-identity-review/v3");
     check!(eq; record.store, fixture.plan.identity);
     check!(eq; record.operation, OPERATION);
     check!(eq; record.expected_head, fixture.plan.head);
@@ -90,13 +90,18 @@ fn witness_and_receipt(
     let raw = journal.get(key.as_slice()).ok_or("manual witness5")?;
     let (_, request_digest) = approval.encoded()?;
     let expected = serde_json::json!({
-        "version": 5, "operation": OPERATION, "actor": "local_operator",
-        "request_digest": request_digest, "adjudication": approval.prepared,
+        "version": 10, "operation": OPERATION,
+        "request_digest": request_digest, "graph": approval.graph,
+        "observed_at": approval.prepared.observed_at,
+        "payload": { "family": "manual", "actor": "local_operator", "adjudication": approval.prepared },
         "record_digest": outcome.head().digest,
     });
     check!(eq; serde_json::from_slice::<serde_json::Value>(raw)?, expected);
-    let mut expected_journal =
-        context::extend(fixture, state, &approval.prepared, prepared_journal)?;
+    let retained = graph::prepared(&fixture.before, state, &fixture.plan.identity, OPERATION)?;
+    check!(eq; retained.reservation["witness"], expected);
+    check!(eq; retained.graph, approval.graph);
+    check!(eq; &retained.journal, prepared_journal);
+    let mut expected_journal = retained.journal;
     check!(expected_journal.insert(key.to_vec(), raw.clone()).is_none());
     check!(eq; journal, &expected_journal);
     let digest = format!("{:x}", Sha256::digest(raw));
@@ -121,12 +126,10 @@ pub(super) fn prepared_journal(
     state: &State,
     approval: &Approval,
 ) -> TestResult<Rows> {
-    context::extend(
-        fixture,
-        state,
-        &approval.prepared,
-        fixture.before.rows("journal")?,
-    )
+    let retained = graph::prepared(&fixture.before, state, &fixture.plan.identity, OPERATION)?;
+    check!(eq; retained.graph, approval.graph);
+    check!(eq; retained.graph.domain_reference()?, approval.prepared.graph);
+    Ok(retained.journal)
 }
 
 pub(super) fn staged(fixture: &Fixture, state: &State, journal: &Rows) -> TestResult {

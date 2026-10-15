@@ -1,7 +1,7 @@
-use fjall::Readable;
 use sha2::{Digest, Sha256};
 
 use super::object::JournalObject;
+use super::object_source::{JournalBytes, JournalSource};
 use super::object_wire::{
     alias_object, chunk_payload, index_ranges, manifest_bounds, JournalPath, RecordRange,
 };
@@ -11,7 +11,7 @@ use crate::journal::{
     object_index_key, object_index_prefix, object_manifest_key, object_ordinal,
     OBJECT_INDEX_PAGE_ENTRIES,
 };
-use crate::{Store, StoreError, StoreResult, MAX_JOURNAL_VALUE_BYTES};
+use crate::{Store, StoreError, StoreResult};
 
 impl Store {
     pub fn journal_object(&self, phase: &str, key: &str) -> StoreResult<Option<JournalObject<'_>>> {
@@ -23,11 +23,16 @@ impl<'s> StoreSnapshot<'s> {
     pub fn journal_object(&self, phase: &str, key: &str) -> StoreResult<Option<JournalObject<'s>>> {
         let path = JournalPath { phase, key };
         let row_key = Store::journal_key(phase, key);
-        let Some(raw) = read_row(&self.snapshot, self.journal, path, &row_key)? else {
+        let source = JournalSource::Live {
+            snapshot: self.snapshot.clone(),
+            journal: self.journal,
+        };
+        let Some(raw) = source.get(path, &row_key)? else {
             return Ok(None);
         };
         let object = alias_object(path, raw.as_ref())?;
-        read_object_root(&self.snapshot, self.journal, path, &object, None).map(Some)
+        drop(raw);
+        read_object_root(source, path, &object, None).map(Some)
     }
 }
 
@@ -65,25 +70,46 @@ pub(crate) fn read_context_object_bounded<'s>(
         phase: "authority_context_v1",
         key: root,
     };
-    read_object_root(snapshot, journal, path, root, Some(limits))
+    read_object_root(
+        JournalSource::Live {
+            snapshot: snapshot.clone(),
+            journal,
+        },
+        path,
+        root,
+        Some(limits),
+    )
+}
+
+pub(crate) fn read_frozen_context_object_bounded<'s>(
+    rows: &'s std::collections::BTreeMap<Vec<u8>, Vec<u8>>,
+    root: &str,
+    limits: ContextReadLimits,
+) -> StoreResult<JournalObject<'s>> {
+    let path = JournalPath {
+        phase: "authority_context_v1",
+        key: root,
+    };
+    read_object_root(JournalSource::Frozen(rows), path, root, Some(limits))
 }
 
 fn read_object_root<'s>(
-    snapshot: &fjall::Snapshot,
-    journal: &'s fjall::Keyspace,
+    source: JournalSource<'s>,
     path: JournalPath<'_>,
     object: &str,
     budget: Option<ContextReadLimits>,
 ) -> StoreResult<JournalObject<'s>> {
     let manifest_key = object_manifest_key(object)?;
-    let raw = read_row(snapshot, journal, path, &manifest_key)?.ok_or_else(|| {
-        StoreError::JournalManifestMissing {
-            phase: path.phase.to_string(),
-            key: path.key.to_string(),
-            object: object.to_owned(),
-        }
-    })?;
+    let raw =
+        source
+            .get(path, &manifest_key)?
+            .ok_or_else(|| StoreError::JournalManifestMissing {
+                phase: path.phase.to_string(),
+                key: path.key.to_string(),
+                object: object.to_owned(),
+            })?;
     let bounds = manifest_bounds(path, object, raw.as_ref())?;
+    drop(raw);
     if let Some(limits) = budget {
         if bounds.total_bytes > limits.bytes || bounds.records > limits.records {
             return Err(path.refusal("authority context exceeds retained input limits"));
@@ -94,8 +120,7 @@ fn read_object_root<'s>(
         path.key.to_string(),
         object.to_owned(),
         bounds,
-        snapshot.clone(),
-        journal,
+        source,
     );
     if let Some(limits) = budget {
         reader.record_byte_limit = limits.record_bytes;
@@ -104,27 +129,9 @@ fn read_object_root<'s>(
     Ok(reader)
 }
 
-fn read_row(
-    snapshot: &fjall::Snapshot,
-    journal: &fjall::Keyspace,
-    path: JournalPath<'_>,
-    key: &[u8],
-) -> StoreResult<Option<fjall::Slice>> {
-    if let Some(length) = snapshot
-        .size_of(journal, key)
-        .map_err(|source| StoreError::Read { source })?
-    {
-        let bytes = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
-        super::legacy_wire::limit(path, "physical object row", bytes, MAX_JOURNAL_VALUE_BYTES)?;
-    }
-    snapshot
-        .get(journal, key)
-        .map_err(|source| StoreError::Read { source })
-}
-
 impl JournalObject<'_> {
-    fn get(&self, key: &[u8]) -> StoreResult<Option<fjall::Slice>> {
-        read_row(&self.snapshot, self.journal, self.path(), key)
+    pub(super) fn get(&self, key: &[u8]) -> StoreResult<Option<JournalBytes<'_>>> {
+        self.source.get(self.path(), key)
     }
 
     fn verify(&self) -> StoreResult<()> {
@@ -165,9 +172,8 @@ impl JournalObject<'_> {
         } else {
             object_chunk_prefix(self.object_id())?
         };
-        for guard in self.snapshot.prefix(self.journal, &prefix) {
-            let raw = guard.key().map_err(|source| StoreError::Read { source })?;
-            let ordinal = object_ordinal(raw.as_ref(), &prefix)
+        self.source.for_each_key(&prefix, |raw| {
+            let ordinal = object_ordinal(raw, &prefix)
                 .ok_or_else(|| self.path().refusal("object prefix holds a malformed key"))?;
             if index_pages && ordinal >= self.bounds.index_pages {
                 return Err(StoreError::JournalIndexExtra {
@@ -185,8 +191,8 @@ impl JournalObject<'_> {
                     declared: self.chunk_count(),
                 });
             }
-        }
-        Ok(())
+            Ok(())
+        })
     }
 
     fn validate_range(&self, next: usize, entry: RecordRange) -> StoreResult<usize> {

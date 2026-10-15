@@ -1,4 +1,5 @@
 use super::*;
+use crate::export::selected_test_fixture::Fixture as SelectedGraphFixture;
 
 #[test]
 fn historical_frozen_replay_keeps_original_school_and_bytes() -> TestResult {
@@ -25,20 +26,19 @@ fn historical_frozen_replay_keeps_original_school_and_bytes() -> TestResult {
     Ok(())
 }
 
-#[test]
-fn selected_recruiting_csv_joins_current_school() -> TestResult {
-    let mut fixture = Fixture::new()?;
-    let affiliations = view(
-        &fixture,
-        "2026-10-01",
-        Some(resolved(&fixture.current, "dated-transfer")),
-    )?;
-    bind_selected(&mut fixture, &affiliations)?;
+#[tokio::test]
+async fn selected_recruiting_csv_joins_current_school() -> TestResult {
+    let (fixture, public_id) =
+        SelectedGraphFixture::transferred_in(UsJurisdiction::Wisconsin).await?;
+    let objects = tempfile::tempdir()?;
+    let dataset = fixture.capture(objects.path())?;
+    check!(eq; dataset.selected_authority()?.profile().input().jurisdictions, vec![UsJurisdiction::Wisconsin]);
+    let original = serde_json::to_vec(&dataset)?;
     let derivation = Derivation::of(
-        &fixture.dataset,
+        &dataset,
         Scope::AllSources,
-        None,
-        &[UsJurisdiction::Michigan],
+        Some(2027),
+        &[UsJurisdiction::Wisconsin],
     )?;
     let path = fixture.directory.path().join("current.csv");
     crate::workbook::write_recruiting_csv(
@@ -58,9 +58,33 @@ fn selected_recruiting_csv_joins_current_school() -> TestResult {
         .ok_or("state column")?;
     let mut records = reader.records();
     let record = records.next().ok_or("athlete record")??;
-    check!(eq; record.get(school), Some("Current school"));
-    check!(eq; record.get(state), Some("MI"));
-    check!(records.next().is_none());
+    check!(eq; record.get(0), Some(public_id.as_str()));
+    check!(eq; record.get(school), Some("Synthetic Transfer High"));
+    check!(eq; record.get(state), Some("WI"));
+    check!(records.next().transpose()?.is_none());
+    check!(eq; derivation.athletes().first().ok_or("current athlete")?.school, fixture.roster_school);
+    let old_school = &dataset
+        .teams
+        .get(&fixture.performance.team)
+        .ok_or("historical team")?
+        .school;
+    check!(ne; old_school, &fixture.roster_school);
+    check!(eq; dataset.schools.get(old_school).ok_or("historical school")?.state, Some(UsJurisdiction::Alabama));
+    check!(eq; dataset.performances.len(), 2);
+    check!(eq; derivation.performances().len(), 2);
+    for performance in &dataset.performances {
+        check!(eq; &dataset.teams.get(&performance.team).ok_or("result team")?.school, old_school);
+        let participation = dataset
+            .verified_participation()?
+            .assessment(&performance.id)
+            .ok_or("participation")?;
+        check!(eq; participation.outcome(), crate::export::ParticipationOutcome::Unresolved);
+        check!(eq; participation.reasons().iter().collect::<Vec<_>>(), vec![
+            census_domain::participation_candidates::ParticipationReason::HighSchoolStatusMissing,
+            census_domain::participation_candidates::ParticipationReason::SummerBoundaryUnresolved,
+        ]);
+    }
+    check!(eq; serde_json::to_vec(&dataset)?, original);
     Ok(())
 }
 

@@ -5,7 +5,7 @@ use serde_json::Value;
 mod composition;
 mod composition_replay;
 mod correction;
-mod fixture;
+pub(crate) mod fixture;
 mod preflight;
 mod public_derivation;
 mod publication;
@@ -49,6 +49,8 @@ async fn selected_capture_save_reopen_retains_all_three_verified_views_without_l
     dataset.save_frozen(&path)?;
     let wire: Value = serde_json::from_slice(&std::fs::read(&path)?)?;
     check!(wire.get("selected_proofs").is_some());
+    check!(eq; wire.pointer("/selected_proofs/version").and_then(Value::as_u64), Some(2));
+    check!(eq; fixture.store.store_format()?.lifecycle_revision, Some(7));
     check!(wire
         .get("data")
         .and_then(|value| value.get("selected_proofs"))

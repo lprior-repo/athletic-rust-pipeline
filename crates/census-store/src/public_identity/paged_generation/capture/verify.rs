@@ -1,23 +1,21 @@
 use super::super::{
-    admission::Node, invalid, CaptureBindingV2, ObjectRefV2, RawGenerationSealV2,
+    admission::Node, invalid, CaptureBindingV2, ObjectRefV2, RawGenerationSealV2, RawObjectSource,
     RawPageReferenceV2, RawPageV2, RawTableReferenceV2, TableBindingV2, MAX_PAGE_RAW_BYTES,
     MAX_PAGE_ROWS,
 };
-use crate::{StoreError, StoreResult, StoreSnapshot};
+use crate::{StoreError, StoreResult};
 
 pub(in crate::public_identity) fn verify(
-    snapshot: &StoreSnapshot<'_>,
+    source: &impl RawObjectSource,
     binding: &CaptureBindingV2,
     object: &ObjectRefV2,
     mut visit: impl FnMut(Node<'_>, &ObjectRefV2) -> StoreResult<()>,
 ) -> StoreResult<RawGenerationSealV2> {
-    if snapshot.store_identity()? != binding.0.store {
-        return Err(invalid("retained capture belongs to another store"));
-    }
-    let seal = snapshot.raw_generation_seal(object, binding)?;
+    source.require_capture(binding)?;
+    let seal = source.read_seal(object, binding)?;
     for table in seal.tables() {
         verify_table(
-            snapshot,
+            source,
             &binding.table_binding(table.table())?,
             table,
             &mut visit,
@@ -27,20 +25,20 @@ pub(in crate::public_identity) fn verify(
     Ok(seal)
 }
 
-fn verify_table(
-    snapshot: &StoreSnapshot<'_>,
+pub(in crate::public_identity::paged_generation) fn verify_table(
+    source: &impl RawObjectSource,
     binding: &TableBindingV2,
     reference: &RawTableReferenceV2,
     visit: &mut impl FnMut(Node<'_>, &ObjectRefV2) -> StoreResult<()>,
 ) -> StoreResult<()> {
-    let table = snapshot.raw_generation_table(&reference.object(), binding)?;
+    let table = source.read_table(&reference.object(), binding)?;
     reference.check_table(&table)?;
     let mut boundary: Option<Boundary> = None;
     for reference in table.blocks() {
-        let block = snapshot.raw_generation_block(&reference.object(), binding)?;
+        let block = source.read_block(&reference.object(), binding)?;
         reference.check_block(&block)?;
         for reference in block.pages() {
-            let page = snapshot.raw_generation_page(&reference.object(), binding)?;
+            let page = source.read_page(&reference.object(), binding)?;
             reference.check_page(&page)?;
             if let Some(previous) = &boundary {
                 previous.check(&page)?;

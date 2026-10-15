@@ -154,7 +154,7 @@ fn six_layouts_capture_exact_bytes_and_replay_after_source_absent_reopen() -> Te
     drop(writer);
     drop(store);
     let (store, writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let replay = writer.capture_raw_generation_v2(&store, &id)?;
     assert!(matches!(

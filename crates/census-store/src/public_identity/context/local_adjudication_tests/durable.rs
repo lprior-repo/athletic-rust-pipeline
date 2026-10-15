@@ -3,28 +3,27 @@ use crate::public_identity_tests::support::retained_state;
 use crate::{Store, Table};
 
 #[test]
-fn manual_inventory_is_read_only_and_matches_the_staged_context_identity() -> TestResult {
+fn manual_inventory_stages_only_the_exact_graph_and_retries_without_writes() -> TestResult {
     let fixture = merged()?;
     let extra = crate::public_identity_tests::support::subject("manual-inspect-unbound", "9988")?;
     fixture.store.append(Table::Athletes, &extra)?;
+    stage_inventory(&fixture, "manual-inspection")?;
     let before = retained_state(&fixture.store)?;
-    let sequence = fixture.store.snapshot().sequence();
     let canonical = fixture.births.first().ok_or("birth")?.public_id();
-    let inventory = fixture
-        .writer
-        .inspect_local_adjudication(&fixture.store, canonical)?;
-    assert!(!inventory.claims().is_empty());
-    assert_eq!(retained_state(&fixture.store)?, before);
-    assert_eq!(fixture.store.snapshot().sequence(), sequence);
-    let repeated = fixture
-        .writer
-        .inspect_local_adjudication(&fixture.store, canonical)?;
-    assert_eq!(repeated.authority_context(), inventory.authority_context());
-    assert_eq!(repeated.claims(), inventory.claims());
-    assert_eq!(retained_state(&fixture.store)?, before);
-    let inputs = super::super::Inputs::capture(&fixture.store.snapshot())?;
-    let staged = inputs.stage(&fixture.store, &fixture.store.store_identity()?)?;
-    assert_eq!(staged.object_id(), inventory.authority_context());
+    let first = fixture.writer.inspect_local_adjudication(
+        &fixture.store,
+        "manual-inspection",
+        canonical,
+    )?;
+    let second = fixture.writer.inspect_local_adjudication(
+        &fixture.store,
+        "manual-inspection",
+        canonical,
+    )?;
+    check!(eq; first.claims(), second.claims());
+    check!(eq; first.affected_record_keys(), results::expected_keys(&fixture)?);
+    check!(eq; first.graph(), second.graph());
+    check!(eq; retained_state(&fixture.store)?, before);
     Ok(())
 }
 
@@ -97,7 +96,7 @@ fn approved_manual_split_commits_reopens_and_frozen_replay_keeps_original_eviden
     assert!(repeated.replayed());
     assert_eq!(repeated.head(), outcome.head());
     assert_eq!(retained_state(&fixture.store)?, state);
-    let frozen = fixture.store.snapshot().freeze_public_identity_v1()?;
+    let frozen = fixture.store.snapshot().freeze_public_identity_v2()?;
     let root = fixture.directory.path().join("identity");
     let ReviewedFixture {
         directory,
@@ -107,7 +106,7 @@ fn approved_manual_split_commits_reopens_and_frozen_replay_keeps_original_eviden
     } = fixture;
     drop(writer);
     drop(store);
-    let (reopened, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (reopened, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     assert_eq!(writer.head(&reopened)?, *outcome.head());
     let reopened_snapshot = reopened
         .snapshot()
@@ -165,7 +164,7 @@ fn persisted_manual_decoder_refuses_unknown_fields_and_oversized_disposition_inv
         .as_object_mut()
         .ok_or("object")?
         .insert("actor_override".into(), serde_json::json!("model"));
-    assert!(serde_json::from_value::<census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2>(unknown).is_err());
+    assert!(serde_json::from_value::<census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV3>(unknown).is_err());
     let mut oversized = original;
     let request = oversized
         .get_mut("request")
@@ -182,7 +181,7 @@ fn persisted_manual_decoder_refuses_unknown_fields_and_oversized_disposition_inv
         "dispositions".into(),
         serde_json::Value::Array(vec![one; 4097]),
     );
-    let result = serde_json::from_value::<census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2>(oversized);
+    let result = serde_json::from_value::<census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV3>(oversized);
     assert!(result.is_err());
     Ok(())
 }
@@ -201,7 +200,7 @@ fn frozen_manual_kind_cannot_carry_a_forged_accepted_decision_row() -> TestResul
     fixture
         .writer
         .apply_local_adjudication(&fixture.store, prepared, bytes, digest)?;
-    let frozen = fixture.store.snapshot().freeze_public_identity_v1()?;
+    let frozen = fixture.store.snapshot().freeze_public_identity_v2()?;
     let mut wire: serde_json::Value = serde_json::from_slice(frozen.bytes())?;
     let operations = wire
         .get_mut("operations")
@@ -215,18 +214,20 @@ fn frozen_manual_kind_cannot_carry_a_forged_accepted_decision_row() -> TestResul
     last.insert("decision".into(), serde_json::json!("{}"));
     let changed = serde_json::to_vec(&wire)?;
     let digest = format!("{:x}", Sha256::digest(&changed));
-    let result = crate::replay_frozen_public_identity_v1(&changed, &digest);
+    let result = crate::replay_frozen_public_identity_v2(&changed, &digest);
     assert!(matches!(
         result,
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "frozen decision material kind"
+            "frozen graph decision material kind"
         )))
     ));
     Ok(())
 }
 
 #[test]
-fn manual_witness_roundtrip_preserves_the_exact_record_and_legacy_witness_ceiling() -> TestResult {
+fn manual_witness_roundtrip_preserves_exact_graph_record_and_legacy_decoder_refusal() -> TestResult
+{
+    use crate::public_identity::graph_witness::{HeldGraphWitness, Payload};
     let fixture = merged()?;
     let prepared = fixture.writer.prepare_local_adjudication(
         &fixture.store,
@@ -236,6 +237,7 @@ fn manual_witness_roundtrip_preserves_the_exact_record_and_legacy_witness_ceilin
         &fixture.writer.head(&fixture.store)?,
     )?;
     let expected = serde_json::to_value(prepared.record())?;
+    let graph = prepared.graph().clone();
     let (bytes, digest) = approval(&prepared)?;
     let outcome =
         fixture
@@ -243,34 +245,34 @@ fn manual_witness_roundtrip_preserves_the_exact_record_and_legacy_witness_ceilin
             .apply_local_adjudication(&fixture.store, prepared, bytes, digest)?;
     let key = crate::public_identity::witness::key(outcome.head().sequence);
     let raw = fixture.store.journal.get(&key)?.ok_or("witness")?;
-    let held = crate::public_identity::operation::HeldWitness::decode(&key, &raw)?;
-    let crate::public_identity::operation::HeldWitness::Manual(manual) = held else {
-        return Err("wrong witness kind".into());
+    let held = HeldGraphWitness::decode(&key, &raw)?;
+    let Payload::Manual { adjudication, .. } = &held.payload else {
+        return Err("manual payload".into());
     };
-    assert_eq!(manual.version, 5);
-    assert_eq!(serde_json::to_value(&manual.adjudication)?, expected);
-    assert_eq!(serde_json::to_vec(&manual)?, raw.to_vec());
-    let mut previous: serde_json::Value = serde_json::from_slice(&raw)?;
-    previous
-        .as_object_mut()
-        .ok_or("witness object")?
-        .insert("version".into(), 4.into());
-    let result = crate::public_identity::operation::HeldWitness::decode(
-        &key,
-        &serde_json::to_vec(&previous)?,
-    );
-    assert!(matches!(
-        result,
+    check!(eq; held.version, 10);
+    check!(eq; serde_json::to_value(adjudication)?, expected);
+    check!(eq; held.graph, graph);
+    check!(eq; serde_json::to_vec(&held)?, raw.to_vec());
+    let historical = crate::public_identity::operation::HeldWitness::decode(&key, &raw);
+    check!(matches!(
+        historical,
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
             "unsupported identity witness version"
+        )))
+    ));
+    let mut previous: serde_json::Value = serde_json::from_slice(&raw)?;
+    *previous.get_mut("version").ok_or("version")? = 4.into();
+    check!(matches!(
+        HeldGraphWitness::decode(&key, &serde_json::to_vec(&previous)?),
+        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
+            "graph witness schema binding"
         )))
     ));
     let mut oversized = br#"{"version":3,"padding":""#.to_vec();
     oversized.extend(vec![b'x'; 65_536]);
     oversized.extend_from_slice(b"\"}");
-    let result = crate::public_identity::operation::HeldWitness::decode("legacy", &oversized);
-    assert!(matches!(
-        result,
+    check!(matches!(
+        crate::public_identity::operation::HeldWitness::decode("legacy", &oversized),
         Err(StoreError::RowTooLarge { max: 65_536, .. })
     ));
     Ok(())
@@ -296,6 +298,7 @@ fn superseded_exact_case_cannot_automatically_remerge_manual_successors() -> Tes
         canonical: ids.first().ok_or("successor")?.clone(),
         members: ids.to_vec(),
     };
+    stage_inventory(&fixture, "synthetic-forbidden-remerge")?;
     let before = retained_state(&fixture.store)?;
     let result = fixture.writer.apply_reviewed_identity(
         &fixture.store,
@@ -307,7 +310,7 @@ fn superseded_exact_case_cannot_automatically_remerge_manual_successors() -> Tes
     assert!(matches!(
         result,
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "reviewed authority superseded by local adjudication"
+            "graph authority superseded by local adjudication"
         )))
     ));
     assert_eq!(retained_state(&fixture.store)?, before);
@@ -318,7 +321,7 @@ fn superseded_exact_case_cannot_automatically_remerge_manual_successors() -> Tes
 #[test]
 fn frozen_source_kind_still_requires_accepted_decision_material() -> TestResult {
     let fixture = merged()?;
-    let frozen = fixture.store.snapshot().freeze_public_identity_v1()?;
+    let frozen = fixture.store.snapshot().freeze_public_identity_v2()?;
     let mut wire: serde_json::Value = serde_json::from_slice(frozen.bytes())?;
     let operation = wire
         .get_mut("operations")
@@ -329,11 +332,11 @@ fn frozen_source_kind_still_requires_accepted_decision_material() -> TestResult 
     operation.remove("decision").ok_or("accepted decision")?;
     let bytes = serde_json::to_vec(&wire)?;
     let digest = format!("{:x}", Sha256::digest(&bytes));
-    let result = crate::replay_frozen_public_identity_v1(&bytes, &digest);
+    let result = crate::replay_frozen_public_identity_v2(&bytes, &digest);
     assert!(matches!(
         result,
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "frozen decision material kind"
+            "frozen graph decision material kind"
         )))
     ));
     Ok(())
@@ -360,9 +363,9 @@ fn witness_version_byte_budgets_accept_exact_boundary_and_refuse_one_more() -> T
         let mut padded = raw.to_vec();
         assert!(padded.len() <= ceiling);
         padded.resize(ceiling, b' ');
-        crate::public_identity::operation::HeldWitness::decode(&key, &padded)?;
+        crate::public_identity::graph_witness::HeldGraphWitness::decode(&key, &padded)?;
         padded.push(b' ');
-        let result = crate::public_identity::operation::HeldWitness::decode(&key, &padded);
+        let result = crate::public_identity::graph_witness::HeldGraphWitness::decode(&key, &padded);
         assert!(matches!(result, Err(StoreError::RowTooLarge { max, .. }) if max == ceiling));
     }
     Ok(())

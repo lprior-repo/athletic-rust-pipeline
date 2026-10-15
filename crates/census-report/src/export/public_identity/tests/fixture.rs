@@ -27,9 +27,9 @@ pub(crate) struct Fixture {
 pub(crate) fn source_births() -> TestResult<Fixture> {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("identity");
-    Store::create_public_identity_qualification_v2(&root)?;
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
-    writer.enroll_manual_context_admission_v1(&store)?;
+    Store::create_public_identity_qualification_v3(&root)?;
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+    writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
     let first = athlete("first", SourceNamespace::MilesplitAthlete, "9401")?;
     let second = athlete("second", SourceNamespace::TfrrsAthlete, "9402")?;
     let unknown = athlete("unestablished", SourceNamespace::MilesplitAthlete, "9403")?;

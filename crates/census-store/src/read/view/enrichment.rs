@@ -1,3 +1,7 @@
+#[path = "enrichment/stream.rs"]
+mod stream;
+pub(crate) use stream::RetainedEnrichment;
+
 use std::collections::HashMap;
 
 use census_domain::model::{CanonicalAthlete, ObservedGrade, SourceNamespace, SourceObservation};

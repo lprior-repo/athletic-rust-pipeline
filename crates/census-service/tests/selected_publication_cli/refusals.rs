@@ -109,7 +109,7 @@ async fn selected_publication_refuses_invalid_or_unregistered_selection_before_o
     check!(!run(&fixture.root, &malformed, &out)?.status.success());
     check!(!out.exists());
     let (store, _writer) =
-        Store::open_public_identity_qualification_v2(&fixture.root)?.into_parts();
+        Store::open_public_identity_qualification_v3(&fixture.root)?.into_parts();
     let missing = census_domain::model::ProfileSelectionV1::new(
         store.store_identity()?,
         census_domain::model::ProfileId::parse(&"b".repeat(64))?,
@@ -120,10 +120,19 @@ async fn selected_publication_refuses_invalid_or_unregistered_selection_before_o
     check!(!run(&fixture.root, &missing_path, &out)?.status.success());
     check!(!out.exists());
     let old = fixture.directory.path().join("old-lifecycle");
-    Store::create_public_identity_qualification_v1(&old)?;
-    let before = Store::format(&old)?;
-    check!(!run(&old, &fixture.selection, &out)?.status.success());
-    check!(eq; Store::format(&old)?, before);
+    for version in [1, 2] {
+        let result = match version {
+            1 => Store::create_public_identity_qualification_v1(&old).map(|_| ()),
+            _ => Store::create_public_identity_qualification_v2(&old).map(|_| ()),
+        };
+        check!(matches!(
+            result,
+            Err(census_store::StoreError::PublicIdentity(
+                census_store::PublicIdentityError::QualificationVersionMismatch { .. }
+            ))
+        ));
+        check!(!old.exists());
+    }
     check!(!out.exists());
     Ok(())
 }
@@ -159,6 +168,48 @@ async fn selected_publication_refuses_every_unknown_execution_contract_before_ou
         check!(error.contains("unsupported exact profile contract reference"));
         check!(error.contains(&format!("{role:?}")));
         check!(!out.exists());
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn selected_publication_refuses_each_historical_qualification_contract_before_output(
+) -> TestResult {
+    use census_domain::profile_execution::{
+        selected_qualification_contract_ref_v1 as old,
+        selected_qualification_contract_ref_v2 as current, ContractRoleV1 as Role,
+    };
+    let fixture = Fixture::create().await?;
+    for (ordinal, role) in Role::ALL.into_iter().enumerate() {
+        let reference = old(role)?;
+        if reference == current(role)? {
+            check!(eq; role, Role::Participation);
+            continue;
+        }
+        let mut input = fixture.profile.input().clone();
+        match role {
+            Role::Cohort => input.policies.cohort = reference,
+            Role::Event => input.policies.event = reference,
+            Role::Identity => input.policies.identity = reference,
+            Role::Affiliation => input.policies.affiliation = reference,
+            Role::Contact => input.policies.contact = reference,
+            Role::Participation => input.policies.participation = reference,
+            Role::Publication => input.policies.publication = reference,
+            Role::SourcePlan => input.source_plan = reference,
+            Role::Completion => input.completion_contract = reference,
+        }
+        let selection = fixture.select_profile(input, &format!("historical-{ordinal}.json"))?;
+        let before = fixture.evidence_state()?;
+        let out = fixture
+            .directory
+            .path()
+            .join(format!("refused-historical-{ordinal}"));
+        let result = run(&fixture.root, &selection, &out)?;
+        check!(!result.status.success());
+        check!(result.stdout.is_empty());
+        check!(String::from_utf8_lossy(&result.stderr).contains(&format!("{role:?}")));
+        check!(!out.exists());
+        check!(eq; fixture.evidence_state()?, before);
     }
     Ok(())
 }

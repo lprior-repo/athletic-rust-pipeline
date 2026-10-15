@@ -1,17 +1,14 @@
-use super::{
-    claims, consume, prepare, ApprovedLocalAdjudicationV1, LocalAdjudicationCommitOutcomeV1,
-};
+use super::{claims, consume, prepare};
 use crate::public_identity::{
     codec,
-    retained::{Read, Revision, Rows},
+    retained::{HistoricalRead as Read, Revision, Rows},
     witness, PublicIdentityError,
 };
 use crate::StoreResult;
 use census_domain::model::{serialized_digest, StoreIdentity};
 use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2;
 use census_domain::public_identity_history::{
-    prepare_next, HistoryProjection, HistoryRecord, PreparedHistoryRecord, PublicAthleteId,
-    RegistryHead, ReplayLimits,
+    prepare_next, HistoryProjection, HistoryRecord, PreparedHistoryRecord, ReplayLimits,
 };
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 use serde::{Deserialize, Serialize};
@@ -34,17 +31,6 @@ pub(in crate::public_identity) enum LocalActor {
 }
 
 impl LocalAdjudicationWitnessV1 {
-    pub(super) fn new(approved: ApprovedLocalAdjudicationV1) -> Self {
-        Self {
-            version: 5,
-            operation: approved.record.operation.clone(),
-            request_digest: approved.approval_digest,
-            actor: LocalActor::LocalOperator,
-            record_digest: approved.history.uncommitted_record.digest,
-            adjudication: approved.record,
-        }
-    }
-
     pub(in crate::public_identity) fn verify(
         &self,
         reader: &impl Read,
@@ -119,28 +105,5 @@ impl LocalAdjudicationWitnessV1 {
             );
         }
         Ok(())
-    }
-
-    pub(in crate::public_identity) fn outcome(
-        &self,
-        record: &HistoryRecord,
-        replayed: bool,
-    ) -> StoreResult<LocalAdjudicationCommitOutcomeV1> {
-        let prepared = prepare_next(
-            &record.installation,
-            &record.previous,
-            record.request.clone(),
-            ReplayLimits::SMALL,
-        )
-        .map_err(PublicIdentityError::from)?;
-        let ids: Vec<PublicAthleteId> = prepared.established_ids;
-        Ok(LocalAdjudicationCommitOutcomeV1 {
-            introduced_public_ids: ids,
-            head: RegistryHead {
-                sequence: record.sequence,
-                digest: record.digest.clone(),
-            },
-            replayed,
-        })
     }
 }

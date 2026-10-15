@@ -1,13 +1,13 @@
-use super::{request, SourceCandidateMembershipOutcomeV1, SourceCandidateMembershipRequestV1};
+use super::{request, SourceCandidateMembershipRequestV1};
 use crate::public_identity::{
     authority, codec,
-    retained::{Read, Revision, Rows},
+    retained::{HistoricalRead as Read, Revision, Rows},
     witness, PublicIdentityError,
 };
 use crate::StoreResult;
 use census_domain::model::{serialized_digest, AppliedAthleteIdentity};
 use census_domain::public_identity_history::{
-    HistoryProjection, HistoryRecord, PreparedHistoryRecord, RegistryHead,
+    HistoryProjection, PreparedHistoryRecord, RegistryHead,
 };
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 use serde::{Deserialize, Serialize};
@@ -35,58 +35,6 @@ pub(in crate::public_identity) struct SourceCandidateMembershipWitnessV1 {
 }
 
 impl SourceCandidateMembershipWitnessV1 {
-    pub(super) fn new(
-        operation: &str,
-        request: &SourceCandidateMembershipRequestV1,
-        snapshot: &crate::StoreSnapshot<'_>,
-        head: &RegistryHead,
-        prepared: &PreparedHistoryRecord,
-        decision: &AppliedAthleteIdentity,
-        context: &str,
-    ) -> StoreResult<Self> {
-        if !prepared.established_ids.is_empty() {
-            return Err(PublicIdentityError::Corrupt("membership introduced public IDs").into());
-        }
-        Ok(Self {
-            version: 6,
-            operation: operation.into(),
-            request: request.clone(),
-            request_digest: request::digest(
-                &prepared.uncommitted_record.installation,
-                operation,
-                request,
-            )?,
-            expected_head: head.clone(),
-            evidence_generation: snapshot.evidence_generation(),
-            derived_generation: snapshot.derived_generation(),
-            snapshot_sequence: snapshot.sequence(),
-            authority_context: context.into(),
-            decision_id: decision.id.clone(),
-            decision_digest: serialized_digest(decision)?,
-            record_digest: prepared.uncommitted_record.digest.clone(),
-            resulting_head: prepared.next_head.clone(),
-            introduced_public_ids: Vec::new(),
-        })
-    }
-
-    pub(in crate::public_identity) fn outcome(
-        &self,
-        record: &HistoryRecord,
-        replayed: bool,
-    ) -> StoreResult<SourceCandidateMembershipOutcomeV1> {
-        if self.record_digest != record.digest || !self.introduced_public_ids.is_empty() {
-            return Err(PublicIdentityError::Corrupt("membership outcome binding").into());
-        }
-        Ok(SourceCandidateMembershipOutcomeV1 {
-            owner: self.request.owner.clone(),
-            head: RegistryHead {
-                sequence: record.sequence,
-                digest: record.digest.clone(),
-            },
-            replayed,
-        })
-    }
-
     pub(in crate::public_identity) fn verify(
         &self,
         reader: &impl Read,

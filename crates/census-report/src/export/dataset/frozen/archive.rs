@@ -22,7 +22,7 @@ struct Archived {
     lineage: DatasetLineage,
     data: Loaded,
     #[serde(default)]
-    selected_proofs: Option<super::super::selected_proofs::SelectedProofsV1>,
+    selected_proofs: Option<super::super::selected_proofs::SelectedProofs>,
 }
 
 pub(super) fn reopen(
@@ -59,7 +59,11 @@ pub(super) fn reopen(
             ));
         }
         let profile = dataset.selected_authority()?.profile().clone();
-        dataset.selected_input_origin = selected_replay_origin(&profile)?;
+        dataset.selected_input_origin = selected_replay_origin(
+            &profile,
+            proofs.version(),
+            dataset.selected_authority()?.qualification_lifecycle(),
+        )?;
         let fingerprints = dataset.selected_authority()?.fingerprints().clone();
         let directory = super::proof_directory(path)?;
         proofs.bind_directory(&directory)?;
@@ -156,15 +160,32 @@ mod origin_tests;
 
 fn selected_replay_origin(
     profile: &census_domain::model::QueryProfileV1,
+    version: super::super::selected_proofs::Version,
+    lifecycle: u32,
 ) -> ReportResult<super::super::SelectedInputOrigin> {
+    use super::super::{selected_proofs::Version, SelectedInputOrigin};
     use census_domain::participation_candidates::participation_policy_v2;
-    use census_domain::profile_execution::validate_selected_qualification_profile_v1;
-    if profile.input().policies.participation
-        == participation_policy_v2().map_err(|error| invalid(&error.to_string()))?
-    {
-        return Ok(super::super::SelectedInputOrigin::HistoricalReplay);
+    use census_domain::profile_execution::{
+        validate_selected_qualification_profile_v1, validate_selected_qualification_profile_v2,
+    };
+    match (version, lifecycle) {
+        (Version::HistoricalContextV1, 6) => {
+            if profile.input().policies.participation
+                == participation_policy_v2().map_err(|error| invalid(&error.to_string()))?
+            {
+                return Ok(SelectedInputOrigin::HistoricalReplay);
+            }
+            let _checked = validate_selected_qualification_profile_v1(profile)
+                .map_err(|error| invalid(&error.to_string()))?;
+            Ok(SelectedInputOrigin::HistoricalIdentityReplay)
+        }
+        (Version::RetainedGraphV2, 7) => {
+            let _checked = validate_selected_qualification_profile_v2(profile)
+                .map_err(|error| invalid(&error.to_string()))?;
+            Ok(SelectedInputOrigin::Current)
+        }
+        _ => Err(invalid(
+            "selected proof family and qualification lifecycle disagree",
+        )),
     }
-    let _supported = validate_selected_qualification_profile_v1(profile)
-        .map_err(|error| invalid(&error.to_string()))?;
-    Ok(super::super::SelectedInputOrigin::Current)
 }

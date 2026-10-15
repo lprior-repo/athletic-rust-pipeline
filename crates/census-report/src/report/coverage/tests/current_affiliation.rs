@@ -21,9 +21,10 @@ fn bind(dataset: &mut ExportDataset, store: &Store) -> TestResult {
 
 fn selected_fixture_store() -> TestResult<(TempDir, Store)> {
     let directory = tempfile::tempdir()?;
-    Store::create_public_identity_qualification_v2(directory.path())?;
+    Store::create_public_identity_qualification_v3(directory.path())?;
     let (store, writer) =
-        Store::open_public_identity_qualification_v2(directory.path())?.into_parts();
+        Store::open_public_identity_qualification_v3(directory.path())?.into_parts();
+    writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
     populate_fixture(&store, |id| match id {
         "wi-mirror" => SourceIdentity::new(SourceNamespace::MilesplitAthlete, "9702"),
         _ => fixture_source(id),

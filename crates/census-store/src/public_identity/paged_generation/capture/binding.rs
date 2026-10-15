@@ -3,7 +3,7 @@ use super::super::{
 };
 use crate::{PublicIdentityInputRevisionsV2, Store, StoreResult, StoreSnapshot};
 
-pub(super) fn capture(
+pub(in crate::public_identity) fn capture(
     store: &Store,
     snapshot: &StoreSnapshot<'_>,
 ) -> StoreResult<CaptureBindingV2> {
@@ -49,7 +49,7 @@ pub(super) fn capture(
     )
 }
 
-pub(super) fn require_inputs(
+pub(in crate::public_identity) fn require_inputs(
     original: &CaptureBindingV2,
     current: &CaptureBindingV2,
 ) -> StoreResult<()> {

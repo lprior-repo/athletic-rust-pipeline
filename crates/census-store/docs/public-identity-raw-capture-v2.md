@@ -46,3 +46,29 @@ refusal, reopen/source absence, corrupt or absent children, incomplete recovery,
 equal-counter divergence, and movement before and after the seal. These tests
 were authored without running builds, tests, or formatting during this slice;
 execution and integration qualification remain outstanding.
+
+## Public workflow schedule and crash fixtures
+
+A separate compile-time test-only rendezvous pauses the actual public capture
+immediately after reservation releases the append lock, or after seal staging
+returns and before the final fence. A thread-local single-use gate uses capacity-one
+channels and 30-second rendezvous deadlines; non-test builds contain neither the
+gate nor its call sites. No production environment switch, cap change, or alternate
+capture/verifier path is introduced.
+
+The public workflow fixtures append a real concurrent athlete observation at both
+phases, verify before-seal refusal versus final-return refusal, and overlap two
+calls for the same operation while checking identical retained graphs and unchanged
+admission-header bytes, accepted registry head, and receipt rows. A Unix lib-test subprocess receives an abort directive only after its observer
+verifies a complete retained graph at the post-seal rendezvous. The capture thread
+executes the abort inside that checkpoint; an expired gate refuses the directive
+and fails the test rather than claiming a crash before return. The parent reopens the scratch store
+and checks explicit historical replay, original bytes, binding, seal, and no replay
+writes. The fixture runner uses a 60-second bounded exit wait followed by a two-second
+SIGTERM-only reap window, with one bounded cleanup retry during drop. If child death
+cannot be verified, its owned fixture directory is retained. It never sends SIGKILL. The child-selection environment variable is confined to the
+lib-test fixture and does not control production capture.
+
+These additional fixtures are authored source, not executed concurrency or crash
+evidence. Integrated compilation, targeted test execution, and the repository's
+normal gates are still required before making those claims.

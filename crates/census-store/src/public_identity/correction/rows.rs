@@ -8,7 +8,7 @@ use census_domain::public_identity_history::{HistoryRecord, ReplayLimits};
 
 pub(super) fn verify(
     witness: &ReviewedWitness,
-    reader: &impl crate::public_identity::retained::Read,
+    reader: &impl crate::public_identity::retained::HistoricalRead,
     identity: &StoreIdentity,
     record: &HistoryRecord,
 ) -> StoreResult<()> {

@@ -139,11 +139,9 @@ pub(super) fn refusal<T>(result: StoreResult<T>, expected: &str) -> TestResult {
 
 pub(super) fn witness_root(store: &Store, sequence: u64) -> TestResult<String> {
     let key = crate::public_identity::witness::key(sequence);
-    let raw = store.journal.get(key)?.ok_or("missing commit witness")?;
-    let witness: crate::public_identity::witness::Witness = serde_json::from_slice(&raw)?;
-    witness
-        .authority_context
-        .ok_or_else(|| "missing retained authority root".into())
+    let raw = store.journal.get(&key)?.ok_or("missing graph witness")?;
+    let witness = crate::public_identity::graph_witness::HeldGraphWitness::decode(&key, &raw)?;
+    Ok(witness.graph.seal().root().as_str().to_owned())
 }
 
 pub(super) fn write_journal(store: &Store, key: &[u8], bytes: &[u8]) -> TestResult {

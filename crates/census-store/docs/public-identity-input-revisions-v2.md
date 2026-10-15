@@ -25,9 +25,11 @@ private; it has no public constructor or deserializer.
   Performances, and RelayResults.
 - `Store::enroll_public_identity_input_revisions_v2(StoreRevision)` uses existing
   generic mutation permissions. Qualified stores require
-  `PublicIdentityWriterV1::enroll_public_identity_input_revisions_v2(&Store,
-  StoreRevision)` with the verified current-V2 writer. Both paths use one shared
-  implementation under the existing append mutex and require a current,
+  `PublicIdentityWriterV1::enroll_graph_admission_v1(&Store, StoreRevision)`
+  with the verified current graph-V3 writer. This sole public qualified-store
+  workflow enrolls graph admission and input revisions; its partial input-revision
+  helper is crate-private. The ordinary-store and qualified-store workflows share
+  the revision implementation under the append mutex and require a current,
   same-origin revision, including repeat enrollment requests.
 
 ## Enrollment and mutation semantics

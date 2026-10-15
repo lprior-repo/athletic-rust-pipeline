@@ -11,6 +11,8 @@ mod controller;
 mod evidence;
 #[path = "manual_admission_recovery/fixture.rs"]
 mod fixture;
+#[path = "public_identity_crash/graph.rs"]
+mod graph;
 #[path = "manual_admission_recovery/membership.rs"]
 mod membership;
 #[path = "manual_admission_recovery/oracle.rs"]
@@ -21,42 +23,54 @@ mod physical;
 mod results;
 
 use census_store::Store;
+use controller::Boundary;
 use fixture::{Fixture, Mode};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 #[test]
-fn split_partial_staging_sigterm_preserves_mixed_admission_and_exact_retry() -> TestResult {
-    exercise(Mode::Split)
+fn split_raw_graph_chunk_sigterm_preserves_mixed_admission_and_exact_retry() -> TestResult {
+    exercise(Mode::Split, Boundary::RawGraphChunk)
 }
 
 #[test]
-fn withholding_partial_staging_sigterm_preserves_mixed_admission_and_exact_retry() -> TestResult {
-    exercise(Mode::Withhold)
+fn withholding_raw_graph_chunk_sigterm_preserves_mixed_admission_and_exact_retry() -> TestResult {
+    exercise(Mode::Withhold, Boundary::RawGraphChunk)
 }
 
 #[test]
-#[ignore = "owned subprocess fixture invoked by the partial context staging controllers"]
-fn manual_admission_partial_staging_child() -> TestResult {
+fn split_preparation_syncdata_sigterm_replays_exact_approval_without_recharging() -> TestResult {
+    exercise(Mode::Split, Boundary::Preparation)
+}
+
+#[test]
+fn withholding_preparation_syncdata_sigterm_replays_exact_approval_without_recharging() -> TestResult
+{
+    exercise(Mode::Withhold, Boundary::Preparation)
+}
+
+#[test]
+#[ignore = "owned subprocess fixture invoked by graph chunk and preparation controllers"]
+fn manual_admission_graph_recovery_child() -> TestResult {
     fixture::child()
 }
 
-fn exercise(mode: Mode) -> TestResult {
+fn exercise(mode: Mode, boundary: Boundary) -> TestResult {
     let (directory, fixture) = Fixture::create(mode)?;
-    let (directory, reached) = controller::interrupt(directory, &fixture)?;
+    let (directory, reached) = controller::interrupt(directory, &fixture, boundary)?;
     let interrupted = physical::read(&fixture.root)?;
-    let admission = oracle::interrupted(&fixture, &interrupted, &reached.input_digest)?;
-    recover(&fixture, &admission)?;
+    let original = oracle::interrupted(&fixture, &interrupted, boundary, &reached)?;
+    let admission = recover(&fixture, original.as_deref())?;
     let recovered = physical::read(&fixture.root)?;
-    oracle::recovered(&fixture, &interrupted, &recovered)?;
+    oracle::recovered(&fixture, &interrupted, &recovered, boundary, &admission)?;
     repeat_without_writes(&fixture, &admission)?;
     check!(eq; physical::read(&fixture.root)?, recovered);
     drop(directory);
     Ok(())
 }
 
-fn recover(fixture: &Fixture, original: &[u8]) -> TestResult {
-    let (store, writer) = Store::open_public_identity_qualification_v2(&fixture.root)?.into_parts();
+fn recover(fixture: &Fixture, original: Option<&[u8]>) -> TestResult<Vec<u8>> {
+    let (store, writer) = Store::open_public_identity_qualification_v3(&fixture.root)?.into_parts();
     check!(eq; writer.store_identity(), &fixture.identity);
     check!(eq; writer.head(&store)?, fixture.head);
     check!(eq; store.evidence_generation(), fixture.evidence);
@@ -65,13 +79,15 @@ fn recover(fixture: &Fixture, original: &[u8]) -> TestResult {
         fixture
             .requests
             .prepare(&store, &writer, fixture.mode, fixture.mode.operation())?;
-    check!(eq; prepared.as_slice(), original);
+    if let Some(original) = original {
+        check!(eq; prepared.as_slice(), original);
+    }
     check!(eq; writer.head(&store)?, fixture.head);
-    Ok(())
+    Ok(prepared)
 }
 
 fn repeat_without_writes(fixture: &Fixture, original: &[u8]) -> TestResult {
-    let (store, writer) = Store::open_public_identity_qualification_v2(&fixture.root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&fixture.root)?.into_parts();
     let sequence = store.snapshot().sequence();
     let repeated =
         fixture
@@ -79,21 +95,21 @@ fn repeat_without_writes(fixture: &Fixture, original: &[u8]) -> TestResult {
             .prepare(&store, &writer, fixture.mode, fixture.mode.operation())?;
     check!(eq; repeated.as_slice(), original);
     check!(eq; store.snapshot().sequence(), sequence);
-    check!(fixture
+    check!(matches!(fixture
         .requests
         .prepare(
             &store,
             &writer,
             fixture.mode.other(),
             fixture.mode.operation()
-        )
-        .is_err());
+        ), Err(error) if matches!(error.downcast_ref::<census_store::StoreError>(), Some(census_store::StoreError::PublicIdentity(census_store::PublicIdentityError::OperationConflict)))));
     check!(eq; store.snapshot().sequence(), sequence);
     let mut changed = fixture.requests.clone();
     changed.change_rationale(fixture.mode);
-    check!(changed
-        .prepare(&store, &writer, fixture.mode, fixture.mode.operation())
-        .is_err());
+    check!(
+        matches!(changed.prepare(&store, &writer, fixture.mode, fixture.mode.operation()),
+        Err(error) if matches!(error.downcast_ref::<census_store::StoreError>(), Some(census_store::StoreError::PublicIdentity(census_store::PublicIdentityError::OperationConflict))))
+    );
     check!(eq; store.snapshot().sequence(), sequence);
     Ok(())
 }

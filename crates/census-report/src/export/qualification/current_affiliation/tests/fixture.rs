@@ -27,10 +27,10 @@ impl Fixture {
         heading: &str,
     ) -> TestResult<Self> {
         let directory = tempfile::tempdir()?;
-        Store::create_public_identity_qualification_v2(directory.path())?;
+        Store::create_public_identity_qualification_v3(directory.path())?;
         let (store, writer) =
-            Store::open_public_identity_qualification_v2(directory.path())?.into_parts();
-        writer.enroll_manual_context_admission_v1(&store)?;
+            Store::open_public_identity_qualification_v3(directory.path())?.into_parts();
+        writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
         let profile = profile(cutoff)?;
         store.register_profile(&profile)?;
         let (athlete, school, body_path, metadata_path) = append_roster_heading(

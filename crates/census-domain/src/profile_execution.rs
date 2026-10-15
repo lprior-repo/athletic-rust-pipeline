@@ -15,8 +15,9 @@ pub use descriptor::{
 };
 pub use role::ContractRoleV1;
 pub use selected_qualification::{
-    selected_qualification_contract_ref_v1, validate_selected_qualification_profile_v1,
-    SupportedQualificationProfileV1,
+    selected_qualification_contract_ref_v1, selected_qualification_contract_ref_v2,
+    validate_selected_qualification_profile_v1, validate_selected_qualification_profile_v2,
+    SupportedQualificationProfileV1, SupportedQualificationProfileV2,
 };
 
 #[derive(Debug, thiserror::Error)]

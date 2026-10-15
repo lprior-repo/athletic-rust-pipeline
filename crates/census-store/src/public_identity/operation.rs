@@ -77,15 +77,6 @@ impl HeldWitness {
             Self::Source(_) | Self::Reviewed(_) | Self::Membership(_) => None,
         }
     }
-    fn request_digest(&self) -> &str {
-        match self {
-            Self::Source(held) => &held.request_digest,
-            Self::Membership(held) => &held.request_digest,
-            Self::MembershipWithheld(held) => &held.request_digest,
-            Self::Reviewed(held) => &held.request_digest,
-            Self::Manual(held) => &held.request_digest,
-        }
-    }
 }
 
 pub(super) enum Replayed {
@@ -120,30 +111,12 @@ pub(super) fn repeated(
             local_adjudication::MAX_WITNESS_BYTES,
         )?
         .ok_or(PublicIdentityError::Corrupt("missing replay witness"))?;
-        let held = HeldWitness::decode(&key, &raw)?;
+        let held = super::graph_witness::HeldGraphWitness::decode(&key, &raw)?;
         if held.operation() == operation {
             if held.request_digest() != digest {
                 return Err(PublicIdentityError::OperationConflict.into());
             }
-            return match held {
-                HeldWitness::MembershipWithheld(held) => held
-                    .outcome(record, true)
-                    .map(Replayed::MembershipWithheld)
-                    .map(Some),
-                HeldWitness::Membership(held) => held
-                    .outcome(record, true)
-                    .map(Replayed::Membership)
-                    .map(Some),
-                HeldWitness::Source(held) => {
-                    held.outcome(record, true).map(Replayed::Source).map(Some)
-                }
-                HeldWitness::Reviewed(held) => {
-                    held.outcome(record, true).map(Replayed::Reviewed).map(Some)
-                }
-                HeldWitness::Manual(held) => {
-                    held.outcome(record, true).map(Replayed::Manual).map(Some)
-                }
-            };
+            return held.outcome(record, true).map(Some);
         }
     }
     Err(PublicIdentityError::Corrupt("receipt without history witness").into())

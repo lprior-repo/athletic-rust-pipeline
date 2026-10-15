@@ -3,10 +3,9 @@ use census_domain::public_identity_history::local_membership_withholding::{
     LocalMembershipWithholdV1, MembershipAttachmentV1,
 };
 use census_domain::public_identity_history::{HistoryRequest, PublicResolution};
-use sha2::{Digest, Sha256};
 
 pub(super) fn withdraw(fixture: &Fixture, candidate: &AthleteId) -> TestResult {
-    let before = fixture.store.snapshot().freeze_public_identity_v1()?;
+    let before = fixture.store.snapshot().freeze_public_identity_v2()?;
     let accepted = before.replay()?;
     let record = accepted.history_records().iter().find(|record| {
         matches!(&record.request, HistoryRequest::BindCandidateMembership { membership, .. } if membership.candidate == candidate.cast())
@@ -17,9 +16,11 @@ pub(super) fn withdraw(fixture: &Fixture, candidate: &AthleteId) -> TestResult {
     else {
         return Err("membership record required".into());
     };
-    let inventory = fixture
-        .writer
-        .inspect_membership_withholding(&fixture.store, owner)?;
+    let inventory = fixture.writer.inspect_membership_withholding(
+        &fixture.store,
+        "withhold-transfer",
+        owner,
+    )?;
     let case = fixture
         .store
         .scan::<ReviewCase>(Table::ReviewCases)?
@@ -45,23 +46,8 @@ pub(super) fn withdraw(fixture: &Fixture, candidate: &AthleteId) -> TestResult {
         fixture.store.snapshot().revision(),
         &fixture.writer.head(&fixture.store)?,
     )?;
-    #[derive(serde::Serialize)]
-    struct Approval<'a> {
-        schema: &'static str,
-        actor: &'static str,
-        prepared: &'a census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV1,
-    }
-    let schema = "local-source-membership-withholding-approval/v1";
-    let bytes = serde_json::to_vec(&Approval {
-        schema,
-        actor: "local_operator",
-        prepared: prepared.record(),
-    })?;
-    let mut hasher = Sha256::new();
-    hasher.update(schema.as_bytes());
-    hasher.update([0]);
-    hasher.update(&bytes);
-    let digest = format!("{:x}", hasher.finalize());
+    let bytes = prepared.approval_bytes()?;
+    let digest = prepared.approval_digest()?;
     let applied = fixture.writer.apply_membership_withholding(
         &fixture.store,
         prepared,
@@ -78,7 +64,7 @@ pub(super) fn withdraw(fixture: &Fixture, candidate: &AthleteId) -> TestResult {
     let after = fixture
         .store
         .snapshot()
-        .freeze_public_identity_v1()?
+        .freeze_public_identity_v2()?
         .replay()?;
     check!(eq; after.public_ids().count(), 1);
     check!(eq; after.resolve_candidate(&candidate.cast())?, PublicResolution::Unresolved);

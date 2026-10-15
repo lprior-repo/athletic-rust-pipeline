@@ -1,13 +1,16 @@
 use super::*;
-use crate::public_identity::local_adjudication::affected;
+use crate::public_identity::{
+    graph_reference::GraphAuthorityReferenceV1, graph_witness::manual::rebuild_manual,
+    retained::Live,
+};
 use census_domain::model::StoreIdentity;
-use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2;
+use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV3;
 
 #[test]
 fn retained_affected_validator_rejects_omitted_and_replaced_record_keys() -> TestResult {
     let fixture = merged()?;
-    let (record, identity, affected) = retained(&fixture)?;
-    affected.validate(&identity, &record)?;
+    let (record, graph) = retained(&fixture)?;
+    validate(&fixture, &graph, &record)?;
     for key in &record.request.affected_record_keys {
         let mut omitted = record.clone();
         omitted
@@ -15,9 +18,9 @@ fn retained_affected_validator_rejects_omitted_and_replaced_record_keys() -> Tes
             .affected_record_keys
             .retain(|held| held != key);
         assert!(matches!(
-            affected.validate(&identity, &omitted),
+            validate(&fixture, &graph, &omitted),
             Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-                "manual affected record inventory"
+                "graph manual affected keys"
             )))
         ));
     }
@@ -30,9 +33,9 @@ fn retained_affected_validator_rejects_omitted_and_replaced_record_keys() -> Tes
             .ok_or("affected key")? = unrelated;
         replaced.request.affected_record_keys.sort();
         assert!(matches!(
-            affected.validate(&identity, &replaced),
+            validate(&fixture, &graph, &replaced),
             Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-                "manual affected record inventory"
+                "graph manual affected keys"
             )))
         ));
     }
@@ -43,44 +46,40 @@ fn retained_affected_validator_rejects_omitted_and_replaced_record_keys() -> Tes
 fn retained_affected_validator_rejects_foreign_snapshot_store_and_authority_bindings() -> TestResult
 {
     let fixture = merged()?;
-    let (record, identity, affected) = retained(&fixture)?;
-    affected.validate(&identity, &record)?;
+    let (record, graph) = retained(&fixture)?;
+    validate(&fixture, &graph, &record)?;
     let changed = [
-        LocalIdentityAdjudicationRecordV2 {
+        LocalIdentityAdjudicationRecordV3 {
             snapshot_sequence: record
                 .snapshot_sequence
                 .checked_add(1)
                 .ok_or("sequence overflow")?,
             ..record.clone()
         },
-        LocalIdentityAdjudicationRecordV2 {
+        LocalIdentityAdjudicationRecordV3 {
             evidence_generation: record
                 .evidence_generation
                 .checked_add(1)
                 .ok_or("evidence overflow")?,
             ..record.clone()
         },
-        LocalIdentityAdjudicationRecordV2 {
+        LocalIdentityAdjudicationRecordV3 {
             derived_generation: record
                 .derived_generation
                 .checked_add(1)
                 .ok_or("derived overflow")?,
             ..record.clone()
         },
-        LocalIdentityAdjudicationRecordV2 {
+        LocalIdentityAdjudicationRecordV3 {
             store: StoreIdentity::parse(&different_digest(record.store.as_str()))?,
-            ..record.clone()
-        },
-        LocalIdentityAdjudicationRecordV2 {
-            authority_context: different_digest(&record.authority_context),
             ..record.clone()
         },
     ];
     for changed in changed {
         assert!(matches!(
-            affected.validate(&identity, &changed),
+            validate(&fixture, &graph, &changed),
             Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-                "manual affected snapshot binding"
+                "manual complete capture binding"
             )))
         ));
     }
@@ -89,11 +88,7 @@ fn retained_affected_validator_rejects_foreign_snapshot_store_and_authority_bind
 
 fn retained(
     fixture: &ReviewedFixture,
-) -> TestResult<(
-    LocalIdentityAdjudicationRecordV2,
-    super::super::Inputs,
-    affected::Inputs,
-)> {
+) -> TestResult<(LocalIdentityAdjudicationRecordV3, GraphAuthorityReferenceV1)> {
     let prepared = fixture.writer.prepare_local_adjudication(
         &fixture.store,
         "synthetic-retained-semantic-validation",
@@ -101,16 +96,46 @@ fn retained(
         fixture.store.snapshot().revision(),
         &fixture.writer.head(&fixture.store)?,
     )?;
-    let record = prepared.record().clone();
+    Ok((prepared.record().clone(), prepared.graph().clone()))
+}
+
+fn validate(
+    fixture: &ReviewedFixture,
+    graph: &GraphAuthorityReferenceV1,
+    record: &LocalIdentityAdjudicationRecordV3,
+) -> crate::StoreResult<()> {
     let snapshot = fixture.store.db.snapshot();
-    let identity = super::super::read_inputs(
-        &snapshot,
-        &fixture.store.journal,
-        &record.authority_context,
-        &record.store,
+    let reader = Live {
+        snapshot: &snapshot,
+        entities: &fixture.store.entities,
+        meta: &fixture.store.meta,
+        journal: &fixture.store.journal,
+        receipts: &fixture.store.receipts,
+    };
+    let ledger = fixture.writer.verified(&fixture.store)?;
+    rebuild_manual(
+        &reader,
+        graph,
+        record,
+        ledger.history.projection(),
+        ledger.history.records(),
     )?;
-    let affected = affected::read(&snapshot, &fixture.store.journal, &record.affected_context)?;
-    Ok((record, identity, affected))
+    Ok(())
+}
+
+#[test]
+fn retained_graph_validator_rejects_changed_domain_reference() -> TestResult {
+    let fixture = merged()?;
+    let (mut record, graph) = retained(&fixture)?;
+    let other = stage_inventory(&fixture, "different-retained-graph")?;
+    record.graph = other.graph().domain_reference()?;
+    check!(matches!(
+        validate(&fixture, &graph, &record),
+        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
+            "graph reference domain binding"
+        )))
+    ));
+    Ok(())
 }
 
 fn different_digest(original: &str) -> String {

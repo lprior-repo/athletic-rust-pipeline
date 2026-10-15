@@ -284,3 +284,43 @@ Deterministic public concurrent mutation, same-operation retry and crash after s
 but before return remain unverified. Existing chunk observation returns an error
 without a resume handshake; the identity-commit marker belongs to another operation.
 Sequential private fence tests are not evidence for those public concurrent schedules.
+
+### Graph authority cutover draft — October 15, 20:56 UTC
+
+The isolated draft composes lifecycle7 qualification, graph-bound witnesses8–12,
+manualV3/withholdingV2 records and frozenV2 replay. These are source changes awaiting
+combined compilation, runtime regressions and independent review, not activation.
+A retained graph reference alone does not verify or authorize evidence. Current
+verification requires exact schema2/key1/lifecycle7, and reviewed Split/Revoke must
+match the complete canonical affected-key inventory in both live and frozen paths.
+
+Explicit graph enrollment retains partially completed enrollment for retry. Graph
+reservation3 owns graph bytes; preparation4 charges operation metadata once, with
+the shared admission header independently auditing reservations. Callers retain the
+append lock across final input/head fences; journal-only staging is excluded from
+input revisions. Manual inspection retains and charges the full graph for the
+explicit logical operation. Historical approval envelopes remain read-only, sharing
+member/case semantics with current graph scans. No resource limit is raised.
+
+Current profile references use eight lifecycle7 qualification-only descriptor
+successors (revision3) plus the unchanged strict participationv3 policy. Historical
+lifecycle6 references remain exact for archived replay only. Production enrollment,
+census completion and the five source-backed positive eligibility obligations above
+remain unqualified. Formatting is observed; source lint and runtime evidence for
+this complete draft are pending.
+
+The current writer-fixture migration uses genuine graph-enrolled stores and selected
+captures for bests, CSV and normalized readback. The bests fixture preserves its
+original two public IDs and attaches only the first athlete's retained roster
+membership before the original reviewed merge. Two premerge cases now explicitly
+prove read-only snapshot identity/affiliation behavior; they do not prove selected
+writer acceptance. Held/current artifact comparison uses genuine current output
+against the old expected identity, while independent field tampering remains a
+refusal oracle. These migrated tests and fresh V3 enrollment constructors are
+source-reviewed or under review only; all combined execution remains pending.
+
+Membership fixture migration explicitly enrolls both graph capabilities. Inspection
+may retain the caller's graph once; unrelated retained bytes must remain unchanged.
+Tamper fixtures re-encode canonical envelope field order so a refusal tests altered
+bindings rather than incidental JSON ordering. Historical witness4 remains rejected
+by its explicit historical decoder.

@@ -61,6 +61,32 @@ impl CapturePositionV2 {
 pub struct CaptureBindingV2(pub(super) wire::CaptureBinding);
 
 impl CaptureBindingV2 {
+    pub(in crate::public_identity) fn require_identity_graph_v3_format(&self) -> StoreResult<()> {
+        let format = &self.0.format;
+        if format.store_schema != 2 || format.key_format != 1
+            || format.lifecycle_revision != census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE
+        {
+            return Err(crate::PublicIdentityError::Corrupt("graph authority capture format").into());
+        }
+        Ok(())
+    }
+
+    pub(in crate::public_identity) fn store_identity(&self) -> &StoreIdentity {
+        &self.0.store
+    }
+
+    pub(in crate::public_identity) fn evidence_generation(&self) -> u64 {
+        self.0.evidence_generation
+    }
+
+    pub(in crate::public_identity) fn derived_generation(&self) -> u64 {
+        self.0.derived_generation
+    }
+
+    pub(in crate::public_identity) fn snapshot_sequence(&self) -> u64 {
+        self.0.snapshot_sequence
+    }
+
     pub fn new(
         store: StoreIdentity,
         format: FormatBindingV2,

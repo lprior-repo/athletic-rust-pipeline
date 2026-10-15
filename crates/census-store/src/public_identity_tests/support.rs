@@ -14,10 +14,17 @@ type PhysicalRows = Vec<(Vec<u8>, Vec<u8>)>;
 pub(crate) type PhysicalState = Vec<(String, PhysicalRows)>;
 
 pub(crate) fn fixture() -> TestResult<(tempfile::TempDir, Store, crate::PublicIdentityWriterV1)> {
+    let (directory, store, writer) = unenrolled_fixture()?;
+    writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
+    Ok((directory, store, writer))
+}
+
+pub(crate) fn unenrolled_fixture(
+) -> TestResult<(tempfile::TempDir, Store, crate::PublicIdentityWriterV1)> {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("identity");
-    Store::create_public_identity_qualification_v2(&root)?;
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    Store::create_public_identity_qualification_v3(&root)?;
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     Ok((directory, store, writer))
 }
 
@@ -49,7 +56,7 @@ pub(crate) fn retained_state(store: &Store) -> TestResult<PhysicalState> {
     .collect()
 }
 
-pub(super) fn physical_state(root: &Path) -> TestResult<PhysicalState> {
+pub(crate) fn physical_state(root: &Path) -> TestResult<PhysicalState> {
     check!(root.join(crate::DB_DIR).join("version").is_file());
     let db = Database::builder(root.join(crate::DB_DIR))
         .cache_size(8_388_608)

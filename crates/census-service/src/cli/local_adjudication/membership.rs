@@ -3,10 +3,7 @@ use census_domain::public_identity_history::local_membership_withholding::LocalM
 use census_domain::public_identity_history::RegistryHead;
 use census_store::MembershipWithholdingOutcomeV1;
 use serde::Serialize;
-use std::io::IsTerminal;
 use std::path::Path;
-
-const APPROVAL_SCHEMA: &str = "local-source-membership-withholding-approval/v1";
 
 pub(super) fn withhold(root: &Path, operation: &str, path: &Path) -> Result<()> {
     let bytes = census_crawl::convert::read_file_capped(path, 1024 * 1024)?;
@@ -21,15 +18,8 @@ pub(super) fn withhold(root: &Path, operation: &str, path: &Path) -> Result<()> 
         store.snapshot().revision(),
         &head,
     )?;
-    let stdin = std::io::stdin();
-    let stdout = std::io::stdout();
-    super::require_terminal(stdin.is_terminal(), stdout.is_terminal())?;
-    let approved = super::confirm_for(
-        APPROVAL_SCHEMA,
-        prepared.record(),
-        &mut stdin.lock(),
-        &mut stdout.lock(),
-    )?;
+    let approved =
+        super::approve_prepared(prepared.approval_bytes()?, prepared.approval_digest()?)?;
     let (bytes, digest) = approved.into_approved_record();
     let outcome = writer.apply_membership_withholding(&store, prepared, bytes, digest.clone())?;
     emit(operation, &digest, &outcome).context("membership withholding committed; if output failed use membership-receipt with the approved digest")
@@ -69,6 +59,7 @@ fn emit(
 
 pub(super) fn preview(
     root: &Path,
+    operation: &str,
     canonical: &census_domain::public_identity_history::PublicAthleteId,
     sequence: u64,
     digest: &str,
@@ -80,9 +71,10 @@ pub(super) fn preview(
     };
     let expected_withheld_memberships =
         writer.preview_membership_withholding(&store, canonical, &attachment)?;
-    let inventory = writer.inspect_membership_withholding(&store, canonical)?;
+    let inventory = writer.inspect_membership_withholding(&store, operation, canonical)?;
     super::command::emit(&serde_json::json!({
-        "schema": "local-membership-withholding-preview/v1", "canonical": canonical,
+        "schema": "local-membership-withholding-preview/v2", "canonical": canonical,
+        "operation": operation, "graph": inventory.graph(),
         "head": writer.head(&store)?, "attachment": attachment,
         "expected_withheld_memberships": expected_withheld_memberships,
         "affected_record_keys": inventory.affected_record_keys(),

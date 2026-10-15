@@ -1,9 +1,10 @@
 use super::*;
+mod diagnostic;
 
 #[test]
 fn disabled_input_revisions_refuse_without_implicit_enrollment() -> TestResult {
-    let (_directory, store, writer) = fixture()?;
-    writer.enroll_manual_context_admission_v1(&store)?;
+    let (_directory, store, writer) = crate::public_identity_tests::support::unenrolled_fixture()?;
+    crate::public_identity::local_adjudication::admission::enroll_header_for_test(&store)?;
     let sequence = store.snapshot().sequence();
     assert!(writer
         .capture_raw_generation_v2(&store, &operation("disabled")?)
@@ -43,9 +44,39 @@ fn aggregate_admission_refuses_before_reservation_or_objects() -> TestResult {
     marks(&store, &mut batch, 97);
     batch.durability(Some(PersistMode::SyncData)).commit()?;
     let sequence = store.snapshot().sequence();
-    let id = operation("aggregate-budget")?;
-    assert!(writer.capture_raw_generation_v2(&store, &id).is_err());
+    let before_physical = diagnostic::physical_state(&store)?;
+    eprintln!("aggregate before journal read: sequence={sequence}, state={before_physical:?}");
+    let before = diagnostic::journal_state(&store)?;
+    let after_journal_read = diagnostic::physical_state(&store)?;
+    eprintln!("aggregate after journal read: state={after_journal_read:?}, journal={before:?}");
+    let measured = diagnostic::physical_bytes(&store)?;
+    let after_measure = diagnostic::physical_state(&store)?;
+    eprintln!(
+        "aggregate after measurement: bytes={measured}, state={after_measure:?}, journal={:?}",
+        diagnostic::journal_state(&store)?
+    );
     assert_eq!(store.snapshot().sequence(), sequence);
+    assert_eq!(after_journal_read, before_physical);
+    assert_eq!(after_measure, before_physical);
+    assert_eq!(diagnostic::journal_state(&store)?, before);
+    assert!(
+        measured > 128 * 1024 * 1024,
+        "aggregate fixture measured only {measured} bytes"
+    );
+    let id = operation("aggregate-budget")?;
+    let result = writer.capture_raw_generation_v2(&store, &id);
+    let after = diagnostic::journal_state(&store)?;
+    eprintln!("aggregate capture result={result:?}; measured_physical_bytes={measured}; sequence={sequence}->{}; journal/header before={before:?}; after={after:?}", store.snapshot().sequence());
+    assert!(
+        result.is_err(),
+        "aggregate capture unexpectedly succeeded: {result:?}"
+    );
+    assert_eq!(
+        store.snapshot().sequence(),
+        sequence,
+        "capture result={result:?}, physical_bytes={measured}"
+    );
+    assert_eq!(after, before);
     assert!(load_graph(&store, writer.store_identity(), &id)?.is_none());
     Ok(())
 }

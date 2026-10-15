@@ -11,6 +11,7 @@ use census_domain::public_identity_qualification::{
 use fjall::{Keyspace, Readable, Snapshot};
 use std::sync::{Arc, Mutex};
 
+pub(in crate::public_identity) mod graph_witnesses;
 mod preservation;
 pub(super) mod witnesses;
 pub(crate) use preservation::{preflight_keyspaces, validate_preservation};
@@ -45,7 +46,7 @@ impl PublicIdentityWriterV1 {
         self.qualification
     }
     pub(super) fn require_current_qualification(&self) -> StoreResult<()> {
-        let expected = PublicIdentityQualificationVersion::RetainedAuthorityContextV2;
+        let expected = PublicIdentityQualificationVersion::RetainedAuthorityGraphV3;
         if self.qualification != expected {
             return Err(PublicIdentityError::QualificationVersionMismatch {
                 expected,
@@ -133,26 +134,7 @@ pub(crate) fn validate(
         require_legacy(snapshot, meta, journal, receipts, format)?;
         return Ok(None);
     }
-    if format.schema_version != Some(2)
-        || format.key_format != Some(1)
-        || format.migration_target.is_some()
-        || format.created_by.is_none()
-        || format.created_at.is_none()
-        || has_prefix(snapshot, meta, "capture:")?
-        || has_prefix(snapshot, meta, "installation:")?
-    {
-        return Err(PublicIdentityError::Corrupt("qualification format").into());
-    }
-    validate_keys(snapshot, meta)?;
-    let raw = codec::load(snapshot, meta, DECLARATION, 65_536)?
-        .ok_or(PublicIdentityError::Corrupt("missing declaration"))?;
-    let declaration = match format.lifecycle_revision {
-        Some(LIFECYCLE) => PublicIdentityQualification::V1(codec::decode(DECLARATION, &raw)?),
-        Some(RETAINED_CONTEXT_LIFECYCLE) => {
-            PublicIdentityQualification::V2(codec::decode(DECLARATION, &raw)?)
-        }
-        _ => return Err(PublicIdentityError::Corrupt("qualification lifecycle").into()),
-    };
+    let declaration = read_declaration(snapshot, meta, format)?;
     match crate::lineage::read(snapshot, journal)? {
         crate::lineage::RetainedIdentity::Present(identity)
             if &identity == declaration.store_identity() => {}
@@ -164,17 +146,36 @@ pub(crate) fn validate(
     let raw = codec::load(snapshot, meta, HISTORY, MAX_PUBLIC_IDENTITY_HISTORY_BYTES)?
         .ok_or(PublicIdentityError::Corrupt("missing history"))?;
     let history = codec::history(&raw, declaration.store_identity(), &head)?;
-    let accepted = super::operation::accepted_decisions(snapshot, journal, history.records())?;
-    super::inventory::validate(snapshot, entities, meta, history.records().len(), accepted)?;
-    witnesses::validate(
+    let reader = super::retained::Live {
         snapshot,
         entities,
         meta,
         journal,
         receipts,
-        &history,
-        &declaration,
-    )?;
+    };
+    let accepted = match declaration.version() {
+        PublicIdentityQualificationVersion::RetainedAuthorityGraphV3 => {
+            graph_witnesses::accepted_decisions(&reader, history.records())?
+        }
+        _ => super::operation::accepted_decisions(snapshot, journal, history.records())?,
+    };
+    super::inventory::validate(snapshot, entities, meta, history.records().len(), accepted)?;
+    match declaration.version() {
+        PublicIdentityQualificationVersion::RetainedAuthorityGraphV3 => {
+            super::witness::verify_count(snapshot, journal, history.records().len())?;
+            super::witness::verify_count(snapshot, receipts, history.records().len())?;
+            graph_witnesses::validate_graph_retained(&reader, &history, &declaration)?;
+        }
+        _ => witnesses::validate(
+            snapshot,
+            entities,
+            meta,
+            journal,
+            receipts,
+            &history,
+            &declaration,
+        )?,
+    }
     Ok(Some(Ledger {
         declaration,
         history,
@@ -213,4 +214,35 @@ fn has_prefix(snapshot: &Snapshot, table: &Keyspace, prefix: &str) -> StoreResul
         })
         .transpose()
         .map(|found| found.is_some())
+}
+
+fn read_declaration(
+    snapshot: &Snapshot,
+    meta: &Keyspace,
+    format: &StoreFormat,
+) -> StoreResult<PublicIdentityQualification> {
+    if format.schema_version != Some(2)
+        || format.key_format != Some(1)
+        || format.migration_target.is_some()
+        || format.created_by.is_none()
+        || format.created_at.is_none()
+        || has_prefix(snapshot, meta, "capture:")?
+        || has_prefix(snapshot, meta, "installation:")?
+    {
+        return Err(PublicIdentityError::Corrupt("qualification format").into());
+    }
+    validate_keys(snapshot, meta)?;
+    let raw = codec::load(snapshot, meta, DECLARATION, 65_536)?
+        .ok_or(PublicIdentityError::Corrupt("missing declaration"))?;
+    let declaration = match format.lifecycle_revision {
+        Some(LIFECYCLE) => PublicIdentityQualification::V1(codec::decode(DECLARATION, &raw)?),
+        Some(RETAINED_CONTEXT_LIFECYCLE) => {
+            PublicIdentityQualification::V2(codec::decode(DECLARATION, &raw)?)
+        }
+        Some(census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE) => {
+            PublicIdentityQualification::V3(codec::decode(DECLARATION, &raw)?)
+        }
+        _ => return Err(PublicIdentityError::Corrupt("qualification lifecycle").into()),
+    };
+    Ok(declaration)
 }

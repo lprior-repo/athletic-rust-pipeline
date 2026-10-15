@@ -5,7 +5,9 @@ mod capture;
 mod replay;
 #[cfg(test)]
 mod tests;
+pub(crate) mod v2;
 mod wire;
+pub use v2::{replay_frozen_public_identity_v2, FrozenPublicIdentityBundleV2};
 
 pub(crate) use capture::capture;
 pub const MAX_FROZEN_PUBLIC_IDENTITY_BYTES: usize = 128 * 1024 * 1024;

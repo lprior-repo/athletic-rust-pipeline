@@ -11,6 +11,7 @@ pub(super) enum SelectedInputOrigin {
     Unqualified,
     Current,
     HistoricalReplay,
+    HistoricalIdentityReplay,
 }
 
 impl ExportDataset {
@@ -22,6 +23,13 @@ impl ExportDataset {
         matches!(
             self.selected_input_origin,
             super::SelectedInputOrigin::HistoricalReplay
+        )
+    }
+
+    pub(crate) fn uses_historical_identity_contract(&self) -> bool {
+        matches!(
+            self.selected_input_origin,
+            SelectedInputOrigin::HistoricalReplay | SelectedInputOrigin::HistoricalIdentityReplay
         )
     }
 
@@ -49,6 +57,32 @@ impl ExportDataset {
 
     pub(crate) fn ensure_input_binding(&self) -> ReportResult<()> {
         frozen::ensure_binding(self)
+    }
+
+    pub(crate) fn ensure_current_selected_write(&self) -> ReportResult<()> {
+        if self.selected_profile_id().is_none() {
+            return Ok(());
+        }
+        self.ensure_input_binding()?;
+        if self.is_historical_selected_replay() {
+            return Err(invalid(
+                "historical selected replay cannot authorize current publication",
+            ));
+        }
+        self.selected_proofs
+            .as_ref()
+            .ok_or_else(|| invalid("selected publication requires retained identity proofs"))?
+            .require_current()?;
+        let _checked =
+            census_domain::profile_execution::validate_selected_qualification_profile_v2(
+                self.selected_authority()?.profile(),
+            )
+            .map_err(|source| {
+                invalid(&format!(
+                    "unsupported selected publication profile: {source}"
+                ))
+            })?;
+        Ok(())
     }
 
     pub(crate) fn selected_profile_id(&self) -> Option<&census_domain::model::ProfileId> {
@@ -258,4 +292,4 @@ fn invalid(detail: &str) -> ReportError {
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

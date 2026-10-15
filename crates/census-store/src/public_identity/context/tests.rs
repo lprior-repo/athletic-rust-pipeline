@@ -65,8 +65,11 @@ fn full_raw_context_root_ignores_operation_candidate_and_decision_time() -> Test
         committed.head(),
     )?;
     check!(eq; next.head().sequence, 2);
-    check!(eq; witness_root(&store, 1)?, staged.object_id());
-    check!(eq; witness_root(&store, 2)?, staged.object_id());
+    for sequence in [1, 2] {
+        let reference = graph_reference(&store, sequence)?;
+        check!(ne; reference.seal().root().as_str(), staged.object_id());
+        check!(eq; exact_inputs(&graph_inputs(&store, &reference)?)?, exact_inputs(&inputs)?);
+    }
     check!(eq; read_inputs(&store, staged.object_id())?.cases.len(), 1);
     check!(eq; read_inputs(&store, staged.object_id())?.verdicts.len(), 1);
     Ok(())
@@ -332,7 +335,7 @@ fn reopened_ledger_replays_retained_decision_after_live_review_changes() -> Test
         store.snapshot().revision(),
         &head,
     )?;
-    let root = witness_root(&store, 1)?;
+    let graph = graph_reference(&store, 1)?;
     let decisions = store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?;
     let [decision] = decisions.as_slice() else {
         return Err("expected one decision".into());
@@ -369,18 +372,50 @@ fn reopened_ledger_replays_retained_decision_after_live_review_changes() -> Test
     check!(ne; current.observations, original.observations);
     check!(ne; current.cases, original.cases);
     check!(ne; current.verdicts, original.verdicts);
-    match accept_inputs(&current, &candidate, &decision.observed_at) {
-        Err(StoreError::PublicIdentity(PublicIdentityError::NotSourceBound)) => {}
-        Err(error) => return Err(format!("unexpected current authority error: {error:?}").into()),
-        Ok(_) => return Err("current unresolved review accepted".into()),
-    }
-    read::verify(&store.db.snapshot(), &store.journal, &root, decision)?;
-    check!(eq; exact_inputs(&read_inputs(&store, &root)?)?, exact_inputs(&original)?);
+    stage_graph(&store, &writer, "changed-live-source-inspection")?;
+    let (current_graph, _) = crate::public_identity::graph_operation::inspect(
+        &writer,
+        &store,
+        "changed-live-source-inspection",
+    )?;
+    let snapshot = store.snapshot();
+    let current_view = crate::public_identity::paged_generation::VerifiedRawGraph::verify(
+        &snapshot,
+        current_graph.capture(),
+        current_graph.seal(),
+    )?;
+    check!(matches!(
+        crate::public_identity::authority::graph::accept_source(
+            &current_view,
+            &candidate,
+            &decision.observed_at
+        ),
+        Err(StoreError::PublicIdentity(
+            PublicIdentityError::NotSourceBound
+        ))
+    ));
+    drop(current_view);
+    drop(snapshot);
+    let snapshot = store.snapshot();
+    let view = crate::public_identity::paged_generation::VerifiedRawGraph::verify(
+        &snapshot,
+        graph.capture(),
+        graph.seal(),
+    )?;
+    let (replayed, _) = crate::public_identity::authority::graph::accept_source(
+        &view,
+        &candidate,
+        &decision.observed_at,
+    )?;
+    check!(eq; replayed.record(), decision);
+    check!(eq; exact_inputs(&graph_inputs(&store, &graph)?)?, exact_inputs(&original)?);
+    drop(view);
+    drop(snapshot);
     let before = retained_state(&store)?;
     drop(writer);
     drop(store);
     let (store, writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     check!(eq; writer.head(&store)?, *committed.head());
     let replay = writer.establish_source_bound(
@@ -461,7 +496,7 @@ fn abandoned_context_staging_does_not_poison_current_ledger_or_reopen() -> TestR
     drop(writer);
     drop(store);
     let (store, writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     check!(eq; writer.head(&store)?, *committed.head());
     check!(eq; retained_state(&store)?, before);
@@ -475,4 +510,250 @@ fn abandoned_context_staging_does_not_poison_current_ledger_or_reopen() -> TestR
     check!(eq; replay.replayed(), true);
     check!(eq; replay.public_id(), committed.public_id());
     Ok(())
+}
+
+pub(super) fn graph_reference(
+    store: &Store,
+    sequence: u64,
+) -> TestResult<crate::public_identity::graph_reference::GraphAuthorityReferenceV1> {
+    let key = crate::public_identity::witness::key(sequence);
+    let raw = store.journal.get(&key)?.ok_or("graph witness")?;
+    Ok(crate::public_identity::graph_witness::HeldGraphWitness::decode(&key, &raw)?.graph)
+}
+
+pub(super) fn graph_inputs(
+    store: &Store,
+    reference: &crate::public_identity::graph_reference::GraphAuthorityReferenceV1,
+) -> TestResult<Inputs> {
+    use crate::public_identity::paged_generation::{AuthorityTableV2, VerifiedRawGraph};
+    let snapshot = store.snapshot();
+    let view = VerifiedRawGraph::verify(&snapshot, reference.capture(), reference.seal())?;
+    let mut inputs = Inputs {
+        athletes: Vec::new(),
+        observations: Vec::new(),
+        cases: Vec::new(),
+        verdicts: Vec::new(),
+    };
+    view.for_each_merged(AuthorityTableV2::Athletes, BUDGET, |row, _| {
+        inputs.athletes.push(row);
+        Ok(())
+    })?;
+    view.for_each_observation(AuthorityTableV2::SourceObservations, BUDGET, |row, _| {
+        inputs.observations.push(row);
+        Ok(())
+    })?;
+    view.for_each_merged(AuthorityTableV2::ReviewCases, BUDGET, |row, _| {
+        inputs.cases.push(row);
+        Ok(())
+    })?;
+    view.for_each_merged(AuthorityTableV2::IdentityVerdicts, BUDGET, |row, _| {
+        inputs.verdicts.push(row);
+        Ok(())
+    })?;
+    Ok(inputs)
+}
+
+pub(super) fn stage_graph(
+    store: &crate::Store,
+    writer: &crate::PublicIdentityWriterV1,
+    operation: &str,
+) -> TestResult {
+    let before = retained_state(store)?;
+    let (graph, _) = crate::public_identity::graph_operation::inspect(writer, store, operation)?;
+    let after = retained_state(store)?;
+    let raw_operation =
+        crate::public_identity::graph_operation::raw_operation(writer.store_identity(), operation)?;
+    let reservation_key = format!(
+        "manual-context-admission-v1\0reservation\0{}",
+        crate::journal::object_digest(raw_operation.as_str().as_bytes())
+    );
+    let reservation = store
+        .journal
+        .get(&reservation_key)?
+        .ok_or("graph reservation")?;
+    let reservation: serde_json::Value = serde_json::from_slice(&reservation)?;
+    check!(eq; reservation.get("version").and_then(serde_json::Value::as_u64), Some(3));
+    let allowed = staged_graph_keys(&reservation, &reservation_key)?;
+    check!(eq; before.len(), after.len());
+    for ((before_name, before_rows), (after_name, after_rows)) in before.iter().zip(&after) {
+        check!(eq; before_name, after_name);
+        if before_name != crate::JOURNAL {
+            check!(eq; before_rows, after_rows);
+            continue;
+        }
+        let header_key = b"manual-context-admission-v1\0header";
+        for (key, value) in before_rows {
+            let (_, current) = after_rows
+                .iter()
+                .find(|(held, _)| held == key)
+                .ok_or("inspection removed a retained row")?;
+            if key.as_slice() != header_key {
+                check!(eq; current, value);
+            }
+        }
+        let added: Vec<_> = after_rows
+            .iter()
+            .filter(|(key, _)| !before_rows.iter().any(|(prior, _)| prior == key))
+            .collect();
+        check!(added.iter().all(|(key, _)| allowed.contains(key)));
+        check!(added
+            .iter()
+            .any(|(key, _)| key == reservation_key.as_bytes()));
+        let bytes = added
+            .iter()
+            .try_fold(0_u64, |total, (key, value)| -> TestResult<u64> {
+                let row = key
+                    .len()
+                    .checked_add(value.len())
+                    .ok_or("row charge overflow")?;
+                Ok(total
+                    .checked_add(u64::try_from(row)?)
+                    .ok_or("charge overflow")?)
+            })?;
+        let roots = u64::try_from(
+            added
+                .iter()
+                .filter(|(key, _)| key.starts_with(b"j2\0manifest\0"))
+                .count(),
+        )?;
+        let header = |rows: &[(Vec<u8>, Vec<u8>)]| -> TestResult<serde_json::Value> {
+            let (_, raw) = rows
+                .iter()
+                .find(|(key, _)| key.as_slice() == header_key)
+                .ok_or("admission header")?;
+            Ok(serde_json::from_slice(raw)?)
+        };
+        let mut expected_header = header(before_rows)?;
+        for (field, increment) in [("bytes", bytes), ("roots", roots), ("reservations", 1)] {
+            let count = expected_header
+                .get(field)
+                .and_then(serde_json::Value::as_u64)
+                .ok_or("admission counter")?;
+            *expected_header.get_mut(field).ok_or("admission counter")? =
+                serde_json::Value::from(count.checked_add(increment).ok_or("counter overflow")?);
+        }
+        check!(eq; header(after_rows)?, expected_header);
+    }
+    let sequence = store.snapshot().sequence();
+    let (repeated, _) = crate::public_identity::graph_operation::inspect(writer, store, operation)?;
+    check!(eq; repeated, graph);
+    check!(eq; retained_state(store)?, after);
+    check!(eq; store.snapshot().sequence(), sequence);
+    Ok(())
+}
+
+fn staged_graph_keys(
+    reservation: &serde_json::Value,
+    reservation_key: &str,
+) -> TestResult<std::collections::BTreeSet<Vec<u8>>> {
+    let descriptors = reservation
+        .get("descriptors")
+        .and_then(serde_json::Value::as_array)
+        .ok_or("graph descriptors")?;
+    let mut keys = std::collections::BTreeSet::from([reservation_key.as_bytes().to_vec()]);
+    for descriptor in descriptors {
+        let physical = descriptor.get("physical").ok_or("physical descriptor")?;
+        let root = physical
+            .get("root")
+            .and_then(serde_json::Value::as_str)
+            .ok_or("physical root")?;
+        keys.insert(crate::journal::object_manifest_key(root)?);
+        for (field, chunk) in [("chunks", true), ("pages", false)] {
+            let rows = physical
+                .get(field)
+                .and_then(serde_json::Value::as_array)
+                .ok_or("physical rows")?;
+            for ordinal in 0..rows.len() {
+                keys.insert(if chunk {
+                    crate::journal::object_chunk_key(root, ordinal)?
+                } else {
+                    crate::journal::object_index_key(root, ordinal)?
+                });
+            }
+        }
+    }
+    Ok(keys)
+}
+
+#[test]
+fn current_graph_material_fence_ignores_review_metadata_but_binds_retained_member_facts(
+) -> TestResult {
+    let fixture = super::reviewed_fixture::ready_for_merge()?;
+    let members: Vec<_> = fixture.candidates.iter().take(2).cloned().collect();
+    let original = current_material(
+        &fixture.store,
+        &fixture.writer,
+        "material-original",
+        &members,
+    )?;
+    let mut inputs = Inputs::capture(&fixture.store.snapshot())?;
+    for case in &mut inputs.cases {
+        case.subject = "Changed display label".into();
+        case.detail = "Another model rerun description".into();
+    }
+    for verdict in &mut inputs.verdicts {
+        verdict.reviewer = "Another synthetic model".into();
+        verdict.rationale = "Same facts, new wording".into();
+    }
+    fixture
+        .store
+        .replace_many(Table::ReviewCases, &inputs.cases)?;
+    fixture
+        .store
+        .replace_many(Table::IdentityVerdicts, &inputs.verdicts)?;
+    check!(eq; current_material(&fixture.store, &fixture.writer, "material-metadata", &members)?, original);
+    let unrelated_id = fixture.candidates.last().ok_or("unrelated candidate")?;
+    let unrelated = inputs
+        .athletes
+        .iter_mut()
+        .find(|row| row.id.as_str() == unrelated_id.as_str())
+        .ok_or("unrelated athlete")?;
+    unrelated
+        .evidence
+        .push(census_domain::model::Evidence::parsed(
+            census_domain::model::SourceRef::new(
+                "unrelated later source",
+                Some("https://unrelated-source.test/result".into()),
+            ),
+            "2026-10-15",
+        ));
+    fixture.store.append(Table::Athletes, unrelated)?;
+    check!(eq; current_material(&fixture.store, &fixture.writer, "material-unrelated", &members)?, original);
+    let member_id = members.first().ok_or("member")?;
+    let member = inputs
+        .athletes
+        .iter_mut()
+        .find(|row| row.id.as_str() == member_id.as_str())
+        .ok_or("member athlete")?;
+    member.evidence.push(census_domain::model::Evidence::parsed(
+        census_domain::model::SourceRef::new(
+            "member later source",
+            Some("https://member-source.test/result".into()),
+        ),
+        "2026-10-15",
+    ));
+    fixture.store.append(Table::Athletes, member)?;
+    check!(ne; current_material(&fixture.store, &fixture.writer, "material-member", &members)?, original);
+    Ok(())
+}
+
+fn current_material(
+    store: &Store,
+    writer: &crate::PublicIdentityWriterV1,
+    operation: &str,
+    members: &[census_domain::model::AthleteCandidateId],
+) -> TestResult<String> {
+    stage_graph(store, writer, operation)?;
+    let (reference, _) =
+        crate::public_identity::graph_operation::inspect(writer, store, operation)?;
+    let before = retained_state(store)?;
+    let snapshot = store.snapshot();
+    let view = crate::public_identity::paged_generation::VerifiedRawGraph::verify(
+        &snapshot,
+        reference.capture(),
+        reference.seal(),
+    )?;
+    let value = crate::public_identity::authority::graph::identity_material(&view, members)?;
+    check!(eq; retained_state(store)?, before);
+    Ok(value)
 }

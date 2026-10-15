@@ -1,110 +1,174 @@
-use base64::prelude::BASE64_STANDARD;
-use base64::Engine;
-use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2;
-use census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV1;
+use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV3;
+use census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV2;
+use census_store::GraphAuthorityReferenceV1;
+use serde::Serialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 
+use super::controller::{Boundary, Reached};
 use super::fixture::{Fixture, Mode};
-use super::physical::{Rows, State};
+use super::graph;
+use super::physical::State;
 use super::TestResult;
-
-#[path = "accounting.rs"]
-mod accounting;
-
-const HEADER: &[u8] = b"manual-context-admission-v1\0header";
 
 pub(super) fn interrupted(
     fixture: &Fixture,
     state: &State,
-    marker_digest: &str,
-) -> TestResult<Vec<u8>> {
+    boundary: Boundary,
+    marker: &Reached,
+) -> TestResult<Option<Vec<u8>>> {
     unchanged_authority(&fixture.before, state)?;
     let before = fixture.before.rows("journal")?;
     let journal = state.rows("journal")?;
-    accounting::verify(before, 1)?;
-    accounting::verify(journal, 2)?;
-    let reservation = reservation_key(fixture.mode.operation());
-    check!(!before.contains_key(&reservation));
-    let raw = journal.get(&reservation).ok_or("new reservation")?;
-    let row: Value = serde_json::from_slice(raw)?;
-    check!(eq; row["decision"]["kind"].as_str(), Some(fixture.mode.kind()));
-    let record = original(fixture.mode, &row["decision"]["record"])?;
-    check!(raw
-        .windows(record.len())
-        .any(|part| part == record.as_slice()));
-    check!(eq; row["decision"]["record"]["affected_context"].as_str(), Some(fixture.context_root.as_str()));
-    check!(eq; row["charges"][0]["roots"].as_u64(), Some(0));
-    check!(eq; row["charges"][0]["bytes"].as_u64(), Some(0));
-    check!(eq; row["charges"][1]["roots"].as_u64(), Some(1));
-    let chunk_key = key("chunk", &fixture.context_root, Some(0));
-    check!(!before.contains_key(&chunk_key));
-    let chunk = journal.get(&chunk_key).ok_or("durable partial chunk")?;
-    check!(eq; digest(chunk), marker_digest);
-    let decoded = chunk_bytes(&fixture.context_root, chunk)?;
-    affected(fixture, &row["decision"]["record"], &decoded)?;
-    check!(!journal.contains_key(&key("index", &fixture.context_root, Some(0))));
-    check!(!journal.contains_key(&key("manifest", &fixture.context_root, None)));
-    let mut expected = before.clone();
-    check!(expected
-        .insert(
-            HEADER.to_vec(),
-            journal.get(HEADER).ok_or("header")?.clone()
-        )
-        .is_some());
-    check!(expected.insert(reservation, raw.clone()).is_none());
-    check!(expected.insert(chunk_key, chunk.clone()).is_none());
-    check!(eq; &expected, journal);
-    Ok(record)
+    graph::verify_accounting(before)?;
+    graph::verify_accounting(journal)?;
+    let raw_key = graph::reservation_key(&graph::raw_operation(
+        &fixture.identity,
+        fixture.mode.operation(),
+    )?);
+    check!(!before.contains_key(&raw_key));
+    let raw = graph::row(journal, &raw_key)?;
+    check!(eq; raw["purpose"]["capture"]["evidence_generation"], json!(fixture.evidence));
+    check!(eq; raw["purpose"]["capture"]["derived_generation"], json!(fixture.derived));
+    let preparation_key = graph::reservation_key(fixture.mode.operation());
+    check!(!before.contains_key(&preparation_key));
+    let prior_header = graph::row(before, graph::HEADER)?;
+    let header = graph::row(journal, graph::HEADER)?;
+    let added = match boundary {
+        Boundary::RawGraphChunk => 1u64,
+        Boundary::Preparation => 2,
+    };
+    check!(eq; header["reservations"].as_u64(), prior_header["reservations"].as_u64().and_then(|value| value.checked_add(added)));
+    match boundary {
+        Boundary::RawGraphChunk => {
+            check!(!journal.contains_key(&preparation_key));
+            let root = &marker.operation;
+            let descriptors = raw["descriptors"].as_array().ok_or("graph descriptors")?;
+            let descriptor = descriptors
+                .iter()
+                .find(|entry| entry["object"]["root"].as_str() == Some(root.as_str()))
+                .ok_or("interrupted graph object")?;
+            check!(eq; descriptor["incremental"]["roots"], json!(1));
+            let chunk = graph::key("chunk", root, Some(0))?;
+            check!(!before.contains_key(&chunk));
+            check!(eq; graph::digest(journal.get(&chunk).ok_or("durable graph chunk")?), marker.input_digest);
+            check!(!journal.contains_key(&graph::key("index", root, Some(0))?));
+            check!(!journal.contains_key(&graph::key("manifest", root, None)?));
+            let expected = graph::extend_raw(
+                &fixture.before,
+                state,
+                &fixture.identity,
+                fixture.mode.operation(),
+                false,
+            )?;
+            check!(eq; journal, &expected);
+            Ok(None)
+        }
+        Boundary::Preparation => {
+            let retained = graph::prepared(
+                &fixture.before,
+                state,
+                &fixture.identity,
+                fixture.mode.operation(),
+            )?;
+            check!(eq; graph::digest(journal.get(&preparation_key).ok_or("durable preparation")?), marker.input_digest);
+            check!(eq; journal, &retained.journal);
+            Ok(Some(approval(fixture.mode, &retained.reservation)?))
+        }
+    }
 }
 
-pub(super) fn recovered(fixture: &Fixture, interrupted: &State, recovered: &State) -> TestResult {
+pub(super) fn recovered(
+    fixture: &Fixture,
+    interrupted: &State,
+    recovered: &State,
+    boundary: Boundary,
+    approval_bytes: &[u8],
+) -> TestResult {
     unchanged_authority(interrupted, recovered)?;
     let before = interrupted.rows("journal")?;
     let after = recovered.rows("journal")?;
-    accounting::verify(after, 2)?;
-    let root = &fixture.context_root;
-    let chunk = before
-        .get(&key("chunk", root, Some(0)))
-        .ok_or("partial chunk")?;
-    let bytes = chunk_bytes(root, chunk)?;
-    let records = bytes
-        .split_inclusive(|byte| *byte == b'\n')
-        .collect::<Vec<_>>();
-    let mut offset = 0usize;
-    let entries = records
+    let retained = graph::prepared(
+        &fixture.before,
+        recovered,
+        &fixture.identity,
+        fixture.mode.operation(),
+    )?;
+    check!(eq; after, &retained.journal);
+    check!(eq; serde_json::to_value(retained.graph.domain_reference()?)?, retained.reservation["witness"]["payload"]["adjudication"]["graph"]);
+    check!(eq; retained.reservation["expected_head"], json!(fixture.head));
+    check!(eq; retained.reservation["witness"]["payload"]["family"], json!(fixture.mode.kind()));
+    check!(eq; approval(fixture.mode, &retained.reservation)?.as_slice(), approval_bytes);
+    for (key, value) in before
         .iter()
-        .enumerate()
-        .map(|(sequence, record)| {
-            let entry = json!({"sequence":sequence,"offset":offset,"length":record.len()});
-            offset = offset.checked_add(record.len()).ok_or("index offset")?;
-            Ok(entry)
-        })
-        .collect::<TestResult<Vec<_>>>()?;
-    let index = serde_json::to_vec(&json!({
-        "type":"journal-index","version":2,"object":root,"page":0,"entries":entries,
-    }))?;
-    let manifest = serde_json::to_vec(&json!({
-        "type":"journal-manifest","version":2,"object":root,"codec":"jsonl",
-        "total_bytes":bytes.len(),"chunks":1,"records":records.len(),"index_pages":1,
-        "chunk_digests":[root],
-    }))?;
-    let mut expected = before.clone();
-    include_exact_json(after, &mut expected, key("index", root, Some(0)), &index)?;
-    include_exact_json(after, &mut expected, key("manifest", root, None), &manifest)?;
-    check!(eq; &expected, after);
+        .filter(|(key, _)| key.as_slice() != graph::HEADER)
+    {
+        check!(eq; after.get(key), Some(value));
+    }
+    match boundary {
+        Boundary::RawGraphChunk => {
+            let prior = graph::row(before, graph::HEADER)?;
+            let current = graph::row(after, graph::HEADER)?;
+            let key = graph::reservation_key(fixture.mode.operation());
+            let raw = after.get(&key).ok_or("new preparation")?;
+            let charge = u64::try_from(
+                key.len()
+                    .checked_add(raw.len())
+                    .ok_or("preparation charge")?,
+            )?;
+            check!(eq; current["bytes"].as_u64(), prior["bytes"].as_u64().and_then(|bytes| bytes.checked_add(charge)));
+            check!(eq; current["roots"], prior["roots"]);
+            check!(eq; current["reservations"].as_u64(), prior["reservations"].as_u64().and_then(|count| count.checked_add(1)));
+        }
+        Boundary::Preparation => check!(eq; recovered, interrupted),
+    }
     Ok(())
 }
 
-fn original(mode: Mode, value: &Value) -> TestResult<Vec<u8>> {
-    match mode {
-        Mode::Split => Ok(serde_json::to_vec(&serde_json::from_value::<
-            LocalIdentityAdjudicationRecordV2,
-        >(value.clone())?)?),
-        Mode::Withhold => Ok(serde_json::to_vec(&serde_json::from_value::<
-            LocalMembershipWithholdingRecordV1,
-        >(value.clone())?)?),
-    }
+#[derive(Serialize)]
+struct Approval<'a, T> {
+    schema: &'static str,
+    actor: &'static str,
+    prepared: &'a T,
+    graph: &'a GraphAuthorityReferenceV1,
+}
+
+fn approval(mode: Mode, reservation: &Value) -> TestResult<Vec<u8>> {
+    let graph: GraphAuthorityReferenceV1 = serde_json::from_value(reservation["graph"].clone())?;
+    let record = reservation["witness"]["payload"]["adjudication"].clone();
+    check!(eq; reservation["witness"]["payload"]["family"], json!(mode.kind()));
+    let bytes = match mode {
+        Mode::Split => {
+            let record: LocalIdentityAdjudicationRecordV3 = serde_json::from_value(record)?;
+            check!(eq; record.graph, graph.domain_reference()?);
+            serde_json::to_vec(&Approval {
+                schema: "local-identity-adjudication-approval/v2",
+                actor: "local_operator",
+                prepared: &record,
+                graph: &graph,
+            })?
+        }
+        Mode::Withhold => {
+            let record: LocalMembershipWithholdingRecordV2 = serde_json::from_value(record)?;
+            check!(eq; record.graph, graph.domain_reference()?);
+            serde_json::to_vec(&Approval {
+                schema: "local-source-membership-withholding-approval/v2",
+                actor: "local_operator",
+                prepared: &record,
+                graph: &graph,
+            })?
+        }
+    };
+    let schema = match mode {
+        Mode::Split => "local-identity-adjudication-approval/v2",
+        Mode::Withhold => "local-source-membership-withholding-approval/v2",
+    };
+    let mut digest = Sha256::new();
+    digest.update(schema.as_bytes());
+    digest.update([0]);
+    digest.update(&bytes);
+    check!(eq; reservation["witness"]["request_digest"], json!(format!("{:x}", digest.finalize())));
+    Ok(bytes)
 }
 
 fn unchanged_authority(before: &State, after: &State) -> TestResult {
@@ -112,81 +176,4 @@ fn unchanged_authority(before: &State, after: &State) -> TestResult {
         check!(eq; before.rows(name)?, after.rows(name)?);
     }
     Ok(())
-}
-
-fn chunk_bytes(root: &str, raw: &[u8]) -> TestResult<Vec<u8>> {
-    let chunk: Value = serde_json::from_slice(raw)?;
-    check!(eq; chunk["type"].as_str(), Some("journal-chunk"));
-    check!(eq; chunk["version"].as_u64(), Some(2));
-    check!(eq; chunk["object"].as_str(), Some(root));
-    check!(eq; chunk["index"].as_u64(), Some(0));
-    let bytes = BASE64_STANDARD.decode(chunk["data"].as_str().ok_or("chunk data")?)?;
-    check!(!bytes.is_empty() && bytes.len() <= 16_384);
-    check!(eq; chunk["length"].as_u64(), Some(u64::try_from(bytes.len())?));
-    check!(eq; chunk["digest"].as_str(), Some(root));
-    check!(eq; digest(&bytes), root);
-    Ok(bytes)
-}
-
-fn affected(fixture: &Fixture, record: &Value, bytes: &[u8]) -> TestResult {
-    let entities = fixture.before.rows("entities")?;
-    let performances = physical_records(entities, b"performances\0", "performance")?;
-    let relays = physical_records(entities, b"relay_results\0", "relay")?;
-    check!(eq; performances.len(), 3);
-    check!(eq; relays.len(), 3);
-    let header = json!({
-        "schema":"local-identity-affected-records/v1", "store":fixture.identity,
-        "authority_context":record["authority_context"],
-        "evidence_generation":fixture.evidence, "derived_generation":fixture.derived,
-        "snapshot_sequence":record["snapshot_sequence"], "counts":[performances.len(),relays.len()],
-    });
-    let expected = std::iter::once(entry("header", "header", header))
-        .chain(performances)
-        .chain(relays)
-        .collect::<Vec<_>>();
-    let observed = bytes
-        .split_inclusive(|byte| *byte == b'\n')
-        .map(serde_json::from_slice::<Value>)
-        .collect::<Result<Vec<_>, _>>()?;
-    check!(eq; expected, observed);
-    Ok(())
-}
-
-fn physical_records(rows: &Rows, prefix: &[u8], kind: &str) -> TestResult<Vec<Value>> {
-    rows.iter().filter(|(key, _)| key.starts_with(prefix)).enumerate()
-        .map(|(index, (key, raw))| Ok(entry(&format!("{kind}:{index:020}"), kind, json!({
-            "physical_key_base64":BASE64_STANDARD.encode(key), "raw_json":std::str::from_utf8(raw)?,
-        })))).collect()
-}
-
-fn entry(key: &str, kind: &str, value: Value) -> Value {
-    json!({"key":key,"at":"","payload":{"kind":kind,"value":value}})
-}
-
-fn include_exact_json(after: &Rows, expected: &mut Rows, key: Vec<u8>, value: &[u8]) -> TestResult {
-    let actual = after.get(&key).ok_or("completed physical row")?;
-    check!(eq; serde_json::from_slice::<Value>(actual)?, serde_json::from_slice::<Value>(value)?);
-    check!(expected.insert(key, actual.clone()).is_none());
-    Ok(())
-}
-
-fn key(segment: &str, root: &str, ordinal: Option<u32>) -> Vec<u8> {
-    let mut key = format!("j2\0{segment}\0{root}").into_bytes();
-    if let Some(ordinal) = ordinal {
-        key.push(0);
-        key.extend_from_slice(&ordinal.to_be_bytes());
-    }
-    key
-}
-
-fn reservation_key(operation: &str) -> Vec<u8> {
-    format!(
-        "manual-context-admission-v1\0reservation\0{}",
-        digest(operation.as_bytes())
-    )
-    .into_bytes()
-}
-
-fn digest(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
 }

@@ -28,9 +28,10 @@ pub(in crate::public_identity) fn ready_for_merge() -> TestResult<ReviewedFixtur
 
 pub(in crate::public_identity) fn ready_for_manual() -> TestResult<ReviewedFixture> {
     build_fixture(|store, writer| {
-        writer
-            .enroll_manual_context_admission_v1(store)
-            .map_err(Into::into)
+        let before = crate::public_identity_tests::support::retained_state(store)?;
+        writer.enroll_graph_admission_v1(store, store.snapshot().revision())?;
+        check!(eq; crate::public_identity_tests::support::retained_state(store)?, before);
+        Ok(())
     })
 }
 
@@ -227,6 +228,9 @@ pub(in crate::public_identity) fn review_inputs(
 pub(super) fn binding_id(store: &Store, sequence: u64) -> TestResult<String> {
     let key = crate::public_identity::witness::key(sequence);
     let raw = store.journal.get(key)?.ok_or("source witness")?;
-    let held: crate::public_identity::witness::Witness = serde_json::from_slice(&raw)?;
+    let held = crate::public_identity::graph_witness::HeldGraphWitness::decode(
+        &crate::public_identity::witness::key(sequence),
+        &raw,
+    )?;
     Ok(format!("source_binding_v1_{}", held.request_digest))
 }

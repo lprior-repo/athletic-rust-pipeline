@@ -15,6 +15,7 @@ impl<'s> Stage<'s> {
         options: &Options,
     ) -> ReportResult<Self> {
         dataset.ensure_current_policy()?;
+        selected::ensure_current_options(dataset, options)?;
         let root = match &options.out {
             Some(root) => root.clone(),
             None => store.out_dir().join("publication"),
@@ -75,6 +76,7 @@ impl<'s> Stage<'s> {
         options: &Options,
         render: impl FnOnce(&Path) -> ReportResult<super::inventory::RowCounts>,
     ) -> ReportResult<PathBuf> {
+        selected::ensure_current_options(dataset, options)?;
         let result = render(&self.directory).and_then(|counts| {
             self.store
                 .publication_lease_renew(

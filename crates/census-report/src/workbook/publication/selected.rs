@@ -1,7 +1,9 @@
 use crate::export::ExportDataset;
 use crate::report::ReportResult;
 use census_domain::model::{ContractRefV1, ProfileDate, ProfileId};
-use census_domain::profile_execution::validate_selected_qualification_profile_v1;
+use census_domain::profile_execution::{
+    validate_selected_qualification_profile_v1, validate_selected_qualification_profile_v2,
+};
 use serde::{Deserialize, Serialize};
 
 pub(super) const REVISION: u32 = 8;
@@ -38,6 +40,7 @@ impl SelectedProfile {
 
 pub(super) fn revision(dataset: &ExportDataset) -> ReportResult<u32> {
     let revision = if dataset.selected_profile_id().is_some() {
+        dataset.ensure_current_selected_write()?;
         REVISION
     } else {
         super::ARTIFACT_REVISION
@@ -57,7 +60,7 @@ pub(super) fn binding(
             SelectedProfile::of(dataset).map(Some)
         }
         REVISION => {
-            current_profile(dataset)?;
+            verified_profile(dataset)?;
             SelectedProfile::of(dataset).map(Some)
         }
         _ => Err(super::invariant(
@@ -75,7 +78,9 @@ pub(super) fn validate(revision: u32, binding: Option<&SelectedProfile>) -> Repo
     }
 }
 
-fn current_profile(dataset: &ExportDataset) -> ReportResult<&census_domain::model::QueryProfileV1> {
+fn verified_profile(
+    dataset: &ExportDataset,
+) -> ReportResult<&census_domain::model::QueryProfileV1> {
     dataset.ensure_input_binding()?;
     if dataset.is_historical_selected_replay() {
         return Err(super::invariant(
@@ -92,19 +97,26 @@ fn current_profile(dataset: &ExportDataset) -> ReportResult<&census_domain::mode
             "current selected publication differs from frozen profile".into(),
         ));
     }
-    let qualified = validate_selected_qualification_profile_v1(profile).map_err(|source| {
-        super::invariant(format!(
-            "unsupported selected publication profile: {source}"
-        ))
-    })?;
+    if dataset.uses_historical_identity_contract() {
+        let _checked = validate_selected_qualification_profile_v1(profile).map_err(|source| {
+            super::invariant(format!("unsupported historical selected profile: {source}"))
+        })?;
+    } else {
+        let _checked = validate_selected_qualification_profile_v2(profile).map_err(|source| {
+            super::invariant(format!(
+                "unsupported selected publication profile: {source}"
+            ))
+        })?;
+    }
     dataset.verified_public_identities()?;
-    Ok(qualified.profile())
+    Ok(profile)
 }
 
 pub(in crate::workbook) fn ensure_current_options(
     dataset: &ExportDataset,
     options: &crate::workbook::Options,
 ) -> ReportResult<()> {
+    dataset.ensure_current_selected_write()?;
     if dataset.selected_profile_id().is_none() {
         return Ok(());
     }
@@ -121,7 +133,7 @@ pub(in crate::workbook) fn ensure_verification_options(
     let revision = if dataset.is_historical_selected_replay() {
         HISTORICAL_REVISION
     } else {
-        revision(dataset)?
+        REVISION
     };
     ensure_options_for_revision(dataset, options, revision)
 }
@@ -133,7 +145,7 @@ pub(super) fn ensure_options_for_revision(
 ) -> ReportResult<()> {
     binding(revision, dataset)?;
     if revision == REVISION {
-        ensure_profile_options(current_profile(dataset)?, options)?;
+        ensure_profile_options(verified_profile(dataset)?, options)?;
     }
     Ok(())
 }

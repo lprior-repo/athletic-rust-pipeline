@@ -1,13 +1,10 @@
-use super::{
-    consume, MembershipWithholdingOutcomeV1, MembershipWithholdingWitnessV1,
-    PreparedMembershipWithholdingV1,
-};
+use super::{consume, MembershipWithholdingOutcomeV1, PreparedMembershipWithholdingV1};
 use crate::public_identity::{
     codec, commit, operation, qualification::Ledger, PublicIdentityError, PublicIdentityWriterV1,
     MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
 };
 use crate::{Store, StoreError, StoreResult};
-use census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV1;
+use census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV2;
 use census_domain::public_identity_history::PreparedHistoryRecord;
 
 impl PublicIdentityWriterV1 {
@@ -18,13 +15,7 @@ impl PublicIdentityWriterV1 {
         approved_bytes: Vec<u8>,
         approval_digest: String,
     ) -> StoreResult<MembershipWithholdingOutcomeV1> {
-        consume::consume(
-            self,
-            store,
-            prepared,
-            (approved_bytes, approval_digest),
-            persist,
-        )
+        consume::consume(self, store, prepared, (approved_bytes, approval_digest))
     }
     pub fn replay_membership_withholding(
         &self,
@@ -33,6 +24,7 @@ impl PublicIdentityWriterV1 {
         approval_digest: &str,
     ) -> StoreResult<Option<MembershipWithholdingOutcomeV1>> {
         let _guard = store.lock_appends();
+        self.require_current_qualification()?;
         let ledger = self.verified(store)?;
         match operation::repeated(store, operation, approval_digest, &ledger)? {
             Some(operation::Replayed::MembershipWithheld(outcome)) => Ok(Some(outcome)),
@@ -41,15 +33,30 @@ impl PublicIdentityWriterV1 {
         }
     }
 }
-fn persist(
+pub(super) fn persist(
     store: &Store,
-    record: LocalMembershipWithholdingRecordV1,
+    record: LocalMembershipWithholdingRecordV2,
+    graph: crate::public_identity::graph_reference::GraphAuthorityReferenceV1,
     history: PreparedHistoryRecord,
     approval_digest: String,
     ledger: Ledger,
 ) -> StoreResult<MembershipWithholdingOutcomeV1> {
-    let witness = MembershipWithholdingWitnessV1::new(record, &history, approval_digest);
-    let outcome = witness.outcome(&history.uncommitted_record, false)?;
+    let witness = crate::public_identity::graph_witness::HeldGraphWitness::new(
+        &record.operation,
+        approval_digest,
+        graph,
+        &record.observed_at,
+        &history,
+        crate::public_identity::graph_witness::Payload::Withholding {
+            actor: crate::public_identity::graph_witness::LocalActor::LocalOperator,
+            adjudication: record.clone(),
+        },
+    )?;
+    let operation::Replayed::MembershipWithheld(outcome) =
+        witness.outcome(&history.uncommitted_record, false)?
+    else {
+        return Err(PublicIdentityError::OperationConflict.into());
+    };
     let (mut records, _) = ledger.history.into_parts();
     records
         .try_reserve(1)
@@ -58,7 +65,7 @@ fn persist(
         })?;
     records.push(history.uncommitted_record);
     let encoded = codec::encode(&records, MAX_PUBLIC_IDENTITY_HISTORY_BYTES)?;
-    codec::history(&encoded, &witness.adjudication.store, &history.next_head)?;
+    codec::history(&encoded, &record.store, &history.next_head)?;
     commit::persist(
         store,
         &witness,
@@ -66,7 +73,7 @@ fn persist(
         commit::DecisionWrite::RetainedInWitness,
         &history.next_head,
         encoded,
-        &witness.adjudication.observed_at,
+        &record.observed_at,
     )?;
     Ok(outcome)
 }

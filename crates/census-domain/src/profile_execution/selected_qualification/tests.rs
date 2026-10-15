@@ -9,7 +9,7 @@ use crate::UsJurisdiction;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-fn input() -> TestResult<QueryProfileInputV1> {
+pub(super) fn input() -> TestResult<QueryProfileInputV1> {
     Ok(QueryProfileInputV1 {
         version: 1,
         graduation_years: vec![GradYear::CO2027],
@@ -40,7 +40,11 @@ fn input() -> TestResult<QueryProfileInputV1> {
     })
 }
 
-fn replace(raw: &mut QueryProfileInputV1, role: ContractRoleV1, reference: ContractRefV1) {
+pub(super) fn replace(
+    raw: &mut QueryProfileInputV1,
+    role: ContractRoleV1,
+    reference: ContractRefV1,
+) {
     match role {
         ContractRoleV1::Cohort => raw.policies.cohort = reference,
         ContractRoleV1::Event => raw.policies.event = reference,

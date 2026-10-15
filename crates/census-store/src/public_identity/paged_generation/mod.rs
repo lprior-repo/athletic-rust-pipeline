@@ -7,6 +7,7 @@ mod emit;
 mod inventory;
 mod operation;
 pub use operation::RawGenerationOperationIdV2;
+mod graph_read;
 mod limits;
 mod page;
 mod page_decode;
@@ -14,7 +15,10 @@ mod raw;
 mod records;
 mod scalar;
 mod seal;
+mod source;
 mod wire;
+pub(crate) use graph_read::VerifiedRawGraph;
+pub(crate) use source::{graph_physical_rows, FrozenRawObjectSource, RawObjectSource};
 
 pub use binding::{
     CaptureBindingV2, CapturePositionV2, FormatBindingV2, RunBindingV2, TableBindingV2,

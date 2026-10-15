@@ -1,7 +1,7 @@
 use super::{digest, invalid, objects::Reference};
 use crate::export::proof_objects;
 use crate::report::ReportResult;
-use census_store::{AcceptedPublicIdentitySnapshot, FrozenPublicIdentityBundleV1, StoreError};
+use census_store::{AcceptedPublicIdentitySnapshot, FrozenPublicIdentityBundleV2, StoreError};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -22,7 +22,7 @@ pub(super) struct Bundle {
 impl Bundle {
     pub(super) fn capture(
         directory: &Path,
-        bundle: &FrozenPublicIdentityBundleV1,
+        bundle: &FrozenPublicIdentityBundleV2,
     ) -> ReportResult<Self> {
         let bytes = bundle.bytes();
         if bytes.is_empty() || bytes.len() > MAX_BYTES || !digest(bundle.digest()) {
@@ -50,6 +50,19 @@ impl Bundle {
     }
 
     pub(super) fn replay(&self, directory: &Path) -> ReportResult<AcceptedPublicIdentitySnapshot> {
+        census_store::replay_frozen_public_identity_v2(&self.read(directory)?, &self.digest)
+            .map_err(Into::into)
+    }
+
+    pub(super) fn replay_historical(
+        &self,
+        directory: &Path,
+    ) -> ReportResult<AcceptedPublicIdentitySnapshot> {
+        census_store::replay_frozen_public_identity_v1(&self.read(directory)?, &self.digest)
+            .map_err(Into::into)
+    }
+
+    fn read(&self, directory: &Path) -> ReportResult<Vec<u8>> {
         self.validate()?;
         let mut bytes = Vec::new();
         bytes
@@ -64,7 +77,7 @@ impl Bundle {
             }
             bytes.extend_from_slice(&part);
         }
-        census_store::replay_frozen_public_identity_v1(&bytes, &self.digest).map_err(Into::into)
+        Ok(bytes)
     }
 
     pub(super) fn chunks(&self) -> &[Reference] {

@@ -6,14 +6,16 @@ use census_domain::model::{
     QueryProfileInputV1, QueryProfileV1, RegionalMembershipV1, SchoolYear, Sport,
 };
 use census_domain::profile_execution::{
-    selected_qualification_contract_ref_v1 as reference, ContractRoleV1 as Role,
+    selected_qualification_contract_ref_v2 as reference, ContractRoleV1 as Role,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use std::path::Path;
 
+pub(crate) mod consumer;
 mod results;
 mod roster;
+pub(crate) use roster::{hash, retain};
 mod transfer;
 
 enum Composition {
@@ -25,7 +27,7 @@ enum Composition {
     SelectedEventScope,
 }
 
-pub(super) struct Fixture {
+pub(crate) struct Fixture {
     pub directory: tempfile::TempDir,
     pub store: Store,
     pub selection: ProfileSelectionV1,
@@ -68,8 +70,9 @@ impl Fixture {
     async fn prepare(composition: Composition) -> TestResult<Self> {
         let directory = super::temporary()?;
         let root = directory.path().join("store");
-        Store::create_public_identity_qualification_v2(&root)?;
-        let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+        Store::create_public_identity_qualification_v3(&root)?;
+        let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+        writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
         let performance = match composition {
             Composition::SelectedEventScope => results::selected::append_baseline(&store).await?,
             Composition::NonSchool(division) => results::append_division(&store, division).await?,

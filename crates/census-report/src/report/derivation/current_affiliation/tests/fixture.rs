@@ -37,9 +37,10 @@ impl Fixture {
 
     pub(super) fn retained() -> TestResult<Self> {
         let directory = tempfile::tempdir()?;
-        Store::create_public_identity_qualification_v2(directory.path())?;
+        Store::create_public_identity_qualification_v3(directory.path())?;
         let (store, writer) =
-            Store::open_public_identity_qualification_v2(directory.path())?.into_parts();
+            Store::open_public_identity_qualification_v3(directory.path())?.into_parts();
+        writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
         let previous = school(&store, UsJurisdiction::Wisconsin, "Previous school")?;
         let current = school(&store, UsJurisdiction::Michigan, "Current school")?;
         let mut athlete = CanonicalAthlete::new(

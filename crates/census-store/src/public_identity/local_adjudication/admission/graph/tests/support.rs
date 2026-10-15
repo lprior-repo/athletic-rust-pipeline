@@ -95,7 +95,7 @@ impl Generation {
 
 pub(super) fn enrolled() -> TestResult<(tempfile::TempDir, Store, crate::PublicIdentityWriterV1)> {
     let (directory, store, writer) = fixture()?;
-    writer.enroll_manual_context_admission_v1(&store)?;
+    writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
     Ok((directory, store, writer))
 }
 
