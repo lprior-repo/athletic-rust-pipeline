@@ -34,7 +34,7 @@ the scenarios that capability blocks.
 | Staged packages | `…/qemu/11.1.1/pkgs/SHA256SUMS.txt` must verify under `sha256sum --check --strict`; staged archives absent from that manifest are reported and recorded with their observed hashes |
 | Guest image | `…/images/Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2` (≤8 GiB) against `images/SHA256SUMS.txt` and the pinned digest `360f0fa4…e87` |
 | Guest captures | `CENSUS_NATIVE_VM_CAPTURES`, default `var/native-vm-captures-sol-20261006.json` (≤32 MiB) with its four manifest-bound capture files |
-| Capture verifier | `VERIFY_BINARY`, default `target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm`; mandatory executable, built by the feature-enabled command below; absence refuses qualification |
+| Native host / capture verifier | `CENSUS_NATIVE_VM_HOST` / `VERIFY_BINARY`, default `target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm`; mandatory feature-enabled executable; absence refuses qualification |
 | Scratch disks | `SCRATCH_STORE`, default `var/durability-scratch`, plus `tmp/`; owned, non-symlink, on local disk; a bounded `FAULT_MEDIA_MIB` (64) sparse probe proves the medium without allocating it |
 | Isolation | `unshare --user --map-root-user --mount --propagation private` must work and a 64 MiB tmpfs must mount inside it — the ENOSPC media of scenarios 09 and 10; `/proc/sys/kernel/random/uuid` mints VM session tokens; `pgrep`, `ss` and `/proc/<pid>/{cmdline,environ}` capture owned-PID identity |
 | Clock | The host clock is read-only: the verifier records the observed host UTC instant and never sets it; scenario 12 owns the guest-only midnight lane and scenario 03 the guest reboot lane |
@@ -94,10 +94,10 @@ SERVE_BINARY="$PWD/target/moon-build/x86_64-unknown-linux-gnu/release/census-ser
 
 Without that endpoint the seam scenarios skip or fail on the missing seam instead of exercising it,
 so a release pass exports `SERVE_BINARY` for the whole gate, not only for the durability lane. The
-two guest lanes (03, 12) additionally read `CENSUS_NATIVE_VM_HOST` for the feature-built
-`qualification_native_vm` example and `CENSUS_NATIVE_VM_CAPTURES` for the live public captures their
-natural-midnight phase replays; without that host they resolve the example under the portable target
-tree, which `pipeline:build-portable` leaves empty, and fail before booting.
+two guest lanes (03, 12) read `CENSUS_NATIVE_VM_HOST` and `VERIFY_BINARY`; both default to the
+feature-built `qualification_native_vm` example under `target/moon-build`, not the empty portable
+examples directory. `CENSUS_NATIVE_VM_CAPTURES` selects the retained public capture manifest;
+verification alone does not establish the guest's live midnight acquisitions.
 
 `S04_V1_BINARY` and `S04_V2_BINARY` override scenario 04's pair directly; without the override
 scenario 04 takes V1 from the feature build in `target/moon-build` and V2 from the plain portable

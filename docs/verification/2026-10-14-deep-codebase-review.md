@@ -29,7 +29,7 @@ implemented components and qualified behavior must remain separate evidence stat
 |---|---|
 | R1–R8 | Components have advanced; final selected-profile integration and workbook acceptance remain unqualified. |
 | R9 / R10 / R15 | Closed in Beads: `55js` / `kkv7` / `3i89`. |
-| R11 | Open: `c945`; LOCAL receipt/coordinator/caller changes are unapplied and uncompiled. |
+| R11 | Open: `c945`; pure report values/revision moved to Domain; semantic receipt/coordinator/caller changes remain LOCAL, unapplied and uncompiled. |
 | R12 / R13 | Open: `rod5`; reusable execution and source-backed discovery/UP qualification remain incomplete. |
 | R14 | Open: `tmdl`; local cleanup/capture checks do not establish whole-workload resource or fault qualification. |
 
@@ -593,3 +593,26 @@ liveness from metadata alone; guest-midnight bookends and journal readback remai
 No whole-deployment memory envelope, 17-fault qualification, performance improvement or national
 completion follows. The earlier full release failure remains historical evidence; repaired
 individual lanes do not imply a passing full release.
+
+### Canonical report values and native wrapper — 2026-10-15
+
+The seven transitive report values now live in `census_domain::national_census`; `Revision`
+lives in `census_domain::model`. Old Service/Reconcile definitions and public re-exports are
+removed, and callers use the canonical types. Fields, serde defaults, revision display and
+historical wire shape are unchanged. This move does not establish R11 semantic authority.
+
+| Exercised surface | Observed result | Evidence |
+|---|---|---|
+| All-target check; full workspace | Passed; 6,515 passed, six skipped | `a489fc40`; `617eb866` |
+| Publication/native examples; source Clippy | 211 passed, none skipped; lint passed with the three retained arity advisories | `9d121680`; `3e16997f` |
+| Strict measurement / size / debt; comments | No debt grew, no production file over 300 lines; no comments in 3,489 Rust files | `f6868b20`; `55bc0e54` |
+| Architecture contract; module seams | Ten checks passed with retained known crate deviations; no seam violations | `5a61df5b`; `2d4d912c` |
+| Rebuilt real report CLI, isolated loopback synthetic historical bytes | Final/default counters preserved; explicit partial remains observable; failed/owed report exits 1 | `var/review-national-dto-2026-10-15T070952077Z/` |
+| Native wrapper defaults | Scenario 03 fails before repair on the nonexistent portable helper; current feature helper accepts the retained capture manifest | `49b0cfd8`; feature build `15686768` |
+| Actual guest reboot and midnight | Both catalogued lanes pass with host/verifier overrides unset; producer artifacts retained | `866d47c0`; `$HOME/.cache/cen-native-vm/run-W7MLe7dN/machine/` |
+
+The actual VM verdict limits its scope to the original reserved source-stage reboot,
+acknowledged effects and fresh guest-midnight acquisitions. Cleanup records endpoint/node/QEMU
+reaped with exit 0 and guest drain accepted = completed = 16. It does not qualify all HTTP
+subphases, scenario 17, the full 17-fault set, whole-workload resources or national completion.
+The report CLI smoke uses synthetic responses, not a live census or source-authority proof.

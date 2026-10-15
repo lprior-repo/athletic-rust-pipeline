@@ -1,10 +1,10 @@
 use super::*;
 use crate::restate_services::wire::{HistoryWindow, SourcePlan};
+use census_domain::model::Revision;
 use census_domain::{
     model::{normalize_name, CanonicalMeet, CanonicalPerformance, CanonicalSchool, SchoolYear},
     UsJurisdiction,
 };
-use census_reconcile::identity::Revision;
 use census_store::Table;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};

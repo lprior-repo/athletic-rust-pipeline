@@ -3,11 +3,12 @@ use crate::restate_services::jurisdiction::capture_admission;
 use crate::restate_services::plan::{compute_plan_fingerprint, BrowserLaneState};
 use crate::restate_services::wire::{JurisdictionRequest, JurisdictionState, SourcePlan};
 use crate::restate_services::{CaptureExecution, Jobs};
+use census_domain::model::Revision;
 use census_domain::model::{
     CensusRun, GradYear, HistoryWindow, RunManifest, SchoolYear, SourceMeetRef,
 };
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_reconcile::identity::WorkflowIdentity;
 use census_store::{clock::SystemClock, Store, Table};
 use std::collections::HashMap;
 

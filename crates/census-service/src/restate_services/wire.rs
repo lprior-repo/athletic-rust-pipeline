@@ -1,10 +1,9 @@
-use census_domain::model::{CoachLaneObligation, CoachLaneStage, SchoolYear};
+use census_domain::model::{CoachLaneObligation, CoachLaneStage, Revision, SchoolYear};
 use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::census::StateProgress;
-use census_reconcile::identity::Revision;
 
 mod history;
 pub use history::{HistoricalProgress, HistoryWindow};
@@ -34,14 +33,11 @@ pub use seal::{BindRunReply, BindRunRequest, SealItem, SealRef, SealReply, SealR
 
 pub(super) mod school_address_join;
 
-pub use school_address_join::{SchoolAddressJoinReply, SchoolAddressJoinRequest};
+pub use school_address_join::SchoolAddressJoinRequest;
 
 pub(super) mod national;
 
-pub use national::{
-    ContactStatus, ContactSummary, JurisdictionSummary, NationalCompleteness, NationalFailure,
-    NationalReport, NationalRequest, SourceStageOutcome,
-};
+pub use national::{ContactStatus, ContactSummary, NationalRequest, SourceStageOutcome};
 
 mod publication;
 pub use publication::{NationalRequestBinding, PublicationCapabilities, PublicationContract};
@@ -262,16 +258,4 @@ pub struct JurisdictionReport {
     pub history: HistoricalProgress,
     pub history_window: HistoryWindow,
     pub completed_at: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct JurisdictionOwed {
-    pub identity: String,
-    pub jurisdiction: UsJurisdiction,
-    #[serde(default)]
-    pub stages_run: Vec<String>,
-    #[serde(default)]
-    pub owed: Vec<String>,
-    #[serde(default)]
-    pub reasons: Vec<String>,
 }

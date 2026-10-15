@@ -62,7 +62,7 @@ mod tests {
         HistoryWindow, JurisdictionRequest, JurisdictionState, SourcePlan,
     };
     use census_domain::model::CoachLaneStatus;
-    use census_reconcile::identity::Revision;
+    use census_domain::model::Revision;
     use census_store::{Store, Table};
 
     type TestResult = Result<(), Box<dyn std::error::Error>>;

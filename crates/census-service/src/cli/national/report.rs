@@ -1,7 +1,6 @@
 use anyhow::{bail, Result};
-use census_service::restate_services::{
-    JurisdictionReport, JurisdictionSummary, NationalReport, SourcePlan,
-};
+use census_domain::national_census::{JurisdictionSummary, NationalReport};
+use census_service::restate_services::{JurisdictionReport, SourcePlan};
 
 pub(crate) fn owed_sources(plan: &SourcePlan) -> String {
     plan.refused

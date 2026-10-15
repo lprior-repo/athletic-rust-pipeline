@@ -1,10 +1,9 @@
+use census_domain::national_census::SchoolAddressJoinReply;
 use serde::de::{Error as _, MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::school_address::{
-    Counters, EvidenceField, EvidenceFields, JoinError, JoinReport, Overrides,
-};
+use crate::school_address::{EvidenceField, EvidenceFields, JoinError, JoinReport, Overrides};
 
 const FIELD_NAMES: [&str; 5] = [
     "generation",
@@ -109,15 +108,6 @@ impl<'de> Deserialize<'de> for SchoolAddressJoinRequest {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         deserializer.deserialize_map(RequestVisitor)
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SchoolAddressJoinReply {
-    pub mode: String,
-    pub generation: String,
-    pub report: String,
-    pub outcomes: String,
-    pub counters: Counters,
 }
 
 impl From<JoinReport> for SchoolAddressJoinReply {

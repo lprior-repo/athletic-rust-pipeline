@@ -1,7 +1,10 @@
 use anyhow::{bail, Context, Result};
 use census_crawl::ingress::Ingress;
-use census_domain::{model::SchoolYear, UsJurisdiction};
-use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_domain::{
+    model::{Revision, SchoolYear},
+    UsJurisdiction,
+};
+use census_reconcile::identity::WorkflowIdentity;
 use census_service::restate_services::{
     HistoryWindow, NationalCensusIngressClient, NationalRequest, NationalRequestBinding,
     PublicationContract,

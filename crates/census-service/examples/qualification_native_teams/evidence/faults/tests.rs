@@ -86,7 +86,7 @@ fn cold_witness_refuses_extra_reservation_missing_pair_and_another_operation() -
     cold.entries.remove(&format!("{key}/attempt/2/outcome"));
     assert!(!slots::boundary(&cold, &key, &input, &progress)?);
     let (cold, key, mut input, progress) = boundary()?;
-    input.jurisdiction.revision = census_reconcile::identity::Revision(99);
+    input.jurisdiction.revision = Revision(99);
     assert!(!slots::boundary(&cold, &key, &input, &progress)?);
     Ok(())
 }

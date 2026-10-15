@@ -10,13 +10,14 @@ use census_store::clock::Clock;
 use census_store::Store;
 
 #[cfg(test)]
-use census_domain::model::{RunManifest, SchoolYear};
+use census_domain::model::Revision;
 #[cfg(test)]
-use census_reconcile::identity::Revision;
+use census_domain::model::{RunManifest, SchoolYear};
 
-use super::jobs;
-use super::wire::{JurisdictionOwed, JurisdictionReport, JurisdictionRequest, JurisdictionState};
+use super::wire::{JurisdictionReport, JurisdictionRequest, JurisdictionState};
+use crate::restate_services::jobs;
 use crate::spawn::Spawner;
+use census_domain::national_census::JurisdictionOwed;
 
 mod athleticlive;
 #[cfg(test)]

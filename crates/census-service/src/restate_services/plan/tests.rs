@@ -385,8 +385,8 @@ fn a_recorded_plan_round_trips_through_the_journal() -> Result<(), Box<dyn std::
 #[test]
 fn fingerprint_is_deterministic() -> Result<(), Box<dyn std::error::Error>> {
     use crate::restate_services::plan::compute_plan_fingerprint;
+    use census_domain::model::Revision;
     use census_domain::model::SchoolYear;
-    use census_reconcile::identity::Revision;
 
     let fp1 = compute_plan_fingerprint(
         UsJurisdiction::Wisconsin,
@@ -408,8 +408,8 @@ fn fingerprint_is_deterministic() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn fingerprint_changes_with_different_inputs() -> Result<(), Box<dyn std::error::Error>> {
     use crate::restate_services::plan::compute_plan_fingerprint;
+    use census_domain::model::Revision;
     use census_domain::model::SchoolYear;
-    use census_reconcile::identity::Revision;
 
     let base = compute_plan_fingerprint(
         UsJurisdiction::Wisconsin,

@@ -1,5 +1,5 @@
+use census_domain::model::Revision;
 use census_domain::model::{RunManifest, SchoolYear};
-use census_reconcile::identity::Revision;
 use restate_sdk::prelude::{HandlerError, TerminalError};
 
 use crate::census::{MeetCensus, StateProgress};

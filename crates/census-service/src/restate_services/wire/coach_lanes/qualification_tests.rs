@@ -2,9 +2,9 @@ use super::super::{az, bind, ct, fl, ny};
 use crate::restate_services::jurisdiction::coach_lane_owed;
 use crate::restate_services::plan::{compute_plan_fingerprint, plan as planned, BrowserLaneState};
 use crate::restate_services::wire::{JurisdictionState, SourcePlan};
+use census_domain::model::Revision;
 use census_domain::model::{CoachLaneObligation, CoachLaneStatus, SchoolYear};
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::Revision;
 use census_store::{Store, Table};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;

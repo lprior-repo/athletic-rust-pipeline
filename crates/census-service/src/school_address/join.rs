@@ -1,3 +1,4 @@
+use census_domain::national_census::Counters;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
@@ -107,43 +108,6 @@ impl LaneSet {
 
 fn carries(lane: &LaneEvidence, key: &IdentifiedKey) -> bool {
     lane.captured.binary_search(key).is_ok()
-}
-
-#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
-pub struct Counters {
-    pub scanned: u64,
-    pub linked: u64,
-    pub already_linked: u64,
-    #[serde(default)]
-    pub backfilled: u64,
-    #[serde(default)]
-    pub postal_gaps: u64,
-    #[serde(default)]
-    pub postal_filled: u64,
-    #[serde(default)]
-    pub postal_remaining: u64,
-    #[serde(default)]
-    pub ccd_filled: u64,
-    #[serde(default)]
-    pub pss_filled: u64,
-    pub websites: u64,
-    pub review: u64,
-    pub no_match: u64,
-    pub refused: u64,
-    pub evidence_missing: u64,
-    pub missing_state: u64,
-    pub exact_name: u64,
-    pub core_name: u64,
-    pub parenthetical: u64,
-    pub parenthetical_inner: u64,
-    pub alias: u64,
-    pub ambiguous: u64,
-    pub review_filed: u64,
-    pub review_present: u64,
-    #[serde(default)]
-    pub co_op_members: u64,
-    #[serde(default)]
-    pub co_op_declined: u64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

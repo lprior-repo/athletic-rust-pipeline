@@ -1,7 +1,8 @@
 mod common;
 
+use census_domain::model::Revision;
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::{admitted_scope, Revision, WorkflowIdentity, MAX_IDENTITY_BYTES};
+use census_reconcile::identity::{admitted_scope, WorkflowIdentity, MAX_IDENTITY_BYTES};
 use common::{season, TestResult};
 
 #[test]

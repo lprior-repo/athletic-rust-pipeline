@@ -92,7 +92,7 @@ once per capture/parse revision and reused across subjects; see [ADR-004](docs/a
 
 | Crate | Owns | Boundary |
 |---|---|---|
-| `census-domain` | Pure constrained types, cohort/event/comparison rules | No async runtime, database, HTTP, browser, Restate, workbook or model clients |
+| `census-domain` | Pure constrained types, workflow revision, national-report values and cohort/event/comparison rules | No async runtime, database, HTTP, browser, Restate, workbook or model clients |
 | `census-store` | Fjall schema, transactions, receipts, snapshots, migration and backup | No source parsing or HTTP |
 | `census-crawl` | Adapters, discovery, fetchers, admission and browser bridge | Produces observations; does not accept canonical identities |
 | `athleticnet-browser` | Headed profile, CDP capture, tab pool, challenge/429 classification | One attempt; no challenge solving, spoofing, login handling or proxy rotation |

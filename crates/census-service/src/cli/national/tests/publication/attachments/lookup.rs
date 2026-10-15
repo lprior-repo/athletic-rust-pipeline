@@ -6,7 +6,7 @@ pub(super) fn assert_lookup(
     ordinal: Option<std::num::NonZeroU32>,
 ) -> TestResult {
     let season = census_domain::model::SchoolYear::new(2026).ok_or("fixture season")?;
-    let revision = census_reconcile::identity::Revision(1);
+    let revision = census_domain::model::Revision(1);
     let states = &[census_domain::UsJurisdiction::Wisconsin];
     let identity = match ordinal {
         Some(ordinal) => census_reconcile::identity::WorkflowIdentity::national_resume(

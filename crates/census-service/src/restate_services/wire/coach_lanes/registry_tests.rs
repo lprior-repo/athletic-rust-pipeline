@@ -6,9 +6,9 @@ use crate::restate_services::plan::{
 use crate::restate_services::wire::{
     HistoryWindow, JurisdictionRequest, JurisdictionState, SourcePlan,
 };
+use census_domain::model::Revision;
 use census_domain::model::{CoachLaneError, CoachLaneStatus, SchoolYear};
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::Revision;
 use census_store::{Store, Table};
 
 pub(super) type TestResult = Result<(), Box<dyn std::error::Error>>;

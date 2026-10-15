@@ -2,9 +2,9 @@ mod strategies;
 use census_crawl::applicability::applicable_sources;
 use census_crawl::net::Fetcher;
 use census_crawl::registry::{AccessClass, AcquisitionPolicyRefusal, SourceDescriptor};
+use census_domain::model::Revision;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::Revision;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BrowserLaneState {

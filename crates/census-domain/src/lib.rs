@@ -10,6 +10,7 @@ pub mod core_scope;
 pub mod error;
 pub mod jurisdiction;
 pub mod model;
+pub mod national_census;
 pub mod participation_candidates;
 pub mod profile_execution;
 pub mod public_identity_history;

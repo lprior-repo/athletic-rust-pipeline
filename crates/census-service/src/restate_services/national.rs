@@ -7,9 +7,11 @@ use census_domain::UsJurisdiction;
 use census_reconcile::identity::{admitted_scope, WorkflowIdentity};
 use census_store::clock::Clock;
 
-use super::jurisdiction::JurisdictionCensusClient;
-use super::wire::{NationalReport, NationalRequest, NationalRequestBinding};
+use crate::restate_services::JurisdictionCensusClient;
+
+use super::wire::{NationalRequest, NationalRequestBinding};
 use super::KEY_STATE;
+use census_domain::national_census::NationalReport;
 
 mod classification;
 mod contact_phase;

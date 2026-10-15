@@ -1,5 +1,6 @@
 use anyhow::{ensure, Context, Result};
-use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_domain::model::Revision;
+use census_reconcile::identity::WorkflowIdentity;
 use census_service::restate_services::TeamsSourceRequest;
 use reqwest::Client;
 use serde::Serialize;

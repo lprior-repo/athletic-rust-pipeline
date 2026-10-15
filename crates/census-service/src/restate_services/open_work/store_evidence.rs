@@ -8,12 +8,12 @@ use crate::restate_services::{
     JobError,
 };
 use census_crawl::CollectionDisposition as Disposition;
+use census_domain::model::Revision;
 use census_domain::model::{
     CanonicalSchool, CensusRun, ContactResearch, ContactResearchOutcome, GradYear,
     SchoolMailboxPurpose, SchoolYear,
 };
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::Revision;
 use census_store::{Store, StoreError, StoreResult, Table};
 
 pub(crate) struct StoreEvidence {

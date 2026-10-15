@@ -6,8 +6,8 @@ use census_report::report::CoverageReport;
 use restate_sdk::prelude::*;
 
 use super::super::publish::Jobs;
-use super::super::wire::NationalReport;
 use super::super::{blocking, job_error};
+use census_domain::national_census::NationalReport;
 
 #[tracing::instrument(skip_all)]
 pub(super) async fn publish(
@@ -63,11 +63,9 @@ fn coverage_rows(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use census_domain::model::SchoolYear;
-    use census_reconcile::identity::Revision;
+    use census_domain::model::{Revision, SchoolYear};
+    use census_domain::national_census::{JurisdictionSummary, NationalFailure};
     use census_store::{Store, Table};
-
-    use super::super::super::wire::{JurisdictionSummary, NationalFailure};
 
     type TestResult = Result<(), Box<dyn std::error::Error>>;
 

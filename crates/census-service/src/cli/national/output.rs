@@ -1,7 +1,7 @@
 use anyhow::Result;
+use census_domain::national_census::NationalReport;
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::WorkflowIdentity;
-use census_service::restate_services::NationalReport;
 use restate_sdk::{
     ingress::{ClientError, Output},
     prelude::Json,

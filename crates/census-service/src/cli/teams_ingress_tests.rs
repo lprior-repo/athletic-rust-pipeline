@@ -1,6 +1,6 @@
+use census_domain::model::Revision;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::Revision;
 use census_service::restate_services::{HistoryWindow, JurisdictionRequest};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 

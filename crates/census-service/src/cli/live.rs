@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
+use census_domain::model::Revision;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::Revision;
 use census_report::report;
 use census_service::restate_services::{
     bests_export_key, report_export_key, workbook_request_key, BestsIngressClient, BestsReply,

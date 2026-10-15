@@ -225,7 +225,7 @@ async fn national_resume_submits_and_reattaches_the_selected_parent_not_a_new_re
         "{}:resume:7",
         WorkflowIdentity::national(
             census_domain::model::SchoolYear::new(2026).ok_or("fixture season")?,
-            census_reconcile::identity::Revision(1),
+            census_domain::model::Revision(1),
             &[census_domain::UsJurisdiction::Wisconsin],
         )
         .as_str()
@@ -268,7 +268,7 @@ async fn national_resume_submits_and_reattaches_the_selected_parent_not_a_new_re
     let (_, payload) = captured.get(3).ok_or("resume request absent")?;
     let request: census_service::restate_services::NationalRequest =
         serde_json::from_slice(payload)?;
-    check!(eq; request.revision, census_reconcile::identity::Revision(1));
+    check!(eq; request.revision, census_domain::model::Revision(1));
     check!(eq; request.history, census_service::restate_services::HistoryWindow::cohort("2026-10-01")?);
     check!(eq; request.publication_contract, census_service::restate_services::PublicationContract::ManagedBundleV2);
     check!(eq; request.pass_budget, 17);
@@ -309,7 +309,7 @@ async fn national_resume_report_reads_the_selected_execution(
     check!(outcome.is_err());
     let identity = WorkflowIdentity::national(
         census_domain::model::SchoolYear::new(2026).ok_or("fixture season")?,
-        census_reconcile::identity::Revision(1),
+        census_domain::model::Revision(1),
         &[census_domain::UsJurisdiction::Wisconsin],
     );
     let expected = format!("{}:resume:7", identity.as_str()).replace(':', "%3A");

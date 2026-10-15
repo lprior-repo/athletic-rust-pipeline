@@ -5,8 +5,10 @@ use super::super::super::{
 };
 use super::super::{files, Marker, MARKER};
 use anyhow::{Context, Result};
-use census_domain::{model::SchoolYear, UsJurisdiction};
-use census_reconcile::identity::Revision;
+use census_domain::{
+    model::{Revision, SchoolYear},
+    UsJurisdiction,
+};
 use census_service::restate_services::{
     JurisdictionRequest, JurisdictionState, SourcePlan, TeamsAttemptProgress,
     TeamsSourceInspection, TeamsSourceRequest, TeamsStage,

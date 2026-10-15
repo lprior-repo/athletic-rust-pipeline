@@ -1,11 +1,10 @@
-use census_domain::model::SchoolYear;
+use census_domain::model::{Revision, SchoolYear};
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::Revision;
 use serde::{Deserialize, Serialize};
 
-use super::school_address_join::{SchoolAddressJoinReply, SchoolAddressJoinRequest};
+use super::school_address_join::SchoolAddressJoinRequest;
 use super::{default_concurrency, default_source_parallelism};
-use super::{HistoryWindow, JurisdictionOwed, PublicationContract};
+use super::{HistoryWindow, PublicationContract};
 
 fn default_pass_budget() -> usize {
     96
@@ -42,73 +41,6 @@ pub struct NationalRequest {
     pub pass_budget: usize,
     #[serde(default = "default_pass_delay_seconds")]
     pub pass_delay_seconds: u64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct JurisdictionSummary {
-    pub jurisdiction: UsJurisdiction,
-    pub identity: String,
-    pub rosters_total: usize,
-    pub rosters_committed: usize,
-    pub rosters_remaining: usize,
-    pub rosters_skipped: usize,
-    pub blocked: bool,
-    pub athletes: usize,
-    pub class_of_2027: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NationalFailure {
-    pub jurisdiction: UsJurisdiction,
-    pub identity: String,
-    pub error: String,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum NationalCompleteness {
-    Partial,
-    #[default]
-    Final,
-}
-
-impl NationalCompleteness {
-    pub fn is_partial(self) -> bool {
-        matches!(self, Self::Partial)
-    }
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Partial => "partial",
-            Self::Final => "final",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NationalReport {
-    pub season: SchoolYear,
-    pub revision: Revision,
-    pub jurisdictions: Vec<JurisdictionSummary>,
-    pub failures: Vec<NationalFailure>,
-    #[serde(default)]
-    pub owed: Vec<JurisdictionOwed>,
-    pub rosters_total: usize,
-    pub athletes_total: usize,
-    pub class_of_2027_total: usize,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub school_address: Option<SchoolAddressJoinReply>,
-    pub today: String,
-    #[serde(default)]
-    pub completeness: NationalCompleteness,
-}
-
-impl NationalReport {
-    pub fn is_partial(&self) -> bool {
-        self.completeness.is_partial()
-    }
-    pub fn completeness_label(&self) -> &'static str {
-        self.completeness.label()
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

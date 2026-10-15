@@ -1,13 +1,13 @@
-use census_domain::model::SchoolYear;
-use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_domain::model::{Revision, SchoolYear};
+use census_domain::national_census::{
+    JurisdictionOwed, JurisdictionSummary, NationalCompleteness, NationalFailure, NationalReport,
+    SchoolAddressJoinReply,
+};
+use census_reconcile::identity::WorkflowIdentity;
 use restate_sdk::prelude::*;
 
 use crate::restate_services::school_address_join::SchoolAddressJoinClient;
-use crate::restate_services::wire::national::NationalCompleteness;
-use crate::restate_services::wire::{
-    JurisdictionOwed, JurisdictionSummary, NationalFailure, NationalReport, NationalRequest,
-    SchoolAddressJoinReply,
-};
+use crate::restate_services::wire::NationalRequest;
 
 pub(super) async fn join_addresses(
     ctx: &WorkflowContext<'_>,

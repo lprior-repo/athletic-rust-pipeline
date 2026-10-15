@@ -2,8 +2,8 @@ use crate::restate_services::plan::{plan, BrowserLaneState};
 use crate::restate_services::wire::{
     HistoryWindow, JurisdictionRequest, JurisdictionState, SourcePlan,
 };
+use census_domain::model::Revision;
 use census_domain::{model::SchoolYear, UsJurisdiction};
-use census_reconcile::identity::Revision;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 

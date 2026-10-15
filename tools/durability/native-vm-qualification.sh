@@ -16,7 +16,7 @@ native_vm_file() {
 
 native_vm_inputs() {
     local field path
-    HOST=$(realpath -e -- "${CENSUS_NATIVE_VM_HOST:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm}")
+    HOST=$(realpath -e -- "${CENSUS_NATIVE_VM_HOST:-$REPO_ROOT/target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm}")
     SERVE=$(realpath -e -- "${SERVE_BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve}")
     NODE=$(realpath -e -- "${RESTATE_SERVER_BIN:-${RESTATE_BINARY:-$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server}}")
     TOOLS=$(realpath -e -- "$HOME/.local/share/athletic-rust-pipeline/qemu/11.1.1")
@@ -37,7 +37,7 @@ native_vm_inputs() {
         native_vm_file "$path" 33554432
         INPUT_FILES+=("$path")
     done
-    VERIFY_BIN="${VERIFY_BINARY:-${CENSUS_NATIVE_VM_VERIFY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm}}"
+    VERIFY_BIN="${VERIFY_BINARY:-${CENSUS_NATIVE_VM_VERIFY:-$REPO_ROOT/target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm}}"
     [[ -x "$VERIFY_BIN" ]] || native_vm_fail "verify binary missing at $VERIFY_BIN; build the feature qualification_native_vm example"
     "$VERIFY_BIN" verify --manifest "$CAPTURES" || native_vm_fail "guest capture provenance refused: $CAPTURES"
     printf 'EVIDENCE: guest capture provenance verified without VM or network: %s\n' "$CAPTURES"

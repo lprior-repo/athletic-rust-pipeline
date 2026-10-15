@@ -1,7 +1,10 @@
 use anyhow::Result;
 use census_crawl::ingress::Ingress;
-use census_domain::{model::SchoolYear, UsJurisdiction};
-use census_reconcile::identity::{admitted_scope, Revision, WorkflowIdentity};
+use census_domain::{
+    model::{Revision, SchoolYear},
+    UsJurisdiction,
+};
+use census_reconcile::identity::{admitted_scope, WorkflowIdentity};
 use census_service::restate_services::{HistoryWindow, JurisdictionCensusIngressClient};
 use restate_sdk::prelude::*;
 use std::num::NonZeroU32;

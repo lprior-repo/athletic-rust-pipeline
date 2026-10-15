@@ -15,8 +15,8 @@ mod report;
 pub use generation_error::GenerationError;
 pub use join::{
     build_lane_evidence, join_generation, parse_source_pairs, preflight_generation, process,
-    Acquisition, Counters, JoinError, JoinReport, LaneEvidence, LaneSelection, LaneSet, Mode,
-    OutcomeRow, Overrides,
+    Acquisition, JoinError, JoinReport, LaneEvidence, LaneSelection, LaneSet, Mode, OutcomeRow,
+    Overrides,
 };
 pub(crate) use join::{join_generation_pinned, EvidenceField, EvidenceFields};
 pub use manifest::{verify_current, VerifiedGeneration};

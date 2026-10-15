@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
 use census_crawl::ingress::{CurrentRoute, Ingress};
+use census_domain::national_census::NationalReport;
 use census_reconcile::identity::WorkflowIdentity;
-use census_service::{ingress, restate_services::NationalReport};
+use census_service::ingress;
 use restate_sdk::{ingress::InvocationHandle, prelude::Json};
 
 #[tracing::instrument(skip_all)]

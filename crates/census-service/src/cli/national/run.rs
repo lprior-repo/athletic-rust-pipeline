@@ -1,9 +1,11 @@
 use anyhow::{Context, Result};
 use census_crawl::ingress::{CurrentRoute, Ingress};
-use census_reconcile::identity::{admitted_scope, Revision, WorkflowIdentity};
+use census_domain::model::Revision;
+use census_domain::national_census::NationalReport;
+use census_reconcile::identity::{admitted_scope, WorkflowIdentity};
 use census_service::restate_services::{
     JurisdictionCensusIngressClient, JurisdictionRequest, NationalCensusIngressClient,
-    NationalReport, NationalRequest, PublicationContract,
+    NationalRequest, PublicationContract,
 };
 use restate_sdk::ingress::{InvocationHandle, SendStatus};
 use restate_sdk::prelude::*;

@@ -8,9 +8,10 @@ use crate::restate_services::publish::{
     BestsClient, ConsolidateClient, ReportClient, WorkbookClient,
 };
 use crate::restate_services::wire::{
-    BestsRequest, ConsolidateRequest, ContactStatus, ContactSummary, NationalReport,
-    NationalRequest, PublicationContract, ReportRequest, SealRequest, WorkbookRequest,
+    BestsRequest, ConsolidateRequest, ContactStatus, ContactSummary, NationalRequest,
+    PublicationContract, ReportRequest, SealRequest, WorkbookRequest,
 };
+use census_domain::national_census::NationalReport;
 
 pub(super) const KEY_SEAL: &str = "publication_seal";
 

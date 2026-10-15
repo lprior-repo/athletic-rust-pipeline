@@ -55,6 +55,7 @@ mod records;
 mod relay_result;
 mod result_status;
 mod review;
+mod revision;
 mod run;
 mod school;
 mod school_address;
@@ -74,6 +75,7 @@ pub use profile::{
     MAX_PROFILE_JURISDICTIONS, MAX_PROFILE_SPORTS, QUERY_PROFILE_VERSION,
 };
 
+pub use revision::Revision;
 pub use store_identity::{StoreIdentity, StoreIdentityError};
 
 pub use adjustment::{Adjustment, AdjustmentBasis, AdjustmentKind};

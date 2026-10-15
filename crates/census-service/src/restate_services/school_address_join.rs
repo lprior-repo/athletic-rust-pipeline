@@ -3,12 +3,13 @@ use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 
+use crate::restate_services::Jobs;
 use crate::school_address::{join_generation_pinned, preflight_generation, JoinError};
 use census_store::Store;
 
-use super::publish::Jobs;
-use super::wire::{SchoolAddressJoinReply, SchoolAddressJoinRequest};
+use super::wire::SchoolAddressJoinRequest;
 use super::{blocking, job_error, JobError};
+use census_domain::national_census::SchoolAddressJoinReply;
 
 const DEFAULT_DIRECTORY: &str = "school-address";
 

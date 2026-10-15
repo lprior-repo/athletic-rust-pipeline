@@ -55,7 +55,7 @@ fn completed_collection() -> Result<JurisdictionState, Box<dyn std::error::Error
     let fingerprint = crate::restate_services::plan::compute_plan_fingerprint(
         jurisdiction,
         season,
-        census_reconcile::identity::Revision(1),
+        census_domain::model::Revision(1),
         lane,
     );
     let mut bound = SourcePlan::of(&dispositions, fingerprint);

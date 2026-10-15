@@ -1,9 +1,10 @@
 use anyhow::{anyhow, Result};
-use census_domain::model::SchoolYear;
-use census_domain::UsJurisdiction;
-use census_reconcile::identity::Revision;
 #[cfg(test)]
-use census_service::restate_services::NationalReport;
+use census_domain::national_census::NationalReport;
+use census_domain::{
+    model::{Revision, SchoolYear},
+    UsJurisdiction,
+};
 use clap::Args;
 use std::time::Duration;
 

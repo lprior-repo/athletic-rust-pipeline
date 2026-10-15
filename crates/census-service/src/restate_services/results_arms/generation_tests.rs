@@ -30,7 +30,7 @@ fn advancing_evidence_returns_transient_without_recapture_and_keeps_results_owed
     let request = JurisdictionRequest {
         jurisdiction,
         season: census_domain::model::SchoolYear::new(2026).ok_or("school year")?,
-        revision: census_reconcile::identity::Revision(1),
+        revision: census_domain::model::Revision(1),
         history: scope(jurisdiction)?.window,
         refresh: false,
         limit_per_state: None,

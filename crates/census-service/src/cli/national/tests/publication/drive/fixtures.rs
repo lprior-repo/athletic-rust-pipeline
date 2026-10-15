@@ -1,3 +1,5 @@
+use census_reconcile::identity::WorkflowIdentity;
+
 use super::*;
 
 pub(super) const INVOCATION: &str = "inv_1aiqX0vFEFNH1Umgre58JiCLgHfTtztYK5";
@@ -43,7 +45,7 @@ pub(super) fn failed_report() -> TestResult<NationalReport> {
     report.jurisdictions.clear();
     report
         .failures
-        .push(census_service::restate_services::NationalFailure {
+        .push(census_domain::national_census::NationalFailure {
             jurisdiction: census_domain::UsJurisdiction::Wisconsin,
             identity: "retained-jurisdiction".into(),
             error: "retained failure".into(),
@@ -55,7 +57,7 @@ pub(super) fn owed_report() -> TestResult<NationalReport> {
     let mut report = complete_report()?;
     report
         .owed
-        .push(census_service::restate_services::JurisdictionOwed {
+        .push(census_domain::national_census::JurisdictionOwed {
             jurisdiction: census_domain::UsJurisdiction::Wisconsin,
             identity: "retained-jurisdiction".into(),
             stages_run: vec!["rosters".into()],

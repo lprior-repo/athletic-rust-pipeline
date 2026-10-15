@@ -5,8 +5,8 @@ use crate::restate_services::wire::{
     JurisdictionRequest, StageOutcome, TeamsAttemptProgress, TeamsSourceOutcome, TeamsSourceRequest,
 };
 use crate::restate_services::JobError;
+use census_domain::model::Revision;
 use census_domain::{model::SchoolYear, UsJurisdiction};
-use census_reconcile::identity::Revision;
 use census_store::Store;
 
 type TestResult = Result<(), Box<dyn Error>>;

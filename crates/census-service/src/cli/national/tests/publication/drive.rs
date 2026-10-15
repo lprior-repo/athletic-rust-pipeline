@@ -1,6 +1,6 @@
 use super::*;
-use census_reconcile::identity::{Revision, WorkflowIdentity};
-use census_service::restate_services::{NationalCompleteness, NationalReport};
+use census_domain::model::Revision;
+use census_domain::national_census::{NationalCompleteness, NationalReport};
 
 #[path = "drive/fixtures.rs"]
 mod fixtures;

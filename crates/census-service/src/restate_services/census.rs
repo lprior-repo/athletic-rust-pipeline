@@ -37,7 +37,7 @@ impl Census {
     ) -> Result<super::open_work::StoreEvidence, HandlerError> {
         let season = SchoolYear::new(request.season)
             .ok_or_else(|| TerminalError::new("invalid open-work season"))?;
-        let revision = census_reconcile::identity::Revision(request.revision);
+        let revision = census_domain::model::Revision(request.revision);
         let store = Arc::clone(&self.store);
         let clock = Arc::clone(&self.clock);
         let region = Arc::clone(self.jobs.region());

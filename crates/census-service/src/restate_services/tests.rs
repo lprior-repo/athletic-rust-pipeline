@@ -9,7 +9,8 @@ use crate::census::{owed_source_objects, SourceObject, StateProgress};
 use census_crawl::registry::{
     AccessClass, SourceAdmission, SourceCapabilities, SourceDescriptor, TransportKind,
 };
-use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_domain::model::Revision;
+use census_reconcile::identity::WorkflowIdentity;
 use census_report::report::ReportError;
 use census_store::StoreError;
 

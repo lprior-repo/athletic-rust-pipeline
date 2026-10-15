@@ -1,10 +1,11 @@
 use anyhow::{bail, Result};
 use census_crawl::ingress::{CurrentRoute, Ingress};
-use census_domain::model::SchoolYear;
+use census_domain::model::{Revision, SchoolYear};
+use census_domain::national_census::NationalReport;
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_reconcile::identity::WorkflowIdentity;
 use census_service::restate_services::{
-    JurisdictionCensusIngressClient, JurisdictionReport, JurisdictionRequest, NationalReport,
+    JurisdictionCensusIngressClient, JurisdictionReport, JurisdictionRequest,
 };
 use restate_sdk::ingress::{InvocationHandle, Output, SendStatus};
 use restate_sdk::prelude::*;

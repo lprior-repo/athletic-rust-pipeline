@@ -1,9 +1,9 @@
 use super::*;
 use crate::restate_services::plan::{compute_plan_fingerprint, BrowserLaneState};
 use crate::restate_services::wire::{RefusedSource, SourcePlan};
+use census_domain::model::Revision;
 use census_domain::model::{HistoryWindow, SchoolYear};
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::Revision;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 

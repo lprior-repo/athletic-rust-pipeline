@@ -1,11 +1,9 @@
 use census_domain::UsJurisdiction;
 use restate_sdk::prelude::*;
 
-use crate::restate_services::jobs;
-use crate::restate_services::wire::{
-    JurisdictionReport, JurisdictionSummary, NationalFailure, NationalRequest,
-};
-use crate::restate_services::KEY_STATE;
+use crate::restate_services::wire::{JurisdictionReport, NationalRequest};
+use crate::restate_services::{jobs, KEY_STATE};
+use census_domain::national_census::{JurisdictionSummary, NationalFailure};
 
 use super::report::assemble_partial;
 

@@ -1,6 +1,9 @@
 use anyhow::{ensure, Context, Result};
-use census_domain::{model::SchoolYear, UsJurisdiction};
-use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_domain::{
+    model::{Revision, SchoolYear},
+    UsJurisdiction,
+};
+use census_reconcile::identity::WorkflowIdentity;
 use census_service::restate_services::JurisdictionRequest;
 use futures::{stream, StreamExt, TryStreamExt};
 use reqwest::{Client, Method};

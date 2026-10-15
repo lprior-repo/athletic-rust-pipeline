@@ -1,8 +1,11 @@
 use super::super::super::input::Original;
 use super::super::super::observe::{Child, Observation};
 use anyhow::{Context, Result};
-use census_domain::{model::SchoolYear, UsJurisdiction};
-use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_domain::{
+    model::{Revision, SchoolYear},
+    UsJurisdiction,
+};
+use census_reconcile::identity::WorkflowIdentity;
 use census_service::restate_services::{
     JurisdictionRequest, JurisdictionState, SourcePlan, TeamsAttemptProgress,
     TeamsSourceInspection, TeamsSourceRequest, TeamsStage,

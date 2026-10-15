@@ -1,7 +1,8 @@
 use census_crawl::CollectionDisposition as Disposition;
 use census_domain::model::CoachLaneStatus;
+use census_domain::model::Revision;
 use census_domain::{model::SchoolYear, UsJurisdiction};
-use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_reconcile::identity::WorkflowIdentity;
 use futures::{stream, StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;
 

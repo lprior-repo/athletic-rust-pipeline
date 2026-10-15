@@ -3,13 +3,10 @@ use census_reconcile::identity::{admitted_scope, WorkflowIdentity};
 use restate_sdk::prelude::*;
 
 use crate::restate_services::census::CensusClient;
-use crate::restate_services::jobs;
-use crate::restate_services::jurisdiction::JurisdictionCensusClient;
-use crate::restate_services::wire::{
-    BindRunRequest, JurisdictionOwed, JurisdictionReport, JurisdictionSummary, NationalFailure,
-    NationalRequest,
-};
+use crate::restate_services::wire::{BindRunRequest, JurisdictionReport, NationalRequest};
 use crate::restate_services::KEY_STATE;
+use crate::restate_services::{jobs, JurisdictionCensusClient};
+use census_domain::national_census::{JurisdictionOwed, JurisdictionSummary, NationalFailure};
 
 use super::classification::{classify, Completion};
 use super::report::assemble_partial;

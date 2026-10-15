@@ -2,6 +2,7 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
+use census_domain::model::Revision;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventIdentity, EventKind, EventSpecification,
@@ -9,7 +10,7 @@ use census_domain::model::{
     SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
-use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_reconcile::identity::WorkflowIdentity;
 use census_store::{Store, Table};
 #[cfg(feature = "native-fault-injection")]
 use sha2::{Digest, Sha256};
