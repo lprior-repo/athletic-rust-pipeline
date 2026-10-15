@@ -218,6 +218,13 @@ fn exclusions(directory: &Path, expected: &Expected) -> TestResult {
 fn workbook_rows(path: &Path, expected: &Expected) -> TestResult {
     check!(std::fs::metadata(path)?.len() <= 16 * 1024 * 1024);
     let mut book: Xlsx<_> = open_workbook(path)?;
+    if expected.included {
+        super::super::meet_geography::verify(
+            &mut book,
+            expected.retained.get("meets").ok_or("original meets")?,
+            &expected.performances,
+        )?;
+    }
     let athletes = sheet(&mut book, "Athletes")?;
     check!(eq; athletes.len(), usize::from(expected.included));
     if expected.included {

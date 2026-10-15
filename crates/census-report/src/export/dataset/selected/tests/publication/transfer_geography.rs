@@ -119,6 +119,7 @@ fn capture(
         ("performances", serde_json::to_value(&dataset.performances)?),
         ("teams", serde_json::to_value(&dataset.teams)?),
         ("schools", serde_json::to_value(&dataset.schools)?),
+        ("meets", serde_json::to_value(&dataset.meets)?),
     ]);
     Ok(Expected {
         included,
