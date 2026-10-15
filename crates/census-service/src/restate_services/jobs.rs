@@ -272,6 +272,7 @@ pub fn collect_error(error: CrawlError) -> JobError {
         | CrawlError::OwnedParseResource(..)
         | CrawlError::OwnedCaptureResource(_)
         | CrawlError::ConverterDeadline { .. }
+        | CrawlError::ConverterLifecycle(_)
         | CrawlError::EventIdentity(..)
         | CrawlError::Specification(..)
         | CrawlError::Performance(..)

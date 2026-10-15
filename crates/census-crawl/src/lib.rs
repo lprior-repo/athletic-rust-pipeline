@@ -65,7 +65,9 @@ pub enum CrawlError {
     OwnedParseResource(#[from] crate::milesplit::OwnedParseResourceFailure),
     #[error(transparent)]
     OwnedCaptureResource(#[from] crate::milesplit::OwnedCaptureResourceFailure),
-    #[error("converter {command} exceeded its {deadline:?} deadline and was killed")]
+    #[error(transparent)]
+    ConverterLifecycle(#[from] crate::convert::ConverterLifecycleError),
+    #[error("converter {command} exceeded its {deadline:?} deadline")]
     ConverterDeadline {
         command: String,
         deadline: std::time::Duration,

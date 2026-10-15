@@ -314,6 +314,14 @@ These exercised repairs follow checkpoint `8005d33f`; they are not a full releas
 | Native reboot/midnight | `3245a342`: scenarios 03 and 12 passed, zero failed/skipped; candidate build `6cbc8b8a` at `5bb37152` | Original reserved invocation recovered; two FULL200 HTTPS acquisitions bracketed guest midnight. Not full national/all HTTP subphases or newer-main qualification |
 | Actual enrollment/registry API | `run-scoped` / `3500a5d2`: official-text cells/pages, pinned regional reads, unchanged evidence generations, cold backup/restore and exact repeat readback passed | Isolated public-text/synthetic-configuration smoke; harness/output fingerprints retained under `var/review-r9-r15-20261014/` |
 | Actual CLI help | Documented command first failed with exit 1 (`916c0065`); after repair, locked-store regression `6393cc0d` and actual `--help` command `5648cf2a` passed | Help exits 0 before runtime/store acquisition; malformed flags remain nonzero |
+| PR50 integration | Rebased onto `833c5f2f`, pushed as `b5b7cd07`; capture CLI lane `84f09337`: four passes | Native Mac lease/source-portability changes retained; not a Mac execution certificate |
+| R14 converter counterexamples | Before repair, `1b3a9e52`: four failures — hidden ELOOP, missing output reported successful, inherited stdout held for 5.004 s despite a 100-ms deadline, invalid envelope reaching file open | Actual unchanged converter exercised; repair acceptance still pending |
+| R14 converter repair | `5860e1a0`: 21 passes, including all four prior failures, actual PDF extraction, exact byte limits, missing/ELOOP output, nonzero status and descendant-held pipes; `75b36c1f`: 16 crawl/private/caller passes | ECHILD preserves primary and cleanup obligations; Linux executed, macOS static-only; no whole-tree/global-resource certificate |
+| R13 listing repair | `5f8c2070`: 21 property/parity passes, including 65,536 rows, exact 32 MiB, conflicting/locality rows and retained-capture failure accounting; `c5815131`: all 11 captures replayed | Captured school directory and controlled collector fixtures, not year/category participation |
+| Actual PDF/listing path | `run-scoped` / `c1ac181a`: real shared converter and public parsers passed complete retained-text and school-cell readback; missing-watch/pre-open refusals passed | Source, binary and output fingerprints retained in `var/review-r9-r15-20261014/source-boundary-smoke-manifest.json`; throwaway example removed |
+| Integrated workspace after draft isolation | Check `647f6c12`, lint `08cca869`, fmt `50b3c303` passed; `a81c9fb9`: 5,951 passes, four skipped; coach converter caller lane `d59c48af`: two passes | Three existing arity advisories remain visible under §10; no full release, Mac or national certificate |
+| R14 coach scratch ownership / `fkko` | `6a16f313` reproduced a precreated-link victim overwrite; `89cd8a0e`: adversarial victim-preservation, byte-cap and deadline cases passed after removing scratch paths. Actual consumer `502f7465` matched complete native `pdftotext -q` output | Local-filesystem adversary, not remote-only arbitrary write; PID/counter, scratch helper and obsolete cleanup tests removed. Linux exercised |
+| Integrated security repair | Check `d6fd07c4`, lint `7dd4c551`, fmt `4aa982bd` passed; `29d6af4f`: 5,952 passes, four skipped | Nextest `a0c165ff-4497-4aa7-b1da-b00b7732ee61`; existing arity advisories unchanged; release/native-current-build qualification remains separate |
 
 The real official-text case failed with `MissingHeader` before repair (`bca4278b`): the PDF contains
 blank trailing physical pages. Admission still counts every physical page before trailing layout
@@ -424,3 +432,63 @@ Formatting/static correctness review PASSED. Synchronous archive locks/hash/fsyn
 need owned blocking composition for uncovered async callers; no latency or cancellation
 claim is made. Full changed-tree format/check/lint and Mac validation PENDING. Live
 acquisition and representative peak-RSS qualification NOT RUN.
+
+### PR51–53 combined integration — 2026-10-15
+
+Rebased the parser/converter/security repairs onto `7441a5af` without conflicts.
+
+| Check | Observed result | Repair boundary |
+|---|---|---|
+| Initial combined workspace / `03b328d6` | 6,293 passed, seven failed, six skipped; check `32da25d6` passed | Two result-identity fixtures, three copied-manifest fixtures and two SDK completion-wire fixtures required integration |
+| Focused report / `fefc1d0a` | Six passed | Genuine same-result contradiction versus distinct attempts; current manifest recapture; positive controls before independent workbook tamper checks |
+| Focused SDK / `94926a0d` | Three passed | Plan content remains 8 MiB; complete fixture wire separately admits bounded notification/framing overhead |
+| Subsequent workspace / `399df502` | 6,299 passed, one failed, six skipped | Removed the obsolete RSS-delta test: JSON encoding length is not a lower bound on allocator/RSS growth. No threshold bump or physical-memory qualification |
+| Final combined workspace / `03c4e07a` | 6,299 passed, six skipped; Nextest `fe1eae14-6080-445b-bad6-5d215e7c2a47` | `pipeline:check` / `2d613ec7`, `pipeline:lint-src` / `37b027d0` and `pipeline:fmt` / `ed065f84` passed |
+| Actual capture/export / `6ce29836` | 185 canonical rows, 60 cohort members; authoritative XLSX/CSV/JSONL readback passed | `env -u CI tools/moon-local run pipeline:bench -- --bench capture_export -- --test`; functional oracle, not a performance measurement or national run |
+
+The manifest fixtures now reuse the real current recapture implementation rather than duplicating
+its digest recipe. The numeric fixtures preserve conflict coverage without treating separate
+provider result identities as one result. Whole-workload RAM/disk, native-current-build and full
+release acceptance remain open.
+
+All combined gates ran through `tools/moon-local`. Source lint still reports three argument-count
+advisories: browser `note_request`, acquisition `process_eligible_entry` and qualification
+`process_root`; none was suppressed or represented as warning-free qualification.
+
+### PR54 rebase — 2026-10-15
+
+Integrated `c78402c2` (Athletic.net acquisition timestamps and immutable cache-hit
+archives). The sole rebase conflict was additive evidence; both dated histories remain.
+
+Initial combined validation passed check `02b89754`, source lint `f074df17` and format
+`b71d035e`. Tests `235402be` / Nextest `ef64af06-afc9-4d6c-a4ab-65c8385a7daf`:
+6,308 passed, two failed, six skipped. The provider fixtures tried to read the new archive
+directory as a file. Their snapshots now explicitly cover mutable body/metadata payloads,
+not archive directories or coordination locks. Exact input bytes, original acquisition
+time, zero network dispatch and once-only physical-row replay remain asserted.
+
+| PR54 post-repair check | Observed result | Evidence |
+|---|---|---|
+| Focused provider replay | 12 passed | `ccea124f`; Nextest `3740e6e4-47a4-47f3-aeff-bd760942fe37` |
+| Full workspace | 6,310 passed, six skipped | `a2f452ac`; Nextest `365e0332-5ae6-436a-a1e4-99c7db63baf3` |
+| Check / source lint / format | Passed; same three argument-count advisories | `b8328320` / `79c34282` / `a21e12cd` |
+| Actual capture/export readback | 185 canonical rows, 60 cohort members; XLSX/CSV/JSONL passed | `15af7326`; functional `capture_export --test`, not performance or national qualification |
+
+### Main synchronization through PR58 — 2026-10-15
+
+Integrated PR55 (publication reservation lifetime), PR56 (explicit scoped default features)
+and PR57 (performance-date participation consensus). Push of the integrated repairs succeeded
+at `495b6831`; PR58 subsequently changed only `xtask/README.md` and fast-forwarded cleanly.
+
+| Combined source validation through PR57 | Observed result | Evidence |
+|---|---|---|
+| Check | Passed | `237b3235` |
+| Focused participation/provider scenarios | 22 passed | `9df6448b`; Nextest `c9dfe5c7-dc6f-4e4e-bb95-a0b81922ebef` |
+| Full workspace | 6,333 passed, six skipped | `57c56e62`; Nextest `e955c6e3-8e0c-400b-bc84-691e15ca802f` |
+| Source lint / format | Passed; three existing argument-count advisories | `8ac331c0` / `cbf8c495` |
+| Actual capture/export readback | 185 canonical rows, 60 cohort members; authoritative XLSX/CSV/JSONL passed | `386a9add`; functional oracle, not timing or national qualification |
+
+R11 caller/core and archive-readback proposals remain LOCAL, unapplied and uncompiled.
+GPU review found dropped retained cases and ignored resource billing; Main returned those
+proposals for repair rather than certifying them. An archive proposal also failed actual patch
+applicability checking and remains outside the repository. None closes R11–R14 or `6fhk`.

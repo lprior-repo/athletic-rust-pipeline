@@ -1,6 +1,7 @@
 use super::super::expectations::Expectations;
 use super::super::read::tests::{
-    alter_sheet, copy_bundle, publication, recapture, rejected_by_all, replace_cell, TestResult,
+    accepted_by_all, alter_sheet, copy_bundle, publication, recapture, rejected_by_all,
+    replace_cell, TestResult,
 };
 
 #[test]
@@ -23,6 +24,8 @@ fn displaced_coach_ids_do_not_bypass_any_observation_cell() -> TestResult {
         ("P2", 15, "1900-01-01"),
     ] {
         let path = copy_bundle(&good, &directory.path().join(cell))?;
+        recapture(&path, &dataset, &options)?;
+        accepted_by_all(&path, &dataset, &options)?;
         alter_sheet(&path, "Coaches", |range| {
             replace_cell(range, (1, 6), last);
             replace_cell(range, (2, 6), first);

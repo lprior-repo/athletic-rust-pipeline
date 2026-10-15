@@ -1,7 +1,9 @@
 use regex::Regex;
 use std::sync::LazyLock;
 
-use super::MAX_CFEMAIL_HEX;
+use super::{MAX_CFEMAIL_HEX, MAX_LISTING_BYTES};
+use crate::directory::acquisition::resource;
+use crate::CrawlResult;
 
 static CF_HREF: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::new(r#"email-protection#([0-9a-fA-F]+)"#).ok());
@@ -48,25 +50,81 @@ pub fn decode_cfemail_fragment(fragment: &str) -> Vec<String> {
     addresses
 }
 
-fn decode_entities(value: &str) -> String {
+const ENTITIES: [(&str, char); 10] = [
+    ("&#039;", '\''),
+    ("&#39;", '\''),
+    ("&#x27;", '\''),
+    ("&apos;", '\''),
+    ("&quot;", '"'),
+    ("&nbsp;", ' '),
+    ("&#160;", ' '),
+    ("&lt;", '<'),
+    ("&gt;", '>'),
+    ("&amp;", '&'),
+];
+
+fn decoded(value: &str) -> impl Iterator<Item = char> + '_ {
+    let mut remaining = value;
+    std::iter::from_fn(move || {
+        for (entity, character) in ENTITIES {
+            if let Some(rest) = remaining.strip_prefix(entity) {
+                remaining = rest;
+                return Some(character);
+            }
+        }
+        let character = remaining.chars().next()?;
+        remaining = remaining.strip_prefix(character)?;
+        Some(character)
+    })
+}
+
+fn normalized(value: &str) -> impl Iterator<Item = char> + '_ {
+    let mut started = false;
+    let mut whitespace = false;
+    decoded(value)
+        .flat_map(move |character| {
+            if character.is_whitespace() {
+                whitespace = started;
+                [None, None]
+            } else {
+                let space = whitespace.then_some(' ');
+                started = true;
+                whitespace = false;
+                [space, Some(character)]
+            }
+        })
+        .flatten()
+}
+
+fn listing_buffer(bytes: usize) -> CrawlResult<String> {
+    if bytes > MAX_LISTING_BYTES {
+        return Err(resource(
+            "MSHSL listing text bytes",
+            bytes,
+            MAX_LISTING_BYTES,
+        ));
+    }
+    let mut value = String::new();
     value
-        .replace("&#039;", "'")
-        .replace("&#39;", "'")
-        .replace("&#x27;", "'")
-        .replace("&apos;", "'")
-        .replace("&quot;", "\"")
-        .replace("&nbsp;", " ")
-        .replace("&#160;", " ")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&amp;", "&")
+        .try_reserve_exact(bytes)
+        .map_err(|_| resource("MSHSL listing text allocation", bytes, MAX_LISTING_BYTES))?;
+    Ok(value)
+}
+
+pub(super) fn copy_bounded(value: &str) -> CrawlResult<String> {
+    let mut copied = listing_buffer(value.len())?;
+    copied.push_str(value);
+    Ok(copied)
+}
+
+pub(super) fn clean_bounded(value: &str) -> CrawlResult<String> {
+    let mut cleaned = listing_buffer(value.len())?;
+    cleaned.extend(normalized(value));
+    Ok(cleaned)
 }
 
 pub(super) fn clean(value: &str) -> String {
-    decode_entities(value)
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ")
+    normalized(value).collect()
 }
 
 pub fn strip_honorific(value: &str) -> String {
