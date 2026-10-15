@@ -112,3 +112,20 @@ Main must run the repository's Moon format, check, lint, and relevant domain/rep
 integrated candidate. Static inspection and authored tests are not compiler or runtime evidence.
 No full tenure, source-activation, non-school, or generic-affiliation integration claim follows
 from this refactor. No new proof format or proof artifact is introduced.
+
+## Scoped source statement — October 15, 19:49 UTC
+
+The reviewed reader requires an explicit, structurally scoped Current Roster heading
+and its member row. Interpretation revision 1 (`milesplit-scoped-current-roster/v1`)
+interprets that statement only on the original acquisition's UTC capture day, which
+must equal the selected as-of date. It retains the original acquisition timestamp,
+including its offset, capture digest, provider school/member IDs, row locator,
+section/container/heading ranges and heading digest. Frozen replay rechecks this
+same retained context; it does not move the observation to another date.
+
+This establishes dated school membership only. It supplies neither independent
+high-school status nor season tenure, a participation window, an effective interval
+or continuing membership. Missing, ambiguous, malformed, inactive or resource-limited
+source statements withhold the corresponding current-membership admission.
+The full specification and strict participation policy are unchanged. Execution of
+this reader is pending on exact candidate `a9c4530f0e60622e3cfcfda0cba83f19959c6d82`.

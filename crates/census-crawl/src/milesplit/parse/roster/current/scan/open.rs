@@ -27,24 +27,12 @@ impl Scan {
             .filter(|parent| !parent.inert)
             .and_then(|parent| parent.section);
         self.heading_open(name, parent_section)?;
-        let roster = if !inert
-            && name == b"ul"
-            && tag
-                .attributes
-                .get(b"id".as_slice())
-                .is_some_and(|value| value.as_slice() == b"rosterDataset")
-        {
+        let roster = if !inert && tag_has(&tag, b"ul", b"id", b"rosterDataset") {
             self.container(tag.span, parent_section)?
         } else {
             None
         };
-        let row = if !inert
-            && name == b"li"
-            && tag
-                .attributes
-                .get(b"class".as_slice())
-                .is_some_and(|value| value.as_slice() == b"athlete-row data-row")
-        {
+        let row = if !inert && tag_has(&tag, b"li", b"class", b"athlete-row data-row") {
             self.row(tag.span)?
         } else {
             None
@@ -184,4 +172,12 @@ fn is_void(name: &[u8]) -> bool {
             | b"track"
             | b"wbr"
     )
+}
+
+fn tag_has(tag: &html5gum::StartTag<usize>, name: &[u8], attribute: &[u8], value: &[u8]) -> bool {
+    tag.name.as_slice() == name
+        && tag
+            .attributes
+            .get(attribute)
+            .is_some_and(|actual| actual.as_slice() == value)
 }
