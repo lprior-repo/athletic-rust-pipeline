@@ -96,3 +96,13 @@ pub(super) fn verify_outcome(
     }
     Ok(counts)
 }
+
+pub(in crate::workbook) use rows::Row as NormalizedRow;
+
+pub(in crate::workbook) fn visit_athletes(
+    path: &Path,
+    expected: usize,
+    visit: impl FnMut(&NormalizedRow<'_>) -> ReportResult<()>,
+) -> ReportResult<u64> {
+    rows::read_table(path, schema::ATHLETES, expected, visit)
+}

@@ -17,7 +17,7 @@ const TEXT: u8 = 7;
 const FORMULA: u8 = 8;
 const OTHER: u8 = 9;
 
-pub(in crate::workbook::verify) trait Cells {
+pub(in crate::workbook) trait Cells {
     fn cell(&mut self, row: usize, column: usize, value: Value) -> ReportResult<()>;
     fn finish(&mut self, rows: usize);
 }

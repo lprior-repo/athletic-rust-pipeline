@@ -1,7 +1,5 @@
 use std::collections::{HashMap, HashSet};
 
-pub const ATHLETES_REQUIRED: &[&str] = &["Athlete ID", "Name", "School", "Graduation Year"];
-
 pub const PERFORMANCES_REQUIRED: &[&str] = &[
     "Canonical Result ID",
     "Athlete ID",

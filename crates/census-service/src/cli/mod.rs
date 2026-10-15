@@ -2,6 +2,7 @@ mod browser_session;
 mod capture_protocol;
 mod census_doc;
 mod command;
+mod compare_reference;
 mod cycle;
 mod dispatch;
 mod export_data;
