@@ -57,6 +57,7 @@ pub(super) fn begin(
     if let Some(prior) = &reserved {
         prior.require_request(&writer.identity, operation, digest, expected, head)?;
     }
+    let _next_generation = store.generations.next_entities()?;
     let original = binding::capture(store, &store.snapshot_locked())?;
     drop(guard);
     let retained = writer.capture_raw_generation_at_v2(

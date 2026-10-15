@@ -47,13 +47,14 @@ fn refuse_competing_sources(athletes: [CanonicalAthlete; 2]) -> TestResult {
     let index = store.athlete_identity_index()?;
     check!(eq; index.subjects().count(), 2);
     let head = writer.head(&store)?;
-    let before = retained_state(&store)?;
-    check!(eq; before.len(), 4);
+    check!(eq; retained_state(&store)?.len(), 4);
     for (position, athlete) in athletes.iter().enumerate() {
+        let before = retained_state(&store)?;
+        let operation = format!("competing-source-{position}");
         check!(!index.isolated_source(&athlete.id.cast()));
         let error = refused(writer.establish_source_bound(
             &store,
-            &format!("competing-source-{position}"),
+            &operation,
             &athlete.id.cast(),
             store.snapshot().revision(),
             &head,
@@ -62,7 +63,26 @@ fn refuse_competing_sources(athletes: [CanonicalAthlete; 2]) -> TestResult {
             error,
             StoreError::PublicIdentity(PublicIdentityError::NotSourceBound)
         ));
-        check!(eq; retained_state(&store)?, before);
+        let staged = retained_state(&store)?;
+        super::support::assert_graph_staging(
+            &store,
+            &before,
+            &staged,
+            writer.store_identity(),
+            &operation,
+        )?;
+        let retry = refused(writer.establish_source_bound(
+            &store,
+            &operation,
+            &athlete.id.cast(),
+            store.snapshot().revision(),
+            &head,
+        ))?;
+        check!(matches!(
+            retry,
+            StoreError::PublicIdentity(PublicIdentityError::NotSourceBound)
+        ));
+        check!(eq; retained_state(&store)?, staged);
         check!(eq; writer.head(&store)?, head);
         check!(eq; store.count(Table::AthleteIdentityDecisions)?, 0);
     }

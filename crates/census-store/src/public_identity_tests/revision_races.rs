@@ -57,7 +57,7 @@ fn public_identity_derived_only_revision_movement_refuses_without_acceptance() -
     drop(writer);
     drop(store);
     let root = directory.path().join("identity");
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     check!(eq; writer.head(&store)?, head);
     check!(eq; retained_state(&store)?, before);
     Ok(())

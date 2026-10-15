@@ -47,7 +47,24 @@ fn public_identity_enrichment_budget_refusal_discards_local_prefix_and_preserves
     assert_budget(error)?;
     check!(eq; writer.head(&store)?, *committed.head());
     check!(eq; store.count(Table::AthleteIdentityDecisions)?, 1);
-    check!(eq; wide_state(&store)?, before);
+    let staged = wide_state(&store)?;
+    super::support::assert_graph_staging_bounded(
+        &store,
+        &before,
+        &staged,
+        writer.store_identity(),
+        "enrichment-pending",
+        10_000,
+    )?;
+    let retry = refused(writer.establish_source_bound(
+        &store,
+        "enrichment-pending",
+        &pending.id.cast(),
+        store.snapshot().revision(),
+        committed.head(),
+    ))?;
+    assert_budget(retry)?;
+    check!(eq; wide_state(&store)?, staged);
     let repeated = writer.establish_source_bound(
         &store,
         "enrichment-prior",
@@ -58,11 +75,11 @@ fn public_identity_enrichment_budget_refusal_discards_local_prefix_and_preserves
     check!(repeated.replayed());
     check!(eq; repeated.public_id(), committed.public_id());
     check!(eq; repeated.head(), committed.head());
-    check!(eq; wide_state(&store)?, before);
+    check!(eq; wide_state(&store)?, staged);
     drop(writer);
     drop(store);
     let root = directory.path().join("identity");
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     let repeated = writer.establish_source_bound(
         &store,
         "enrichment-prior",
@@ -73,7 +90,7 @@ fn public_identity_enrichment_budget_refusal_discards_local_prefix_and_preserves
     check!(repeated.replayed());
     check!(eq; repeated.public_id(), committed.public_id());
     check!(eq; repeated.head(), committed.head());
-    check!(eq; wide_state(&store)?, before);
+    check!(eq; wide_state(&store)?, staged);
     Ok(())
 }
 

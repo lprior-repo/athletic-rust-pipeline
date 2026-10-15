@@ -21,7 +21,7 @@ fn public_identity_ledger_accepts_exact_encoded_byte_ceiling_and_refuses_one_mor
     store.flush()?;
     drop(store);
     let root = directory.path().join("identity");
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     check!(eq; writer.head(&store)?, head);
     raw.push(b' ');
     store.meta.insert(HISTORY, &raw)?;
@@ -32,7 +32,7 @@ fn public_identity_ledger_accepts_exact_encoded_byte_ceiling_and_refuses_one_mor
         if bytes == raw.len() && max == MAX_PUBLIC_IDENTITY_HISTORY_BYTES));
     check!(eq; retained_state(&store)?, before);
     drop(store);
-    let error = refused(Store::open_public_identity_qualification_v2(&root))?;
+    let error = refused(Store::open_public_identity_qualification_v3(&root))?;
     check!(matches!(error, StoreError::RowTooLarge { bytes, max }
         if bytes == raw.len() && max == MAX_PUBLIC_IDENTITY_HISTORY_BYTES));
     check!(eq; physical_state(&root)?, before);
@@ -40,11 +40,11 @@ fn public_identity_ledger_accepts_exact_encoded_byte_ceiling_and_refuses_one_mor
 }
 
 #[test]
-fn public_identity_structurally_valid_matched_group_is_not_accepted_by_source_only_opener(
+fn public_identity_structurally_valid_matched_group_cannot_replace_graph_witness_history(
 ) -> TestResult {
     let (directory, store, writer) = fixture()?;
-    let first = subject("unsupported-first", "201")?;
-    let second = subject("unsupported-second", "202")?;
+    let first = subject("unwitnessed-first", "201")?;
+    let second = subject("unwitnessed-second", "202")?;
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
     let identity = store.store_identity()?;
     let head = genesis(&identity)?;
@@ -58,7 +58,7 @@ fn public_identity_structurally_valid_matched_group_is_not_accepted_by_source_on
     let prepared = prepare_next(
         &identity,
         &head,
-        unsupported_group([first.id.cast(), second.id.cast()]),
+        unwitnessed_group([first.id.cast(), second.id.cast()]),
         ReplayLimits::SMALL,
     )?;
     let records = [prepared.uncommitted_record];
@@ -76,18 +76,18 @@ fn public_identity_structurally_valid_matched_group_is_not_accepted_by_source_on
     let before = retained_state(&store)?;
     drop(store);
     let root = directory.path().join("identity");
-    let error = refused(Store::open_public_identity_qualification_v2(&root))?;
+    let error = refused(Store::open_public_identity_qualification_v3(&root))?;
     check!(matches!(
         error,
         StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "unsupported acceptance operation"
+            "graph witness history binding"
         ))
     ));
     check!(eq; physical_state(&root)?, before);
     Ok(())
 }
 
-fn unsupported_group(mut members: [AthleteCandidateId; 2]) -> HistoryRequest {
+fn unwitnessed_group(mut members: [AthleteCandidateId; 2]) -> HistoryRequest {
     members.sort();
     let bindings = members
         .iter()
@@ -106,7 +106,7 @@ fn unsupported_group(mut members: [AthleteCandidateId; 2]) -> HistoryRequest {
     HistoryRequest::EstablishMatchedGroup {
         bindings,
         evidence: CandidateDecisionReference {
-            application_id: "synthetic-unsupported-acceptance".into(),
+            application_id: "synthetic-unwitnessed-acceptance".into(),
             evidence_digest: "a".repeat(64),
             kind: CandidateEvidenceKind::SamePerson,
             members: members.to_vec(),

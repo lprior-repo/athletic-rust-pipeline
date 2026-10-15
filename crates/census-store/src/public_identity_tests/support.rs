@@ -1,3 +1,6 @@
+mod graph_effects;
+pub(crate) use graph_effects::{assert_graph_staging, assert_graph_staging_bounded};
+
 use std::path::Path;
 
 use census_domain::model::{

@@ -24,21 +24,25 @@ fn public_identity_changed_witness_revision_fields_refuse_without_mutation() -> 
         let raw = store.journal.get(&key)?.ok_or("missing fixture witness")?;
         let value: serde_json::Value = serde_json::from_slice(&raw)?;
         let changed = value
-            .get(field)
+            .pointer(&format!("/graph/capture/{field}"))
             .and_then(serde_json::Value::as_u64)
             .ok_or("missing numeric witness field")?
             .checked_add(1)
             .ok_or("fixture overflow")?;
         store.journal.insert(
             &key,
-            replace_field(&raw, field, &serde_json::json!(changed))?,
+            replace_field(
+                &raw,
+                &format!("/graph/capture/{field}"),
+                &serde_json::json!(changed),
+            )?,
         )?;
         store.flush()?;
         let reason = match field {
             "evidence_generation" | "derived_generation" => {
                 "commit revision exceeds retained state"
             }
-            _ => "commit receipt binding",
+            _ => "graph receipt binding",
         };
         assert_corruption(directory, store, writer, reason)?;
     }
@@ -96,7 +100,7 @@ fn public_identity_resealed_decision_and_witness_cannot_change_history_evidence(
     reseal_changed_decision(&store, decision)?;
     check!(eq; store.meta.get(HISTORY)?.ok_or("history disappeared")?.as_ref(), history_raw.as_ref());
     store.flush()?;
-    assert_corruption(directory, store, writer, "accepted decision digest")
+    assert_corruption(directory, store, writer, "graph accepted decision binding")
 }
 
 fn committed() -> TestResult<(tempfile::TempDir, Store, PublicIdentityWriterV1)> {
@@ -130,7 +134,7 @@ fn assert_corruption(
     check!(eq; retained_state(&store)?, before);
     drop(store);
     let root = directory.path().join("identity");
-    let error = refused(Store::open_public_identity_qualification_v2(&root))?;
+    let error = refused(Store::open_public_identity_qualification_v3(&root))?;
     check!(
         matches!(error, StoreError::PublicIdentity(PublicIdentityError::Corrupt(found))
         if found == reason)
@@ -151,9 +155,17 @@ fn decision_key(decision: &AppliedAthleteIdentity) -> Vec<u8> {
     )
 }
 
-fn replace_field(raw: &[u8], field: &str, replacement: &serde_json::Value) -> TestResult<Vec<u8>> {
+fn replace_field(
+    raw: &[u8],
+    pointer: &str,
+    replacement: &serde_json::Value,
+) -> TestResult<Vec<u8>> {
     let parsed: serde_json::Value = serde_json::from_slice(raw)?;
-    let previous = parsed.get(field).ok_or("missing fixture field")?;
+    let previous = parsed.pointer(pointer).ok_or("missing fixture field")?;
+    let field = pointer
+        .rsplit('/')
+        .next()
+        .ok_or("missing fixture field name")?;
     let name = serde_json::to_string(field)?;
     let original = format!("{name}:{}", serde_json::to_string(previous)?);
     let changed = format!("{name}:{}", serde_json::to_string(replacement)?);
@@ -174,7 +186,7 @@ fn reseal_changed_decision(store: &Store, decision: &AppliedAthleteIdentity) -> 
     check!(eq; receipt.digest, format!("{:x}", Sha256::digest(&raw)));
     let changed = replace_field(
         &raw,
-        "decision_digest",
+        "/payload/decision/digest",
         &serde_json::json!(serialized_digest(decision)?),
     )?;
     receipt.digest = format!("{:x}", Sha256::digest(&changed));

@@ -35,7 +35,27 @@ fn public_identity_writer_retains_source_only_cohort_contradiction_without_parti
         StoreError::PublicIdentity(PublicIdentityError::NotSourceBound)
     ));
     check!(eq; writer.head(&store)?, head);
-    check!(eq; retained_state(&store)?, before);
+    let staged = retained_state(&store)?;
+    super::support::assert_graph_staging(
+        &store,
+        &before,
+        &staged,
+        writer.store_identity(),
+        "source-only-contradiction",
+    )?;
+    let retry = refused(writer.establish_source_bound(
+        &store,
+        "source-only-contradiction",
+        &athlete.id.cast(),
+        store.snapshot().revision(),
+        &head,
+    ))?;
+    check!(matches!(
+        retry,
+        StoreError::PublicIdentity(PublicIdentityError::NotSourceBound)
+    ));
+    check!(eq; writer.head(&store)?, head);
+    check!(eq; retained_state(&store)?, staged);
     check!(eq; store.scan::<CanonicalAthlete>(Table::Athletes)?, vec![athlete]);
     check!(eq; store.scan::<SourceObservation>(Table::SourceObservations)?, vec![observation]);
     Ok(())
@@ -62,7 +82,7 @@ fn public_identity_evidence_counter_exhaustion_preserves_exact_replay_and_refuse
     store.flush()?;
     drop(store);
     let root = directory.path().join("identity");
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     check!(eq; store.evidence_generation(), u64::MAX);
     let before = retained_state(&store)?;
     let replayed = writer.establish_source_bound(
@@ -88,7 +108,7 @@ fn public_identity_evidence_counter_exhaustion_preserves_exact_replay_and_refuse
     check!(eq; writer.head(&store)?, committed.head().clone());
     check!(eq; retained_state(&store)?, before);
     drop(store);
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     check!(eq; store.evidence_generation(), u64::MAX);
     check!(eq; writer.head(&store)?, committed.head().clone());
     check!(eq; retained_state(&store)?, before);

@@ -1,11 +1,12 @@
 use super::support::refused;
 use crate::PublicIdentityError;
 use census_domain::public_identity_history::genesis;
+use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 
 use super::*;
 
 #[test]
-fn public_identity_initialization_and_reopen_retain_one_lineage() -> TestResult {
+fn public_identity_historical_initialization_and_replay_retain_one_lineage() -> TestResult {
     let directory = tempfile::tempdir()?;
     for root in [
         directory.path().join("absent"),
@@ -14,18 +15,29 @@ fn public_identity_initialization_and_reopen_retain_one_lineage() -> TestResult 
         if root.ends_with("empty") {
             std::fs::create_dir(&root)?;
         }
-        let declaration = Store::create_public_identity_qualification_v1(&root)?;
-        let (store, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
-        check!(eq; store.store_format()?.lifecycle_revision, Some(5));
-        check!(eq; store.store_identity()?, declaration.store_identity().clone());
-        check!(eq; writer.store_identity(), declaration.store_identity());
-        check!(eq; writer.head(&store)?, genesis(declaration.store_identity())?);
-        let before = retained_state(&store)?;
-        drop(store);
-        let (reopened, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
-        check!(eq; reopened.store_identity()?, declaration.store_identity().clone());
-        check!(eq; writer.head(&reopened)?, genesis(declaration.store_identity())?);
-        check!(eq; retained_state(&reopened)?, before);
+        let declaration = crate::public_identity::create_historical_test_fixture(
+            &root,
+            PublicIdentityQualificationVersion::SourceBoundV1,
+        )?;
+        let before = physical_state(&root)?;
+        let metadata = &before
+            .iter()
+            .find(|(name, _)| name == crate::META)
+            .ok_or("historical fixture lacks metadata")?
+            .1;
+        check!(metadata.iter().any(|(key, value)| {
+            key.as_slice() == crate::format::LIFECYCLE_REVISION_KEY.as_bytes()
+                && value.as_slice() == b"5"
+        }));
+        let accepted = Store::replay_historical_public_identity(&root)?;
+        check!(eq; accepted.qualification_version(), PublicIdentityQualificationVersion::SourceBoundV1);
+        check!(eq; accepted.store_identity(), declaration.store_identity());
+        check!(eq; accepted.head(), &genesis(declaration.store_identity())?);
+        check!(eq; physical_state(&root)?, before);
+        let reopened = Store::replay_historical_public_identity(&root)?;
+        check!(eq; reopened.store_identity(), declaration.store_identity());
+        check!(eq; reopened.head(), &genesis(declaration.store_identity())?);
+        check!(eq; physical_state(&root)?, before);
     }
     Ok(())
 }
@@ -86,7 +98,7 @@ fn public_identity_initialization_never_adopts_an_existing_store_or_artifact() -
     let before = retained_state(&store)?;
     drop(store);
     check!(matches!(
-        refused(Store::create_public_identity_qualification_v2(
+        refused(Store::create_public_identity_qualification_v3(
             legacy.path()
         ))?,
         StoreError::PublicIdentity(PublicIdentityError::ExistingRoot)
@@ -97,7 +109,7 @@ fn public_identity_initialization_never_adopts_an_existing_store_or_artifact() -
     drop(store);
     let root = directory.path().join("identity");
     check!(matches!(
-        refused(Store::create_public_identity_qualification_v2(&root))?,
+        refused(Store::create_public_identity_qualification_v3(&root))?,
         StoreError::PublicIdentity(PublicIdentityError::ExistingRoot)
     ));
     check!(eq; physical_state(&root)?, before);
@@ -105,7 +117,7 @@ fn public_identity_initialization_never_adopts_an_existing_store_or_artifact() -
     let path = artifact.path().join("historical.body");
     std::fs::write(&path, b"retained historical evidence")?;
     check!(matches!(
-        refused(Store::create_public_identity_qualification_v2(
+        refused(Store::create_public_identity_qualification_v3(
             artifact.path()
         ))?,
         StoreError::PublicIdentity(PublicIdentityError::ExistingRoot)
@@ -116,18 +128,18 @@ fn public_identity_initialization_never_adopts_an_existing_store_or_artifact() -
 }
 
 #[test]
-fn public_identity_missing_open_never_creates_and_second_owner_refuses() -> TestResult {
+fn public_identity_current_missing_open_never_creates_and_second_owner_refuses() -> TestResult {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("absent");
-    check!(Store::open_public_identity_qualification_v1(&root).is_err());
+    check!(Store::open_public_identity_qualification_v3(&root).is_err());
     check!(!root.exists());
-    Store::create_public_identity_qualification_v1(&root)?;
-    let (store, _) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
+    Store::create_public_identity_qualification_v3(&root)?;
+    let (store, _) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     check!(matches!(
-        Store::open_public_identity_qualification_v1(&root),
+        Store::open_public_identity_qualification_v3(&root),
         Err(StoreError::Open { .. })
     ));
-    check!(eq; store.store_format()?.lifecycle_revision, Some(5));
+    check!(eq; store.store_format()?.lifecycle_revision, Some(7));
     Ok(())
 }
 
@@ -147,7 +159,7 @@ fn public_identity_missing_lineage_is_refused_and_never_reminted() -> TestResult
     check!(!store.journal.contains_key(&key)?);
     drop(store);
     let root = directory.path().join("identity");
-    check!(Store::open_public_identity_qualification_v2(&root).is_err());
+    check!(Store::open_public_identity_qualification_v3(&root).is_err());
     check!(eq; physical_state(&root)?, before);
     Ok(())
 }
@@ -162,7 +174,7 @@ fn public_identity_partial_store_refusal_never_creates_keyspaces_or_output_dirs(
     db.persist(fjall::PersistMode::SyncData)?;
     drop(meta);
     drop(db);
-    check!(Store::open_public_identity_qualification_v1(&root).is_err());
+    check!(Store::replay_historical_public_identity(&root).is_err());
     check!(Store::open(&root).is_err());
     check!(Store::inspect(&root).is_err());
     check!(Store::migrate(&root).is_err());

@@ -2,45 +2,51 @@ use census_domain::public_identity_qualification::PublicIdentityQualificationVer
 
 use crate::PublicIdentityError;
 
-use super::support::{accepted, refused};
+use super::support::refused;
 use super::*;
 
 #[test]
-fn public_identity_historical_v1_refuses_fresh_identity_write_without_mutation() -> TestResult {
+fn public_identity_historical_v1_refuses_every_mutating_writer_without_mutation() -> TestResult {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("historical");
-    Store::create_public_identity_qualification_v1(&root)?;
-    let (store, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
-    check!(eq; store.store_format()?.lifecycle_revision, Some(5));
-    check!(eq; writer.qualification_version(), PublicIdentityQualificationVersion::SourceBoundV1);
-    let athlete = subject("historical-write-refusal", "116")?;
-    accepted(&athlete)?;
-    store.append(Table::Athletes, &athlete)?;
-    let head = writer.head(&store)?;
-    check!(eq; head.sequence, 0);
-    let before = retained_state(&store)?;
-    let error = refused(writer.establish_source_bound(
-        &store,
-        "historical-fresh-write",
-        &athlete.id.cast(),
-        store.snapshot().revision(),
-        &head,
-    ))?;
-    check!(matches!(
-        error,
-        StoreError::PublicIdentity(PublicIdentityError::QualificationVersionMismatch {
-            expected: PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
-            found: PublicIdentityQualificationVersion::SourceBoundV1,
-        })
-    ));
-    check!(eq; writer.head(&store)?, head);
-    check!(eq; store.count(Table::AthleteIdentityDecisions)?, 0);
-    check!(eq; retained_state(&store)?, before);
-    drop(store);
+    let declaration = crate::public_identity::create_historical_test_fixture(
+        &root,
+        PublicIdentityQualificationVersion::SourceBoundV1,
+    )?;
+    let before = physical_state(&root)?;
+    let accepted = Store::replay_historical_public_identity(&root)?;
+    check!(eq; accepted.qualification_version(), PublicIdentityQualificationVersion::SourceBoundV1);
+    check!(eq; accepted.store_identity(), declaration.store_identity());
+    check!(eq; accepted.head(), &census_domain::public_identity_history::genesis(declaration.store_identity())?);
+    check!(accepted.history_records().is_empty());
+    check!(eq; accepted.public_ids().count(), 0);
     check!(eq; physical_state(&root)?, before);
-    let (store, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
-    check!(eq; writer.head(&store)?, head);
-    check!(eq; writer.qualification_version(), PublicIdentityQualificationVersion::SourceBoundV1);
-    check!(eq; retained_state(&store)?, before);
+    for (result, found) in [
+        (
+            Store::open_public_identity_qualification_v1(&root),
+            PublicIdentityQualificationVersion::SourceBoundV1,
+        ),
+        (
+            Store::open_public_identity_qualification_v2(&root),
+            PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
+        ),
+        (
+            Store::open_public_identity_qualification_v3(&root),
+            PublicIdentityQualificationVersion::SourceBoundV1,
+        ),
+    ] {
+        check!(matches!(refused(result)?, StoreError::PublicIdentity(
+            PublicIdentityError::QualificationVersionMismatch {
+                expected: PublicIdentityQualificationVersion::RetainedAuthorityGraphV3,
+                found: actual,
+            }
+        ) if actual == found));
+        check!(eq; physical_state(&root)?, before);
+    }
+    let reopened = Store::replay_historical_public_identity(&root)?;
+    check!(eq; reopened.qualification_version(), accepted.qualification_version());
+    check!(eq; reopened.store_identity(), accepted.store_identity());
+    check!(eq; reopened.head(), accepted.head());
+    check!(eq; physical_state(&root)?, before);
     Ok(())
 }

@@ -26,7 +26,16 @@ pub(super) struct SourceImage {
 
 impl SourceImage {
     pub(super) fn capture(entities: &Rows, meta: &Rows) -> TestResult<Self> {
-        check!(entities.len() <= FIXTURE_ROWS);
+        Self::capture_bounded(entities, meta, FIXTURE_ROWS)
+    }
+
+    pub(super) fn capture_bounded(
+        entities: &Rows,
+        meta: &Rows,
+        maximum_rows: usize,
+    ) -> TestResult<Self> {
+        check!(maximum_rows <= 10_000);
+        check!(entities.len() <= maximum_rows);
         let raw = meta
             .get(b"generation:derived:current".as_slice())
             .ok_or("source derived generation")?;
