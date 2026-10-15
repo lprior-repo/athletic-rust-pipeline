@@ -8,6 +8,7 @@ mod matched_group;
 mod merge;
 mod record;
 mod replay;
+mod request_order;
 mod resolution;
 mod revocation;
 mod split;

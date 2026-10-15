@@ -210,7 +210,6 @@ fn participation_rejects_cohort_outside_profile_without_changing_status_evidence
         year: crate::model::GradYear::new(2028).ok_or("cohort")?,
         proof: f.proof("cohort")?,
     };
-    // A cohort-2027 window cannot establish the boundary for a cohort-2028 athlete.
     check!(eq; outcome(&f, &case)?,
     (CandidateOutcome::Excluded, vec![
         Reason::CohortOutsideSelection, Reason::SummerBoundaryUnresolved,

@@ -1,60 +1,132 @@
-use std::fmt;
-
-use crate::model::ProfileDateRangeV1;
 use serde::de::{EnumAccess, Error, MapAccess, VariantAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 
-use super::super::{
-    BindingClaim, CandidateDecisionReference, EffectiveScope, HistoryRequest, PublicAthleteId,
-};
-use super::atoms::PublicIdNode;
-use super::containers::{Bindings, ListNode, Members, Meter, Node, NodeSeed};
-use super::objects::{object_node, BindingNode, EvidenceNode, RevocationNode, SplitNode};
+use crate::model::ProfileDateRangeV1;
+
+use super::super::{BindingClaim, CandidateDecisionReference, EffectiveScope, HistoryRequest};
+use super::claims::{BindingNode, EvidenceNode};
+use super::containers::{Bindings, ListNode, Meter, Node, NodeSeed};
+use super::corrections::{RevocationNode, SplitNode};
+use super::membership::{BindNode, MergeNode};
+use super::object_decoder::{ObjectFields, ObjectSeed};
 
 pub(super) struct RequestNode;
 pub(super) struct ScopeNode;
 struct EstablishNode;
 struct MatchedNode;
-struct BindNode;
-struct MergeNode;
 
-struct EstablishInput {
-    binding: BindingClaim,
-    evidence: CandidateDecisionReference,
-}
-struct MatchedInput {
-    bindings: Vec<BindingClaim>,
-    evidence: CandidateDecisionReference,
-}
-struct BindInput {
-    owner: PublicAthleteId,
-    binding: BindingClaim,
-    evidence: CandidateDecisionReference,
-}
-struct MergeInput {
-    canonical: PublicAthleteId,
-    members: Vec<PublicAthleteId>,
-    evidence: CandidateDecisionReference,
+#[derive(Deserialize)]
+#[serde(field_identifier, rename_all = "snake_case")]
+enum EstablishFields {
+    Binding,
+    Evidence,
 }
 
-object_node!(EstablishNode, EstablishFields => EstablishInput {
-    Binding => binding: BindingNode,
-    Evidence => evidence: EvidenceNode,
-});
-object_node!(MatchedNode, MatchedFields => MatchedInput {
-    Bindings => bindings: ListNode<BindingNode, Bindings>,
-    Evidence => evidence: EvidenceNode,
-});
-object_node!(BindNode, BindFields => BindInput {
-    Owner => owner: PublicIdNode,
-    Binding => binding: BindingNode,
-    Evidence => evidence: EvidenceNode,
-});
-object_node!(MergeNode, MergeFields => MergeInput {
-    Canonical => canonical: PublicIdNode,
-    Members => members: ListNode<PublicIdNode, Members>,
-    Evidence => evidence: EvidenceNode,
-});
+impl ObjectFields for EstablishNode {
+    type Field = EstablishFields;
+    type State = (Option<BindingClaim>, Option<CandidateDecisionReference>);
+    const FIELD_COUNT: usize = 2;
+
+    fn read<'de, A: MapAccess<'de>>(
+        state: &mut Self::State,
+        meter: &mut Meter,
+        field: Self::Field,
+        map: &mut A,
+    ) -> Result<(), A::Error> {
+        match field {
+            EstablishFields::Binding => {
+                if state.0.is_some() {
+                    return Err(A::Error::duplicate_field("binding"));
+                }
+                state.0 = Some(map.next_value_seed(NodeSeed::<BindingNode>::new(meter))?);
+            }
+            EstablishFields::Evidence => {
+                if state.1.is_some() {
+                    return Err(A::Error::duplicate_field("evidence"));
+                }
+                state.1 = Some(map.next_value_seed(NodeSeed::<EvidenceNode>::new(meter))?);
+            }
+        }
+        Ok(())
+    }
+
+    fn build<E: Error>(state: Self::State) -> Result<Self::Value, E> {
+        Ok(HistoryRequest::Establish {
+            binding: state.0.ok_or_else(|| E::missing_field("binding"))?,
+            evidence: state.1.ok_or_else(|| E::missing_field("evidence"))?,
+        })
+    }
+}
+
+impl Node for EstablishNode {
+    type Value = HistoryRequest;
+
+    fn decode<'de, D: Deserializer<'de>>(
+        meter: &mut Meter,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_map(ObjectSeed::<Self>::new(meter))
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(field_identifier, rename_all = "snake_case")]
+enum MatchedFields {
+    Bindings,
+    Evidence,
+}
+
+impl ObjectFields for MatchedNode {
+    type Field = MatchedFields;
+    type State = (
+        Option<Vec<BindingClaim>>,
+        Option<CandidateDecisionReference>,
+    );
+    const FIELD_COUNT: usize = 2;
+
+    fn read<'de, A: MapAccess<'de>>(
+        state: &mut Self::State,
+        meter: &mut Meter,
+        field: Self::Field,
+        map: &mut A,
+    ) -> Result<(), A::Error> {
+        match field {
+            MatchedFields::Bindings => {
+                if state.0.is_some() {
+                    return Err(A::Error::duplicate_field("bindings"));
+                }
+                state.0 = Some(
+                    map.next_value_seed(NodeSeed::<ListNode<BindingNode, Bindings>>::new(meter))?,
+                );
+            }
+            MatchedFields::Evidence => {
+                if state.1.is_some() {
+                    return Err(A::Error::duplicate_field("evidence"));
+                }
+                state.1 = Some(map.next_value_seed(NodeSeed::<EvidenceNode>::new(meter))?);
+            }
+        }
+        Ok(())
+    }
+
+    fn build<E: Error>(state: Self::State) -> Result<Self::Value, E> {
+        Ok(HistoryRequest::EstablishMatchedGroup {
+            bindings: state.0.ok_or_else(|| E::missing_field("bindings"))?,
+            evidence: state.1.ok_or_else(|| E::missing_field("evidence"))?,
+        })
+    }
+}
+
+impl Node for MatchedNode {
+    type Value = HistoryRequest;
+
+    fn decode<'de, D: Deserializer<'de>>(
+        meter: &mut Meter,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_map(ObjectSeed::<Self>::new(meter))
+    }
+}
 
 #[derive(Deserialize)]
 enum RequestVariant {
@@ -91,7 +163,7 @@ impl Node for RequestNode {
 impl<'de> Visitor<'de> for NodeSeed<'_, RequestNode> {
     type Value = HistoryRequest;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("one version-one history request")
     }
 
@@ -99,36 +171,16 @@ impl<'de> Visitor<'de> for NodeSeed<'_, RequestNode> {
         let (tag, variant) = data.variant::<RequestVariant>()?;
         match tag {
             RequestVariant::Establish => {
-                let input =
-                    variant.newtype_variant_seed(NodeSeed::<EstablishNode>::new(self.meter))?;
-                Ok(HistoryRequest::Establish {
-                    binding: input.binding,
-                    evidence: input.evidence,
-                })
+                variant.newtype_variant_seed(NodeSeed::<EstablishNode>::new(self.meter))
             }
             RequestVariant::EstablishMatchedGroup => {
-                let input =
-                    variant.newtype_variant_seed(NodeSeed::<MatchedNode>::new(self.meter))?;
-                Ok(HistoryRequest::EstablishMatchedGroup {
-                    bindings: input.bindings,
-                    evidence: input.evidence,
-                })
+                variant.newtype_variant_seed(NodeSeed::<MatchedNode>::new(self.meter))
             }
             RequestVariant::Bind => {
-                let input = variant.newtype_variant_seed(NodeSeed::<BindNode>::new(self.meter))?;
-                Ok(HistoryRequest::Bind {
-                    owner: input.owner,
-                    binding: input.binding,
-                    evidence: input.evidence,
-                })
+                variant.newtype_variant_seed(NodeSeed::<BindNode>::new(self.meter))
             }
             RequestVariant::Merge => {
-                let input = variant.newtype_variant_seed(NodeSeed::<MergeNode>::new(self.meter))?;
-                Ok(HistoryRequest::Merge {
-                    canonical: input.canonical,
-                    members: input.members,
-                    evidence: input.evidence,
-                })
+                variant.newtype_variant_seed(NodeSeed::<MergeNode>::new(self.meter))
             }
             RequestVariant::Split => variant
                 .newtype_variant_seed(NodeSeed::<SplitNode>::new(self.meter))
@@ -164,7 +216,7 @@ impl Node for ScopeNode {
 impl<'de> Visitor<'de> for NodeSeed<'_, ScopeNode> {
     type Value = EffectiveScope;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("an unknown or validated closed effective range")
     }
 

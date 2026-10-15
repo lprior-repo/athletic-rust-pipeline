@@ -8,7 +8,8 @@ fn single_civil_day_requires_valid_complete_published_dates() -> TestResult {
         ("2026-03-27", Some("2026-03-27")),
         ("2026-03-27T23:30:00-05:00", None),
     ] {
-        assert_eq!(
+        check!(
+            eq;
             date(start, end),
             RetainedPerformanceDate::Exact(ProfileDate::parse("2026-03-27")?)
         );
@@ -22,7 +23,7 @@ fn single_civil_day_requires_valid_complete_published_dates() -> TestResult {
         ("2026-03-27invalid", None),
         ("2026", None),
     ] {
-        assert_eq!(date(start, end), RetainedPerformanceDate::Unresolved);
+        check!(eq; date(start, end), RetainedPerformanceDate::Unresolved);
     }
     Ok(())
 }

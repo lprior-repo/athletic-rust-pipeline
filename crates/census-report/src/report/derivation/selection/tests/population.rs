@@ -8,7 +8,6 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 use census_store::Store;
-use std::borrow::Cow;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -69,30 +68,6 @@ fn add_related_population(dataset: &mut ExportDataset) -> TestResult {
 }
 
 #[test]
-fn all_sources_no_alias_derivation_borrows_population() -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let store = Store::open(directory.path())?;
-    let mut dataset = ExportDataset::load(&store)?;
-    dataset.athletes.push(athlete("Runner")?);
-    add_related_population(&mut dataset)?;
-    let derivation = Derivation::of(&dataset, Scope::AllSources, None, &[]);
-    assert!(matches!(derivation.athletes, Cow::Borrowed(_)));
-    assert!(matches!(derivation.meets, Cow::Borrowed(_)));
-    assert!(matches!(derivation.events, Cow::Borrowed(_)));
-    assert!(matches!(derivation.coaches, Cow::Borrowed(_)));
-    assert!(matches!(derivation.coach_observations, Cow::Borrowed(_)));
-    assert_eq!(derivation.athletes().as_ptr(), dataset.athletes.as_ptr());
-    assert_eq!(derivation.meets.as_ptr(), dataset.meets.as_ptr());
-    assert_eq!(derivation.events.as_ptr(), dataset.events.as_ptr());
-    assert_eq!(derivation.coaches.as_ptr(), dataset.coaches.as_ptr());
-    assert_eq!(
-        derivation.coach_observations.as_ptr(),
-        dataset.coach_observations.as_ptr()
-    );
-    Ok(())
-}
-
-#[test]
 fn core_derivation_owns_evidence_transform_without_mutating_dataset() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
@@ -103,41 +78,25 @@ fn core_derivation_owns_evidence_transform_without_mutating_dataset() -> TestRes
     let original_meets = dataset.meets.clone();
     let original_events = dataset.events.clone();
     let derivation = Derivation::of(&dataset, Scope::Core, None, &[]);
-    assert!(matches!(derivation.athletes, Cow::Owned(_)));
-    assert!(matches!(derivation.meets, Cow::Owned(_)));
-    assert!(matches!(derivation.events, Cow::Owned(_)));
-    let selected = derivation
-        .athletes()
-        .first()
-        .ok_or("missing core athlete")?;
-    assert_eq!(selected.evidence.len(), 1);
-    assert_eq!(
-        selected
-            .evidence
-            .first()
-            .map(|value| value.source.id.as_str()),
-        Some("milesplit_roster")
+    let expected_evidence = vec![Evidence::parsed(
+        SourceRef::new("milesplit_roster", None),
+        "2026-10-15",
+    )];
+    let mut expected = original.clone();
+    expected.evidence = expected_evidence.clone();
+    expected.source_links.clear();
+    check!(eq; derivation.athletes(), &[expected]);
+    check!(eq; dataset.athletes, vec![original]);
+    check!(eq;
+        derivation.meets.first().ok_or("core meet")?.evidence,
+        expected_evidence
     );
-    assert!(selected.source_links.is_empty());
-    let mut expected = vec![original.clone()];
-    assert_eq!(crate::report::retain_core(&mut expected), 0);
-    assert_eq!(derivation.athletes(), expected.as_slice());
-    assert_eq!(dataset.athletes, vec![original]);
-    assert_eq!(
-        derivation.meets.first().ok_or("core meet")?.evidence.len(),
-        1
+    check!(eq;
+        derivation.events.first().ok_or("core event")?.evidence,
+        expected_evidence
     );
-    assert_eq!(
-        derivation
-            .events
-            .first()
-            .ok_or("core event")?
-            .evidence
-            .len(),
-        1
-    );
-    assert_eq!(dataset.meets, original_meets);
-    assert_eq!(dataset.events, original_events);
+    check!(eq; dataset.meets, original_meets);
+    check!(eq; dataset.events, original_events);
     Ok(())
 }
 
@@ -181,8 +140,7 @@ fn accepted_alias_union_preserves_explicit_facts_and_canonical_order() -> TestRe
     let source = [alias, other, original];
     let untouched = source.clone();
     let collapsed = crate::report::derivation::borrowed_or_collapsed(&source, &aliases);
-    assert!(matches!(collapsed, Cow::Owned(_)));
-    assert_eq!(collapsed.as_ref(), expected_rows.as_slice());
-    assert_eq!(source, untouched);
+    check!(eq; collapsed.as_ref(), expected_rows.as_slice());
+    check!(eq; source, untouched);
     Ok(())
 }

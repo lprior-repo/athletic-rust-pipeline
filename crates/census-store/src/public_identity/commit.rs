@@ -8,11 +8,11 @@ use super::{
 use crate::clock::{Clock, SystemClock};
 use crate::{Store, StoreError, StoreResult, StoreRevision, Table};
 use census_domain::model::{
-    serialized_digest, AcceptedAthleteIdentity, AthleteCandidateId, SourceIdentity,
+    serialized_digest, AcceptedAthleteIdentity, AthleteCandidateId, SourceIdentity, StoreIdentity,
 };
 use census_domain::public_identity_history::{
-    prepare_next, BindingClaim, CandidateDecisionReference, EffectiveScope, HistoryRequest,
-    PublicResolution, RegistryHead, ReplayLimits, SourceObjectKey,
+    prepare_next, BindingClaim, CandidateDecisionReference, EffectiveScope, HistoryRecord,
+    HistoryRequest, PublicResolution, RegistryHead, ReplayLimits, SourceObjectKey,
 };
 use fjall::PersistMode;
 
@@ -143,7 +143,7 @@ impl PublicIdentityWriterV1 {
             ReplayLimits::SMALL,
         )
         .map_err(PublicIdentityError::from)?;
-        let (mut records, projection) = ledger.history.into_parts();
+        let (records, projection) = ledger.history.into_parts();
         projection
             .extend_candidate(&prepared.uncommitted_record)
             .map_err(PublicIdentityError::from)?;
@@ -157,14 +157,12 @@ impl PublicIdentityWriterV1 {
             &context_root,
         )?;
         let outcome = witness.outcome(&prepared.uncommitted_record, false)?;
-        records
-            .try_reserve(1)
-            .map_err(|error| StoreError::Refused {
-                detail: format!("identity history allocation: {error}"),
-            })?;
-        records.push(prepared.uncommitted_record);
-        let history = codec::encode(&records, MAX_PUBLIC_IDENTITY_HISTORY_BYTES)?;
-        codec::history(&history, &self.identity, &prepared.next_head)?;
+        let history = encode_next_history(
+            records,
+            prepared.uncommitted_record,
+            &self.identity,
+            &prepared.next_head,
+        )?;
         persist(
             store,
             &witness,
@@ -175,6 +173,23 @@ impl PublicIdentityWriterV1 {
         )?;
         Ok(outcome)
     }
+}
+
+fn encode_next_history(
+    mut records: Vec<HistoryRecord>,
+    record: HistoryRecord,
+    identity: &StoreIdentity,
+    head: &RegistryHead,
+) -> StoreResult<Vec<u8>> {
+    records
+        .try_reserve(1)
+        .map_err(|error| StoreError::Refused {
+            detail: format!("identity history allocation: {error}"),
+        })?;
+    records.push(record);
+    let history = codec::encode(&records, MAX_PUBLIC_IDENTITY_HISTORY_BYTES)?;
+    codec::history(&history, identity, head)?;
+    Ok(history)
 }
 
 pub(super) fn source_binding(

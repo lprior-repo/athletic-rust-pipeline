@@ -188,10 +188,11 @@ weaken existing refusal, change IDs or claim stable multi-cohort runtime is impl
 
 The enrollment-only lifecycle-3 installation capability now exists and binds an immutable
 profile/resource configuration. It refuses generic execution before recovery or serving;
-it is not qualified ReusableProduction enrollment/execution. Lifecycle 4 is a separately
-scoped fresh capture qualification capability. Neither changes the forward lifecycle
-contract or certifies annual operation. See the
-[dated implementation record](../verification/2026-10-14-pr29-summary.md#installation-and-result-status).
+it is not qualified ReusableProduction enrollment/execution. Lifecycle 4 scopes fresh capture
+qualification; lifecycle 5 preserves historical public-identity qualification, and lifecycle 6
+retains its original authority context. None certifies annual operation or changes the forward
+production contract. See the [installation record](../verification/2026-10-14-pr29-summary.md#installation-and-result-status)
+and [current repair evidence](../verification/2026-10-14-deep-codebase-review.md).
 
 This ADR supersedes ADR-013's fresh-only lifecycle restriction solely for
 explicitly enrolled, qualified ReusableProduction operation. ADR-013 remains binding for

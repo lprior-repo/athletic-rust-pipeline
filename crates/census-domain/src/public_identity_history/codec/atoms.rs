@@ -24,29 +24,71 @@ pub(super) trait Text {
     fn parse<E: Error>(meter: &mut Meter, value: &str) -> Result<Self::Value, E>;
 }
 
-macro_rules! text_nodes {
-    ($($node:ident),+ $(,)?) => {
-        $(impl Node for $node {
-            type Value = <Self as Text>::Value;
+impl Node for TextNode {
+    type Value = String;
 
-            fn decode<'de, D: Deserializer<'de>>(
-                meter: &mut Meter,
-                deserializer: D,
-            ) -> Result<Self::Value, D::Error> {
-                deserializer.deserialize_str(NodeSeed::<Self>::new(meter))
-            }
-        })+
-    };
+    fn decode<'de, D: Deserializer<'de>>(
+        meter: &mut Meter,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_str(NodeSeed::<Self>::new(meter))
+    }
 }
 
-text_nodes!(
-    TextNode,
-    CandidateNode,
-    PublicIdNode,
-    InstallationNode,
-    DigestNode,
-    EvidenceDigestNode
-);
+impl Node for CandidateNode {
+    type Value = AthleteCandidateId;
+
+    fn decode<'de, D: Deserializer<'de>>(
+        meter: &mut Meter,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_str(NodeSeed::<Self>::new(meter))
+    }
+}
+
+impl Node for PublicIdNode {
+    type Value = PublicAthleteId;
+
+    fn decode<'de, D: Deserializer<'de>>(
+        meter: &mut Meter,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_str(NodeSeed::<Self>::new(meter))
+    }
+}
+
+impl Node for InstallationNode {
+    type Value = StoreIdentity;
+
+    fn decode<'de, D: Deserializer<'de>>(
+        meter: &mut Meter,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_str(NodeSeed::<Self>::new(meter))
+    }
+}
+
+impl Node for DigestNode {
+    type Value = String;
+
+    fn decode<'de, D: Deserializer<'de>>(
+        meter: &mut Meter,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_str(NodeSeed::<Self>::new(meter))
+    }
+}
+
+impl Node for EvidenceDigestNode {
+    type Value = String;
+
+    fn decode<'de, D: Deserializer<'de>>(
+        meter: &mut Meter,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_str(NodeSeed::<Self>::new(meter))
+    }
+}
 
 impl<'de, N: Text> Visitor<'de> for NodeSeed<'_, N> {
     type Value = N::Value;

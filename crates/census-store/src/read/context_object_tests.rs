@@ -43,7 +43,6 @@ fn context_reader_refuses_oversized_record_before_loading_chunks_without_changin
     check!(eq; row.length(), length);
     check!(eq; row.payload(), entry.get("payload").ok_or("expected payload")?);
 
-    // A chunk decode would fail differently: range admission must happen first.
     write(
         &store,
         &[(object_chunk_key(&staged.id, 0)?, b"invalid chunk".to_vec())],
@@ -135,7 +134,6 @@ fn generic_writes_cannot_overwrite_j2_rows_through_phase_or_key_separators() -> 
         object_chunk_key(&staged.id, 0)?,
     ];
     for physical in physical {
-        // Every NUL split encodes the same physical key through the generic API.
         for split in physical
             .iter()
             .enumerate()

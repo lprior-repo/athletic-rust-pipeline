@@ -1,5 +1,5 @@
 use super::config::{self, Manifest};
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Context, Result};
 use serde_json::json;
 use std::path::Path;
 use std::time::Duration;
@@ -75,10 +75,11 @@ fn child_result(out: &Path, fixture: &str) -> Result<()> {
         config::MANIFEST_LIMIT,
     )?;
     let result: serde_json::Value = serde_json::from_slice(&result)?;
-    ensure!(
-        result["fixture_sha256"] == fixture,
-        "child fixture identity mismatch"
-    );
+    let child_fixture = result
+        .get("fixture_sha256")
+        .and_then(serde_json::Value::as_str)
+        .context("child fixture identity missing")?;
+    ensure!(child_fixture == fixture, "child fixture identity mismatch");
     Ok(())
 }
 

@@ -53,20 +53,20 @@ fn manifested_generation_admits_exact_summary_and_reports_discrepancy() -> TestR
             &digest,
             1,
         )?;
-        assert_eq!(summary.passed(), passed);
+        check!(eq; summary.passed(), passed);
         let output = serde_json::to_value(&summary)?;
-        assert_eq!(output["traversal_complete"], true);
-        assert_eq!(output["required_identity_cohort_checks_passed"], passed);
-        assert_eq!(output["full_reference_reproduction_verified"], false);
-        assert!(output.get("complete").is_none());
-        assert!(output.get("passed").is_none());
-        assert_eq!(output["reference_sha256"], digest);
-        assert_eq!(output["counts"]["matched_unique"], 1);
-        assert_eq!(output["counts"]["name_mismatches"], mismatches);
-        assert_eq!(output["counts"]["required_fields_unassessed"], 0);
+        check!(eq; output["traversal_complete"], serde_json::json!(true));
+        check!(eq; output["required_identity_cohort_checks_passed"], serde_json::json!(passed));
+        check!(eq; output["full_reference_reproduction_verified"], serde_json::json!(false));
+        check!(output.get("complete").is_none());
+        check!(output.get("passed").is_none());
+        check!(eq; output["reference_sha256"], serde_json::json!(digest));
+        check!(eq; output["counts"]["matched_unique"], serde_json::json!(1));
+        check!(eq; output["counts"]["name_mismatches"], serde_json::json!(mismatches));
+        check!(eq; output["counts"]["required_fields_unassessed"], serde_json::json!(0));
         let admitted = comparison_input(&workbook, 2027)?;
-        assert_eq!(output["publication_generation"], admitted.generation());
-        assert_eq!(output["normalized_athletes_sha256"], admitted.binding().1);
+        check!(eq; output["publication_generation"], serde_json::json!(admitted.generation()));
+        check!(eq; output["normalized_athletes_sha256"], serde_json::json!(admitted.binding().1));
         let encoded = serde_json::to_string(&summary)?;
         for secret in [
             "Ada Runner",
@@ -75,7 +75,7 @@ fn manifested_generation_admits_exact_summary_and_reports_discrepancy() -> TestR
             "source_identities",
             "athlete_id",
         ] {
-            assert!(!encoded.contains(secret));
+            check!(!encoded.contains(secret));
         }
         let keys = output
             .as_object()
@@ -83,7 +83,7 @@ fn manifested_generation_admits_exact_summary_and_reports_discrepancy() -> TestR
             .keys()
             .map(String::as_str)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(
+        check!(eq;
             keys,
             std::collections::BTreeSet::from([
                 "comparison_policy",
@@ -99,7 +99,7 @@ fn manifested_generation_admits_exact_summary_and_reports_discrepancy() -> TestR
                 "supplemental_fields",
             ])
         );
-        assert_eq!(
+        check!(eq;
             output["supplemental_fields"],
             serde_json::json!({
                 "teams_and_states": "not_assessed_temporal_affiliation_mapping_required",
@@ -112,7 +112,7 @@ fn manifested_generation_admits_exact_summary_and_reports_discrepancy() -> TestR
             })
         );
     }
-    assert!(super::compare(&request(&workbook, &reference)).is_err());
+    check!(super::compare(&request(&workbook, &reference)).is_err());
     Ok(())
 }
 
@@ -120,11 +120,11 @@ fn manifested_generation_admits_exact_summary_and_reports_discrepancy() -> TestR
 fn manifested_generation_requires_unlimited_matching_year() -> TestResult {
     let root = tempfile::tempdir()?;
     let workbook = publication(root.path(), None)?;
-    assert!(comparison_input(&workbook, 2027).is_ok());
+    check!(comparison_input(&workbook, 2027).is_ok());
     let error = comparison_input(&workbook, 2028)
         .err()
         .ok_or("wrong year admitted")?;
-    assert!(error
+    check!(error
         .to_string()
         .contains("unlimited matching graduation-year"));
     let limited = tempfile::tempdir()?;
@@ -132,7 +132,7 @@ fn manifested_generation_requires_unlimited_matching_year() -> TestResult {
     let error = comparison_input(&workbook, 2027)
         .err()
         .ok_or("limited generation admitted")?;
-    assert!(error
+    check!(error
         .to_string()
         .contains("unlimited matching graduation-year"));
     Ok(())
@@ -153,13 +153,16 @@ fn admitted_csv_binding_refuses_same_length_tamper_and_retains_staged_bytes() ->
         let staged = stage.copy(&source, bytes, digest)?;
         std::fs::write(&source, &altered)
             .map_err(|cause| crate::report::io_error(&source, cause))?;
-        assert_eq!(
-            std::fs::read(staged).map_err(|cause| crate::report::io_error(&source, cause))?,
-            original
-        );
-        assert!(stage.copy(&source, bytes, digest).is_err());
+        let retained =
+            std::fs::read(staged).map_err(|cause| crate::report::io_error(&source, cause))?;
+        if retained != original {
+            return Err(super::error("staged CSV changed with its source"));
+        }
+        if stage.copy(&source, bytes, digest).is_ok() {
+            return Err(super::error("same-length CSV tampering was accepted"));
+        }
         Ok(())
     })?;
-    assert!(comparison_input(&workbook, 2027).is_err());
+    check!(comparison_input(&workbook, 2027).is_err());
     Ok(())
 }

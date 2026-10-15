@@ -9,7 +9,12 @@ use crate::{StoreError, StoreResult, Table};
 mod budget;
 use budget::Admission;
 
-type Owners<'a> = HashMap<&'a SourceNamespace, HashMap<&'a str, Vec<&'a mut Vec<ObservedGrade>>>>;
+struct TargetEntry<'a> {
+    grades: &'a mut Vec<ObservedGrade>,
+    initial_len: usize,
+}
+
+type Owners<'a> = HashMap<&'a SourceNamespace, HashMap<&'a str, Vec<TargetEntry<'a>>>>;
 
 struct Enrichment<'a> {
     owners: Owners<'a>,
@@ -19,7 +24,12 @@ struct Enrichment<'a> {
 impl StoreSnapshot<'_> {
     pub fn enrich_athletes(&self, athletes: &mut [CanonicalAthlete]) -> StoreResult<()> {
         let mut enrichment = Enrichment::new(athletes, Admission::Legacy)?;
-        self.for_each_observation(Table::SourceObservations, |row| enrichment.accept(&row))
+        let result =
+            self.for_each_observation(Table::SourceObservations, |row| enrichment.accept(&row));
+        if result.is_err() {
+            enrichment.rollback();
+        }
+        result
     }
 
     pub fn enrich_athletes_bounded(
@@ -28,9 +38,14 @@ impl StoreSnapshot<'_> {
         budget: ReadBudget,
     ) -> StoreResult<ReadCounts> {
         let mut enrichment = Enrichment::new(athletes, Admission::bounded(budget))?;
-        self.for_each_observation_bounded(Table::SourceObservations, budget, |row, _| {
-            enrichment.accept(&row)
-        })
+        let result =
+            self.for_each_observation_bounded(Table::SourceObservations, budget, |row, _| {
+                enrichment.accept(&row)
+            });
+        if result.is_err() {
+            enrichment.rollback();
+        }
+        result
     }
 }
 
@@ -40,9 +55,13 @@ pub(crate) fn enrich_retained_observations(
     budget: ReadBudget,
 ) -> StoreResult<()> {
     let mut enrichment = Enrichment::new(athletes, Admission::bounded(budget))?;
-    observations
+    let result = observations
         .iter()
-        .try_for_each(|row| enrichment.accept(row))
+        .try_for_each(|row| enrichment.accept(row));
+    if result.is_err() {
+        enrichment.rollback();
+    }
+    result
 }
 
 impl<'a> Enrichment<'a> {
@@ -58,9 +77,23 @@ impl<'a> Enrichment<'a> {
             by_id.try_reserve(1).map_err(allocation)?;
             let targets = by_id.entry(source.id.as_str()).or_default();
             targets.try_reserve(1).map_err(allocation)?;
-            targets.push(&mut athlete.observed_grades);
+            let initial_len = athlete.observed_grades.len();
+            targets.push(TargetEntry {
+                grades: &mut athlete.observed_grades,
+                initial_len,
+            });
         }
         Ok(Self { owners, admission })
+    }
+
+    fn rollback(&mut self) {
+        for namespace in self.owners.values_mut() {
+            for targets in namespace.values_mut() {
+                for target in targets {
+                    target.grades.truncate(target.initial_len);
+                }
+            }
+        }
     }
 
     fn accept(&mut self, row: &SourceObservation) -> StoreResult<()> {
@@ -79,19 +112,21 @@ impl<'a> Enrichment<'a> {
         };
         let count = targets
             .iter()
-            .filter(|grades| !grades.contains(grade))
+            .filter(|target| !target.grades.contains(grade))
             .count();
         self.admission.additions(grade, count)?;
         targets
             .iter_mut()
-            .filter(|grades| !grades.contains(grade))
-            .try_for_each(|grades| grades.try_reserve(1).map_err(allocation))?;
-        let mut unmatched = targets.iter_mut().filter(|grades| !grades.contains(grade));
+            .filter(|target| !target.grades.contains(grade))
+            .try_for_each(|target| target.grades.try_reserve(1).map_err(allocation))?;
+        let mut unmatched = targets
+            .iter_mut()
+            .filter(|target| !target.grades.contains(grade));
         if let Some(first) = unmatched.next() {
-            for grades in unmatched {
-                grades.push(grade.clone());
+            for target in unmatched {
+                target.grades.push(grade.clone());
             }
-            first.push(grade.clone());
+            first.grades.push(grade.clone());
         }
         Ok(())
     }

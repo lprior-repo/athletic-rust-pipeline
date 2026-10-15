@@ -61,16 +61,7 @@ impl JurisdictionCensus {
                             .map_err(|error| {
                                 jobs::invariant(&format!("capture worker admission: {error}"))
                             })?;
-                        match outcome {
-                            crate::outcome::Outcome::Ok(value) => Ok(value),
-                            crate::outcome::Outcome::Err(error) => Err(error),
-                            crate::outcome::Outcome::Panicked => {
-                                Err(jobs::invariant("capture results worker panicked"))
-                            }
-                            crate::outcome::Outcome::Cancelled => {
-                                Err(jobs::invariant("capture results worker cancelled"))
-                            }
-                        }
+                        worker_outcome(outcome)
                     }
                 }
             })
@@ -89,6 +80,12 @@ async fn legacy_results_work(
         .dedicated((), job)
         .await
         .map_err(|error| jobs::invariant(&format!("capture worker admission: {error}")))?;
+    worker_outcome(outcome)
+}
+
+fn worker_outcome(
+    outcome: crate::outcome::Outcome<Json<ResultsStageOutcome>, HandlerError>,
+) -> Result<Json<ResultsStageOutcome>, HandlerError> {
     match outcome {
         crate::outcome::Outcome::Ok(value) => Ok(value),
         crate::outcome::Outcome::Err(error) => Err(error),

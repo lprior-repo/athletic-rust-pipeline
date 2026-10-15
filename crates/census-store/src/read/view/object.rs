@@ -178,14 +178,23 @@ impl JournalRecords<'_, '_> {
                     .path()
                     .refusal("record range leaves the pinned chunks")
             })?;
-            let take = available.len().min(range.length - bytes.len());
+            let remaining = range
+                .length
+                .checked_sub(bytes.len())
+                .ok_or(StoreError::CounterOverflow)?;
+            let take = available.len().min(remaining);
             if take == 0 {
                 return Err(self
                     .object
                     .path()
                     .refusal("record range leaves the pinned chunks"));
             }
-            bytes.extend_from_slice(&available[..take]);
+            let segment = available.get(..take).ok_or_else(|| {
+                self.object
+                    .path()
+                    .refusal("record range leaves the pinned chunks")
+            })?;
+            bytes.extend_from_slice(segment);
             offset = offset
                 .checked_add(take)
                 .ok_or(StoreError::CounterOverflow)?;
@@ -218,10 +227,15 @@ impl Iterator for JournalRecords<'_, '_> {
         if self.failed || self.index >= self.object.record_count() {
             return None;
         }
-        let result = self.read_record();
-        match &result {
-            Ok(_) => self.index += 1,
-            Err(_) => self.failed = true,
+        let result = self.read_record().and_then(|record| {
+            self.index = self
+                .index
+                .checked_add(1)
+                .ok_or(StoreError::CounterOverflow)?;
+            Ok(record)
+        });
+        if result.is_err() {
+            self.failed = true;
         }
         Some(result)
     }

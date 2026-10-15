@@ -34,7 +34,7 @@ fn public_identity_enrichment_budget_refusal_discards_local_prefix_and_preserves
             .enrich_athletes_bounded(&mut local, authority_budget()),
     )?;
     assert_budget(error)?;
-    check!(eq; local.first().ok_or("local candidate disappeared")?.observed_grades, vec![grade]);
+    check!(eq; local, vec![pending.clone()]);
     check!(pending.observed_grades.is_empty());
     check!(eq; wide_state(&store)?, before);
     let error = refused(writer.establish_source_bound(

@@ -103,7 +103,10 @@ fn inspect(
             if field(header, row, "performance_availability")?
                 == "no_eligible_selected_mark_in_snapshot"
             {
-                flags.identity_only += 1;
+                flags.identity_only = flags
+                    .identity_only
+                    .checked_add(1)
+                    .context("identity_only overflow")?;
             }
         }
         "best_marks.csv" => {
@@ -114,10 +117,10 @@ fn inspect(
         }
         "identity_aliases.csv" => {
             if field(header, row, "original_id")? != field(header, row, "resolved_id")? {
-                flags.aliases += 1;
+                flags.aliases = flags.aliases.checked_add(1).context("aliases overflow")?;
             }
             if field(header, row, "publication_membership")? == "canonical_outside_publication" {
-                flags.outside += 1;
+                flags.outside = flags.outside.checked_add(1).context("outside overflow")?;
             }
         }
         "provenance.csv" => inspect_fact(header, row, manifest, flags)?,
@@ -141,12 +144,18 @@ fn inspect_fact(
         && field(header, row, "source_reference")? == "synthetic_memory_fixture"
     {
         let fact: serde_json::Value = serde_json::from_str(field(header, row, "retained_fact")?)?;
-        let note = fact["note"].as_str().context("synthetic note missing")?;
+        let note = fact
+            .get("note")
+            .and_then(serde_json::Value::as_str)
+            .context("synthetic note missing")?;
         ensure!(
             note.len() == manifest.config.evidence_bytes && note.bytes().all(|byte| byte == b'x')
         );
         ensure!(field(header, row, "observed_on")? == config::DAY);
-        flags.performance_facts += 1;
+        flags.performance_facts = flags
+            .performance_facts
+            .checked_add(1)
+            .context("performance_facts overflow")?;
     }
     Ok(())
 }
@@ -165,11 +174,16 @@ fn validate_counts(family: &str, rows: u64, flags: &Flags, manifest: &Manifest) 
                 && flags.outside == counts.outside,
             "alias/scope population mismatch"
         ),
-        "provenance.csv" => ensure!(
-            flags.performance_facts
-                == counts.performances * u64::from(manifest.config.evidence_width),
-            "performance evidence width mismatch"
-        ),
+        "provenance.csv" => {
+            let expected = counts
+                .performances
+                .checked_mul(u64::from(manifest.config.evidence_width))
+                .context("evidence width multiplication overflow")?;
+            ensure!(
+                flags.performance_facts == expected,
+                "performance evidence width mismatch"
+            );
+        }
         _ => {}
     }
     Ok(())

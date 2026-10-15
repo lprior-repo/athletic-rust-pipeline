@@ -70,6 +70,10 @@ impl Staging {
         if total > MAX_BYTES || self.files >= MAX_FILES {
             return Err(error("comparison staging budget exhausted"));
         }
+        let files = self
+            .files
+            .checked_add(1)
+            .ok_or_else(|| error("file count overflow"))?;
         let target = self.directory.join(self.files.to_string());
         let mut options = OpenOptions::new();
         options.write(true).create_new(true);
@@ -83,7 +87,7 @@ impl Staging {
             .map_err(|cause| io_error(&target, cause))?;
         copy_verified(source, &mut output, bytes, digest)?;
         self.bytes = total;
-        self.files += 1;
+        self.files = files;
         Ok(target)
     }
 }
@@ -124,7 +128,9 @@ fn copy_verified(path: &Path, output: &mut File, expected: u64, digest: &str) ->
         output
             .write_all(chunk)
             .map_err(|cause| io_error(path, cause))?;
-        remaining -= u64::try_from(read).map_err(|_| error("copy counter overflow"))?;
+        remaining = remaining
+            .checked_sub(u64::try_from(read).map_err(|_| error("copy counter overflow"))?)
+            .ok_or_else(|| error("copy counter underflow"))?;
     }
     let mut extra = [0_u8; 1];
     if input
@@ -155,17 +161,19 @@ mod tests {
             let path = stage.copy(&source, 7, &digest)?;
             std::fs::write(&source, b"changed").map_err(|cause| io_error(&source, cause))?;
             let bytes = std::fs::read(&path).map_err(|cause| io_error(&path, cause))?;
-            assert_eq!(bytes, b"example");
+            if bytes != b"example" {
+                return Err(error("staged bytes changed with the source"));
+            }
             Ok(path)
         })?;
-        assert!(!staged.exists());
+        check!(!staged.exists());
         let mut failed_directory = PathBuf::new();
         let outcome = Staging::run(|stage| {
             failed_directory = stage.directory.clone();
             stage.copy(&source, 7, &digest)
         });
-        assert!(outcome.is_err());
-        assert!(!failed_directory.exists());
+        check!(outcome.is_err());
+        check!(!failed_directory.exists());
         Ok(())
     }
 
@@ -176,10 +184,14 @@ mod tests {
         std::fs::write(&source, b"x")?;
         let digest = format!("{:x}", Sha256::digest(b"x"));
         Staging::run(|stage| {
-            assert!(stage.copy(&source, MAX_BYTES + 1, &digest).is_err());
+            if stage.copy(&source, MAX_BYTES + 1, &digest).is_ok() {
+                return Err(error("oversized staging entry was accepted"));
+            }
             stage.copy(&source, 1, &digest)?;
             stage.copy(&source, 1, &digest)?;
-            assert!(stage.copy(&source, 1, &digest).is_err());
+            if stage.copy(&source, 1, &digest).is_ok() {
+                return Err(error("staging entry count exceeded its limit"));
+            }
             Ok(())
         })?;
         Ok(())

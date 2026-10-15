@@ -73,7 +73,7 @@ pub(crate) fn subject(label: &str, source_id: &str) -> TestResult<CanonicalAthle
     let school = SchoolId::mint("sch", &["public-identity-fixture", label]);
     let mut athlete = CanonicalAthlete::new(
         &school,
-        &format!("Synthetic Runner {label}"),
+        format!("Synthetic Runner {label}"),
         GradYear::CO2027,
         Gender::Girls,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, source_id),

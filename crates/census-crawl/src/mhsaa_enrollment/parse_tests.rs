@@ -51,42 +51,36 @@ fn cells(school: &EnrollmentSchool) -> (u16, u32, &str, u32, u32, u16) {
 #[test]
 fn official_text_preserves_known_cells_and_every_published_ordinal() -> TestResult {
     let document = parse(OFFICIAL_TEXT)?;
-    assert_eq!(document.school_year(), SchoolYear::DEFAULT);
-    assert_eq!(document.physical_pages(), 40);
-    assert_eq!(document.schools().len(), 755);
+    check!(eq; document.school_year(), SchoolYear::DEFAULT);
+    check!(eq; document.physical_pages(), 40);
+    check!(eq; document.schools().len(), 755);
     let first = document.schools().first().ok_or("missing first school")?;
-    assert_eq!(cells(first), (1, 5792, "East Kentwood", 3042, 3042, 1));
+    check!(eq; cells(first), (1, 5792, "East Kentwood", 3042, 3042, 1));
     let central = document
         .schools()
         .iter()
         .find(|school| school.mhsaa_id() == 4638)
         .ok_or("missing Detroit Catholic Central")?;
-    assert_eq!(
-        cells(central),
-        (15, 4638, "Detroit Catholic Central", 1046, 2092, 1)
-    );
+    check!(eq; cells(central),
+    (15, 4638, "Detroit Catholic Central", 1046, 2092, 1));
     let last = document.schools().last().ok_or("missing last school")?;
-    assert_eq!(
-        cells(last),
-        (755, 9962, "Wyoming West Michigan Lutheran", 11, 11, 20)
-    );
+    check!(eq; cells(last),
+    (755, 9962, "Wyoming West Michigan Lutheran", 11, 11, 20));
     let mut ids = BTreeSet::new();
     for (ordinal, school) in (1usize..=755).zip(document.schools()) {
-        assert_eq!(usize::from(school.ordinal()), ordinal);
-        assert!(
+        check!(eq; usize::from(school.ordinal()), ordinal);
+        check!(
             ids.insert(school.mhsaa_id()),
             "duplicate ID at ordinal {ordinal}"
         );
-        assert_eq!(
-            usize::from(school.page()),
-            ordinal
-                .checked_sub(1)
-                .ok_or("ordinal underflow")?
-                .checked_div(38)
-                .ok_or("invalid page divisor")?
-                .checked_add(1)
-                .ok_or("page overflow")?
-        );
+        check!(eq; usize::from(school.page()),
+        ordinal
+            .checked_sub(1)
+            .ok_or("ordinal underflow")?
+            .checked_div(38)
+            .ok_or("invalid page divisor")?
+            .checked_add(1)
+            .ok_or("page overflow")?);
     }
     Ok(())
 }
@@ -95,9 +89,9 @@ fn official_text_preserves_known_cells_and_every_published_ordinal() -> TestResu
 fn official_text_refuses_a_different_requested_year() -> TestResult {
     let expected = year(2025)?;
     let result = parse_enrollment_text(OFFICIAL_TEXT, expected);
-    assert!(
+    check!(
         matches!(result, Err(EnrollmentParseError::SchoolYear { expected: actual, found })
-        if actual == expected && found == SchoolYear::DEFAULT)
+    if actual == expected && found == SchoolYear::DEFAULT)
     );
     Ok(())
 }
@@ -110,12 +104,10 @@ fn physical_pages_preserve_contiguous_rows_and_page_numbers() -> TestResult {
         page("2026-27", "2 4638 Detroit Catholic Central 1046 2092\n")
     );
     let document = parse(&text)?;
-    assert_eq!(document.schools().len(), 2);
+    check!(eq; document.schools().len(), 2);
     let second = document.schools().get(1).ok_or("missing second school")?;
-    assert_eq!(
-        cells(second),
-        (2, 4638, "Detroit Catholic Central", 1046, 2092, 2)
-    );
+    check!(eq; cells(second),
+    (2, 4638, "Detroit Catholic Central", 1046, 2092, 2));
     Ok(())
 }
 
@@ -128,9 +120,9 @@ fn ordinal_gaps_repeats_and_reordering_are_refused() -> TestResult {
         ("1 10 One 1 1\n2 20 Two 1 1\n1 30 Reordered 1 1\n", 3, 1),
     ] {
         let error = refusal(&page("2026-27", body))?;
-        assert!(
+        check!(
             matches!(error, EnrollmentParseError::Ordinal { expected: actual, found: ordinal }
-            if actual == expected && ordinal == found),
+        if actual == expected && ordinal == found),
             "{body}"
         );
     }
@@ -144,7 +136,7 @@ fn duplicate_ids_are_refused_across_physical_pages() -> TestResult {
         page("2026-27", "1 5792 First 1 1\n"),
         page("2026-27", "2 5792 Second 2 2\n")
     );
-    assert!(matches!(
+    check!(matches!(
         refusal(&text)?,
         EnrollmentParseError::DuplicateSchool { id: 5792 }
     ));
@@ -153,7 +145,7 @@ fn duplicate_ids_are_refused_across_physical_pages() -> TestResult {
 
 #[test]
 fn declared_table_without_rows_is_not_a_zero_school_document() -> TestResult {
-    assert!(matches!(
+    check!(matches!(
         refusal(&page("2026-27", ""))?,
         EnrollmentParseError::NoSchools
     ));

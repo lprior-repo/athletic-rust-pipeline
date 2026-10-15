@@ -1,6 +1,6 @@
 use super::config::{self, Config, Counts, Manifest, Shape, VERSION};
 use super::fixture_rows::{self, Owners};
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Context, Result};
 use census_domain::model::{CanonicalAthlete, CanonicalPerformance};
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -16,7 +16,7 @@ pub fn generate(root: &Path, config: Config) -> Result<()> {
         mixed(&store, &owners, &config)?;
     }
     store.flush()?;
-    let counts = Counts::of(&config);
+    let counts = Counts::of(&config)?;
     ensure!(store.walk_table(Table::Athletes)?.rows == counts.stored_athletes);
     ensure!(store.walk_table(Table::Performances)?.rows == counts.performances);
     let tables_sha256 = store.snapshot().tables_digest(&Table::ALL)?;
@@ -86,7 +86,10 @@ fn mixed(store: &Store, owners: &Owners, config: &Config) -> Result<()> {
     let foreign = fixture_rows::athlete(
         &outside,
         config,
-        config.athletes + 1,
+        config
+            .athletes
+            .checked_add(1)
+            .context("foreign athlete index overflow")?,
         "Synthetic Outside Scope".into(),
     )?;
     store.append(Table::Athletes, &foreign)?;

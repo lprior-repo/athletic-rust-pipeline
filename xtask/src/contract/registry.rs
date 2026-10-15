@@ -114,7 +114,7 @@ pub(super) fn admissions() -> Result<Check> {
     Ok(Check::violated(5, NAME, detail, failures))
 }
 
-const NON_ADAPTERS: [(&str, &str); 23] = [
+const NON_ADAPTERS: [(&str, &str); 24] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
@@ -133,6 +133,10 @@ const NON_ADAPTERS: [(&str, &str); 23] = [
         "the Google geocoder and USPS address validator the corpus verb reaches when the operator supplies credentials: typed clients of external APIs, with no source origin to admit",
     ),
     ("hytek", "parses Hy-Tek Meet Manager result files"),
+    (
+        "mhsaa_enrollment",
+        "parses retained official enrollment text; acquisition and origin admission belong to the owning MHSAA producer",
+    ),
     (
         "private_assoc",
         "reads association membership listings the operator supplies: no capture exists for the association hosts, so it has no descriptor and is reachable only through the corpus verb",

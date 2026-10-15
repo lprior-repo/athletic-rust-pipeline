@@ -22,7 +22,16 @@ struct Capture {
     metadata: PathBuf,
 }
 
-pub fn prepare(root: &Path, input: &Path) -> Result<Value> {
+struct ValidatedCaptures {
+    input: Input,
+    index: Vec<u8>,
+    index_meta: Value,
+    roster_bytes: Vec<u8>,
+    roster_meta: Value,
+    rows: Vec<Value>,
+}
+
+fn validate(input: &Path) -> Result<ValidatedCaptures> {
     let input: Input = serde_json::from_slice(&artifacts::read(input)?)?;
     let jurisdiction =
         UsJurisdiction::from_code(&input.jurisdiction).context("unknown jurisdiction")?;
@@ -56,6 +65,25 @@ pub fn prepare(root: &Path, input: &Path) -> Result<Value> {
         !rows.is_empty() && rows.len() <= 100,
         "require 1..100 genuine Class-of-2027 rows"
     );
+    Ok(ValidatedCaptures {
+        input,
+        index,
+        index_meta,
+        roster_bytes,
+        roster_meta,
+        rows,
+    })
+}
+
+pub fn prepare(root: &Path, input: &Path) -> Result<Value> {
+    let ValidatedCaptures {
+        input,
+        index,
+        index_meta,
+        roster_bytes,
+        roster_meta,
+        rows,
+    } = validate(input)?;
     let payload = json!({"table":"athletes", "rows":rows, "operation_id":"vm_fixture_replay_2026_r1:athletes:0", "cursor":input.team_id});
     [("index.body", index), ("roster.body", roster_bytes)]
         .into_iter()
@@ -66,6 +94,39 @@ pub fn prepare(root: &Path, input: &Path) -> Result<Value> {
     Ok(
         json!({"request":payload, "captures":[index_meta,roster_meta], "season":2026, "cohort":2027, "revision":1, "fresh_public_acquisition":false, "transport":"SSH fixture replay", "date_semantics":"immutable supplied source capture dates; not replay installation time"}),
     )
+}
+
+pub(super) fn verify(path: &Path) -> Result<Value> {
+    let captures = validate(path)?;
+    for (label, metadata) in [
+        ("index", &captures.index_meta),
+        ("roster", &captures.roster_meta),
+    ] {
+        ensure!(
+            metadata.get("from_cache").and_then(Value::as_bool) == Some(false),
+            "{label} metadata does not declare an uncached acquisition"
+        );
+        ensure!(
+            metadata
+                .get("content_type")
+                .and_then(Value::as_str)
+                .is_some(),
+            "{label} content_type absent"
+        );
+    }
+    Ok(json!({
+        "manifest": std::fs::canonicalize(path)?.display().to_string(),
+        "jurisdiction": captures.input.jurisdiction,
+        "team_id": captures.input.team_id,
+        "index_bytes": captures.index.len(),
+        "roster_bytes": captures.roster_bytes.len(),
+        "class2027_rows": captures.rows.len(),
+        "well_formed_and_bound": true,
+        "live_claimed_by_metadata": true,
+        "liveness_unwitnessed_pre_boot": [
+            "network-refresh", "guest-midnight-bookends", "journal-readback"
+        ]
+    }))
 }
 
 fn cohort_rows(

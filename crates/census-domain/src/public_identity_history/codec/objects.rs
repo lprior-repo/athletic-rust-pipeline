@@ -1,127 +1,159 @@
-use std::fmt;
-
-use serde::de::{Error, MapAccess, Visitor};
+use serde::de::{Error, MapAccess};
 use serde::{Deserialize, Deserializer};
 
-use super::super::{
-    BindingClaim, BindingPartition, CandidateDecisionReference, HistoryRecord, RegistryHead,
-    RevocationRequest, SourceObjectKey, SplitRequest,
-};
-use super::atoms::{
-    CandidateNode, DigestNode, EvidenceDigestNode, EvidenceKindNode, InstallationNode, NumberNode,
-    OptionalTextNode, PublicIdNode, TextNode, VersionNode,
-};
-use super::containers::{Affected, ListNode, Members, Meter, Node, NodeSeed, RecordNode};
-use super::namespace::NamespaceNode;
-use super::requests::{RequestNode, ScopeNode};
+use crate::model::StoreIdentity;
 
-macro_rules! object_node {
-    ($node:ident, $fields:ident => $($target:ident)::+ {
-        $($variant:ident => $field:ident : $child:ty),+ $(,)?
-    }) => {
-        #[derive(Deserialize)]
-        #[serde(field_identifier, rename_all = "snake_case")]
-        enum $fields { $($variant),+ }
-
-        impl Node for $node {
-            type Value = $($target)::+;
-
-            fn decode<'de, D: Deserializer<'de>>(
-                meter: &mut Meter,
-                deserializer: D,
-            ) -> Result<Self::Value, D::Error> {
-                deserializer.deserialize_map(NodeSeed::<Self>::new(meter))
-            }
-        }
-
-        impl<'de> Visitor<'de> for NodeSeed<'_, $node> {
-            type Value = $($target)::+;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter.write_str("a complete history object without unknown or duplicate fields")
-            }
-
-            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
-                $(let mut $field = None;)+
-                while let Some(field) = map.next_key::<$fields>()? {
-                    match field {
-                        $($fields::$variant => {
-                            if $field.is_some() {
-                                return Err(A::Error::duplicate_field(stringify!($field)));
-                            }
-                            $field = Some(map.next_value_seed(NodeSeed::<$child>::new(self.meter))?);
-                        })+
-                    }
-                }
-                Ok($($target)::+ {
-                    $($field: $field.ok_or_else(|| A::Error::missing_field(stringify!($field)))?),+
-                })
-            }
-        }
-    };
-}
-
-pub(super) use object_node;
+use super::super::{HistoryRecord, HistoryRequest, RegistryHead};
+use super::atoms::{DigestNode, InstallationNode, NumberNode, VersionNode};
+use super::containers::{Meter, Node, NodeSeed, RecordNode};
+use super::object_decoder::{ObjectFields, ObjectSeed};
+use super::requests::RequestNode;
 
 pub(super) struct HeadNode;
-pub(super) struct EvidenceNode;
-pub(super) struct BindingNode;
-pub(super) struct SourceNode;
-pub(super) struct PartitionNode;
-pub(super) struct SplitNode;
-pub(super) struct RevocationNode;
 
-object_node!(RecordNode, RecordFields => HistoryRecord {
-    Version => version: VersionNode,
-    Installation => installation: InstallationNode,
-    Sequence => sequence: NumberNode,
-    Previous => previous: HeadNode,
-    Request => request: RequestNode,
-    Digest => digest: DigestNode,
-});
+#[derive(Deserialize)]
+#[serde(field_identifier, rename_all = "snake_case")]
+pub(super) enum RecordFields {
+    Version,
+    Installation,
+    Sequence,
+    Previous,
+    Request,
+    Digest,
+}
 
-object_node!(HeadNode, HeadFields => RegistryHead {
-    Sequence => sequence: NumberNode,
-    Digest => digest: DigestNode,
-});
+impl ObjectFields for RecordNode {
+    type Field = RecordFields;
+    type State = (
+        Option<u32>,
+        Option<StoreIdentity>,
+        Option<u64>,
+        Option<RegistryHead>,
+        Option<HistoryRequest>,
+        Option<String>,
+    );
+    const FIELD_COUNT: usize = 6;
 
-object_node!(EvidenceNode, EvidenceFields => CandidateDecisionReference {
-    ApplicationId => application_id: TextNode,
-    EvidenceDigest => evidence_digest: EvidenceDigestNode,
-    Kind => kind: EvidenceKindNode,
-    Members => members: ListNode<CandidateNode, Members>,
-});
+    fn read<'de, A: MapAccess<'de>>(
+        state: &mut Self::State,
+        meter: &mut Meter,
+        field: Self::Field,
+        map: &mut A,
+    ) -> Result<(), A::Error> {
+        match field {
+            RecordFields::Version => {
+                if state.0.is_some() {
+                    return Err(A::Error::duplicate_field("version"));
+                }
+                state.0 = Some(map.next_value_seed(NodeSeed::<VersionNode>::new(meter))?);
+            }
+            RecordFields::Installation => {
+                if state.1.is_some() {
+                    return Err(A::Error::duplicate_field("installation"));
+                }
+                state.1 = Some(map.next_value_seed(NodeSeed::<InstallationNode>::new(meter))?);
+            }
+            RecordFields::Sequence => {
+                if state.2.is_some() {
+                    return Err(A::Error::duplicate_field("sequence"));
+                }
+                state.2 = Some(map.next_value_seed(NodeSeed::<NumberNode>::new(meter))?);
+            }
+            RecordFields::Previous => {
+                if state.3.is_some() {
+                    return Err(A::Error::duplicate_field("previous"));
+                }
+                state.3 = Some(map.next_value_seed(NodeSeed::<HeadNode>::new(meter))?);
+            }
+            RecordFields::Request => {
+                if state.4.is_some() {
+                    return Err(A::Error::duplicate_field("request"));
+                }
+                state.4 = Some(map.next_value_seed(NodeSeed::<RequestNode>::new(meter))?);
+            }
+            RecordFields::Digest => {
+                if state.5.is_some() {
+                    return Err(A::Error::duplicate_field("digest"));
+                }
+                state.5 = Some(map.next_value_seed(NodeSeed::<DigestNode>::new(meter))?);
+            }
+        }
+        Ok(())
+    }
 
-object_node!(BindingNode, BindingFields => BindingClaim {
-    Id => id: TextNode,
-    Source => source: SourceNode,
-    Candidate => candidate: CandidateNode,
-    Effective => effective: ScopeNode,
-    Supersedes => supersedes: OptionalTextNode,
-});
+    fn build<E: Error>(state: Self::State) -> Result<Self::Value, E> {
+        Ok(HistoryRecord {
+            version: state.0.ok_or_else(|| E::missing_field("version"))?,
+            installation: state.1.ok_or_else(|| E::missing_field("installation"))?,
+            sequence: state.2.ok_or_else(|| E::missing_field("sequence"))?,
+            previous: state.3.ok_or_else(|| E::missing_field("previous"))?,
+            request: state.4.ok_or_else(|| E::missing_field("request"))?,
+            digest: state.5.ok_or_else(|| E::missing_field("digest"))?,
+        })
+    }
+}
 
-object_node!(SourceNode, SourceFields => SourceObjectKey {
-    Namespace => namespace: NamespaceNode,
-    Identifier => identifier: TextNode,
-});
+impl Node for RecordNode {
+    type Value = HistoryRecord;
 
-object_node!(PartitionNode, PartitionFields => BindingPartition {
-    BindingIds => binding_ids: ListNode<TextNode, Members>,
-    Representative => representative: CandidateNode,
-});
+    fn decode<'de, D: Deserializer<'de>>(
+        meter: &mut Meter,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_map(ObjectSeed::<Self>::new(meter))
+    }
+}
 
-object_node!(SplitNode, SplitFields => SplitRequest {
-    Canonical => canonical: PublicIdNode,
-    RevokeMerges => revoke_merges: ListNode<NumberNode, Members>,
-    Partitions => partitions: ListNode<PartitionNode, Members>,
-    UnresolvedBindings => unresolved_bindings: ListNode<TextNode, Members>,
-    AffectedRecordKeys => affected_record_keys: ListNode<TextNode, Affected>,
-    Evidence => evidence: EvidenceNode,
-});
+#[derive(Deserialize)]
+#[serde(field_identifier, rename_all = "snake_case")]
+pub(super) enum HeadFields {
+    Sequence,
+    Digest,
+}
 
-object_node!(RevocationNode, RevocationFields => RevocationRequest {
-    Canonical => canonical: PublicIdNode,
-    RevokeMerges => revoke_merges: ListNode<NumberNode, Members>,
-    AffectedRecordKeys => affected_record_keys: ListNode<TextNode, Affected>,
-    Evidence => evidence: EvidenceNode,
-});
+impl ObjectFields for HeadNode {
+    type Field = HeadFields;
+    type State = (Option<u64>, Option<String>);
+    const FIELD_COUNT: usize = 2;
+
+    fn read<'de, A: MapAccess<'de>>(
+        state: &mut Self::State,
+        meter: &mut Meter,
+        field: Self::Field,
+        map: &mut A,
+    ) -> Result<(), A::Error> {
+        match field {
+            HeadFields::Sequence => {
+                if state.0.is_some() {
+                    return Err(A::Error::duplicate_field("sequence"));
+                }
+                state.0 = Some(map.next_value_seed(NodeSeed::<NumberNode>::new(meter))?);
+            }
+            HeadFields::Digest => {
+                if state.1.is_some() {
+                    return Err(A::Error::duplicate_field("digest"));
+                }
+                state.1 = Some(map.next_value_seed(NodeSeed::<DigestNode>::new(meter))?);
+            }
+        }
+        Ok(())
+    }
+
+    fn build<E: Error>(state: Self::State) -> Result<Self::Value, E> {
+        Ok(RegistryHead {
+            sequence: state.0.ok_or_else(|| E::missing_field("sequence"))?,
+            digest: state.1.ok_or_else(|| E::missing_field("digest"))?,
+        })
+    }
+}
+
+impl Node for HeadNode {
+    type Value = RegistryHead;
+
+    fn decode<'de, D: Deserializer<'de>>(
+        meter: &mut Meter,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_map(ObjectSeed::<Self>::new(meter))
+    }
+}

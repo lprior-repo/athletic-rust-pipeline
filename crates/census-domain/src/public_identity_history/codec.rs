@@ -9,8 +9,12 @@ use super::{
 };
 
 mod atoms;
+mod claims;
 mod containers;
+mod corrections;
+mod membership;
 mod namespace;
+mod object_decoder;
 mod objects;
 mod requests;
 

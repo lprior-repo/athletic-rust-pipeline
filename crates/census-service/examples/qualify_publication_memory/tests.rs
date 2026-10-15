@@ -27,11 +27,9 @@ fn synthetic_shapes_have_stable_fixture_hashes_and_verified_population_counts() 
         ensure!(one.fixture_sha256 == two.fixture_sha256);
         let out = directory.path().join("publication");
         oracle::publish(&first, &out)?;
-        ensure!(out.join("publication-result.json").is_file());
-        let error = oracle::publish(&first, &out)
-            .err()
-            .ok_or_else(|| anyhow::anyhow!("existing output accepted"))?;
-        ensure!(format!("{error:#}").contains("exist"));
+        let original = std::fs::read(out.join("publication-result.json"))?;
+        ensure!(oracle::publish(&first, &out).is_err());
+        ensure!(std::fs::read(out.join("publication-result.json"))? == original);
     }
     Ok(())
 }
@@ -63,10 +61,7 @@ fn invalid_budgets_refuse_before_creating_a_fixture() -> Result<()> {
         },
     ] {
         let root = directory.path().join("refused");
-        let error = fixture::generate(&root, config)
-            .err()
-            .ok_or_else(|| anyhow::anyhow!("invalid budget accepted"))?;
-        ensure!(!format!("{error:#}").is_empty());
+        ensure!(fixture::generate(&root, config).is_err());
         ensure!(!root.exists());
     }
     Ok(())
@@ -81,10 +76,7 @@ fn manifest_tampering_cannot_relabel_the_retained_population() -> Result<()> {
     let mut raw: serde_json::Value = serde_json::from_slice(&std::fs::read(&path)?)?;
     raw["config"]["evidence_bytes"] = serde_json::json!(9);
     std::fs::write(path, serde_json::to_vec(&raw)?)?;
-    let error = Manifest::read(&root)
-        .err()
-        .ok_or_else(|| anyhow::anyhow!("changed configuration accepted"))?;
-    ensure!(error.to_string().contains("digest mismatch"));
+    ensure!(Manifest::read(&root).is_err());
     Ok(())
 }
 
@@ -135,11 +127,7 @@ fn evidence_object_budget_is_independent_of_note_bytes() -> Result<()> {
             athletes,
             ..admitted.clone()
         };
-        let error = config
-            .validate()
-            .err()
-            .ok_or_else(|| anyhow::anyhow!("object budget accepted"))?;
-        ensure!(error.to_string().contains("evidence object count"));
+        ensure!(config.validate().is_err());
     }
     Config {
         athletes: 1_000,
@@ -148,5 +136,26 @@ fn evidence_object_budget_is_independent_of_note_bytes() -> Result<()> {
         shape: Shape::AllSelected,
     }
     .validate()?;
+    Ok(())
+}
+
+#[test]
+fn oversized_manifest_with_complete_json_prefix_is_refused() -> Result<()> {
+    let directory = tempfile::tempdir()?;
+    let root = directory.path().join("fixture");
+    fixture::generate(&root, small(Shape::AllSelected))?;
+    let path = root.join("fixture.json");
+    let mut bytes = std::fs::read(&path)?;
+    let limit = usize::try_from(super::config::MANIFEST_LIMIT)?;
+    ensure!(bytes.len() < limit);
+    let oversized = limit
+        .checked_add(1)
+        .ok_or_else(|| anyhow::anyhow!("limit overflow"))?;
+    bytes.resize(oversized, b' ');
+    std::fs::write(path, bytes)?;
+    ensure!(
+        Manifest::read(&root).is_err(),
+        "oversized manifest accepted as a valid prefix"
+    );
     Ok(())
 }

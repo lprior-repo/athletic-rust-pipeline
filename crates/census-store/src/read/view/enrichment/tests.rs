@@ -117,6 +117,7 @@ fn bounded_enrichment_refuses_excess_source_rows_instead_of_returning_a_prefix()
         )?;
     }
     let mut rows = vec![athlete("1")?];
+    let original = rows.clone();
     let result = store.snapshot().enrich_athletes_bounded(
         &mut rows,
         ReadBudget {
@@ -132,8 +133,7 @@ fn bounded_enrichment_refuses_excess_source_rows_instead_of_returning_a_prefix()
             available: 1
         })
     ));
-    // Refusal can leave a local prefix; callers must discard the slice on error.
-    check!(eq; rows[0].observed_grades, vec![grade(11)?]);
+    check!(eq; rows, original);
     Ok(())
 }
 
@@ -148,6 +148,7 @@ fn duplicate_owners_share_an_aggregate_addition_row_ceiling() -> TestResult {
         )?;
     }
     let mut rows = vec![athlete("1")?; 2];
+    let original = rows.clone();
     let result = store.snapshot().enrich_athletes_bounded(
         &mut rows,
         ReadBudget {
@@ -163,10 +164,7 @@ fn duplicate_owners_share_an_aggregate_addition_row_ceiling() -> TestResult {
             available: 3
         })
     ));
-    let first = grade(11)?;
-    check!(rows
-        .iter()
-        .all(|row| row.observed_grades == vec![first.clone()]));
+    check!(eq; rows, original);
     let mut exact = vec![athlete("1")?; 2];
     store.snapshot().enrich_athletes_bounded(
         &mut exact,
@@ -175,7 +173,8 @@ fn duplicate_owners_share_an_aggregate_addition_row_ceiling() -> TestResult {
             ..budget()
         },
     )?;
-    check!(exact.iter().all(|row| row.observed_grades.len() == 2));
+    let expected = vec![grade(11)?, grade(10)?];
+    check!(exact.iter().all(|row| row.observed_grades == expected));
     Ok(())
 }
 
@@ -240,5 +239,64 @@ fn bounded_enrichment_honors_snapshot_and_refuses_owner_index_amplification() ->
             available: 1
         })
     ));
+    Ok(())
+}
+
+#[test]
+fn bounded_enrichment_preserves_preexisting_grades_on_late_budget_failure() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    for value in [10, 11] {
+        store.append(
+            Table::SourceObservations,
+            &observation(SourceNamespace::MilesplitAthlete, "1", grade(value)?),
+        )?;
+    }
+    let original = athlete("1")?;
+    let mut rows = vec![original.clone()];
+    rows[0].observed_grades.push(grade(9)?);
+    let result = store.snapshot().enrich_athletes_bounded(
+        &mut rows,
+        ReadBudget {
+            rows: 1,
+            ..budget()
+        },
+    );
+    check!(matches!(
+        result,
+        Err(StoreError::BudgetExceeded {
+            what: "capture physical rows",
+            ..
+        })
+    ));
+    check!(eq; rows[0].observed_grades, vec![grade(9)?]);
+    Ok(())
+}
+
+#[test]
+fn enrich_retained_observations_preserves_input_on_failure() -> TestResult {
+    use super::enrich_retained_observations;
+    let observations = vec![
+        observation(SourceNamespace::MilesplitAthlete, "1", grade(10)?),
+        observation(SourceNamespace::MilesplitAthlete, "1", grade(11)?),
+    ];
+    let original = athlete("1")?;
+    let mut rows = vec![original.clone()];
+    let result = enrich_retained_observations(
+        &mut rows,
+        &observations,
+        ReadBudget {
+            rows: 1,
+            ..budget()
+        },
+    );
+    check!(matches!(
+        result,
+        Err(StoreError::BudgetExceeded {
+            what: "enriched grade additions",
+            ..
+        })
+    ));
+    check!(eq; rows, vec![original]);
     Ok(())
 }

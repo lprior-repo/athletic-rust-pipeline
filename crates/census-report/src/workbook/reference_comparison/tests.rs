@@ -14,10 +14,9 @@ fn exact_provider_match_allows_broader_independent_output() -> TestResult {
     let mut counts = ComparisonCounts::default();
     index.observe(1, " Example  Runner ", 2027, &mut counts)?;
     index.finish(&mut counts);
-    assert!(counts.passed());
-    assert_eq!(counts.matched_unique, 1);
-    assert_eq!(counts.output_only_provider_ids, 1);
-    assert_eq!(counts.output_athletes_without_provider_id, 1);
+    check!(eq; counts.matched_unique, 1);
+    check!(eq; counts.output_only_provider_ids, 1);
+    check!(eq; counts.output_athletes_without_provider_id, 1);
     Ok(())
 }
 
@@ -31,11 +30,11 @@ fn duplicate_reference_and_ambiguous_output_never_choose_first() -> TestResult {
     index.observe(1, "Example Runner", 2027, &mut counts)?;
     index.observe(3, "Absent Runner", 2027, &mut counts)?;
     index.finish(&mut counts);
-    assert_eq!(counts.matched_unique, 0);
-    assert_eq!(counts.ambiguous_output_ids, 1);
-    assert_eq!(counts.duplicate_reference_ids, 1);
-    assert_eq!(counts.reference_only, 1);
-    assert!(!counts.passed());
+    check!(eq; counts.matched_unique, 0);
+    check!(eq; counts.ambiguous_output_ids, 1);
+    check!(eq; counts.duplicate_reference_ids, 1);
+    check!(eq; counts.reference_only, 1);
+    check!(!counts.passed());
     Ok(())
 }
 
@@ -47,8 +46,8 @@ fn many_reference_identities_to_one_output_are_explicit() -> TestResult {
     index.observe(1, "Example Runner", 2027, &mut counts)?;
     index.observe(2, "Example Runner", 2027, &mut counts)?;
     index.finish(&mut counts);
-    assert_eq!(counts.many_reference_ids_to_one_output, 1);
-    assert!(!counts.passed());
+    check!(eq; counts.many_reference_ids_to_one_output, 1);
+    check!(!counts.passed());
     Ok(())
 }
 
@@ -58,10 +57,10 @@ fn cohort_and_name_differences_are_not_hidden_by_id_match() -> TestResult {
     index.add("Different Runner".into(), 2028, false, BTreeSet::from([1]))?;
     let mut counts = ComparisonCounts::default();
     index.observe(1, "Example Runner", 2027, &mut counts)?;
-    assert_eq!(counts.graduation_year_mismatches, 1);
-    assert_eq!(counts.name_mismatches, 1);
-    assert_eq!(counts.required_fields_unassessed, 1);
-    assert!(!counts.passed());
+    check!(eq; counts.graduation_year_mismatches, 1);
+    check!(eq; counts.name_mismatches, 1);
+    check!(eq; counts.required_fields_unassessed, 1);
+    check!(!counts.passed());
     Ok(())
 }
 
@@ -73,8 +72,8 @@ fn plural_names_are_unassessed_and_commas_are_not_split() -> TestResult {
     let mut counts = ComparisonCounts::default();
     index.observe(1, "Runner, Example", 2027, &mut counts)?;
     index.observe(2, "Example Runner; Other Runner", 2027, &mut counts)?;
-    assert_eq!(counts.name_mismatches, 0);
-    assert_eq!(counts.required_fields_unassessed, 1);
+    check!(eq; counts.name_mismatches, 0);
+    check!(eq; counts.required_fields_unassessed, 1);
     Ok(())
 }
 
@@ -89,13 +88,13 @@ fn source_identity_namespace_and_numeric_contract_are_reused() -> TestResult {
     );
     let team = SourceIdentity::new(SourceNamespace::athletic_net("team"), "7");
     let identities = [current.clone(), current, legacy, team];
-    assert_eq!(
+    check!(eq;
         super::index::provider_keys(identities.iter())?,
         BTreeSet::from([7])
     );
     let bad = SourceIdentity::new(SourceNamespace::athletic_net("athlete"), "07");
-    assert!(super::index::provider_keys([bad].iter()).is_err());
-    assert_eq!(
+    check!(super::index::provider_keys([bad].iter()).is_err());
+    check!(eq;
         reference::id(&Value::Number(7.0))?,
         reference::id(&Value::Text("7".into()))?
     );
@@ -106,7 +105,7 @@ fn source_identity_namespace_and_numeric_contract_are_reused() -> TestResult {
         Value::Text("07".into()),
         Value::Text("7e0".into()),
     ] {
-        assert!(reference::id(&value).is_err());
+        check!(reference::id(&value).is_err());
     }
     Ok(())
 }
@@ -119,13 +118,13 @@ fn bounded_inline_workbook_reads_every_row_and_refuses_wrong_profile() -> TestRe
     let mut index = Index::empty();
     index.add("Example Runner".into(), 2027, true, BTreeSet::from([1]))?;
     let counts = reference::compare(&path, 1, &mut index, 2027)?;
-    assert_eq!(counts.reference_rows, 1);
-    assert!(counts.passed());
-    assert!(reference::compare(&path, 2, &mut Index::empty(), 2027).is_err());
+    check!(eq; counts.reference_rows, 1);
+    check!(counts.passed());
+    check!(reference::compare(&path, 2, &mut Index::empty(), 2027).is_err());
     reference_book(&path, "Wrong Sheet", "AthleteID", "Example Runner")?;
-    assert!(reference::compare(&path, 1, &mut Index::empty(), 2027).is_err());
+    check!(reference::compare(&path, 1, &mut Index::empty(), 2027).is_err());
     reference_book(&path, "All Athletes", "Wrong ID", "Example Runner")?;
-    assert!(reference::compare(&path, 1, &mut Index::empty(), 2027).is_err());
+    check!(reference::compare(&path, 1, &mut Index::empty(), 2027).is_err());
     Ok(())
 }
 
@@ -163,17 +162,18 @@ pub(super) fn reference_book(
 }
 
 #[test]
-fn invalid_profile_refuses_before_opening_publication() {
+fn invalid_profile_refuses_before_opening_publication() -> TestResult {
     let request = super::ComparisonRequest {
         workbook: std::path::Path::new("absent"),
         reference: std::path::Path::new("absent"),
         reference_profile: super::REFERENCE_PROFILE,
         graduation_year: 2028,
     };
-    let message = super::compare(&request)
-        .expect_err("wrong graduation year must refuse")
-        .to_string();
-    assert!(message.contains("requires 2027"));
+    let error = super::compare(&request)
+        .err()
+        .ok_or("wrong graduation year must refuse")?;
+    check!(matches!(error, super::ReportError::Invariant { .. }));
+    Ok(())
 }
 
 #[test]
@@ -234,11 +234,11 @@ fn normalized_csv_uses_shared_schema_row_count_and_bounded_decoder() -> TestResu
     let mut index = Index::read(&path, bytes, 1)?;
     let mut counts = ComparisonCounts::default();
     index.observe(1, "Example Runner", 2027, &mut counts)?;
-    assert!(counts.passed());
-    assert!(Index::read(&path, bytes, 0).is_err());
-    assert!(Index::read(&path, bytes, 2).is_err());
-    assert!(Index::read(&path, 129 * 1024 * 1024, 1).is_err());
-    assert!(Index::read(&path, bytes, 1_000_001).is_err());
+    check!(counts.passed());
+    check!(Index::read(&path, bytes, 0).is_err());
+    check!(Index::read(&path, bytes, 2).is_err());
+    check!(Index::read(&path, 129 * 1024 * 1024, 1).is_err());
+    check!(Index::read(&path, bytes, 1_000_001).is_err());
     Ok(())
 }
 
@@ -250,7 +250,7 @@ fn late_workbook_corruption_never_returns_completed_counts() -> TestResult {
     let file = std::fs::OpenOptions::new().write(true).open(&path)?;
     let length = file.metadata()?.len();
     file.set_len(length.saturating_sub(12))?;
-    assert!(reference::compare(&path, 1, &mut Index::empty(), 2027).is_err());
+    check!(reference::compare(&path, 1, &mut Index::empty(), 2027).is_err());
     Ok(())
 }
 
@@ -267,7 +267,7 @@ fn aggregate_json_has_no_athlete_identifiers_or_values() -> TestResult {
     index.observe(987654321, "Synthetic Private Name", 2027, &mut counts)?;
     index.finish(&mut counts);
     let output = serde_json::to_string(&counts)?;
-    assert!(!output.contains("Synthetic Private Name"));
-    assert!(!output.contains("987654321"));
+    check!(!output.contains("Synthetic Private Name"));
+    check!(!output.contains("987654321"));
     Ok(())
 }

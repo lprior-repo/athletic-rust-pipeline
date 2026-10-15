@@ -27,4 +27,7 @@ pub use selection::{select_candidates, CandidateQuery, DeclaredFrozenView};
 pub use temporal::{CalendarCandidate, SportScope, TemporalGap, TemporalScope};
 
 #[cfg(test)]
+mod fixture;
+
+#[cfg(test)]
 mod tests;

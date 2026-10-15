@@ -45,7 +45,10 @@ impl Config {
             "evidence bytes outside 1..=16384"
         );
         ensure!(
-            u64::from(self.evidence_width) * u64::try_from(self.evidence_bytes)? <= 512 * 1024,
+            u64::from(self.evidence_width)
+                .checked_mul(u64::try_from(self.evidence_bytes)?)
+                .context("evidence note payload overflow")?
+                <= 512 * 1024,
             "evidence note payload exceeds 512 KiB per record"
         );
         let objects = self.evidence_objects()?;
@@ -68,12 +71,16 @@ impl Config {
     }
 
     fn evidence_objects(&self) -> Result<u64> {
-        let counts = Counts::of(self);
+        let counts = Counts::of(self)?;
+        let additional = match self.shape {
+            Shape::AllSelected => 1_u64,
+            Shape::Mixed => 2_u64,
+        };
         counts
             .stored_athletes
             .checked_add(counts.performances)
             .and_then(|n| n.checked_mul(u64::from(self.evidence_width)))
-            .and_then(|n| n.checked_add(1 + u64::from(self.shape == Shape::Mixed)))
+            .and_then(|n| n.checked_add(additional))
             .context("fixture evidence object count overflow")
     }
 }
@@ -91,17 +98,24 @@ pub struct Counts {
 }
 
 impl Counts {
-    pub fn of(config: &Config) -> Self {
+    pub fn of(config: &Config) -> Result<Self> {
         let mixed = u64::from(config.shape == Shape::Mixed);
-        Self {
-            stored_athletes: config.athletes + 3 * mixed,
-            selected_athletes: config.athletes + mixed,
+        Ok(Self {
+            stored_athletes: 3u64
+                .checked_mul(mixed)
+                .context("stored athletes overflow")?
+                .checked_add(config.athletes)
+                .context("stored athletes add overflow")?,
+            selected_athletes: config
+                .athletes
+                .checked_add(mixed)
+                .context("selected athletes overflow")?,
             performances: config.athletes,
             selected_bests: config.athletes,
             aliases: mixed,
             outside: mixed,
             identity_only: mixed,
-        }
+        })
     }
 }
 
@@ -144,7 +158,7 @@ impl Manifest {
             "unsupported/non-synthetic fixture"
         );
         ensure!(
-            manifest.counts == Counts::of(&manifest.config),
+            manifest.counts == Counts::of(&manifest.config)?,
             "fixture count contract mismatch"
         );
         ensure!(
@@ -160,9 +174,10 @@ impl Manifest {
 }
 
 pub fn bounded_read(path: &Path, max: u64) -> Result<Vec<u8>> {
+    let probe = max.checked_add(1).context("bounded read limit overflow")?;
     let mut bytes = Vec::new();
     std::fs::File::open(path)?
-        .take(max + 1)
+        .take(probe)
         .read_to_end(&mut bytes)?;
     ensure!(
         u64::try_from(bytes.len())? <= max,

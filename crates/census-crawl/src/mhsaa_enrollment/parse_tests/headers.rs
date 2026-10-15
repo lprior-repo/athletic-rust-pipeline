@@ -18,7 +18,7 @@ fn exact_official_title_requires_adjacent_valid_academic_end_year() -> TestResul
         "2026-27 Unofficial Enrollment List",
     ] {
         let text = format!("{title}\n{COLUMNS}1 10 School 1 1\n");
-        assert!(
+        check!(
             matches!(refusal(&text)?, EnrollmentParseError::MissingHeader),
             "{title}"
         );
@@ -36,8 +36,8 @@ fn year_boundaries_and_century_rollovers_preserve_declared_year() -> TestResult 
     ] {
         let expected = year(start)?;
         let document = parse_enrollment_text(&page(academic, "1 10 School 1 1\n"), expected)?;
-        assert_eq!(document.school_year(), expected);
-        assert_eq!(document.schools().len(), 1);
+        check!(eq; document.school_year(), expected);
+        check!(eq; document.schools().len(), 1);
     }
     Ok(())
 }
@@ -46,18 +46,18 @@ fn year_boundaries_and_century_rollovers_preserve_declared_year() -> TestResult 
 fn every_page_requires_its_own_matching_title_and_table_headers() -> TestResult {
     let first = page("2026-27", "1 10 First 1 1\n");
     let wrong = format!("{first}\u{000c}{}", page("2025-26", "2 20 Second 2 2\n"));
-    assert!(
+    check!(
         matches!(refusal(&wrong)?, EnrollmentParseError::SchoolYear { expected, found }
-        if expected == year(2026)? && found == year(2025)?)
+    if expected == year(2026)? && found == year(2025)?)
     );
     let missing = format!("{first}\u{000c}{COLUMNS}2 20 Second 2 2\n");
-    assert!(matches!(
+    check!(matches!(
         refusal(&missing)?,
         EnrollmentParseError::MissingHeader
     ));
     let missing_columns =
         format!("{first}\u{000c}2026-27 MHSAA Enrollment List\n2 20 Second 2 2\n");
-    assert!(matches!(
+    check!(matches!(
         refusal(&missing_columns)?,
         EnrollmentParseError::Layout { page: 2 }
     ));
@@ -77,7 +77,7 @@ fn missing_reordered_and_truncated_column_layouts_are_refused() -> TestResult {
         "Enrollment Enrollment\n1 10 School 1 1\nID School Total Classification\n",
     ] {
         let text = format!("2026-27 MHSAA Enrollment List\n{layout}1 10 School 1 1\n");
-        assert!(
+        check!(
             matches!(refusal(&text)?, EnrollmentParseError::Layout { page: 1 }),
             "{layout}"
         );
@@ -88,7 +88,7 @@ fn missing_reordered_and_truncated_column_layouts_are_refused() -> TestResult {
 #[test]
 fn absent_or_empty_physical_page_is_not_silently_discarded() -> TestResult {
     for text in ["", "\n\t\n", "arbitrary text\n1 10 School 1 1\n"] {
-        assert!(matches!(
+        check!(matches!(
             refusal(text)?,
             EnrollmentParseError::MissingHeader
         ));
@@ -98,7 +98,7 @@ fn absent_or_empty_physical_page_is_not_silently_discarded() -> TestResult {
         page("2026-27", "1 10 School 1 1\n"),
         page("2026-27", "2 20 School 1 1\n")
     );
-    assert!(matches!(
+    check!(matches!(
         refusal(&text)?,
         EnrollmentParseError::MissingHeader
     ));
@@ -112,15 +112,13 @@ fn recognized_official_preamble_and_crlf_preserve_school_rows() -> TestResult {
         Class A 783 and above\r\nClass B 782 – 358\r\nClass C 357– 167\r\nClass D 166 and below\r\n\
         Enrollment Enrollment\r\nID School Total Classification\r\n1 10 School 1 2\r\n";
     let document = parse(text)?;
-    assert_eq!(document.schools().len(), 1);
+    check!(eq; document.schools().len(), 1);
     let school = document.schools().first().ok_or("missing school")?;
-    assert_eq!(
-        (
-            school.total_enrollment(),
-            school.classification_enrollment()
-        ),
-        (1, 2)
-    );
+    check!(eq; (
+        school.total_enrollment(),
+        school.classification_enrollment()
+    ),
+    (1, 2));
     Ok(())
 }
 
@@ -129,7 +127,7 @@ fn unknown_preamble_and_repeated_headers_cannot_hide_rows() -> TestResult {
     let unknown = format!(
         "2026-27 MHSAA Enrollment List\nunknown 1 10 School 1 1\n{COLUMNS}1 10 School 1 1\n"
     );
-    assert!(matches!(
+    check!(matches!(
         refusal(&unknown)?,
         EnrollmentParseError::Layout { page: 1 }
     ));
@@ -137,7 +135,7 @@ fn unknown_preamble_and_repeated_headers_cannot_hide_rows() -> TestResult {
         "2026-27",
         "1 10 First 1 1\nID School Total Classification\n2 20 Second 2 2\n",
     );
-    assert!(matches!(
+    check!(matches!(
         refusal(&repeated)?,
         EnrollmentParseError::Row {
             page: 1,

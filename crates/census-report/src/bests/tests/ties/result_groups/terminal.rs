@@ -24,7 +24,7 @@ fn ordinary_terminal_replay_with_numeric_same_id_uses_only_the_clean_distinct_id
                 check!(eq; selected.source.performance_id, clean.performance.id);
                 check!(eq; selected.inventory.eligible_group_count(), 1);
                 check!(eq; selected.inventory.tied_group_count(), 1);
-                check!(eq; selected.supporting_tied_candidate_ids(), &[clean.performance.id.clone()]);
+                check!(eq; selected.supporting_tied_candidate_ids(), std::slice::from_ref(&clean.performance.id));
                 dataset.performances.reverse();
             }
         }

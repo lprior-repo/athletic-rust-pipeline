@@ -222,18 +222,19 @@ fn validate_witnesses(
 }
 
 fn validate_keys(snapshot: &Snapshot, meta: &Keyspace) -> StoreResult<()> {
-    let count = snapshot
-        .prefix(meta, "public_identity")
-        .take(4)
-        .try_fold(0, |count, guard| {
-            let key = guard.key().map_err(|source| StoreError::Read { source })?;
-            if ![DECLARATION.as_bytes(), HEAD.as_bytes(), HISTORY.as_bytes()]
-                .contains(&key.as_ref())
-            {
-                return Err(PublicIdentityError::Corrupt("unknown qualification key").into());
-            }
-            Ok::<usize, StoreError>(count + 1)
-        })?;
+    let count =
+        snapshot
+            .prefix(meta, "public_identity")
+            .take(4)
+            .try_fold(0_usize, |count, guard| {
+                let key = guard.key().map_err(|source| StoreError::Read { source })?;
+                if ![DECLARATION.as_bytes(), HEAD.as_bytes(), HISTORY.as_bytes()]
+                    .contains(&key.as_ref())
+                {
+                    return Err(PublicIdentityError::Corrupt("unknown qualification key").into());
+                }
+                count.checked_add(1).ok_or(StoreError::CounterOverflow)
+            })?;
     if count != 3 {
         return Err(PublicIdentityError::Corrupt("qualification metadata cardinality").into());
     }

@@ -66,13 +66,7 @@ fn row(
     performances: &super::PerformanceIndex<'_>,
 ) -> ReportResult<Vec<String>> {
     let dataset = derivation.dataset();
-    let performance = performances
-        .get(&best.source.performance_id)
-        .copied()
-        .ok_or(super::defect(format!(
-            "missing selected performance {}",
-            best.source.performance_id
-        )))?;
+    let performance = selected_performance(best, performances)?;
     let school = dataset
         .teams
         .get(&performance.team)
@@ -124,6 +118,21 @@ fn row(
         fields.extend(["canonical_performance_id".into(), "unknown".into()]);
     }
     Ok(fields)
+}
+
+fn selected_performance<'a>(
+    best: &SharedSelection,
+    performances: &super::PerformanceIndex<'a>,
+) -> ReportResult<&'a census_domain::model::CanonicalPerformance> {
+    performances
+        .get(&best.source.performance_id)
+        .copied()
+        .ok_or_else(|| {
+            super::defect(format!(
+                "missing selected performance {}",
+                best.source.performance_id
+            ))
+        })
 }
 
 fn header(policy: census_domain::model::EventSemantics) -> Vec<&'static str> {

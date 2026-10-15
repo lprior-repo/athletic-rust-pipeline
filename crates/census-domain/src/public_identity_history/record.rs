@@ -2,7 +2,8 @@ use crate::model::{serialized_digest, StoreIdentity};
 use serde::Serialize;
 
 use super::{
-    budget, EstablishmentOrdinal, HistoryError, HistoryRequest, PublicAthleteId, ReplayLimits,
+    budget, request_order, EstablishmentOrdinal, HistoryError, HistoryRequest, PublicAthleteId,
+    ReplayLimits,
 };
 
 pub const HISTORY_VERSION: u32 = 1;
@@ -51,7 +52,7 @@ pub fn prepare_next(
         .sequence
         .checked_add(1)
         .ok_or(HistoryError::CounterOverflow)?;
-    let request = budget::normalize(request)?;
+    let request = request_order::normalize(request)?;
     let record = HistoryRecord {
         version: HISTORY_VERSION,
         installation: installation.clone(),

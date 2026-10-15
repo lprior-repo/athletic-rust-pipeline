@@ -15,6 +15,7 @@ mod process;
 mod qmp;
 mod record;
 mod transport;
+mod verify;
 
 #[derive(Parser)]
 struct Cli {
@@ -32,6 +33,7 @@ enum Mode {
         action: String,
     },
     Record(record::Args),
+    Verify(verify::Args),
 }
 
 #[derive(clap::Args)]
@@ -64,6 +66,7 @@ pub fn run() -> Result<()> {
         Mode::GuestInit => guest::initialize(),
         Mode::GuestSupervise => guest::supervise(),
         Mode::Record(args) => record::run(args),
+        Mode::Verify(args) => verify::run(args),
         Mode::GuestAction { action } => {
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()

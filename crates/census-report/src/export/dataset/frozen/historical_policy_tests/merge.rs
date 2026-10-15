@@ -51,7 +51,7 @@ fn install_prior_policy(
     state: Option<InputState>,
 ) -> TestResult<Retained> {
     let encoded = serialized_bytes(manifest)?;
-    if matches!(manifest.lineage.policy_revision, 18 | 19 | 20) {
+    if matches!(manifest.lineage.policy_revision, 18..=20) {
         check!(eq; FrozenManifest::decode(&encoded)?, *manifest);
     } else {
         let expected = format!("policy revision {}", manifest.lineage.policy_revision);
@@ -96,7 +96,7 @@ fn refused_prior_cancellation(store: &Store, job: &str, policy: u32) -> TestResu
 }
 
 fn check_refusal<T>(result: Result<T, ReportError>, policy: u32) -> TestResult {
-    if matches!(policy, 18 | 19 | 20) {
+    if matches!(policy, 18..=20) {
         check!(matches!(
             result,
             Err(ReportError::Invariant { ref detail })
@@ -267,7 +267,7 @@ fn historical_full_coverage_archives_are_preserved_without_rewriting_their_bytes
 }
 
 fn check_archive(path: &Path, store: &Store, policy: u32, retained: &[u8]) -> TestResult {
-    if matches!(policy, 18 | 19 | 20) {
+    if matches!(policy, 18..=20) {
         let dataset = ExportDataset::reopen_frozen(path)?;
         check!(eq; dataset.lineage.policy_revision, policy);
         check!(eq; dataset.relays.len(), 1);

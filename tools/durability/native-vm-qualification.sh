@@ -37,6 +37,10 @@ native_vm_inputs() {
         native_vm_file "$path" 33554432
         INPUT_FILES+=("$path")
     done
+    VERIFY_BIN="${VERIFY_BINARY:-${CENSUS_NATIVE_VM_VERIFY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm}}"
+    [[ -x "$VERIFY_BIN" ]] || native_vm_fail "verify binary missing at $VERIFY_BIN; build the feature qualification_native_vm example"
+    "$VERIFY_BIN" verify --manifest "$CAPTURES" || native_vm_fail "guest capture provenance refused: $CAPTURES"
+    printf 'EVIDENCE: guest capture provenance verified without VM or network: %s\n' "$CAPTURES"
     INPUT_FILES+=("$TOOLS/prefix/usr/bin/qemu-system-x86_64" "$TOOLS/prefix/usr/bin/qemu-img" "$TOOLS/prefix/usr/share/qemu/bios-256k.bin" "$IMAGE")
     native_vm_file "$TOOLS/prefix/usr/share/qemu/bios-256k.bin" 33554432
 }

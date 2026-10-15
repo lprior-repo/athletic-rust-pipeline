@@ -94,7 +94,11 @@ impl<'a> ReferenceRows<'a> {
             if !matches!(grade, Value::Number(number) if *number == 11.0)
                 && !matches!(grade, Value::Text(text) if text == "11")
             {
-                self.counts.required_fields_unassessed += 1;
+                self.counts.required_fields_unassessed = self
+                    .counts
+                    .required_fields_unassessed
+                    .checked_add(1)
+                    .ok_or_else(|| error("required fields unassessed counter overflow"))?;
             }
             self.index.observe(id, name, self.year, &mut self.counts)?;
         }

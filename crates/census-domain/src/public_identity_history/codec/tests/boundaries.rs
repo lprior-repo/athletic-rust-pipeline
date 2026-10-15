@@ -54,8 +54,9 @@ fn record_limit_refuses_before_decoding_an_extra_record() -> TestResult {
 #[test]
 fn individual_collections_refuse_before_retaining_extra_elements() -> TestResult {
     use super::super::atoms::{CandidateNode, NumberNode, TextNode};
+    use super::super::claims::BindingNode;
     use super::super::containers::{Affected, Bindings, ListNode, Members};
-    use super::super::objects::{BindingNode, PartitionNode};
+    use super::super::corrections::PartitionNode;
     let limits = ReplayLimits {
         members_per_operation: 0,
         affected_record_keys: 0,

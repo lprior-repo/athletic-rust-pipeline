@@ -92,7 +92,7 @@ fn current_policy_cannot_reuse_historical_published_receipts() -> TestResult {
 fn historical_input_is_read_only(old: &historical::Historical) -> TestResult {
     let directory = old.workbook.parent().ok_or("historical directory")?;
     manifest::verify_directory(directory)?;
-    if matches!(old.lineage.policy_revision, 18 | 19 | 20) {
+    if matches!(old.lineage.policy_revision, 18..=20) {
         let dataset = ExportDataset::reopen_frozen(&directory.join("frozen-input.json"))?;
         check!(eq; dataset.lineage, old.lineage);
         let semantics = if old.lineage.policy_revision == 18 {

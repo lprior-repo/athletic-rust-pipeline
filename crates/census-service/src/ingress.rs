@@ -6,8 +6,6 @@ use url::{Host, Url};
 
 pub const DEFAULT_ORIGIN: &str = "http://127.0.0.1:18095/";
 
-mod publication;
-pub use publication::require_managed_publication;
 mod lookup;
 pub use lookup::lookup_workflow;
 

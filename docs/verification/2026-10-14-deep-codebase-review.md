@@ -3,7 +3,7 @@
 | Control | Value |
 |---|---|
 | Status | Review retained; repairs in progress; **final-spec acceptance not established** |
-| Owner / date | Main / 2026-10-14 |
+| Owner / dates | Main / original 2026-10-14; updated 2026-10-15 |
 | Scope | Nine workspace crates; redundancy, Rust discipline, architecture/ADR currency |
 | Authority | [Spec v2](../specifications/athletic-recruiting-end-vision-spec-v2.md), [architecture](../../ARCHITECTURE.md), [ADRs](../adr/README.md) |
 | Tracking | Review `cbxd`; unresolved findings `iilh`; [existing delivery plan](../NATIONAL-CENSUS-PLAN.md) remains authoritative |
@@ -23,7 +23,24 @@ The Downloads spec and repository spec are byte-identical:
 Architecture adopts the full reusable product; current runtime is narrower. Decisions,
 implemented components and qualified behavior must remain separate evidence states.
 
-## Findings register
+## Current disposition
+
+| Findings | State |
+|---|---|
+| R1–R8 | Components have advanced; final selected-profile integration and workbook acceptance remain unqualified. |
+| R9 / R10 / R15 | Closed in Beads: `55js` / `kkv7` / `3i89`. |
+| R11 | Open: `c945`; LOCAL receipt/coordinator/caller changes are unapplied and uncompiled. |
+| R12 / R13 | Open: `rod5`; reusable execution and source-backed discovery/UP qualification remain incomplete. |
+| R14 | Open: `tmdl`; local cleanup/capture checks do not establish whole-workload resource or fault qualification. |
+
+Full release `6775e677` failed comments, strict Clippy, dependent ratchet, configured native
+captures and performance corpus identity. Subsequent source repairs pass strict Clippy/scan/
+ratchet (`4e23d5f3`) and zero-comments (`cdae80fb`); no gate or baseline was weakened.
+Native exact-build qualification and comparable performance evidence remain open.
+Actual export readback passed (`31cc5324`: 185 canonical rows, 60 cohort members,
+authoritative XLSX/CSV/JSONL). Historical measurements and current exercised behavior follow.
+
+## Original findings register
 
 Source paths below are relative to `crates/` at the original review revision. Static
 counterexamples identify risks, not observed contamination of a live dataset. H = final-product
@@ -69,7 +86,7 @@ are substantive components. None certifies the unfinished product.
 | §§13,15 | Frozen workbook bundle exists; normalized snapshot incomplete. Query database is an optional downstream choice. R5,R7. |
 | §18 | Existing delivery plan remains the implementation/acceptance authority; this review creates no competing roadmap. |
 
-## Rust discipline: measured, not asserted
+## Original Rust measurements
 
 The strict scan checked 18,380 callables / 1,585 files; zero unresolved syntax sites.
 It reported zero counted production unsafe/unwrap/expect/panic/indexing/as-cast sites,
@@ -102,7 +119,7 @@ is proposed. Read Holzman references: `nasa-jpl-standards.md`,
 All four repository startup skills were available and read; the spec's historical
 missing-skill statement remains historical.
 
-## Verification record
+## Original verification record
 
 | Exact command | Observed result |
 |---|---|
@@ -538,3 +555,41 @@ the configured path, and performance comparison refused the corpus mismatch
 The archive comparator's 71-line violation was subsequently removed by separating sample
 validation from outcome wrapping; check/source lint and all 15 focused archive scenarios passed
 (`63acdf81` / `a61900d1` / `97b15737`). Other release failures remain tracked in `iilh.1`.
+
+### PR68–71 integration and refusal/cleanup repairs — 2026-10-15
+
+Integrated remote main through `003ac3e6`, preserving local work and historical stores.
+Qualification lifecycle 6 retains original public-identity authority context; this is not
+reusable-production enrollment. R11–R14 remain open; LOCAL core/caller proposals are not
+runtime acceptance.
+
+| Executed verification | Observed result | Evidence |
+|---|---|---|
+| Full workspace | 6,515 passed, six skipped after final source repairs | `ddcff906` |
+| Check; focused identity/results suite | Passed; 229 passed | `6c5fea43`; `949501d2` |
+| Source lint; all-target panic extraction | Passed; existing arity advisories remain | `20e39a6f`; full extraction output retained with the workspace run |
+| Strict production scan; module seams | Passed; no seam violations | `5bc26af4`; `77f6abd0` |
+| Publication/native-verifier examples | 16 passed, including manifest-prefix refusal | `8b7ccc95` |
+| Enrichment refusal | Fails before repair; 23 focused cases pass after repair | `c51fdc8c`; `9ad9aeaf` |
+| Actual enrichment executable | Typed row-budget refusal leaves caller population unchanged; two source rows survive reopen | `8fe37a07`; `var/review-refusal-20261015T044649111Z/` |
+| Watcher-admission cleanup | Fails before repair; immediate synchronous store reopen passes after repair | `0bb47649`; `9ad9aeaf` |
+| Actual endpoint discovery and SIGTERM | HTTP/2 200; exit 0; accepted = completed = 3; all other terminal/remaining counts zero | `var/review-shutdown-2026-10-15T050348149Z/` |
+| Actual retained-capture verification | Valid retained manifest accepted; tampered digest and cached metadata each refuse with exit 1 | `9d9b179c`; `var/review-native-verifier-20261015T045029476Z/` |
+| Actual fresh host capture recording and verification | Both acquisitions succeeded; 199,518-byte index, 210,849-byte roster, 18 Class-of-2027 rows | `var/review-native-record-2026-10-15T050912594Z/`; exact command, binary digest, manifest, metadata and bodies retained |
+| Strict source measurement, size and debt ratchet | Passed; no metric grew; existing arity advisories remain | `4e23d5f3` |
+| Zero comments | Passed across 3,487 Rust files | `cdae80fb` |
+| Manifest overflow regression | Valid JSON plus padding at 65,537 bytes fails before repair; passes after checked limit-plus-one probe | `1b7ba3c2`; `8b7ccc95` |
+| Actual synthetic publication CLI | Mixed fixture generation and measured independent oracle exit 0; oversized manifest and invalid budget exit 1 before output creation | `2221eeff`; `var/review-publication-2026-10-15T054904674Z/` |
+
+Enrichment rolls back appended grades on every error without cloning the population. Shutdown
+now cancels, awaits the endpoint, drains tasks, inspects attempts and flushes even when watcher
+admission fails; simultaneous cleanup failures retain both typed causes. Reopen proves resource
+release, not an independent crash-durability qualification.
+
+The read-only native verifier shares capture validation with preparation, checks exact distinct
+binary roles and file digests, and refuses a missing verifier binary. The host recorder also
+completed fresh public acquisition into an isolated cache. A verifier cannot establish that
+liveness from metadata alone; guest-midnight bookends and journal readback remain unwitnessed.
+No whole-deployment memory envelope, 17-fault qualification, performance improvement or national
+completion follows. The earlier full release failure remains historical evidence; repaired
+individual lanes do not imply a passing full release.

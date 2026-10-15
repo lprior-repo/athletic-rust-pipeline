@@ -94,7 +94,10 @@ impl Index {
         self.admit(cost)?;
         let ordinal = self.athletes.len();
         if keys.is_empty() {
-            self.without_provider += 1;
+            self.without_provider = self
+                .without_provider
+                .checked_add(1)
+                .ok_or_else(|| error("without-provider counter overflow"))?;
         }
         for key in keys {
             match self.owners.entry(key) {
@@ -134,20 +137,27 @@ impl Index {
         year: i16,
         counts: &mut ComparisonCounts,
     ) -> ReportResult<()> {
-        counts.reference_rows += 1;
+        counts.reference_rows = increment(counts.reference_rows, "reference row counter overflow")?;
         if self.seen.contains(&id) {
-            counts.duplicate_reference_ids += 1;
+            counts.duplicate_reference_ids = increment(
+                counts.duplicate_reference_ids,
+                "duplicate reference ID counter overflow",
+            )?;
             return Ok(());
         }
         self.admit(128)?;
         self.seen.insert(id);
         let ordinal = match self.owners.get(&id) {
             None => {
-                counts.reference_only += 1;
+                counts.reference_only =
+                    increment(counts.reference_only, "reference-only counter overflow")?;
                 return Ok(());
             }
             Some(Ownership::Ambiguous) => {
-                counts.ambiguous_output_ids += 1;
+                counts.ambiguous_output_ids = increment(
+                    counts.ambiguous_output_ids,
+                    "ambiguous output ID counter overflow",
+                )?;
                 return Ok(());
             }
             Some(Ownership::Unique(ordinal)) => *ordinal,
@@ -156,22 +166,7 @@ impl Index {
             .athletes
             .get_mut(ordinal)
             .ok_or_else(|| error("comparison index contains an invalid ordinal"))?;
-        athlete.matched_ids += 1;
-        counts.matched_unique += 1;
-        if athlete.year != year {
-            counts.graduation_year_mismatches += 1;
-        }
-        if !athlete.cohort_resolved {
-            counts.required_fields_unassessed += 1;
-        }
-        let expected = crate::csv_safety::protect_owned(normalize_name(name))
-            .map_err(|_| error("reference name cannot be safely compared"))?;
-        if name.trim().is_empty() || name.contains(';') {
-            counts.required_fields_unassessed += 1;
-        } else if expected != normalize_name(&athlete.name) {
-            counts.name_mismatches += 1;
-        }
-        Ok(())
+        observe_match(athlete, name, year, counts)
     }
 
     pub(super) fn finish(&self, counts: &mut ComparisonCounts) {
@@ -217,4 +212,42 @@ pub(super) fn provider_keys<'a>(
 
 fn normalize_name(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn increment(value: usize, message: &'static str) -> ReportResult<usize> {
+    value.checked_add(1).ok_or_else(|| error(message))
+}
+
+fn observe_match(
+    athlete: &mut Athlete,
+    name: &str,
+    year: i16,
+    counts: &mut ComparisonCounts,
+) -> ReportResult<()> {
+    athlete.matched_ids = increment(athlete.matched_ids, "matched ID counter overflow")?;
+    counts.matched_unique = increment(counts.matched_unique, "matched unique counter overflow")?;
+    if athlete.year != year {
+        counts.graduation_year_mismatches = increment(
+            counts.graduation_year_mismatches,
+            "graduation year mismatch counter overflow",
+        )?;
+    }
+    if !athlete.cohort_resolved {
+        counts.required_fields_unassessed = increment(
+            counts.required_fields_unassessed,
+            "required fields unassessed counter overflow",
+        )?;
+    }
+    let expected = crate::csv_safety::protect_owned(normalize_name(name))
+        .map_err(|_| error("reference name cannot be safely compared"))?;
+    if name.trim().is_empty() || name.contains(';') {
+        counts.required_fields_unassessed = increment(
+            counts.required_fields_unassessed,
+            "required fields unassessed counter overflow",
+        )?;
+    } else if expected != normalize_name(&athlete.name) {
+        counts.name_mismatches =
+            increment(counts.name_mismatches, "name mismatch counter overflow")?;
+    }
+    Ok(())
 }

@@ -1,4 +1,4 @@
-use super::TestResult;
+type TestResult<T = (), E = Box<dyn std::error::Error>> = Result<T, E>;
 use crate::affiliation_candidates::*;
 use crate::model::{
     AthleteId, ContractRefV1, ProfileDate, ProfileDateRangeV1, SchoolId, SourceCapture,

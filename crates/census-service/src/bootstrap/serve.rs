@@ -1,6 +1,6 @@
 use std::future::Future;
 use std::net::SocketAddr;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::AtomicU8;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -14,13 +14,15 @@ use census_crawl::net::bridge::BrowserLane;
 use census_store::Store;
 
 use super::drain::{
-    attempt_state, await_endpoint_shutdown, count_error, DrainReport, EndpointShutdown,
-    ENDPOINT_SHUTDOWN_GRACE,
+    await_endpoint_shutdown, count_error, DrainReport, EndpointShutdown, ENDPOINT_SHUTDOWN_GRACE,
 };
 use super::error::BootstrapError;
 use super::options::ServeOptions;
 use super::stop::{await_stop, StopOutcome, StopReason};
 use crate::restate_services::CaptureExecution;
+
+mod finalize;
+use finalize::{finalize_region, finish_startup};
 
 pub async fn serve(options: ServeOptions) -> Result<DrainReport> {
     serve_until(options, std::future::pending::<()>()).await
@@ -43,6 +45,15 @@ pub(super) async fn supervise(
     init_tracing();
     let memory = super::guard::MemoryReader::prepare(&options)?;
     let region = Arc::new(Spawner::new());
+    supervise_region(options, shutdown, memory, region).await
+}
+
+async fn supervise_region(
+    options: ServeOptions,
+    shutdown: impl Future<Output = ()> + Send + 'static,
+    memory: super::guard::MemoryReader,
+    region: Arc<Spawner>,
+) -> Result<DrainReport, BootstrapError> {
     let (store, capture) =
         super::store::open(&region, options.data_dir.clone(), options.capture_protocol).await?;
     let (listener, bound) = bind_listener(&options).await?;
@@ -55,27 +66,31 @@ pub(super) async fn supervise(
     let over_budget = Arc::new(tokio::sync::Notify::new());
     let (cancel, endpoint_done) =
         spawn_endpoint(&region, &store, capture, &options, listener, lane)?;
-    region
+    let watch_result = region
         .spawn(super::guard::watch_memory(
             memory,
             Arc::clone(&over_budget),
             region.stopping(),
         ))
-        .map_err(count_error)?;
-    tracing::info!(
-        %bound,
-        max_concurrent = options.max_concurrent,
-        memory_budget_gib = options.memory_budget_bytes / (1024 * 1024 * 1024),
-        "census service listening"
-    );
-
-    let stop_outcome = await_stop(
-        Arc::clone(&reason),
-        Arc::clone(&over_budget),
-        shutdown,
-        endpoint_done,
-    )
-    .await;
+        .map_err(count_error);
+    let stop_outcome = match &watch_result {
+        Ok(()) => {
+            tracing::info!(
+                %bound,
+                max_concurrent = options.max_concurrent,
+                memory_budget_gib = options.memory_budget_bytes / (1024 * 1024 * 1024),
+                "census service listening"
+            );
+            await_stop(
+                Arc::clone(&reason),
+                Arc::clone(&over_budget),
+                shutdown,
+                endpoint_done,
+            )
+            .await
+        }
+        Err(_) => StopOutcome::ReceiverPending(endpoint_done),
+    };
     cancel.send(()).ok();
     let endpoint_shutdown = match stop_outcome {
         StopOutcome::EndpointAlreadyEnded => EndpointShutdown::Completed,
@@ -83,22 +98,15 @@ pub(super) async fn supervise(
             await_endpoint_shutdown(receiver, ENDPOINT_SHUTDOWN_GRACE).await
         }
     };
-    let counted = region
-        .drain(options.drain_timeout)
-        .await
-        .map_err(count_error)?;
-    let mut report = DrainReport::from_counted(counted);
-    report.stop_reason = StopReason::from_raw(reason.load(Ordering::SeqCst));
-    report.endpoint_shutdown = endpoint_shutdown;
-    report.attempts = attempt_state(&store)?;
-
-    let finalized = store.flush();
-    drop(store);
-    finalized.map_err(|source| BootstrapError::StoreFlush {
-        source: Box::new(source),
-    })?;
-    tracing::info!(?report, "census service stopped");
-    Ok(report)
+    let finalized = finalize_region(
+        store,
+        region,
+        reason,
+        endpoint_shutdown,
+        options.drain_timeout,
+    )
+    .await;
+    finish_startup(watch_result, finalized)
 }
 
 fn lane_client(options: &ServeOptions) -> Result<Option<BrowserLane>, BootstrapError> {
@@ -266,3 +274,7 @@ mod capture_tests;
 #[cfg(test)]
 #[path = "endpoint_region_tests.rs"]
 mod endpoint_region_tests;
+
+#[cfg(test)]
+#[path = "watch_cleanup_tests.rs"]
+mod watch_cleanup_tests;

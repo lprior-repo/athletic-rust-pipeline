@@ -32,7 +32,7 @@ pub(crate) async fn submit_national(
 ) -> Result<InvocationHandle<CurrentRoute, Json<NationalReport>>> {
     let contract = request.publication_contract;
     if contract == PublicationContract::ManagedBundleV2 {
-        ingress::require_managed_publication(ingestion).await?;
+        crate::cli::publication_preflight::require_managed_publication(ingestion).await?;
     }
     let national = NationalCensusIngressClient::from_client(ingestion.clone(), identity.as_str());
     let handle = match national.run(Json(request)).send().await {
@@ -118,11 +118,7 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
         match failure_exit(&report) {
             Ok(()) => return Ok(()),
             Err(error) if args.drive && cycle < cycles => {
-                let next = next_resume_ordinal(ordinal)?;
-                ordinal = Some(next);
-                println!(
-                    "drive cycle {cycle}: the completed invocation still owes work ({error:#}); re-driving under resume ordinal {next}"
-                );
+                ordinal = Some(announce_resume(ordinal, cycle, &error)?);
             }
             Err(error) if !args.drive => return Err(error),
             Err(error) => {
@@ -133,6 +129,18 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     Err(anyhow::anyhow!(
         "drive finished without a completed run report"
     ))
+}
+
+fn announce_resume(
+    ordinal: Option<NonZeroU32>,
+    cycle: u32,
+    error: &anyhow::Error,
+) -> Result<NonZeroU32> {
+    let next = next_resume_ordinal(ordinal)?;
+    println!(
+        "drive cycle {cycle}: the completed invocation still owes work ({error:#}); re-driving under resume ordinal {next}"
+    );
+    Ok(next)
 }
 
 fn next_resume_ordinal(ordinal: Option<NonZeroU32>) -> Result<NonZeroU32> {

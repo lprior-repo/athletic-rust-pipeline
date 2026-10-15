@@ -11,8 +11,7 @@ use crate::UsJurisdiction;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod boundaries;
-#[path = "../tests/fixture.rs"]
-mod fixture;
+use crate::affiliation_candidates::fixture;
 mod metadata;
 mod relationships;
 mod retained;

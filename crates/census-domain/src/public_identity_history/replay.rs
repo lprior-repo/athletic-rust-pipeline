@@ -3,8 +3,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::model::{AthleteCandidateId, StoreIdentity};
 
 use super::{
-    budget, genesis, record, BindingClaim, EstablishmentOrdinal, HistoryError, HistoryRecord,
-    HistoryRequest, PublicAthleteId, RegistryHead, ReplayLimits,
+    budget, genesis, record, request_order, BindingClaim, EstablishmentOrdinal, HistoryError,
+    HistoryRecord, HistoryRequest, PublicAthleteId, RegistryHead, ReplayLimits,
 };
 
 #[derive(Debug, Clone)]
@@ -152,7 +152,7 @@ impl HistoryProjection {
             return Err(HistoryError::Limit("records"));
         }
         self.check_request_budget(&record.request)?;
-        if budget::normalize(record.request.clone())? != record.request {
+        if request_order::normalize(record.request.clone())? != record.request {
             return Err(HistoryError::Invalid("noncanonical request order"));
         }
         if record::payload_digest(record)? != record.digest {

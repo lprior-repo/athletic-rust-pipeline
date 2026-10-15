@@ -14,6 +14,7 @@ mod national;
 mod open_work;
 mod profile;
 mod provider;
+mod publication_preflight;
 mod publish;
 mod qa_reports;
 mod retained_capture;

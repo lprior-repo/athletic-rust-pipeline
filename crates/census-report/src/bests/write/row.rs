@@ -15,7 +15,11 @@ impl Serialize for Row<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut wire = serializer.serialize_struct(
             "best-result",
-            33 + self.0.inventory.serialized_field_count(),
+            33_usize
+                .checked_add(self.0.inventory.serialized_field_count())
+                .ok_or_else(|| {
+                    <S::Error as serde::ser::Error>::custom("row field count overflow")
+                })?,
         )?;
         identity(&mut wire, self.0)?;
         result(&mut wire, self.0)?;

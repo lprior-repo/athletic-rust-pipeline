@@ -34,6 +34,7 @@ the scenarios that capability blocks.
 | Staged packages | `…/qemu/11.1.1/pkgs/SHA256SUMS.txt` must verify under `sha256sum --check --strict`; staged archives absent from that manifest are reported and recorded with their observed hashes |
 | Guest image | `…/images/Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2` (≤8 GiB) against `images/SHA256SUMS.txt` and the pinned digest `360f0fa4…e87` |
 | Guest captures | `CENSUS_NATIVE_VM_CAPTURES`, default `var/native-vm-captures-sol-20261006.json` (≤32 MiB) with its four manifest-bound capture files |
+| Capture verifier | `VERIFY_BINARY`, default `target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm`; mandatory executable, built by the feature-enabled command below; absence refuses qualification |
 | Scratch disks | `SCRATCH_STORE`, default `var/durability-scratch`, plus `tmp/`; owned, non-symlink, on local disk; a bounded `FAULT_MEDIA_MIB` (64) sparse probe proves the medium without allocating it |
 | Isolation | `unshare --user --map-root-user --mount --propagation private` must work and a 64 MiB tmpfs must mount inside it — the ENOSPC media of scenarios 09 and 10; `/proc/sys/kernel/random/uuid` mints VM session tokens; `pgrep`, `ss` and `/proc/<pid>/{cmdline,environ}` capture owned-PID identity |
 | Clock | The host clock is read-only: the verifier records the observed host UTC instant and never sets it; scenario 12 owns the guest-only midnight lane and scenario 03 the guest reboot lane |
@@ -133,6 +134,22 @@ that manifest for the durability lanes. Use a fresh `--out` path per recording; 
 refuses to overwrite. The `--cache` directory holds the HTTP cache and payload files; one cache
 can serve multiple recording runs as long as each uses a distinct `--out` manifest. The optional
 `--source` label is written into the fetcher's source tracking.
+
+## Verifying retained inputs
+
+Run from the repository root; manifest capture paths retain their recorded cwd-relative meaning:
+
+```sh
+target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm \
+  verify --manifest <capture-manifest>
+```
+
+This read-only command reuses preparation's capture/protocol/cohort validation. Optional
+`--host-manifest <host-manifest>` additionally verifies the exact distinct qualification,
+endpoint and Restate binary roles against their file digests. It opens no census store and
+starts no network acquisition or VM. `live_claimed_by_metadata` is not independently witnessed
+liveness: fresh acquisition, guest-midnight bookends and journal readback remain scenario duties.
+
 
 ## Current wrapper map
 

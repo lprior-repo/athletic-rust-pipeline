@@ -1,5 +1,5 @@
 mod evidence;
-mod fixture;
+use super::fixture;
 mod resources_and_replay;
 mod selection;
 mod temporal;

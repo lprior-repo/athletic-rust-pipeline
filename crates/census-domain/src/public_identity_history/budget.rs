@@ -1,6 +1,9 @@
 use crate::model::{AppliedAthleteIdentity, SourceNamespace};
 
-use super::{BindingClaim, CandidateDecisionReference, HistoryError, HistoryRequest, ReplayLimits};
+use super::{
+    BindingClaim, CandidateDecisionReference, HistoryError, HistoryRequest, PublicAthleteId,
+    ReplayLimits, RevocationRequest, SplitRequest,
+};
 
 pub(super) fn request(
     request: &HistoryRequest,
@@ -9,61 +12,23 @@ pub(super) fn request(
     let mut budget = Budget { limits, used: 0 };
     match request {
         HistoryRequest::Establish { binding, evidence } => {
-            budget.binding(binding)?;
-            budget.evidence(evidence)?;
+            budget.admit_establish(binding, evidence)?
         }
         HistoryRequest::EstablishMatchedGroup { bindings, evidence } => {
-            budget.count(
-                bindings.len(),
-                limits.members_per_operation,
-                "matched group bindings",
-            )?;
-            budget.count(bindings.len(), limits.bindings, "bindings")?;
-            bindings
-                .iter()
-                .try_for_each(|binding| budget.binding(binding))?;
-            budget.evidence(evidence)?;
+            budget.admit_matched_group(bindings, evidence)?
         }
         HistoryRequest::Bind {
             owner,
             binding,
             evidence,
-        } => {
-            budget.text(owner.as_str())?;
-            budget.binding(binding)?;
-            budget.evidence(evidence)?;
-        }
+        } => budget.admit_bind(owner, binding, evidence)?,
         HistoryRequest::Merge {
             canonical,
             members,
             evidence,
-        } => {
-            budget.count(members.len(), limits.members_per_operation, "merge members")?;
-            budget.text(canonical.as_str())?;
-            members
-                .iter()
-                .try_for_each(|member| budget.text(member.as_str()))?;
-            budget.evidence(evidence)?;
-        }
+        } => budget.admit_merge(canonical, members, evidence)?,
         HistoryRequest::Split(split) => budget.split(split)?,
-        HistoryRequest::Revoke(revocation) => {
-            budget.count(
-                revocation.revoke_merges.len(),
-                limits.members_per_operation,
-                "revocations",
-            )?;
-            budget.count(
-                revocation.affected_record_keys.len(),
-                limits.affected_record_keys,
-                "affected records",
-            )?;
-            budget.text(revocation.canonical.as_str())?;
-            revocation
-                .affected_record_keys
-                .iter()
-                .try_for_each(|id| budget.text(id))?;
-            budget.evidence(&revocation.evidence)?;
-        }
+        HistoryRequest::Revoke(revocation) => budget.admit_revocation(revocation)?,
     }
     Ok(budget.used)
 }
@@ -101,6 +66,80 @@ pub(super) fn accepted_reference(
 }
 
 impl Budget {
+    fn admit_establish(
+        &mut self,
+        binding: &BindingClaim,
+        evidence: &CandidateDecisionReference,
+    ) -> Result<(), HistoryError> {
+        self.binding(binding)?;
+        self.evidence(evidence)
+    }
+
+    fn admit_matched_group(
+        &mut self,
+        bindings: &[BindingClaim],
+        evidence: &CandidateDecisionReference,
+    ) -> Result<(), HistoryError> {
+        self.count(
+            bindings.len(),
+            self.limits.members_per_operation,
+            "matched group bindings",
+        )?;
+        self.count(bindings.len(), self.limits.bindings, "bindings")?;
+        bindings
+            .iter()
+            .try_for_each(|binding| self.binding(binding))?;
+        self.evidence(evidence)
+    }
+
+    fn admit_bind(
+        &mut self,
+        owner: &PublicAthleteId,
+        binding: &BindingClaim,
+        evidence: &CandidateDecisionReference,
+    ) -> Result<(), HistoryError> {
+        self.text(owner.as_str())?;
+        self.binding(binding)?;
+        self.evidence(evidence)
+    }
+
+    fn admit_merge(
+        &mut self,
+        canonical: &PublicAthleteId,
+        members: &[PublicAthleteId],
+        evidence: &CandidateDecisionReference,
+    ) -> Result<(), HistoryError> {
+        self.count(
+            members.len(),
+            self.limits.members_per_operation,
+            "merge members",
+        )?;
+        self.text(canonical.as_str())?;
+        members
+            .iter()
+            .try_for_each(|member| self.text(member.as_str()))?;
+        self.evidence(evidence)
+    }
+
+    fn admit_revocation(&mut self, revocation: &RevocationRequest) -> Result<(), HistoryError> {
+        self.count(
+            revocation.revoke_merges.len(),
+            self.limits.members_per_operation,
+            "revocations",
+        )?;
+        self.count(
+            revocation.affected_record_keys.len(),
+            self.limits.affected_record_keys,
+            "affected records",
+        )?;
+        self.text(revocation.canonical.as_str())?;
+        revocation
+            .affected_record_keys
+            .iter()
+            .try_for_each(|id| self.text(id))?;
+        self.evidence(&revocation.evidence)
+    }
+
     fn count(&self, count: usize, limit: usize, field: &'static str) -> Result<(), HistoryError> {
         if count > limit {
             return Err(HistoryError::Limit(field));
@@ -155,7 +194,7 @@ impl Budget {
         }
     }
 
-    fn split(&mut self, split: &super::SplitRequest) -> Result<(), HistoryError> {
+    fn split(&mut self, split: &SplitRequest) -> Result<(), HistoryError> {
         self.count(
             split.partitions.len(),
             self.limits.members_per_operation,
@@ -212,55 +251,4 @@ impl Budget {
             .try_for_each(|id| self.text(id))?;
         self.evidence(&split.evidence)
     }
-}
-
-pub(super) fn normalize(mut request: HistoryRequest) -> Result<HistoryRequest, HistoryError> {
-    match &mut request {
-        HistoryRequest::Establish { evidence, .. } | HistoryRequest::Bind { evidence, .. } => {
-            ordered(&mut evidence.members, "evidence members")?;
-        }
-        HistoryRequest::EstablishMatchedGroup { bindings, evidence } => {
-            bindings.sort_by(|left, right| {
-                left.candidate
-                    .cmp(&right.candidate)
-                    .then(left.id.cmp(&right.id))
-            });
-            ordered(&mut evidence.members, "evidence members")?;
-        }
-        HistoryRequest::Merge {
-            members, evidence, ..
-        } => {
-            ordered(members, "merge members")?;
-            ordered(&mut evidence.members, "evidence members")?;
-        }
-        HistoryRequest::Split(split) => {
-            ordered(&mut split.revoke_merges, "revocations")?;
-            ordered(&mut split.unresolved_bindings, "unresolved bindings")?;
-            ordered(&mut split.affected_record_keys, "affected records")?;
-            ordered(&mut split.evidence.members, "evidence members")?;
-            split.partitions.iter_mut().try_for_each(|partition| {
-                ordered(&mut partition.binding_ids, "partition bindings")
-            })?;
-            split
-                .partitions
-                .sort_by(|left, right| left.binding_ids.cmp(&right.binding_ids));
-        }
-        HistoryRequest::Revoke(revocation) => {
-            ordered(&mut revocation.revoke_merges, "revocations")?;
-            ordered(&mut revocation.affected_record_keys, "affected records")?;
-            ordered(&mut revocation.evidence.members, "evidence members")?;
-        }
-    }
-    Ok(request)
-}
-
-fn ordered<T: Ord>(values: &mut [T], field: &'static str) -> Result<(), HistoryError> {
-    values.sort();
-    if values
-        .windows(2)
-        .any(|pair| matches!(pair, [left, right] if left == right))
-    {
-        return Err(HistoryError::Duplicate(field));
-    }
-    Ok(())
 }

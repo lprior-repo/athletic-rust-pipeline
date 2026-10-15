@@ -282,6 +282,10 @@ if [[ "$CAPTURES_PATH" == "$REPO_ROOT/"* ]]; then
         "$REPO_ROOT"
 fi
 record_artifact 'guest-capture-manifest' "$CAPTURES_PATH" ''
+VERIFY_BIN="${VERIFY_BINARY:-$REPO_ROOT/target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm}"
+[[ -x "$VERIFY_BIN" ]] || fail "verify binary missing at $VERIFY_BIN; build it with pipeline:build -- --release -p census-service --features native-fault-injection --example qualification_native_vm"
+"$VERIFY_BIN" verify --manifest "$CAPTURES_PATH" || fail "guest capture provenance refused: $CAPTURES_PATH"
+printf 'RESOURCE: guest capture provenance verified by capture/protocol checks: %s\n' "$CAPTURES_PATH"
 
 ENDPOINT="${SERVE_BINARY:-$REPO_ROOT/target/moon-build/x86_64-unknown-linux-gnu/release/census-serve}"
 if [[ -f "$ENDPOINT" ]]; then

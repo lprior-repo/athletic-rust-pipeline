@@ -165,7 +165,7 @@ async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
     let options = publication_options(args)?;
     let generation = ExportGeneration::resolve(args.generation.as_deref())?;
     let client = ingress::client(origin)?;
-    ingress::require_managed_publication(&client).await?;
+    super::publication_preflight::require_managed_publication(&client).await?;
     publish_workbook_live(origin, &options, &generation).await
 }
 

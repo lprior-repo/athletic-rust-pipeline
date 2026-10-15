@@ -74,7 +74,8 @@ fn omitted_resolved_cases_cannot_supply_membership_from_other_sources() -> TestR
     let generic = case("generic", "a", ReviewState::Pending);
     let specific = resolved("specific", &["a", "b"]);
     let answer = verdict("specific", true, "value_proposed");
-    let (without, held) = separate_generic_identity_cases(vec![generic.clone()], &[answer.clone()]);
+    let (without, held) =
+        separate_generic_identity_cases(vec![generic.clone()], std::slice::from_ref(&answer));
     check!(without.is_empty());
     check!(eq; held, vec![generic.clone()]);
     let (with, held) =

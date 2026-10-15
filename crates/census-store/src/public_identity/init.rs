@@ -48,17 +48,7 @@ fn create(
     let (db, entities, journal, meta, receipts) =
         crate::open_keyspaces(root, crate::DEFAULT_CACHE_BYTES)?;
     crate::acquisition::init::require_claimed_root(root).map_err(init_error)?;
-    [&entities, &journal, &meta, &receipts]
-        .into_iter()
-        .try_for_each(|keyspace| {
-            if !keyspace
-                .is_empty()
-                .map_err(|source| StoreError::Read { source })?
-            {
-                return Err(PublicIdentityError::ExistingRoot.into());
-            }
-            Ok::<(), StoreError>(())
-        })?;
+    require_empty_keyspaces([&entities, &journal, &meta, &receipts])?;
     let mut batch = db.batch();
     crate::format::stage_initialization(&mut batch, &meta, version.lifecycle_revision());
     Table::ALL.into_iter().for_each(|table| {
@@ -104,6 +94,18 @@ fn create(
         return Err(PublicIdentityError::Corrupt("new declaration mismatch").into());
     }
     Ok(declaration)
+}
+
+fn require_empty_keyspaces(keyspaces: [&fjall::Keyspace; 4]) -> StoreResult<()> {
+    keyspaces.into_iter().try_for_each(|keyspace| {
+        if !keyspace
+            .is_empty()
+            .map_err(|source| StoreError::Read { source })?
+        {
+            return Err(PublicIdentityError::ExistingRoot.into());
+        }
+        Ok(())
+    })
 }
 
 fn init_error(error: StoreError) -> StoreError {

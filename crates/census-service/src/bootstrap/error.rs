@@ -101,6 +101,12 @@ pub enum BootstrapError {
         #[source]
         source: Box<crate::spawn::SpawnError>,
     },
+    #[error("shutdown cleanup failed after {primary}; additional failure: {secondary}")]
+    ShutdownCleanup {
+        #[source]
+        primary: Box<BootstrapError>,
+        secondary: Box<BootstrapError>,
+    },
     #[error("reading the durable source attempt state failed: {source}")]
     SourceAttempts {
         #[source]

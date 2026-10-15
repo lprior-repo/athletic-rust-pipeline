@@ -54,6 +54,41 @@ fn wake(wakers: WakeList) {
     wakers.into_iter().flatten().for_each(Waker::wake);
 }
 
+fn main_resources(bytes: u64, work: u64, slots: u64) -> Result<Resources, DepartureReason> {
+    if bytes == 0 {
+        return Err(DepartureReason::NoBytes);
+    }
+    if work == 0 {
+        return Err(DepartureReason::NoWork);
+    }
+    if slots == 0 {
+        return Err(DepartureReason::NoSlots);
+    }
+    Ok(Resources {
+        bytes,
+        work,
+        slots: SlotVector {
+            tasks: slots,
+            stages: slots,
+            browser: slots,
+            populations: 1,
+        },
+    })
+}
+
+fn reserve_resources() -> Resources {
+    Resources {
+        bytes: RESERVE_BYTES,
+        work: 64,
+        slots: SlotVector {
+            tasks: 64,
+            stages: 64,
+            browser: 1,
+            populations: 0,
+        },
+    }
+}
+
 impl Coordinator {
     pub fn with(
         bytes: u64,
@@ -62,40 +97,13 @@ impl Coordinator {
         waiter_cap: u64,
         default: WorkClass,
     ) -> Result<Self, DepartureReason> {
-        if bytes == 0 {
-            return Err(DepartureReason::NoBytes);
-        }
-        if work == 0 {
-            return Err(DepartureReason::NoWork);
-        }
-        if slots == 0 {
-            return Err(DepartureReason::NoSlots);
-        }
+        let main = main_resources(bytes, work, slots)?;
         let waiter_cap =
             usize::try_from(waiter_cap).map_err(|_| DepartureReason::AccountingOverflow)?;
         if waiter_cap == 0 || waiter_cap > MAX_WAITERS {
             return Err(DepartureReason::WaitersFull);
         }
-        let main = Resources {
-            bytes,
-            work,
-            slots: SlotVector {
-                tasks: slots,
-                stages: slots,
-                browser: slots,
-                populations: 1,
-            },
-        };
-        let reserve = Resources {
-            bytes: RESERVE_BYTES,
-            work: 64,
-            slots: SlotVector {
-                tasks: 64,
-                stages: 64,
-                browser: 1,
-                populations: 0,
-            },
-        };
+        let reserve = reserve_resources();
         main.checked_add(reserve)?.checked_add(reserve)?;
         default.validate()?;
         if let Some(reason) = main.shortage(default.resources) {
@@ -129,16 +137,7 @@ impl Coordinator {
                 populations: 1,
             },
         };
-        let reserve = Resources {
-            bytes: RESERVE_BYTES,
-            work: 64,
-            slots: SlotVector {
-                tasks: 64,
-                stages: 64,
-                browser: 1,
-                populations: 0,
-            },
-        };
+        let reserve = reserve_resources();
         Self {
             inner: Arc::new(Mutex::new(State {
                 closed: false,
