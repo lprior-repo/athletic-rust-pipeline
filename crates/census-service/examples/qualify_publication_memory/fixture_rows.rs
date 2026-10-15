@@ -53,7 +53,8 @@ pub fn owners(store: &Store, state: UsJurisdiction) -> Result<Owners> {
         format!("Synthetic {} Invite", state.code()),
         DAY,
         CompetitionLevel::Invitational,
-    ).map_err(anyhow::Error::msg)?;
+    )
+    .map_err(anyhow::Error::msg)?;
     meet.sports.push(Sport::OutdoorTrack);
     store.append(Table::Meets, &meet)?;
     let mut event = CanonicalEvent::new(
