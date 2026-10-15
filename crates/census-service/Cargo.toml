@@ -75,6 +75,9 @@ proptest = "1"
 tokio = { version = "1", features = ["test-util", "macros", "rt-multi-thread"] }
 tempfile = "3"
 
+[target.'cfg(unix)'.dev-dependencies]
+rustix = { version = "=1.1.4", features = ["process"] }
+
 # The committed measurement target: result-file parsing, school-label resolution and the read-time
 # merge, on the entry points the census actually drives. `harness = false` hands the run to
 # criterion; helpers live in `benches/core/`.
