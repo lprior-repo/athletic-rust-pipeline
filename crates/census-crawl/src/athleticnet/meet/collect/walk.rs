@@ -24,7 +24,7 @@ impl MeetRun {
                 break;
             }
             let urls = MeetUrls::new(*meet_id, options.event_metadata);
-            if urls.journaled(&self.done) {
+            if !ctx.refresh && !options.refresh && urls.journaled(&self.done) {
                 continue;
             }
             let documents = match self.documents(ctx, options, &urls).await {
@@ -167,7 +167,7 @@ impl MeetRun {
             headers.push(("anettokens".to_string(), token.to_string()));
         }
         let fetch_options = FetchOptions {
-            refresh: options.refresh,
+            refresh: ctx.refresh || options.refresh,
             allow_not_found: false,
             headers,
         };
