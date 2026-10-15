@@ -1,3 +1,5 @@
+mod capacity;
+use capacity::require_capacity;
 mod decision;
 pub(in crate::public_identity) mod graph;
 mod graph_wire;
@@ -6,7 +8,7 @@ pub(in crate::public_identity) mod preparation;
 #[cfg(test)]
 mod retry;
 use crate::journal::context::ContextCharge;
-use crate::public_identity::{codec, PublicIdentityError};
+use crate::public_identity::{codec, PublicIdentityAdmissionResource, PublicIdentityError};
 use crate::{Store, StoreError, StoreResult, MAX_JOURNAL_VALUE_BYTES};
 use census_domain::model::StoreIdentity;
 #[cfg(test)]
@@ -198,13 +200,8 @@ impl Reservation {
     }
 }
 
-fn require_capacity(bytes: u64, roots: u64, reservations: u64) -> StoreResult<()> {
-    if bytes > MAX_BYTES || roots > MAX_ROOTS || reservations > MAX_RESERVATIONS {
-        return Err(invalid());
-    }
-    Ok(())
-}
-
+#[cfg(test)]
+mod capacity_tests;
 #[cfg(test)]
 mod tests;
 

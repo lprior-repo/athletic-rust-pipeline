@@ -40,10 +40,11 @@ pub use public_identity::{
     FrozenPublicIdentityBundleV1, FrozenPublicIdentityBundleV2, GraphAuthorityReferenceV1,
     IdentityCommitOutcomeV1, LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1,
     MembershipWithholdingInventoryV1, MembershipWithholdingOutcomeV1, PreparedLocalAdjudicationV1,
-    PreparedMembershipWithholdingV1, PublicIdentityError, PublicIdentityQualificationStore,
-    PublicIdentityWriterV1, ReviewedIdentityCommitOutcomeV1, ReviewedIdentityRequestV1,
-    SourceCandidateMembershipOutcomeV1, SourceCandidateMembershipRequestV1,
-    MAX_FROZEN_PUBLIC_IDENTITY_BYTES, MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
+    PreparedMembershipWithholdingV1, PublicIdentityAdmissionResource, PublicIdentityError,
+    PublicIdentityQualificationStore, PublicIdentityWriterV1, ReviewedIdentityCommitOutcomeV1,
+    ReviewedIdentityRequestV1, SourceCandidateMembershipOutcomeV1,
+    SourceCandidateMembershipRequestV1, MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
+    MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
 };
 mod inspect;
 mod installation;

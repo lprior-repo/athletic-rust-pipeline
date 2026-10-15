@@ -31,6 +31,7 @@ pub(crate) struct StagedContextObject {
 }
 
 impl StagedContextObject {
+    #[cfg(test)]
     pub(crate) fn object_id(&self) -> &str {
         &self.object
     }
@@ -78,6 +79,7 @@ where
     Ok(run_pass(Pass::Measure, &emit)?.staged.object)
 }
 
+#[cfg(test)]
 pub(crate) fn stage_context_object<F>(store: &Store, emit: F) -> StoreResult<StagedContextObject>
 where
     F: Fn(&mut ContextRecordSink<'_>) -> StoreResult<()>,

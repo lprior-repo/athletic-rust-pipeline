@@ -5,6 +5,7 @@ use census_domain::public_identity_history::local_adjudication::{
 use census_domain::public_identity_history::local_membership_withholding::{
     LocalMembershipWithholdingRecordV1, LOCAL_MEMBERSHIP_WITHHOLDING_POLICY,
 };
+#[cfg(test)]
 use census_domain::public_identity_history::RegistryHead;
 use serde::{Deserialize, Serialize};
 
@@ -18,9 +19,13 @@ pub(super) enum Decision {
 pub(in crate::public_identity) struct Binding<'a> {
     pub(in crate::public_identity) store: &'a StoreIdentity,
     pub(in crate::public_identity) operation: &'a str,
+    #[cfg(test)]
     pub(in crate::public_identity) expected_head: &'a RegistryHead,
+    #[cfg(test)]
     pub(in crate::public_identity) evidence_generation: u64,
+    #[cfg(test)]
     pub(in crate::public_identity) derived_generation: u64,
+    #[cfg(test)]
     pub(in crate::public_identity) snapshot_sequence: u64,
     pub(in crate::public_identity) authority_context: &'a str,
     pub(in crate::public_identity) affected_context: &'a str,
@@ -32,9 +37,13 @@ impl Decision {
             Self::SplitV2(record) => Binding {
                 store: &record.store,
                 operation: &record.operation,
+                #[cfg(test)]
                 expected_head: &record.expected_head,
+                #[cfg(test)]
                 evidence_generation: record.evidence_generation,
+                #[cfg(test)]
                 derived_generation: record.derived_generation,
+                #[cfg(test)]
                 snapshot_sequence: record.snapshot_sequence,
                 authority_context: &record.authority_context,
                 affected_context: &record.affected_context,
@@ -42,9 +51,13 @@ impl Decision {
             Self::MembershipWithholdingV1(record) => Binding {
                 store: &record.store,
                 operation: &record.operation,
+                #[cfg(test)]
                 expected_head: &record.expected_head,
+                #[cfg(test)]
                 evidence_generation: record.evidence_generation,
+                #[cfg(test)]
                 derived_generation: record.derived_generation,
+                #[cfg(test)]
                 snapshot_sequence: record.snapshot_sequence,
                 authority_context: &record.authority_context,
                 affected_context: &record.affected_context,

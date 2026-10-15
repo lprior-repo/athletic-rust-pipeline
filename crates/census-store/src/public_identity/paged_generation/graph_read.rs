@@ -1,6 +1,6 @@
 use super::{
-    admission::Node, capture::verify, invalid, AuthorityTableV2, CaptureBindingV2, InventoryV2,
-    ObjectRefV2, RawGenerationSealV2, RawObjectSource, RawPageV2, RawTableReferenceV2,
+    admission::Node, capture::verify, invalid, AuthorityTableV2, CaptureBindingV2, ObjectRefV2,
+    RawGenerationSealV2, RawObjectSource, RawPageV2, RawTableReferenceV2,
 };
 use crate::{Entity, ReadBudget, ReadCounts, StoreError, StoreResult};
 
@@ -9,6 +9,7 @@ mod scan;
 pub(crate) struct VerifiedRawGraph<'a, S: RawObjectSource> {
     source: &'a S,
     seal: RawGenerationSealV2,
+    #[cfg(test)]
     object: &'a ObjectRefV2,
 }
 
@@ -22,6 +23,7 @@ impl<'a, S: RawObjectSource> VerifiedRawGraph<'a, S> {
         Ok(Self {
             source,
             seal,
+            #[cfg(test)]
             object,
         })
     }
@@ -29,11 +31,16 @@ impl<'a, S: RawObjectSource> VerifiedRawGraph<'a, S> {
     pub(crate) fn binding(&self) -> &CaptureBindingV2 {
         self.seal.binding()
     }
+    #[cfg(test)]
     pub(crate) fn seal(&self) -> &ObjectRefV2 {
         self.object
     }
 
-    pub(crate) fn table_inventory(&self, table: AuthorityTableV2) -> StoreResult<InventoryV2> {
+    #[cfg(test)]
+    pub(crate) fn table_inventory(
+        &self,
+        table: AuthorityTableV2,
+    ) -> StoreResult<super::InventoryV2> {
         Ok(self.table_reference(table)?.inventory())
     }
 

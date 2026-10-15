@@ -5,19 +5,22 @@ pub(super) fn physical_bytes(store: &Store) -> TestResult<u64> {
     let snapshot = store.snapshot();
     let capture = binding::capture(store, &snapshot)?;
     let mut total = 0u64;
+    let mut builder = GraphPlanBuilder::new(capture.clone());
     let seal = scan::walk(&snapshot, &capture, |node| {
         let measured = node.measure(store)?;
         total = total
             .checked_add(measured.incremental_charge().bytes)
             .ok_or(StoreError::CounterOverflow)?;
-        ObjectRefV2::new(
-            DigestV2::parse(measured.root())?,
-            u32::try_from(measured.jsonl_bytes()).map_err(|_| StoreError::CounterOverflow)?,
-            u32::try_from(measured.records()).map_err(|_| StoreError::CounterOverflow)?,
-            measured.full_bytes(),
-        )
+        builder.add(store, node)
     })?;
     let measured = Node::Seal(&seal).measure(store)?;
+    let _plan = builder.finish(store, &seal)?;
+    let roots = seal
+        .declared_inventory()
+        .object_count()
+        .checked_add(1)
+        .ok_or("root count")?;
+    assert!(roots <= 4096, "non-byte root capacity: {roots}");
     Ok(total
         .checked_add(measured.incremental_charge().bytes)
         .ok_or("physical sum overflow")?)
@@ -46,7 +49,10 @@ pub(super) fn journal_state(store: &Store) -> TestResult<(u64, String, Vec<u8>)>
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct PhysicalState {
-    sequence: u64,
+    identity: census_domain::model::StoreIdentity,
+    evidence_generation: u64,
+    derived_generation: u64,
+    input_revisions: crate::PublicIdentityInputRevisionsV2,
     spaces: Vec<(&'static str, u64, u64, String)>,
 }
 
@@ -83,7 +89,10 @@ pub(super) fn physical_state(store: &Store) -> TestResult<PhysicalState> {
         spaces.push((name, count, bytes, format!("{:x}", digest.finalize())));
     }
     Ok(PhysicalState {
-        sequence: snapshot.seqno(),
+        identity: store.store_identity()?,
+        evidence_generation: store.evidence_generation(),
+        derived_generation: store.derived_generation(),
+        input_revisions: store.snapshot().public_identity_input_revisions_v2()?,
         spaces,
     })
 }

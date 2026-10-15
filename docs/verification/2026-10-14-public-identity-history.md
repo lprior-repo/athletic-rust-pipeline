@@ -324,3 +324,8 @@ may retain the caller's graph once; unrelated retained bytes must remain unchang
 Tamper fixtures re-encode canonical envelope field order so a refusal tests altered
 bindings rather than incidental JSON ordering. Historical witness4 remains rejected
 by its explicit historical decoder.
+
+
+### Aggregate admission oracle correction (2026-10-15 21:46 UTC)
+
+Fjall 3.1.10 snapshot sequence is an engine version, not a logical-write counter. The 97 MiB fixture exceeds the default 64 MiB memtable (keyspace/options.rs:91); flush registration and a trivial level move can each advance the shared sequence (lsm-tree version/super_version.rs:113–143; compaction/worker.rs:225–237). This source-backed path explains the observed 10→12 with unchanged contents; no runtime trace establishes the exact interleaving. The aggregate test now compares exact ordered key/value hashes, counts and byte counts for all four keyspaces, admission header, store identity and application revisions before/after reads, complete graph planning and refusal. Engine sequence remains diagnostic. Successful GraphPlanBuilder::finish plus measured charge above 128 MiB and the exact typed Bytes-capacity error distinguish quota refusal from corrupt input or another bound. Limits and historical wire formats are unchanged; execution of this revised oracle remains pending.

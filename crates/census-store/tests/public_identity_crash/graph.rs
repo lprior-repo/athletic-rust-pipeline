@@ -10,6 +10,8 @@ use super::TestResult;
 mod accounting;
 #[path = "graph_physical.rs"]
 mod physical;
+#[path = "graph_source.rs"]
+mod source;
 
 pub(crate) const HEADER: &[u8] = b"manual-context-admission-v1\0header";
 pub(crate) const PREFIX: &[u8] = b"manual-context-admission-v1\0reservation\0";
@@ -69,6 +71,8 @@ pub(crate) fn extend_raw(
     check!(eq; reservation["purpose"]["kind"], json!("raw_generation"));
     check!(eq; reservation["purpose"]["operation"], json!(raw_operation(identity, operation)?));
     check!(eq; reservation["purpose"]["capture"]["store"], json!(identity));
+    let mut source = source::SourceImage::capture(before.rows("entities")?, before.rows("meta")?)?;
+    check!(eq; reservation["purpose"]["capture"]["derived_generation"], json!(source.derived_generation()));
     let mut expected = before.rows("journal")?.clone();
     include(journal, &mut expected, key)?;
     expected.insert(
@@ -94,13 +98,14 @@ pub(crate) fn extend_raw(
             check!(eq; descriptor["incremental"]["bytes"], bytes);
         }
         let rows = physical::verify(journal, descriptor, complete)?;
-        physical::verify_source_rows(&rows, before.rows("entities")?)?;
+        source.observe_object(&rows)?;
         for (key, value) in rows {
             if let Some(prior) = expected.insert(key, value.clone()) {
                 check!(eq; prior, value);
             }
         }
     }
+    source.finish(complete)?;
     Ok(expected)
 }
 

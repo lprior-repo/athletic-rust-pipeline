@@ -328,9 +328,11 @@ fn finish_pending_source_at_capacity(
 
 fn capacity_refusal<T>(result: StoreResult<T>) -> TestResult {
     match result {
-        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "manual admission missing, corrupt, or exhausted",
-        ))) => Ok(()),
+        Err(StoreError::PublicIdentity(PublicIdentityError::AdmissionCapacity {
+            resource: crate::PublicIdentityAdmissionResource::Reservations,
+            needed: 4097,
+            available: 4096,
+        })) => Ok(()),
         Err(error) => Err(format!("unexpected refusal: {error}").into()),
         Ok(_) => Err("exhausted admission accepted new operation".into()),
     }
