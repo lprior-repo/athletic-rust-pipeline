@@ -5,13 +5,15 @@ use census_domain::model::{
     CanonicalSchool,
 };
 use census_domain::{JurisdictionBucket, UsJurisdiction};
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 
 mod aliases;
 mod cohort;
 mod historical;
 mod population;
-pub(super) use aliases::collapse_athletes;
+mod selection;
+pub(super) use aliases::{borrowed_or_collapsed, collapse_athletes};
 pub(crate) use cohort::candidates as cohort_candidates;
 
 pub(crate) fn in_run_scope(bucket: JurisdictionBucket, jurisdictions: &[UsJurisdiction]) -> bool {
@@ -44,15 +46,15 @@ pub struct Derivation<'a> {
     school_state: HashMap<&'a str, Option<UsJurisdiction>>,
     schools: Vec<CanonicalSchool>,
     outside_schools: Vec<CanonicalSchool>,
-    athletes: Vec<CanonicalAthlete>,
+    athletes: Cow<'a, [CanonicalAthlete]>,
     outside_athletes: Vec<CanonicalAthlete>,
     scoped_athletes: usize,
-    meets: Vec<CanonicalMeet>,
+    meets: Cow<'a, [CanonicalMeet]>,
     outside_meets: Vec<CanonicalMeet>,
-    coaches: Vec<CanonicalCoach>,
+    coaches: Cow<'a, [CanonicalCoach]>,
     outside_coaches: Vec<CanonicalCoach>,
-    coach_observations: Vec<CanonicalCoach>,
-    events: Vec<CanonicalEvent>,
+    coach_observations: Cow<'a, [CanonicalCoach]>,
+    events: Cow<'a, [CanonicalEvent]>,
     performances: Vec<&'a CanonicalPerformance>,
     athlete_aliases: &'a HashMap<String, String>,
     dropped_rows: usize,

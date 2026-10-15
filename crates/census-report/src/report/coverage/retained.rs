@@ -80,7 +80,7 @@ fn raw_pr_support(
         .map(|selection| selection.athlete_id().as_str())
         .collect();
     let states = school_state_index(&scanned.schools);
-    for athlete in &scanned.athletes {
+    for athlete in scanned.athletes.iter() {
         if supported.contains(athlete.id.as_str()) {
             let bucket = super::state::bucket_mut(
                 buckets,

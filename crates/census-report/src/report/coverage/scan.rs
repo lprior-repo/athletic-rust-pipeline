@@ -4,13 +4,14 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     EventKind,
 };
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 
 pub(super) struct Scanned<'a> {
     pub(super) schools: Vec<CanonicalSchool>,
     pub(super) coaches: &'a [CanonicalCoach],
     pub(super) meets: &'a [CanonicalMeet],
-    pub(super) athletes: Vec<CanonicalAthlete>,
+    pub(super) athletes: Cow<'a, [CanonicalAthlete]>,
     pub(super) aliases: &'a HashMap<String, String>,
     pub(super) performances: &'a [CanonicalPerformance],
     pub(super) event_ids: HashSet<String>,
@@ -24,7 +25,7 @@ impl<'a> Scanned<'a> {
             schools: dataset.schools.values().cloned().collect(),
             coaches: &dataset.coaches,
             meets: &dataset.meets,
-            athletes: super::super::derivation::collapse_athletes(
+            athletes: super::super::derivation::borrowed_or_collapsed(
                 &dataset.athletes,
                 &dataset.canonical_aliases,
             ),
