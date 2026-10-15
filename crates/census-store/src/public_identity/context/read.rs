@@ -64,7 +64,9 @@ fn rows<T: DeserializeOwned>(
     Ok(rows)
 }
 
-fn next_record(records: &mut crate::read::JournalRecords<'_, '_>) -> StoreResult<crate::read::JournalRecord> {
+fn next_record(
+    records: &mut crate::read::JournalRecords<'_, '_>,
+) -> StoreResult<crate::read::JournalRecord> {
     records
         .next()
         .ok_or_else(|| invalid("retained authority record missing"))?
