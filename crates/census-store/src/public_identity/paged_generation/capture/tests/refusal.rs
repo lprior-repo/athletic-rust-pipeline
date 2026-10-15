@@ -1,4 +1,5 @@
 use super::*;
+mod diagnostic;
 
 #[test]
 fn disabled_input_revisions_refuse_without_implicit_enrollment() -> TestResult {
@@ -43,9 +44,28 @@ fn aggregate_admission_refuses_before_reservation_or_objects() -> TestResult {
     marks(&store, &mut batch, 97);
     batch.durability(Some(PersistMode::SyncData)).commit()?;
     let sequence = store.snapshot().sequence();
-    let id = operation("aggregate-budget")?;
-    assert!(writer.capture_raw_generation_v2(&store, &id).is_err());
+    let before = diagnostic::journal_state(&store)?;
+    let measured = diagnostic::physical_bytes(&store)?;
     assert_eq!(store.snapshot().sequence(), sequence);
+    assert_eq!(diagnostic::journal_state(&store)?, before);
+    assert!(
+        measured > 128 * 1024 * 1024,
+        "aggregate fixture measured only {measured} bytes"
+    );
+    let id = operation("aggregate-budget")?;
+    let result = writer.capture_raw_generation_v2(&store, &id);
+    let after = diagnostic::journal_state(&store)?;
+    eprintln!("aggregate capture result={result:?}; measured_physical_bytes={measured}; sequence={sequence}->{}; journal/header before={before:?}; after={after:?}", store.snapshot().sequence());
+    assert!(
+        result.is_err(),
+        "aggregate capture unexpectedly succeeded: {result:?}"
+    );
+    assert_eq!(
+        store.snapshot().sequence(),
+        sequence,
+        "capture result={result:?}, physical_bytes={measured}"
+    );
+    assert_eq!(after, before);
     assert!(load_graph(&store, writer.store_identity(), &id)?.is_none());
     Ok(())
 }

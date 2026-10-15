@@ -21,6 +21,20 @@ fn enrolled() -> TestResult<(tempfile::TempDir, Store, PublicIdentityWriterV1)> 
     Ok((directory, store, writer))
 }
 
+fn seeded_and_reopened(
+    count: u64,
+) -> TestResult<(tempfile::TempDir, Store, PublicIdentityWriterV1)> {
+    let (directory, store, writer) = fixture()?;
+    seed(&store, count)?;
+    let root = store.root().to_path_buf();
+    drop(writer);
+    drop(store);
+    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    writer.enroll_public_identity_input_revisions_v2(&store, store.snapshot().revision())?;
+    writer.enroll_manual_context_admission_v1(&store)?;
+    Ok((directory, store, writer))
+}
+
 fn operation(label: &str) -> StoreResult<RawGenerationOperationIdV2> {
     RawGenerationOperationIdV2::new(label)
 }

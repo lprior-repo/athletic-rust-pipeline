@@ -68,15 +68,17 @@ fn mutation(store: &Store) -> TestResult {
 }
 
 fn require_moved(result: StoreResult<RawGenerationCaptureOutcomeV2>) -> TestResult {
-    assert!(matches!(result, Err(StoreError::Refused { detail })
-        if detail == "raw public identity generation V2: capture input lineage or revisions moved"));
+    assert!(
+        matches!(&result, Err(StoreError::Refused { detail })
+        if detail == "raw public identity generation V2: capture input lineage or revisions moved"),
+        "expected moved-input refusal, observed {result:?}"
+    );
     Ok(())
 }
 
 #[test]
 fn public_capture_concurrent_source_mutation_after_reservation_refuses_before_seal() -> TestResult {
-    let (_directory, store, writer) = enrolled()?;
-    seed(&store, 513)?;
+    let (_directory, store, writer) = seeded_and_reopened(513)?;
     let authority = authority_state(&store, &writer)?;
     let id = operation("public-before-seal")?;
     let (gate, controller) = rendezvous::pair(Phase::AfterReservation);
@@ -104,8 +106,7 @@ fn public_capture_concurrent_source_mutation_after_reservation_refuses_before_se
 
 #[test]
 fn public_capture_concurrent_source_mutation_after_seal_refuses_final_return() -> TestResult {
-    let (_directory, store, writer) = enrolled()?;
-    seed(&store, 513)?;
+    let (_directory, store, writer) = seeded_and_reopened(513)?;
     let authority = authority_state(&store, &writer)?;
     let id = operation("public-after-seal")?;
     let (gate, controller) = rendezvous::pair(Phase::AfterSeal);
@@ -138,8 +139,7 @@ fn public_capture_concurrent_source_mutation_after_seal_refuses_final_return() -
 
 #[test]
 fn public_same_operation_overlap_reuses_one_charge_and_one_retained_graph() -> TestResult {
-    let (_directory, store, writer) = enrolled()?;
-    seed(&store, 513)?;
+    let (_directory, store, writer) = seeded_and_reopened(513)?;
     let authority = authority_state(&store, &writer)?;
     let id = operation("public-overlap")?;
     let (gate, controller) = rendezvous::pair(Phase::AfterReservation);
