@@ -33,7 +33,7 @@ struct Run<'a> {
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let before = ctx.fetcher.stats().await;
-    let mut run = Run {
+    let run = Run {
         ctx,
         options,
         report: AdapterReport::new(SOURCE_ID, "schools"),
@@ -42,20 +42,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Colorado) {
         return Ok(run.report);
     }
-    let directory = run.directory().await?;
-    let mut run = stream::iter(directory.iter().flat_map(|capture| {
-        capture
-            .rows
-            .iter()
-            .enumerate()
-            .map(move |(index, row)| (index, row, capture.fetched_at.as_str()))
-    }))
-    .map(Ok::<_, CrawlError>)
-    .try_fold(run, |mut run, (index, row, fetched_at)| async move {
-        run.school(index, row, fetched_at).await?;
-        Ok(run)
-    })
-    .await?;
+    let mut run = run.schools().await?;
     if run.report.unfinished.is_empty() {
         run.report.finish_frontier();
     }
@@ -68,6 +55,23 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 }
 
 impl Run<'_> {
+    async fn schools(mut self) -> CrawlResult<Self> {
+        let Some(capture) = self.directory().await? else {
+            return Ok(self);
+        };
+        let (run, _) = stream::iter(capture.rows.into_iter().enumerate())
+            .map(Ok::<_, CrawlError>)
+            .try_fold(
+                (self, capture.fetched_at),
+                |(mut run, fetched_at), (index, row)| async move {
+                    run.school(index, &row, &fetched_at).await?;
+                    Ok((run, fetched_at))
+                },
+            )
+            .await?;
+        Ok(run)
+    }
+
     async fn directory(&mut self) -> CrawlResult<Option<DirectoryCapture>> {
         let fetch = crate::net::FetchOptions {
             refresh: self.ctx.refresh || self.options.refresh,

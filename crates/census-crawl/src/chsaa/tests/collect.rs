@@ -5,6 +5,10 @@ use crate::net::{
 };
 use census_store::{Store, Table};
 
+fn require_send<F: std::future::Future + Send>(future: F) -> F {
+    future
+}
+
 fn seed_cache(cache: &std::path::Path, url: &str, body: &str) -> TestResult {
     seed_cache_at(cache, url, body, "2026-09-27T12:00:00Z")
 }
@@ -39,7 +43,7 @@ fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache() -> Te
         seed_cache(&cache, &school_page_url(&cherry_creek_slug()?), SCHOOL_PAGE)?;
         let store = Store::open(dir.path().join("store"))?;
         let ctx = context(&fetcher, &store)?;
-        let report = collect(&ctx, &options()).await?;
+        let report = require_send(collect(&ctx, &options())).await?;
         check!(eq; report.rows, 1);
         check!(eq; report.errors, 0);
         check!(eq; report.with_email, 0);
@@ -128,7 +132,7 @@ fn directory_school_dates_do_not_follow_detail_capture_refresh() -> TestResult {
         for (detail_stamp, raw_rows) in [("2026-09-22T12:00:00Z", 50), ("2026-09-24T12:00:00Z", 100)] {
             retained_stamps.push(detail_stamp);
             seed_cache_at(&cache, &url, SCHOOL_PAGE, detail_stamp)?;
-            let report = collect(&ctx, &options()).await?;
+            let report = require_send(collect(&ctx, &options())).await?;
             check!(eq; report.errors, 0);
             check!(eq; report.requests, 0);
             let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
