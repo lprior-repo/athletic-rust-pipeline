@@ -196,9 +196,8 @@ impl SchoolIndex {
     ) -> Result<Self, SchoolIndexBuildError> {
         let mut names = HashMap::with_capacity(capacity.names_entries);
         let mut aliases = HashMap::with_capacity(capacity.aliases_entries);
-        let mut by_state: HashMap<UsJurisdiction, Vec<Entry>> = HashMap::with_capacity(
-            capacity.by_state_entries,
-        );
+        let mut by_state: HashMap<UsJurisdiction, Vec<Entry>> =
+            HashMap::with_capacity(capacity.by_state_entries);
 
         for school in schools {
             let Some(state) = school.state else {
@@ -212,13 +211,10 @@ impl SchoolIndex {
             for alias in &school.aliases {
                 record_label(&mut aliases, (state, normalize_name(alias)), &school.id);
             }
-            by_state
-                .entry(state)
-                .or_default()
-                .push(Entry {
-                    normalized: school.normalized_name.clone(),
-                    id: school.id.clone(),
-                });
+            by_state.entry(state).or_default().push(Entry {
+                normalized: school.normalized_name.clone(),
+                id: school.id.clone(),
+            });
         }
 
         Ok(Self {
