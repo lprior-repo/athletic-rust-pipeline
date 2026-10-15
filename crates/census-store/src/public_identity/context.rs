@@ -1,7 +1,13 @@
 mod read;
 mod storage;
 mod wire;
-pub(super) use read::verify as verify_retained;
+pub(super) use read::read as read_inputs;
+#[cfg(test)]
+pub(super) use read::verify_reviewed;
+mod verify;
+pub(super) use verify::{reviewed as verify_reviewed_inputs, source as verify_source_inputs};
+mod decode;
+pub(super) use decode::from_bytes;
 
 use crate::{Entity, StoreError, StoreResult, StoreSnapshot, Table};
 use census_domain::model::{CanonicalAthlete, ReviewCase, ReviewVerdictRecord, SourceObservation};
@@ -62,3 +68,12 @@ mod consumer_snapshot_tests;
 
 #[cfg(test)]
 mod section_budget_tests;
+
+#[cfg(test)]
+pub(in crate::public_identity) mod reviewed_fixture;
+
+#[cfg(test)]
+mod reviewed_consumer_tests;
+
+#[cfg(test)]
+mod local_adjudication_tests;

@@ -33,8 +33,11 @@ mod generation;
 mod identity;
 mod public_identity;
 pub use public_identity::{
-    IdentityCommitOutcomeV1, PublicIdentityError, PublicIdentityQualificationStore,
-    PublicIdentityWriterV1, MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
+    replay_frozen_public_identity_v1, FrozenPublicIdentityBundleV1, IdentityCommitOutcomeV1,
+    LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1, PreparedLocalAdjudicationV1,
+    PublicIdentityError, PublicIdentityQualificationStore, PublicIdentityWriterV1,
+    ReviewedIdentityCommitOutcomeV1, ReviewedIdentityRequestV1, MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
+    MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
 };
 mod inspect;
 mod installation;

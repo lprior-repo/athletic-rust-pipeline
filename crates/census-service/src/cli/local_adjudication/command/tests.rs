@@ -1,0 +1,175 @@
+use super::*;
+use crate::cli::{Cli, Command};
+use census_store::{PublicIdentityError, StoreError};
+use clap::{error::ErrorKind, Parser};
+
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+#[test]
+fn local_identity_cli_registers_inspect_split_and_receipt_without_live_ingress() -> TestResult {
+    let canonical = format!("ath_public_v1_{}", "1".repeat(64));
+    let cli = Cli::try_parse_from([
+        "census-service",
+        "--store",
+        "synthetic-offline-store",
+        "local-identity-adjudication",
+        "inspect",
+        "--canonical",
+        &canonical,
+    ])?;
+    check!(eq; cli.store.as_deref(), Some(Path::new("synthetic-offline-store")));
+    check!(matches!(
+        cli.command,
+        Command::LocalIdentityAdjudication(LocalAdjudicationArgs {
+            command: LocalCommand::Inspect { .. }
+        })
+    ));
+    let cli = Cli::try_parse_from([
+        "census-service",
+        "local-identity-adjudication",
+        "split",
+        "--operation",
+        "synthetic-split",
+        "--file",
+        "synthetic-request.json",
+    ])?;
+    check!(
+        matches!(cli.command, Command::LocalIdentityAdjudication(LocalAdjudicationArgs {
+        command: LocalCommand::Split { operation, file }
+    }) if operation == "synthetic-split" && file == Path::new("synthetic-request.json"))
+    );
+    let cli = Cli::try_parse_from([
+        "census-service",
+        "local-identity-adjudication",
+        "receipt",
+        "--operation",
+        "synthetic-split",
+        "--approval-digest",
+        &"a".repeat(64),
+    ])?;
+    check!(matches!(
+        cli.command,
+        Command::LocalIdentityAdjudication(LocalAdjudicationArgs {
+            command: LocalCommand::Receipt { .. }
+        })
+    ));
+    Ok(())
+}
+
+#[test]
+fn local_identity_cli_refuses_automation_and_remote_approval_switches() -> TestResult {
+    for extra in [
+        "--yes",
+        "--approve",
+        "--approval-digest",
+        "--ingress",
+        "--actor",
+    ] {
+        let error = match Cli::try_parse_from([
+            "census-service",
+            "local-identity-adjudication",
+            "split",
+            "--operation",
+            "synthetic-split",
+            "--file",
+            "synthetic-request.json",
+            extra,
+        ]) {
+            Err(error) => error,
+            Ok(_) => return Err(format!("unsupported bypass accepted: {extra}").into()),
+        };
+        check!(eq; error.kind(), ErrorKind::UnknownArgument);
+    }
+    Ok(())
+}
+
+#[test]
+fn local_identity_cli_requires_an_operation_and_request_file() -> TestResult {
+    for [flag, value] in [
+        ["--operation", "synthetic-split"],
+        ["--file", "synthetic-request.json"],
+    ] {
+        let error = match Cli::try_parse_from([
+            "census-service",
+            "local-identity-adjudication",
+            "split",
+            flag,
+            value,
+        ]) {
+            Err(error) => error,
+            Ok(_) => return Err("incomplete split command accepted".into()),
+        };
+        check!(eq; error.kind(), ErrorKind::MissingRequiredArgument);
+    }
+    Ok(())
+}
+
+#[test]
+fn local_identity_cli_requires_explicit_existing_store_without_initializing_a_root() -> TestResult {
+    let error = match require_root(None) {
+        Err(error) => error,
+        Ok(_) => return Err("implicit store accepted".into()),
+    };
+    check!(error.to_string().contains("requires explicit --store"));
+    let directory = tempfile::tempdir()?;
+    let missing = directory.path().join("absent");
+    let error = match open(&missing) {
+        Err(error) => error,
+        Ok(_) => return Err("missing store initialized".into()),
+    };
+    check!(matches!(
+        error.downcast_ref::<StoreError>(),
+        Some(StoreError::Io { .. })
+    ));
+    check!(!missing.exists());
+    Ok(())
+}
+
+#[test]
+fn local_identity_cli_refuses_legacy_store_and_an_existing_owner() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let legacy = directory.path().join("legacy");
+    drop(Store::open(&legacy)?);
+    let error = match open(&legacy) {
+        Err(error) => error,
+        Ok(_) => return Err("legacy store admitted".into()),
+    };
+    check!(matches!(
+        error.downcast_ref::<StoreError>(),
+        Some(StoreError::PublicIdentity(
+            PublicIdentityError::OptInRequired
+        ))
+    ));
+    let qualified = directory.path().join("qualified");
+    Store::create_public_identity_qualification_v2(&qualified)?;
+    let (store, writer) = open(&qualified)?;
+    let head = writer.head(&store)?;
+    let error = match open(&qualified) {
+        Err(error) => error,
+        Ok(_) => return Err("simultaneous owner admitted".into()),
+    };
+    check!(matches!(
+        error.downcast_ref::<StoreError>(),
+        Some(StoreError::Open { .. })
+    ));
+    check!(eq; writer.head(&store)?, head);
+    Ok(())
+}
+
+#[test]
+fn local_identity_cli_rejects_malformed_request_before_opening_a_store() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let missing = directory.path().join("absent");
+    let input = directory.path().join("invalid.json");
+    std::fs::write(&input, b"{\"actor\":\"model\"}")?;
+    let error = match split(&missing, "synthetic-split", &input) {
+        Err(error) => error,
+        Ok(()) => return Err("malformed request accepted".into()),
+    };
+    check!(matches!(
+        error.downcast_ref::<input::InputError>(),
+        Some(input::InputError::Json(_))
+    ));
+    check!(!missing.exists());
+    Ok(())
+}

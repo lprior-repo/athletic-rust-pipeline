@@ -4,9 +4,17 @@ mod authority;
 mod codec;
 mod commit;
 mod context;
+mod correction;
+mod local_adjudication;
+pub use local_adjudication::{
+    LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1, PreparedLocalAdjudicationV1,
+};
+pub(crate) mod frozen;
 mod init;
 mod inventory;
+mod operation;
 pub(crate) mod qualification;
+mod retained;
 mod witness;
 
 pub(crate) const LIFECYCLE: u32 =
@@ -19,6 +27,11 @@ const HEAD: &str = "public_identity:v1:head";
 const HISTORY: &str = "public_identity:v1:history";
 pub const MAX_PUBLIC_IDENTITY_HISTORY_BYTES: usize = 16 * 1024 * 1024;
 
+pub use correction::{ReviewedIdentityCommitOutcomeV1, ReviewedIdentityRequestV1};
+pub use frozen::{
+    replay_frozen_public_identity_v1, FrozenPublicIdentityBundleV1,
+    MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
+};
 pub(crate) use qualification::{preflight_keyspaces, require_legacy, validate};
 pub use qualification::{PublicIdentityQualificationStore, PublicIdentityWriterV1};
 
@@ -66,6 +79,10 @@ pub enum PublicIdentityError {
     OperationConflict,
     #[error("candidate cannot be established from retained source evidence")]
     NotSourceBound,
+    #[error("retained review does not authorize this identity operation")]
+    NotReviewed,
+    #[error("reviewed identity request must use canonical ledger order")]
+    NonCanonicalRequest,
     #[error("candidate already has a public identity binding")]
     AlreadyBound,
     #[error("public identity reserved namespace requires its owned writer")]

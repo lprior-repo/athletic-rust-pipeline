@@ -64,6 +64,13 @@ enum Pass<'a> {
     Stage(persist::StageTarget<'a>),
 }
 
+pub(crate) fn measure_context_object<F>(emit: F) -> StoreResult<String>
+where
+    F: Fn(&mut ContextRecordSink<'_>) -> StoreResult<()>,
+{
+    Ok(run_pass(Pass::Measure, &emit)?.staged.object)
+}
+
 pub(crate) fn stage_context_object<F>(store: &Store, emit: F) -> StoreResult<StagedContextObject>
 where
     F: Fn(&mut ContextRecordSink<'_>) -> StoreResult<()>,

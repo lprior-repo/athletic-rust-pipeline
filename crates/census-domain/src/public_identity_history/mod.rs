@@ -4,6 +4,7 @@ mod codec;
 mod error;
 mod evidence;
 mod graph;
+pub mod local_adjudication;
 mod matched_group;
 mod merge;
 mod record;

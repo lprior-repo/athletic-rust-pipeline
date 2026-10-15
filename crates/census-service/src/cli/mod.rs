@@ -9,6 +9,7 @@ mod export_data;
 mod gather;
 mod installation;
 mod live;
+mod local_adjudication;
 mod merge_coaches;
 mod national;
 mod open_work;

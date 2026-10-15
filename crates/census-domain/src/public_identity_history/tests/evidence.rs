@@ -4,6 +4,7 @@ use crate::public_identity_history::HistoryError;
 use super::fixture::*;
 use super::*;
 
+mod correction;
 mod matching;
 
 fn accepted_application(observed_at: &str) -> TestResult<AcceptedAthleteIdentity> {
