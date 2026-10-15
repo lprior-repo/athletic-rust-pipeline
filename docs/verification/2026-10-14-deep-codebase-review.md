@@ -473,3 +473,22 @@ time, zero network dispatch and once-only physical-row replay remain asserted.
 | Full workspace | 6,310 passed, six skipped | `a2f452ac`; Nextest `365e0332-5ae6-436a-a1e4-99c7db63baf3` |
 | Check / source lint / format | Passed; same three argument-count advisories | `b8328320` / `79c34282` / `a21e12cd` |
 | Actual capture/export readback | 185 canonical rows, 60 cohort members; XLSX/CSV/JSONL passed | `15af7326`; functional `capture_export --test`, not performance or national qualification |
+
+### Main synchronization through PR58 — 2026-10-15
+
+Integrated PR55 (publication reservation lifetime), PR56 (explicit scoped default features)
+and PR57 (performance-date participation consensus). Push of the integrated repairs succeeded
+at `495b6831`; PR58 subsequently changed only `xtask/README.md` and fast-forwarded cleanly.
+
+| Combined source validation through PR57 | Observed result | Evidence |
+|---|---|---|
+| Check | Passed | `237b3235` |
+| Focused participation/provider scenarios | 22 passed | `9df6448b`; Nextest `c9dfe5c7-dc6f-4e4e-bb95-a0b81922ebef` |
+| Full workspace | 6,333 passed, six skipped | `57c56e62`; Nextest `e955c6e3-8e0c-400b-bc84-691e15ca802f` |
+| Source lint / format | Passed; three existing argument-count advisories | `8ac331c0` / `cbf8c495` |
+| Actual capture/export readback | 185 canonical rows, 60 cohort members; authoritative XLSX/CSV/JSONL passed | `386a9add`; functional oracle, not timing or national qualification |
+
+R11 caller/core and archive-readback proposals remain LOCAL, unapplied and uncompiled.
+GPU review found dropped retained cases and ignored resource billing; Main returned those
+proposals for repair rather than certifying them. An archive proposal also failed actual patch
+applicability checking and remains outside the repository. None closes R11–R14 or `6fhk`.
