@@ -81,7 +81,7 @@ fn create(root: &Path, protocol: CaptureProtocolVersion) -> StoreResult<CaptureQ
     }
     Ok(verified)
 }
-fn claim_empty_root(root: &Path) -> StoreResult<()> {
+pub(crate) fn claim_empty_root(root: &Path) -> StoreResult<()> {
     match std::fs::symlink_metadata(root) {
         Ok(metadata) => {
             if !metadata.is_dir() {
@@ -112,7 +112,7 @@ fn claim_empty_root(root: &Path) -> StoreResult<()> {
     })?;
     crate::fs::fsync_dir(root)
 }
-fn require_claimed_root(root: &Path) -> StoreResult<()> {
+pub(crate) fn require_claimed_root(root: &Path) -> StoreResult<()> {
     let mut entries = std::fs::read_dir(root).map_err(|source| io(root, source))?;
     let first = entries
         .next()

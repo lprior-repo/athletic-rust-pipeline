@@ -24,6 +24,7 @@ impl StoreSnapshot<'_> {
     }
 
     pub fn athlete_identity_projection(&self) -> StoreResult<AthleteIdentityProjection> {
+        self.require_legacy_identity_publication()?;
         let index = self.athlete_identity_index()?;
         self.project_athlete_identities(index)
     }
@@ -32,6 +33,7 @@ impl StoreSnapshot<'_> {
         &self,
         index: AthleteIdentityIndex,
     ) -> StoreResult<AthleteIdentityProjection> {
+        self.require_legacy_identity_publication()?;
         let cases: Vec<ReviewCase> = self.scan(Table::ReviewCases)?;
         let verdicts: Vec<ReviewVerdictRecord> = self.scan(Table::IdentityVerdicts)?;
         let decisions: Vec<AppliedIdentity> = self.scan(Table::AthleteIdentityDecisions)?;

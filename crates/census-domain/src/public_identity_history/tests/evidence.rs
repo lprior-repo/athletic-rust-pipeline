@@ -4,7 +4,9 @@ use crate::public_identity_history::HistoryError;
 use super::fixture::*;
 use super::*;
 
-fn accepted_reference(observed_at: &str) -> TestResult<CandidateDecisionReference> {
+mod matching;
+
+fn accepted_application(observed_at: &str) -> TestResult<AcceptedAthleteIdentity> {
     let school = SchoolId::mint("sch", &["WI", "Fixture School"]);
     let mut athlete = CanonicalAthlete::new(
         &school,
@@ -25,12 +27,16 @@ fn accepted_reference(observed_at: &str) -> TestResult<CandidateDecisionReferenc
         .next()
         .ok_or("missing source application")??;
     match application {
-        IdentityApplication::Accepted(accepted) => Ok(CandidateDecisionReference::from_accepted(
-            &accepted,
-            ReplayLimits::SMALL,
-        )?),
+        IdentityApplication::Accepted(accepted) => Ok(accepted),
         IdentityApplication::Retained(issue) => Err(format!("fixture retained: {issue:?}").into()),
     }
+}
+
+fn accepted_reference(observed_at: &str) -> TestResult<CandidateDecisionReference> {
+    Ok(CandidateDecisionReference::from_accepted(
+        &accepted_application(observed_at)?,
+        ReplayLimits::SMALL,
+    )?)
 }
 
 #[test]

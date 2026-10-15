@@ -71,6 +71,13 @@ fn an_existing_accepted_same_person_decision_can_establish_the_initial_group() -
     };
     let evidence = CandidateDecisionReference::from_accepted(&accepted, ReplayLimits::SMALL)?;
     check!(eq; evidence.kind, CandidateEvidenceKind::SamePerson);
+    check!(evidence.matches_applied(accepted.record(), ReplayLimits::SMALL)?);
+    let mut reversed_reference = evidence.clone();
+    reversed_reference.members.reverse();
+    check!(!reversed_reference.matches_applied(accepted.record(), ReplayLimits::SMALL)?);
+    let mut reversed_record = accepted.record().clone();
+    reversed_record.members.reverse();
+    check!(!evidence.matches_applied(&reversed_record, ReplayLimits::SMALL)?);
     let representative = accepted
         .record()
         .canonical_id

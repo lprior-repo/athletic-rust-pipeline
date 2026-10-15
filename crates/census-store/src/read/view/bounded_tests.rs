@@ -210,3 +210,6 @@ fn bounded_observation_callback_refusal_preserves_error_without_completion() -> 
     );
     Ok(())
 }
+
+#[path = "bounded_tests/preflight.rs"]
+mod preflight;

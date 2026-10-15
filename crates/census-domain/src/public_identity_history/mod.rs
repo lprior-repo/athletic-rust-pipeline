@@ -1,5 +1,6 @@
 mod binding;
 mod budget;
+mod codec;
 mod error;
 mod evidence;
 mod graph;
@@ -12,6 +13,7 @@ mod revocation;
 mod split;
 mod types;
 
+pub use codec::{CandidateHistorySeed, DecodedCandidateHistory};
 pub use error::HistoryError;
 pub use evidence::{CandidateDecisionReference, CandidateEvidenceKind};
 pub use record::{genesis, prepare_next, HistoryRecord, PreparedHistoryRecord, RegistryHead};

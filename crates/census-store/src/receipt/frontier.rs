@@ -86,7 +86,9 @@ impl Store {
             let (key, raw) = guard
                 .into_inner()
                 .map_err(|source| StoreError::Read { source })?;
-            if key.starts_with(b"source_acquisition_attempt_") {
+            if key.starts_with(b"source_acquisition_attempt_")
+                || key.starts_with(b"public_identity")
+            {
                 continue;
             }
             let receipt: Receipt =

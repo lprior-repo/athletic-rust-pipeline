@@ -38,7 +38,7 @@ impl<'store> StoreRevision<'store> {
         Ok(())
     }
 
-    fn ensure_current(&self, store: &Store, operation: &str) -> StoreResult<()> {
+    pub(crate) fn ensure_current(&self, store: &Store, operation: &str) -> StoreResult<()> {
         self.ensure_origin(store, operation)?;
         let evidence = store.evidence_generation();
         let derived = store.derived_generation();

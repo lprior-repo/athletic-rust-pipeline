@@ -41,6 +41,7 @@ mod identity_corroboration;
 mod identity_decision;
 mod identity_index;
 mod identity_projection;
+mod identity_review_partition;
 mod identity_validation;
 mod installation;
 mod meet;
@@ -144,6 +145,7 @@ pub use identity_index::{AthleteIdentityIndex, IdentityError};
 pub use identity_projection::{
     AthleteIdentityProjection, IdentityAliasTransition, IdentityProjectionBuilder,
 };
+pub use identity_review_partition::separate_generic_identity_cases;
 pub use identity_validation::{IdentityDecisionIssue, VerdictKind};
 pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
 pub use natural_key::NaturalKey;

@@ -16,6 +16,8 @@ mod object;
 mod object_read;
 mod object_wire;
 mod operations;
+mod public_identity;
+pub use public_identity::AcceptedPublicIdentitySnapshot;
 mod regions;
 mod run;
 

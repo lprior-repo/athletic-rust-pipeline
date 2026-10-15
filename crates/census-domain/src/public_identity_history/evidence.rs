@@ -1,11 +1,12 @@
 use crate::model::{
-    serialized_digest, AcceptedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId,
+    serialized_digest, AcceptedAthleteIdentity, AppliedAthleteIdentity, AppliedIdentityKind,
+    AthleteCandidateId,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::{HistoryError, ReplayLimits};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CandidateEvidenceKind {
     SourceBound,
     SamePerson,
@@ -25,7 +26,21 @@ impl CandidateDecisionReference {
         application: &AcceptedAthleteIdentity,
         limits: ReplayLimits,
     ) -> Result<Self, HistoryError> {
-        let record = application.record();
+        Self::from_record(application.record(), limits)
+    }
+
+    pub fn matches_applied(
+        &self,
+        record: &AppliedAthleteIdentity,
+        limits: ReplayLimits,
+    ) -> Result<bool, HistoryError> {
+        Ok(self == &Self::from_record(record, limits)?)
+    }
+
+    fn from_record(
+        record: &AppliedAthleteIdentity,
+        limits: ReplayLimits,
+    ) -> Result<Self, HistoryError> {
         super::budget::accepted_reference(record, limits)?;
         let kind = match record.kind {
             AppliedIdentityKind::SourceBound => CandidateEvidenceKind::SourceBound,

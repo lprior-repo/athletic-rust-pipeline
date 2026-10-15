@@ -1,9 +1,9 @@
 use census_domain::model::{
-    AcceptedAthleteIdentity, IdentityApplication, IdentityError, IdentityProjectionBuilder,
-    ReviewCase, ReviewState, ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY,
+    separate_generic_identity_cases, AcceptedAthleteIdentity, IdentityApplication, IdentityError,
+    IdentityProjectionBuilder, ReviewCase, ReviewState, ReviewVerdictRecord,
 };
 use census_store::{Store, StoreError, StoreResult, Table, MAX_IDENTITY_APPLICATION_BATCH};
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 
 type GenericCases<'a> = HashMap<&'a str, Vec<&'a ReviewCase>>;
 
@@ -11,7 +11,7 @@ pub(super) fn apply_decisions(store: &Store, observed_at: &str) -> StoreResult<u
     let snapshot = store.snapshot();
     let cases: Vec<ReviewCase> = snapshot.scan(Table::ReviewCases)?;
     let verdicts: Vec<ReviewVerdictRecord> = snapshot.scan(Table::IdentityVerdicts)?;
-    let (generic, bound) = separate_generic_cases(cases, &verdicts);
+    let (generic, bound) = separate_generic_identity_cases(cases, &verdicts);
     let mut generic_cases: GenericCases<'_> = HashMap::new();
     for case in &generic {
         generic_cases
@@ -55,32 +55,6 @@ pub(super) fn apply_decisions(store: &Store, observed_at: &str) -> StoreResult<u
     flush_applications(store, &mut accepted, &mut applied, &generic_cases)?;
     store.replace_many(Table::ReviewCases, &retained)?;
     Ok(applied)
-}
-
-fn separate_generic_cases(
-    cases: Vec<ReviewCase>,
-    verdicts: &[ReviewVerdictRecord],
-) -> (Vec<ReviewCase>, Vec<ReviewCase>) {
-    let by_case: HashMap<_, _> = verdicts
-        .iter()
-        .map(|row| (row.case_id.as_str(), row))
-        .collect();
-    let members: BTreeSet<_> = cases
-        .iter()
-        .filter(|case| {
-            case.family == ATHLETE_IDENTITY_FAMILY && case.state == ReviewState::Resolved
-        })
-        .flat_map(|case| case.member_ids.iter().cloned())
-        .collect();
-    cases.into_iter().partition(|case| {
-        case.family == ATHLETE_IDENTITY_FAMILY
-            && case.member_ids.is_empty()
-            && members.contains(case.subject_id.as_str())
-            && matches!(case.state, ReviewState::Pending | ReviewState::Retained)
-            && by_case
-                .get(case.id.as_str())
-                .is_none_or(|row| !row.accepted && row.kind == "insufficient_evidence")
-    })
 }
 
 fn stage_application(
