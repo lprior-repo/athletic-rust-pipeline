@@ -67,6 +67,13 @@ pub(crate) fn refuse_identity_write(
     Ok(())
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PublicIdentityAdmissionResource {
+    Bytes,
+    Roots,
+    Reservations,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum PublicIdentityError {
     #[error("public identity qualification requires a new empty root")]
@@ -82,6 +89,14 @@ pub enum PublicIdentityError {
     ForeignStore,
     #[error("public identity ledger is missing or inconsistent: {0}")]
     Corrupt(&'static str),
+    #[error(
+        "public identity admission capacity exhausted for {resource:?}: needed {needed}, available {available}"
+    )]
+    AdmissionCapacity {
+        resource: PublicIdentityAdmissionResource,
+        needed: u64,
+        available: u64,
+    },
     #[error("public identity registry head moved")]
     HeadMoved,
     #[error("public identity operation conflicts with its immutable receipt")]

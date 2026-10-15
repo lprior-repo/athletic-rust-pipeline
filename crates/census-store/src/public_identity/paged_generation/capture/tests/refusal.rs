@@ -44,9 +44,30 @@ fn aggregate_admission_refuses_before_reservation_or_objects() -> TestResult {
     marks(&store, &mut batch, 97);
     batch.durability(Some(PersistMode::SyncData)).commit()?;
     let sequence = store.snapshot().sequence();
+    let before_physical = diagnostic::physical_state(&store)?;
+    eprintln!("aggregate before journal read: sequence={sequence}, state={before_physical:?}");
     let before = diagnostic::journal_state(&store)?;
+    let admission: serde_json::Value = serde_json::from_slice(&before.2)?;
+    assert_eq!(
+        admission.get("roots").and_then(serde_json::Value::as_u64),
+        Some(0)
+    );
+    assert_eq!(
+        admission
+            .get("reservations")
+            .and_then(serde_json::Value::as_u64),
+        Some(0)
+    );
+    let after_journal_read = diagnostic::physical_state(&store)?;
+    eprintln!("aggregate after journal read: state={after_journal_read:?}, journal={before:?}");
     let measured = diagnostic::physical_bytes(&store)?;
-    assert_eq!(store.snapshot().sequence(), sequence);
+    let after_measure = diagnostic::physical_state(&store)?;
+    eprintln!(
+        "aggregate after measurement: bytes={measured}, state={after_measure:?}, journal={:?}",
+        diagnostic::journal_state(&store)?
+    );
+    assert_eq!(after_journal_read, before_physical);
+    assert_eq!(after_measure, before_physical);
     assert_eq!(diagnostic::journal_state(&store)?, before);
     assert!(
         measured > 128 * 1024 * 1024,
@@ -56,15 +77,19 @@ fn aggregate_admission_refuses_before_reservation_or_objects() -> TestResult {
     let result = writer.capture_raw_generation_v2(&store, &id);
     let after = diagnostic::journal_state(&store)?;
     eprintln!("aggregate capture result={result:?}; measured_physical_bytes={measured}; sequence={sequence}->{}; journal/header before={before:?}; after={after:?}", store.snapshot().sequence());
-    assert!(
-        result.is_err(),
-        "aggregate capture unexpectedly succeeded: {result:?}"
-    );
-    assert_eq!(
-        store.snapshot().sequence(),
-        sequence,
-        "capture result={result:?}, physical_bytes={measured}"
-    );
+    match &result {
+        Err(StoreError::PublicIdentity(crate::PublicIdentityError::AdmissionCapacity {
+            resource: crate::PublicIdentityAdmissionResource::Bytes,
+            needed,
+            available,
+        })) => {
+            assert_eq!(*available, 128 * 1024 * 1024);
+            assert!(*needed > *available);
+            assert!(*needed >= measured);
+        }
+        other => return Err(format!("unexpected aggregate refusal: {other:?}").into()),
+    }
+    assert_eq!(diagnostic::physical_state(&store)?, before_physical);
     assert_eq!(after, before);
     assert!(load_graph(&store, writer.store_identity(), &id)?.is_none());
     Ok(())
