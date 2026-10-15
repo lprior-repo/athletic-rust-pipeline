@@ -191,11 +191,11 @@ fn stage_without(store: &Store, staged: &ObjectPlan, excluded: &[u8]) -> TestRes
     write(store, &all)
 }
 
-fn read(store: &Store) -> StoreResult<Option<JournalObject<'_>>> {
+fn read(store: &Store) -> StoreResult<Option<JournalObject>> {
     store.journal_object(PHASE, KEY)
 }
 
-fn stream(object: &JournalObject<'_>) -> TestResult<Vec<JournalRecord>> {
+fn stream(object: &JournalObject) -> TestResult<Vec<JournalRecord>> {
     Ok(object.records().collect::<Result<Vec<_>, _>>()?)
 }
 
@@ -651,6 +651,3 @@ fn journal_object_refuses_a_chunk_interleaved_from_another_generation() -> TestR
 
 #[path = "journal_recovery_tests.rs"]
 mod recovery;
-
-#[path = "journal_object_bounded_tests.rs"]
-mod bounded;

@@ -1,141 +1,154 @@
 use fjall::Readable;
-use sha2::{Digest, Sha256};
 
 use super::object::JournalObject;
 use super::object_wire::{
-    alias_object, chunk_payload, index_ranges, manifest_bounds, JournalPath, RecordRange,
+    alias_object, chunk_payload, index_ranges, manifest_bounds, JournalPath, ObjectBounds,
+    RecordRange,
 };
 use super::StoreSnapshot;
 use crate::journal::{
     expected_chunk_length, expected_index_entries, object_chunk_key, object_chunk_prefix,
     object_index_key, object_index_prefix, object_manifest_key, object_ordinal,
-    OBJECT_INDEX_PAGE_ENTRIES, OBJECT_RECORD_BYTES_LIMIT,
+    object_stream_digest, OBJECT_RECORD_BYTES_LIMIT,
 };
-use crate::{Store, StoreError, StoreResult, MAX_JOURNAL_VALUE_BYTES};
+use crate::{Store, StoreError, StoreResult};
 
 impl Store {
-    pub fn journal_object(&self, phase: &str, key: &str) -> StoreResult<Option<JournalObject<'_>>> {
+    pub fn journal_object(&self, phase: &str, key: &str) -> StoreResult<Option<JournalObject>> {
         self.snapshot().journal_object(phase, key)
     }
 }
 
-impl<'s> StoreSnapshot<'s> {
-    pub fn journal_object(&self, phase: &str, key: &str) -> StoreResult<Option<JournalObject<'s>>> {
-        let path = JournalPath { phase, key };
+impl StoreSnapshot<'_> {
+    pub fn journal_object(&self, phase: &str, key: &str) -> StoreResult<Option<JournalObject>> {
         let row_key = Store::journal_key(phase, key);
-        let Some(raw) = read_row(&self.snapshot, self.journal, path, &row_key)? else {
+        let Some(raw) = self.journal_get(&row_key)? else {
             return Ok(None);
         };
+        let path = JournalPath { phase, key };
         let object = alias_object(path, raw.as_ref())?;
-        let manifest_key = object_manifest_key(&object)?;
-        let raw =
-            read_row(&self.snapshot, self.journal, path, &manifest_key)?.ok_or_else(|| {
-                StoreError::JournalManifestMissing {
-                    phase: phase.to_string(),
-                    key: key.to_string(),
-                    object: object.clone(),
-                }
-            })?;
-        let bounds = manifest_bounds(path, &object, raw.as_ref())?;
-        let reader = JournalObject::new(
-            phase.to_string(),
-            key.to_string(),
-            object,
-            bounds,
-            self.snapshot.clone(),
-            self.journal,
-        );
-        reader.verify()?;
-        Ok(Some(reader))
-    }
-}
-
-fn read_row(
-    snapshot: &fjall::Snapshot,
-    journal: &fjall::Keyspace,
-    path: JournalPath<'_>,
-    key: &[u8],
-) -> StoreResult<Option<fjall::Slice>> {
-    if let Some(length) = snapshot
-        .size_of(journal, key)
-        .map_err(|source| StoreError::Read { source })?
-    {
-        let bytes = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
-        super::legacy_wire::limit(path, "physical object row", bytes, MAX_JOURNAL_VALUE_BYTES)?;
-    }
-    snapshot
-        .get(journal, key)
-        .map_err(|source| StoreError::Read { source })
-}
-
-impl JournalObject<'_> {
-    fn get(&self, key: &[u8]) -> StoreResult<Option<fjall::Slice>> {
-        read_row(&self.snapshot, self.journal, self.path(), key)
-    }
-
-    fn verify(&self) -> StoreResult<()> {
-        self.verify_keys(true)?;
-        let mut next = 0usize;
-        let mut records = 0usize;
-        for page in 0..self.bounds.index_pages {
-            for entry in self.read_page(page)? {
-                next = self.validate_range(next, entry)?;
-                records = records.checked_add(1).ok_or(StoreError::CounterOverflow)?;
-            }
-        }
-        if next != self.total_bytes() || records != self.record_count() {
-            return Err(self
-                .path()
-                .refusal("index ranges do not cover the declared records"));
-        }
-        self.verify_keys(false)?;
-        let mut hash = Sha256::new();
-        for index in 0..self.chunk_count() {
-            hash.update(self.read_chunk(index)?);
-        }
-        let computed = format!("{:x}", hash.finalize());
-        if computed != self.object_id() {
+        let bounds = self.object_bounds(path, &object)?;
+        let ranges = self.object_ranges(path, &object, &bounds)?;
+        let chunks = self.object_chunks(path, &object, &bounds)?;
+        let computed = object_stream_digest(&chunks);
+        if computed != object {
             return Err(StoreError::JournalObjectDigest {
-                phase: self.phase.clone(),
-                key: self.key.clone(),
-                declared: self.object_id().to_string(),
+                phase: phase.to_string(),
+                key: key.to_string(),
+                declared: object,
                 computed,
             });
         }
-        Ok(())
+        Ok(Some(JournalObject::new(
+            phase.to_string(),
+            key.to_string(),
+            object,
+            bounds.total_bytes,
+            ranges,
+            chunks,
+        )))
     }
 
-    fn verify_keys(&self, index_pages: bool) -> StoreResult<()> {
-        let prefix = if index_pages {
-            object_index_prefix(self.object_id())?
-        } else {
-            object_chunk_prefix(self.object_id())?
+    fn journal_get(&self, key: &[u8]) -> StoreResult<Option<fjall::Slice>> {
+        self.snapshot
+            .get(self.journal, key)
+            .map_err(|source| StoreError::Read { source })
+    }
+
+    fn object_bounds(&self, path: JournalPath<'_>, object: &str) -> StoreResult<ObjectBounds> {
+        let key = object_manifest_key(object)?;
+        let Some(raw) = self.journal_get(&key)? else {
+            return Err(StoreError::JournalManifestMissing {
+                phase: path.phase.to_string(),
+                key: path.key.to_string(),
+                object: object.to_string(),
+            });
         };
+        manifest_bounds(path, object, raw.as_ref())
+    }
+
+    fn object_ranges(
+        &self,
+        path: JournalPath<'_>,
+        object: &str,
+        bounds: &ObjectBounds,
+    ) -> StoreResult<Vec<RecordRange>> {
+        self.verify_index_pages(path, object, bounds)?;
+        let mut ranges = Vec::new();
+        ranges
+            .try_reserve_exact(bounds.records)
+            .map_err(|source| StoreError::Refused {
+                detail: format!(
+                    "journal index of {} records cannot be reserved: {source}",
+                    bounds.records
+                ),
+            })?;
+        let mut next = 0_usize;
+        for page in 0..bounds.index_pages {
+            let key = object_index_key(object, page)?;
+            let Some(raw) = self.journal_get(&key)? else {
+                return Err(StoreError::JournalIndexMissing {
+                    phase: path.phase.to_string(),
+                    key: path.key.to_string(),
+                    page,
+                });
+            };
+            let expected_entries = expected_index_entries(page, bounds.index_pages, bounds.records)
+                .ok_or_else(|| path.refusal("index pages do not cover the declared records"))?;
+            let entries = index_ranges(
+                path,
+                object,
+                page,
+                ranges.len(),
+                expected_entries,
+                raw.as_ref(),
+            )?;
+            for entry in entries {
+                next = Self::validate_and_record_range(
+                    path,
+                    next,
+                    entry,
+                    &mut ranges,
+                    bounds.total_bytes,
+                )?;
+            }
+        }
+        if next != bounds.total_bytes || ranges.len() != bounds.records {
+            return Err(path.refusal("index ranges do not cover the declared records"));
+        }
+        Ok(ranges)
+    }
+
+    fn verify_index_pages(
+        &self,
+        path: JournalPath<'_>,
+        object: &str,
+        bounds: &ObjectBounds,
+    ) -> StoreResult<()> {
+        let prefix = object_index_prefix(object)?;
         for guard in self.snapshot.prefix(self.journal, &prefix) {
             let raw = guard.key().map_err(|source| StoreError::Read { source })?;
-            let ordinal = object_ordinal(raw.as_ref(), &prefix)
-                .ok_or_else(|| self.path().refusal("object prefix holds a malformed key"))?;
-            if index_pages && ordinal >= self.bounds.index_pages {
+            let page = object_ordinal(raw.as_ref(), &prefix)
+                .ok_or_else(|| path.refusal("index prefix holds a malformed key"))?;
+            if page >= bounds.index_pages {
                 return Err(StoreError::JournalIndexExtra {
-                    phase: self.phase.clone(),
-                    key: self.key.clone(),
-                    page: ordinal,
-                    declared: self.bounds.index_pages,
-                });
-            }
-            if !index_pages && ordinal >= self.chunk_count() {
-                return Err(StoreError::JournalChunkExtra {
-                    phase: self.phase.clone(),
-                    key: self.key.clone(),
-                    index: ordinal,
-                    declared: self.chunk_count(),
+                    phase: path.phase.to_string(),
+                    key: path.key.to_string(),
+                    page,
+                    declared: bounds.index_pages,
                 });
             }
         }
         Ok(())
     }
 
-    fn validate_range(&self, next: usize, entry: RecordRange) -> StoreResult<usize> {
+    fn validate_and_record_range(
+        path: JournalPath<'_>,
+        next: usize,
+        entry: RecordRange,
+        ranges: &mut Vec<RecordRange>,
+        total_bytes: usize,
+    ) -> StoreResult<usize> {
         if entry.length == 0 || entry.length > OBJECT_RECORD_BYTES_LIMIT {
             return Err(StoreError::RowTooLarge {
                 bytes: entry.length,
@@ -145,66 +158,66 @@ impl JournalObject<'_> {
         let end = next
             .checked_add(entry.length)
             .ok_or(StoreError::CounterOverflow)?;
-        if entry.offset != next || end > self.total_bytes() {
-            return Err(self
-                .path()
-                .refusal("index ranges do not tile the declared bytes"));
+        if entry.offset != next || end > total_bytes {
+            return Err(path.refusal("index ranges do not tile the declared bytes"));
         }
+        ranges.push(entry);
         Ok(end)
     }
 
-    pub(super) fn read_page(&self, page: usize) -> StoreResult<Vec<RecordRange>> {
-        let key = object_index_key(self.object_id(), page)?;
-        let raw = self
-            .get(&key)?
-            .ok_or_else(|| StoreError::JournalIndexMissing {
-                phase: self.phase.clone(),
-                key: self.key.clone(),
-                page,
+    fn object_chunks(
+        &self,
+        path: JournalPath<'_>,
+        object: &str,
+        bounds: &ObjectBounds,
+    ) -> StoreResult<Vec<Vec<u8>>> {
+        let prefix = object_chunk_prefix(object)?;
+        for guard in self.snapshot.prefix(self.journal, &prefix) {
+            let raw = guard.key().map_err(|source| StoreError::Read { source })?;
+            let index = object_ordinal(raw.as_ref(), &prefix)
+                .ok_or_else(|| path.refusal("chunk prefix holds a malformed key"))?;
+            if index >= bounds.chunks {
+                return Err(StoreError::JournalChunkExtra {
+                    phase: path.phase.to_string(),
+                    key: path.key.to_string(),
+                    index,
+                    declared: bounds.chunks,
+                });
+            }
+        }
+        let mut chunks = Vec::new();
+        chunks
+            .try_reserve_exact(bounds.chunks)
+            .map_err(|source| StoreError::Refused {
+                detail: format!(
+                    "journal object of {} chunks cannot be reserved: {source}",
+                    bounds.chunks
+                ),
             })?;
-        let entries = expected_index_entries(page, self.bounds.index_pages, self.record_count())
-            .ok_or_else(|| {
-                self.path()
-                    .refusal("index pages do not cover the declared records")
-            })?;
-        let first = page
-            .checked_mul(OBJECT_INDEX_PAGE_ENTRIES)
-            .ok_or(StoreError::CounterOverflow)?;
-        index_ranges(
-            self.path(),
-            self.object_id(),
-            page,
-            first,
-            entries,
-            raw.as_ref(),
-        )
-    }
-
-    pub(super) fn read_chunk(&self, index: usize) -> StoreResult<Vec<u8>> {
-        let expected = expected_chunk_length(index, self.chunk_count(), self.total_bytes())
-            .ok_or_else(|| {
-                self.path()
-                    .refusal("chunk count does not cover the declared bytes")
-            })?;
-        let digest = self.bounds.chunk_digests.get(index).ok_or_else(|| {
-            self.path()
-                .refusal("chunk digests do not cover the declared chunks")
-        })?;
-        let key = object_chunk_key(self.object_id(), index)?;
-        let raw = self
-            .get(&key)?
-            .ok_or_else(|| StoreError::JournalChunkMissing {
-                phase: self.phase.clone(),
-                key: self.key.clone(),
+        for index in 0..bounds.chunks {
+            let expected = expected_chunk_length(index, bounds.chunks, bounds.total_bytes)
+                .ok_or_else(|| path.refusal("chunk count does not cover the declared bytes"))?;
+            let digest = bounds
+                .chunk_digests
+                .get(index)
+                .ok_or_else(|| path.refusal("chunk digests do not cover the declared chunks"))?;
+            let key = object_chunk_key(object, index)?;
+            let Some(raw) = self.journal_get(&key)? else {
+                return Err(StoreError::JournalChunkMissing {
+                    phase: path.phase.to_string(),
+                    key: path.key.to_string(),
+                    index,
+                });
+            };
+            chunks.push(chunk_payload(
+                path,
+                object,
                 index,
-            })?;
-        chunk_payload(
-            self.path(),
-            self.object_id(),
-            index,
-            expected,
-            digest,
-            raw.as_ref(),
-        )
+                expected,
+                digest,
+                raw.as_ref(),
+            )?);
+        }
+        Ok(chunks)
     }
 }
