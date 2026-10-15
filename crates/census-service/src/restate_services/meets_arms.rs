@@ -1,3 +1,4 @@
+mod access_completion;
 mod diagnostics;
 mod prerequisites;
 #[cfg(test)]
@@ -15,6 +16,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 pub(super) use walks::required;
+
+const OUTCOME_PHASE: &str = "meet_fragment_outcomes_v1";
 
 pub(super) const MEETS_ARMS: &[(&str, MeetsArm)] = &[
     (crate::census::SOURCE, MeetsArm::MilesplitIndex),
@@ -53,9 +56,8 @@ pub(super) async fn collect_fragment(
     source: (String, usize),
     identity: String,
 ) -> Result<Json<MeetsStageOutcome>, HandlerError> {
-    const PHASE: &str = "meet_fragment_outcomes_v1";
     if let Some(previous) = store
-        .journal_payload(PHASE, &identity)
+        .journal_payload(OUTCOME_PHASE, &identity)
         .map_err(store_error)?
     {
         return serde_json::from_value(previous)
@@ -92,9 +94,7 @@ pub(super) async fn collect_fragment(
         spool,
         next,
     };
-    store
-        .journal_done(PHASE, &outcome.identity, &outcome)
-        .map_err(store_error)?;
+    access_completion::retain_and_complete(&store, &fetcher, &outcome).await?;
     Ok(Json(outcome))
 }
 
