@@ -22,7 +22,7 @@ mod store_evidence;
 #[cfg(test)]
 mod tests;
 
-pub(super) use store_evidence::{inspect_store, StoreEvidence};
+pub(super) use store_evidence::{inspect_store, sample_archive_activity, StoreEvidence};
 const MAX_OBJECTS: usize = 1_000_000;
 const MAX_ENDPOINTS: usize = 4096;
 
@@ -121,6 +121,7 @@ fn reply(
         silent_sources,
         endpoints,
         jurisdictions: rows,
+        archive_capture_activity: evidence.archive_capture_activity.clone(),
     })
 }
 

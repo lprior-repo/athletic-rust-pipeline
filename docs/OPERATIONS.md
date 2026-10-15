@@ -576,6 +576,25 @@ inspection rather than deleting a potentially unique capture after an IO/publica
 Lock filenames are synchronization artifacts, not evidence of a held lock. Do not unlink them
 while processes can use the archive: replacing a lock inode can break mutual exclusion.
 
+`open-work` reports `archive_capture_activity` from the serving store owner. For two-sample growth:
+
+```sh
+target/moon-portable/x86_64-unknown-linux-gnu/release/census-service open-work \
+  --ingress http://127.0.0.1:18095 --capture-sample-seconds 5 --json
+```
+
+The optional interval is 1–60 seconds. JSON contains the second `open_work` reply and
+`archive_artifact_growth`. Counts represent immutable metadata/body addresses and logical body
+bytes—not requests, ingest completions, run-attributed population, physical disk usage or body
+integrity. Identical retained addresses do not increment; different metadata can share one body.
+Comparison requires the same store/directory/metric epoch, non-regressing counters and ordered
+server timestamps. Its elapsed time is the server finish-to-finish interval, not the requested sleep.
+The read-only scan takes the existing archive fence nonblocking, with no creation or recovery.
+Busy, missing, lock/I/O, unexpected-layout, corrupt, over-budget, unsupported, unavailable-store-ID
+and legacy inventories are **unmeasured**, never zero or prefix totals. Limits are 262,144 visited
+entries, 64 KiB per metadata record, 64 MiB total metadata and 32 MiB per body. Stable directory
+identity is required for a comparable epoch.
+
 Arbiter incomplete-response recovery uses `arbiter_coaches_incomplete_v2:<state>:<org>:<public-id>`
 with version-2 owner-bound payloads. An unchanged incomplete cached response triggers an ordinary
 admitted refresh; partial valid facts survive and only a complete owned acquisition receives its

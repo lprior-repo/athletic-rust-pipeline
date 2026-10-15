@@ -97,8 +97,10 @@ removed-ledger claims are not guarantees about the installed server version.
 
 ### Local restart and continuation
 
-For the native local node (`/home/lewis/bin/restate-server`, per-run
-`var/<run>/restate.toml`), retain the node's durable base directory, store, browser
+Use pinned Restate **1.7.10** at
+`$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server`, or a verified
+`RESTATE_SERVER_BIN` override; check `--version` rather than assuming a generic local binary
+matches. For the per-run `var/<run>/restate.toml`, retain the node's durable base directory, store, browser
 profile, logs and publications. A fresh qualification uses a new store, unused
 run namespace, endpoint port and registration; reusable production must not use
 that procedure as an annual reset. Enrollment alone does not authorize production
@@ -111,13 +113,15 @@ closed ports before handing ownership over. Never SIGKILL or delete durable stat
 to manufacture a fresh or drained result.
 
 For a fresh isolated node, use unique node/cluster names and a new `base-dir`,
-start `restate-server --no-logo -c var/<run>/restate.toml`, and wait for its
-`Admin:` and `HTTP Ingress:` banners. Start the verified immutable endpoint
+start the verified binary with `--no-logo -c var/<run>/restate.toml`. Confirm
+`Ingress HTTP listening` and `Admin API starting` logs and a successful admin `GET /deployments`.
+Start the verified immutable endpoint
 against its intended store on an unused port, with an absolute browser-profile
 path and `/usr/bin/chromium` when that lane is configured. Athletic.net requires
 the [headed profile](OPERATIONS.md#browser-lane); a headless CLI flag does not
 waive that policy. Register the endpoint and inspect the discovered service
 catalog before submitting `census-service national --ingress <origin> --detach`.
+Endpoint discovery uses HTTP/2; an HTTP/1 GET is not a valid endpoint readiness probe.
 Observe through ingress/admin APIs, never a second opener of the live store.
 
 A legacy store accepts exactly one census run. A different `--revision` is

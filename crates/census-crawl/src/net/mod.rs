@@ -43,6 +43,11 @@ pub use types::{
     EvidenceLane, FetchError, FetchOptions, FetchOutcome, FetchStats, HostTraffic, RedirectHop,
     RefusalEvidenceLoss,
 };
+mod activity;
+pub use activity::{
+    sample_archive_artifacts, ArchiveActivityReason, ArchiveActivitySample, ArchiveActivityScan,
+    ARCHIVE_ACTIVITY_METRIC_VERSION,
+};
 
 pub use representation::RepresentationHeaders;
 pub(crate) use types::host_of;

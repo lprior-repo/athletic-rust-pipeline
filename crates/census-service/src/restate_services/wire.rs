@@ -19,7 +19,9 @@ pub use ingest::{
 pub(super) mod open;
 
 pub use open::{
-    JurisdictionOpen, OpenWorkReply, OpenWorkRequest, SourceObjectInventory, SourceObjectOpen,
+    ArchiveCaptureActivity, ArchiveCaptureEpoch, ArchiveCaptureSample, ArchiveCaptureUnmeasured,
+    ArchiveUnmeasuredReason, JurisdictionOpen, OpenWorkReply, OpenWorkRequest,
+    SourceObjectInventory, SourceObjectOpen, ARCHIVE_ACTIVITY_METRIC_VERSION,
 };
 
 pub(super) mod plan;

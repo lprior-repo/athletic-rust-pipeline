@@ -492,3 +492,49 @@ R11 caller/core and archive-readback proposals remain LOCAL, unapplied and uncom
 GPU review found dropped retained cases and ignored resource billing; Main returned those
 proposals for repair rather than certifying them. An archive proposal also failed actual patch
 applicability checking and remains outside the repository. None closes R11–R14 or `6fhk`.
+
+### Archive artifact-growth readback — 2026-10-15
+
+Implemented `open_work.archive_capture_activity` and opt-in `open-work
+--capture-sample-seconds 1..60`. This counts complete immutable metadata/body addresses and
+logical body lengths, not physical requests, capture occurrences, current-source authority or
+run-attributed population. Missing, busy, invalid and bounded-out inventories remain unmeasured.
+The serving process samples its existing store; the CLI never opens Fjall.
+
+| Executed verification | Observed result | Evidence |
+|---|---|---|
+| Check | Passed | `3d1252a2` |
+| Source lint / format | Passed; three existing argument-count advisories | `918d977d` / `64a5a57e` |
+| Full workspace | 6,346 passed, six skipped | `fe44c9f4`; includes real archive corruption, symlink and cumulative-metadata-budget cases, plus epoch/time/count comparison boundaries |
+| Portable native binaries | Built successfully | `7cc99da3`; remote cache upload warned, build passed |
+| Native capture publication | Second pair changed two metadata documents to four; one shared body remained 14 bytes | Actual loopback Fetcher → archive → native Restate `Census/open_work`; `run-scoped` / `8e1db0d4` |
+| Capacity exhausted | Both new captures refused with attributable used/reserved/requested/projected/capacity diagnostics; counts stayed 4 / 1 / 14 | `CENSUS_ARCHIVE_CAPACITY_BYTES=1`; `run-scoped` / `19becc40` |
+| Busy archive fence | `unmeasured`, reason `fence-busy`; no zero/prefix inventory | External `flock` around actual ingress request |
+| Actual two-sample CLI | Zero added documents/bodies/bytes over four server seconds | Requested interval one second; actual finish-to-finish elapsed, not a fabricated one-second rate |
+| CLI boundaries | Zero and 61 refused, exit 2 | Actual portable CLI |
+| Graceful teardown | Endpoint and node exited 0; all four assigned ports closed | Accepted = completed = 453; cancelled/timed-out/aborted/panicked/failed/remaining = 0 |
+
+Commands used the repository launcher: `env -u CI tools/moon-local run pipeline:build-portable`;
+the temporary Rust smoke ran through `pipeline:run-scoped -p census-service --example
+review_archive_readback`, not Cargo. Its retained source, exact invocation output, deployment,
+configuration, manifests, logs and observed SHA-256 identities are under
+`var/review-archive-20261015T015311946Z/`; the temporary example was removed from project source.
+The native node was the pinned Restate 1.7.10 binary. The deployment registered all twelve services
+using HTTP/2 endpoint discovery. Both owned processes were stopped; no historical deployment or
+durable state was reset, removed or opened by a second owner.
+
+Independent GPU 5090 filesystem and Muse wire/CLI reviews were static, not execution evidence.
+Two documentation-precision findings were repaired: the growth limits now include 32 MiB per
+body, and every unmeasured reason is documented. No latency, throughput, allocation/RSS,
+concurrency-model, proof, full fault-lane or national qualification follows from this smoke.
+R11 core/caller candidates remain LOCAL and unqualified; this slice does not close R11–R14.
+
+The actual capture/export oracle also passed (`5d8f0046`: 185 canonical rows, 60 cohort members,
+authoritative XLSX/CSV/JSONL). Full `pipeline:gate -- --release` failed (`ba1dcc9a`):
+zero-comments, source registration, all-target panic extraction, size/macro provenance and module
+seams; dependent Clippy/ratchet measurements were incomplete. Native VM captures were absent at
+the configured path, and performance comparison refused the corpus mismatch
+(baseline 154,721 versus current 155,677). No baseline or gate was weakened.
+The archive comparator's 71-line violation was subsequently removed by separating sample
+validation from outcome wrapping; check/source lint and all 15 focused archive scenarios passed
+(`63acdf81` / `a61900d1` / `97b15737`). Other release failures remain tracked in `iilh.1`.

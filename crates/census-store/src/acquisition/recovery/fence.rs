@@ -23,6 +23,36 @@ impl ArchiveWriteFence {
             root: http_root.to_path_buf(),
         })
     }
+    pub fn try_acquire_existing(http_root: &Path) -> StoreResult<Option<Self>> {
+        let path = http_root.join("archive-capacity.lock");
+        let named = std::fs::symlink_metadata(&path).map_err(|source| io(&path, source))?;
+        if !named.is_file() {
+            return Err(crate::CaptureError::PreparedRepairRequired.into());
+        }
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&path)
+            .map_err(|source| io(&path, source))?;
+        match file.try_lock() {
+            Ok(()) => {}
+            Err(std::fs::TryLockError::WouldBlock) => return Ok(None),
+            Err(std::fs::TryLockError::Error(source)) => return Err(io(&path, source)),
+        }
+        let opened = file.metadata().map_err(|source| io(&path, source))?;
+        let current = std::fs::symlink_metadata(&path).map_err(|source| io(&path, source))?;
+        if !opened.is_file()
+            || !current.is_file()
+            || !super::backing::same_file(&named, &opened)
+            || !super::backing::same_file(&current, &opened)
+        {
+            return Err(crate::CaptureError::PreparedAssessmentChanged.into());
+        }
+        Ok(Some(Self {
+            file,
+            root: http_root.to_path_buf(),
+        }))
+    }
 
     pub fn root(&self) -> &Path {
         &self.root
