@@ -152,7 +152,7 @@ pub(super) fn promote(step: PromotionStep, from: &Path, to: &Path) -> io::Result
     }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn exchange(from: &Path, to: &Path) -> io::Result<()> {
     rustix::fs::renameat_with(
         rustix::fs::CWD,
@@ -164,7 +164,7 @@ fn exchange(from: &Path, to: &Path) -> io::Result<()> {
     .map_err(io::Error::from)
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn exchange(_from: &Path, _to: &Path) -> io::Result<()> {
     Err(io::Error::new(
         io::ErrorKind::Unsupported,

@@ -14,6 +14,45 @@ const OLD_AT: &str = "2026-10-01T00:00:00+00:00";
 const NEW_AT: &str = "2026-10-02T00:00:00+00:00";
 const LATEST_AT: &str = "2026-10-03T00:00:00+00:00";
 
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn exchange_requires_both_generations_without_falling_back_to_rename() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let from = dir.path().join("staged");
+    let to = dir.path().join("missing");
+    generation_at(&from, "new-marker", NEW_AT)?;
+    let result = promote(PromotionStep::Exchange, &from, &to);
+    check!(result.is_err());
+    check!(eq; marker(&from)?, vec!["new-marker".to_string()]);
+    check!(from.join(MANIFEST_PATH).is_file());
+    check!(!to.exists());
+    Ok(())
+}
+
+#[test]
+fn unsupported_exchange_preserves_the_old_generation_and_reports_failure() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let to = dir.path().join("backup");
+    generation_at(&to, "old-marker", OLD_AT)?;
+    let generation = Generation::create(&to, STAGING_PREFIX)?;
+    generation_at(generation.path(), "new-marker", NEW_AT)?;
+    let mut attempted = None;
+    let result = generation.publish_with(&mut |step, _, _| {
+        attempted = Some(step);
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Unsupported,
+            "exchange unavailable",
+        ))
+    });
+    check!(eq; attempted, Some(PromotionStep::Exchange));
+    check!(matches!(result, Err(crate::StoreError::Io { source, .. })
+        if source.kind() == std::io::ErrorKind::Unsupported));
+    check!(eq; marker(&to)?, vec!["old-marker".to_string()]);
+    check!(eq; leftovers(dir.path())?, Vec::<String>::new());
+    check!(eq; recover(&to, STAGING_PREFIX)?, Recovered::default());
+    Ok(())
+}
+
 fn manifest(written_at: &str) -> Manifest {
     Manifest {
         version: MANIFEST_VERSION,
