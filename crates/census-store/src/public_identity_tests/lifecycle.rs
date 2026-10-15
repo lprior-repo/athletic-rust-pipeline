@@ -86,7 +86,7 @@ fn public_identity_initialization_never_adopts_an_existing_store_or_artifact() -
     let before = retained_state(&store)?;
     drop(store);
     check!(matches!(
-        refused(Store::create_public_identity_qualification_v1(
+        refused(Store::create_public_identity_qualification_v2(
             legacy.path()
         ))?,
         StoreError::PublicIdentity(PublicIdentityError::ExistingRoot)
@@ -97,7 +97,7 @@ fn public_identity_initialization_never_adopts_an_existing_store_or_artifact() -
     drop(store);
     let root = directory.path().join("identity");
     check!(matches!(
-        refused(Store::create_public_identity_qualification_v1(&root))?,
+        refused(Store::create_public_identity_qualification_v2(&root))?,
         StoreError::PublicIdentity(PublicIdentityError::ExistingRoot)
     ));
     check!(eq; physical_state(&root)?, before);
@@ -105,7 +105,7 @@ fn public_identity_initialization_never_adopts_an_existing_store_or_artifact() -
     let path = artifact.path().join("historical.body");
     std::fs::write(&path, b"retained historical evidence")?;
     check!(matches!(
-        refused(Store::create_public_identity_qualification_v1(
+        refused(Store::create_public_identity_qualification_v2(
             artifact.path()
         ))?,
         StoreError::PublicIdentity(PublicIdentityError::ExistingRoot)
@@ -147,7 +147,7 @@ fn public_identity_missing_lineage_is_refused_and_never_reminted() -> TestResult
     check!(!store.journal.contains_key(&key)?);
     drop(store);
     let root = directory.path().join("identity");
-    check!(Store::open_public_identity_qualification_v1(&root).is_err());
+    check!(Store::open_public_identity_qualification_v2(&root).is_err());
     check!(eq; physical_state(&root)?, before);
     Ok(())
 }

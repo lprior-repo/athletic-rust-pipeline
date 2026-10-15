@@ -23,7 +23,7 @@ fn refuses_corrupt_counter(directory: tempfile::TempDir, store: Store) -> TestRe
     drop(store);
     let root = directory.path().join("identity");
     check!(eq; physical_state(&root)?, before);
-    let error = refused(Store::open_public_identity_qualification_v1(&root))?;
+    let error = refused(Store::open_public_identity_qualification_v2(&root))?;
     check!(matches!(
         error,
         StoreError::PublicIdentity(crate::PublicIdentityError::Corrupt(_))

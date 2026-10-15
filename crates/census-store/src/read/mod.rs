@@ -21,6 +21,8 @@ mod legacy_journal_tests;
 mod snapshot;
 mod source_objects;
 mod view;
+pub(crate) use view::enrich_retained_observations;
+pub(crate) use view::read_context_object;
 
 pub(crate) use directory::directory_bytes;
 pub use identity::build_athlete_identity_projection;

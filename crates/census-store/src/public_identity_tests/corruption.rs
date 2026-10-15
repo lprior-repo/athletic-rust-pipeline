@@ -130,7 +130,7 @@ fn assert_corruption(
     check!(eq; retained_state(&store)?, before);
     drop(store);
     let root = directory.path().join("identity");
-    let error = refused(Store::open_public_identity_qualification_v1(&root))?;
+    let error = refused(Store::open_public_identity_qualification_v2(&root))?;
     check!(
         matches!(error, StoreError::PublicIdentity(PublicIdentityError::Corrupt(found))
         if found == reason)

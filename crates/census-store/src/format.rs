@@ -12,7 +12,7 @@ pub use migrate::MigrationReport;
 
 pub const STORE_SCHEMA_VERSION: u32 = 2;
 pub const KEY_FORMAT_VERSION: u32 = 1;
-pub const LIFECYCLE_REVISION: u32 = 5;
+pub const LIFECYCLE_REVISION: u32 = 6;
 const FRESH_LIFECYCLE_REVISION: u32 = 2;
 
 pub const DEFAULT_CACHE_BYTES: u64 = 1024 * 1024 * 1024;

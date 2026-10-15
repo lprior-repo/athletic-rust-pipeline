@@ -43,16 +43,18 @@ fn exercise(boundary: Boundary) -> TestResult {
     let (directory, reached) = controller::interrupt(directory, &fixture.root, boundary)?;
     let interrupted = physical::read(&fixture.root)?;
     if boundary == Boundary::BeforeCommit {
-        check!(eq; interrupted, fixture.before);
+        oracle::staged_delta(&fixture, &interrupted)?;
     }
     let (outcome, snapshot_sequence) = recover_and_replay(&fixture, boundary)?;
     let recovered = physical::read(&fixture.root)?;
     let receipt_digest =
         oracle::committed_delta(&fixture, &recovered, &outcome, snapshot_sequence)?;
+    oracle::retained_context_unchanged(&fixture, &interrupted, &recovered)?;
     if boundary == Boundary::AfterCommit {
         check!(eq; recovered, interrupted);
         check!(eq; receipt_digest, reached.input_digest);
     }
+    replay_without_mutation(&fixture, &outcome)?;
     drop(directory);
     Ok(())
 }
@@ -61,7 +63,7 @@ fn recover_and_replay(
     fixture: &Fixture,
     boundary: Boundary,
 ) -> TestResult<(IdentityCommitOutcomeV1, u64)> {
-    let (store, writer) = Store::open_public_identity_qualification_v1(&fixture.root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v2(&fixture.root)?.into_parts();
     check!(eq; writer.store_identity(), &fixture.identity);
     let accepted = store
         .snapshot()
@@ -116,4 +118,24 @@ fn recover_and_replay(
     check!(eq; accepted.head(), first.head());
     store.flush()?;
     Ok((first, snapshot_sequence))
+}
+
+fn replay_without_mutation(fixture: &Fixture, committed: &IdentityCommitOutcomeV1) -> TestResult {
+    let before = physical::read(&fixture.root)?;
+    let (store, writer) = Store::open_public_identity_qualification_v2(&fixture.root)?.into_parts();
+    let repeated = writer.establish_source_bound(
+        &store,
+        OPERATION,
+        &fixture.candidate,
+        store.snapshot().revision(),
+        &fixture.genesis,
+    )?;
+    check!(repeated.replayed());
+    check!(eq; repeated.public_id(), committed.public_id());
+    check!(eq; repeated.head(), committed.head());
+    store.flush()?;
+    drop(writer);
+    drop(store);
+    check!(eq; physical::read(&fixture.root)?, before);
+    Ok(())
 }

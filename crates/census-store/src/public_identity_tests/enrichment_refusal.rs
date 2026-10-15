@@ -62,7 +62,7 @@ fn public_identity_enrichment_budget_refusal_discards_local_prefix_and_preserves
     drop(writer);
     drop(store);
     let root = directory.path().join("identity");
-    let (store, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
     let repeated = writer.establish_source_bound(
         &store,
         "enrichment-prior",

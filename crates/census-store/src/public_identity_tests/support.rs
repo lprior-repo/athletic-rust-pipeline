@@ -9,15 +9,15 @@ use fjall::{Database, Keyspace, KeyspaceCreateOptions};
 
 use super::*;
 
-pub(super) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
+pub(crate) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 type PhysicalRows = Vec<(Vec<u8>, Vec<u8>)>;
-pub(super) type PhysicalState = Vec<(String, PhysicalRows)>;
+pub(crate) type PhysicalState = Vec<(String, PhysicalRows)>;
 
-pub(super) fn fixture() -> TestResult<(tempfile::TempDir, Store, crate::PublicIdentityWriterV1)> {
+pub(crate) fn fixture() -> TestResult<(tempfile::TempDir, Store, crate::PublicIdentityWriterV1)> {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("identity");
-    Store::create_public_identity_qualification_v1(&root)?;
-    let (store, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
+    Store::create_public_identity_qualification_v2(&root)?;
+    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
     Ok((directory, store, writer))
 }
 
@@ -37,7 +37,7 @@ fn rows(keyspace: &Keyspace) -> TestResult<PhysicalRows> {
     Ok(rows)
 }
 
-pub(super) fn retained_state(store: &Store) -> TestResult<PhysicalState> {
+pub(crate) fn retained_state(store: &Store) -> TestResult<PhysicalState> {
     [
         (crate::ENTITIES, &store.entities),
         (crate::JOURNAL, &store.journal),
@@ -69,7 +69,7 @@ pub(super) fn physical_state(root: &Path) -> TestResult<PhysicalState> {
     .collect()
 }
 
-pub(super) fn subject(label: &str, source_id: &str) -> TestResult<CanonicalAthlete> {
+pub(crate) fn subject(label: &str, source_id: &str) -> TestResult<CanonicalAthlete> {
     let school = SchoolId::mint("sch", &["public-identity-fixture", label]);
     let mut athlete = CanonicalAthlete::new(
         &school,

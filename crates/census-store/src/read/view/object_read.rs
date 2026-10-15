@@ -9,7 +9,7 @@ use super::StoreSnapshot;
 use crate::journal::{
     expected_chunk_length, expected_index_entries, object_chunk_key, object_chunk_prefix,
     object_index_key, object_index_prefix, object_manifest_key, object_ordinal,
-    OBJECT_INDEX_PAGE_ENTRIES, OBJECT_RECORD_BYTES_LIMIT,
+    OBJECT_INDEX_PAGE_ENTRIES,
 };
 use crate::{Store, StoreError, StoreResult, MAX_JOURNAL_VALUE_BYTES};
 
@@ -27,27 +27,65 @@ impl<'s> StoreSnapshot<'s> {
             return Ok(None);
         };
         let object = alias_object(path, raw.as_ref())?;
-        let manifest_key = object_manifest_key(&object)?;
-        let raw =
-            read_row(&self.snapshot, self.journal, path, &manifest_key)?.ok_or_else(|| {
-                StoreError::JournalManifestMissing {
-                    phase: phase.to_string(),
-                    key: key.to_string(),
-                    object: object.clone(),
-                }
-            })?;
-        let bounds = manifest_bounds(path, &object, raw.as_ref())?;
-        let reader = JournalObject::new(
-            phase.to_string(),
-            key.to_string(),
-            object,
-            bounds,
-            self.snapshot.clone(),
-            self.journal,
-        );
-        reader.verify()?;
-        Ok(Some(reader))
+        read_object_root(&self.snapshot, self.journal, path, &object, None).map(Some)
     }
+}
+
+pub(crate) fn read_context_object<'s>(
+    snapshot: &fjall::Snapshot,
+    journal: &'s fjall::Keyspace,
+    root: &str,
+) -> StoreResult<JournalObject<'s>> {
+    let path = JournalPath {
+        phase: "authority_context_v1",
+        key: root,
+    };
+    read_object_root(
+        snapshot,
+        journal,
+        path,
+        root,
+        Some((
+            crate::journal::context::CONTEXT_TOTAL_BYTES,
+            crate::journal::context::CONTEXT_RECORDS,
+        )),
+    )
+}
+
+fn read_object_root<'s>(
+    snapshot: &fjall::Snapshot,
+    journal: &'s fjall::Keyspace,
+    path: JournalPath<'_>,
+    object: &str,
+    budget: Option<(usize, usize)>,
+) -> StoreResult<JournalObject<'s>> {
+    let manifest_key = object_manifest_key(object)?;
+    let raw = read_row(snapshot, journal, path, &manifest_key)?.ok_or_else(|| {
+        StoreError::JournalManifestMissing {
+            phase: path.phase.to_string(),
+            key: path.key.to_string(),
+            object: object.to_owned(),
+        }
+    })?;
+    let bounds = manifest_bounds(path, object, raw.as_ref())?;
+    if let Some((bytes, records)) = budget {
+        if bounds.total_bytes > bytes || bounds.records > records {
+            return Err(path.refusal("authority context exceeds retained input limits"));
+        }
+    }
+    let mut reader = JournalObject::new(
+        path.phase.to_string(),
+        path.key.to_string(),
+        object.to_owned(),
+        bounds,
+        snapshot.clone(),
+        journal,
+    );
+    if budget.is_some() {
+        reader.record_byte_limit = crate::journal::context::CONTEXT_RECORD_BYTES;
+    }
+    reader.verify()?;
+    Ok(reader)
 }
 
 fn read_row(
@@ -136,10 +174,10 @@ impl JournalObject<'_> {
     }
 
     fn validate_range(&self, next: usize, entry: RecordRange) -> StoreResult<usize> {
-        if entry.length == 0 || entry.length > OBJECT_RECORD_BYTES_LIMIT {
+        if entry.length == 0 || entry.length > self.record_byte_limit {
             return Err(StoreError::RowTooLarge {
                 bytes: entry.length,
-                max: OBJECT_RECORD_BYTES_LIMIT,
+                max: self.record_byte_limit,
             });
         }
         let end = next

@@ -11,7 +11,7 @@ fn public_identity_invalid_row_mark_cannot_reseed_a_missing_sequence_before_refu
     let before = retained_state(&store)?;
     drop(store);
     let root = directory.path().join("identity");
-    check!(Store::open_public_identity_qualification_v1(&root).is_err());
+    check!(Store::open_public_identity_qualification_v2(&root).is_err());
     check!(eq; physical_state(&root)?, before);
     Ok(())
 }
@@ -29,7 +29,7 @@ fn public_identity_invalid_generation_cannot_sweep_retained_temporary_before_ref
     let before = retained_state(&store)?;
     drop(store);
     let root = directory.path().join("identity");
-    check!(Store::open_public_identity_qualification_v1(&root).is_err());
+    check!(Store::open_public_identity_qualification_v2(&root).is_err());
     check!(eq; std::fs::read(&temporary)?, b"retained before qualification refusal");
     check!(eq; physical_state(&root)?, before);
     Ok(())
@@ -122,13 +122,13 @@ fn public_identity_future_orphans_block_legacy_open_and_migration_without_mutati
 fn public_identity_future_orphans_block_qualification_reopen_without_mutation() -> TestResult {
     for family in FUTURE_FAMILIES {
         let (directory, store, _) = fixture()?;
-        check!(eq; store.store_format()?.lifecycle_revision, Some(5));
+        check!(eq; store.store_format()?.lifecycle_revision, Some(6));
         insert_future_orphan(&store, family)?;
         let before = retained_state(&store)?;
         drop(store);
         let root = directory.path().join("identity");
         check!(matches!(
-            refused(Store::open_public_identity_qualification_v1(&root))?,
+            refused(Store::open_public_identity_qualification_v2(&root))?,
             StoreError::PublicIdentity(crate::PublicIdentityError::Corrupt(_))
         ));
         check!(eq; physical_state(&root)?, before);
