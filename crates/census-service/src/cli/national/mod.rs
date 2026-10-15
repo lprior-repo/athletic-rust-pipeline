@@ -206,6 +206,7 @@ pub(super) struct NationalReportArgs {
 }
 
 mod observe;
+mod output;
 mod report;
 mod run;
 

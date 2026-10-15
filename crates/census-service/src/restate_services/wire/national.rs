@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::school_address_join::{SchoolAddressJoinReply, SchoolAddressJoinRequest};
 use super::{default_concurrency, default_source_parallelism};
-use super::{HistoryWindow, JurisdictionOwed};
+use super::{HistoryWindow, JurisdictionOwed, PublicationContract};
 
 fn default_pass_budget() -> usize {
     96
@@ -20,6 +20,8 @@ pub struct NationalRequest {
     pub season: SchoolYear,
     pub revision: Revision,
     pub history: HistoryWindow,
+    #[serde(default, skip_serializing_if = "PublicationContract::is_legacy")]
+    pub publication_contract: PublicationContract,
     #[serde(default)]
     pub jurisdictions: Vec<UsJurisdiction>,
     #[serde(default)]

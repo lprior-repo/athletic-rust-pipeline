@@ -419,6 +419,7 @@ fn national_request(jurisdictions: Vec<UsJurisdiction>) -> TestResult<NationalRe
         season: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         revision: Revision(1),
         history: HistoryWindow::cohort("2026-09-22")?,
+        publication_contract: super::PublicationContract::LegacySeparateV1,
         jurisdictions,
         refresh: false,
         limit_per_state: None,

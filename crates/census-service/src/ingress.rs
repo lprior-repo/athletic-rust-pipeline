@@ -6,6 +6,11 @@ use url::{Host, Url};
 
 pub const DEFAULT_ORIGIN: &str = "http://127.0.0.1:18095/";
 
+mod publication;
+pub use publication::require_managed_publication;
+mod lookup;
+pub use lookup::lookup_workflow;
+
 #[derive(serde::Deserialize)]
 struct IngressFailure {
     message: String,
@@ -38,6 +43,14 @@ pub fn job_client(origin: &str) -> Result<Ingress> {
 }
 
 fn build(origin: &str, timeout: Duration) -> Result<Ingress> {
+    let url = validated_origin(origin)?;
+    Ok(census_crawl::ingress::client(
+        url.as_str().parse()?,
+        http_client(timeout)?,
+    )?)
+}
+
+fn validated_origin(origin: &str) -> Result<Url> {
     if origin.trim().is_empty() {
         bail!(
             "--ingress must name the Restate ingress origin (the local census node is {DEFAULT_ORIGIN}): \
@@ -50,10 +63,7 @@ fn build(origin: &str, timeout: Duration) -> Result<Ingress> {
             "ingress origins must be loopback HTTP origins without credentials or paths: {origin}"
         );
     }
-    Ok(census_crawl::ingress::client(
-        url.as_str().parse()?,
-        http_client(timeout)?,
-    )?)
+    Ok(url)
 }
 
 pub fn origin(given: Option<&str>) -> &str {
@@ -77,12 +87,20 @@ fn is_loopback_origin(url: &Url) -> bool {
 }
 
 fn http_client(timeout: Duration) -> Result<reqwest::Client> {
-    Ok(reqwest::Client::builder()
+    Ok(http_client_builder(timeout).build()?)
+}
+
+fn http_client_builder(timeout: Duration) -> reqwest::ClientBuilder {
+    reqwest::Client::builder()
         .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
+        .retry(reqwest::retry::never())
         .timeout(timeout)
-        .build()?)
 }
+
+#[cfg(test)]
+#[path = "ingress/retry_tests.rs"]
+mod retry_tests;
 
 #[cfg(test)]
 mod tests {

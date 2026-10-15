@@ -6,6 +6,9 @@ use census_service::restate_services::{HistoryWindow, JurisdictionCensusIngressC
 use restate_sdk::prelude::*;
 use std::num::NonZeroU32;
 
+mod binding;
+pub(super) use binding::{bound_request, retained_request};
+
 #[derive(Debug, thiserror::Error)]
 enum ResumeHistoryError {
     #[error("no jurisdiction has bound history for this run; resume cannot change its immutable history scope")]

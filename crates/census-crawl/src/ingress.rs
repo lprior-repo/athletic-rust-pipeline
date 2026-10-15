@@ -1,6 +1,13 @@
 use bytes::Bytes;
+use futures::TryStreamExt;
 use http::{Request as HttpRequest, Response as HttpResponse, Uri};
 use restate_sdk::ingress::{Client, ClientBuildError, RequestExecutor};
+
+mod body;
+mod budget;
+mod error;
+pub use budget::ResponseClass;
+pub use error::{is_admission_error, AdmissionKind, IngressError, ResponseRefusal};
 
 const SDK_ROUTE_PREFIX: &str = "/restate";
 
@@ -28,8 +35,9 @@ impl CurrentRoute {
 }
 
 impl RequestExecutor for CurrentRoute {
-    type Error = reqwest::Error;
+    type Error = IngressError;
 
+    #[tracing::instrument(skip_all)]
     async fn execute(
         &self,
         mut request: HttpRequest<Bytes>,
@@ -37,7 +45,31 @@ impl RequestExecutor for CurrentRoute {
         if let Some(uri) = invocation_route(request.uri()) {
             *request.uri_mut() = uri;
         }
-        <reqwest::Client as RequestExecutor>::execute(&self.transport, request).await
+        let control = budget::is_control(request.method(), request.uri());
+        let requested_invocation = budget::requested_invocation(request.uri());
+        let request: reqwest::Request = request.try_into()?;
+        let response = self.transport.execute(request).await.map_err(|source| {
+            error::response_error(source, requested_invocation.as_deref(), None)
+        })?;
+        let admission = budget::Admission::new(control, response.status(), response.headers())
+            .with_requested_invocation(requested_invocation);
+        admission.headers(response.headers())?;
+        admission.declared(response.content_length())?;
+        let status = response.status();
+        let version = response.version();
+        let headers = response.headers().clone();
+        let body = body::read(
+            response
+                .bytes_stream()
+                .map_err(|source| admission.transport_error(source)),
+            &admission,
+        )
+        .await?;
+        let mut response = HttpResponse::new(body);
+        *response.status_mut() = status;
+        *response.version_mut() = version;
+        *response.headers_mut() = headers;
+        Ok(response)
     }
 }
 
@@ -161,3 +193,7 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "ingress/transport_tests.rs"]
+mod transport_tests;

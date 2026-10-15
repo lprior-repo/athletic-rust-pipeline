@@ -1,5 +1,7 @@
 use super::*;
 use census_service::restate_services::{JurisdictionOwed, JurisdictionSummary, NationalFailure};
+#[path = "tests/publication.rs"]
+mod publication;
 #[path = "tests/resume.rs"]
 mod resume;
 

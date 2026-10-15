@@ -141,6 +141,15 @@ impl RefusalPolicy {
 )]
 impl Census {
     #[handler]
+    #[tracing::instrument(skip_all)]
+    async fn publication_capabilities(
+        &self,
+        _ctx: Context<'_>,
+    ) -> Result<Json<super::wire::PublicationCapabilities>, HandlerError> {
+        Ok(Json(super::wire::PublicationCapabilities::current()))
+    }
+
+    #[handler]
     async fn status(&self, _ctx: Context<'_>) -> Result<Json<StatusReply>, HandlerError> {
         let stats = self.status_stats().await.map_err(job_error)?;
         let tables = stats

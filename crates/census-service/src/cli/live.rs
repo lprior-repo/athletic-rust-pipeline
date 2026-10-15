@@ -1,14 +1,12 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::Revision;
 use census_report::report;
 use census_service::restate_services::{
-    bests_export_key, consolidate_export_key, report_export_key, workbook_request_key,
-    BestsIngressClient, BestsReply, BestsRequest, ConsolidateIngressClient, ConsolidateReply,
-    ConsolidateRequest, ConsolidatedTable, ExportGeneration, JurisdictionReport,
-    JurisdictionRequest, ReportIngressClient, ReportReply, ReportRequest, WorkbookIngressClient,
-    WorkbookReply, WorkbookRequest,
+    bests_export_key, report_export_key, workbook_request_key, BestsIngressClient, BestsReply,
+    BestsRequest, ExportGeneration, JurisdictionReport, JurisdictionRequest, ReportIngressClient,
+    ReportReply, ReportRequest, WorkbookIngressClient, WorkbookReply, WorkbookRequest,
 };
 use restate_sdk::prelude::*;
 
@@ -18,16 +16,6 @@ use census_service::ingress;
 
 fn log_submit(message: &str, generation: &ExportGeneration, key: &str) {
     tracing::info!(generation = generation.as_str(), key = key, "{message}");
-}
-
-fn consolidate_client(
-    origin: Option<&str>,
-    key: String,
-) -> Result<ConsolidateIngressClient<CurrentRoute>> {
-    Ok(ConsolidateIngressClient::from_client(
-        ingress::job_client(ingress::origin(origin))?,
-        key,
-    ))
 }
 
 fn report_client(origin: Option<&str>, key: String) -> Result<ReportIngressClient<CurrentRoute>> {
@@ -54,22 +42,6 @@ fn workbook_client(
     ))
 }
 
-pub(super) async fn consolidate(
-    origin: Option<&str>,
-    generation: &ExportGeneration,
-) -> Result<Vec<ConsolidatedTable>> {
-    let key = consolidate_export_key(generation);
-    log_submit("submitting consolidate export", generation, key.as_str());
-    let Json(ConsolidateReply { tables }) = consolidate_client(origin, key)?
-        .run(Json(ConsolidateRequest::default()))
-        .call()
-        .await
-        .map_err(ingress::error)?
-        .into_body()
-        .map_err(ingress::error)?;
-    Ok(tables)
-}
-
 pub(super) struct ReportSummary {
     pub scope: String,
     pub json_path: String,
@@ -77,15 +49,6 @@ pub(super) struct ReportSummary {
     pub totals: serde_json::Value,
     pub generation: String,
     pub generated_on: String,
-}
-
-impl ReportSummary {
-    pub(super) fn total(&self, field: &str) -> Result<u64> {
-        self.totals
-            .get(field)
-            .and_then(serde_json::Value::as_u64)
-            .with_context(|| format!("the report reply carries no `{field}` total"))
-    }
 }
 
 pub(super) async fn report(

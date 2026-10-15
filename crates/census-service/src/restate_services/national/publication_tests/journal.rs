@@ -1,25 +1,34 @@
 use super::codec::{self, Frame};
-use super::{fixtures, TestResult};
+use super::{fixtures, transport, TestResult};
 use crate::restate_services::wire::NationalRequest;
 use census_reconcile::identity::WorkflowIdentity;
 
+mod tests;
+
 pub struct Journal {
+    pub original: NationalRequest,
+    pub address_digest: String,
     pub identity: String,
     pub invocation: String,
     pub entries: Vec<Frame>,
     pub calls: Vec<Frame>,
     pub output: Option<serde_json::Value>,
+    pub(super) ended: bool,
     pub held: Option<Frame>,
     pub hold_stage: Option<String>,
     pub partial_contacts: bool,
     pub unfinished_rosters: bool,
     pub seal_refusals: usize,
     pub source_store: Option<std::sync::Arc<census_store::Store>>,
+    pub(super) transcript: Option<transport::Transcript>,
+    exchanges: usize,
 }
 
 impl Journal {
     pub fn new(request: &NationalRequest) -> TestResult<Self> {
         Ok(Self {
+            original: request.clone(),
+            address_digest: "fixture-directory-digest".to_owned(),
             identity: WorkflowIdentity::national(
                 request.season,
                 request.revision,
@@ -34,12 +43,15 @@ impl Journal {
             )],
             calls: Vec::new(),
             output: None,
+            ended: false,
             held: None,
             hold_stage: None,
             partial_contacts: false,
             unfinished_rosters: false,
             seal_refusals: 0,
             source_store: None,
+            transcript: None,
+            exchanges: 0,
         })
     }
 
@@ -50,20 +62,20 @@ impl Journal {
         start.extend(codec::blob(6, self.identity.as_bytes())?);
         let mut bytes = Frame::new(0, start).encode()?;
         for entry in &self.entries {
-            bytes.extend(entry.encode()?);
+            transport::append(&mut bytes, &entry.encode()?)?;
         }
         Ok(bytes)
     }
 
     pub async fn step(&mut self, client: &reqwest::Client, url: &str) -> TestResult<Vec<Frame>> {
-        let response = client
-            .post(url)
-            .header("content-type", "application/vnd.restate.invocation.v6")
-            .body(self.request_body()?)
-            .send()
-            .await?;
-        check!(eq; response.status(), reqwest::StatusCode::OK);
-        let output = codec::frames(&response.bytes().await?)?;
+        check!(
+            self.exchanges < 256,
+            "fixture total exchange budget exhausted"
+        );
+        self.exchanges += 1;
+        let output =
+            transport::exchange(client, url, self.request_body()?, &mut self.transcript).await?;
+        transport::terminal(&output)?;
         for entry in &output {
             self.record(entry)?;
         }
@@ -82,11 +94,11 @@ impl Journal {
 
     pub fn release(&mut self) -> TestResult {
         let call = self.held.take().ok_or("no held publication stage")?;
-        self.entries.push(codec::notification(
+        self.append(codec::notification(
             0x800D,
             call.number(11)?,
             &serde_json::to_vec(&fixtures::answer(&call, self)?)?,
-        )?);
+        )?)?;
         self.hold_stage = None;
         Ok(())
     }
@@ -100,7 +112,7 @@ impl Journal {
         )?);
         let mut completion = codec::integer(1, call.number(11)?);
         completion.extend(codec::blob(6, &failure)?);
-        self.entries.push(Frame::new(0x800D, completion));
+        self.append(Frame::new(0x800D, completion))?;
         self.seal_refusals = self
             .seal_refusals
             .checked_add(1)
@@ -112,17 +124,17 @@ impl Journal {
         match entry.kind {
             0x040D => self.call(entry)?,
             0x040C => {
-                self.entries.push(entry.clone());
+                self.append(entry.clone())?;
                 let mut completion = codec::integer(1, entry.number(11)?);
                 completion.extend(codec::blob(4, &[])?);
-                self.entries.push(Frame::new(0x800C, completion));
+                self.append(Frame::new(0x800C, completion))?;
             }
             0x0005 => {
-                self.entries.push(codec::notification(
+                self.append(codec::notification(
                     0x8011,
                     entry.number(1)?,
                     entry.bytes(14)?,
-                )?);
+                )?)?;
             }
             0x0401 => {
                 if let Some(failure) = codec::field(&entry.payload, 15)? {
@@ -137,33 +149,59 @@ impl Journal {
                 self.output = Some(serde_json::from_slice(value)?);
             }
             0x0002 => return Err(format!("SDK failed: {}", entry.text(2)?).into()),
-            kind if (0x0400..0x8000).contains(&kind) => self.entries.push(entry.clone()),
-            0x0001 | 0x0003 => {}
+            kind if (0x0400..0x8000).contains(&kind) => self.append(entry.clone())?,
+            0x0001 => {}
+            0x0003 => self.ended = true,
             kind => return Err(format!("unexpected SDK frame {kind:#x}").into()),
         }
         Ok(())
     }
 
     fn call(&mut self, call: &Frame) -> TestResult {
-        self.entries.push(call.clone());
+        check!(
+            self.calls.len() < 512,
+            "fixture child call budget exhausted"
+        );
+        self.append(call.clone())?;
         self.calls.push(call.clone());
         let mut invocation = codec::integer(1, call.number(10)?);
         invocation.extend(codec::blob(
             16,
             format!("child-{}", call.number(11)?).as_bytes(),
         )?);
-        self.entries.push(Frame::new(0x800E, invocation));
-        if self.hold_stage.as_deref() == Some(call.text(1)?.as_str())
-            && (call.text(1)? != "Census" || call.text(2)? == "publication")
+        self.append(Frame::new(0x800E, invocation))?;
+        if self.hold_stage.as_deref() == Some(call.text(2)?.as_str())
+            || (self.hold_stage.as_deref() == Some(call.text(1)?.as_str())
+                && (call.text(1)? != "Census" || call.text(2)? == "publication"))
         {
             self.held = Some(call.clone());
         } else {
-            self.entries.push(codec::notification(
+            self.append(codec::notification(
                 0x800D,
                 call.number(11)?,
                 &serde_json::to_vec(&fixtures::answer(call, self)?)?,
-            )?);
+            )?)?;
         }
+        Ok(())
+    }
+
+    fn append(&mut self, frame: Frame) -> TestResult {
+        check!(
+            self.entries.len() < codec::MAX_FRAMES - 1,
+            "fixture journal frame budget exhausted"
+        );
+        let bytes = self.entries.iter().try_fold(
+            frame.wire_size()?,
+            |sum, entry| -> TestResult<usize> {
+                sum.checked_add(entry.wire_size()?)
+                    .ok_or_else(|| "fixture journal length overflow".into())
+            },
+        )?;
+        check!(
+            bytes <= codec::MAX_WIRE_BYTES,
+            "fixture journal byte budget exhausted"
+        );
+        self.entries.push(frame);
         Ok(())
     }
 }

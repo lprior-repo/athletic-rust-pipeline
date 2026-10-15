@@ -4,6 +4,8 @@ use super::TestResult;
 use crate::restate_services::wire::NationalRequest;
 use serde_json::{json, Value};
 
+pub(super) const MANAGED_WORKBOOK: &str = "out/publication/generations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/workbook.xlsx";
+
 pub fn request() -> TestResult<NationalRequest> {
     Ok(serde_json::from_value(json!({
         "season": 2026, "revision": 1,
@@ -29,6 +31,7 @@ pub fn answer(call: &Frame, journal: &Journal) -> TestResult<Value> {
         }
     }
     Ok(match (service.as_str(), handler.as_str()) {
+        ("Census", "school_address_preflight") => json!(journal.address_digest),
         ("Census", "bind_run") => json!({
             "store_identity": "fixture-store", "season": 2026, "revision": 1,
             "cohort": 2027, "jurisdictions": required(&request, "jurisdictions")?
@@ -59,7 +62,14 @@ pub fn answer(call: &Frame, journal: &Journal) -> TestResult<Value> {
             "cohort": "2027", "rows": 49, "jsonl": "out/bests-2027.jsonl", "csv": "out/bests-2027.csv"
         }),
         ("Workbook", "run") => {
-            json!({"path": "out/publication/current/workbook.xlsx", "grad_year": 2027})
+            let path = if journal.original.publication_contract
+                == crate::restate_services::PublicationContract::ManagedBundleV2
+            {
+                MANAGED_WORKBOOK
+            } else {
+                "out/publication/current/workbook.xlsx"
+            };
+            json!({"path": path, "grad_year": 2027})
         }
         ("Census", "publication") => json!({
             "phase": "sealed", "workbook": required(&request, "workbook")?, "recorded": null,

@@ -4,10 +4,13 @@ use restate_sdk::prelude::*;
 use std::sync::Arc;
 use std::time::Duration;
 
+mod binding;
 pub(crate) mod codec;
+mod external;
 mod fixtures;
 pub(super) mod journal;
 mod resume;
+mod transport;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -29,7 +32,14 @@ impl Clock for FixtureClock {
 
 #[derive(Clone, Copy)]
 enum Scenario {
+    ExternalControl,
+    Address(binding::Scenario),
     Complete,
+    ManagedComplete,
+    ManagedFailedStage,
+    ManagedRefusedSeal,
+    ManagedCompletedResume,
+    ManagedExhaustedResume,
     FailedStage(&'static str),
     RefusedSeal,
     PartialContacts,
@@ -37,6 +47,36 @@ enum Scenario {
     CompletedResume,
     ExhaustedResume,
     InvalidResume(&'static str),
+}
+
+#[tokio::test]
+async fn current_fixture_exercises_external_replay_driver_without_historical_claim() -> TestResult {
+    exercise(Scenario::ExternalControl).await
+}
+
+#[tokio::test]
+async fn managed_national_publication_binds_one_original_request_and_one_bundle() -> TestResult {
+    exercise(Scenario::ManagedComplete).await
+}
+
+#[tokio::test]
+async fn managed_national_workbook_retry_preserves_the_same_call_and_request() -> TestResult {
+    exercise(Scenario::ManagedFailedStage).await
+}
+
+#[tokio::test]
+async fn managed_national_seal_refusal_never_rebuilds_its_bundle() -> TestResult {
+    exercise(Scenario::ManagedRefusedSeal).await
+}
+
+#[tokio::test]
+async fn managed_national_resume_preserves_source_keys_and_original_request() -> TestResult {
+    exercise(Scenario::ManagedCompletedResume).await
+}
+
+#[tokio::test]
+async fn managed_national_resume_cannot_reset_exhausted_source_attempts() -> TestResult {
+    exercise(Scenario::ManagedExhaustedResume).await
 }
 
 #[tokio::test]
@@ -88,9 +128,17 @@ async fn national_resume_rejects_noncanonical_or_unbounded_execution_keys() -> T
     }
     Ok(())
 }
-
 #[tokio::test]
 async fn restricted_national_run_publishes_only_its_five_states() -> TestResult {
+    restricted(crate::restate_services::PublicationContract::LegacySeparateV1).await
+}
+
+#[tokio::test]
+async fn managed_national_bundle_preserves_the_selected_five_states() -> TestResult {
+    restricted(crate::restate_services::PublicationContract::ManagedBundleV2).await
+}
+
+async fn restricted(contract: crate::restate_services::PublicationContract) -> TestResult {
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await?;
     let url = format!(
         "http://{}/invoke/NationalCensus/run",
@@ -116,6 +164,7 @@ async fn restricted_national_run_publishes_only_its_five_states() -> TestResult 
                 .timeout(Duration::from_secs(5))
                 .build()?;
             let mut request = fixtures::request()?;
+            request.publication_contract = contract;
             request.jurisdictions = vec![
                 census_domain::UsJurisdiction::Michigan,
                 census_domain::UsJurisdiction::Minnesota,
@@ -126,7 +175,12 @@ async fn restricted_national_run_publishes_only_its_five_states() -> TestResult 
             let mut journal = journal::Journal::new(&request)?;
             journal.drive(&client, &url).await?;
             let expected = serde_json::json!(["MI", "MN", "IA", "IL", "CO"]);
-            for stage in ["Report", "Bests", "Workbook"] {
+            let stages = if contract == crate::restate_services::PublicationContract::ManagedBundleV2 {
+                vec!["Workbook"]
+            } else {
+                vec!["Report", "Bests", "Workbook"]
+            };
+            for stage in stages {
                 let call = journal
                     .calls
                     .iter()
@@ -261,10 +315,19 @@ fn publication_services(journal: &journal::Journal) -> TestResult<Vec<String>> {
 }
 
 fn assert_published(journal: &journal::Journal) -> TestResult {
-    let mut expected = vec!["Consolidate", "Report", "Bests", "Workbook", "Census"];
+    let managed = journal.original.publication_contract
+        == crate::restate_services::PublicationContract::ManagedBundleV2;
+    let stages = if managed {
+        vec!["Consolidate", "Workbook"]
+    } else {
+        vec!["Consolidate", "Report", "Bests", "Workbook"]
+    };
+    let mut expected = stages.clone();
+    expected.push("Census");
     expected.extend((0..journal.seal_refusals).map(|_| "Census"));
     check!(eq; publication_services(journal)?, expected);
-    for stage in ["Consolidate", "Report", "Bests", "Workbook"] {
+    binding::assert_requests(journal, managed)?;
+    for stage in stages {
         let call = journal
             .calls
             .iter()
@@ -279,15 +342,21 @@ fn assert_published(journal: &journal::Journal) -> TestResult {
         .find(|call| call.text(2).is_ok_and(|handler| handler == "publication"))
         .ok_or("national never called the journal-measuring publication handler")?;
     check!(eq; seal.text(6)?, format!("{}:seal:0", journal.identity));
+    let workbook = if managed {
+        fixtures::MANAGED_WORKBOOK
+    } else {
+        "out/publication/current/workbook.xlsx"
+    };
     check!(eq; serde_json::from_slice::<serde_json::Value>(seal.bytes(3)?)?, serde_json::json!({
-        "grad_year": 2027, "all_sources": true, "workbook": "out/publication/current/workbook.xlsx",
-        "write": true, "season": 2026, "revision": 1, "source_objects": [], "jurisdictions": []
+        "grad_year": 2027, "all_sources": true, "workbook": workbook,
+        "write": true, "season": 2026, "revision": 1, "source_objects": [], "jurisdictions": journal.original.jurisdictions
     }));
     let report = journal
         .output
         .as_ref()
         .ok_or("national did not return its completed report")?;
-    check!(eq; report.get("jurisdictions").and_then(serde_json::Value::as_array).map(Vec::len), Some(49));
+    let count = census_reconcile::identity::admitted_scope(&journal.original.jurisdictions).len();
+    check!(eq; report.get("jurisdictions").and_then(serde_json::Value::as_array).map(Vec::len), Some(count));
     check!(eq; report.get("failures"), Some(&serde_json::json!([])));
     check!(eq; report.get("owed"), Some(&serde_json::json!([])));
     Ok(())
