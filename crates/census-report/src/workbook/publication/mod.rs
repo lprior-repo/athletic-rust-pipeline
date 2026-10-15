@@ -31,6 +31,22 @@ pub(super) use stage::Stage;
 
 const ARTIFACT_REVISION: u32 = 6;
 
+#[cfg(test)]
+pub(in crate::workbook) fn recapture_manifest(
+    directory: &Path,
+    dataset: &ExportDataset,
+    options: &Options,
+) -> ReportResult<()> {
+    let captured = manifest::Manifest::recapture(directory, dataset, options)?;
+    let path = directory.join("manifest.json");
+    let bytes = serde_json::to_vec(&captured).map_err(|source| ReportError::Decode {
+        path: path.clone(),
+        line: 0,
+        source,
+    })?;
+    std::fs::write(&path, bytes).map_err(|source| io_error(&path, source))
+}
+
 fn staging_nonce(store_identity: &str) -> ReportResult<String> {
     let time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

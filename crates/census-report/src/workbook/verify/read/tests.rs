@@ -2,7 +2,7 @@ mod archive;
 mod fixture;
 
 pub(in crate::workbook::verify) use archive::{
-    alter_sheet, copy_bundle, recapture, rejected_by_all, remove_row, replace_cell,
+    accepted_by_all, alter_sheet, copy_bundle, recapture, rejected_by_all, remove_row, replace_cell,
 };
 pub(in crate::workbook::verify) use fixture::publication;
 pub(in crate::workbook::verify) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -23,7 +23,7 @@ fn declared_dimensions_cannot_hide_trailing_pr_or_metadata_rows() -> TestResult 
     ] {
         let path = copy_bundle(&good, &directory.path().join(sheet))?;
         recapture(&path, &dataset, &options)?;
-        crate::workbook::publication::verify_published(&path)?;
+        accepted_by_all(&path, &dataset, &options)?;
         alter_sheet(&path, sheet, |range| {
             let (row, _) = range.end().ok_or("missing last row")?;
             check!(
@@ -44,6 +44,8 @@ fn absent_headers_short_dimensions_and_interior_gaps_are_rejected() -> TestResul
     let (good, dataset, options) = publication(directory.path())?;
     for mode in ["headers", "empty", "short", "interior"] {
         let path = copy_bundle(&good, &directory.path().join(mode))?;
+        recapture(&path, &dataset, &options)?;
+        accepted_by_all(&path, &dataset, &options)?;
         alter_sheet(&path, "Run Metrics", |range| {
             match mode {
                 "headers" => remove_row(range, 0)?,

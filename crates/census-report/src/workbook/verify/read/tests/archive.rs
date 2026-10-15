@@ -4,8 +4,6 @@ use crate::workbook::Options;
 use calamine::{Data, Range, Reader};
 use census_domain::model::GradYear;
 use rust_xlsxwriter::Workbook;
-use serde_json::{json, Value};
-use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 
 pub(in crate::workbook::verify) fn copy_bundle(path: &Path, target: &Path) -> TestResult<PathBuf> {
@@ -96,27 +94,25 @@ pub(in crate::workbook::verify) fn recapture(
     dataset: &ExportDataset,
     options: &Options,
 ) -> TestResult {
-    let manifest_path = path.parent().ok_or("generation")?.join("manifest.json");
-    let mut manifest: Value = serde_json::from_slice(&std::fs::read(&manifest_path)?)?;
-    let revision = manifest
-        .get("schema_revision")
-        .and_then(Value::as_u64)
-        .ok_or("manifest schema revision")?;
-    let bytes = std::fs::read(path)?;
-    let artifact = manifest
-        .pointer_mut("/artifacts/workbook.xlsx")
-        .ok_or("workbook artifact")?;
-    *artifact = json!({"bytes": bytes.len(), "sha256": format!("{:x}", Sha256::digest(&bytes))});
-    let selection = selection_json(options)?;
-    let digest_input = format!(
-        "[{revision},{},{},{}]",
-        serde_json::to_string(&dataset.lineage)?,
-        selection,
-        serde_json::to_string(manifest.get("artifacts").ok_or("artifacts")?)?
-    );
-    *manifest.get_mut("generation_digest").ok_or("digest")? =
-        json!(format!("{:x}", Sha256::digest(digest_input.as_bytes())));
-    std::fs::write(manifest_path, serde_json::to_vec(&manifest)?)?;
+    let directory = path.parent().ok_or("generation")?;
+    crate::workbook::publication::recapture_manifest(directory, dataset, options)?;
+    Ok(())
+}
+
+pub(in crate::workbook::verify) fn accepted_by_all(
+    path: &Path,
+    dataset: &ExportDataset,
+    options: &Options,
+) -> TestResult {
+    use crate::workbook::{publication, verify::verify_frozen};
+    for workbook in [
+        verify_frozen(path, dataset, options)?,
+        publication::verify_published(path)?.workbook,
+        publication::open_publication(path, &dataset.lineage, options.scope, GradYear::CO2027)?
+            .workbook,
+    ] {
+        check!(eq; workbook.mapped_athletes, 1);
+    }
     Ok(())
 }
 
@@ -133,57 +129,17 @@ pub(in crate::workbook::verify) fn rejected_by_all(
         publication::open_publication(path, &dataset.lineage, options.scope, GradYear::CO2027)
             .map(|_| ()),
     ] {
-        let error = match result {
-            Err(error) => error.to_string(),
+        match result {
+            Err(crate::report::ReportError::SemanticMismatch {
+                path: found,
+                detail,
+            }) => {
+                check!(eq; found, path);
+                check!(detail.contains(location), "{location}: {detail}");
+            }
+            Err(error) => return Err(format!("{location}: unexpected refusal: {error}").into()),
             Ok(()) => return Err(format!("{location}: forged workbook accepted").into()),
-        };
-        check!(error.contains(location), "{location}: {error}");
+        }
     }
-    Ok(())
-}
-
-fn selection_json(options: &Options) -> TestResult<String> {
-    let mut jurisdictions: Vec<&str> = options
-        .jurisdictions
-        .iter()
-        .map(|jurisdiction| jurisdiction.code())
-        .collect();
-    jurisdictions.sort_unstable();
-    jurisdictions.dedup();
-    let suffix = if jurisdictions.is_empty() {
-        String::new()
-    } else {
-        format!(
-            ",\"jurisdictions\":{}",
-            serde_json::to_string(&jurisdictions)?
-        )
-    };
-    Ok(format!(
-        "{{\"scope\":{},\"grad_year\":{},\"limit\":{},\"school_year\":{}{suffix}}}",
-        serde_json::to_string(options.scope.as_str())?,
-        serde_json::to_string(&options.grad_year)?,
-        serde_json::to_string(&options.limit)?,
-        serde_json::to_string(&Some(options.school_year))?
-    ))
-}
-
-#[test]
-fn independent_selection_encoding_preserves_empty_and_canonical_state_scope() -> TestResult {
-    use census_domain::{model::SchoolYear, UsJurisdiction};
-    let mut options = Options {
-        scope: crate::report::Scope::AllSources,
-        grad_year: Some(2027),
-        limit: None,
-        school_year: SchoolYear::new(2026).ok_or("school year")?,
-        out: None,
-        jurisdictions: Vec::new(),
-    };
-    check!(eq; selection_json(&options)?, r#"{"scope":"all_sources","grad_year":2027,"limit":null,"school_year":2026}"#);
-    options.jurisdictions = vec![
-        UsJurisdiction::Wisconsin,
-        UsJurisdiction::Michigan,
-        UsJurisdiction::Wisconsin,
-    ];
-    check!(eq; selection_json(&options)?, r#"{"scope":"all_sources","grad_year":2027,"limit":null,"school_year":2026,"jurisdictions":["MI","WI"]}"#);
     Ok(())
 }

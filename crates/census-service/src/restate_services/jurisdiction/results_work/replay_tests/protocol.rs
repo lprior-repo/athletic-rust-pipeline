@@ -3,6 +3,9 @@ use crate::restate_services::national::publication_tests::codec::{self, Frame};
 
 const RUN_COMPLETION_ID: u64 = 2;
 
+#[path = "request_wire.rs"]
+mod request_wire;
+
 pub(super) async fn serve<F, Fut>(fixture: &Fixture, exercise: F) -> TestResult
 where
     F: FnOnce(reqwest::Client, String) -> Fut,
@@ -100,10 +103,7 @@ pub(super) async fn invoke_frames(
     state.extend(codec::blob(2, &serde_json::to_vec(&fixture.state)?)?);
     start.extend(codec::blob(4, &state)?);
     start.extend(codec::blob(6, fixture.key().as_bytes())?);
-    let mut body = Frame::new(0, start).encode()?;
-    for frame in journal {
-        body.extend(frame.encode()?);
-    }
+    let body = request_wire::encode(&Frame::new(0, start), journal)?;
     let response = client
         .post(url)
         .header("content-type", "application/vnd.restate.invocation.v6")

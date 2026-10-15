@@ -432,3 +432,25 @@ Formatting/static correctness review PASSED. Synchronous archive locks/hash/fsyn
 need owned blocking composition for uncovered async callers; no latency or cancellation
 claim is made. Full changed-tree format/check/lint and Mac validation PENDING. Live
 acquisition and representative peak-RSS qualification NOT RUN.
+
+### PR51–53 combined integration — 2026-10-15
+
+Rebased the parser/converter/security repairs onto `7441a5af` without conflicts.
+
+| Check | Observed result | Repair boundary |
+|---|---|---|
+| Initial combined workspace / `03b328d6` | 6,293 passed, seven failed, six skipped; check `32da25d6` passed | Two result-identity fixtures, three copied-manifest fixtures and two SDK completion-wire fixtures required integration |
+| Focused report / `fefc1d0a` | Six passed | Genuine same-result contradiction versus distinct attempts; current manifest recapture; positive controls before independent workbook tamper checks |
+| Focused SDK / `94926a0d` | Three passed | Plan content remains 8 MiB; complete fixture wire separately admits bounded notification/framing overhead |
+| Subsequent workspace / `399df502` | 6,299 passed, one failed, six skipped | Removed the obsolete RSS-delta test: JSON encoding length is not a lower bound on allocator/RSS growth. No threshold bump or physical-memory qualification |
+| Final combined workspace / `03c4e07a` | 6,299 passed, six skipped; Nextest `fe1eae14-6080-445b-bad6-5d215e7c2a47` | `pipeline:check` / `2d613ec7`, `pipeline:lint-src` / `37b027d0` and `pipeline:fmt` / `ed065f84` passed |
+| Actual capture/export / `6ce29836` | 185 canonical rows, 60 cohort members; authoritative XLSX/CSV/JSONL readback passed | `env -u CI tools/moon-local run pipeline:bench -- --bench capture_export -- --test`; functional oracle, not a performance measurement or national run |
+
+The manifest fixtures now reuse the real current recapture implementation rather than duplicating
+its digest recipe. The numeric fixtures preserve conflict coverage without treating separate
+provider result identities as one result. Whole-workload RAM/disk, native-current-build and full
+release acceptance remain open.
+
+All combined gates ran through `tools/moon-local`. Source lint still reports three argument-count
+advisories: browser `note_request`, acquisition `process_eligible_entry` and qualification
+`process_root`; none was suppressed or represented as warning-free qualification.
