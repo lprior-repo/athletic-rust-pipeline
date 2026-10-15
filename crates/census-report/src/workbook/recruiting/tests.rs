@@ -169,6 +169,18 @@ fn performance(
     source: &str,
     url: &str,
 ) -> TestResult {
+    let source_key = format!("{source}:{}:{}", context.date, mark.raw());
+    performance_with_key(store, context, mark, source, url, &source_key)
+}
+
+fn performance_with_key(
+    store: &Store,
+    context: &PerformanceRow<'_>,
+    mark: Mark,
+    source: &str,
+    url: &str,
+    shared_key: &str,
+) -> TestResult {
     let school_year = SchoolYear::from_date(context.date).ok_or("invalid fixture result date")?;
     let source_athlete = SourceIdentity::new(
         SourceNamespace::Other(source.to_string()),
@@ -194,7 +206,6 @@ fn performance(
             retained_conflicts: Vec::new(),
         },
     )?;
-    let source_key = format!("{source}:{}:{}", context.date, mark.raw());
     store.append(
         Table::Performances,
         &CanonicalPerformance {
@@ -203,7 +214,7 @@ fn performance(
                 context.meet,
                 context.event,
                 context.date,
-                &source_key,
+                shared_key,
             ),
             athlete: context.athlete.clone(),
             team,
@@ -219,7 +230,7 @@ fn performance(
             timing: None,
             observed_grade: None,
             evidence: evidence(source, Some(url)),
-            source_key,
+            source_key: shared_key.to_string(),
             source_athlete: Some(source_athlete),
             retained_conflicts: Vec::new(),
             combined_completion: None,
@@ -594,8 +605,8 @@ fn the_prs_sheet_retains_shared_winners_units_dates_and_provenance() -> TestResu
     "2",
     "two sources report this event");
     check!(eq; text(&range, sprint, 18),
-    "WIAA Division 3 State: 49.71 | 49.80",
-    "the losing marks stay attached to the winner");
+    "",
+    "distinct provider results are distinct attempts");
     check!(eq; text(&range, sprint, 19), "outdoor");
     check!(eq; text(&range, sprint, 20), "na");
     check!(eq; text(&range, sprint, 21), "unknown");
@@ -615,6 +626,95 @@ fn the_prs_sheet_retains_shared_winners_units_dates_and_provenance() -> TestResu
     check!(eq; text(&all_range, jump, 11), "m");
     check!(eq; text(&all_range, jump, 17), "1");
     check!(eq; text(&all_range, jump, 18), "", "one report cannot conflict");
+    Ok(())
+}
+#[test]
+fn the_prs_sheet_retains_a_same_result_conflict_beside_the_winner() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let wi = school(&store, UsJurisdiction::Wisconsin, "Abbotsford")?;
+    let (julian, _) = julian(&store, &wi)?;
+    let state = meet(
+        &store,
+        UsJurisdiction::Wisconsin,
+        "WIAA Division 3 State",
+        "2026-06-06",
+        CompetitionLevel::State,
+        Sport::OutdoorTrack,
+    )?;
+    let invite = meet(
+        &store,
+        UsJurisdiction::Wisconsin,
+        "Abbotsford Invitational",
+        "2026-05-01",
+        CompetitionLevel::Invitational,
+        Sport::OutdoorTrack,
+    )?;
+    let sprint = event(&store, &state, EventKind::Track400m)?;
+    let sprint_invite = event(&store, &invite, EventKind::Track400m)?;
+    let shared = "wiaa_results:2026-06-06:shared-final";
+    for seconds in ["49.71", "49.80"] {
+        performance_with_key(
+            &store,
+            &PerformanceRow {
+                athlete: &julian,
+                school: &wi,
+                meet: &state,
+                event: &sprint,
+                date: "2026-06-06",
+            },
+            Mark::TimeSeconds(ExactSeconds::parse(seconds)?),
+            "wiaa_results",
+            "https://wiaa.test/results/state",
+            shared,
+        )?;
+    }
+    performance(
+        &store,
+        &PerformanceRow {
+            athlete: &julian,
+            school: &wi,
+            meet: &invite,
+            event: &sprint_invite,
+            date: "2026-05-01",
+        },
+        Mark::TimeSeconds(ExactSeconds::parse("48.55")?),
+        "wiaa_results",
+        "https://wiaa.test/results/invite",
+    )?;
+    let dataset = crate::export::ExportDataset::load(&store)?;
+    let canonical = bests::build_from_dataset(
+        &dataset,
+        &bests::Options {
+            scope: Scope::Core,
+            grad_year: Some(2027),
+            limit: None,
+            jurisdictions: Vec::new(),
+        },
+    )?;
+    check!(eq; canonical.len(), 1);
+    let winner = canonical.first().ok_or("missing winner")?;
+    check!(eq; winner.mark_text(), "48.55");
+    check!(eq; winner.meet.date, "2026-05-01");
+    check!(eq; winner.meet.name, "Abbotsford Invitational");
+    check!(eq; winner.conflicts.len(), 1);
+    let conflict = winner.conflicts.first().ok_or("missing conflict")?;
+    check!(eq; conflict.meet, "WIAA Division 3 State");
+    check!(eq; conflict.marks, vec!["49.71".to_string()]);
+    let projection = recruiting(&store, Scope::Core, Some(2027))?;
+    let path = dir.path().join("recruiting.xlsx");
+    let mut book = Workbook::new();
+    projection.write_prs(&mut book, &path)?;
+    book.save(&path)?;
+    let mut readback = open_workbook(&path)?;
+    let range = sheet(&mut readback, "PRs")?;
+    let row = row_of_event(&range, julian.as_str(), "Track400m")?;
+    check!(eq; text(&range, row, 9), "48.55");
+    check!(eq; text(&range, row, 11), "s");
+    check!(eq; text(&range, row, 13), "2026-05-01");
+    check!(eq; text(&range, row, 14), "Abbotsford Invitational");
+    check!(eq; text(&range, row, 16), "https://wiaa.test/results/invite");
+    check!(eq; text(&range, row, 18), "WIAA Division 3 State: 49.71");
     Ok(())
 }
 

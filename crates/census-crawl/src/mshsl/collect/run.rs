@@ -74,10 +74,13 @@ impl<'a> MshslRun<'a> {
                 return fail(&mut self.report, &url, error);
             }
         };
-        let rows = parse_school_list(body);
-        if rows.is_empty() || body.matches("school-teaser__title").count() != rows.len() {
-            owe(&mut self.report, &url)?;
-        }
+        let rows = match parse_school_list(body) {
+            Ok(rows) => rows,
+            Err(error) => {
+                self.page = None;
+                return fail(&mut self.report, &url, error);
+            }
+        };
         stream::iter(&rows)
             .map(Ok::<_, CrawlError>)
             .try_fold(&mut *self, |run, row| async move {

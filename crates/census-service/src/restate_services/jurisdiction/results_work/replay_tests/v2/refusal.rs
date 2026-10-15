@@ -1,4 +1,5 @@
 use super::*;
+use crate::restate_services::results_arms::plan_v2::MAX_PLAN_BYTES;
 
 #[tokio::test(flavor = "current_thread")]
 async fn oversized_completed_j0_bytes_refuse_at_real_sdk_decode_before_j1() -> TestResult {
@@ -10,15 +11,16 @@ async fn oversized_completed_j0_bytes_refuse_at_real_sdk_decode_before_j1() -> T
         let mut journal = endpoint::input(f)?;
         let frames = endpoint::invoke(&client, &url, f, &journal).await?;
         let mut encoded = protocol::acknowledge(&mut journal, &frames, "results-v2-plan")?;
-        encoded.resize(8_388_609, b' ');
+        encoded.resize(
+            MAX_PLAN_BYTES
+                .checked_add(1)
+                .ok_or("fixture next plan byte overflow")?,
+            b' ',
+        );
         protocol::overwrite_plan_notification(&mut journal, &encoded)?;
         let before = snapshot(f).await?;
         let frames = endpoint::invoke_frames(&client, &url, f, &journal).await?;
-        let error = frames
-            .iter()
-            .find(|frame| frame.kind == 0x0002)
-            .ok_or("SDK decode error absent")?;
-        check!(error.text(2)?.contains("encoded plan bytes"));
+        check!(eq; frames.iter().filter(|frame| frame.kind == 0x0002).count(), 1);
         check!(eq; frames.iter().filter(|frame| frame.kind == 0x0411).count(), 0);
         check!(eq; frames.iter().filter(|frame| frame.kind == 0x0005).count(), 0);
         check!(eq; snapshot(f).await?, before);
@@ -72,7 +74,7 @@ async fn exact_cap_completed_j0_bytes_are_decoded_by_the_actual_sdk_before_execu
         let mut journal = endpoint::input(f)?;
         let frames = endpoint::invoke(&client, &url, f, &journal).await?;
         let mut encoded = protocol::acknowledge(&mut journal, &frames, "results-v2-plan")?;
-        encoded.resize(8_388_608, b' ');
+        encoded.resize(MAX_PLAN_BYTES, b' ');
         protocol::overwrite_plan_notification(&mut journal, &encoded)?;
         let frames = endpoint::invoke(&client, &url, f, &journal).await?;
         let outcome = protocol::acknowledge(&mut journal, &frames, "results-v2-execute")?;

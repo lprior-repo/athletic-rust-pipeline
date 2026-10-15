@@ -8,4 +8,32 @@ if [[ ${MOON_RUST_BUILD_JOBS+x} ]]; then
   fi
   export CARGO_BUILD_JOBS="$MOON_RUST_BUILD_JOBS"
 fi
+if [[ ${MOON_RUST_SCOPED_TEST_FEATURES+x} ]]; then
+  case "$MOON_RUST_SCOPED_TEST_FEATURES" in
+    all|default) ;;
+    *)
+      printf 'tools/moon-cargo: MOON_RUST_SCOPED_TEST_FEATURES must be all or default\n' >&2
+      exit 2
+      ;;
+  esac
+  if [[ ${MOON_TARGET:-} != pipeline:tests-scoped || $# -lt 9 ||
+        ${1:-} != nextest || ${2:-} != run || ${3:-} != --config ||
+        ${4:-} != .cargo/fast-iteration.toml || ${5:-} != --all-features ||
+        ${6:-} != --locked || ${7:-} != --offline ||
+        ${8:-} != --no-fail-fast || ${9:-} != --test-threads=16 ]]; then
+    printf 'tools/moon-cargo: scoped test feature mode requires the canonical pipeline:tests-scoped prefix\n' >&2
+    exit 2
+  fi
+  if [[ $MOON_RUST_SCOPED_TEST_FEATURES == default ]]; then
+    for argument in "${@:10}"; do
+      case "$argument" in
+        --all-features|--all-features=*|--features|--features=*|-F*|--no-default-features|--no-default-features=*)
+          printf 'tools/moon-cargo: default scoped mode refuses conflicting feature flag: %s\n' "$argument" >&2
+          exit 2
+          ;;
+      esac
+    done
+    set -- "${@:1:4}" "${@:6}"
+  fi
+fi
 exec "$MOON_RUST_CARGO" "$@"

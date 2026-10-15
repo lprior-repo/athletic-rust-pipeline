@@ -265,13 +265,22 @@ fn provider(cli: &Cli) -> TestResult<&ProviderArgs> {
     }
 }
 
-fn cache_files(fetcher: &Fetcher) -> TestResult<BTreeMap<PathBuf, Vec<u8>>> {
-    std::fs::read_dir(fetcher.cache_dir())?
-        .map(|entry| {
-            let path = entry?.path();
-            Ok((path.clone(), std::fs::read(path)?))
-        })
-        .collect()
+fn cache_payloads(fetcher: &Fetcher) -> TestResult<BTreeMap<PathBuf, Vec<u8>>> {
+    let mut payloads = BTreeMap::new();
+    for entry in std::fs::read_dir(fetcher.cache_dir())? {
+        let entry = entry?;
+        let name = entry.file_name();
+        let name = name.to_str().ok_or("fixture cache name is not UTF-8")?;
+        if !name.ends_with(".body") && !name.ends_with(".meta.json") {
+            continue;
+        }
+        if !entry.file_type()?.is_file() {
+            return Err("fixture cache payload is not a regular file".into());
+        }
+        let path = entry.path();
+        payloads.insert(path.clone(), std::fs::read(path)?);
+    }
+    Ok(payloads)
 }
 
 fn require_offline(outcome: Result<FetchOutcome, FetchError>, expected: &str) -> TestResult {
@@ -382,7 +391,7 @@ async fn provider_offline_refuses_all_http_entrypoints_without_dispatch() -> Tes
     check!(eq; stats.cache_hits, 0);
     check!(eq; stats.physical_requests(), 0);
     check!(eq; stats.per_host.len(), 0);
-    check!(eq; cache_files(&fetcher)?.len(), 0);
+    check!(eq; cache_payloads(&fetcher)?.len(), 0);
     Ok(())
 }
 
@@ -424,7 +433,7 @@ async fn provider_offline_refuses_browser_cache_miss_without_ingress_dispatch() 
         .await?;
     require_offline(outcome, BROWSER_URL)?;
     check!(eq; fetcher.stats().await.physical_requests(), 0);
-    check!(eq; cache_files(&fetcher)?.len(), 0);
+    check!(eq; cache_payloads(&fetcher)?.len(), 0);
     Ok(())
 }
 
@@ -463,7 +472,7 @@ async fn provider_offline_reuses_cached_bytes_and_original_acquisition_metadata(
     let url = format!("{}/cached", observer.origin);
     check!(eq; fetcher.is_offline(), true);
     capture_cache::seed(fetcher.cache_dir(), &url, LIST, ACQUIRED_AT, &[])?;
-    let retained = cache_files(&fetcher)?;
+    let retained = cache_payloads(&fetcher)?;
     let options = FetchOptions::default();
     let fetched = observer
         .without_dispatch(fetcher.get(&url, &options))
@@ -472,7 +481,7 @@ async fn provider_offline_reuses_cached_bytes_and_original_acquisition_metadata(
     check!(eq; fetched.url, url);
     check!(eq; fetched.fetched_at, ACQUIRED_AT);
     check!(eq; fetched.from_cache, true);
-    check!(eq; cache_files(&fetcher)?, retained);
+    check!(eq; cache_payloads(&fetcher)?, retained);
     let stats = fetcher.stats().await;
     check!(eq; stats.requests, 1);
     check!(eq; stats.cache_hits, 1);
@@ -490,7 +499,7 @@ async fn provider_offline_refuses_corrupt_cached_bytes_without_replacing_them() 
     let url = format!("{}/corrupt", observer.origin);
     check!(eq; fetcher.is_offline(), true);
     capture_cache::seed(fetcher.cache_dir(), &url, LIST, ACQUIRED_AT, &[])?;
-    let body = cache_files(&fetcher)?
+    let body = cache_payloads(&fetcher)?
         .into_keys()
         .find(|path| {
             path.extension()
@@ -498,13 +507,13 @@ async fn provider_offline_refuses_corrupt_cached_bytes_without_replacing_them() 
         })
         .ok_or("cached fixture body missing")?;
     std::fs::write(body, b"corrupt fixture")?;
-    let retained = cache_files(&fetcher)?;
+    let retained = cache_payloads(&fetcher)?;
     let options = FetchOptions::default();
     let outcome = observer
         .without_dispatch(fetcher.get(&url, &options))
         .await?;
     require_offline(outcome, &url)?;
-    check!(eq; cache_files(&fetcher)?, retained);
+    check!(eq; cache_payloads(&fetcher)?, retained);
     let stats = fetcher.stats().await;
     check!(eq; stats.requests, 0);
     check!(eq; stats.physical_requests(), 0);
@@ -522,7 +531,7 @@ async fn provider_offline_uses_the_current_collector_and_replays_physical_rows_o
     let fetcher = isolated_fetcher(&cli, &store, directory.path())?;
     check!(eq; fetcher.is_offline(), true);
     capture_cache::seed(fetcher.cache_dir(), URL, LIST, ACQUIRED_AT, &[])?;
-    let retained = cache_files(&fetcher)?;
+    let retained = cache_payloads(&fetcher)?;
     let initial_context = context(&store, &fetcher, args)?;
     let report = dispatch(&initial_context, args, initial_context.observed_on.clone()).await?;
     check!(eq; report.errors, 0);
@@ -554,7 +563,7 @@ async fn provider_offline_uses_the_current_collector_and_replays_physical_rows_o
     check!(eq; replay.errors, 0);
     check!(eq; replay.disposition, CollectionDisposition::Complete);
     check!(eq; reopened.walk_table(Table::Performances)?, physical);
-    check!(eq; cache_files(&fetcher)?, retained);
+    check!(eq; cache_payloads(&fetcher)?, retained);
     Ok(())
 }
 

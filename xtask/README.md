@@ -170,7 +170,7 @@ tools/moon-local run pipeline:tests -- -E 'binary(restate_kill_restart)'
 |---|---|
 | `pipeline:report-test` | Cacheable scoped `census-report` library results, all features; a hit may replay prior logs instead of executing tests |
 | `pipeline:tests` | Full workspace/all-features Nextest, 16 test threads, `cache: false`; executes tests rather than replaying a native-fault result |
-| `pipeline:tests-scoped` | Manual uncached scoped Nextest; pass package/target/filter arguments explicitly; uses `target/fast-iteration` |
+| `pipeline:tests-scoped` | Manual uncached Nextest, all features by default; pass package/target/filter arguments explicitly; uses `target/fast-iteration` |
 | `pipeline:build-scoped` / `pipeline:run-scoped` | Manual uncached scoped build/run through the fast-iteration configuration; explicit package and binary/example selection |
 | `pipeline:check` | Uncached workspace/all-targets/all-features compilation |
 | `pipeline:lint-src` | Uncached workspace source Clippy (`--lib --bins --examples`, warnings denied); not test-style linting |
@@ -200,6 +200,21 @@ a serving store still violates the single-owner boundary; use isolated scratch o
 The full test task is deliberately uncached because native fault/recovery checks observe processes,
 ports and durable state not represented by source hashes. Running it does not by itself certify all
 separately required native fault scenarios. A report-library cache hit cannot stand in for this lane.
+
+`pipeline:tests-scoped` keeps `--all-features` unless
+`MOON_RUST_SCOPED_TEST_FEATURES=default` explicitly selects Cargo's default features.
+Unset or `all` preserves the existing argument vector. This option is accepted only
+for the canonical `pipeline:tests-scoped` command; other tasks and unknown modes fail
+before Cargo starts. Default mode rejects additional feature-selection flags rather
+than silently changing the requested feature set. Locked/offline execution, build-job
+limits, filters, and empty-selection failure options remain unchanged. This does not
+weaken the aggregate, source, or release gates, which still require all features.
+
+```sh
+env -u CI MOON_RUST_BUILD_JOBS=1 MOON_RUST_SCOPED_TEST_FEATURES=default \
+  tools/moon-local run pipeline:tests-scoped -- -p census-service --lib \
+  -E 'test(restate_services::publish::runtime::publication_tests::)' --no-tests fail
+```
 
 For fresh scoped execution rather than cached-log replay, use:
 

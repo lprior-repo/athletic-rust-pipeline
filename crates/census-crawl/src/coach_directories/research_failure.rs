@@ -65,6 +65,7 @@ pub(super) fn crawl(error: &crate::CrawlError) -> Outcome {
         | CrawlError::EventIdentity(_)
         | CrawlError::Specification(_)
         | CrawlError::Io { .. }
+        | CrawlError::ConverterLifecycle(_)
         | CrawlError::DirectoryArtifact { .. } => Outcome::Failed,
     }
 }

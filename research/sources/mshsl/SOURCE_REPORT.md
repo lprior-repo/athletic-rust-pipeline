@@ -77,3 +77,13 @@ The other two disputed values (`sv313@yahoo.com`, `treroundtree@aol.com`) appear
 ### 5. Requirement
 
 A published coach email must be traceable to a retained body+meta capture pair (body containing the address, meta sidecar carrying the capture sha256 and fetch time). Values traceable only to a research artifact (`canonical-coaches.csv`) or only to the delivered workbook must be treated as unverifiable.
+
+## Listing parser boundary — 2026-10-14
+
+`mshsl::parse_school_list` returns `CrawlResult<Vec<SchoolListRow>>`: direct parser admission
+is 32 MiB and 65,536 raw rows; acquisition limits remain independent. Exact duplicates retain
+first-seen order. Conflicting names/cities, malformed rows and empty listings refuse explicitly.
+The collector retains the capture, marks the actual URL unfinished and stops that frontier.
+Directory parsing does not establish year/category participation or a complete denominator.
+[Executed checks](../../../docs/verification/2026-10-14-deep-codebase-review.md#subsequent-r9r15-working-tree-evidence)
+record the bounded cases, collector readback and offline replay.
