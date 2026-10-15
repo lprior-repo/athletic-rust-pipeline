@@ -1,20 +1,30 @@
 use census_domain::model::{CanonicalAthlete, Gender};
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 
 type AliasGroups<'a> = BTreeMap<&'a str, Vec<&'a CanonicalAthlete>>;
+
+pub(in crate::report) fn borrowed_or_collapsed<'a>(
+    athletes: &'a [CanonicalAthlete],
+    aliases: &HashMap<String, String>,
+) -> Cow<'a, [CanonicalAthlete]> {
+    if aliases.is_empty() {
+        return Cow::Borrowed(athletes);
+    }
+    let groups = group_aliases(athletes, aliases);
+    let capacity = groups.len();
+    Cow::Owned(
+        groups
+            .into_iter()
+            .fold(Vec::with_capacity(capacity), append_group),
+    )
+}
 
 pub(in crate::report) fn collapse_athletes(
     athletes: &[CanonicalAthlete],
     aliases: &HashMap<String, String>,
 ) -> Vec<CanonicalAthlete> {
-    if aliases.is_empty() {
-        return athletes.to_vec();
-    }
-    let groups = group_aliases(athletes, aliases);
-    let capacity = groups.len();
-    groups
-        .into_iter()
-        .fold(Vec::with_capacity(capacity), append_group)
+    borrowed_or_collapsed(athletes, aliases).into_owned()
 }
 
 fn append_group(
