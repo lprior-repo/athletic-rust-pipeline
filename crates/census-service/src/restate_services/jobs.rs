@@ -1,5 +1,8 @@
 mod source_access;
 
+#[cfg(test)]
+mod publication_tests;
+
 use std::path::PathBuf;
 use std::sync::Arc;
 

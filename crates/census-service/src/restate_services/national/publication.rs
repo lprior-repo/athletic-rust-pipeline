@@ -9,7 +9,7 @@ use crate::restate_services::publish::{
 };
 use crate::restate_services::wire::{
     BestsRequest, ConsolidateRequest, ContactStatus, ContactSummary, NationalReport,
-    NationalRequest, ReportRequest, SealRequest, WorkbookRequest,
+    NationalRequest, PublicationContract, ReportRequest, SealRequest, WorkbookRequest,
 };
 
 pub(super) const KEY_SEAL: &str = "publication_seal";
@@ -21,7 +21,9 @@ pub(super) async fn publish(
     request: &NationalRequest,
 ) -> Result<(), HandlerError> {
     consolidate(ctx, identity).await?;
-    derive(ctx, identity, request).await?;
+    if request.publication_contract == PublicationContract::LegacySeparateV1 {
+        derive(ctx, identity, request).await?;
+    }
     let workbook = workbook(ctx, identity, request).await?;
     seal(
         ctx,

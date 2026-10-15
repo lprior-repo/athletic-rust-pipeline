@@ -214,7 +214,7 @@ fn the_offline_cycle_retains_each_event_and_surface_pr_with_the_cross_source_win
     check!(eq; expected.len(), 30, "three eligible comparison classes per athlete");
     {
         let store = Store::open(&data_dir)?;
-        corpus.append(&store)?;
+        corpus.append_prepared(&store)?;
     }
     let output_path = tmpdir.path().join("publication");
     let output = run_cycle(&data_dir, &output_path)?;

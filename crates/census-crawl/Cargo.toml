@@ -24,6 +24,7 @@ reqwest = { version = "=0.13.4", default-features = false, features = ["json", "
 # The ingress client's request and response bodies are the SDK's own `http`/`bytes` types.
 bytes = "1"
 http = "1"
+hyper = { version = "=1.11.0", default-features = false, features = ["http1", "server"] }
 # The browser lane is a Restate service reached over the ingress client: a page a plain fetch cannot
 # render is requested through it, and the lane's own retry/queueing semantics come from Restate. This
 # crate therefore names the SDK as a *client*; the service definitions themselves live in the service

@@ -41,6 +41,9 @@ pub use national::{
     NationalReport, NationalRequest, SourceStageOutcome,
 };
 
+mod publication;
+pub use publication::{NationalRequestBinding, PublicationCapabilities, PublicationContract};
+
 mod teams;
 pub use teams::{CompletedTeams, IncompleteTeams, TeamsFailure, TeamsStage};
 mod teams_sources;

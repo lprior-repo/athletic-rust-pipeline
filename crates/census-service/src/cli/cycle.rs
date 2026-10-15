@@ -1,27 +1,19 @@
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use census_report::export::ExportDataset;
-use census_report::report;
 use census_report::workbook;
-use census_service::census;
-use census_service::restate_services::{
-    reject_offline_generation, ConsolidatedTable, ExportGeneration,
-};
+use census_service::restate_services::{reject_offline_generation, ExportGeneration};
 use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
 
-use super::live;
+use census_service::ingress;
 
 mod gather;
 mod publish;
-use super::{contact_school_year, school_year, scope_of, Cli, Route};
+use super::{Cli, Route};
 use gather::gather_athleticnet;
-use publish::{
-    publish_bests_and_workbook_live, publish_bests_and_workbook_with, publish_scope_live,
-    publish_scope_with,
-};
+use publish::{publication_options, publish_workbook_live, publish_workbook_offline};
 
 #[derive(Args, Debug, Clone)]
 pub(super) struct RunArgs {
@@ -56,7 +48,7 @@ pub(super) struct RunArgs {
     #[arg(help = "Ignore cached HTTP bodies and re-fetch")]
     #[arg(long)]
     refresh: bool,
-    #[arg(help = "ISO date stamped into evidence (defaults to today)")]
+    #[arg(help = "ISO date stamped into gathered evidence (defaults to today)")]
     #[arg(long)]
     observed_on: Option<String>,
     #[arg(
@@ -75,11 +67,13 @@ pub(super) struct RunArgs {
     #[arg(help = "Cap the number of meets processed on the whole-meet route")]
     #[arg(long)]
     meet_limit: Option<usize>,
-    #[arg(help = "Workbook path (defaults to the store's own `out/` path)")]
+    #[arg(
+        help = "Publication root directory (defaults to <store>/out/publication); publishes one verified managed bundle"
+    )]
     #[arg(long)]
     out: Option<PathBuf>,
     #[arg(
-        help = "Logical export generation selecting a fresh report/bests/consolidate/workbook run; omitted reuses the legacy generation 1 keys"
+        help = "Logical export generation selecting a managed workbook publication; omitted reuses the legacy generation 1 key"
     )]
     #[arg(long, value_name = "GENERATION")]
     generation: Option<String>,
@@ -109,38 +103,27 @@ pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
     }
 }
 
+enum PublicationPreparation {
+    Retained,
+    Gathered { observed_on: String },
+}
+
 async fn run_offline(cli: &Cli, store: std::sync::Arc<Store>, args: &RunArgs) -> Result<()> {
-    let observed_on = match args.observed_on.clone() {
-        Some(value) => value,
-        None => census_crawl::net::today_iso(),
-    };
-    let grad_year = school_year(args.grad_year)?;
-    let contact_season = contact_school_year(args.school_year)?;
-    let scope = scope_of(args.core);
-
-    match (&args.input, args.meets.is_empty()) {
+    let options = publication_options(args)?;
+    let preparation = match (&args.input, args.meets.is_empty()) {
         (Some(_), _) | (None, false) => {
-            gather_athleticnet(cli, &store, args, observed_on.clone()).await?
+            let observed_on = match args.observed_on.clone() {
+                Some(value) => value,
+                None => census_crawl::net::today_iso(),
+            };
+            gather_athleticnet(cli, &store, args, observed_on.clone()).await?;
+            PublicationPreparation::Gathered { observed_on }
         }
-        (None, true) => {
-            println!("gather\tathleticnet\tskipped (no --input): publishing what the store holds")
-        }
-    }
-
-    let stages = std::sync::Arc::clone(&store);
-    let arguments = args.clone();
-    tokio::task::spawn_blocking(move || {
-        offline_stages(
-            &stages,
-            &arguments,
-            &observed_on,
-            grad_year,
-            contact_season,
-            scope,
-        )
-    })
-    .await
-    .map_err(|error| anyhow::anyhow!("the offline stages did not finish: {error}"))?
+        (None, true) => PublicationPreparation::Retained,
+    };
+    tokio::task::spawn_blocking(move || offline_stages(&store, &options, preparation))
+        .await
+        .map_err(|error| anyhow::anyhow!("the offline stages did not finish: {error}"))?
 }
 
 fn stage_line(name: &str, detail: &str, started: std::time::Instant) {
@@ -149,36 +132,15 @@ fn stage_line(name: &str, detail: &str, started: std::time::Instant) {
 
 fn offline_stages(
     store: &Store,
-    args: &RunArgs,
-    observed_on: &str,
-    grad_year: i16,
-    school_year: SchoolYear,
-    scope: report::Scope,
+    options: &workbook::Options,
+    preparation: PublicationPreparation,
 ) -> Result<()> {
-    let total = std::time::Instant::now();
-    derive_index(store, observed_on, school_year)?;
-    consolidate_store(store)?;
-    let dataset = load_dataset(store)?;
-
+    if let PublicationPreparation::Gathered { observed_on } = preparation {
+        derive_index(store, &observed_on, options.school_year)?;
+    }
     let started = std::time::Instant::now();
-    let all_sources = publish_scope_with(&dataset, store, report::Scope::AllSources, &[])?;
-    let core = publish_scope_with(&dataset, store, report::Scope::Core, &[])?;
-    stage_line("reports", "all_sources+core", started);
-    let censuses = workbook::Censuses { core, all_sources };
-
-    let started = std::time::Instant::now();
-    publish_bests_and_workbook_with(
-        &dataset,
-        store,
-        args,
-        scope,
-        grad_year,
-        school_year,
-        &censuses,
-    )?;
-    stage_line("publish", "bests+workbook", started);
-
-    stage_line("stages", "total", total);
+    publish_workbook_offline(store, options)?;
+    stage_line("publish", "managed_bundle", started);
     Ok(())
 }
 
@@ -194,62 +156,18 @@ fn derive_index(store: &Store, observed_on: &str, school_year: SchoolYear) -> Re
     Ok(())
 }
 
-fn consolidate_store(store: &Store) -> Result<()> {
-    let started = std::time::Instant::now();
-    let counts = census::consolidate(store).context("consolidating the store")?;
-    let detail = counts
-        .iter()
-        .map(|(table, count)| format!("{table}={count}"))
-        .collect::<Vec<_>>()
-        .join(" ");
-    stage_line("consolidate", &detail, started);
-    Ok(())
-}
-
-fn load_dataset(store: &Store) -> Result<ExportDataset> {
-    let started = std::time::Instant::now();
-    let dataset = ExportDataset::load(store).context("loading the export dataset")?;
-    let detail = format!(
-        "athletes={} performances={} events={} coaches={}",
-        dataset.athletes.len(),
-        dataset.performances.len(),
-        dataset.events.len(),
-        dataset.coaches.len()
-    );
-    stage_line("dataset", &detail, started);
-    Ok(dataset)
-}
-
 async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
     if args.input.is_some() || !args.meets.is_empty() {
         anyhow::bail!(
             "the gather stage writes the store the running service holds: --input and --meets need --store"
         );
     }
-    println!("gather\tathleticnet\tskipped (no --input): publishing what the store holds");
-    let grad_year = school_year(args.grad_year)?;
-    let contact_season = contact_school_year(args.school_year)?;
-    let scope = scope_of(args.core);
+    let options = publication_options(args)?;
     let generation = ExportGeneration::resolve(args.generation.as_deref())?;
-    let tables = live::consolidate(Some(origin), &generation).await?;
-    print_consolidation(&tables);
-    println!("index\tskipped (offline stage: `index --store <dir>` with census-serve stopped)");
-
-    for scope in [report::Scope::AllSources, report::Scope::Core] {
-        publish_scope_live(origin, scope, &[], &generation).await?;
-    }
-
-    publish_bests_and_workbook_live(origin, args, scope, grad_year, contact_season, &generation)
-        .await
+    let client = ingress::client(origin)?;
+    ingress::require_managed_publication(&client).await?;
+    publish_workbook_live(origin, &options, &generation).await
 }
 
-fn print_consolidation(tables: &[ConsolidatedTable]) {
-    println!(
-        "consolidate\t{}",
-        tables
-            .iter()
-            .map(|table| format!("{}={}", table.table, table.rows))
-            .collect::<Vec<_>>()
-            .join(" ")
-    );
-}
+#[cfg(test)]
+mod tests;

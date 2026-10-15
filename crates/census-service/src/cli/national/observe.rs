@@ -22,16 +22,22 @@ pub(crate) struct Watch<'a> {
 }
 
 pub(crate) async fn observe(watch: Watch<'_>) -> Result<NationalReport> {
+    let identity = WorkflowIdentity::national(watch.season, watch.revision, watch.jurisdictions);
     let mut round: u64 = 0;
     while round < watch.rounds {
         round = round.saturating_add(1);
-        match watch
+        let response = watch
             .handle
             .output()
             .await
-            .map_err(ingress::error)?
-            .into_body()
-        {
+            .map_err(super::output::read_error)?;
+        super::output::validate(
+            response.headers(),
+            response.body(),
+            watch.handle.invocation_id(),
+            &identity,
+        )?;
+        match response.into_body() {
             Output::Ready(Json(report)) => return Ok(report),
             Output::NotReady => {}
         }

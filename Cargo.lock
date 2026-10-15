@@ -344,6 +344,7 @@ dependencies = [
  "futures",
  "html5gum",
  "http",
+ "hyper",
  "indexmap",
  "regex",
  "reqwest",

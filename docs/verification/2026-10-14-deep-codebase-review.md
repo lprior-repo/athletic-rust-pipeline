@@ -261,6 +261,40 @@ context-based duplicate-count policy needs identity justification; normalized
 provenance still enumerates exported tied IDs rather than every supporting source ID.
 Neither review item is fully closed by these focused repairs.
 
+### Focused R7/R8 routing and ingress package — 2026-10-14
+
+Prepared on `87178d3a` from the ordered Rust/Cargo deltas `95b27801`, `87e07200`,
+`1d7a46cd`, `201b285a`, `4e54e825`, `9b266252`, `728bb79b`. The focused report
+package is a prerequisite: existing `388bb367`/`a041adcf` test-only follow-ups
+retain the artifact6 / 22-artifact / nine-normalized-family assertions. No report,
+identity, acquisition-snapshot, resource-guard or shutdown implementation is replaced.
+New standalone/national commands use the existing managed publication path;
+`LegacySeparateV1` remains explicit historical replay compatibility, with old wire
+omission semantics retained. Observer failures preserve the original invocation;
+only validated completed Final output permits the existing bounded drive continuation.
+
+Prior cloud results below belong to their recorded source trees, not this rebase:
+
+| Surface / source | Passed / failed / skipped | Retained Nextest run |
+|---|---|---|
+| Managed routing, `87e07200` | 126 / 0 / 1033 | `75c67ac5-0ae6-459e-afa8-d6fc3df6ba62` |
+| Offline/cutoff/roster integration, `87e07200` | 16 / 0 / 0 | `d4fe605c-8024-4cf0-85bd-0afb6676ed2c` |
+| Attachment/resume, `1d7a46cd` | 28 / 0 / 1142 | `975b45d7-351d-419c-a4b0-4a4e0af8d1f4` |
+| Managed/replay selector, `201b285a` | 75 / 0 / 1120 | `2f6311cd-d6a2-4c5f-9a0b-2114c5d07f86` |
+| Bounded ingress, `4e54e825`, 23:13 UTC | 27 / 0 / 1505 | Exit 0; 1.291s tests |
+| Drive ownership, `9b266252` | 110 / 0 / 1098 | `4a35badd-d7dd-40de-a2b9-d01d1576207a` |
+| HTTP/2 retry ownership, `728bb79b` | 2 / 0 / 1013 | `3335e2f7-f442-4e5f-9de0-3f9b9d3eca87` |
+
+The HTTP/2 REFUSED_STREAM fixture observed three pinned-default transmissions versus
+one with explicit no-retry policy; it does not establish duplicate provider effects.
+Body admission is bounded, while earlier header/network allocations and global peak
+RSS remain unqualified. Known response status/invocation and original transport causes
+are retained; H2 header overflow is not guessed from opaque transport failures.
+This package has patch/static checks only. Current-main compilation, focused tests,
+all-target/source lint and release gates are PENDING. Genuine historical Restate
+endpoint replay, native fault windows, provider E2E and representative peak memory
+remain NOT QUALIFIED. Incoming R9–R15 evidence below is preserved unchanged.
+
 ### Subsequent R9–R15 working-tree evidence
 
 These exercised repairs follow checkpoint `8005d33f`; they are not a full release certificate.

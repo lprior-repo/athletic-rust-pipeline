@@ -8,7 +8,7 @@ use census_reconcile::identity::{admitted_scope, WorkflowIdentity};
 use census_store::clock::Clock;
 
 use super::jurisdiction::JurisdictionCensusClient;
-use super::wire::{NationalReport, NationalRequest};
+use super::wire::{NationalReport, NationalRequest, NationalRequestBinding};
 use super::KEY_STATE;
 
 mod classification;
@@ -18,6 +18,7 @@ mod publication;
 mod reconciliation;
 mod redrive;
 mod report;
+mod request_binding;
 
 #[cfg(test)]
 pub(crate) mod publication_tests;
@@ -29,7 +30,7 @@ pub(super) use super::jobs;
 pub(super) use classification::collect_outcomes;
 #[cfg(test)]
 pub(super) use classification::{classify, Completion};
-use redrive::{bind_run, redrive, require_identity};
+use redrive::{redrive, require_identity};
 use report::{assemble, join_addresses};
 
 #[derive(Clone)]
@@ -101,15 +102,7 @@ impl NationalCensus {
     ) -> Result<Json<NationalReport>, HandlerError> {
         let identity = require_identity(&ctx, &request)?;
 
-        bind_run(&ctx, &request).await?;
-        if let Some(address) = request.school_address.as_mut() {
-            let Json(digest) = ctx
-                .service_client::<super::census::CensusClient>()
-                .school_address_preflight(Json(address.clone()))
-                .call()
-                .await?;
-            address.expected_digest = Some(digest);
-        }
+        request_binding::prepare(&ctx, &mut request).await?;
 
         let targets = targets(&request)?;
         let mut in_flight = DurableFuturesUnordered::new();
@@ -149,6 +142,15 @@ impl NationalCensus {
             publication::publish(&ctx, &identity, &request).await?;
         }
         Ok(Json(report))
+    }
+
+    #[handler]
+    #[tracing::instrument(skip_all)]
+    async fn request(
+        &self,
+        ctx: SharedWorkflowContext<'_>,
+    ) -> Result<Json<NationalRequestBinding>, HandlerError> {
+        request_binding::read(&ctx).await.map(Json)
     }
 
     #[handler]

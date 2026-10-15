@@ -8,6 +8,9 @@ mod readback;
 #[path = "offline_cycle_mod/cross_source.rs"]
 mod cross_source;
 
+#[path = "offline_cycle_mod/preparation.rs"]
+mod preparation;
+
 use calamine::Reader;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
@@ -52,6 +55,13 @@ impl Corpus {
         store.append_many(Table::Meets, &self.meets)?;
         store.append_many(Table::Events, &self.events)?;
         store.append_many(Table::Performances, &self.performances)?;
+        Ok(())
+    }
+
+    fn append_prepared(&self, store: &Store) -> TestResult {
+        self.append(store)?;
+        let season = SchoolYear::new(2025).ok_or("invalid fixture season")?;
+        census_reconcile::index::derive(store, "fixture:prepared", MEET_DATE, season)?;
         Ok(())
     }
 }
@@ -194,8 +204,9 @@ fn unique_athlete_ids(path: &Path) -> TestResult<HashSet<String>> {
     Ok(ids)
 }
 
-fn run_cycle(store: &Path, out: &Path) -> std::io::Result<std::process::Output> {
-    Command::new(env!("CARGO_BIN_EXE_census-service"))
+fn run_cycle(store: &Path, out: &Path) -> TestResult<std::process::Output> {
+    let before = preparation::retained_state(store)?;
+    let output = Command::new(env!("CARGO_BIN_EXE_census-service"))
         .arg("run")
         .arg("--grad-year")
         .arg("2027")
@@ -206,8 +217,11 @@ fn run_cycle(store: &Path, out: &Path) -> std::io::Result<std::process::Output> 
         .arg("--store")
         .arg(store)
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .output()
+        .stderr(Stdio::piped())
+        .output()?;
+    check!(eq; preparation::retained_state(store)?, before);
+    preparation::check_managed_only(store, &output)?;
+    Ok(output)
 }
 
 fn verify(store: &Path, out: &Path) -> std::io::Result<std::process::ExitStatus> {
@@ -233,7 +247,7 @@ fn the_offline_cycle_publishes_each_cohort_athlete_once_in_a_verified_bundle() -
     check!(eq; expected, 10, "the synthetic fixture contains ten Class-of-2027 athletes");
     {
         let store = Store::open(&data_dir)?;
-        corpus.append(&store)?;
+        corpus.append_prepared(&store)?;
     }
 
     let output_path = tmpdir.path().join("publication");

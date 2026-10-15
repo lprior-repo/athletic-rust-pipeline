@@ -1,4 +1,5 @@
 use super::*;
+use census_service::restate_services::consolidate_export_key;
 use census_service::restate_services::reject_offline_generation;
 use census_service::restate_services::DEFAULT_GENERATION;
 

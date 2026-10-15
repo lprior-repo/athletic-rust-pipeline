@@ -1,23 +1,42 @@
 use super::TestResult;
 
+pub const MAX_WIRE_BYTES: usize = 8 * 1024 * 1024;
+pub const MAX_FRAMES: usize = 4096;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Frame {
     pub kind: u16,
+    pub flags: u16,
     pub payload: Vec<u8>,
 }
 
 impl Frame {
     pub fn new(kind: u16, payload: Vec<u8>) -> Self {
-        Self { kind, payload }
+        Self {
+            kind,
+            flags: 0,
+            payload,
+        }
     }
 
     pub fn encode(&self) -> TestResult<Vec<u8>> {
+        check!(
+            self.wire_size()? <= MAX_WIRE_BYTES,
+            "fixture wire byte budget exhausted"
+        );
         let mut bytes = Vec::new();
         bytes.extend(self.kind.to_be_bytes());
-        bytes.extend([0_u8; 2]);
+        bytes.extend(self.flags.to_be_bytes());
         bytes.extend(u32::try_from(self.payload.len())?.to_be_bytes());
         bytes.extend(&self.payload);
         Ok(bytes)
+    }
+
+    pub fn wire_size(&self) -> TestResult<usize> {
+        self.payload
+            .len()
+            .checked_add(8)
+            .ok_or_else(|| "fixture wire length overflow".into())
     }
 
     pub fn bytes(&self, tag: u64) -> TestResult<&[u8]> {
@@ -36,18 +55,22 @@ impl Frame {
 }
 
 pub fn frames(mut bytes: &[u8]) -> TestResult<Vec<Frame>> {
+    check!(
+        bytes.len() <= MAX_WIRE_BYTES,
+        "fixture wire byte budget exhausted"
+    );
     let mut frames = Vec::new();
     while !bytes.is_empty() {
+        check!(frames.len() < MAX_FRAMES, "fixture frame budget exhausted");
         let header = take(&mut bytes, 8)?;
         let kind = u16::from_be_bytes(header.get(..2).ok_or("short type")?.try_into()?);
+        let flags = u16::from_be_bytes(header.get(2..4).ok_or("short flags")?.try_into()?);
         let length = u32::from_be_bytes(header.get(4..8).ok_or("short length")?.try_into()?);
-        frames.push(Frame::new(
+        frames.push(Frame {
             kind,
-            take(&mut bytes, usize::try_from(length)?)?.to_vec(),
-        ));
-        if frames.len() > 4096 {
-            return Err("fixture frame budget exhausted".into());
-        }
+            flags,
+            payload: take(&mut bytes, usize::try_from(length)?)?.to_vec(),
+        });
     }
     Ok(frames)
 }
@@ -114,6 +137,7 @@ fn varint(bytes: &mut &[u8]) -> TestResult<u64> {
     let mut value = 0_u64;
     for shift in (0..64).step_by(7) {
         let byte = *take(bytes, 1)?.first().ok_or("short varint")?;
+        check!(shift != 63 || byte <= 1, "fixture varint overflow");
         value |= u64::from(byte & 127)
             .checked_shl(shift)
             .ok_or("varint overflow")?;
@@ -124,7 +148,7 @@ fn varint(bytes: &mut &[u8]) -> TestResult<u64> {
     Err("fixture varint overflow".into())
 }
 
-fn encode_varint(mut value: u64) -> Vec<u8> {
+pub(super) fn encode_varint(mut value: u64) -> Vec<u8> {
     let mut bytes = Vec::new();
     for _ in 0..10 {
         let byte = u8::try_from(value & 127).map_or(0, core::convert::identity);

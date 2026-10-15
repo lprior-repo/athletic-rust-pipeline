@@ -1,10 +1,9 @@
 use anyhow::{Context, Result};
 use census_crawl::ingress::{CurrentRoute, Ingress};
-use census_domain::{model::SchoolYear, UsJurisdiction};
 use census_reconcile::identity::{admitted_scope, Revision, WorkflowIdentity};
 use census_service::restate_services::{
-    HistoryWindow, JurisdictionCensusIngressClient, JurisdictionRequest,
-    NationalCensusIngressClient, NationalReport, NationalRequest, SchoolAddressJoinRequest,
+    JurisdictionCensusIngressClient, JurisdictionRequest, NationalCensusIngressClient,
+    NationalReport, NationalRequest, PublicationContract,
 };
 use restate_sdk::ingress::{InvocationHandle, SendStatus};
 use restate_sdk::prelude::*;
@@ -16,33 +15,33 @@ use super::{named_season, JurisdictionArgs, NationalArgs, NationalReportArgs};
 use crate::cli::Cli;
 use census_service::ingress;
 
+mod attachment;
+mod request;
 mod resume;
+pub(crate) use attachment::attach_existing;
+use request::national_request;
 #[cfg(test)]
 #[path = "run/size_tests.rs"]
 mod size_tests;
 
-pub(crate) async fn attach_existing(
-    ingestion: &Ingress,
-    identity: &WorkflowIdentity,
-) -> Result<InvocationHandle<CurrentRoute, Json<NationalReport>>> {
-    let handle = ingestion.invocation_handle(identity.as_str().to_string());
-    match handle.output().await {
-        Ok(_) => Ok(handle),
-        Err(error) => Err(ingress::error(error))
-            .with_context(|| format!("no invocation exists under {} either", identity.as_str())),
-    }
-}
-
 pub(crate) async fn submit_national(
+    origin: &str,
     ingestion: &Ingress,
     identity: &WorkflowIdentity,
     request: NationalRequest,
 ) -> Result<InvocationHandle<CurrentRoute, Json<NationalReport>>> {
+    let contract = request.publication_contract;
+    if contract == PublicationContract::ManagedBundleV2 {
+        ingress::require_managed_publication(ingestion).await?;
+    }
     let national = NationalCensusIngressClient::from_client(ingestion.clone(), identity.as_str());
     let handle = match national.run(Json(request)).send().await {
         Ok(submitted) => {
             if matches!(submitted.send_status(), SendStatus::PreviouslyAccepted) {
-                println!(
+                if contract == PublicationContract::ManagedBundleV2 {
+                    request::show_retained_request(ingestion, identity).await?;
+                } else {
+                    println!(
                     "WARNING: {} already has a run, so Restate deduplicated this submission and\n\
                      WARNING: EVERY CHANGED PARAMETER ON THIS COMMAND WAS IGNORED (rate, delay, states, limit).\n\
                      WARNING: The existing run is being observed as-is. To re-drive owed work after an\n\
@@ -51,38 +50,25 @@ pub(crate) async fn submit_national(
                     identity.as_str(),
                     2,
                     3
-                );
+                    );
+                }
             }
             submitted.invocation_handle()
         }
         Err(error) => {
+            if contract == PublicationContract::ManagedBundleV2 {
+                request::show_retained_request(ingestion, identity).await?;
+            }
+            let handle = attach_existing(origin, ingestion, identity).await?;
             println!(
                 "national run {} already exists — observing it instead",
                 identity.as_str()
             );
             println!("restate refused the submission: {}", ingress::error(error));
-            attach_existing(ingestion, identity).await?
+            handle
         }
     };
     Ok(handle)
-}
-
-fn school_address_request(args: &NationalArgs) -> Result<Option<SchoolAddressJoinRequest>> {
-    if args.school_directory.is_none()
-        && args.evidence_urls.is_empty()
-        && args.evidence_dates.is_empty()
-    {
-        return Ok(None);
-    }
-    let overrides = census_service::school_address::Overrides::from_cli_pairs(
-        &args.evidence_urls,
-        &args.evidence_dates,
-    )?;
-    Ok(Some(SchoolAddressJoinRequest {
-        generation: args.school_directory.clone(),
-        overrides,
-        expected_digest: None,
-    }))
 }
 
 #[tracing::instrument(skip_all, fields(command = "national"))]
@@ -106,7 +92,7 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
             ordinal,
         )
         .await?;
-        let handle = submit_national(&ingestion, &identity, request).await?;
+        let handle = submit_national(origin, &ingestion, &identity, request).await?;
         println!(
             "{} invocation {}",
             identity.as_str(),
@@ -115,7 +101,7 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
         if args.detach {
             return Ok(());
         }
-        match observe(Watch {
+        let report = observe(Watch {
             handle: &handle,
             ingestion: &ingestion,
             jurisdictions: &watched,
@@ -124,18 +110,21 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
             rounds: args.flags.rounds(),
         })
         .await
-        {
-            Ok(report) => {
-                print_national(&report, args.flags.json)?;
-                return failure_exit(&report);
-            }
-            Err(error) if cycle < cycles => {
+        .with_context(|| format!(
+            "observation stopped for workflow {} invocation {}; rerun the same command to reattach without changing its resume ordinal",
+            identity.as_str(), handle.invocation_id()
+        ))?;
+        print_national(&report, args.flags.json)?;
+        match failure_exit(&report) {
+            Ok(()) => return Ok(()),
+            Err(error) if args.drive && cycle < cycles => {
                 let next = next_resume_ordinal(ordinal)?;
                 ordinal = Some(next);
                 println!(
-                    "drive cycle {cycle}: the run is still owed work ({error:#}); re-driving under resume ordinal {next}"
+                    "drive cycle {cycle}: the completed invocation still owes work ({error:#}); re-driving under resume ordinal {next}"
                 );
             }
+            Err(error) if !args.drive => return Err(error),
             Err(error) => {
                 return Err(error).context("drive cycles exhausted with the run still owed work")
             }
@@ -144,39 +133,6 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     Err(anyhow::anyhow!(
         "drive finished without a completed run report"
     ))
-}
-
-#[tracing::instrument(skip_all)]
-async fn national_request(
-    cli: &Cli,
-    args: &NationalArgs,
-    ingestion: &Ingress,
-    season: SchoolYear,
-    revision: Revision,
-    jurisdictions: &[UsJurisdiction],
-    ordinal: Option<NonZeroU32>,
-) -> Result<NationalRequest> {
-    let history = if ordinal.is_some() {
-        resume::history(ingestion, season, revision, jurisdictions).await?
-    } else {
-        HistoryWindow::cohort(&chrono::Utc::now().date_naive().to_string())
-            .map_err(anyhow::Error::msg)?
-    };
-    Ok(NationalRequest {
-        season,
-        revision,
-        history,
-        jurisdictions: jurisdictions.to_vec(),
-        refresh: args.refresh,
-        limit_per_state: args.limit_per_state,
-        concurrency: args.concurrency,
-        observed_on: None,
-        authorized_hosts: cli.authorized_hosts.clone(),
-        source_parallelism: cli.source_parallelism,
-        school_address: school_address_request(args)?,
-        pass_budget: args.pass_budget,
-        pass_delay_seconds: args.pass_delay_seconds,
-    })
 }
 
 fn next_resume_ordinal(ordinal: Option<NonZeroU32>) -> Result<NonZeroU32> {
