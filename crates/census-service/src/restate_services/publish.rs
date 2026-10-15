@@ -60,14 +60,16 @@ impl Consolidate {
         let permit = self.jobs.permit_control().await?;
         let reply = ctx
             .run(move || async move {
-                let _permit = permit;
                 #[cfg(feature = "native-fault-injection")]
-                let outcome = blocking(region, move || {
+                let outcome = runtime::run_reserved(region, permit, move || {
                     consolidate_armed(&store, &tables, &operation)
                 })
                 .await;
                 #[cfg(not(feature = "native-fault-injection"))]
-                let outcome = blocking(region, move || consolidate_tables(&store, &tables)).await;
+                let outcome = runtime::run_reserved(region, permit, move || {
+                    consolidate_tables(&store, &tables)
+                })
+                .await;
                 outcome
                     .map(|tables| Json(ConsolidateReply { tables }))
                     .map_err(job_error)
@@ -112,14 +114,15 @@ impl Report {
         let jurisdictions = normalize_jurisdictions(&request.jurisdictions)?;
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
-        let permit = self.jobs.permit_control().await?;
+        let permit = self.jobs.permit_publication().await?;
         let reply = ctx
             .run(move || async move {
-                let _permit = permit;
-                blocking(region, move || build_report(&store, scope, &jurisdictions))
-                    .await
-                    .map(Json)
-                    .map_err(job_error)
+                runtime::run_reserved(region, permit, move || {
+                    build_report(&store, scope, &jurisdictions)
+                })
+                .await
+                .map(Json)
+                .map_err(job_error)
             })
             .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
@@ -165,11 +168,10 @@ impl Bests {
         };
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
-        let permit = self.jobs.permit_control().await?;
+        let permit = self.jobs.permit_publication().await?;
         let reply = ctx
             .run(move || async move {
-                let _permit = permit;
-                blocking(region, move || build_bests(&store, &options))
+                runtime::run_reserved(region, permit, move || build_bests(&store, &options))
                     .await
                     .map(Json)
                     .map_err(job_error)
@@ -237,14 +239,15 @@ impl Workbook {
         let job = format!("workbook:{}", ctx.key());
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
-        let permit = self.jobs.permit_control().await?;
+        let permit = self.jobs.permit_publication().await?;
         let reply = ctx
             .run(move || async move {
-                let _permit = permit;
-                blocking(region, move || build_workbook(&store, &options, &job))
-                    .await
-                    .map(Json)
-                    .map_err(job_error)
+                runtime::run_reserved(region, permit, move || {
+                    build_workbook(&store, &options, &job)
+                })
+                .await
+                .map(Json)
+                .map_err(job_error)
             })
             .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;

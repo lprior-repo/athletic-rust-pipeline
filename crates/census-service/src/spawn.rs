@@ -5,7 +5,8 @@ use tokio::sync::{watch, Semaphore};
 use tokio::task::JoinSet;
 
 pub use crate::admission::{
-    Charged, Reservation, WORK_CLASS_CONTROL, WORK_CLASS_INGEST, WORK_CLASS_STAGE,
+    Charged, Reservation, WORK_CLASS_CONTROL, WORK_CLASS_INGEST, WORK_CLASS_PUBLICATION,
+    WORK_CLASS_STAGE,
 };
 use crate::admission::{Coordinator, TryResult, WorkClass, WORK_CLASS_NORMAL};
 #[cfg(test)]
