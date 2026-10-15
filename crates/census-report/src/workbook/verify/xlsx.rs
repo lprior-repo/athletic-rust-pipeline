@@ -11,7 +11,7 @@ mod zip;
 #[cfg(test)]
 mod tests;
 
-pub(super) use sheet::Cells;
+pub(in crate::workbook) use sheet::Cells;
 
 pub(super) const WORKBOOK: &str = "xl/workbook.xml";
 pub(super) const WORKBOOK_RELS: &str = "xl/_rels/workbook.xml.rels";
@@ -57,7 +57,7 @@ pub(super) trait Sink {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(super) struct Profile {
+pub(in crate::workbook) struct Profile {
     pub(super) container: u64,
     pub(super) member: u64,
     pub(super) inflated: u64,
@@ -67,7 +67,7 @@ pub(super) struct Profile {
 }
 
 impl Profile {
-    pub(super) const fn inline() -> Self {
+    pub(in crate::workbook) const fn inline() -> Self {
         Self {
             container: 256 * 1024 * 1024,
             member: 64 * 1024 * 1024,
@@ -99,14 +99,14 @@ impl Profile {
     }
 }
 
-pub(super) struct Archive {
+pub(in crate::workbook) struct Archive {
     path: PathBuf,
     container: zip::Container,
     profile: Profile,
 }
 
 impl Archive {
-    pub(super) fn open(path: &Path, profile: Profile) -> ReportResult<Self> {
+    pub(in crate::workbook) fn open(path: &Path, profile: Profile) -> ReportResult<Self> {
         profile.validate()?;
         let container = zip::Container::open(path, profile)?;
         Ok(Self {
@@ -120,20 +120,20 @@ impl Archive {
         Scope::new(&self.path, member)
     }
 
-    pub(super) fn uses_shared_strings(&self) -> bool {
+    pub(in crate::workbook) fn uses_shared_strings(&self) -> bool {
         self.container
             .entry(SHARED_STRINGS)
             .is_some_and(|entry| entry.uncompressed > 0)
     }
 
-    pub(super) fn sheet_names(&self) -> ReportResult<Vec<String>> {
+    pub(in crate::workbook) fn sheet_names(&self) -> ReportResult<Vec<String>> {
         Ok(names::worksheets(self)?
             .into_iter()
             .map(|sheet| sheet.name)
             .collect())
     }
 
-    pub(super) fn read_sheet<C: Cells>(
+    pub(in crate::workbook) fn read_sheet<C: Cells>(
         &self,
         name: &str,
         rows: usize,

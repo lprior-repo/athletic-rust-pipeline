@@ -10,7 +10,7 @@ mod incident;
 mod install;
 pub(super) mod inventory;
 mod lifecycle;
-mod manifest;
+pub(in crate::workbook) mod manifest;
 pub(super) mod normalized;
 mod pointer;
 mod protocol;
@@ -18,7 +18,7 @@ mod recovery;
 mod seal;
 mod sidecars;
 mod stage;
-mod verify_sidecars;
+pub(in crate::workbook) mod verify_sidecars;
 mod versions;
 pub use manifest::{
     current_workbook, open_publication, open_publication_for_seal, verify_published,

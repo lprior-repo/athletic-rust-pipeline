@@ -16,6 +16,7 @@ pub use performances::{PerformanceProjection, PerformanceRow, ProjectedValue};
 mod recruiting;
 pub use recruiting::{write_recruiting_csv, RecruitingCsvCounts};
 pub mod publication;
+pub mod reference_comparison;
 #[cfg(test)]
 mod tests;
 pub mod verify;

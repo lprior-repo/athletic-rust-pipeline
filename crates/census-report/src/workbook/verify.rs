@@ -4,7 +4,7 @@ use crate::workbook::Options;
 use std::path::Path;
 
 mod athletes;
-mod canonical;
+pub(in crate::workbook) mod canonical;
 mod coaches;
 mod context;
 mod expectations;
@@ -18,7 +18,7 @@ mod reach;
 mod read;
 mod relays;
 mod report;
-mod xlsx;
+pub(in crate::workbook) mod xlsx;
 
 #[derive(Debug)]
 pub struct VerifiedWorkbook {
