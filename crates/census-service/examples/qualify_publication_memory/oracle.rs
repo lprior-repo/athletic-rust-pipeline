@@ -27,8 +27,8 @@ pub fn publish(root: &Path, out: &Path) -> Result<()> {
         store.snapshot().tables_digest(&Table::ALL)? == manifest.tables_sha256,
         "fixture store digest mismatch"
     );
-    ensure!(store.count(Table::Athletes)? == manifest.counts.stored_athletes);
-    ensure!(store.count(Table::Performances)? == manifest.counts.performances);
+    ensure!(store.walk_table(Table::Athletes)?.rows == manifest.counts.stored_athletes);
+    ensure!(store.walk_table(Table::Performances)?.rows == manifest.counts.performances);
     let options = workbook::Options {
         grad_year: Some(2027),
         out: Some(out.join("bundle")),

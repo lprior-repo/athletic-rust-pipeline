@@ -17,8 +17,8 @@ pub fn generate(root: &Path, config: Config) -> Result<()> {
     }
     store.flush()?;
     let counts = Counts::of(&config);
-    ensure!(store.count(Table::Athletes)? == counts.stored_athletes);
-    ensure!(store.count(Table::Performances)? == counts.performances);
+    ensure!(store.walk_table(Table::Athletes)?.rows == counts.stored_athletes);
+    ensure!(store.walk_table(Table::Performances)?.rows == counts.performances);
     let tables_sha256 = store.snapshot().tables_digest(&Table::ALL)?;
     drop(store);
     let mut manifest = Manifest {
