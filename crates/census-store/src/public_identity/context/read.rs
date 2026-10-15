@@ -119,6 +119,3 @@ fn invalid(detail: &str) -> StoreError {
     }
 }
 
-#[cfg(test)]
-#[path = "section_budget_tests.rs"]
-mod section_budget_tests;

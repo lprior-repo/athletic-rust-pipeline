@@ -1,6 +1,6 @@
-use super::super::storage::RETAINED_SECTION_BYTES;
-use super::super::test_fixture::{full_inputs, read_inputs, records, stage_records};
-use super::super::{wire, Inputs};
+use super::storage::RETAINED_SECTION_BYTES;
+use super::test_fixture::{full_inputs, read_inputs, records, stage_records};
+use super::{wire, Inputs};
 use crate::public_identity_tests::support::{fixture, retained_state, TestResult};
 use crate::{StoreError, StoreResult};
 use census_domain::model::{SourceAthleteObservation, SourceNamespace, SourceObservation};
