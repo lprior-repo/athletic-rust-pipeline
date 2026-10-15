@@ -218,9 +218,7 @@ fn tenure_for(
             last_school_year: Some(year),
         },
         Some(year) => CoachTenure::Current { school_year: year },
-        None => CoachTenure::Current {
-            school_year: run_year,
-        },
+        None => CoachTenure::Unknown,
     }
 }
 

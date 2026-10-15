@@ -305,7 +305,7 @@ fn the_statement_byte_bound_never_truncates_source_program_labels() -> TestResul
 }
 
 #[test]
-fn the_production_collector_persists_the_run_season_and_actual_summary_capture_claim() -> TestResult
+fn the_production_collector_preserves_unknown_season_and_actual_summary_capture_claim() -> TestResult
 {
     use crate::net::cache::{write_cache, CacheMeta};
     use crate::net::{FetchOptions, Fetcher};
@@ -350,9 +350,10 @@ fn the_production_collector_persists_the_run_season_and_actual_summary_capture_c
             return Err("expected one committed directory coach".into());
         };
         let [evidence] = coach.tenure_evidence.as_slice() else {
-            return Err("production caller must emit the run-scoped appointment".into());
+            return Err("production caller must retain the source appointment".into());
         };
-        check!(eq; evidence.tenure, CoachTenure::Current { school_year: year });
+        check!(eq; evidence.tenure, CoachTenure::Unknown);
+        check!(eq; coach.tenure_state(year)?, CoachTenure::Unknown);
         check!(eq; evidence.source.url.as_deref(), Some(summary_url("TEST").as_str()));
         check!(eq; evidence.source_sha256, content_digest(&summary));
         check!(eq; evidence.retrieved_at.as_str(), RETRIEVED);
@@ -592,5 +593,41 @@ fn a_coach_with_only_former_evidence_yields_former() -> TestResult {
             last_school_year: Some(SchoolYear::new(2025).ok_or("valid former year")?)
         }
     );
+    Ok(())
+}
+
+#[test]
+fn an_unscoped_listing_is_identical_across_run_years() -> TestResult {
+    for (role, program) in [
+        ("Head Coach", Some("Boys' Cross Country")),
+        ("Athletic Director", None),
+    ] {
+        let body = listing(Some(role), program, Some("ada@school.edu"));
+        let summary = parse_summary(&body)?;
+        let school = SchoolId::mint("sch", &["test high school"]);
+        let digest = content_digest(&body);
+        let mut previous = None;
+        for year in [2021, 2031, 2032] {
+            let year = SchoolYear::new(year).ok_or("run season")?;
+            let emission = coach_entities(&summary, &school, URL, RETRIEVED, year, &digest)?;
+            let [coach] = emission.coaches.as_slice() else {
+                return Err("expected one unscoped coach".into());
+            };
+            let [evidence] = coach.tenure_evidence.as_slice() else {
+                return Err("expected one capture-bound claim".into());
+            };
+            check!(eq; evidence.tenure, CoachTenure::Unknown);
+            check!(eq; coach.tenure_state(year)?, CoachTenure::Unknown);
+            check!(eq; evidence.retrieved_at, RETRIEVED);
+            check!(eq; evidence.source_sha256, digest);
+            check!(eq; evidence.source.url.as_deref(), Some(URL));
+            check!(eq; evidence.claim.as_ref().ok_or("claim")?.mailbox.as_deref(), Some("ada@school.edu"));
+            check!(eq; validate_tenure_evidence(evidence), Ok(()));
+            if let Some(previous) = &previous {
+                check!(eq; &emission.coaches, previous);
+            }
+            previous = Some(emission.coaches);
+        }
+    }
     Ok(())
 }
