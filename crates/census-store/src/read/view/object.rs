@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::object_wire::{JournalPath, RecordRange};
+use super::object_wire::{JournalPath, ObjectBounds, RecordRange};
 use crate::{StoreError, StoreResult};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -50,67 +50,109 @@ impl JournalRecord {
     }
 }
 
-#[derive(Debug)]
-pub struct JournalObject {
-    phase: String,
-    key: String,
-    object: JournalDigest,
-    total_bytes: usize,
-    ranges: Vec<RecordRange>,
-    chunks: Vec<Vec<u8>>,
+pub struct JournalObject<'s> {
+    pub(super) phase: String,
+    pub(super) key: String,
+    pub(super) object: JournalDigest,
+    pub(super) bounds: ObjectBounds,
+    pub(super) snapshot: fjall::Snapshot,
+    pub(super) journal: &'s fjall::Keyspace,
 }
 
-impl JournalObject {
+impl std::fmt::Debug for JournalObject<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("JournalObject")
+            .field("phase", &self.phase)
+            .field("key", &self.key)
+            .field("object", &self.object)
+            .field("sequence", &self.snapshot.seqno())
+            .finish_non_exhaustive()
+    }
+}
+
+impl<'s> JournalObject<'s> {
     pub(super) fn new(
         phase: String,
         key: String,
         object: String,
-        total_bytes: usize,
-        ranges: Vec<RecordRange>,
-        chunks: Vec<Vec<u8>>,
+        bounds: ObjectBounds,
+        snapshot: fjall::Snapshot,
+        journal: &'s fjall::Keyspace,
     ) -> Self {
         Self {
             phase,
             key,
             object: JournalDigest(object),
-            total_bytes,
-            ranges,
-            chunks,
+            bounds,
+            snapshot,
+            journal,
         }
     }
 
     pub fn object_id(&self) -> &str {
         self.object.as_str()
     }
-
     pub fn total_bytes(&self) -> usize {
-        self.total_bytes
+        self.bounds.total_bytes
     }
-
     pub fn chunk_count(&self) -> usize {
-        self.chunks.len()
+        self.bounds.chunks
     }
-
     pub fn record_count(&self) -> usize {
-        self.ranges.len()
+        self.bounds.records
     }
 
-    pub fn records(&self) -> JournalRecords<'_> {
+    pub fn records(&self) -> JournalRecords<'_, 's> {
         JournalRecords {
             object: self,
             index: 0,
+            ranges: Vec::new(),
+            chunk: Vec::new(),
+            chunk_index: None,
             failed: false,
         }
     }
 
-    fn path(&self) -> JournalPath<'_> {
+    pub(super) fn path(&self) -> JournalPath<'_> {
         JournalPath {
             phase: &self.phase,
             key: &self.key,
         }
     }
+}
 
-    fn record_bytes(&self, range: RecordRange) -> StoreResult<Vec<u8>> {
+#[derive(Debug)]
+pub struct JournalRecords<'o, 's> {
+    object: &'o JournalObject<'s>,
+    index: usize,
+    ranges: Vec<RecordRange>,
+    chunk: Vec<u8>,
+    chunk_index: Option<usize>,
+    failed: bool,
+}
+
+impl JournalRecords<'_, '_> {
+    #[cfg(test)]
+    pub(crate) fn retained_capacity(&self) -> (usize, usize) {
+        (self.ranges.capacity(), self.chunk.capacity())
+    }
+
+    fn record_range(&mut self) -> StoreResult<RecordRange> {
+        let page = self.index / crate::journal::OBJECT_INDEX_PAGE_ENTRIES;
+        let position = self.index % crate::journal::OBJECT_INDEX_PAGE_ENTRIES;
+        if position == 0 {
+            self.ranges = Vec::new();
+            self.ranges = self.object.read_page(page)?;
+        }
+        self.ranges.get(position).copied().ok_or_else(|| {
+            self.object
+                .path()
+                .refusal("record is absent from its index page")
+        })
+    }
+
+    fn record_bytes(&mut self, range: RecordRange) -> StoreResult<Vec<u8>> {
         let mut bytes = Vec::new();
         bytes
             .try_reserve_exact(range.length)
@@ -120,83 +162,65 @@ impl JournalObject {
                     range.length
                 ),
             })?;
-        let mut skip = range.offset;
-        let mut take = range.length;
-        for chunk in &self.chunks {
+        let mut offset = range.offset;
+        while bytes.len() < range.length {
+            let index = offset / crate::journal::OBJECT_CHUNK_BYTES;
+            if self.chunk_index != Some(index) {
+                self.chunk = Vec::new();
+                self.chunk = self.object.read_chunk(index)?;
+                self.chunk_index = Some(index);
+            }
+            let start = offset % crate::journal::OBJECT_CHUNK_BYTES;
+            let available = self.chunk.get(start..).ok_or_else(|| {
+                self.object
+                    .path()
+                    .refusal("record range leaves the pinned chunks")
+            })?;
+            let take = available.len().min(range.length - bytes.len());
             if take == 0 {
-                break;
+                return Err(self
+                    .object
+                    .path()
+                    .refusal("record range leaves the pinned chunks"));
             }
-            let length = chunk.len();
-            if skip >= length {
-                skip = skip
-                    .checked_sub(length)
-                    .ok_or(StoreError::CounterOverflow)?;
-                continue;
-            }
-            let available = length
-                .checked_sub(skip)
+            bytes.extend_from_slice(&available[..take]);
+            offset = offset
+                .checked_add(take)
                 .ok_or(StoreError::CounterOverflow)?;
-            let span = std::cmp::min(available, take);
-            let stop = skip.checked_add(span).ok_or(StoreError::CounterOverflow)?;
-            let piece = chunk
-                .get(skip..stop)
-                .ok_or_else(|| self.path().refusal("record range leaves the pinned chunks"))?;
-            bytes.extend_from_slice(piece);
-            skip = 0;
-            take = take.checked_sub(span).ok_or(StoreError::CounterOverflow)?;
-        }
-        if take != 0 {
-            return Err(self.path().refusal("record range leaves the pinned chunks"));
         }
         Ok(bytes)
     }
-}
 
-#[derive(Debug)]
-pub struct JournalRecords<'o> {
-    object: &'o JournalObject,
-    index: usize,
-    failed: bool,
-}
-
-impl Iterator for JournalRecords<'_> {
-    type Item = StoreResult<JournalRecord>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.failed {
-            return None;
-        }
-        let range = *self.object.ranges.get(self.index)?;
-        let sequence = self.index;
-        self.index = self.index.saturating_add(1);
-        let decoded = self
-            .object
-            .record_bytes(range)
-            .and_then(|bytes| decode_entry(self.object, sequence, &bytes));
-        match decoded {
-            Ok(entry) => Some(Ok(JournalRecord {
-                sequence,
-                range,
-                entry,
-            })),
-            Err(error) => {
-                self.failed = true;
-                Some(Err(error))
-            }
-        }
+    fn read_record(&mut self) -> StoreResult<JournalRecord> {
+        let range = self.record_range()?;
+        let bytes = self.record_bytes(range)?;
+        let entry = serde_json::from_slice(&bytes).map_err(|source| StoreError::Decode {
+            key: format!(
+                "journal object record {} for {}/{}",
+                self.index, self.object.phase, self.object.key
+            ),
+            source,
+        })?;
+        Ok(JournalRecord {
+            sequence: self.index,
+            range,
+            entry,
+        })
     }
 }
 
-fn decode_entry(
-    object: &JournalObject,
-    sequence: usize,
-    bytes: &[u8],
-) -> StoreResult<JournalEntry> {
-    serde_json::from_slice(bytes).map_err(|source| StoreError::Decode {
-        key: format!(
-            "journal object record {sequence} for {}/{}",
-            object.phase, object.key
-        ),
-        source,
-    })
+impl Iterator for JournalRecords<'_, '_> {
+    type Item = StoreResult<JournalRecord>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.failed || self.index >= self.object.record_count() {
+            return None;
+        }
+        let result = self.read_record();
+        match &result {
+            Ok(_) => self.index += 1,
+            Err(_) => self.failed = true,
+        }
+        Some(result)
+    }
 }
