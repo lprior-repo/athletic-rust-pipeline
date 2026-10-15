@@ -7,7 +7,7 @@ use serde::Serialize;
 
 const CHUNK_BYTES: usize = 32 * 1024;
 
-pub(super) fn provenance(capture: &FetchOutcome) -> serde_json::Value {
+pub(in crate::milesplit::results) fn provenance(capture: &FetchOutcome) -> serde_json::Value {
     serde_json::json!({
         "url": capture.url, "response_url": capture.response_url,
         "method": capture.method, "status": capture.status,
@@ -23,7 +23,7 @@ pub(super) fn digest<T: Serialize>(value: &T) -> CrawlResult<String> {
     })
 }
 
-pub(super) fn metadata_provenance(
+pub(in crate::milesplit::results) fn metadata_provenance(
     reference: &ResultSetRef,
     capture: &FetchOutcome,
 ) -> CrawlResult<serde_json::Value> {

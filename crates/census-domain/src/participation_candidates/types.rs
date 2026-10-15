@@ -154,6 +154,8 @@ pub enum ParticipationInputError {
     ProfileMismatch,
     #[error("participation candidate rule does not match the selected profile")]
     PolicyMismatch,
+    #[error("participation policy reference is not registered for policy-aware assessment")]
+    UnsupportedPolicy,
     #[error("participation candidate frozen-generation binding differs")]
     FrozenBindingMismatch,
     #[error("participation candidate evidence names a foreign athlete or result")]

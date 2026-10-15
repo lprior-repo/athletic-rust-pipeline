@@ -1,4 +1,5 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ParticipationReason {
     MissingPerformanceDate,
     UnsupportedDatePrecision,
@@ -103,6 +104,10 @@ impl ParticipationReason {
 pub struct ParticipationReasons(u32);
 
 impl ParticipationReasons {
+    pub const fn union(self, other: Self) -> Self {
+        Self(self.0 | other.0)
+    }
+
     pub fn iter(self) -> impl Iterator<Item = ParticipationReason> {
         ParticipationReason::ALL
             .into_iter()

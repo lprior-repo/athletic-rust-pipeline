@@ -7,6 +7,7 @@ mod outcome;
 mod parse;
 mod resource_error;
 mod retained;
+mod retained_result;
 mod row;
 #[cfg(test)]
 mod tests;
@@ -22,6 +23,9 @@ pub use parse::{
 pub use retained::{
     read_retained_acquisition, CaptureReadBudget, CaptureWitnessError, OwnedAcquisitionRef,
     VerifiedOwnedAcquisition,
+};
+pub use retained_result::{
+    read_retained_owned_result, RetainedResultError, VerifiedRetainedOwnedResult,
 };
 
 pub const OWNED_MEET_PHASE: &str = "milesplit_owned_meet_v4";

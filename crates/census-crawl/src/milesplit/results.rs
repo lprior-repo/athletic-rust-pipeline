@@ -13,6 +13,7 @@ mod budget;
 mod frontier;
 pub(in crate::milesplit) mod pages;
 mod report;
+mod retained_metadata;
 mod run;
 mod schools;
 
@@ -174,3 +175,8 @@ fn journal_contains(ctx: &AdapterContext<'_>, phase: &str, key: &str) -> CrawlRe
     }
     Ok(ctx.store.journal_contains(phase, key)?)
 }
+
+pub use retained_metadata::{
+    read_retained_result_metadata, RawMetadataArchiveRef, RetainedMetadataError,
+    RetainedPerformanceDate, RetainedResultDivision, VerifiedRetainedResultMetadata,
+};

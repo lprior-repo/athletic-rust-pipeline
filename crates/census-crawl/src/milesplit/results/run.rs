@@ -7,9 +7,9 @@ use crate::net::FetchOutcome;
 use crate::{AdapterContext, CrawlError, CrawlResult};
 
 mod acquired;
-mod capture;
+pub(super) mod capture;
 mod evidence;
-mod metadata;
+pub(super) mod metadata;
 mod projection;
 mod resource;
 use resource::resource_capture;

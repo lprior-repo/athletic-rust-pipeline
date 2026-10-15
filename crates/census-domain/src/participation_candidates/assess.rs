@@ -1,4 +1,5 @@
 use super::checks::{check, visible};
+use super::policy::ParticipationPolicy;
 use super::{
     CandidateAssessment, CandidateOutcome, CandidateQuery, CohortFact, ParticipationContext,
     ParticipationInputError, ParticipationObservation, ParticipationReason as Reason,
@@ -6,9 +7,29 @@ use super::{
 };
 use crate::model::{PerformanceWindowV1, ProfileDate};
 
-pub fn assess_participation<'a>(
+pub fn assess_historical_participation<'a>(
     query: CandidateQuery<'a>,
     observation: &'a ParticipationObservation<'a>,
+) -> Result<CandidateAssessment<'a>, ParticipationInputError> {
+    assess(
+        query,
+        observation,
+        ParticipationPolicy::HistoricalExplicitWindow,
+    )
+}
+
+pub fn assess_participation_for_policy<'a>(
+    query: CandidateQuery<'a>,
+    observation: &'a ParticipationObservation<'a>,
+) -> Result<CandidateAssessment<'a>, ParticipationInputError> {
+    let policy = ParticipationPolicy::resolve(query.binding.participation_rule)?;
+    assess(query, observation, policy)
+}
+
+fn assess<'a>(
+    query: CandidateQuery<'a>,
+    observation: &'a ParticipationObservation<'a>,
+    policy: ParticipationPolicy,
 ) -> Result<CandidateAssessment<'a>, ParticipationInputError> {
     check(query, observation)?;
     let mut reasons = ParticipationReasons::default();
@@ -17,7 +38,7 @@ pub fn assess_participation<'a>(
     contexts(query, observation, &mut reasons)?;
     if let Some(date) = performance_date(query, observation, &mut reasons) {
         status(query, observation, date, &mut reasons)?;
-        super::windows::assess(query, observation, date, &mut reasons)?;
+        super::windows::assess(query, observation, date, &mut reasons, policy)?;
     }
     Ok(CandidateAssessment {
         query,

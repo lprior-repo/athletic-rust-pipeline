@@ -28,9 +28,10 @@ pub use owned::{
     OwnedResourceReceipt, VerifiedOwnedAcquisition, MAX_OWNED_BODY_BYTES, OWNED_CAPTURE_PHASE,
     OWNED_FIELDS, OWNED_MEET_PHASE,
 };
+pub use owned::{read_retained_owned_result, RetainedResultError, VerifiedRetainedOwnedResult};
 pub use parse::{
-    has_next_page, parse_meet_index, parse_meet_result_files, parse_roster, parse_team_index,
-    TeamIndexRead,
+    has_next_page, parse_captured_roster, parse_meet_index, parse_meet_result_files, parse_roster,
+    parse_team_index, TeamIndexRead,
 };
 pub use raw::{parse_raw, RawPage};
 pub use raw_issue::{RawGradeIssue, RawGradeIssueKind};
@@ -50,3 +51,8 @@ pub use wire::{
 
 #[cfg(test)]
 mod tests;
+
+pub use results::{
+    read_retained_result_metadata, RawMetadataArchiveRef, RetainedMetadataError,
+    RetainedPerformanceDate, RetainedResultDivision, VerifiedRetainedResultMetadata,
+};
