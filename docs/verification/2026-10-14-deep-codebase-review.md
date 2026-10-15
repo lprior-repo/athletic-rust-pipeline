@@ -374,3 +374,53 @@ The report result-group and exclusion changes consume those domain APIs; report-
 comparison modules are not restored. Both prior review-history sections above are retained.
 Formatting and patch checks do not qualify this rebased tree: compilation, focused report
 tests, all-target/source lint, native crash windows and release acceptance remain pending.
+
+### R2 Athletic.net result-capture timestamps, October 15 00:37 UTC
+
+`athleticnet/meet/collect{.rs,/walk.rs}` now commits each interpreted meet's school
+and athlete observations with its results capture's actual `fetched_at`. Canonical
+meet evidence retains the separately fetched meet timestamp. Partial mapped rows
+commit under their own capture without completion markers, and the resolved-school
+cache clears after commit so subsequent captures preserve school provenance.
+No refresh policy, shared schema or completion-journal format changed.
+
+PASSED: five offline acquisition tests, zero failed, 1,530 skipped; 0.727s tests /
+129.967s Moon, exit 0. Three new regressions cover separate capture times for shared
+subjects, partial rows and partial-then-success; cached replay now checks raw source
+observations. Initial test build FAILED at link with signal 7 while disk was full;
+no tests ran. Removed only reproducible generated test artifacts and consolidated
+byte-identical clean research checkout copies through reversible sparse checkout;
+the identical command then passed. Historical source files and Git objects remain.
+
+```sh
+env -u CI CARGO_INCREMENTAL=0 MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-crawl --lib -E 'test(athleticnet::meet::tests::acquisition::)' --no-capture --no-tests fail
+```
+
+Static review and formatting PASSED. Current all-target/lint and native Mac gates
+PENDING. Source coverage, live acquisition and representative peak RSS NOT RUN.
+
+### R2 immutable archive preservation on cache hits, October 15 00:45 UTC
+
+`net/execute/fetch.rs` now preserves verified ordinary cache hits through the existing
+canonical replay/archive helper before returning or counting a hit. `net/cache/archive.rs`
+selects exact expected metadata before encoding/loading, rereads once under existing
+archive/cache fences, and preserves original acquisition time and historical metadata.
+Changed/damaged pairs remain misses; encoding and unsupported-envelope errors remain
+typed refusals. Refresh, adopted occurrence and conditional-304 routes retain their
+existing meaning. The ordinary caller releases its prior body before the fenced reread.
+
+RED: eight new archive regressions ran, three passed and five failed before repair
+(Nextest `1b0b94f4-35e1-4cc0-9ee2-26a1574e1509`). Two incorrectly named filter attempts
+FAILED with zero selected tests; an intermediate broad filter ran seven, six passed and
+one failed. These are not pass evidence. GREEN: 84 cache/fetch/adopted/304 regressions
+passed, zero failed, 1,459 skipped; Nextest `44049a1e-1c17-4b84-9762-c44e88f66269`,
+7.570s tests / 145.190s Moon, exit 0.
+
+```sh
+env -u CI CARGO_INCREMENTAL=0 MOON_RUST_BUILD_JOBS=1 tools/moon-local run pipeline:tests-scoped -- --build-jobs 1 -p census-crawl --lib -E 'test(net::execute::fetch::tests::) | test(net::cache::) | test(actual_304_) | test(adopted)' --no-capture --no-tests fail
+```
+
+Formatting/static correctness review PASSED. Synchronous archive locks/hash/fsync still
+need owned blocking composition for uncovered async callers; no latency or cancellation
+claim is made. Full changed-tree format/check/lint and Mac validation PENDING. Live
+acquisition and representative peak-RSS qualification NOT RUN.

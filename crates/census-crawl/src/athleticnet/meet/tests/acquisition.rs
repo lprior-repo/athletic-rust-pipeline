@@ -7,6 +7,8 @@ use census_store::{Store, Table};
 use std::collections::HashSet;
 use std::path::Path;
 
+mod capture_time;
+
 const MEET_CAPTURED_AT: &str = "2026-09-22T11:59:58Z";
 const RESULTS_CAPTURED_AT: &str = "2026-09-22T12:00:00Z";
 
@@ -45,6 +47,7 @@ fn seed_cache(
 }
 
 fn retained_evidence(store: &Store) -> TestResult {
+    capture_time::retained_observations(store, RESULTS_CAPTURED_AT)?;
     let snapshot = store.snapshot();
     let meets: Vec<CanonicalMeet> = snapshot.scan(Table::Meets)?;
     check!(eq; meets.len(), 1);

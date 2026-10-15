@@ -105,23 +105,18 @@ pub(super) fn replay_preserved_cache(
     let capacity = admission::archive_capacity()?;
     let archive_lock = ArchiveLock::acquire(root)?;
     let lock = lock_cache(meta_path)?;
-    let Some((meta, body)) = super::read_cache(
-        body_path,
-        meta_path,
-        &expected.method,
-        &expected.url,
-        &expected.representation,
-    )?
-    else {
-        return Ok(None);
-    };
-    if &meta != expected {
+    if !body_path.exists() || !meta_path.exists() {
         return Ok(None);
     }
+    let (capture, body) = match read_previous(body_path, meta_path, Some(expected))? {
+        Ok(retained) => retained,
+        Err(PreviousError::Damaged(_) | PreviousError::ChangedMetadata) => return Ok(None),
+        Err(PreviousError::Encoding(error)) => return Err(error),
+    };
     let archive = initialize_archive(root)?;
     let mut admission = ArchiveAdmission::begin_with_capacity(&archive_lock, capacity)?;
     with_stage(root, |stage| {
-        preserve_previous(&archive, stage, body_path, meta_path, &mut admission)
+        preserve_capture(&archive, stage, "replay", &body, &capture, &mut admission)
     })?;
     drop(lock);
     Ok(Some(body))
@@ -183,51 +178,84 @@ fn preserve_previous(
             )
         }
     }
-    match read_previous(body_path, meta_path)? {
+    match read_previous(body_path, meta_path, None)? {
         Ok((capture, body)) => {
             preserve_capture(archive, stage, "old", &body, &capture, admission)?;
         }
-        Err(reason) => {
+        Err(error) => {
+            let reason = match error {
+                PreviousError::Damaged(reason) => reason,
+                PreviousError::Encoding(_) => Damage::InvalidMetadata,
+                PreviousError::ChangedMetadata => {
+                    return Err(invalid(meta_path, "replacement capture selection changed"));
+                }
+            };
             quarantine_pair(stage, body_path, meta_path, presence, reason)?;
         }
     }
     Ok(())
 }
 
-type Previous = Result<(Capture, Vec<u8>), Damage>;
+enum PreviousError {
+    Damaged(Damage),
+    Encoding(FetchError),
+    ChangedMetadata,
+}
 
-fn read_previous(body_path: &Path, meta_path: &Path) -> Result<Previous, FetchError> {
+type Previous = Result<(Capture, Vec<u8>), PreviousError>;
+
+fn read_previous(
+    body_path: &Path,
+    meta_path: &Path,
+    expected: Option<&CacheMeta>,
+) -> Result<Previous, FetchError> {
     let Some(encoded) = read_cache_file(meta_path, MAX_META_BYTES, None)? else {
-        return Ok(Err(Damage::MetadataLimitOrChanged));
+        return Ok(Err(PreviousError::Damaged(Damage::MetadataLimitOrChanged)));
     };
     let decoded =
         super::envelope::decode(&encoded, meta_path).and_then(|document| match document {
+            super::envelope::CacheDocument::Historical(meta) if !selected(&meta, expected) => {
+                Ok(None)
+            }
+            super::envelope::CacheDocument::Eligible(envelope)
+                if !selected(&envelope.metadata, expected) =>
+            {
+                Ok(None)
+            }
             super::envelope::CacheDocument::Historical(_) => {
-                Capture::from_bytes(&encoded, meta_path)
+                Capture::from_bytes(&encoded, meta_path).map(Some)
             }
             super::envelope::CacheDocument::Eligible(envelope) => {
-                Capture::from_meta(&envelope.metadata, meta_path)
+                Capture::from_meta(&envelope.metadata, meta_path).map(Some)
             }
         });
     let capture = match decoded {
-        Ok(capture) => capture,
-        Err(FetchError::Decode { .. } | FetchError::Encode { .. }) => {
-            return Ok(Err(Damage::InvalidMetadata));
+        Ok(Some(capture)) => capture,
+        Ok(None) => return Ok(Err(PreviousError::ChangedMetadata)),
+        Err(FetchError::Decode { .. }) => {
+            return Ok(Err(PreviousError::Damaged(Damage::InvalidMetadata)));
+        }
+        Err(error @ FetchError::Encode { .. }) => {
+            return Ok(Err(PreviousError::Encoding(error)));
         }
         Err(FetchError::Cache { source, .. })
             if source.kind() == std::io::ErrorKind::InvalidData =>
         {
-            return Ok(Err(Damage::InvalidMetadata));
+            return Ok(Err(PreviousError::Damaged(Damage::InvalidMetadata)));
         }
         Err(error) => return Err(error),
     };
     let Some(body) = read_cache_file(body_path, MAX_BODY_BYTES, Some(capture.meta.bytes))? else {
-        return Ok(Err(Damage::BodySizeOrChanged));
+        return Ok(Err(PreviousError::Damaged(Damage::BodySizeOrChanged)));
     };
     if content_digest(&body) != capture.meta.content_digest {
-        return Ok(Err(Damage::BodyIntegrity));
+        return Ok(Err(PreviousError::Damaged(Damage::BodyIntegrity)));
     }
     Ok(Ok((capture, body)))
+}
+
+fn selected(meta: &CacheMeta, expected: Option<&CacheMeta>) -> bool {
+    expected.is_none_or(|expected| meta == expected && meta.status == 200)
 }
 
 fn verified_body(path: &Path, capture: &Capture) -> Result<Vec<u8>, FetchError> {

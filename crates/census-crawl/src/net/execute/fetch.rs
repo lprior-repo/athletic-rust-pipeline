@@ -1,6 +1,6 @@
 use super::attempt::FetchPlan;
 use super::{representation, request_target};
-use crate::net::cache::{read_cache, CacheMeta};
+use crate::net::cache::{read_cache, replay_cache, CacheMeta};
 use crate::net::request::RequestBody;
 use crate::net::{FetchError, FetchOptions, FetchOutcome, Fetcher};
 use std::time::Instant;
@@ -33,20 +33,18 @@ impl Fetcher {
         let extra = representation::cache_extra(body.as_ref(), &representation);
         let key = Self::key_for(method, url, &extra);
         let (body_path, meta_path) = self.cache_paths(&key);
-        let cached = if session.is_adopted() {
+        let mut cached = if session.is_adopted() {
             session.cached().cloned().map(|meta| (meta, Vec::new()))
         } else {
             read_cache(&body_path, &meta_path, method, url, &representation)?
         };
         if !session.is_adopted() {
-            if let Some(outcome) = self.reuse_cached(method, url, &cached, options).await? {
+            if let Some(outcome) = self.reuse_cached(&mut cached, options, &key).await? {
                 return Ok(outcome);
             }
         }
         if self.offline {
-            return Err(FetchError::Offline {
-                url: url.to_string(),
-            });
+            return Err(FetchError::Offline { url: url.into() });
         }
 
         let (host, origin) = request_target(url)?;
@@ -100,14 +98,18 @@ impl Fetcher {
 
     async fn reuse_cached(
         &self,
-        method: &str,
-        url: &str,
-        cached: &Option<(CacheMeta, Vec<u8>)>,
+        cached: &mut Option<(CacheMeta, Vec<u8>)>,
         options: &FetchOptions,
+        key: &str,
     ) -> Result<Option<FetchOutcome>, FetchError> {
+        let (body_path, meta_path) = self.cache_paths(key);
         match cached {
             Some((meta, body)) if !options.refresh => {
-                self.cached_outcome(method, url, meta, options, body.clone())
+                drop(std::mem::take(body));
+                let Some(body) = replay_cache(&body_path, &meta_path, meta)? else {
+                    return Ok(None);
+                };
+                self.cached_outcome(&meta.method, &meta.url, meta, options, body)
                     .await
             }
             _ => Ok(None),
