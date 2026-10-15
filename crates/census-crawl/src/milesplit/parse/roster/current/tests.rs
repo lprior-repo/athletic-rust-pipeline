@@ -1,3 +1,5 @@
+mod structural;
+
 use super::*;
 use crate::milesplit::parse_roster;
 use census_domain::model::Sport;
@@ -117,10 +119,8 @@ fn tag_shaped_member_bytes_in_comment_do_not_receive_statement_authority() -> Te
 
 #[test]
 fn current_statement_without_verified_document_owner_remains_untrusted() -> TestResult {
-    let body = MASON.replace(
-        "<link rel=\"canonical\" href=\"https://oh.milesplit.com/teams/10002-mason/roster\" />",
-        "",
-    );
+    let body = scoped(&member_html()?);
+    check!(!super::super::owner::validate_published(&body, &team())?);
     let verdict = parse_roster(&body, team())?;
     let roster = verdict.roster().ok_or("physical rows")?;
     check!(!roster.athletes.is_empty());
@@ -199,8 +199,8 @@ fn duplicate_heading_or_dataset_container_is_ambiguous() -> TestResult {
 
 #[test]
 fn nonvoid_self_closing_syntax_does_not_end_inert_html_elements() -> TestResult {
-    for prefix in ["<template/>", "<div hidden/>"] {
-        let body = document(&format!("{prefix}{}", scoped(&member_html()?)));
+    for (prefix, close) in [("<template/>", "</template>"), ("<div hidden/>", "</div>")] {
+        let body = document(&format!("{prefix}{}{close}", scoped(&member_html()?)));
         assert_unavailable(&body, Gap::InactiveMember)?;
     }
     Ok(())

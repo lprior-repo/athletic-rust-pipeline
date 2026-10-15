@@ -44,7 +44,7 @@ pub(super) fn append(store: &Store, id: &AthleteId) -> TestResult<(AthleteId, Sc
         site.host(),
         person.id
     );
-    let body = format!(r#"<link rel="canonical" href="{}/roster"><ul id="rosterDataset"><li class="athlete-row data-row"><a href="{profile}">{}</a><div class="column-gender">f</div><div class="column-grad-year">2027</div><div class="data-point" data-season-id="1"><svg class="icon icon-no"></svg></div><div class="data-point" data-season-id="2"><svg class="icon icon-yes"></svg></div><div class="data-point" data-season-id="3"><svg class="icon icon-no"></svg></div></li></ul>"#, team.url, original.canonical_name).into_bytes();
+    let body = format!(r#"<link rel="canonical" href="{}/roster"><section><h4>Current Roster</h4><ul id="rosterDataset"><li class="athlete-row data-row"><a href="{profile}">{}</a><div class="column-gender">f</div><div class="column-grad-year">2027</div><div class="data-point" data-season-id="1"><svg class="icon icon-no"></svg></div><div class="data-point" data-season-id="2"><svg class="icon icon-yes"></svg></div><div class="data-point" data-season-id="3"><svg class="icon icon-no"></svg></div></li></ul></section>"#, team.url, original.canonical_name).into_bytes();
     let capture = FetchOutcome {
         url: format!("{}/roster", team.url),
         response_url: None,
@@ -65,6 +65,13 @@ pub(super) fn append(store: &Store, id: &AthleteId) -> TestResult<(AthleteId, Sc
         .athletes
         .first()
         .ok_or("roster member")?;
+    let proof = member
+        .current_roster()
+        .ok_or("synthetic scoped current roster assertion")?;
+    check!(eq; proof.owner(), team.id.as_str());
+    check!(eq; proof.row(), member.locator());
+    check!(proof.supports(Sport::OutdoorTrack));
+    check!(eq; capture.body.get(proof.heading()), Some(b"<h4>Current Roster</h4>".as_slice()));
     let published = member.athlete();
     check!(!published.indoor);
     check!(published.outdoor);
