@@ -106,14 +106,14 @@ fn same_dataset(dataset: &ExportDataset, expected: &[u8], witness: &Witness) -> 
 }
 
 fn verify_semantics(directory: &Path, captured: &Captured) -> TestResult {
-    verify_sidecars::verify(directory, &captured.dataset, &captured.options, 3)?;
+    verify_sidecars::verify(directory, &captured.dataset, &captured.options, 6)?;
     Ok(())
 }
 
 fn metadata_refused(directory: &Path, captured: &Captured, name: &str) -> TestResult {
     check!(
         matches!(
-            verify_sidecars::verify(directory, &captured.dataset, &captured.options, 3),
+            verify_sidecars::verify(directory, &captured.dataset, &captured.options, 6),
             Err(ReportError::Invariant { .. })
         ),
         "mutation {name}"

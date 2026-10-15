@@ -1,6 +1,6 @@
 use super::*;
 use crate::export::DatasetLineage;
-use census_domain::model::serialized_digest;
+use crate::workbook::publication::manifest::historical_fixture;
 use census_store::publish::Request;
 
 pub(super) struct Historical {
@@ -17,16 +17,7 @@ pub(super) fn install(
     policy: u32,
 ) -> TestResult<Historical> {
     let mut dataset = ExportDataset::load(store)?;
-    dataset.lineage.policy_revision = policy;
-    dataset.lineage.input_generation = serialized_digest(&(
-        &dataset.lineage.store_identity,
-        &dataset.lineage.source_digest,
-        &dataset.lineage.input_digest,
-        &dataset.lineage.generated_on,
-        &dataset.lineage.export_job,
-        3_u32,
-        policy,
-    ))?;
+    historical_fixture::rebind(&mut dataset, policy)?;
     let namespace = binding::namespace(root)?;
     let stage = root.join(format!("synthetic-policy{policy}-integrity-fixture"));
     std::fs::create_dir_all(root.join("generations"))?;
@@ -42,7 +33,7 @@ pub(super) fn install(
     let installed = root.join("generations").join(receipt.as_str());
     std::fs::rename(&stage, &installed)?;
     manifest::verify_directory(&installed)?;
-    let input = binding::input(&dataset, store, options)?;
+    let input = historical_fixture::input(store, &dataset, options, 2)?;
     let identity =
         binding::digest(&(&namespace, &dataset.lineage.input_generation, &input.recipe))?;
     let lease_epoch = store.publication_lease(&identity)?;

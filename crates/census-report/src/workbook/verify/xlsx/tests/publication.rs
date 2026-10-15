@@ -18,14 +18,14 @@ fn verify_corrupt_failed_publication_emits_no_certificate_and_keeps_the_prior_pu
     let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
     let stage = Stage::begin(&dataset, &store, &options)?;
     let result = stage.publish(&dataset, &options, |artifacts: &Path| {
-        crate::workbook::write_artifacts(artifacts, &dataset, &options, &censuses)?;
+        let counts = crate::workbook::write_artifacts(artifacts, &dataset, &options, &censuses)?;
         let workbook = artifacts.join("workbook.xlsx");
         let mut bytes = std::fs::read(&workbook)
             .map_err(|source| crate::report::io_error(&workbook, source))?;
         bytes.truncate(64);
         std::fs::write(&workbook, &bytes)
             .map_err(|source| crate::report::io_error(&workbook, source))?;
-        Ok(())
+        Ok(counts)
     });
     check!(result.is_err(), "a truncated workbook was published");
     check!(eq; std::fs::read_link(root.join("current"))?, pointer, "the pointer did not move");

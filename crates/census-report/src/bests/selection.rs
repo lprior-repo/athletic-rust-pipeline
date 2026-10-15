@@ -84,12 +84,14 @@ pub struct SharedSelection {
     pub athlete: SelectionAthlete,
     pub population: Population,
     pub conflicts: Vec<Conflict>,
-    pub eligible_candidate_count: usize,
-    pub tied_performance_count: usize,
-    pub tied_performance_ids: Vec<PerformanceId>,
+    #[serde(flatten)]
+    pub inventory: SelectionInventory,
     #[serde(skip)]
     pub(super) supporting_tied_candidate_ids: Vec<PerformanceId>,
 }
+
+mod inventory;
+pub use inventory::{HistoricalInventory, ResultGroupInventory, SelectionInventory};
 
 type OrderKey<'a> = (JurisdictionBucket, &'a str, &'a str, &'a PrKey);
 

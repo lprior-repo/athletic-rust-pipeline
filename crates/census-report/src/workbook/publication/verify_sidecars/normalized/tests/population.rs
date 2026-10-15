@@ -26,6 +26,13 @@ impl Population {
         Self::build(None)
     }
 
+    pub fn current() -> TestResult<Self> {
+        let mut population = Self::new()?;
+        let store = Store::open(population.directory.path().join("store"))?;
+        population.dataset = crate::export::ExportDataset::load(&store)?;
+        Ok(population)
+    }
+
     pub fn with_unknown_historical_school() -> TestResult<(Self, SchoolId)> {
         let (_, historical) = CanonicalSchool::new(
             UsJurisdiction::NewJersey,
@@ -133,7 +140,17 @@ impl Population {
             &store,
             std::slice::from_ref(&coverage),
         )?;
-        let dataset = crate::export::ExportDataset::load(&store)?;
+        let mut dataset = crate::export::ExportDataset::load(&store)?;
+        dataset.lineage.policy_revision = 20;
+        dataset.lineage.input_generation = serialized_digest(&(
+            &dataset.lineage.store_identity,
+            &dataset.lineage.source_digest,
+            &dataset.lineage.input_digest,
+            &dataset.lineage.generated_on,
+            &dataset.lineage.export_job,
+            dataset.lineage.schema_revision,
+            20_u32,
+        ))?;
         let options = crate::workbook::Options {
             grad_year: Some(2027),
             out: None,

@@ -13,6 +13,11 @@ fn synthetic_flat_events_header_is_readable_but_not_current_job_input() -> TestR
     historical_header_is_read_only(EventSemantics::FlatEvents19)
 }
 
+#[test]
+fn synthetic_combined_events_header_is_readable_but_not_current_job_input() -> TestResult {
+    historical_header_is_read_only(EventSemantics::CombinedEvents20)
+}
+
 fn historical_header_is_read_only(semantics: EventSemantics) -> TestResult {
     let temporary = tempfile::tempdir()?;
     let store = Store::open(temporary.path().join("store"))?;

@@ -195,7 +195,7 @@ fn given_wrong_or_excess_headers_when_table_is_read_then_consumer_is_not_called(
                 Ok(())
             },
         );
-        refused(result.map(|()| 0))?;
+        refused(result.map(|_| 0))?;
         check!(eq; visited, 0);
     }
     Ok(())
@@ -238,7 +238,7 @@ fn given_overflowing_or_unallocatable_limits_when_opened_then_consumer_is_not_ca
                 Ok(())
             },
         )
-        .map(|()| 0),
+        .map(|_| 0),
     )?;
     check!(eq; visited, 0);
     Ok(())

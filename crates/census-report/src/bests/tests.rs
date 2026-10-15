@@ -188,7 +188,9 @@ fn selection_dataset(kind: EventKind) -> TestResult<ExportDataset> {
     store.append(Table::Athletes, &athlete)?;
     store.append(Table::Meets, &meet)?;
     store.append(Table::Events, &event)?;
-    Ok(ExportDataset::load(&store)?)
+    let mut dataset = ExportDataset::load(&store)?;
+    dataset.lineage.policy_revision = 20;
+    Ok(dataset)
 }
 
 fn reported(dataset: &ExportDataset, label: &str, mark: Mark) -> CanonicalPerformance {

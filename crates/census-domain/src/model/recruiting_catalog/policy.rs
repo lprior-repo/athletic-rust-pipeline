@@ -257,6 +257,8 @@ pub(super) const SEPARATORS: &str = "._-',()[]:/\"";
 pub(super) fn included(semantics: EventSemantics) -> &'static [EventKind] {
     match semantics {
         EventSemantics::Legacy18 => super::legacy_policy::INCLUDED,
-        EventSemantics::FlatEvents19 | EventSemantics::CombinedEvents20 => INCLUDED,
+        EventSemantics::FlatEvents19
+        | EventSemantics::CombinedEvents20
+        | EventSemantics::ResultGroups21 => INCLUDED,
     }
 }

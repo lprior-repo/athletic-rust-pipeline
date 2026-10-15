@@ -62,7 +62,7 @@ pub(super) fn verify(
     directory: &Path,
     inputs: &Inputs<'_>,
     schools: &Schools<'_>,
-) -> ReportResult<()> {
+) -> ReportResult<u64> {
     rows::table(
         directory,
         ("schools.csv", schema::SCHOOLS),

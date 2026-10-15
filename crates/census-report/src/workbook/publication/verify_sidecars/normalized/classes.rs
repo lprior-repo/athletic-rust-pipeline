@@ -29,7 +29,7 @@ pub(super) fn verify(
     directory: &Path,
     inputs: &Inputs<'_>,
     bests: &[SharedSelection],
-) -> ReportResult<()> {
+) -> ReportResult<u64> {
     let classes =
         bests
             .iter()
@@ -37,9 +37,10 @@ pub(super) fn verify(
                 classes.insert(id(best)?, best);
                 Ok(classes)
             })?;
-    let catalog = census_domain::model::RecruitingCatalogV1::new()
-        .digest()
-        .map_err(|error| super::super::defect(error.to_string()))?;
+    let catalog =
+        census_domain::model::RecruitingCatalogV1::with_policy(inputs.dataset.semantic_policy()?)
+            .digest()
+            .map_err(|error| super::super::defect(error.to_string()))?;
     rows::table(
         directory,
         ("comparison_classes.csv", schema::CLASSES),

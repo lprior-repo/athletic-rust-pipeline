@@ -18,7 +18,7 @@ const HEADER: [&str; 12] = [
     "resolution_reference_status",
 ];
 
-pub(super) fn write(directory: &Path, derivation: &Derivation<'_>) -> ReportResult<()> {
+pub(super) fn write(directory: &Path, derivation: &Derivation<'_>) -> ReportResult<u64> {
     let dataset = derivation.dataset();
     let projection = dataset.identities();
     let published: BTreeSet<_> = derivation

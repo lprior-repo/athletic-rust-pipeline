@@ -1,4 +1,6 @@
 mod fixture;
+mod result_groups;
+mod supporting;
 
 use crate::report::ReportError;
 use std::collections::{BTreeMap, BTreeSet};
@@ -17,6 +19,7 @@ fn given_admitted_athlete_without_mark_when_published_then_directory_preserves_s
         &given.dataset,
         &given.options,
         &given.bests,
+        &[],
     )?;
     let athletes = read(directory.path(), "athletes.csv")?;
     check!(eq; athletes.len(), 1);
@@ -44,6 +47,7 @@ fn given_formula_like_name_when_published_then_csv_is_literal_and_authoritative_
         &given.dataset,
         &given.options,
         &given.bests,
+        &[],
     )?;
     let athletes = read(directory.path(), "athletes.csv")?;
     check!(
@@ -74,6 +78,7 @@ fn given_equal_marks_at_distinct_meets_when_published_then_one_key_has_complete_
         &given.dataset,
         &given.options,
         &given.bests,
+        &[],
     )?;
     let marks = read(directory.path(), "best_marks.csv")?;
     let classes = read(directory.path(), "comparison_classes.csv")?;
@@ -90,9 +95,10 @@ fn given_equal_marks_at_distinct_meets_when_published_then_one_key_has_complete_
     );
     check!(eq; field(mark, "normalized_mark")?, "50000000000");
     check!(eq; field(mark, "unit")?, "ns");
-    check!(eq; field(mark, "eligible_candidate_count")?, "2");
-    check!(eq; field(mark, "tied_performance_count")?, "2");
-    let ids: BTreeSet<String> = serde_json::from_str(field(mark, "tied_performance_ids")?)?;
+    check!(eq; field(mark, "eligible_result_group_count")?, "2");
+    check!(eq; field(mark, "tied_result_group_count")?, "2");
+    let ids: BTreeSet<String> =
+        serde_json::from_str(field(mark, "tied_result_group_representative_ids")?)?;
     let expected: BTreeSet<String> = given
         .dataset
         .performances
@@ -119,6 +125,7 @@ fn given_evidence_without_capture_edges_when_published_then_no_capture_or_parser
         &given.dataset,
         &given.options,
         &given.bests,
+        &[],
     )?;
     let marks = read(directory.path(), "best_marks.csv")?;
     let provenance = read(directory.path(), "provenance.csv")?;
@@ -161,6 +168,7 @@ fn given_unknown_school_address_and_empty_metrics_when_published_then_absence_is
         &given.dataset,
         &given.options,
         &given.bests,
+        &[],
     )?;
     let schools = read(directory.path(), "schools.csv")?;
     let school = schools.first().ok_or("missing school")?;
@@ -193,6 +201,7 @@ fn given_invalid_best_reference_when_published_then_existing_artifact_is_unchang
         &given.dataset,
         &given.options,
         &given.bests,
+        &[],
     );
     match failure {
         Err(ReportError::Invariant { detail }) => check!(
@@ -219,8 +228,20 @@ fn given_same_generation_when_written_twice_then_every_family_is_byte_identical(
     let given = fixture::Population::new("Ada Runner", &["50.00", "51.00"])?;
     let first = tempfile::tempdir()?;
     let second = tempfile::tempdir()?;
-    super::write(first.path(), &given.dataset, &given.options, &given.bests)?;
-    super::write(second.path(), &given.dataset, &given.options, &given.bests)?;
+    super::write(
+        first.path(),
+        &given.dataset,
+        &given.options,
+        &given.bests,
+        &[],
+    )?;
+    super::write(
+        second.path(),
+        &given.dataset,
+        &given.options,
+        &given.bests,
+        &[],
+    )?;
     for family in [
         "athletes.csv",
         "best_marks.csv",
@@ -266,6 +287,7 @@ fn given_unverified_coach_channels_when_published_then_roles_do_not_multiply_mar
         &given.dataset,
         &given.options,
         &given.bests,
+        &[],
     )?;
     let coaches = read(directory.path(), "coach_contacts.csv")?;
     check!(eq; coaches.len(), 2);
@@ -292,6 +314,7 @@ fn given_transfer_history_outside_current_scope_when_published_then_historical_s
         &given.dataset,
         &given.options,
         &given.bests,
+        &[],
     )?;
     let athletes = read(directory.path(), "athletes.csv")?;
     check!(
@@ -333,6 +356,7 @@ fn given_same_event_indoors_and_outdoors_when_published_then_comparison_keys_and
         &given.dataset,
         &given.options,
         &given.bests,
+        &[],
     )?;
     let classes = read(directory.path(), "comparison_classes.csv")?;
     let marks = read(directory.path(), "best_marks.csv")?;

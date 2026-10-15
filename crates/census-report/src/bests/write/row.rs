@@ -13,10 +13,14 @@ impl<'a> From<&'a SharedSelection> for Row<'a> {
 
 impl Serialize for Row<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut wire = serializer.serialize_struct("best-result", super::HEADER.len())?;
+        let mut wire = serializer.serialize_struct(
+            "best-result",
+            33 + self.0.inventory.serialized_field_count(),
+        )?;
         identity(&mut wire, self.0)?;
         result(&mut wire, self.0)?;
         specifications(&mut wire, self.0)?;
+        inventory(&mut wire, self.0)?;
         wire.end()
     }
 }
@@ -104,16 +108,50 @@ fn specifications<S: SerializeStruct>(wire: &mut S, row: &SharedSelection) -> Re
         Some(source) => text(wire, "adjustment_source", &source),
         None => wire.serialize_field("adjustment_source", &None::<String>),
     }?;
-    wire.serialize_field("eligible_candidate_count", &row.eligible_candidate_count)?;
-    wire.serialize_field("tied_performance_count", &row.tied_performance_count)?;
-    let mut tied_ids = String::new();
-    for id in &row.tied_performance_ids {
-        if !tied_ids.is_empty() {
-            tied_ids.push(';');
-        }
-        tied_ids.push_str(id.as_str());
+    Ok(())
+}
+
+fn inventory<S: SerializeStruct>(wire: &mut S, row: &SharedSelection) -> Result<(), S::Error> {
+    let current = matches!(
+        row.inventory,
+        crate::bests::SelectionInventory::ResultGroups(_)
+    );
+    let (eligible, tied, ids) = if current {
+        (
+            "eligible_result_group_count",
+            "tied_result_group_count",
+            "tied_result_group_representative_ids",
+        )
+    } else {
+        (
+            "eligible_candidate_count",
+            "tied_performance_count",
+            "tied_performance_ids",
+        )
+    };
+    wire.serialize_field(eligible, &row.inventory.eligible_group_count())?;
+    wire.serialize_field(tied, &row.inventory.tied_group_count())?;
+    let tied_ids =
+        row.inventory
+            .tied_representative_ids()
+            .iter()
+            .fold(String::new(), |mut encoded, id| {
+                if !encoded.is_empty() {
+                    encoded.push(';');
+                }
+                encoded.push_str(id.as_str());
+                encoded
+            });
+    text(wire, ids, &tied_ids)?;
+    if current {
+        text(wire, "result_group_basis", "canonical_performance_id")?;
+        text(wire, "physical_performance_count_status", "unknown")?;
+        wire.serialize_field(
+            "selection_policy_version",
+            &row.inventory.policy().revision(),
+        )?;
     }
-    text(wire, "tied_performance_ids", &tied_ids)
+    Ok(())
 }
 
 fn text<S: SerializeStruct>(

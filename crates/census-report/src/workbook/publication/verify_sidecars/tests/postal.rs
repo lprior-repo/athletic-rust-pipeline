@@ -33,7 +33,7 @@ fn source_backed_postal_sidecar_rejects_a_tampered_school_address() -> TestResul
     let workbook = crate::workbook::build(&store, &options)?;
     let generation = workbook.parent().ok_or("missing generation directory")?;
     let dataset = ExportDataset::reopen_frozen(&generation.join("frozen-input.json"))?;
-    super::super::verify(generation, &dataset, &options, 3)?;
+    super::super::verify(generation, &dataset, &options, 6)?;
     let path = generation.join("recruiting.csv");
     let original = std::fs::read(&path)?;
     let mut reader = csv::Reader::from_reader(original.as_slice());
@@ -48,9 +48,9 @@ fn source_backed_postal_sidecar_rejects_a_tampered_school_address() -> TestResul
     Some("1 Rocket Drive, Asheville, NC 28803"));
     std::fs::write(&path, &original)?;
     rewrite_cell(&path, "school_address", "forged postal provenance")?;
-    let error = match super::super::verify(generation, &dataset, &options, 3) {
+    let error = match super::super::verify(generation, &dataset, &options, 6) {
         Err(error) => error.to_string(),
-        Ok(()) => return Err("forged school address column accepted".into()),
+        Ok(_) => return Err("forged school address column accepted".into()),
     };
     check!(error.contains("recruiting.csv"), "{error}");
     check!(error.contains("forged postal provenance"), "{error}");

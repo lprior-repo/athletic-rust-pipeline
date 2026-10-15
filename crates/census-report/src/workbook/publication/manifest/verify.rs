@@ -35,7 +35,17 @@ pub(in crate::workbook::publication) fn verify_prepared(
             "retained frozen bytes differ from the captured export input".to_string(),
         ));
     }
-    super::super::verify_sidecars::verify(directory, dataset, options, manifest.schema_revision)?;
+    let counts = super::super::verify_sidecars::verify(
+        directory,
+        dataset,
+        options,
+        manifest.schema_revision,
+    )?;
+    super::super::inventory::compare(
+        manifest.schema_revision,
+        manifest.normalized_csv_rows.as_ref(),
+        &counts,
+    )?;
     crate::workbook::verify::verify_frozen(&directory.join("workbook.xlsx"), dataset, options)?;
     Ok(())
 }
@@ -59,6 +69,16 @@ pub(super) fn verify_against(
     dataset: &ExportDataset,
 ) -> ReportResult<crate::workbook::verify::VerifiedWorkbook> {
     let options = manifest.selection.options()?;
-    super::super::verify_sidecars::verify(directory, dataset, &options, manifest.schema_revision)?;
+    let counts = super::super::verify_sidecars::verify(
+        directory,
+        dataset,
+        &options,
+        manifest.schema_revision,
+    )?;
+    super::super::inventory::compare(
+        manifest.schema_revision,
+        manifest.normalized_csv_rows.as_ref(),
+        &counts,
+    )?;
     crate::workbook::verify::verify_frozen(&directory.join("workbook.xlsx"), dataset, &options)
 }

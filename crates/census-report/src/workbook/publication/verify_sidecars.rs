@@ -24,18 +24,28 @@ pub(super) fn verify(
     dataset: &ExportDataset,
     options: &Options,
     artifact_revision: u32,
-) -> ReportResult<()> {
+) -> ReportResult<super::inventory::RowCounts> {
+    super::versions::validate_policy(artifact_revision, dataset.lineage.policy_revision)?;
     let inputs = input::Inputs::new(dataset, options)?;
     catalog::verify(directory, &inputs)?;
     census::verify(directory, &inputs)?;
     recruiting::verify(directory, &inputs)?;
     contacts::verify(directory, &inputs)?;
     audit::verify(directory, &inputs)?;
-    bests::verify(directory, &inputs, artifact_revision)?;
-    if artifact_revision == 3 {
-        normalized::verify(directory, &inputs)?;
+    let outcome = crate::bests::build_admitted_outcome(
+        &inputs.admission,
+        &crate::bests::Options {
+            scope: options.scope,
+            grad_year: options.grad_year,
+            limit: options.limit,
+            jurisdictions: options.jurisdictions.clone(),
+        },
+    )?;
+    bests::verify(directory, &inputs, artifact_revision, &outcome.selections)?;
+    if matches!(artifact_revision, 3..=6) {
+        return normalized::verify_outcome(directory, &inputs, artifact_revision, &outcome);
     }
-    Ok(())
+    Ok(super::inventory::RowCounts::new())
 }
 
 pub(super) fn cohort(grad_year: Option<i16>) -> String {

@@ -2,7 +2,6 @@ use super::fixture::{numeric_cases, orders, NumericCase, Observation, TieFixture
 use super::selection::{assert_winner, provider_evidence, same_context, stable_id_reports};
 use crate::bests::tests::{selected, TestResult};
 use crate::bests::SharedSelection;
-use crate::export::ExportDataset;
 use census_domain::model::{ExactSeconds, Mark, PerformanceId};
 
 fn reports(fixture: &TieFixture, case: &NumericCase) -> TestResult<[Observation; 3]> {
@@ -44,12 +43,12 @@ fn tied_support_retains_distinct_same_context_source_ids_without_inflating_count
         let directory = tempfile::tempdir()?;
         let store = fixture.store_with_replay(directory.path(), &with_inferior)?;
         let row = assert_winner(
-            &ExportDataset::load(&store)?,
+            &super::historical_dataset(&store)?,
             observations.first().ok_or("missing preferred support")?,
         )?;
-        check!(eq; row.eligible_candidate_count, 3);
-        check!(eq; row.tied_performance_count, 2);
-        check!(eq; row.tied_performance_ids.len(), 2);
+        check!(eq; row.inventory.eligible_group_count(), 3);
+        check!(eq; row.inventory.tied_group_count(), 2);
+        check!(eq; row.inventory.tied_representative_ids().len(), 2);
         assert_support(&row, &observations)
     })
 }
@@ -66,7 +65,7 @@ fn tied_support_is_arrival_order_and_replay_invariant() -> TestResult {
                 order.push(preferred.clone());
                 let directory = tempfile::tempdir()?;
                 let store = fixture.store_with_replay(directory.path(), &order)?;
-                let mut dataset = ExportDataset::load(&store)?;
+                let mut dataset = super::historical_dataset(&store)?;
                 let repeated = dataset
                     .performances
                     .first()
@@ -74,8 +73,8 @@ fn tied_support_is_arrival_order_and_replay_invariant() -> TestResult {
                     .ok_or("missing replay candidate")?;
                 dataset.performances.push(repeated);
                 let row = assert_winner(&dataset, preferred)?;
-                check!(eq; row.eligible_candidate_count, 2);
-                check!(eq; row.tied_performance_count, 2);
+                check!(eq; row.inventory.eligible_group_count(), 2);
+                check!(eq; row.inventory.tied_group_count(), 2);
                 assert_support(&row, &observations)?;
                 dataset.performances.reverse();
                 check!(eq; assert_winner(&dataset, preferred)?, row);
@@ -100,8 +99,8 @@ fn tied_support_keeps_equal_precision_source_spellings() -> TestResult {
     let observations = [preferred.clone(), other, later];
     let directory = tempfile::tempdir()?;
     let store = fixture.store_with_replay(directory.path(), &observations)?;
-    let row = assert_winner(&ExportDataset::load(&store)?, &preferred)?;
-    check!(eq; row.tied_performance_count, 2);
+    let row = assert_winner(&super::historical_dataset(&store)?, &preferred)?;
+    check!(eq; row.inventory.tied_group_count(), 2);
     assert_support(&row, &observations)
 }
 
@@ -123,9 +122,9 @@ fn tied_support_excludes_conflicted_and_withdrawn_contexts() -> TestResult {
                 ] {
                     let directory = tempfile::tempdir()?;
                     let store = fixture.store_with_replay(directory.path(), &order)?;
-                    let row = assert_winner(&ExportDataset::load(&store)?, &clean)?;
-                    check!(eq; row.eligible_candidate_count, 1);
-                    check!(eq; row.tied_performance_count, 1);
+                    let row = assert_winner(&super::historical_dataset(&store)?, &clean)?;
+                    check!(eq; row.inventory.eligible_group_count(), 1);
+                    check!(eq; row.inventory.tied_group_count(), 1);
                     assert_support(&row, std::slice::from_ref(&clean))?;
                 }
                 Ok(())
@@ -140,7 +139,7 @@ fn tied_support_is_internal_and_does_not_change_serialized_selection() -> TestRe
     let observations = reports(&fixture, cases.first().ok_or("missing time fixture")?)?;
     let directory = tempfile::tempdir()?;
     let store = fixture.store_with_replay(directory.path(), &observations)?;
-    let mut row = selected(&ExportDataset::load(&store)?)?
+    let mut row = selected(&super::historical_dataset(&store)?)?
         .into_iter()
         .next()
         .ok_or("missing supported selection")?;

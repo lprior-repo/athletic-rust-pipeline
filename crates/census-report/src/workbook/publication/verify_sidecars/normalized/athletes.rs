@@ -15,7 +15,7 @@ pub(super) fn verify(
     directory: &Path,
     inputs: &Inputs<'_>,
     bests: &[SharedSelection],
-) -> ReportResult<()> {
+) -> ReportResult<u64> {
     let athletes: BTreeMap<_, _> = inputs
         .derivation
         .athletes()
@@ -118,7 +118,7 @@ fn evidence(row: &Row<'_>, athlete: &CanonicalAthlete) -> ReportResult<()> {
     row.json("cohort_evidence_refs", &references)
 }
 
-pub(super) fn aliases(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> {
+pub(super) fn aliases(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<u64> {
     let athletes: BTreeMap<_, _> = inputs
         .dataset
         .athletes

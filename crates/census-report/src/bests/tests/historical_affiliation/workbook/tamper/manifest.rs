@@ -78,9 +78,23 @@ fn digest(manifest: &Value) -> TestResult<String> {
             )
         })
         .collect::<BTreeMap<_, _>>();
-    Ok(serialized_digest(&(
-        revision, lineage, selection, artifacts,
-    ))?)
+    match revision {
+        1..=4 => Ok(serialized_digest(&(
+            revision, lineage, selection, artifacts,
+        ))?),
+        5 | 6 => {
+            let counts: BTreeMap<String, u64> =
+                serde_json::from_value(field(manifest, "normalized_csv_rows")?.clone())?;
+            Ok(serialized_digest(&(
+                revision,
+                lineage,
+                selection,
+                artifacts,
+                Some(counts),
+            ))?)
+        }
+        _ => Err("unsupported affiliation fixture artifact revision".into()),
+    }
 }
 
 fn rebind_artifact(manifest: &mut Value, name: &str, bytes: &[u8]) -> TestResult {

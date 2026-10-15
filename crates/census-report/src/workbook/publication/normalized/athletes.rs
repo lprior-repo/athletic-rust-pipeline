@@ -31,7 +31,7 @@ pub(super) fn write(
     directory: &Path,
     derivation: &Derivation<'_>,
     bests: &[SharedSelection],
-) -> ReportResult<()> {
+) -> ReportResult<u64> {
     let marked: BTreeSet<_> = bests.iter().map(SharedSelection::athlete_id).collect();
     write_csv(&directory.join("athletes.csv"), &HEADER, |writer| {
         for athlete in derivation.athletes() {

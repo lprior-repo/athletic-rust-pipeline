@@ -10,7 +10,8 @@ pub(super) fn numeric_dataset(kind: EventKind) -> TestResult<ExportDataset> {
     let observation = fixture.report(&case, "retained_conflict_seed", "2025-03-01")?;
     let directory = tempfile::tempdir()?;
     let store = fixture.store_with_replay(directory.path(), &[observation])?;
-    let dataset = ExportDataset::load(&store)?;
+    let mut dataset = ExportDataset::load(&store)?;
+    dataset.lineage.policy_revision = 20;
     let rows = selected(&dataset)?;
     check!(eq; rows.len(), 1);
     let winner = rows

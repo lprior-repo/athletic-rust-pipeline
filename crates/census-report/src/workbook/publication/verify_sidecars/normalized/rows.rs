@@ -74,7 +74,7 @@ pub(super) fn table(
     expected: usize,
     keys: &[&str],
     mut visit: impl FnMut(&Row<'_>) -> ReportResult<()>,
-) -> ReportResult<()> {
+) -> ReportResult<u64> {
     let path = directory.join(schema.0);
     let mut seen = BTreeSet::new();
     let mut budget = crate::grouping::Admission::new("normalized readback keys");
@@ -89,7 +89,7 @@ fn read_table(
     header: &[&str],
     expected: usize,
     mut visit: impl FnMut(&Row<'_>) -> ReportResult<()>,
-) -> ReportResult<()> {
+) -> ReportResult<u64> {
     let limits = read::Limits {
         bytes: 268_435_456,
         records: decoder::add(expected, 2)?,
@@ -101,7 +101,11 @@ fn read_table(
         header.len(),
         |index, record| visit_record(path, header, index, record, &mut visit),
     )?;
-    row_count(path, total, expected)
+    row_count(path, total, expected)?;
+    let records = total
+        .checked_sub(1)
+        .ok_or_else(|| defect("normalized CSV header missing".into()))?;
+    u64::try_from(records).map_err(|error| defect(format!("normalized CSV count: {error}")))
 }
 
 fn visit_record(

@@ -16,7 +16,7 @@ pub(super) fn verify(
     inputs: &Inputs<'_>,
     coaches: &[CanonicalCoach],
     schools: &Schools<'_>,
-) -> ReportResult<()> {
+) -> ReportResult<u64> {
     let roles: BTreeMap<_, _> = coaches
         .iter()
         .map(|coach| (coach.id.as_str(), coach))

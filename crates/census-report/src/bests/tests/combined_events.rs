@@ -6,6 +6,7 @@ use census_domain::model::{
 };
 
 mod contexts;
+mod exclusions;
 
 fn pentathlon_specification(revision: u32) -> TestResult<CombinedEventSpecification> {
     let lineup = [
@@ -69,21 +70,28 @@ fn assert_withheld(
     let store = fixture.store_with_replay(directory.path(), std::slice::from_ref(&observation))?;
     let dataset = ExportDataset::load(&store)?;
     check!(eq; selected(&dataset)?, Vec::new());
+    let outcome = exclusions::selection_outcome(&dataset)?;
+    check!(outcome.selections.is_empty());
+    exclusions::assert_exclusion(&outcome, &observation.performance, reason)?;
     check!(eq; dataset.performances.len(), 1);
     check!(eq; dataset.performances.first(), Some(&observation.performance));
+    let excluded = observation.performance.clone();
     orders(&[observation, clean.clone()])?
         .into_iter()
         .try_for_each(|order| -> TestResult {
             let directory = tempfile::tempdir()?;
             let store = fixture.store_with_replay(directory.path(), &order)?;
             let dataset = ExportDataset::load(&store)?;
+            let outcome = exclusions::selection_outcome(&dataset)?;
+            exclusions::assert_exclusion(&outcome, &excluded, reason)?;
             let rows = selected(&dataset)?;
+            check!(eq; outcome.selections, rows);
             check!(eq; rows.len(), 1);
             let row = rows.first().ok_or("missing completed fallback")?;
             check!(eq; row.source.performance_id, clean.performance.id);
             check!(eq; row.result.value, 400000);
-            check!(eq; row.eligible_candidate_count, 1);
-            check!(eq; row.tied_performance_ids, vec![clean.performance.id.clone()]);
+            check!(eq; row.inventory.eligible_group_count(), 1);
+            check!(eq; row.inventory.tied_representative_ids(), vec![clean.performance.id.clone()]);
             Ok(())
         })
 }
@@ -318,8 +326,8 @@ fn assert_distinct_classes(second_specification: CombinedEventSpecification) -> 
                 let row = rows.iter().find(|row| row.source.performance_id == expected.performance.id).ok_or("missing distinct class")?;
                 check!(eq; row.result.mark, expected.performance.mark);
                 check!(eq; row.key.specification.combined_event, expected.event.specification.combined_event);
-                check!(eq; row.eligible_candidate_count, 1);
-                check!(eq; row.tied_performance_ids, vec![expected.performance.id.clone()]);
+                check!(eq; row.inventory.eligible_group_count(), 1);
+                check!(eq; row.inventory.tied_representative_ids(), vec![expected.performance.id.clone()]);
                 check!(eq; row.conflicts, Vec::new());
             }
             Ok(())

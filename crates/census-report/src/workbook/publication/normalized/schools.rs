@@ -40,7 +40,11 @@ const HEADER: [&str; 26] = [
     "address_evidence_refs",
 ];
 
-pub(super) fn write(directory: &Path, schools: &Schools<'_>, generation: &str) -> ReportResult<()> {
+pub(super) fn write(
+    directory: &Path,
+    schools: &Schools<'_>,
+    generation: &str,
+) -> ReportResult<u64> {
     write_csv(&directory.join("schools.csv"), &HEADER, |writer| {
         schools.iter().try_for_each(|(id, reference)| {
             let fields = match reference {

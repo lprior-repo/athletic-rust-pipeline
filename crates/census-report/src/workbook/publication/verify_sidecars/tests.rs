@@ -140,7 +140,7 @@ fn rewrite_cell(path: &std::path::Path, column: &str, value: &str) -> TestResult
 fn valid_generated_sidecars_pass_semantic_readback() -> TestResult {
     let directory = tempfile::tempdir()?;
     let (generation, dataset, options) = publish(&directory)?;
-    super::verify(&generation, &dataset, &options, 3)?;
+    super::verify(&generation, &dataset, &options, 6)?;
     Ok(())
 }
 
@@ -153,9 +153,9 @@ fn a_forged_census_sidecar_fails_semantic_readback() -> TestResult {
     let mut report: serde_json::Value = serde_json::from_slice(&bytes)?;
     report["totals"]["athletes"] = serde_json::Value::from(9_999_u64);
     std::fs::write(&path, serde_json::to_vec(&report)?)?;
-    let error = match super::verify(&generation, &dataset, &options, 3) {
+    let error = match super::verify(&generation, &dataset, &options, 6) {
         Err(error) => error,
-        Ok(()) => return Err("forged census accepted".into()),
+        Ok(_) => return Err("forged census accepted".into()),
     };
     check!(error.to_string().contains("census-core.json"), "{error}");
     Ok(())
@@ -170,9 +170,9 @@ fn a_forged_recruiting_sidecar_fails_semantic_readback() -> TestResult {
         "name",
         "Mallory Impostor",
     )?;
-    let error = match super::verify(&generation, &dataset, &options, 3) {
+    let error = match super::verify(&generation, &dataset, &options, 6) {
         Err(error) => error,
-        Ok(()) => return Err("forged recruiting row accepted".into()),
+        Ok(_) => return Err("forged recruiting row accepted".into()),
     };
     check!(error.to_string().contains("recruiting.csv"), "{error}");
     Ok(())
@@ -187,19 +187,19 @@ fn extra_and_missing_bundle_sidecars_are_rejected() -> TestResult {
     text.push_str("{\"forged\":true}\n");
     std::fs::write(&jsonl, text)?;
     check!(matches!(
-        super::verify(&generation, &dataset, &options, 3),
+        super::verify(&generation, &dataset, &options, 6),
         Err(crate::report::ReportError::Invariant { .. })
     ));
 
     std::fs::remove_file(&jsonl)?;
     check!(matches!(
-        super::verify(&generation, &dataset, &options, 3),
+        super::verify(&generation, &dataset, &options, 6),
         Err(crate::report::ReportError::Io { .. })
     ));
 
     std::fs::remove_file(generation.join("recruiting.csv"))?;
     check!(matches!(
-        super::verify(&generation, &dataset, &options, 3),
+        super::verify(&generation, &dataset, &options, 6),
         Err(crate::report::ReportError::Io { .. })
     ));
     Ok(())
@@ -231,7 +231,7 @@ fn contact_mailboxes_and_research_cannot_borrow_frozen_source_claims() -> TestRe
         let (generation, dataset, options) = publish(&directory)?;
         rewrite_cell(&generation.join(name), column, forged)?;
         check!(matches!(
-            super::verify(&generation, &dataset, &options, 3),
+            super::verify(&generation, &dataset, &options, 6),
             Err(crate::report::ReportError::Invariant { .. })
         ));
     }

@@ -10,7 +10,7 @@ impl Schema {
     pub(in crate::workbook::verify) fn of(semantics: EventSemantics) -> Self {
         match semantics {
             EventSemantics::Legacy18 | EventSemantics::FlatEvents19 => Self::Historical64,
-            EventSemantics::CombinedEvents20 => Self::Current70,
+            EventSemantics::CombinedEvents20 | EventSemantics::ResultGroups21 => Self::Current70,
         }
     }
 

@@ -82,14 +82,14 @@ fn publication_fence_run_binding_during_render_refuses_intent() -> TestResult {
     let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
     let stage = Stage::begin(&dataset, &store, &options)?;
     let result = stage.publish(&dataset, &options, |directory| {
-        crate::workbook::write_artifacts(directory, &dataset, &options, &censuses)?;
+        let counts = crate::workbook::write_artifacts(directory, &dataset, &options, &censuses)?;
         store.bind_run(&RunManifest {
             store_identity: dataset.lineage.store_identity.clone(),
             run: CensusRun::new(options.school_year, 1).ok_or_else(|| invariant("run".into()))?,
             cohort: GradYear::CO2027,
             jurisdictions: vec![census_domain::UsJurisdiction::Wisconsin],
         })?;
-        Ok(())
+        Ok(counts)
     });
     check!(matches!(
         result,

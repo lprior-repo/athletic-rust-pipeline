@@ -40,7 +40,7 @@ pub(super) fn write(
     directory: &Path,
     derivation: &Derivation<'_>,
     year: SchoolYear,
-) -> ReportResult<()> {
+) -> ReportResult<u64> {
     let coaches = claims(derivation)?;
     let contacts = bounded::bounded_contacts(&coaches, year, bounded::WORKBOOK_GROUP_BUDGET)?;
     write_csv(&directory.join("coach_contacts.csv"), &HEADER, |writer| {
