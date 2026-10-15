@@ -38,7 +38,8 @@ pub(super) async fn redrive(
             jurisdictions,
             failures,
             &owed,
-        );
+        )
+        .map_err(|error| TerminalError::new(error.to_string()))?;
         ctx.set(KEY_STATE, Json(partial));
         pending = next;
         tracing::info!(

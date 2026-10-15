@@ -135,7 +135,8 @@ impl NationalCensus {
             owed,
             join,
             today,
-        );
+        )
+        .map_err(|error| TerminalError::new(error.to_string()))?;
         coverage::publish(&self.jobs, &ctx, &targets, &report).await?;
         let ready = publication::ready(&request, &report, &contacts);
         ctx.set(contact_phase::KEY_CONTACTS, Json(contacts));

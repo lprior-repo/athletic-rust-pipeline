@@ -1,3 +1,9 @@
+mod validation;
+
+pub use validation::{
+    NationalMetric, NationalReportError, NationalReportResult, NationalRows, NationalTotals,
+};
+
 use crate::model::{Revision, SchoolYear};
 use crate::UsJurisdiction;
 use serde::{Deserialize, Serialize};
@@ -126,3 +132,6 @@ impl NationalReport {
         self.completeness.label()
     }
 }
+
+#[cfg(test)]
+mod tests;

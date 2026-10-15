@@ -616,3 +616,25 @@ acknowledged effects and fresh guest-midnight acquisitions. Cleanup records endp
 reaped with exit 0 and guest drain accepted = completed = 16. It does not qualify all HTTP
 subphases, scenario 17, the full 17-fault set, whole-workload resources or national completion.
 The report CLI smoke uses synthetic responses, not a live census or source-authority proof.
+
+### Checked report totals — 2026-10-15
+
+An actual Service constructor probe with two overflowing jurisdiction counts panicked in
+`Iterator::sum`. Both final and partial report constructors now use the same checked
+`NationalTotals::of`; partial assembly reuses final assembly. Three workflow callers return
+terminal errors instead of publishing a wrapped total or retrying the malformed aggregate.
+
+The borrowed `NationalReport::validate` checks exact totals, ordered/unique jurisdictions
+within each list and absence of final metadata on partial reports. It does not require all
+49 jurisdictions, disjoint lists or a nonempty final date, and it does not certify source truth.
+
+| Exercised verification | Observed result | Evidence |
+|---|---|---|
+| Real constructor boundary; permanent regressions | Panic before repair; 12 focused cases pass after repair | `11ff18db`; `4de370db` |
+| Check / full workspace / examples | Passed; 6,524 passed with six skips; 211 example cases passed | `c4376181`; `72589e64`; `e208472d` |
+| Source lint / strict size and debt / comments / seams | Passed; no debt grew or production file exceeded 300 lines; 3,491 Rust files contain no comments; no seam violations | `7fbfbf88`; `80f40bbe`; `bc06dfbb`; `905d5ac8` |
+| Actual bounded validation executable | Valid report accepted; inconsistent and overflowing totals return typed errors with exit 1, not a panic | `c2ebee53`; `var/review-national-validation-2026-10-15T075128485Z/` |
+
+The temporary constructor probe was replaced by the typed regression. The executable's source
+and inputs remain with the evidence; its project example was removed. R11's semantic-effect
+and original-input authority integration remains unqualified.

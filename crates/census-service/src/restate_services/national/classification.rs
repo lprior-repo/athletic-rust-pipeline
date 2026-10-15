@@ -56,7 +56,8 @@ pub(in crate::restate_services) async fn collect_outcomes(
             Completion::Unanswered(failure) => failures.push(failure),
         }
         let partial =
-            assemble_partial(request.season, request.revision, &summaries, &failures, &[]);
+            assemble_partial(request.season, request.revision, &summaries, &failures, &[])
+                .map_err(|error| TerminalError::new(error.to_string()))?;
         ctx.set(KEY_STATE, Json(partial));
     }
     Ok((summaries, failures))

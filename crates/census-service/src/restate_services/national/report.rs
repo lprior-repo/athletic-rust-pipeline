@@ -1,7 +1,7 @@
 use census_domain::model::{Revision, SchoolYear};
 use census_domain::national_census::{
     JurisdictionOwed, JurisdictionSummary, NationalCompleteness, NationalFailure, NationalReport,
-    SchoolAddressJoinReply,
+    NationalReportError, NationalTotals, SchoolAddressJoinReply,
 };
 use census_reconcile::identity::WorkflowIdentity;
 use restate_sdk::prelude::*;
@@ -45,29 +45,24 @@ pub(super) fn assemble(
     mut owed: Vec<JurisdictionOwed>,
     school_address: Option<SchoolAddressJoinReply>,
     today: String,
-) -> NationalReport {
+) -> Result<NationalReport, NationalReportError> {
+    let totals = NationalTotals::of(&jurisdictions)?;
     jurisdictions.sort_by_key(|summary| summary.jurisdiction.code());
     failures.sort_by_key(|failure| failure.jurisdiction.code());
     owed.sort_by_key(|owed| owed.jurisdiction.code());
-    NationalReport {
+    Ok(NationalReport {
         season,
         revision,
-        rosters_total: jurisdictions
-            .iter()
-            .map(|summary| summary.rosters_total)
-            .sum(),
-        athletes_total: jurisdictions.iter().map(|summary| summary.athletes).sum(),
-        class_of_2027_total: jurisdictions
-            .iter()
-            .map(|summary| summary.class_of_2027)
-            .sum(),
+        rosters_total: totals.rosters,
+        athletes_total: totals.athletes,
+        class_of_2027_total: totals.class_of_2027,
         jurisdictions,
         failures,
         owed,
         school_address,
         today,
         completeness: NationalCompleteness::Final,
-    }
+    })
 }
 
 pub(super) fn assemble_partial(
@@ -76,32 +71,18 @@ pub(super) fn assemble_partial(
     jurisdictions: &[JurisdictionSummary],
     failures: &[NationalFailure],
     owed: &[JurisdictionOwed],
-) -> NationalReport {
-    let mut jurisdictions: Vec<JurisdictionSummary> = jurisdictions.to_vec();
-    let mut failures: Vec<NationalFailure> = failures.to_vec();
-    let mut owed: Vec<JurisdictionOwed> = owed.to_vec();
-    jurisdictions.sort_by_key(|summary| summary.jurisdiction.code());
-    failures.sort_by_key(|failure| failure.jurisdiction.code());
-    owed.sort_by_key(|owed| owed.jurisdiction.code());
-    NationalReport {
+) -> Result<NationalReport, NationalReportError> {
+    let mut report = assemble(
         season,
         revision,
-        rosters_total: jurisdictions
-            .iter()
-            .map(|summary| summary.rosters_total)
-            .sum(),
-        athletes_total: jurisdictions.iter().map(|summary| summary.athletes).sum(),
-        class_of_2027_total: jurisdictions
-            .iter()
-            .map(|summary| summary.class_of_2027)
-            .sum(),
-        jurisdictions,
-        failures,
-        owed,
-        school_address: None,
-        today: String::new(),
-        completeness: NationalCompleteness::Partial,
-    }
+        jurisdictions.to_vec(),
+        failures.to_vec(),
+        owed.to_vec(),
+        None,
+        String::new(),
+    )?;
+    report.completeness = NationalCompleteness::Partial;
+    Ok(report)
 }
 
 #[cfg(test)]
@@ -153,14 +134,14 @@ mod tests {
             std::slice::from_ref(&first),
             &[],
             &[],
-        );
+        )?;
         check!(partial.is_partial());
         check!(eq; partial.completeness_label(), "partial");
         check!(eq; partial.jurisdictions.len(), 1);
         check!(eq; partial.rosters_total, 7);
         check!(eq; partial.athletes_total, 14);
         check!(eq; partial.class_of_2027_total, 7);
-        let full = assemble_partial(season()?, Revision(1), &[first, second], &[], &[]);
+        let full = assemble_partial(season()?, Revision(1), &[first, second], &[], &[])?;
         check!(eq; full.jurisdictions.len(), 2);
         check!(eq; full.rosters_total, 12);
         check!(eq; full.athletes_total, 24);
@@ -176,7 +157,7 @@ mod tests {
         ];
         let failures: Vec<NationalFailure> = Vec::new();
         let owed: Vec<JurisdictionOwed> = Vec::new();
-        let partial = assemble_partial(season()?, Revision(1), &jurisdictions, &failures, &owed);
+        let partial = assemble_partial(season()?, Revision(1), &jurisdictions, &failures, &owed)?;
         let final_report = assemble(
             season()?,
             Revision(1),
@@ -185,7 +166,7 @@ mod tests {
             owed.clone(),
             None,
             "2026-10-12".to_string(),
-        );
+        )?;
         check!(partial.is_partial());
         check!(!final_report.is_partial());
         check!(eq; final_report.completeness, NationalCompleteness::Final);
@@ -197,6 +178,29 @@ mod tests {
         check!(eq; encoded.get("completeness"), Some(&serde_json::json!("partial")));
         let decoded: NationalReport = serde_json::from_value(encoded)?;
         check!(eq; decoded.completeness, NationalCompleteness::Partial);
+        Ok(())
+    }
+
+    #[test]
+    fn report_total_overflow_returns_the_typed_metric() -> TestResult {
+        let result = assemble(
+            season()?,
+            Revision(1),
+            vec![
+                summary(UsJurisdiction::Wisconsin, usize::MAX),
+                summary(UsJurisdiction::Iowa, 1),
+            ],
+            Vec::new(),
+            Vec::new(),
+            None,
+            String::new(),
+        );
+        check!(matches!(
+            result,
+            Err(NationalReportError::TotalOverflow {
+                metric: census_domain::national_census::NationalMetric::Rosters,
+            })
+        ));
         Ok(())
     }
 }
