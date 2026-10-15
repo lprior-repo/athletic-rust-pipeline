@@ -1,3 +1,4 @@
+use super::super::InventoryV2;
 use super::*;
 
 pub(super) fn preflight(inventory: InventoryV2, budget: ReadBudget) -> StoreResult<()> {
