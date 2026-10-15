@@ -5,7 +5,15 @@ use crate::net::{
 };
 use census_store::{Store, Table};
 
+fn require_send<F: std::future::Future + Send>(future: F) -> F {
+    future
+}
+
 fn seed_cache(cache: &std::path::Path, url: &str, body: &str) -> TestResult {
+    seed_cache_at(cache, url, body, "2026-09-27T12:00:00Z")
+}
+
+fn seed_cache_at(cache: &std::path::Path, url: &str, body: &str, stamp: &str) -> TestResult {
     let key = Fetcher::key_for("GET", url, "");
     write_cache(
         &cache.join(format!("{key}.body")),
@@ -18,7 +26,7 @@ fn seed_cache(cache: &std::path::Path, url: &str, body: &str) -> TestResult {
             status: 200,
             content_digest: content_digest(body.as_bytes()),
             bytes: body.len(),
-            fetched_at: "2026-09-27T12:00:00Z".to_owned(),
+            fetched_at: stamp.to_owned(),
             ..CacheMeta::default()
         },
     )?;
@@ -35,7 +43,7 @@ fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache() -> Te
         seed_cache(&cache, &school_page_url(&cherry_creek_slug()?), SCHOOL_PAGE)?;
         let store = Store::open(dir.path().join("store"))?;
         let ctx = context(&fetcher, &store)?;
-        let report = collect(&ctx, &options()).await?;
+        let report = require_send(collect(&ctx, &options())).await?;
         check!(eq; report.rows, 1);
         check!(eq; report.errors, 0);
         check!(eq; report.with_email, 0);
@@ -105,4 +113,57 @@ fn options() -> Options {
         school_names: vec!["Cherry Creek".to_owned()],
         ..Options::default()
     }
+}
+
+#[test]
+fn directory_school_dates_do_not_follow_detail_capture_refresh() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let dir = tempfile::tempdir()?;
+        let cache = dir.path().join("http");
+        let fetcher = Fetcher::new(&cache, None, std::time::Duration::ZERO, std::collections::HashMap::new(), Vec::new())?.with_offline(true);
+        let directory_stamp = "2026-09-20T12:00:00Z";
+        let url = school_page_url(&cherry_creek_slug()?);
+        seed_cache_at(&cache, DIRECTORY_URL, DIRECTORY, directory_stamp)?;
+        let store = Store::open(dir.path().join("store"))?;
+        let mut ctx = context(&fetcher, &store)?;
+        ctx.observed_on = "2031-10-12".to_string();
+        let mut school_rows = None;
+        let mut retained_stamps = Vec::new();
+        for (detail_stamp, raw_rows) in [("2026-09-22T12:00:00Z", 50), ("2026-09-24T12:00:00Z", 100)] {
+            retained_stamps.push(detail_stamp);
+            seed_cache_at(&cache, &url, SCHOOL_PAGE, detail_stamp)?;
+            let report = require_send(collect(&ctx, &options())).await?;
+            check!(eq; report.errors, 0);
+            check!(eq; report.requests, 0);
+            let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
+            let school = schools.first().ok_or("school")?;
+            check!(school.evidence.iter().all(|evidence| evidence.observed_on == directory_stamp));
+            check!(school.evidence.iter().all(|evidence| evidence.source.url.as_deref() == Some(DIRECTORY_URL)));
+            let observations = store.scan::<census_domain::model::SourceObservation>(Table::SourceObservations)?;
+            check!(!observations.is_empty());
+            check!(observations.iter().all(|row| row.observed_on() == directory_stamp));
+            let rows = [store.walk_table(Table::Schools)?, store.walk_table(Table::SourceObservations)?];
+            if let Some(previous) = &school_rows {
+                check!(eq; &rows, previous);
+            }
+            school_rows = Some(rows);
+            let coaches = store.scan::<CanonicalCoach>(Table::Coaches)?;
+            check!(eq; store.walk_table(Table::Coaches)?.rows, raw_rows);
+            check!(eq; coaches.len(), 50);
+            check!(coaches.iter().all(|coach| retained_stamps.iter().all(|stamp|
+                coach.evidence.iter().any(|evidence| evidence.observed_on == *stamp
+                    && evidence.source.url.as_deref() == Some(url.as_str())))));
+        }
+        let coaches = store.scan::<CanonicalCoach>(Table::Coaches)?;
+        let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
+        let observations = store.scan::<census_domain::model::SourceObservation>(Table::SourceObservations)?;
+        let raw_coaches = store.walk_table(Table::Coaches)?;
+        drop(store);
+        let reopened = Store::open(dir.path().join("store"))?;
+        check!(eq; reopened.walk_table(Table::Coaches)?, raw_coaches);
+        check!(eq; reopened.scan::<CanonicalCoach>(Table::Coaches)?, coaches);
+        check!(eq; reopened.scan::<CanonicalSchool>(Table::Schools)?, schools);
+        check!(eq; reopened.scan::<census_domain::model::SourceObservation>(Table::SourceObservations)?, observations);
+        Ok(())
+    })
 }

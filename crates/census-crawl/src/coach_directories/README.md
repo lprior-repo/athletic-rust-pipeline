@@ -43,9 +43,10 @@ published season scope is parsed from the title first and the team label second.
 A stated season that is not the run season is retained as
 `CoachTenure::Former { last_school_year: <stated> }`, so it cannot assert a
 current appointment; a stated future season is retained the same way and the
-tenure assessment ignores it, leaving the identity Unknown. Only a listing with
-no stated season follows ADR-024 and takes the run school year as its current
-claim. Every emitted claim is validated before it is returned.
+tenure assessment ignores it, leaving the identity Unknown. A listing with
+no stated season retains `CoachTenure::Unknown`; neither the run school year nor
+the retrieval time establishes a published season. Every emitted claim is validated
+before it is returned.
 
 Three passes: team `coachProfileIds` first, then unplaced staff with a `teamName`, then directors.
 All published records for an ID reach admission; no earlier eligible record is overwritten before
@@ -86,8 +87,9 @@ summary capture's SHA256 and RFC3339 retrieval time. The collector supplies
 `AdapterContext.school_year` and the summary `FetchOutcome` metadata, never a year
 inferred from the observation date or a digest manufactured by the mapper.
 
-A listed head/assistant coach with a named team emits `CoachTenure::Current` for
-that run season. Team-index placement keeps the source team's label; unplaced staff
+A listed head/assistant coach with a named team emits `CoachTenure::Current` only
+when its published season matches the run season; an undated listing remains
+`CoachTenure::Unknown`. Team-index placement keeps the source team's label; unplaced staff
 keeps its own `teamName`. A listed Athletic Director uses the source school's name
 and school athletics as its program. Unknown/former roles and coaching roles without
 a team emit no tenure evidence. Name-only appointments may have current tenure but
