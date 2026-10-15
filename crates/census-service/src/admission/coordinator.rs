@@ -83,6 +83,7 @@ impl Coordinator {
                 tasks: slots,
                 stages: slots,
                 browser: slots,
+                populations: 1,
             },
         };
         let reserve = Resources {
@@ -92,6 +93,7 @@ impl Coordinator {
                 tasks: 64,
                 stages: 64,
                 browser: 1,
+                populations: 0,
             },
         };
         main.checked_add(reserve)?.checked_add(reserve)?;
@@ -124,6 +126,7 @@ impl Coordinator {
                 tasks: slots,
                 stages: slots,
                 browser: 4,
+                populations: 1,
             },
         };
         let reserve = Resources {
@@ -133,6 +136,7 @@ impl Coordinator {
                 tasks: 64,
                 stages: 64,
                 browser: 1,
+                populations: 0,
             },
         };
         Self {

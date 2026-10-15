@@ -28,6 +28,7 @@ fn profile(bytes: u64, slots: u64) -> WorkClass {
             tasks: slots,
             stages: 0,
             browser: 0,
+            populations: 0,
         },
     )
 }
@@ -157,7 +158,7 @@ fn giant_units_are_refused_without_queuing_or_charging() -> TestResult {
         check!(matches!(coordinator.try_enqueue(profile), Err(actual) if actual == reason));
     }
     check!(eq; coordinator.remaining(), Resources { bytes: 1024, work: 1_000_000,
-        slots: SlotVector { tasks: 1, stages: 1, browser: 1 } });
+        slots: SlotVector { tasks: 1, stages: 1, browser: 1, populations: 1 } });
     Ok(())
 }
 
@@ -171,6 +172,7 @@ fn blocked_downstream_does_not_pin_the_ready_queue_head() -> TestResult {
             tasks: 0,
             stages: 2,
             browser: 0,
+            populations: 0,
         },
     );
     let held = grant(coordinator.try_reserve_profile(stage))?;

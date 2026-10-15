@@ -12,6 +12,7 @@ pub struct SlotVector {
     pub tasks: u64,
     pub stages: u64,
     pub browser: u64,
+    pub populations: u64,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -31,6 +32,7 @@ impl Resources {
                 tasks: add(self.slots.tasks, other.slots.tasks)?,
                 stages: add(self.slots.stages, other.slots.stages)?,
                 browser: add(self.slots.browser, other.slots.browser)?,
+                populations: add(self.slots.populations, other.slots.populations)?,
             },
         })
     }
@@ -44,6 +46,7 @@ impl Resources {
                 tasks: sub(self.slots.tasks, other.slots.tasks)?,
                 stages: sub(self.slots.stages, other.slots.stages)?,
                 browser: sub(self.slots.browser, other.slots.browser)?,
+                populations: sub(self.slots.populations, other.slots.populations)?,
             },
         })
     }
@@ -58,6 +61,7 @@ impl Resources {
         if required.slots.tasks > self.slots.tasks
             || required.slots.stages > self.slots.stages
             || required.slots.browser > self.slots.browser
+            || required.slots.populations > self.slots.populations
         {
             return Some(DepartureReason::NoSlots);
         }
@@ -87,7 +91,8 @@ impl WorkClass {
             && resources.work == 0
             && resources.slots.tasks == 0
             && resources.slots.stages == 0
-            && resources.slots.browser == 0;
+            && resources.slots.browser == 0
+            && resources.slots.populations == 0;
         if empty {
             return Err(DepartureReason::EmptyEnvelope);
         }
@@ -102,6 +107,7 @@ pub const WORK_CLASS_NORMAL: WorkClass = WorkClass::work(
         tasks: 1,
         stages: 0,
         browser: 0,
+        populations: 0,
     },
 );
 pub const WORK_CLASS_INGEST: WorkClass = WorkClass::work(
@@ -111,6 +117,7 @@ pub const WORK_CLASS_INGEST: WorkClass = WorkClass::work(
         tasks: 0,
         stages: 1,
         browser: 0,
+        populations: 0,
     },
 );
 pub const WORK_CLASS_STAGE: WorkClass = WorkClass::work(
@@ -120,6 +127,15 @@ pub const WORK_CLASS_STAGE: WorkClass = WorkClass::work(
         tasks: 0,
         stages: 1,
         browser: 0,
+        populations: 0,
+    },
+);
+pub const WORK_CLASS_PUBLICATION: WorkClass = WorkClass::work(
+    WORK_CLASS_STAGE.resources.bytes,
+    WORK_CLASS_STAGE.resources.work,
+    SlotVector {
+        populations: 1,
+        ..WORK_CLASS_STAGE.resources.slots
     },
 );
 pub const WORK_CLASS_BROWSER: WorkClass = WorkClass::work(
@@ -129,6 +145,7 @@ pub const WORK_CLASS_BROWSER: WorkClass = WorkClass::work(
         tasks: 0,
         stages: 0,
         browser: 1,
+        populations: 0,
     },
 );
 pub const WORK_CLASS_CONTROL: WorkClass = WorkClass {
@@ -139,6 +156,7 @@ pub const WORK_CLASS_CONTROL: WorkClass = WorkClass {
             tasks: 0,
             stages: 1,
             browser: 0,
+            populations: 0,
         },
     },
     class: Class::Control,
