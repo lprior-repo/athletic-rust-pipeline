@@ -186,6 +186,21 @@ tools/moon-local run pipeline:tests -- -E 'binary(restate_kill_restart)'
 | `pipeline:durability` / `pipeline:backup-drill` | Manual uncached existing fault/backup wrappers, bound to portable Moon binaries; require owned scratch/stopped stores |
 | `pipeline:native-resources` | Manual uncached `tools/durability/native-resources.sh`: verifies the pinned Restate/QEMU/image/guest-capture resources, prepares owned scratch disks and probes the isolation mechanisms the native fault scenarios need; `--certificate <path>` records the observed identities |
 
+`pipeline:tests-scoped` keeps `--all-features` unless
+`MOON_RUST_SCOPED_TEST_FEATURES=default` explicitly selects Cargo's default features.
+Unset or `all` preserves the existing argument vector. This option is accepted only
+for the canonical `pipeline:tests-scoped` command; other tasks and unknown modes fail
+before Cargo starts. Default mode rejects additional feature-selection flags rather
+than silently changing the requested feature set. Locked/offline execution, build-job
+limits, filters, and empty-selection failure options remain unchanged. This does not
+weaken the aggregate, source, or release gates, which still require all features.
+
+```sh
+env -u CI MOON_RUST_BUILD_JOBS=1 MOON_RUST_SCOPED_TEST_FEATURES=default \
+  tools/moon-local run pipeline:tests-scoped -- -p census-service --lib \
+  -E 'test(restate_services::publish::publication_boundary::)' --no-tests fail
+```
+
 Scoped tasks are manual: unset `CI`, including when its value is `false`.
 
 ```sh
