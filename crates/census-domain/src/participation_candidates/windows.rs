@@ -1,4 +1,5 @@
 use super::checks::visible;
+use super::policy::ParticipationPolicy;
 use super::{
     CandidateQuery, CohortFact, EligibilityWindowFact, ParticipationInputError,
     ParticipationObservation, ParticipationReason, ParticipationReasons,
@@ -10,8 +11,8 @@ pub(super) fn assess(
     observation: &ParticipationObservation<'_>,
     date: &ProfileDate,
     reasons: &mut ParticipationReasons,
+    policy: ParticipationPolicy,
 ) -> Result<(), ParticipationInputError> {
-    // The public assessor checks MAX_PARTICIPATION_FACTS before either traversal.
     let (seen, admitted, conflicted) = observation.eligibility_windows.iter().try_fold(
         (false, false, false),
         |(seen, admitted, conflicted), fact| {
@@ -30,7 +31,9 @@ pub(super) fn assess(
         reasons.add(ParticipationReason::ParticipationWindowConflict);
     }
     if !seen {
-        reasons.add(ParticipationReason::SummerBoundaryUnresolved);
+        if !policy.establishes_date_local_status(query, observation, date, *reasons)? {
+            reasons.add(ParticipationReason::SummerBoundaryUnresolved);
+        }
     } else if !admitted {
         reasons.add(ParticipationReason::OutsideParticipationWindow);
     }

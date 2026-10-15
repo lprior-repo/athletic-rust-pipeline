@@ -22,6 +22,7 @@ mod pending_recording;
 mod replay;
 mod resource_recovery;
 mod result_sets;
+mod retained_metadata;
 mod unresolved;
 use fixture::*;
 

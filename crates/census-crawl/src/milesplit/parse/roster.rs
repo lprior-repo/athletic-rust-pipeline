@@ -16,7 +16,7 @@ const MAX_ROWS: usize = 20_000;
 const MAX_ROW_BYTES: usize = 64 * 1024;
 const MAX_FIELD_BYTES: usize = 4096;
 
-pub(in crate::milesplit) fn parse_captured_roster(
+pub fn parse_captured_roster(
     html: &str,
     team: TeamRef,
     capture: &crate::net::FetchOutcome,

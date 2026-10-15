@@ -46,6 +46,15 @@ fn parse_document(
     precision: DatePrecision,
 ) -> CrawlResult<RawPage> {
     let event = document::read(html, url, ownership)?;
+    parse_event(html, url, event, precision)
+}
+
+fn parse_event(
+    html: &str,
+    url: &str,
+    event: SportsEvent,
+    precision: DatePrecision,
+) -> CrawlResult<RawPage> {
     let facts = page_facts(event, url, precision)?;
     let (block_start, block_text) =
         pre_block(html).ok_or_else(|| schema(url, "no <pre> result block"))?;
@@ -221,4 +230,16 @@ fn sport_of(value: &str) -> Option<Sport> {
     } else {
         None
     }
+}
+
+pub(in crate::milesplit) fn parse_bound_with_dates(
+    html: &str,
+    url: &str,
+    check: &dyn Fn(&str, &str) -> CrawlResult<()>,
+) -> CrawlResult<(RawPage, String, Option<String>)> {
+    let event = document::read(html, url, document::Ownership::Bound(check))?;
+    let start = event.start_date.clone();
+    let end = event.end_date.clone();
+    let page = parse_event(html, url, event, DatePrecision::Published)?;
+    Ok((page, start, end))
 }

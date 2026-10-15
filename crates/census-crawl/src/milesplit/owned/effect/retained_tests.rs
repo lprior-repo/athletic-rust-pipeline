@@ -16,6 +16,7 @@ mod corruptions;
 mod ownership;
 mod positives;
 mod references;
+mod result;
 
 fn source() -> TestResult<ResultSetRef> {
     ResultSetRef::parse("https://al.milesplit.com/meets/725218/results/1266814/raw")

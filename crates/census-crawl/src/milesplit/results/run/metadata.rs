@@ -19,7 +19,7 @@ pub(super) async fn fetch_metadata(
     Ok((capture, page))
 }
 
-pub(super) fn parse_capture(
+pub(in crate::milesplit::results) fn parse_capture(
     capture: &FetchOutcome,
     reference: &ResultSetRef,
 ) -> CrawlResult<RawPage> {
@@ -120,4 +120,16 @@ fn schema(reference: &ResultSetRef, detail: &str) -> CrawlError {
         url: reference.url.clone(),
         detail: detail.into(),
     }
+}
+
+pub(in crate::milesplit::results) fn parse_capture_with_dates(
+    capture: &FetchOutcome,
+    reference: &ResultSetRef,
+) -> CrawlResult<(RawPage, String, Option<String>)> {
+    check_capture(capture, reference)?;
+    let html = std::str::from_utf8(&capture.body)
+        .map_err(|_| schema(reference, "raw metadata is not UTF-8"))?;
+    crate::milesplit::raw::parse_bound_with_dates(html, &reference.url, &|url, role| {
+        check_url(url, reference, role)
+    })
 }

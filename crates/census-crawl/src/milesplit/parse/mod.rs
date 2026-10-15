@@ -90,7 +90,7 @@ pub use team_index::{parse_team_index, TeamIndexRead};
 
 pub(in crate::milesplit) mod markup;
 pub(in crate::milesplit) mod roster;
-pub use roster::parse_roster;
+pub use roster::{parse_captured_roster, parse_roster};
 
 pub(super) static MEET_INDEX_MARKER_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(
     || {

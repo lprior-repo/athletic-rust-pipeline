@@ -6,6 +6,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 mod evidence;
 mod fixture;
 mod metadata;
+mod policy;
 mod windows;
 
 use fixture::{day, outcome, range, Fixture};
