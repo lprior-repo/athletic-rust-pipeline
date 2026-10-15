@@ -454,3 +454,22 @@ release acceptance remain open.
 All combined gates ran through `tools/moon-local`. Source lint still reports three argument-count
 advisories: browser `note_request`, acquisition `process_eligible_entry` and qualification
 `process_root`; none was suppressed or represented as warning-free qualification.
+
+### PR54 rebase — 2026-10-15
+
+Integrated `c78402c2` (Athletic.net acquisition timestamps and immutable cache-hit
+archives). The sole rebase conflict was additive evidence; both dated histories remain.
+
+Initial combined validation passed check `02b89754`, source lint `f074df17` and format
+`b71d035e`. Tests `235402be` / Nextest `ef64af06-afc9-4d6c-a4ab-65c8385a7daf`:
+6,308 passed, two failed, six skipped. The provider fixtures tried to read the new archive
+directory as a file. Their snapshots now explicitly cover mutable body/metadata payloads,
+not archive directories or coordination locks. Exact input bytes, original acquisition
+time, zero network dispatch and once-only physical-row replay remain asserted.
+
+| PR54 post-repair check | Observed result | Evidence |
+|---|---|---|
+| Focused provider replay | 12 passed | `ccea124f`; Nextest `3740e6e4-47a4-47f3-aeff-bd760942fe37` |
+| Full workspace | 6,310 passed, six skipped | `a2f452ac`; Nextest `365e0332-5ae6-436a-a1e4-99c7db63baf3` |
+| Check / source lint / format | Passed; same three argument-count advisories | `b8328320` / `79c34282` / `a21e12cd` |
+| Actual capture/export readback | 185 canonical rows, 60 cohort members; XLSX/CSV/JSONL passed | `15af7326`; functional `capture_export --test`, not performance or national qualification |
