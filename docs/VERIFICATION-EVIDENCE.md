@@ -1408,3 +1408,20 @@ Workspace `pipeline:check` (`fac928f8`), `pipeline:fmt` (`e124b2e9`) and
 `pipeline:lint-src` (`69320c09`) passed. Lint emitted three existing arity advisories
 in browser rankings capture and Store acquisition cache/inventory; no suppression was added.
 These results qualify the recovery scope only, not release or the national run.
+
+## 2026-10-15 — archive readback CLI boundary regression
+
+- Root Moon `942faed7`, Nextest `9c9baf21-f2e0-4d65-bdf9-13e56dd2b041`: two
+  capture-sampling parser regressions passed; 202 unrelated binary tests were filtered out.
+  Values `0` and `61` require `ValueValidation`; `1` and `60` retain their parsed intervals.
+- Root CLI build `ccf576a4` and formatting `f86245bf` passed. The actual built binary
+  returned exit `0` for `open-work --help` and exit `2` for each invalid interval, with
+  actionable range errors and no stack traces. Raw command/output/exit records:
+  `var/review-archive-cli-20261015/observed.json`. No serving store or live endpoint was opened.
+- Earlier Root runs `bef61cdb` and `54f60ded` failed after seven report edits targeted
+  the wrong checkout. All seven were preserved and transferred to the untouched private
+  destinations, then Root was restored to its committed preimages before the passing runs.
+  Recovery source: `local://service-scope-recovery-20261015/`. Private edits now require
+  fully qualified worktree paths in edit headers, not only in reads.
+- This closes the CLI boundary evidence gap only. Archive activity measures immutable
+  metadata/body growth, not physical request counts or national completeness.
