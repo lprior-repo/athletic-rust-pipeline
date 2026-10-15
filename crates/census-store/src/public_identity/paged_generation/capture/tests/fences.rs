@@ -1,7 +1,6 @@
 use super::*;
-use census_domain::model::{
-    CensusRun, GradYear, RunManifest, SchoolYear, StoreIdentity, UsJurisdiction,
-};
+use census_domain::model::{CensusRun, GradYear, RunManifest, SchoolYear, StoreIdentity};
+use census_domain::UsJurisdiction;
 
 #[test]
 fn each_input_counter_and_lineage_dimension_refuses_but_journal_churn_does_not() -> TestResult {

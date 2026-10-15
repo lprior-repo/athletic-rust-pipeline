@@ -28,15 +28,6 @@ pub(in crate::public_identity) struct GraphPlan {
     descriptors: Vec<Descriptor>,
 }
 
-impl GraphPlan {
-    pub(in crate::public_identity) fn seal(&self) -> &ObjectRefV2 {
-        &self.seal
-    }
-    pub(in crate::public_identity) fn capture(&self) -> &CaptureBindingV2 {
-        &self.capture
-    }
-}
-
 impl GraphReservation {
     pub(in crate::public_identity) fn seal(&self) -> &ObjectRefV2 {
         match &self.purpose {

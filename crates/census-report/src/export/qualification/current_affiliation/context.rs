@@ -1,8 +1,11 @@
+mod membership;
+
 use super::{charge, invalid, CurrentAffiliationResolution, PinnedCurrentAffiliations};
 use crate::export::ExportDataset;
 use census_crawl::milesplit::CurrentRosterAssertion;
 use census_domain::model::{serialized_digest, AthleteId, Evidence, ProfileDate, QueryProfileV1};
 use census_store::StoreResult;
+use membership::DatedMembership;
 use std::collections::BTreeMap;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -22,7 +25,7 @@ pub(crate) struct DatedRosterMembership {
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Membership {
     Physical,
-    Dated(DatedRosterMembership),
+    Dated(DatedMembership),
 }
 
 #[derive(Default)]
@@ -85,7 +88,7 @@ impl RosterEvidence {
             .and_then(|rows| rows.get_mut(&digest))
             .ok_or_else(|| invalid("dated membership lacks checked physical context"))?;
         if let Membership::Dated(previous) = row {
-            if previous != &proof {
+            if previous.get()? != &proof {
                 return Err(invalid(
                     "dated roster membership changed for identical evidence",
                 ));
@@ -110,7 +113,7 @@ impl RosterEvidence {
             64 * 1024 * 1024,
             "verified roster context encoded bytes",
         )?;
-        *row = Membership::Dated(proof);
+        *row = Membership::Dated(DatedMembership::new(proof)?);
         self.bytes = retained_bytes;
         Ok(())
     }
@@ -123,7 +126,7 @@ impl RosterEvidence {
         let digest = serialized_digest(evidence)?;
         Ok(
             match self.rows.get(athlete).and_then(|rows| rows.get(&digest)) {
-                Some(Membership::Dated(proof)) => Some(proof),
+                Some(Membership::Dated(proof)) => Some(proof.get()?),
                 Some(Membership::Physical) | None => None,
             },
         )

@@ -21,8 +21,8 @@ fn graph_reservation_precedes_every_child_write_and_charges_the_complete_graph()
     let (generation, plan) = Generation::new(&store, 0)?;
     assert_eq!(retained_state(&store)?, before);
     assert_eq!(plan.descriptors.len(), 9);
-    assert_eq!(plan.capture(), &generation.capture);
-    let inventory = generation.seal.inventory_including_seal(plan.seal())?;
+    assert_eq!(&plan.capture, &generation.capture);
+    let inventory = generation.seal.inventory_including_seal(&plan.seal)?;
     assert_eq!(inventory.object_count(), 9);
     assert_eq!(inventory.pages(), 1);
     assert_eq!(inventory.rows(), 1);
@@ -62,13 +62,13 @@ fn graph_reservation_precedes_every_child_write_and_charges_the_complete_graph()
 fn ready_graph_reuse_has_zero_incremental_charge_and_positive_full_references() -> TestResult {
     let (_directory, store, _writer) = enrolled()?;
     let (generation, plan) = Generation::new(&store, 0)?;
-    let original_seal = plan.seal().clone();
+    let original_seal = plan.seal.clone();
     let reservation = reserve(&store, "first-graph", plan)?;
     generation.stage(&store, &reservation)?;
     let retained = retained_state(&store)?;
     let reused_plan = generation.plan(&store)?;
     reservation.require_plan(&reused_plan)?;
-    assert_eq!(reused_plan.seal(), &original_seal);
+    assert_eq!(&reused_plan.seal, &original_seal);
     assert_eq!(retained_state(&store)?, retained);
     for descriptor in &reused_plan.descriptors {
         assert_eq!(
