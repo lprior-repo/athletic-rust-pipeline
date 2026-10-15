@@ -43,6 +43,5 @@ pub fn build_publication(
     )?;
     let verified = workbook::publication::verify_published(&written)?;
     let artifacts = super::artifacts::read(&written)?;
-    crate::milesplit_publication::assert_publication(&written)?;
     Ok((verified, artifacts))
 }

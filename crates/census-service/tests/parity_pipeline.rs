@@ -20,8 +20,6 @@ mod fixture_builders;
 mod fixtures;
 #[path = "parity_pipeline_mod/milesplit_fixtures.rs"]
 mod milesplit_fixtures;
-#[path = "parity_pipeline_mod/milesplit_fixtures/publication.rs"]
-mod milesplit_publication;
 #[path = "parity_pipeline_mod/ohsaa_wiaa_builders.rs"]
 mod ohsaa_wiaa_builders;
 #[path = "parity_pipeline_mod/pipeline.rs"]

@@ -6,7 +6,7 @@ mod provenance;
 #[path = "milesplit_fixtures/raw.rs"]
 mod raw;
 #[path = "milesplit_fixtures/replay.rs"]
-pub(crate) mod replay;
+mod replay;
 
 pub use replay::replay_owned_captures;
 

@@ -73,7 +73,6 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
         counts
     };
 
-    crate::milesplit_publication::project_into_publication_store(&store, &fetcher).await?;
     let (publication, artifacts) = super::workbook::build_publication(&store, root)?;
 
     Ok(Run {

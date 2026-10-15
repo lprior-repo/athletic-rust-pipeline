@@ -15,9 +15,9 @@ mod assertions;
 #[path = "../../common/capture_cache.rs"]
 mod cache;
 
-pub(crate) const OWNED: &[u8] =
+const OWNED: &[u8] =
     include_bytes!("../../../../census-crawl/src/milesplit/owned/fixtures/troy_725218.json");
-pub(crate) const ACQUIRED_AT: &str = "2026-10-01T23:44:16Z";
+const ACQUIRED_AT: &str = "2026-10-01T23:44:16Z";
 const PHASE: &str = milesplit::RESULT_SET_PHASE;
 
 pub async fn replay_owned_captures() -> Result<()> {
@@ -73,7 +73,7 @@ async fn replay_capture(body: &[u8], relay: bool) -> Result<()> {
     assertions::assert_retention(&store, body, relay)
 }
 
-pub(crate) fn seed_captures(fetcher: &Fetcher, body: &[u8]) -> Result<milesplit::ResultSetOptions> {
+fn seed_captures(fetcher: &Fetcher, body: &[u8]) -> Result<milesplit::ResultSetOptions> {
     let owned_url = format!(
         "https://al.milesplit.com/api/v1/meets/725218/performances?isMeetPro=0&fields={}",
         milesplit::OWNED_FIELDS
