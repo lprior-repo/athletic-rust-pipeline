@@ -103,12 +103,12 @@ verification alone does not establish the guest's live midnight acquisitions.
 scenario 04 takes V1 from the feature build in `target/moon-build` and V2 from the plain portable
 build, independent of `SERVE_BINARY`, so exporting the feature build for scenarios 02, 05, 06 and 11
 can no longer collapse the pair into one binary. The release gate's durability lane
-(`lane_durability` in `tools/gate.sh`) performs that wiring itself: it builds the feature endpoint
-and its `qualification_native_vm` example when either is missing, builds the
-`crates/census-store/examples/receipt-oracle.rs` reconciliation binary through
-`S06_RECEIPT_ORACLE_BINARY` when it is missing, then exports `SERVE_BINARY`, `S04_V1_BINARY`,
+(`lane_durability` in `tools/gate.sh`) performs that wiring itself. Every invocation asks Moon
+to build the current feature endpoint, `qualification_native_vm` and
+`crates/census-store/examples/receipt-oracle.rs`, then the plain portable CLI/endpoint pair.
+An existing executable is not build provenance. The lane exports `SERVE_BINARY`, `S04_V1_BINARY`,
 `S04_V2_BINARY`, `S06_RECEIPT_ORACLE_BINARY`, `CENSUS_NATIVE_VM_HOST` and
-`CENSUS_NATIVE_VM_CAPTURES` for the lane.
+`CENSUS_NATIVE_VM_CAPTURES`; a build or scenario failure remains fatal.
 
 ## Recording live public captures
 

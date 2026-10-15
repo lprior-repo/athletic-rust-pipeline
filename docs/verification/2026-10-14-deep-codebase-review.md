@@ -638,3 +638,33 @@ within each list and absence of final metadata on partial reports. It does not r
 The temporary constructor probe was replaced by the typed regression. The executable's source
 and inputs remain with the evidence; its project example was removed. R11's semantic-effect
 and original-input authority integration remains unqualified.
+
+### Fresh-build native fault lane — 2026-10-15
+
+The durability gate no longer treats executable presence as current-build evidence. The actual
+release lane rebuilt its feature endpoint/VM host/receipt oracle (`5bdded35`) and portable
+CLI/endpoint (`64cdeeb7`), then executed all 18 wrappers: the required 17 plus run-binding.
+Gate `bcb7c6b1` and runner `fad8722a` failed with 12 wrapper passes, six failures and no skips.
+Preserved evidence: `var/durability-scratch/run-uNKcwfgf/`; complete command output `846`.
+
+| Wrapper | Observed latest result |
+|---|---|
+| 01, 04, 05, 08, 09, 10, 13, 14, 15, 16, 17, 18 | Wrapper PASS. Scenario 05 explicitly leaves the durable three-attempt source ceiling unexercised; this is not full catalog acceptance. |
+| 02 | Same 136 invocation identities retained; the original reserved source did not advance. Cause not yet established. |
+| 03 | Post-reboot offline snapshot refused: the guest endpoint did not produce its current-incarnation drain certificate or reap within its owned deadline. |
+| 06 | All six source/capture/apply/ack boundaries remained unreached; no recovery proof. |
+| 07 | Original invocation failed because the protected live endpoint holds the requested public origin. The origin admission refusal is correct; its lock was not bypassed. |
+| 11 | Exclusive drain accounting reconciled, but the wrapper required exit 0 after an explicitly injected HTTP-server failure; the endpoint returned exit 1. Recovery after that point was not exercised. |
+| 12 | Correctly refused reuse of scenario 03's incomplete producer; no midnight qualification. |
+
+The guest's failed disks/logs remain at
+`$HOME/.cache/cen-native-vm/run-hMc57Jtj/machine/`. QEMU was reaped after SIGTERM;
+guest drain remains unproven. The earlier two-scenario pass is historical, not acceptance for
+this latest attempt. No protected live process/store was stopped or opened.
+
+The separate old-code performance control also failed: original `d4fdf76b` code and original
+154,721-line corpus against the retained recorded baseline, command `5aa387e5`, output `845`.
+Fifteen actual benchmark input/oracle files are SHA-256-identical between that control and
+current code (`var/review-perf-reference-20261015/input-equality.json`). This does not explain
+the timing failures or qualify current performance. No threshold, fixture scope or Root
+performance baseline was changed.

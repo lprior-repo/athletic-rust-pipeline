@@ -277,22 +277,15 @@ lane_durability() {
     local vm_host="$PWD/target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm"
     local oracle_bin="$PWD/target/moon-build/x86_64-unknown-linux-gnu/release/examples/receipt-oracle"
     local vm_captures="${CENSUS_NATIVE_VM_CAPTURES:-$PWD/var/native-vm-captures-sol-20261006.json}"
-    if [ ! -x "$seam_bin" ] || [ ! -x "$vm_host" ]; then
-      env -u CI tools/moon-local run pipeline:build -- --release -p census-service \
-        --features native-fault-injection --bin census-serve --example qualification_native_vm || return 1
-    fi
-    if [ ! -x "$oracle_bin" ]; then
-      env -u CI tools/moon-local run pipeline:build -- --release -p census-store \
-        --features native-fault-injection --example receipt-oracle || return 1
-    fi
-    if [ ! -x "$plain_bin" ]; then
-      echo "durability: portable census-serve missing at $plain_bin; run pipeline:build-portable"
-      return 1
-    fi
     if [ ! -f "$vm_captures" ]; then
       echo "durability: native VM captures missing at $vm_captures"
       return 1
     fi
+    env -u CI tools/moon-local run pipeline:build -- --release \
+      -p census-service -p census-store \
+      --features census-service/native-fault-injection,census-store/native-fault-injection \
+      --bin census-serve --example qualification_native_vm --example receipt-oracle || return 1
+    env -u CI tools/moon-local run pipeline:build-portable || return 1
     local scratch
     scratch="$(durability_scratch)" || return 1
     printf 'durability: scratch %s admin=%s service=%s\n' "$scratch" "$admin_port" "$service_port"
