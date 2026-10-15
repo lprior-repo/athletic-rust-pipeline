@@ -3,6 +3,7 @@ use census_domain::public_identity_history::{PublicAthleteId, RegistryHead};
 mod authority;
 mod codec;
 mod commit;
+mod context;
 mod init;
 mod inventory;
 pub(crate) mod qualification;
@@ -10,6 +11,8 @@ mod witness;
 
 pub(crate) const LIFECYCLE: u32 =
     census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_LIFECYCLE;
+pub(crate) const RETAINED_CONTEXT_LIFECYCLE: u32 =
+    census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_V2_LIFECYCLE;
 pub(crate) const OPERATION_PREFIX: &str = "public_identity_v1:";
 const DECLARATION: &str = "public_identity:v1:qualification";
 const HEAD: &str = "public_identity:v1:head";
@@ -18,6 +21,10 @@ pub const MAX_PUBLIC_IDENTITY_HISTORY_BYTES: usize = 16 * 1024 * 1024;
 
 pub(crate) use qualification::{preflight_keyspaces, require_legacy, validate};
 pub use qualification::{PublicIdentityQualificationStore, PublicIdentityWriterV1};
+
+pub(crate) fn is_qualification_lifecycle(revision: Option<u32>) -> bool {
+    matches!(revision, Some(LIFECYCLE | RETAINED_CONTEXT_LIFECYCLE))
+}
 
 pub(crate) fn refuse_reserved(value: &str) -> crate::StoreResult<()> {
     if value.starts_with("public_identity") {
@@ -31,7 +38,7 @@ pub(crate) fn refuse_identity_write(
     table: crate::Table,
 ) -> crate::StoreResult<()> {
     if table == crate::Table::AthleteIdentityDecisions
-        && store.store_format()?.lifecycle_revision == Some(LIFECYCLE)
+        && is_qualification_lifecycle(store.store_format()?.lifecycle_revision)
     {
         return Err(PublicIdentityError::ReservedWrite.into());
     }
@@ -44,6 +51,11 @@ pub enum PublicIdentityError {
     ExistingRoot,
     #[error("public identity qualification requires its explicit opener")]
     OptInRequired,
+    #[error("public identity qualification requires {expected:?}, found {found:?}")]
+    QualificationVersionMismatch {
+        expected: census_domain::public_identity_qualification::PublicIdentityQualificationVersion,
+        found: census_domain::public_identity_qualification::PublicIdentityQualificationVersion,
+    },
     #[error("public identity capability belongs to another store")]
     ForeignStore,
     #[error("public identity ledger is missing or inconsistent: {0}")]

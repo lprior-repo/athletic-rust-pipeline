@@ -4,6 +4,8 @@ use sha2::{Digest, Sha256};
 
 use super::error::StoreError;
 
+pub(crate) mod context;
+
 pub(super) const JOURNAL_CHUNK_VERSION: u8 = 1;
 
 pub(super) const MANIFEST_TYPE: &str = "chunked-manifest";
@@ -222,4 +224,13 @@ fn object_key(segment: &[u8], object: &str, ordinal: Option<usize>) -> Result<Ve
         out.extend_from_slice(&encoded.to_be_bytes());
     }
     Ok(out)
+}
+
+pub(crate) fn refuse_object_namespace(phase: &str) -> Result<(), StoreError> {
+    if phase == "j2" || phase.starts_with("j2\0") {
+        return Err(StoreError::Refused {
+            detail: "journal object namespace requires its immutable owned writer".into(),
+        });
+    }
+    Ok(())
 }

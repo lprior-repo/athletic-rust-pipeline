@@ -1,15 +1,36 @@
+#[cfg(feature = "native-fault-injection")]
+mod native;
+
 use super::{
-    authority, codec, qualification::Ledger, witness, IdentityCommitOutcomeV1, PublicIdentityError,
+    authority, codec, context, witness, IdentityCommitOutcomeV1, PublicIdentityError,
     PublicIdentityWriterV1, HEAD, HISTORY, MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
 };
 use crate::clock::{Clock, SystemClock};
 use crate::{Store, StoreError, StoreResult, StoreRevision, Table};
-use census_domain::model::{serialized_digest, AthleteCandidateId};
+use census_domain::model::{
+    serialized_digest, AcceptedAthleteIdentity, AthleteCandidateId, SourceIdentity,
+};
 use census_domain::public_identity_history::{
     prepare_next, BindingClaim, CandidateDecisionReference, EffectiveScope, HistoryRequest,
     PublicResolution, RegistryHead, ReplayLimits, SourceObjectKey,
 };
 use fjall::PersistMode;
+
+struct Pending<'a, 's> {
+    operation: &'a str,
+    candidate: &'a AthleteCandidateId,
+    digest: String,
+    expected: StoreRevision<'s>,
+    head: &'a RegistryHead,
+}
+
+struct Prepared<'s> {
+    snapshot: crate::StoreSnapshot<'s>,
+    accepted: AcceptedAthleteIdentity,
+    source: SourceIdentity,
+    context_root: String,
+    at: String,
+}
 
 impl PublicIdentityWriterV1 {
     pub fn establish_source_bound(
@@ -27,6 +48,7 @@ impl PublicIdentityWriterV1 {
         if let Some(outcome) = repeated(store, operation, &digest, &ledger)? {
             return Ok(outcome);
         }
+        self.require_current_qualification()?;
         expected.ensure_current(store, operation)?;
         if head != ledger.history.projection().head() {
             return Err(PublicIdentityError::HeadMoved.into());
@@ -41,20 +63,76 @@ impl PublicIdentityWriterV1 {
         ) {
             return Err(PublicIdentityError::AlreadyBound.into());
         }
-        self.commit_first(store, operation, candidate, digest, ledger)
+        drop(_guard);
+        self.commit_first(
+            store,
+            Pending {
+                operation,
+                candidate,
+                digest,
+                expected,
+                head,
+            },
+        )
+    }
+
+    fn prepare<'s>(
+        &self,
+        store: &'s Store,
+        candidate: &AthleteCandidateId,
+    ) -> StoreResult<Prepared<'s>> {
+        let snapshot = store.snapshot();
+        let inputs = context::Inputs::capture(&snapshot)?;
+        let at = SystemClock.today_iso8601();
+        let (accepted, source) = authority::accept_inputs(&inputs, candidate, &at)?;
+        let retained = inputs.stage(store, &self.identity)?;
+        Ok(Prepared {
+            snapshot,
+            accepted,
+            source,
+            context_root: retained.object_id().to_owned(),
+            at,
+        })
     }
 
     fn commit_first(
         &self,
         store: &Store,
-        operation: &str,
-        candidate: &AthleteCandidateId,
-        digest: String,
-        ledger: Ledger,
+        pending: Pending<'_, '_>,
     ) -> StoreResult<IdentityCommitOutcomeV1> {
-        let snapshot = store.snapshot_locked();
-        let at = SystemClock.today_iso8601();
-        let (accepted, source) = authority::accept(&snapshot, candidate, &at)?;
+        let prepared = self.prepare(store, pending.candidate)?;
+        let _guard = store.lock_appends();
+        let ledger = self.verified(store)?;
+        if let Some(outcome) = repeated(store, pending.operation, &pending.digest, &ledger)? {
+            return Ok(outcome);
+        }
+        pending.expected.ensure_current(store, pending.operation)?;
+        if pending.head != ledger.history.projection().head() {
+            return Err(PublicIdentityError::HeadMoved.into());
+        }
+        self.commit_prepared(store, pending, prepared, ledger)
+    }
+
+    fn commit_prepared(
+        &self,
+        store: &Store,
+        pending: Pending<'_, '_>,
+        material: Prepared<'_>,
+        ledger: super::qualification::Ledger,
+    ) -> StoreResult<IdentityCommitOutcomeV1> {
+        let Pending {
+            operation,
+            candidate,
+            digest,
+            ..
+        } = pending;
+        let Prepared {
+            snapshot,
+            accepted,
+            source,
+            context_root,
+            at,
+        } = material;
         let evidence = CandidateDecisionReference::from_accepted(&accepted, ReplayLimits::SMALL)
             .map_err(PublicIdentityError::from)?;
         let binding = source_binding(candidate, source, &digest);
@@ -76,6 +154,7 @@ impl PublicIdentityWriterV1 {
             &snapshot,
             &prepared,
             accepted.record(),
+            &context_root,
         )?;
         let outcome = witness.outcome(&prepared.uncommitted_record, false)?;
         records
@@ -98,7 +177,7 @@ impl PublicIdentityWriterV1 {
     }
 }
 
-fn source_binding(
+pub(super) fn source_binding(
     candidate: &AthleteCandidateId,
     source: census_domain::model::SourceIdentity,
     digest: &str,
@@ -119,7 +198,7 @@ fn repeated(
     store: &Store,
     operation: &str,
     digest: &str,
-    ledger: &Ledger,
+    ledger: &super::qualification::Ledger,
 ) -> StoreResult<Option<IdentityCommitOutcomeV1>> {
     let snapshot = store.db.snapshot();
     let key = witness::receipt_key(operation);
@@ -192,39 +271,13 @@ fn persist(
     store.put_row_mark(&mut batch, Table::AthleteIdentityDecisions, rows);
     crate::generation::write_entities(&mut batch, &store.meta, generation);
     #[cfg(feature = "native-fault-injection")]
-    pause_before_commit(witness, &receipt, head.sequence)?;
+    native::pause_before_commit(witness, &receipt, head.sequence)?;
     batch
         .durability(Some(PersistMode::SyncData))
         .commit()
         .map_err(|source| StoreError::Write { source })?;
     store.generations.publish_entities(generation);
     #[cfg(feature = "native-fault-injection")]
-    pause_after_commit(witness, &receipt, head.sequence)?;
+    native::pause_after_commit(witness, &receipt, head.sequence)?;
     Ok(())
-}
-
-#[cfg(feature = "native-fault-injection")]
-fn pause_before_commit(
-    witness: &witness::Witness,
-    receipt: &crate::Receipt,
-    sequence: u64,
-) -> StoreResult<()> {
-    crate::native_worker_boundary::pause(
-        crate::native_worker_boundary::Position::PublicIdentityStagedBeforeCommit { sequence },
-        &witness.operation,
-        &receipt.digest,
-    )
-}
-
-#[cfg(feature = "native-fault-injection")]
-fn pause_after_commit(
-    witness: &witness::Witness,
-    receipt: &crate::Receipt,
-    sequence: u64,
-) -> StoreResult<()> {
-    crate::native_worker_boundary::pause(
-        crate::native_worker_boundary::Position::PublicIdentityCommittedBeforeReturn { sequence },
-        &witness.operation,
-        &receipt.digest,
-    )
 }

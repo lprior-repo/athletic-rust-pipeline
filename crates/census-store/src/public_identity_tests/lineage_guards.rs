@@ -48,7 +48,7 @@ fn refuses_lineage_replacement(route: GenericLineageWrite) -> TestResult {
     drop(store);
     let root = directory.path().join("identity");
     check!(eq; physical_state(&root)?, before);
-    let (store, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
     check!(eq; retained_state(&store)?, before);
     check!(eq; store.store_identity()?, identity);
     check!(eq; writer.head(&store)?, *committed.head());

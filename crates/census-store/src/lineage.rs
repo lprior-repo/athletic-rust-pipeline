@@ -33,7 +33,9 @@ pub(crate) fn refuse_qualification_write(store: &Store, phase: &str) -> StoreRes
             .strip_prefix(PHASE)
             .is_some_and(|suffix| suffix.starts_with('\0'));
     if in_namespace
-        && store.store_format()?.lifecycle_revision == Some(crate::public_identity::LIFECYCLE)
+        && crate::public_identity::is_qualification_lifecycle(
+            store.store_format()?.lifecycle_revision,
+        )
     {
         return Err(crate::PublicIdentityError::ReservedWrite.into());
     }
@@ -56,7 +58,7 @@ impl Store {
                     .lifecycle_revision
                     .is_some_and(|revision| {
                         revision == census_domain::model::CAPTURE_QUALIFICATION_LIFECYCLE
-                            || revision == crate::public_identity::LIFECYCLE
+                            || crate::public_identity::is_qualification_lifecycle(Some(revision))
                     }) =>
             {
                 Err(StoreLineageError::Missing.into())

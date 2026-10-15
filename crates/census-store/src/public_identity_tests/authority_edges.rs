@@ -62,7 +62,7 @@ fn public_identity_evidence_counter_exhaustion_preserves_exact_replay_and_refuse
     store.flush()?;
     drop(store);
     let root = directory.path().join("identity");
-    let (store, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
     check!(eq; store.evidence_generation(), u64::MAX);
     let before = retained_state(&store)?;
     let replayed = writer.establish_source_bound(
@@ -88,7 +88,7 @@ fn public_identity_evidence_counter_exhaustion_preserves_exact_replay_and_refuse
     check!(eq; writer.head(&store)?, committed.head().clone());
     check!(eq; retained_state(&store)?, before);
     drop(store);
-    let (store, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
     check!(eq; store.evidence_generation(), u64::MAX);
     check!(eq; writer.head(&store)?, committed.head().clone());
     check!(eq; retained_state(&store)?, before);

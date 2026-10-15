@@ -1,29 +1,39 @@
 use super::{
     Declaration, IdentityAcceptance, IdentityProtocol, PublicIdentityQualificationV1,
-    QualificationLifecycle,
+    PublicIdentityQualificationV2, QualificationLifecycle, RetainedAuthorityAcceptance,
 };
 use crate::model::StoreIdentity;
 use serde::de::{value::MapAccessDeserializer, Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer};
-use std::fmt;
+use std::{fmt, marker::PhantomData};
 
 impl<'de> Deserialize<'de> for PublicIdentityQualificationV1 {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        deserializer.deserialize_map(DeclarationVisitor)
+        deserializer
+            .deserialize_map(DeclarationVisitor(PhantomData))
+            .map(Self)
     }
 }
 
-struct DeclarationVisitor;
+impl<'de> Deserialize<'de> for PublicIdentityQualificationV2 {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer
+            .deserialize_map(DeclarationVisitor(PhantomData))
+            .map(Self)
+    }
+}
 
-impl<'de> Visitor<'de> for DeclarationVisitor {
-    type Value = PublicIdentityQualificationV1;
+struct DeclarationVisitor<const VERSION: u8, A>(PhantomData<A>);
+
+impl<'de, const VERSION: u8, A: Deserialize<'de>> Visitor<'de> for DeclarationVisitor<VERSION, A> {
+    type Value = Declaration<VERSION, A>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("a public identity qualification declaration object")
     }
 
     fn visit_map<M: MapAccess<'de>>(self, map: M) -> Result<Self::Value, M::Error> {
-        Declaration::deserialize(MapAccessDeserializer::new(map)).map(PublicIdentityQualificationV1)
+        Declaration::deserialize(MapAccessDeserializer::new(map))
     }
 }
 
@@ -73,6 +83,16 @@ impl<'de> Deserialize<'de> for IdentityAcceptance {
             deserializer,
             "source_bound_establishment_v1",
             Self::SourceBoundEstablishmentV1,
+        )
+    }
+}
+
+impl<'de> Deserialize<'de> for RetainedAuthorityAcceptance {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        fixed_text(
+            deserializer,
+            "retained_authority_context_v2",
+            Self::RetainedAuthorityContextV2,
         )
     }
 }

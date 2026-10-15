@@ -9,7 +9,7 @@ use super::*;
 fn public_identity_legacy_projection_entrypoints_refuse_empty_and_unestablished_stores(
 ) -> TestResult {
     let (_directory, store, writer) = fixture()?;
-    check!(eq; store.store_format()?.lifecycle_revision, Some(5));
+    check!(eq; store.store_format()?.lifecycle_revision, Some(6));
     check!(eq; writer.head(&store)?.sequence, 0);
     refused_entrypoints(&store, &store.snapshot())?;
     let athlete = subject("unestablished-projection", "704")?;

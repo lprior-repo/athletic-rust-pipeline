@@ -23,6 +23,8 @@ pub(super) struct Witness {
     pub decision_id: String,
     pub decision_digest: String,
     pub public_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authority_context: Option<String>,
 }
 
 pub(super) fn request_digest(
@@ -50,6 +52,27 @@ pub(super) fn receipt_key(operation: &str) -> String {
 }
 
 impl Witness {
+    #[cfg(test)]
+    pub(super) fn version(&self) -> u32 {
+        self.version
+    }
+
+    pub(super) fn require_qualification_version(
+        &self,
+        version: census_domain::public_identity_qualification::PublicIdentityQualificationVersion,
+    ) -> StoreResult<()> {
+        if self.version != version.witness_version() {
+            return Err(
+                PublicIdentityError::Corrupt("witness qualification version mismatch").into(),
+            );
+        }
+        match (self.version, self.authority_context.as_deref()) {
+            (1, None) => Ok(()),
+            (2, Some(root)) if crate::journal::is_object_id(root) => Ok(()),
+            _ => Err(PublicIdentityError::Corrupt("authority context version binding").into()),
+        }
+    }
+
     pub(super) fn new(
         operation: &str,
         candidate: &AthleteCandidateId,
@@ -57,12 +80,13 @@ impl Witness {
         snapshot: &crate::StoreSnapshot<'_>,
         prepared: &census_domain::public_identity_history::PreparedHistoryRecord,
         decision: &AppliedAthleteIdentity,
+        authority_context: &str,
     ) -> StoreResult<Self> {
         let [public_id] = prepared.established_ids.as_slice() else {
             return Err(PublicIdentityError::Corrupt("establishment cardinality").into());
         };
         Ok(Self {
-            version: 1,
+            version: 2,
             operation: operation.to_owned(),
             candidate: candidate.to_string(),
             request_digest: digest,
@@ -73,6 +97,7 @@ impl Witness {
             decision_id: decision.id.clone(),
             decision_digest: serialized_digest(decision)?,
             public_id: public_id.as_str().to_owned(),
+            authority_context: Some(authority_context.to_owned()),
         })
     }
 
@@ -95,7 +120,7 @@ impl Witness {
         let HistoryRequest::Establish { binding, evidence } = &record.request else {
             return Err(PublicIdentityError::Corrupt("unsupported acceptance operation").into());
         };
-        if self.version != 1
+        if !matches!(self.version, 1 | 2)
             || self.candidate != binding.candidate.as_str()
             || self.record_digest != record.digest
             || self.decision_id != evidence.application_id
@@ -112,9 +137,11 @@ impl Witness {
 pub(super) fn verify_rows(
     snapshot: &Snapshot,
     entities: &Keyspace,
+    journal: &Keyspace,
     receipts: &Keyspace,
     witness: &Witness,
     evidence: &census_domain::public_identity_history::CandidateDecisionReference,
+    binding: &census_domain::public_identity_history::BindingClaim,
 ) -> StoreResult<()> {
     let key = receipt_key(&witness.operation);
     let raw = codec::load(snapshot, receipts, &key, 65_536)?
@@ -155,6 +182,14 @@ pub(super) fn verify_rows(
             .map_err(PublicIdentityError::from)?
     {
         return Err(PublicIdentityError::Corrupt("accepted decision digest").into());
+    }
+    if let Some(root) = &witness.authority_context {
+        let source = super::context::verify_retained(snapshot, journal, root, &decision)?;
+        let expected =
+            super::commit::source_binding(&binding.candidate, source, &witness.request_digest);
+        if binding != &expected {
+            return Err(PublicIdentityError::Corrupt("retained authority source binding").into());
+        }
     }
     Ok(())
 }

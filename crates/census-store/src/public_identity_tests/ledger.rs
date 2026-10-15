@@ -21,7 +21,7 @@ fn public_identity_ledger_accepts_exact_encoded_byte_ceiling_and_refuses_one_mor
     store.flush()?;
     drop(store);
     let root = directory.path().join("identity");
-    let (store, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
     check!(eq; writer.head(&store)?, head);
     raw.push(b' ');
     store.meta.insert(HISTORY, &raw)?;
@@ -32,7 +32,7 @@ fn public_identity_ledger_accepts_exact_encoded_byte_ceiling_and_refuses_one_mor
         if bytes == raw.len() && max == MAX_PUBLIC_IDENTITY_HISTORY_BYTES));
     check!(eq; retained_state(&store)?, before);
     drop(store);
-    let error = refused(Store::open_public_identity_qualification_v1(&root))?;
+    let error = refused(Store::open_public_identity_qualification_v2(&root))?;
     check!(matches!(error, StoreError::RowTooLarge { bytes, max }
         if bytes == raw.len() && max == MAX_PUBLIC_IDENTITY_HISTORY_BYTES));
     check!(eq; physical_state(&root)?, before);
@@ -76,7 +76,7 @@ fn public_identity_structurally_valid_matched_group_is_not_accepted_by_source_on
     let before = retained_state(&store)?;
     drop(store);
     let root = directory.path().join("identity");
-    let error = refused(Store::open_public_identity_qualification_v1(&root))?;
+    let error = refused(Store::open_public_identity_qualification_v2(&root))?;
     check!(matches!(
         error,
         StoreError::PublicIdentity(PublicIdentityError::Corrupt(

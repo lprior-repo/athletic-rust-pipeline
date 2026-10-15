@@ -71,6 +71,7 @@ pub(crate) fn encode_entry<T: Serialize>(
 }
 
 fn checked_key(phase: &str, key: &str) -> StoreResult<Vec<u8>> {
+    crate::journal::refuse_object_namespace(phase)?;
     crate::acquisition::codec::reject_generic_phase(phase)?;
     crate::public_identity::refuse_reserved(phase)?;
     let bytes = phase

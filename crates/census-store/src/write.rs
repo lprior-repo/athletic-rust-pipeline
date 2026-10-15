@@ -119,6 +119,7 @@ impl Store {
         payload: &T,
     ) -> StoreResult<()> {
         crate::lineage::refuse_qualification_write(self, phase)?;
+        crate::journal::refuse_object_namespace(phase)?;
         crate::acquisition::codec::reject_generic_phase(phase)?;
         crate::public_identity::refuse_reserved(phase)?;
         let entry = serde_json::json!({

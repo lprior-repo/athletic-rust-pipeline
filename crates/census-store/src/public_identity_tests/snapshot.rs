@@ -82,7 +82,7 @@ fn public_identity_legacy_snapshot_has_no_accepted_ledger_and_allows_legacy_publ
 fn public_identity_qualification_snapshot_refuses_legacy_publication_before_and_after_commit(
 ) -> TestResult {
     let (_directory, store, writer) = fixture()?;
-    check!(eq; store.store_format()?.lifecycle_revision, Some(5));
+    check!(eq; store.store_format()?.lifecycle_revision, Some(6));
     let empty = store.snapshot();
     let before = retained_state(&store)?;
     check!(matches!(

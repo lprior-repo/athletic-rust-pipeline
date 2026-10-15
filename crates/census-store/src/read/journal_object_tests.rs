@@ -654,3 +654,6 @@ mod recovery;
 
 #[path = "journal_object_bounded_tests.rs"]
 mod bounded;
+
+#[path = "context_object_tests.rs"]
+mod context_object_tests;
