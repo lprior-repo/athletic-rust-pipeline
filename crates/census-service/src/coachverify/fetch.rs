@@ -1,11 +1,8 @@
 use census_crawl::convert::{
-    converter_files_capped, read_file_capped, CONVERTER_DEADLINE, CONVERTER_MAX_OUTPUT_BYTES,
+    converter_stdout_capped, CONVERTER_DEADLINE, CONVERTER_MAX_OUTPUT_BYTES,
 };
 use census_crawl::net::{FetchOptions, Fetcher};
 use census_domain::model::RawContactRow;
-use std::ffi::OsStr;
-use std::path::Path;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
@@ -99,8 +96,6 @@ pub fn body_text(body: &[u8], pdftotext: Option<&str>) -> String {
     String::from_utf8_lossy(body).into_owned()
 }
 
-static SCRATCH: AtomicU64 = AtomicU64::new(0);
-
 fn inflate_pdf(binary: &str, body: &[u8]) -> Option<String> {
     inflate_pdf_under(binary, body, CONVERTER_DEADLINE, CONVERTER_MAX_OUTPUT_BYTES)
 }
@@ -111,39 +106,9 @@ pub(crate) fn inflate_pdf_under(
     deadline: Duration,
     max_output: usize,
 ) -> Option<String> {
-    inflate_pdf_in(&std::env::temp_dir(), binary, body, deadline, max_output)
-}
-
-pub(crate) fn inflate_pdf_in(
-    scratch: &Path,
-    binary: &str,
-    body: &[u8],
-    deadline: Duration,
-    max_output: usize,
-) -> Option<String> {
-    let tag = format!(
-        "coachverify-{}-{}",
-        std::process::id(),
-        SCRATCH.fetch_add(1, Ordering::Relaxed)
-    );
-    let raw = scratch.join(format!("{tag}.pdf"));
-    let text = scratch.join(format!("{tag}.txt"));
-    let result = (|| -> Option<String> {
-        std::fs::write(&raw, body).ok()?;
-        converter_files_capped(
-            binary,
-            [OsStr::new("-q"), raw.as_os_str(), text.as_os_str()],
-            &text,
-            deadline,
-            max_output,
-        )
-        .ok()?;
-        let bytes = read_file_capped(&text, max_output).ok()?;
-        Some(String::from_utf8_lossy(&bytes).into_owned())
-    })();
-    std::fs::remove_file(&raw).ok();
-    std::fs::remove_file(&text).ok();
-    result
+    let bytes =
+        converter_stdout_capped(binary, ["-q", "-", "-"], body, deadline, max_output).ok()?;
+    Some(String::from_utf8_lossy(&bytes).into_owned())
 }
 
 async fn run_passes(

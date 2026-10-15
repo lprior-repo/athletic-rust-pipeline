@@ -515,72 +515,45 @@ fn union_staging_publishes_reconcilable_evidence() -> TestResult {
     Ok(())
 }
 
-fn scratch_script(tag: &str, body: &str) -> TestResult<PathBuf> {
+fn scratch_script(scratch: &Path, tag: &str, body: &str) -> TestResult<PathBuf> {
     use std::os::unix::fs::PermissionsExt;
 
-    let path = std::env::temp_dir().join(format!(
-        "coachverify-script-{}-{tag}.sh",
-        std::process::id()
-    ));
+    let path = scratch.join(format!("{tag}.sh"));
     std::fs::write(&path, body)?;
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755))?;
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700))?;
     Ok(path)
-}
-
-fn scratch_dir(tag: &str) -> TestResult<PathBuf> {
-    let path =
-        std::env::temp_dir().join(format!("coachverify-scratch-{}-{tag}", std::process::id()));
-    std::fs::remove_dir_all(&path).ok();
-    std::fs::create_dir_all(&path)?;
-    Ok(path)
-}
-
-fn assert_scratch_empty(scratch: &Path) -> TestResult {
-    check!(
-        std::fs::read_dir(scratch)?.next().is_none(),
-        "the coach converter must leave no scratch files in {}",
-        scratch.display()
-    );
-    Ok(())
 }
 
 #[test]
-fn an_over_cap_coach_converter_refuses_and_leaves_no_scratch_files() -> TestResult {
+fn an_over_cap_coach_converter_refuses_while_admitted_output_survives() -> TestResult {
+    let scratch = tempfile::tempdir()?;
     let converter = scratch_script(
+        scratch.path(),
         "over-cap",
-        "#!/bin/sh\nhead -c 300000 /dev/zero | tr '\\0' 'a' > \"$3\"\n",
+        "#!/bin/sh\nhead -c 300000 /dev/zero | tr '\\0' 'a'\n",
     )?;
-    let scratch = scratch_dir("over-cap")?;
     let binary = converter.to_string_lossy().into_owned();
     let body = b"%PDF-1.4 coach body";
-    let refused =
-        super::fetch::inflate_pdf_in(&scratch, &binary, body, Duration::from_secs(60), 4096);
+    let refused = super::fetch::inflate_pdf_under(&binary, body, Duration::from_secs(60), 4096);
     check!(
         refused.is_none(),
         "converted text over the cap must be refused: {refused:?}"
     );
-    assert_scratch_empty(&scratch)?;
     let inflated =
-        super::fetch::inflate_pdf_in(&scratch, &binary, body, Duration::from_secs(60), 1_048_576);
-    check!(
-        eq;
-        inflated.as_deref().map(str::len),
-        Some(300_000),
-        "conversion under the cap is retained: {inflated:?}"
-    );
-    assert_scratch_empty(&scratch)?;
-    std::fs::remove_dir_all(&scratch)?;
-    std::fs::remove_file(&converter)?;
+        super::fetch::inflate_pdf_under(&binary, body, Duration::from_secs(60), 1_048_576)
+            .ok_or("bounded converter refused admitted output")?;
+    check!(eq; inflated.len(), 300_000);
+    check!(inflated.bytes().all(|byte| byte == b'a'));
+    scratch.close()?;
     Ok(())
 }
 
 #[test]
-fn a_stalled_coach_converter_refuses_at_its_deadline_and_leaves_no_scratch_files() -> TestResult {
-    let converter = scratch_script("stall", "#!/bin/sh\nexec sleep 300\n")?;
-    let scratch = scratch_dir("stall")?;
+fn a_stalled_coach_converter_refuses_at_its_deadline() -> TestResult {
+    let scratch = tempfile::tempdir()?;
+    let converter = scratch_script(scratch.path(), "stall", "#!/bin/sh\nexec sleep 300\n")?;
     let started = Instant::now();
-    let refused = super::fetch::inflate_pdf_in(
-        &scratch,
+    let refused = super::fetch::inflate_pdf_under(
         &converter.to_string_lossy(),
         b"%PDF-1.4 coach body",
         Duration::from_millis(200),
@@ -594,9 +567,7 @@ fn a_stalled_coach_converter_refuses_at_its_deadline_and_leaves_no_scratch_files
         started.elapsed() < Duration::from_secs(20),
         "a stalled coach converter must be killed at its deadline"
     );
-    assert_scratch_empty(&scratch)?;
-    std::fs::remove_dir_all(&scratch)?;
-    std::fs::remove_file(&converter)?;
+    scratch.close()?;
     Ok(())
 }
 
@@ -756,3 +727,7 @@ fn reconciliation_work_budget_is_a_reported_error() -> TestResult {
     check!(eq; error.to_string(), "contact reconciliation work: 8000008 exceeds 8000000");
     Ok(())
 }
+
+#[cfg(unix)]
+#[path = "tests/pdf_security.rs"]
+mod pdf_security;
