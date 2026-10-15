@@ -1425,3 +1425,18 @@ These results qualify the recovery scope only, not release or the national run.
   fully qualified worktree paths in edit headers, not only in reads.
 - This closes the CLI boundary evidence gap only. Archive activity measures immutable
   metadata/body growth, not physical request counts or national completeness.
+
+## 2026-10-15 — private bounded-index integration checkpoint
+
+- Private `current-v2-integration-20261015` Moon `4d7520a1`, Nextest
+  `c6181942-a2a8-4839-a247-72654715e183`: 944 Domain tests passed, none skipped.
+  This followed a failed checkpoint (`c3663e88`): the resource-test module path and
+  borrowed constructor lifetime were corrected; no assertions were weakened.
+- Actual consumer run `5def11ea` used bounded school construction and standalone
+  quota leases: three schools, correct abbreviation resolution, ambiguous same-name
+  schools in different cities, and explicit admission refusal. Retained bytes were
+  1,606; all standalone leases released to zero. Smoke source:
+  `var/review-bounded-index-20261015/smoke.rs`; throwaway example removed.
+- Four unused roster-helper warnings remain for caller cutover. These results do
+  not establish Service admission, integrated Store behavior, release qualification,
+  or national readiness. The implementation remains private and unmerged.
