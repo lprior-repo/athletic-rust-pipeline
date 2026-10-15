@@ -46,7 +46,7 @@ pub(super) fn read(
 }
 
 fn rows<T: DeserializeOwned>(
-    records: &mut crate::JournalRecords<'_, '_>,
+    records: &mut crate::read::JournalRecords<'_, '_>,
     kind: &str,
     count: usize,
 ) -> StoreResult<Vec<T>> {
@@ -64,14 +64,14 @@ fn rows<T: DeserializeOwned>(
     Ok(rows)
 }
 
-fn next_record(records: &mut crate::JournalRecords<'_, '_>) -> StoreResult<crate::JournalRecord> {
+fn next_record(records: &mut crate::read::JournalRecords<'_, '_>) -> StoreResult<crate::read::JournalRecord> {
     records
         .next()
         .ok_or_else(|| invalid("retained authority record missing"))?
 }
 
 fn value<T: DeserializeOwned>(
-    record: crate::JournalRecord,
+    record: crate::read::JournalRecord,
     key: &str,
     kind: &str,
 ) -> StoreResult<T> {
