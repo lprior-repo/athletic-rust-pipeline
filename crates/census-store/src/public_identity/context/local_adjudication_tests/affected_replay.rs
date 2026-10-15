@@ -147,23 +147,37 @@ fn graph_objects(
         reference.capture(),
         reference.seal(),
         |_, object| {
-            let mut rows = Vec::new();
+            let mut rows = std::collections::BTreeMap::new();
             graph_physical_rows(
                 &store.db.snapshot(),
                 &store.journal,
                 object,
                 |key, value| {
-                    rows.push(serde_json::json!({
+                    let row = serde_json::json!({
                         "key_base64": base64::engine::general_purpose::STANDARD.encode(key),
                         "value_base64": base64::engine::general_purpose::STANDARD.encode(value),
-                    }));
+                    });
+                    if rows.insert(key.to_vec(), row).is_some() {
+                        return Err(crate::PublicIdentityError::Corrupt(
+                            "duplicate expected graph physical row",
+                        )
+                        .into());
+                    }
                     Ok(())
                 },
             )?;
-            objects.insert(
-                object.root().as_str().to_owned(),
-                serde_json::json!({"reference": object, "rows": rows}),
-            );
+            let rows: Vec<_> = rows.into_values().collect();
+            let expected = serde_json::json!({"reference": object, "rows": rows});
+            if let Some(previous) =
+                objects.insert(object.root().as_str().to_owned(), expected.clone())
+            {
+                if previous != expected {
+                    return Err(crate::PublicIdentityError::Corrupt(
+                        "conflicting expected graph object",
+                    )
+                    .into());
+                }
+            }
             Ok(())
         },
     )?;

@@ -448,11 +448,13 @@ fn fabricated_full_count_is_corruption_and_never_valid_exhaustion() -> TestResul
     batch.durability(Some(PersistMode::SyncData)).commit()?;
     let baseline = store.db.snapshot();
     let sequence = store.snapshot().sequence();
-    capacity_refusal(preparation::load(
-        &store,
-        writer.store_identity(),
-        "missing-operation",
-    ))?;
+    match preparation::load(&store, writer.store_identity(), "missing-operation") {
+        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
+            "manual admission missing, corrupt, or exhausted",
+        ))) => (),
+        Err(error) => return Err(format!("unexpected refusal: {error}").into()),
+        Ok(_) => return Err("fabricated admission count accepted as valid".into()),
+    }
     unchanged(&store, &baseline, sequence)?;
     Ok(())
 }

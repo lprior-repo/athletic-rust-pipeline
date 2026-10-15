@@ -278,6 +278,7 @@ fn reservation_scan_limit(extra: usize) -> StoreResult<usize> {
 
 #[cfg(test)]
 pub(in crate::public_identity) fn enroll_header_for_test(store: &Store) -> StoreResult<()> {
+    let identity = store.store_identity()?;
     let _guard = store.lock_appends();
-    persist::enroll_empty(store, &store.store_identity()?)
+    persist::enroll_empty(store, &identity)
 }

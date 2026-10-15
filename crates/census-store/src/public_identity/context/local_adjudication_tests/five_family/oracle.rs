@@ -137,13 +137,14 @@ pub(super) fn withholding_claims(
             .find(|(_, row)| row.id.as_str() == candidate.as_str())
             .ok_or("membership athlete")?;
         let value = serde_json::to_value(athlete)?;
+        check!(athlete.identity_attestations.is_empty());
+        check!(value.get("identity_attestations").is_none());
         for path in [
             "/canonical_name",
             "/evidence/0",
             "/gender",
             "/grad_year",
             "/id",
-            "/identity_attestations",
             "/known_names/0",
             "/observed_grades",
             "/public_profile_urls",
@@ -195,7 +196,7 @@ pub(super) fn withholding_claims(
         claim_digest: serialized_digest(&value)?,
         retained_value: value,
     });
-    check!(eq; expected.len(), 29);
+    check!(eq; expected.len(), 27);
     check!(eq; claims, expected);
     Ok(id)
 }

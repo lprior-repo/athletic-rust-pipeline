@@ -15,6 +15,8 @@ pub use local_adjudication::{
 };
 pub(crate) mod frozen;
 mod init;
+#[cfg(test)]
+pub(crate) use init::create_historical_test_fixture;
 mod input_revisions;
 mod inventory;
 mod membership;
