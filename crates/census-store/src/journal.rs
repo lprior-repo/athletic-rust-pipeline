@@ -117,14 +117,6 @@ pub(super) fn object_digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
-pub(super) fn object_stream_digest(chunks: &[Vec<u8>]) -> String {
-    let mut hash = Sha256::new();
-    for chunk in chunks {
-        hash.update(chunk);
-    }
-    format!("{:x}", hash.finalize())
-}
-
 pub(super) fn decode_object_chunk(data: &str) -> Option<Vec<u8>> {
     BASE64_STANDARD.decode(data).ok()
 }
