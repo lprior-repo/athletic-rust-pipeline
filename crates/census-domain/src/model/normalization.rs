@@ -1,41 +1,64 @@
 pub fn normalize_name(raw: &str) -> String {
-    let lowered = raw.trim().to_lowercase();
-    let mut out = String::with_capacity(lowered.len());
-    for ch in lowered.chars() {
-        if ch.is_ascii_alphanumeric() {
-            out.push(ch);
-        } else if ch.is_whitespace()
-            || ch == '-'
-            || ch == '\''
-            || ch == '.'
-            || ch == ','
-            || ch == '/'
-        {
-            out.push(' ');
-        } else if !ch.is_ascii() {
-            if let Some(replacement) = strip_diacritic(ch) {
-                out.push(replacement);
+    let raw = raw.trim();
+    let mut out = String::with_capacity(raw.len());
+    let mut last_was_space = true;
+
+    for ch in raw.chars() {
+        for lc_ch in ch.to_lowercase() {
+            let out_ch = if lc_ch.is_ascii_alphanumeric() {
+                Some(lc_ch)
+            } else if lc_ch.is_whitespace()
+                || lc_ch == '-'
+                || lc_ch == '\''
+                || lc_ch == '.'
+                || lc_ch == ','
+                || lc_ch == '/'
+            {
+                Some(' ')
+            } else if !lc_ch.is_ascii() {
+                strip_diacritic(lc_ch)
+            } else {
+                None
+            };
+
+            if let Some(c) = out_ch {
+                if c == ' ' {
+                    if !last_was_space {
+                        out.push(' ');
+                        last_was_space = true;
+                    }
+                } else {
+                    out.push(c);
+                    last_was_space = false;
+                }
             }
         }
     }
-    let collapsed = out.split_whitespace().collect::<Vec<_>>().join(" ");
-    let mut parts: Vec<&str> = collapsed.split(' ').collect();
-    while strip_type_suffix(&mut parts) {}
-    parts.join(" ")
+
+    if let Some(prefix) = out.strip_suffix(' ') {
+        let length = prefix.len();
+        out.truncate(length);
+    }
+    while strip_type_suffix(&mut out) {}
+
+    out
 }
 
-fn strip_type_suffix(parts: &mut Vec<&str>) -> bool {
+fn strip_type_suffix(out: &mut String) -> bool {
     for suffix in [
-        "high school",
-        "hs",
-        "highschool",
-        "school",
-        "sr high",
-        "senior high",
+        " high school",
+        " hs",
+        " highschool",
+        " school",
+        " sr high",
+        " senior high",
     ] {
-        let tokens: Vec<&str> = suffix.split(' ').collect();
-        if parts.len() > tokens.len() && parts.ends_with(&tokens) {
-            parts.truncate(parts.len().saturating_sub(tokens.len()));
+        if let Some(prefix) = out.strip_suffix(suffix) {
+            if prefix.is_empty() {
+                continue;
+            }
+            let length = prefix.len();
+            out.truncate(length);
             return true;
         }
     }

@@ -668,3 +668,31 @@ Fifteen actual benchmark input/oracle files are SHA-256-identical between that c
 current code (`var/review-perf-reference-20261015/input-equality.json`). This does not explain
 the timing failures or qualify current performance. No threshold, fixture scope or Root
 performance baseline was changed.
+
+### Measured normalization simplification — 2026-10-15
+
+`normalize_name` now builds one output buffer and strips suffixes in place, removing the
+lowercased copy, token vectors and joins. Its signature and canonical matching rules remain
+unchanged; LSP identified 295 references before the change. Only the current implementation ships.
+
+Actual domain run `b219ac19` passed 777 tests, including 4,448,256 Unicode-scalar/context
+comparisons against the retained reference implementation. The temporary differential test was
+removed. Workspace run `c8c3f29e` passed 6,524 tests with six skips; formatting `e124b2e9`,
+check `fac928f8` and source Clippy `69320c09` passed. Existing argument-count advisories remain.
+
+The unchanged `census/school_index` Criterion workload used its default warmup, sample count and
+measurement interval, before `92c58157` and after `6b271e6a`:
+
+| Case | Before estimate, µs | After estimate, µs | Criterion reported time change |
+|---|---:|---:|---:|
+| `normalize_label` | 13.945 | 2.7609 | −80.37% |
+| `resolve_label` | 23.143 | 9.7260 | −58.16% |
+| `build_index` | 2.0856 | 2.1600 | +2.94%, regression |
+
+All three results are retained, including the regression; no threshold or performance baseline
+was changed. Sources, hashes and exercised results are under `var/review-normalization-20261015/`.
+This is not an allocation-count, whole-workload RSS, global performance or native-release verdict.
+R11–R14 and the current-only lifecycle cutover remain open.
+
+Strict debt ratchet `4cb2b367` passed without a baseline update: no gated metric grew and no
+production Rust file exceeded 300 lines. This scoped pass does not close the other release lanes.
