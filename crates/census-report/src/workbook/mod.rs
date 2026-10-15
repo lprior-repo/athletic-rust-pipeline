@@ -180,7 +180,7 @@ fn render_artifacts(
 struct Views<'a> {
     core: &'a Census,
     all_sources: &'a Census,
-    recruiting: &'a recruiting::Recruiting,
+    recruiting: &'a recruiting::Recruiting<'a>,
     derivation: &'a Derivation<'a>,
     population: &'a Derivation<'a>,
     school_year: census_domain::model::SchoolYear,
@@ -190,7 +190,7 @@ struct Views<'a> {
 impl<'a> Views<'a> {
     fn of(
         censuses: &'a Censuses,
-        recruiting: &'a recruiting::Recruiting,
+        recruiting: &'a recruiting::Recruiting<'a>,
         derivation: &'a Derivation<'a>,
         population: &'a Derivation<'a>,
         school_year: census_domain::model::SchoolYear,
@@ -248,7 +248,7 @@ fn write_objective_sheets(book: &mut Workbook, path: &Path, views: Views<'_>) ->
 fn write_recruiting_sheets(
     book: &mut Workbook,
     path: &Path,
-    recruiting: &recruiting::Recruiting,
+    recruiting: &recruiting::Recruiting<'_>,
 ) -> ReportResult<()> {
     let started = Instant::now();
     recruiting.write_athletes(book, path)?;
@@ -282,7 +282,7 @@ fn write_performance_sheets(
 fn write_coach_sheet(
     book: &mut Workbook,
     path: &Path,
-    recruiting: &recruiting::Recruiting,
+    recruiting: &recruiting::Recruiting<'_>,
 ) -> ReportResult<()> {
     let started = Instant::now();
     recruiting.write_coaches(book, path)?;
