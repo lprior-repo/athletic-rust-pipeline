@@ -5,7 +5,7 @@ use crate::athleticnet::meet::read::EventMetadata;
 use crate::athleticnet::meet::wire::{AllResults, EventDivisions, MeetData};
 use crate::athleticnet::Options;
 use crate::net::FetchOptions;
-use crate::{AdapterContext, CrawlResult, FLUSH_UNITS};
+use crate::{AdapterContext, CrawlResult};
 use census_domain::model::SourceRef;
 use census_domain::school_index::SchoolIndex;
 
@@ -19,7 +19,6 @@ impl MeetRun {
     ) -> CrawlResult<u64> {
         let mut rows: u64 = 0;
         let mut totals = MeetStats::default();
-        let mut units: usize = 0;
         for (processed, meet_id) in options.meets.iter().enumerate() {
             if options.meet_limit.is_some_and(|limit| processed >= limit) {
                 break;
@@ -38,6 +37,10 @@ impl MeetRun {
             let Some(documents) = documents else {
                 continue;
             };
+            let physical = AdapterContext {
+                observed_on: documents.results.fetched_at.clone(),
+                ..*ctx
+            };
             let (stored, counts) =
                 match self.absorb(&documents, source, index, ctx.performance_as_of) {
                     Ok(outcome) => outcome,
@@ -49,18 +52,14 @@ impl MeetRun {
                         self.report
                             .unfinished
                             .push(format!("meet {meet_id}: {error}"));
-                        self.flush(ctx)?;
+                        self.commit_accumulated(&physical)?;
                         continue;
                     }
                 };
             rows = rows.saturating_add(stored);
             totals.merge(&counts);
             urls.journal(stored, &mut self.pending);
-            units = units.saturating_add(1);
-            if units >= FLUSH_UNITS {
-                self.flush(ctx)?;
-                units = 0;
-            }
+            self.flush(&physical)?;
         }
         self.flush(ctx)?;
         note(&mut self.report, &totals, options.event_metadata);

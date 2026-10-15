@@ -71,13 +71,18 @@ impl MeetRun {
         if self.pending.is_empty() {
             return Ok(());
         }
+        self.commit_accumulated(ctx)
+    }
+
+    fn commit_accumulated(&mut self, ctx: &AdapterContext<'_>) -> CrawlResult<()> {
         let mut page = ctx.write_batch();
         let batch = store_accumulated(ctx, std::mem::take(&mut self.accumulated), &mut page)?;
-        self.batches.push(batch);
         for (url, payload) in self.pending.drain(..) {
             page.journal_done(MEET_COMPLETION_PHASE, &url, &payload)?;
         }
         page.commit()?;
+        self.batches.push(batch);
+        self.resolved.clear();
         Ok(())
     }
 }

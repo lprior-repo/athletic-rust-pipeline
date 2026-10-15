@@ -5,6 +5,9 @@ use std::time::Duration;
 
 type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
+#[path = "cache_hit_archive_tests.rs"]
+mod archive;
+
 fn offline_fetcher(root: &std::path::Path) -> Result<Fetcher, FetchError> {
     Ok(Fetcher::new(
         root,
