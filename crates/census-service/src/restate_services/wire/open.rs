@@ -54,6 +54,70 @@ pub struct SourceObjectInventory {
     pub unreadable: u64,
 }
 
+pub use census_crawl::net::ARCHIVE_ACTIVITY_METRIC_VERSION;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ArchiveUnmeasuredReason {
+    FenceBusy,
+    Missing,
+    LockIo,
+    Io,
+    UnexpectedLayout,
+    Corrupt,
+    Limit,
+    Unsupported,
+    StoreIdentityUnavailable,
+    Legacy,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArchiveCaptureEpoch {
+    pub store_identity: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub archive_dev: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub archive_ino: Option<u64>,
+    pub metric_version: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArchiveCaptureSample {
+    pub epoch: ArchiveCaptureEpoch,
+    pub started_at: String,
+    pub finished_at: String,
+    pub capture_documents: u64,
+    pub unique_body_files: u64,
+    pub unique_body_payload_bytes: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArchiveCaptureUnmeasured {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub epoch: Option<ArchiveCaptureEpoch>,
+    pub started_at: String,
+    pub finished_at: String,
+    pub reason: ArchiveUnmeasuredReason,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "state", rename_all = "snake_case")]
+pub enum ArchiveCaptureActivity {
+    Measured(ArchiveCaptureSample),
+    Unmeasured(ArchiveCaptureUnmeasured),
+}
+
+impl Default for ArchiveCaptureActivity {
+    fn default() -> Self {
+        Self::Unmeasured(ArchiveCaptureUnmeasured {
+            epoch: None,
+            started_at: String::new(),
+            finished_at: String::new(),
+            reason: ArchiveUnmeasuredReason::Legacy,
+        })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenWorkReply {
     pub season: String,
@@ -66,4 +130,6 @@ pub struct OpenWorkReply {
     pub silent_sources: Vec<String>,
     pub jurisdictions: Vec<JurisdictionOpen>,
     pub endpoints: Vec<SourceObjectOpen>,
+    #[serde(default)]
+    pub archive_capture_activity: ArchiveCaptureActivity,
 }

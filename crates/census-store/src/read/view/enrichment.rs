@@ -19,7 +19,7 @@ struct Enrichment<'a> {
 impl StoreSnapshot<'_> {
     pub fn enrich_athletes(&self, athletes: &mut [CanonicalAthlete]) -> StoreResult<()> {
         let mut enrichment = Enrichment::new(athletes, Admission::Legacy)?;
-        self.for_each_observation(Table::SourceObservations, |row| enrichment.accept(row))
+        self.for_each_observation(Table::SourceObservations, |row| enrichment.accept(&row))
     }
 
     pub fn enrich_athletes_bounded(
@@ -29,9 +29,20 @@ impl StoreSnapshot<'_> {
     ) -> StoreResult<ReadCounts> {
         let mut enrichment = Enrichment::new(athletes, Admission::bounded(budget))?;
         self.for_each_observation_bounded(Table::SourceObservations, budget, |row, _| {
-            enrichment.accept(row)
+            enrichment.accept(&row)
         })
     }
+}
+
+pub(crate) fn enrich_retained_observations(
+    athletes: &mut [CanonicalAthlete],
+    observations: &[SourceObservation],
+    budget: ReadBudget,
+) -> StoreResult<()> {
+    let mut enrichment = Enrichment::new(athletes, Admission::bounded(budget))?;
+    observations
+        .iter()
+        .try_for_each(|row| enrichment.accept(row))
 }
 
 impl<'a> Enrichment<'a> {
@@ -52,11 +63,11 @@ impl<'a> Enrichment<'a> {
         Ok(Self { owners, admission })
     }
 
-    fn accept(&mut self, row: SourceObservation) -> StoreResult<()> {
+    fn accept(&mut self, row: &SourceObservation) -> StoreResult<()> {
         let SourceObservation::Athlete(row) = row else {
             return Ok(());
         };
-        let Some(grade) = row.observed_grade else {
+        let Some(grade) = &row.observed_grade else {
             return Ok(());
         };
         let Some(targets) = self
@@ -68,19 +79,19 @@ impl<'a> Enrichment<'a> {
         };
         let count = targets
             .iter()
-            .filter(|grades| !grades.contains(&grade))
+            .filter(|grades| !grades.contains(grade))
             .count();
-        self.admission.additions(&grade, count)?;
+        self.admission.additions(grade, count)?;
         targets
             .iter_mut()
-            .filter(|grades| !grades.contains(&grade))
+            .filter(|grades| !grades.contains(grade))
             .try_for_each(|grades| grades.try_reserve(1).map_err(allocation))?;
-        let mut unmatched = targets.iter_mut().filter(|grades| !grades.contains(&grade));
+        let mut unmatched = targets.iter_mut().filter(|grades| !grades.contains(grade));
         if let Some(first) = unmatched.next() {
             for grades in unmatched {
                 grades.push(grade.clone());
             }
-            first.push(grade);
+            first.push(grade.clone());
         }
         Ok(())
     }

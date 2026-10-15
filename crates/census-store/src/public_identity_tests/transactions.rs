@@ -64,7 +64,7 @@ fn public_identity_committed_id_and_receipt_survive_reopen() -> TestResult {
     let before = retained_state(&store)?;
     drop(store);
     let root = directory.path().join("identity");
-    let (store, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
     check!(eq; store.store_identity()?, identity);
     check!(eq; writer.head(&store)?, committed.head().clone());
     let repeated = writer.establish_source_bound(
@@ -199,7 +199,7 @@ fn public_identity_writer_is_bound_to_one_live_store_origin() -> TestResult {
     let identity = store.store_identity()?;
     drop(store);
     let root = directory.path().join("identity");
-    let (reopened, _) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
+    let (reopened, _) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
     check!(eq; reopened.store_identity()?, identity);
     let before = retained_state(&reopened)?;
     let error = refused(writer.head(&reopened))?;

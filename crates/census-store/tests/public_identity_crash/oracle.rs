@@ -13,6 +13,30 @@ use super::fixture::{Fixture, OPERATION};
 use super::physical::{Rows, State};
 use super::TestResult;
 
+#[path = "authority_context.rs"]
+mod authority_context;
+
+pub(super) fn staged_delta(fixture: &Fixture, state: &State) -> TestResult {
+    for name in ["entities", "meta", "receipts"] {
+        check!(eq; state.rows(name)?, fixture.before.rows(name)?);
+    }
+    let context = authority_context::read(fixture, state)?;
+    let expected = context.extend_journal(fixture.before.rows("journal")?)?;
+    check!(eq; state.rows("journal")?, &expected);
+    Ok(())
+}
+
+pub(super) fn retained_context_unchanged(
+    fixture: &Fixture,
+    interrupted: &State,
+    recovered: &State,
+) -> TestResult {
+    let interrupted = authority_context::read(fixture, interrupted)?;
+    let recovered = authority_context::read(fixture, recovered)?;
+    check!(eq; recovered, interrupted);
+    Ok(())
+}
+
 pub(super) fn committed_delta(
     fixture: &Fixture,
     state: &State,
@@ -131,13 +155,20 @@ fn verify_witness_and_receipt(
     request_digest: &str,
     snapshot_sequence: u64,
 ) -> TestResult<String> {
-    let (key, raw) = sole_added(fixture.before.rows("journal")?, state.rows("journal")?)?;
-    check!(eq; key, b"public_identity_v1:00000000000000000001");
+    let context = authority_context::read(fixture, state)?;
+    let key = b"public_identity_v1:00000000000000000001";
+    let journal = state.rows("journal")?;
+    let raw = journal
+        .get(key.as_slice())
+        .ok_or("missing committed witness")?;
+    let mut expected_journal = context.extend_journal(fixture.before.rows("journal")?)?;
+    check!(expected_journal.insert(key.to_vec(), raw.clone()).is_none());
+    check!(eq; journal, &expected_journal);
     let witness: serde_json::Value = serde_json::from_slice(raw)?;
     let object = witness.as_object().ok_or("witness is not an object")?;
-    check!(eq; object.len(), 11);
+    check!(eq; object.len(), 12);
     for (name, expected) in [
-        ("version", serde_json::json!(1)),
+        ("version", serde_json::json!(2)),
         ("operation", serde_json::json!(OPERATION)),
         ("candidate", serde_json::json!(fixture.candidate)),
         ("request_digest", serde_json::json!(request_digest)),
@@ -151,6 +182,7 @@ fn verify_witness_and_receipt(
             serde_json::json!(serialized_digest(decision)?),
         ),
         ("public_id", serde_json::json!(outcome.public_id().as_str())),
+        ("authority_context", serde_json::json!(context.root)),
     ] {
         check!(eq; object.get(name), Some(&expected));
     }

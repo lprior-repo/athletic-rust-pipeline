@@ -39,11 +39,16 @@ impl Census {
             .ok_or_else(|| TerminalError::new("invalid open-work season"))?;
         let revision = census_reconcile::identity::Revision(request.revision);
         let store = Arc::clone(&self.store);
+        let clock = Arc::clone(&self.clock);
         let region = Arc::clone(self.jobs.region());
         let permit = self.jobs.permit_control().await?;
         super::blocking(region, move || {
             let _permit = permit;
-            super::open_work::inspect_store(&store, season, revision)
+            let started = clock.today_iso8601();
+            let mut evidence = super::open_work::inspect_store(&store, season, revision)?;
+            evidence.archive_capture_activity =
+                super::open_work::sample_archive_activity(&store, &started, &*clock);
+            Ok::<_, super::JobError>(evidence)
         })
         .await
         .map_err(job_error)

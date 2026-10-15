@@ -57,6 +57,7 @@ pub struct JournalObject<'s> {
     pub(super) bounds: ObjectBounds,
     pub(super) snapshot: fjall::Snapshot,
     pub(super) journal: &'s fjall::Keyspace,
+    pub(super) record_byte_limit: usize,
 }
 
 impl std::fmt::Debug for JournalObject<'_> {
@@ -87,6 +88,7 @@ impl<'s> JournalObject<'s> {
             bounds,
             snapshot,
             journal,
+            record_byte_limit: crate::journal::OBJECT_RECORD_BYTES_LIMIT,
         }
     }
 

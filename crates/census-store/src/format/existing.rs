@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 use fjall::Database;
 
 use crate::{Store, StoreError, StoreResult};
@@ -7,7 +8,7 @@ use crate::{Store, StoreError, StoreResult};
 #[derive(Clone, Copy)]
 pub(crate) enum OpenPurpose {
     LegacyExecution,
-    PublicIdentityExecution,
+    PublicIdentityExecution(PublicIdentityQualificationVersion),
     InstallationControl,
     CaptureControl,
     CaptureExecution(census_domain::model::CaptureProtocolVersion),
@@ -17,24 +18,18 @@ impl Store {
     pub fn open_public_identity_qualification_v1(
         root: impl AsRef<Path>,
     ) -> StoreResult<crate::PublicIdentityQualificationStore> {
-        let store = existing(
+        open_public_identity(
             root.as_ref(),
-            OpenPurpose::PublicIdentityExecution,
-            super::DEFAULT_CACHE_BYTES,
-        )?;
-        let ledger = crate::public_identity::validate(
-            &store.db.snapshot(),
-            &store.entities,
-            &store.meta,
-            &store.journal,
-            &store.receipts,
-            &store.store_format()?,
-        )?
-        .ok_or(crate::PublicIdentityError::OptInRequired)?;
-        Ok(crate::PublicIdentityQualificationStore::new(
-            store,
-            ledger.declaration.store_identity().clone(),
-        ))
+            PublicIdentityQualificationVersion::SourceBoundV1,
+        )
+    }
+    pub fn open_public_identity_qualification_v2(
+        root: impl AsRef<Path>,
+    ) -> StoreResult<crate::PublicIdentityQualificationStore> {
+        open_public_identity(
+            root.as_ref(),
+            PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
+        )
     }
     pub fn open_existing(root: impl AsRef<Path>) -> StoreResult<Self> {
         existing(
@@ -100,6 +95,30 @@ impl Store {
     }
 }
 
+fn open_public_identity(
+    root: &Path,
+    version: PublicIdentityQualificationVersion,
+) -> StoreResult<crate::PublicIdentityQualificationStore> {
+    let store = existing(
+        root,
+        OpenPurpose::PublicIdentityExecution(version),
+        super::DEFAULT_CACHE_BYTES,
+    )?;
+    let ledger = crate::public_identity::validate(
+        &store.db.snapshot(),
+        &store.entities,
+        &store.meta,
+        &store.journal,
+        &store.receipts,
+        &store.store_format()?,
+    )?
+    .ok_or(crate::PublicIdentityError::OptInRequired)?;
+    Ok(crate::PublicIdentityQualificationStore::new(
+        store,
+        &ledger.declaration,
+    ))
+}
+
 pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> StoreResult<Store> {
     existing_marker(root)?;
     let db = Database::builder(root.join(crate::DB_DIR))
@@ -118,10 +137,10 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
         &format,
     )?;
     match purpose {
-        OpenPurpose::PublicIdentityExecution if identity.is_none() => {
-            return Err(crate::PublicIdentityError::OptInRequired.into())
-        }
-        OpenPurpose::PublicIdentityExecution => {}
+        OpenPurpose::PublicIdentityExecution(expected) => identity
+            .as_ref()
+            .ok_or(crate::PublicIdentityError::OptInRequired)?
+            .require_version(expected)?,
         _ if identity.is_some() => return Err(crate::PublicIdentityError::OptInRequired.into()),
         _ => {}
     }
@@ -136,7 +155,7 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
     match purpose {
         OpenPurpose::LegacyExecution
         | OpenPurpose::InstallationControl
-        | OpenPurpose::PublicIdentityExecution => crate::acquisition::require_legacy(&capture)?,
+        | OpenPurpose::PublicIdentityExecution(_) => crate::acquisition::require_legacy(&capture)?,
         OpenPurpose::CaptureControl | OpenPurpose::CaptureExecution(_) if capture.is_none() => {
             return Err(crate::CaptureError::CaptureCapabilityMissing.into())
         }
@@ -205,7 +224,7 @@ fn finish_existing(
     match purpose {
         OpenPurpose::LegacyExecution
         | OpenPurpose::CaptureExecution(_)
-        | OpenPurpose::PublicIdentityExecution => {
+        | OpenPurpose::PublicIdentityExecution(_) => {
             crate::installation::require_legacy_execution(&state)?
         }
         OpenPurpose::InstallationControl | OpenPurpose::CaptureControl => {}
@@ -213,7 +232,7 @@ fn finish_existing(
     match purpose {
         OpenPurpose::LegacyExecution
         | OpenPurpose::CaptureExecution(_)
-        | OpenPurpose::PublicIdentityExecution => {
+        | OpenPurpose::PublicIdentityExecution(_) => {
             crate::ensure_dirs(root)?;
             Store::recover_opened(root.to_path_buf(), db, entities, journal, meta, receipts)
         }

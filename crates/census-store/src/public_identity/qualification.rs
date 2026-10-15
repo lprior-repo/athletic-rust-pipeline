@@ -1,15 +1,20 @@
 use super::{
-    codec, witness, PublicIdentityError, DECLARATION, HEAD, HISTORY, LIFECYCLE,
-    MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
+    codec, is_qualification_lifecycle, witness, PublicIdentityError, DECLARATION, HEAD, HISTORY,
+    LIFECYCLE, MAX_PUBLIC_IDENTITY_HISTORY_BYTES, RETAINED_CONTEXT_LIFECYCLE,
 };
 use crate::{Store, StoreError, StoreFormat, StoreResult};
 use census_domain::model::StoreIdentity;
 use census_domain::public_identity_history::{
     DecodedCandidateHistory, PublicResolution, RegistryHead,
 };
-use census_domain::public_identity_qualification::PublicIdentityQualificationV1;
-use fjall::{Database, Keyspace, Readable, Snapshot};
+use census_domain::public_identity_qualification::{
+    PublicIdentityQualification, PublicIdentityQualificationVersion,
+};
+use fjall::{Keyspace, Readable, Snapshot};
 use std::sync::{Arc, Mutex};
+
+mod preservation;
+pub(crate) use preservation::{preflight_keyspaces, validate_preservation};
 
 pub struct PublicIdentityQualificationStore {
     store: Store,
@@ -19,13 +24,15 @@ pub struct PublicIdentityQualificationStore {
 pub struct PublicIdentityWriterV1 {
     pub(super) origin: Arc<Mutex<()>>,
     pub(super) identity: StoreIdentity,
+    qualification: PublicIdentityQualificationVersion,
 }
 
 impl PublicIdentityQualificationStore {
-    pub(crate) fn new(store: Store, identity: StoreIdentity) -> Self {
+    pub(crate) fn new(store: Store, declaration: &PublicIdentityQualification) -> Self {
         let writer = PublicIdentityWriterV1 {
             origin: store.appends.clone(),
-            identity,
+            identity: declaration.store_identity().clone(),
+            qualification: declaration.version(),
         };
         Self { store, writer }
     }
@@ -35,6 +42,20 @@ impl PublicIdentityQualificationStore {
 }
 
 impl PublicIdentityWriterV1 {
+    pub fn qualification_version(&self) -> PublicIdentityQualificationVersion {
+        self.qualification
+    }
+    pub(super) fn require_current_qualification(&self) -> StoreResult<()> {
+        let expected = PublicIdentityQualificationVersion::RetainedAuthorityContextV2;
+        if self.qualification != expected {
+            return Err(PublicIdentityError::QualificationVersionMismatch {
+                expected,
+                found: self.qualification,
+            }
+            .into());
+        }
+        Ok(())
+    }
     pub fn store_identity(&self) -> &StoreIdentity {
         &self.identity
     }
@@ -55,7 +76,9 @@ impl PublicIdentityWriterV1 {
             &store.store_format()?,
         )?
         .ok_or(PublicIdentityError::ForeignStore)?;
-        if ledger.declaration.store_identity() != &self.identity {
+        if ledger.declaration.store_identity() != &self.identity
+            || ledger.declaration.version() != self.qualification
+        {
             return Err(PublicIdentityError::ForeignStore.into());
         }
         Ok(ledger)
@@ -63,8 +86,23 @@ impl PublicIdentityWriterV1 {
 }
 
 pub(crate) struct Ledger {
-    pub declaration: PublicIdentityQualificationV1,
+    pub declaration: PublicIdentityQualification,
     pub history: DecodedCandidateHistory,
+}
+
+impl Ledger {
+    pub(crate) fn require_version(
+        &self,
+        expected: PublicIdentityQualificationVersion,
+    ) -> StoreResult<()> {
+        let found = self.declaration.version();
+        if found != expected {
+            return Err(
+                PublicIdentityError::QualificationVersionMismatch { expected, found }.into(),
+            );
+        }
+        Ok(())
+    }
 }
 
 pub(crate) fn require_legacy(
@@ -74,7 +112,7 @@ pub(crate) fn require_legacy(
     receipts: &Keyspace,
     format: &StoreFormat,
 ) -> StoreResult<()> {
-    if format.lifecycle_revision == Some(LIFECYCLE)
+    if is_qualification_lifecycle(format.lifecycle_revision)
         || has_prefix(snapshot, meta, "public_identity")?
         || has_prefix(snapshot, journal, "public_identity")?
         || has_prefix(snapshot, receipts, "public_identity")?
@@ -92,7 +130,7 @@ pub(crate) fn validate(
     receipts: &Keyspace,
     format: &StoreFormat,
 ) -> StoreResult<Option<Ledger>> {
-    if format.lifecycle_revision != Some(LIFECYCLE) {
+    if !is_qualification_lifecycle(format.lifecycle_revision) {
         require_legacy(snapshot, meta, journal, receipts, format)?;
         return Ok(None);
     }
@@ -109,7 +147,13 @@ pub(crate) fn validate(
     validate_keys(snapshot, meta)?;
     let raw = codec::load(snapshot, meta, DECLARATION, 65_536)?
         .ok_or(PublicIdentityError::Corrupt("missing declaration"))?;
-    let declaration: PublicIdentityQualificationV1 = codec::decode(DECLARATION, &raw)?;
+    let declaration = match format.lifecycle_revision {
+        Some(LIFECYCLE) => PublicIdentityQualification::V1(codec::decode(DECLARATION, &raw)?),
+        Some(RETAINED_CONTEXT_LIFECYCLE) => {
+            PublicIdentityQualification::V2(codec::decode(DECLARATION, &raw)?)
+        }
+        _ => return Err(PublicIdentityError::Corrupt("qualification lifecycle").into()),
+    };
     match crate::lineage::read(snapshot, journal)? {
         crate::lineage::RetainedIdentity::Present(identity)
             if &identity == declaration.store_identity() => {}
@@ -122,7 +166,15 @@ pub(crate) fn validate(
         .ok_or(PublicIdentityError::Corrupt("missing history"))?;
     let history = codec::history(&raw, declaration.store_identity(), &head)?;
     super::inventory::validate(snapshot, entities, meta, history.records().len())?;
-    validate_witnesses(snapshot, entities, meta, journal, receipts, &history)?;
+    validate_witnesses(
+        snapshot,
+        entities,
+        meta,
+        journal,
+        receipts,
+        &history,
+        declaration.version(),
+    )?;
     Ok(Some(Ledger {
         declaration,
         history,
@@ -136,6 +188,7 @@ fn validate_witnesses(
     journal: &Keyspace,
     receipts: &Keyspace,
     history: &DecodedCandidateHistory,
+    version: PublicIdentityQualificationVersion,
 ) -> StoreResult<()> {
     witness::verify_count(snapshot, journal, history.records().len())?;
     witness::verify_count(snapshot, receipts, history.records().len())?;
@@ -158,9 +211,12 @@ fn validate_witnesses(
         let raw = codec::load(snapshot, journal, &key, 65_536)?
             .ok_or(PublicIdentityError::Corrupt("missing commit witness"))?;
         let held: witness::Witness = codec::decode(&key, &raw)?;
+        held.require_qualification_version(version)?;
         held.validate(record, &resolved.public_id)?;
         super::inventory::validate_witness_revision(snapshot, meta, &held)?;
-        witness::verify_rows(snapshot, entities, receipts, &held, evidence)?;
+        witness::verify_rows(
+            snapshot, entities, journal, receipts, &held, evidence, binding,
+        )?;
     }
     Ok(())
 }
@@ -196,68 +252,4 @@ fn has_prefix(snapshot: &Snapshot, table: &Keyspace, prefix: &str) -> StoreResul
         })
         .transpose()
         .map(|found| found.is_some())
-}
-
-pub(crate) fn preflight_keyspaces(db: &Database) -> StoreResult<()> {
-    let snapshot = db.snapshot();
-    let relevant = [crate::META, crate::JOURNAL, crate::RECEIPTS]
-        .into_iter()
-        .try_fold(false, |relevant, name| {
-            if !db.keyspace_exists(name) {
-                return Ok::<bool, StoreError>(relevant);
-            }
-            let keyspace = db
-                .keyspace(name, fjall::KeyspaceCreateOptions::default)
-                .map_err(|source| StoreError::Open { source })?;
-            let prefix = "public_identity";
-            let marked = has_prefix(&snapshot, &keyspace, prefix)?;
-            let lifecycle = if name == crate::META {
-                raw_lifecycle(&snapshot, &keyspace)?
-            } else {
-                None
-            };
-            Ok(relevant || marked || lifecycle == Some(LIFECYCLE))
-        })?;
-    if relevant {
-        crate::format::existing::require_keyspaces(db)?;
-    }
-    Ok(())
-}
-
-fn raw_lifecycle(snapshot: &Snapshot, meta: &Keyspace) -> StoreResult<Option<u32>> {
-    let key = crate::format::LIFECYCLE_REVISION_KEY;
-    let size = snapshot
-        .size_of(meta, key)
-        .map_err(|source| StoreError::Read { source })?;
-    if !size.is_some_and(|size| size <= 32) {
-        return Ok(None);
-    }
-    let raw = snapshot
-        .get(meta, key)
-        .map_err(|source| StoreError::Read { source })?;
-    Ok(raw
-        .as_ref()
-        .and_then(|raw| std::str::from_utf8(raw).ok())
-        .and_then(|value| value.trim().parse().ok()))
-}
-
-pub(crate) fn validate_preservation(
-    root: &std::path::Path,
-    db: &Database,
-    entities: &Keyspace,
-    meta: &Keyspace,
-    journal: &Keyspace,
-    receipts: &Keyspace,
-) -> StoreResult<()> {
-    let snapshot = db.snapshot();
-    if raw_lifecycle(&snapshot, meta)? != Some(LIFECYCLE)
-        && !has_prefix(&snapshot, meta, "public_identity")?
-        && !has_prefix(&snapshot, journal, "public_identity")?
-        && !has_prefix(&snapshot, receipts, "public_identity")?
-    {
-        return Ok(());
-    }
-    let format = crate::format::require_current(root, crate::format::read_format(meta)?)?;
-    validate(&snapshot, entities, meta, journal, receipts, &format)?;
-    Ok(())
 }

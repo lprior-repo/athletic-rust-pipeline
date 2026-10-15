@@ -1,7 +1,12 @@
+mod archive_activity;
 mod publication;
+pub(in crate::restate_services) use archive_activity::sample_archive_activity;
 
 use super::obligation;
-use crate::restate_services::{wire::SourceObjectOpen, JobError};
+use crate::restate_services::{
+    wire::{ArchiveCaptureActivity, SourceObjectOpen},
+    JobError,
+};
 use census_crawl::CollectionDisposition as Disposition;
 use census_domain::model::{
     CanonicalSchool, CensusRun, ContactResearch, ContactResearchOutcome, GradYear,
@@ -18,6 +23,7 @@ pub(crate) struct StoreEvidence {
     pub(super) objects: Vec<SourceObjectOpen>,
     pub(super) source_keys: StoreResult<Vec<String>>,
     pub(super) publication: Disposition,
+    pub(in crate::restate_services) archive_capture_activity: ArchiveCaptureActivity,
     contacts: Vec<ContactTally>,
     rosters: Vec<RosterTally>,
 }
@@ -95,6 +101,7 @@ pub(crate) fn inspect_store(
         objects: Vec::new(),
         source_keys: store.source_object_keys(super::MAX_OBJECTS, super::MAX_ENDPOINTS),
         publication: Disposition::Unknown,
+        archive_capture_activity: ArchiveCaptureActivity::default(),
         contacts,
         rosters: Vec::new(),
     };
