@@ -19,7 +19,7 @@ pub(crate) use envelope::EligibleCacheV2;
 mod quarantine;
 pub(in crate::net) mod recovery;
 
-const MAX_META_BYTES: usize = 64 * 1024;
+pub(super) const MAX_META_BYTES: usize = 64 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct CacheMeta {
@@ -89,7 +89,7 @@ pub(crate) fn content_digest(body: &[u8]) -> String {
     d.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn is_valid_hex64(s: &str) -> bool {
+pub(super) fn is_valid_hex64(s: &str) -> bool {
     s.len() == 64
         && s.bytes()
             .all(|byte| byte.is_ascii_digit() || matches!(byte, b'a'..=b'f'))
