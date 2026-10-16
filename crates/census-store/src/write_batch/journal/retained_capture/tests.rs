@@ -1,10 +1,12 @@
 use super::*;
 use chrono::{DateTime, SecondsFormat, Utc};
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 const KEY: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
 #[test]
-fn canonical_envelope_measurement_preserves_escaped_payload_size() -> StoreResult<()> {
+fn canonical_envelope_measurement_preserves_escaped_payload_size() -> TestResult {
     let payload =
         serde_json::json!({"escaped\"\\key": "\"\\\n\t", "unicode": "é", "rows": [1, true, null]});
     let mut entry = envelope(KEY, payload.clone());
@@ -19,7 +21,7 @@ fn canonical_envelope_measurement_preserves_escaped_payload_size() -> StoreResul
 }
 
 #[test]
-fn complete_envelope_accepts_exact_limit_and_refuses_next_byte() -> StoreResult<()> {
+fn complete_envelope_accepts_exact_limit_and_refuses_next_byte() -> TestResult {
     let capacity = MAX_RETAINED_CAPTURE_ENVELOPE_BYTES
         .checked_sub(envelope_overhead(KEY)?)
         .and_then(|bytes| bytes.checked_sub(2))
@@ -53,7 +55,7 @@ fn complete_envelope_accepts_exact_limit_and_refuses_next_byte() -> StoreResult<
 }
 
 #[test]
-fn refusal_is_sticky_even_after_small_write() -> StoreResult<()> {
+fn refusal_is_sticky_even_after_small_write() -> TestResult {
     let mut counter = Counter {
         bytes: MAX_RETAINED_CAPTURE_ENVELOPE_BYTES,
         refusal: None,
@@ -69,7 +71,7 @@ fn refusal_is_sticky_even_after_small_write() -> StoreResult<()> {
 }
 
 #[test]
-fn timestamp_allowance_covers_chrono_utc_extremes() {
+fn timestamp_allowance_covers_chrono_utc_extremes() -> TestResult {
     for instant in [DateTime::<Utc>::MIN_UTC, DateTime::<Utc>::MAX_UTC] {
         let timestamp = instant.to_rfc3339_opts(SecondsFormat::Secs, true);
         check!(timestamp.is_ascii());
@@ -78,10 +80,11 @@ fn timestamp_allowance_covers_chrono_utc_extremes() {
             .bytes()
             .all(|byte| byte != b'"' && byte != b'\\' && !byte.is_ascii_control()));
     }
+    Ok(())
 }
 
 #[test]
-fn malformed_key_refuses_before_payload_measurement() {
+fn malformed_key_refuses_before_payload_measurement() -> TestResult {
     let error = Store::check_retained_capture_entry_v1(
         RetainedCaptureRootSchemaV1::ProviderTargetPacketV1,
         "not-a-digest",
@@ -91,4 +94,5 @@ fn malformed_key_refuses_before_payload_measurement() {
         error,
         Err(StoreError::EvidenceSubjectAttachment(_))
     ));
+    Ok(())
 }
