@@ -26,6 +26,12 @@ mod derived;
 mod engine;
 mod entities;
 mod error;
+mod evidence_subject_attachment;
+pub use evidence_subject_attachment::{
+    EvidenceSubjectAttachmentStoreError, RetainedCaptureLeafKindV1, RetainedCaptureLeafV1,
+    RetainedCaptureRootReadV1, RetainedCaptureRootSchemaV1, RetainedCaptureRootV1,
+    RetainedCaptureSlotV1,
+};
 mod fence;
 mod format;
 pub mod fs;

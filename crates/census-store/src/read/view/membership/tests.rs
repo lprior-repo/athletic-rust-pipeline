@@ -3,6 +3,7 @@ use crate::journal::{chunk_key, chunk_value, manifest_value};
 use crate::{Store, StoreError, MAX_JOURNAL_VALUE_BYTES};
 use serde_json::json;
 
+mod admission;
 mod bounds;
 mod closure;
 mod descriptors;

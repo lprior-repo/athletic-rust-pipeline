@@ -1,5 +1,11 @@
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
+    #[error("evidence subject attachment: {0}")]
+    EvidenceSubjectAttachment(
+        #[from]
+        #[source]
+        crate::EvidenceSubjectAttachmentStoreError,
+    ),
     #[error(transparent)]
     PublicIdentity(#[from] crate::PublicIdentityError),
     #[error(transparent)]

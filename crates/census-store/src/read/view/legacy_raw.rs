@@ -1,3 +1,5 @@
+pub(crate) mod envelope;
+
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use serde_json::{value::RawValue, Map, Value};

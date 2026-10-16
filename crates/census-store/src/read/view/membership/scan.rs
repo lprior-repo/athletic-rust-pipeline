@@ -14,6 +14,23 @@ impl<'s> StoreSnapshot<'s> {
         budget: ReadBudget,
         mut visit: impl FnMut(&[u8], &[u8]) -> StoreResult<()>,
     ) -> StoreResult<JournalNamespaceFingerprint<'s>> {
+        self.scan_journal_namespace_with_admission(
+            namespace,
+            budget,
+            &mut (),
+            |_| Ok(()),
+            |_, key, raw| visit(key, raw),
+        )
+    }
+
+    pub(super) fn scan_journal_namespace_with_admission<G>(
+        &self,
+        namespace: JournalNamespace<'_>,
+        budget: ReadBudget,
+        state: &mut G,
+        mut admit_row: impl FnMut(&mut G) -> StoreResult<()>,
+        mut visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
+    ) -> StoreResult<JournalNamespaceFingerprint<'s>> {
         admit(budget)?;
         let prefix = namespace.physical_prefix()?;
         let mut physical = self.snapshot.prefix(self.journal, &prefix);
@@ -22,12 +39,13 @@ impl<'s> StoreSnapshot<'s> {
             let Some(guard) = physical.next() else {
                 return Ok(scan.finish(self));
             };
+            admit_row(state)?;
             scan.charge_visit()?;
             let (key, raw) = guard
                 .into_inner()
                 .map_err(|source| StoreError::Read { source })?;
             scan.accept(&key, &raw)?;
-            visit(&key, &raw)?;
+            visit(state, &key, &raw)?;
         }
         Err(namespace.refusal("namespace scan did not prove exhaustion"))
     }

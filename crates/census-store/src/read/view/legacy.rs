@@ -33,6 +33,17 @@ impl StoreSnapshot<'_> {
         })
     }
 
+    pub(crate) fn journal_entry_raw_bounded(
+        &self,
+        phase: &str,
+        key: &str,
+        budget: JournalReadBudget,
+    ) -> StoreResult<Option<super::JournalRawEnvelope>> {
+        self.legacy_payload_bounded(phase, key, budget, |path, what, raw| {
+            super::legacy_raw::envelope::entry(path, what, raw, budget)
+        })
+    }
+
     fn legacy_payload_bounded<T>(
         &self,
         phase: &str,

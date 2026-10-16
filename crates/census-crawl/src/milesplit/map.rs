@@ -17,7 +17,7 @@ mod owned;
 
 use events::record_event;
 use map_rows::record_row;
-pub(super) use owned::ProviderSchools;
+pub(crate) use owned::ProviderSchools;
 
 pub(super) struct OwnedResultSet<'a> {
     pub(super) capture: &'a FetchOutcome,

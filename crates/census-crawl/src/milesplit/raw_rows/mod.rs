@@ -3,6 +3,7 @@ use crate::{CrawlError, CrawlResult};
 use census_domain::model::{EventKind, Gender, Sport};
 use regex::Regex;
 
+use super::raw::located::{ProvisionalRawRowLocatorV1, SuccessfulRowVisitor};
 use super::{RawGradeIssue, RawGradeIssueKind, SourceRowLocator};
 
 mod columns;
@@ -66,7 +67,17 @@ pub(super) fn read_block(
     sport: Option<Sport>,
     base_offset: usize,
 ) -> CrawlResult<RawBlock> {
+    read_block_with_rows(block, sport, base_offset, &mut |_, _| Ok(()))
+}
+
+pub(super) fn read_block_with_rows(
+    block: &str,
+    sport: Option<Sport>,
+    base_offset: usize,
+    successful: &mut SuccessfulRowVisitor<'_>,
+) -> CrawlResult<RawBlock> {
     let mut reader = Reader {
+        successful,
         tags: tag_pattern()?,
         sport,
         columns: None,
@@ -84,7 +95,7 @@ pub(super) fn read_block(
             .ok()
             .and_then(|value| value.checked_add(1))
             .ok_or_else(locator_overflow)?;
-        reader.read(line, ordinal, offset);
+        reader.read(line, ordinal, offset)?;
         offset = offset
             .checked_add(raw_line.len())
             .ok_or_else(locator_overflow)?;
@@ -99,8 +110,9 @@ fn locator_overflow() -> CrawlError {
     }
 }
 
-struct Reader<'a> {
-    tags: &'a Regex,
+struct Reader<'a, 'v> {
+    successful: &'a mut SuccessfulRowVisitor<'v>,
+    tags: &'static Regex,
     sport: Option<Sport>,
     columns: Option<Columns>,
     sections: Vec<RawSection>,
@@ -110,24 +122,24 @@ struct Reader<'a> {
     qualified: bool,
 }
 
-impl Reader<'_> {
-    fn read(&mut self, raw_line: &str, ordinal: u32, offset: usize) {
+impl Reader<'_, '_> {
+    fn read(&mut self, raw_line: &str, ordinal: u32, offset: usize) -> CrawlResult<()> {
         let line = decode_line(raw_line, self.tags);
         if line.trim().is_empty() || line.trim_start().starts_with("====") {
-            return;
+            return Ok(());
         }
         if let Some(columns) = header_columns(&line) {
             self.columns = Some(columns);
             self.qualified = true;
-            return;
+            return Ok(());
         }
         if self.read_round(&line) {
-            return;
+            return Ok(());
         }
         if event_label(&line, self.sport) {
             self.sections.push(section_of(&line, self.sport));
             self.columns = None;
-            return;
+            return Ok(());
         }
         let Some(columns) = self.columns else {
             self.skipped.push(describe_skip(
@@ -136,8 +148,9 @@ impl Reader<'_> {
                 offset,
                 "no qualified column header",
             ));
-            return;
+            return Ok(());
         };
+        let event_index = self.sections.len().saturating_sub(1);
         let Some(section) = self.sections.last_mut() else {
             self.skipped.push(describe_skip(
                 raw_line,
@@ -145,7 +158,7 @@ impl Reader<'_> {
                 offset,
                 "row before any section header",
             ));
-            return;
+            return Ok(());
         };
         let cells = row_cells(&line, columns);
         match build_row(&cells, &section.kind) {
@@ -155,6 +168,14 @@ impl Reader<'_> {
                         self.grade_issues.push(issue);
                     }
                 }
+                let locator = ProvisionalRawRowLocatorV1::new(
+                    event_index,
+                    section.rows.len(),
+                    ordinal,
+                    offset,
+                    raw_line.len(),
+                );
+                (self.successful)(locator, &row)?;
                 section.rows.push(row);
                 self.rows_parsed = self.rows_parsed.saturating_add(1);
             }
@@ -162,6 +183,7 @@ impl Reader<'_> {
                 .skipped
                 .push(describe_skip(raw_line, ordinal, offset, reason)),
         }
+        Ok(())
     }
 
     fn read_round(&mut self, line: &str) -> bool {

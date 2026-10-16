@@ -176,7 +176,7 @@ impl PhysicalScan<'_> {
     }
 }
 
-fn read_admitted(
+pub(super) fn read_admitted(
     key_bytes: usize,
     size: Option<u32>,
     counts: &mut ReadCounts,
@@ -214,7 +214,12 @@ fn invariant(detail: &'static str) -> StoreError {
     }
 }
 
-fn charge(current: u64, added: u64, available: u64, what: &'static str) -> StoreResult<u64> {
+pub(super) fn charge(
+    current: u64,
+    added: u64,
+    available: u64,
+    what: &'static str,
+) -> StoreResult<u64> {
     let needed = current
         .checked_add(added)
         .ok_or(StoreError::CounterOverflow)?;

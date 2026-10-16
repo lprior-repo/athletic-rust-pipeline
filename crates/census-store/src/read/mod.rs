@@ -5,6 +5,10 @@ use std::path::Path;
 use super::keys::{key_label, observation_prefix, view_observation_key};
 use super::{Consolidated, Entity, Store, StoreError, StoreResult, StoreStats, Table};
 
+#[cfg(test)]
+mod attachment_envelope_tests;
+#[cfg(test)]
+mod attachment_receipt_tests;
 mod directory;
 mod identity;
 mod journal_budget;
@@ -23,6 +27,7 @@ mod source_objects;
 mod view;
 pub(crate) use view::enrich_retained_observations;
 pub(crate) use view::read_context_object;
+pub(crate) use view::JournalRawEnvelope;
 pub(crate) use view::JournalRawRecords;
 pub(crate) use view::RetainedEnrichment;
 pub(crate) use view::{accept_merged_row, publish_merged_row};

@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "captures": [
+    {
+      "label": "mi-team-index",
+      "requested_url": "https://mi.milesplit.com/teams",
+      "final_url": "https://mi.milesplit.com/teams",
+      "status": 200,
+      "request_method": "GET",
+      "request_headers": [
+        [
+          "User-Agent",
+          "OpenAI-research/0.1"
+        ],
+        [
+          "Accept",
+          "text/html"
+        ]
+      ],
+      "started_at": "2026-10-16T02:57:54Z",
+      "completed_at": "2026-10-16T02:58:00Z",
+      "content_type": "text/html; charset=UTF-8",
+      "body_encoding": "identity",
+      "files": [
+        {
+          "path": "mi-team-index.html",
+          "bytes": 293847,
+          "sha256": "39606bf8e07f0170138bb586ae8a762903bb820b515520e89e34745f6c732351"
+        },
+        {
+          "path": "mi-team-index.headers",
+          "bytes": 363,
+          "sha256": "799cbe37df707defdf67f43415d99fb74dfb8adc4ca3267c22d527007692e34c"
+        }
+      ]
+    },
+    {
+      "label": "dcc-provider-roster",
+      "requested_url": "https://mi.milesplit.com/teams/12439-detroit-catholic-central/roster",
+      "final_url": "https://mi.milesplit.com/teams/12439-detroit-catholic-central/roster",
+      "status": 200,
+      "request_method": "GET",
+      "request_headers": [
+        [
+          "User-Agent",
+          "OpenAI-research/0.1"
+        ],
+        [
+          "Accept",
+          "text/html"
+        ]
+      ],
+      "started_at": "2026-10-16T00:49:38Z",
+      "completed_at": "2026-10-16T00:49:43Z",
+      "content_type": "text/html; charset=UTF-8",
+      "body_encoding": "identity",
+      "files": [
+        {
+          "path": "dcc-provider-roster.html",
+          "bytes": 372977,
+          "sha256": "246374a87ba6d56802e58e54e4a1edcc5d1eee52106dedb24df185cbd037e178"
+        },
+        {
+          "path": "dcc-provider-roster.headers",
+          "bytes": 363,
+          "sha256": "48a19972dda40f5047fc4ac0843f5d56f95d34342ba27c74a95ed31edeac85a4"
+        }
+      ]
+    }
+  ],
+  "scope": "Original public directory and current provider roster source evidence. No person membership, enrollment, historical affiliation, official-school publisher, or campus address authority is asserted."
+}
