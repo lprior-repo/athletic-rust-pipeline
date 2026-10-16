@@ -22,7 +22,7 @@ impl<'s> Held<'s> {
             .map(|(phase, key)| {
                 let fingerprint = snapshot.journal_namespace_fingerprint(
                     JournalNamespace::new(&phase, &key)?,
-                    school_budget(),
+                    journal_namespace_budget(),
                 )?;
                 Ok((phase, key, fingerprint))
             })
@@ -38,7 +38,7 @@ impl<'s> Held<'s> {
         for (phase, key, before) in &self.physical {
             let after = snapshot.journal_namespace_fingerprint(
                 JournalNamespace::new(phase, key)?,
-                school_budget(),
+                journal_namespace_budget(),
             )?;
             check!(before.same_contents(store, &after)?);
         }
@@ -55,7 +55,7 @@ impl Logical {
             let mut keys = Vec::new();
             snapshot.for_each_journal_root_bounded(
                 JournalNamespace::new(&phase, &prefix)?,
-                school_budget(),
+                journal_namespace_budget(),
                 |key| {
                     keys.push(key.to_owned());
                     Ok(())
@@ -106,4 +106,12 @@ fn namespaces(sources: &Sources) -> Vec<(String, String)> {
         .collect::<Vec<_>>();
     namespaces.push(("evidence_subject".into(), "attachment/v1/record/".into()));
     namespaces
+}
+
+pub(super) fn journal_namespace_budget() -> ReadBudget {
+    ReadBudget {
+        rows: 25_000,
+        bytes: 32 * 1024 * 1024,
+        record_bytes: census_store::MAX_JOURNAL_VALUE_BYTES,
+    }
 }

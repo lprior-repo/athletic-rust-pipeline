@@ -99,15 +99,18 @@ pub(super) fn physical_inventory(store: &Store, sources: &Sources) -> TestResult
     let mut roots = Vec::new();
     for root in &sources.roots {
         let namespace = JournalNamespace::new(root.schema.phase(), &root.key)?;
-        let inventory =
-            snapshot.for_each_journal_root_bounded(namespace, school_budget(), |_| Ok(()))?;
+        let inventory = snapshot.for_each_journal_root_bounded(
+            namespace,
+            preservation::journal_namespace_budget(),
+            |_| Ok(()),
+        )?;
         roots.push(json!({"root":root, "logical_roots":inventory.logical_roots(),
             "physical_rows":inventory.fingerprint().physical_rows(), "physical_encoded_bytes":inventory.fingerprint().encoded_bytes(),
             "chunk_rows":inventory.fingerprint().physical_rows().checked_sub(inventory.logical_roots()).ok_or("chunk inventory underflow")?}));
     }
     let attachments = snapshot.for_each_journal_root_bounded(
         JournalNamespace::new("evidence_subject", "attachment/v1/record/")?,
-        school_budget(),
+        preservation::journal_namespace_budget(),
         |_| Ok(()),
     )?;
     Ok(
