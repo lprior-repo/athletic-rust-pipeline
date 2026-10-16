@@ -28,9 +28,12 @@ mod entities;
 mod error;
 mod evidence_subject_attachment;
 pub use evidence_subject_attachment::{
-    EvidenceSubjectAttachmentStoreError, RetainedCaptureLeafKindV1, RetainedCaptureLeafV1,
-    RetainedCaptureRootReadV1, RetainedCaptureRootSchemaV1, RetainedCaptureRootV1,
-    RetainedCaptureSlotV1,
+    AttachmentContextObjectV1, AttachmentInspectionRequestV1,
+    EvidenceSubjectAttachmentInspectionV1, EvidenceSubjectAttachmentPreparationV1,
+    EvidenceSubjectAttachmentStoreError, PreparedEvidenceSubjectAttachmentV1,
+    RetainedCaptureLeafKindV1, RetainedCaptureLeafV1, RetainedCaptureRootReadV1,
+    RetainedCaptureRootSchemaV1, RetainedCaptureRootV1, RetainedCaptureSlotV1,
+    RetainedEvidenceSubjectAttachmentReferencesV1,
 };
 mod fence;
 mod format;

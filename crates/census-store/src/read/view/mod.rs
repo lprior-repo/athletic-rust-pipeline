@@ -3,6 +3,7 @@ use crate::{Store, StoreError, StoreResult, Table};
 use fjall::{Readable, Snapshot};
 
 mod acquisition;
+mod attachment_inputs;
 mod bounded;
 mod bounded_page;
 pub use bounded_page::{PhysicalObservationCursor, PhysicalObservationPage};
@@ -29,7 +30,6 @@ pub(crate) use operations::enrich_retained_observations;
 pub(crate) use operations::RetainedEnrichment;
 mod public_identity;
 pub use public_identity::AcceptedPublicIdentitySnapshot;
-#[cfg(test)]
 mod receipt_prefix;
 mod regions;
 mod run;

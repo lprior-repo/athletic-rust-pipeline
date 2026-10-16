@@ -48,6 +48,14 @@ pub(super) fn validate_baseline(
 ) -> StoreResult<()> {
     let evidence = generation(snapshot, meta, crate::generation::ENTITIES)?;
     let derived = generation(snapshot, meta, crate::generation::DERIVED_CURRENT)?;
+    validate_baseline_values(token, evidence, derived)
+}
+
+pub(super) fn validate_baseline_values(
+    token: super::PublicIdentityInputRevisionTokenV2,
+    evidence: u64,
+    derived: u64,
+) -> StoreResult<()> {
     if token.baseline_evidence_generation > evidence || token.baseline_derived_generation > derived
     {
         return Err(invalid(

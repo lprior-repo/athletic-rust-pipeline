@@ -1,4 +1,5 @@
 use super::StoreSnapshot;
+mod component_claims;
 mod projection_check;
 use crate::{PublicIdentityError, StoreResult};
 use census_domain::model::{AthleteCandidateId, StoreIdentity};
@@ -75,6 +76,9 @@ impl AcceptedPublicIdentitySnapshot {
 }
 
 impl StoreSnapshot<'_> {
+    pub(crate) fn attachment_public_head(&self) -> StoreResult<RegistryHead> {
+        crate::public_identity::attachment_public_head(&self.snapshot, self.meta)
+    }
     pub fn accepted_public_identity_snapshot(
         &self,
     ) -> StoreResult<Option<AcceptedPublicIdentitySnapshot>> {

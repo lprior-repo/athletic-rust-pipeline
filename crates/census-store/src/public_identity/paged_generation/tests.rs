@@ -1,3 +1,4 @@
+mod attachment_binding;
 mod boundaries;
 mod corruption;
 mod hierarchy;

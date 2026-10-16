@@ -3,6 +3,7 @@ use crate::{StoreError, StoreResult, MAX_OPERATION_BYTES};
 use fjall::Readable;
 
 impl StoreSnapshot<'_> {
+    #[cfg(test)]
     pub(crate) fn visit_attachment_receipts_bounded(
         &self,
         prefix: &[u8],

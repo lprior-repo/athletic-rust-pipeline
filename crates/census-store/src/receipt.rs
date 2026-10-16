@@ -155,10 +155,23 @@ pub(super) fn decide(store: &Store, operation: &str, digest: &str) -> StoreResul
 }
 
 pub(super) fn first(operation: &str, digest: &str, appended: u64) -> Receipt {
+    first_on(operation, digest, appended, || SystemClock.today())
+}
+
+pub(super) fn first_at(
+    operation: &str,
+    digest: &str,
+    appended: u64,
+    at: chrono::DateTime<chrono::Utc>,
+) -> Receipt {
+    first_on(operation, digest, appended, || at.date_naive().to_string())
+}
+
+fn first_on(operation: &str, digest: &str, appended: u64, at: impl FnOnce() -> String) -> Receipt {
     Receipt {
         operation: operation.to_string(),
         digest: digest.to_string(),
-        at: SystemClock.today(),
+        at: at(),
         appended,
         credited: false,
     }
