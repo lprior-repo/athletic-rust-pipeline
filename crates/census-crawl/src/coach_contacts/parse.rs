@@ -24,14 +24,7 @@ pub(super) fn strip_honorific(value: &str) -> String {
     }
 }
 
-pub(super) fn nonempty(value: &str) -> Option<String> {
-    let value = value.trim();
-    if value.is_empty() {
-        None
-    } else {
-        Some(value.to_string())
-    }
-}
+pub(super) use crate::row_hygiene::nonempty;
 
 pub fn parse_sport(label: &str) -> Option<(Sport, Gender)> {
     let lowered = label.to_ascii_lowercase();

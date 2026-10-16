@@ -76,10 +76,7 @@ pub(super) fn clean_text(raw: &str) -> CrawlResult<String> {
     Ok(crate::row_hygiene::clean_text(&decoded))
 }
 
-pub(super) fn nonempty(value: &str) -> Option<String> {
-    let trimmed = value.trim();
-    (!trimmed.is_empty()).then(|| trimmed.to_string())
-}
+pub(super) use crate::row_hygiene::nonempty;
 
 pub(super) fn strip_honorific(value: &str) -> String {
     let mut parts: Vec<&str> = value.split_whitespace().collect();

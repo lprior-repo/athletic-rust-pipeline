@@ -5,6 +5,7 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 
 use super::wire::KshsaaRecord;
+use crate::row_hygiene::nonempty;
 
 pub fn parse_school(
     record: &KshsaaRecord,
@@ -87,14 +88,5 @@ fn strip_honorific(value: &str) -> String {
         value.trim().to_string()
     } else {
         parts.join(" ")
-    }
-}
-
-fn nonempty(value: &str) -> Option<String> {
-    let value = value.trim();
-    if value.is_empty() {
-        None
-    } else {
-        Some(value.to_string())
     }
 }

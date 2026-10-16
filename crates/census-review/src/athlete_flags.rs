@@ -140,7 +140,7 @@ fn cohort_flags(a: &CanonicalAthlete, b: &CanonicalAthlete) -> Vec<Flag> {
 
 fn subject_flags(a: &CanonicalAthlete, b: &CanonicalAthlete) -> Vec<Flag> {
     let mut flags = Vec::new();
-    if a.gender != b.gender && !census_domain::model::genders_compatible(a.gender, b.gender) {
+    if !census_domain::model::genders_compatible(a.gender, b.gender) {
         flags.push(Flag {
             kind: FlagKind::GenderDiffers,
             detail: format!(

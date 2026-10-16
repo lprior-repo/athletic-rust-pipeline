@@ -1,4 +1,4 @@
-use census_domain::model::performance_comparison::{mark_unit, Measure, PrKey, SurfaceClass};
+use census_domain::model::performance_comparison::{mark_unit, Measure, PrKey};
 use census_domain::model::{
     AthleteId, EventSpecification, Gender, Mark, PerformanceId, SourceRef, TimingMethod,
 };
@@ -109,7 +109,7 @@ impl SharedSelection {
     }
 
     pub fn event_label(&self) -> String {
-        self.key.event_kind.stable_key().into_owned()
+        self.event_key()
     }
 
     pub fn event_key(&self) -> String {
@@ -121,12 +121,7 @@ impl SharedSelection {
     }
 
     pub fn season(&self) -> &'static str {
-        match self.key.surface {
-            SurfaceClass::Indoor => "Winter",
-            SurfaceClass::Outdoor => "Spring",
-            SurfaceClass::CrossCountry => "Fall",
-            SurfaceClass::Unresolved => "Unresolved",
-        }
+        self.key.surface.season_label()
     }
 
     pub fn mark_text(&self) -> String {

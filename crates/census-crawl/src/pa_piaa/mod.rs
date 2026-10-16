@@ -22,14 +22,7 @@ pub fn details_url(school_id: &str) -> String {
     format!("{DETAILS_URL_PREFIX}{school_id}")
 }
 
-pub(crate) fn nonempty(value: &str) -> Option<String> {
-    let trimmed = value.trim();
-    if trimmed.is_empty() {
-        None
-    } else {
-        Some(trimmed.to_string())
-    }
-}
+pub(crate) use crate::row_hygiene::nonempty;
 
 pub use collect::{collect, Options};
 

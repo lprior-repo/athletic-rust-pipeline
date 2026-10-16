@@ -87,14 +87,7 @@ pub fn parse_staff(body: &str) -> CrawlResult<Vec<StaffPerson>> {
     Ok(people)
 }
 
-pub(super) fn nonempty(value: &str) -> Option<String> {
-    let trimmed = value.trim();
-    if trimmed.is_empty() {
-        None
-    } else {
-        Some(trimmed.to_string())
-    }
-}
+pub(super) use crate::row_hygiene::nonempty;
 
 pub fn parse_schools(body: &str) -> CrawlResult<Vec<SchoolRecord>> {
     let envelope: SchoolsEnvelope =
