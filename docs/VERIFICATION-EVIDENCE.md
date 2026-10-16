@@ -1798,3 +1798,62 @@ main interface approval still require implementation and qualification.
 No live Store was opened, reset or restarted; release/native/resource/source and
 UP/five-state/national acceptance remain separate outstanding obligations.
 
+### Actual-host funded storage producer — 2026-10-16
+
+Scope: public Domain `public_identity_history::funding` producer types and Service
+`Reservation::into_history_memory`. The opaque Service capability consumes the
+actual held reservation; zero-byte refusal returns its other resources. Borrowed
+non-Clone grants cannot outlive the owning budget. Bytes/text and slot backing
+retain their grants through data destruction, checked refusal, split and absorb.
+Slot funding does not claim ownership of arbitrary nested allocations in `T`.
+
+Main executed with `CI` unset:
+
+| Surface | Command/task identity | Observed result |
+|---|---|---|
+| Producer, Service bridge and private cursor candidate | `pipeline:tests-scoped -- -p census-domain -p census-service --lib -E 'test(public_identity_history::funding::) \| test(public_identity_history::codec::cursor::) \| test(admission::history_memory::)' --no-tests fail`, `b35c28ba` | 39 passed, 0 failed; includes 11 candidate-cursor cases |
+| Normal dependency executable | `pipeline:run-scoped -- -p census-service --example history_funding_smoke`, `ea9bbc71` | Passed: actual host permit, retained UTF-8 buffer, byte/text/slot ownership, one-byte-under refusal, partial refund, foreign ownership, zero-byte rejection and full parent release |
+| Final integrated workspace, cursor candidate excluded | `pipeline:fmt pipeline:check pipeline:lint-src pipeline:tests --force` | All four tasks passed; 7,622 passed, 0 failed, 9 skipped (`bd2a9f15`) |
+| Canonical iteration CI | `tools/moon-local ci --force --summary detailed` | Five tasks passed: workspace 7,622/7,622, report 1,234/1,234, fmt/check/lint; report task `337e2eda` |
+
+Commands use `tools/moon-local run`. The successful smoke used normal Domain/Service
+dependencies, not source inclusion. It was removed after execution; exact source:
+`local://actual-history-memory-producer-smoke-20261016.rs`. Two earlier
+include-based attempts failed to resolve modules, were deleted and are not proof.
+Final task identities: fmt `18180f32`, check `6d260df1`, lint `9db2499f`.
+The final suite retains 28 new producer/Service behavior cases. Existing
+out-of-slice compiler/Clippy warnings remain; task success is not a zero-warning
+or release-debt closure claim.
+Canonical CI emitted remote-cache upload warnings; task execution still passed.
+It does not replace the separate release, resource and native-fault gates.
+
+The private cursor had no typed production consumer and was not exposed as a
+general JSON API. Its complete tested candidate, including the checked-offset
+regression, is preserved outside production in
+`var/work-preservation-20261016-01e842a3-9981-4c1b-a7ba-6c2ffba1d7c7/main-cursor-candidate.tar.zst`
+(SHA256 `8a5d024d1b0b472264f02d1c36cda21517448cae5dcf627ecd47cbf332946881`).
+No unused parser or warning suppression is part of the producer integration.
+
+This does not fund the existing semantic graph, typed history decoding/preparation
+or Store snapshots. `1itf` and dependent acceptance remain open. No installation,
+persisted schema, historical identity, live Store or running endpoint was changed;
+there is no measured speedup or release/native-fault/national qualification claim.
+
+### Existing source preservation and backlog scope — 2026-10-16
+
+No stash, worktree, index or existing branch was applied, reset, pruned or deleted.
+The owned `var/work-preservation-20261016-01e842a3-9981-4c1b-a7ba-6c2ffba1d7c7/`
+contains the complete-history bundle, private 7,235-member working-source archive,
+7,416-entry stage manifest and stage-object pack. Independent unbundling into its
+isolated `restore-check.git` recovered all 13 pinned stash commits; independently
+importing the staged pack recovered all 7,078 unique objects, including all 270
+unmerged stage entries. Manifest hashes and restore-check JSON record the proof.
+This is local source preservation, not remote landing or a live-data backup.
+
+Tracker reconciliation found 111 unclosed issues, including six epics. The
+validated 33-contract spec/review plan has four closed and 29 remaining; it is a
+subset, not the whole backlog. Two read-only audits mapped all 82 older contracts;
+overlap is not proof of repair. Main corrected missing `e85o` blocker edges and
+replaced `pn6j`'s obsolete legacy-runtime switch with isolated reference comparison
+and publication rollback. No unexercised native fault or source lane was closed.
+
