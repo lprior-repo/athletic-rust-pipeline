@@ -3,8 +3,15 @@ use crate::export::{
     CurrentAffiliationResolution, ExportDataset, VerifiedCurrentAffiliations,
     VerifiedParticipationView,
 };
-use census_domain::model::{CanonicalSchool, ProfileDate, ProfileId};
-use census_domain::participation_candidates::participation_policy_v2;
+use census_domain::model::{
+    CanonicalSchool, DiscoveryPriorityV1, Gender, GradYear, PerformanceWindowV1, ProfileDate,
+    ProfileDateRangeV1, ProfilePoliciesV1, ProfileSelectionV1, ProvisionalInclusionV1,
+    PublishedGraduation, QueryProfileInputV1, QueryProfileV1, RegionalMembershipV1, SchoolYear,
+    SourceRef, Sport,
+};
+use census_domain::profile_execution::{
+    selected_qualification_contract_ref_v3 as reference, ContractRoleV1 as Role,
+};
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use std::collections::BTreeMap;
@@ -21,16 +28,34 @@ pub(super) fn selected_dataset(store: &Store) -> TestResult<ExportDataset> {
         school.evidence = athlete.evidence.clone();
         store.append(Table::Schools, &school)?;
     }
-    let mut dataset = ExportDataset::load_public_identity_fixture(store)?;
-    let profile = ProfileId::parse(&"a".repeat(64))?;
-    let cutoff = ProfileDate::parse("2026-10-14")?;
-    let participation_rule = participation_policy_v2()?;
-    dataset.bind_selection_for_test(profile.clone(), cutoff.clone())?;
-    dataset.bind_participation_rule_for_test(participation_rule.clone())?;
+    let profile = profile()?;
+    store.register_profile(&profile)?;
+    let selection = ProfileSelectionV1::new(store.store_identity()?, profile.id()?);
+    let objects = tempfile::tempdir()?;
+    let mut dataset = ExportDataset::from_selected_snapshot(
+        store,
+        &store.snapshot(),
+        &selection,
+        objects.path(),
+    )?;
+    dataset.ensure_current_selected_write()?;
+    for athlete in dataset.athletes.iter_mut() {
+        if athlete.published_graduations.is_empty() && athlete.observed_grades.is_empty() {
+            athlete.published_graduations.push(PublishedGraduation {
+                grad_year: GradYear::CO2027,
+                source: SourceRef::new("synthetic-cohort", None),
+            });
+        }
+    }
+    dataset.bind_participation_rule_for_test(profile.input().policies.participation.clone())?;
     dataset.bind_public_identity_fixture_from_store(store)?;
+    let generation = dataset.lineage.input_generation.clone();
+    let profile_id = profile.id()?;
+    let cutoff = profile.input().as_of.clone();
+    let rule = profile.input().policies.participation.clone();
     let affiliations = VerifiedCurrentAffiliations::fixture(
-        dataset.lineage.input_generation.clone(),
-        profile.clone(),
+        generation.clone(),
+        profile_id.clone(),
         cutoff,
         dataset
             .athletes
@@ -46,12 +71,39 @@ pub(super) fn selected_dataset(store: &Store) -> TestResult<ExportDataset> {
             })
             .collect(),
     );
-    let participation = VerifiedParticipationView::fixture(
-        dataset.lineage.input_generation.clone(),
-        profile,
-        participation_rule,
-        BTreeMap::new(),
-    );
+    let participation =
+        VerifiedParticipationView::fixture(generation, profile_id, rule, BTreeMap::new());
     dataset.bind_verified_views_for_test(participation, affiliations)?;
     Ok(dataset)
+}
+
+fn profile() -> TestResult<QueryProfileV1> {
+    Ok(QueryProfileV1::new(QueryProfileInputV1 {
+        version: 1,
+        graduation_years: vec![GradYear::CO2027],
+        jurisdictions: vec![UsJurisdiction::Michigan],
+        regional_membership: RegionalMembershipV1::AllSelectedJurisdictions,
+        discovery_priority: DiscoveryPriorityV1::Uniform,
+        sports: vec![Sport::OutdoorTrack],
+        competition_categories: vec![Gender::Girls],
+        as_of: ProfileDate::parse("2026-10-01")?,
+        performance_window: PerformanceWindowV1::AllRetainedThroughAsOf,
+        contact_school_year: SchoolYear::new(2026).ok_or("school year")?,
+        source_plan: reference(Role::SourcePlan)?,
+        acquisition_window: ProfileDateRangeV1::new(
+            ProfileDate::parse("2026-01-01")?,
+            ProfileDate::parse("2026-10-01")?,
+        )?,
+        completion_contract: reference(Role::Completion)?,
+        policies: ProfilePoliciesV1 {
+            cohort: reference(Role::Cohort)?,
+            event: reference(Role::Event)?,
+            identity: reference(Role::Identity)?,
+            affiliation: reference(Role::Affiliation)?,
+            contact: reference(Role::Contact)?,
+            participation: reference(Role::Participation)?,
+            publication: reference(Role::Publication)?,
+        },
+        include_provisional: ProvisionalInclusionV1::Exclude,
+    })?)
 }

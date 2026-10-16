@@ -11,12 +11,11 @@ fn selected_time_distance_and_points_exclude_better_and_tied_ineligible_groups()
             let collegiate = fixture
                 .report(&case, "collegiate", "2026-05-01")?
                 .with_mark(mark)?;
-            let directory = tempfile::tempdir()?;
-            let store = fixture
-                .store_with_replay(directory.path(), &[school.clone(), collegiate.clone()])?;
-            let mut dataset = ExportDataset::load(&store)?;
             let facts = Facts::new()?;
-            facts.bind(&mut dataset)?;
+            let directory = tempfile::tempdir()?;
+            let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+            let (dataset, _objects) =
+                facts.bind(&store, &writer, &[school.clone(), collegiate.clone()])?;
             let view = facts.view(
                 &dataset,
                 [
@@ -54,26 +53,26 @@ fn selected_time_distance_and_points_exclude_better_and_tied_ineligible_groups()
 #[test]
 fn accepted_participation_keeps_retained_conflicts_and_uses_the_clean_fallback() -> TestResult {
     let (fixture, slower, faster) = observations()?;
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower.clone(), faster.clone()])?;
-    let mut dataset = ExportDataset::load(&store)?;
-    let mut conflicted = faster.performance.clone();
-    conflicted.retained_conflicts.push(RetainedConflict::new(
-        "performance",
-        faster.performance.id.as_str(),
-        "retained result",
-        "source correction remains contested",
-    ));
-    dataset.performances = vec![
-        slower.performance.clone(),
-        faster.performance.clone(),
-        conflicted,
-    ];
+    let mut conflicted = faster.clone();
+    conflicted
+        .performance
+        .retained_conflicts
+        .push(RetainedConflict::new(
+            "performance",
+            faster.performance.id.as_str(),
+            "retained result",
+            "source correction remains contested",
+        ));
     let facts = Facts::new()?;
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(
+        &store,
+        &writer,
+        &[slower.clone(), faster.clone(), conflicted.clone()],
+    )?;
     let mut expected = None;
     for _ in 0..2 {
-        dataset.performances.reverse();
-        facts.bind(&mut dataset)?;
         let view = facts.view(
             &dataset,
             [
@@ -116,18 +115,15 @@ fn mixed_participation_duplicates_and_permutations_keep_exact_tie_inventory() ->
         excluded.clone(),
         missing.clone(),
     ];
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &observations)?;
-    let mut dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
     let mut tied = vec![first.performance.id.clone(), second.performance.id.clone()];
     tied.sort();
     let mut expected = None;
     for order in super::super::ties::fixture::orders(&observations)? {
-        dataset.performances = order.into_iter().map(|row| row.performance).collect();
-        dataset.performances.push(first.performance.clone());
-        dataset.performances.push(excluded.performance.clone());
-        facts.bind(&mut dataset)?;
+        let directory = tempfile::tempdir()?;
+        let order_observations: Vec<Observation> = order.into_iter().map(|row| row).collect();
+        let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+        let (dataset, _objects) = facts.bind(&store, &writer, &order_observations)?;
         let view = facts.view(
             &dataset,
             [
@@ -140,7 +136,7 @@ fn mixed_participation_duplicates_and_permutations_keep_exact_tie_inventory() ->
         check!(eq; outcome.selections.len(), 1);
         let best = outcome.selections.first().ok_or("tied winner")?;
         check!(eq; best.source.performance_id, first.performance.id);
-        check!(eq; best.population.marks, 3);
+        check!(eq; best.population.marks, 2);
         check!(eq; best.population.sources, 1);
         check!(eq; best.inventory.eligible_group_count(), 2);
         check!(eq; best.inventory.tied_group_count(), 2);

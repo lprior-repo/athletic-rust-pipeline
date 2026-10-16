@@ -1,4 +1,5 @@
 use super::*;
+use sha2::{Digest, Sha256};
 
 mod readback;
 
@@ -61,10 +62,24 @@ fn current_affiliation_csv_requires_retained_runtime_authority_before_creating_o
     let directory = tempfile::tempdir()?;
     let frozen = directory.path().join("frozen.json");
     fixture.dataset.save_frozen(&frozen)?;
-    let reopened = ExportDataset::reopen_frozen(&frozen)?;
-    let absent = directory.path().join("uncreated");
-    check!(write(&absent, &reopened).is_err());
-    check!(!absent.exists());
-    check!(verify(directory.path(), &reopened).is_err());
+    match ExportDataset::reopen_frozen(&frozen) {
+        Err(crate::report::ReportError::Invariant { detail }) => {
+            check!(eq; detail, "selected proofs require an external frozen archive commitment");
+        }
+        Err(error) => {
+            return Err(format!("unexpected uncommitted affiliation reopen result: {error}").into())
+        }
+        Ok(_) => {
+            return Err(
+                "uncommitted affiliation proofs reopened without an archive commitment".into(),
+            )
+        }
+    }
+    let bytes = std::fs::read(&frozen)?;
+    let digest = format!("{:x}", Sha256::digest(&bytes));
+    let reopened = ExportDataset::reopen_frozen_with_digest(&frozen, &digest)?;
+    let written = directory.path().join("committed");
+    check!(eq; write(&written, &reopened)?, 7);
+    check!(eq; verify(&written, &reopened)?, 7);
     Ok(())
 }

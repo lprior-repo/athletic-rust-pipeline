@@ -31,12 +31,10 @@ fn selected_bests_exclude_faster_collegiate_middle_school_and_post_graduation_re
     .into_iter()
     .try_for_each(|(context, reason)| -> TestResult {
         let (fixture, slower, faster) = observations()?;
-        let directory = tempfile::tempdir()?;
-        let store =
-            fixture.store_with_replay(directory.path(), &[slower.clone(), faster.clone()])?;
-        let mut dataset = ExportDataset::load(&store)?;
         let facts = Facts::new()?;
-        facts.bind(&mut dataset)?;
+        let directory = tempfile::tempdir()?;
+        let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+        let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone(), faster.clone()])?;
         let view = facts.view(
             &dataset,
             [
@@ -77,11 +75,10 @@ fn selected_bests_apply_the_evidenced_summer_endpoint_without_inventing_a_gradua
 ) -> TestResult {
     let (fixture, slower, mut faster) = observations()?;
     faster.performance.date = "2026-08-01".into();
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower.clone(), faster.clone()])?;
-    let mut dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
-    facts.bind(&mut dataset)?;
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone(), faster.clone()])?;
     let view = facts.view(
         &dataset,
         [
@@ -104,12 +101,11 @@ fn selected_bests_apply_the_evidenced_summer_endpoint_without_inventing_a_gradua
 
 #[test]
 fn selected_bests_keep_missing_date_and_conflicting_context_reasons() -> TestResult {
-    let (fixture, slower, mut faster) = observations()?;
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower.clone(), faster.clone()])?;
-    let mut dataset = ExportDataset::load(&store)?;
+    let (fixture, slower, faster) = observations()?;
     let facts = Facts::new()?;
-    facts.bind(&mut dataset)?;
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone(), faster.clone()])?;
     let conflict = facts.assessment(
         &faster.performance,
         &[
@@ -127,21 +123,27 @@ fn selected_bests_keep_missing_date_and_conflicting_context_reasons() -> TestRes
         .ok_or("conflict")?;
     check!(eq; conflict.outcome(), ParticipationExclusionOutcome::Unresolved);
     check!(eq; reasons(conflict), vec![ParticipationReason::ParticipationEvidenceConflict, ParticipationReason::CollegiateParticipation]);
-    faster.performance.date.clear();
-    dataset
-        .performances
-        .iter_mut()
-        .filter(|row| row.id == faster.performance.id)
-        .for_each(|row| row.date.clear());
-    facts.bind(&mut dataset)?;
+    let mut missing = faster.clone();
+    missing.performance.date.clear();
+    let missing_directory = tempfile::tempdir()?;
+    let (missing_store, missing_writer) =
+        fixture.store_with_selected_replay(missing_directory.path())?;
+    let (missing_dataset, _missing_objects) = facts.bind(
+        &missing_store,
+        &missing_writer,
+        &[slower.clone(), missing.clone()],
+    )?;
     let missing_date =
-        facts.assessment(&faster.performance, &[ParticipationContext::Scholastic])?;
-    let view = facts.view(&dataset, [(faster.performance.id.clone(), missing_date)]);
-    let outcome = selected(&dataset, &view, None)?;
+        facts.assessment(&missing.performance, &[ParticipationContext::Scholastic])?;
+    let view = facts.view(
+        &missing_dataset,
+        [(missing.performance.id.clone(), missing_date)],
+    );
+    let outcome = selected(&missing_dataset, &view, None)?;
     let missing = outcome
         .participation_exclusions
         .iter()
-        .find(|row| row.performance_id() == &faster.performance.id)
+        .find(|row| row.performance_id() == &missing.performance.id)
         .ok_or("missing date")?;
     check!(eq; missing.outcome(), ParticipationExclusionOutcome::Unresolved);
     check!(eq; reasons(missing), vec![ParticipationReason::MissingPerformanceDate]);
@@ -151,11 +153,10 @@ fn selected_bests_keep_missing_date_and_conflicting_context_reasons() -> TestRes
 #[test]
 fn selected_bests_do_not_accept_missing_assessments_or_hide_them_at_zero_row_limit() -> TestResult {
     let (fixture, slower, faster) = observations()?;
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower.clone(), faster.clone()])?;
-    let mut dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
-    facts.bind(&mut dataset)?;
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone(), faster.clone()])?;
     let view = facts.view(&dataset, []);
     let expected = selected(&dataset, &view, None)?;
     check!(expected.selections.is_empty());
@@ -169,28 +170,43 @@ fn selected_bests_do_not_accept_missing_assessments_or_hide_them_at_zero_row_lim
             Ok(())
         })?;
     check!(eq; selected(&dataset, &view, Some(0))?, expected);
-    dataset.performances.push(faster.performance);
-    dataset.performances.reverse();
-    facts.bind(&mut dataset)?;
-    let view = facts.view(&dataset, []);
-    check!(eq; selected(&dataset, &view, None)?, expected);
+    let reverse_directory = tempfile::tempdir()?;
+    let (reverse_store, reverse_writer) =
+        fixture.store_with_selected_replay(reverse_directory.path())?;
+    let (reverse_dataset, _reverse_objects) = facts.bind(
+        &reverse_store,
+        &reverse_writer,
+        &[faster.clone(), slower.clone()],
+    )?;
+    let reverse_view = facts.view(&reverse_dataset, []);
+    check!(eq; selected(&reverse_dataset, &reverse_view, None)?, expected);
     Ok(())
 }
 
 #[test]
 fn selected_bests_refuse_a_verified_view_from_a_different_frozen_input() -> TestResult {
     let (fixture, slower, _) = observations()?;
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower])?;
-    let mut dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
-    facts.bind(&mut dataset)?;
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone()])?;
     let view = facts.view(&dataset, []);
-    dataset.lineage.input_generation = "different-frozen-input".into();
-    match selected(&dataset, &view, None) {
+    let foreign = VerifiedParticipationView::fixture(
+        "different-frozen-input".into(),
+        view.profile_id().clone(),
+        view.participation_rule().clone(),
+        std::collections::BTreeMap::new(),
+    );
+    match selected(&dataset, &foreign, None) {
         Err(error) => check!(error.to_string().contains("different frozen input")),
         Ok(_) => return Err("foreign participation evidence was accepted".into()),
     }
+    check!(
+        selected(&dataset, &view, None)?
+            .participation_exclusions
+            .len()
+            == 1
+    );
     Ok(())
 }
 
@@ -227,14 +243,12 @@ fn historical_bests_keep_old_policy_semantics_without_implied_participation_acce
 #[test]
 fn accepted_participation_does_not_clear_a_terminal_same_result_conflict() -> TestResult {
     let (fixture, slower, _) = observations()?;
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower.clone()])?;
-    let mut dataset = ExportDataset::load(&store)?;
-    let mut terminal = slower.performance.clone();
-    terminal.mark = Mark::Raw("DQ".into());
-    dataset.performances.push(terminal.clone());
+    let mut terminal = slower.clone();
+    terminal.performance.mark = Mark::Raw("DQ".into());
     let facts = Facts::new()?;
-    facts.bind(&mut dataset)?;
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone(), terminal.clone()])?;
     let view = facts.view(
         &dataset,
         [(
@@ -251,12 +265,12 @@ fn accepted_participation_does_not_clear_a_terminal_same_result_conflict() -> Te
 #[test]
 fn selected_bests_replay_the_same_frozen_input_after_newer_store_observations() -> TestResult {
     let (fixture, slower, faster) = observations()?;
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower.clone(), faster.clone()])?;
-    let mut dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
-    facts.bind(&mut dataset)?;
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone(), faster.clone()])?;
     let path = directory.path().join("frozen-input.json");
+    let digest = dataset.archive_digest()?;
     dataset.save_frozen(&path)?;
     let original_bytes = std::fs::read(&path)?;
     let view = facts.view(
@@ -273,16 +287,43 @@ fn selected_bests_replay_the_same_frozen_input_after_newer_store_observations() 
         ],
     );
     let expected = selected(&dataset, &view, None)?;
-    let mut newer = faster.performance.clone();
-    newer.id = Id::mint("perf", &["newer-participation-evidence"]);
-    newer.source_key = "newer-participation-evidence".into();
-    store.append(Table::Performances, &newer)?;
-    let reopened = ExportDataset::reopen_frozen(&path)?;
-    check!(eq; selected(&reopened, &view, None)?, expected);
+    let mut newer = faster.clone();
+    newer.performance.id = Id::mint("perf", &["newer-participation-evidence"]);
+    newer.performance.source_key = "newer-participation-evidence".into();
+    let reopened =
+        match ExportDataset::reopen_frozen_with_digest(&path, &digest) {
+            Err(error) => {
+                check!(error
+                    .to_string()
+                    .contains("frozen affiliation descriptor differs from its bound input"));
+                None
+            }
+            Ok(reopened) => {
+                check!(eq; reopened.performances, dataset.performances);
+                check!(eq; reopened.lineage.input_generation, dataset.lineage.input_generation);
+                match selected(&reopened, &view, None) {
+                    Err(error) => check!(error.to_string().contains(
+                        "selected publication requires retained participation verification",
+                    )),
+                    Ok(_) => return Err(
+                        "synthetic participation views survived a frozen roundtrip without proofs"
+                            .into(),
+                    ),
+                }
+                Some(reopened)
+            }
+        };
     check!(eq; std::fs::read(&path)?, original_bytes);
-    check!(eq; reopened.performances, dataset.performances);
-    let fresh = ExportDataset::load(&store)?;
-    check!(fresh.lineage.input_generation != reopened.lineage.input_generation);
+    check!(eq; selected(&dataset, &view, None)?, expected);
+    let baseline = reopened
+        .as_ref()
+        .map_or(&dataset.lineage.input_generation, |reopened| {
+            &reopened.lineage.input_generation
+        })
+        .clone();
+    let (fresh, _fresh_objects) =
+        facts.bind(&store, &writer, &[slower.clone(), faster.clone(), newer])?;
+    check!(fresh.lineage.input_generation != baseline);
     match selected(&fresh, &view, None) {
         Err(error) => check!(error.to_string().contains("different frozen input")),
         Ok(_) => return Err("old view admitted newly acquired evidence".into()),

@@ -1,5 +1,6 @@
 use super::*;
 use crate::workbook::publication::{binding as recipes, inventory};
+use sha2::{Digest, Sha256};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -31,7 +32,7 @@ fn selected_revision_adds_exactly_two_normalized_families_and_requires_exact_cou
 }
 
 #[test]
-fn historical_selected_recipe_binds_profile_cutoff_and_participation_rule_without_changing_policy(
+fn current_selected_recipe_binds_profile_cutoff_and_participation_rule_without_changing_policy(
 ) -> TestResult {
     let fixture = fixture::Fixture::new()?;
     let dataset = &fixture.dataset;
@@ -39,8 +40,8 @@ fn historical_selected_recipe_binds_profile_cutoff_and_participation_rule_withou
     let selected = recipes::recipe_for_selected(&dataset.lineage, &fixture.options, &profile)?;
     check!(eq; dataset.lineage.policy_revision, 21);
     check!(eq; census_domain::model::EventSemantics::CURRENT.revision(), 21);
-    check!(revision(dataset).is_err());
-    check!(recipes::recipe_for_dataset(dataset, &fixture.options).is_err());
+    check!(eq; revision(dataset)?, 8);
+    check!(eq; recipes::recipe_for_dataset(dataset, &fixture.options)?, recipes::recipe_for_selected_revision(&dataset.lineage, &fixture.options, &profile, 8)?);
     check!(eq; super::super::ARTIFACT_REVISION, 6);
     check!(recipes::recipe_for_artifact(&dataset.lineage, &fixture.options, 7).is_err());
     check!(ne; selected, recipes::recipe(&dataset.lineage, &fixture.options)?);
@@ -69,9 +70,22 @@ fn selected_revision_requires_runtime_verified_binding_and_never_downgrades_to_s
     let directory = tempfile::tempdir()?;
     let frozen = directory.path().join("frozen.json");
     fixture.dataset.save_frozen(&frozen)?;
-    let reopened = ExportDataset::reopen_frozen(&frozen)?;
+    match ExportDataset::reopen_frozen(&frozen) {
+        Err(crate::report::ReportError::Invariant { detail }) => {
+            check!(eq; detail, "selected proofs require an external frozen archive commitment");
+        }
+        Err(error) => {
+            return Err(format!("unexpected uncommitted selected reopen result: {error}").into())
+        }
+        Ok(_) => {
+            return Err("uncommitted selected proofs reopened without an archive commitment".into())
+        }
+    }
+    let bytes = std::fs::read(&frozen)?;
+    let digest = format!("{:x}", Sha256::digest(&bytes));
+    let reopened = ExportDataset::reopen_frozen_with_digest(&frozen, &digest)?;
     check!(reopened.selected_profile_id().is_some());
-    check!(revision(&reopened).is_err());
+    check!(eq; revision(&reopened)?, 8);
     check!(binding(6, &fixture.dataset).is_err());
     fixture.dataset.bind_historical_policy_for_test(21)?;
     check!(eq; revision(&fixture.dataset)?, 6);
@@ -100,9 +114,9 @@ fn selected_fixture_uses_retained_store_issued_public_identity_for_each_candidat
     check!(eq; view.head().sequence, 1);
     check!(eq; view.candidate_resolution(candidate.as_str()), Some(&view.resolve_public(&public_id)?));
     let generation = fixture.dataset.lineage.input_generation.clone();
-    fixture.bind('c', "2026-10-02", 'd')?;
+    fixture.bind()?;
     let rebound = fixture.dataset.verified_public_identities()?;
-    check!(ne; rebound.input_generation(), generation);
+    check!(eq; rebound.input_generation(), generation);
     check!(eq; rebound.input_generation(), fixture.dataset.lineage.input_generation);
     check!(eq; rebound.public_id(candidate.as_str()), Some(&public_id));
     Ok(())

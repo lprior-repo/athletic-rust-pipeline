@@ -257,6 +257,11 @@ impl ExportDataset {
     }
 
     #[cfg(test)]
+    pub(crate) fn strip_verified_affiliations_for_test(&mut self) {
+        self.verified_current_affiliations = None;
+    }
+
+    #[cfg(test)]
     pub(crate) fn bind_verified_views_for_test(
         &mut self,
         participation: VerifiedParticipationView,

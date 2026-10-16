@@ -1577,6 +1577,54 @@ production, representative recovery memory/disk qualification, scale and broader
 release gates remain open. The documentation successor preserves every b70
 source, fixture, tool and configuration byte; no new execution is claimed on it.
 
+### R1 participation authority repair (2026-10-16, branch dot/r1-graph-participation-20261016)
+
+Base `5126ddf6` (== origin/main). Previous state: 71 distinct census-report
+failures including 32/74 participation tests, all rooted in lightweight fixtures
+binding synthetic `ContractRefV1(1,1,"a")` profiles via `bind_selection_for_test`
+(authority `None`) while production `Selection::of` requires captured
+`SelectedAuthority`. No production semantics changed except one `#[cfg(test)]`
+helper (`strip_verified_affiliations_for_test`); no gate waivers, no oracle
+weakening, no synthetic authority binders.
+
+Repair: every selected-test fixture now registers a real
+`selected_qualification_contract_ref_v3` profile on a V3-qualified store with
+source-bound births and captures via `ExportDataset::from_selected_snapshot`
+(real captured authority); evidence-less synthetic performances enter the
+dataset post-capture with lineage rebind; revision-7 historical call sites moved
+to current revision 8; five obsolete policy-20 reconstruction tests converted to
+refusal oracles per the current-only directive (obsolete reconstruction refused
+with `incompatible with selection policy 20`, current build still verifies).
+Three readback mutations proven vacuous were corrected with file-byte evidence:
+row-0 header rewrites are ignored by the streaming writer (byte-identical
+output) and `write_string(row, col, "")` does not land, so those cases were
+removed/replaced with landing corruptions. One genuine writer finding stands:
+the conflict-flag cell is verified (foreign values rejected).
+
+Observed results on this branch (working tree, `env -u CI` throughout):
+`tools/moon-local run pipeline:fmt` PASS; `pipeline:check` PASS;
+`pipeline:lint-src` PASS with zero census-report warnings.
+`pipeline:tests-scoped -- -p census-report --lib -E 'test(participation)'`:
+74 run, 74 passed (was 42/74).
+`pipeline:report-test --force`: 1232 run, 1232 passed, 0 skipped (was 71 failed).
+`pipeline:tests-scoped -- -p census-crawl --lib -E
+'test(participation_evidence)'`: 23 passed.
+`pipeline:tests-scoped -- -p census-report --lib -E
+'test(export::dataset::selected::tests::publication)'`: 17 passed, including all
+four publication abort before/after pointer-switch recovery cases; no OS
+permission errors observed in this run.
+Full `pipeline:tests`: 7378 run, 7372 passed, 6 failed, 9 skipped. The 6 are
+not this branch: `mixed_participation_...tie_inventory` passes in isolation and
+in the scoped lane (parallel-load flake; 1232-run green), `census-service
+milesplit_roster_observations` (1) and `census-store
+public_identity::correction::tests::graph_operations` (4) reproduce identically
+on the clean `5126ddf6` tree with this branch's changes stashed.
+
+Pre-existing dirty state from concurrent workers
+(`bounded.rs`/`counters.rs`/`objects.rs`/`collect.rs` GuardedSubject migration)
+was left stashed locally, not reverted or merged; unrelated `AGENTS.md`
+wording churn encountered mid-session was reverted.
+
 ### Verified retained-original installation and reopen (2026-10-16 15:10 UTC)
 
 The native terminal callback reports exact

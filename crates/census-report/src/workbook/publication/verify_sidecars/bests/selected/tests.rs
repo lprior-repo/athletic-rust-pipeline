@@ -138,7 +138,7 @@ fn independent_selected_readback_rejects_changed_public_candidate_resolution_sch
 #[test]
 fn independent_selected_readback_uses_read_only_premerge_identity_expectations() -> TestResult {
     let fixture = source_births()?;
-    let (held, _) = crate::export::current_school::fixture::capture(&fixture.store)?;
+    let (held, _objects) = crate::export::current_school::fixture::capture(&fixture.store)?;
     let held_head = held.verified_public_identities()?.head().clone();
     let [_, second, _] = &fixture.athletes;
     let rows = [selection(second)];

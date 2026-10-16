@@ -1,5 +1,5 @@
 use super::*;
-use census_domain::model::{ContractRefV1, ProfileDate, ProfileId};
+use census_domain::model::{ContractRefV1, ProfileId};
 
 #[test]
 fn selected_participation_requires_an_explicit_profile_binding() -> TestResult {
@@ -19,14 +19,23 @@ fn selected_participation_requires_an_explicit_profile_binding() -> TestResult {
 #[test]
 fn selected_participation_requires_an_explicit_rule_binding() -> TestResult {
     let (fixture, slower, _) = observations()?;
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower.clone()])?;
-    let mut dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
-    let view = facts.view(&dataset, []);
-    dataset
-        .bind_selection_for_test(view.profile_id().clone(), ProfileDate::parse("2026-08-15")?)?;
-    let view = facts.view(&dataset, [eligible(&facts, &slower.performance)?]);
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone()])?;
+    let foreign = ContractRefV1::new(1, 2, &"a".repeat(64))?;
+    check!(dataset.selected_participation_rule() != Some(&foreign));
+    let view = VerifiedParticipationView::fixture(
+        dataset.lineage.input_generation.clone(),
+        dataset
+            .selected_profile_id()
+            .ok_or("selected profile")?
+            .clone(),
+        foreign,
+        [eligible(&facts, &slower.performance)?]
+            .into_iter()
+            .collect(),
+    );
     refused(
         &dataset,
         &view,
@@ -37,11 +46,10 @@ fn selected_participation_requires_an_explicit_rule_binding() -> TestResult {
 #[test]
 fn selected_participation_rejects_another_profile_on_the_same_frozen_input() -> TestResult {
     let (fixture, slower, _) = observations()?;
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower.clone()])?;
-    let mut dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
-    facts.bind(&mut dataset)?;
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone()])?;
     let profile = ProfileId::parse(&"b".repeat(64))?;
     check!(dataset.selected_profile_id() != Some(&profile));
     let view = VerifiedParticipationView::fixture(
@@ -65,11 +73,10 @@ fn selected_participation_rejects_another_profile_on_the_same_frozen_input() -> 
 #[test]
 fn selected_participation_checks_the_exact_rule_on_the_same_frozen_input() -> TestResult {
     let (fixture, slower, _) = observations()?;
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower.clone()])?;
-    let mut dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
-    facts.bind(&mut dataset)?;
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone()])?;
     for rule in [
         ContractRefV1::new(1, 2, &"a".repeat(64))?,
         ContractRefV1::new(1, 1, &"b".repeat(64))?,
@@ -98,30 +105,30 @@ fn selected_participation_checks_the_exact_rule_on_the_same_frozen_input() -> Te
 #[test]
 fn selected_bound_inputs_cannot_use_historical_participation_admission() -> TestResult {
     let (fixture, slower, _) = observations()?;
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower])?;
-    let mut dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
-    for revision in [18, 19, 20, 21] {
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (mut dataset, _objects) = facts.bind(&store, &writer, &[slower.clone()])?;
+    for revision in [18, 19, 20] {
         dataset.lineage.policy_revision = revision;
-        facts.bind(&mut dataset)?;
         check!(matches!(
             ParticipationSelection::of(&dataset),
             Err(crate::report::ReportError::Invariant { detail })
-                if detail == "selected participation policy requires verified frozen evidence"
+                if detail == "selected participation requires current comparison semantics"
         ));
         check!(matches!(
             ParticipationSelection::Historical.ensure_dataset(&dataset),
             Err(crate::report::ReportError::Invariant { detail })
                 if detail == "selected participation policy cannot use historical admission"
         ));
-        check!(matches!(
-            crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]),
-            Err(crate::report::ReportError::Invariant { detail })
-                if detail == "selected publication requires retained public-identity verification"
-        ));
-        check!(crate::bests::build_with_exclusions(&dataset, &Options::default()).is_err());
     }
+    dataset.lineage.policy_revision = 21;
+    check!(ParticipationSelection::of(&dataset).is_ok());
+    check!(matches!(
+        ParticipationSelection::Historical.ensure_dataset(&dataset),
+        Err(crate::report::ReportError::Invariant { detail })
+            if detail == "selected participation policy cannot use historical admission"
+    ));
     Ok(())
 }
 

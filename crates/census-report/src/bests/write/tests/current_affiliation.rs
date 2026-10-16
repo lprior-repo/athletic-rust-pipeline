@@ -91,7 +91,7 @@ fn selected_bests_label_historical_school_separately_from_pinned_current_school(
 #[test]
 fn selected_school_projection_refuses_absent_resolved_current_school() -> TestResult {
     let fixture = crate::export::public_identity::tests::fixture::source_births()?;
-    let (mut dataset, _) = crate::export::current_school::fixture::capture(&fixture.store)?;
+    let (mut dataset, _objects) = crate::export::current_school::fixture::capture(&fixture.store)?;
     let absent = census_domain::model::SchoolId::mint("sch", &["absent-current-school"]);
     check!(!dataset.schools.contains_key(&absent));
     bind_resolution(

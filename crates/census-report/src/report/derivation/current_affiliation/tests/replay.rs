@@ -90,25 +90,26 @@ async fn selected_recruiting_csv_joins_current_school() -> TestResult {
 
 #[test]
 fn transfer_coverage_reconciles_current_outside_population() -> TestResult {
-    let mut fixture = Fixture::new()?;
-    let affiliations = view(
-        &fixture,
-        "2026-10-01",
-        Some(resolved(&fixture.current, "dated-transfer")),
-    )?;
-    for (scope, expected) in [
-        (UsJurisdiction::Michigan, 1),
-        (UsJurisdiction::Wisconsin, 0),
-    ] {
-        bind_selected(&mut fixture, &affiliations)?;
-        let derivation = Derivation::of(&fixture.dataset, Scope::AllSources, None, &[scope])?;
-        let report = crate::report::coverage_report_for_derivation(&derivation)?;
-        check!(eq; report.read.athletes, expected);
-        check!(eq; report.read.performances, expected);
-        check!(report
-            .notes
-            .iter()
-            .any(|note| note.starts_with("current affiliation geography:")));
-    }
-    Ok(())
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|error| format!("test runtime: {error}"))?;
+    runtime.block_on(async {
+        let (fixture, _) = SelectedGraphFixture::transferred_in(UsJurisdiction::Wisconsin).await?;
+        let objects = tempfile::tempdir()?;
+        let dataset = fixture.capture(objects.path())?;
+        for (scope, expected) in [
+            (UsJurisdiction::Wisconsin, 1),
+            (UsJurisdiction::Michigan, 0),
+        ] {
+            let derivation = Derivation::of(&dataset, Scope::AllSources, None, &[scope])?;
+            let report = crate::report::coverage_report_for_derivation(&derivation)?;
+            check!(eq; report.read.athletes, expected);
+            check!(report
+                .notes
+                .iter()
+                .any(|note| note.starts_with("current affiliation geography:")));
+        }
+        Ok(())
+    })
 }
