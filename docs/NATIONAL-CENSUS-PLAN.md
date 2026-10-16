@@ -1,4 +1,4 @@
-# Fresh national census — delivery and acceptance plan
+# Recruiting database — delivery and acceptance plan
 
 Status: binding unfinished delivery contract, **not execution evidence**. This is the only active
 plan. [ARCHITECTURE.md](../ARCHITECTURE.md) owns mission, engineering policy and semantics
@@ -366,6 +366,48 @@ Ten linked worktrees were inspected: main and three other clean tracked worktree
 worktrees. Whole merges of the two unmerged implementation branches are unnecessary/regressive.
 Selective missing callers are planned; preservation is not complete merely because a ref exists.
 No national completion or all-17 fault acceptance was established by this code/branch analysis.
+
+### 7.4. Spec-v2 implementation handoff — 2026-10-16
+
+The owner's Downloads specification and the repository copy are byte-identical:
+SHA256 `a3b687cc06952dbceaeda2f21300e4769acb96130570fc1174ff70210a09f11e`.
+First delivery remains UP qualification followed by Class-of-2027 MI/MN/IA/IL/CO.
+The separate fresh 49-jurisdiction qualification is not discharged by either.
+
+Planner session `athletic-spec-v2-readiness-20261016` validated 31 work contracts:
+18 new atomic issues and 13 updated existing owners. Beads holds the live claims,
+dependencies, exclusive files and acceptance criteria; this table is a routing index,
+not a second task list. Planning/schema validation is not runtime acceptance.
+
+All IDs below have prefix `athletic-rust-pipeline-`.
+
+| Spec boundary | Implementation beads | Existing acceptance owner |
+|---|---|---|
+| Funded identity history, lifecycle bootstrap, atomic graph and semantic revisions (§§5,9,12,14) | `1itf`, `m9ew`, `2002`, `ukkb` | `lzue`, `c945`, `rod5` |
+| Frozen proof replay, bounded derivation and workbook generation (§§4,7,8,12,13) | `gnp5`, `t3rc`, `qxit` | `53hl`, `tmdl`, `5lg2` |
+| Current acquisition, CLI/Restate callers and native qualification (§§3,6,9,10,16) | `notj`, `w5id`, `769a` | `rod5`, `61w4` |
+| Current-main identity, roster and unresolved-participation defects (§§5,7,8,16) | `uz3a`, `pqtb`, `6jkb` | `lzue`, `rod5`, `iilh` |
+| Fenced refresh, offline reparse, indexed no-change and annual reuse (§§6,10,11,14) | `6urc`, `gqqc` | `rod5` |
+| Source-backed five-state/UP obligations and actual publication (§§3,4,18,19) | `ck33`, `2ao9` | `1d9h`, UP pilot `99o`; national `ooat` remains separate |
+| Capability/document correspondence (§§16–18) | `twwx` | `iilh` |
+
+Archive visibility stays with `6fhk`; OHSAA tenure/replay with `smps`; WIAA
+fragment/counter authority with `56ry`. Source-lane work such as MN staff `098i`,
+IA Bound `zp10` and MI access refusal/school-site discovery `2gqi` remains owned
+by those issues, not duplicated by the matrix/compiler bead.
+
+Main and remote main reached `38b73aef` with the separately recorded R1 repair.
+Its Report evidence does not certify the unfinished current-only migration or
+clear its separately reported full-workspace failures. The preserved
+`integration/current-v2-main-20261016` worktree still contains an unfinished merge.
+The older `fix/current-authority-fixtures-20261016` repair overlaps landed R1 work;
+do not merge it wholesale or mistake its failing snapshot for current-main status.
+
+Agents start with `bd ready`, inspect `bd show <id>`, then claim one exclusive
+boundary. Main freezes shared/persisted contracts and integrates after source
+quiescence. No worker runs builds mid-flight, weakens an oracle, changes source
+identity to fit a fixture, resets a live store or substitutes a historical binary.
+Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
 ## 8. F01–F15 acceptance ledger
 
