@@ -17,12 +17,6 @@ pub(super) struct RefusedLane {
 
 pub(super) const LANES: &[RefusedLane] = &[
     RefusedLane {
-        jurisdiction: UsJurisdiction::Colorado,
-        arm: "chsaa", slug: "co_missing_coach_sources",
-        reason: "CHSAA per-school detail pages beyond the 3 samples (`chsaanow.com/schools/*`); Colorado High School Coaches Association (CHSCA); Colorado TF/XC coaches association; school athletics staff pages.",
-        kind: RefusalKind::EngineeringGap,
-    },
-    RefusedLane {
         jurisdiction: UsJurisdiction::Kentucky,
         arm: "arbiter_orgs", slug: "ky_missing_coach_sources",
         reason: "KHSAA member-directory route (`khsaa.org`); Kentucky Track & Cross Country Coaches Association; TFRRS KY; school sites (emails).",

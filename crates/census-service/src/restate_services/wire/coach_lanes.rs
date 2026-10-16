@@ -10,6 +10,7 @@ pub(super) mod ut;
 pub(super) mod vt;
 
 pub(super) mod ca;
+pub(super) mod co;
 pub(super) mod fl;
 pub(super) mod il;
 pub(super) mod ny;
@@ -68,6 +69,13 @@ pub(super) const LANES: &[Lane] = &[
         refusal: (ca::CA_REFUSAL_SLUG, ca::CA_TRUE_MISSING),
         kind: RefusalKind::EngineeringGap,
         lane: ca::lane,
+    },
+    Lane {
+        jurisdiction: UsJurisdiction::Colorado,
+        arm: co::CO_ARM,
+        refusal: (co::CO_REFUSAL_SLUG, co::CO_TRUE_MISSING),
+        kind: RefusalKind::EngineeringGap,
+        lane: co::lane,
     },
     Lane {
         jurisdiction: UsJurisdiction::Connecticut,

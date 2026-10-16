@@ -61,7 +61,9 @@ fn bound(jurisdiction: UsJurisdiction) -> Result<JurisdictionState, Box<dyn std:
 
 fn expected_status(jurisdiction: UsJurisdiction) -> CoachLaneStatus {
     match jurisdiction {
-        UsJurisdiction::Utah | UsJurisdiction::Illinois => CoachLaneStatus::Armed,
+        UsJurisdiction::Utah | UsJurisdiction::Illinois | UsJurisdiction::Colorado => {
+            CoachLaneStatus::Armed
+        }
         _ => CoachLaneStatus::Blocked,
     }
 }
