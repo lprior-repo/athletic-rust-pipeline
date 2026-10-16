@@ -1,6 +1,7 @@
 mod charged;
 mod classes;
 mod coordinator;
+mod history_memory;
 mod reservation;
 
 pub use charged::Charged;
@@ -10,6 +11,7 @@ pub use classes::{
     WORK_CLASS_STAGE,
 };
 pub use coordinator::{Coordinator, WaitTicket, MAX_BYPASSES, MAX_ORIGIN_WAITERS, MAX_WAITERS};
+pub use history_memory::HistoryMemoryReservation;
 pub use reservation::Reservation;
 
 #[derive(Debug)]
