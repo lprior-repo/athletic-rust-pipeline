@@ -19,6 +19,7 @@ pub(in super::super) fn install(
     let root = directory.path().join("store");
     Store::create_public_identity_qualification_v3(&root)?;
     let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+    writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
     let school_packet = school_fixtures::packet(school_fixtures::DIRECTORY)?;
     let checked = school_packet.read()?;
     school_fixtures::verify_checked_school(&checked)?;
