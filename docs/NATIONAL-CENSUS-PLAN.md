@@ -392,17 +392,24 @@ All IDs below have prefix `athletic-rust-pipeline-`.
 | Capability/document correspondence (§§16–18) | `twwx` | `iilh` |
 
 Archive visibility stays with `6fhk`; OHSAA tenure/replay with `smps`; WIAA
-fragment/counter authority with `56ry`. Source-lane work such as MN staff `098i`,
-IA Bound `zp10` and MI access refusal/school-site discovery `2gqi` remains owned
-by those issues, not duplicated by the matrix/compiler bead.
+fragment/counter authority with `56ry`. MN staff `098i` and IA Bound `zp10` already
+have adapters; their remaining work is qualification/receipts and historical-failure
+attribution, not duplicate implementation. MI refusal/school-site work stays with `2gqi`.
 
 The implementation checkout is the registered repository root on `main`.
-Verified repairs through `107d9b1c` are recorded in `VERIFICATION-EVIDENCE.md`;
+Verified repairs through `8b15baf9` are recorded in `VERIFICATION-EVIDENCE.md`;
 their results do not qualify another worktree or the current-only migration.
 The preserved `integration/current-v2-main-20261016` worktree is unmerged and
 unqualified: reference/preservation only, not a production editing target or a
 wholesale merge candidate. Its prototype receipt-intake SDK is absent from main.
 Confirm actual main interfaces before proposing or applying any migration.
+
+The new Domain `public_identity_history::funding` producer port is consumed by
+Service `Reservation::into_history_memory`, which retains a genuine host permit.
+It does not fund the existing identity projection or history preparation yet;
+`1itf` retains that work. The separately tested borrowed JSON cursor is preserved
+outside production until typed-codec integration, not shipped as an unused parser.
+
 The older `fix/current-authority-fixtures-20261016` repair overlaps landed R1 work;
 do not merge it wholesale or mistake its failing snapshot for current-main status.
 
