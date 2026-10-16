@@ -5,6 +5,7 @@ use census_domain::model::{
     AthleteId, EventKind, ExactSeconds, Gender, Mark, SchoolId, TimingMethod,
 };
 
+mod error;
 mod fixture;
 mod identity;
 mod refusals;

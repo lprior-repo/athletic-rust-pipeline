@@ -33,7 +33,7 @@ pub enum HtmlResultProjectionError {
     #[error("HTML result projection meet: {0}")]
     Meet(String),
     #[error(transparent)]
-    Source(#[from] RetainedResultOwnershipError),
+    Source(#[from] Box<RetainedResultOwnershipError>),
     #[error(transparent)]
     Store(#[from] census_store::StoreError),
     #[error(transparent)]
@@ -42,6 +42,12 @@ pub enum HtmlResultProjectionError {
     Specification(#[from] SpecificationError),
     #[error(transparent)]
     Performance(#[from] PerformanceError),
+}
+
+impl From<RetainedResultOwnershipError> for HtmlResultProjectionError {
+    fn from(error: RetainedResultOwnershipError) -> Self {
+        Self::Source(Box::new(error))
+    }
 }
 
 pub fn project_retained_html_results<'a, 'capture>(
