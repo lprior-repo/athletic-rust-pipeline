@@ -34,11 +34,11 @@ fn selected_alias_headers() -> Vec<&'static str> {
 
 fn options() -> TestResult<Options> {
     Ok(Options {
-        grad_year: None,
+        grad_year: Some(2027),
         out: None,
         limit: None,
         scope: Scope::AllSources,
-        jurisdictions: Vec::new(),
+        jurisdictions: vec![census_domain::UsJurisdiction::Michigan],
         school_year: SchoolYear::new(2026).ok_or("school year")?,
     })
 }

@@ -79,11 +79,6 @@ fn bytes(directory: &Path) -> TestResult<BTreeMap<String, Vec<u8>>> {
         .collect()
 }
 
-fn write(directory: &Path, value: &Value) -> TestResult {
-    std::fs::write(directory.join("manifest.json"), serde_json::to_vec(value)?)?;
-    Ok(())
-}
-
 fn rehash(directory: &Path, mut value: Value) -> TestResult {
     let raw_counts = value
         .as_object_mut()
@@ -272,103 +267,37 @@ fn recaptured_csv_hash_and_row_count_cannot_hide_an_extra_source_unbacked_row() 
 }
 
 #[test]
-fn reconstructed_policy20_v4_manifest_and_eight_family_bytes_remain_immutable() -> TestResult {
+fn obsolete_policy20_v4_reconstruction_refuses_before_mutation() -> TestResult {
     let temporary = tempfile::tempdir()?;
     let store = Store::open(temporary.path().join("store"))?;
     seed(&store, "Historical V4 Count High")?;
     let workbook = crate::workbook::build(&store, &options()?)?;
     let directory = temporary.path().join("reconstructed-policy20-v4");
-    let (_, historical) = historical_fixture::render_policy20(&store, &directory, &options()?, 4)?;
-    let artifacts = historical.artifacts;
-    let digest = census_domain::model::serialized_digest(&(
-        4_u32,
-        &historical.lineage,
-        &historical.selection,
-        &artifacts,
-    ))?;
-    let value = json!({
-        "schema_revision": 4,
-        "lineage": historical.lineage,
-        "selection": historical.selection,
-        "artifacts": artifacts,
-        "generation_digest": digest,
-    });
-    write(&directory, &value)?;
-    let before = bytes(&directory)?;
-    check!(manifest(&directory)?.get("normalized_csv_rows").is_none());
-    publication::verify_published(&directory.join("workbook.xlsx"))?;
-    check!(eq; bytes(&directory)?, before);
-    for (name, injected) in [
-        ("legacy-counts", json!(expected(true))),
-        ("legacy-empty", json!({})),
-        ("legacy-null", Value::Null),
-    ] {
-        let changed = copied(&directory, temporary.path(), name)?;
-        let mut value = manifest(&changed)?;
-        value["normalized_csv_rows"] = injected;
-        write(&changed, &value)?;
-        check!(publication::verify_published(&changed.join("workbook.xlsx")).is_err());
-    }
-    check!(eq; bytes(&directory)?, before);
+    let error = historical_fixture::render_policy20(&store, &directory, &options()?, 4)
+        .err()
+        .ok_or("obsolete policy-20 v4 reconstruction was accepted")?;
+    check!(error
+        .to_string()
+        .contains("incompatible with selection policy 20"));
+    check!(!directory.join("manifest.json").exists());
+    check!(!directory.join("workbook.xlsx").exists());
     publication::verify_published(&workbook)?;
     Ok(())
 }
 
 #[test]
-fn reconstructed_policy20_v5_keeps_literal_count_digest_and_historical_columns() -> TestResult {
+fn obsolete_policy20_v5_reconstruction_refuses_before_mutation() -> TestResult {
     let temporary = tempfile::tempdir()?;
     let store = Store::open(temporary.path().join("store"))?;
     seed(&store, "Historical V5 Count High")?;
     let directory = temporary.path().join("reconstructed-policy20-v5");
-    let (dataset, historical) =
-        historical_fixture::render_policy20(&store, &directory, &options()?, 5)?;
-    let before = bytes(&directory)?;
-    let value = manifest(&directory)?;
-    check!(eq; value.get("schema_revision"), Some(&json!(5)));
-    check!(eq; value.pointer("/lineage/policy_revision"), Some(&json!(20)));
-    check!(eq; counts(&value)?, expected(true));
-    let digest = census_domain::model::serialized_digest(&(
-        5_u32,
-        &historical.lineage,
-        &historical.selection,
-        &historical.artifacts,
-        &historical.normalized_csv_rows,
-    ))?;
-    check!(eq; historical.generation_digest, digest);
-    let mut flat = csv::Reader::from_path(directory.join("best-results-co2027.csv"))?;
-    let flat_header = flat.headers()?.clone();
-    check!(eq; flat_header.len(), 36);
-    for field in [
-        "eligible_candidate_count",
-        "tied_performance_count",
-        "tied_performance_ids",
-    ] {
-        check!(flat_header.iter().any(|name| name == field));
-    }
-    for field in [
-        "eligible_result_group_count",
-        "tied_result_group_count",
-        "result_group_basis",
-        "physical_performance_count_status",
-    ] {
-        check!(!flat_header.iter().any(|name| name == field));
-    }
-    check!(flat.records().next().transpose()?.is_none());
-    super::super::verify_prepared(&directory, &dataset, &options()?)?;
-    publication::verify_published(&directory.join("workbook.xlsx"))?;
-    check!(eq; bytes(&directory)?, before);
-    let changed = copied(&directory, temporary.path(), "v5-with-policy21")?;
-    let mut forged: Manifest = serde_json::from_value(manifest(&changed)?)?;
-    forged.lineage.policy_revision = 21;
-    forged.generation_digest = census_domain::model::serialized_digest(&(
-        5_u32,
-        &forged.lineage,
-        &forged.selection,
-        &forged.artifacts,
-        &forged.normalized_csv_rows,
-    ))?;
-    std::fs::write(changed.join("manifest.json"), serde_json::to_vec(&forged)?)?;
-    check!(super::super::verify_directory(&changed).is_err());
-    check!(eq; bytes(&directory)?, before);
+    let error = historical_fixture::render_policy20(&store, &directory, &options()?, 5)
+        .err()
+        .ok_or("obsolete policy-20 v5 reconstruction was accepted")?;
+    check!(error
+        .to_string()
+        .contains("incompatible with selection policy 20"));
+    check!(!directory.join("manifest.json").exists());
+    check!(!directory.join("workbook.xlsx").exists());
     Ok(())
 }

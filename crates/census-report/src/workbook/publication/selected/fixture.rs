@@ -5,27 +5,33 @@ use crate::export::{
 use crate::report::{Derivation, Scope};
 use crate::workbook::Options;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalPerformance, CanonicalSchool, ContractRefV1, Evidence, ExactSeconds,
-    Gender, GradYear, Id, Mark, ProfileDate, ProfileId, PublishedGraduation, SchoolYear,
-    SourceIdentity, SourceNamespace, SourceRef,
+    CanonicalAthlete, CanonicalPerformance, CanonicalSchool, DiscoveryPriorityV1, Evidence, Gender,
+    GradYear, PerformanceWindowV1, ProfileDate, ProfileDateRangeV1, ProfilePoliciesV1,
+    ProfileSelectionV1, ProvisionalInclusionV1, PublishedGraduation, QueryProfileInputV1,
+    QueryProfileV1, RegionalMembershipV1, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
+    Sport,
 };
-use census_store::{Store, Table};
+use census_domain::profile_execution::{
+    selected_qualification_contract_ref_v3 as reference, ContractRoleV1 as Role,
+};
+use census_store::{PublicIdentityWriterV1, Store, Table};
 use std::collections::BTreeMap;
+
+mod qualification;
 
 type TestResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 pub(in crate::workbook) struct Fixture {
     pub dataset: ExportDataset,
     pub options: Options,
-    store: Store,
     _directory: tempfile::TempDir,
+    _objects: tempfile::TempDir,
 }
 
 impl Fixture {
     pub fn new() -> TestResult<Self> {
         let (school, athlete) = school_and_athlete()?;
-        let performances = vec![performance(&athlete)?];
-        Self::from_rows(school, vec![athlete], performances)
+        Self::from_qualified_rows(school, vec![athlete])
     }
 
     pub fn from_rows(
@@ -33,49 +39,43 @@ impl Fixture {
         athletes: Vec<CanonicalAthlete>,
         performances: Vec<CanonicalPerformance>,
     ) -> TestResult<Self> {
-        let directory = tempfile::tempdir()?;
-        let root = directory.path().join("store");
-        Store::create_public_identity_qualification_v3(&root)?;
-        let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
-        writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
+        let (directory, store, writer) = setup()?;
         store.append(Table::Schools, &school)?;
         store.append_many(Table::Athletes, &athletes)?;
         store.append_many(Table::Performances, &performances)?;
-        for athlete in &athletes {
-            writer.establish_source_bound(
-                &store,
-                &format!("selected-fixture-birth-{}", athlete.id),
-                &athlete.id.cast(),
-                store.snapshot().revision(),
-                &writer.head(&store)?,
-            )?;
-        }
-        let dataset = ExportDataset::load_public_identity_fixture(&store)?;
-        let mut fixture = Self {
-            dataset,
-            options: Options {
-                grad_year: Some(2027),
-                out: None,
-                limit: Some(0),
-                scope: Scope::AllSources,
-                jurisdictions: vec![census_domain::UsJurisdiction::Michigan],
-                school_year: SchoolYear::new(2026).ok_or("synthetic season")?,
-            },
-            store,
-            _directory: directory,
-        };
-        fixture.bind('a', "2026-10-01", 'b')?;
-        Ok(fixture)
+        finish(directory, store, writer)
     }
 
-    pub fn bind(&mut self, profile: char, cutoff: &str, rule: char) -> TestResult<()> {
-        let profile = ProfileId::parse(&profile.to_string().repeat(64))?;
-        let cutoff = ProfileDate::parse(cutoff)?;
-        let rule = ContractRefV1::new(1, 1, &rule.to_string().repeat(64))?;
-        self.dataset
-            .bind_selection_for_test(profile.clone(), cutoff.clone())?;
-        self.dataset
-            .bind_participation_rule_for_test(rule.clone())?;
+    fn from_qualified_rows(
+        school: CanonicalSchool,
+        athletes: Vec<CanonicalAthlete>,
+    ) -> TestResult<Self> {
+        let (directory, store, writer) = setup()?;
+        store.append(Table::Schools, &school)?;
+        store.append_many(Table::Athletes, &athletes)?;
+        let [athlete] = athletes.as_slice() else {
+            return Err("selected publication fixture qualifies exactly one athlete".into());
+        };
+        qualification::qualify(&store, &school, athlete)?;
+        finish(directory, store, writer)
+    }
+
+    pub fn bind(&mut self) -> TestResult<()> {
+        let profile = self
+            .dataset
+            .selected_profile_id()
+            .ok_or("captured selected profile")?
+            .clone();
+        let cutoff = self
+            .dataset
+            .selected_as_of()
+            .ok_or("captured selected cutoff")?
+            .clone();
+        let rule = self
+            .dataset
+            .selected_participation_rule()
+            .ok_or("captured participation rule")?
+            .clone();
         let generation = self.dataset.lineage.input_generation.clone();
         let participation = VerifiedParticipationView::fixture(
             generation.clone(),
@@ -103,8 +103,6 @@ impl Fixture {
         );
         self.dataset
             .bind_verified_views_for_test(participation, affiliations)?;
-        self.dataset
-            .bind_public_identity_fixture_from_store(&self.store)?;
         Ok(())
     }
 
@@ -117,6 +115,87 @@ impl Fixture {
             self.dataset.verified_current_affiliations()?,
         )?)
     }
+}
+
+fn setup() -> TestResult<(tempfile::TempDir, Store, PublicIdentityWriterV1)> {
+    let directory = tempfile::tempdir()?;
+    let root = directory.path().join("store");
+    Store::create_public_identity_qualification_v3(&root)?;
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+    writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
+    Ok((directory, store, writer))
+}
+
+fn finish(
+    directory: tempfile::TempDir,
+    store: Store,
+    writer: PublicIdentityWriterV1,
+) -> TestResult<Fixture> {
+    for athlete in store.snapshot().athletes()? {
+        writer.establish_source_bound(
+            &store,
+            &format!("selected-fixture-birth-{}", athlete.id),
+            &athlete.id.cast(),
+            store.snapshot().revision(),
+            &writer.head(&store)?,
+        )?;
+    }
+    let profile = michigan_profile()?;
+    store.register_profile(&profile)?;
+    let selection = ProfileSelectionV1::new(store.store_identity()?, profile.id()?);
+    let objects = tempfile::tempdir()?;
+    let dataset = ExportDataset::from_selected_snapshot(
+        &store,
+        &store.snapshot(),
+        &selection,
+        objects.path(),
+    )?;
+    let mut fixture = Fixture {
+        dataset,
+        options: Options {
+            grad_year: Some(2027),
+            out: None,
+            limit: None,
+            scope: Scope::AllSources,
+            jurisdictions: vec![census_domain::UsJurisdiction::Michigan],
+            school_year: SchoolYear::new(2026).ok_or("selected fixture school year")?,
+        },
+        _directory: directory,
+        _objects: objects,
+    };
+    fixture.bind()?;
+    Ok(fixture)
+}
+
+fn michigan_profile() -> TestResult<QueryProfileV1> {
+    Ok(QueryProfileV1::new(QueryProfileInputV1 {
+        version: 1,
+        graduation_years: vec![GradYear::CO2027],
+        jurisdictions: vec![census_domain::UsJurisdiction::Michigan],
+        regional_membership: RegionalMembershipV1::AllSelectedJurisdictions,
+        discovery_priority: DiscoveryPriorityV1::Uniform,
+        sports: vec![Sport::OutdoorTrack],
+        competition_categories: vec![Gender::Girls],
+        as_of: ProfileDate::parse("2026-10-01")?,
+        performance_window: PerformanceWindowV1::AllRetainedThroughAsOf,
+        contact_school_year: SchoolYear::new(2026).ok_or("selected fixture school year")?,
+        source_plan: reference(Role::SourcePlan)?,
+        acquisition_window: ProfileDateRangeV1::new(
+            ProfileDate::parse("2026-01-01")?,
+            ProfileDate::parse("2026-10-01")?,
+        )?,
+        completion_contract: reference(Role::Completion)?,
+        policies: ProfilePoliciesV1 {
+            cohort: reference(Role::Cohort)?,
+            event: reference(Role::Event)?,
+            identity: reference(Role::Identity)?,
+            affiliation: reference(Role::Affiliation)?,
+            contact: reference(Role::Contact)?,
+            participation: reference(Role::Participation)?,
+            publication: reference(Role::Publication)?,
+        },
+        include_provisional: ProvisionalInclusionV1::Exclude,
+    })?)
 }
 
 pub(in crate::workbook::publication) fn school_and_athlete(
@@ -146,28 +225,4 @@ pub(in crate::workbook::publication) fn school_and_athlete(
         "2026-10-14",
     ));
     Ok((school, athlete))
-}
-
-fn performance(athlete: &CanonicalAthlete) -> TestResult<CanonicalPerformance> {
-    Ok(CanonicalPerformance {
-        id: Id::mint("perf", &["synthetic-selected-missing"]),
-        athlete: athlete.id.clone(),
-        team: Id::mint("team", &["synthetic-selected"]),
-        event: Id::mint("event", &["synthetic-selected"]),
-        meet: Id::mint("meet", &["synthetic-selected"]),
-        date: "2026-05-01".into(),
-        mark: Mark::TimeSeconds(ExactSeconds::parse("50.00")?),
-        wind_mps: None,
-        adjustment: None,
-        place: None,
-        heat: None,
-        round: None,
-        timing: None,
-        observed_grade: None,
-        evidence: Vec::new(),
-        source_key: "synthetic-selected-missing".into(),
-        source_athlete: athlete.source.clone(),
-        retained_conflicts: Vec::new(),
-        combined_completion: None,
-    })
 }

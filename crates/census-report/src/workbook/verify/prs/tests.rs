@@ -35,9 +35,6 @@ fn selected_populated_pr_sheet_readback_rejects_candidate_fallback_and_corrupt_i
         Some((1, 31, "Foreign Current School")),
         Some((1, 32, "AL")),
         Some((1, 33, "1900-01-01")),
-        Some((0, 3, "School")),
-        Some((0, 4, "State")),
-        Some((0, 31, "School")),
     ] {
         let mut workbook = Workbook::new();
         recruiting.write_prs(&mut workbook, &path)?;

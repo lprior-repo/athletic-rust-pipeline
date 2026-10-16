@@ -3,12 +3,20 @@ use crate::workbook::publication::verify_sidecars::input::Inputs;
 use crate::workbook::publication::{inventory, normalized, selected::fixture::Fixture};
 
 #[test]
-fn revision_seven_writes_and_independently_reads_all_exclusions_at_zero_row_limit() -> TestResult {
+fn revision_eight_writes_and_independently_reads_all_exclusions_at_full_population() -> TestResult {
     let fixture = Fixture::new()?;
-    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 7)?;
+    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 8)?;
     let outcome = inputs.outcome()?;
     check!(outcome.selections.is_empty());
     check!(eq; outcome.participation_exclusions.len(), 1);
+    let limited = crate::bests::build_selected_outcome(
+        &inputs.derivation,
+        &inputs.admission,
+        fixture.dataset.verified_participation()?,
+        Some(0),
+    )?;
+    check!(limited.selections.is_empty());
+    check!(eq; limited.participation_exclusions.len(), 1);
     let directory = tempfile::tempdir()?;
     let written = normalized::write_outcome(
         directory.path(),
@@ -18,8 +26,8 @@ fn revision_seven_writes_and_independently_reads_all_exclusions_at_zero_row_limi
     )?;
     check!(eq; written.len(), 11);
     check!(eq; written.get("participation_exclusions.csv"), Some(&1));
-    let read = super::super::verify_outcome(directory.path(), &inputs, 7, &inputs.outcome()?)?;
-    inventory::compare(7, Some(&written), &read)?;
+    let read = super::super::verify_outcome(directory.path(), &inputs, 8, &inputs.outcome()?)?;
+    inventory::compare(8, Some(&written), &read)?;
     let text = std::fs::read_to_string(directory.path().join("participation_exclusions.csv"))?;
     check!(text.contains("missing_participation_evidence"));
     check!(text.contains("unresolved"));
@@ -28,10 +36,10 @@ fn revision_seven_writes_and_independently_reads_all_exclusions_at_zero_row_limi
 }
 
 #[test]
-fn revision_seven_readback_refuses_missing_duplicate_foreign_and_tampered_exclusions() -> TestResult
+fn revision_eight_readback_refuses_missing_duplicate_foreign_and_tampered_exclusions() -> TestResult
 {
     let fixture = Fixture::new()?;
-    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 7)?;
+    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 8)?;
     let directory = tempfile::tempdir()?;
     let outcome = inputs.outcome()?;
     let path = directory.path().join("participation_exclusions.csv");
@@ -72,7 +80,7 @@ fn revision_seven_readback_refuses_missing_duplicate_foreign_and_tampered_exclus
             writer.flush()?;
         }
         check!(
-            super::super::verify_outcome(directory.path(), &inputs, 7, &inputs.outcome()?).is_err()
+            super::super::verify_outcome(directory.path(), &inputs, 8, &inputs.outcome()?).is_err()
         );
     }
     Ok(())
@@ -81,7 +89,7 @@ fn revision_seven_readback_refuses_missing_duplicate_foreign_and_tampered_exclus
 #[test]
 fn public_selected_derivation_writes_verified_output_and_refuses_unbound_revisions() -> TestResult {
     let fixture = Fixture::new()?;
-    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 7)?;
+    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 8)?;
     let outcome = inputs.outcome()?;
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("not-created");
@@ -97,6 +105,6 @@ fn public_selected_derivation_writes_verified_output_and_refuses_unbound_revisio
     check!(Inputs::for_revision(&fixture.dataset, &fixture.options, 6).is_err());
     let store = census_store::Store::open(directory.path().join("store"))?;
     let dataset = crate::export::ExportDataset::load(&store)?;
-    check!(Inputs::for_revision(&dataset, &fixture.options, 7).is_err());
+    check!(Inputs::for_revision(&dataset, &fixture.options, 8).is_err());
     Ok(())
 }

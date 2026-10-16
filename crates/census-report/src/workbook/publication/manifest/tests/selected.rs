@@ -5,6 +5,7 @@ use crate::workbook::publication::{
     selected::{fixture::Fixture, SelectedProfile},
 };
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::path::Path;
 
 fn historical_wire(directory: &Path, fixture: &Fixture) -> TestResult<Manifest> {
@@ -147,7 +148,20 @@ fn selected_manifest_capture_refuses_frozen_json_without_runtime_verified_views(
     let directory = tempfile::tempdir()?;
     let frozen = directory.path().join("frozen.json");
     fixture.dataset.save_frozen(&frozen)?;
-    let reopened = crate::export::ExportDataset::reopen_frozen(&frozen)?;
+    match crate::export::ExportDataset::reopen_frozen(&frozen) {
+        Err(crate::report::ReportError::Invariant { detail }) => {
+            check!(eq; detail, "selected proofs require an external frozen archive commitment");
+        }
+        Err(error) => {
+            return Err(format!("unexpected uncommitted manifest reopen result: {error}").into())
+        }
+        Ok(_) => {
+            return Err("uncommitted manifest proofs reopened without an archive commitment".into())
+        }
+    }
+    let bytes = std::fs::read(&frozen)?;
+    let digest = format!("{:x}", Sha256::digest(&bytes));
+    let reopened = crate::export::ExportDataset::reopen_frozen_with_digest(&frozen, &digest)?;
     let counts = inventory::names(7)?
         .iter()
         .map(|name| ((*name).into(), 0))
@@ -160,7 +174,11 @@ fn selected_manifest_capture_refuses_frozen_json_without_runtime_verified_views(
 
 #[test]
 fn current_capture_refuses_unqualified_synthetic_selected_views() -> TestResult {
-    let fixture = Fixture::new()?;
+    let mut fixture = Fixture::new()?;
+    fixture.dataset.bind_selection_for_test(
+        census_domain::model::ProfileId::parse(&"a".repeat(64))?,
+        census_domain::model::ProfileDate::parse("2026-10-01")?,
+    )?;
     let directory = tempfile::tempdir()?;
     let absent = directory.path().join("not-created");
     let counts = inventory::names(8)?

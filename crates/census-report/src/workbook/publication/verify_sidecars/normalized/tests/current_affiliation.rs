@@ -6,7 +6,7 @@ use crate::workbook::publication::verify_sidecars::input::Inputs;
 #[test]
 fn selected_affiliation_readback_rejects_legacy_status_or_missing_claim_references() -> TestResult {
     let fixture = Fixture::new()?;
-    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 7)?;
+    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 8)?;
     let directory = tempfile::tempdir()?;
     normalized::write_outcome(
         directory.path(),

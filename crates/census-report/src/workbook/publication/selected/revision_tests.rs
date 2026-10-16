@@ -35,10 +35,10 @@ fn selected_artifact_eight_has_distinct_recipe_and_preserves_exact_seven_recipe(
 }
 
 #[test]
-fn old_synthetic_views_cannot_authorize_current_artifact_eight() -> TestResult {
+fn captured_authority_binds_current_artifact_eight() -> TestResult {
     let fixture = fixture::Fixture::new()?;
-    check!(binding(8, &fixture.dataset).is_err());
-    check!(ensure_current_options(&fixture.dataset, &fixture.options).is_err());
-    check!(recipes::recipe_for_dataset(&fixture.dataset, &fixture.options).is_err());
+    check!(binding(8, &fixture.dataset)?.is_some());
+    ensure_current_options(&fixture.dataset, &fixture.options)?;
+    check!(recipes::recipe_for_dataset(&fixture.dataset, &fixture.options).is_ok());
     Ok(())
 }

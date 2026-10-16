@@ -14,11 +14,10 @@ fn evidenced_scholastic_club_open_and_unattached_results_survive_on_the_summer_b
     .try_for_each(|context| -> TestResult {
         let (fixture, _, mut faster) = observations()?;
         faster.performance.date = "2026-07-31".into();
-        let directory = tempfile::tempdir()?;
-        let store = fixture.store_with_replay(directory.path(), &[faster.clone()])?;
-        let mut dataset = ExportDataset::load(&store)?;
         let facts = Facts::new()?;
-        facts.bind(&mut dataset)?;
+        let directory = tempfile::tempdir()?;
+        let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+        let (dataset, _objects) = facts.bind(&store, &writer, &[faster.clone()])?;
         let view = facts.view(
             &dataset,
             [(
@@ -41,11 +40,10 @@ fn evidenced_scholastic_club_open_and_unattached_results_survive_on_the_summer_b
 fn a_result_after_the_profile_cutoff_retains_every_exclusion_reason() -> TestResult {
     let (fixture, _, mut faster) = observations()?;
     faster.performance.date = "2026-08-16".into();
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[faster.clone()])?;
-    let mut dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
-    facts.bind(&mut dataset)?;
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(&store, &writer, &[faster.clone()])?;
     let view = facts.view(
         &dataset,
         [(
@@ -63,11 +61,10 @@ fn a_result_after_the_profile_cutoff_retains_every_exclusion_reason() -> TestRes
 #[test]
 fn inconsistent_verified_outcomes_cannot_be_used_to_bypass_selection() -> TestResult {
     let (fixture, _, faster) = observations()?;
-    let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[faster.clone()])?;
-    let mut dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
-    facts.bind(&mut dataset)?;
+    let directory = tempfile::tempdir()?;
+    let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
+    let (dataset, _objects) = facts.bind(&store, &writer, &[faster.clone()])?;
     let excluded = facts.assessment(&faster.performance, &[ParticipationContext::Collegiate])?;
     [
         (ParticipationOutcome::Eligible, excluded.reasons()),

@@ -56,7 +56,8 @@ fn selected_alias_projection_uses_canonical_affiliation_when_alias_is_absent_or_
     crate::export::public_identity::tests::fixture::merge(&fixture)?;
     let [canonical, alias, _] = &fixture.athletes;
     for alias_resolution in [None, Some(CurrentAffiliationResolution::Conflicted)] {
-        let (mut dataset, _) = crate::export::current_school::fixture::capture(&fixture.store)?;
+        let (mut dataset, _objects) =
+            crate::export::current_school::fixture::capture(&fixture.store)?;
         let current = dataset
             .verified_current_affiliations()?
             .resolution(&canonical.id)

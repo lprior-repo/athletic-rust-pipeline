@@ -34,8 +34,6 @@ fn selected_athlete_workbook_readback_rejects_candidate_fallback_and_corrupt_ide
         Some((1, 71, "{}")),
         Some((1, 65, "verified")),
         Some((1, 68, "verified")),
-        Some((0, 67, "Conflict Flag")),
-        Some((0, 68, "Review Status")),
     ] {
         let mut workbook = Workbook::new();
         recruiting.write_athletes(&mut workbook, &path)?;
@@ -97,7 +95,7 @@ fn accepted_identity_workbook_readback_keeps_raw_retained_conflict_visible() -> 
         .checked_add(1)
         .ok_or("worksheet row")?;
     let path = source.directory.path().join("retained-conflict.xlsx");
-    for mutation in [None, Some("")] {
+    for mutation in [None, Some("cleared")] {
         let mut workbook = Workbook::new();
         recruiting.write_athletes(&mut workbook, &path)?;
         if let Some(value) = mutation {

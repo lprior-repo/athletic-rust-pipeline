@@ -17,8 +17,6 @@ fn committed_public_merge_admits_best_and_ties_when_automatic_projection_keeps_c
     let source = source_births()?;
     merge(&source)?;
     let [first, second, _] = &source.athletes;
-    result::append(&source.store, first, "first", "2026-05-01")?;
-    result::append(&source.store, second, "second", "2026-05-02")?;
     let mut retained = source
         .store
         .snapshot()
@@ -33,7 +31,9 @@ fn committed_public_merge_admits_best_and_ties_when_automatic_projection_keeps_c
         "Automatic source projection stays separate from the committed public merge",
     ));
     source.store.append(Table::Athletes, &retained)?;
-    let dataset = fixture::selected_dataset(&source.store)?;
+    let mut dataset = fixture::selected_dataset(&source.store)?;
+    result::append(&source.store, &mut dataset, first, "first", "2026-05-01")?;
+    result::append(&source.store, &mut dataset, second, "second", "2026-05-02")?;
     let projection = dataset.identities();
     check!(eq; projection.status(first.id.as_str())?, IdentityStatus::RetainedConflict);
     check!(ne; projection.canonical_id(first.id.as_str()), projection.canonical_id(second.id.as_str()));
@@ -62,9 +62,9 @@ fn selected_tie_readback_rejects_a_matching_mark_from_an_unknown_identity() -> T
     let source = source_births()?;
     merge(&source)?;
     let [first, second, unknown] = &source.athletes;
-    result::append(&source.store, first, "first", "2026-05-01")?;
-    result::append(&source.store, second, "second", "2026-05-02")?;
-    let dataset = fixture::selected_dataset(&source.store)?;
+    let mut dataset = fixture::selected_dataset(&source.store)?;
+    result::append(&source.store, &mut dataset, first, "first", "2026-05-01")?;
+    result::append(&source.store, &mut dataset, second, "second", "2026-05-02")?;
     let derivation = Derivation::for_publication(&dataset, Scope::AllSources, None, &[])?;
     let admission = EventAdmission::of(&dataset)?;
     let participation = eligible(&dataset)?;

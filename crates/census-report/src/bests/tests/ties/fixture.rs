@@ -253,6 +253,22 @@ impl TieFixture {
         .with_mark(case.tied.clone())
     }
 
+    pub(in crate::bests::tests) fn store_with_selected_replay(
+        &self,
+        root: &Path,
+    ) -> TestResult<(Store, census_store::PublicIdentityWriterV1)> {
+        Store::create_public_identity_qualification_v3(root)?;
+        let (store, writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
+        writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
+        let numeric = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "9401");
+        let mut athlete = self.athlete.clone();
+        athlete.source = Some(numeric);
+        store.append(Table::Schools, &self.school)?;
+        store.append(Table::Athletes, &athlete)?;
+        store.append(Table::Teams, &self.team)?;
+        Ok((store, writer))
+    }
+
     pub fn store_with_replay(
         &self,
         root: &Path,
