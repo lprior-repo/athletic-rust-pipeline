@@ -1549,3 +1549,30 @@ async grace deadline and forbids reporting a successful drain while they remain;
 it does not promise a wall-clock bound on arbitrary engine or filesystem calls.
 Genuine-person attachment, official-school ownership, dated affiliation and
 result/season correspondence remain separate acceptance dependencies.
+
+### Verified controlled positive publication (2026-10-16 03:12 UTC)
+
+The native terminal callback verifies exact
+`b70bcafd292aa79476f822a3bf686277498e74d9`, tree
+`06171228c59064b2f71f71a206417e44132edabf`: formatting, full check and
+source lint PASS; the explicit synthetic publication positive 1/1, scoped domain
+98/98, participation readers 22/22, selected CLI 10/10 and broader report scope
+88/88 PASS. The original formatting invocation refused a tests-only feature
+environment; the corrected invocation unset that environment and passed. Both
+attempts remain in the native logs, not two successful format runs.
+
+The strict-v3 external consumer passed 1/1. Its full 50-entry comparison,
+including the original producer receipt, remained unchanged; receipt SHA256 is
+`9d573de6c0482ee9cec22c71b64d254332ce19cde64a7a8df4f71da4be2a0b0f`.
+Persistent logs are in `verification-r1-b70-logs-20261016` under the existing
+Omarchy task directory. The verification overlay was removed; checkout was
+clean at exact b70 with no active build. Four previously OS-denied publication
+abort cases were explicitly excluded and were not rerun or counted as passing.
+
+This closes the controlled synthetic eligible winner/window fallback, stronger
+result exclusion, artifact agreement and source-deleted replay gate. Genuine
+person/source attachment, official-school ownership, dated affiliation and exact
+result/season correspondence remain pending. Historical orphan preservation in
+production, representative recovery memory/disk qualification, scale and broader
+release gates remain open. The documentation successor preserves every b70
+source, fixture, tool and configuration byte; no new execution is claimed on it.
