@@ -1,4 +1,6 @@
-use super::OBSERVED_ON;
+use super::locator;
+use super::ROSTER_URL;
+use super::{CAPTURED_AT, OBSERVED_ON};
 use census_domain::model::{
     CanonicalAthlete, CanonicalSchool, Confidence, Gender, GradYear, PublishedGraduation,
     SourceIdentity, SourceNamespace, SourceObservation, SourceRef,
@@ -10,7 +12,6 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 const TEAM_URL: &str = "https://wi.milesplit.com/teams/52649-abbotsford";
-const ROSTER_URL: &str = "https://wi.milesplit.com/teams/52649-abbotsford/roster";
 
 const PUBLISHED: [(&str, &str, &str, i16, Gender); 25] = [
     (
@@ -236,8 +237,10 @@ pub(super) fn assert_published(store: &Store) -> super::TestResult {
         check!(eq; observation.gender, gender);
         check!(eq; observation.observed_grade, None);
         check!(eq; observation.profile_url.as_deref(), Some(profile.as_str()));
-        check!(eq; observation.source_row_key, profile);
-        check!(eq; observation.observed_on, OBSERVED_ON);
+        let row = locator::parse(&observation.source_row_key)?;
+        check!(eq; row.resource_url, ROSTER_URL);
+        check!(eq; observation.observed_on, CAPTURED_AT,
+    "domain row preserves the capture's RFC3339 instant, not a restamped caller date");
     }
     Ok(())
 }
@@ -270,6 +273,6 @@ pub(super) fn assert_capture(
     format!("{:x}", Sha256::digest(synthetic_body.as_bytes())));
     check!(eq; journal["capture"]["bytes"], synthetic_body.len());
     check!(eq; journal["capture"].get("response_url"), None);
-    check!(eq; journal["capture"]["fetched_at"], "2026-09-20T00:00:00Z");
+    check!(eq; journal["capture"]["fetched_at"], CAPTURED_AT);
     Ok(())
 }
