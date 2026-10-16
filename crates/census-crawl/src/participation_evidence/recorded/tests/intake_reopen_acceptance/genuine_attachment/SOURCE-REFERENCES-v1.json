@@ -134,6 +134,14 @@
       "offset": 113861,
       "bytes": 667,
       "sha256": "7913637b4dc9a7e3e1d84df3741eec0ab0102361795a30f5dede010780661b57"
+    },
+    {
+      "source": "mhsaa-status",
+      "role": "checked_document_subject_enclosing_h4",
+      "offset": 113581,
+      "bytes": 358,
+      "sha256": "be72c9e5e2e494d63f1ee727b40df5a9937e25aa40223d694e393c2ee43b11ba",
+      "scope": "Full heading Element.span used by status::read; separate inner66-byte literal status fact unchanged"
     }
   ],
   "source_derived_preimages": [
@@ -141,18 +149,18 @@
       "role": "document_owned_subject",
       "source": "mhsaa-status",
       "encoding": "exact UTF-8 with no terminal newline",
-      "preimage_utf8": "document_subject_v1\nmhsaa_article_v1\n28974\nhttps://www.mhsaa.com/sports/boys-track-field/stories/performance-week-detroit-catholic-centrals-zacchaeus-brocks\n2fb479da65fb5cd69a3bb4a6b8a5625c298cfe51cdf06a43efe5359bf31de57a\nhtml_bytes:113861:113927",
+      "preimage_utf8": "document_subject_v1\nmhsaa_article_v1\n28974\nhttps://www.mhsaa.com/sports/boys-track-field/stories/performance-week-detroit-catholic-centrals-zacchaeus-brocks\n2fb479da65fb5cd69a3bb4a6b8a5625c298cfe51cdf06a43efe5359bf31de57a\nhtml_bytes:113581:113939",
       "bytes": 246,
-      "sha256": "97746c394a22b92cfaa5f05a633c3405b83b041e3c6e3605148037eacd64839f",
+      "sha256": "693ec13ae52aa09e4591fc9d7c8717a196b3e2d5e54054755fd282d9a89d997f",
       "status": "independent source oracle; runtime constructor must match actual checked reader reference"
     },
     {
       "role": "document_locator",
       "source": "mhsaa-status",
       "encoding": "exact UTF-8 with no terminal newline",
-      "preimage_utf8": "html_bytes:113861:113927",
+      "preimage_utf8": "html_bytes:113581:113939",
       "bytes": 24,
-      "sha256": "fc3a22ea86ad833b3fb251995fc39a94bc8b8cd0c4f8a435b6b2d6ad0523d2ea",
+      "sha256": "b45060131fbc0cab03bf5ac375aa04e0421f6ba9ad742f81092210e76feb11ea",
       "status": "independent source oracle; runtime constructor must match actual checked reader reference"
     },
     {
@@ -213,9 +221,9 @@
       "role": "checked_proof_interpretation_preimage",
       "source": "mhsaa-status",
       "encoding": "exact UTF-8 with no terminal newline",
-      "preimage_utf8": "mhsaa_subject_dcc_event_day_v1\n2fb479da65fb5cd69a3bb4a6b8a5625c298cfe51cdf06a43efe5359bf31de57a\nhtml_bytes:113861:113927",
+      "preimage_utf8": "mhsaa_subject_dcc_event_day_v1\n2fb479da65fb5cd69a3bb4a6b8a5625c298cfe51cdf06a43efe5359bf31de57a\nhtml_bytes:113581:113939",
       "bytes": 120,
-      "sha256": "398c57010359cd40691a6088735efd7c6efdba7929cd7889c1324a4102be7bc1",
+      "sha256": "37f808a142850ee27ba10e506fb169b5270708c855dbc0f939995f80ce4328de",
       "status": "independent source oracle; runtime constructor must match actual checked reader reference"
     },
     {
@@ -246,5 +254,11 @@
     "actual active A record, receipt and inventory",
     "current complete scopes, commands and deduplicated six-category counts",
     "public-route phase outcomes and retained-grant capacity"
-  ]
+  ],
+  "correction": {
+    "native_commit": "3c987361be2526d3013ad133ad93fee66da36688",
+    "observed_reader_locator": "html_bytes:113581:113939",
+    "source_contract": "status::read combines article.span.start and selected heading.span endpoints. The inner status text span was mistakenly used only in the fixture assertion and static oracle. Actual subject construction already uses checked reader values.",
+    "preserved": "All nine authoritative inventory spans, all original bytes, the667-byte Senior/hurdles fact, context/negative facts, pairs and fixed grant are unchanged. No six-category or capacity result was available from this constructor refusal."
+  }
 }

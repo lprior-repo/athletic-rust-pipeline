@@ -25,7 +25,9 @@ pub(super) fn article(sources: &Sources) -> TestResult<Value> {
     let url = url::Url::parse(capture.capture.requested_url())?;
     let selected = markup::status_article(&body, url.path())?;
     check!(eq; selected.span, 106790..125395);
-    check!(eq; checked.subject().locator(), "html_bytes:113861:113927");
+    check!(eq; checked.subject().locator(), "html_bytes:113581:113939");
+    check!(eq; hash(span(STATUS, 113581, 358)?),
+        "be72c9e5e2e494d63f1ee727b40df5a9937e25aa40223d694e393c2ee43b11ba");
     check!(eq; checked.subject().native_document_id(), "28974");
     let headings = elements(selected.html, b"h4", selected.span.start)?;
     let paragraphs = elements(selected.html, b"p", selected.span.start)?;

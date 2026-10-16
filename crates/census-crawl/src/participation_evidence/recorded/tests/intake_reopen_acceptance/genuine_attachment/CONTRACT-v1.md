@@ -47,7 +47,12 @@ a checked reference. String preimages have no terminal newline.
   `document_subject_v1\n{namespace}\n{native_document_id}\n{url}\n{body_sha256}\n{locator}`.
   The constructor asserts the digest equals `DocumentSubjectV1::reference()`.
 - A is document-owned namespace `mhsaa_article_v1`, native document `28974`,
-  locator `html_bytes:113861:113927`, role AthleteStatus. Its interpretation bytes
+  locator `html_bytes:113581:113939`, role AthleteStatus. This is the complete
+  358-byte h4 selected by the checked reader; the separate 66-byte inner status
+  text remains at 113861 through 113927 with its original literal-fact digest.
+  The enclosing heading digest is
+  `be72c9e5e2e494d63f1ee727b40df5a9937e25aa40223d694e393c2ee43b11ba`.
+  Its interpretation bytes
   are `mhsaa_subject_dcc_event_day_v1\n{proof.capture}\n{proof.locator}`, asserted
   against the checked proof. Its context is the complete article DTO.
 - Each provider-linked CHSL subject is an explicitly test-authored canonical DTO
