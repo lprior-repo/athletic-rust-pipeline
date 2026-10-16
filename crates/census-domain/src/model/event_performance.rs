@@ -170,12 +170,7 @@ fn mark_kind_compatible(kind: &EventKind, mark: &Mark) -> bool {
         EventKind::Pentathlon | EventKind::Heptathlon | EventKind::Decathlon => {
             matches!(mark, Mark::Points(_)) || is_raw
         }
-        EventKind::Relay4x100
-        | EventKind::Relay4x200
-        | EventKind::Relay4x400
-        | EventKind::Relay4x800
-        | EventKind::SprintMedley
-        | EventKind::DistanceMedley => is_time_mark || is_raw,
+        _ if kind.is_relay() => is_time_mark || is_raw,
         _ if kind.is_field() => is_field_mark || is_raw,
         _ if is_time_event => is_time_mark || is_raw,
         _ => true,

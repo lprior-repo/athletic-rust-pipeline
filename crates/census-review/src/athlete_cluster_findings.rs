@@ -48,10 +48,6 @@ impl<'a> Row<'a> {
             && self.athlete.grad_year == other.athlete.grad_year
             && !self.cohort.conflicts_with(&other.cohort)
     }
-
-    fn gender_compatible(&self, other: &Self) -> bool {
-        census_domain::model::genders_compatible(self.athlete.gender, other.athlete.gender)
-    }
 }
 
 #[derive(Debug, Default)]
@@ -152,10 +148,9 @@ impl Span<'_> {
             return Some(HardContradiction::GradYearEvidenceDiffers);
         }
         if self.rows.iter().enumerate().any(|(i, row)| {
-            self.rows
-                .iter()
-                .skip(i.saturating_add(1))
-                .any(|other| !row.gender_compatible(other))
+            self.rows.iter().skip(i.saturating_add(1)).any(|other| {
+                !census_domain::model::genders_compatible(row.athlete.gender, other.athlete.gender)
+            })
         }) {
             return Some(HardContradiction::GenderDiffers);
         }
