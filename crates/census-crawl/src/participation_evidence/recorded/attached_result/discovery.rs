@@ -92,7 +92,7 @@ impl<'a, 'v, 's> AttachmentHtmlResultDiscoveryV1<'a, 'v, 's> {
 }
 
 fn reserve<T>(count: usize, grant: &mut AttachmentReplayGrantV1) -> CrawlResult<Vec<T>> {
-    let limit = census_domain::evidence_subject_attachment::ReplayLimits::SMALL.traversal_steps;
+    let limit = census_domain::public_identity_history::ReplayLimits::SMALL.traversal_steps;
     if count > limit {
         return Err(domain(
             census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError::Capacity {

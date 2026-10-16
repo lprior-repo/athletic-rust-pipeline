@@ -16,11 +16,19 @@ pub(super) fn observe(
     check!(eq; checked.context_reference(), document.recorded_root().key);
     check!(eq; checked.meet_id(), "763888");
     check!(eq; checked.result_document_id(), "1304896");
+    let page = checked.parsed_page();
     let wire = serde_json::to_vec(&(
         document.recorded_root(),
         checked.context_reference(),
         checked.original_document(),
-        checked.parsed_page(),
+        (
+            &page.meet,
+            &page.sport,
+            &page.region,
+            &page.school_year,
+            &page.skipped,
+            &page.grade_issues,
+        ),
         checked.published_start(),
         checked.published_end(),
     ))?;
