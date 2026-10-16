@@ -66,7 +66,9 @@ fn encoded<'a>(capture: &Capture<'a>, grant: &mut AttachmentReplayGrantV1) -> St
     let text = raw
         .strip_prefix('"')
         .and_then(|value| value.strip_suffix('"'))
-        .ok_or_else(|| Error::Corrupt("external capture body is not a plain base64 string"))?;
+        .ok_or(Error::Corrupt(
+            "external capture body is not a plain base64 string",
+        ))?;
     let expected = capture
         .body_bytes
         .checked_add(2)

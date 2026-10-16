@@ -29,6 +29,7 @@ pub(crate) use operations::enrich_retained_observations;
 pub(crate) use operations::RetainedEnrichment;
 mod public_identity;
 pub use public_identity::AcceptedPublicIdentitySnapshot;
+#[cfg(test)]
 mod receipt_prefix;
 mod regions;
 mod run;

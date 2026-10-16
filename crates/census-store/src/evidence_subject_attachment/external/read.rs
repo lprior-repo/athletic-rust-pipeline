@@ -75,7 +75,7 @@ fn pinned(
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<RetainedCaptureRootReadV1> {
     let actual = complete(view, expected.schema, &expected.key, grant)?
-        .ok_or_else(|| Error::Corrupt("external root is absent or ambiguous"))?;
+        .ok_or(Error::Corrupt("external root is absent or ambiguous"))?;
     grant.charge_steps(1).map_err(Error::Domain)?;
     if actual.root() != expected {
         return Err(Error::Corrupt("external root payload reference differs").into());

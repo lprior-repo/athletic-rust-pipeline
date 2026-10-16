@@ -75,7 +75,7 @@ fn read_checked(
     let budget = JournalReadBudget::new(measured.min(MAX_RETAINED_CAPTURE_ENVELOPE_BYTES))?;
     let envelope = view
         .journal_entry_raw_bounded(schema.phase(), key, budget)?
-        .ok_or_else(|| Error::Corrupt("external root disappeared from held view"))?;
+        .ok_or(Error::Corrupt("external root disappeared from held view"))?;
     Ok(Some(envelope))
 }
 
