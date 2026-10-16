@@ -18,14 +18,17 @@ pub(super) fn bind<'a, 's>(
         .receipts
         .get(index)
         .ok_or(Error::Corrupt("active attachment receipt missing"))?;
-    let target =
-        super::super::target::current(&owner.accepted, &record.command.target.public_id, grant)?;
+    let target = super::super::target::current(
+        owner.accepted.view(),
+        &record.command.target.public_id,
+        grant,
+    )?;
     target.require_command_target(&record.command.target, grant)?;
     grant.charge_steps(1).map_err(Error::Domain)?;
     Ok(Some(CurrentEvidenceSubjectAttachmentV1 {
         view: owner.view,
         ledger: &owner.ledger,
-        accepted: &owner.accepted,
+        accepted: owner.accepted.view(),
         record,
         subject,
         receipt,
@@ -44,7 +47,7 @@ fn select<'a>(
 > {
     let projection = owner
         .ledger
-        .projection(owner.accepted.store_identity(), grant)?;
+        .projection(owner.accepted.view().store_identity(), grant)?;
     grant
         .charge_steps(owner.ledger.records.len())
         .map_err(Error::Domain)?;

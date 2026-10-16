@@ -5,14 +5,16 @@ use census_domain::evidence_subject_attachment::{
 };
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 
+mod accepted;
 mod binding;
 mod capability;
+use accepted::AcceptedOwner;
 pub use capability::CurrentEvidenceSubjectAttachmentV1;
 
 pub struct CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's> {
     view: &'v StoreSnapshot<'s>,
     ledger: Ledger<'s>,
-    accepted: AcceptedPublicIdentitySnapshot,
+    accepted: AcceptedOwner<'v>,
 }
 
 impl<'v, 's> CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's> {
@@ -70,7 +72,7 @@ fn read<'v, 's>(
     Ok(CurrentEvidenceSubjectAttachmentReferencesV1 {
         view,
         ledger,
-        accepted,
+        accepted: AcceptedOwner::Owned(Box::new(accepted)),
     })
 }
 
