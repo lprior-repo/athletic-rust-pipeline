@@ -137,14 +137,7 @@ pub(super) fn clean(value: &str) -> String {
     collapse_whitespace(value)
 }
 
-pub(super) fn nonempty(value: &str) -> Option<String> {
-    let trimmed = value.trim();
-    if trimmed.is_empty() {
-        None
-    } else {
-        Some(trimmed.to_string())
-    }
-}
+pub(super) use crate::row_hygiene::nonempty;
 
 pub(super) fn meaningful(value: &str) -> Option<String> {
     nonempty(value).filter(|value| {

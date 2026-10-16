@@ -5,7 +5,7 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 
 use super::parse::{MemberSchool, SchoolCoachRow};
-use super::{ASSOCIATION, SOURCE_ID};
+use super::{nonempty, ASSOCIATION, SOURCE_ID};
 
 pub fn map_directory_row(
     row: &MemberSchool,
@@ -93,14 +93,5 @@ fn classify_role(title: &str) -> Option<CoachRole> {
         Some(CoachRole::AthleticDirector)
     } else {
         None
-    }
-}
-
-fn nonempty(value: &str) -> Option<String> {
-    let value = value.trim();
-    if value.is_empty() {
-        None
-    } else {
-        Some(value.to_string())
     }
 }

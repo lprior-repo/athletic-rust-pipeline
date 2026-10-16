@@ -106,6 +106,15 @@ pub fn clean_text(value: &str) -> String {
     cleaned
 }
 
+pub fn nonempty(value: &str) -> Option<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
 pub fn sanitize_person(value: &str) -> CrawlResult<Option<String>> {
     let cleaned = clean_text(value);
     let person = role_suffix()?

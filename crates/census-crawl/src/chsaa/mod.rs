@@ -11,14 +11,7 @@ pub fn school_page_url(slug: &str) -> String {
     format!("{HOST}/schools/{slug}/")
 }
 
-pub(crate) fn nonempty(value: &str) -> Option<String> {
-    let trimmed = value.trim();
-    if trimmed.is_empty() {
-        None
-    } else {
-        Some(trimmed.to_string())
-    }
-}
+pub(crate) use crate::row_hygiene::nonempty;
 
 pub use collect::{collect, Options};
 
