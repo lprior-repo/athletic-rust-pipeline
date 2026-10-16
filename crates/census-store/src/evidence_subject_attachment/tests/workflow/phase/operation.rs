@@ -1,4 +1,4 @@
-use super::meter::{object_position, Meter};
+use super::meter::{depth, Meter};
 use super::model::Record;
 use super::{domain, ledger, model};
 use crate::evidence_subject_attachment::AttachmentInspectionRequestV1;
@@ -49,7 +49,7 @@ pub(super) fn prepare(prior: &[&Record], record: &Record, meter: &mut Meter) -> 
     for reference in &record.issued {
         meter.singles(
             "issued input declaration",
-            object_position(record.references(), &reference.digest)?,
+            depth(record.references(), &reference.digest)?,
         )?;
     }
     model::introductions(prior, record, meter)?;

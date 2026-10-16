@@ -131,11 +131,12 @@ fn require_declared(
     reference: &AttachmentObjectReferenceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
-    for actual in record.command.reviewed_context.objects.as_slice() {
-        grant.charge_steps(1).map_err(Error::Domain)?;
-        if actual == reference {
-            return Ok(());
-        }
+    if super::super::ledger::declared(
+        record.command.reviewed_context.objects.as_slice(),
+        reference,
+        grant,
+    )? {
+        return Ok(());
     }
     Err(Error::Corrupt("historical target witness dependency omitted").into())
 }

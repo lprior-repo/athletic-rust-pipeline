@@ -13,6 +13,7 @@ use census_domain::model::StoreIdentity;
 use census_domain::public_identity_history::ReplayLimits;
 
 mod context;
+pub(super) use context::declared;
 pub(super) mod fences;
 mod read;
 mod receipts;

@@ -35,11 +35,12 @@ fn declared(
     expected: &AttachmentObjectReferenceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
-    for reference in record.command.reviewed_context.objects.as_slice() {
-        grant.charge_steps(1).map_err(Error::Domain)?;
-        if reference == expected {
-            return Ok(());
-        }
+    if super::declared(
+        record.command.reviewed_context.objects.as_slice(),
+        expected,
+        grant,
+    )? {
+        return Ok(());
     }
     Err(Error::Corrupt("entry input role absent from complete context").into())
 }

@@ -1,4 +1,4 @@
-use super::meter::{object_position, Meter};
+use super::meter::{depth, Meter};
 use super::model::Record;
 use super::{domain, model};
 use crate::public_identity_tests::support::TestResult;
@@ -83,7 +83,7 @@ pub(super) fn fences(records: &[&Record], record: &Record, meter: &mut Meter) ->
     for reference in [capture, token] {
         meter.singles(
             "entry input-role declaration",
-            object_position(record.references(), &reference.digest)?,
+            depth(record.references(), &reference.digest)?,
         )?;
     }
     check!(model::find(records, &capture.digest, meter)?);
@@ -103,7 +103,7 @@ pub(super) fn history(records: &[&Record], record: &Record, meter: &mut Meter) -
     for reference in [group, capture, token] {
         meter.singles(
             "historical dependency declaration",
-            object_position(record.references(), &reference.digest)?,
+            depth(record.references(), &reference.digest)?,
         )?;
     }
     check!(model::find(records, &group.digest, meter)?);

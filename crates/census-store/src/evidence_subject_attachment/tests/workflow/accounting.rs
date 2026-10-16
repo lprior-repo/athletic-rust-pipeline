@@ -153,9 +153,18 @@ fn first_record_work(
     Ok(FirstRecordWork {
         command: command_steps(command)?,
         context_closure: sum([product(2, 54)?, product(n, 6)?])?,
-        input_fences: sum([16, c, t, depth(c)?, depth(t)?])?,
-        historical_witness: sum([30, depth(w)?, depth(g)?, depth(c)?, depth(t)?, g, c, t])?,
-        issued_declarations: sum([g, w, c, t])?,
+        input_fences: sum([16, depth(c)?, depth(t)?, depth(c)?, depth(t)?])?,
+        historical_witness: sum([
+            30,
+            depth(w)?,
+            depth(g)?,
+            depth(c)?,
+            depth(t)?,
+            depth(g)?,
+            depth(c)?,
+            depth(t)?,
+        ])?,
+        issued_declarations: sum([depth(g)?, depth(w)?, depth(c)?, depth(t)?])?,
     })
 }
 
