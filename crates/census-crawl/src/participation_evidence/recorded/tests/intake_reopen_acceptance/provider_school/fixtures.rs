@@ -75,7 +75,7 @@ pub(super) fn verify_checked_school(checked: &CheckedProviderSchoolPacketV1) -> 
         &[],
         year,
         "2026-10-16T00:49:43+00:00",
-        &Site::for_jurisdiction(UsJurisdiction::MI),
+        &Site::for_jurisdiction(UsJurisdiction::Michigan),
     )?;
     check!(athletes.is_empty());
     check!(teams.is_empty());
@@ -90,7 +90,7 @@ pub(super) fn verify_checked_school(checked: &CheckedProviderSchoolPacketV1) -> 
     check!(eq; identity.url.as_deref(), Some("https://mi.milesplit.com/teams/12439-detroit-catholic-central"));
     check!(eq; school.name, "Detroit Catholic Central");
     check!(eq; school.city.as_deref(), Some("Novi"));
-    check!(eq; school.state, Some(UsJurisdiction::MI));
+    check!(eq; school.state, Some(UsJurisdiction::Michigan));
     check!(school.postal_addresses.is_empty());
     let proof = checked.directory_proof();
     check!(eq; proof.capture_sha256(), hash(DIRECTORY));
