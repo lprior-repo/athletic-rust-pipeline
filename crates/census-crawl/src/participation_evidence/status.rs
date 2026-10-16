@@ -1,5 +1,5 @@
 use super::{invalid, markup, DocumentSubjectV1, RetainedHtmlCaptureV1, SubjectOwnershipV1};
-use census_domain::model::{Grade, ProfileDate, SourceIdentity, SourceNamespace};
+use census_domain::model::{Grade, ProfileDate, SchoolYear, SourceIdentity, SourceNamespace};
 use census_store::StoreResult;
 use chrono::NaiveDate;
 
@@ -32,13 +32,7 @@ pub(super) fn read(capture: &RetainedHtmlCaptureV1) -> StoreResult<Status> {
         .map_err(|_| invalid("student-status article publication day invalid"))?;
     let day = ProfileDate::parse(&day.format("%Y-%m-%d").to_string())
         .map_err(|_| invalid("student-status day unsupported"))?;
-    let headings = markup::elements(article.html, b"h4", None)?;
-    let heading = markup::single(
-        headings
-            .into_iter()
-            .filter(|h| h.html.contains("text--secondary"))
-            .collect(),
-    )?;
+    let heading = subject_heading(article.html, &day)?;
     let (name, school, grade) = statement(&markup::text(heading.html)?)?;
     let start = article
         .span
@@ -69,6 +63,48 @@ pub(super) fn read(capture: &RetainedHtmlCaptureV1) -> StoreResult<Status> {
         day,
         grade,
     })
+}
+
+fn subject_heading<'a>(html: &'a str, day: &ProfileDate) -> StoreResult<markup::Element<'a>> {
+    let headings = markup::elements(html, b"h4", None)?;
+    let mut selected = None;
+    let mut seen_index = false;
+    for heading in headings {
+        if !heading.html.contains("text--secondary") {
+            continue;
+        }
+        let text = markup::text(heading.html)?;
+        if text.starts_with("Previous ") && text.ends_with(" honorees") {
+            index_heading(&heading, &text, day)?;
+            if selected.is_none() || seen_index {
+                return Err(invalid(
+                    "status index heading is repeated or precedes subject",
+                ));
+            }
+            seen_index = true;
+            continue;
+        }
+        statement(&text)?;
+        if selected.is_some() || seen_index {
+            return Err(invalid("status subject heading is ambiguous"));
+        }
+        selected = Some(heading);
+    }
+    selected.ok_or_else(|| invalid("status subject heading is missing"))
+}
+
+fn index_heading(heading: &markup::Element<'_>, text: &str, day: &ProfileDate) -> StoreResult<()> {
+    let year = SchoolYear::from_date(day.as_str())
+        .ok_or_else(|| invalid("status index day has no canonical school year"))?;
+    let span = markup::single(markup::elements(
+        heading.html,
+        b"span",
+        Some("text--secondary"),
+    )?)?;
+    if text != format!("Previous {} honorees", year.short()) || markup::text(span.html)? != text {
+        return Err(invalid("unsupported status index heading"));
+    }
+    Ok(())
 }
 
 fn statement(value: &str) -> StoreResult<(String, String, Grade)> {

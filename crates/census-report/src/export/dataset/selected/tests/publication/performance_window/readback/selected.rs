@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::{collections::BTreeSet, path::Path};
 
 pub(super) fn artifacts(directory: &Path, expected: &Expected) -> TestResult {
-    let ties = serde_json::to_string(&[expected.eligible.id.as_str()])?;
+    let normalized_ties = serde_json::to_string(&[expected.eligible.id.as_str()])?;
     let csv = csv_rows(&directory.join("best-results-co2027.csv"))?;
     check!(eq; csv.len(), 1);
     fields(
@@ -26,7 +26,10 @@ pub(super) fn artifacts(directory: &Path, expected: &Expected) -> TestResult {
             ("current_school_as_of", "2026-10-01"),
             ("eligible_result_group_count", "1"),
             ("tied_result_group_count", "1"),
-            ("tied_result_group_representative_ids", &ties),
+            (
+                "tied_result_group_representative_ids",
+                expected.eligible.id.as_str(),
+            ),
             ("result_group_basis", "canonical_performance_id"),
             ("physical_performance_count_status", "unknown"),
             ("selection_policy_version", "21"),
@@ -62,7 +65,7 @@ pub(super) fn artifacts(directory: &Path, expected: &Expected) -> TestResult {
             ("input_generation", &expected.input_generation),
             ("eligible_result_group_count", "1"),
             ("tied_result_group_count", "1"),
-            ("tied_result_group_representative_ids", &ties),
+            ("tied_result_group_representative_ids", &normalized_ties),
             ("result_group_basis", "canonical_performance_id"),
             ("physical_performance_count_status", "unknown"),
             ("selection_policy_version", "21"),

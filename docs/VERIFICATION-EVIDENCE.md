@@ -1504,8 +1504,8 @@ explicit synthetic participation publication test failed with CheckFailure
 cache confirmed that the domain and crawl invocations were package-wide --lib
 runs without the requested -E filter. A separate exact participation filter
 `test(participation_evidence::tests::)` passed 7/10. Detailed logs beyond the preserved summary were unavailable,
-so the exact positive-test assertion and causes of the other 148 crawl failures
-are unestablished. These failures are not classified as preexisting baseline
+so the exact positive-test assertion is unestablished. Package-wide crawl failure
+diagnostics are unavailable; the separate focused participation run failed 3/10. These failures are not classified as preexisting baseline
 failures. The genuine nested-article owner-selection defect was independently
 identified in source and its correction remains separately reviewed.
 

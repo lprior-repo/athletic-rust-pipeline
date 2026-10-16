@@ -68,7 +68,7 @@ fn exclusions(directory: &Path, expected: &Expected) -> TestResult {
 
 fn fields(row: &BTreeMap<String, String>, expected: &[(&str, &str)]) -> TestResult {
     for (name, value) in expected {
-        check!(eq; row.get(*name).map(String::as_str), Some(*value));
+        check!(eq; row.get(*name).map(String::as_str), Some(*value), "published readback field {name}");
     }
     Ok(())
 }
