@@ -177,7 +177,7 @@ async fn selected_publication_refuses_each_historical_qualification_contract_bef
 ) -> TestResult {
     use census_domain::profile_execution::{
         selected_qualification_contract_ref_v1 as old,
-        selected_qualification_contract_ref_v2 as current, ContractRoleV1 as Role,
+        selected_qualification_contract_ref_v3 as current, ContractRoleV1 as Role,
     };
     let fixture = Fixture::create().await?;
     for (ordinal, role) in Role::ALL.into_iter().enumerate() {

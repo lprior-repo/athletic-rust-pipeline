@@ -251,3 +251,5 @@ fn participation_unknown_context_does_not_inherit_a_scholastic_classification() 
         (CandidateOutcome::Unresolved, vec![Reason::ParticipationContextUnresolved]));
     Ok(())
 }
+
+mod in_season;

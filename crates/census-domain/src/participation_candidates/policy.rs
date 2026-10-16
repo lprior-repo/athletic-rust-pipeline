@@ -49,6 +49,7 @@ pub(super) enum ParticipationPolicy {
     HistoricalExplicitWindow,
     DateLocalScholastic,
     StrictExplicitWindow,
+    SourceProvenInSeason,
 }
 
 impl ParticipationPolicy {
@@ -56,6 +57,7 @@ impl ParticipationPolicy {
         match (reference.revision().get(), reference.digest()) {
             (2, PARTICIPATION_POLICY_V2_SHA256) => Ok(Self::DateLocalScholastic),
             (3, PARTICIPATION_POLICY_V3_SHA256) => Ok(Self::StrictExplicitWindow),
+            (4, super::in_season::PARTICIPATION_POLICY_V4_SHA256) => Ok(Self::SourceProvenInSeason),
             _ => Err(ParticipationInputError::UnsupportedPolicy),
         }
     }
@@ -63,7 +65,7 @@ impl ParticipationPolicy {
     pub(super) fn admits_status(self, status: StudentStatus, basis: StatusBasis) -> bool {
         match self {
             Self::HistoricalExplicitWindow | Self::DateLocalScholastic => true,
-            Self::StrictExplicitWindow => match status {
+            Self::StrictExplicitWindow | Self::SourceProvenInSeason => match status {
                 StudentStatus::HighSchool => matches!(
                     basis,
                     StatusBasis::DatedSchoolRoster | StatusBasis::ExplicitStudentStatus
@@ -83,7 +85,9 @@ impl ParticipationPolicy {
         reasons: ParticipationReasons,
     ) -> Result<bool, ParticipationInputError> {
         match self {
-            Self::HistoricalExplicitWindow | Self::StrictExplicitWindow => Ok(false),
+            Self::HistoricalExplicitWindow
+            | Self::StrictExplicitWindow
+            | Self::SourceProvenInSeason => Ok(false),
             Self::DateLocalScholastic => Ok(!reasons
                 .contains(ParticipationReason::ParticipationEvidenceConflict)
                 && !reasons.contains(ParticipationReason::CollegiateParticipation)

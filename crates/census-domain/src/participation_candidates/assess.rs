@@ -1,9 +1,10 @@
-use super::checks::{check, visible};
+use super::checks::{check, check_with_in_season, visible};
 use super::policy::ParticipationPolicy;
 use super::{
-    CandidateAssessment, CandidateOutcome, CandidateQuery, CohortFact, ParticipationContext,
-    ParticipationInputError, ParticipationObservation, ParticipationReason as Reason,
-    ParticipationReasons, PerformanceDateFact, ResultOwnership, StudentStatus,
+    CandidateAssessment, CandidateOutcome, CandidateQuery, CohortFact, InSeasonEvidence,
+    ParticipationContext, ParticipationInputError, ParticipationObservation,
+    ParticipationReason as Reason, ParticipationReasons, PerformanceDateFact, ResultOwnership,
+    StudentStatus,
 };
 use crate::model::{PerformanceWindowV1, ProfileDate};
 
@@ -18,6 +19,7 @@ pub fn assess_historical_participation<'a>(
         query,
         observation,
         ParticipationPolicy::HistoricalExplicitWindow,
+        InSeasonEvidence::Unavailable,
     )
 }
 
@@ -26,22 +28,41 @@ pub fn assess_participation_for_policy<'a>(
     observation: &'a ParticipationObservation<'a>,
 ) -> Result<CandidateAssessment<'a>, ParticipationInputError> {
     let policy = ParticipationPolicy::resolve(query.binding.participation_rule)?;
-    assess(query, observation, policy)
+    if matches!(policy, ParticipationPolicy::SourceProvenInSeason) {
+        return Err(ParticipationInputError::UnsupportedPolicy);
+    }
+    assess(query, observation, policy, InSeasonEvidence::Unavailable)
+}
+
+pub fn assess_participation_with_in_season<'a>(
+    query: CandidateQuery<'a>,
+    observation: &'a ParticipationObservation<'a>,
+    season: InSeasonEvidence<'a>,
+) -> Result<CandidateAssessment<'a>, ParticipationInputError> {
+    let policy = ParticipationPolicy::resolve(query.binding.participation_rule)?;
+    if !matches!(policy, ParticipationPolicy::SourceProvenInSeason) {
+        return Err(ParticipationInputError::UnsupportedPolicy);
+    }
+    assess(query, observation, policy, season)
 }
 
 fn assess<'a>(
     query: CandidateQuery<'a>,
     observation: &'a ParticipationObservation<'a>,
     policy: ParticipationPolicy,
+    season: InSeasonEvidence<'a>,
 ) -> Result<CandidateAssessment<'a>, ParticipationInputError> {
-    check(query, observation)?;
+    match season {
+        InSeasonEvidence::Unavailable => check(query, observation)?,
+        _ => check_with_in_season(query, observation, season)?,
+    }
     let mut reasons = ParticipationReasons::default();
     ownership(query, observation, &mut reasons)?;
     cohort(query, observation, &mut reasons)?;
     contexts(query, observation, &mut reasons)?;
     if let Some(date) = performance_date(query, observation, &mut reasons) {
         status(query, observation, date, &mut reasons, policy)?;
-        super::windows::assess(query, observation, date, &mut reasons, policy)?;
+        super::windows::assess(query, observation, date, &mut reasons, policy, season)?;
     }
     Ok(CandidateAssessment {
         query,

@@ -3,7 +3,7 @@ use crate::report::EventAdmission;
 use census_domain::model::{
     EventDisposition, EventExclusionReason, EventKind, ProfileSelectionV1, QueryProfileV1,
 };
-use census_domain::profile_execution::{selected_qualification_contract_ref_v2, ContractRoleV1};
+use census_domain::profile_execution::{selected_qualification_contract_ref_v3, ContractRoleV1};
 use serde_json::Value;
 
 mod guards;
@@ -13,18 +13,18 @@ mod reducer;
 async fn zero_eligible_selected_event_scope_publishes_audit_and_replays_offline() -> TestResult {
     let mut fixture = Fixture::selected_event_scope().await?;
     let mut input = super::super::fixture::profile()?.input().clone();
-    input.policies.cohort = selected_qualification_contract_ref_v2(ContractRoleV1::Cohort)?;
-    input.policies.event = selected_qualification_contract_ref_v2(ContractRoleV1::Event)?;
-    input.policies.identity = selected_qualification_contract_ref_v2(ContractRoleV1::Identity)?;
+    input.policies.cohort = selected_qualification_contract_ref_v3(ContractRoleV1::Cohort)?;
+    input.policies.event = selected_qualification_contract_ref_v3(ContractRoleV1::Event)?;
+    input.policies.identity = selected_qualification_contract_ref_v3(ContractRoleV1::Identity)?;
     input.policies.affiliation =
-        selected_qualification_contract_ref_v2(ContractRoleV1::Affiliation)?;
-    input.policies.contact = selected_qualification_contract_ref_v2(ContractRoleV1::Contact)?;
+        selected_qualification_contract_ref_v3(ContractRoleV1::Affiliation)?;
+    input.policies.contact = selected_qualification_contract_ref_v3(ContractRoleV1::Contact)?;
     input.policies.participation =
-        selected_qualification_contract_ref_v2(ContractRoleV1::Participation)?;
+        selected_qualification_contract_ref_v3(ContractRoleV1::Participation)?;
     input.policies.publication =
-        selected_qualification_contract_ref_v2(ContractRoleV1::Publication)?;
-    input.source_plan = selected_qualification_contract_ref_v2(ContractRoleV1::SourcePlan)?;
-    input.completion_contract = selected_qualification_contract_ref_v2(ContractRoleV1::Completion)?;
+        selected_qualification_contract_ref_v3(ContractRoleV1::Publication)?;
+    input.source_plan = selected_qualification_contract_ref_v3(ContractRoleV1::SourcePlan)?;
+    input.completion_contract = selected_qualification_contract_ref_v3(ContractRoleV1::Completion)?;
     let profile = QueryProfileV1::new(input)?;
     fixture.store.register_profile(&profile)?;
     fixture.selection = ProfileSelectionV1::new(fixture.store.store_identity()?, profile.id()?);

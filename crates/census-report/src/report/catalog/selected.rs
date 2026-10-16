@@ -3,6 +3,7 @@ use crate::report::{ReportError, ReportResult};
 use census_domain::model::QueryProfileV1;
 use census_domain::profile_execution::{
     validate_selected_qualification_profile_v1, validate_selected_qualification_profile_v2,
+    validate_selected_qualification_profile_v3,
 };
 
 #[derive(Clone, Copy)]
@@ -28,8 +29,10 @@ impl<'a> Selection<'a> {
         }
         let checked = if dataset.uses_historical_identity_contract() {
             validate_selected_qualification_profile_v1(profile).map(|_| ())
-        } else {
+        } else if dataset.uses_historical_participation_contract() {
             validate_selected_qualification_profile_v2(profile).map(|_| ())
+        } else {
+            validate_selected_qualification_profile_v3(profile).map(|_| ())
         };
         checked.map_err(|source| ReportError::Invariant {
             detail: format!("selected event publication contract: {source}"),

@@ -1,6 +1,7 @@
 mod attach;
 mod authority;
 mod capture;
+mod origin;
 use super::{frozen, ExportDataset};
 use crate::export::{VerifiedCurrentAffiliations, VerifiedParticipationView};
 use crate::report::{ReportError, ReportResult};
@@ -12,25 +13,12 @@ pub(super) enum SelectedInputOrigin {
     Current,
     HistoricalReplay,
     HistoricalIdentityReplay,
+    HistoricalParticipationReplay,
 }
 
 impl ExportDataset {
     pub(crate) fn archive_digest(&self) -> ReportResult<String> {
         frozen::archive_digest(self)
-    }
-
-    pub(crate) fn is_historical_selected_replay(&self) -> bool {
-        matches!(
-            self.selected_input_origin,
-            super::SelectedInputOrigin::HistoricalReplay
-        )
-    }
-
-    pub(crate) fn uses_historical_identity_contract(&self) -> bool {
-        matches!(
-            self.selected_input_origin,
-            SelectedInputOrigin::HistoricalReplay | SelectedInputOrigin::HistoricalIdentityReplay
-        )
     }
 
     pub fn canonical_aliases(&self) -> &std::collections::HashMap<String, String> {
@@ -64,7 +52,12 @@ impl ExportDataset {
             return Ok(());
         }
         self.ensure_input_binding()?;
-        if self.is_historical_selected_replay() {
+        if matches!(
+            self.selected_input_origin,
+            SelectedInputOrigin::HistoricalReplay
+                | SelectedInputOrigin::HistoricalIdentityReplay
+                | SelectedInputOrigin::HistoricalParticipationReplay
+        ) {
             return Err(invalid(
                 "historical selected replay cannot authorize current publication",
             ));
@@ -74,7 +67,7 @@ impl ExportDataset {
             .ok_or_else(|| invalid("selected publication requires retained identity proofs"))?
             .require_current()?;
         let _checked =
-            census_domain::profile_execution::validate_selected_qualification_profile_v2(
+            census_domain::profile_execution::validate_selected_qualification_profile_v3(
                 self.selected_authority()?.profile(),
             )
             .map_err(|source| {

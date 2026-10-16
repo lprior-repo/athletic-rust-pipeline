@@ -5,7 +5,7 @@ use census_domain::model::{
     QueryProfileInputV1, QueryProfileV1, RegionalMembershipV1, SchoolYear, Sport,
 };
 use census_domain::profile_execution::{
-    selected_qualification_contract_ref_v2 as reference, ContractRoleV1 as Role,
+    selected_qualification_contract_ref_v3 as reference, ContractRoleV1 as Role,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};

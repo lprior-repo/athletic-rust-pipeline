@@ -1,11 +1,19 @@
 use super::{
-    CandidateQuery, CohortFact, ParticipationInputError, ParticipationObservation, ProofReference,
-    ResultOwnership, MAX_PARTICIPATION_FACTS,
+    CandidateQuery, CohortFact, InSeasonEvidence, ParticipationInputError,
+    ParticipationObservation, ProofReference, ResultOwnership, MAX_PARTICIPATION_FACTS,
 };
 
 pub(super) fn check(
     query: CandidateQuery<'_>,
     observation: &ParticipationObservation<'_>,
+) -> Result<(), ParticipationInputError> {
+    check_with_in_season(query, observation, InSeasonEvidence::Unavailable)
+}
+
+pub(super) fn check_with_in_season(
+    query: CandidateQuery<'_>,
+    observation: &ParticipationObservation<'_>,
+    season: InSeasonEvidence<'_>,
 ) -> Result<(), ParticipationInputError> {
     if query.profile.id()? != *query.binding.profile
         || observation.binding.profile != query.binding.profile
@@ -25,13 +33,15 @@ pub(super) fn check(
         .len()
         .checked_add(observation.high_school_status.len())
         .and_then(|count| count.checked_add(observation.eligibility_windows.len()))
+        .and_then(|count| count.checked_add(super::in_season::fact_count(season)))
         .and_then(|count| count.checked_add(2))
         .ok_or(ParticipationInputError::TooManyFacts)?;
     if count > MAX_PARTICIPATION_FACTS {
         return Err(ParticipationInputError::TooManyFacts);
     }
+    super::in_season::check_facts(season)?;
     check_ownership(observation)?;
-    check_proofs(query, observation)?;
+    check_proofs(query, observation, season)?;
     observation
         .eligibility_windows
         .iter()
@@ -68,6 +78,7 @@ fn check_ownership(
 
 fn proofs<'a>(
     observation: &'a ParticipationObservation<'a>,
+    season: InSeasonEvidence<'a>,
 ) -> impl Iterator<Item = ProofReference<'a>> {
     let ownership = match observation.ownership {
         ResultOwnership::Bound { proof, .. } => Some(proof),
@@ -88,18 +99,20 @@ fn proofs<'a>(
                 .iter()
                 .map(|fact| fact.boundary_proof),
         )
+        .chain(super::in_season::proofs(season))
 }
 
 fn check_proofs(
     query: CandidateQuery<'_>,
     observation: &ParticipationObservation<'_>,
+    season: InSeasonEvidence<'_>,
 ) -> Result<(), ParticipationInputError> {
-    proofs(observation).try_for_each(|proof| {
+    proofs(observation, season).try_for_each(|proof| {
         if proof.athlete != observation.athlete {
             return Err(ParticipationInputError::ForeignSubject);
         }
         visible(query, proof)?;
-        proofs(observation).try_for_each(|other| {
+        proofs(observation, season).try_for_each(|other| {
             if proof.fact == other.fact && proof != other {
                 Err(ParticipationInputError::ConflictingProofIdentity)
             } else {

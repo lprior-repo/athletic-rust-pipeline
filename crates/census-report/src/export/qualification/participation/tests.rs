@@ -42,6 +42,12 @@ async fn synthetic_scholastic_source_retains_archive_but_lacks_independent_statu
     let fixture = Fixture::prepare(Some("High School")).await?;
     let token = fixture.assess()?;
     let payload = serde_json::to_value(&token.replay)?;
+    assert_eq!(payload["version"], 2);
+    assert!(payload["independent"]["entries"]
+        .as_object()
+        .ok_or("independent entries")?
+        .is_empty());
+    let payload = &payload["retained"];
     assert_eq!(
         payload["profile_id"],
         serde_json::to_value(fixture.profile.id()?)?

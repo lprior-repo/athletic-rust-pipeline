@@ -1,9 +1,9 @@
-use super::participation::{ParticipationReplayV1, PinnedParticipation};
+use super::participation::{ParticipationReplay, PinnedParticipation};
 use super::{ParticipationAssessment, ParticipationOutcome, VerifiedParticipationView};
 use census_domain::participation_candidates::CandidateOutcome;
 
 impl VerifiedParticipationView {
-    pub(crate) fn from_pinned(pinned: PinnedParticipation) -> (Self, ParticipationReplayV1) {
+    pub(crate) fn from_pinned(pinned: PinnedParticipation) -> (Self, ParticipationReplay) {
         let (input_generation, profile_id, participation_rule, rows, replay) = pinned.into_parts();
         let rows = rows
             .into_iter()

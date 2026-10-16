@@ -54,7 +54,8 @@ pub(super) fn run(cli: &super::Cli, args: &SelectedPublicationArgs) -> Result<()
     println!(
         "{}",
         serde_json::json!({
-            "schema": "selected_publication_qualification_v2",
+            "schema": "selected_publication_qualification_v3",
+            "participation_policy_revision": 4,
             "qualification_only": true,
             "qualification_lifecycle": 7,
             "profile_id": selection.profile_id(),

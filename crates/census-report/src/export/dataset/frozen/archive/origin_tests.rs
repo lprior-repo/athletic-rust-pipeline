@@ -9,7 +9,7 @@ use census_domain::model::{
 };
 use census_domain::participation_candidates::participation_policy_v2;
 use census_domain::profile_execution::{
-    selected_qualification_contract_ref_v1, selected_qualification_contract_ref_v2, ContractRoleV1,
+    selected_qualification_contract_ref_v1, selected_qualification_contract_ref_v3, ContractRoleV1,
 };
 use census_domain::UsJurisdiction;
 use sha2::{Digest, Sha256};
@@ -28,20 +28,20 @@ fn input() -> TestResult<QueryProfileInputV1> {
         as_of: ProfileDate::parse("2026-10-13")?,
         performance_window: PerformanceWindowV1::AllRetainedThroughAsOf,
         contact_school_year: SchoolYear::new(2026).ok_or("school year")?,
-        source_plan: selected_qualification_contract_ref_v2(ContractRoleV1::SourcePlan)?,
+        source_plan: selected_qualification_contract_ref_v3(ContractRoleV1::SourcePlan)?,
         acquisition_window: ProfileDateRangeV1::new(
             ProfileDate::parse("2026-10-01")?,
             ProfileDate::parse("2026-10-13")?,
         )?,
-        completion_contract: selected_qualification_contract_ref_v2(ContractRoleV1::Completion)?,
+        completion_contract: selected_qualification_contract_ref_v3(ContractRoleV1::Completion)?,
         policies: ProfilePoliciesV1 {
-            cohort: selected_qualification_contract_ref_v2(ContractRoleV1::Cohort)?,
-            event: selected_qualification_contract_ref_v2(ContractRoleV1::Event)?,
-            identity: selected_qualification_contract_ref_v2(ContractRoleV1::Identity)?,
-            affiliation: selected_qualification_contract_ref_v2(ContractRoleV1::Affiliation)?,
-            contact: selected_qualification_contract_ref_v2(ContractRoleV1::Contact)?,
-            participation: selected_qualification_contract_ref_v2(ContractRoleV1::Participation)?,
-            publication: selected_qualification_contract_ref_v2(ContractRoleV1::Publication)?,
+            cohort: selected_qualification_contract_ref_v3(ContractRoleV1::Cohort)?,
+            event: selected_qualification_contract_ref_v3(ContractRoleV1::Event)?,
+            identity: selected_qualification_contract_ref_v3(ContractRoleV1::Identity)?,
+            affiliation: selected_qualification_contract_ref_v3(ContractRoleV1::Affiliation)?,
+            contact: selected_qualification_contract_ref_v3(ContractRoleV1::Contact)?,
+            participation: selected_qualification_contract_ref_v3(ContractRoleV1::Participation)?,
+            publication: selected_qualification_contract_ref_v3(ContractRoleV1::Publication)?,
         },
         include_provisional: ProvisionalInclusionV1::Exclude,
     })
@@ -161,7 +161,12 @@ fn wire_origin_cannot_grant_current_or_historical_authority() -> TestResult {
         .ok_or("data")?
         .get("selected_input_origin")
         .is_none());
-    for marker in ["Current", "HistoricalReplay", "HistoricalIdentityReplay"] {
+    for marker in [
+        "Current",
+        "HistoricalReplay",
+        "HistoricalIdentityReplay",
+        "HistoricalParticipationReplay",
+    ] {
         let mut wire = original.clone();
         wire.get_mut("data")
             .and_then(serde_json::Value::as_object_mut)
@@ -226,7 +231,7 @@ fn proof_family_lifecycle_and_exact_profile_contract_cannot_be_mixed() -> TestRe
 fn current_capture_refuses_every_historical_qualification_descriptor_before_io() -> TestResult {
     for role in ContractRoleV1::ALL {
         let old = selected_qualification_contract_ref_v1(role)?;
-        let current = selected_qualification_contract_ref_v2(role)?;
+        let current = selected_qualification_contract_ref_v3(role)?;
         if old == current {
             check!(eq; role, ContractRoleV1::Participation);
             continue;
@@ -234,6 +239,34 @@ fn current_capture_refuses_every_historical_qualification_descriptor_before_io()
         let mut raw = input()?;
         replace(&mut raw, role, old);
         live_refused(raw, role)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn strict_graph_profile_is_historical_and_mixed_replay_contracts_refuse() -> TestResult {
+    let mut raw = input()?;
+    for role in ContractRoleV1::ALL {
+        replace(
+            &mut raw,
+            role,
+            census_domain::profile_execution::selected_qualification_contract_ref_v2(role)?,
+        );
+    }
+    let profile = QueryProfileV1::new(raw.clone())?;
+    check!(matches!(
+        current_origin(&profile)?,
+        SelectedInputOrigin::HistoricalParticipationReplay
+    ));
+    live_refused(raw.clone(), ContractRoleV1::Participation)?;
+    for role in [ContractRoleV1::Participation, ContractRoleV1::Publication] {
+        let mut mixed = raw.clone();
+        replace(
+            &mut mixed,
+            role,
+            selected_qualification_contract_ref_v3(role)?,
+        );
+        check!(current_origin(&QueryProfileV1::new(mixed)?).is_err());
     }
     Ok(())
 }

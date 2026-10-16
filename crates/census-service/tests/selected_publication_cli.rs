@@ -42,7 +42,8 @@ async fn selected_publication_executable_withholds_unwindowed_marks_and_replays_
     let reply: serde_json::Value = serde_json::from_slice(&result.stdout)?;
     check!(eq; reply["qualification_only"], true);
     check!(eq; reply["qualification_lifecycle"], 7);
-    check!(eq; reply["schema"], "selected_publication_qualification_v2");
+    check!(eq; reply["schema"], "selected_publication_qualification_v3");
+    check!(eq; reply["participation_policy_revision"], 4);
     check!(eq; reply["independently_verified"], true);
     let path = std::path::PathBuf::from(reply["workbook"].as_str().ok_or("workbook path")?);
     let verified = publication::verify_published(&path)?;

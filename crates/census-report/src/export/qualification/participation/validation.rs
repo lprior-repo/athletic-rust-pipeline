@@ -21,9 +21,27 @@ pub(super) fn live(
 pub(super) fn frozen(
     dataset: &ExportDataset,
     profile: &QueryProfileV1,
-    replay: &ParticipationReplayV1,
+    replay: &ParticipationReplay,
 ) -> ReportResult<()> {
     selected(dataset, profile)?;
+    let current = profile.input().policies.participation
+        == participation_policy_v4().map_err(|_| invalid("V4 participation policy unavailable"))?;
+    match replay {
+        ParticipationReplay::V1(_) if current => {
+            return Err(invalid("V4 participation requires ReplayV2").into())
+        }
+        ParticipationReplay::V2(value) => {
+            if !current || value.version != 2 {
+                return Err(invalid("ReplayV2 requires exact V4 participation").into());
+            }
+            value.independent.require_binding(
+                &dataset.lineage.store_identity,
+                dataset.lineage.snapshot_sequence,
+            )?;
+        }
+        ParticipationReplay::V1(_) => {}
+    }
+    let replay = replay.retained();
     if replay.version != 1
         || replay.profile != *profile
         || replay.profile_id != profile.id().map_err(StoreError::from)?
@@ -58,9 +76,9 @@ fn selected(dataset: &ExportDataset, profile: &QueryProfileV1) -> ReportResult<(
 
 fn current_policy(rule: &census_domain::model::ContractRefV1) -> ReportResult<()> {
     if rule
-        != &participation_policy_v3().map_err(|_| invalid("V3 participation policy unavailable"))?
+        != &participation_policy_v4().map_err(|_| invalid("V4 participation policy unavailable"))?
     {
-        return Err(invalid("new participation capture requires the exact V3 policy").into());
+        return Err(invalid("new participation capture requires the exact V4 policy").into());
     }
     Ok(())
 }
@@ -70,7 +88,9 @@ fn replay_policy(rule: &census_domain::model::ContractRefV1) -> ReportResult<()>
         participation_policy_v2().map_err(|_| invalid("V2 participation policy unavailable"))?;
     let v3 =
         participation_policy_v3().map_err(|_| invalid("V3 participation policy unavailable"))?;
-    if rule != &v2 && rule != &v3 {
+    let v4 =
+        participation_policy_v4().map_err(|_| invalid("V4 participation policy unavailable"))?;
+    if rule != &v2 && rule != &v3 && rule != &v4 {
         return Err(invalid("participation replay policy is not registered").into());
     }
     Ok(())
@@ -85,12 +105,15 @@ mod tests {
     };
 
     #[test]
-    fn current_capture_requires_v3_and_historical_replay_preserves_exact_v2(
+    fn current_capture_requires_v4_and_historical_replay_preserves_exact_v2_v3(
     ) -> Result<(), Box<dyn std::error::Error>> {
         let v2 = participation_policy_v2()?;
         let v3 = participation_policy_v3()?;
+        let v4 = participation_policy_v4()?;
         assert!(current_policy(&v2).is_err());
-        assert!(current_policy(&v3).is_ok());
+        assert!(current_policy(&v3).is_err());
+        assert!(current_policy(&v4).is_ok());
+        assert!(replay_policy(&v4).is_ok());
         assert!(replay_policy(&v2).is_ok());
         assert!(replay_policy(&v3).is_ok());
         for (revision, digest) in [

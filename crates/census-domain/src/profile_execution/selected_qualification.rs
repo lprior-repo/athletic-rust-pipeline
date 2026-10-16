@@ -32,6 +32,7 @@ enum Component {
     RetainedProfessionalRoleAndMailboxSchoolYear,
     SelectedArtifact8AtomicFrozenBundle,
     SelectedArtifact8AtomicFrozenGraphBundleV2,
+    SelectedArtifact8AtomicFrozenGraphBundleV2IndependentParticipationReplayV2,
     RetainedInputsOnlyNoAcquisition,
     QualificationOnlyNoCensusCompletionCertification,
 }
@@ -64,6 +65,50 @@ impl<'a> SupportedQualificationProfileV2<'a> {
     pub fn profile(&self) -> &'a QueryProfileV1 {
         self.profile
     }
+}
+
+#[derive(Debug)]
+#[must_use]
+pub struct SupportedQualificationProfileV3<'a> {
+    profile: &'a QueryProfileV1,
+}
+
+impl<'a> SupportedQualificationProfileV3<'a> {
+    pub fn profile(&self) -> &'a QueryProfileV1 {
+        self.profile
+    }
+}
+
+pub fn selected_qualification_contract_ref_v3(
+    role: ContractRoleV1,
+) -> Result<ContractRefV1, ProfileExecutionError> {
+    if role == ContractRoleV1::Participation {
+        return Ok(crate::participation_candidates::participation_policy_v4()?);
+    }
+    if role == ContractRoleV1::Publication {
+        let digest = serialized_digest(&Descriptor {
+            version: 1,
+            revision: 4,
+            role,
+            scope: Scope::ExistingRetainedAuthorityGraphV3QualificationOnly,
+            component: Component::SelectedArtifact8AtomicFrozenGraphBundleV2IndependentParticipationReplayV2,
+        })?;
+        return Ok(ContractRefV1::new(1, 4, &digest)?);
+    }
+    selected_qualification_contract_ref_v2(role)
+}
+
+pub fn validate_selected_qualification_profile_v3(
+    profile: &QueryProfileV1,
+) -> Result<SupportedQualificationProfileV3<'_>, ProfileExecutionError> {
+    ContractRoleV1::ALL.into_iter().try_for_each(|role| {
+        if role.reference(profile.input()) != &selected_qualification_contract_ref_v3(role)? {
+            return Err(ProfileExecutionError::UnsupportedContractReference { role });
+        }
+        Ok(())
+    })?;
+    check_selection_configuration(profile)?;
+    Ok(SupportedQualificationProfileV3 { profile })
 }
 
 pub fn selected_qualification_contract_ref_v1(
@@ -161,3 +206,6 @@ fn validate(profile: &QueryProfileV1, family: Family) -> Result<(), ProfileExecu
 mod graph_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod in_season_tests;

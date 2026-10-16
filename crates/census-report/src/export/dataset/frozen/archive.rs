@@ -164,9 +164,12 @@ fn selected_replay_origin(
     lifecycle: u32,
 ) -> ReportResult<super::super::SelectedInputOrigin> {
     use super::super::{selected_proofs::Version, SelectedInputOrigin};
-    use census_domain::participation_candidates::participation_policy_v2;
+    use census_domain::participation_candidates::{
+        participation_policy_v2, participation_policy_v3, participation_policy_v4,
+    };
     use census_domain::profile_execution::{
         validate_selected_qualification_profile_v1, validate_selected_qualification_profile_v2,
+        validate_selected_qualification_profile_v3,
     };
     match (version, lifecycle) {
         (Version::HistoricalContextV1, 6) => {
@@ -180,7 +183,16 @@ fn selected_replay_origin(
             Ok(SelectedInputOrigin::HistoricalIdentityReplay)
         }
         (Version::RetainedGraphV2, 7) => {
-            let _checked = validate_selected_qualification_profile_v2(profile)
+            let rule = &profile.input().policies.participation;
+            if rule == &participation_policy_v3().map_err(|error| invalid(&error.to_string()))? {
+                let _checked = validate_selected_qualification_profile_v2(profile)
+                    .map_err(|error| invalid(&error.to_string()))?;
+                return Ok(SelectedInputOrigin::HistoricalParticipationReplay);
+            }
+            if rule != &participation_policy_v4().map_err(|error| invalid(&error.to_string()))? {
+                return Err(invalid("unsupported retained participation policy"));
+            }
+            let _checked = validate_selected_qualification_profile_v3(profile)
                 .map_err(|error| invalid(&error.to_string()))?;
             Ok(SelectedInputOrigin::Current)
         }

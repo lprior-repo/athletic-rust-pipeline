@@ -7,7 +7,7 @@ use census_crawl::{AdapterContext, AdapterReport, CaptureContext, CrawlResult};
 use census_domain::model::{
     CanonicalAthlete, CanonicalSchool, QueryProfileV1, SchoolYear, SourceIdentity, SourceNamespace,
 };
-use census_domain::participation_candidates::participation_policy_v3;
+use census_domain::participation_candidates::participation_policy_v4;
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use serde_json::{json, Value};
@@ -93,7 +93,7 @@ impl Fixture {
             .into_iter()
             .find(|row| row.source_key == "milesplit_result:201782263")
             .ok_or("owned performance")?;
-        let profile = super::profile::profile(participation_policy_v3()?)?;
+        let profile = super::profile::profile(participation_policy_v4()?)?;
         store.store_identity()?;
         store.register_profile(&profile)?;
         for athlete in store.snapshot().athletes()? {

@@ -3,6 +3,7 @@ use crate::report::ReportResult;
 use census_domain::model::{ContractRefV1, ProfileDate, ProfileId};
 use census_domain::profile_execution::{
     validate_selected_qualification_profile_v1, validate_selected_qualification_profile_v2,
+    validate_selected_qualification_profile_v3,
 };
 use serde::{Deserialize, Serialize};
 
@@ -101,8 +102,14 @@ fn verified_profile(
         let _checked = validate_selected_qualification_profile_v1(profile).map_err(|source| {
             super::invariant(format!("unsupported historical selected profile: {source}"))
         })?;
-    } else {
+    } else if dataset.uses_historical_participation_contract() {
         let _checked = validate_selected_qualification_profile_v2(profile).map_err(|source| {
+            super::invariant(format!(
+                "unsupported historical participation profile: {source}"
+            ))
+        })?;
+    } else {
+        let _checked = validate_selected_qualification_profile_v3(profile).map_err(|source| {
             super::invariant(format!(
                 "unsupported selected publication profile: {source}"
             ))
