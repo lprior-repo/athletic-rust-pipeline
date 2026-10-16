@@ -9,6 +9,8 @@ use census_store::{ReadBudget, Store, StoreResult, Table};
 use serde_json::Value;
 use std::collections::BTreeSet;
 
+mod inventory;
+
 const BUDGET: ReadBudget = ReadBudget {
     rows: 64,
     bytes: 1024 * 1024,
@@ -21,11 +23,13 @@ pub(super) fn references(
     mut refs: BTreeSet<String>,
 ) -> TestResult<Vec<String>> {
     let snapshot = store.snapshot();
-    check!(eq; snapshot.athletes()?.len(), 1);
-    check!(eq; snapshot.scan::<CanonicalPerformance>(Table::Performances)?.len(), 2);
-    check!(eq; snapshot.scan::<CanonicalTeam>(Table::Teams)?.len(), 1);
-    check!(eq; snapshot.scan::<CanonicalEvent>(Table::Events)?.len(), 1);
-    check!(eq; snapshot.scan::<CanonicalMeet>(Table::Meets)?.len(), 2);
+    check!(eq; snapshot.athletes()?.len(), 1, "fixture canonical athlete count");
+    check!(eq; snapshot.scan::<CanonicalTeam>(Table::Teams)?.len(), 1, "fixture canonical team count");
+    inventory::check(
+        &snapshot.scan::<CanonicalPerformance>(Table::Performances)?,
+        &snapshot.scan::<CanonicalEvent>(Table::Events)?,
+        &snapshot.scan::<CanonicalMeet>(Table::Meets)?,
+    )?;
     snapshot.for_each_observation_bounded::<CanonicalAthlete>(
         Table::Athletes,
         BUDGET,

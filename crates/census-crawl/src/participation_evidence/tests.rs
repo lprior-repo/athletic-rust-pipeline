@@ -2,6 +2,8 @@ use super::*;
 use census_domain::model::StoreIdentity;
 use chrono::{DateTime, Utc};
 
+mod article_owner;
+
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 const STATUS: &[u8] = include_bytes!("tests/fixtures/mhsaa-status.html");
 const SCHEDULE: &[u8] = include_bytes!("tests/fixtures/dcc-schedule.html");

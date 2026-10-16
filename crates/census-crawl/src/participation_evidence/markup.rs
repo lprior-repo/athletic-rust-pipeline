@@ -4,6 +4,11 @@ use html5gum::{DefaultEmitter, StartTag, Token, Tokenizer};
 use std::ops::Range;
 
 mod active;
+mod article;
+
+pub(super) fn status_article<'a>(html: &'a str, path: &str) -> StoreResult<Element<'a>> {
+    article::selected(html, path)
+}
 
 type ElementAttributes = Vec<(String, String)>;
 

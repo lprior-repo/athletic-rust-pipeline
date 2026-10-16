@@ -1487,3 +1487,38 @@ Root workspace check `b5b8e6f3` and formatting `6b761a4a` also passed.
 This is a regression-test-only integration; the separate current-version
 migration remains unmerged and unqualified. No release or national-run
 acceptance is inferred.
+
+## Checked participation successor and historical probes, 2026-10-16
+
+Native verification of exact `ef1d12445401a7bc9535d56c2878fe5e641e19fe`
+reported formatting and workspace check PASS. Source lint failed four findings:
+markup tuple type complexity, a collapsible canonical-link match, and two manual
+ASCII case comparisons in transport validation. Source-cleared two-file repair
+`7f017c1b6dc5aba80f04d98ed2cbfcd134eb446d` has not yet passed native lint.
+The normal merge `25f204f3f24ff060ed33589e11f71f6166d1da47` preserves incoming
+main `a8e7d7be6008d27fa38ac4e804bf071ebae2135b`; merged-tree checks remain pending.
+
+On exact ef1d, domain tests passed 833/833 and service tests passed 10/10. The
+explicit synthetic participation publication test failed with CheckFailure
+(left 2, right 1). Crawl tests passed 1465/1616, with 151 failures. Native command
+cache confirmed that the domain and crawl invocations were package-wide --lib
+runs without the requested -E filter. A separate exact participation filter
+`test(participation_evidence::tests::)` passed 7/10. Detailed logs beyond the preserved summary were unavailable,
+so the exact positive-test assertion and causes of the other 148 crawl failures
+are unestablished. These failures are not classified as preexisting baseline
+failures. The genuine nested-article owner-selection defect was independently
+identified in source and its correction remains separately reviewed.
+
+The external strict-v3 graph archive consumer passed 1/1 on ef1d, reopening the
+unaltered exact-53e producer output offline and refusing a current CSV write.
+All original 49 receipt inventory entries were unchanged. Producer receipt SHA256
+is `9d573de6c0482ee9cec22c71b64d254332ce19cde64a7a8df4f71da4be2a0b0f`.
+
+The separate exact-53e guarded-open fixture experiment passed 2/2, using the
+reviewed temporary Fjall guarded-callback and first-party inspection-copy overlay.
+Original historical store inventory and producer receipt hashes remained
+unchanged; original Fjall recovery was not opened. Temporary Cargo manifest and
+lock wiring were restored to their pinned hashes. This proves the controlled
+clean/orphan fixture refusal behavior only. The dependency and guarded opener
+remain unactivated, and copied recovery has no hard production memory, growth or
+shutdown bound. No national or genuine-person selection acceptance follows.

@@ -21,13 +21,7 @@ pub(super) fn read(capture: &RetainedHtmlCaptureV1) -> StoreResult<Status> {
     }
     let body = capture.body()?;
     markup::canonical(&body, capture.requested_url())?;
-    let articles = markup::elements(&body, b"article", Some("node__article"))?;
-    let article = markup::single(
-        articles
-            .into_iter()
-            .filter(|item| item.attribute("data-path") == Some(url.path()))
-            .collect(),
-    )?;
+    let article = markup::status_article(&body, url.path())?;
     if article.attribute("data-nid").is_none_or(|id| !numeric(id)) {
         return Err(invalid(
             "status article has no exact numeric document identity",

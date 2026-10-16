@@ -3,6 +3,10 @@ use super::{
 };
 use crate::bests::{ParticipationExclusionOutcome, ParticipationExclusionReason};
 use crate::export::ParticipationOutcome;
+use census_domain::model::performance_comparison::{
+    ComparisonPolicy, Measure, PrKey, SurfaceClass, TimingClass, WindClass,
+};
+use census_domain::model::{CompetitionCategory, EventKind, EventSpecification};
 use census_domain::participation_candidates::ParticipationReason;
 
 pub(super) fn all_retained(dataset: &ExportDataset, stronger: &CanonicalPerformance) -> TestResult {
@@ -12,7 +16,7 @@ pub(super) fn all_retained(dataset: &ExportDataset, stronger: &CanonicalPerforma
             .verified_participation()?
             .assessment(&performance.id)
             .ok_or("independently supported in-season assessment")?;
-        check!(eq; assessment.outcome(), ParticipationOutcome::Eligible);
+        check!(eq; assessment.outcome(), ParticipationOutcome::Eligible, "all-retained participation: {}", performance.source_key);
         check!(assessment.reasons().iter().next().is_none());
         check!(assessment.diagnostics().is_empty());
     }
@@ -33,6 +37,7 @@ pub(super) fn bounded(
     check!(dataset.performances.contains(eligible));
     check!(dataset.performances.contains(excluded));
     check!(ne; eligible.meet, excluded.meet);
+    check!(ne; eligible.event, excluded.event, "March-window distinct physical events");
     check!(eq; eligible.athlete, excluded.athlete);
     check!(eq; eligible.source_key, "milesplit_result:201782263");
     check!(eq; excluded.source_key, "milesplit_result:201782264");
@@ -75,11 +80,26 @@ fn selected(
     value: i64,
     eligible_groups: usize,
 ) -> TestResult {
-    check!(eq; outcome.selections.len(), 1);
+    check!(eq; outcome.selections.len(), 1, "PR selection count for {} with {eligible_groups} eligible groups", expected.source_key);
     let row = outcome
         .selections
         .first()
         .ok_or("nonempty actual PR winner")?;
+    check!(eq; row.key, PrKey {
+        athlete_id: expected.athlete.clone(),
+        event_kind: EventKind::LongJump,
+        surface: SurfaceClass::Outdoor,
+        wind_class: WindClass::Unknown,
+        timing: TimingClass::NonTime,
+        measure: Measure::Distance,
+        context: None,
+        specification: EventSpecification {
+            category: Some(CompetitionCategory::Published("boys/high school".into())),
+            ..EventSpecification::default()
+        },
+        comparison: ComparisonPolicy::Standard,
+        adjustment: None,
+    }, "exact common PR comparison class for {}", expected.source_key);
     check!(eq; row.source.performance_id, expected.id);
     check!(eq; row.source.source_key, expected.source_key);
     check!(eq; row.athlete_id(), &expected.athlete);
@@ -87,7 +107,7 @@ fn selected(
     check!(eq; row.result.mark, expected.mark);
     check!(eq; row.meet.date, expected.date);
     check!(eq; row.meet.meet_id, expected.meet);
-    check!(eq; row.inventory.eligible_group_count(), eligible_groups);
+    check!(eq; row.inventory.eligible_group_count(), eligible_groups, "PR eligible result-group count for {}", expected.source_key);
     check!(eq; row.inventory.tied_group_count(), 1);
     check!(eq; row.inventory.tied_representative_ids(), std::slice::from_ref(&expected.id));
     check!(eq; row.inventory.policy().revision(), 21);
