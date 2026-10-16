@@ -9,8 +9,8 @@ pub enum StoreIdentityError {
     InvalidFormat,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(try_from = "String", into = "String")]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
+#[serde(try_from = "String")]
 pub struct StoreIdentity(String);
 
 impl StoreIdentity {
@@ -21,14 +21,25 @@ impl StoreIdentity {
         Ok(Self(value))
     }
     pub fn parse(value: &str) -> Result<Self, StoreIdentityError> {
-        if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-            return Err(StoreIdentityError::InvalidFormat);
-        }
+        Self::validate(value)?;
         Ok(Self(value.to_owned()))
     }
 
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    fn validate(value: &str) -> Result<(), StoreIdentityError> {
+        if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            return Err(StoreIdentityError::InvalidFormat);
+        }
+        Ok(())
+    }
+}
+
+impl Serialize for StoreIdentity {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.as_str())
     }
 }
 
@@ -36,7 +47,8 @@ impl TryFrom<String> for StoreIdentity {
     type Error = StoreIdentityError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::parse(&value)
+        Self::validate(&value)?;
+        Ok(Self(value))
     }
 }
 

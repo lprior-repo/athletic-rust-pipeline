@@ -17,6 +17,8 @@ use std::time::Duration;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+#[path = "milesplit_roster_observations/locator.rs"]
+mod locator;
 #[path = "milesplit_roster_observations/outcomes.rs"]
 mod outcomes;
 #[path = "milesplit_roster_observations/projection.rs"]
@@ -27,10 +29,12 @@ mod provenance;
 mod replay;
 
 const OBSERVED_ON: &str = "2026-09-20";
+const CAPTURED_AT: &str = "2026-09-20T00:00:00Z";
 const WI_TEAMS_FIXTURE: &str =
     include_str!("../../census-crawl/tests/fixtures/milesplit/wi_teams_index.html");
 const WI_ROSTER_FIXTURE: &str =
     include_str!("../../census-crawl/tests/fixtures/milesplit/wi_roster_52649.html");
+const ROSTER_URL: &str = "https://wi.milesplit.com/teams/52649-abbotsford/roster";
 
 fn synthetic_owned_roster_document(team: &milesplit::TeamRef, fragment: &str) -> String {
     format!(
@@ -80,7 +84,7 @@ fn seed_cache(cache: &Path, url: &str, body: &str) -> TestResult {
         "status": 200,
         "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
-        "fetched_at": "2026-09-20T00:00:00Z",
+        "fetched_at": CAPTURED_AT,
         "content_type": "text/html; charset=utf-8",
     });
     std::fs::write(cache.join(format!("{key}.meta.json")), meta.to_string())?;
@@ -174,6 +178,7 @@ fn a_synthetic_owned_roster_pass_files_an_observation_per_published_athlete() ->
 
             let schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
             check!(eq; schools.len(), 1, "one indexed roster, one school");
+            let captured_digest = format!("{:x}", Sha256::digest(capture.body.as_slice()));
             for (id, (name, profile_url)) in &published {
                 let observation = filed
                     .get(id.as_str())
@@ -188,10 +193,32 @@ fn a_synthetic_owned_roster_pass_files_an_observation_per_published_athlete() ->
                 check!(eq; observation.profile_url.as_deref(),
         Some(*profile_url),
         "the profile page the id was read from");
-                check!(eq; observation.observed_on, OBSERVED_ON);
+                check!(eq; observation.observed_on, CAPTURED_AT,
+    "domain row preserves the capture's RFC3339 instant, not a restamped caller date");
                 check!(eq; observation.observed_grade, None);
-                check!(eq; observation.source_row_key, *profile_url);
+                let row = locator::parse(&observation.source_row_key)?;
+                check!(eq; row.resource_url, ROSTER_URL);
+                check!(eq; row.capture_sha256, captured_digest.as_str());
+                locator::assert_span_contains_profile(&row, capture.body.as_slice(), profile_url)?;
             }
+
+            let mut ordinals = Vec::new();
+            let mut spans = Vec::new();
+            for id in published.keys() {
+                let observation = filed.get(id.as_str()).ok_or("missing observation")?;
+                let row = locator::parse(&observation.source_row_key)?;
+                check!(row.ordinal < 25);
+                ordinals.push(row.ordinal);
+                spans.push((row.byte_offset, row.byte_length));
+            }
+            ordinals.sort();
+            ordinals.dedup();
+            check!(eq; ordinals.len(), published.len(),
+    "each published athlete has a distinct row ordinal");
+            spans.sort();
+            spans.dedup();
+            check!(eq; spans.len(), published.len(),
+    "each published athlete has a distinct physical byte span");
 
             projection::assert_published(&store)?;
             projection::assert_capture(&store, &options, &synthetic_body)?;

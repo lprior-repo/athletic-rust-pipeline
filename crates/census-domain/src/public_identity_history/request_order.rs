@@ -52,3 +52,66 @@ fn ordered<T: Ord>(values: &mut [T], field: &'static str) -> Result<(), HistoryE
     }
     Ok(())
 }
+
+pub(super) fn require_canonical(request: &HistoryRequest) -> Result<(), HistoryError> {
+    match request {
+        HistoryRequest::Establish { evidence, .. }
+        | HistoryRequest::Bind { evidence, .. }
+        | HistoryRequest::BindCandidateMembership { evidence, .. } => {
+            monotonic(&evidence.members, "evidence members")?;
+        }
+        HistoryRequest::EstablishMatchedGroup { bindings, evidence } => {
+            for pair in bindings.windows(2) {
+                let order = pair[0]
+                    .candidate
+                    .cmp(&pair[1].candidate)
+                    .then_with(|| pair[0].id.cmp(&pair[1].id));
+                if order.is_gt() {
+                    return Err(HistoryError::Invalid("noncanonical request order"));
+                }
+            }
+            monotonic(&evidence.members, "evidence members")?;
+        }
+        HistoryRequest::Merge {
+            members, evidence, ..
+        } => {
+            monotonic(members, "merge members")?;
+            monotonic(&evidence.members, "evidence members")?;
+        }
+        HistoryRequest::Split(split) => {
+            monotonic(&split.revoke_merges, "revocations")?;
+            monotonic(&split.unresolved_bindings, "unresolved bindings")?;
+            monotonic(&split.affected_record_keys, "affected records")?;
+            monotonic(&split.evidence.members, "evidence members")?;
+            for partition in &split.partitions {
+                monotonic(&partition.binding_ids, "partition bindings")?;
+            }
+            if split
+                .partitions
+                .windows(2)
+                .any(|pair| pair[0].binding_ids > pair[1].binding_ids)
+            {
+                return Err(HistoryError::Invalid("noncanonical request order"));
+            }
+        }
+        HistoryRequest::Revoke(revocation) => {
+            monotonic(&revocation.revoke_merges, "revocations")?;
+            monotonic(&revocation.affected_record_keys, "affected records")?;
+            monotonic(&revocation.evidence.members, "evidence members")?;
+        }
+    }
+    Ok(())
+}
+
+fn monotonic<T: Ord>(values: &[T], field: &'static str) -> Result<(), HistoryError> {
+    for pair in values.windows(2) {
+        match pair[0].cmp(&pair[1]) {
+            std::cmp::Ordering::Less => {}
+            std::cmp::Ordering::Equal => return Err(HistoryError::Duplicate(field)),
+            std::cmp::Ordering::Greater => {
+                return Err(HistoryError::Invalid("noncanonical request order"));
+            }
+        }
+    }
+    Ok(())
+}

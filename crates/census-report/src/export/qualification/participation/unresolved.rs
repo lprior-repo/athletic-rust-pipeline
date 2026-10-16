@@ -1,8 +1,9 @@
 use super::invalid;
 use census_domain::model::CanonicalPerformance;
 use census_domain::participation_candidates::{
-    assess_participation_for_policy, CandidateOutcome, CandidateQuery, CohortFact,
-    ParticipationObservation, ParticipationReasons, PerformanceDateFact, ResultOwnership,
+    assess_participation_for_policy, assess_participation_with_in_season, CandidateOutcome,
+    CandidateQuery, CohortFact, InSeasonEvidence, ParticipationObservation, ParticipationReasons,
+    PerformanceDateFact, ResultOwnership, PARTICIPATION_POLICY_V4_SHA256,
 };
 use census_store::StoreResult;
 
@@ -21,8 +22,13 @@ pub(super) fn assess(
         high_school_status: &[],
         eligibility_windows: &[],
     };
-    let assessment = assess_participation_for_policy(query, &observation).map_err(|_| {
-        invalid("strict participation assessor rejected its pinned profile binding")
-    })?;
+    let is_v4 = query.binding.participation_rule.revision().get() == 4
+        && query.binding.participation_rule.digest() == PARTICIPATION_POLICY_V4_SHA256;
+    let assessment = if is_v4 {
+        assess_participation_with_in_season(query, &observation, InSeasonEvidence::Unavailable)
+    } else {
+        assess_participation_for_policy(query, &observation)
+    }
+    .map_err(|_| invalid("strict participation assessor rejected its pinned profile binding"))?;
     Ok((assessment.outcome, assessment.reasons))
 }
