@@ -1910,3 +1910,56 @@ resource/recovery qualification. No live census, full-package run or denied
 crash/fence retry is claimed. These are parent-reported native results; cloud
 review verifies source preservation. The earlier published 916bac branch remains
 unmerged after the recorded PR-creation action denial.
+
+### Current documentary rows and exact wind interpretation (2026-10-16 21:47 UTC)
+
+The native terminal callback reports exact
+`19c21b4c5def3adb06abdaec8dd1ff4d51980055`, tree
+`43b3c0338707e9918c1843a2d0eb067b52476b5d`, passed genuine chain 1/1,
+literal inventory 1/1, wind/heat controls 26/26, raw readers 50/50, retained
+result ownership 6/6, current Store attachment 27/27, documentary domain 11/11,
+physical projector 10/10, attachment workflow 65/65, Store attachment 160/160,
+domain attachment 84/84, participation candidates 95/95 and recorded intake
+20/20. Scopes overlap and are not summed. Formatting and all-target check
+passed, with ten test-build dead-code warnings. Source lint failed 23
+`result_large_err` findings identifying the projector's source-error payload
+as at least 128 bytes; this was not an assertion or source-evidence failure.
+
+The narrow successor `75af7044e69779794a4ccd98ced36cd1e5dff787`, tree
+`26416a431c62c15aae47f89407b0320c7a084290`, boxed only that typed source
+payload and preserved its transparent display/source chain and raw conversion.
+Three added controls cover layout, typed capacity and concrete Store-error
+forwarding. Its native callback reports formatting, all-target check and source
+lint all exited zero, projector 13/13 (1700 skipped), and complete genuine chain
+1/1 (1712 skipped). Ten test-build dead-code and four forced argument-count
+warnings remain; no large-error lint remains. Logs are retained in
+`verification-logs-typed-error-repair-75af-20261016`; checkout ended clean.
+This error conversion has one ordinary fixed allocation on its error path;
+no hard allocation, whole-process memory or performance claim is implied.
+
+The complete genuine control still applies A and B, reopens the retained roots
+and receipts, and repeats both original commands with their original receipts.
+The added current raw-row consumer binds all three exact original result rows
+to active attachments and the current accepted target on one held view and
+original grant. Their wind readings are `Some(0.2)`, `None`, `None`. The actual
+controlled V4 assessment retains exactly four unresolved reasons: cohort,
+participation context, high-school status and summer boundary. The school label
+has no checked school/team binding; provider person/team IDs are not invented.
+
+The prior `3a219831` bridge assertion exposed wind hardcoded to None and its
+misclassification as heat. `58979164` corrected header-qualified wind/heat and
+passed the genuine bridge, but the existing NC wrapped-finals test then reported
+214 false skipped rows because its explicit `(Pl)` column was unrecognized.
+`19c21b4c` validates that bounded ancillary heat-local placing column without
+replacing global place; all original assertions, including `Some(0.2)`, remain.
+Corrected parsed context changes the exact context key; old affected captures
+and attachment subjects are not silently rewritten or authorized as new context.
+
+This verifies current source identity linkage, physical interpretation and the
+controlled unresolved evaluator route. SelectedProofs frozen documentary closure,
+selected exclusion/PR and workbook consumption, genuine school/status/season
+acceptance, explicit migration and national resource/recovery gates remain open.
+No live census, package-wide run or denied crash/fence retry is claimed. Results
+are parent-reported native callbacks; cloud review checks exact source equivalence.
+The published branch remains at 916bac after both PR-creation and later branch
+update action denials; neither this candidate nor the earlier 3b279 is published.
