@@ -51,7 +51,20 @@ impl PublicIdentityWriterV1 {
             return Err(PublicIdentityError::AlreadyBound.into());
         }
         drop(guard);
-        let capture = graph_operation::begin(self, store, operation, &digest, expected, head)?;
+        let capture = match graph_operation::begin(self, store, operation, &digest, expected, head)
+        {
+            Ok(capture) => capture,
+            Err(error) if matches!(&error, StoreError::RevisionMoved { operation: moved, .. } if moved == operation) =>
+            {
+                let _guard = store.lock_appends();
+                let ledger = self.verified(store)?;
+                if let Some(outcome) = repeated(store, operation, &digest, &ledger)? {
+                    return Ok(outcome);
+                }
+                return Err(error);
+            }
+            Err(error) => return Err(error),
+        };
         let pending = prepare_source(self, store, operation, candidate, &digest, head, capture)?;
         finish_source(self, store, operation, &digest, expected, head, pending)
     }

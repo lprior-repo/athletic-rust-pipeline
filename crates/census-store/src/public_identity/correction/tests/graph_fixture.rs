@@ -9,6 +9,9 @@ use census_domain::model::{
 use census_domain::public_identity_history::BindingPartition;
 use sha2::{Digest, Sha256};
 
+mod physical;
+use physical::later_page_results;
+
 pub(super) struct Fixture {
     pub directory: tempfile::TempDir,
     pub store: Store,
@@ -88,44 +91,75 @@ pub(super) fn ready() -> TestResult<Fixture> {
     store.append_many(Table::Athletes, &members)?;
     let first_pair = [members[0].id.cast(), members[1].id.cast()];
     let last_pair = [members[1].id.cast(), members[2].id.cast()];
-    let (first_case, first_verdict) =
+    let (mut first_case, first_verdict) =
         context::reviewed_fixture::review(&store, &first_pair, "same_person")?;
     let (last_case, last_verdict) =
         context::reviewed_fixture::review(&store, &last_pair, "same_person")?;
     store.replace_many(Table::ReviewCases, &[first_case.clone(), last_case.clone()])?;
-    store.replace_many(Table::IdentityVerdicts, &[first_verdict, last_verdict])?;
+    store.replace_many(
+        Table::IdentityVerdicts,
+        &[first_verdict.clone(), last_verdict.clone()],
+    )?;
     for (operation, case, other) in [
         ("graph-correction-ab", first_case.id.clone(), 1),
-        ("graph-correction-bc", last_case.id, 2),
+        ("graph-correction-bc", last_case.id.clone(), 2),
     ] {
         let mut public = vec![
             births[0].public_id().clone(),
             births[other].public_id().clone(),
         ];
         public.sort();
-        writer.apply_reviewed_identity(
+        writer
+            .apply_reviewed_identity(
+                &store,
+                operation,
+                &ReviewedIdentityRequestV1::Merge {
+                    case_id: case,
+                    canonical: births[0].public_id().clone(),
+                    members: public,
+                },
+                store.snapshot().revision(),
+                &writer.head(&store)?,
+            )
+            .map_err(|error| format!("reviewed merge {operation}: {error}"))?;
+    }
+    members
+        .first_mut()
+        .ok_or("first")?
+        .identity_attestations
+        .push(claim(&first_key, "correction-a-independent-rereview")?);
+    store.append_many(Table::Athletes, &members)?;
+    let (redundant_case, redundant_verdict) =
+        context::reviewed_fixture::review(&store, &first_pair, "same_person")?;
+    check!(ne; redundant_case.id, first_case.id);
+    first_case.state = census_domain::model::ReviewState::Superseded;
+    store.replace_many(
+        Table::ReviewCases,
+        &[first_case, last_case, redundant_case.clone()],
+    )?;
+    store.replace_many(
+        Table::IdentityVerdicts,
+        &[first_verdict, last_verdict, redundant_verdict],
+    )?;
+    writer
+        .apply_reviewed_identity(
             &store,
-            operation,
+            "graph-correction-redundant-ab",
             &ReviewedIdentityRequestV1::Merge {
-                case_id: case,
+                case_id: redundant_case.id,
                 canonical: births[0].public_id().clone(),
-                members: public,
+                members: vec![births[0].public_id().clone()],
             },
             store.snapshot().revision(),
             &writer.head(&store)?,
-        )?;
-    }
-    writer.apply_reviewed_identity(
-        &store,
-        "graph-correction-redundant-ab",
-        &ReviewedIdentityRequestV1::Merge {
-            case_id: first_case.id,
-            canonical: births[0].public_id().clone(),
-            members: vec![births[0].public_id().clone()],
-        },
-        store.snapshot().revision(),
-        &writer.head(&store)?,
-    )?;
+        )
+        .map_err(|error| format!("independently reviewed redundant merge: {error}"))?;
+    let mut affected = members
+        .iter()
+        .map(|row| format!("athletes:{}", row.id))
+        .collect::<Vec<_>>();
+    affected.extend(later_page_results(&store, &members)?);
+    affected.sort();
     let candidates = members.iter().map(|row| row.id.cast()).collect::<Vec<_>>();
     let (case, verdict) =
         context::reviewed_fixture::review(&store, &candidates, "different_person")?;
@@ -135,15 +169,10 @@ pub(super) fn ready() -> TestResult<Fixture> {
         &context::Inputs::capture(&store.snapshot())?,
         &case.id,
         "2026-10-14",
-    )?;
+    )
+    .map_err(|error| format!("different-person correction review: {error}"))?;
     check!(eq; accepted.record().kind, AppliedIdentityKind::DifferentPerson);
     check!(eq; accepted.record().members.len(), 3);
-    let mut affected = members
-        .iter()
-        .map(|row| format!("athletes:{}", row.id))
-        .collect::<Vec<_>>();
-    affected.extend(later_page_results(&store, &members)?);
-    affected.sort();
     Ok(Fixture {
         directory,
         store,
@@ -206,62 +235,6 @@ fn claim(subject: &SourceIdentity, publisher: &str) -> TestResult<IdentityAttest
     };
     claim.validate()?;
     Ok(claim)
-}
-
-fn later_page_results(store: &Store, members: &[CanonicalAthlete]) -> TestResult<Vec<String>> {
-    let unrelated = subject("graph-correction-unrelated", "109")?;
-    store.append(Table::Athletes, &unrelated)?;
-    let event = EventId::mint("event", &["graph-correction-later"]);
-    let meet = MeetId::mint("meet", &["graph-correction-later"]);
-    let team = TeamId::mint("team", &["graph-correction-later"]);
-    let performance = CanonicalPerformance::new(
-        PerformanceIdentity {
-            athlete: &unrelated.id,
-            event: &event,
-            meet: &meet,
-            date: "2026-10-14",
-            source_key: "graph-correction-physical-variants",
-        },
-        PerformanceResult {
-            team: &team,
-            mark: Mark::Raw("12.10".into()),
-            wind_mps: None,
-            place: Some(1),
-            adjustment: None,
-        },
-    )?;
-    let relay = RelayResult::new(
-        &team,
-        &event,
-        &meet,
-        Mark::Raw("48.10".into()),
-        "graph-correction-physical-variants",
-    );
-    let mut performances = Vec::new();
-    let mut relays = Vec::new();
-    for ordinal in 0..520 {
-        let mut row = performance.clone();
-        row.mark = Mark::Raw(format!("variant-{ordinal}"));
-        performances.push(row);
-        let mut row = relay.clone();
-        row.members =
-            vec![RelayMember::new(1, format!("unrelated-{ordinal}"))
-                .with_athlete(unrelated.id.clone())];
-        relays.push(row);
-    }
-    let mut later = performance.clone();
-    later.athlete = members.first().ok_or("member")?.id.clone();
-    performances.push(later);
-    let mut later = relay.clone();
-    later.members = vec![RelayMember::new(1, "retained later-page member")
-        .with_athlete(members.get(2).ok_or("member")?.id.clone())];
-    relays.push(later);
-    store.append_many(Table::Performances, &performances)?;
-    store.append_many(Table::RelayResults, &relays)?;
-    Ok(vec![
-        format!("performances:{}", performance.id),
-        format!("relay_results:{}", relay.id),
-    ])
 }
 
 pub(super) fn facts(store: &Store) -> TestResult<String> {

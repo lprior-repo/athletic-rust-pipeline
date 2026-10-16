@@ -1705,6 +1705,100 @@ queue. No new historical strict-v3 overlay result or package-wide test run is
 claimed. Runtime statements above are native callback evidence; cloud review
 verifies source identity and does not claim independent execution.
 
+### Current-main repair verification — 2026-10-16
+
+Scope: `6jkb`, `pqtb`, `uz3a`, based on `5642a43b` after integrating PR #75.
+Main executed the commands below; reviewer summaries are not runtime evidence.
+
+| Contract | Change and exercised outcome |
+|---|---|
+| V4 missing participation facts stay unresolved | Exact V4 dispatch uses the in-season assessor with unavailable evidence; malformed rules and foreign profiles still refuse. Both direct binding and genuine public selected-capture regressions passed. |
+| Roster observations preserve captured authority | Expected RFC3339 capture time is distinct from the caller date. The independent 25-person oracle checks source identity, school/cohort, body digest, checked physical spans and distinct bounded ordinals; refusal and reopen/replay controls remain intact. |
+| Reviewed graph corrections preserve original identities | A second A–B application follows an appended independent attestation and superseded stale review, not an invented retry key. Original primary identities remain unchanged. Split/revoke, later-page inventory and rehashed frozen-tamper controls all passed. |
+
+The graph's singleton *current public root* is not a singleton binding edge:
+`public_identity_history/merge.rs` retains binding IDs from the accepted decision's
+members. The revoke-first-merge regression proves the independent redundant path.
+The rejected A–C/source-identity-fitting attempt was removed.
+
+Commands, all from the repository root with `CI` unset:
+
+- `tools/moon-local run pipeline:tests-scoped -- -p census-service --test milesplit_roster_observations --no-tests fail`: 4 passed, 0 skipped (`26205a51`).
+- `tools/moon-local run pipeline:tests-scoped -- -p census-store --lib -E 'test(graph_operations)' --no-tests fail`: 4 passed, 1 slow, 1,243 unselected (`8aaef295`), before moving the unchanged physical-fixture helper.
+- `tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src pipeline:tests --force`: all four tasks passed; **7,502 tests passed, 0 failed, 9 skipped**. Test fingerprint `e7358548`; fmt `69f63ad0`, check `4bb299ea`, lint `f1d9d477`. Ten Store test-build dead-code warnings and six forced argument-count lint warnings remain; this is not a zero-warning claim.
+- `tools/moon-local run pipeline:run-scoped -- -p census-report --example v4_public_capture_smoke`: passed (`01462737`). A standalone, non-test executable exercised genuine selected authority over a controlled fixture dataset, saved it, removed only its newly created temporary source Store and HTTP cache, and reopened the wire-hash-anchored frozen artifact. All four performance rows matched exactly; the synthetic unowned result occurred once. The temporary example was removed after execution; its public-capture outcome is also covered by the permanent regression.
+
+The runtime smoke initially failed to compile when calling a crate-private digest
+method; a parsed-JSON commitment then correctly failed the external-commitment
+check. The successful run used SHA256 of the exact saved wire bytes. Neither
+failed harness invocation is counted as a successful gate or a product defect.
+
+Owned repair-set fingerprint: SHA256 of ordered `sha256sum` output for the eight
+Rust files in this change:
+`10a257bbb924f8bf9a7704a09e4c80001a546486e6e6f5659dfdeebb7d779a57`.
+The earlier mixed-participation aggregate failure did not recur in this run;
+its cause is not established and remains tracked by `lzue.1`, not waived.
+
+This verifies the bounded repairs, not release or national readiness. No release,
+formal, native-fault or resource qualification is claimed here. The current-only
+migration and UP/five-state/national acceptance remain open. No live national
+Store was opened, reset or restarted. Architecture/ADR contracts are unchanged.
+
+### PR76 integration and exact-replay race — 2026-10-16
+
+PR #76 (`38227b0a`) was integrated without discarding either verification section.
+The first integrated full run (`a7f469ed`) passed 7,587/7,588 with nine skipped.
+Its exact-payload writer race failed with `RevisionMoved`: expected evidence 1,
+actual 2. This was not waived as a flaky test; it is tracked by `lzue.2`.
+
+The append lock was released between the initial receipt lookup and graph capture.
+The fix rechecks the validated committed receipt under the lock only after a
+matching-operation revision-movement refusal. Exact committed requests replay;
+changed payloads still conflict; unrelated movement without a receipt retains the
+original refusal. No new operation identity, revision refresh or capture-wide
+lock was introduced. Main restored the lock release omitted in the GPU handoff.
+
+Main executed `tools/moon-local run pipeline:tests-scoped -- -p census-store --lib
+-E 'test(public_identity_tests::revision_races)' --stress-count 100 --no-tests fail`
+with `CI` unset: **100/100 iterations passed**, three strict cases each
+(`dc0c4cd4`); the initial focused run also passed 3/3 (`fa9bbd94`).
+
+Post-fix `tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src
+pipeline:tests --force`, also with `CI` unset: all four tasks passed,
+**7,588 tests passed, 0 failed, 9 skipped** (`99c22ac4`).
+Fmt `7d7bcf2d`, check `06f781db`, lint `7cc1c27a`; existing warnings remain.
+These results supersede the failed integrated run, not the separate outstanding
+release, migration, source-coverage, native-fault and resource obligations.
+
+
+### Main-only history allocation cleanup — 2026-10-16
+
+The registered repository root on `main` is the implementation target. The
+unmerged current-v2 worktree and its prototype SDK are preservation/reference
+only; no result below compiles or qualifies that tree.
+
+Replay now checks canonical request order through borrowed fields instead of
+cloning and sorting every request. Construction still normalizes its owned input.
+All seven variants keep canonical ordering rules and duplicate diagnostics for
+otherwise ordered fields; malformed permutations refuse without normalization.
+`StoreIdentity` serialization borrows the retained spelling; owned-string
+conversion validates and retains its input buffer. Public signatures, historical
+JSON spelling and digest payloads are unchanged. LSP identified 370 references
+before the codec change; existing exhaustive wire/spelling tests were retained.
+
+Main executed these commands with `CI` unset:
+
+- `tools/moon-local run pipeline:tests-scoped -- -p census-domain --lib -E 'test(public_identity_history) | test(model::store_identity)' --no-tests fail`: **142 passed**, 739 unselected (`f2d101cc`).
+- `tools/moon-local run pipeline:run-scoped -- -p census-domain --example canonical_history_smoke`: passed (`9c6bcfc9`). The controlled public-API executable checked exact birth/head, refusal of a validly rehashed descending record, unchanged accepted replay, retained owned-string allocation, and exact lower/upper/mixed/zero JSON spelling. It was removed after execution; the exercised source is preserved as `local://canonical-history-smoke-exercised-20261016.rs`.
+- `tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src pipeline:tests --force`: all four passed; **7,594 passed, 0 failed, 9 skipped** (`ceb9e345`). Fmt `32e71a9a`, check `cc6f2a65`, lint `b321e08d`; existing warnings remain.
+
+This is bounded cleanup, not a measured speedup or fully funded history decoder.
+`1itf` remains open: decoder scratch, graph storage, retained ownership and actual
+main interface approval still require implementation and qualification.
+No live Store was opened, reset or restarted; release/native/resource/source and
+UP/five-state/national acceptance remain separate outstanding obligations.
+
+
 ### Bounded genuine attachment progress (2026-10-16 18:51 UTC)
 
 The native terminal callback reports exact

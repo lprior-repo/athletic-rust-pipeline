@@ -9,6 +9,7 @@ use serde_json::{json, Value};
 mod fixture;
 mod groups;
 mod historical;
+mod missing_facts;
 mod profile;
 mod refusals;
 use fixture::Fixture;
