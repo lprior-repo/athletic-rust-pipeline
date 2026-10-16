@@ -35,17 +35,18 @@ fn row(name: &str, mark: &str) -> String {
 }
 
 fn mixed() -> (String, Vec<String>) {
-    let rows = vec![
+    let rows = [
         row("MÜLLER, Émile", "13.57a"),
         row("Other Runner", "14.10a"),
         row("Third Runner", "36.23a"),
     ];
+    let [first, second, third] = &rows;
     let bad = row("Rejected Runner", "invalid");
     let block = format!(
         "Boys 110 Hurdles\r\n{}\r\n{}\r\n{bad}\r\nFinals\r\n{}\r\n{}\r\nBoys 300 Hurdles\r\n{}\r\n{}\r\n",
-        header(), rows[0], header(), rows[1], header(), rows[2],
+        header(), first, header(), second, header(), third,
     );
-    (document(&block), rows)
+    (document(&block), Vec::from(rows))
 }
 
 #[test]
@@ -57,16 +58,16 @@ fn located_route_preserves_legacy_rows_and_exact_success_spans() -> TestResult {
         found.push((locator, row.clone()));
         Ok(())
     })?;
-    assert_eq!(located.page, legacy.0);
-    assert_eq!(located.published_start, legacy.1);
-    assert_eq!(located.published_end, legacy.2);
-    assert_eq!(found.len(), 3);
-    assert_eq!(located.page.meet.rows_skipped, 1);
+    check!(eq; located.page, legacy.0);
+    check!(eq; located.published_start, legacy.1);
+    check!(eq; located.published_end, legacy.2);
+    check!(eq; found.len(), 3);
+    check!(eq; located.page.meet.rows_skipped, 1);
     for (index, ((locator, row), original)) in found.iter().zip(&original_rows).enumerate() {
-        assert_eq!(locator.event_index, index);
-        assert_eq!(locator.row_index, 0);
-        assert_eq!(locator.row.byte_length, original.len());
-        assert_eq!(
+        check!(eq; locator.event_index, index);
+        check!(eq; locator.row_index, 0);
+        check!(eq; locator.row.byte_length, original.len());
+        check!(eq;
             locator.row.byte_offset,
             html.find(original).ok_or("original span")?
         );
@@ -75,13 +76,20 @@ fn located_route_preserves_legacy_rows_and_exact_success_spans() -> TestResult {
             .byte_offset
             .checked_add(locator.row.byte_length)
             .ok_or("span end")?;
-        assert_eq!(
+        check!(eq;
             html.get(locator.row.byte_offset..end),
             Some(original.as_str())
         );
-        assert_eq!(located.page.meet.events[index].rows[0], *row);
+        let parsed = located
+            .page
+            .meet
+            .events
+            .get(index)
+            .and_then(|event| event.rows.first())
+            .ok_or("located parsed row")?;
+        check!(eq; parsed, row);
     }
-    assert_eq!(
+    check!(eq;
         found
             .iter()
             .map(|(span, _)| span.row.ordinal)
@@ -105,11 +113,11 @@ fn later_visitor_refusal_cannot_return_a_completed_document() -> TestResult {
         }
         Ok(())
     });
-    assert_eq!(visited, 2);
-    assert!(
+    check!(eq; visited, 2);
+    check!(
         matches!(result, Err(CrawlError::Schema { detail, .. }) if detail == "late locator admission")
     );
-    assert_eq!(
+    check!(eq;
         super::super::parse_bound_with_dates(&html, URL, &check)?
             .0
             .meet
@@ -131,8 +139,8 @@ fn later_foreign_metadata_is_rejected_before_any_success_callback() -> TestResul
         Ok(())
     });
     let legacy = super::super::parse_bound_with_dates(&html, URL, &check);
-    assert_eq!(visited, 0);
-    assert_eq!(
+    check!(eq; visited, 0);
+    check!(eq;
         result.err().ok_or("located refusal")?.to_string(),
         legacy.err().ok_or("legacy refusal")?.to_string()
     );
