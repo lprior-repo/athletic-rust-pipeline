@@ -39,7 +39,27 @@ fn public_identity_specific_pending_resolved_and_rejected_cases_block_establishm
             StoreError::PublicIdentity(PublicIdentityError::NotSourceBound)
         ));
         check!(eq; writer.head(&store)?, head);
-        check!(eq; retained_state(&store)?, before);
+        let staged = retained_state(&store)?;
+        super::support::assert_graph_staging(
+            &store,
+            &before,
+            &staged,
+            writer.store_identity(),
+            "blocked-review",
+        )?;
+        let retry = refused(writer.establish_source_bound(
+            &store,
+            "blocked-review",
+            &athlete.id.cast(),
+            store.snapshot().revision(),
+            &head,
+        ))?;
+        check!(matches!(
+            retry,
+            StoreError::PublicIdentity(PublicIdentityError::NotSourceBound)
+        ));
+        check!(eq; writer.head(&store)?, head);
+        check!(eq; retained_state(&store)?, staged);
     }
     Ok(())
 }

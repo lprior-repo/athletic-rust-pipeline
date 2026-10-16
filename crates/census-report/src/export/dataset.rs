@@ -82,7 +82,7 @@ pub struct ExportDataset {
     #[serde(skip)]
     verified_public_identities: Option<super::public_identity::VerifiedPublicIdentityView>,
     #[serde(skip)]
-    selected_proofs: Option<selected_proofs::SelectedProofsV1>,
+    selected_proofs: Option<selected_proofs::SelectedProofs>,
     #[serde(skip)]
     selected_input_origin: SelectedInputOrigin,
 }

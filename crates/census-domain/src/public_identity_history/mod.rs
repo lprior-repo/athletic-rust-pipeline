@@ -4,6 +4,8 @@ mod codec;
 mod error;
 mod evidence;
 mod graph;
+mod graph_reference;
+pub use graph_reference::GraphAuthorityReferenceV1;
 pub mod local_adjudication;
 pub mod local_membership_withholding;
 mod matched_group;

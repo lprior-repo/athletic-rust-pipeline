@@ -63,7 +63,7 @@ fn selected_publication_worker() -> TestResult {
     let Some(store) = std::env::var_os(CHILD_STORE) else {
         return Ok(());
     };
-    let (store, _writer) = Store::open_public_identity_qualification_v2(store)?.into_parts();
+    let (store, _writer) = Store::open_public_identity_qualification_v3(store)?.into_parts();
     let archive = PathBuf::from(std::env::var_os(CHILD_ARCHIVE).ok_or("worker archive")?);
     let dataset =
         ExportDataset::reopen_frozen_with_digest(&archive, &std::env::var(CHILD_DIGEST)?)?;
@@ -183,7 +183,7 @@ async fn exercise(boundary: Boundary, integrity: IntegrityCase) -> TestResult {
     case.directory = directory;
     check!(eq; status.signal(), Some(6));
     std::fs::remove_dir_all(case.directory.path().join("transport"))?;
-    let (store, _writer) = Store::open_public_identity_qualification_v2(&case.store)?.into_parts();
+    let (store, _writer) = Store::open_public_identity_qualification_v3(&case.store)?.into_parts();
     let intent = harness::active_intent(&store, &case.root)?;
     let desired = intent
         .desired()

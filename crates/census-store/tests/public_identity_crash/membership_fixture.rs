@@ -1,6 +1,6 @@
 use super::{evidence, physical, TestResult};
 use census_domain::public_identity_history::local_membership_withholding::{
-    LocalMembershipWithholdV1, LocalMembershipWithholdingRecordV1, MembershipAttachmentV1,
+    LocalMembershipWithholdV1, LocalMembershipWithholdingRecordV2, MembershipAttachmentV1,
 };
 use census_domain::public_identity_history::{HistoryRequest, PublicResolution, RegistryHead};
 use census_store::{PublicIdentityWriterV1, SourceCandidateMembershipRequestV1, Store};
@@ -13,7 +13,7 @@ pub(super) const CHILD_NAME: &str = "membership::membership_crash_child_fixture"
 const PLAN: &str = "membership-crash-plan.json";
 const ATTACH: &str = "native-membership-attachment";
 const WITHHOLD: &str = "native-membership-withholding";
-const APPROVAL_SCHEMA: &str = "local-source-membership-withholding-approval/v1";
+const APPROVAL_SCHEMA: &str = "local-source-membership-withholding-approval/v2";
 #[derive(Clone, Copy)]
 pub(super) enum Mode {
     Attach,
@@ -27,8 +27,14 @@ pub(super) struct Plan {
 }
 #[derive(Serialize, Deserialize)]
 enum Action {
-    Attach { sequence: u64, digest: String },
-    Withhold(Box<LocalMembershipWithholdingRecordV1>),
+    Attach {
+        sequence: u64,
+        digest: String,
+    },
+    Withhold {
+        record: Box<LocalMembershipWithholdingRecordV2>,
+        graph: census_store::GraphAuthorityReferenceV1,
+    },
 }
 pub(super) struct Fixture {
     pub root: PathBuf,
@@ -42,9 +48,9 @@ impl Fixture {
     pub fn create(mode: Mode) -> TestResult<(tempfile::TempDir, Self)> {
         let directory = tempfile::tempdir()?;
         let root = directory.path().join("membership");
-        Store::create_public_identity_qualification_v2(&root)?;
-        let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
-        writer.enroll_manual_context_admission_v1(&store)?;
+        Store::create_public_identity_qualification_v3(&root)?;
+        let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+        writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
         let attachment = evidence::install(&store, &writer)?;
         let head = writer.head(&store)?;
         let action = match mode {
@@ -112,7 +118,11 @@ fn prepare_withholding(
         digest: record.digest.clone(),
         membership_id: membership.id.clone(),
     };
-    let inventory = writer.inspect_membership_withholding(store, &attachment.owner)?;
+    let inventory = writer.inspect_membership_withholding(
+        store,
+        "membership-crash-withhold-inventory",
+        &attachment.owner,
+    )?;
     let request = LocalMembershipWithholdV1 {
         case_id: attachment.case_id.clone(),
         canonical: attachment.owner.clone(),
@@ -132,20 +142,29 @@ fn prepare_withholding(
         store.snapshot().revision(),
         &writer.head(store)?,
     )?;
-    Ok(Action::Withhold(Box::new(prepared.record().clone())))
+    Ok(Action::Withhold {
+        record: Box::new(prepared.record().clone()),
+        graph: prepared.graph().clone(),
+    })
 }
 
 impl Plan {
-    pub fn withholding(&self) -> Option<&LocalMembershipWithholdingRecordV1> {
+    pub fn withholding(&self) -> Option<&LocalMembershipWithholdingRecordV2> {
         match &self.action {
             Action::Attach { .. } => None,
-            Action::Withhold(record) => Some(record),
+            Action::Withhold { record, .. } => Some(record),
+        }
+    }
+    pub fn withholding_graph(&self) -> TestResult<&census_store::GraphAuthorityReferenceV1> {
+        match &self.action {
+            Action::Withhold { graph, .. } => Ok(graph),
+            Action::Attach { .. } => Err("attachment has no manual approval".into()),
         }
     }
     pub fn operation(&self) -> &'static str {
         match &self.action {
             Action::Attach { .. } => ATTACH,
-            Action::Withhold(_) => WITHHOLD,
+            Action::Withhold { .. } => WITHHOLD,
         }
     }
     pub fn prior_head(&self) -> RegistryHead {
@@ -154,7 +173,7 @@ impl Plan {
                 sequence: *sequence,
                 digest: digest.clone(),
             },
-            Action::Withhold(record) => record.expected_head.clone(),
+            Action::Withhold { record, .. } => record.expected_head.clone(),
         }
     }
     pub fn apply(
@@ -173,8 +192,8 @@ impl Plan {
                 )?;
                 Ok((outcome.head().clone(), outcome.replayed()))
             }
-            Action::Withhold(record) => {
-                let (bytes, digest) = approval(record)?;
+            Action::Withhold { record, graph } => {
+                let (bytes, digest) = approval(record, graph)?;
                 if let Some(outcome) =
                     writer.replay_membership_withholding(store, WITHHOLD, &digest)?
                 {
@@ -188,6 +207,9 @@ impl Plan {
                     &record.expected_head,
                 )?;
                 check!(eq; prepared.record(), record.as_ref());
+                check!(eq; prepared.graph(), graph);
+                check!(eq; prepared.approval_bytes()?, bytes);
+                check!(eq; prepared.approval_digest()?, digest);
                 let outcome =
                     writer.apply_membership_withholding(store, prepared, bytes, digest)?;
                 Ok((outcome.head().clone(), outcome.replayed()))
@@ -208,7 +230,7 @@ pub(super) fn child() -> TestResult {
         .read_to_end(&mut bytes)?;
     check!(bytes.len() <= 1_048_576);
     let plan: Plan = serde_json::from_slice(&bytes)?;
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     write(
         &root.join("child-precommit-sequence.bin"),
         &store.snapshot().sequence().to_be_bytes(),
@@ -218,18 +240,22 @@ pub(super) fn child() -> TestResult {
 }
 
 pub(super) fn approval(
-    record: &LocalMembershipWithholdingRecordV1,
+    record: &LocalMembershipWithholdingRecordV2,
+    graph: &census_store::GraphAuthorityReferenceV1,
 ) -> TestResult<(Vec<u8>, String)> {
     #[derive(Serialize)]
     struct Approval<'a> {
         schema: &'static str,
         actor: &'static str,
-        prepared: &'a LocalMembershipWithholdingRecordV1,
+        prepared: &'a LocalMembershipWithholdingRecordV2,
+        graph: &'a census_store::GraphAuthorityReferenceV1,
     }
+    check!(eq; graph.domain_reference()?, record.graph);
     let bytes = serde_json::to_vec(&Approval {
         schema: APPROVAL_SCHEMA,
         actor: "local_operator",
         prepared: record,
+        graph,
     })?;
     check!(bytes.len() <= 1_048_576);
     let mut digest = Sha256::new();

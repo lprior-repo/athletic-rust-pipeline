@@ -120,6 +120,23 @@ pub struct EligibilityWindowFact<'a> {
     pub boundary_proof: ProofReference<'a>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InSeasonWindowFact<'a> {
+    pub identity: EligibilityWindowIdentity<'a>,
+    pub interval: &'a ProfileDateRangeV1,
+    pub boundary_proof: ProofReference<'a>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum InSeasonEvidence<'a> {
+    Unavailable,
+    Uncontested(&'a [InSeasonWindowFact<'a>]),
+    Conflicted {
+        supported: &'a [InSeasonWindowFact<'a>],
+        contrary: &'a [InSeasonWindowFact<'a>],
+    },
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct ParticipationObservation<'a> {
     pub binding: CandidateBinding<'a>,
@@ -170,6 +187,8 @@ pub enum ParticipationInputError {
     AcquisitionAfterFrozenInstant,
     #[error("participation interval does not end at its documented summer endpoint")]
     SummerEndpointMismatch,
+    #[error("in-season conflict requires retained contrary proofs")]
+    EmptyInSeasonConflict,
     #[error("participation candidate temporal metadata is invalid: {0}")]
     Temporal(#[from] AffiliationCandidateError),
     #[error("participation profile identity could not be calculated: {0}")]

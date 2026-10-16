@@ -20,7 +20,7 @@ pub struct SourceCandidateMembershipRequestV1 {
     pub candidate: AthleteCandidateId,
 }
 
-pub(super) fn digest(
+pub(in crate::public_identity) fn digest(
     identity: &StoreIdentity,
     operation: &str,
     request: &SourceCandidateMembershipRequestV1,
@@ -55,6 +55,22 @@ pub(super) fn authorized(
     accepted: &AcceptedAthleteIdentity,
     projection: &HistoryProjection,
 ) -> StoreResult<HistoryRequest> {
+    let rows = inputs
+        .athletes
+        .iter()
+        .enumerate()
+        .map(|(ordinal, row)| (ordinal, row.clone()))
+        .collect::<Vec<_>>();
+    authorized_rows(request, digest, &rows, accepted, projection)
+}
+
+pub(in crate::public_identity) fn authorized_rows(
+    request: &SourceCandidateMembershipRequestV1,
+    digest: &str,
+    rows: &[(usize, CanonicalAthlete)],
+    accepted: &AcceptedAthleteIdentity,
+    projection: &HistoryProjection,
+) -> StoreResult<HistoryRequest> {
     if accepted.record().kind != AppliedIdentityKind::SamePerson
         || accepted.record().case_id.as_deref() != Some(request.case_id.as_str())
     {
@@ -72,8 +88,8 @@ pub(super) fn authorized(
         .binding_claim(&request.anchor_binding_id)
         .ok_or(PublicIdentityError::NotSourceBound)?;
     authorize_anchor(request, projection, anchor)?;
-    let first = physical(inputs, &anchor.candidate)?;
-    let second = physical(inputs, &request.candidate)?;
+    let first = physical_rows(rows, &anchor.candidate)?;
+    let second = physical_rows(rows, &request.candidate)?;
     let primary = first
         .source
         .as_ref()
@@ -105,13 +121,13 @@ pub(super) fn authorized(
     })
 }
 
-fn physical<'a>(
-    inputs: &'a Inputs,
+fn physical_rows<'a>(
+    rows: &'a [(usize, CanonicalAthlete)],
     candidate: &AthleteCandidateId,
 ) -> StoreResult<&'a CanonicalAthlete> {
-    let mut matches = inputs
-        .athletes
+    let mut matches = rows
         .iter()
+        .map(|(_, athlete)| athlete)
         .filter(|athlete| athlete.id.as_str() == candidate.as_str());
     let athlete = matches.next().ok_or(PublicIdentityError::NotSourceBound)?;
     let source = athlete

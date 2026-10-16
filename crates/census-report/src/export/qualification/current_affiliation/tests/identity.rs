@@ -8,7 +8,7 @@ pub(in super::super) fn accept_pair(
     left: &AthleteId,
     right: &AthleteId,
 ) -> TestResult<AthleteId> {
-    let before = store.snapshot().freeze_public_identity_v1()?;
+    let before = store.snapshot().freeze_public_identity_v2()?;
     let accepted = before.replay()?;
     let PublicResolution::Canonical(owner) = accepted.resolve_candidate(&left.cast())? else {
         return Err("first source must be established before the second roster arrives".into());
@@ -44,7 +44,7 @@ pub(in super::super) fn accept_pair(
     )?;
     check!(eq; attached.public_id(), &owner.public_id);
     check!(attached.introduced_public_ids().is_empty());
-    let after = store.snapshot().freeze_public_identity_v1()?;
+    let after = store.snapshot().freeze_public_identity_v2()?;
     let replayed = after.replay()?;
     check!(eq; replayed.public_ids().count(), 1);
     check!(eq; replayed.resolve_candidate(&left.cast())?, replayed.resolve_candidate(&right.cast())?);

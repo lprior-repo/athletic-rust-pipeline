@@ -9,28 +9,46 @@ fn attachment_refuses_copied_primary_cohort_gender_and_physical_id() -> TestResu
         request,
         ..
     } = &fixture;
-    let inputs = crate::public_identity::context::Inputs::capture(&store.snapshot())?;
-    let accepted = crate::public_identity::authority::accept_reviewed(
-        &inputs,
+    let inventory = stage_inventory(store, writer, "physical-check", &request.owner)?;
+    let snapshot = store.snapshot();
+    let view = crate::public_identity::paged_generation::VerifiedRawGraph::verify(
+        &snapshot,
+        inventory.graph().capture(),
+        inventory.graph().seal(),
+    )?;
+    let accepted = crate::public_identity::authority::graph::accept_reviewed(
+        &view,
         &request.case_id,
         "2026-10-15",
     )?;
     let ledger = writer.verified(store)?;
+    let projection = ledger.history.projection();
+    let anchor = projection
+        .binding_claim(&request.anchor_binding_id)
+        .ok_or("anchor binding")?;
+    let rows = crate::public_identity::authority::graph::member_rows(
+        &view,
+        &[anchor.candidate.clone(), request.candidate.clone()],
+    )?;
     let digest = super::request::digest(writer.store_identity(), "physical-check", request)?;
-    check!(super::request::authorized(
-        request,
-        &digest,
-        &inputs,
-        &accepted,
-        ledger.history.projection()
-    )
-    .is_ok());
+    let authorized =
+        super::request::authorized_rows(request, &digest, &rows, &accepted, projection)?;
+    check!(matches!(authorized,
+        census_domain::public_identity_history::HistoryRequest::BindCandidateMembership {
+            owner, membership, evidence,
+        } if owner == request.owner
+            && membership.id == format!("source_membership_v1_{digest}")
+            && membership.candidate == request.candidate
+            && membership.anchor_binding_id == request.anchor_binding_id
+            && membership.source == anchor.source
+            && evidence == census_domain::public_identity_history::CandidateDecisionReference::from_accepted(
+                &accepted, census_domain::public_identity_history::ReplayLimits::SMALL)?
+    ));
     for change in 0..4 {
-        let mut altered = crate::public_identity::context::Inputs::capture(&store.snapshot())?;
-        let row = altered
-            .athletes
+        let mut altered = rows.clone();
+        let (_, row) = altered
             .iter_mut()
-            .find(|row| row.id.as_str() == request.candidate.as_str())
+            .find(|(_, row)| row.id.as_str() == request.candidate.as_str())
             .ok_or("candidate physical row")?;
         match change {
             0 => row.source.as_mut().ok_or("primary")?.id = "copied-foreign-provider-key".into(),
@@ -38,14 +56,12 @@ fn attachment_refuses_copied_primary_cohort_gender_and_physical_id() -> TestResu
             2 => row.gender = census_domain::model::Gender::Boys,
             _ => row.school = SchoolId::mint("sch", &["tampered-school-with-old-physical-id"]),
         }
-        check!(super::request::authorized(
-            request,
-            &digest,
-            &altered,
-            &accepted,
-            ledger.history.projection()
-        )
-        .is_err());
+        check!(matches!(
+            super::request::authorized_rows(request, &digest, &altered, &accepted, projection),
+            Err(StoreError::PublicIdentity(
+                PublicIdentityError::NotSourceBound
+            ))
+        ));
     }
     Ok(())
 }
@@ -78,23 +94,26 @@ fn same_primary_never_overrides_genuine_conflicting_cohort_review() -> TestResul
         .journal
         .get(crate::public_identity::witness::key(1))?
         .ok_or("birth witness")?;
-    let held: crate::public_identity::witness::Witness = serde_json::from_slice(&raw)?;
+    let held = HeldGraphWitness::decode("birth witness", &raw)?;
+    check!(eq; held.version, 8);
     let request = SourceCandidateMembershipRequestV1 {
         case_id: case.id,
         owner: birth.public_id().clone(),
         anchor_binding_id: format!("source_binding_v1_{}", held.request_digest),
         candidate: second.id.cast(),
     };
+    stage_inventory(&store, &writer, "conflicting-cohort", birth.public_id())?;
     let state = retained_state(&store)?;
-    check!(writer
-        .extend_source_candidate(
+    check!(matches!(
+        writer.extend_source_candidate(
             &store,
             "conflicting-cohort",
             &request,
             store.snapshot().revision(),
             birth.head()
-        )
-        .is_err());
+        ),
+        Err(StoreError::PublicIdentity(PublicIdentityError::NotReviewed))
+    ));
     check!(eq; retained_state(&store)?, state);
     Ok(())
 }

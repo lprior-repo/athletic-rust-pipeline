@@ -5,6 +5,7 @@ pub(crate) use raw::JournalRawRecords;
 use serde::Deserialize;
 use serde_json::Value;
 
+use super::object_source::JournalSource;
 use super::object_wire::{JournalPath, ObjectBounds, RecordRange};
 use crate::{StoreError, StoreResult};
 
@@ -59,8 +60,7 @@ pub struct JournalObject<'s> {
     pub(super) key: String,
     pub(super) object: JournalDigest,
     pub(super) bounds: ObjectBounds,
-    pub(super) snapshot: fjall::Snapshot,
-    pub(super) journal: &'s fjall::Keyspace,
+    pub(super) source: JournalSource<'s>,
     pub(super) record_byte_limit: usize,
 }
 
@@ -71,7 +71,7 @@ impl std::fmt::Debug for JournalObject<'_> {
             .field("phase", &self.phase)
             .field("key", &self.key)
             .field("object", &self.object)
-            .field("sequence", &self.snapshot.seqno())
+            .field("sequence", &self.source.sequence())
             .finish_non_exhaustive()
     }
 }
@@ -82,16 +82,14 @@ impl<'s> JournalObject<'s> {
         key: String,
         object: String,
         bounds: ObjectBounds,
-        snapshot: fjall::Snapshot,
-        journal: &'s fjall::Keyspace,
+        source: JournalSource<'s>,
     ) -> Self {
         Self {
             phase,
             key,
             object: JournalDigest(object),
             bounds,
-            snapshot,
-            journal,
+            source,
             record_byte_limit: crate::journal::OBJECT_RECORD_BYTES_LIMIT,
         }
     }

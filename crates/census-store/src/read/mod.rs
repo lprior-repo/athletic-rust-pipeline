@@ -24,6 +24,8 @@ mod view;
 pub(crate) use view::enrich_retained_observations;
 pub(crate) use view::read_context_object;
 pub(crate) use view::JournalRawRecords;
+pub(crate) use view::RetainedEnrichment;
+pub(crate) use view::{accept_merged_row, publish_merged_row};
 
 pub(crate) use directory::directory_bytes;
 pub use identity::build_athlete_identity_projection;
@@ -197,3 +199,7 @@ impl Store {
         Ok(out)
     }
 }
+
+pub(crate) use view::{
+    read_context_object_bounded, read_frozen_context_object_bounded, ContextReadLimits,
+};

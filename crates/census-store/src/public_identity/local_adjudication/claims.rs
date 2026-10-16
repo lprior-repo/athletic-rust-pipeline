@@ -1,3 +1,7 @@
+mod inventory;
+use inventory::encoded_value;
+pub(in crate::public_identity) use inventory::Inventory;
+
 use crate::public_identity::{context::Inputs, PublicIdentityError};
 use crate::{StoreError, StoreResult};
 use census_domain::model::{
@@ -21,12 +25,19 @@ pub(in crate::public_identity) fn membership_inventory(
     projection: &census_domain::public_identity_history::HistoryProjection,
     records: &[census_domain::public_identity_history::HistoryRecord],
 ) -> StoreResult<Vec<RetainedClaimV1>> {
-    if !records.iter().any(|record| matches!(&record.request,
-        census_domain::public_identity_history::HistoryRequest::BindCandidateMembership { membership, .. }
-        if members.contains(&membership.candidate) && projection.membership_claim(&membership.id).is_some())) {
+    if membership_authority(members, projection, records).is_none() {
         return inventory(inputs, members);
     }
     let claims = build_inventory(inputs, members, Some((projection, records)))?;
+    append_memberships(claims, members, projection, records)
+}
+
+pub(in crate::public_identity) fn append_memberships(
+    claims: Vec<RetainedClaimV1>,
+    members: &[AthleteCandidateId],
+    projection: &census_domain::public_identity_history::HistoryProjection,
+    records: &[census_domain::public_identity_history::HistoryRecord],
+) -> StoreResult<Vec<RetainedClaimV1>> {
     let mut inventory = Inventory {
         claims,
         remaining: super::MAX_WITNESS_BYTES,
@@ -61,10 +72,21 @@ pub(in crate::public_identity) fn membership_inventory(
     Ok(inventory.claims)
 }
 
-type MembershipAuthority<'a> = (
+pub(in crate::public_identity) type MembershipAuthority<'a> = (
     &'a census_domain::public_identity_history::HistoryProjection,
     &'a [census_domain::public_identity_history::HistoryRecord],
 );
+
+pub(in crate::public_identity) fn membership_authority<'a>(
+    members: &[AthleteCandidateId],
+    projection: &'a census_domain::public_identity_history::HistoryProjection,
+    records: &'a [census_domain::public_identity_history::HistoryRecord],
+) -> Option<MembershipAuthority<'a>> {
+    records.iter().any(|record| matches!(&record.request,
+        census_domain::public_identity_history::HistoryRequest::BindCandidateMembership { membership, .. }
+        if members.contains(&membership.candidate) && projection.membership_claim(&membership.id).is_some()))
+        .then_some((projection, records))
+}
 
 fn build_inventory(
     inputs: &Inputs,
@@ -85,7 +107,9 @@ fn build_inventory(
             .ok_or(PublicIdentityError::Corrupt("manual member missing"))?;
         if let Some(primary) = &athlete.source {
             let key = serialized_digest(&(&primary.namespace, &primary.id))?;
-            if !primaries.insert(key) && !explained_primary(inputs, members, primary, authority)? {
+            if !primaries.insert(key)
+                && !explained_primary(inputs.athletes.iter(), members, primary, authority)?
+            {
                 return Err(PublicIdentityError::Corrupt(
                     "manual correction needs source epoch evidence",
                 )
@@ -94,121 +118,17 @@ fn build_inventory(
         }
         inventory.athlete(member, ordinal, athlete)?;
         for (ordinal, observation) in inputs.observations.iter().enumerate() {
-            let SourceObservation::Athlete(row) = observation else {
-                continue;
-            };
-            if athlete.identities().any(|source| {
-                source.namespace == row.namespace && source.id == row.source_athlete_id
-            }) {
-                let value = encoded_value(observation)?;
-                inventory.push(
-                    member,
-                    RetainedIdentitySectionV1::SourceObservation,
-                    ordinal,
-                    &serialized_digest(observation)?,
-                    String::new(),
-                    &value,
-                )?;
-            }
+            inventory.observation(member, athlete, ordinal, observation)?;
         }
     }
     Ok(inventory.claims)
 }
 
-struct Inventory {
-    claims: Vec<RetainedClaimV1>,
-    remaining: usize,
-}
-
-impl Inventory {
-    fn athlete(
-        &mut self,
-        member: &AthleteCandidateId,
-        ordinal: usize,
-        athlete: &CanonicalAthlete,
-    ) -> StoreResult<()> {
-        let value = encoded_value(athlete)?;
-        let row_digest = serialized_digest(athlete)?;
-        let fields = value
-            .as_object()
-            .ok_or(PublicIdentityError::Corrupt("manual athlete record"))?;
-        for (field, value) in fields {
-            match value {
-                Value::Array(values) if !values.is_empty() => {
-                    for (index, value) in values.iter().enumerate() {
-                        self.push(
-                            member,
-                            RetainedIdentitySectionV1::Athlete,
-                            ordinal,
-                            &row_digest,
-                            format!("/{field}/{index}"),
-                            value,
-                        )?;
-                    }
-                }
-                _ => self.push(
-                    member,
-                    RetainedIdentitySectionV1::Athlete,
-                    ordinal,
-                    &row_digest,
-                    format!("/{field}"),
-                    value,
-                )?,
-            }
-        }
-        Ok(())
-    }
-
-    fn push(
-        &mut self,
-        candidate: &AthleteCandidateId,
-        section: RetainedIdentitySectionV1,
-        ordinal: usize,
-        row_digest: &str,
-        claim_path: String,
-        value: &Value,
-    ) -> StoreResult<()> {
-        if self.claims.len() >= 4096 {
-            return Err(
-                PublicIdentityError::Corrupt("manual claim inventory exceeds bound").into(),
-            );
-        }
-        let claim = RetainedClaimV1 {
-            candidate: candidate.clone(),
-            section,
-            ordinal: u64::try_from(ordinal).map_err(|_| StoreError::CounterOverflow)?,
-            row_digest: row_digest.to_owned(),
-            claim_path,
-            claim_digest: serialized_digest(value)?,
-            retained_value: value.clone(),
-        };
-        let encoded = crate::public_identity::codec::encode(&claim, self.remaining)?;
-        self.remaining = self
-            .remaining
-            .checked_sub(encoded.len())
-            .ok_or(StoreError::CounterOverflow)?;
-        self.claims
-            .try_reserve(1)
-            .map_err(|error| StoreError::Refused {
-                detail: format!("manual claim inventory allocation: {error}"),
-            })?;
-        self.claims.push(claim);
-        Ok(())
-    }
-}
-
-fn encoded_value<T: serde::Serialize>(row: &T) -> StoreResult<Value> {
-    serde_json::to_value(row).map_err(|source| StoreError::Json {
-        detail: "encoding retained manual claim".into(),
-        source,
-    })
-}
-
 #[cfg(test)]
 mod tests;
 
-fn explained_primary(
-    inputs: &Inputs,
+pub(in crate::public_identity) fn explained_primary<'a>(
+    athletes: impl Iterator<Item = &'a CanonicalAthlete>,
     members: &[AthleteCandidateId],
     primary: &census_domain::model::SourceIdentity,
     authority: Option<MembershipAuthority<'_>>,
@@ -216,9 +136,7 @@ fn explained_primary(
     let Some((projection, records)) = authority else {
         return Ok(false);
     };
-    let group: Vec<_> = inputs
-        .athletes
-        .iter()
+    let group: Vec<_> = athletes
         .filter(|row| {
             members
                 .iter()

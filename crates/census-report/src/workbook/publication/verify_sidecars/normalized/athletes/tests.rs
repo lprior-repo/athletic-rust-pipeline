@@ -405,11 +405,19 @@ fn normalized_athlete_readback_accepts_retained_public_status_and_rejects_legacy
     Ok(())
 }
 
-#[test]
-fn recruiting_csv_readback_accepts_retained_public_status_and_rejects_legacy_labels() -> TestResult
-{
-    let fixture = crate::workbook::public_identity::fixture::Fixture::new()?;
-    let inputs = selected_inputs(&fixture.dataset, &fixture.options)?;
+#[tokio::test]
+async fn recruiting_csv_readback_accepts_retained_public_status_and_rejects_legacy_labels(
+) -> TestResult {
+    let fixture = crate::export::selected_test_fixture::Fixture::composed(true).await?;
+    let objects = tempfile::tempdir()?;
+    let dataset = fixture.capture(objects.path())?;
+    let mut options = options()?;
+    options.grad_year = Some(2027);
+    options.jurisdictions = vec![
+        census_domain::UsJurisdiction::Alabama,
+        census_domain::UsJurisdiction::Wisconsin,
+    ];
+    let inputs = selected_inputs(&dataset, &options)?;
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("recruiting.csv");
     crate::workbook::write_recruiting_csv(&inputs.derivation, inputs.school_year, &path)?;
@@ -443,5 +451,116 @@ fn recruiting_csv_readback_accepts_retained_public_status_and_rejects_legacy_lab
     }
     write_records(&path, &header, &records)?;
     super::super::super::recruiting::verify(directory.path(), &inputs)?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn current_only_wisconsin_profile_publishes_transfer_with_alabama_history() -> TestResult {
+    verify_current_geography(census_domain::UsJurisdiction::Wisconsin, 1, 2).await
+}
+
+#[tokio::test]
+async fn original_only_alabama_profile_excludes_current_wisconsin_transfer() -> TestResult {
+    verify_current_geography(census_domain::UsJurisdiction::Alabama, 0, 0).await
+}
+
+async fn verify_current_geography(
+    jurisdiction: census_domain::UsJurisdiction,
+    athletes: usize,
+    performances: usize,
+) -> TestResult {
+    let mut options = options()?;
+    options.grad_year = Some(2027);
+    options.jurisdictions = vec![jurisdiction];
+    let (fixture, public_id) =
+        crate::export::selected_test_fixture::Fixture::transferred_in(jurisdiction).await?;
+    let objects = tempfile::tempdir()?;
+    let dataset = fixture.capture(objects.path())?;
+    check!(eq; dataset.selected_authority()?.profile().input().jurisdictions, vec![jurisdiction]);
+    check_transfer_evidence(&dataset, &fixture)?;
+    let original = serde_json::to_vec(&dataset)?;
+    let inputs = selected_inputs(&dataset, &options)?;
+    check!(eq; inputs.derivation.athletes().len(), athletes);
+    check!(eq; inputs.derivation.performances().len(), performances);
+    let coverage = crate::report::coverage_report_for_derivation(&inputs.derivation)?;
+    check!(eq; coverage.read.athletes, athletes);
+    check!(eq; coverage.read.performances, performances);
+    let outcome = inputs.outcome()?;
+    check!(outcome.selections.is_empty());
+    check!(eq; outcome.participation_exclusions.len(), performances);
+    let directory = tempfile::tempdir()?;
+    let written = crate::workbook::publication::normalized::write_outcome(
+        directory.path(),
+        &inputs.derivation,
+        &options,
+        &outcome,
+    )?;
+    let verified = super::super::verify_outcome(
+        directory.path(),
+        &inputs,
+        crate::workbook::publication::selected::REVISION,
+        &outcome,
+    )?;
+    check!(eq; verified, written);
+    check!(eq; verified.get("athletes.csv"), Some(&u64::try_from(athletes)?));
+    check!(eq; verified.get("best_marks.csv"), Some(&0));
+    check!(eq; verified.get("participation_exclusions.csv"), Some(&u64::try_from(performances)?));
+    let recruiting = directory.path().join("recruiting.csv");
+    crate::workbook::write_recruiting_csv(&inputs.derivation, inputs.school_year, &recruiting)?;
+    super::super::super::recruiting::verify(directory.path(), &inputs)?;
+    let mut reader = csv::Reader::from_path(&recruiting)?;
+    let header = reader.headers()?.clone();
+    let records = reader.records().collect::<Result<Vec<_>, _>>()?;
+    check!(eq; records.len(), athletes);
+    if let Some(row) = records.first() {
+        for (name, expected) in [
+            ("athlete_id", public_id.as_str()),
+            (
+                "canonical_candidate_id",
+                fixture.performance.athlete.as_str(),
+            ),
+            ("school", "Synthetic Transfer High"),
+            ("state", "WI"),
+        ] {
+            let column = header
+                .iter()
+                .position(|value| value == name)
+                .ok_or("recruiting column")?;
+            check!(eq; row.get(column), Some(expected), "{name}");
+        }
+    }
+    check!(eq; serde_json::to_vec(&dataset)?, original);
+    Ok(())
+}
+
+fn check_transfer_evidence(
+    dataset: &ExportDataset,
+    fixture: &crate::export::selected_test_fixture::Fixture,
+) -> TestResult {
+    check!(eq; dataset.performances.len(), 2);
+    check!(eq; dataset.schools.get(&fixture.roster_school).ok_or("current school")?.state, Some(census_domain::UsJurisdiction::Wisconsin));
+    check!(eq; dataset.verified_current_affiliations()?.resolution(&fixture.performance.athlete).school(), Some(&fixture.roster_school));
+    let mut keys = Vec::new();
+    for performance in &dataset.performances {
+        let old_school = &dataset
+            .teams
+            .get(&performance.team)
+            .ok_or("historical team")?
+            .school;
+        check!(ne; old_school, &fixture.roster_school);
+        check!(eq; dataset.schools.get(old_school).ok_or("historical school")?.state, Some(census_domain::UsJurisdiction::Alabama));
+        let participation = dataset
+            .verified_participation()?
+            .assessment(&performance.id)
+            .ok_or("retained participation")?;
+        check!(eq; participation.outcome(), crate::export::ParticipationOutcome::Unresolved);
+        check!(eq; participation.reasons().iter().collect::<Vec<_>>(), vec![
+            census_domain::participation_candidates::ParticipationReason::HighSchoolStatusMissing,
+            census_domain::participation_candidates::ParticipationReason::SummerBoundaryUnresolved,
+        ]);
+        keys.push(performance.source_key.as_str());
+    }
+    keys.sort_unstable();
+    check!(eq; keys, vec!["milesplit_result:201782263", "milesplit_result:201782264"]);
     Ok(())
 }

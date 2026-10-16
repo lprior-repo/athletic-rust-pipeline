@@ -1,4 +1,4 @@
-use super::{Read, Revision, Rows};
+use super::{HistoricalRead, Read, Revision, Rows};
 use crate::public_identity::{codec, context, inventory, PublicIdentityError};
 use crate::{StoreError, StoreResult, Table};
 use census_domain::model::StoreIdentity;
@@ -27,19 +27,6 @@ impl Read for Live<'_> {
             Rows::Decision => self.decision(key),
         }
     }
-    fn context(&self, root: &str, identity: &StoreIdentity) -> StoreResult<context::Inputs> {
-        context::read_inputs(self.snapshot, self.journal, root, identity)
-    }
-    fn affected_context(
-        &self,
-        root: &str,
-    ) -> StoreResult<crate::public_identity::local_adjudication::affected::Inputs> {
-        crate::public_identity::local_adjudication::affected::read(
-            self.snapshot,
-            self.journal,
-            root,
-        )
-    }
     fn revision(&self) -> StoreResult<Revision> {
         Ok(Revision {
             evidence_generation: inventory::number(
@@ -54,6 +41,22 @@ impl Read for Live<'_> {
             )?,
             snapshot_sequence: self.snapshot.seqno(),
         })
+    }
+}
+
+impl HistoricalRead for Live<'_> {
+    fn context(&self, root: &str, identity: &StoreIdentity) -> StoreResult<context::Inputs> {
+        context::read_inputs(self.snapshot, self.journal, root, identity)
+    }
+    fn affected_context(
+        &self,
+        root: &str,
+    ) -> StoreResult<crate::public_identity::local_adjudication::affected::Inputs> {
+        crate::public_identity::local_adjudication::affected::read(
+            self.snapshot,
+            self.journal,
+            root,
+        )
     }
 }
 

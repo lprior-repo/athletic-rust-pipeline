@@ -21,55 +21,80 @@ struct Descriptor {
 
 impl ParticipationReplayV1 {
     pub(crate) fn install(&self, directory: &Path) -> ReportResult<String> {
-        let mut writer = Chunks::new(directory)?;
-        let encoded = serde_json::to_writer(&mut writer, self);
-        if let Some(error) = writer.failure.take() {
-            return Err(error);
-        }
-        encoded.map_err(encoding)?;
-        let descriptor = writer.finish()?;
-        let bytes = serde_json::to_vec(&descriptor).map_err(encoding)?;
-        proof_objects::install(directory, &bytes)
+        install(self, directory, 1)
     }
-
     pub(crate) fn load(directory: &Path, anchored_descriptor: &str) -> ReportResult<Self> {
-        let bytes = proof_objects::read(directory, anchored_descriptor, 32 * 1024)?;
-        let descriptor: Descriptor = serde_json::from_slice(&bytes).map_err(encoding)?;
-        if descriptor.version != 1
-            || descriptor.bytes == 0
-            || descriptor.bytes > MAX_BYTES
-            || descriptor.chunks.len() > MAX_CHUNKS
-            || descriptor.chunks.len() != descriptor.bytes.div_ceil(CHUNK_BYTES)
-            || serde_json::to_vec(&descriptor).map_err(encoding)? != bytes
-        {
-            return Err(invalid(
-                "participation replay descriptor shape or budget differs",
-            ));
-        }
-        let mut payload = Vec::new();
-        payload
-            .try_reserve_exact(descriptor.bytes)
-            .map_err(|_| invalid("participation replay allocation refused"))?;
-        descriptor
-            .chunks
-            .iter()
-            .enumerate()
-            .try_for_each(|(index, digest)| {
-                let chunk_limit = u64::try_from(CHUNK_BYTES)
-                    .map_err(|_| invalid("participation replay chunk limit overflow"))?;
-                let chunk = proof_objects::read(directory, digest, chunk_limit)?;
-                let expected = (descriptor.bytes - index * CHUNK_BYTES).min(CHUNK_BYTES);
-                if chunk.len() != expected {
-                    return Err(invalid("participation replay chunk boundary differs"));
-                }
-                payload.extend_from_slice(&chunk);
-                Ok::<(), ReportError>(())
-            })?;
-        if hash(&payload) != descriptor.sha256 {
-            return Err(invalid("participation replay payload digest differs"));
-        }
-        serde_json::from_slice(&payload).map_err(encoding)
+        load(directory, anchored_descriptor, 1)
     }
+}
+
+pub(super) fn install<T: Serialize>(
+    value: &T,
+    directory: &Path,
+    version: u32,
+) -> ReportResult<String> {
+    let mut writer = Chunks::new(directory)?;
+    let encoded = serde_json::to_writer(&mut writer, value);
+    if let Some(error) = writer.failure.take() {
+        return Err(error);
+    }
+    encoded.map_err(encoding)?;
+    let descriptor = writer.finish(version)?;
+    let bytes = serde_json::to_vec(&descriptor).map_err(encoding)?;
+    proof_objects::install(directory, &bytes)
+}
+
+pub(super) fn load<T: serde::de::DeserializeOwned + Serialize>(
+    directory: &Path,
+    anchored_descriptor: &str,
+    version: u32,
+) -> ReportResult<T> {
+    let bytes = proof_objects::read(directory, anchored_descriptor, 32 * 1024)?;
+    let descriptor: Descriptor = serde_json::from_slice(&bytes).map_err(encoding)?;
+    if descriptor.version != version
+        || descriptor.bytes == 0
+        || descriptor.bytes > MAX_BYTES
+        || descriptor.chunks.len() > MAX_CHUNKS
+        || descriptor.chunks.len() != descriptor.bytes.div_ceil(CHUNK_BYTES)
+        || serde_json::to_vec(&descriptor).map_err(encoding)? != bytes
+    {
+        return Err(invalid(
+            "participation replay descriptor shape or budget differs",
+        ));
+    }
+    let mut payload = Vec::new();
+    payload
+        .try_reserve_exact(descriptor.bytes)
+        .map_err(|_| invalid("participation replay allocation refused"))?;
+    descriptor
+        .chunks
+        .iter()
+        .enumerate()
+        .try_for_each(|(index, digest)| {
+            let chunk_limit = u64::try_from(CHUNK_BYTES)
+                .map_err(|_| invalid("participation replay chunk limit overflow"))?;
+            let chunk = proof_objects::read(directory, digest, chunk_limit)?;
+            let expected = (descriptor.bytes - index * CHUNK_BYTES).min(CHUNK_BYTES);
+            if chunk.len() != expected {
+                return Err(invalid("participation replay chunk boundary differs"));
+            }
+            payload.extend_from_slice(&chunk);
+            Ok::<(), ReportError>(())
+        })?;
+    if hash(&payload) != descriptor.sha256 {
+        return Err(invalid("participation replay payload digest differs"));
+    }
+    let value: T = serde_json::from_slice(&payload).map_err(encoding)?;
+    if version == 2 {
+        super::canonical::require(&value, &payload)?;
+    }
+    Ok(value)
+}
+
+pub(super) fn version(directory: &Path, anchored_descriptor: &str) -> ReportResult<u32> {
+    let bytes = proof_objects::read(directory, anchored_descriptor, 32 * 1024)?;
+    let descriptor: Descriptor = serde_json::from_slice(&bytes).map_err(encoding)?;
+    Ok(descriptor.version)
 }
 
 struct Chunks<'a> {
@@ -135,10 +160,10 @@ impl<'a> Chunks<'a> {
         Ok(())
     }
 
-    fn finish(mut self) -> ReportResult<Descriptor> {
+    fn finish(mut self, version: u32) -> ReportResult<Descriptor> {
         self.store()?;
         Ok(Descriptor {
-            version: 1,
+            version,
             bytes: self.bytes,
             sha256: format!("{:x}", self.hash.finalize()),
             chunks: self.chunks,

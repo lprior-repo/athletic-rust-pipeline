@@ -49,6 +49,7 @@ pub fn write_recruiting_csv(
     school_year: SchoolYear,
     path: &Path,
 ) -> ReportResult<RecruitingCsvCounts> {
+    derivation.dataset().ensure_current_selected_write()?;
     derivation.ensure_selected_affiliation()?;
     public_identity::preflight(derivation.dataset(), derivation.athletes())?;
     crate::report::EventAdmission::of(derivation.dataset())?;

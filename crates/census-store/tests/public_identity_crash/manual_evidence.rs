@@ -173,7 +173,8 @@ fn split_request(
     case: &ReviewCase,
     canonical: &census_domain::public_identity_history::PublicAthleteId,
 ) -> TestResult<LocalIdentitySplitV1> {
-    let inventory = writer.inspect_local_adjudication(store, canonical)?;
+    let inventory =
+        writer.inspect_local_adjudication(store, "manual-crash-split-inventory", canonical)?;
     let accepted = store
         .snapshot()
         .accepted_public_identity_snapshot()?

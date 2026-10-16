@@ -1,0 +1,31 @@
+HTTP/1.1 200 OK
+date: Fri, 16 Oct 2026 00:05:15 GMT
+
+HTTP/2 200 
+date: Fri, 16 Oct 2026 00:05:15 GMT
+content-type: text/html; charset=utf-8
+cache-control: max-age=3600, public
+content-language: en
+content-security-policy: report-uri /report-csp-violation
+cf-cache-status: DYNAMIC
+expires: Sun, 19 Nov 1978 05:00:00 GMT
+last-modified: Thu, 15 Oct 2026 23:40:59 GMT
+referrer-policy: strict-origin-when-cross-origin
+server: cloudflare
+strict-transport-security: max-age=31622400; includeSubDomains; preload
+x-content-type-options: nosniff
+x-drupal-cache: MISS
+x-drupal-dynamic-cache: UNCACHEABLE (poor cacheability)
+x-frame-options: SAMEORIGIN
+x-generator: Drupal 11 (https://www.drupal.org)
+x-pantheon-styx-hostname: styx-us-a-fbbcf58dd-ltc8f
+x-styx-req-id: dfd68a69-c8f1-11f1-a155-0a3f580c3e95
+x-served-by: cache-chi-kigq8000107-CHI, cache-bur-kbur8200043-BUR
+x-cache: HIT, MISS
+x-cache-hits: 1, 0
+x-timer: S1792109116.709429,VS0,VE73
+vary: Accept-Encoding, Cookie, Origin, Cookie, Cookie
+age: 1455
+via: 1.1 varnish, 1.1 varnish
+cf-ray: a4b2cf94ccd4c4eb-LAX
+

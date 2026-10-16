@@ -1,15 +1,15 @@
-use super::{consume, MembershipWithholdingOutcomeV1};
+use super::consume;
 use crate::public_identity::{
     codec,
     local_adjudication::{claims, prepare::members},
-    retained::{Read, Revision, Rows},
+    retained::{HistoricalRead as Read, Revision, Rows},
     witness, PublicIdentityError,
 };
 use crate::StoreResult;
 use census_domain::model::serialized_digest;
 use census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV1;
 use census_domain::public_identity_history::{
-    HistoryProjection, HistoryRecord, PreparedHistoryRecord, RegistryHead,
+    HistoryProjection, HistoryRecord, PreparedHistoryRecord,
 };
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 use serde::{Deserialize, Serialize};
@@ -31,20 +31,6 @@ enum LocalActor {
 }
 
 impl MembershipWithholdingWitnessV1 {
-    pub(super) fn new(
-        record: LocalMembershipWithholdingRecordV1,
-        history: &PreparedHistoryRecord,
-        approval_digest: String,
-    ) -> Self {
-        Self {
-            version: 7,
-            operation: record.operation.clone(),
-            request_digest: approval_digest,
-            actor: LocalActor::LocalOperator,
-            adjudication: record,
-            record_digest: history.uncommitted_record.digest.clone(),
-        }
-    }
     pub(in crate::public_identity) fn verify(
         &self,
         reader: &impl Read,
@@ -89,27 +75,6 @@ impl MembershipWithholdingWitnessV1 {
             return Err(PublicIdentityError::Corrupt("withholding receipt binding").into());
         }
         Ok(())
-    }
-    pub(in crate::public_identity) fn outcome(
-        &self,
-        record: &HistoryRecord,
-        replayed: bool,
-    ) -> StoreResult<MembershipWithholdingOutcomeV1> {
-        if self.record_digest != record.digest {
-            return Err(PublicIdentityError::Corrupt("withholding outcome binding").into());
-        }
-        Ok(MembershipWithholdingOutcomeV1 {
-            head: RegistryHead {
-                sequence: record.sequence,
-                digest: record.digest.clone(),
-            },
-            withheld_memberships: self
-                .adjudication
-                .request
-                .expected_withheld_memberships
-                .clone(),
-            replayed,
-        })
     }
 }
 

@@ -29,8 +29,9 @@ fn selected_fixture() -> TestResult<(
 )> {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("store");
-    Store::create_public_identity_qualification_v2(&root)?;
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    Store::create_public_identity_qualification_v3(&root)?;
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+    writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
     let current = populate(&store)?;
     let athletes = store.snapshot().athletes()?;
     let athlete = athletes.first().ok_or("synthetic transfer athlete")?;

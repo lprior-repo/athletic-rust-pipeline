@@ -1,6 +1,6 @@
 use census_domain::public_identity_history::{BindingResolution, PublicResolution};
 use census_store::{
-    AcceptedPublicIdentitySnapshot, FrozenPublicIdentityBundleV1, LocalAdjudicationCommitOutcomeV1,
+    AcceptedPublicIdentitySnapshot, FrozenPublicIdentityBundleV2, LocalAdjudicationCommitOutcomeV1,
     PublicIdentityError, StoreError,
 };
 use sha2::{Digest, Sha256};
@@ -100,7 +100,7 @@ pub(super) fn split(
 
 pub(super) fn frozen(
     plan: &Plan,
-    bundle: &FrozenPublicIdentityBundleV1,
+    bundle: &FrozenPublicIdentityBundleV2,
     expected: &AcceptedPublicIdentitySnapshot,
     outcome: &LocalAdjudicationCommitOutcomeV1,
 ) -> TestResult {
@@ -117,7 +117,7 @@ pub(super) fn frozen(
     reject_fake_accepted_decision(bundle)
 }
 
-fn reject_fake_accepted_decision(bundle: &FrozenPublicIdentityBundleV1) -> TestResult {
+fn reject_fake_accepted_decision(bundle: &FrozenPublicIdentityBundleV2) -> TestResult {
     let mut wire: serde_json::Value = serde_json::from_slice(bundle.bytes())?;
     let operations = wire
         .get_mut("operations")
@@ -140,9 +140,9 @@ fn reject_fake_accepted_decision(bundle: &FrozenPublicIdentityBundleV1) -> TestR
     let changed = serde_json::to_vec(&wire)?;
     let digest = format!("{:x}", Sha256::digest(&changed));
     check!(matches!(
-        census_store::replay_frozen_public_identity_v1(&changed, &digest),
+        census_store::replay_frozen_public_identity_v2(&changed, &digest),
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "frozen decision material kind"
+            "frozen graph decision material kind"
         )))
     ));
     Ok(())

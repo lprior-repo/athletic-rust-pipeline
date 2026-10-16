@@ -1,7 +1,7 @@
 use super::checks::visible;
 use super::policy::ParticipationPolicy;
 use super::{
-    CandidateQuery, CohortFact, EligibilityWindowFact, ParticipationInputError,
+    CandidateQuery, CohortFact, EligibilityWindowFact, InSeasonEvidence, ParticipationInputError,
     ParticipationObservation, ParticipationReason, ParticipationReasons,
 };
 use crate::model::ProfileDate;
@@ -12,7 +12,9 @@ pub(super) fn assess(
     date: &ProfileDate,
     reasons: &mut ParticipationReasons,
     policy: ParticipationPolicy,
+    season: InSeasonEvidence<'_>,
 ) -> Result<(), ParticipationInputError> {
+    let in_season = super::in_season::admitted(query, observation, date, season, reasons)?;
     let (seen, admitted, conflicted) = observation.eligibility_windows.iter().try_fold(
         (false, false, false),
         |(seen, admitted, conflicted), fact| {
@@ -31,7 +33,9 @@ pub(super) fn assess(
         reasons.add(ParticipationReason::ParticipationWindowConflict);
     }
     if !seen {
-        if !policy.establishes_date_local_status(query, observation, date, *reasons)? {
+        if !(matches!(policy, ParticipationPolicy::SourceProvenInSeason) && in_season)
+            && !policy.establishes_date_local_status(query, observation, date, *reasons)?
+        {
             reasons.add(ParticipationReason::SummerBoundaryUnresolved);
         }
     } else if !admitted {

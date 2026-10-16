@@ -29,6 +29,7 @@ pub(crate) fn write(
     policy: EventSemantics,
     dataset: &ExportDataset,
 ) -> ReportResult<(PathBuf, PathBuf)> {
+    dataset.ensure_current_selected_write()?;
     let schools = SelectedSchools::of(dataset)?;
     preflight(selections, policy, &schools)?;
     census_store::fs::create_dir_all_synced(directory).map_err(|source| io(directory, source))?;

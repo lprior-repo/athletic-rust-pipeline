@@ -3,8 +3,8 @@ use census_domain::public_identity_history::ReplayLimits;
 
 #[test]
 fn frozen_row_budget_precedes_operation_decode() -> TestResult {
-    let (_directory, store, _writer, _) = two_births()?;
-    let frozen = store.snapshot().freeze_public_identity_v1()?;
+    let historical = historical::two_births()?;
+    let frozen = &historical.frozen;
     let mut bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
     bundle.operations.first_mut().ok_or("operation")?.witness = "x".repeat(65_537);
     check!(matches!(
@@ -19,8 +19,8 @@ fn frozen_row_budget_precedes_operation_decode() -> TestResult {
 
 #[test]
 fn frozen_collection_decoder_refuses_one_more_than_history_limit() -> TestResult {
-    let (_directory, store, _writer, _) = two_births()?;
-    let frozen = store.snapshot().freeze_public_identity_v1()?;
+    let historical = historical::two_births()?;
+    let frozen = &historical.frozen;
     let mut bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
     bundle.contexts = (0..=ReplayLimits::SMALL.records)
         .map(|_| wire::Context {
@@ -36,7 +36,7 @@ fn frozen_collection_decoder_refuses_one_more_than_history_limit() -> TestResult
 
 #[test]
 fn frozen_context_record_budget_is_checked_before_json_decode() -> TestResult {
-    let (_directory, store, _writer, _) = two_births()?;
+    let (_directory, store, _writer) = fixture()?;
     let mut bytes = vec![b'x'; crate::journal::context::CONTEXT_RECORD_BYTES];
     bytes.push(b'\n');
     let result = crate::public_identity::context::from_bytes(
@@ -51,8 +51,11 @@ fn frozen_context_record_budget_is_checked_before_json_decode() -> TestResult {
 
 #[test]
 fn frozen_context_record_count_is_checked_before_json_decode() -> TestResult {
-    let (_directory, store, _writer, _) = two_births()?;
-    let bytes = vec![b'\n'; crate::journal::context::CONTEXT_RECORDS + 1];
+    let (_directory, store, _writer) = fixture()?;
+    let count = crate::journal::context::CONTEXT_RECORDS
+        .checked_add(1)
+        .ok_or("context count")?;
+    let bytes = vec![b'\n'; count];
     let result = crate::public_identity::context::from_bytes(
         &bytes,
         &digest(&bytes),

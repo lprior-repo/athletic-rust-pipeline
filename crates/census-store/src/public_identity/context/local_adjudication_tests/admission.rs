@@ -42,74 +42,73 @@ fn changed_request_cannot_reuse_reservation_or_write() -> TestResult {
         &head,
     )?;
     request.rationale.push_str(" changed");
-    let sequence = fixture.store.snapshot().sequence();
-    assert!(fixture
-        .writer
-        .prepare_local_adjudication(
-            &fixture.store,
-            "admission-conflict",
-            request,
-            fixture.store.snapshot().revision(),
-            &head
-        )
-        .is_err());
-    assert_eq!(sequence, fixture.store.snapshot().sequence());
-    Ok(())
-}
-
-#[test]
-fn absent_enrollment_refuses_preparation_without_context_write() -> TestResult {
-    let fixture = super::super::reviewed_fixture::ready_for_merge()?;
-    results::install(&fixture)?;
-    fixture.writer.apply_reviewed_identity(
+    let before = retained_state(&fixture.store)?;
+    let refused = fixture.writer.prepare_local_adjudication(
         &fixture.store,
-        "unenrolled-merge",
-        &fixture.request,
+        "admission-conflict",
+        request,
         fixture.store.snapshot().revision(),
-        &fixture.writer.head(&fixture.store)?,
-    )?;
-    let request = request(&fixture)?;
-    let sequence = fixture.store.snapshot().sequence();
-    assert!(fixture
-        .writer
-        .prepare_local_adjudication(
-            &fixture.store,
-            "unenrolled-manual",
-            request,
-            fixture.store.snapshot().revision(),
-            &fixture.writer.head(&fixture.store)?
-        )
-        .is_err());
-    assert_eq!(sequence, fixture.store.snapshot().sequence());
-    assert!(fixture
-        .writer
-        .enroll_manual_context_admission_v1(&fixture.store)
-        .is_err());
-    assert_eq!(sequence, fixture.store.snapshot().sequence());
+        &head,
+    );
+    check!(matches!(
+        refused,
+        Err(StoreError::PublicIdentity(
+            PublicIdentityError::OperationConflict
+        ))
+    ));
+    check!(eq; retained_state(&fixture.store)?, before);
     Ok(())
 }
 
 #[test]
-fn abandoned_reservation_reopens_and_resumes_original_prepared_bytes() -> TestResult {
+fn absent_enrollment_refuses_preparation_without_graph_write() -> TestResult {
+    let enrolled = merged()?;
+    let request = request(&enrolled)?;
+    let (_directory, store, writer) = crate::public_identity_tests::support::unenrolled_fixture()?;
+    let before = retained_state(&store)?;
+    let result = writer.prepare_local_adjudication(
+        &store,
+        "unenrolled-manual",
+        request,
+        store.snapshot().revision(),
+        &writer.head(&store)?,
+    );
+    check!(matches!(
+        result,
+        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
+            "manual admission missing, corrupt, or exhausted"
+        )))
+    ));
+    check!(eq; retained_state(&store)?, before);
+    Ok(())
+}
+
+#[test]
+fn abandoned_preparation_reopens_and_resumes_original_record_graph_and_approval() -> TestResult {
     let fixture = merged()?;
     let request = request(&fixture)?;
     let head = fixture.writer.head(&fixture.store)?;
-    let operation = "admission-crash-before-context";
-    let before = fixture.store.snapshot().sequence();
-    let reserved = fixture.writer.reserve_local_adjudication(
+    let operation = "admission-crash-before-approval";
+    let prepared = fixture.writer.prepare_local_adjudication(
         &fixture.store,
         operation,
         request.clone(),
         fixture.store.snapshot().revision(),
         &head,
     )?;
-    let original = serde_json::to_vec(reserved.prepared.record())?;
-    assert!(fixture.store.snapshot().sequence() > before);
-    drop(reserved);
+    let original = (
+        serde_json::to_vec(prepared.record())?,
+        serde_json::to_vec(prepared.graph())?,
+        prepared.approval_bytes()?,
+        prepared.approval_digest()?,
+    );
+    let committed = committed_state(&fixture.store)?;
+    let state = retained_state(&fixture.store)?;
+    drop(prepared);
     let path = fixture.directory.path().join("identity");
     drop(fixture.writer);
     drop(fixture.store);
-    let (store, writer) = crate::Store::open_public_identity_qualification_v2(&path)?.into_parts();
+    let (store, writer) = crate::Store::open_public_identity_qualification_v3(&path)?.into_parts();
     let prepared = writer.prepare_local_adjudication(
         &store,
         operation,
@@ -117,81 +116,70 @@ fn abandoned_reservation_reopens_and_resumes_original_prepared_bytes() -> TestRe
         store.snapshot().revision(),
         &head,
     )?;
-    assert_eq!(original, serde_json::to_vec(prepared.record())?);
+    check!(eq; (serde_json::to_vec(prepared.record())?, serde_json::to_vec(prepared.graph())?, prepared.approval_bytes()?, prepared.approval_digest()?), original);
+    check!(eq; committed_state(&store)?, committed);
+    check!(eq; retained_state(&store)?, state);
     Ok(())
 }
 
 #[test]
-fn interruption_after_first_root_resumes_same_reservation() -> TestResult {
+fn interruption_after_complete_graph_before_preparation_reuses_the_same_graph() -> TestResult {
     let fixture = merged()?;
     let request = request(&fixture)?;
     let head = fixture.writer.head(&fixture.store)?;
-    let operation = "admission-crash-between-roots";
-    let reserved = fixture.writer.reserve_local_adjudication(
-        &fixture.store,
+    let operation = "admission-crash-after-graph";
+    let inventory = stage_inventory(&fixture, operation)?;
+    let original = inventory.graph().clone();
+    let committed = committed_state(&fixture.store)?;
+    let path = fixture.directory.path().join("identity");
+    drop(fixture.writer);
+    drop(fixture.store);
+    let (store, writer) = crate::Store::open_public_identity_qualification_v3(&path)?.into_parts();
+    let prepared = writer.prepare_local_adjudication(
+        &store,
         operation,
         request.clone(),
-        fixture.store.snapshot().revision(),
+        store.snapshot().revision(),
         &head,
     )?;
-    let original = serde_json::to_vec(reserved.prepared.record())?;
-    reserved.inputs.stage_admitted(
-        &fixture.store,
-        &fixture.store.store_identity()?,
-        &reserved.permits[0],
-    )?;
-    drop(reserved);
-    let prepared = fixture.writer.prepare_local_adjudication(
-        &fixture.store,
+    check!(eq; prepared.graph(), &original);
+    check!(eq; committed_state(&store)?, committed);
+    let bytes = prepared.approval_bytes()?;
+    let before = retained_state(&store)?;
+    let retry = writer.prepare_local_adjudication(
+        &store,
         operation,
         request,
-        fixture.store.snapshot().revision(),
+        store.snapshot().revision(),
         &head,
     )?;
-    assert_eq!(original, serde_json::to_vec(prepared.record())?);
+    check!(eq; retry.approval_bytes()?, bytes);
+    check!(eq; retained_state(&store)?, before);
     Ok(())
 }
 
 #[test]
-fn reserved_capability_refuses_foreign_store_and_changed_context_before_writes() -> TestResult {
+fn prepared_graph_refuses_foreign_store_before_any_write() -> TestResult {
     let fixture = merged()?;
-    let request = request(&fixture)?;
-    let mut reserved = fixture.writer.reserve_local_adjudication(
+    let prepared = fixture.writer.prepare_local_adjudication(
         &fixture.store,
-        "admission-permit",
-        request,
+        "admission-foreign",
+        request(&fixture)?,
         fixture.store.snapshot().revision(),
         &fixture.writer.head(&fixture.store)?,
     )?;
-    let (_other_dir, other_store, _other_writer) =
-        crate::public_identity_tests::support::fixture()?;
-    let other_sequence = other_store.snapshot().sequence();
-    assert!(reserved
-        .inputs
-        .stage_admitted(
-            &other_store,
-            &fixture.store.store_identity()?,
-            &reserved.permits[0]
-        )
-        .is_err());
-    assert_eq!(other_sequence, other_store.snapshot().sequence());
-    reserved
-        .inputs
-        .athletes
-        .push(crate::public_identity_tests::support::subject(
-            "changed-reserved-input",
-            "9977",
-        )?);
-    let sequence = fixture.store.snapshot().sequence();
-    assert!(reserved
-        .inputs
-        .stage_admitted(
-            &fixture.store,
-            &fixture.store.store_identity()?,
-            &reserved.permits[0]
-        )
-        .is_err());
-    assert_eq!(sequence, fixture.store.snapshot().sequence());
+    let approval = approval(&prepared)?;
+    let (_directory, other, _) = crate::public_identity_tests::support::fixture()?;
+    let before = retained_state(&other)?;
+    let original = retained_state(&fixture.store)?;
+    let result = fixture
+        .writer
+        .apply_local_adjudication(&other, prepared, approval.0, approval.1);
+    check!(
+        matches!(result, Err(StoreError::RevisionOriginMismatch { operation }) if operation == "admission-foreign")
+    );
+    check!(eq; retained_state(&other)?, before);
+    check!(eq; retained_state(&fixture.store)?, original);
     Ok(())
 }
 
@@ -230,3 +218,5 @@ fn concurrent_exact_preparations_share_original_record() -> TestResult {
 mod accounting;
 
 mod variants;
+
+mod concurrency;

@@ -37,6 +37,33 @@ impl VerifiedPublicIdentityView {
         projection: &AthleteIdentityProjection,
     ) -> ReportResult<Self> {
         require_current_qualification(accepted.qualification_version())?;
+        Self::from_accepted(accepted, lineage, retained_head, athletes, projection)
+    }
+
+    pub(crate) fn replay_historical(
+        accepted: AcceptedPublicIdentitySnapshot,
+        lineage: &DatasetLineage,
+        retained_head: &RegistryHead,
+        athletes: &[CanonicalAthlete],
+        projection: &AthleteIdentityProjection,
+    ) -> ReportResult<Self> {
+        if accepted.qualification_version()
+            != PublicIdentityQualificationVersion::RetainedAuthorityContextV2
+        {
+            return Err(invalid(
+                "historical selected identity requires qualification V2",
+            ));
+        }
+        Self::from_accepted(accepted, lineage, retained_head, athletes, projection)
+    }
+
+    fn from_accepted(
+        accepted: AcceptedPublicIdentitySnapshot,
+        lineage: &DatasetLineage,
+        retained_head: &RegistryHead,
+        athletes: &[CanonicalAthlete],
+        projection: &AthleteIdentityProjection,
+    ) -> ReportResult<Self> {
         if accepted.store_identity().as_str() != lineage.store_identity
             || accepted.snapshot_sequence() != lineage.snapshot_sequence
             || accepted.head() != retained_head
@@ -192,9 +219,9 @@ fn invalid(detail: &str) -> ReportError {
 }
 
 fn require_current_qualification(version: PublicIdentityQualificationVersion) -> ReportResult<()> {
-    if version != PublicIdentityQualificationVersion::RetainedAuthorityContextV2 {
+    if version != PublicIdentityQualificationVersion::RetainedAuthorityGraphV3 {
         return Err(invalid(
-            "public identity publication requires retained-authority qualification V2",
+            "public identity publication requires retained-graph qualification V3",
         ));
     }
     Ok(())

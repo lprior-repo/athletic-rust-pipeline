@@ -87,7 +87,7 @@ fn public_identity_legacy_snapshot_has_no_accepted_ledger_and_allows_legacy_publ
 fn public_identity_qualification_snapshot_refuses_legacy_publication_before_and_after_commit(
 ) -> TestResult {
     let (_directory, store, writer) = fixture()?;
-    check!(eq; store.store_format()?.lifecycle_revision, Some(6));
+    check!(eq; store.store_format()?.lifecycle_revision, Some(7));
     let empty = store.snapshot();
     let before = retained_state(&store)?;
     check!(matches!(
@@ -138,7 +138,7 @@ fn public_identity_snapshot_refuses_a_missing_witness_without_changing_the_pinne
     let before = retained_state(&store)?;
     check!(matches!(
         refused(store.snapshot().accepted_public_identity_snapshot())?,
-        StoreError::PublicIdentity(PublicIdentityError::Corrupt("missing inventory witness"))
+        StoreError::PublicIdentity(PublicIdentityError::Corrupt("missing graph commit witness"))
     ));
     let accepted = held
         .accepted_public_identity_snapshot()?
@@ -167,7 +167,7 @@ fn public_identity_snapshot_refuses_a_forged_witness_without_yielding_an_accepte
     let raw = store.journal.get(&key)?.ok_or("missing fixture witness")?;
     let mut witness: serde_json::Value = serde_json::from_slice(&raw)?;
     let candidate = witness
-        .get_mut("candidate")
+        .pointer_mut("/payload/candidate")
         .ok_or("missing witness candidate")?;
     check!(eq; candidate.as_str(), Some(athlete.id.as_str()));
     *candidate = serde_json::Value::String(subject("forged-candidate", "607")?.id.to_string());
@@ -176,7 +176,7 @@ fn public_identity_snapshot_refuses_a_forged_witness_without_yielding_an_accepte
     let before = retained_state(&store)?;
     check!(matches!(
         refused(store.snapshot().accepted_public_identity_snapshot())?,
-        StoreError::PublicIdentity(PublicIdentityError::Corrupt("commit witness binding"))
+        StoreError::PublicIdentity(PublicIdentityError::Corrupt("graph receipt binding"))
     ));
     let accepted = held
         .accepted_public_identity_snapshot()?

@@ -46,6 +46,7 @@ async fn grouped_capture_resolution_preserves_individual_assessments_for_reorder
         closure: &closure,
         sources: RetainedResultSession::new(&snapshot, CaptureReadBudget::new(32 * 1024 * 1024)?),
         budget: budget::Captures::default(),
+        independent: None,
     };
     let expected = dataset
         .performances

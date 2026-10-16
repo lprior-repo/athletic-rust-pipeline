@@ -7,14 +7,16 @@ use census_domain::model::{CanonicalPerformance, RelayResult};
 fn affected_inventory_is_exact_sorted_unique_and_includes_all_raw_result_variants() -> TestResult {
     let fixture = merged()?;
     let canonical = fixture.births.first().ok_or("birth")?.public_id();
-    let inventory = fixture
-        .writer
-        .inspect_local_adjudication(&fixture.store, canonical)?;
+    let inventory = fixture.writer.inspect_local_adjudication(
+        &fixture.store,
+        "affected-inventory",
+        canonical,
+    )?;
     assert_eq!(
         inventory.affected_record_keys(),
         results::expected_keys(&fixture)?
     );
-    assert!(!inventory.affected_context().is_empty());
+    check!(eq; inventory.graph().capture().store_identity(), fixture.writer.store_identity());
     assert_eq!(
         results::raw::<CanonicalPerformance>(&fixture.store, Table::Performances)?.len(),
         5
@@ -42,10 +44,12 @@ fn affected_inventory_is_exact_sorted_unique_and_includes_all_raw_result_variant
     for unrelated in results::unrelated_keys(&fixture)? {
         assert!(!inventory.affected_record_keys().contains(&unrelated));
     }
-    let inspected = fixture
-        .writer
-        .inspect_local_adjudication(&fixture.store, canonical)?;
-    assert_eq!(inspected.affected_context(), inventory.affected_context());
+    let inspected = fixture.writer.inspect_local_adjudication(
+        &fixture.store,
+        "affected-inventory",
+        canonical,
+    )?;
+    check!(eq; inspected.graph(), inventory.graph());
     assert_eq!(
         inspected.affected_record_keys(),
         inventory.affected_record_keys()
@@ -97,6 +101,7 @@ fn omitted_athlete_source_performance_or_relay_is_refused_before_any_commit() ->
 }
 
 fn refused_without_commit(fixture: &ReviewedFixture, request: LocalIdentitySplitV1) -> TestResult {
+    stage_inventory(fixture, "synthetic-invalid-affected-inventory")?;
     let before = retained_state(&fixture.store)?;
     let head = fixture.writer.head(&fixture.store)?;
     let sequence = fixture.store.snapshot().sequence();
@@ -110,7 +115,7 @@ fn refused_without_commit(fixture: &ReviewedFixture, request: LocalIdentitySplit
     assert!(matches!(
         result,
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "manual affected record inventory"
+            "graph manual affected keys"
         )))
     ));
     assert_eq!(fixture.writer.head(&fixture.store)?, head);

@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use census_domain::model::{AthleteCandidateId, StoreIdentity};
 use census_domain::public_identity_history::local_adjudication::{
-    LocalIdentityAdjudicationRecordV2, LocalIdentitySplitV1,
+    LocalIdentityAdjudicationRecordV3, LocalIdentitySplitV1,
 };
 use census_domain::public_identity_history::{PublicAthleteId, RegistryHead};
 use census_store::{PreparedLocalAdjudicationV1, PublicIdentityWriterV1, Store, Table};
@@ -17,7 +17,7 @@ pub(super) const CHILD_NAME: &str = "manual::public_identity_manual_crash_child_
 const PLAN_FILE: &str = "manual-crash-plan.json";
 const PREPARED_FILE: &str = "manual-crash-original-prepared.json";
 const APPROVAL_FILE: &str = "manual-crash-approved.json";
-const APPROVAL_SCHEMA: &str = "local-identity-adjudication-approval/v1";
+const APPROVAL_SCHEMA: &str = "local-identity-adjudication-approval/v2";
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -45,9 +45,9 @@ impl Fixture {
         let directory = tempfile::tempdir()?;
         let root = directory.path().join("identity");
         check!(root.is_absolute());
-        Store::create_public_identity_qualification_v2(&root)?;
-        let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
-        writer.enroll_manual_context_admission_v1(&store)?;
+        Store::create_public_identity_qualification_v3(&root)?;
+        let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+        writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
         let plan = evidence::install(&store, &writer)?;
         check!(eq; plan.head.sequence, 4);
         check!(eq; store.snapshot().scan::<census_domain::model::AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?.len(), 4);
@@ -83,21 +83,24 @@ impl Fixture {
 pub(super) struct Approval {
     schema: String,
     actor: String,
-    pub prepared: LocalIdentityAdjudicationRecordV2,
+    pub prepared: LocalIdentityAdjudicationRecordV3,
+    pub graph: census_store::GraphAuthorityReferenceV1,
 }
 
 impl Approval {
-    pub fn new(record: &LocalIdentityAdjudicationRecordV2) -> Self {
+    pub fn new(prepared: &PreparedLocalAdjudicationV1<'_>) -> Self {
         Self {
             schema: APPROVAL_SCHEMA.into(),
             actor: "local_operator".into(),
-            prepared: record.clone(),
+            prepared: prepared.record().clone(),
+            graph: prepared.graph().clone(),
         }
     }
 
     pub fn encoded(&self) -> TestResult<(Vec<u8>, String)> {
         check!(eq; self.schema, APPROVAL_SCHEMA);
         check!(eq; self.actor, "local_operator");
+        check!(eq; self.graph.domain_reference()?, self.prepared.graph);
         let bytes = serde_json::to_vec(self)?;
         let mut digest = Sha256::new();
         digest.update(APPROVAL_SCHEMA.as_bytes());
@@ -113,7 +116,7 @@ pub(super) fn prepare<'s>(
     plan: &Plan,
 ) -> TestResult<PreparedLocalAdjudicationV1<'s>> {
     let prepared = prepare_record(store, writer, plan)?;
-    let original: LocalIdentityAdjudicationRecordV2 = read_json(&store.root().join(PREPARED_FILE))?;
+    let original: LocalIdentityAdjudicationRecordV3 = read_json(&store.root().join(PREPARED_FILE))?;
     check!(eq; serde_json::to_vec(prepared.record())?, serde_json::to_vec(&original)?);
     Ok(prepared)
 }
@@ -141,12 +144,14 @@ pub(super) fn child() -> TestResult {
     );
     check!(root.is_absolute());
     let plan: Plan = read_json(&root.join(PLAN_FILE))?;
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     check!(eq; writer.store_identity(), &plan.identity);
     check!(eq; writer.head(&store)?, plan.head);
     check!(eq; store.snapshot().scan::<census_domain::model::AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?.len(), 4);
     let prepared = prepare(&store, &writer, &plan)?;
-    let (bytes, digest) = Approval::new(prepared.record()).encoded()?;
+    let (bytes, digest) = Approval::new(&prepared).encoded()?;
+    check!(eq; prepared.approval_bytes()?, bytes);
+    check!(eq; prepared.approval_digest()?, digest);
     write_new(&root.join(APPROVAL_FILE), &bytes)?;
     writer.apply_local_adjudication(&store, prepared, bytes, digest)?;
     Err("manual child returned without interruption at the durable boundary".into())

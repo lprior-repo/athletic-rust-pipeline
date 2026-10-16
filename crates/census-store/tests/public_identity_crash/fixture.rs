@@ -34,10 +34,11 @@ impl Fixture {
         let directory = tempfile::tempdir()?;
         let root = directory.path().join("identity");
         check!(root.is_absolute());
-        let declaration = Store::create_public_identity_qualification_v2(&root)?;
-        let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
-        check!(eq; store.store_format()?.lifecycle_revision, Some(6));
-        check!(eq; writer.qualification_version(), PublicIdentityQualificationVersion::RetainedAuthorityContextV2);
+        let declaration = Store::create_public_identity_qualification_v3(&root)?;
+        let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+        check!(eq; store.store_format()?.lifecycle_revision, Some(7));
+        check!(eq; writer.qualification_version(), PublicIdentityQualificationVersion::RetainedAuthorityGraphV3);
+        writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
         let athlete = subject()?;
         store.append(Table::Athletes, &athlete)?;
         let identity = declaration.store_identity().clone();
@@ -88,9 +89,9 @@ pub(super) fn child() -> TestResult {
     check!(eq; std::env::var(CHILD_CASE)?.as_str(), CHILD_NAME);
     let root = PathBuf::from(std::env::var_os(CHILD_ROOT).ok_or("child root absent")?);
     check!(root.is_absolute());
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
-    check!(eq; store.store_format()?.lifecycle_revision, Some(6));
-    check!(eq; writer.qualification_version(), PublicIdentityQualificationVersion::RetainedAuthorityContextV2);
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+    check!(eq; store.store_format()?.lifecycle_revision, Some(7));
+    check!(eq; writer.qualification_version(), PublicIdentityQualificationVersion::RetainedAuthorityGraphV3);
     let athlete = subject()?;
     check!(eq; store.scan::<CanonicalAthlete>(Table::Athletes)?, vec![athlete.clone()]);
     let head = writer.head(&store)?;

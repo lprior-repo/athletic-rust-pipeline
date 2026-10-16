@@ -57,7 +57,7 @@ fn interrupted_descendant_resumes_after_store_reopen_without_second_reservation(
     drop(writer);
     drop(store);
     let (store, _writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let reservation = load(&store, "interrupted-graph")?.ok_or("reopened reservation")?;
     let before_retry = retained_state(&store)?;
@@ -114,7 +114,7 @@ fn recovered_partial_descendant_keeps_original_full_charge_and_exact_rows() -> T
     drop(writer);
     drop(store);
     let (store, _writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let reservation = load(&store, "recovered-partial")?.ok_or("recovered reservation")?;
     let current = generation.plan(&store)?;

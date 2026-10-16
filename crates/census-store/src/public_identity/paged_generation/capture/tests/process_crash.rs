@@ -7,7 +7,7 @@ use std::process::{Command, Stdio};
 const CHILD_ROOT: &str = "R3_CAPTURE_AFTER_SEAL_TEST_ROOT";
 
 fn interrupted_public_capture(root: &Path) -> TestResult {
-    let (store, writer) = Store::open_public_identity_qualification_v2(root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
     let id = operation("public-crash-after-seal")?;
     let (gate, controller) = rendezvous::pair(Phase::AfterSeal);
     std::thread::scope(|scope| -> TestResult {
@@ -56,7 +56,7 @@ fn public_capture_seal_survives_process_abort_before_return_and_replays_exactly(
     let (directory, status) = super::owned_child::wait(child, directory)?;
     assert_eq!(status.signal(), Some(6));
     let root = directory.path().join("identity");
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     let id = operation("public-crash-after-seal")?;
     let reserved =
         load_graph(&store, writer.store_identity(), &id)?.ok_or("missing retained reservation")?;

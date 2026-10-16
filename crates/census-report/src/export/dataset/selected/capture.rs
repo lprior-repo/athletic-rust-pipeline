@@ -19,7 +19,7 @@ impl ExportDataset {
         snapshot.ensure_origin(store)?;
         let profile = snapshot.selected_profile(selection)?;
         let _supported =
-            census_domain::profile_execution::validate_selected_qualification_profile_v1(&profile)
+            census_domain::profile_execution::validate_selected_qualification_profile_v3(&profile)
                 .map_err(|error| invalid(&error.to_string()))?;
         preflight::admit(snapshot)?;
         let accepted = snapshot
@@ -40,7 +40,7 @@ impl ExportDataset {
         let mut dataset = Self::from_loaded(loaded, frozen::lineage(store, snapshot)?)?;
         dataset.selected_input_origin = super::super::SelectedInputOrigin::Current;
         let fingerprints = dataset.selected_authority()?.fingerprints().clone();
-        let (proofs, hydrated) = super::super::selected_proofs::SelectedProofsV1::capture(
+        let (proofs, hydrated) = super::super::selected_proofs::SelectedProofs::capture(
             &mut dataset,
             snapshot,
             &profile,

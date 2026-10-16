@@ -9,7 +9,11 @@ use census_domain::model::{
 };
 use serde_json::json;
 
-pub(super) fn append(store: &Store, id: &AthleteId) -> TestResult<(AthleteId, SchoolId)> {
+pub(super) fn append(
+    store: &Store,
+    id: &AthleteId,
+    address: super::CurrentAddress,
+) -> TestResult<(AthleteId, SchoolId)> {
     let original = store
         .snapshot()
         .athletes()?
@@ -27,7 +31,9 @@ pub(super) fn append(store: &Store, id: &AthleteId) -> TestResult<(AthleteId, Sc
         SourceNamespace::MilesplitSchool,
         "52649",
     ));
-    super::postal::attach(store, &mut school)?;
+    if matches!(address, super::CurrentAddress::Retained) {
+        super::postal::attach(store, &mut school)?;
+    }
     let owner = school
         .source_identities
         .first()

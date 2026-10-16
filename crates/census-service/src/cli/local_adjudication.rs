@@ -1,5 +1,3 @@
-use serde::Serialize;
-use sha2::{Digest, Sha256};
 use std::io::{BufRead, IsTerminal, Read, Write};
 
 mod command;
@@ -7,7 +5,6 @@ mod input;
 mod membership;
 pub(super) use command::{run, LocalAdjudicationArgs};
 
-const APPROVAL_SCHEMA: &str = "local-identity-adjudication-approval/v1";
 const MAX_PREPARED_BYTES: usize = 1024 * 1024;
 const MAX_CONFIRMATION_BYTES: u64 = 75;
 
@@ -19,23 +16,10 @@ pub(super) enum ApprovalError {
     ExactConfirmationRequired,
     #[error("prepared identity adjudication exceeds the encoded approval budget")]
     PreparedBudgetExceeded,
-    #[error("identity adjudication preparation could not be encoded: {0}")]
-    Encode(#[source] serde_json::Error),
+    #[error("prepared identity adjudication has an invalid approval digest")]
+    InvalidDigest,
     #[error("identity adjudication terminal I/O failed: {0}")]
     Io(#[from] std::io::Error),
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "snake_case")]
-enum Actor {
-    LocalOperator,
-}
-
-#[derive(Serialize)]
-struct ApprovalEnvelope<'a, T> {
-    schema: &'static str,
-    actor: Actor,
-    prepared: &'a T,
 }
 
 pub(super) struct VerifiedLocalAdjudication {
@@ -49,13 +33,14 @@ impl VerifiedLocalAdjudication {
     }
 }
 
-pub(super) fn approve_prepared<T: Serialize>(
-    prepared: &T,
+pub(super) fn approve_prepared(
+    encoded: Vec<u8>,
+    digest: String,
 ) -> Result<VerifiedLocalAdjudication, ApprovalError> {
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
     require_terminal(stdin.is_terminal(), stdout.is_terminal())?;
-    confirm(prepared, &mut stdin.lock(), &mut stdout.lock())
+    confirm(encoded, digest, &mut stdin.lock(), &mut stdout.lock())
 }
 
 fn require_terminal(input: bool, output: bool) -> Result<(), ApprovalError> {
@@ -65,24 +50,24 @@ fn require_terminal(input: bool, output: bool) -> Result<(), ApprovalError> {
     }
 }
 
-fn confirm<T: Serialize, R: BufRead, W: Write>(
-    prepared: &T,
+fn confirm<R: BufRead, W: Write>(
+    encoded: Vec<u8>,
+    digest: String,
     reader: &mut R,
     writer: &mut W,
 ) -> Result<VerifiedLocalAdjudication, ApprovalError> {
-    confirm_for(APPROVAL_SCHEMA, prepared, reader, writer)
-}
-
-fn confirm_for<T: Serialize, R: BufRead, W: Write>(
-    schema: &'static str,
-    prepared: &T,
-    reader: &mut R,
-    writer: &mut W,
-) -> Result<VerifiedLocalAdjudication, ApprovalError> {
-    let encoded = encode_for(schema, prepared)?;
-    let digest = approval_digest_for(schema, &encoded);
+    if encoded.is_empty() || encoded.len() > MAX_PREPARED_BYTES {
+        return Err(ApprovalError::PreparedBudgetExceeded);
+    }
+    if digest.len() != 64
+        || !digest
+            .bytes()
+            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+    {
+        return Err(ApprovalError::InvalidDigest);
+    }
     writer.write_all(
-        b"Local operator identity adjudication. Review the complete prepared record:\n",
+        b"Local operator identity adjudication. Review the complete prepared record and graph:\n",
     )?;
     writer.write_all(&encoded)?;
     write!(writer, "\nType exactly: approve {digest}\n> ")?;
@@ -107,66 +92,6 @@ fn verify_confirmation(digest: &str, response: &[u8]) -> Result<(), ApprovalErro
         return Err(ApprovalError::ExactConfirmationRequired);
     }
     Ok(())
-}
-
-#[cfg(test)]
-fn approval_digest(encoded: &[u8]) -> String {
-    approval_digest_for(APPROVAL_SCHEMA, encoded)
-}
-
-fn approval_digest_for(schema: &str, encoded: &[u8]) -> String {
-    let mut digest = Sha256::new();
-    digest.update(schema.as_bytes());
-    digest.update([0]);
-    digest.update(encoded);
-    format!("{:x}", digest.finalize())
-}
-
-#[cfg(test)]
-fn encode<T: Serialize>(prepared: &T) -> Result<Vec<u8>, ApprovalError> {
-    encode_for(APPROVAL_SCHEMA, prepared)
-}
-
-fn encode_for<T: Serialize>(schema: &'static str, prepared: &T) -> Result<Vec<u8>, ApprovalError> {
-    let envelope = ApprovalEnvelope {
-        schema,
-        actor: Actor::LocalOperator,
-        prepared,
-    };
-    let mut writer = BoundedRecord {
-        bytes: Vec::new(),
-        exceeded: false,
-    };
-    let result = serde_json::to_writer(&mut writer, &envelope);
-    if writer.exceeded {
-        return Err(ApprovalError::PreparedBudgetExceeded);
-    }
-    result.map_err(ApprovalError::Encode)?;
-    Ok(writer.bytes)
-}
-
-struct BoundedRecord {
-    bytes: Vec<u8>,
-    exceeded: bool,
-}
-
-impl Write for BoundedRecord {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        let remaining = MAX_PREPARED_BYTES.saturating_sub(self.bytes.len());
-        if bytes.len() > remaining {
-            self.exceeded = true;
-            return Err(std::io::Error::other("prepared adjudication budget"));
-        }
-        self.bytes
-            .try_reserve_exact(bytes.len())
-            .map_err(std::io::Error::other)?;
-        self.bytes.extend_from_slice(bytes);
-        Ok(bytes.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
 }
 
 #[cfg(test)]

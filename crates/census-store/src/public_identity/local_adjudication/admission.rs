@@ -1,16 +1,20 @@
+mod capacity;
+use capacity::require_capacity;
 mod decision;
 pub(in crate::public_identity) mod graph;
 mod graph_wire;
 mod persist;
+pub(in crate::public_identity) mod preparation;
+#[cfg(test)]
 mod retry;
 use crate::journal::context::ContextCharge;
 use crate::public_identity::{codec, PublicIdentityAdmissionResource, PublicIdentityError};
 use crate::{Store, StoreError, StoreResult, MAX_JOURNAL_VALUE_BYTES};
 use census_domain::model::StoreIdentity;
+#[cfg(test)]
 pub(in crate::public_identity) use decision::Binding;
 use decision::Decision;
 use fjall::Readable;
-pub(in crate::public_identity) use persist::{reserve, reserve_withholding};
 use serde::{Deserialize, Serialize};
 
 const PREFIX: &str = "manual-context-admission-v1\0";
@@ -110,6 +114,7 @@ fn audit_row(
     let version: Version = codec::decode(row_key, &raw)?;
     match version.version {
         3 => return graph::audit(store, row_key, &raw, identity),
+        4 => return preparation::audit(store, row_key, &raw, identity),
         2 => (),
         _ => return Err(invalid()),
     }
@@ -159,6 +164,7 @@ fn charge(reservation: &Reservation, key_bytes: usize, value_bytes: usize) -> St
     )
 }
 
+#[cfg(test)]
 pub(in crate::public_identity) fn load(
     store: &Store,
     identity: &StoreIdentity,
@@ -177,6 +183,7 @@ pub(in crate::public_identity) fn load(
 }
 
 impl Reservation {
+    #[cfg(test)]
     pub(in crate::public_identity) fn require_allowance(
         &self,
         measured: &[ContextCharge; 2],
@@ -191,28 +198,6 @@ impl Reservation {
         }
         Ok(())
     }
-}
-
-fn require_capacity(bytes: u64, roots: u64, reservations: u64) -> StoreResult<()> {
-    for (resource, needed, available) in [
-        (PublicIdentityAdmissionResource::Bytes, bytes, MAX_BYTES),
-        (PublicIdentityAdmissionResource::Roots, roots, MAX_ROOTS),
-        (
-            PublicIdentityAdmissionResource::Reservations,
-            reservations,
-            MAX_RESERVATIONS,
-        ),
-    ] {
-        if needed > available {
-            return Err(PublicIdentityError::AdmissionCapacity {
-                resource,
-                needed,
-                available,
-            }
-            .into());
-        }
-    }
-    Ok(())
 }
 
 #[cfg(test)]
@@ -267,6 +252,7 @@ impl Permit<'_> {
 }
 
 impl Reservation {
+    #[cfg(test)]
     pub(in crate::public_identity) fn permits<'s>(&self, store: &'s Store) -> [Permit<'s>; 2] {
         self.charges.each_ref().map(|charge| Permit {
             store,
@@ -288,4 +274,11 @@ fn reservation_scan_limit(extra: usize) -> StoreResult<usize> {
         .map_err(|_| StoreError::CounterOverflow)?
         .checked_add(extra)
         .ok_or(StoreError::CounterOverflow)
+}
+
+#[cfg(test)]
+pub(in crate::public_identity) fn enroll_header_for_test(store: &Store) -> StoreResult<()> {
+    let identity = store.store_identity()?;
+    let _guard = store.lock_appends();
+    persist::enroll_empty(store, &identity)
 }

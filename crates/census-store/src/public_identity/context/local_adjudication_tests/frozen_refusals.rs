@@ -1,5 +1,5 @@
 use super::*;
-use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2;
+use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV3;
 use census_domain::public_identity_history::HistoryError;
 use serde_json::Value;
 
@@ -25,69 +25,70 @@ fn prior_manual_record_version_and_policy_are_refused_without_reinterpreting_old
     prior.policy = "local-operator-retained-identity-review/v1".into();
     assert!(matches!(
         prior.history_request(&claims),
-        Err(HistoryError::Invalid("manual adjudication policy"))
+        Err(HistoryError::Invalid("manual adjudication graph policy"))
     ));
     let mut old_shape = serde_json::to_value(prior)?;
     old_shape
         .as_object_mut()
         .ok_or("prior record object")?
-        .remove("affected_context")
-        .ok_or("affected context")?;
-    assert!(serde_json::from_value::<LocalIdentityAdjudicationRecordV2>(old_shape).is_err());
+        .remove("graph")
+        .ok_or("graph reference")?;
+    assert!(serde_json::from_value::<LocalIdentityAdjudicationRecordV3>(old_shape).is_err());
     Ok(())
 }
 
 #[test]
-fn frozen_replay_refuses_missing_affected_context_even_with_recomputed_bundle_digest() -> TestResult
-{
+fn frozen_replay_refuses_missing_manual_graph_even_with_recomputed_bundle_digest() -> TestResult {
     let (mut wire, root) = frozen_manual()?;
-    let contexts = wire
-        .get_mut("contexts")
+    let objects = wire
+        .get_mut("objects")
         .and_then(Value::as_array_mut)
-        .ok_or("contexts")?;
-    let before = contexts.len();
-    contexts.retain(|row| row.get("root").and_then(Value::as_str) != Some(root.as_str()));
-    assert_eq!(
-        contexts.len().checked_add(1).ok_or("context count")?,
-        before
+        .ok_or("objects")?;
+    let before = objects.len();
+    objects.retain(|row| {
+        row.pointer("/reference/root").and_then(Value::as_str) != Some(root.as_str())
+    });
+    check!(eq; objects.len().checked_add(1).ok_or("object count")?, before);
+    check!(
+        matches!(replay_changed(&wire), Err(StoreError::JournalManifestMissing { object, .. }) if object == root)
     );
-    let result = replay_changed(&wire);
-    assert!(matches!(
-        result,
-        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "frozen authority context inventory"
-        )))
-    ));
     Ok(())
 }
 
 #[test]
-fn frozen_replay_refuses_tampered_affected_bytes_even_with_recomputed_bundle_digest() -> TestResult
-{
+fn frozen_replay_refuses_tampered_manual_graph_bytes_even_with_recomputed_bundle_digest(
+) -> TestResult {
+    use base64::Engine;
     let (mut wire, root) = frozen_manual()?;
-    let context = wire
-        .get_mut("contexts")
+    let object = wire
+        .get_mut("objects")
         .and_then(Value::as_array_mut)
-        .ok_or("contexts")?
+        .ok_or("objects")?
         .iter_mut()
-        .find(|row| row.get("root").and_then(Value::as_str) == Some(root.as_str()))
-        .ok_or("affected context")?;
-    let mut bytes = context
-        .get("bytes")
+        .find(|row| row.pointer("/reference/root").and_then(Value::as_str) == Some(root.as_str()))
+        .ok_or("manual graph object")?;
+    let key = base64::engine::general_purpose::STANDARD
+        .encode(crate::journal::object_chunk_key(&root, 0)?);
+    let row = object
+        .get_mut("rows")
+        .and_then(Value::as_array_mut)
+        .ok_or("rows")?
+        .iter_mut()
+        .find(|row| row.get("key_base64").and_then(Value::as_str) == Some(key.as_str()))
+        .ok_or("seal chunk")?;
+    let encoded = row
+        .get("value_base64")
         .and_then(Value::as_str)
-        .ok_or("context bytes")?
-        .to_owned();
-    bytes.push('\n');
-    context
-        .as_object_mut()
-        .ok_or("context object")?
-        .insert("bytes".into(), bytes.into());
-    let result = replay_changed(&wire);
-    assert!(matches!(
-        result,
-        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "manual affected context digest or byte bound"
-        )))
+        .ok_or("chunk value")?;
+    let raw = base64::engine::general_purpose::STANDARD.decode(encoded)?;
+    let mut chunk: Value = serde_json::from_slice(&raw)?;
+    *chunk.get_mut("digest").ok_or("chunk digest")? = "0".repeat(64).into();
+    *row.get_mut("value_base64").ok_or("row value")? = base64::engine::general_purpose::STANDARD
+        .encode(serde_json::to_vec(&chunk)?)
+        .into();
+    check!(matches!(
+        replay_changed(&wire),
+        Err(StoreError::JournalChunkDigest { index: 0, .. })
     ));
     Ok(())
 }
@@ -101,12 +102,12 @@ fn frozen_manual() -> TestResult<(Value, String)> {
         fixture.store.snapshot().revision(),
         &fixture.writer.head(&fixture.store)?,
     )?;
-    let root = prepared.record().affected_context.clone();
+    let root = prepared.graph().seal().root().as_str().to_owned();
     let (bytes, digest) = approval(&prepared)?;
     fixture
         .writer
         .apply_local_adjudication(&fixture.store, prepared, bytes, digest)?;
-    let frozen = fixture.store.snapshot().freeze_public_identity_v1()?;
+    let frozen = fixture.store.snapshot().freeze_public_identity_v2()?;
     frozen.replay()?;
     Ok((serde_json::from_slice(frozen.bytes())?, root))
 }
@@ -117,5 +118,5 @@ fn replay_changed(wire: &Value) -> crate::StoreResult<crate::AcceptedPublicIdent
         source,
     })?;
     let digest = format!("{:x}", Sha256::digest(&bytes));
-    crate::replay_frozen_public_identity_v1(&bytes, &digest)
+    crate::replay_frozen_public_identity_v2(&bytes, &digest)
 }

@@ -1487,3 +1487,92 @@ Root workspace check `b5b8e6f3` and formatting `6b761a4a` also passed.
 This is a regression-test-only integration; the separate current-version
 migration remains unmerged and unqualified. No release or national-run
 acceptance is inferred.
+
+## Checked participation successor and historical probes, 2026-10-16
+
+Native verification of exact `ef1d12445401a7bc9535d56c2878fe5e641e19fe`
+reported formatting and workspace check PASS. Source lint failed four findings:
+markup tuple type complexity, a collapsible canonical-link match, and two manual
+ASCII case comparisons in transport validation. Source-cleared two-file repair
+`7f017c1b6dc5aba80f04d98ed2cbfcd134eb446d` has not yet passed native lint.
+The normal merge `25f204f3f24ff060ed33589e11f71f6166d1da47` preserves incoming
+main `a8e7d7be6008d27fa38ac4e804bf071ebae2135b`; merged-tree checks remain pending.
+
+On exact ef1d, domain tests passed 833/833 and service tests passed 10/10. The
+explicit synthetic participation publication test failed with CheckFailure
+(left 2, right 1). Crawl tests passed 1465/1616, with 151 failures. Native command
+cache confirmed that the domain and crawl invocations were package-wide --lib
+runs without the requested -E filter. A separate exact participation filter
+`test(participation_evidence::tests::)` passed 7/10. Detailed logs beyond the preserved summary were unavailable,
+so the exact positive-test assertion is unestablished. Package-wide crawl failure
+diagnostics are unavailable; the separate focused participation run failed 3/10. These failures are not classified as preexisting baseline
+failures. The genuine nested-article owner-selection defect was independently
+identified in source and its correction remains separately reviewed.
+
+The external strict-v3 graph archive consumer passed 1/1 on ef1d, reopening the
+unaltered exact-53e producer output offline and refusing a current CSV write.
+All original 49 receipt inventory entries were unchanged. Producer receipt SHA256
+is `9d573de6c0482ee9cec22c71b64d254332ce19cde64a7a8df4f71da4be2a0b0f`.
+
+The separate exact-53e guarded-open fixture experiment passed 2/2, using the
+reviewed temporary Fjall guarded-callback and first-party inspection-copy overlay.
+Original historical store inventory and producer receipt hashes remained
+unchanged; original Fjall recovery was not opened. Temporary Cargo manifest and
+lock wiring were restored to their pinned hashes. This proves the controlled
+clean/orphan fixture refusal behavior only. The dependency and guarded opener
+remain unactivated, and copied recovery has no hard production memory, growth or
+shutdown bound. No national or genuine-person selection acceptance follows.
+
+### Scoped participation and historical replay checkpoint (2026-10-16 02:46 UTC)
+
+The native callback reports exact cd93c6dc/tree e9ea50c7 passed formatting,
+full check and source lint, participation reader tests 22/22, scoped domain
+98/98, and executable selected CLI 10/10. The strict-v3 external consumer passed
+1/1; all original publication inventory entries and the producer receipt above
+were unchanged. Persistent native logs are retained in
+`verification-r1-cd93-logs-20261016` under the existing Omarchy task directory.
+The cloud source-review lane did not independently execute these gates.
+
+The report scope passed 87/88. Its sole failing positive test expected the raw
+meet-metadata URL where the canonical writer and verifier emit the structured
+result-capture URL. The successor test carries the authored offline request URL
+into all three affected artifact assertions and independently checks both source
+roles. The one selected PR, stronger excluded mark, exact frozen evidence and
+source-deleted replay assertions remain. This successor requires its own native
+rerun. Four publication-abort cases previously refused by the OS harness were
+explicitly excluded from this run; they are not passing assertions.
+
+The guarded-copy experiment above establishes preservation for its two fixtures.
+Production recovery still lacks a qualified memory/disk envelope. The existing
+operations contract permits owned blocking effects to remain pending beyond the
+async grace deadline and forbids reporting a successful drain while they remain;
+it does not promise a wall-clock bound on arbitrary engine or filesystem calls.
+Genuine-person attachment, official-school ownership, dated affiliation and
+result/season correspondence remain separate acceptance dependencies.
+
+### Verified controlled positive publication (2026-10-16 03:12 UTC)
+
+The native terminal callback verifies exact
+`b70bcafd292aa79476f822a3bf686277498e74d9`, tree
+`06171228c59064b2f71f71a206417e44132edabf`: formatting, full check and
+source lint PASS; the explicit synthetic publication positive 1/1, scoped domain
+98/98, participation readers 22/22, selected CLI 10/10 and broader report scope
+88/88 PASS. The original formatting invocation refused a tests-only feature
+environment; the corrected invocation unset that environment and passed. Both
+attempts remain in the native logs, not two successful format runs.
+
+The strict-v3 external consumer passed 1/1. Its full 50-entry comparison,
+including the original producer receipt, remained unchanged; receipt SHA256 is
+`9d573de6c0482ee9cec22c71b64d254332ce19cde64a7a8df4f71da4be2a0b0f`.
+Persistent logs are in `verification-r1-b70-logs-20261016` under the existing
+Omarchy task directory. The verification overlay was removed; checkout was
+clean at exact b70 with no active build. Four previously OS-denied publication
+abort cases were explicitly excluded and were not rerun or counted as passing.
+
+This closes the controlled synthetic eligible winner/window fallback, stronger
+result exclusion, artifact agreement and source-deleted replay gate. Genuine
+person/source attachment, official-school ownership, dated affiliation and exact
+result/season correspondence remain pending. Historical orphan preservation in
+production, representative recovery memory/disk qualification, scale and broader
+release gates remain open. The documentation successor preserves every b70
+source, fixture, tool and configuration byte; no new execution is claimed on it.

@@ -22,7 +22,7 @@ fn historical_ids_survive_absent_candidate_groups_reopen_and_frozen_replay() -> 
     let accepted = snapshot
         .accepted_public_identity_snapshot()?
         .ok_or("accepted public history")?;
-    let frozen = snapshot.freeze_public_identity_v1()?;
+    let frozen = snapshot.freeze_public_identity_v2()?;
     let view =
         VerifiedPublicIdentityView::capture(accepted, &lineage, merged.head(), &[], &projection)?;
     let [first_birth, second_birth] = &fixture.births;
@@ -53,7 +53,7 @@ fn historical_ids_survive_absent_candidate_groups_reopen_and_frozen_replay() -> 
     drop(writer);
     drop(store);
     let (store, _writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let snapshot = store.snapshot();
     let reopened_lineage = store_lineage(&store)?;

@@ -13,16 +13,16 @@ fn public_identity_current_initialization_and_reopen_retain_one_lineage() -> Tes
         if root.ends_with("empty") {
             std::fs::create_dir(&root)?;
         }
-        let declaration = Store::create_public_identity_qualification_v2(&root)?;
-        let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
-        check!(eq; store.store_format()?.lifecycle_revision, Some(6));
+        let declaration = Store::create_public_identity_qualification_v3(&root)?;
+        let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+        check!(eq; store.store_format()?.lifecycle_revision, Some(7));
         check!(eq; store.store_identity()?, declaration.store_identity().clone());
         check!(eq; writer.store_identity(), declaration.store_identity());
-        check!(eq; writer.qualification_version(), PublicIdentityQualificationVersion::RetainedAuthorityContextV2);
+        check!(eq; writer.qualification_version(), PublicIdentityQualificationVersion::RetainedAuthorityGraphV3);
         check!(eq; writer.head(&store)?, genesis(declaration.store_identity())?);
         let before = retained_state(&store)?;
         drop(store);
-        let (reopened, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+        let (reopened, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
         check!(eq; reopened.store_identity()?, declaration.store_identity().clone());
         check!(eq; writer.head(&reopened)?, genesis(declaration.store_identity())?);
         check!(eq; retained_state(&reopened)?, before);
@@ -34,16 +34,16 @@ fn public_identity_current_initialization_and_reopen_retain_one_lineage() -> Tes
 fn public_identity_current_missing_open_never_creates_and_second_owner_refuses() -> TestResult {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("absent");
-    check!(Store::open_public_identity_qualification_v2(&root).is_err());
+    check!(Store::open_public_identity_qualification_v3(&root).is_err());
     check!(!root.exists());
-    Store::create_public_identity_qualification_v2(&root)?;
-    let (store, _) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    Store::create_public_identity_qualification_v3(&root)?;
+    let (store, _) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     let before = retained_state(&store)?;
     check!(matches!(
-        Store::open_public_identity_qualification_v2(&root),
+        Store::open_public_identity_qualification_v3(&root),
         Err(StoreError::Open { .. })
     ));
-    check!(eq; store.store_format()?.lifecycle_revision, Some(6));
+    check!(eq; store.store_format()?.lifecycle_revision, Some(7));
     check!(eq; retained_state(&store)?, before);
     Ok(())
 }
@@ -55,11 +55,11 @@ fn public_identity_current_partial_store_refusal_never_creates_keyspaces_or_outp
     let root = directory.path().join("partial");
     let db = fjall::Database::builder(root.join(crate::DB_DIR)).open()?;
     let meta = db.keyspace(crate::META, fjall::KeyspaceCreateOptions::default)?;
-    meta.insert(crate::format::LIFECYCLE_REVISION_KEY, b"6")?;
+    meta.insert(crate::format::LIFECYCLE_REVISION_KEY, b"7")?;
     db.persist(fjall::PersistMode::SyncData)?;
     drop(meta);
     drop(db);
-    check!(Store::open_public_identity_qualification_v2(&root).is_err());
+    check!(Store::open_public_identity_qualification_v3(&root).is_err());
     check!(Store::open(&root).is_err());
     check!(Store::inspect(&root).is_err());
     check!(Store::migrate(&root).is_err());

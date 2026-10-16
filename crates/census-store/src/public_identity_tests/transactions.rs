@@ -64,7 +64,7 @@ fn public_identity_committed_id_and_receipt_survive_reopen() -> TestResult {
     let before = retained_state(&store)?;
     drop(store);
     let root = directory.path().join("identity");
-    let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     check!(eq; store.store_identity()?, identity);
     check!(eq; writer.head(&store)?, committed.head().clone());
     let repeated = writer.establish_source_bound(
@@ -199,7 +199,7 @@ fn public_identity_writer_is_bound_to_one_live_store_origin() -> TestResult {
     let identity = store.store_identity()?;
     drop(store);
     let root = directory.path().join("identity");
-    let (reopened, _) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (reopened, _) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     check!(eq; reopened.store_identity()?, identity);
     let before = retained_state(&reopened)?;
     let error = refused(writer.head(&reopened))?;
@@ -231,7 +231,27 @@ fn public_identity_missing_source_evidence_cannot_mint_or_write_a_receipt() -> T
         StoreError::PublicIdentity(PublicIdentityError::NotSourceBound)
     ));
     check!(eq; writer.head(&store)?, head);
-    check!(eq; retained_state(&store)?, before);
+    let staged = retained_state(&store)?;
+    super::support::assert_graph_staging(
+        &store,
+        &before,
+        &staged,
+        writer.store_identity(),
+        "unparsed",
+    )?;
+    let retry = refused(writer.establish_source_bound(
+        &store,
+        "unparsed",
+        &athlete.id.cast(),
+        store.snapshot().revision(),
+        &head,
+    ))?;
+    check!(matches!(
+        retry,
+        StoreError::PublicIdentity(PublicIdentityError::NotSourceBound)
+    ));
+    check!(eq; writer.head(&store)?, head);
+    check!(eq; retained_state(&store)?, staged);
     Ok(())
 }
 

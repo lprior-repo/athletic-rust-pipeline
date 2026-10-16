@@ -96,47 +96,58 @@ fn context_presence_must_agree_with_the_witness_qualification_version() -> TestR
 }
 
 #[test]
-fn newly_committed_v2_receipt_hash_binds_the_retained_context_root() -> TestResult {
+fn newly_committed_graph_receipt_hash_binds_the_complete_retained_graph() -> TestResult {
     let (_directory, store, writer) = fixture()?;
     let athlete = subject("witness-context-hash", "9299")?;
     store.append(Table::Athletes, &athlete)?;
-    let head = writer.head(&store)?;
     let committed = writer.establish_source_bound(
         &store,
         "witness-context-hash",
         &athlete.id.cast(),
         store.snapshot().revision(),
-        &head,
+        &writer.head(&store)?,
     )?;
     check!(eq; committed.head().sequence, 1);
-    let raw = store
-        .journal
-        .get(witness::key(1))?
-        .ok_or("missing V2 witness")?;
-    let mut retained: witness::Witness = codec::decode("current-witness", &raw)?;
-    let root = retained
-        .authority_context
-        .clone()
-        .ok_or("missing V2 context root")?;
-    retained.require_qualification_version(
-        PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
-    )?;
-    check!(eq; retained.version(), 2);
-    check!(eq; serde_json::to_value(&retained)?.get("authority_context"), Some(&serde_json::json!(root)));
-    let key = witness::receipt_key("witness-context-hash");
-    let raw_receipt = store.receipts.get(&key)?.ok_or("missing V2 receipt")?;
-    let receipt: Receipt = codec::decode(&key, &raw_receipt)?;
+    let key = witness::key(1);
+    let raw = store.journal.get(&key)?.ok_or("current graph witness")?;
+    let mut retained = crate::public_identity::graph_witness::HeldGraphWitness::decode(&key, &raw)?;
+    check!(eq; retained.version, 8);
+    check!(matches!(
+        &retained.payload,
+        crate::public_identity::graph_witness::Payload::Source { .. }
+    ));
+    let original_graph = retained.graph.clone();
+    let receipt_key = witness::receipt_key("witness-context-hash");
+    let raw_receipt = store
+        .receipts
+        .get(&receipt_key)?
+        .ok_or("current graph receipt")?;
+    let receipt: Receipt = codec::decode(&receipt_key, &raw_receipt)?;
     check!(eq; receipt.digest, serialized_digest(&retained)?);
-    retained.authority_context = None;
+    let mut omitted = serde_json::to_value(&retained)?;
+    omitted
+        .as_object_mut()
+        .ok_or("witness object")?
+        .remove("graph")
+        .ok_or("graph field")?;
+    check!(matches!(
+        crate::public_identity::graph_witness::HeldGraphWitness::decode(
+            "missing graph",
+            &serde_json::to_vec(&omitted)?
+        ),
+        Err(StoreError::Decode { .. })
+    ));
+    let later = subject("witness-alternative-graph", "9300")?;
+    store.append(Table::Athletes, &later)?;
+    let (alternative, _) = crate::public_identity::graph_operation::inspect(
+        &writer,
+        &store,
+        "witness-alternative-graph",
+    )?;
+    check!(ne; alternative, original_graph);
+    retained.graph = alternative;
     check!(ne; serialized_digest(&retained)?, receipt.digest);
-    let replacement = if root == "a".repeat(64) {
-        "b".repeat(64)
-    } else {
-        "a".repeat(64)
-    };
-    retained.authority_context = Some(replacement);
-    check!(ne; serialized_digest(&retained)?, receipt.digest);
-    check!(eq; store.journal.get(witness::key(1))?.ok_or("retained V2 witness")?, raw);
-    check!(eq; store.receipts.get(&key)?.ok_or("retained V2 receipt")?, raw_receipt);
+    check!(eq; store.journal.get(&key)?.ok_or("retained graph witness")?, raw);
+    check!(eq; store.receipts.get(&receipt_key)?.ok_or("retained graph receipt")?, raw_receipt);
     Ok(())
 }

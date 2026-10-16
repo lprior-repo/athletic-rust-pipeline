@@ -1,5 +1,5 @@
 use super::reviewed_fixture::{binding_id, ready_for_merge, review, ReviewedFixture};
-use super::test_fixture::read_inputs;
+use super::tests::{graph_inputs, graph_reference, stage_graph};
 use super::Inputs;
 use crate::public_identity_tests::support::{retained_state, TestResult};
 use crate::{PublicIdentityError, ReviewedIdentityRequestV1, Store, StoreError, Table};
@@ -99,8 +99,8 @@ fn reviewed_merge_keeps_public_and_binding_consumers_consistent_across_snapshot_
     let unknown = PublicAthleteId::parse(&format!("ath_public_v1_{}", "0".repeat(64)))?;
     check!(eq; current.resolve_public(&unknown)?, PublicResolution::Unknown);
     check!(eq; current.correction_history(&unknown), None);
-    let root = reviewed_root(&store, 4)?;
-    let retained = read_inputs(&store, &root)?;
+    let graph = graph_reference(&store, 4)?;
+    let retained = graph_inputs(&store, &graph)?;
     check!(eq; retained.athletes.len(), 4);
     check!(eq; retained.observations.len(), 1);
     check!(eq; retained.cases.len(), 2);
@@ -119,7 +119,7 @@ fn reviewed_merge_keeps_public_and_binding_consumers_consistent_across_snapshot_
     drop(writer);
     drop(store);
     let (store, writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let reopened = store
         .snapshot()
@@ -189,6 +189,7 @@ fn retained_reviewed_merge_replays_when_current_review_is_superseded_after_reope
     verdict.observed_at = "2026-10-15".into();
     store.replace_many(Table::ReviewCases, &live.cases)?;
     store.replace_many(Table::IdentityVerdicts, &live.verdicts)?;
+    stage_graph(&store, &writer, "new-superseded-review")?;
     let before = retained_state(&store)?;
     check_not_reviewed(writer.apply_reviewed_identity(
         &store,
@@ -201,7 +202,7 @@ fn retained_reviewed_merge_replays_when_current_review_is_superseded_after_reope
     drop(writer);
     drop(store);
     let (store, writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let reopened = store
         .snapshot()
@@ -277,6 +278,7 @@ fn relabeling_the_same_positive_evidence_as_different_person_cannot_split_public
         unresolved_bindings: Vec::new(),
         affected_record_keys: vec!["synthetic-performance:1".into()],
     };
+    stage_graph(&store, &writer, "unsupported-split")?;
     let before = retained_state(&store)?;
     check_not_reviewed(writer.apply_reviewed_identity(
         &store,
@@ -304,19 +306,6 @@ fn check_not_reviewed<T>(result: crate::StoreResult<T>) -> TestResult {
         Err(error) => Err(format!("unexpected reviewed refusal: {error:?}").into()),
         Ok(_) => Err("unsupported reviewed authority was accepted".into()),
     }
-}
-
-fn reviewed_root(store: &Store, sequence: u64) -> TestResult<String> {
-    let bytes = store
-        .journal
-        .get(crate::public_identity::witness::key(sequence))?
-        .ok_or("reviewed witness")?;
-    let value: serde_json::Value = serde_json::from_slice(&bytes)?;
-    value
-        .get("authority_context")
-        .and_then(serde_json::Value::as_str)
-        .map(str::to_owned)
-        .ok_or_else(|| "reviewed retained root".into())
 }
 
 fn source_material(store: &Store) -> TestResult<Vec<Vec<u8>>> {

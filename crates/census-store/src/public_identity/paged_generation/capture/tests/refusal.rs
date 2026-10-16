@@ -3,8 +3,8 @@ mod diagnostic;
 
 #[test]
 fn disabled_input_revisions_refuse_without_implicit_enrollment() -> TestResult {
-    let (_directory, store, writer) = fixture()?;
-    writer.enroll_manual_context_admission_v1(&store)?;
+    let (_directory, store, writer) = crate::public_identity_tests::support::unenrolled_fixture()?;
+    crate::public_identity::local_adjudication::admission::enroll_header_for_test(&store)?;
     let sequence = store.snapshot().sequence();
     assert!(writer
         .capture_raw_generation_v2(&store, &operation("disabled")?)

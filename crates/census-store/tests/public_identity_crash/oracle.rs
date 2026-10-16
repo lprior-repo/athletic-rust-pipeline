@@ -13,27 +13,28 @@ use super::fixture::{Fixture, OPERATION};
 use super::physical::{Rows, State};
 use super::TestResult;
 
-#[path = "authority_context.rs"]
-mod authority_context;
+use super::graph;
 
 pub(super) fn staged_delta(fixture: &Fixture, state: &State) -> TestResult {
     for name in ["entities", "meta", "receipts"] {
         check!(eq; state.rows(name)?, fixture.before.rows(name)?);
     }
-    let context = authority_context::read(fixture, state)?;
-    let expected = context.extend_journal(fixture.before.rows("journal")?)?;
+    let retained = graph::prepared(&fixture.before, state, &fixture.identity, OPERATION)?;
+    let expected = retained.journal;
     check!(eq; state.rows("journal")?, &expected);
     Ok(())
 }
 
-pub(super) fn retained_context_unchanged(
+pub(super) fn retained_graph_unchanged(
     fixture: &Fixture,
     interrupted: &State,
     recovered: &State,
 ) -> TestResult {
-    let interrupted = authority_context::read(fixture, interrupted)?;
-    let recovered = authority_context::read(fixture, recovered)?;
-    check!(eq; recovered, interrupted);
+    let interrupted = graph::prepared(&fixture.before, interrupted, &fixture.identity, OPERATION)?;
+    let recovered = graph::prepared(&fixture.before, recovered, &fixture.identity, OPERATION)?;
+    check!(eq; recovered.graph, interrupted.graph);
+    check!(eq; recovered.reservation, interrupted.reservation);
+    check!(eq; recovered.journal, interrupted.journal);
     Ok(())
 }
 
@@ -155,37 +156,31 @@ fn verify_witness_and_receipt(
     request_digest: &str,
     snapshot_sequence: u64,
 ) -> TestResult<String> {
-    let context = authority_context::read(fixture, state)?;
+    let retained = graph::prepared(&fixture.before, state, &fixture.identity, OPERATION)?;
     let key = b"public_identity_v1:00000000000000000001";
     let journal = state.rows("journal")?;
     let raw = journal
         .get(key.as_slice())
         .ok_or("missing committed witness")?;
-    let mut expected_journal = context.extend_journal(fixture.before.rows("journal")?)?;
+    let mut expected_journal = retained.journal;
     check!(expected_journal.insert(key.to_vec(), raw.clone()).is_none());
     check!(eq; journal, &expected_journal);
     let witness: serde_json::Value = serde_json::from_slice(raw)?;
-    let object = witness.as_object().ok_or("witness is not an object")?;
-    check!(eq; object.len(), 12);
-    for (name, expected) in [
-        ("version", serde_json::json!(2)),
-        ("operation", serde_json::json!(OPERATION)),
-        ("candidate", serde_json::json!(fixture.candidate)),
-        ("request_digest", serde_json::json!(request_digest)),
-        ("evidence_generation", serde_json::json!(fixture.evidence)),
-        ("derived_generation", serde_json::json!(fixture.derived)),
-        ("snapshot_sequence", serde_json::json!(snapshot_sequence)),
-        ("record_digest", serde_json::json!(outcome.head().digest)),
-        ("decision_id", serde_json::json!(decision.id)),
-        (
-            "decision_digest",
-            serde_json::json!(serialized_digest(decision)?),
-        ),
-        ("public_id", serde_json::json!(outcome.public_id().as_str())),
-        ("authority_context", serde_json::json!(context.root)),
-    ] {
-        check!(eq; object.get(name), Some(&expected));
-    }
+    check!(eq; retained.reservation["graph"]["capture"]["evidence_generation"], serde_json::json!(fixture.evidence));
+    check!(eq; retained.reservation["graph"]["capture"]["derived_generation"], serde_json::json!(fixture.derived));
+    check!(eq; retained.reservation["graph"]["capture"]["snapshot_sequence"], serde_json::json!(snapshot_sequence));
+    check!(eq; retained.reservation["expected_head"], serde_json::json!(fixture.genesis));
+    check!(eq; retained.reservation["request_digest"], serde_json::json!(request_digest));
+    let expected = serde_json::json!({
+        "version": 8, "operation": OPERATION, "request_digest": request_digest,
+        "record_digest": outcome.head().digest, "graph": retained.graph,
+        "observed_at": decision.observed_at,
+        "payload": { "family": "source", "candidate": fixture.candidate,
+            "decision": { "id": decision.id, "digest": serialized_digest(decision)? },
+            "public_id": outcome.public_id().as_str() },
+    });
+    check!(eq; witness, expected);
+    check!(eq; retained.reservation["witness"], expected);
     let digest = format!("{:x}", Sha256::digest(raw));
     let (receipt_key, receipt_raw) =
         sole_added(fixture.before.rows("receipts")?, state.rows("receipts")?)?;

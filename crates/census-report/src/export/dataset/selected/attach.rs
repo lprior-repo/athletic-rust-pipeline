@@ -1,5 +1,5 @@
 use super::invalid;
-use crate::export::dataset::selected_proofs::{HydratedProofs, SelectedProofsV1};
+use crate::export::dataset::selected_proofs::{HydratedProofs, SelectedProofs};
 use crate::export::dataset::ExportDataset;
 use crate::export::public_identity::VerifiedPublicIdentityView;
 use crate::export::VerifiedParticipationView;
@@ -24,9 +24,27 @@ impl ExportDataset {
         Ok(())
     }
 
+    pub(in crate::export::dataset) fn replay_historical_public_identities(
+        &mut self,
+        accepted: census_store::AcceptedPublicIdentitySnapshot,
+    ) -> ReportResult<()> {
+        self.ensure_input_binding()?;
+        let authority = self.selected_authority()?;
+        authority.ensure_historical_identity(&accepted)?;
+        let identities = VerifiedPublicIdentityView::replay_historical(
+            accepted,
+            &self.lineage,
+            &authority.registry_head(),
+            &self.athletes,
+            &self.identities(),
+        )?;
+        self.verified_public_identities = Some(identities);
+        Ok(())
+    }
+
     pub(in crate::export::dataset) fn attach_selected_proofs(
         &mut self,
-        proofs: SelectedProofsV1,
+        proofs: SelectedProofs,
         hydrated: HydratedProofs,
     ) -> ReportResult<()> {
         self.ensure_input_binding()?;

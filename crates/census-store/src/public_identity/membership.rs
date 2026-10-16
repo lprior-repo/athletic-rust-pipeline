@@ -1,5 +1,5 @@
 mod commit;
-mod request;
+pub(in crate::public_identity) mod request;
 mod witness;
 
 use census_domain::public_identity_history::{PublicAthleteId, RegistryHead};
@@ -8,9 +8,9 @@ pub(super) use witness::SourceCandidateMembershipWitnessV1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceCandidateMembershipOutcomeV1 {
-    owner: PublicAthleteId,
-    head: RegistryHead,
-    replayed: bool,
+    pub(in crate::public_identity) owner: PublicAthleteId,
+    pub(in crate::public_identity) head: RegistryHead,
+    pub(in crate::public_identity) replayed: bool,
 }
 
 impl SourceCandidateMembershipOutcomeV1 {

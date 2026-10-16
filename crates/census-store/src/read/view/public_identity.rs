@@ -1,4 +1,5 @@
 use super::StoreSnapshot;
+mod projection_check;
 use crate::{PublicIdentityError, StoreResult};
 use census_domain::model::{AthleteCandidateId, StoreIdentity};
 use census_domain::public_identity_history::{
@@ -93,6 +94,19 @@ impl StoreSnapshot<'_> {
         Ok(ledger.map(|ledger| {
             AcceptedPublicIdentitySnapshot::from_qualified_ledger(ledger, self.sequence())
         }))
+    }
+    pub fn freeze_public_identity_v2(&self) -> StoreResult<crate::FrozenPublicIdentityBundleV2> {
+        let accepted = self
+            .accepted_public_identity_snapshot()?
+            .ok_or(PublicIdentityError::OptInRequired)?;
+        crate::public_identity::frozen::v2::capture(
+            &self.snapshot,
+            self.entities,
+            self.meta,
+            self.journal,
+            self.receipts,
+            &accepted,
+        )
     }
     pub fn freeze_public_identity_v1(&self) -> StoreResult<crate::FrozenPublicIdentityBundleV1> {
         let accepted = self

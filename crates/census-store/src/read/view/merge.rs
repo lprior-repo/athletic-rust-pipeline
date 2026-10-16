@@ -50,7 +50,7 @@ pub(super) fn decode<T: Entity>(table: Table, key: &[u8], raw: &[u8]) -> StoreRe
     Ok(row)
 }
 
-pub(super) fn accept<T: Entity>(
+pub(crate) fn accept<T: Entity>(
     current: &mut Option<T>,
     row: T,
     visit: &mut impl FnMut(T) -> StoreResult<()>,
@@ -69,7 +69,7 @@ pub(super) fn accept<T: Entity>(
     }
 }
 
-pub(super) fn publish<T: Entity>(
+pub(crate) fn publish<T: Entity>(
     mut row: T,
     visit: &mut impl FnMut(T) -> StoreResult<()>,
     published: u64,

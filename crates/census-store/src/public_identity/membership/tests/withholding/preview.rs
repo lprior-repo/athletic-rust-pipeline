@@ -1,11 +1,10 @@
 use super::*;
-use crate::{PublicIdentityError, StoreError};
 use census_domain::public_identity_history::{HistoryError, PublicAthleteId};
 
 #[test]
 fn preview_authenticates_exact_attachment_and_never_changes_retained_state() -> TestResult {
     let fixture = ready()?;
-    let request = request(&fixture)?;
+    let request = request(&fixture, "preview-exact")?;
     let Fixture { store, writer, .. } = &fixture;
     let state = retained_state(store)?;
     check!(eq; writer.preview_membership_withholding(store, &request.canonical, &request.attachment)?, request.expected_withheld_memberships);
@@ -38,7 +37,7 @@ fn preview_authenticates_exact_attachment_and_never_changes_retained_state() -> 
 #[test]
 fn preview_refuses_previously_withheld_attachment_without_writes() -> TestResult {
     let fixture = ready()?;
-    let request = request(&fixture)?;
+    let request = request(&fixture, "preview-revoked")?;
     let Fixture { store, writer, .. } = &fixture;
     let prepared = writer.prepare_membership_withholding(
         store,
@@ -47,7 +46,7 @@ fn preview_refuses_previously_withheld_attachment_without_writes() -> TestResult
         store.snapshot().revision(),
         &writer.head(store)?,
     )?;
-    let (bytes, digest) = approval(prepared.record())?;
+    let (bytes, digest) = approval(prepared.record(), prepared.graph())?;
     writer.apply_membership_withholding(store, prepared, bytes, digest)?;
     let state = retained_state(store)?;
     check!(matches!(

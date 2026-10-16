@@ -147,6 +147,7 @@ pub mod nces;
 pub mod net;
 pub mod ohsaa;
 pub mod pa_piaa;
+pub mod participation_evidence;
 pub mod plain_names;
 pub mod private_assoc;
 pub mod raceday;

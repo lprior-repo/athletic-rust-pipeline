@@ -1,6 +1,6 @@
 use crate::public_identity::{
     operation::HeldWitness,
-    retained::{Live, Read, Revision, Rows},
+    retained::{HistoricalRead as Read, Live, Revision, Rows},
     witness, PublicIdentityError,
 };
 use crate::StoreResult;

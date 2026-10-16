@@ -14,17 +14,33 @@ const INTERVAL: Duration = Duration::from_millis(10);
 const MARKER_POLLS: u32 = 3_000;
 const REAP_POLLS: u32 = 200;
 
-const PHASE: &str = "journal_context_chunk_committed_before_next";
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Boundary {
+    RawGraphChunk,
+    Preparation,
+}
+
+impl Boundary {
+    fn phase(self) -> &'static str {
+        match self {
+            Self::RawGraphChunk => "journal_context_chunk_committed_before_next",
+            Self::Preparation => "public_identity_preparation_committed_before_return",
+        }
+    }
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct Reached {
     schema: u8,
     pid: u32,
-    operation: String,
+    pub operation: String,
     pub input_digest: String,
     phase: String,
-    index: usize,
+    #[serde(default)]
+    index: Option<usize>,
+    #[serde(default)]
+    sequence: Option<u64>,
 }
 
 struct OwnedChild {
@@ -35,6 +51,7 @@ struct OwnedChild {
 pub(super) fn interrupt(
     directory: tempfile::TempDir,
     fixture: &Fixture,
+    boundary: Boundary,
 ) -> TestResult<(tempfile::TempDir, Reached)> {
     let marker = directory.path().join("reached.json");
     let child = Command::new(std::env::current_exe()?)
@@ -47,7 +64,7 @@ pub(super) fn interrupt(
         ])
         .env(CHILD_CASE, CHILD_NAME)
         .env(CHILD_ROOT, &fixture.root)
-        .env("CENSUS_NATIVE_WORKER_BOUNDARY", PHASE)
+        .env("CENSUS_NATIVE_WORKER_BOUNDARY", boundary.phase())
         .env("CENSUS_NATIVE_WORKER_MARKER", &marker)
         .stdin(Stdio::null())
         .stdout(Stdio::inherit())
@@ -57,7 +74,7 @@ pub(super) fn interrupt(
         child,
         directory: Some(directory),
     };
-    let reached = wait_marker(&mut owned.child, &marker, &fixture.context_root);
+    let reached = wait_marker(&mut owned.child, &marker, fixture, boundary);
     let stopped = terminate_and_reap(&mut owned.child);
     let (reached, status) = finish(reached, stopped)?;
     check!(eq; status.signal(), Some(Signal::TERM.as_raw()));
@@ -68,7 +85,12 @@ pub(super) fn interrupt(
     Ok((directory, reached))
 }
 
-fn wait_marker(child: &mut Child, path: &Path, root: &str) -> TestResult<Reached> {
+fn wait_marker(
+    child: &mut Child,
+    path: &Path,
+    fixture: &Fixture,
+    boundary: Boundary,
+) -> TestResult<Reached> {
     let started = Instant::now();
     for _ in 0..MARKER_POLLS {
         if let Some(status) = child.try_wait()? {
@@ -77,9 +99,25 @@ fn wait_marker(child: &mut Child, path: &Path, root: &str) -> TestResult<Reached
         if let Some(reached) = read_marker(path)? {
             check!(eq; reached.schema, 1);
             check!(eq; reached.pid, child.id());
-            check!(eq; reached.operation.as_str(), root);
-            check!(eq; reached.phase.as_str(), PHASE);
-            check!(eq; reached.index, 0);
+            check!(eq; reached.phase.as_str(), boundary.phase());
+            match boundary {
+                Boundary::RawGraphChunk => {
+                    check!(eq; reached.index, Some(0));
+                    check!(eq; reached.sequence, None);
+                    check!(
+                        reached.operation.len() == 64
+                            && reached
+                                .operation
+                                .bytes()
+                                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+                    );
+                }
+                Boundary::Preparation => {
+                    check!(eq; reached.operation, fixture.mode.operation());
+                    check!(eq; reached.sequence, Some(fixture.head.sequence));
+                    check!(eq; reached.index, None);
+                }
+            }
             check!(
                 reached.input_digest.len() == 64
                     && reached
@@ -96,7 +134,7 @@ fn wait_marker(child: &mut Child, path: &Path, root: &str) -> TestResult<Reached
     }
     Err(format!(
         "identity fixture did not reach {} within bounded marker wait",
-        PHASE
+        boundary.phase()
     )
     .into())
 }

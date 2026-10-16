@@ -93,8 +93,7 @@ fn persisted_over_capacity_headers_remain_corruption_without_writes() -> TestRes
         PublicIdentityAdmissionResource::Roots,
         PublicIdentityAdmissionResource::Reservations,
     ] {
-        let (_directory, store, writer) = fixture()?;
-        writer.enroll_manual_context_admission_v1(&store)?;
+        let (_directory, store, _writer) = fixture()?;
         let identity = store.store_identity()?;
         let mut altered = header(&store, &identity)?;
         match resource {

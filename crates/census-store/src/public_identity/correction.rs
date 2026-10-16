@@ -1,5 +1,6 @@
+pub(in crate::public_identity) mod affected;
 mod commit;
-mod request;
+pub(in crate::public_identity) mod request;
 mod rows;
 mod witness;
 
@@ -9,9 +10,9 @@ pub(super) use witness::ReviewedWitness;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReviewedIdentityCommitOutcomeV1 {
-    introduced_public_ids: Vec<PublicAthleteId>,
-    head: RegistryHead,
-    replayed: bool,
+    pub(in crate::public_identity) introduced_public_ids: Vec<PublicAthleteId>,
+    pub(in crate::public_identity) head: RegistryHead,
+    pub(in crate::public_identity) replayed: bool,
 }
 
 impl ReviewedIdentityCommitOutcomeV1 {

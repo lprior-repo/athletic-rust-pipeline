@@ -1,18 +1,109 @@
-use super::PreparedMembershipWithholdingV1;
+use super::{MembershipWithholdingOutcomeV1, PreparedMembershipWithholdingV1};
 use crate::public_identity::{
-    codec, qualification::Ledger, retained::Live, PublicIdentityError, PublicIdentityWriterV1,
+    codec, graph_operation,
+    graph_reference::GraphAuthorityReferenceV1,
+    graph_witness::{HeldGraphWitness, LocalActor, Payload},
+    local_adjudication::admission::preparation,
+    operation, PublicIdentityError, PublicIdentityWriterV1,
 };
 use crate::{Store, StoreResult};
-use census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV1;
-use census_domain::public_identity_history::PreparedHistoryRecord;
+use census_domain::model::serialized_digest;
+use census_domain::public_identity_history::local_membership_withholding::{
+    LocalMembershipWithholdingRecordV1, LocalMembershipWithholdingRecordV2,
+};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 const APPROVAL_SCHEMA: &str = "local-source-membership-withholding-approval/v1";
+const GRAPH_APPROVAL_SCHEMA: &str = "local-source-membership-withholding-approval/v2";
 #[derive(Serialize)]
 struct Envelope<'a> {
     schema: &'static str,
     actor: &'static str,
     prepared: &'a LocalMembershipWithholdingRecordV1,
+}
+#[derive(Serialize)]
+struct GraphEnvelope<'a> {
+    schema: &'static str,
+    actor: &'static str,
+    prepared: &'a LocalMembershipWithholdingRecordV2,
+    graph: &'a GraphAuthorityReferenceV1,
+}
+pub(in crate::public_identity) fn graph_approval_bytes(
+    record: &LocalMembershipWithholdingRecordV2,
+    graph: &GraphAuthorityReferenceV1,
+) -> StoreResult<Vec<u8>> {
+    graph.require_domain(&record.graph)?;
+    codec::encode(
+        &GraphEnvelope {
+            schema: GRAPH_APPROVAL_SCHEMA,
+            actor: "local_operator",
+            prepared: record,
+            graph,
+        },
+        1024 * 1024,
+    )
+}
+pub(in crate::public_identity) fn graph_approval_digest(encoded: &[u8]) -> String {
+    let mut digest = Sha256::new();
+    digest.update(GRAPH_APPROVAL_SCHEMA.as_bytes());
+    digest.update([0]);
+    digest.update(encoded);
+    format!("{:x}", digest.finalize())
+}
+pub(super) fn consume(
+    writer: &PublicIdentityWriterV1,
+    store: &Store,
+    prepared: PreparedMembershipWithholdingV1<'_>,
+    approval: (Vec<u8>, String),
+) -> StoreResult<MembershipWithholdingOutcomeV1> {
+    let bytes = graph_approval_bytes(&prepared.record, &prepared.graph)?;
+    if approval.0 != bytes || approval.1 != graph_approval_digest(&bytes) {
+        return Err(PublicIdentityError::Corrupt("withholding graph approval binding").into());
+    }
+    let _guard = store.lock_appends();
+    prepared
+        .expected
+        .ensure_origin(store, &prepared.record.operation)?;
+    writer.require_current_qualification()?;
+    let ledger = writer.verified(store)?;
+    match operation::repeated(store, &prepared.record.operation, &approval.1, &ledger)? {
+        Some(operation::Replayed::MembershipWithheld(outcome)) => return Ok(outcome),
+        Some(_) => return Err(PublicIdentityError::OperationConflict.into()),
+        None => (),
+    }
+    let ledger = graph_operation::require_current(
+        writer,
+        store,
+        &prepared.record.operation,
+        prepared.expected,
+        &prepared.record.expected_head,
+        &prepared.graph,
+    )?;
+    let history =
+        super::prepare::rebuild_history(store, &prepared.graph, &prepared.record, &ledger)?;
+    if history != prepared.history {
+        return Err(PublicIdentityError::Corrupt("withholding graph prepared history").into());
+    }
+    let witness = HeldGraphWitness::new(
+        &prepared.record.operation,
+        approval.1.clone(),
+        prepared.graph.clone(),
+        &prepared.record.observed_at,
+        &history,
+        Payload::Withholding {
+            actor: LocalActor::LocalOperator,
+            adjudication: prepared.record.clone(),
+        },
+    )?;
+    require_reserved(store, &prepared, &witness)?;
+    super::persist::persist(
+        store,
+        prepared.record,
+        prepared.graph,
+        history,
+        approval.1,
+        ledger,
+    )
 }
 
 pub(super) fn approval_bytes(record: &LocalMembershipWithholdingRecordV1) -> StoreResult<Vec<u8>> {
@@ -33,56 +124,29 @@ pub(super) fn approval_digest(encoded: &[u8]) -> String {
     format!("{:x}", digest.finalize())
 }
 
-pub(super) fn consume<R>(
-    writer: &PublicIdentityWriterV1,
+fn require_reserved(
     store: &Store,
-    prepared: PreparedMembershipWithholdingV1<'_>,
-    approval: (Vec<u8>, String),
-    persist: impl FnOnce(
-        &Store,
-        LocalMembershipWithholdingRecordV1,
-        PreparedHistoryRecord,
-        String,
-        Ledger,
-    ) -> StoreResult<R>,
-) -> StoreResult<R> {
-    let expected = approval_bytes(&prepared.record)?;
-    if approval.0 != expected || approval.1 != approval_digest(&expected) {
-        return Err(PublicIdentityError::Corrupt("withholding approval binding").into());
-    }
-    let _guard = store.lock_appends();
-    prepared
-        .expected
-        .ensure_current(store, &prepared.record.operation)?;
-    let ledger = writer.verified(store)?;
-    if store
-        .receipts
-        .contains_key(crate::public_identity::witness::receipt_key(
-            &prepared.record.operation,
-        ))
-        .map_err(|source| crate::StoreError::Read { source })?
-    {
-        return Err(PublicIdentityError::OperationConflict.into());
-    }
-    if &prepared.record.expected_head != ledger.history.projection().head() {
-        return Err(PublicIdentityError::HeadMoved.into());
-    }
-    let snapshot = store.db.snapshot();
-    let reader = Live {
-        snapshot: &snapshot,
-        entities: &store.entities,
-        meta: &store.meta,
-        journal: &store.journal,
-        receipts: &store.receipts,
-    };
-    let history = super::witness::rebuild(
-        &reader,
-        &prepared.record,
-        ledger.history.projection(),
-        ledger.history.records(),
+    prepared: &PreparedMembershipWithholdingV1<'_>,
+    witness: &HeldGraphWitness,
+) -> StoreResult<()> {
+    let reserved = preparation::load(store, &prepared.record.store, &prepared.record.operation)?
+        .ok_or(PublicIdentityError::Corrupt(
+            "missing graph withholding preparation",
+        ))?;
+    let digest = super::prepare::request_digest(
+        &prepared.record.store,
+        &prepared.record.operation,
+        &prepared.record.request,
     )?;
-    if history != prepared.history {
-        return Err(PublicIdentityError::Corrupt("withholding prepared history binding").into());
+    reserved.require_request(
+        &prepared.record.store,
+        &prepared.record.operation,
+        &digest,
+        prepared.expected,
+        &prepared.record.expected_head,
+    )?;
+    if serialized_digest(&reserved.witness)? != serialized_digest(witness)? {
+        return Err(PublicIdentityError::Corrupt("withholding reserved approval binding").into());
     }
-    persist(store, prepared.record, history, approval.1, ledger)
+    Ok(())
 }

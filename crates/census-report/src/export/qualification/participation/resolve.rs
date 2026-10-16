@@ -3,7 +3,7 @@ use super::{
     PinnedParticipationRow,
 };
 use crate::export::{
-    participation_bridge::{assess_retained_source_participation, SourceCohortAgreement},
+    participation_bridge::{assess_with_independent, SourceCohortAgreement},
     ExportDataset,
 };
 use census_crawl::milesplit::{
@@ -18,6 +18,7 @@ use serde_json::Value;
 use std::collections::BTreeSet;
 
 mod groups;
+mod independent;
 mod notes;
 
 pub(super) struct Resolver<'a, V> {
@@ -28,6 +29,8 @@ pub(super) struct Resolver<'a, V> {
     pub(super) closure: &'a Closure,
     pub(super) roster_context: super::VerifiedRosterContext<'a>,
     pub(super) budget: super::budget::Captures,
+    pub(super) independent:
+        Option<&'a census_crawl::participation_evidence::IndependentParticipationBundleV1>,
 }
 
 impl<V: RetainedJournalView> Resolver<'_, V> {
@@ -137,8 +140,9 @@ impl<V: RetainedJournalView> Resolver<'_, V> {
             result.gaps.insert(Gap::SourceBindingMismatch);
             return Ok(());
         }
+        let independent = self.independent_sources(performance, result)?;
         let assessment =
-            match assess_retained_source_participation(query, performance, &source, cohort) {
+            match assess_with_independent(query, performance, &source, cohort, &independent) {
                 Ok(assessment) => assessment,
                 Err(_) => {
                     result.gaps.insert(Gap::SourceBindingMismatch);

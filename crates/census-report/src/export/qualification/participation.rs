@@ -9,7 +9,8 @@ use census_crawl::milesplit::{
 use census_domain::affiliation_candidates::{DeclaredFrozenView, ObjectRef};
 use census_domain::model::{serialized_digest, PerformanceId, QueryProfileV1};
 use census_domain::participation_candidates::{
-    participation_policy_v2, participation_policy_v3, CandidateBinding, CandidateQuery,
+    participation_policy_v2, participation_policy_v3, participation_policy_v4, CandidateBinding,
+    CandidateQuery,
 };
 use census_store::clock::{Clock, SystemClock};
 use census_store::{StoreError, StoreResult, StoreSnapshot};
@@ -23,6 +24,7 @@ mod budget;
 mod closure;
 mod context;
 mod contexts;
+mod independent;
 mod note;
 mod observations;
 mod resolve;
@@ -31,7 +33,7 @@ mod types;
 mod unresolved;
 mod validation;
 
-pub(crate) use archive::ParticipationReplayV1;
+pub(crate) use archive::{ParticipationReplay, ParticipationReplayV1, ParticipationReplayV2};
 pub(crate) use observations::BUDGET as PHYSICAL_OBSERVATION_BUDGET;
 pub(crate) use types::{ParticipationDiagnostic, PinnedParticipation, PinnedParticipationRow};
 const MAX_ARCHIVE_BYTES: u64 = 512 * 1024 * 1024;
@@ -61,6 +63,7 @@ impl PinnedParticipation {
             .with_timezone(&Utc);
         let (closure, observations) =
             observations::capture(dataset, snapshot, directory, athletes, expected_athletes)?;
+        let independent = independent::capture(snapshot, &closure)?;
         let recorder = RecordingRetainedJournal::new(snapshot);
         let rows = assess(
             dataset,
@@ -69,6 +72,7 @@ impl PinnedParticipation {
             &closure,
             captured_at,
             roster_context,
+            Some(&independent),
         )?;
         let replay = ParticipationReplayV1 {
             version: 1,
@@ -83,6 +87,11 @@ impl PinnedParticipation {
             observations,
             journal: recorder.finish()?,
         };
+        let replay = ParticipationReplay::V2(ParticipationReplayV2 {
+            version: 2,
+            retained: replay,
+            independent,
+        });
         Ok(Self {
             input_generation: dataset.lineage.input_generation.clone(),
             profile_id: profile.id().map_err(StoreError::from)?,
@@ -100,20 +109,21 @@ impl PinnedParticipation {
         expected_fingerprints: &BTreeMap<String, String>,
         roster_context: VerifiedRosterContext<'_>,
     ) -> ReportResult<Self> {
-        let replay = ParticipationReplayV1::load(directory, anchored_descriptor)?;
+        let replay = ParticipationReplay::load(directory, anchored_descriptor)?;
         validation::frozen(dataset, profile, &replay)?;
         roster_context.require_binding(dataset, profile)?;
+        let retained = replay.retained();
         let closure = observations::read(
             dataset,
             directory,
-            &replay.observations,
+            &retained.observations,
             expected_fingerprints,
         )?;
-        let bytes = replay.journal.encode()?;
+        let bytes = retained.journal.encode()?;
         let journal = FrozenRetainedJournal::from_descriptor(
             &archive::hash(&bytes),
-            &replay.store_identity,
-            replay.snapshot_sequence,
+            &retained.store_identity,
+            retained.snapshot_sequence,
             &bytes,
         )?;
         let rows = assess(
@@ -121,8 +131,9 @@ impl PinnedParticipation {
             profile,
             &journal,
             &closure,
-            replay.captured_at,
+            retained.captured_at,
             roster_context,
+            replay.independent(),
         )?;
         Ok(Self {
             input_generation: dataset.lineage.input_generation.clone(),
@@ -141,6 +152,7 @@ fn assess(
     closure: &closure::Closure,
     captured_at: DateTime<Utc>,
     roster_context: VerifiedRosterContext<'_>,
+    independent: Option<&census_crawl::participation_evidence::IndependentParticipationBundleV1>,
 ) -> ReportResult<BTreeMap<PerformanceId, PinnedParticipationRow>> {
     let profile_id = profile.id().map_err(StoreError::from)?;
     let frozen = DeclaredFrozenView {
@@ -171,6 +183,7 @@ fn assess(
         closure,
         roster_context,
         budget: budget::Captures::default(),
+        independent,
     };
     Ok(resolver.grouped_rows(query)?)
 }

@@ -1,4 +1,4 @@
-mod binding;
+pub(in crate::public_identity) mod binding;
 mod scan;
 pub(in crate::public_identity) mod verify;
 
@@ -50,13 +50,38 @@ impl PublicIdentityWriterV1 {
         store: &Store,
         operation: &RawGenerationOperationIdV2,
     ) -> StoreResult<RawGenerationCaptureOutcomeV2> {
+        self.capture_raw_generation(store, operation, RequestFence::Unpinned)
+    }
+
+    pub(in crate::public_identity) fn capture_raw_generation_at_v2(
+        &self,
+        store: &Store,
+        operation: &RawGenerationOperationIdV2,
+        expected: crate::StoreRevision<'_>,
+        original: &CaptureBindingV2,
+    ) -> StoreResult<RawGenerationCaptureOutcomeV2> {
+        self.capture_raw_generation(
+            store,
+            operation,
+            RequestFence::Pinned { expected, original },
+        )
+    }
+
+    fn capture_raw_generation(
+        &self,
+        store: &Store,
+        operation: &RawGenerationOperationIdV2,
+        fence: RequestFence<'_, '_>,
+    ) -> StoreResult<RawGenerationCaptureOutcomeV2> {
         self.require_current_qualification()?;
         let guard = store.lock_appends();
         self.verified(store)?;
         let held = store.snapshot_locked();
         let current = binding::capture(store, &held)?;
+        let current = fence.current(store, operation, current)?;
         let reserved = load_graph(store, self.store_identity(), operation)?;
         if let Some(reserved) = &reserved {
+            fence.require_reserved(reserved.capture(), &current)?;
             if reserved.is_complete(store)? {
                 return completed(&held, reserved)
                     .map(RawGenerationCaptureOutcomeV2::HistoricalReplay);
@@ -84,6 +109,58 @@ impl PublicIdentityWriterV1 {
         #[cfg(test)]
         rendezvous::checkpoint(rendezvous::Phase::AfterSeal)?;
         finish_current(store, &reserved).map(RawGenerationCaptureOutcomeV2::Captured)
+    }
+}
+
+enum RequestFence<'a, 's> {
+    Unpinned,
+    Pinned {
+        expected: crate::StoreRevision<'s>,
+        original: &'a CaptureBindingV2,
+    },
+}
+impl RequestFence<'_, '_> {
+    fn current(
+        &self,
+        store: &Store,
+        operation: &RawGenerationOperationIdV2,
+        current: CaptureBindingV2,
+    ) -> StoreResult<CaptureBindingV2> {
+        match self {
+            Self::Unpinned => Ok(current),
+            Self::Pinned { expected, original } => {
+                expected.ensure_current(store, operation.as_str())?;
+                binding::require_inputs(original, &current)?;
+                if original.evidence_generation() != expected.evidence_generation()
+                    || original.derived_generation() != expected.derived_generation()
+                {
+                    return Err(super::invalid(
+                        "original request revision does not match capture",
+                    ));
+                }
+                Ok((*original).clone())
+            }
+        }
+    }
+    fn require_reserved(
+        &self,
+        reserved: &CaptureBindingV2,
+        current: &CaptureBindingV2,
+    ) -> StoreResult<()> {
+        match self {
+            Self::Unpinned => Ok(()),
+            Self::Pinned { expected, .. } => {
+                binding::require_inputs(reserved, current)?;
+                if reserved.evidence_generation() != expected.evidence_generation()
+                    || reserved.derived_generation() != expected.derived_generation()
+                {
+                    return Err(super::invalid(
+                        "historical capture does not authorize current operation",
+                    ));
+                }
+                Ok(())
+            }
+        }
     }
 }
 

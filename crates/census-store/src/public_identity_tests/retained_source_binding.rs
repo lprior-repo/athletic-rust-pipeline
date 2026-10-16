@@ -75,7 +75,7 @@ fn refuses_resealed_source(change: ChangedSource) -> TestResult {
     drop(writer);
     drop(store);
     let root = directory.path().join("identity");
-    assert_source_refusal(Store::open_public_identity_qualification_v2(&root))?;
+    assert_source_refusal(Store::open_public_identity_qualification_v3(&root))?;
     check!(eq; physical_state(&root)?, before);
     Ok(())
 }
@@ -117,7 +117,7 @@ fn reseal(
 fn assert_source_refusal<T>(result: StoreResult<T>) -> TestResult {
     match refused(result)? {
         StoreError::PublicIdentity(PublicIdentityError::Corrupt(detail)) => {
-            check!(eq; detail, "retained authority source binding");
+            check!(eq; detail, "graph authority prepared history binding");
         }
         error => return Err(format!("unexpected source-binding refusal: {error:?}").into()),
     }

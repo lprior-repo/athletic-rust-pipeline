@@ -1,6 +1,7 @@
 use super::{
     Declaration, IdentityAcceptance, IdentityProtocol, PublicIdentityQualificationV1,
-    PublicIdentityQualificationV2, QualificationLifecycle, RetainedAuthorityAcceptance,
+    PublicIdentityQualificationV2, PublicIdentityQualificationV3, QualificationLifecycle,
+    RetainedAuthorityAcceptance, RetainedGraphAcceptance,
 };
 use crate::model::StoreIdentity;
 use serde::de::{value::MapAccessDeserializer, Error, MapAccess, Visitor};
@@ -20,6 +21,24 @@ impl<'de> Deserialize<'de> for PublicIdentityQualificationV2 {
         deserializer
             .deserialize_map(DeclarationVisitor(PhantomData))
             .map(Self)
+    }
+}
+
+impl<'de> Deserialize<'de> for PublicIdentityQualificationV3 {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer
+            .deserialize_map(DeclarationVisitor(PhantomData))
+            .map(Self)
+    }
+}
+
+impl<'de> Deserialize<'de> for RetainedGraphAcceptance {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        fixed_text(
+            deserializer,
+            "retained_authority_graph_v3",
+            Self::RetainedAuthorityGraphV3,
+        )
     }
 }
 

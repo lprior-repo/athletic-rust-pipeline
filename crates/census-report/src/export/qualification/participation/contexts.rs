@@ -66,6 +66,14 @@ impl ResultContexts {
         self.retain(Entity::Meet(&performance.meet), metadata)
     }
 
+    pub(super) fn retain_independent(
+        &mut self,
+        performance: &PerformanceId,
+        evidence: &Evidence,
+    ) -> StoreResult<()> {
+        self.retain(Entity::Performance(performance), fingerprint(evidence)?)
+    }
+
     pub(super) fn contains(&self, entity: Entity<'_>, evidence: &Evidence) -> StoreResult<bool> {
         let (kind, id) = entity.key();
         let digest = fingerprint(evidence)?;

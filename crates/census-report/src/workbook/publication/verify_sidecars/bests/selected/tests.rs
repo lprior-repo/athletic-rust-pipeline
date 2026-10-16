@@ -2,8 +2,8 @@ use super::*;
 use crate::bests::{
     public_identity_selection_for_test as selection, write_selected_identity_for_test as write,
 };
-use crate::export::current_school::fixture::capture;
-use crate::export::public_identity::tests::fixture::{merge, source_births, Fixture, TestResult};
+use crate::export::public_identity::tests::fixture::{Fixture, TestResult};
+use crate::export::selected_test_fixture::consumer::{capture, merge, source_births};
 use crate::report::ReportError;
 use census_domain::model::EventSemantics;
 use census_store::Store;
@@ -12,7 +12,7 @@ use census_store::Store;
 fn independent_selected_readback_accepts_real_merge_outputs_and_reopened_authority() -> TestResult {
     let fixture = source_births()?;
     merge(&fixture)?;
-    let (view, _) = capture(&fixture.store)?;
+    let (view, proofs) = capture(&fixture.store)?;
     let [_, second, _] = &fixture.athletes;
     let rows = [selection(second)];
     let output = fixture.directory.path().join("publication");
@@ -33,10 +33,22 @@ fn independent_selected_readback_accepts_real_merge_outputs_and_reopened_authori
     drop(writer);
     drop(store);
     let (store, _) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
-    let (reopened, _) = capture(&store)?;
+    let (reopened, reopened_proofs) = capture(&store)?;
     verify(&output, "co2027", &rows, &reopened)?;
+    let archive = tempfile::tempdir()?;
+    let path = archive.path().join("selected.json");
+    let digest = reopened.archive_digest()?;
+    reopened.save_frozen(&path)?;
+    drop(view);
+    proofs.close()?;
+    drop(reopened);
+    drop(store);
+    reopened_proofs.close()?;
+    std::fs::remove_dir_all(directory.path().join("identity"))?;
+    let offline = crate::export::ExportDataset::reopen_frozen_with_digest(&path, &digest)?;
+    verify(&output, "co2027", &rows, &offline)?;
     Ok(())
 }
 
@@ -44,7 +56,7 @@ fn independent_selected_readback_accepts_real_merge_outputs_and_reopened_authori
 fn independent_selected_readback_refuses_candidate_fallback_in_csv_primary_join_key() -> TestResult
 {
     let fixture = source_births()?;
-    let (view, _) = capture(&fixture.store)?;
+    let (view, _proofs) = capture(&fixture.store)?;
     let [first, _, _] = &fixture.athletes;
     let rows = [selection(first)];
     let output = fixture.directory.path().join("publication");
@@ -76,7 +88,7 @@ fn independent_selected_readback_rejects_changed_public_candidate_resolution_sch
 ) -> TestResult {
     let fixture = source_births()?;
     merge(&fixture)?;
-    let (view, _) = capture(&fixture.store)?;
+    let (view, _proofs) = capture(&fixture.store)?;
     let [first, second, _] = &fixture.athletes;
     let rows = [selection(second)];
     let output = fixture.directory.path().join("publication");
@@ -124,33 +136,37 @@ fn independent_selected_readback_rejects_changed_public_candidate_resolution_sch
 }
 
 #[test]
-fn independent_selected_readback_uses_held_identity_head_instead_of_current_tables() -> TestResult {
+fn independent_selected_readback_uses_read_only_premerge_identity_expectations() -> TestResult {
     let fixture = source_births()?;
-    let (held, _) = capture(&fixture.store)?;
+    let (held, _) = crate::export::current_school::fixture::capture(&fixture.store)?;
+    let held_head = held.verified_public_identities()?.head().clone();
     let [_, second, _] = &fixture.athletes;
     let rows = [selection(second)];
+    merge(&fixture)?;
+    let (current, _current_proofs) = capture(&fixture.store)?;
     let output = fixture.directory.path().join("publication");
     let (_, csv) = write(
         &output,
         &rows,
         "co2027",
         EventSemantics::ResultGroups21,
-        &held,
+        &current,
     )?;
-    merge(&fixture)?;
-    let (current, _) = capture(&fixture.store)?;
-    verify(&output, "co2027", &rows, &held)?;
+    verify(&output, "co2027", &rows, &current)?;
     let [first_birth, second_birth] = &fixture.births;
+    check!(eq; held.verified_public_identities()?.head(), &held_head);
+    check!(eq; held.verified_public_identities()?.public_id(second.id.as_str()), Some(second_birth.public_id()));
+    check!(eq; current.verified_public_identities()?.public_id(second.id.as_str()), Some(first_birth.public_id()));
     let expected = format!(
         "{} record 2 column 0: expected {:?}, found {:?}",
         csv.display(),
-        first_birth.public_id().as_str(),
-        second_birth.public_id().as_str()
+        second_birth.public_id().as_str(),
+        first_birth.public_id().as_str()
     );
-    match verify(&output, "co2027", &rows, &current) {
+    match verify(&output, "co2027", &rows, &held) {
         Err(ReportError::Invariant { detail }) => check!(eq; detail, expected),
         Err(error) => return Err(format!("unexpected moved-head refusal: {error}").into()),
-        Ok(()) => return Err("current identity head reinterpreted old selected output".into()),
+        Ok(()) => return Err("held identity head was reinterpreted as current output".into()),
     }
     Ok(())
 }
@@ -205,7 +221,7 @@ fn mismatch(result: ReportResult<()>, path: &Path, field: &str) -> TestResult {
 #[test]
 fn independent_selected_bests_readback_rejects_each_current_affiliation_field() -> TestResult {
     let fixture = source_births()?;
-    let (dataset, _) = capture(&fixture.store)?;
+    let (dataset, _proofs) = capture(&fixture.store)?;
     let [first, _, _] = &fixture.athletes;
     let rows = [selection(first)];
     let output = fixture.directory.path().join("affiliation-publication");

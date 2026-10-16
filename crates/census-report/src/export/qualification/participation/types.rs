@@ -48,7 +48,7 @@ pub(crate) struct PinnedParticipation {
     pub(super) profile_id: ProfileId,
     pub(super) participation_rule: ContractRefV1,
     pub(super) rows: BTreeMap<PerformanceId, PinnedParticipationRow>,
-    pub(super) replay: super::archive::ParticipationReplayV1,
+    pub(super) replay: super::archive::ParticipationReplay,
 }
 
 impl PinnedParticipation {
@@ -59,7 +59,7 @@ impl PinnedParticipation {
         ProfileId,
         ContractRefV1,
         BTreeMap<PerformanceId, PinnedParticipationRow>,
-        super::archive::ParticipationReplayV1,
+        super::archive::ParticipationReplay,
     ) {
         (
             self.input_generation,

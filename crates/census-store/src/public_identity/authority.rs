@@ -1,3 +1,5 @@
+pub(super) mod graph;
+
 use super::context::{Inputs, BUDGET};
 use super::PublicIdentityError;
 use crate::StoreResult;

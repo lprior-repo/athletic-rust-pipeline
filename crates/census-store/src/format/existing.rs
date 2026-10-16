@@ -3,34 +3,21 @@ use std::path::Path;
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 use fjall::Database;
 
+mod public_identity;
+
 use crate::{Store, StoreError, StoreResult};
 
 #[derive(Clone, Copy)]
 pub(crate) enum OpenPurpose {
     LegacyExecution,
     PublicIdentityExecution(PublicIdentityQualificationVersion),
+    PublicIdentityHistory,
     InstallationControl,
     CaptureControl,
     CaptureExecution(census_domain::model::CaptureProtocolVersion),
 }
 
 impl Store {
-    pub fn open_public_identity_qualification_v1(
-        root: impl AsRef<Path>,
-    ) -> StoreResult<crate::PublicIdentityQualificationStore> {
-        open_public_identity(
-            root.as_ref(),
-            PublicIdentityQualificationVersion::SourceBoundV1,
-        )
-    }
-    pub fn open_public_identity_qualification_v2(
-        root: impl AsRef<Path>,
-    ) -> StoreResult<crate::PublicIdentityQualificationStore> {
-        open_public_identity(
-            root.as_ref(),
-            PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
-        )
-    }
     pub fn open_existing(root: impl AsRef<Path>) -> StoreResult<Self> {
         existing(
             root.as_ref(),
@@ -95,30 +82,6 @@ impl Store {
     }
 }
 
-fn open_public_identity(
-    root: &Path,
-    version: PublicIdentityQualificationVersion,
-) -> StoreResult<crate::PublicIdentityQualificationStore> {
-    let store = existing(
-        root,
-        OpenPurpose::PublicIdentityExecution(version),
-        super::DEFAULT_CACHE_BYTES,
-    )?;
-    let ledger = crate::public_identity::validate(
-        &store.db.snapshot(),
-        &store.entities,
-        &store.meta,
-        &store.journal,
-        &store.receipts,
-        &store.store_format()?,
-    )?
-    .ok_or(crate::PublicIdentityError::OptInRequired)?;
-    Ok(crate::PublicIdentityQualificationStore::new(
-        store,
-        &ledger.declaration,
-    ))
-}
-
 pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> StoreResult<Store> {
     existing_marker(root)?;
     let db = Database::builder(root.join(crate::DB_DIR))
@@ -129,34 +92,27 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
     let (db, entities, journal, meta, receipts) = crate::keyspaces(db)?;
     let format = super::require_current(root, super::read_format(&meta)?)?;
     crate::input_revisions::validate_format(&db.snapshot(), &meta, &format)?;
-    let identity = crate::public_identity::validate(
-        &db.snapshot(),
-        &entities,
-        &meta,
-        &journal,
-        &receipts,
-        &format,
-    )?;
-    match purpose {
-        OpenPurpose::PublicIdentityExecution(expected) => identity
-            .as_ref()
-            .ok_or(crate::PublicIdentityError::OptInRequired)?
-            .require_version(expected)?,
-        _ if identity.is_some() => return Err(crate::PublicIdentityError::OptInRequired.into()),
-        _ => {}
-    }
+    let keyspaces = ExistingKeyspaces {
+        db,
+        entities,
+        journal,
+        meta,
+        receipts,
+    };
+    keyspaces.validate_identity(purpose, &format)?;
     let capture = crate::acquisition::validate_format(
         root,
-        &db.snapshot(),
-        &meta,
-        &journal,
-        &receipts,
+        &keyspaces.db.snapshot(),
+        &keyspaces.meta,
+        &keyspaces.journal,
+        &keyspaces.receipts,
         &format,
     )?;
     match purpose {
         OpenPurpose::LegacyExecution
         | OpenPurpose::InstallationControl
-        | OpenPurpose::PublicIdentityExecution(_) => crate::acquisition::require_legacy(&capture)?,
+        | OpenPurpose::PublicIdentityExecution(_)
+        | OpenPurpose::PublicIdentityHistory => crate::acquisition::require_legacy(&capture)?,
         OpenPurpose::CaptureControl | OpenPurpose::CaptureExecution(_) if capture.is_none() => {
             return Err(crate::CaptureError::CaptureCapabilityMissing.into())
         }
@@ -169,13 +125,6 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
         }
         _ => {}
     }
-    let keyspaces = ExistingKeyspaces {
-        db,
-        entities,
-        journal,
-        meta,
-        receipts,
-    };
     finish_existing(root, purpose, keyspaces, format)
 }
 
@@ -228,7 +177,9 @@ fn finish_existing(
         | OpenPurpose::PublicIdentityExecution(_) => {
             crate::installation::require_legacy_execution(&state)?
         }
-        OpenPurpose::InstallationControl | OpenPurpose::CaptureControl => {}
+        OpenPurpose::InstallationControl
+        | OpenPurpose::CaptureControl
+        | OpenPurpose::PublicIdentityHistory => {}
     }
     match purpose {
         OpenPurpose::LegacyExecution
@@ -237,7 +188,9 @@ fn finish_existing(
             crate::ensure_dirs(root)?;
             Store::recover_opened(root.to_path_buf(), db, entities, journal, meta, receipts)
         }
-        OpenPurpose::InstallationControl | OpenPurpose::CaptureControl => {
+        OpenPurpose::InstallationControl
+        | OpenPurpose::CaptureControl
+        | OpenPurpose::PublicIdentityHistory => {
             control_store(root, db, entities, journal, meta, receipts)
         }
     }
@@ -286,3 +239,42 @@ fn existing_marker(root: &Path) -> StoreResult<()> {
 
 #[cfg(test)]
 mod tests;
+
+impl ExistingKeyspaces {
+    fn validate_identity(
+        &self,
+        purpose: OpenPurpose,
+        format: &crate::StoreFormat,
+    ) -> StoreResult<()> {
+        let identity = crate::public_identity::validate(
+            &self.db.snapshot(),
+            &self.entities,
+            &self.meta,
+            &self.journal,
+            &self.receipts,
+            format,
+        )?;
+        match purpose {
+            OpenPurpose::PublicIdentityExecution(expected) => identity
+                .as_ref()
+                .ok_or(crate::PublicIdentityError::OptInRequired)?
+                .require_version(expected)?,
+            OpenPurpose::PublicIdentityHistory => {
+                let version = identity
+                    .as_ref()
+                    .ok_or(crate::PublicIdentityError::OptInRequired)?
+                    .declaration
+                    .version();
+                if version == PublicIdentityQualificationVersion::RetainedAuthorityGraphV3 {
+                    return Err(crate::PublicIdentityError::Corrupt(
+                        "current graph store is not historical",
+                    )
+                    .into());
+                }
+            }
+            _ if identity.is_some() => return Err(crate::PublicIdentityError::OptInRequired.into()),
+            _ => {}
+        }
+        Ok(())
+    }
+}

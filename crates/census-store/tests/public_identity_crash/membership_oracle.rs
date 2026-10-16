@@ -13,8 +13,7 @@ use census_store::{PublicIdentityWriterV1, Receipt, Store, Table};
 use serde::de::DeserializeSeed;
 use sha2::{Digest, Sha256};
 
-#[path = "membership_context.rs"]
-mod context;
+use super::super::graph;
 
 pub(super) struct Expected {
     identity: StoreIdentity,
@@ -47,7 +46,13 @@ pub(super) fn staged(fixture: &Fixture, state: &State) -> TestResult {
     for name in ["entities", "meta", "receipts"] {
         check!(eq; state.rows(name)?, fixture.before.rows(name)?);
     }
-    let (_, journal) = context::extend(fixture, state)?;
+    let journal = graph::prepared(
+        &fixture.before,
+        state,
+        &fixture.expected.identity,
+        fixture.plan.operation(),
+    )?
+    .journal;
     check!(eq; state.rows("journal")?, &journal);
     Ok(())
 }
@@ -73,14 +78,23 @@ pub(super) fn committed(
             .deserialize(&mut parser)?
             .into_parts();
     parser.end()?;
-    let (context_root, mut journal) = context::extend(fixture, state)?;
+    let retained = graph::prepared(
+        &fixture.before,
+        state,
+        &expected.identity,
+        fixture.plan.operation(),
+    )?;
+    check!(eq; retained.reservation["graph"]["capture"]["evidence_generation"], serde_json::json!(expected.evidence));
+    check!(eq; retained.reservation["graph"]["capture"]["derived_generation"], serde_json::json!(expected.derived));
+    check!(eq; retained.reservation["expected_head"], serde_json::json!(prior));
+    let mut journal = retained.journal;
     let (request, at, witness) = match mode {
         Mode::Attach => attachment(
             fixture,
             state,
             &history,
             head,
-            &context_root,
+            &retained.graph,
             snapshot_sequence,
         )?,
         Mode::Withhold => {
@@ -91,17 +105,21 @@ pub(super) fn committed(
                 .iter()
                 .map(|row| row.claim.clone())
                 .collect::<Vec<_>>();
-            let (_, digest) = super::fixture::approval(record)?;
+            let (_, digest) = super::fixture::approval(record, fixture.plan.withholding_graph()?)?;
             (
                 record.history_request(&claims)?,
                 record.observed_at.clone(),
                 serde_json::json!({
-                    "version": 7, "operation": fixture.plan.operation(), "actor": "local_operator",
-                    "request_digest": digest, "adjudication": record, "record_digest": head.digest,
+                    "version": 12, "operation": fixture.plan.operation(),
+                    "request_digest": digest, "graph": fixture.plan.withholding_graph()?,
+                    "observed_at": record.observed_at,
+                    "payload": { "family": "withholding", "actor": "local_operator", "adjudication": record },
+                    "record_digest": head.digest,
                 }),
             )
         }
     };
+    check!(eq; retained.reservation["witness"], witness);
     let prepared = prepare_next(&expected.identity, &prior, request, ReplayLimits::SMALL)?;
     check!(prepared.established_ids.is_empty());
     check!(eq; head, &prepared.next_head);
@@ -158,10 +176,11 @@ fn attachment(
     state: &State,
     history: &[census_domain::public_identity_history::HistoryRecord],
     head: &RegistryHead,
-    context_root: &str,
+    graph: &census_store::GraphAuthorityReferenceV1,
     snapshot_sequence: u64,
 ) -> TestResult<(HistoryRequest, String, serde_json::Value)> {
     let expected = &fixture.expected;
+    check!(eq; serde_json::to_value(graph.capture())?["snapshot_sequence"], serde_json::json!(snapshot_sequence));
     let (key, raw) = sole_added(fixture.before.rows("entities")?, state.rows("entities")?)?;
     let decision: AppliedAthleteIdentity = serde_json::from_slice(raw)?;
     let mut decision_key = format!("athlete_identity_decisions\0{}\0", decision.id).into_bytes();
@@ -206,12 +225,11 @@ fn attachment(
         request,
         decision.observed_at.clone(),
         serde_json::json!({
-            "version": 6, "operation": fixture.plan.operation(), "request": fixture.plan.attachment,
-            "request_digest": digest, "expected_head": fixture.plan.prior_head(),
-            "evidence_generation": expected.evidence, "derived_generation": expected.derived,
-            "snapshot_sequence": snapshot_sequence, "authority_context": context_root,
-            "decision_id": decision.id, "decision_digest": serialized_digest(&decision)?,
-            "record_digest": head.digest, "resulting_head": head, "introduced_public_ids": [],
+            "version": 11, "operation": fixture.plan.operation(),
+            "request_digest": digest, "graph": graph,
+            "record_digest": head.digest, "observed_at": decision.observed_at,
+            "payload": { "family": "membership", "request": fixture.plan.attachment,
+                "decision": { "id": decision.id, "digest": serialized_digest(&decision)? } },
         }),
     ))
 }

@@ -44,6 +44,10 @@ impl SelectedAuthority {
         })
     }
 
+    pub(crate) fn qualification_lifecycle(&self) -> u32 {
+        self.qualification_lifecycle
+    }
+
     pub(crate) fn profile(&self) -> &QueryProfileV1 {
         &self.profile
     }
@@ -62,6 +66,24 @@ impl SelectedAuthority {
         accepted: &AcceptedPublicIdentitySnapshot,
     ) -> ReportResult<()> {
         require_current(accepted)?;
+        self.ensure_binding(accepted)
+    }
+
+    pub(crate) fn ensure_historical_identity(
+        &self,
+        accepted: &AcceptedPublicIdentitySnapshot,
+    ) -> ReportResult<()> {
+        if accepted.qualification_version()
+            != PublicIdentityQualificationVersion::RetainedAuthorityContextV2
+        {
+            return Err(invalid(
+                "historical selected identity requires qualification V2",
+            ));
+        }
+        self.ensure_binding(accepted)
+    }
+
+    fn ensure_binding(&self, accepted: &AcceptedPublicIdentitySnapshot) -> ReportResult<()> {
         if accepted.head() != &self.registry_head()
             || accepted.qualification_version().lifecycle_revision() != self.qualification_lifecycle
         {
@@ -71,7 +93,7 @@ impl SelectedAuthority {
     }
 
     pub(crate) fn validate(&self) -> ReportResult<()> {
-        if self.qualification_lifecycle != 6
+        if !matches!(self.qualification_lifecycle, 6 | 7)
             || !digest(&self.identity_digest)
             || self.fingerprints.len() != TABLES.len()
             || TABLES.iter().any(|table| {
@@ -89,10 +111,10 @@ impl SelectedAuthority {
 
 fn require_current(accepted: &AcceptedPublicIdentitySnapshot) -> ReportResult<()> {
     if accepted.qualification_version()
-        != PublicIdentityQualificationVersion::RetainedAuthorityContextV2
+        != PublicIdentityQualificationVersion::RetainedAuthorityGraphV3
     {
         return Err(invalid(
-            "selected publication requires retained public identity V2",
+            "selected publication requires retained public identity V3",
         ));
     }
     Ok(())

@@ -73,16 +73,13 @@ fn recover(
     mode: Mode,
     boundary: Boundary,
 ) -> TestResult<(
-    census_store::FrozenPublicIdentityBundleV1,
+    census_store::FrozenPublicIdentityBundleV2,
     census_domain::public_identity_history::RegistryHead,
     u64,
 )> {
-    let (store, writer) = Store::open_public_identity_qualification_v2(&fixture.root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&fixture.root)?.into_parts();
     let snapshot = store.snapshot();
-    let snapshot_sequence = match boundary {
-        Boundary::BeforeCommit => snapshot.sequence(),
-        Boundary::AfterCommit => super::fixture::read_precommit_sequence(&fixture.root)?,
-    };
+    let snapshot_sequence = super::fixture::read_precommit_sequence(&fixture.root)?;
     let accepted = snapshot
         .accepted_public_identity_snapshot()?
         .ok_or("accepted snapshot")?;
@@ -101,7 +98,7 @@ fn recover(
     check!(replayed);
     check!(eq; head, again);
     check!(eq; store.scan::<census_domain::model::AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?.len(), 2);
-    let frozen = store.snapshot().freeze_public_identity_v1()?;
+    let frozen = store.snapshot().freeze_public_identity_v2()?;
     let accepted = store
         .snapshot()
         .accepted_public_identity_snapshot()?
@@ -120,7 +117,7 @@ fn replay_without_mutation(
     head: &census_domain::public_identity_history::RegistryHead,
 ) -> TestResult {
     let before = physical::read(&fixture.root)?;
-    let (store, writer) = Store::open_public_identity_qualification_v2(&fixture.root)?.into_parts();
+    let (store, writer) = Store::open_public_identity_qualification_v3(&fixture.root)?.into_parts();
     let sequence = store.snapshot().sequence();
     let (again, replayed) = fixture.plan.apply(&store, &writer)?;
     check!(replayed);

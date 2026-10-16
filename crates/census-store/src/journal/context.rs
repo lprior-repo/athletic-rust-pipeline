@@ -5,9 +5,9 @@ use crate::{Store, StoreError, StoreResult};
 
 mod charge;
 mod encode;
-pub(crate) use charge::{
-    charge_context_object, measure_context_physical, verify_retained_charge, ContextCharge,
-};
+#[cfg(test)]
+pub(crate) use charge::charge_context_object;
+pub(crate) use charge::{measure_context_physical, verify_retained_charge, ContextCharge};
 mod persist;
 mod physical_ref;
 mod stream;
@@ -31,6 +31,7 @@ pub(crate) struct StagedContextObject {
 }
 
 impl StagedContextObject {
+    #[cfg(test)]
     pub(crate) fn object_id(&self) -> &str {
         &self.object
     }
@@ -78,6 +79,7 @@ where
     Ok(run_pass(Pass::Measure, &emit)?.staged.object)
 }
 
+#[cfg(test)]
 pub(crate) fn stage_context_object<F>(store: &Store, emit: F) -> StoreResult<StagedContextObject>
 where
     F: Fn(&mut ContextRecordSink<'_>) -> StoreResult<()>,

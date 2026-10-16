@@ -124,7 +124,7 @@ fn identity_bundle_chunk_count_and_boundaries_are_exact() -> TestResult {
 fn identity_bundle_replays_without_live_store() -> TestResult {
     let fixture = crate::export::public_identity::tests::fixture::source_births()?;
     let snapshot = fixture.store.snapshot();
-    let frozen = snapshot.freeze_public_identity_v1()?;
+    let frozen = snapshot.freeze_public_identity_v2()?;
     let expected = frozen.replay()?;
     let directory = tempfile::tempdir()?;
     let retained = identity::Bundle::capture(directory.path(), &frozen)?;
@@ -137,13 +137,74 @@ fn identity_bundle_replays_without_live_store() -> TestResult {
     check!(eq; replayed.store_identity(), expected.store_identity());
     check!(eq; replayed.snapshot_sequence(), expected.snapshot_sequence());
     check!(eq; replayed.qualification_version(), expected.qualification_version());
+    check!(eq; replayed.qualification_version(), census_domain::public_identity_qualification::PublicIdentityQualificationVersion::RetainedAuthorityGraphV3);
+    check!(matches!(
+        retained.replay_historical(directory.path()),
+        Err(crate::report::ReportError::Store(_))
+    ));
+    Ok(())
+}
+
+fn historical_identity_bundle(directory: &std::path::Path) -> TestResult<identity::Bundle> {
+    let identity = census_domain::model::StoreIdentity::parse(&"a".repeat(64))?;
+    let declaration =
+        census_domain::public_identity_qualification::PublicIdentityQualificationV2::new(
+            identity.clone(),
+        );
+    let head = census_domain::public_identity_history::genesis(&identity)?;
+    let bytes = serde_json::to_vec(&json!({
+        "version": 1,
+        "store_identity": identity,
+        "revision": {"evidence_generation": 0, "derived_generation": 0, "snapshot_sequence": 1},
+        "declaration": serde_json::to_string(&declaration)?,
+        "head": serde_json::to_string(&head)?,
+        "history": "[]", "operations": [], "contexts": [],
+    }))?;
+    let digest = proof_objects::install(directory, &bytes)?;
+    Ok(serde_json::from_value(json!({
+        "digest": digest, "bytes": bytes.len(),
+        "chunks": [{"digest": digest, "bytes": bytes.len()}],
+    }))?)
+}
+
+#[test]
+fn frozen_v1_is_explicitly_read_only_and_never_falls_back_from_graph_replay() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let bundle = historical_identity_bundle(directory.path())?;
+    let replayed = bundle.replay_historical(directory.path())?;
+    check!(eq; replayed.qualification_version(), census_domain::public_identity_qualification::PublicIdentityQualificationVersion::RetainedAuthorityContextV2);
+    check!(eq; replayed.head().sequence, 0);
+    check!(eq; replayed.public_ids().count(), 0);
+    check!(matches!(
+        bundle.replay(directory.path()),
+        Err(crate::report::ReportError::Store(_))
+    ));
+    Ok(())
+}
+
+#[test]
+fn selected_proof_versions_preserve_exact_numeric_wire_and_refuse_unknowns() -> TestResult {
+    for (wire, expected) in [
+        (1, super::Version::HistoricalContextV1),
+        (2, super::Version::RetainedGraphV2),
+    ] {
+        let decoded: super::Version = serde_json::from_value(json!(wire))?;
+        check!(eq; decoded, expected);
+        check!(eq; serde_json::to_value(decoded)?, json!(wire));
+    }
+    for value in [json!(0), json!(3), json!(u32::MAX), json!(-1), json!("2")] {
+        check!(matches!(
+            serde_json::from_value::<super::Version>(value),
+            Err(_)
+        ));
+    }
     Ok(())
 }
 
 #[test]
 fn identity_chunk_digest_and_bundle_digest_are_independently_enforced() -> TestResult {
     let fixture = crate::export::public_identity::tests::fixture::source_births()?;
-    let frozen = fixture.store.snapshot().freeze_public_identity_v1()?;
+    let frozen = fixture.store.snapshot().freeze_public_identity_v2()?;
     let directory = tempfile::tempdir()?;
     let retained = identity::Bundle::capture(directory.path(), &frozen)?;
     let mut wire = serde_json::to_value(&retained)?;
@@ -197,5 +258,21 @@ fn bare_relative_destination_is_valid_without_changing_working_directory() -> Te
     objects::copy(source.path(), destination, &inventory)?;
     objects::verify(destination, &inventory)?;
     target.close()?;
+    Ok(())
+}
+
+#[test]
+fn v1_bundle_reserialization_does_not_acquire_graph_authority() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let historical = historical_identity_bundle(directory.path())?;
+    let original = serde_json::to_vec(&historical)?;
+    let current: identity::Bundle = serde_json::from_slice(&original)?;
+    check!(eq; serde_json::to_vec(&current)?, original);
+    let old = current.replay_historical(directory.path())?;
+    check!(eq; old.qualification_version(), census_domain::public_identity_qualification::PublicIdentityQualificationVersion::RetainedAuthorityContextV2);
+    check!(matches!(
+        current.replay(directory.path()),
+        Err(crate::report::ReportError::Store(_))
+    ));
     Ok(())
 }

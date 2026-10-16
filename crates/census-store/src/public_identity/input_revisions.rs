@@ -1,7 +1,7 @@
 use crate::{PublicIdentityInputRevisionTokenV2, Store, StoreResult, StoreRevision};
 
 impl super::PublicIdentityWriterV1 {
-    pub fn enroll_public_identity_input_revisions_v2(
+    pub(crate) fn enroll_public_identity_input_revisions_v2(
         &self,
         store: &Store,
         expected: StoreRevision<'_>,

@@ -3,8 +3,35 @@ use super::*;
 #[tokio::test]
 async fn synthetic_historical_v2_frozen_replay_preserves_decision_and_archive_bytes() -> TestResult
 {
+    historical_roundtrip(
+        participation_policy_v2()?,
+        CandidateOutcome::EligibleCandidate,
+        &[],
+    )
+    .await
+}
+
+#[tokio::test]
+async fn synthetic_historical_v3_frozen_replay_preserves_strict_withholding_and_archive_bytes(
+) -> TestResult {
+    historical_roundtrip(
+        participation_policy_v3()?,
+        CandidateOutcome::Unresolved,
+        &[
+            ParticipationReason::HighSchoolStatusMissing,
+            ParticipationReason::SummerBoundaryUnresolved,
+        ],
+    )
+    .await
+}
+
+async fn historical_roundtrip(
+    rule: census_domain::model::ContractRefV1,
+    expected: CandidateOutcome,
+    expected_reasons: &[ParticipationReason],
+) -> TestResult {
     let mut fixture = Fixture::prepare(Some("High School")).await?;
-    fixture.profile = profile::profile(participation_policy_v2()?)?;
+    fixture.profile = profile::profile(rule)?;
     fixture.store.register_profile(&fixture.profile)?;
     let snapshot = fixture.store.snapshot();
     let dataset = fixture.dataset(&snapshot)?;
@@ -38,12 +65,16 @@ async fn synthetic_historical_v2_frozen_replay_preserves_decision_and_archive_by
         &closure,
         captured_at,
         affiliations.roster_context(),
+        None,
     )?;
     let historical_row = historical_rows
         .get(&fixture.performance.id)
         .ok_or("historical row")?;
-    assert_eq!(historical_row.outcome, CandidateOutcome::EligibleCandidate);
-    assert!(historical_row.reasons.is_empty());
+    assert_eq!(historical_row.outcome, expected);
+    assert_eq!(
+        historical_row.reasons.iter().collect::<Vec<_>>(),
+        expected_reasons
+    );
     let historical = ParticipationReplayV1 {
         version: 1,
         store_identity: dataset.lineage.store_identity.clone(),
@@ -70,8 +101,8 @@ async fn synthetic_historical_v2_frozen_replay_preserves_decision_and_archive_by
     )?;
     assert_eq!(serde_json::to_vec(&replay.replay)?, historical_wire);
     let (outcome, reasons, references, gaps) = row(replay, &fixture.performance.id)?.into_parts();
-    assert_eq!(outcome, CandidateOutcome::EligibleCandidate);
-    assert!(reasons.is_empty());
+    assert_eq!(outcome, expected);
+    assert_eq!(reasons.iter().collect::<Vec<_>>(), expected_reasons);
     assert!(gaps.is_empty());
     assert!(!references.is_empty());
     assert_eq!(archive_bytes(&directory)?, bytes_before);

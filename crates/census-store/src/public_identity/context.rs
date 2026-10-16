@@ -9,6 +9,7 @@ pub(super) use verify::{reviewed as verify_reviewed_inputs, source as verify_sou
 mod decode;
 pub(super) use decode::from_bytes;
 
+#[cfg(test)]
 use crate::{Entity, StoreError, StoreResult, StoreSnapshot, Table};
 use census_domain::model::{CanonicalAthlete, ReviewCase, ReviewVerdictRecord, SourceObservation};
 
@@ -25,6 +26,7 @@ pub(super) struct Inputs {
     pub verdicts: Vec<ReviewVerdictRecord>,
 }
 
+#[cfg(test)]
 impl Inputs {
     pub(super) fn capture(snapshot: &StoreSnapshot<'_>) -> StoreResult<Self> {
         let athletes = collect::<CanonicalAthlete>(snapshot, Table::Athletes)?;
@@ -41,12 +43,14 @@ impl Inputs {
     }
 }
 
+#[cfg(test)]
 fn collect<T: Entity>(snapshot: &StoreSnapshot<'_>, table: Table) -> StoreResult<Vec<T>> {
     let mut rows = Vec::new();
     snapshot.for_each_merged_bounded(table, BUDGET, |row, _| push(&mut rows, row))?;
     Ok(rows)
 }
 
+#[cfg(test)]
 fn push<T>(rows: &mut Vec<T>, row: T) -> StoreResult<()> {
     rows.try_reserve(1).map_err(|error| StoreError::Refused {
         detail: format!("public identity input allocation: {error}"),

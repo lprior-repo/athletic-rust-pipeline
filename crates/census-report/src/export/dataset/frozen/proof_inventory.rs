@@ -1,5 +1,5 @@
 use super::{io, proof_directory};
-use crate::export::dataset::{selected_proofs::SelectedProofsV1, ExportDataset};
+use crate::export::dataset::{selected_proofs::SelectedProofs, ExportDataset};
 use crate::report::ReportResult;
 use serde::Deserialize;
 use std::path::Path;
@@ -12,7 +12,7 @@ struct Inventory {
     #[serde(rename = "data")]
     _data: serde::de::IgnoredAny,
     #[serde(default)]
-    selected_proofs: Option<SelectedProofsV1>,
+    selected_proofs: Option<SelectedProofs>,
 }
 
 impl ExportDataset {

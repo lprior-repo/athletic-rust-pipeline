@@ -1,5 +1,3 @@
-use fjall::Readable;
-
 use super::object::JournalObject;
 use crate::journal::{object_chunk_key, object_index_key, object_manifest_key};
 use crate::{StoreError, StoreResult, MAX_JOURNAL_VALUE_BYTES};
@@ -17,12 +15,10 @@ impl JournalObject<'_> {
     }
 
     fn add_physical_row(&self, total: u64, key: &[u8], maximum: u64) -> StoreResult<u64> {
-        let length = self
-            .snapshot
-            .size_of(self.journal, key)
-            .map_err(|source| StoreError::Read { source })?
+        let value_bytes = self
+            .source
+            .size(key)?
             .ok_or_else(|| self.path().refusal("retained physical row is absent"))?;
-        let value_bytes = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
         super::legacy_wire::limit(
             self.path(),
             "physical object row",
@@ -41,5 +37,38 @@ impl JournalObject<'_> {
                 .refusal("retained physical bytes exceed reference"));
         }
         Ok(observed)
+    }
+}
+
+impl JournalObject<'_> {
+    pub(crate) fn for_each_physical_row(
+        &self,
+        expected_bytes: u64,
+        mut visit: impl FnMut(&[u8], &[u8]) -> StoreResult<()>,
+    ) -> StoreResult<()> {
+        if self.retained_physical_bytes(expected_bytes)? != expected_bytes {
+            return Err(self
+                .path()
+                .refusal("retained physical bytes differ from reference"));
+        }
+        self.visit_physical_row(&object_manifest_key(self.object_id())?, &mut visit)?;
+        for index in 0..self.bounds.index_pages {
+            self.visit_physical_row(&object_index_key(self.object_id(), index)?, &mut visit)?;
+        }
+        for index in 0..self.chunk_count() {
+            self.visit_physical_row(&object_chunk_key(self.object_id(), index)?, &mut visit)?;
+        }
+        Ok(())
+    }
+
+    fn visit_physical_row(
+        &self,
+        key: &[u8],
+        visit: &mut impl FnMut(&[u8], &[u8]) -> StoreResult<()>,
+    ) -> StoreResult<()> {
+        let raw = self
+            .get(key)?
+            .ok_or_else(|| self.path().refusal("retained physical row is absent"))?;
+        visit(key, raw.as_ref())
     }
 }

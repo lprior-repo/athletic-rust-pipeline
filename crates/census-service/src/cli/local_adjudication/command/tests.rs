@@ -14,6 +14,8 @@ fn local_identity_cli_registers_inspect_split_and_receipt_without_live_ingress()
         "synthetic-offline-store",
         "local-identity-adjudication",
         "inspect",
+        "--operation",
+        "synthetic-split",
         "--canonical",
         &canonical,
     ])?;
@@ -105,6 +107,23 @@ fn local_identity_cli_requires_an_operation_and_request_file() -> TestResult {
 }
 
 #[test]
+fn graph_inventory_requires_explicit_operation_before_staging() -> TestResult {
+    let canonical = format!("ath_public_v1_{}", "1".repeat(64));
+    let error = match Cli::try_parse_from([
+        "census-service",
+        "local-identity-adjudication",
+        "inspect",
+        "--canonical",
+        &canonical,
+    ]) {
+        Err(error) => error,
+        Ok(_) => return Err("graph inventory accepted an implicit operation".into()),
+    };
+    check!(eq; error.kind(), ErrorKind::MissingRequiredArgument);
+    Ok(())
+}
+
+#[test]
 fn local_identity_cli_requires_explicit_existing_store_without_initializing_a_root() -> TestResult {
     let error = match require_root(None) {
         Err(error) => error,
@@ -141,7 +160,7 @@ fn local_identity_cli_refuses_legacy_store_and_an_existing_owner() -> TestResult
         ))
     ));
     let qualified = directory.path().join("qualified");
-    Store::create_public_identity_qualification_v2(&qualified)?;
+    Store::create_public_identity_qualification_v3(&qualified)?;
     let (store, writer) = open(&qualified)?;
     let head = writer.head(&store)?;
     let error = match open(&qualified) {
@@ -171,5 +190,81 @@ fn local_identity_cli_rejects_malformed_request_before_opening_a_store() -> Test
         Some(input::InputError::Json(_))
     ));
     check!(!missing.exists());
+    Ok(())
+}
+
+#[test]
+fn graph_enrollment_is_explicit_and_does_not_alias_historical_command() -> TestResult {
+    let cli = Cli::try_parse_from([
+        "census-service",
+        "local-identity-adjudication",
+        "enroll-graph-admission",
+    ])?;
+    check!(matches!(
+        cli.command,
+        Command::LocalIdentityAdjudication(LocalAdjudicationArgs {
+            command: LocalCommand::EnrollGraphAdmission,
+        })
+    ));
+    let error = match Cli::try_parse_from([
+        "census-service",
+        "local-identity-adjudication",
+        "enroll-context-budget",
+    ]) {
+        Err(error) => error,
+        Ok(_) => return Err("historical enrollment command was aliased".into()),
+    };
+    check!(eq; error.kind(), ErrorKind::InvalidSubcommand);
+    Ok(())
+}
+
+#[test]
+fn graph_enrollment_repeats_without_charging_or_changing_head() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let root = directory.path().join("graph-enrollment");
+    Store::create_public_identity_qualification_v3(&root)?;
+    let (store, writer) = open(&root)?;
+    let head = writer.head(&store)?;
+    enroll_graph_admission(&store, &writer)?;
+    let sequence = store.snapshot().sequence();
+    let revisions = store.snapshot().public_identity_input_revisions_v2()?;
+    check!(matches!(
+        revisions,
+        census_store::PublicIdentityInputRevisionsV2::Enabled(_)
+    ));
+    enroll_graph_admission(&store, &writer)?;
+    check!(eq; store.snapshot().sequence(), sequence);
+    check!(eq; store.snapshot().public_identity_input_revisions_v2()?, revisions);
+    check!(eq; writer.head(&store)?, head);
+    Ok(())
+}
+
+#[test]
+fn stale_graph_enrollment_refuses_then_retries_same_store() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let root = directory.path().join("graph-enrollment");
+    Store::create_public_identity_qualification_v3(&root)?;
+    let (store, writer) = open(&root)?;
+    let stale = store.snapshot();
+    let (school, _) = census_domain::model::CanonicalSchool::new(
+        census_domain::UsJurisdiction::Wisconsin,
+        "Retained enrollment school",
+        "retained enrollment school",
+        None,
+    );
+    store.append(census_store::Table::Schools, &school)?;
+    let after_source = store.snapshot().sequence();
+    check!(matches!(
+        writer.enroll_graph_admission_v1(&store, stale.revision()),
+        Err(StoreError::RevisionMoved { .. })
+    ));
+    check!(eq; store.snapshot().sequence(), after_source);
+    check!(eq; store.snapshot().public_identity_input_revisions_v2()?, census_store::PublicIdentityInputRevisionsV2::Disabled);
+    enroll_graph_admission(&store, &writer)?;
+    check!(matches!(
+        store.snapshot().public_identity_input_revisions_v2()?,
+        census_store::PublicIdentityInputRevisionsV2::Enabled(_)
+    ));
+    check!(eq; writer.head(&store)?.sequence, 0);
     Ok(())
 }

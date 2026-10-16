@@ -1,7 +1,10 @@
 use super::{CanonicalEvent, EventDisposition, ExportDataset, RecruitingCatalogV1, Sport};
 use crate::report::{ReportError, ReportResult};
 use census_domain::model::QueryProfileV1;
-use census_domain::profile_execution::validate_selected_qualification_profile_v1;
+use census_domain::profile_execution::{
+    validate_selected_qualification_profile_v1, validate_selected_qualification_profile_v2,
+    validate_selected_qualification_profile_v3,
+};
 
 #[derive(Clone, Copy)]
 pub(super) enum Selection<'a> {
@@ -24,13 +27,18 @@ impl<'a> Selection<'a> {
                 detail: "event selection profile differs from frozen authority".into(),
             });
         }
-        let qualified = validate_selected_qualification_profile_v1(profile).map_err(|source| {
-            ReportError::Invariant {
-                detail: format!("selected event publication contract: {source}"),
-            }
+        let checked = if dataset.uses_historical_identity_contract() {
+            validate_selected_qualification_profile_v1(profile).map(|_| ())
+        } else if dataset.uses_historical_participation_contract() {
+            validate_selected_qualification_profile_v2(profile).map(|_| ())
+        } else {
+            validate_selected_qualification_profile_v3(profile).map(|_| ())
+        };
+        checked.map_err(|source| ReportError::Invariant {
+            detail: format!("selected event publication contract: {source}"),
         })?;
         dataset.verified_participation()?;
-        Ok(Self::Selected(qualified.profile()))
+        Ok(Self::Selected(profile))
     }
 
     pub(super) fn classify(

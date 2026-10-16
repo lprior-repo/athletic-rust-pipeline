@@ -1,12 +1,12 @@
 use anyhow::{Context, Result};
 use census_domain::model::performance_comparison::SurfaceClass;
 use census_domain::model::{Gender, QueryProfileV1, Sport};
-use census_domain::profile_execution::validate_selected_qualification_profile_v1;
+use census_domain::profile_execution::validate_selected_qualification_profile_v3;
 use census_report::{export::ExportDataset, report::Scope, workbook};
 use std::path::Path;
 
 pub(super) fn options(profile: &QueryProfileV1, out: &Path) -> Result<workbook::Options> {
-    let checked = validate_selected_qualification_profile_v1(profile)?;
+    let checked = validate_selected_qualification_profile_v3(profile)?;
     let input = checked.profile().input();
     let [cohort] = input.graduation_years.as_slice() else {
         anyhow::bail!("unsupported qualification profile: exactly one graduation year required");

@@ -285,10 +285,74 @@ but before return remain unverified. Existing chunk observation returns an error
 without a resume handshake; the identity-commit marker belongs to another operation.
 Sequential private fence tests are not evidence for those public concurrent schedules.
 
+### Graph authority cutover draft — October 15, 20:56 UTC
+
+The isolated draft composes lifecycle7 qualification, graph-bound witnesses8–12,
+manualV3/withholdingV2 records and frozenV2 replay. These are source changes awaiting
+combined compilation, runtime regressions and independent review, not activation.
+A retained graph reference alone does not verify or authorize evidence. Current
+verification requires exact schema2/key1/lifecycle7, and reviewed Split/Revoke must
+match the complete canonical affected-key inventory in both live and frozen paths.
+
+Explicit graph enrollment retains partially completed enrollment for retry. Graph
+reservation3 owns graph bytes; preparation4 charges operation metadata once, with
+the shared admission header independently auditing reservations. Callers retain the
+append lock across final input/head fences; journal-only staging is excluded from
+input revisions. Manual inspection retains and charges the full graph for the
+explicit logical operation. Historical approval envelopes remain read-only, sharing
+member/case semantics with current graph scans. No resource limit is raised.
+
+Current profile references use eight lifecycle7 qualification-only descriptor
+successors (revision3) plus the unchanged strict participationv3 policy. Historical
+lifecycle6 references remain exact for archived replay only. Production enrollment,
+census completion and the five source-backed positive eligibility obligations above
+remain unqualified. Formatting is observed; source lint and runtime evidence for
+this complete draft are pending.
+
+The current writer-fixture migration uses genuine graph-enrolled stores and selected
+captures for bests, CSV and normalized readback. The bests fixture preserves its
+original two public IDs and attaches only the first athlete's retained roster
+membership before the original reviewed merge. Two premerge cases now explicitly
+prove read-only snapshot identity/affiliation behavior; they do not prove selected
+writer acceptance. Held/current artifact comparison uses genuine current output
+against the old expected identity, while independent field tampering remains a
+refusal oracle. These migrated tests and fresh V3 enrollment constructors are
+source-reviewed or under review only; all combined execution remains pending.
+
+Membership fixture migration explicitly enrolls both graph capabilities. Inspection
+may retain the caller's graph once; unrelated retained bytes must remain unchanged.
+Tamper fixtures re-encode canonical envelope field order so a refusal tests altered
+bindings rather than incidental JSON ordering. Historical witness4 remains rejected
+by its explicit historical decoder.
+
 
 ### Aggregate admission oracle correction (2026-10-15 21:46 UTC)
 
 Fjall 3.1.10 snapshot sequence is an engine version, not a logical-write counter. The 97 MiB fixture exceeds the default 64 MiB memtable (keyspace/options.rs:91); flush registration and a trivial level move can each advance the shared sequence (lsm-tree version/super_version.rs:113–143; compaction/worker.rs:225–237). This source-backed path explains the observed 10→12 with unchanged contents; no runtime trace establishes the exact interleaving. The aggregate test now compares exact ordered key/value hashes, counts and byte counts for all four keyspaces, admission header, store identity and application revisions before/after reads, complete graph planning and refusal. Engine sequence remains diagnostic. Successful GraphPlanBuilder::finish plus measured charge above 128 MiB and the exact typed Bytes-capacity error distinguish quota refusal from corrupt input or another bound. Limits and historical wire formats are unchanged; execution of this revised oracle remains pending.
+
+### Scale acceptance dependencies (2026-10-15 21:52 UTC)
+
+The source audit of 941ee0d9 leaves scalable-production acceptance open: current qualification admits at most 8,192 physical input rows before merging; permanent graph plus preparation reservation rows bound distinct source births to at most 2,048; the frozen 4,096-physical-row inventory bounds unique seals to at most 1,365 before accounting for shared objects. Whole-history ReplayLimits::SMALL and the separate 16 MiB history cap remain. Pages can be reused under position-only churn, so repeated capture does not inherently duplicate every graph byte. Raising limits or resetting admission namespaces is not an accepted repair. Passing the current bounded tests will establish neither national-scale readiness nor R3 completion. After that audit, dce74a67 adds typed resource-capacity reporting and revised logical-state refusal oracles; their execution remains pending independently of these unchanged limits.
+
+### Graph cutover import repair (2026-10-15 22:03 UTC)
+
+Exact dce74a67 passed formatting but failed full check and lint: the scoped dead-code cleanup removed a parent InventoryV2 import still used through a child glob in graph_read/scan.rs. Native and focused runtime suites did not run. The child now imports its production InventoryV2 dependency directly; the remaining99ce→dce import changes were inspected for analogous child dependencies. This is a new integration regression after99ce compiled, not a preexisting compiler failure. Successor execution remains pending.
+
+### Current graph runtime repair checkpoint (2026-10-15 22:38 UTC)
+
+Exact de3e1ee0 passed formatting, full check and lint. Runtime found two context oracle failures: frozen graph rows are canonically ordered by raw key, and the two withholding subjects omit empty identity attestations (27 exact claims, not 29). The repaired assertions retain complete physical references/bytes, duplicate refusal, original full-section ordinals and offline replay. A fabricated admission header must return exact corruption; the independently valid full ledger still requires typed reservation exhaustion. Five enrollment tests stalled because their test helper re-entered the append mutex through store_identity; identity is now read before the unchanged locked enrollment. These repairs are source-reviewed but not yet executed. The 31 legacy identity test failures remain a separate pending migration. The added R2 conflict/unknown publication regression retains all candidate audits and independently verifies zero selected output before and after source deletion; its runtime is pending. Strict R1 positive source-status/window and scalable R3 acceptance remain open.
+
+### Current identity fixture and generation preflight repair (2026-10-15 22:48 UTC)
+
+The current public-identity suite now uses V3 constructors and explicit historical-only fixtures. Semantic refusals independently verify the precisely allowed raw-graph/admission delta, unchanged accepted state and exact retry; preflight failures retain full no-write assertions. The existing evidence-counter exhaustion regression exposed a production ordering gap: shared graph preparation now checks the existing pure next_entities capacity under the append lock before raw capture, while exact receipt replay and final locked persistence checks remain unchanged. The bounded test source-image helper keeps its 2,048-row default and explicitly admits at most 10,000 only for the existing 8,193-row refusal fixture. These source-reviewed changes are unexecuted; 66 registered tests include six reused physical-oracle tests, not 66 distinct authority scenarios. Historical physical preservation remains independently blocked: writable Fjall recovery currently precedes lifecycle refusal, and no safe pre-open ownership handoff has yet been established.
+
+### Concurrent preparation and canonical remerge fixture (2026-10-15 23:17 UTC)
+
+Exact26b42af8 passed formatting, full all-target check and source lint (configured argument-count warnings and ten test dead-code warnings); public_identity_tests66/66, report transfer1/1, transfer-geography2/2 including retained venues, conflict/unknown publication1/1 and executable selected CLI10/10 passed. Its two remaining context failures were not rerun there. A genuine concurrent preparation race retained stale observed_at values after begin; manual and withholding paths now re-read and validate the persisted winner under the final append guard before rebuilding record/history/witness. Exact reservation digest validation remains strict. Two deterministic test-only crossed-timestamp schedules check original records/approvals and once-only charge, alongside the existing concurrent test. The superseded-remerge fixture now sorts request members while retaining the oldest canonical birth ID, preventing randomly hashed IDs from reaching the earlier noncanonical-request gate. Exact superseded refusal and full no-write/head checks remain. These successor repairs and helper extraction are source-reviewed and formatted, not runtime-qualified. Historical pre-open physical preservation and broader native/external replay gates remain open.
+
+### Graph runtime ordering and substitution oracles (2026-10-15 23:57 UTC)
+
+Exact40a98f9e passed formatting, full check and source lint, all four focused preparation-race/order tests, graph operations8/8, public identity66/66, frozen29/29, initialization6/6 and authority23/23. Ten test dead-code warnings and six configured argument-count warnings remained. Context65/66 and membership13/14 exposed two further oracle mismatches: resolved successors use public-ID ordering while introduced IDs use normalized partition positions; a valid substituted birth graph lacks the later membership review case and is rejected at the earlier availability check. The successor test now checks both ordering contracts independently without changing claims. The substitution test retains explicit graph verification and exact NotReviewed authority proof, and asserts the exact earlier ledger refusal plus restored state. These new test repairs require their own runtime rerun. Native and external historical probe results are not established by this checkpoint. Historical pre-open physical preservation, genuine source-backed R1 positive eligibility and scalable R3 acceptance remain open.
 
 ### Verified selected-publication and raw-retention checkpoint (2026-10-15 21:56 UTC)
 
@@ -297,3 +361,11 @@ Omarchy verified exact commit `3acc67275c5fb094e18fb36706a9e27ec67bc6b8`, tree `
 This is accumulated current-lifecycle6 selected publication, dated affiliation and bounded raw-retention work beyond merged PR72, not the separate lifecycle7 graph-authority cutover. Admission enrollment requires a fresh qualified head0 with no prior j2 objects or admission namespace. Existing lifecycle6 stores containing identities cannot transparently enroll; new operations requiring this capability refuse while historical reads and exact existing receipt replay remain supported. Existing-store adoption/migration is unresolved. The five positive source-backed eligibility obligations, independent scale/memory limits and R1/R2/R3 acceptance remain OPEN; no production upgrade or national-readiness claim follows from these bounded tests.
 
 Broader workspace runtime suites, the aggregate release gate and representative peak-memory workloads were NOT RUN on this checkpoint. Passing compilation and the focused suites above does not stand in for those gates.
+
+### Verified graph oracle repairs and historical producer (2026-10-16 00:38 UTC)
+
+Omarchy verified exact53e5cd8c/tree8f837d6d: formatting, full all-target/all-feature check and source lint passed; two focused repairs2/2, context66/66 and membership/withholding14/14 passed. Ten test dead-code warnings and configured argument-count warnings remain. Merge19001d29/tree392f5052 preserves every source, fixture, tool and configuration blob from53e; only the eight incoming foundation verification-ledger lines differ. The same-source test evidence is retained without claiming a new execution on the merge commit.
+
+The external strict-v3 graph producer ran against exact53e with scratch-only patch48f1fca6 and passed1/1. Its closed publication pins lifecycle7, participation policy3 and ReplayV1; source store/cache/staging are absent and the offline witness matches. Receipt SHA256 is9d573de6c0482ee9cec22c71b64d254332ce19cde64a7a8df4f71da4be2a0b0f, covering49 entries (44 files,341273 bytes,4 directories,1 symlink). An earlier invocation refused an already-created output directory; only the fresh run2 is acceptance evidence. Successor consumption of these unchanged bytes remains pending.
+
+The independent historical lifecycle6 clean refusal and artifact7/8 replay probes passed on40a. The orphan-version probe failed: writable recovery deleted fjall/keyspaces/0/v7 before lifecycle rejection. Historical physical preservation remains a production blocker; an isolated guarded-open dependency/copy experiment is source-reviewed only. No release, representative memory, national-scale or genuine source-backed R1 acceptance follows from these checkpoints.

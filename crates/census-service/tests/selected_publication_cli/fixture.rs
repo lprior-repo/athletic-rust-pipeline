@@ -5,7 +5,7 @@ use census_domain::model::{
     QueryProfileInputV1, QueryProfileV1, RegionalMembershipV1, SchoolYear, Sport,
 };
 use census_domain::profile_execution::{
-    selected_qualification_contract_ref_v1 as reference, ContractRoleV1 as Role,
+    selected_qualification_contract_ref_v3 as reference, ContractRoleV1 as Role,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -30,8 +30,9 @@ impl Fixture {
     pub async fn create() -> TestResult<Self> {
         let directory = tempfile::tempdir()?;
         let root = directory.path().join("store");
-        Store::create_public_identity_qualification_v2(&root)?;
-        let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+        Store::create_public_identity_qualification_v3(&root)?;
+        let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+        writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
         let performance = results::append(&store).await?;
         roster::append_for(&store, &performance.athlete)?;
         for athlete in store.snapshot().athletes()? {
@@ -73,7 +74,7 @@ impl Fixture {
 
     pub fn evidence_state(&self) -> TestResult<(String, String, u64, String)> {
         let (store, writer) =
-            Store::open_public_identity_qualification_v2(&self.root)?.into_parts();
+            Store::open_public_identity_qualification_v3(&self.root)?.into_parts();
         let snapshot = store.snapshot();
         let digest = snapshot.tables_digest(&[
             Table::Athletes,
@@ -95,7 +96,7 @@ impl Fixture {
     pub fn select_profile(&self, input: QueryProfileInputV1, name: &str) -> TestResult<PathBuf> {
         let profile = QueryProfileV1::new(input)?;
         let (store, _writer) =
-            Store::open_public_identity_qualification_v2(&self.root)?.into_parts();
+            Store::open_public_identity_qualification_v3(&self.root)?.into_parts();
         let path = self.directory.path().join(name);
         save_selection(&store, &profile, &path)?;
         Ok(path)

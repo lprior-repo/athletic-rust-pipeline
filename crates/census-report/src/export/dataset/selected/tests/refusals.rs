@@ -1,5 +1,5 @@
 use super::{ExportDataset, Fixture, Table, TestResult, Value};
-use crate::export::dataset::selected_proofs::SelectedProofsV1;
+use crate::export::dataset::selected_proofs::SelectedProofs;
 use census_domain::model::{ProfileSelectionV1, StoreIdentity};
 use sha2::{Digest, Sha256};
 
@@ -54,7 +54,7 @@ async fn all_independent_physical_roots_are_enforced_on_capture_and_replay() -> 
             .ok_or("physical root")?;
         check!(ne; original, "0".repeat(64));
         let fresh = super::temporary()?;
-        check!(SelectedProofsV1::capture(
+        check!(SelectedProofs::capture(
             &mut dataset,
             &fixture.store.snapshot(),
             &profile,

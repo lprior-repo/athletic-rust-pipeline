@@ -25,8 +25,8 @@ const TABLES: [Table; 5] = [
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct SelectedProofsV1 {
-    version: u32,
+pub(crate) struct SelectedProofs {
+    version: Version,
     affiliation: FrozenAffiliationDescriptor,
     affiliation_digest: String,
     participation_digest: String,
@@ -37,12 +37,44 @@ pub(crate) struct SelectedProofsV1 {
     objects_directory: Option<PathBuf>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "u32", into = "u32")]
+pub(in crate::export::dataset) enum Version {
+    HistoricalContextV1,
+    RetainedGraphV2,
+}
+
+impl TryFrom<u32> for Version {
+    type Error = &'static str;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(Self::HistoricalContextV1),
+            2 => Ok(Self::RetainedGraphV2),
+            _ => Err("unsupported selected proof envelope version"),
+        }
+    }
+}
+
+impl From<Version> for u32 {
+    fn from(value: Version) -> Self {
+        match value {
+            Version::HistoricalContextV1 => 1,
+            Version::RetainedGraphV2 => 2,
+        }
+    }
+}
+
 pub(crate) struct HydratedProofs {
     pub(crate) participation: PinnedParticipation,
     pub(crate) affiliations: PinnedCurrentAffiliations,
 }
 
-impl SelectedProofsV1 {
+impl SelectedProofs {
+    pub(in crate::export::dataset) fn version(&self) -> Version {
+        self.version
+    }
+
     pub(crate) fn capture(
         dataset: &mut ExportDataset,
         snapshot: &StoreSnapshot<'_>,
@@ -51,15 +83,9 @@ impl SelectedProofsV1 {
         directory: &Path,
     ) -> ReportResult<(Self, HydratedProofs)> {
         require_binding(dataset, profile, expected_fingerprints)?;
-        for table in TABLES {
-            if expected_fingerprints.get(table.file()) != Some(&snapshot.tables_digest(&[table])?) {
-                return Err(invalid(
-                    "selected proof authority differs from the pinned physical table",
-                ));
-            }
-        }
+        require_physical_roots(snapshot, expected_fingerprints)?;
         objects::require_empty(directory)?;
-        let bundle = snapshot.freeze_public_identity_v1()?;
+        let bundle = snapshot.freeze_public_identity_v2()?;
         dataset.prepare_selected_public_identities(bundle.replay()?)?;
         let public_identity = identity::Bundle::capture(directory, &bundle)?;
         let (affiliation, affiliations) =
@@ -88,7 +114,7 @@ impl SelectedProofsV1 {
         let participation_digest = participation.install_replay(directory)?;
         let objects = objects::inventory(directory)?;
         let proofs = Self {
-            version: 1,
+            version: Version::RetainedGraphV2,
             affiliation,
             affiliation_digest,
             participation_digest,
@@ -116,7 +142,13 @@ impl SelectedProofsV1 {
         require_binding(dataset, profile, expected_fingerprints)?;
         self.validate()?;
         objects::verify(directory, &self.objects)?;
-        dataset.prepare_selected_public_identities(self.public_identity.replay(directory)?)?;
+        match self.version {
+            Version::HistoricalContextV1 => dataset.replay_historical_public_identities(
+                self.public_identity.replay_historical(directory)?,
+            )?,
+            Version::RetainedGraphV2 => dataset
+                .prepare_selected_public_identities(self.public_identity.replay(directory)?)?,
+        }
         let affiliations = current_affiliation::replay_frozen(
             dataset,
             directory,
@@ -147,6 +179,16 @@ impl SelectedProofsV1 {
         })
     }
 
+    pub(crate) fn require_current(&self) -> ReportResult<()> {
+        self.validate()?;
+        if self.version != Version::RetainedGraphV2 {
+            return Err(invalid(
+                "historical selected identity proofs cannot authorize current publication",
+            ));
+        }
+        Ok(())
+    }
+
     pub(crate) fn verify_objects(&self, directory: &Path) -> ReportResult<()> {
         self.validate()?;
         objects::verify(directory, &self.objects)
@@ -169,8 +211,7 @@ impl SelectedProofsV1 {
     }
 
     fn validate(&self) -> ReportResult<()> {
-        if self.version != 1
-            || !digest(&self.affiliation_digest)
+        if !digest(&self.affiliation_digest)
             || !digest(&self.participation_digest)
             || self.affiliation.digest()? != self.affiliation_digest
         {
@@ -216,6 +257,20 @@ fn require_binding(
         return Err(invalid(
             "selected proofs require the bound profile and five independent table roots",
         ));
+    }
+    Ok(())
+}
+
+fn require_physical_roots(
+    snapshot: &StoreSnapshot<'_>,
+    expected: &BTreeMap<String, String>,
+) -> ReportResult<()> {
+    for table in TABLES {
+        if expected.get(table.file()) != Some(&snapshot.tables_digest(&[table])?) {
+            return Err(invalid(
+                "selected proof authority differs from the pinned physical table",
+            ));
+        }
     }
     Ok(())
 }

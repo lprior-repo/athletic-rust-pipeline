@@ -54,7 +54,7 @@ impl ReviewedIdentityRequestV1 {
             Self::Revoke { .. } => ReviewedKind::Revoke,
         }
     }
-    pub(super) fn authorized(
+    pub(in crate::public_identity) fn authorized(
         &self,
         accepted: &AcceptedAthleteIdentity,
     ) -> StoreResult<HistoryRequest> {
@@ -138,7 +138,7 @@ impl ReviewedIdentityRequestV1 {
     }
 }
 
-pub(super) fn digest(
+pub(in crate::public_identity) fn digest(
     identity: &StoreIdentity,
     operation: &str,
     request: &ReviewedIdentityRequestV1,

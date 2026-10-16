@@ -108,12 +108,12 @@ async fn recorded_source_journal_replays_through_the_same_owned_and_raw_readers(
     use sha2::{Digest, Sha256};
     let fixture = Fixture::prepare(Some("High School")).await?;
     let token = fixture.assess()?;
-    let bytes = token.replay.journal.encode()?;
+    let bytes = token.replay.retained().journal.encode()?;
     let digest = format!("{:x}", Sha256::digest(&bytes));
     let frozen = FrozenRetainedJournal::from_descriptor(
         &digest,
-        &token.replay.store_identity,
-        token.replay.snapshot_sequence,
+        &token.replay.retained().store_identity,
+        token.replay.retained().snapshot_sequence,
         &bytes,
     )?;
     let evidence: Vec<_> = fixture
@@ -140,10 +140,13 @@ async fn recorded_source_journal_replays_through_the_same_owned_and_raw_readers(
         source.division(),
         census_crawl::milesplit::RetainedResultDivision::HighSchool
     );
-    assert_eq!(source.snapshot_sequence(), token.replay.snapshot_sequence);
+    assert_eq!(
+        source.snapshot_sequence(),
+        token.replay.retained().snapshot_sequence
+    );
     assert_eq!(
         source.store_identity().as_str(),
-        token.replay.store_identity
+        token.replay.retained().store_identity
     );
     Ok(())
 }
@@ -154,12 +157,12 @@ async fn immutable_replay_objects_round_trip_and_refuse_foreign_descriptor() -> 
     let token = fixture.assess()?;
     let directory = tempfile::tempdir()?;
     let descriptor = token.replay.install(directory.path())?;
-    let replay = ParticipationReplayV1::load(directory.path(), &descriptor)?;
+    let replay = ParticipationReplay::load(directory.path(), &descriptor)?;
     assert_eq!(
         serde_json::to_value(&replay)?,
         serde_json::to_value(&token.replay)?
     );
-    assert!(ParticipationReplayV1::load(directory.path(), &"f".repeat(64)).is_err());
+    assert!(ParticipationReplay::load(directory.path(), &"f".repeat(64)).is_err());
     Ok(())
 }
 

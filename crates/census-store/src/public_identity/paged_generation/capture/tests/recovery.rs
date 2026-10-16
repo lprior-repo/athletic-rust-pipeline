@@ -32,7 +32,7 @@ fn partial_capture_reopens_and_resumes_original_reserved_content() -> TestResult
     drop(writer);
     drop(store);
     let (store, writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let outcome = writer.capture_raw_generation_v2(&store, &id)?;
     assert!(matches!(
@@ -71,7 +71,7 @@ fn complete_capture_reopens_without_original_source_rows() -> TestResult {
     drop(writer);
     drop(store);
     let (store, writer) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     assert_eq!(retained_rows(&store, &retained)?, 513);
     let replay = writer.capture_raw_generation_v2(&store, &id)?;

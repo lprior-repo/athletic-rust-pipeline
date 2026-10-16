@@ -66,7 +66,7 @@ fn enrollment_refuses_stale_and_foreign_revisions_without_writes() -> TestResult
 
 #[test]
 fn qualification_requires_its_current_writer_and_keeps_generic_open_refused() -> TestResult {
-    let (directory, store, writer) = fixture()?;
+    let (directory, store, writer) = crate::public_identity_tests::support::unenrolled_fixture()?;
     let before = retained_state(&store)?;
     check!(eq; store.snapshot().public_identity_input_revisions_v2()?, PublicIdentityInputRevisionsV2::Disabled);
     check!(store
@@ -81,15 +81,15 @@ fn qualification_requires_its_current_writer_and_keeps_generic_open_refused() ->
     let root = directory.path().join("identity");
     check!(Store::open_existing(&root).is_err());
     check!(Store::migrate(&root).is_err());
-    let (store, _) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+    let (store, _) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     check!(eq; enabled(&store)?, token);
     Ok(())
 }
 
 #[test]
 fn qualification_enrollment_refuses_foreign_and_historical_writers() -> TestResult {
-    let (_directory, store, writer) = fixture()?;
-    let (_other_directory, other, _) = fixture()?;
+    let (_directory, store, writer) = crate::public_identity_tests::support::unenrolled_fixture()?;
+    let (_other_directory, other, _) = crate::public_identity_tests::support::unenrolled_fixture()?;
     let before = retained_state(&other)?;
     check!(writer
         .enroll_public_identity_input_revisions_v2(&other, other.snapshot().revision())
@@ -97,13 +97,9 @@ fn qualification_enrollment_refuses_foreign_and_historical_writers() -> TestResu
     check!(eq; retained_state(&other)?, before);
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("historical");
-    Store::create_public_identity_qualification_v1(&root)?;
-    let (historical, writer) = Store::open_public_identity_qualification_v1(&root)?.into_parts();
-    let before = retained_state(&historical)?;
-    check!(writer
-        .enroll_public_identity_input_revisions_v2(&historical, historical.snapshot().revision())
-        .is_err());
-    check!(eq; retained_state(&historical)?, before);
+    check!(Store::create_public_identity_qualification_v1(&root).is_err());
+    check!(Store::open_public_identity_qualification_v1(&root).is_err());
+    check!(!root.exists());
     check!(eq; store.snapshot().public_identity_input_revisions_v2()?, PublicIdentityInputRevisionsV2::Disabled);
     Ok(())
 }

@@ -1,6 +1,6 @@
 use super::*;
-use crate::export::current_school::fixture::capture;
-use crate::export::public_identity::tests::fixture::{merge, source_births, Fixture};
+use crate::export::public_identity::tests::fixture::Fixture;
+use crate::export::selected_test_fixture::consumer::{capture, merge, source_births};
 use census_domain::model::{CanonicalAthlete, EventSemantics};
 use census_store::{Store, StoreError};
 
@@ -32,7 +32,7 @@ pub(crate) fn row(athlete: &CanonicalAthlete) -> SharedSelection {
 fn selected_bests_publish_public_join_keys_and_keep_original_selection_and_source_identity(
 ) -> TestResult {
     let fixture = source_births()?;
-    let (view, _) = capture(&fixture.store)?;
+    let (view, _proofs) = capture(&fixture.store)?;
     let [first, _, _] = &fixture.athletes;
     let [birth, _] = &fixture.births;
     let rows = [row(first)];
@@ -68,24 +68,32 @@ fn selected_bests_publish_public_join_keys_and_keep_original_selection_and_sourc
 }
 
 #[test]
-fn selected_bests_preserve_old_snapshot_and_replay_real_merge_identically_after_reopen(
+fn selected_bests_preserve_premerge_identity_snapshot_and_replay_real_merge_after_reopen(
 ) -> TestResult {
     let fixture = source_births()?;
-    let (old_view, _) = capture(&fixture.store)?;
+    let (old_view, _old_proofs) = capture(&fixture.store)?;
     let [_, second, _] = &fixture.athletes;
     let rows = [row(second)];
-    merge(&fixture)?;
-    let (merged_view, _) = capture(&fixture.store)?;
-    let (old_json, _) = super::super::selected::write(
-        &fixture.directory.path().join("old"),
-        &rows,
-        "co2027",
-        EventSemantics::ResultGroups21,
-        &old_view,
+    let old_head = old_view.verified_public_identities()?.head().clone();
+    let old = serde_json::to_value(
+        crate::export::public_identity::output::AcceptedIdentityFields::for_candidate(
+            old_view.verified_public_identities()?,
+            second.id.as_str(),
+        )?,
     )?;
-    let old: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(old_json)?)?;
     let [first_birth, second_birth] = &fixture.births;
     check!(eq; old.get("athlete_id"), Some(&serde_json::json!(second_birth.public_id())));
+    check!(eq; old_view.verified_current_affiliations()?.resolution(&second.id), &crate::export::CurrentAffiliationResolution::Unknown);
+    merge(&fixture)?;
+    let (merged_view, _merged_proofs) = capture(&fixture.store)?;
+    let held = serde_json::to_value(
+        crate::export::public_identity::output::AcceptedIdentityFields::for_candidate(
+            old_view.verified_public_identities()?,
+            second.id.as_str(),
+        )?,
+    )?;
+    check!(eq; held, old);
+    check!(eq; old_view.verified_public_identities()?.head(), &old_head);
     let (merged_json, merged_csv) = super::super::selected::write(
         &fixture.directory.path().join("merged"),
         &rows,
@@ -97,7 +105,7 @@ fn selected_bests_preserve_old_snapshot_and_replay_real_merge_identically_after_
     let csv_bytes = std::fs::read(merged_csv)?;
     let merged: serde_json::Value = serde_json::from_slice(&json_bytes)?;
     check!(eq; merged.get("athlete_id"), Some(&serde_json::json!(first_birth.public_id())));
-    check!(eq; merged.get("selection"), old.get("selection"));
+    check!(eq; merged.get("selection"), Some(&serde_json::to_value(rows.first().ok_or("original selection")?)?));
     let Fixture {
         directory,
         store,
@@ -107,9 +115,9 @@ fn selected_bests_preserve_old_snapshot_and_replay_real_merge_identically_after_
     drop(writer);
     drop(store);
     let (store, _) =
-        Store::open_public_identity_qualification_v2(directory.path().join("identity"))?
+        Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
-    let (reopened, _) = capture(&store)?;
+    let (reopened, _reopened_proofs) = capture(&store)?;
     let (json, csv) = super::super::selected::write(
         &directory.path().join("reopened"),
         &rows,
@@ -125,7 +133,7 @@ fn selected_bests_preserve_old_snapshot_and_replay_real_merge_identically_after_
 #[test]
 fn selected_bests_refuse_unknown_before_creating_or_replacing_any_artifact() -> TestResult {
     let fixture = source_births()?;
-    let (view, _) = capture(&fixture.store)?;
+    let (view, _proofs) = capture(&fixture.store)?;
     let [first, _, unknown] = &fixture.athletes;
     let rows = [row(first), row(unknown)];
     let missing = fixture.directory.path().join("uncreated");
@@ -156,7 +164,7 @@ fn selected_bests_refuse_unknown_before_creating_or_replacing_any_artifact() -> 
 
 #[test]
 fn historical_bests_keep_original_schema_and_candidate_id_bytes() -> TestResult {
-    let fixture = source_births()?;
+    let fixture = crate::export::public_identity::tests::fixture::source_births()?;
     let [first, _, _] = &fixture.athletes;
     let rows = [row(first)];
     let expected_json = format!("{}\n", serde_json::to_string(rows.first().ok_or("row")?)?);
@@ -179,7 +187,7 @@ fn historical_bests_keep_original_schema_and_candidate_id_bytes() -> TestResult 
 #[test]
 fn empty_selected_bests_keep_explicit_selected_csv_schema_and_empty_jsonl() -> TestResult {
     let fixture = source_births()?;
-    let (view, _) = capture(&fixture.store)?;
+    let (view, _proofs) = capture(&fixture.store)?;
     let (jsonl, csv) = super::super::selected::write(
         &fixture.directory.path().join("empty"),
         &[],

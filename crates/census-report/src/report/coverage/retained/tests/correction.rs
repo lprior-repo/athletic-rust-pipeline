@@ -8,8 +8,6 @@ use census_domain::public_identity_history::local_adjudication::{
 use census_domain::public_identity_history::{BindingPartition, HistoryRequest};
 use census_domain::UsJurisdiction;
 use census_store::PreparedLocalAdjudicationV1;
-use serde::Serialize;
-use sha2::{Digest, Sha256};
 
 #[test]
 fn local_split_reconciles_two_accepted_people_and_preserves_the_merged_snapshot() -> TestResult {
@@ -66,9 +64,11 @@ pub(crate) fn split(fixture: &Fixture, case_id: &str) -> TestResult {
 fn request(fixture: &Fixture, case_id: &str) -> TestResult<LocalIdentitySplitV1> {
     let canonical = fixture.births.first().ok_or("first birth")?.public_id();
     let head = fixture.writer.head(&fixture.store)?;
-    let inventory = fixture
-        .writer
-        .inspect_local_adjudication(&fixture.store, canonical)?;
+    let inventory = fixture.writer.inspect_local_adjudication(
+        &fixture.store,
+        "coverage-committed-local-split",
+        canonical,
+    )?;
     let dispositions = inventory
         .claims()
         .iter()
@@ -120,20 +120,5 @@ fn request(fixture: &Fixture, case_id: &str) -> TestResult<LocalIdentitySplitV1>
 }
 
 fn approval(prepared: &PreparedLocalAdjudicationV1<'_>) -> TestResult<(Vec<u8>, String)> {
-    #[derive(Serialize)]
-    struct Envelope<'a, T: Serialize> {
-        schema: &'static str,
-        actor: &'static str,
-        prepared: &'a T,
-    }
-    let bytes = serde_json::to_vec(&Envelope {
-        schema: "local-identity-adjudication-approval/v1",
-        actor: "local_operator",
-        prepared: prepared.record(),
-    })?;
-    let mut digest = Sha256::new();
-    digest.update(b"local-identity-adjudication-approval/v1");
-    digest.update([0]);
-    digest.update(&bytes);
-    Ok((bytes, format!("{:x}", digest.finalize())))
+    Ok((prepared.approval_bytes()?, prepared.approval_digest()?))
 }

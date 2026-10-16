@@ -1,96 +1,74 @@
 use super::*;
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::io::Cursor;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-fn prepared() -> Value {
-    json!({
-        "operation": "split", "case_id": "synthetic-case", "revision": 8,
-        "expected": {"store": "synthetic-store", "head": "head-7", "context_digest": "context-7"},
-        "supersedes": [{"decision": "merge-6", "digest": "merge-digest"}],
-        "members": [{"candidate": "a", "digest": "a-evidence"}, {"candidate": "b", "digest": "b-evidence"}],
-        "citations": [{"capture": "capture-1", "interpretation": "parser-2", "locator": "row-3", "claim_digest": "claim-4"}],
-        "conflict_dispositions": [{"claim": "old-link", "resolution": "rejected_for_identity", "citation": 0}],
-        "partitions": [["a"], ["b"]], "unresolved_records": ["result-uncertain"],
-        "rationale": "Synthetic contradictory identity claim resolved using cited retained context",
-        "policy": "local-reviewed-identity/v1"
-    })
+fn prepared() -> Result<(Vec<u8>, String), serde_json::Error> {
+    let bytes = serde_json::to_vec(&json!({
+        "schema": "local-identity-adjudication-approval/v2",
+        "actor": "local_operator",
+        "prepared": {"version": 3, "operation": "split", "rationale": "Exact retained claims"},
+        "graph": {"version": 1, "capture": "exact capture", "seal": "exact seal"}
+    }))?;
+    let digest = format!("{:x}", Sha256::digest(&bytes));
+    Ok((bytes, digest))
 }
 
 #[test]
-fn exact_confirmation_freezes_the_complete_record_and_local_operator_provenance() -> TestResult {
-    let prepared = prepared();
-    let encoded = encode(&prepared)?;
-    let digest = approval_digest(&encoded);
+fn exact_confirmation_preserves_store_encoded_record_and_full_graph() -> TestResult {
+    let (bytes, digest) = prepared()?;
     let mut input = Cursor::new(format!("approve {digest}\n"));
     let mut output = Vec::new();
-    let approved = confirm(&prepared, &mut input, &mut output)?;
+    let approved = confirm(bytes.clone(), digest.clone(), &mut input, &mut output)?;
     let (actual, actual_digest) = approved.into_approved_record();
-    assert_eq!(actual, encoded);
-    assert_eq!(actual_digest, digest);
+    check!(eq; actual, bytes);
+    check!(eq; actual_digest, digest);
     let record: Value = serde_json::from_slice(&actual)?;
-    assert_eq!(record.get("actor"), Some(&json!("local_operator")));
-    assert_eq!(record.get("prepared"), Some(&prepared));
-    assert!(String::from_utf8(output)?.contains(&format!("approve {digest}")));
+    check!(eq; record.get("schema"), Some(&json!("local-identity-adjudication-approval/v2")));
+    check!(eq; record.get("actor"), Some(&json!("local_operator")));
+    check!(eq; record.pointer("/graph/seal"), Some(&json!("exact seal")));
+    check!(String::from_utf8(output)?.contains(&format!("approve {digest}")));
     Ok(())
 }
 
 #[test]
-fn a_changed_operation_state_citation_disposition_or_result_needs_new_confirmation() -> TestResult {
-    let original = prepared();
-    let digest = approval_digest(&encode(&original)?);
-    for field in [
-        "operation",
-        "case_id",
-        "revision",
-        "expected",
-        "supersedes",
-        "members",
-        "citations",
-        "conflict_dispositions",
-        "partitions",
-        "unresolved_records",
-        "rationale",
-        "policy",
-    ] {
-        let mut changed = original.clone();
-        let object = changed.as_object_mut().ok_or("fixture is not an object")?;
-        object.insert(field.to_owned(), json!("changed"));
-        let mut input = Cursor::new(format!("approve {digest}\n"));
-        let result = confirm(&changed, &mut input, &mut Vec::new());
-        assert!(
-            matches!(result, Err(ApprovalError::ExactConfirmationRequired)),
-            "{field}"
-        );
-    }
+fn changed_store_approval_digest_requires_new_confirmation() -> TestResult {
+    let (bytes, digest) = prepared()?;
+    let mut input = Cursor::new(format!("approve {digest}\n"));
+    check!(matches!(
+        confirm(bytes, "a".repeat(64), &mut input, &mut Vec::new()),
+        Err(ApprovalError::ExactConfirmationRequired)
+    ));
     Ok(())
 }
 
 #[test]
-fn piped_input_or_redirected_output_cannot_approve() {
+fn piped_input_or_redirected_output_cannot_approve() -> TestResult {
     for (input, output) in [(false, false), (false, true), (true, false)] {
-        assert!(matches!(
+        check!(matches!(
             require_terminal(input, output),
             Err(ApprovalError::InteractiveTerminalRequired)
         ));
     }
-    assert!(require_terminal(true, true).is_ok());
+    require_terminal(true, true)?;
+    Ok(())
 }
 
 #[test]
-fn generic_consent_partial_confirmation_and_unterminated_input_are_rejected() -> TestResult {
-    let digest = approval_digest(&encode(&prepared())?);
+fn generic_partial_and_unterminated_confirmations_are_rejected() -> TestResult {
+    let (_, digest) = prepared()?;
     for response in [
         String::new(),
-        "yes\n".to_owned(),
-        "approve\n".to_owned(),
+        "yes\n".into(),
+        "approve\n".into(),
         format!("approve {digest}"),
         format!(" approve {digest}\n"),
         format!("approve {digest} \n"),
         format!("approve {digest}suffix\n"),
     ] {
-        assert!(matches!(
+        check!(matches!(
             verify_confirmation(&digest, response.as_bytes()),
             Err(ApprovalError::ExactConfirmationRequired)
         ));
@@ -100,25 +78,47 @@ fn generic_consent_partial_confirmation_and_unterminated_input_are_rejected() ->
 }
 
 #[test]
-fn oversized_prepared_record_is_refused_before_prompting() -> TestResult {
-    let mut input = Cursor::new(b"yes\n");
-    let mut output = Vec::new();
-    let result = confirm(&"x".repeat(MAX_PREPARED_BYTES), &mut input, &mut output);
-    assert!(matches!(result, Err(ApprovalError::PreparedBudgetExceeded)));
-    assert!(output.is_empty());
-    assert_eq!(input.position(), 0);
+fn encoded_approval_budget_is_exact_and_refuses_before_prompting() -> TestResult {
+    let digest = "a".repeat(64);
+    let mut input = Cursor::new(format!("approve {digest}\n"));
+    let approved = confirm(
+        vec![b'x'; MAX_PREPARED_BYTES],
+        digest.clone(),
+        &mut input,
+        &mut Vec::new(),
+    )?;
+    check!(eq; approved.into_approved_record().0.len(), MAX_PREPARED_BYTES);
+    for bytes in [Vec::new(), vec![b'x'; MAX_PREPARED_BYTES + 1]] {
+        let mut input = Cursor::new(b"yes\n");
+        let mut output = Vec::new();
+        check!(matches!(
+            confirm(bytes, digest.clone(), &mut input, &mut output),
+            Err(ApprovalError::PreparedBudgetExceeded)
+        ));
+        check!(output.is_empty());
+        check!(eq; input.position(), 0);
+    }
     Ok(())
 }
 
 #[test]
-fn exact_encoded_budget_is_accepted_and_one_more_byte_is_refused() -> TestResult {
-    let overhead = encode(&"")?.len();
-    let payload = "x".repeat(MAX_PREPARED_BYTES.checked_sub(overhead).ok_or("budget")?);
-    assert_eq!(encode(&payload)?.len(), MAX_PREPARED_BYTES);
-    assert!(matches!(
-        encode(&format!("{payload}x")),
-        Err(ApprovalError::PreparedBudgetExceeded)
-    ));
+fn malformed_digest_refuses_before_prompting() -> TestResult {
+    for digest in [
+        String::new(),
+        "a".repeat(63),
+        "a".repeat(65),
+        "A".repeat(64),
+        "g".repeat(64),
+    ] {
+        let mut input = Cursor::new(b"yes\n");
+        let mut output = Vec::new();
+        check!(matches!(
+            confirm(b"record".to_vec(), digest, &mut input, &mut output),
+            Err(ApprovalError::InvalidDigest)
+        ));
+        check!(output.is_empty());
+        check!(eq; input.position(), 0);
+    }
     Ok(())
 }
 
@@ -133,22 +133,26 @@ impl Write for RefusedOutput {
 }
 
 #[test]
-fn failed_prompt_never_consumes_confirmation() {
+fn failed_prompt_never_consumes_confirmation() -> TestResult {
+    let (bytes, digest) = prepared()?;
     let mut input = Cursor::new(b"approve whatever\n");
-    let result = confirm(&prepared(), &mut input, &mut RefusedOutput);
-    assert!(matches!(result, Err(ApprovalError::Io(_))));
-    assert_eq!(input.position(), 0);
+    check!(matches!(
+        confirm(bytes, digest, &mut input, &mut RefusedOutput),
+        Err(ApprovalError::Io(_))
+    ));
+    check!(eq; input.position(), 0);
+    Ok(())
 }
 
 #[test]
-fn overlong_confirmation_stops_reading_at_the_fixed_bound() -> TestResult {
+fn overlong_confirmation_stops_at_fixed_bound() -> TestResult {
+    let (bytes, digest) = prepared()?;
     let mut input = Cursor::new(vec![b'x'; 4096]);
-    let result = confirm(&prepared(), &mut input, &mut Vec::new());
-    assert!(matches!(
-        result,
+    check!(matches!(
+        confirm(bytes, digest, &mut input, &mut Vec::new()),
         Err(ApprovalError::ExactConfirmationRequired)
     ));
-    assert_eq!(input.position(), MAX_CONFIRMATION_BYTES);
+    check!(eq; input.position(), MAX_CONFIRMATION_BYTES);
     Ok(())
 }
 
@@ -163,23 +167,13 @@ impl Write for FailedFlush {
 }
 
 #[test]
-fn a_prompt_that_cannot_be_flushed_does_not_consume_confirmation() {
+fn failed_flush_never_consumes_confirmation() -> TestResult {
+    let (bytes, digest) = prepared()?;
     let mut input = Cursor::new(b"approve whatever\n");
-    let result = confirm(&prepared(), &mut input, &mut FailedFlush(Vec::new()));
-    assert!(matches!(result, Err(ApprovalError::Io(_))));
-    assert_eq!(input.position(), 0);
-}
-
-#[test]
-fn membership_approval_is_separately_bound_to_its_complete_record(
-) -> Result<(), Box<dyn std::error::Error>> {
-    let record = serde_json::json!({"attachment": "retained", "withheld": ["membership:b"]});
-    let old = super::encode(&record)?;
-    let new = super::encode_for("local-source-membership-withholding-approval/v1", &record)?;
-    assert_ne!(old, new);
-    assert_ne!(
-        super::approval_digest(&new),
-        super::approval_digest_for("local-source-membership-withholding-approval/v1", &new)
-    );
+    check!(matches!(
+        confirm(bytes, digest, &mut input, &mut FailedFlush(Vec::new())),
+        Err(ApprovalError::Io(_))
+    ));
+    check!(eq; input.position(), 0);
     Ok(())
 }
