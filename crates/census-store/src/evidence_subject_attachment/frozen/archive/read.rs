@@ -55,7 +55,7 @@ pub(in super::super) fn read<'a>(
         &header.inventory,
     )?;
     let mut state = State::new(grant);
-    let prefixes = super::array::read(header.prefixes, &mut state, State::prefix, prefix)?;
+    let prefixes = super::array::read(header.prefixes, &mut state, |state| state.prefix(), prefix)?;
     let archive = Archive {
         schema: header.schema,
         store: header.store,
@@ -73,7 +73,7 @@ fn prefix<'a>(raw: &'a RawValue, state: &mut State<'_>) -> StoreResult<Prefix<'a
     let group: Group<'_> = parse(raw.get())?;
     validate::root(group.kind, group.root.as_ref())?;
     state.receipt = group.kind == Kind::Receipts;
-    let rows = super::array::read(group.rows, state, State::admit_row, row)?;
+    let rows = super::array::read(group.rows, state, |state| state.admit_row(), row)?;
     Ok(Prefix {
         kind: group.kind,
         root: group.root,
