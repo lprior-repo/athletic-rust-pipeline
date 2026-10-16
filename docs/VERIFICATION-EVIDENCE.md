@@ -1845,3 +1845,25 @@ full-database migration and national resource/recovery acceptance remain open.
 No live census or production activation follows. The 16 previously OS-denied
 report crash/fence controls were not retried; no new package-wide or historical
 strict-v3 consumer result is claimed for this tree.
+
+### Current-main bounded attachment reconciliation (2026-10-16 19:31 UTC)
+
+The native terminal callback reports exact
+`3c3432c0d81423a30b8f3fcd4254120ee2b6aaa2`, tree
+`6fd3053caf92f50f6042e177a88c23ebacb46225`, passed formatting, all-target
+check and source lint, plus: accepted provider 2/2, source revision races 3/3,
+public identity history 137/137 (including six new order controls), graph
+operations 4/4, roster observations 4/4, report missing-fact controls 2/2,
+workflow 46/46, Store attachment 114/114, domain attachment 51/51 and recorded
+intake excluding genuine attachment 18/18. Scopes overlap. Ten test-build
+dead-code warnings and forced argument-count warnings remain. Logs are retained
+in `verification-logs-main-reconciliation-20261016`; checkout ended clean.
+
+The normal merge preserves all incoming `8b15baf9` code and its full evidence
+ledger, plus the exact cb31 source and its appendix. This combined run verifies
+the affected source-bound replay, history-order, V4 unresolved and attachment
+surfaces. The complete genuine A-to-B selector was deliberately excluded:
+cb31's B apply refusal at 8193/8192 remains an open failing acceptance gate.
+No package-wide, denied crash/fence, historical consumer, live census or complete
+recruiting-spec acceptance is inferred. These are parent-reported native results;
+cloud review checks source equivalence and preservation, not independent runtime.
