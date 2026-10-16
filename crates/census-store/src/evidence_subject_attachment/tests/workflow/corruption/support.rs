@@ -76,7 +76,7 @@ pub(super) fn replace_entry_preserving_record(
             .ok_or("altered input roles absent")?
             .clone(),
     )?;
-    let raw = census_domain::model::serialized_bytes(&envelope)?;
+    let raw = serde_json::to_vec(&envelope)?;
     check!(eq; serde_json::from_slice::<Value>(&raw)?, *altered);
     replace_typed_entry(store, RECORD_KEY, &envelope, &original_record_raw)
 }
@@ -87,7 +87,7 @@ pub(super) fn replace_typed_entry(
     envelope: &CorruptedEnvelope,
     original_record_raw: &str,
 ) -> TestResult {
-    let raw = census_domain::model::serialized_bytes(envelope)?;
+    let raw = serde_json::to_vec(envelope)?;
     let retained: CorruptedEnvelope = serde_json::from_slice(&raw)?;
     check!(eq; retained.payload.record.get(), original_record_raw);
     check!(raw.len() <= crate::MAX_JOURNAL_VALUE_BYTES);
