@@ -4,11 +4,7 @@ use super::{domain, model};
 use crate::public_identity_tests::support::TestResult;
 
 pub(super) fn load(records: &[&Record], meter: &mut Meter) -> TestResult {
-    meter.charge("attachment namespace setup", 2)?;
-    for _ in records {
-        meter.charge("attachment physical inline row", 4)?;
-        meter.charge("attachment logical root callback", 1)?;
-    }
+    physical(records, meter)?;
     let rows = records.len();
     let legacy = rows
         .checked_add(1)
@@ -26,6 +22,41 @@ pub(super) fn load(records: &[&Record], meter: &mut Meter) -> TestResult {
             meter,
         )?;
     }
+    receipts(rows, meter)?;
+    domain::inventory(rows, meter)?;
+    validation(records, meter)
+}
+
+pub(super) fn refresh(records: &[&Record], meter: &mut Meter) -> TestResult {
+    physical(records, meter)?;
+    meter.charge("retained physical fingerprint equality", 1)?;
+    meter.charge("retained positional lengths", 1)?;
+    for (index, record) in records.iter().enumerate() {
+        meter.charge("retained record traversal", 1)?;
+        model::closure(
+            records.get(..index).ok_or("refresh prefix absent")?,
+            record,
+            meter,
+        )?;
+    }
+    receipts(records.len(), meter)?;
+    meter.charge("retained receipt lengths", 1)?;
+    meter.singles("retained exact receipt equality", records.len())?;
+    domain::inventory(records.len(), meter)?;
+    meter.charge("retained inventory equality", 1)?;
+    validation(records, meter)
+}
+
+fn physical(records: &[&Record], meter: &mut Meter) -> TestResult {
+    meter.charge("attachment namespace setup", 2)?;
+    for _ in records {
+        meter.charge("attachment physical inline row", 4)?;
+        meter.charge("attachment logical root callback", 1)?;
+    }
+    Ok(())
+}
+
+fn receipts(rows: usize, meter: &mut Meter) -> TestResult {
     meter.singles("receipt slots", rows)?;
     meter.charge("receipt namespace setup", 2)?;
     for index in 0..rows {
@@ -35,8 +66,10 @@ pub(super) fn load(records: &[&Record], meter: &mut Meter) -> TestResult {
             index.checked_add(1).ok_or("receipt count overflow")?,
         )?;
     }
-    meter.singles("receipt completion", rows)?;
-    domain::inventory(rows, meter)?;
+    meter.singles("receipt completion", rows)
+}
+
+fn validation(records: &[&Record], meter: &mut Meter) -> TestResult {
     domain::projection(records, meter)?;
     for record in records {
         fences(records, record, meter)?;

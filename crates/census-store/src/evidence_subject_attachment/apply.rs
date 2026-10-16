@@ -48,46 +48,43 @@ fn apply(
     if identity != prepared.record.command.store {
         return Err(Error::InputMoved.into());
     }
-    let ledger = Ledger::load(&view, &identity, &mut prepared.grant)?;
-    if let Some(index) = ledger.find_operation(
-        prepared.record.command.operation.as_str(),
+    match std::mem::replace(&mut prepared.state, PreparedState::Replay) {
+        PreparedState::New {
+            inspection,
+            introduced,
+        } => apply_new(guard, &view, &identity, prepared, inspection, introduced),
+        PreparedState::Replay => replay_current(&view, &identity, prepared, false),
+    }
+}
+
+fn apply_new<'s>(
+    guard: AttachmentCommitGuard<'s>,
+    view: &crate::StoreSnapshot<'s>,
+    identity: &census_domain::model::StoreIdentity,
+    prepared: &mut PreparedEvidenceSubjectAttachmentV1<'_>,
+    mut inspection: super::inspection::EvidenceSubjectAttachmentInspectionV1<'s>,
+    introduced: Vec<super::material::Material>,
+) -> StoreResult<Application> {
+    if !inspection.state.ledger.refresh(
+        guard.store(),
+        view,
+        &prepared.record.command.store,
         &mut prepared.grant,
     )? {
-        prepared.grant.charge_steps(1).map_err(Error::Domain)?;
-        let record = ledger
-            .records
-            .get(index)
-            .ok_or(Error::Corrupt("replay record missing"))?;
-        if record.command != prepared.record.command
-            || record.approval_digest != prepared.record.approval_digest
-            || (matches!(prepared.state, PreparedState::Replay) && record != &prepared.record)
-        {
-            return Err(Error::OperationConflict.into());
-        }
-        return Ok(Application::Repeated(
-            ledger
-                .receipts
-                .get(index)
-                .ok_or(Error::Corrupt("replay receipt missing"))?
-                .clone(),
-        ));
+        drop(inspection);
+        drop(introduced);
+        return replay_current(view, identity, prepared, true);
     }
-    let PreparedState::New {
-        inspection,
-        introduced,
-    } = &mut prepared.state
-    else {
-        return Err(Error::Corrupt("replay-only prepared record disappeared").into());
-    };
+    if let Some(application) = repeated(&inspection.state.ledger, prepared, false)? {
+        return Ok(application);
+    }
     require_new(
-        store,
-        &view,
-        &ledger,
-        inspection,
+        guard.store(),
+        view,
+        &inspection,
         &prepared.record.command,
         &mut prepared.grant,
     )?;
-    let introduced = std::mem::take(introduced);
     let inputs = super::ledger::wire::EntryInputs {
         capture: inspection.state.inputs.capture.reference().clone(),
         token: inspection.state.inputs.token.reference().clone(),
@@ -97,13 +94,66 @@ fn apply(
         introduced,
         inputs,
     };
-    commit::commit(guard, &view, ledger, append, &mut prepared.grant)
+    commit::commit(
+        guard,
+        view,
+        inspection.state.ledger,
+        append,
+        &mut prepared.grant,
+    )
+}
+
+fn replay_current(
+    view: &crate::StoreSnapshot<'_>,
+    identity: &census_domain::model::StoreIdentity,
+    prepared: &mut PreparedEvidenceSubjectAttachmentV1<'_>,
+    changed: bool,
+) -> StoreResult<Application> {
+    let ledger = Ledger::load(view, identity, &mut prepared.grant)?;
+    if let Some(application) = repeated(&ledger, prepared, !changed)? {
+        return Ok(application);
+    }
+    if changed {
+        return Err(Error::InventoryMoved.into());
+    }
+    Err(Error::Corrupt("replay-only prepared record disappeared").into())
+}
+
+fn repeated(
+    ledger: &Ledger<'_>,
+    prepared: &mut PreparedEvidenceSubjectAttachmentV1<'_>,
+    exact_record: bool,
+) -> StoreResult<Option<Application>> {
+    let Some(index) = ledger.find_operation(
+        prepared.record.command.operation.as_str(),
+        &mut prepared.grant,
+    )?
+    else {
+        return Ok(None);
+    };
+    prepared.grant.charge_steps(1).map_err(Error::Domain)?;
+    let record = ledger
+        .records
+        .get(index)
+        .ok_or(Error::Corrupt("replay record missing"))?;
+    if record.command != prepared.record.command
+        || record.approval_digest != prepared.record.approval_digest
+        || (exact_record && record != &prepared.record)
+    {
+        return Err(Error::OperationConflict.into());
+    }
+    Ok(Some(Application::Repeated(
+        ledger
+            .receipts
+            .get(index)
+            .ok_or(Error::Corrupt("replay receipt missing"))?
+            .clone(),
+    )))
 }
 
 fn require_new(
     store: &Store,
     view: &crate::StoreSnapshot<'_>,
-    ledger: &Ledger<'_>,
     inspection: &super::inspection::EvidenceSubjectAttachmentInspectionV1<'_>,
     command: &census_domain::evidence_subject_attachment::RetainedEvidenceSubjectAttachmentCommandV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -113,14 +163,7 @@ fn require_new(
         .revision
         .ensure_current(store, command.operation.as_str())?;
     grant.charge_steps(1).map_err(Error::Domain)?;
-    if ledger.inventory != command.expected_attachment_inventory
-        || !inspection
-            .state
-            .ledger
-            .physical
-            .fingerprint()
-            .same_contents(store, ledger.physical.fingerprint())?
-    {
+    if inspection.state.ledger.inventory != command.expected_attachment_inventory {
         return Err(Error::InventoryMoved.into());
     }
     super::inputs::require_head(view, &command.expected_public_head, grant)?;
