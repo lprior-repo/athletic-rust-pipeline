@@ -95,7 +95,7 @@ fn row<'a>(raw: &'a RawValue, state: &mut State<'_>) -> StoreResult<Row<'a>> {
         row.key.len(),
         if state.receipt { 1024 } else { 8202 },
     )?;
-    if row.key.is_empty() || row.key.len() % 2 != 0 || !row.key.bytes().all(lower_hex) {
+    if row.key.is_empty() || !row.key.len().is_multiple_of(2) || !row.key.bytes().all(lower_hex) {
         return Err(Error::Corrupt("frozen archive key spelling").into());
     }
     bound(

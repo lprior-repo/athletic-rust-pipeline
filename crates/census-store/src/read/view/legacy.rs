@@ -32,6 +32,7 @@ impl StoreSnapshot<'_> {
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn journal_entry_raw_bounded(
         &self,
         phase: &str,

@@ -11,6 +11,7 @@ impl JournalNamespaceContents {
     pub(crate) fn encoded_bytes(&self) -> u64 {
         self.encoded_bytes
     }
+    #[cfg(test)]
     pub(crate) fn digest(&self) -> &[u8; 32] {
         &self.digest
     }
