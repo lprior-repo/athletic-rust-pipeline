@@ -1704,3 +1704,50 @@ The 16 previously OS-denied report crash/fence controls were not retried in this
 queue. No new historical strict-v3 overlay result or package-wide test run is
 claimed. Runtime statements above are native callback evidence; cloud review
 verifies source identity and does not claim independent execution.
+
+### Bounded genuine attachment progress (2026-10-16 18:51 UTC)
+
+The native terminal callback reports exact
+`cb31e075efd2a35182db7a186aeb1a32e3284e68`, tree
+`14ff5d7da371806b05b45e0494bd3b3b16a64974`: workflow 46/46,
+its owner-reuse subset 10/10, Store attachment 114/114 and domain attachment
+51/51 passed. The independent genuine literal inventory passed 1/1. Formatting,
+all-target check and source lint passed; ten test-build dead-code warnings and
+forced `too_many_arguments` warnings remain. These overlapping scopes are not
+an aggregate unique-test count. The terminal checkout was clean without an
+active build. Runtime statements are native callback evidence, not independent
+cloud execution.
+
+The complete genuine A-to-B control remains failing: B apply exhausts the
+unchanged traversal grant at 8193 requested steps against 8192 available. A and
+existing evidence remain preserved. This is an explicit unresolved acceptance
+gate, not a successful complete-chain or replay result. The controlled review
+bytes used by this mechanism fixture do not establish human identity approval.
+
+Exact predecessor `4e6f243043c069d23dfa28cc468cbae9183c9274` completed A
+apply and an active held read, then refused B apply at 5198722 encoded bytes
+against 4194304 available. Reopen preserved the four original roots and five
+receipts including A, with one attachment root represented by five physical rows.
+Actual A admission was 61 combined references; B was 59. The subsequent cb31
+owner change carries the same decoded ledger through preparation and application,
+with fresh guarded complete physical equality, receipt/context/root/projection
+and input checks. Changed physical content drops that owner before a canonical
+replay-only reload. Its ten mutation/race controls pass; grants are never reset.
+
+Earlier exact `cc770c1` refused A at the traversal ceiling; `5d34c2b` replaced
+validated ordered domain membership scans with charged binary lookups and then
+exposed A's encoded-byte refusal (4414782/4194304). The `4e6f243` chunk planner
+removed a real full-envelope allocation, using one precharged reusable buffer
+and retaining identical final row wire and complete atomic-commit checks.
+Original evidence, complete context, fixed caps and refusal preservation remain.
+The earlier observer-budget and enclosing-heading fixture corrections remain
+separate recorded failures; neither changed the evidence or accepted identity.
+
+This batch includes the complete genuine fixture and production bounded-work,
+streaming and ownership changes. It does not include the separate website-host
+reader/installer or the next declaration-lookup proposal. Genuine B completion,
+reviewed attribution, dated school eligibility, selected-workbook qualification,
+full-database migration and national resource/recovery acceptance remain open.
+No live census or production activation follows. The 16 previously OS-denied
+report crash/fence controls were not retried; no new package-wide or historical
+strict-v3 consumer result is claimed for this tree.
