@@ -23,8 +23,8 @@ env -u CI tools/moon-local run pipeline:gate -- --release
 
 - Main owns shared/wire/schema/identity/workflow/migration contracts and integration.
   Assign exclusive files; preserve user edits; reuse rules, never duplicate workflows.
-- Allow up to 12 concurrent subagents when independent work benefits. Prefer Muse,
-  DeepSeek Flash and RTX 5090/3090; use Sol as needed. One coding job per GPU.
+- Up to 12 useful, nonoverlapping subagents. RTX 5090/3090 are primary coders,
+  one coding job per GPU. Muse/DeepSeek Flash support; Sol only as needed.
 - One Fjall owner; inspect live state via ingress/admin. Preserve historical data,
   IDs, receipts and artifacts. No SIGKILL, implicit migration, annual fresh reset or
   replacement keys to evade exhaustion. Follow [deployment](docs/deployment-lifecycle.md).
