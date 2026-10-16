@@ -47,8 +47,41 @@ fn object_checked(
     value: &impl Serialize,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<EncodedObject> {
+    let bytes = measure(value, grant)?;
+    object_measured(value, bytes, grant)
+}
+
+pub(super) fn measure(
+    value: &impl Serialize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<usize> {
+    grant.ensure_available().map_err(Error::Domain)?;
     grant.charge_steps(1).map_err(Error::Domain)?;
-    let bytes = sink::measure(value, ReplayLimits::SMALL.total_text_bytes)?;
+    let result = sink::measure(value, ReplayLimits::SMALL.total_text_bytes);
+    if result.is_err() {
+        grant.poison();
+    }
+    result
+}
+
+pub(super) fn object_measured(
+    value: &impl Serialize,
+    bytes: usize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<EncodedObject> {
+    grant.ensure_available().map_err(Error::Domain)?;
+    let result = encode_measured(value, bytes, grant);
+    if result.is_err() {
+        grant.poison();
+    }
+    result
+}
+
+fn encode_measured(
+    value: &impl Serialize,
+    bytes: usize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<EncodedObject> {
     grant.charge_bytes(bytes).map_err(Error::Domain)?;
     grant.charge_steps(1).map_err(Error::Domain)?;
     let encoded = sink::encode(value, bytes)?;
