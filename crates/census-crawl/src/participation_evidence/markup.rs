@@ -5,6 +5,8 @@ use std::ops::Range;
 
 mod active;
 
+type ElementAttributes = Vec<(String, String)>;
+
 pub(super) struct Element<'a> {
     pub(super) html: &'a str,
     pub(super) span: Range<usize>,
@@ -30,7 +32,7 @@ pub(super) fn elements<'a>(
 ) -> StoreResult<Vec<Element<'a>>> {
     let mut emitter = DefaultEmitter::<usize>::new_with_span();
     emitter.naively_switch_states(true);
-    let mut active: Option<(usize, usize, Vec<(String, String)>)> = None;
+    let mut active: Option<(usize, usize, ElementAttributes)> = None;
     let mut output = Vec::new();
     let mut visibility = active::Active::default();
     Tokenizer::new_with_emitter(html, emitter)
@@ -202,24 +204,24 @@ pub(super) fn canonical(html: &str, requested: &str) -> StoreResult<()> {
                 return Ok(());
             }
             match token {
-                Token::StartTag(tag) if tag.name.as_slice() == b"link" => {
-                    if canonical_relation(&tag)? {
-                        let raw = tag
-                            .attributes
-                            .get(b"href".as_slice())
-                            .ok_or_else(|| invalid("canonical URL absent"))?;
-                        bound(raw.len(), 2048, "participation canonical URL bytes")?;
-                        let raw = std::str::from_utf8(raw)
-                            .map_err(|_| invalid("canonical URL encoding"))?;
-                        if base
-                            .join(raw)
-                            .map_err(|_| invalid("canonical URL invalid"))?
-                            != base
-                        {
-                            return Err(invalid("participation declared canonical owner differs"));
-                        }
-                        found = true;
+                Token::StartTag(tag)
+                    if tag.name.as_slice() == b"link" && canonical_relation(&tag)? =>
+                {
+                    let raw = tag
+                        .attributes
+                        .get(b"href".as_slice())
+                        .ok_or_else(|| invalid("canonical URL absent"))?;
+                    bound(raw.len(), 2048, "participation canonical URL bytes")?;
+                    let raw =
+                        std::str::from_utf8(raw).map_err(|_| invalid("canonical URL encoding"))?;
+                    if base
+                        .join(raw)
+                        .map_err(|_| invalid("canonical URL invalid"))?
+                        != base
+                    {
+                        return Err(invalid("participation declared canonical owner differs"));
                     }
+                    found = true;
                 }
                 _ => {}
             }

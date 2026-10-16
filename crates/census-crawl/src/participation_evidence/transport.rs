@@ -46,7 +46,9 @@ impl RetainedHttpProvenanceV1 {
         })?;
         if self.request_method != "GET"
             || self.started_at > completed_at
-            || self.content_type.to_ascii_lowercase() != "text/html; charset=utf-8"
+            || !self
+                .content_type
+                .eq_ignore_ascii_case("text/html; charset=utf-8")
         {
             return Err(invalid("participation transport provenance is unsupported"));
         }
@@ -76,7 +78,7 @@ impl RetainedHttpProvenanceV1 {
                 .split_once(':')
                 .ok_or_else(|| invalid("participation response header malformed"))?;
             if name.eq_ignore_ascii_case("content-type") {
-                if value.trim().to_ascii_lowercase() != self.content_type.to_ascii_lowercase() {
+                if !value.trim().eq_ignore_ascii_case(&self.content_type) {
                     return Err(invalid("participation MIME differs from retained headers"));
                 }
                 mime = true;
