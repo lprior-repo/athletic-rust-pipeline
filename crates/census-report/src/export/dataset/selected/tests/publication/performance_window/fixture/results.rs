@@ -51,7 +51,7 @@ impl ResultCase {
     }
 }
 
-pub(super) async fn append(store: &Store) -> TestResult<[CanonicalPerformance; 2]> {
+pub(super) async fn append(store: &Store) -> TestResult<([CanonicalPerformance; 2], [String; 2])> {
     let mut school = CanonicalSchool::new(
         UsJurisdiction::Michigan,
         "Detroit Catholic Central",
@@ -65,13 +65,15 @@ pub(super) async fn append(store: &Store) -> TestResult<[CanonicalPerformance; 2
     ));
     store.append(Table::Schools, &school)?;
     let [first, second] = &CASES;
-    Ok([
-        append_one(store, first).await?,
-        append_one(store, second).await?,
-    ])
+    let (first, first_url) = append_one(store, first).await?;
+    let (second, second_url) = append_one(store, second).await?;
+    Ok(([first, second], [first_url, second_url]))
 }
 
-async fn append_one(store: &Store, case: &ResultCase) -> TestResult<CanonicalPerformance> {
+async fn append_one(
+    store: &Store,
+    case: &ResultCase,
+) -> TestResult<(CanonicalPerformance, String)> {
     let fetcher = Fetcher::new(
         store.http_cache_dir(),
         None,
@@ -118,11 +120,12 @@ async fn append_one(store: &Store, case: &ResultCase) -> TestResult<CanonicalPer
     let acquisition: Pin<Box<dyn Future<Output = CrawlResult<AdapterReport>> + '_>> =
         Box::pin(collect_result_sets(&context, &options));
     check!(eq; acquisition.await?.errors, 0);
-    Ok(store
+    let performance = store
         .scan::<CanonicalPerformance>(Table::Performances)?
         .into_iter()
         .find(|row| row.source_key == format!("milesplit_result:{}", case.id))
-        .ok_or("synthetic retained result")?)
+        .ok_or("synthetic retained result")?;
+    Ok((performance, request.original_url().to_owned()))
 }
 
 pub(in super::super) fn raw_body(case: &ResultCase) -> String {

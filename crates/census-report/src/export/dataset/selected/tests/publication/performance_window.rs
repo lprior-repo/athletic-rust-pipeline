@@ -43,6 +43,7 @@ async fn synthetic_michigan_in_season_pr_and_window_fallback_survive_source_dele
         school_id: fixture.school_id.clone(),
         eligible,
         excluded,
+        result_capture_urls: fixture.result_capture_urls.clone(),
         eligible_evidence_refs: fixture.proofs.eligible.clone(),
         evidence_refs: fixture.proofs.excluded.clone(),
         packets: fixture.proofs.packets.clone(),

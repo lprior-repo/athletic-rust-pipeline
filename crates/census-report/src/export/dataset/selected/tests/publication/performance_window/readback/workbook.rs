@@ -3,6 +3,7 @@ use calamine::{open_workbook, Data, Reader, Xlsx};
 use std::path::Path;
 
 pub(super) fn pr(path: &Path, expected: &Expected) -> TestResult {
+    let [eligible_source_url, _] = &expected.result_capture_urls;
     let mut book: Xlsx<_> = open_workbook(path)?;
     let range = book.worksheet_range("PRs")?;
     check!(eq; range.height(), 2);
@@ -26,10 +27,7 @@ pub(super) fn pr(path: &Path, expected: &Expected) -> TestResult {
         ("PR date", "2026-03-27"),
         ("Meet ID", expected.eligible.meet.as_str()),
         ("Meet", "Synthetic Michigan March Meet"),
-        (
-            "Result URL",
-            "https://mi.milesplit.com/meets/725218/results/1266814/raw",
-        ),
+        ("Result URL", eligible_source_url.as_str()),
         ("School at performance", "Detroit Catholic Central"),
         ("State at performance", "MI"),
         ("Current school", "Detroit Catholic Central"),

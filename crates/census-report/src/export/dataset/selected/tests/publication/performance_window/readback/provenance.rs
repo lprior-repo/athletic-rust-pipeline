@@ -14,13 +14,18 @@ pub(super) fn retained(directory: &Path, expected: &Expected) -> TestResult {
     )?;
     check!(eq; performances.len(), 2);
     let provenance = csv_rows(&directory.join("provenance.csv"))?;
-    for source in [&expected.eligible, &expected.excluded] {
+    for ((source, capture_url), case) in [&expected.eligible, &expected.excluded]
+        .into_iter()
+        .zip(&expected.result_capture_urls)
+        .zip(&super::super::fixture::CASES)
+    {
         let retained = performances
             .iter()
             .find(|row| row.id == source.id)
             .ok_or("retained original performance")?;
         check!(eq; retained, source);
         check!(eq; source.evidence.len(), 3);
+        result_sources(source, capture_url, case)?;
         let mut identifiers = BTreeSet::new();
         for fact in &source.evidence {
             let id = serialized_digest(&("performance", source.id.as_str(), fact))?;
@@ -36,6 +41,10 @@ pub(super) fn retained(directory: &Path, expected: &Expected) -> TestResult {
                     &[
                         ("entity_type", "performance"),
                         ("entity_id", source.id.as_str()),
+                        (
+                            "source_url",
+                            fact.source.url.as_deref().ok_or("source fact URL")?,
+                        ),
                         ("input_generation", &expected.input_generation),
                     ],
                 )?;
@@ -65,5 +74,41 @@ pub(super) fn retained(directory: &Path, expected: &Expected) -> TestResult {
         }
     }
     check!(eq; expected.packets.len(), 2);
+    Ok(())
+}
+
+fn result_sources(
+    source: &CanonicalPerformance,
+    capture_url: &str,
+    case: &super::super::fixture::ResultCase,
+) -> TestResult {
+    let raw_url = case.url();
+    check!(ne; capture_url, raw_url.as_str());
+    let structured = source
+        .evidence
+        .first()
+        .ok_or("structured result evidence")?;
+    check!(eq; structured.source.url.as_deref(), Some(capture_url));
+    let note: Value =
+        serde_json::from_str(structured.note.as_deref().ok_or("structured source note")?)?;
+    check!(eq; note.get("capture_url").and_then(Value::as_str), Some(capture_url));
+    check!(eq; note.get("raw_metadata_url").and_then(Value::as_str), Some(raw_url.as_str()));
+    let metadata: Vec<_> = source
+        .evidence
+        .iter()
+        .filter(|fact| fact.source.url.as_deref() == Some(raw_url.as_str()))
+        .collect();
+    check!(eq; metadata.len(), 1);
+    let metadata = metadata
+        .first()
+        .ok_or("separate raw meet metadata evidence")?;
+    let note: Value = serde_json::from_str(metadata.note.as_deref().ok_or("raw metadata note")?)?;
+    for (pointer, value) in [
+        ("/role", "raw result file meet/season metadata only"),
+        ("/owned_capture/url", capture_url),
+        ("/raw_metadata_capture/url", raw_url.as_str()),
+    ] {
+        check!(eq; note.pointer(pointer).and_then(Value::as_str), Some(value));
+    }
     Ok(())
 }

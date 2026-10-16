@@ -1522,3 +1522,30 @@ lock wiring were restored to their pinned hashes. This proves the controlled
 clean/orphan fixture refusal behavior only. The dependency and guarded opener
 remain unactivated, and copied recovery has no hard production memory, growth or
 shutdown bound. No national or genuine-person selection acceptance follows.
+
+### Scoped participation and historical replay checkpoint (2026-10-16 02:46 UTC)
+
+The native callback reports exact cd93c6dc/tree e9ea50c7 passed formatting,
+full check and source lint, participation reader tests 22/22, scoped domain
+98/98, and executable selected CLI 10/10. The strict-v3 external consumer passed
+1/1; all original publication inventory entries and the producer receipt above
+were unchanged. Persistent native logs are retained in
+`verification-r1-cd93-logs-20261016` under the existing Omarchy task directory.
+The cloud source-review lane did not independently execute these gates.
+
+The report scope passed 87/88. Its sole failing positive test expected the raw
+meet-metadata URL where the canonical writer and verifier emit the structured
+result-capture URL. The successor test carries the authored offline request URL
+into all three affected artifact assertions and independently checks both source
+roles. The one selected PR, stronger excluded mark, exact frozen evidence and
+source-deleted replay assertions remain. This successor requires its own native
+rerun. Four publication-abort cases previously refused by the OS harness were
+explicitly excluded from this run; they are not passing assertions.
+
+The guarded-copy experiment above establishes preservation for its two fixtures.
+Production recovery still lacks a qualified memory/disk envelope. The existing
+operations contract permits owned blocking effects to remain pending beyond the
+async grace deadline and forbids reporting a successful drain while they remain;
+it does not promise a wall-clock bound on arbitrary engine or filesystem calls.
+Genuine-person attachment, official-school ownership, dated affiliation and
+result/season correspondence remain separate acceptance dependencies.

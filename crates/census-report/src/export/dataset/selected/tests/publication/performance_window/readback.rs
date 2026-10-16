@@ -11,6 +11,7 @@ pub(super) struct Expected {
     pub school_id: String,
     pub eligible: CanonicalPerformance,
     pub excluded: CanonicalPerformance,
+    pub result_capture_urls: [String; 2],
     pub evidence_refs: Vec<String>,
     pub eligible_evidence_refs: Vec<String>,
     pub packets: BTreeMap<String, serde_json::Value>,

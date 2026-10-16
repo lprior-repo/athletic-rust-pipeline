@@ -4,6 +4,7 @@ use serde_json::Value;
 use std::{collections::BTreeSet, path::Path};
 
 pub(super) fn artifacts(directory: &Path, expected: &Expected) -> TestResult {
+    let [eligible_source_url, _] = &expected.result_capture_urls;
     let normalized_ties = serde_json::to_string(&[expected.eligible.id.as_str()])?;
     let csv = csv_rows(&directory.join("best-results-co2027.csv"))?;
     check!(eq; csv.len(), 1);
@@ -53,10 +54,7 @@ pub(super) fn artifacts(directory: &Path, expected: &Expected) -> TestResult {
             ("display_mark", "13-9"),
             ("normalized_mark", "4191000"),
             ("unit", "um"),
-            (
-                "source_url",
-                "https://mi.milesplit.com/meets/725218/results/1266814/raw",
-            ),
+            ("source_url", eligible_source_url),
             ("meet_date", "2026-03-27"),
             ("school_at_performance", &expected.school_id),
             ("meet_id", expected.eligible.meet.as_str()),
@@ -79,6 +77,7 @@ pub(super) fn artifacts(directory: &Path, expected: &Expected) -> TestResult {
 }
 
 fn jsonl(directory: &Path, expected: &Expected) -> TestResult {
+    let [eligible_source_url, _] = &expected.result_capture_urls;
     let bytes = std::fs::read_to_string(directory.join("best-results-co2027.jsonl"))?;
     let rows = bytes
         .lines()
@@ -95,10 +94,7 @@ fn jsonl(directory: &Path, expected: &Expected) -> TestResult {
         ),
         ("/selection/performance_id", expected.eligible.id.as_str()),
         ("/selection/source_key", "milesplit_result:201782263"),
-        (
-            "/selection/result_url",
-            "https://mi.milesplit.com/meets/725218/results/1266814/raw",
-        ),
+        ("/selection/result_url", eligible_source_url.as_str()),
         ("/selection/date", "2026-03-27"),
         ("/selection/meet_id", expected.eligible.meet.as_str()),
         ("/selection/meet", "Synthetic Michigan March Meet"),

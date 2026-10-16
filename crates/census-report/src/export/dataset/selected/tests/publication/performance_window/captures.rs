@@ -61,7 +61,10 @@ pub(super) fn high_school_results(
         .and_then(Value::as_array)
         .ok_or("retained participation journal entries")?;
     let mut found = BTreeSet::new();
-    for case in &super::fixture::CASES {
+    for (case, capture_url) in super::fixture::CASES
+        .iter()
+        .zip(&expected.result_capture_urls)
+    {
         let super::fixture::ResultCase {
             id,
             meet,
@@ -76,6 +79,7 @@ pub(super) fn high_school_results(
         )?)?;
         let budget = CaptureReadBudget::new(32 * 1024 * 1024)?;
         let owned = read_retained_owned_result_from(&frozen, &reference, "data[0]", budget)?;
+        check!(eq; owned.acquisition().capture().url.as_str(), capture_url.as_str());
         check!(eq; owned.row().result_id, *id);
         assert_owned(owned.acquisition().body(), *id, meet, result_set, mark)?;
         let url = format!("https://mi.milesplit.com/meets/{meet}/results/{result_set}/raw");

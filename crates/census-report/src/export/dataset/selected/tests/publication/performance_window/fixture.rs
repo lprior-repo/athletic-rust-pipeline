@@ -16,6 +16,7 @@ pub(super) struct Fixture {
     pub selection: ProfileSelectionV1,
     pub eligible: CanonicalPerformance,
     pub stronger: CanonicalPerformance,
+    pub result_capture_urls: [String; 2],
     pub public_id: String,
     pub school_id: String,
     pub proofs: evidence::ExpectedProofs,
@@ -28,7 +29,7 @@ impl Fixture {
         Store::create_public_identity_qualification_v3(&root)?;
         let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
         writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
-        let [mut eligible, mut stronger] = results::append(&store).await?;
+        let ([mut eligible, mut stronger], result_capture_urls) = results::append(&store).await?;
         check!(eq; eligible.athlete, stronger.athlete);
         let (_, school) = roster::append(&store, &eligible.athlete)?;
         let school_id = school.as_str().to_owned();
@@ -50,6 +51,7 @@ impl Fixture {
             selection,
             eligible,
             stronger,
+            result_capture_urls,
             public_id,
             school_id,
             proofs,
