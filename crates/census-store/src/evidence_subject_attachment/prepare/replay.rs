@@ -1,8 +1,6 @@
 use super::*;
 use crate::StoreSnapshot;
-use census_domain::evidence_subject_attachment::{
-    check_attachment_command_with_grant, CheckedAttachmentCommandV1,
-};
+use census_domain::evidence_subject_attachment::check_attachment_command_with_grant;
 use census_domain::model::StoreIdentity;
 
 pub(super) enum Found {
@@ -11,8 +9,10 @@ pub(super) enum Found {
         approval: Vec<u8>,
     },
     Repeated {
-        record: CheckedReviewedReferenceRecordV1,
+        command: CheckedAttachmentCommandV1,
         approval: Vec<u8>,
+        approval_digest: AttachmentDigestV1,
+        index: usize,
     },
 }
 
@@ -23,9 +23,25 @@ pub(super) fn prepare<'s>(
     changed: bool,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<PreparedParts<'s>> {
-    let mut ledger = Ledger::load(view, identity, grant)?;
-    if let Found::Repeated { record, approval } = find(&mut ledger, command, grant)? {
-        return Ok((view.revision(), record, approval, PreparedState::Replay));
+    let ledger = Ledger::load(view, identity, grant)?;
+    if let Found::Repeated {
+        command,
+        approval,
+        approval_digest,
+        index,
+    } = find(&ledger, command, grant)?
+    {
+        let input = ReplayPrepared {
+            command,
+            approval_digest,
+            ledger,
+            index,
+        };
+        return Ok((
+            view.revision(),
+            approval,
+            PreparedState::Replay(Box::new(input)),
+        ));
     }
     if changed {
         return Err(Error::InventoryMoved.into());
@@ -34,7 +50,7 @@ pub(super) fn prepare<'s>(
 }
 
 pub(super) fn find(
-    ledger: &mut Ledger<'_>,
+    ledger: &Ledger<'_>,
     command: RetainedEvidenceSubjectAttachmentCommandV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Found> {
@@ -53,9 +69,15 @@ pub(super) fn find(
     if &retained.command != command.command() {
         return Err(Error::OperationConflict.into());
     }
-    let record = ledger
-        .records
-        .remove_with_grant(index, grant)
-        .map_err(Error::Domain)?;
-    Ok(Found::Repeated { record, approval })
+    grant.charge_bytes(approval.len()).map_err(Error::Domain)?;
+    grant.charge_bytes(64).map_err(Error::Domain)?;
+    grant.charge_steps(1).map_err(Error::Domain)?;
+    let approval_digest =
+        AttachmentDigestV1::parse(retained.approval_digest.as_str()).map_err(Error::Domain)?;
+    Ok(Found::Repeated {
+        command,
+        approval,
+        approval_digest,
+        index,
+    })
 }

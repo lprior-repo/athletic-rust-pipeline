@@ -43,12 +43,12 @@ pub(super) fn prepare<'s>(
     let (record, introduced) = restore(ledger, previous, &state.inputs, grant)?;
     Ok((
         view.revision(),
-        record,
         approval,
-        PreparedState::New {
+        PreparedState::New(Box::new(NewPrepared {
+            record,
             inspection,
             introduced,
-        },
+        })),
     ))
 }
 
