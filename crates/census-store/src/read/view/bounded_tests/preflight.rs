@@ -32,7 +32,7 @@ fn bounded_value_preflight_refuses_record_bytes_before_loading_value() -> TestRe
     let mut loaded = false;
     let result = read_admitted(2, Some(5), &mut counts, budget(), || {
         loaded = true;
-        Ok(None)
+        Ok(None::<fjall::UserValue>)
     });
     check!(matches!(
         result,
@@ -52,7 +52,7 @@ fn bounded_value_preflight_charges_key_and_prior_bytes_before_loading_value() ->
     let mut loaded = false;
     let result = read_admitted(2, Some(4), &mut counts, budget(), || {
         loaded = true;
-        Ok(None)
+        Ok(None::<fjall::UserValue>)
     });
     check!(matches!(
         result,
@@ -72,7 +72,7 @@ fn bounded_value_preflight_refuses_missing_size_before_loading_value() -> TestRe
     let mut loaded = false;
     let result = read_admitted(2, None, &mut ReadCounts::default(), budget(), || {
         loaded = true;
-        Ok(None)
+        Ok(None::<fjall::UserValue>)
     });
     check!(matches!(result, Err(StoreError::Invariant { .. })));
     check!(!loaded);

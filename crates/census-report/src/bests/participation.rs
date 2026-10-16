@@ -2,7 +2,7 @@ use crate::export::ExportDataset;
 use crate::export::{ParticipationAssessment, ParticipationOutcome, VerifiedParticipationView};
 use crate::report::{ReportError, ReportResult};
 use census_domain::model::{AthleteId, CanonicalPerformance, EventId, PerformanceId};
-use census_domain::participation_candidates::ParticipationReasons;
+use census_domain::participation_candidates::{CandidateOutcome, ParticipationReasons};
 
 mod exclusions;
 
@@ -18,6 +18,10 @@ pub enum ParticipationExclusionOutcome {
 pub enum ParticipationExclusionReason {
     MissingParticipationEvidence,
     Assessment(ParticipationReasons),
+    DocumentarySchoolBindingUnresolved {
+        assessment: CandidateOutcome,
+        reasons: ParticipationReasons,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,6 +34,11 @@ pub struct ParticipationExclusion {
 }
 
 impl ParticipationExclusion {
+    #[cfg(test)]
+    pub(crate) fn override_reason_for_test(&mut self, reason: ParticipationExclusionReason) {
+        self.reason = reason;
+    }
+
     pub fn performance_id(&self) -> &PerformanceId {
         &self.performance_id
     }

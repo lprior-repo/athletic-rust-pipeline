@@ -39,6 +39,15 @@ pub(super) fn frozen(
                 dataset.lineage.snapshot_sequence,
             )?;
         }
+        ParticipationReplay::V3(value) => {
+            if !current || value.version != 3 || value.retained.version != 2 {
+                return Err(invalid("ReplayV3 requires exact V4 participation").into());
+            }
+            value.retained.independent.require_binding(
+                &dataset.lineage.store_identity,
+                dataset.lineage.snapshot_sequence,
+            )?;
+        }
         ParticipationReplay::V1(_) => {}
     }
     let replay = replay.retained();

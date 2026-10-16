@@ -4,6 +4,7 @@ use census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError;
 mod apply;
 mod current;
 mod encoding;
+mod frozen;
 mod inputs;
 mod inspection;
 mod ledger;
@@ -12,7 +13,14 @@ mod planning;
 mod prepare;
 mod retained;
 pub use current::{
+    ActiveResultSubjectDiscoveryV1, ActiveResultSubjectV1,
     CurrentEvidenceSubjectAttachmentReferencesV1, CurrentEvidenceSubjectAttachmentV1,
+    DiscoveredAttachmentCaptureV1, DiscoveredAttachmentLocatorV1,
+};
+pub use frozen::{
+    replay_frozen_evidence_subject_attachment_references_v1,
+    FrozenCurrentEvidenceSubjectAttachmentReferencesV1, FrozenCurrentEvidenceSubjectAttachmentV1,
+    FrozenEvidenceSubjectAttachmentBundleV1, FrozenRetainedCaptureSourceV1,
 };
 pub use inspection::{AttachmentInspectionRequestV1, EvidenceSubjectAttachmentInspectionV1};
 pub use material::AttachmentContextObjectV1;

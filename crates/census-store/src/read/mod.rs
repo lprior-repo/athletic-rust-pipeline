@@ -31,6 +31,12 @@ pub(crate) use view::JournalRawEnvelope;
 pub(crate) use view::JournalRawRecords;
 pub(crate) use view::RetainedEnrichment;
 pub(crate) use view::{accept_merged_row, publish_merged_row};
+pub(crate) use view::{
+    admit_namespace_budget, for_each_retained_journal_root_with_admission,
+    read_retained_journal_entry_raw_bounded, retained_source_sealed, JournalNamespaceContents,
+    JournalNamespaceContentsInventory, NamespaceScan, ReceiptScan, RetainedJournalBytes,
+    RetainedJournalReadSource,
+};
 
 pub(crate) use directory::directory_bytes;
 pub use identity::build_athlete_identity_projection;

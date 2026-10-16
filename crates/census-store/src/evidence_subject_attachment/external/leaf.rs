@@ -1,5 +1,6 @@
 use super::super::EvidenceSubjectAttachmentStoreError as Error;
 use super::{read, RetainedCaptureRootV1};
+use crate::read::RetainedJournalReadSource;
 use crate::{StoreResult, StoreSnapshot};
 use census_domain::evidence_subject_attachment::{
     AttachmentObjectReferenceV1, AttachmentReplayGrantV1,
@@ -60,8 +61,8 @@ pub struct RetainedCaptureLeafV1 {
     pub object: AttachmentObjectReferenceV1,
 }
 
-pub(super) fn verify(
-    view: &StoreSnapshot<'_>,
+pub(in super::super) fn verify(
+    view: &impl RetainedJournalReadSource,
     leaf: &RetainedCaptureLeafV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
@@ -74,7 +75,7 @@ pub(super) fn verify(
 }
 
 fn verify_checked(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalReadSource,
     leaf: &RetainedCaptureLeafV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {

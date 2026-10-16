@@ -106,6 +106,10 @@ impl VerifiedPublicIdentityView {
         self.accepted.head()
     }
 
+    pub(crate) fn accepted_snapshot(&self) -> &AcceptedPublicIdentitySnapshot {
+        &self.accepted
+    }
+
     pub(crate) fn snapshot_sequence(&self) -> u64 {
         self.accepted.snapshot_sequence()
     }

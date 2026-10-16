@@ -15,6 +15,10 @@ pub(crate) enum ParticipationDiagnostic {
     IdentityUnaccepted,
     CanonicalConflict,
     CohortUnresolved,
+    DocumentaryAssessmentEligible,
+    DocumentaryAssessmentExcluded,
+    DocumentaryAssessmentUnresolved,
+    SchoolBindingUnresolved,
 }
 
 #[derive(Debug)]
@@ -48,6 +52,8 @@ pub(crate) struct PinnedParticipation {
     pub(super) profile_id: ProfileId,
     pub(super) participation_rule: ContractRefV1,
     pub(super) rows: BTreeMap<PerformanceId, PinnedParticipationRow>,
+    pub(super) unsupported_documentary: Vec<super::UnsupportedDocumentarySource>,
+    pub(super) documentary: BTreeMap<PerformanceId, super::super::DocumentaryParticipationRow>,
     pub(super) replay: super::archive::ParticipationReplay,
 }
 
@@ -59,6 +65,8 @@ impl PinnedParticipation {
         ProfileId,
         ContractRefV1,
         BTreeMap<PerformanceId, PinnedParticipationRow>,
+        BTreeMap<PerformanceId, super::super::DocumentaryParticipationRow>,
+        Vec<super::UnsupportedDocumentarySource>,
         super::archive::ParticipationReplay,
     ) {
         (
@@ -66,6 +74,8 @@ impl PinnedParticipation {
             self.profile_id,
             self.participation_rule,
             self.rows,
+            self.documentary,
+            self.unsupported_documentary,
             self.replay,
         )
     }

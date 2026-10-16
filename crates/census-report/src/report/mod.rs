@@ -4,7 +4,10 @@ use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fmt;
 
+mod documentary_error;
 mod error;
+pub(crate) use documentary_error::source as documentary_source_error;
+pub use documentary_error::DocumentarySourceError;
 pub(crate) mod file_digest;
 mod resource;
 pub(crate) use error::{artifact_corrupt, io_error, semantic_mismatch, verifier_input, xlsx_error};

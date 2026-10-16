@@ -13,7 +13,7 @@ struct Wire {
 }
 
 pub(super) fn load(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalReadSource,
     records: &[ReviewedReferenceRecordV1],
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<Receipt>> {
@@ -24,7 +24,7 @@ pub(super) fn load(
         slots.push(None);
     }
     grant.charge_steps(2).map_err(Error::Domain)?;
-    view.visit_attachment_receipts_with_admission(
+    view.visit_receipt_prefix(
         OPERATION_PREFIX.as_bytes(),
         ReadBudget {
             rows: 4096,

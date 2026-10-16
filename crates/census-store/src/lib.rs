@@ -28,13 +28,16 @@ mod entities;
 mod error;
 mod evidence_subject_attachment;
 pub use evidence_subject_attachment::{
-    AttachmentContextObjectV1, AttachmentInspectionRequestV1,
+    replay_frozen_evidence_subject_attachment_references_v1, ActiveResultSubjectDiscoveryV1,
+    ActiveResultSubjectV1, AttachmentContextObjectV1, AttachmentInspectionRequestV1,
     CurrentEvidenceSubjectAttachmentReferencesV1, CurrentEvidenceSubjectAttachmentV1,
+    DiscoveredAttachmentCaptureV1, DiscoveredAttachmentLocatorV1,
     EvidenceSubjectAttachmentInspectionV1, EvidenceSubjectAttachmentPreparationV1,
-    EvidenceSubjectAttachmentStoreError, PreparedEvidenceSubjectAttachmentV1,
-    RetainedCaptureLeafKindV1, RetainedCaptureLeafV1, RetainedCaptureRootReadV1,
-    RetainedCaptureRootSchemaV1, RetainedCaptureRootV1, RetainedCaptureSlotV1,
-    RetainedEvidenceSubjectAttachmentReferencesV1,
+    EvidenceSubjectAttachmentStoreError, FrozenCurrentEvidenceSubjectAttachmentReferencesV1,
+    FrozenCurrentEvidenceSubjectAttachmentV1, FrozenEvidenceSubjectAttachmentBundleV1,
+    FrozenRetainedCaptureSourceV1, PreparedEvidenceSubjectAttachmentV1, RetainedCaptureLeafKindV1,
+    RetainedCaptureLeafV1, RetainedCaptureRootReadV1, RetainedCaptureRootSchemaV1,
+    RetainedCaptureRootV1, RetainedCaptureSlotV1, RetainedEvidenceSubjectAttachmentReferencesV1,
 };
 mod fence;
 mod format;

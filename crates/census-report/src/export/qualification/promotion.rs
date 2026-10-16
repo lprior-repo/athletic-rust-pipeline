@@ -4,7 +4,15 @@ use census_domain::participation_candidates::CandidateOutcome;
 
 impl VerifiedParticipationView {
     pub(crate) fn from_pinned(pinned: PinnedParticipation) -> (Self, ParticipationReplay) {
-        let (input_generation, profile_id, participation_rule, rows, replay) = pinned.into_parts();
+        let (
+            input_generation,
+            profile_id,
+            participation_rule,
+            rows,
+            documentary,
+            unsupported_documentary,
+            replay,
+        ) = pinned.into_parts();
         let rows = rows
             .into_iter()
             .map(|(id, row)| {
@@ -31,6 +39,8 @@ impl VerifiedParticipationView {
                 profile_id,
                 participation_rule,
                 rows,
+                documentary,
+                unsupported_documentary,
             },
             replay,
         )

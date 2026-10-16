@@ -8,6 +8,7 @@ use super::super::{
     invalid, IndependentParticipationPacketV1, ParticipationEvidenceRefV1, RetainedHtmlCaptureV1,
     VerifiedIndependentParticipationV1,
 };
+use super::attached_result::view::Source;
 use crate::milesplit::SourceRowLocator;
 use crate::{CrawlError, CrawlResult};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
@@ -102,9 +103,23 @@ pub fn read_recorded_html_result_capture(
     requested: &[SourceRowLocator],
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<Option<RecordedHtmlResultCaptureV1>> {
+    read_html_result_capture_from(
+        Source::Current(snapshot),
+        context_reference,
+        requested,
+        grant,
+    )
+}
+
+pub(super) fn read_html_result_capture_from(
+    source: Source<'_, '_>,
+    context_reference: &str,
+    requested: &[SourceRowLocator],
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<Option<RecordedHtmlResultCaptureV1>> {
     with_grant(grant, |grant| {
-        let Some((capture, held)) = retained(
-            snapshot,
+        let Some((capture, held)) = retained_from(
+            source,
             RetainedCaptureRootSchemaV1::HtmlResultCaptureV1,
             context_reference,
             grant,
@@ -119,6 +134,24 @@ pub fn read_recorded_html_result_capture(
         let root = held.root().clone();
         Ok(Some(RecordedHtmlResultCaptureV1 { capture, root }))
     })
+}
+
+pub(super) fn reopen_html_result_capture(
+    source: Source<'_, '_>,
+    context_reference: &str,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<Option<RecordedHtmlResultCaptureV1>> {
+    let Some((capture, held)) = retained_from(
+        source,
+        RetainedCaptureRootSchemaV1::HtmlResultCaptureV1,
+        context_reference,
+        grant,
+    )?
+    else {
+        return Ok(None);
+    };
+    let root = held.root().clone();
+    Ok(Some(RecordedHtmlResultCaptureV1 { capture, root }))
 }
 
 pub fn read_recorded_independent_participation(
@@ -166,7 +199,16 @@ pub(super) fn retained<T: DeserializeOwned>(
     key: &str,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<Option<(T, RetainedCaptureRootReadV1)>> {
-    let Some(held) = snapshot.read_retained_capture_root_v1(schema, key, grant)? else {
+    retained_from(Source::Current(snapshot), schema, key, grant)
+}
+
+fn retained_from<T: DeserializeOwned>(
+    source: Source<'_, '_>,
+    schema: RetainedCaptureRootSchemaV1,
+    key: &str,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<Option<(T, RetainedCaptureRootReadV1)>> {
+    let Some(held) = source.read(schema, key, grant)? else {
         return Ok(None);
     };
     let decoded = serde_json::from_str(held.payload().get()).map_err(super::super::json)?;

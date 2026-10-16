@@ -1,6 +1,8 @@
 use super::*;
 use context::{Context, History, Stage};
 
+mod discovery_check;
+mod handoff;
 mod operations;
 
 use operations::{chain, require_originals};
@@ -61,6 +63,7 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
     };
     if let Err(error) = replay_completed(&store, &sources, completed)
         .and_then(|()| super::bridge::verify(&store, &sources, &installed, &outcome))
+        .and_then(|()| discovery_check::verify(&store, &sources))
     {
         drop(writer);
         drop(store);
@@ -76,8 +79,17 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
         replay_observation("chain", "replay-or-bridge-failure-reopen", observed);
         return Err(error);
     }
+    let prepared = handoff::prepare(&store, &sources);
     drop(writer);
-    Ok(())
+    drop(store);
+    match prepared {
+        Ok(Some(prepared)) => handoff::finish(prepared, directory),
+        Ok(None) => Ok(()),
+        Err(error) => {
+            let _preserved = directory.keep();
+            Err(error)
+        }
+    }
 }
 
 fn replay_completed(

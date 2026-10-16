@@ -31,6 +31,17 @@ pub(crate) use operations::RetainedEnrichment;
 mod public_identity;
 pub use public_identity::AcceptedPublicIdentitySnapshot;
 mod receipt_prefix;
+mod retained_source;
+pub(crate) use membership::{
+    admit_namespace_budget, JournalNamespaceContents, JournalNamespaceContentsInventory,
+    NamespaceScan,
+};
+pub(crate) use receipt_prefix::ReceiptScan;
+pub(crate) use retained_source::sealed as retained_source_sealed;
+pub(crate) use retained_source::{
+    for_each_retained_journal_root_with_admission, read_retained_journal_entry_raw_bounded,
+    RetainedJournalBytes, RetainedJournalReadSource,
+};
 mod regions;
 mod run;
 

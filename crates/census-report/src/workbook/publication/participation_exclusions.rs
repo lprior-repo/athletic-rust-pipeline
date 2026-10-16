@@ -14,6 +14,8 @@ use std::path::Path;
 
 use super::verify_sidecars::normalized::rows;
 
+mod documentary;
+
 const FILE: &str = "participation_exclusions.csv";
 const HEADER: [&str; 8] = [
     "retained_candidate_id",
@@ -105,8 +107,9 @@ fn validate(
     outcome: &SelectionOutcome,
 ) -> ReportResult<()> {
     ParticipationSelection::Selected(participation).ensure_dataset(dataset)?;
-    Admission::new("participation exclusion inventory")
-        .charge(0, outcome.participation_exclusions.len())?;
+    participation.require_documentary_publication()?;
+    let mut budget = Admission::new("participation exclusion inventory");
+    budget.charge(0, outcome.participation_exclusions.len())?;
     outcome
         .participation_exclusions
         .windows(2)
@@ -119,7 +122,8 @@ fn validate(
                 }
             }
             Ok(())
-        })
+        })?;
+    documentary::require_complete(participation, outcome, &mut budget)
 }
 
 #[derive(Serialize)]
@@ -180,6 +184,12 @@ fn assessment<'a>(
     value: &ParticipationExclusion,
     participation: &'a VerifiedParticipationView,
 ) -> ReportResult<Option<&'a ParticipationAssessment>> {
+    if matches!(
+        value.reason(),
+        ParticipationExclusionReason::DocumentarySchoolBindingUnresolved { .. }
+    ) {
+        return documentary::assessment(value, participation).map(Some);
+    }
     match (
         value.reason(),
         participation.assessment(value.performance_id()),
@@ -223,9 +233,10 @@ impl Serialize for Reasons {
             ParticipationExclusionReason::MissingParticipationEvidence => {
                 serializer.collect_seq(["missing_participation_evidence"])
             }
-            ParticipationExclusionReason::Assessment(reasons) => {
-                serializer.collect_seq(reasons.iter())
-            }
+            ParticipationExclusionReason::Assessment(reasons)
+            | ParticipationExclusionReason::DocumentarySchoolBindingUnresolved {
+                reasons, ..
+            } => serializer.collect_seq(reasons.iter()),
         }
     }
 }

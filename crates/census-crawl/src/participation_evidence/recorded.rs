@@ -12,8 +12,11 @@ mod read;
 mod schools;
 
 pub use attached_result::{
-    with_attached_html_results, AttachedResultGapV1, IdentityLinkedHtmlResultDocumentV1,
-    IdentityLinkedHtmlResultRowV1,
+    discover_current_html_results, discover_frozen_html_results, with_attached_html_results,
+    AttachedResultGapV1, AttachmentHtmlResultDiscoveryGapV1, AttachmentHtmlResultDiscoveryV1,
+    DiscoveredIdentityLinkedHtmlResultDocumentV1, DiscoveredIdentityLinkedHtmlResultRowV1,
+    DiscoveredResultAttachmentV1, IdentityLinkedHtmlResultDocumentV1,
+    IdentityLinkedHtmlResultRowV1, UnresolvedAttachmentHtmlResultV1,
 };
 pub use provider::{ProviderTargetIntakeDispositionV1, ProviderTargetWithheldV1};
 pub use provider_school::{

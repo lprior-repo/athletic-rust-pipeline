@@ -1,9 +1,10 @@
 use super::super::super::EvidenceSubjectAttachmentStoreError as Error;
 use super::super::RetainedCaptureRootSchemaV1;
-use crate::read::{JournalNamespace, JournalRawEnvelope};
-use crate::{
-    JournalReadBudget, ReadBudget, StoreError, StoreResult, StoreSnapshot, MAX_JOURNAL_VALUE_BYTES,
+use crate::read::{
+    for_each_retained_journal_root_with_admission, read_retained_journal_entry_raw_bounded,
+    JournalNamespace, JournalRawEnvelope, RetainedJournalReadSource,
 };
+use crate::{JournalReadBudget, ReadBudget, StoreError, StoreResult, MAX_JOURNAL_VALUE_BYTES};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 
 use super::super::MAX_RETAINED_CAPTURE_ENVELOPE_BYTES;
@@ -12,7 +13,7 @@ const MAX_PHYSICAL_BYTES: u64 = 4 * 1024 * 1024;
 const DECODER_PASS_SLOTS: usize = 17;
 
 pub(super) fn read(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalReadSource,
     schema: RetainedCaptureRootSchemaV1,
     key: &str,
     grant: &mut AttachmentReplayGrantV1,
@@ -26,7 +27,7 @@ pub(super) fn read(
 }
 
 fn read_checked(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalReadSource,
     schema: RetainedCaptureRootSchemaV1,
     key: &str,
     grant: &mut AttachmentReplayGrantV1,
@@ -40,7 +41,8 @@ fn read_checked(
         return Err(Error::Corrupt("external root descriptor bounds").into());
     }
     steps(grant, 2)?;
-    let inventory = view.for_each_journal_root_with_admission(
+    let inventory = for_each_retained_journal_root_with_admission(
+        view,
         JournalNamespace::new(schema.phase(), key)?,
         ReadBudget {
             rows: MAX_PHYSICAL_ROWS,
@@ -63,7 +65,7 @@ fn read_checked(
     if inventory.logical_roots() != 1 {
         return Err(Error::Corrupt("external root is absent or ambiguous").into());
     }
-    let physical = inventory.fingerprint();
+    let physical = inventory.contents();
     let passes = usize::try_from(physical.physical_rows())
         .map_err(|_| StoreError::CounterOverflow)?
         .checked_add(1)
@@ -73,8 +75,7 @@ fn read_checked(
     let measured =
         usize::try_from(physical.encoded_bytes()).map_err(|_| StoreError::CounterOverflow)?;
     let budget = JournalReadBudget::new(measured.min(MAX_RETAINED_CAPTURE_ENVELOPE_BYTES))?;
-    let envelope = view
-        .journal_entry_raw_bounded(schema.phase(), key, budget)?
+    let envelope = read_retained_journal_entry_raw_bounded(view, schema.phase(), key, budget)?
         .ok_or(Error::Corrupt("external root disappeared from held view"))?;
     Ok(Some(envelope))
 }

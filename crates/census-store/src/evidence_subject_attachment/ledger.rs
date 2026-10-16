@@ -3,7 +3,7 @@ use super::{
     material::{self, Material},
     EvidenceSubjectAttachmentStoreError as Error, OPERATION_PREFIX, PHASE,
 };
-use crate::read::JournalNamespaceInventory;
+use crate::read::{JournalNamespaceInventory, RetainedJournalReadSource};
 use crate::{Receipt, StoreError, StoreResult, StoreSnapshot};
 use census_domain::evidence_subject_attachment::{
     self as domain, AttachmentDigestV1, AttachmentInventoryV1, AttachmentObjectReferenceV1,
@@ -16,18 +16,22 @@ use census_domain::public_identity_history::ReplayLimits;
 mod context;
 pub(super) use context::declared;
 pub(super) mod fences;
+mod inventory;
 mod read;
+pub(super) use read::retained as read_retained;
 mod receipts;
 mod refresh;
 pub(super) mod wire;
 
-pub(super) struct Ledger<'s> {
+pub(super) type Ledger<'s> = VerifiedLedger<JournalNamespaceInventory<'s>>;
+
+pub(super) struct VerifiedLedger<P> {
     pub(super) records: CheckedReviewedReferenceRecordsV1,
     pub(super) receipts: Vec<Receipt>,
     pub(super) introductions: Vec<Vec<Material>>,
     pub(super) input_refs: Vec<wire::EntryInputs>,
     pub(super) inventory: AttachmentInventoryV1,
-    pub(super) physical: JournalNamespaceInventory<'s>,
+    pub(super) physical: P,
 }
 
 impl<'s> Ledger<'s> {
@@ -57,28 +61,6 @@ impl<'s> Ledger<'s> {
             grant.poison();
         }
         result
-    }
-
-    pub(super) fn find_operation(
-        &self,
-        operation: &str,
-        grant: &mut AttachmentReplayGrantV1,
-    ) -> StoreResult<Option<usize>> {
-        for (index, record) in self.records.iter().enumerate() {
-            grant.charge_steps(1).map_err(Error::Domain)?;
-            if record.command.operation.as_str() == operation {
-                return Ok(Some(index));
-            }
-        }
-        Ok(None)
-    }
-
-    pub(super) fn find_object(
-        &self,
-        digest: &AttachmentDigestV1,
-        grant: &mut AttachmentReplayGrantV1,
-    ) -> StoreResult<Option<&Material>> {
-        context::find(&self.introductions, digest, grant)
     }
 
     pub(super) fn append_proposed(
@@ -111,6 +93,30 @@ impl<'s> Ledger<'s> {
             .ok_or(Error::Corrupt("proposed inputs absent"))?;
         fences::verify(self, record, inputs, grant)?;
         Ok(previous)
+    }
+}
+
+impl<P> VerifiedLedger<P> {
+    pub(super) fn find_operation(
+        &self,
+        operation: &str,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<Option<usize>> {
+        for (index, record) in self.records.iter().enumerate() {
+            grant.charge_steps(1).map_err(Error::Domain)?;
+            if record.command.operation.as_str() == operation {
+                return Ok(Some(index));
+            }
+        }
+        Ok(None)
+    }
+
+    pub(super) fn find_object(
+        &self,
+        digest: &AttachmentDigestV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<Option<&Material>> {
+        context::find(&self.introductions, digest, grant)
     }
 
     pub(super) fn object(

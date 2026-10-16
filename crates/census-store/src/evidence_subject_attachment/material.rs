@@ -1,4 +1,5 @@
 use super::{EvidenceSubjectAttachmentStoreError as Error, RetainedCaptureLeafV1};
+use crate::read::RetainedJournalReadSource;
 use crate::{StoreError, StoreResult, StoreSnapshot};
 use census_domain::evidence_subject_attachment::{
     AttachmentObjectReferenceV1, AttachmentReplayGrantV1, EvidenceSubjectAttachmentError,
@@ -63,12 +64,12 @@ impl Material {
 
     pub(super) fn verify(
         &self,
-        view: &StoreSnapshot<'_>,
+        view: &impl RetainedJournalReadSource,
         grant: &mut AttachmentReplayGrantV1,
     ) -> StoreResult<()> {
         match self {
             Self::Inline { reference, data } => inline::decode(reference, data, grant).map(|_| ()),
-            Self::Retained { leaf } => view.verify_retained_capture_leaf_v1(leaf, grant),
+            Self::Retained { leaf } => super::external::verify_leaf(view, leaf, grant),
         }
     }
 
