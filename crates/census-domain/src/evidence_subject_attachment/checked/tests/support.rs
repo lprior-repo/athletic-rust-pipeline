@@ -77,7 +77,9 @@ pub(super) fn replay(
         &mut AttachmentReplayGrantV1::new(),
     )?;
     replay_checked_reviewed_references_with_grant(
-        &StoreIdentity::parse(&"1".repeat(64))?,
+        &store().map_err(|_| {
+            EvidenceSubjectAttachmentError::Invalid("checked fixture store identity")
+        })?,
         records,
         &receipts,
         &expected,
