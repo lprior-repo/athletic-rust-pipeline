@@ -1661,3 +1661,46 @@ The separately authored attachment workflow and website-host reader are absent.
 Historical recovery/resource qualification and scale gates remain open. These
 runtime results are native callback evidence; cloud review verifies source
 identity and does not claim an independent runtime execution.
+
+### Reviewed attachment workflow and genuine source identity (2026-10-16 17:08 UTC)
+
+The native terminal callback reports exact
+`8656feef71448543db00c8668d4ce09946f39e66`, tree
+`7ff0bbd37953bc0e2383dc3578bdfc3b8d365063`, passed workflow 36/36,
+Store attachment 94/94, formatting, all-target check and source lint. These
+nested test scopes overlap and are not an aggregate unique-test count. Existing
+forced `too_many_arguments` warnings remain disclosed. Each command required
+exact commit/tree and clean checkout; the terminal checkout was clean with no
+active build. Passing phase output was captured using the installed runner's
+verified `--success-output immediate` option.
+
+The strict attach, revoke and fresh-target positive passed with its three-record
+history. The phase controls passed, including the fixed 8192-step boundary and
+8193-step refusal without writes. These synthetic mechanism controls do not prove
+that the separate complete genuine article/result inventory fits the same grant.
+
+On predecessor `d6b24ed057f1a45a972561a0cbbee525d6f8dd18`, workflow
+29/36 and attachment 87/94 shared seven corruption-fixture setup failures. Exact
+failure values showed a RawValue wrapper versus bare JSON before journal
+insertion, not post-refusal Store mutation. The sole 8656 change replaces two
+fixture serializer calls; every pre-insert equality, size guard, typed refusal,
+raw four-keyspace preservation and poison check remains unchanged. Production
+wire parity and opaque inspection ownership were repaired in `abba7642`.
+
+The exact earlier `f5776f1ef7b863909e4acec20afc525150b723fe` native run
+passed the genuine accepted-provider positive 1/1, accepted-provider prefix 2/2
+and recorded intake/reopen 18/18 after canonical graph enrollment was added to
+the fixture. These are overlapping scopes. The real retained-source target uses
+the existing source-bound writer and preserves original evidence and identity
+across reopen/replay; it is a controlled Class-of-2026 source qualification.
+
+This batch preserves actual PR75 ancestry `46731282`, including incoming user
+fixtures and documentation. The separate genuine A/B capacity fixture `c41b3aee`
+and website-host reader/installer `58a89f9b` are absent. Human review approval,
+genuine article/result attribution, dated school eligibility, genuine selected
+workbook replay, full-database migration and national resource/recovery
+qualification remain open. No live census or production activation follows.
+The 16 previously OS-denied report crash/fence controls were not retried in this
+queue. No new historical strict-v3 overlay result or package-wide test run is
+claimed. Runtime statements above are native callback evidence; cloud review
+verifies source identity and does not claim independent execution.
