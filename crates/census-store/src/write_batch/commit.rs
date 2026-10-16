@@ -7,6 +7,9 @@ use super::super::sequences::Reserved;
 use super::super::{generation, Store, StoreError, StoreResult};
 use super::{conditional, ConditionalBatch, Page, Replacement, StoreBatch};
 
+mod application;
+pub(super) use application::first_application;
+
 impl<'store> StoreBatch<'store> {
     pub fn commit(self) -> StoreResult<()> {
         self.commit_inner(None, None, Vec::new(), Ok(()))
@@ -84,7 +87,16 @@ impl<'store> StoreBatch<'store> {
     pub(super) fn commit_staged(
         self,
         once: Option<(&str, &str)>,
+        batch: OwnedWriteBatch,
+    ) -> StoreResult<Option<Application>> {
+        self.commit_staged_at(once, batch, None)
+    }
+
+    pub(super) fn commit_staged_at(
+        self,
+        once: Option<(&str, &str)>,
         mut batch: OwnedWriteBatch,
+        receipt_at: Option<chrono::DateTime<chrono::Utc>>,
     ) -> StoreResult<Option<Application>> {
         let store = self.store;
         self.admit_source_access()?;
@@ -95,9 +107,7 @@ impl<'store> StoreBatch<'store> {
             self.replacements,
             self.source_access,
         );
-        let written = once
-            .map(|identity| first_application(store, identity, count_rows(&pages)?, &mut batch))
-            .transpose()?;
+        let written = application::stage(store, once, &pages, &mut batch, receipt_at)?;
         let reservations = plan_reservations(&pages, store)?;
         write_pages_staged(&pages, &reservations, store, &mut batch)?;
         write_journal(journal, store, &mut batch);
@@ -205,21 +215,6 @@ pub(super) fn count_rows(pages: &[Page]) -> StoreResult<u64> {
         let count = u64::try_from(page.records.len()).map_err(|_| StoreError::CounterOverflow)?;
         total.checked_add(count).ok_or(StoreError::CounterOverflow)
     })
-}
-
-pub(super) fn first_application(
-    store: &Store,
-    identity: (&str, &str),
-    appended: u64,
-    batch: &mut OwnedWriteBatch,
-) -> StoreResult<Application> {
-    let receipt = receipt::first(identity.0, identity.1, appended);
-    let value = serde_json::to_vec(&receipt).map_err(|source| StoreError::Json {
-        detail: "serializing a receipt".to_string(),
-        source,
-    })?;
-    batch.insert(&store.receipts, identity.0.as_bytes(), value);
-    Ok(Application::Written(receipt))
 }
 
 fn write_pages_staged(

@@ -71,6 +71,11 @@ pub(super) fn write(
     meta: &Keyspace,
     token: PublicIdentityInputRevisionTokenV2,
 ) -> StoreResult<()> {
+    batch.insert(meta, KEY, encode(token)?);
+    Ok(())
+}
+
+pub(crate) fn encode(token: PublicIdentityInputRevisionTokenV2) -> StoreResult<Vec<u8>> {
     let record = Record {
         version: 2,
         baseline_evidence_generation: token.baseline_evidence_generation,
@@ -87,6 +92,19 @@ pub(super) fn write(
             max: MAX_BYTES,
         });
     }
-    batch.insert(meta, KEY, raw);
-    Ok(())
+    Ok(raw)
+}
+
+pub(crate) fn decode_attachment(raw: &[u8]) -> StoreResult<PublicIdentityInputRevisionTokenV2> {
+    if raw.len() > MAX_BYTES {
+        return Err(StoreError::RowTooLarge {
+            bytes: raw.len(),
+            max: MAX_BYTES,
+        });
+    }
+    let token = decode(raw)?;
+    if encode(token)? != raw {
+        return Err(invalid("noncanonical attachment input token"));
+    }
+    Ok(token)
 }

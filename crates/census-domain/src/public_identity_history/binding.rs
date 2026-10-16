@@ -249,7 +249,7 @@ impl HistoryProjection {
             .ok_or(HistoryError::BindingConflict)
     }
 
-    pub(super) fn component_bindings(
+    pub fn component_bindings(
         &self,
         canonical: &PublicAthleteId,
     ) -> Result<BTreeSet<String>, HistoryError> {

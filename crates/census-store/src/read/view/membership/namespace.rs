@@ -6,8 +6,25 @@ pub struct JournalNamespace<'a> {
     logical_prefix: &'a str,
 }
 
+enum PrefixRequirement {
+    Nonempty,
+    WholePhase,
+}
+
 impl<'a> JournalNamespace<'a> {
     pub fn new(phase: &'a str, logical_prefix: &'a str) -> StoreResult<Self> {
+        Self::checked(phase, logical_prefix, PrefixRequirement::Nonempty)
+    }
+
+    pub(crate) fn whole_phase(phase: &'a str) -> StoreResult<Self> {
+        Self::checked(phase, "", PrefixRequirement::WholePhase)
+    }
+
+    fn checked(
+        phase: &'a str,
+        logical_prefix: &'a str,
+        requirement: PrefixRequirement,
+    ) -> StoreResult<Self> {
         let length = phase
             .len()
             .checked_add(logical_prefix.len())
@@ -20,7 +37,10 @@ impl<'a> JournalNamespace<'a> {
             });
         }
         validate_text(phase)?;
-        validate_text(logical_prefix)?;
+        match requirement {
+            PrefixRequirement::Nonempty => validate_text(logical_prefix)?,
+            PrefixRequirement::WholePhase => {}
+        }
         if phase.as_bytes() == crate::journal::OBJECT_NAMESPACE {
             return Err(StoreError::Refused {
                 detail: "shared object storage is not a logical journal namespace".to_string(),
@@ -83,3 +103,6 @@ pub(super) fn allocation_refused() -> StoreError {
         detail: "journal namespace scratch allocation refused".to_string(),
     }
 }
+
+#[cfg(test)]
+mod tests;

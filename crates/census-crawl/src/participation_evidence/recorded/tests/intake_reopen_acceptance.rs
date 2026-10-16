@@ -24,6 +24,7 @@ use sha2::{Digest, Sha256};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod accepted_provider;
 mod fixtures;
 mod html;
 mod participation;

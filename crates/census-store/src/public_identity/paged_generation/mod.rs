@@ -1,4 +1,9 @@
 pub(crate) mod admission;
+mod attachment_binding;
+pub(crate) use attachment_binding::{
+    attachment_capture_binding, decode_attachment_capture_binding,
+    require_attachment_capture_inputs, require_attachment_retained_inputs,
+};
 mod binding;
 pub(in crate::public_identity) mod capture;
 pub use capture::{RawGenerationCaptureOutcomeV2, RetainedRawGenerationV2};

@@ -4,6 +4,8 @@ pub(crate) mod graph_witness;
 use census_domain::public_identity_history::{PublicAthleteId, RegistryHead};
 pub use graph_reference::GraphAuthorityReferenceV1;
 
+mod attachment_fence;
+pub(crate) use attachment_fence::read_head as attachment_public_head;
 mod authority;
 mod codec;
 mod commit;
