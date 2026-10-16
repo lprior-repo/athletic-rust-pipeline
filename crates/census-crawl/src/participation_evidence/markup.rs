@@ -36,7 +36,7 @@ pub(super) fn elements<'a>(
     Tokenizer::new_with_emitter(html, emitter)
         .take(100_001)
         .enumerate()
-        .try_for_each(|(index, token)| {
+        .try_for_each(|(index, token)| -> StoreResult<()> {
             bound(
                 index.checked_add(1).ok_or(StoreError::CounterOverflow)?,
                 100_000,
