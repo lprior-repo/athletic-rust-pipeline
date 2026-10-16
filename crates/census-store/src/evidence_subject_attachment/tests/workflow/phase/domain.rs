@@ -1,4 +1,4 @@
-use super::meter::{object_position, position, Meter};
+use super::meter::{depth, position, Meter};
 use super::model::Record;
 use crate::public_identity_tests::support::TestResult;
 use census_domain::evidence_subject_attachment::*;
@@ -44,30 +44,48 @@ pub(super) fn command(record: &Record, meter: &mut Meter) -> TestResult {
     check!(eq; refs.len(), 15);
     for digest in refs {
         meter.singles(
-            "domain object resolution",
-            object_position(record.references(), digest)?,
+            "domain object midpoint comparisons",
+            depth(record.references(), digest)?,
         )?;
     }
-    meter.singles("domain paired fact and subject resolution", 5)?;
+    let pair = context
+        .corroboration
+        .as_slice()
+        .first()
+        .ok_or("pair absent")?;
+    meter.singles(
+        "domain paired source fact midpoint comparisons",
+        fact_depth(context, &pair.subject_fact)?,
+    )?;
+    meter.singles(
+        "domain paired target fact midpoint comparisons",
+        fact_depth(context, &pair.accepted_target_fact)?,
+    )?;
+    meter.singles("domain paired subject and target scans", 2)?;
     if matches!(command.action, AttachmentActionV1::Attach { .. }) {
         meter.charge("domain complete paired coverage", 1)?;
-        let pair = context
-            .corroboration
-            .as_slice()
-            .first()
-            .ok_or("pair absent")?;
-        let facts = context
-            .facts
-            .as_slice()
-            .iter()
-            .map(|fact| fact.fact.clone())
-            .collect::<Vec<_>>();
         meter.singles(
-            "domain coverage source fact",
-            position(&facts, &pair.subject_fact)?,
+            "domain coverage source fact midpoint comparisons",
+            fact_depth(context, &pair.subject_fact)?,
         )?;
     }
     Ok(())
+}
+
+fn fact_depth(
+    context: &ReviewedAttachmentContextV1,
+    digest: &AttachmentDigestV1,
+) -> TestResult<usize> {
+    let index = context
+        .facts
+        .as_slice()
+        .iter()
+        .position(|fact| &fact.fact == digest)
+        .ok_or("phase fact absent")?;
+    [2usize, 1]
+        .get(index)
+        .copied()
+        .ok_or_else(|| "phase two-fact depth absent".into())
 }
 
 pub(super) fn record(record: &Record, meter: &mut Meter) -> TestResult {

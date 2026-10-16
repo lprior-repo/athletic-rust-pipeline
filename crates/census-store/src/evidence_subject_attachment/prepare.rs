@@ -13,6 +13,7 @@ use census_domain::evidence_subject_attachment::{
 
 mod context;
 mod new;
+mod replay;
 
 pub enum EvidenceSubjectAttachmentPreparationV1<'s, 'a> {
     New {
@@ -119,29 +120,26 @@ fn prepare<'s>(
     if command.store != identity {
         return Err(Error::InputMoved.into());
     }
-    let mut ledger = Ledger::load(&view, &identity, grant)?;
-    let approval = command
-        .approval_bytes_with_grant(4 * 1024 * 1024, grant)
-        .map_err(Error::Domain)?;
-    if let Some(index) = ledger.find_operation(command.operation.as_str(), grant)? {
-        grant.charge_steps(1).map_err(Error::Domain)?;
-        let retained = ledger
-            .records
-            .get(index)
-            .ok_or(Error::Corrupt("replay record index"))?;
-        if retained.command != command {
-            return Err(Error::OperationConflict.into());
-        }
-        let record = ledger.records.remove(index);
+    let Some((mut inspection, context)) = proposed else {
+        return replay::prepare(&view, &identity, command, false, grant);
+    };
+    if !inspection
+        .state
+        .ledger
+        .refresh(store, &view, &identity, grant)?
+    {
+        drop(inspection);
+        return replay::prepare(&view, &identity, command, true, grant);
+    }
+    let (approval, retained) = replay::find(&mut inspection.state.ledger, &command, grant)?;
+    if let Some(record) = retained {
         return Ok((view.revision(), record, approval, PreparedState::Replay));
     }
-    let (inspection, context) =
-        proposed.ok_or(Error::Corrupt("new attachment requires an inspection"))?;
     let input = new::NewPreparation {
         command,
         inspection,
         supplied: context,
         approval,
     };
-    new::prepare(store, &view, input, ledger, grant)
+    new::prepare(store, &view, input, grant)
 }

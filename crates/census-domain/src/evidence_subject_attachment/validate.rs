@@ -3,6 +3,8 @@ use crate::participation_candidates::MAX_PARTICIPATION_FACTS;
 
 pub(super) use super::AttachmentReplayGrantV1 as Grant;
 
+mod lookup;
+
 pub(super) fn record(record: &ReviewedReferenceRecordV1, grant: &mut Grant) -> Result<()> {
     grant.steps(1)?;
     let bytes = codec::measure_with_grant(record, ReplayLimits::SMALL.total_text_bytes, grant)?;
@@ -150,20 +152,21 @@ fn object(
     reference: &AttachmentDigestV1,
     grant: &mut Grant,
 ) -> Result<()> {
-    for object in context.objects.as_slice() {
-        grant.steps(1)?;
-        if &object.digest == reference {
-            if object.bytes == 0 {
-                return Err(EvidenceSubjectAttachmentError::Invalid(
-                    "empty retained object",
-                ));
-            }
-            return Ok(());
-        }
-    }
-    Err(EvidenceSubjectAttachmentError::Invalid(
+    let object = lookup::find(
+        context.objects.as_slice(),
+        reference,
+        |object| &object.digest,
+        grant,
+    )?
+    .ok_or(EvidenceSubjectAttachmentError::Invalid(
         "missing retained object reference",
-    ))
+    ))?;
+    if object.bytes == 0 {
+        return Err(EvidenceSubjectAttachmentError::Invalid(
+            "empty retained object",
+        ));
+    }
+    Ok(())
 }
 
 fn fact<'a>(
@@ -171,13 +174,13 @@ fn fact<'a>(
     reference: &AttachmentDigestV1,
     grant: &mut Grant,
 ) -> Result<&'a ReviewedAttachmentFactV1> {
-    for fact in context.facts.as_slice() {
-        grant.steps(1)?;
-        if &fact.fact == reference {
-            return Ok(fact);
-        }
-    }
-    Err(EvidenceSubjectAttachmentError::Invalid(
+    lookup::find(
+        context.facts.as_slice(),
+        reference,
+        |fact| &fact.fact,
+        grant,
+    )?
+    .ok_or(EvidenceSubjectAttachmentError::Invalid(
         "missing corroborating fact",
     ))
 }

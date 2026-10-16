@@ -16,6 +16,7 @@ mod context;
 pub(super) mod fences;
 mod read;
 mod receipts;
+mod refresh;
 pub(super) mod wire;
 
 pub(super) struct Ledger<'s> {
@@ -35,6 +36,21 @@ impl<'s> Ledger<'s> {
     ) -> StoreResult<Self> {
         grant.ensure_available().map_err(Error::Domain)?;
         let result = read::load(view, store, grant);
+        if result.is_err() {
+            grant.poison();
+        }
+        result
+    }
+
+    pub(super) fn refresh(
+        &mut self,
+        store: &crate::Store,
+        view: &StoreSnapshot<'_>,
+        identity: &StoreIdentity,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<bool> {
+        grant.ensure_available().map_err(Error::Domain)?;
+        let result = refresh::refresh(self, store, view, identity, grant);
         if result.is_err() {
             grant.poison();
         }
@@ -70,7 +86,7 @@ impl<'s> Ledger<'s> {
         introduced: Vec<Material>,
         inputs: wire::EntryInputs,
         grant: &mut AttachmentReplayGrantV1,
-    ) -> StoreResult<()> {
+    ) -> StoreResult<AttachmentInventoryV1> {
         context::accept(view, &self.introductions, &introduced, &record, grant)?;
         material::allocate(&mut self.records)?;
         material::allocate(&mut self.introductions)?;
@@ -78,9 +94,10 @@ impl<'s> Ledger<'s> {
         self.input_refs.push(inputs);
         self.records.push(record);
         self.introductions.push(introduced);
-        self.inventory =
+        let inventory =
             domain::calculate_reviewed_reference_inventory_with_grant(&self.records, grant)
                 .map_err(Error::Domain)?;
+        let previous = std::mem::replace(&mut self.inventory, inventory);
         let record = self
             .records
             .last()
@@ -90,7 +107,7 @@ impl<'s> Ledger<'s> {
             .last()
             .ok_or(Error::Corrupt("proposed inputs absent"))?;
         fences::verify(self, record, inputs, grant)?;
-        Ok(())
+        Ok(previous)
     }
 
     pub(super) fn object(

@@ -41,7 +41,7 @@ pub(super) fn inspect(
 
 pub(super) fn prepare(prior: &[&Record], record: &Record, meter: &mut Meter) -> TestResult {
     meter.charge("preparation StoreIdentity", 1)?;
-    ledger::load(prior, meter)?;
+    ledger::refresh(prior, meter)?;
     domain::command(record, meter)?;
     meter.singles("approval measure and encode", 2)?;
     meter.singles("preparation operation lookup", prior.len())?;
@@ -54,12 +54,13 @@ pub(super) fn prepare(prior: &[&Record], record: &Record, meter: &mut Meter) -> 
     }
     model::introductions(prior, record, meter)?;
     meter.singles("preparation three digest groups", 6)?;
-    proposed(prior, record, meter)
+    proposed(prior, record, meter)?;
+    meter.charge("restore previous ledger owner", 1)
 }
 
 pub(super) fn apply(prior: &[&Record], record: &Record, meter: &mut Meter) -> TestResult {
     meter.singles("apply approval and StoreIdentity", 2)?;
-    ledger::load(prior, meter)?;
+    ledger::refresh(prior, meter)?;
     meter.singles("apply operation lookup", prior.len())?;
     current_fences(meter)?;
     if matches!(record.command.action, AttachmentActionV1::Attach { .. }) {

@@ -54,7 +54,7 @@ pub(super) fn load<'s>(
     Ok(ledger)
 }
 
-fn inventory<'s>(
+pub(super) fn inventory<'s>(
     view: &StoreSnapshot<'s>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<(JournalNamespaceInventory<'s>, Vec<String>)> {

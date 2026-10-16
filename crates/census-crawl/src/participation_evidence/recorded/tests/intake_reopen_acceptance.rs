@@ -26,6 +26,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod accepted_provider;
 mod fixtures;
+mod genuine_attachment;
 mod html;
 mod participation;
 mod provider;

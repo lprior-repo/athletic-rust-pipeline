@@ -12,17 +12,47 @@ pub(super) fn prepare<'s>(
     store: &'s Store,
     view: &StoreSnapshot<'s>,
     input: NewPreparation<'s, '_>,
-    mut ledger: Ledger<'s>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<PreparedParts<'s>> {
     let NewPreparation {
         command,
-        inspection,
+        mut inspection,
         supplied,
         approval,
     } = input;
-    require_fences(store, view, &command, &inspection, &ledger, grant)?;
-    let introduced = context::introductions(view, &inspection, supplied, &ledger, grant)?;
+    require_fences(store, view, &command, &inspection, grant)?;
+    let introduced =
+        context::introductions(view, &inspection, supplied, &inspection.state.ledger, grant)?;
+    let record = draft(command, grant)?;
+    let inputs = super::super::ledger::wire::EntryInputs {
+        capture: inspection.state.inputs.capture.reference().clone(),
+        token: inspection.state.inputs.token.reference().clone(),
+    };
+    let state = &mut *inspection.state;
+    let ledger = &mut state.ledger;
+    let previous = ledger.append_proposed(view, record, introduced, inputs, grant)?;
+    ledger.validate_projection(&state.store, grant)?;
+    let record = ledger
+        .records
+        .last()
+        .ok_or(Error::Corrupt("prepared record missing"))?;
+    super::super::target::verify_historical(ledger, record, grant)?;
+    let (record, introduced) = restore(ledger, previous, &state.inputs, grant)?;
+    Ok((
+        view.revision(),
+        record,
+        approval,
+        PreparedState::New {
+            inspection,
+            introduced,
+        },
+    ))
+}
+
+fn draft(
+    command: RetainedEvidenceSubjectAttachmentCommandV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<ReviewedReferenceRecordV1> {
     let prepared_digest = command
         .prepared_digest_with_grant(grant)
         .map_err(Error::Domain)?;
@@ -40,17 +70,27 @@ pub(super) fn prepare<'s>(
     record.record_digest = record
         .calculated_record_digest_with_grant(grant)
         .map_err(Error::Domain)?;
-    let inputs = super::super::ledger::wire::EntryInputs {
-        capture: inspection.state.inputs.capture.reference().clone(),
-        token: inspection.state.inputs.token.reference().clone(),
-    };
-    ledger.append_proposed(view, record, introduced, inputs, grant)?;
-    ledger.validate_projection(&inspection.state.store, grant)?;
-    let record = ledger
-        .records
-        .last()
-        .ok_or(Error::Corrupt("prepared record missing"))?;
-    super::super::target::verify_historical(&ledger, record, grant)?;
+    Ok(record)
+}
+
+fn restore(
+    ledger: &mut Ledger<'_>,
+    previous: census_domain::evidence_subject_attachment::AttachmentInventoryV1,
+    expected: &super::super::inputs::Inputs,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<(ReviewedReferenceRecordV1, Vec<Material>)> {
+    grant.charge_steps(1).map_err(Error::Domain)?;
+    let expected_len = ledger
+        .receipts
+        .len()
+        .checked_add(1)
+        .ok_or(crate::StoreError::CounterOverflow)?;
+    if ledger.records.len() != expected_len
+        || ledger.introductions.len() != expected_len
+        || ledger.input_refs.len() != expected_len
+    {
+        return Err(Error::Corrupt("prepared ledger restoration").into());
+    }
     let record = ledger
         .records
         .pop()
@@ -59,15 +99,17 @@ pub(super) fn prepare<'s>(
         .introductions
         .pop()
         .ok_or(Error::Corrupt("prepared context missing"))?;
-    Ok((
-        view.revision(),
-        record,
-        approval,
-        PreparedState::New {
-            inspection,
-            introduced,
-        },
-    ))
+    let inputs = ledger
+        .input_refs
+        .pop()
+        .ok_or(Error::Corrupt("prepared inputs missing"))?;
+    if inputs.capture != *expected.capture.reference()
+        || inputs.token != *expected.token.reference()
+    {
+        return Err(Error::Corrupt("prepared ledger restoration").into());
+    }
+    ledger.inventory = previous;
+    Ok((record, introduced))
 }
 
 fn require_fences(
@@ -75,7 +117,6 @@ fn require_fences(
     view: &StoreSnapshot<'_>,
     command: &RetainedEvidenceSubjectAttachmentCommandV1,
     inspection: &EvidenceSubjectAttachmentInspectionV1<'_>,
-    ledger: &Ledger<'_>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
     grant.charge_steps(1).map_err(Error::Domain)?;
@@ -93,15 +134,7 @@ fn require_fences(
     {
         return Err(Error::InputMoved.into());
     }
-    if command.expected_attachment_inventory != inspection.state.ledger.inventory
-        || command.expected_attachment_inventory != ledger.inventory
-        || !inspection
-            .state
-            .ledger
-            .physical
-            .fingerprint()
-            .same_contents(store, ledger.physical.fingerprint())?
-    {
+    if command.expected_attachment_inventory != inspection.state.ledger.inventory {
         return Err(Error::InventoryMoved.into());
     }
     super::super::inputs::require_head(view, &inspection.state.head, grant)?;

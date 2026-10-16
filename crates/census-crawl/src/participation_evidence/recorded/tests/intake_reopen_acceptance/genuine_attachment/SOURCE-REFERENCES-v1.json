@@ -1,0 +1,264 @@
+{
+  "schema": "genuine-attachment-static-source-references/v1",
+  "baseline_commit": "1ca29fe1138d54529b535afb3e04c13af3e59b05",
+  "inventory_sha256": "ffe74266d46b4d0324f511a55a90a4cb9fc0d4be4b4fbdf6fff023b2ac23b2f4",
+  "source_inventory_sha256": "fcbbee47cc88bd078a5c843dfb9807971128fdb05015575c647fcecf4fe55e21",
+  "status": "Static byte comparisons and source-derived preimage oracle only; no Rust compilation, checked-reader execution, actual grant measurement, review approval or attachment acceptance",
+  "original_bodies": [
+    {
+      "source": "dcc-roster",
+      "bytes": 264070,
+      "sha256": "f09ce2ccb8e9e789c4f7e782f286d95d5387aefd28996327a40a0aa82054a324",
+      "inventory_original_equals_compiled_fixture": true,
+      "response_headers_sha256": "98c18e5df4725d2825db7da293ac97f298e44e465054dbd360ddfd0867451b90"
+    },
+    {
+      "source": "dcc-schedule",
+      "bytes": 418855,
+      "sha256": "26833e4c45506da5d776eb844b106dcfb041f67f7916bec0fb59c950b99693eb",
+      "inventory_original_equals_compiled_fixture": true,
+      "response_headers_sha256": "27cf595d1ba9e79021d9bb02d567bb6eb57e2703ded552889febd629dd63524a"
+    },
+    {
+      "source": "mhsaa-status",
+      "bytes": 157420,
+      "sha256": "2fb479da65fb5cd69a3bb4a6b8a5625c298cfe51cdf06a43efe5359bf31de57a",
+      "inventory_original_equals_compiled_fixture": true,
+      "response_headers_sha256": "332359dda51eb233a10c766ecda05510bcc84e1736896bd2bf70d102b2c675dd"
+    },
+    {
+      "source": "milesplit-result",
+      "bytes": 136288,
+      "sha256": "95350f1389f9f81fc0354d73637a59cf508413f8bea530a91eb0de7c28cc19e5",
+      "inventory_original_equals_compiled_fixture": true,
+      "response_headers_sha256": "15dfbd070a93ae2e3fd19cd2beeb87d4f189861e0266f2a2fdf7ce01ce7a3ef8"
+    },
+    {
+      "source": "chsl-team",
+      "bytes": 98477,
+      "sha256": "3a8c7b8c30d42117c784c8401acebd07d4cd804ea58079d244d29682b979393d",
+      "inventory_original_equals_compiled_fixture": true,
+      "response_headers_sha256": "3c9d5d723494ae307a19e5213e4910a2dfe822ad7df5bf020db043b189c1b8f0"
+    },
+    {
+      "source": "dcc-provider-roster",
+      "bytes": 372977,
+      "sha256": "246374a87ba6d56802e58e54e4a1edcc5d1eee52106dedb24df185cbd037e178",
+      "inventory_original_equals_compiled_fixture": true,
+      "response_headers_sha256": "48a19972dda40f5047fc4ac0843f5d56f95d34342ba27c74a95ed31edeac85a4"
+    },
+    {
+      "source": "brocks-provider-profile",
+      "bytes": 461666,
+      "sha256": "b11d89fd95b7e08e5a90d1cbc1e51174cdb4a5f1bdf3833b980f4256ae1b266c",
+      "inventory_original_equals_compiled_fixture": true,
+      "response_headers_sha256": "61306a68c842857fc5fc57149385a27d7f3b1fa20ca47e19a5592bab5c7b57ac"
+    },
+    {
+      "source": "mi-team-index",
+      "bytes": 293847,
+      "sha256": "39606bf8e07f0170138bb586ae8a762903bb820b515520e89e34745f6c732351",
+      "inventory_original_equals_compiled_fixture": true
+    }
+  ],
+  "literal_spans": [
+    {
+      "source": "mhsaa-status",
+      "role": "article_status",
+      "offset": 113861,
+      "bytes": 66,
+      "sha256": "5b6a7eb82af2852669b5b7df9b37804f90d89bcb065825d74e2dc84125c308f4"
+    },
+    {
+      "source": "mhsaa-status",
+      "role": "article_person_specific_chsl_context",
+      "offset": 113940,
+      "bytes": 588,
+      "sha256": "d668ec9ee0510d228cb19e0bba2e08fe934eccfc80548280f3ec56329e1d0428"
+    },
+    {
+      "source": "mhsaa-status",
+      "role": "article_publication_day",
+      "offset": 107891,
+      "bytes": 67,
+      "sha256": "56aaadc1f2d91abc85c3697b4aa83a48110698b0c3ce409d8aacde93f9b8f005"
+    },
+    {
+      "source": "mhsaa-status",
+      "role": "article_owner",
+      "offset": 106790,
+      "bytes": 18605,
+      "sha256": "9f884851e60e2b85ab51eff97b7d1c48a3cb3224ad6e977d18fe03e80f5cf834"
+    },
+    {
+      "source": "milesplit-result",
+      "role": "result_subject",
+      "ordinal": 527,
+      "offset": 80520,
+      "bytes": 100,
+      "sha256": "bc7c7f83bcfc715c9c3343e09cf45f82bee7651ac86838f3427e1097de010b3d"
+    },
+    {
+      "source": "milesplit-result",
+      "role": "result_subject",
+      "ordinal": 540,
+      "offset": 81648,
+      "bytes": 92,
+      "sha256": "6bf39ca146977ced76ba63e226c1d41786e1914947f492c148fe3ca8708cd582"
+    },
+    {
+      "source": "milesplit-result",
+      "role": "result_subject",
+      "ordinal": 572,
+      "offset": 84465,
+      "bytes": 92,
+      "sha256": "8595ae83c23900e31b747b8bc0b3c6adb7c842139e0344f15e361a71e718d736"
+    },
+    {
+      "source": "chsl-team",
+      "role": "provider_linked_result_row",
+      "offset": 65480,
+      "bytes": 1319,
+      "sha256": "93fa4b8db2c428b36aacd581f89720d3dc49533e400064803178cb4f05f1453d"
+    },
+    {
+      "source": "chsl-team",
+      "role": "provider_linked_result_row",
+      "offset": 69033,
+      "bytes": 1319,
+      "sha256": "2a6e216d180730bc6724860d98a71312803f4a8473ec2ec75f444161257de2a4"
+    },
+    {
+      "source": "mhsaa-status",
+      "role": "B_original_senior_dual_hurdles_context",
+      "offset": 113861,
+      "bytes": 667,
+      "sha256": "7913637b4dc9a7e3e1d84df3741eec0ab0102361795a30f5dede010780661b57"
+    },
+    {
+      "source": "mhsaa-status",
+      "role": "checked_document_subject_enclosing_h4",
+      "offset": 113581,
+      "bytes": 358,
+      "sha256": "be72c9e5e2e494d63f1ee727b40df5a9937e25aa40223d694e393c2ee43b11ba",
+      "scope": "Full heading Element.span used by status::read; separate inner66-byte literal status fact unchanged"
+    }
+  ],
+  "source_derived_preimages": [
+    {
+      "role": "document_owned_subject",
+      "source": "mhsaa-status",
+      "encoding": "exact UTF-8 with no terminal newline",
+      "preimage_utf8": "document_subject_v1\nmhsaa_article_v1\n28974\nhttps://www.mhsaa.com/sports/boys-track-field/stories/performance-week-detroit-catholic-centrals-zacchaeus-brocks\n2fb479da65fb5cd69a3bb4a6b8a5625c298cfe51cdf06a43efe5359bf31de57a\nhtml_bytes:113581:113939",
+      "bytes": 246,
+      "sha256": "693ec13ae52aa09e4591fc9d7c8717a196b3e2d5e54054755fd282d9a89d997f",
+      "status": "independent source oracle; runtime constructor must match actual checked reader reference"
+    },
+    {
+      "role": "document_locator",
+      "source": "mhsaa-status",
+      "encoding": "exact UTF-8 with no terminal newline",
+      "preimage_utf8": "html_bytes:113581:113939",
+      "bytes": 24,
+      "sha256": "b45060131fbc0cab03bf5ac375aa04e0421f6ba9ad742f81092210e76feb11ea",
+      "status": "independent source oracle; runtime constructor must match actual checked reader reference"
+    },
+    {
+      "role": "document_owned_subject",
+      "source": "milesplit-result",
+      "encoding": "exact UTF-8 with no terminal newline",
+      "preimage_utf8": "document_subject_v1\nmilesplit_result_document_v1\n1304896\nhttps://mi.milesplit.com/meets/763888-mhsaa-lp-region-09-1-milford-2026/results/1304896/raw\n95350f1389f9f81fc0354d73637a59cf508413f8bea530a91eb0de7c28cc19e5\nhtml_bytes:80520:80620",
+      "bytes": 236,
+      "sha256": "1373635c1a9072a8569299e36cacd4eb8ac9dc8e4290281f413eafb1b21d8260",
+      "status": "independent source oracle; runtime constructor must match actual checked reader reference"
+    },
+    {
+      "role": "document_locator",
+      "source": "milesplit-result",
+      "encoding": "exact UTF-8 with no terminal newline",
+      "preimage_utf8": "html_bytes:80520:80620",
+      "bytes": 22,
+      "sha256": "37eacd574003bd020425e37c684dc0d3a66f6dfdf30eb1aa45ddf13873014704",
+      "status": "independent source oracle; runtime constructor must match actual checked reader reference"
+    },
+    {
+      "role": "document_owned_subject",
+      "source": "milesplit-result",
+      "encoding": "exact UTF-8 with no terminal newline",
+      "preimage_utf8": "document_subject_v1\nmilesplit_result_document_v1\n1304896\nhttps://mi.milesplit.com/meets/763888-mhsaa-lp-region-09-1-milford-2026/results/1304896/raw\n95350f1389f9f81fc0354d73637a59cf508413f8bea530a91eb0de7c28cc19e5\nhtml_bytes:81648:81740",
+      "bytes": 236,
+      "sha256": "2f52e9e3e814e0c8903c98aad2ac9ba74d57f767aba7e9c3fd8ee711bbb181bd",
+      "status": "independent source oracle; runtime constructor must match actual checked reader reference"
+    },
+    {
+      "role": "document_locator",
+      "source": "milesplit-result",
+      "encoding": "exact UTF-8 with no terminal newline",
+      "preimage_utf8": "html_bytes:81648:81740",
+      "bytes": 22,
+      "sha256": "10ff768d35593ac8a13c1bf8f13b585fd4eb5f78e7c38967248112d08c730686",
+      "status": "independent source oracle; runtime constructor must match actual checked reader reference"
+    },
+    {
+      "role": "document_owned_subject",
+      "source": "milesplit-result",
+      "encoding": "exact UTF-8 with no terminal newline",
+      "preimage_utf8": "document_subject_v1\nmilesplit_result_document_v1\n1304896\nhttps://mi.milesplit.com/meets/763888-mhsaa-lp-region-09-1-milford-2026/results/1304896/raw\n95350f1389f9f81fc0354d73637a59cf508413f8bea530a91eb0de7c28cc19e5\nhtml_bytes:84465:84557",
+      "bytes": 236,
+      "sha256": "c8ca9e5151f07525366dc936fb4dd3976e91fe1bb3bfe3c593a090322206f66f",
+      "status": "independent source oracle; runtime constructor must match actual checked reader reference"
+    },
+    {
+      "role": "document_locator",
+      "source": "milesplit-result",
+      "encoding": "exact UTF-8 with no terminal newline",
+      "preimage_utf8": "html_bytes:84465:84557",
+      "bytes": 22,
+      "sha256": "bf37173b8c403da3da6c5f6aead23d2a9be81e2d6c0f4e3af19934b0a9a9c522",
+      "status": "independent source oracle; runtime constructor must match actual checked reader reference"
+    },
+    {
+      "role": "checked_proof_interpretation_preimage",
+      "source": "mhsaa-status",
+      "encoding": "exact UTF-8 with no terminal newline",
+      "preimage_utf8": "mhsaa_subject_dcc_event_day_v1\n2fb479da65fb5cd69a3bb4a6b8a5625c298cfe51cdf06a43efe5359bf31de57a\nhtml_bytes:113581:113939",
+      "bytes": 120,
+      "sha256": "37f808a142850ee27ba10e506fb169b5270708c855dbc0f939995f80ce4328de",
+      "status": "independent source oracle; runtime constructor must match actual checked reader reference"
+    },
+    {
+      "role": "checked_proof_interpretation_preimage",
+      "source": "chsl-team",
+      "encoding": "exact UTF-8 with no terminal newline",
+      "preimage_utf8": "milesplit_profile_linked_competition_target_v1\n3a8c7b8c30d42117c784c8401acebd07d4cd804ea58079d244d29682b979393d\nhtml_bytes:65480:66799",
+      "bytes": 134,
+      "sha256": "466b8f0155a3870cf1876237dba082fdfdbe08c1c95fa8548995f3d7c26eddbd",
+      "status": "independent source oracle; runtime constructor must match actual checked reader reference"
+    },
+    {
+      "role": "checked_proof_interpretation_preimage",
+      "source": "chsl-team",
+      "encoding": "exact UTF-8 with no terminal newline",
+      "preimage_utf8": "milesplit_profile_linked_competition_target_v1\n3a8c7b8c30d42117c784c8401acebd07d4cd804ea58079d244d29682b979393d\nhtml_bytes:69033:70352",
+      "bytes": 134,
+      "sha256": "1553f3bfe515fcbbe86301e470fe939a988718f4c5c76aae92957d510f7d6c4c",
+      "status": "independent source oracle; runtime constructor must match actual checked reader reference"
+    }
+  ],
+  "runtime_unresolved": [
+    "actual installed roots and CaptureJson bytes/references",
+    "canonical checked-result context and interpretation DTO outputs",
+    "canonical diagnostics and publisher-lineage DTO outputs",
+    "actual accepted public target and witness",
+    "Inspection-issued input capture/token/head references",
+    "actual active A record, receipt and inventory",
+    "current complete scopes, commands and deduplicated six-category counts",
+    "public-route phase outcomes and retained-grant capacity"
+  ],
+  "correction": {
+    "native_commit": "3c987361be2526d3013ad133ad93fee66da36688",
+    "observed_reader_locator": "html_bytes:113581:113939",
+    "source_contract": "status::read combines article.span.start and selected heading.span endpoints. The inner status text span was mistakenly used only in the fixture assertion and static oracle. Actual subject construction already uses checked reader values.",
+    "preserved": "All nine authoritative inventory spans, all original bytes, the667-byte Senior/hurdles fact, context/negative facts, pairs and fixed grant are unchanged. No six-category or capacity result was available from this constructor refusal."
+  }
+}

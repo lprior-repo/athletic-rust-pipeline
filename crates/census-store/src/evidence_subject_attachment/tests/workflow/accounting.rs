@@ -2,9 +2,10 @@ use super::fixture::*;
 use crate::public_identity_tests::support::{retained_state, TestResult};
 use census_domain::evidence_subject_attachment::*;
 
-const EMPTY_LEDGER_STEPS: usize = 8;
+const EMPTY_LEDGER_REFRESH_STEPS: usize = 12;
 const ONE_CLAIM_INSPECTION_STEPS: usize = 34;
 const SIXTEEN_SORTED_LOOKUP_DEPTHS: [usize; 16] = [5, 4, 3, 4, 2, 4, 3, 4, 1, 4, 3, 4, 2, 4, 3, 4];
+const TWO_SORTED_FACT_DEPTHS: [usize; 2] = [2, 1];
 
 fn sum(values: impl IntoIterator<Item = usize>) -> TestResult<usize> {
     values.into_iter().try_fold(0usize, |total, value| {
@@ -31,6 +32,16 @@ fn position(
         .position(|object| &object.digest == digest)
         .and_then(|index| index.checked_add(1))
         .ok_or_else(|| "accounting reference absent".into())
+}
+
+fn depth(one_based: usize) -> TestResult<usize> {
+    let index = one_based
+        .checked_sub(1)
+        .ok_or("lookup position underflow")?;
+    SIXTEEN_SORTED_LOOKUP_DEPTHS
+        .get(index)
+        .copied()
+        .ok_or_else(|| "lookup depth absent".into())
 }
 
 fn command_steps(command: &RetainedEvidenceSubjectAttachmentCommandV1) -> TestResult<usize> {
@@ -62,20 +73,23 @@ fn command_steps(command: &RetainedEvidenceSubjectAttachmentCommandV1) -> TestRe
     check!(eq; refs.len(), 15);
     let resolution = sum(refs
         .into_iter()
-        .map(|digest| position(command, digest))
+        .map(|digest| depth(position(command, digest)?))
         .collect::<TestResult<Vec<_>>>()?)?;
     let pair = reviewed
         .corroboration
         .as_slice()
         .first()
         .ok_or("accounting pair absent")?;
-    let source_fact_position = reviewed
+    let source_fact_index = reviewed
         .facts
         .as_slice()
         .iter()
         .position(|fact| fact.fact == pair.subject_fact)
-        .and_then(|index| index.checked_add(1))
         .ok_or("accounting source fact absent")?;
+    let source_fact_depth = TWO_SORTED_FACT_DEPTHS
+        .get(source_fact_index)
+        .copied()
+        .ok_or("accounting source fact depth absent")?;
     let n = reviewed.objects.len();
     sum([
         1,
@@ -85,7 +99,7 @@ fn command_steps(command: &RetainedEvidenceSubjectAttachmentCommandV1) -> TestRe
         resolution,
         5,
         1,
-        source_fact_position,
+        source_fact_depth,
     ])
 }
 
@@ -135,15 +149,6 @@ fn first_record_work(
     let t = position(command, &token.digest)?;
     let n = command.reviewed_context.objects.len();
     check!(eq; n, 16);
-    let depth = |one_based: usize| -> TestResult<usize> {
-        let index = one_based
-            .checked_sub(1)
-            .ok_or("lookup position underflow")?;
-        SIXTEEN_SORTED_LOOKUP_DEPTHS
-            .get(index)
-            .copied()
-            .ok_or_else(|| "lookup depth absent".into())
-    };
     check!(eq; sum(SIXTEEN_SORTED_LOOKUP_DEPTHS)?, 54);
     Ok(FirstRecordWork {
         command: command_steps(command)?,
@@ -171,7 +176,7 @@ fn first_record_inspection_preparation_and_held_read_match_independently_counted
     ])?;
     let expected_prepared = sum([
         ONE_CLAIM_INSPECTION_STEPS,
-        sum([1, EMPTY_LEDGER_STEPS])?,
+        sum([1, EMPTY_LEDGER_REFRESH_STEPS])?,
         sum([work.command, 2])?,
         sum([11, work.issued_declarations])?,
         introduction_steps,
@@ -181,6 +186,7 @@ fn first_record_inspection_preparation_and_held_read_match_independently_counted
         work.input_fences,
         sum([work.command, 16])?,
         work.historical_witness,
+        1,
     ])?;
     let prepared = prepare(&fixture.store, inspection, command, &context)?;
     check!(eq; prepared.grant.usage().traversal_steps(), expected_prepared);

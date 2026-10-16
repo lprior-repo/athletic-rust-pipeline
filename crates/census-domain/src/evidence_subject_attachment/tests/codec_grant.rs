@@ -1,11 +1,11 @@
 use super::{fixture::*, *};
 
-const COMMAND_WORK: usize = 165;
-const RECORD_WORK: usize = 173;
-const RECORD_ENCODE_WORK: usize = 175;
-const RECORD_DECODE_WORK: usize = 174;
-const BORROWED_REPLAY_WORK: usize = 180;
-const OWNED_REPLAY_WORK: usize = 182;
+const COMMAND_WORK: usize = 107;
+const RECORD_WORK: usize = 115;
+const RECORD_ENCODE_WORK: usize = 117;
+const RECORD_DECODE_WORK: usize = 116;
+const BORROWED_REPLAY_WORK: usize = 122;
+const OWNED_REPLAY_WORK: usize = 124;
 
 #[test]
 fn fixed_fixture_validation_and_codec_pass_costs_match_the_independent_inventory() -> TestResult {
