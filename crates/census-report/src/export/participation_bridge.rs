@@ -35,6 +35,7 @@ impl SourceParticipationAssessment {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn assess_retained_source_participation(
     query: CandidateQuery<'_>,
     performance: &CanonicalPerformance,
