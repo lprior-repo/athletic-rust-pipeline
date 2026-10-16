@@ -3,14 +3,13 @@ use crate::{JournalReadBudget, StoreResult};
 use serde_json::value::RawValue;
 
 pub(crate) struct JournalRawEnvelope {
-    _at: String,
+    at: String,
     payload: Box<RawValue>,
 }
 
 impl JournalRawEnvelope {
-    #[cfg(test)]
     pub(crate) fn at(&self) -> &str {
-        &self._at
+        &self.at
     }
 
     pub(crate) fn payload(&self) -> &RawValue {
@@ -41,7 +40,7 @@ pub(in crate::read::view) fn entry(
         let decoded = owned(path, what, envelope)?;
         let payload = match decoded.payload {
             Some(payload) => Some(JournalRawEnvelope {
-                _at: at.ok_or_else(|| path.refusal("journal envelope timestamp is missing"))?,
+                at: at.ok_or_else(|| path.refusal("journal envelope timestamp is missing"))?,
                 payload,
             }),
             None => None,

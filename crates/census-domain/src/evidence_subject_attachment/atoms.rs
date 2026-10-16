@@ -83,6 +83,9 @@ impl<T> AttachmentListV1<T> {
     pub fn as_slice(&self) -> &[T] {
         &self.0
     }
+    pub fn into_values(self) -> Vec<T> {
+        self.0
+    }
     pub fn len(&self) -> usize {
         self.0.len()
     }

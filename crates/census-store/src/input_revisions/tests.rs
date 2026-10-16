@@ -5,6 +5,7 @@ use crate::{Application, StorageMode};
 use fjall::PersistMode;
 use serde_json::json;
 
+mod attachment;
 mod corruption;
 mod enrollment;
 mod interleavings;

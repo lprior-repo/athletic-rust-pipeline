@@ -1,4 +1,5 @@
 mod append;
+mod attachment_commit;
 mod budget;
 #[cfg(test)]
 mod byte_tests;
@@ -10,6 +11,8 @@ mod revision;
 mod source_access;
 
 pub use revision::{RevisionedApplication, StoreRevision};
+
+pub(crate) use attachment_commit::commit_evidence_subject_attachment;
 
 pub(crate) use journal::encode_publication_entry;
 

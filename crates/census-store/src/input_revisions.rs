@@ -8,6 +8,7 @@ mod format;
 #[cfg(test)]
 mod tests;
 
+pub(crate) use codec::encode as encode_attachment_token;
 pub(crate) use enrollment::enroll_locked;
 pub(crate) use format::{preflight_keyspaces, validate_format};
 
@@ -94,4 +95,14 @@ fn invalid(detail: &str) -> StoreError {
     StoreError::SchemaUnknown {
         detail: format!("{KEY}: {detail}"),
     }
+}
+
+pub(crate) fn decode_attachment_token(
+    raw: &[u8],
+    evidence: u64,
+    derived: u64,
+) -> StoreResult<PublicIdentityInputRevisionTokenV2> {
+    let token = codec::decode_attachment(raw)?;
+    format::validate_baseline_values(token, evidence, derived)?;
+    Ok(token)
 }
