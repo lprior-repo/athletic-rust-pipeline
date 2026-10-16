@@ -1726,7 +1726,7 @@ Commands, all from the repository root with `CI` unset:
 - `tools/moon-local run pipeline:tests-scoped -- -p census-service --test milesplit_roster_observations --no-tests fail`: 4 passed, 0 skipped (`26205a51`).
 - `tools/moon-local run pipeline:tests-scoped -- -p census-store --lib -E 'test(graph_operations)' --no-tests fail`: 4 passed, 1 slow, 1,243 unselected (`8aaef295`), before moving the unchanged physical-fixture helper.
 - `tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src pipeline:tests --force`: all four tasks passed; **7,502 tests passed, 0 failed, 9 skipped**. Test fingerprint `e7358548`; fmt `69f63ad0`, check `4bb299ea`, lint `f1d9d477`. Ten Store test-build dead-code warnings and six forced argument-count lint warnings remain; this is not a zero-warning claim.
-- `tools/moon-local run pipeline:run-scoped -- -p census-report --example v4_public_capture_smoke`: passed (`01462737`). A standalone, non-test executable captured a genuine selected dataset, saved it, removed only its newly created temporary source Store and HTTP cache, and reopened the wire-hash-anchored frozen artifact. All four performance rows matched exactly; the unowned result occurred once. The temporary example was removed after execution; its public-capture outcome is also covered by the permanent regression.
+- `tools/moon-local run pipeline:run-scoped -- -p census-report --example v4_public_capture_smoke`: passed (`01462737`). A standalone, non-test executable exercised genuine selected authority over a controlled fixture dataset, saved it, removed only its newly created temporary source Store and HTTP cache, and reopened the wire-hash-anchored frozen artifact. All four performance rows matched exactly; the synthetic unowned result occurred once. The temporary example was removed after execution; its public-capture outcome is also covered by the permanent regression.
 
 The runtime smoke initially failed to compile when calling a crate-private digest
 method; a parsed-JSON commitment then correctly failed the external-commitment
@@ -1743,3 +1743,30 @@ This verifies the bounded repairs, not release or national readiness. No release
 formal, native-fault or resource qualification is claimed here. The current-only
 migration and UP/five-state/national acceptance remain open. No live national
 Store was opened, reset or restarted. Architecture/ADR contracts are unchanged.
+
+### PR76 integration and exact-replay race — 2026-10-16
+
+PR #76 (`38227b0a`) was integrated without discarding either verification section.
+The first integrated full run (`a7f469ed`) passed 7,587/7,588 with nine skipped.
+Its exact-payload writer race failed with `RevisionMoved`: expected evidence 1,
+actual 2. This was not waived as a flaky test; it is tracked by `lzue.2`.
+
+The append lock was released between the initial receipt lookup and graph capture.
+The fix rechecks the validated committed receipt under the lock only after a
+matching-operation revision-movement refusal. Exact committed requests replay;
+changed payloads still conflict; unrelated movement without a receipt retains the
+original refusal. No new operation identity, revision refresh or capture-wide
+lock was introduced. Main restored the lock release omitted in the GPU handoff.
+
+Main executed `tools/moon-local run pipeline:tests-scoped -- -p census-store --lib
+-E 'test(public_identity_tests::revision_races)' --stress-count 100 --no-tests fail`
+with `CI` unset: **100/100 iterations passed**, three strict cases each
+(`dc0c4cd4`); the initial focused run also passed 3/3 (`fa9bbd94`).
+
+Post-fix `tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src
+pipeline:tests --force`, also with `CI` unset: all four tasks passed,
+**7,588 tests passed, 0 failed, 9 skipped** (`99c22ac4`).
+Fmt `7d7bcf2d`, check `06f781db`, lint `7cc1c27a`; existing warnings remain.
+These results supersede the failed integrated run, not the separate outstanding
+release, migration, source-coverage, native-fault and resource obligations.
+
