@@ -85,6 +85,11 @@ fn genuine_merge_can_prepare_and_consume_explicit_manual_split_without_erasing_c
     let fixture = merged()?;
     let before = results::retained_facts(&fixture.store)?;
     let request = request(&fixture)?;
+    let mut partitions = request.partitions.clone();
+    for partition in &mut partitions {
+        partition.binding_ids.sort();
+    }
+    partitions.sort_by(|left, right| left.binding_ids.cmp(&right.binding_ids));
     let head = fixture.writer.head(&fixture.store)?;
     let prepared = fixture.writer.prepare_local_adjudication(
         &fixture.store,
@@ -107,7 +112,23 @@ fn genuine_merge_can_prepare_and_consume_explicit_manual_split_without_erasing_c
     let PublicResolution::Ambiguous { successors, .. } = accepted.resolve_public(old)? else {
         return Err("manual split must make old birth ambiguous".into());
     };
-    check!(eq; successors.iter().map(|value| value.public_id.clone()).collect::<Vec<_>>(), outcome.introduced_public_ids());
+    let mut expected_successors = outcome.introduced_public_ids().to_vec();
+    expected_successors.sort();
+    check!(eq; successors.iter().map(|value| value.public_id.clone()).collect::<Vec<_>>(), expected_successors);
+    check!(eq; outcome.introduced_public_ids().len(), partitions.len());
+    for (position, (id, partition)) in outcome
+        .introduced_public_ids()
+        .iter()
+        .zip(&partitions)
+        .enumerate()
+    {
+        let PublicResolution::Canonical(successor) = accepted.resolve_public(id)? else {
+            return Err("introduced split identity must remain canonical".into());
+        };
+        check!(eq; successor.representative_candidate, partition.representative);
+        check!(eq; successor.established.sequence, outcome.head().sequence);
+        check!(eq; successor.established.position, u32::try_from(position)?);
+    }
     check!(eq; outcome.introduced_public_ids().len(), 2);
     check!(eq; outcome.head().sequence, head.sequence.checked_add(1).ok_or("head overflow")?);
     check!(eq; fixture.writer.head(&fixture.store)?, *outcome.head());

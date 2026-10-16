@@ -253,6 +253,8 @@ fn membership_rejects_rehashed_source_graph_substitution() -> TestResult {
         store.snapshot().revision(),
         &writer.head(store)?,
     )?;
+    let original_state = retained_state(store)?;
+    let original_head = writer.head(store)?;
     let source = store
         .journal
         .get(crate::public_identity::witness::key(1))?
@@ -262,6 +264,13 @@ fn membership_rejects_rehashed_source_graph_substitution() -> TestResult {
     let raw = store.journal.get(&key)?.ok_or("membership graph witness")?;
     let mut witness = HeldGraphWitness::decode(&key, &raw)?;
     check!(witness.graph != source.graph);
+    assert_substituted_graph_is_not_reviewed(
+        store,
+        &source.graph,
+        &request.case_id,
+        &witness.observed_at,
+    )?;
+    let original_digest = census_domain::model::serialized_digest(&witness)?;
     witness.graph = source.graph;
     let receipt_key = crate::public_identity::witness::receipt_key("graph-substitution");
     let raw_receipt = store
@@ -269,23 +278,57 @@ fn membership_rejects_rehashed_source_graph_substitution() -> TestResult {
         .get(&receipt_key)?
         .ok_or("membership receipt")?;
     let mut receipt: crate::Receipt = serde_json::from_slice(&raw_receipt)?;
+    check!(eq; receipt.digest, original_digest);
     receipt.digest = census_domain::model::serialized_digest(&witness)?;
+    check!(ne; receipt.digest, original_digest);
     let mut batch = store.db.batch();
     batch.insert(&store.journal, &key, serde_json::to_vec(&witness)?);
     batch.insert(&store.receipts, &receipt_key, serde_json::to_vec(&receipt)?);
     batch.commit()?;
     let tampered = retained_state(store)?;
-    check!(matches!(
-        writer.head(store),
-        Err(StoreError::PublicIdentity(PublicIdentityError::NotReviewed))
-    ));
+    assert_substitution_ledger_refusal(writer.head(store))?;
     check!(eq; retained_state(store)?, tampered);
     let mut batch = store.db.batch();
     batch.insert(&store.journal, &key, raw.as_ref());
     batch.insert(&store.receipts, &receipt_key, raw_receipt.as_ref());
     batch.commit()?;
     check!(eq; writer.head(store)?.sequence, 2);
+    check!(eq; writer.head(store)?, original_head);
+    check!(eq; retained_state(store)?, original_state);
     Ok(())
+}
+
+fn assert_substituted_graph_is_not_reviewed(
+    store: &Store,
+    graph: &crate::public_identity::graph_reference::GraphAuthorityReferenceV1,
+    case_id: &str,
+    observed_at: &str,
+) -> TestResult {
+    let snapshot = store.snapshot();
+    let view = crate::public_identity::paged_generation::VerifiedRawGraph::verify(
+        &snapshot,
+        graph.capture(),
+        graph.seal(),
+    )?;
+    match crate::public_identity::authority::graph::accept_reviewed(&view, case_id, observed_at) {
+        Err(StoreError::PublicIdentity(PublicIdentityError::NotReviewed)) => Ok(()),
+        Err(error) => {
+            Err(format!("unexpected substituted graph authority refusal: {error:?}").into())
+        }
+        Ok(_) => Err("substituted source graph unexpectedly authorized membership review".into()),
+    }
+}
+
+fn assert_substitution_ledger_refusal(
+    result: crate::StoreResult<census_domain::public_identity_history::RegistryHead>,
+) -> TestResult {
+    match result {
+        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
+            "manual review case missing",
+        ))) => Ok(()),
+        Err(error) => Err(format!("unexpected substituted graph ledger refusal: {error:?}").into()),
+        Ok(head) => Err(format!("substituted source graph unexpectedly verified: {head:?}").into()),
+    }
 }
 
 fn stage_inventory(
