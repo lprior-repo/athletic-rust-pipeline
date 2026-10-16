@@ -1476,3 +1476,14 @@ operations each returned HTTP403, `Resource not accessible by integration`.
 No alternate route or retry was used. Manual merge is pending; this is not a main
 landing or full selected-publication acceptance result. Earlier historical status
 and test records above remain unchanged.
+
+## Archive fence public-API regressions
+
+On root main baseline `dd61b145`, the added `archive_fence` integration target
+passed three tests with zero skips: contention/reacquisition, noncreating
+missing-file probes and symlink refusal without target mutation.
+Moon `cd8bb178`; Nextest `df27ff32-e7c0-4c7b-ac51-228693b04597`.
+Root workspace check `b5b8e6f3` and formatting `6b761a4a` also passed.
+This is a regression-test-only integration; the separate current-version
+migration remains unmerged and unqualified. No release or national-run
+acceptance is inferred.
