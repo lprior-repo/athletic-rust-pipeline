@@ -4,6 +4,7 @@ pub(super) enum Layout {
     Qualified {
         heat: Option<usize>,
         wind: Option<usize>,
+        place: Option<usize>,
     },
     Invalid,
 }
@@ -12,6 +13,7 @@ pub(super) enum Layout {
 pub(super) struct Header {
     heat: Option<usize>,
     wind: Option<usize>,
+    place: Option<usize>,
     other_end: Option<usize>,
     invalid: bool,
 }
@@ -26,7 +28,13 @@ impl Header {
             self.invalid |= self.wind.replace(end).is_some();
         } else if label.eq_ignore_ascii_case("H#") || label.eq_ignore_ascii_case("Heat") {
             self.invalid |= self.heat.replace(end).is_some();
-        } else if starts(label, "Wind") || starts(label, "H#") || starts(label, "Heat") {
+        } else if label.eq_ignore_ascii_case("(Pl)") {
+            self.invalid |= self.place.replace(end).is_some();
+        } else if starts(label, "Wind")
+            || starts(label, "H#")
+            || starts(label, "Heat")
+            || starts(label, "(Pl")
+        {
             self.invalid = true;
         } else {
             self.other_end = Some(self.other_end.map_or(end, |prior| prior.max(end)));
@@ -34,20 +42,24 @@ impl Header {
     }
 
     pub(super) fn finish(&self, mark_end: usize) -> Layout {
-        let qualified = self.heat.is_some() || self.wind.is_some();
+        let qualified = self.heat.is_some() || self.wind.is_some() || self.place.is_some();
         if self.invalid
             || qualified && self.other_end.is_some_and(|end| end > mark_end)
             || self.heat.is_some_and(|end| end <= mark_end)
             || self.wind.is_some_and(|end| end <= mark_end)
             || self.heat.is_some() && self.heat == self.wind
+            || self
+                .place
+                .is_some_and(|place| self.heat.is_none_or(|heat| heat >= place))
         {
             Layout::Invalid
-        } else if self.heat.is_none() && self.wind.is_none() {
+        } else if !qualified {
             Layout::Unlabelled
         } else {
             Layout::Qualified {
                 heat: self.heat,
                 wind: self.wind,
+                place: self.place,
             }
         }
     }
@@ -74,7 +86,7 @@ pub(super) fn read(line: &str, mark_end: usize, layout: Layout) -> Result<Cells<
                 wind: None,
             })
         }
-        Layout::Qualified { heat, wind } => declared(line, mark_end, heat, wind),
+        Layout::Qualified { heat, wind, place } => declared(line, mark_end, heat, wind, place),
     }
 }
 
@@ -83,10 +95,12 @@ fn declared(
     mark_end: usize,
     heat: Option<usize>,
     wind: Option<usize>,
+    place: Option<usize>,
 ) -> Result<Cells<'_>, &'static str> {
-    let last = heat
+    let ends = [heat, wind, place];
+    let last = ends
         .into_iter()
-        .chain(wind)
+        .flatten()
         .max()
         .ok_or("invalid declared tail columns")?;
     let suffix = line
@@ -96,20 +110,25 @@ fn declared(
         return Err("undeclared result tail content");
     }
     let heat_cell = heat
-        .map(|end| field(line, previous(mark_end, end, wind), end))
+        .map(|end| field(line, previous(mark_end, end, ends), end))
         .transpose()?;
     let wind_cell = wind
-        .map(|end| field(line, previous(mark_end, end, heat), end))
+        .map(|end| field(line, previous(mark_end, end, ends), end))
         .transpose()?;
-    Ok(Cells {
-        heat: parse_heat(heat_cell.map_or("", core::convert::identity))?,
-        wind: parse_wind(wind_cell.map_or("", core::convert::identity))?,
-    })
+    let place_cell = place
+        .map(|end| field(line, previous(mark_end, end, ends), end))
+        .transpose()?;
+    let heat = parse_heat(heat_cell.map_or("", core::convert::identity))?;
+    let wind = parse_wind(wind_cell.map_or("", core::convert::identity))?;
+    heat_place(place_cell.map_or("", core::convert::identity))?;
+    Ok(Cells { heat, wind })
 }
 
-fn previous(mark: usize, end: usize, other: Option<usize>) -> usize {
-    other
+fn previous(mark: usize, end: usize, ends: [Option<usize>; 3]) -> usize {
+    ends.into_iter()
+        .flatten()
         .filter(|other| *other < end)
+        .max()
         .map_or(mark, core::convert::identity)
 }
 
@@ -139,6 +158,23 @@ fn parse_heat(value: &str) -> Result<Option<&str>, &'static str> {
         return Err("invalid declared heat field");
     }
     Ok(Some(value))
+}
+
+fn heat_place(value: &str) -> Result<(), &'static str> {
+    if value.is_empty() {
+        return Ok(());
+    }
+    if value.len() > 16 {
+        return Err("invalid declared heat place field");
+    }
+    let rank = value
+        .strip_prefix('(')
+        .and_then(|value| value.strip_suffix(')'))
+        .ok_or("invalid declared heat place field")?;
+    if !digits(rank) || !rank.bytes().any(|byte| byte != b'0') {
+        return Err("invalid declared heat place field");
+    }
+    Ok(())
 }
 
 fn parse_wind(value: &str) -> Result<Option<f64>, &'static str> {

@@ -5,6 +5,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod guards;
 mod located;
+mod placing;
 mod support;
 
 use support::{base_header, base_row, document, one_row, page, refused};
