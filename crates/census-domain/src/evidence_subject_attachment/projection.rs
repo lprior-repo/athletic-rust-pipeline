@@ -66,6 +66,30 @@ pub fn replay_reviewed_references_with_grant<'a>(
     })
 }
 
+pub fn replay_checked_reviewed_references_with_grant(
+    store: &StoreIdentity,
+    records: &super::checked::CheckedReviewedReferenceRecordsV1,
+    receipts: &[AttachmentReceiptBindingV1],
+    expected_inventory: &AttachmentInventoryV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> Result<()> {
+    grant.admit(|grant| {
+        limit("records", records.len(), ReplayLimits::SMALL.records)?;
+        if records.len() != receipts.len() {
+            return Err(EvidenceSubjectAttachmentError::Invalid(
+                "record and receipt count",
+            ));
+        }
+        records.require_origin(grant)?;
+        for (record, receipt) in records.iter().zip(receipts) {
+            validate::record_shell(record, grant)?;
+            validate_receipt(store, record, receipt, grant)?;
+        }
+        project(records, expected_inventory, grant)?;
+        Ok(())
+    })
+}
+
 fn project<'a>(
     records: &'a [ReviewedReferenceRecordV1],
     expected_inventory: &AttachmentInventoryV1,
@@ -106,6 +130,15 @@ fn validate_record(
     grant: &mut validate::Grant,
 ) -> Result<()> {
     validate::record(record, grant)?;
+    validate_receipt(store, record, receipt, grant)
+}
+
+fn validate_receipt(
+    store: &StoreIdentity,
+    record: &ReviewedReferenceRecordV1,
+    receipt: &AttachmentReceiptBindingV1,
+    grant: &mut validate::Grant,
+) -> Result<()> {
     let bytes = codec::measure_with_grant(receipt, ReplayLimits::SMALL.total_text_bytes, grant)?;
     grant.bytes(bytes)?;
     grant.steps(1)?;

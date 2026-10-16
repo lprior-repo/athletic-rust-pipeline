@@ -3,23 +3,27 @@ use crate::model::AthleteCandidateId;
 use crate::public_identity_history::PublicAthleteId;
 use chrono::{DateTime, Utc};
 
-pub(super) fn digest(label: &str) -> TestResult<AttachmentDigestV1> {
+pub(in crate::evidence_subject_attachment) fn digest(
+    label: &str,
+) -> TestResult<AttachmentDigestV1> {
     Ok(AttachmentDigestV1::of(label)?)
 }
-pub(super) fn text(value: &str) -> TestResult<AttachmentTextV1> {
+pub(in crate::evidence_subject_attachment) fn text(value: &str) -> TestResult<AttachmentTextV1> {
     Ok(AttachmentTextV1::parse(value)?)
 }
-pub(super) fn store() -> TestResult<StoreIdentity> {
+pub(in crate::evidence_subject_attachment) fn store() -> TestResult<StoreIdentity> {
     Ok(StoreIdentity::parse(&"1".repeat(64))?)
 }
 pub(super) fn list<T>(values: Vec<T>) -> TestResult<AttachmentListV1<T>> {
     Ok(AttachmentListV1::new(values)?)
 }
-pub(super) fn stamp() -> TestResult<DateTime<Utc>> {
+pub(in crate::evidence_subject_attachment) fn stamp() -> TestResult<DateTime<Utc>> {
     Ok(DateTime::parse_from_rfc3339("2026-10-16T00:00:00Z")?.with_timezone(&Utc))
 }
 
-pub(super) fn command(operation: &str) -> TestResult<RetainedEvidenceSubjectAttachmentCommandV1> {
+pub(in crate::evidence_subject_attachment) fn command(
+    operation: &str,
+) -> TestResult<RetainedEvidenceSubjectAttachmentCommandV1> {
     let subject = subject("source-row")?;
     let context = context(&subject)?;
     Ok(RetainedEvidenceSubjectAttachmentCommandV1 {
@@ -111,7 +115,7 @@ fn context(
     })
 }
 
-pub(super) fn seal(
+pub(in crate::evidence_subject_attachment) fn seal(
     command: RetainedEvidenceSubjectAttachmentCommandV1,
 ) -> TestResult<ReviewedReferenceRecordV1> {
     let mut record = ReviewedReferenceRecordV1 {
@@ -134,7 +138,7 @@ pub(super) fn append(
     Ok(())
 }
 
-pub(super) fn inventory(
+pub(in crate::evidence_subject_attachment) fn inventory(
     records: &[ReviewedReferenceRecordV1],
 ) -> TestResult<AttachmentInventoryV1> {
     Ok(super::super::inventory::inventory(
@@ -143,7 +147,9 @@ pub(super) fn inventory(
     )?)
 }
 
-pub(super) fn receipts(records: &[ReviewedReferenceRecordV1]) -> Vec<AttachmentReceiptBindingV1> {
+pub(in crate::evidence_subject_attachment) fn receipts(
+    records: &[ReviewedReferenceRecordV1],
+) -> Vec<AttachmentReceiptBindingV1> {
     records
         .iter()
         .map(|record| AttachmentReceiptBindingV1 {

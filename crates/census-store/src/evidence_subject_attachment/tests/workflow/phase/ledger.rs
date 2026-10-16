@@ -15,12 +15,14 @@ pub(super) fn load(records: &[&Record], meter: &mut Meter) -> TestResult {
         meter.singles("entry parse and canonical equality", 2)?;
         meter.charge("domain record decode", 1)?;
         domain::record(record, meter)?;
+        meter.charge("fresh decoded record proof issuance", 1)?;
         meter.charge("entry timestamp comparison", 1)?;
         model::closure(
             records.get(..index).ok_or("ledger prefix absent")?,
             record,
             meter,
         )?;
+        meter.singles("fresh decoded record and collection origin", 2)?;
     }
     receipts(rows, meter)?;
     domain::inventory(rows, meter)?;

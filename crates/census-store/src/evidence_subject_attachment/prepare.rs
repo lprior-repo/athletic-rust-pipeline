@@ -7,8 +7,8 @@ use super::{
 };
 use crate::{Store, StoreResult, StoreRevision};
 use census_domain::evidence_subject_attachment::{
-    AttachmentDigestV1, AttachmentReplayGrantV1, RetainedEvidenceSubjectAttachmentCommandV1,
-    ReviewedReferenceRecordV1,
+    AttachmentDigestV1, AttachmentReplayGrantV1, CheckedReviewedReferenceRecordV1,
+    RetainedEvidenceSubjectAttachmentCommandV1,
 };
 
 mod context;
@@ -25,7 +25,7 @@ pub enum EvidenceSubjectAttachmentPreparationV1<'s, 'a> {
 
 pub struct PreparedEvidenceSubjectAttachmentV1<'s> {
     pub(super) revision: StoreRevision<'s>,
-    pub(super) record: ReviewedReferenceRecordV1,
+    pub(super) record: CheckedReviewedReferenceRecordV1,
     pub(super) approval: Vec<u8>,
     pub(super) state: PreparedState<'s>,
     pub(super) grant: AttachmentReplayGrantV1,
@@ -98,7 +98,7 @@ impl Store {
 
 type PreparedParts<'s> = (
     StoreRevision<'s>,
-    ReviewedReferenceRecordV1,
+    CheckedReviewedReferenceRecordV1,
     Vec<u8>,
     PreparedState<'s>,
 );
@@ -131,15 +131,18 @@ fn prepare<'s>(
         drop(inspection);
         return replay::prepare(&view, &identity, command, true, grant);
     }
-    let (approval, retained) = replay::find(&mut inspection.state.ledger, &command, grant)?;
-    if let Some(record) = retained {
-        return Ok((view.revision(), record, approval, PreparedState::Replay));
+    match replay::find(&mut inspection.state.ledger, command, grant)? {
+        replay::Found::Repeated { record, approval } => {
+            Ok((view.revision(), record, approval, PreparedState::Replay))
+        }
+        replay::Found::New { command, approval } => {
+            let input = new::NewPreparation {
+                command,
+                inspection,
+                supplied: context,
+                approval,
+            };
+            new::prepare(store, &view, input, grant)
+        }
     }
-    let input = new::NewPreparation {
-        command,
-        inspection,
-        supplied: context,
-        approval,
-    };
-    new::prepare(store, &view, input, grant)
 }

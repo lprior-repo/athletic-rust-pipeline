@@ -2,7 +2,7 @@ use super::*;
 
 mod budget;
 mod codec_grant;
-mod fixture;
+pub(super) mod fixture;
 mod ordered_lookup;
 mod reversals;
 mod shared_grant;

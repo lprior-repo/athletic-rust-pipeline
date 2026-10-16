@@ -2,6 +2,7 @@ use crate::model::{CanonicalJsonError, StoreIdentity};
 use crate::public_identity_history::ReplayLimits;
 
 mod atoms;
+mod checked;
 mod codec;
 mod context;
 mod grant;
@@ -11,6 +12,11 @@ mod types;
 mod validate;
 
 pub use atoms::{AttachmentDigestV1, AttachmentListV1, AttachmentTextV1};
+pub use checked::{
+    check_attachment_command_with_grant, decode_checked_reviewed_reference_with_grant,
+    CheckedAttachmentCommandV1, CheckedReviewedReferenceRecordV1,
+    CheckedReviewedReferenceRecordsV1,
+};
 pub use codec::{
     decode_reviewed_reference, decode_reviewed_reference_with_grant, encode_reviewed_reference,
     encode_reviewed_reference_with_grant,
@@ -20,8 +26,9 @@ pub use grant::{AttachmentReplayGrantV1, AttachmentReplayUsageV1};
 pub use inventory::calculate_reviewed_reference_inventory_with_grant;
 pub use projection::{
     decode_and_replay_reviewed_references, decode_and_replay_reviewed_references_with_grant,
-    replay_reviewed_references, replay_reviewed_references_with_grant,
-    OwnedReviewedReferenceProjectionV1, ReviewedReferenceProjectionV1,
+    replay_checked_reviewed_references_with_grant, replay_reviewed_references,
+    replay_reviewed_references_with_grant, OwnedReviewedReferenceProjectionV1,
+    ReviewedReferenceProjectionV1,
 };
 pub use types::*;
 

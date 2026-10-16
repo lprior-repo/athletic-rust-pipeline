@@ -6,10 +6,23 @@ pub(super) use super::AttachmentReplayGrantV1 as Grant;
 mod lookup;
 
 pub(super) fn record(record: &ReviewedReferenceRecordV1, grant: &mut Grant) -> Result<()> {
+    record_prefix(record, grant)?;
+    command(&record.command, grant)?;
+    record_suffix(record, grant)
+}
+
+pub(super) fn record_shell(record: &ReviewedReferenceRecordV1, grant: &mut Grant) -> Result<()> {
+    record_prefix(record, grant)?;
+    record_suffix(record, grant)
+}
+
+fn record_prefix(record: &ReviewedReferenceRecordV1, grant: &mut Grant) -> Result<()> {
     grant.steps(1)?;
     let bytes = codec::measure_with_grant(record, ReplayLimits::SMALL.total_text_bytes, grant)?;
-    grant.bytes(bytes)?;
-    command(&record.command, grant)?;
+    grant.bytes(bytes)
+}
+
+fn record_suffix(record: &ReviewedReferenceRecordV1, grant: &mut Grant) -> Result<()> {
     if record.prepared_digest != record.command.prepared_digest_with_grant(grant)?
         || record.approval_digest != record.command.approval_digest_with_grant(grant)?
         || record.record_digest != record.calculated_record_digest_with_grant(grant)?

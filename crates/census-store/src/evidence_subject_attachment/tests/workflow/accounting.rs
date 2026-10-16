@@ -2,8 +2,8 @@ use super::fixture::*;
 use crate::public_identity_tests::support::{retained_state, TestResult};
 use census_domain::evidence_subject_attachment::*;
 
-const EMPTY_LEDGER_REFRESH_STEPS: usize = 12;
-const ONE_CLAIM_INSPECTION_STEPS: usize = 34;
+const EMPTY_LEDGER_REFRESH_STEPS: usize = 13;
+const ONE_CLAIM_INSPECTION_STEPS: usize = 35;
 const SIXTEEN_SORTED_LOOKUP_DEPTHS: [usize; 16] = [5, 4, 3, 4, 2, 4, 3, 4, 1, 4, 3, 4, 2, 4, 3, 4];
 const TWO_SORTED_FACT_DEPTHS: [usize; 2] = [2, 1];
 
@@ -186,16 +186,17 @@ fn first_record_inspection_preparation_and_held_read_match_independently_counted
     let expected_prepared = sum([
         ONE_CLAIM_INSPECTION_STEPS,
         sum([1, EMPTY_LEDGER_REFRESH_STEPS])?,
-        sum([work.command, 2])?,
+        sum([work.command, 4])?,
         sum([11, work.issued_declarations])?,
         introduction_steps,
-        6,
+        7,
         work.context_closure,
+        2,
         3,
         work.input_fences,
-        sum([work.command, 16])?,
+        17,
         work.historical_witness,
-        1,
+        3,
     ])?;
     let prepared = prepare(&fixture.store, inspection, command, &context)?;
     check!(eq; prepared.grant.usage().traversal_steps(), expected_prepared);
@@ -205,11 +206,12 @@ fn first_record_inspection_preparation_and_held_read_match_independently_counted
         1,
         7,
         34,
-        sum([work.command, 12])?,
+        sum([work.command, 13])?,
         work.context_closure,
+        2,
         7,
         3,
-        sum([work.command, 16])?,
+        17,
         work.input_fences,
         work.historical_witness,
     ])?;

@@ -1,4 +1,5 @@
 use super::{limit, EvidenceSubjectAttachmentError, ReplayLimits, Result};
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AttachmentReplayUsageV1 {
@@ -25,6 +26,7 @@ enum Admission {
 pub struct AttachmentReplayGrantV1 {
     usage: AttachmentReplayUsageV1,
     admission: Admission,
+    origin: Option<Arc<()>>,
 }
 
 impl Default for AttachmentReplayGrantV1 {
@@ -41,6 +43,7 @@ impl AttachmentReplayGrantV1 {
                 traversal_steps: 0,
             },
             admission: Admission::Open,
+            origin: None,
         }
     }
 
@@ -89,6 +92,28 @@ impl AttachmentReplayGrantV1 {
                 ReplayLimits::SMALL.traversal_steps,
             )?;
             grant.usage.traversal_steps = needed;
+            Ok(())
+        })
+    }
+
+    pub(super) fn issue_origin(&mut self) -> Result<Arc<()>> {
+        self.steps(1)?;
+        let origin = self.origin.get_or_insert_with(|| Arc::new(()));
+        Ok(Arc::clone(origin))
+    }
+
+    pub(super) fn require_origin(&mut self, expected: &Arc<()>) -> Result<()> {
+        self.admit(|grant| {
+            grant.steps(1)?;
+            if grant
+                .origin
+                .as_ref()
+                .is_none_or(|origin| !Arc::ptr_eq(origin, expected))
+            {
+                return Err(EvidenceSubjectAttachmentError::Invalid(
+                    "checked command grant differs",
+                ));
+            }
             Ok(())
         })
     }

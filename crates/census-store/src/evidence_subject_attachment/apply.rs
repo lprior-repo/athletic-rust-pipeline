@@ -138,7 +138,7 @@ fn repeated(
         .ok_or(Error::Corrupt("replay record missing"))?;
     if record.command != prepared.record.command
         || record.approval_digest != prepared.record.approval_digest
-        || (exact_record && record != &prepared.record)
+        || (exact_record && record != prepared.record.record())
     {
         return Err(Error::OperationConflict.into());
     }

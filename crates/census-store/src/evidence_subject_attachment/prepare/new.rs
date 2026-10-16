@@ -1,8 +1,9 @@
 use super::*;
 use crate::StoreSnapshot;
+use census_domain::evidence_subject_attachment::CheckedAttachmentCommandV1;
 
 pub(super) struct NewPreparation<'s, 'a> {
-    pub(super) command: RetainedEvidenceSubjectAttachmentCommandV1,
+    pub(super) command: CheckedAttachmentCommandV1,
     pub(super) inspection: EvidenceSubjectAttachmentInspectionV1<'s>,
     pub(super) supplied: &'a [AttachmentContextObjectV1<'a>],
     pub(super) approval: Vec<u8>,
@@ -23,7 +24,9 @@ pub(super) fn prepare<'s>(
     require_fences(store, view, &command, &inspection, grant)?;
     let introduced =
         context::introductions(view, &inspection, supplied, &inspection.state.ledger, grant)?;
-    let record = draft(command, grant)?;
+    let record = command
+        .into_draft_with_grant(grant)
+        .map_err(Error::Domain)?;
     let inputs = super::super::ledger::wire::EntryInputs {
         capture: inspection.state.inputs.capture.reference().clone(),
         token: inspection.state.inputs.token.reference().clone(),
@@ -49,36 +52,12 @@ pub(super) fn prepare<'s>(
     ))
 }
 
-fn draft(
-    command: RetainedEvidenceSubjectAttachmentCommandV1,
-    grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<ReviewedReferenceRecordV1> {
-    let prepared_digest = command
-        .prepared_digest_with_grant(grant)
-        .map_err(Error::Domain)?;
-    let approval_digest = command
-        .approval_digest_with_grant(grant)
-        .map_err(Error::Domain)?;
-    let committed_at = command.reviewed_at;
-    let mut record = ReviewedReferenceRecordV1 {
-        command,
-        prepared_digest,
-        approval_digest,
-        committed_at,
-        record_digest: AttachmentDigestV1::parse(&"0".repeat(64)).map_err(Error::Domain)?,
-    };
-    record.record_digest = record
-        .calculated_record_digest_with_grant(grant)
-        .map_err(Error::Domain)?;
-    Ok(record)
-}
-
 fn restore(
     ledger: &mut Ledger<'_>,
     previous: census_domain::evidence_subject_attachment::AttachmentInventoryV1,
     expected: &super::super::inputs::Inputs,
     grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<(ReviewedReferenceRecordV1, Vec<Material>)> {
+) -> StoreResult<(CheckedReviewedReferenceRecordV1, Vec<Material>)> {
     grant.charge_steps(1).map_err(Error::Domain)?;
     let expected_len = ledger
         .receipts
@@ -93,8 +72,8 @@ fn restore(
     }
     let record = ledger
         .records
-        .pop()
-        .ok_or(Error::Corrupt("prepared record missing"))?;
+        .pop_with_grant(grant)
+        .map_err(Error::Domain)?;
     let introduced = ledger
         .introductions
         .pop()
