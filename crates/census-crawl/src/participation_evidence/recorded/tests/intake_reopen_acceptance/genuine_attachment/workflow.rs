@@ -59,22 +59,94 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
             return Err(error);
         }
     };
+    if let Err(error) = replay_completed(&store, &sources, completed) {
+        drop(writer);
+        drop(store);
+        let observed = (|| -> TestResult {
+            let (store, _writer) =
+                Store::open_public_identity_qualification_v3(directory.path().join("store"))?
+                    .into_parts();
+            check!(eq; preservation::Logical::capture(&store, &sources)?, retained);
+            retained.require_receipts(&store)?;
+            require_originals(&store, &sources)?;
+            installed.verify(&store)
+        })();
+        replay_observation("chain", "replay-failure-reopen", observed);
+        return Err(error);
+    }
+    drop(writer);
+    Ok(())
+}
+
+fn replay_completed(
+    store: &Store,
+    sources: &Sources,
+    completed: Vec<(RetainedEvidenceSubjectAttachmentCommandV1, Receipt)>,
+) -> TestResult {
     for (command, receipt) in completed {
-        let before = preservation::Held::capture(&store, &sources)?;
-        let replay = store.prepare_evidence_subject_attachment_v1(
+        let before = preservation::Held::capture(store, sources)?;
+        replay_phase(
+            command.operation.as_str(),
+            "replay-prepare-start",
+            "started",
+            json!({}),
+        );
+        let replay = match store.prepare_evidence_subject_attachment_v1(
             command.clone(),
             EvidenceSubjectAttachmentPreparationV1::ReplayOnly,
-        )?;
+        ) {
+            Ok(replay) => replay,
+            Err(error) => {
+                return replay_refused(
+                    command.operation.as_str(),
+                    "replay-prepare",
+                    error,
+                    store,
+                    sources,
+                    &before,
+                )
+            }
+        };
         check!(replay.is_replay());
+        replay_phase(
+            command.operation.as_str(),
+            "replay-prepare",
+            "prepared",
+            json!({}),
+        );
         let approval = replay.approval_bytes().to_vec();
         let digest = replay.approval_digest().clone();
-        match store.apply_evidence_subject_attachment_v1(replay, &approval, &digest)? {
-            Application::Repeated(found) => check!(eq; found, receipt),
-            Application::Written(_) => {
+        replay_phase(
+            command.operation.as_str(),
+            "replay-apply-start",
+            "started",
+            json!({}),
+        );
+        match store.apply_evidence_subject_attachment_v1(replay, &approval, &digest) {
+            Ok(Application::Repeated(found)) => {
+                check!(eq; found, receipt);
+                replay_phase(
+                    command.operation.as_str(),
+                    "replay-apply",
+                    "repeated-exact-receipt",
+                    json!(found),
+                );
+            }
+            Ok(Application::Written(_)) => {
                 return Err("exact replay unexpectedly wrote another attachment".into())
             }
+            Err(error) => {
+                return replay_refused(
+                    command.operation.as_str(),
+                    "replay-apply",
+                    error,
+                    store,
+                    sources,
+                    &before,
+                )
+            }
         }
-        before.require_unchanged(&store, &sources)?;
+        before.require_unchanged(store, sources)?;
         report::phase(
             command.operation.as_str(),
             "replay",
@@ -82,8 +154,61 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
             json!(receipt),
         )?;
     }
-    drop(writer);
     Ok(())
+}
+
+fn replay_refused(
+    stage: &str,
+    phase: &str,
+    error: StoreError,
+    store: &Store,
+    sources: &Sources,
+    before: &preservation::Held<'_>,
+) -> TestResult {
+    let detail = match &error {
+        StoreError::EvidenceSubjectAttachment(EvidenceSubjectAttachmentStoreError::Domain(
+            EvidenceSubjectAttachmentError::Capacity {
+                resource,
+                needed,
+                available,
+            },
+        )) => json!({"typed":"EvidenceSubjectAttachment::Domain::Capacity",
+            "resource":resource, "needed":needed, "available":available}),
+        other => {
+            json!({"typed":"StoreError", "category":format!("{:?}", std::mem::discriminant(other)),
+            "detail":"Original typed error returned unchanged; no source payload emitted"})
+        }
+    };
+    replay_phase(stage, phase, "refused", detail);
+    let observed = before
+        .require_unchanged(store, sources)
+        .and_then(|()| require_originals(store, sources));
+    replay_observation(stage, &format!("{phase}-preservation"), observed);
+    Err(error.into())
+}
+
+fn replay_observation(stage: &str, phase: &str, observed: TestResult) {
+    let outcome = if observed.is_ok() {
+        "preserved"
+    } else {
+        "observation-failed"
+    };
+    replay_phase(
+        stage,
+        phase,
+        outcome,
+        json!({
+            "checks":"Exact namespace/logical payloads, receipts and original roots; reopened observation also checks accepted-provider identity",
+            "primary_error":"Original replay failure remains the returned error",
+            "observer_error":"Any observer failure is reported separately without source payloads",
+        }),
+    );
+}
+
+fn replay_phase(stage: &str, phase: &str, outcome: &str, detail: Value) {
+    if report::phase(stage, phase, outcome, detail).is_err() {
+        eprintln!("GENUINE_ATTACHMENT replay-diagnostic-write-failed stage={stage} phase={phase} outcome={outcome}");
+    }
 }
 
 #[test]
