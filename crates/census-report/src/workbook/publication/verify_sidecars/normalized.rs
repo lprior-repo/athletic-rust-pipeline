@@ -13,7 +13,7 @@ mod coverage;
 mod facts;
 mod inventory;
 mod revision;
-mod rows;
+pub(in crate::workbook::publication) mod rows;
 mod schema;
 mod schools;
 #[cfg(test)]
@@ -25,15 +25,7 @@ pub(super) fn verify(
     inputs: &Inputs<'_>,
     artifact_revision: u32,
 ) -> ReportResult<()> {
-    let outcome = crate::bests::build_admitted_outcome(
-        &inputs.admission,
-        &crate::bests::Options {
-            scope: inputs.options.scope,
-            grad_year: inputs.options.grad_year,
-            limit: inputs.options.limit,
-            jurisdictions: inputs.options.jurisdictions.clone(),
-        },
-    )?;
+    let outcome = inputs.outcome()?;
     verify_outcome(directory, inputs, artifact_revision, &outcome).map(|_| ())
 }
 
@@ -47,6 +39,8 @@ pub(super) fn verify_outcome(
         artifact_revision,
         inputs.dataset.lineage.policy_revision,
     )?;
+    super::super::selected::binding(artifact_revision, inputs.dataset)?;
+    inputs.derivation.ensure_selected_affiliation()?;
     let revision = revision::Revision::parse(artifact_revision)?;
     inventory::verify(inputs)?;
     inputs.admission.ensure_dataset(inputs.dataset)?;
@@ -94,6 +88,21 @@ pub(super) fn verify_outcome(
             combined_exclusions::verify(directory, inputs, &outcome.combined_exclusions)?,
         );
     }
+    if revision.has_participation_exclusions() {
+        counts.insert(
+            "current_affiliations.csv".into(),
+            super::super::current_affiliations::verify(directory, inputs.dataset)?,
+        );
+        counts.insert(
+            "participation_exclusions.csv".into(),
+            super::super::participation_exclusions::verify(
+                directory,
+                inputs.dataset,
+                inputs.dataset.verified_participation()?,
+                outcome,
+            )?,
+        );
+    }
     Ok(counts)
 }
 
@@ -102,7 +111,22 @@ pub(in crate::workbook) use rows::Row as NormalizedRow;
 pub(in crate::workbook) fn visit_athletes(
     path: &Path,
     expected: usize,
+    artifact_revision: u32,
     visit: impl FnMut(&NormalizedRow<'_>) -> ReportResult<()>,
 ) -> ReportResult<u64> {
-    rows::read_table(path, schema::ATHLETES, expected, visit)
+    let additional = match artifact_revision {
+        1..=6 => None,
+        7 | 8 => Some(["canonical_candidate_id", "identity_resolution"]),
+        _ => {
+            return Err(super::defect(format!(
+                "unsupported comparison artifact revision {artifact_revision}"
+            )))
+        }
+    };
+    let headers: Vec<_> = schema::ATHLETES
+        .iter()
+        .copied()
+        .chain(additional.into_iter().flatten())
+        .collect();
+    rows::read_table(path, &headers, expected, visit)
 }

@@ -31,12 +31,18 @@ mod format;
 pub mod fs;
 mod generation;
 mod identity;
+mod input_revisions;
+pub use input_revisions::{PublicIdentityInputRevisionTokenV2, PublicIdentityInputRevisionsV2};
 mod public_identity;
+pub use public_identity::paged_generation;
 pub use public_identity::{
     replay_frozen_public_identity_v1, FrozenPublicIdentityBundleV1, IdentityCommitOutcomeV1,
-    LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1, PreparedLocalAdjudicationV1,
-    PublicIdentityError, PublicIdentityQualificationStore, PublicIdentityWriterV1,
-    ReviewedIdentityCommitOutcomeV1, ReviewedIdentityRequestV1, MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
+    LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1,
+    MembershipWithholdingInventoryV1, MembershipWithholdingOutcomeV1, PreparedLocalAdjudicationV1,
+    PreparedMembershipWithholdingV1, PublicIdentityAdmissionResource, PublicIdentityError,
+    PublicIdentityQualificationStore, PublicIdentityWriterV1, ReviewedIdentityCommitOutcomeV1,
+    ReviewedIdentityRequestV1, SourceCandidateMembershipOutcomeV1,
+    SourceCandidateMembershipRequestV1, MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
     MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
 };
 mod inspect;
@@ -83,7 +89,8 @@ pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
 pub use profiles::{ProfileRegistration, ProfileRegistryError, MAX_PROFILE_RECORD_BYTES};
 pub use read::{
     build_athlete_identity_projection, decode_physical_observation, AcceptedPublicIdentitySnapshot,
-    JournalReadBudget, ReadBudget, ReadCounts, StoreSnapshot,
+    JournalReadBudget, PhysicalObservationCursor, PhysicalObservationPage, ReadBudget, ReadCounts,
+    StoreSnapshot,
 };
 pub use receipt::{
     Application, Credit, Pruned, Receipt, ReplayFrontier, ReplayWitness, MAX_DIGEST_BYTES,
@@ -155,6 +162,7 @@ fn open_keyspaces(
         .map_err(|source| StoreError::Open { source })?;
     acquisition::qualification::preflight_keyspaces(&db)?;
     public_identity::preflight_keyspaces(&db)?;
+    input_revisions::preflight_keyspaces(root, &db)?;
     keyspaces(db)
 }
 

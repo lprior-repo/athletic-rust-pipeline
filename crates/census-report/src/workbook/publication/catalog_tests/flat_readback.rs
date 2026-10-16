@@ -39,7 +39,7 @@ fn current_six_event_publication_reopens_and_independently_verifies() -> TestRes
             .join(format!("historical-policy{policy}-publish-refused"));
         let mut options = options()?;
         options.out = Some(refused_root.clone());
-        let censuses = Censuses::of(&historical, &fixture.store.out_dir(), &[]);
+        let censuses = Censuses::of(&historical, &fixture.store.out_dir(), &[])?;
         check!(workbook::build_from(&historical, &fixture.store, &options, &censuses).is_err());
         check!(!refused_root.exists());
     }

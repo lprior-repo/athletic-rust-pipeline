@@ -227,7 +227,11 @@ fn object_key(segment: &[u8], object: &str, ordinal: Option<usize>) -> Result<Ve
 }
 
 pub(crate) fn refuse_object_namespace(phase: &str) -> Result<(), StoreError> {
-    if phase == "j2" || phase.starts_with("j2\0") {
+    if phase == "j2"
+        || phase.starts_with("j2\0")
+        || phase == "manual-context-admission-v1"
+        || phase.starts_with("manual-context-admission-v1\0")
+    {
         return Err(StoreError::Refused {
             detail: "journal object namespace requires its immutable owned writer".into(),
         });

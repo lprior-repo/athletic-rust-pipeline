@@ -38,7 +38,7 @@ fn best_options() -> bests::Options {
 
 fn publish(fixture: &Fixture, dataset: &ExportDataset) -> TestResult<PathBuf> {
     let options = options()?;
-    let censuses = Censuses::of(dataset, &fixture.store.out_dir(), &[]);
+    let censuses = Censuses::of(dataset, &fixture.store.out_dir(), &[])?;
     Ok(workbook::build_from(
         dataset,
         &fixture.store,

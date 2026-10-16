@@ -66,28 +66,113 @@ impl StoreSnapshot<'_> {
         budget: ReadBudget,
         mut visit: impl FnMut(T, &[u8], &[u8], u64) -> StoreResult<()>,
     ) -> StoreResult<ReadCounts> {
+        Ok(self
+            .scan_physical_observations(table, budget, PhysicalScan::Whole, &mut visit)?
+            .counts)
+    }
+
+    pub(super) fn scan_physical_observations<T: Entity>(
+        &self,
+        table: Table,
+        budget: ReadBudget,
+        mode: PhysicalScan<'_>,
+        mut visit: impl FnMut(T, &[u8], &[u8], u64) -> StoreResult<()>,
+    ) -> StoreResult<PhysicalScanResult> {
         let mut counts = ReadCounts::default();
         let prefix = self.layout().prefix(table);
-        for guard in self.snapshot.prefix(self.entities, &prefix) {
-            counts.key_visits = charge(counts.key_visits, 1, budget.rows, "capture physical rows")?;
+        let rows = mode.rows(self, &prefix);
+        for guard in rows {
+            if matches!(mode, PhysicalScan::Whole) {
+                charge(counts.key_visits, 1, budget.rows, "capture physical rows")?;
+            }
             let key = guard.key().map_err(|source| StoreError::Read { source })?;
-            let size = self
-                .snapshot
-                .size_of(self.entities, &key)
-                .map_err(|source| StoreError::Read { source })?;
-            let raw = read_admitted(key.len(), size, &mut counts, budget, || {
-                self.snapshot
-                    .get(self.entities, &key)
-                    .map_err(|source| StoreError::Read { source })
-            })?;
+            if !key.starts_with(&prefix) {
+                break;
+            }
+            if matches!(mode, PhysicalScan::Page(_))
+                && counts.key_visits == budget.rows
+                && counts.decoded_rows > 0
+            {
+                return Ok(PhysicalScanResult {
+                    counts,
+                    next_key: Some(key),
+                });
+            }
+            let mut admitted = counts;
+            admitted.key_visits =
+                charge(counts.key_visits, 1, budget.rows, "capture physical rows")?;
+            let raw = self.load_physical_observation(&key, &mut admitted, budget);
+            let raw = match raw {
+                Err(error) if mode.can_continue(&error, counts, budget) => {
+                    return Ok(PhysicalScanResult {
+                        counts,
+                        next_key: Some(key),
+                    });
+                }
+                result => result?,
+            };
             let row = decode_physical_observation(table, &key, &raw)?;
-            counts.decoded_rows = counts
+            admitted.decoded_rows = counts
                 .decoded_rows
                 .checked_add(1)
                 .ok_or(StoreError::CounterOverflow)?;
-            visit(row, &key, &raw, counts.encoded_bytes)?;
+            visit(row, &key, &raw, admitted.encoded_bytes)?;
+            counts = admitted;
         }
-        Ok(counts)
+        Ok(PhysicalScanResult {
+            counts,
+            next_key: None,
+        })
+    }
+
+    fn load_physical_observation(
+        &self,
+        key: &[u8],
+        counts: &mut ReadCounts,
+        budget: ReadBudget,
+    ) -> StoreResult<fjall::UserValue> {
+        let size = self
+            .snapshot
+            .size_of(self.entities, key)
+            .map_err(|source| StoreError::Read { source })?;
+        read_admitted(key.len(), size, counts, budget, || {
+            self.snapshot
+                .get(self.entities, key)
+                .map_err(|source| StoreError::Read { source })
+        })
+    }
+}
+
+pub(super) enum PhysicalScan<'a> {
+    Whole,
+    Page(Option<&'a [u8]>),
+}
+
+pub(super) struct PhysicalScanResult {
+    pub counts: ReadCounts,
+    pub next_key: Option<fjall::UserKey>,
+}
+
+impl PhysicalScan<'_> {
+    fn rows(&self, snapshot: &StoreSnapshot<'_>, prefix: &[u8]) -> fjall::Iter {
+        match self {
+            Self::Page(Some(start)) => snapshot.snapshot.range::<&[u8], _>(
+                snapshot.entities,
+                (
+                    std::ops::Bound::Included(*start),
+                    std::ops::Bound::Unbounded,
+                ),
+            ),
+            Self::Whole | Self::Page(None) => snapshot.snapshot.prefix(snapshot.entities, prefix),
+        }
+    }
+
+    fn can_continue(&self, error: &StoreError, counts: ReadCounts, budget: ReadBudget) -> bool {
+        matches!(self, Self::Page(_))
+            && counts.decoded_rows > 0
+            && matches!(error, StoreError::BudgetExceeded {
+                what: "capture encoded bytes", needed, ..
+            } if needed.checked_sub(counts.encoded_bytes).is_some_and(|bytes| bytes <= budget.bytes))
     }
 }
 

@@ -48,10 +48,13 @@ pub(super) fn identity_unverified(
     cohort: &[CanonicalAthlete],
     names: &HashMap<&str, &str>,
 ) -> crate::report::ReportResult<Family> {
+    if rows.source.selected_profile_id().is_some() {
+        return super::candidates::withheld(rows.source);
+    }
     let mut family = Family::new(IDENTITY_UNVERIFIED);
+    let identities = rows.source.identities();
     for athlete in cohort {
-        let status = rows
-            .identities
+        let status = identities
             .status(athlete.id.as_str())
             .map_err(census_store::StoreError::from)?;
         if status == census_domain::model::IdentityStatus::Verified {

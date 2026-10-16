@@ -11,6 +11,7 @@ mod artifact;
 mod comparison;
 pub(in crate::workbook) use comparison::comparison_input;
 mod counts;
+mod decode;
 #[cfg(test)]
 pub(in crate::workbook::publication) mod historical_fixture;
 #[cfg(test)]
@@ -84,7 +85,7 @@ impl Selection {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct Manifest {
     schema_revision: u32,
@@ -97,12 +98,30 @@ pub(super) struct Manifest {
         skip_serializing_if = "Option::is_none"
     )]
     normalized_csv_rows: Option<super::inventory::RowCounts>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    selected_profile: Option<super::selected::SelectedProfile>,
     pub(super) generation_digest: String,
 }
 
 impl Manifest {
     pub(super) fn recipe(&self) -> ReportResult<census_store::publish::Digest> {
-        super::binding::recipe_for_artifact(&self.lineage, &self.selection()?, self.schema_revision)
+        super::selected::validate(self.schema_revision, self.selected_profile.as_ref())?;
+        match &self.selected_profile {
+            Some(selected) if self.schema_revision == super::selected::HISTORICAL_REVISION => {
+                super::binding::recipe_for_selected(&self.lineage, &self.selection()?, selected)
+            }
+            Some(selected) => super::binding::recipe_for_selected_revision(
+                &self.lineage,
+                &self.selection()?,
+                selected,
+                self.schema_revision,
+            ),
+            None => super::binding::recipe_for_artifact(
+                &self.lineage,
+                &self.selection()?,
+                self.schema_revision,
+            ),
+        }
     }
 
     pub(super) fn selection(&self) -> ReportResult<Options> {
@@ -115,23 +134,22 @@ impl Manifest {
         options: &Options,
         normalized_csv_rows: super::inventory::RowCounts,
     ) -> ReportResult<Self> {
-        super::versions::validate_policy(
-            super::ARTIFACT_REVISION,
-            dataset.lineage.policy_revision,
-        )?;
-        super::inventory::validate(super::ARTIFACT_REVISION, Some(&normalized_csv_rows))?;
+        let revision = super::selected::revision(dataset)?;
+        let selected_profile = super::selected::binding(revision, dataset)?;
+        super::inventory::validate(revision, Some(&normalized_csv_rows))?;
         let selection = Selection::of(options);
-        let names = artifact_names(super::ARTIFACT_REVISION, options.grad_year)?;
+        let names = artifact_names(revision, options.grad_year)?;
         let artifacts = names
             .into_iter()
             .map(|name| hash_artifact(&directory.join(&name)).map(|artifact| (name, artifact)))
             .collect::<ReportResult<BTreeMap<_, _>>>()?;
         let mut manifest = Self {
-            schema_revision: super::ARTIFACT_REVISION,
+            schema_revision: revision,
             lineage: dataset.lineage.clone(),
             selection,
             artifacts,
             normalized_csv_rows: Some(normalized_csv_rows),
+            selected_profile,
             generation_digest: String::new(),
         };
         manifest.generation_digest = manifest.digest()?;
@@ -148,6 +166,7 @@ impl Manifest {
     }
 
     fn digest(&self) -> ReportResult<String> {
+        super::selected::validate(self.schema_revision, self.selected_profile.as_ref())?;
         super::inventory::validate(self.schema_revision, self.normalized_csv_rows.as_ref())?;
         let result = match self.schema_revision {
             1..=4 => census_domain::model::serialized_digest(&(
@@ -163,6 +182,14 @@ impl Manifest {
                 &self.artifacts,
                 &self.normalized_csv_rows,
             )),
+            7 | 8 => census_domain::model::serialized_digest(&(
+                self.schema_revision,
+                &self.lineage,
+                &self.selection,
+                &self.artifacts,
+                &self.normalized_csv_rows,
+                &self.selected_profile,
+            )),
             _ => {
                 return Err(invariant(
                     "unsupported publication artifact revision".into(),
@@ -170,6 +197,15 @@ impl Manifest {
             }
         };
         result.map_err(|error| invariant(format!("encoding generation manifest: {error}")))
+    }
+
+    fn ensure_dataset(&self, dataset: &ExportDataset) -> ReportResult<()> {
+        if self.selected_profile != super::selected::binding(self.schema_revision, dataset)? {
+            return Err(invariant(
+                "manifest and frozen selected profile binding disagree".into(),
+            ));
+        }
+        Ok(())
     }
 }
 

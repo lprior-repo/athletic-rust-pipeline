@@ -50,6 +50,14 @@ pub struct BindingClaim {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CandidateMembershipClaimV1 {
+    pub id: String,
+    pub candidate: AthleteCandidateId,
+    pub anchor_binding_id: String,
+    pub source: SourceObjectKey,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct BindingPartition {
     pub binding_ids: Vec<String>,
     pub representative: AthleteCandidateId,
@@ -86,6 +94,11 @@ pub enum HistoryRequest {
     Bind {
         owner: PublicAthleteId,
         binding: BindingClaim,
+        evidence: CandidateDecisionReference,
+    },
+    BindCandidateMembership {
+        owner: PublicAthleteId,
+        membership: CandidateMembershipClaimV1,
         evidence: CandidateDecisionReference,
     },
     Merge {

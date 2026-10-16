@@ -77,7 +77,7 @@ fn core_derivation_owns_evidence_transform_without_mutating_dataset() -> TestRes
     add_related_population(&mut dataset)?;
     let original_meets = dataset.meets.clone();
     let original_events = dataset.events.clone();
-    let derivation = Derivation::of(&dataset, Scope::Core, None, &[]);
+    let derivation = Derivation::of(&dataset, Scope::Core, None, &[])?;
     let expected_evidence = vec![Evidence::parsed(
         SourceRef::new("milesplit_roster", None),
         "2026-10-15",

@@ -1,4 +1,4 @@
-use super::reviewed_fixture::{binding_id, ready_for_merge, ReviewedFixture};
+use super::reviewed_fixture::{binding_id, ready_for_manual as ready_for_merge, ReviewedFixture};
 use crate::public_identity::{local_adjudication, PublicIdentityError};
 use crate::public_identity_tests::support::TestResult;
 use crate::StoreError;
@@ -234,3 +234,5 @@ mod durable;
 mod frozen_refusals;
 mod results;
 mod retained_validation;
+
+mod admission;

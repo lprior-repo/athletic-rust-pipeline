@@ -113,7 +113,7 @@ impl Run {
         reference: &ResultSetRef,
     ) -> CrawlResult<()> {
         self.metadata_capture = MetadataCapture::Unacquired;
-        match self.read_unit(ctx, reference).await {
+        match Box::pin(self.read_unit(ctx, reference)).await {
             Err(
                 error @ (CrawlError::Resource { .. }
                 | CrawlError::OwnedParseResource(_)

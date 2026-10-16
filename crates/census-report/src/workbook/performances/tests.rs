@@ -195,7 +195,7 @@ fn write_sheets(rows: &[PerformanceRow], per_sheet: usize, path: &Path) -> TestR
 
 fn performance_rows(store: &Store, scope: Scope) -> ReportResult<Vec<PerformanceRow>> {
     let dataset = ExportDataset::load(store)?;
-    let derivation = Derivation::of(&dataset, scope, None, &[]);
+    let derivation = Derivation::of(&dataset, scope, None, &[])?;
     let lookups = super::join::PerformanceProjection::of(&derivation);
     let mut rows: Vec<PerformanceRow> = derivation
         .performances()
@@ -334,7 +334,7 @@ fn the_spilled_rows_match_the_collected_rows_across_range_seams() -> TestResult 
     let store = seeded_store(&dir, &fixtures()?)?;
     let collected = performance_rows(&store, Scope::Core)?;
     let dataset = ExportDataset::load(&store)?;
-    let derivation = Derivation::of(&dataset, Scope::Core, None, &[]);
+    let derivation = Derivation::of(&dataset, Scope::Core, None, &[])?;
 
     let streamed: Vec<PerformanceRow> =
         PerformanceRows::with_ranges(&derivation, 2, 64)?.collect::<ReportResult<Vec<_>>>()?;
@@ -411,7 +411,7 @@ fn a_spill_budget_that_holds_no_row_or_no_range_is_rejected() -> TestResult {
     let dir = tempfile::tempdir()?;
     let store = seeded_store(&dir, &fixtures()?)?;
     let dataset = ExportDataset::load(&store)?;
-    let derivation = Derivation::of(&dataset, Scope::Core, None, &[]);
+    let derivation = Derivation::of(&dataset, Scope::Core, None, &[])?;
 
     for (range_rows, max_ranges) in [(0, 64), (2, 0), (2, 65)] {
         let error = match PerformanceRows::with_ranges(&derivation, range_rows, max_ranges) {
@@ -522,7 +522,7 @@ fn the_frozen_entry_point_writes_the_partitioned_sheets() -> TestResult {
     let path = dir.path().join("book.xlsx");
 
     let dataset = ExportDataset::load(&store)?;
-    let derivation = Derivation::of(&dataset, Scope::Core, None, &[]);
+    let derivation = Derivation::of(&dataset, Scope::Core, None, &[])?;
     let mut book = Workbook::new();
     write_performance_sheets(&mut book, &path, &derivation)?;
     book.save(&path)?;

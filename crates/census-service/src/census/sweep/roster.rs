@@ -18,6 +18,7 @@ mod counts;
 mod effects;
 pub(crate) mod journal;
 mod metadata;
+mod provenance;
 pub(super) mod refusal;
 mod summary;
 #[cfg(test)]
@@ -108,7 +109,10 @@ async fn apply(
 ) -> CrawlResult<Application> {
     let commit = Commit::new(store, team, run, read)?;
     let outcome = match read.verdict.roster() {
-        Some(roster) => apply_roster(&commit, roster, run).await,
+        Some(roster) => match provenance::Binding::new(&read.capture, team, &read.verdict) {
+            Ok(binding) => apply_roster(&commit, roster, run, &binding).await,
+            Err(error) => Err(error),
+        },
         None => commit.window(None, &Counts::default(), 0, true).await,
     };
     outcome.map_err(|error| refusal::retain_capture_error(store, team, run, read, error))
@@ -118,13 +122,15 @@ async fn apply_roster(
     commit: &Commit<'_>,
     roster: &Roster,
     run: &RosterRun<'_>,
+    binding: &provenance::Binding<'_>,
 ) -> CrawlResult<Application> {
     let counts = Counts::new()?;
     stream::try_unfold((0, counts), |(offset, mut counts)| async move {
-        let Some(window) = Window::next(roster, offset, run.observed_on)? else {
+        let Some(window) = Window::next(roster, offset, binding.observed_on())? else {
             return Ok(None);
         };
-        let records = Records::of(&window, &run.site, run.school_year)?;
+        let mut records = Records::of(&window, &run.site, run.school_year)?;
+        records.bind(binding)?;
         counts.include(records.members(), records.teams())?;
         let next =
             offset

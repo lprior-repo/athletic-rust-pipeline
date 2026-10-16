@@ -162,13 +162,17 @@ pub(super) fn outcome(
     case: &Case<'_>,
 ) -> TestResult<(CandidateOutcome, Vec<ParticipationReason>)> {
     let observation = case.observation(f);
-    let assessment = assess_participation(f.query()?, &observation)?;
+    let assessment = if f.profile.input().policies.participation.revision().get() == 1 {
+        assess_historical_participation(f.query()?, &observation)?
+    } else {
+        assess_participation_for_policy(f.query()?, &observation)?
+    };
     Ok((assessment.outcome, assessment.reasons.iter().collect()))
 }
 
 pub(super) fn rejected(f: &Fixture, case: &Case<'_>) -> TestResult<ParticipationInputError> {
     let observation = case.observation(f);
-    match assess_participation(f.query()?, &observation) {
+    match assess_historical_participation(f.query()?, &observation) {
         Err(error) => Ok(error),
         Ok(assessment) => {
             Err(format!("invalid inputs assessed as {:?}", assessment.outcome).into())

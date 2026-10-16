@@ -696,3 +696,65 @@ R11–R14 and the current-only lifecycle cutover remain open.
 
 Strict debt ratchet `4cb2b367` passed without a baseline update: no gated metric grew and no
 production Rust file exceeded 300 lines. This scoped pass does not close the other release lanes.
+
+
+### R1/R2/R3 selected acceptance mapping — 2026-10-15
+
+**R1 OPEN; R2 OPEN; R3 OPEN.** This maps the staged selected integration to spec
+§§4–5,7–8,13,16; it does not replace the original findings or certify publication.
+Report paths below are relative to `crates/census-report/src/`; Domain and Store paths
+are explicitly prefixed from `crates/`. Exact executed checkpoints and unexecuted lanes
+are recorded in [verification evidence](../VERIFICATION-EVIDENCE.md#2026-10-15--r1r2r3-selected-checkpoints).
+
+- **R1: eligibility governs PRs; exclusions survive.**
+  `export/qualification/participation.rs` pins/replays the profile,
+  physical evidence and verified roster context; `export/qualification/participation/closure.rs`
+  checks accepted identity, ownership and related evidence.
+  `export/participation_bridge.rs` supplies retained-source participation assessment.
+  `bests/participation.rs` requires the selected binding, and `bests/reduce/build.rs`
+  withholds ineligible/unresolved candidates before best selection.
+  `report/coverage/pr_support.rs` uses those bests; `workbook/publication/participation_exclusions.rs`
+  writes and independently reads back dispositions, reasons, diagnostics and evidence references.
+  **Remaining:** execute positive/mixed/negative selected publications and independently compare
+  complete real-population PR membership, retained candidates and exclusions across every output.
+  The positive source bridge is MileSplit-specific; unsupported providers, unverified additional
+  evidence and unresolved club/open/summer eligibility remain explicit gaps, not proof of absence.
+- **R2: dated current affiliation controls selection; historical school stays separate.**
+  `export/qualification/current_affiliation/observation.rs` binds retained
+  roster ownership/row evidence to accepted identity and cutoff;
+  `export/qualification/current_affiliation/frozen/capture.rs`
+  retains replay inputs. `report/derivation/current_affiliation.rs` selects current school
+  before geography/cohort filtering. `export/current_school.rs`, `bests/write/selected.rs`
+  and `workbook/recruiting/prs.rs` expose current school/as-of separately from performance school;
+  `workbook/publication/normalized/athletes.rs` and
+  `workbook/publication/normalized/best_marks.rs` retain that split.
+  **Remaining:** execute transfer-in/out, unknown/conflicting/co-op and out-of-region-meet cases,
+  checking workbook/CSV/JSONL/normalized parity, current contacts and historical performance school.
+  Current positive affiliation proof is retained MileSplit roster evidence on the exact cutoff
+  capture day; it does not establish arbitrary effective intervals or other-source currentness.
+- **R3: permanent public identity, corrections and frozen consumers.**
+  `census-domain/src/public_identity_history/merge.rs`,
+  `census-domain/src/public_identity_history/split.rs` and
+  `census-domain/src/public_identity_history/revocation.rs` own
+  reversible public-ID history. `census-store/src/public_identity/correction/commit.rs`,
+  `census-store/src/public_identity/local_adjudication/consume.rs` and
+  `census-store/src/public_identity/frozen/replay.rs` bind accepted operations and replay.
+  `export/dataset/selected_proofs.rs` hydrates that authority before
+  affiliation/participation; `export/public_identity/population.rs` and
+  `export/public_identity/output.rs` govern selected membership/public IDs; `workbook/publication/normalized/identity_aliases.rs`
+  exports resolution audit alongside preserved historical automatic status.
+  **Remaining:** demonstrate real-population merge/split/revocation/withholding parity through
+  reports, coverage, aliases, PRs and normalized outputs, including crash/reopen and store-free
+  frozen replay with an unchanged prior generation. Store tests alone do not qualify these consumers.
+
+**Shared acceptance dependencies:** execute the combined report/publication/crash/frozen lanes
+on the final exact tree, independently read back all selected output families, and measure
+representative peak RSS. `census-store/src/public_identity/context.rs` still caps each authority
+section at **8,192 rows / 16 MiB** (1 MiB per record): athletes/cases/verdicts are merged typed
+rows and source observations are typed rows, serialized by
+`census-store/src/public_identity/context/storage.rs`. This is not retention of every raw
+authority variant. The separate
+`census-store/src/public_identity/local_adjudication/affected/capture.rs` retains physical
+performance/relay keys and original JSON. Any paged authority replacement must preserve raw source inputs and complete collision/index
+closure; raising a cap or passing small fixtures cannot establish population-scale acceptance.
+Historical stores, IDs, receipts and artifacts remain preserved. R4–R15 dispositions are unchanged.

@@ -29,11 +29,11 @@ fn report_bests_and_workbook_chain_over_synthetic_entities() -> TestResult {
 
     let dataset = ExportDataset::load(&store)?;
     let core = report::build_census(
-        &Derivation::of(&dataset, Scope::Core, None, &[]),
+        &Derivation::of(&dataset, Scope::Core, None, &[])?,
         &store.out_dir(),
     );
     let all_sources = report::build_census(
-        &Derivation::of(&dataset, Scope::AllSources, None, &[]),
+        &Derivation::of(&dataset, Scope::AllSources, None, &[])?,
         &store.out_dir(),
     );
     assert_census_counts(&core, &all_sources, &corpus)?;

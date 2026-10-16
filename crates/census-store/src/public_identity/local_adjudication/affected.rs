@@ -59,6 +59,24 @@ impl Inputs {
         }
         Ok(())
     }
+    pub(in crate::public_identity) fn validate_withholding(
+        &self,
+        identity: &context::Inputs,
+        record: &census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV1,
+    ) -> StoreResult<()> {
+        if self.header.store != record.store
+            || self.header.authority_context != record.authority_context
+            || self.header.evidence_generation != record.evidence_generation
+            || self.header.derived_generation != record.derived_generation
+            || self.header.snapshot_sequence != record.snapshot_sequence
+        {
+            return Err(invalid("membership affected snapshot binding"));
+        }
+        if self.record_keys(identity, &record.members)? != record.request.affected_record_keys {
+            return Err(invalid("membership affected record inventory"));
+        }
+        Ok(())
+    }
 }
 
 fn invalid(detail: &'static str) -> StoreError {

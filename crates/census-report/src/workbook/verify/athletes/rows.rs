@@ -1,14 +1,17 @@
 use super::super::canonical::Value;
+use super::super::public_identity::Expected;
 use super::super::{labels::athlete_headers::Schema, reach};
 use super::{cells, Verifier};
 use crate::bests::SharedSelection;
+use crate::report::ReportResult;
 use census_domain::model::{CanonicalAthlete, IdentityStatus, Sport};
 
 impl Verifier<'_, '_> {
-    pub(super) fn values(&mut self, athlete: &CanonicalAthlete) -> Vec<Value> {
+    pub(super) fn values(&mut self, athlete: &CanonicalAthlete) -> ReportResult<Vec<Value>> {
+        let identity = Expected::of(self.expectations.dataset, athlete.id.as_str())?;
         let prs: Vec<&SharedSelection> = self.expectations.prs_of(athlete.id.as_str()).collect();
         let mut values = Vec::with_capacity(self.schema.headers().len());
-        values.extend(self.identity(athlete));
+        values.extend(self.identity(athlete, &identity.athlete_id));
         append_performance_cells(&mut values, athlete, &prs, self.schema);
         values.extend(self.tally_cells(athlete));
         let reach = reach::Reach::of(self.expectations, athlete);
@@ -20,13 +23,14 @@ impl Verifier<'_, '_> {
         append_profiles(&mut values, athlete);
         values.extend(self.status_cells(athlete));
         self.append_address(&mut values, athlete);
-        values
+        values.extend(identity.audit.into_iter().flatten().map(Value::text));
+        Ok(values)
     }
 
-    fn identity(&self, athlete: &CanonicalAthlete) -> Vec<Value> {
+    fn identity(&self, athlete: &CanonicalAthlete, athlete_id: &str) -> Vec<Value> {
         let school = athlete.school.as_str();
         vec![
-            Value::text(athlete.id.as_str()),
+            Value::text(athlete_id),
             Value::text(&athlete.canonical_name),
             Value::text(athlete.gender.stable_key()),
             Value::integer(i64::from(athlete.grad_year.get())),
@@ -55,15 +59,24 @@ impl Verifier<'_, '_> {
         let Ok(status) = status else {
             return self.unverified_status(athlete);
         };
+        let (identity_status, authority) =
+            if self.expectations.dataset.selected_profile_id().is_some() {
+                ("accepted_public_identity", "retained_public_history")
+            } else {
+                (
+                    status.as_str(),
+                    if status == IdentityStatus::Verified {
+                        "verified"
+                    } else {
+                        "review"
+                    },
+                )
+            };
         vec![
-            Value::text(status.as_str()),
+            Value::text(identity_status),
             self.coverage_state(athlete),
             Value::flagged(status == IdentityStatus::RetainedConflict),
-            Value::text(if status == IdentityStatus::Verified {
-                "verified"
-            } else {
-                "review"
-            }),
+            Value::text(authority),
         ]
     }
 

@@ -143,7 +143,7 @@ fn requested_stage_without_active_history_rebinds_exactly_once_before_publicatio
     check!(eq; rebound.request, expected);
     check!(eq; store.publication_active(&request.request.namespace)?, Some(rebound));
     check!(eq; pointer::read(&root)?, Root::Absent);
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let published = stage.publish(&dataset, &options, |directory| {
         crate::workbook::write_artifacts(directory, &dataset, &options, &censuses)
     })?;

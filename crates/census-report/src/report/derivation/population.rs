@@ -15,6 +15,42 @@ impl<'a> Derivation<'a> {
         grad_year: Option<i16>,
         jurisdictions: &[census_domain::UsJurisdiction],
     ) -> Self {
+        Self::population_with_aliases(
+            dataset,
+            scope,
+            grad_year,
+            jurisdictions,
+            &dataset.canonical_aliases,
+        )
+    }
+
+    pub(super) fn selected_population(
+        dataset: &'a ExportDataset,
+        scope: Scope,
+        grad_year: Option<i16>,
+        jurisdictions: &[census_domain::UsJurisdiction],
+    ) -> crate::report::ReportResult<Self> {
+        let identities = dataset.verified_public_identities()?;
+        let mut selected = Self::population_with_aliases(
+            dataset,
+            scope,
+            grad_year,
+            jurisdictions,
+            identities.aliases(),
+        );
+        selection::retain(&mut selected.athletes, |athlete| {
+            identities.public_id(athlete.id.as_str()).is_some()
+        });
+        Ok(selected)
+    }
+
+    fn population_with_aliases(
+        dataset: &'a ExportDataset,
+        scope: Scope,
+        grad_year: Option<i16>,
+        jurisdictions: &[census_domain::UsJurisdiction],
+        aliases: &'a std::collections::HashMap<String, String>,
+    ) -> Self {
         Self {
             dataset,
             scope,
@@ -23,7 +59,7 @@ impl<'a> Derivation<'a> {
             school_state: school_state_index(dataset.schools.values()),
             schools: dataset.schools.values().cloned().collect(),
             outside_schools: Vec::new(),
-            athletes: borrowed_or_collapsed(&dataset.athletes, &dataset.canonical_aliases),
+            athletes: borrowed_or_collapsed(&dataset.athletes, aliases),
             outside_athletes: Vec::new(),
             scoped_athletes: 0,
             meets: Cow::Borrowed(&dataset.meets),
@@ -33,8 +69,10 @@ impl<'a> Derivation<'a> {
             coach_observations: Cow::Borrowed(&dataset.coach_observations),
             events: Cow::Borrowed(&dataset.events),
             performances: Vec::new(),
-            athlete_aliases: &dataset.canonical_aliases,
+            athlete_aliases: aliases,
             dropped_rows: 0,
+            current_affiliations: super::CurrentAffiliationView::Historical,
+            affiliation_exclusions: std::collections::BTreeMap::new(),
         }
     }
 
@@ -93,5 +131,18 @@ impl<'a> Derivation<'a> {
             &cohort,
             self.athlete_aliases,
         );
+        if matches!(
+            self.current_affiliations,
+            super::CurrentAffiliationView::Selected(_)
+        ) {
+            self.performances.retain(|performance| {
+                let subject = performance.athlete.as_str();
+                let canonical = self
+                    .athlete_aliases
+                    .get(subject)
+                    .map_or(subject, String::as_str);
+                cohort.contains(canonical)
+            });
+        }
     }
 }

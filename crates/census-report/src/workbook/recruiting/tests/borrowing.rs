@@ -22,13 +22,13 @@ fn assert_borrowed(projection: &Recruiting<'_>, derivation: &Derivation<'_>) -> 
 fn recruiting_borrows_selected_population_and_school_records() -> TestResult {
     let fixture = fixture()?;
     let dataset = crate::export::ExportDataset::load(&fixture.store)?;
-    let derivation = Derivation::of(&dataset, Scope::Core, Some(2027), &[]);
+    let derivation = Derivation::of(&dataset, Scope::Core, Some(2027), &[])?;
     let projection = recruiting(&derivation)?;
     check!(eq; dataset.athletes.len(), 3);
     check!(eq; projection.dataset.athletes.len(), 2);
     check!(!projection.dataset.schools.is_empty());
     assert_borrowed(&projection, &derivation)?;
-    let empty = Derivation::of(&dataset, Scope::Core, Some(2030), &[]);
+    let empty = Derivation::of(&dataset, Scope::Core, Some(2030), &[])?;
     let projection = recruiting(&empty)?;
     check!(projection.dataset.athletes.is_empty());
     assert_borrowed(&projection, &empty)
@@ -70,7 +70,7 @@ fn recruiting_borrows_the_accepted_alias_cohort_union() -> TestResult {
     let dataset = crate::export::ExportDataset::load(&store)?;
     check!(eq; dataset.athletes.len(), 2);
     check!(eq; dataset.canonical_aliases.len(), 1);
-    let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
+    let derivation = Derivation::of(&dataset, Scope::AllSources, Some(2027), &[])?;
     let projection = recruiting(&derivation)?;
     let [athlete] = projection.dataset.athletes else {
         return Err("borrowed accepted alias union lost its single selected athlete".into());

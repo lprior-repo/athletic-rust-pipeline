@@ -14,14 +14,10 @@ impl HistoryProjection {
         &self,
         candidate: &AthleteCandidateId,
     ) -> Result<PublicResolution, HistoryError> {
-        let Some(binding) = self
-            .bindings
-            .values()
-            .find(|binding| &binding.claim.candidate == candidate)
-        else {
+        let Some((_, _, owner)) = self.claims().find(|(_, held, _)| *held == candidate) else {
             return Ok(PublicResolution::Unknown);
         };
-        match &binding.owner {
+        match owner {
             Some(owner) => self.resolve_public(owner),
             None => Ok(PublicResolution::Unresolved),
         }
@@ -33,7 +29,17 @@ impl HistoryProjection {
 
     pub fn resolve_binding(&self, id: &str) -> Result<BindingResolution, HistoryError> {
         let Some(binding) = self.bindings.get(id) else {
-            return Ok(BindingResolution::Unknown);
+            return match self.memberships.get(id) {
+                Some(entry) => match &entry.owner {
+                    Some(owner) => Ok(BindingResolution::Resolved {
+                        identity: self.resolve_public(owner)?,
+                        established_at: entry.established_at,
+                        superseded_by: None,
+                    }),
+                    None => Ok(BindingResolution::Unresolved),
+                },
+                None => Ok(BindingResolution::Unknown),
+            };
         };
         let Some(owner) = &binding.owner else {
             return Ok(BindingResolution::Unresolved);
@@ -81,9 +87,8 @@ impl HistoryProjection {
         }
         self.check_binding(binding)?;
         if self
-            .bindings
-            .values()
-            .any(|held| held.claim.candidate == binding.candidate)
+            .claims()
+            .any(|(_, candidate, _)| candidate == &binding.candidate)
         {
             return Err(HistoryError::BindingConflict);
         }
@@ -110,6 +115,11 @@ impl HistoryProjection {
         sequence: u64,
     ) -> Result<(), HistoryError> {
         self.require_current(owner)?;
+        if self.component_has_membership(owner)?
+            && self.component_bindings(owner)?.len() >= self.limits.members_per_operation
+        {
+            return Err(HistoryError::Limit("affected bindings"));
+        }
         self.check_binding(binding)?;
         if evidence.kind != CandidateEvidenceKind::SamePerson
             || evidence.members.len() < 2
@@ -128,9 +138,8 @@ impl HistoryProjection {
                 Ok(())
             })?;
         if self
-            .bindings
-            .values()
-            .any(|held| held.claim.candidate == binding.candidate)
+            .claims()
+            .any(|(_, candidate, _)| candidate == &binding.candidate)
         {
             return Err(HistoryError::BindingConflict);
         }
@@ -145,10 +154,9 @@ impl HistoryProjection {
             .changed_at = sequence;
         self.insert_binding(binding, owner.clone(), sequence)?;
         let binding_ids = self
-            .bindings
-            .values()
-            .filter(|held| evidence.members.contains(&held.claim.candidate))
-            .map(|held| held.claim.id.clone())
+            .claims()
+            .filter(|(_, candidate, _)| evidence.members.contains(candidate))
+            .map(|(id, _, _)| id.to_owned())
             .collect();
         self.merges.insert(
             sequence,
@@ -161,10 +169,8 @@ impl HistoryProjection {
     }
 
     pub(super) fn check_binding(&self, binding: &BindingClaim) -> Result<(), HistoryError> {
-        if self.bindings.len() >= self.limits.bindings {
-            return Err(HistoryError::Limit("bindings"));
-        }
-        if self.bindings.contains_key(&binding.id) {
+        self.check_claim_capacity()?;
+        if self.bindings.contains_key(&binding.id) || self.memberships.contains_key(&binding.id) {
             return Err(HistoryError::Duplicate("binding ID"));
         }
         let prior: Vec<_> = self
@@ -227,14 +233,10 @@ impl HistoryProjection {
         candidate: &AthleteCandidateId,
     ) -> Result<PublicAthleteId, HistoryError> {
         let roots = self
-            .bindings
-            .values()
-            .filter(|binding| &binding.claim.candidate == candidate)
-            .try_fold(BTreeSet::new(), |mut roots, binding| {
-                let owner = binding
-                    .owner
-                    .as_ref()
-                    .ok_or(HistoryError::BindingConflict)?;
+            .claims()
+            .filter(|(_, held, _)| *held == candidate)
+            .try_fold(BTreeSet::new(), |mut roots, (_, _, owner)| {
+                let owner = owner.ok_or(HistoryError::BindingConflict)?;
                 roots.insert(self.root(owner)?);
                 Ok::<_, HistoryError>(roots)
             })?;
@@ -251,15 +253,14 @@ impl HistoryProjection {
         &self,
         canonical: &PublicAthleteId,
     ) -> Result<BTreeSet<String>, HistoryError> {
-        self.bindings
-            .iter()
-            .try_fold(BTreeSet::new(), |mut found, (id, binding)| {
-                if let Some(owner) = &binding.owner {
+        self.claims()
+            .try_fold(BTreeSet::new(), |mut found, (id, _, owner)| {
+                if let Some(owner) = owner {
                     if self.root(owner)? == *canonical {
                         if found.len() >= self.limits.members_per_operation {
                             return Err(HistoryError::Limit("affected bindings"));
                         }
-                        found.insert(id.clone());
+                        found.insert(id.to_owned());
                     }
                 }
                 Ok(found)

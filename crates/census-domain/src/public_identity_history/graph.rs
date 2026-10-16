@@ -44,7 +44,7 @@ impl HistoryProjection {
         }
     }
 
-    fn expand_connections(
+    pub(super) fn expand_connections(
         &self,
         seen: &BTreeSet<String>,
         bindings: &BTreeSet<String>,
@@ -62,11 +62,16 @@ impl HistoryProjection {
                     .and_then(|steps| steps.checked_add(1))
                     .ok_or(HistoryError::CounterOverflow)?;
                 self.charge_graph_work(steps, work)?;
-                if merge.revoked_at.is_none()
-                    && !revoked.contains(sequence)
-                    && merge.binding_ids.is_subset(bindings)
-                    && !merge.binding_ids.is_disjoint(&expanded)
-                {
+                if merge.revoked_at.is_some() || revoked.contains(sequence) {
+                    return Ok(expanded);
+                }
+                if !merge.binding_ids.is_subset(bindings) {
+                    if !merge.binding_ids.is_disjoint(bindings) {
+                        return Err(HistoryError::SurvivingMerge);
+                    }
+                    return Ok(expanded);
+                }
+                if !merge.binding_ids.is_disjoint(&expanded) {
                     expanded.extend(merge.binding_ids.iter().cloned());
                 }
                 Ok(expanded)

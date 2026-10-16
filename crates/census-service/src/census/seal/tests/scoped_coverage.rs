@@ -30,7 +30,7 @@ fn seal_counts_reconcile_with_restricted_workbook_census_and_coverage() -> TestR
         Scope::AllSources,
         Some(2027),
         &options.jurisdictions,
-    );
+    )?;
     let coverage = coverage_report_for_derivation(&derivation)?;
     let census = build_census(&derivation, &store.out_dir());
     check!(eq; coverage.read.athletes, census.totals.athletes);
@@ -147,7 +147,7 @@ fn outside_only_raw_conflict_remains_in_retained_seal_findings() -> TestResult {
         Scope::AllSources,
         Some(2027),
         &options.jurisdictions,
-    );
+    )?;
     let scoped = coverage_report_for_derivation(&derivation)?;
     check!(!scoped
         .gaps

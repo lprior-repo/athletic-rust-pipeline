@@ -63,6 +63,7 @@ pub(super) fn open_format(
         return read_format(meta_keyspace);
     }
     let format = require_current(root, format)?;
+    crate::input_revisions::validate_format(&db.snapshot(), meta_keyspace, &format)?;
     let [_, journal, receipts] = data;
     crate::public_identity::require_legacy(
         &db.snapshot(),
@@ -97,6 +98,7 @@ pub(crate) fn require_semantic_format(
     receipts: &Keyspace,
 ) -> StoreResult<StoreFormat> {
     let format = require_current(root, read_format(meta)?)?;
+    crate::input_revisions::validate_format(&db.snapshot(), meta, &format)?;
     crate::public_identity::require_legacy(&db.snapshot(), meta, journal, receipts, &format)?;
     let capture =
         crate::acquisition::qualification::declaration(&db.snapshot(), meta, journal, &format)?;

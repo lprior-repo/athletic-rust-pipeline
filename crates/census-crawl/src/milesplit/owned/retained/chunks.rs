@@ -2,9 +2,9 @@ use super::error::{corrupt, foreign};
 use super::manifests::{same_content, validate_capture, Layout, Occurrence};
 use super::{decode, read, CaptureWitnessError, OwnedAcquisitionRef, CHUNK_JOURNAL_BYTES};
 use crate::milesplit::owned::effect::CAPTURE_CHUNK_BYTES;
+use crate::milesplit::RetainedJournalView;
 use crate::net::FetchOutcome;
 use base64::{engine::general_purpose::STANDARD, Engine};
-use census_store::StoreSnapshot;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -16,7 +16,7 @@ struct Chunk {
 }
 
 pub(super) fn read_body(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalView,
     reference: &OwnedAcquisitionRef,
     occurrence: &Occurrence,
     layout: Layout,

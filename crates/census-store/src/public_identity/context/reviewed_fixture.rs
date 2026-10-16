@@ -23,7 +23,22 @@ pub(in crate::public_identity) struct ReviewedFixture {
 }
 
 pub(in crate::public_identity) fn ready_for_merge() -> TestResult<ReviewedFixture> {
+    build_fixture(|_, _| Ok(()))
+}
+
+pub(in crate::public_identity) fn ready_for_manual() -> TestResult<ReviewedFixture> {
+    build_fixture(|store, writer| {
+        writer
+            .enroll_manual_context_admission_v1(store)
+            .map_err(Into::into)
+    })
+}
+
+fn build_fixture(
+    enroll: impl FnOnce(&Store, &PublicIdentityWriterV1) -> TestResult,
+) -> TestResult<ReviewedFixture> {
     let (directory, store, writer) = fixture()?;
+    enroll(&store, &writer)?;
     let mut inputs = full_inputs()?;
     let original = inputs.athletes.get(1).ok_or("second fixture athlete")?;
     let second = tfrrs_subject(original)?;

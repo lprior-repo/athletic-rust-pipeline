@@ -1,6 +1,7 @@
 use super::{comparison_classes, encode, provenance, text, write_csv};
 use crate::bests::SharedSelection;
 use crate::report::{Derivation, ReportResult};
+use crate::workbook::public_identity::{self, Identity};
 use std::path::Path;
 
 const HEADER: [&str; 36] = [
@@ -50,12 +51,14 @@ pub(super) fn write(
 ) -> ReportResult<u64> {
     write_csv(
         &directory.join("best_marks.csv"),
-        &header(derivation.dataset().semantic_policy()?),
+        &public_identity::headers(
+            &header(derivation.dataset().semantic_policy()?),
+            public_identity::view(derivation.dataset())?,
+        ),
         |writer| {
-            for best in bests {
-                writer.push_vec(row(best, derivation, performances)?)?;
-            }
-            Ok(())
+            bests
+                .iter()
+                .try_for_each(|best| writer.push_vec(row(best, derivation, performances)?))
         },
     )
 }
@@ -66,14 +69,12 @@ fn row(
     performances: &super::PerformanceIndex<'_>,
 ) -> ReportResult<Vec<String>> {
     let dataset = derivation.dataset();
+    let identity = Identity::of(public_identity::view(dataset)?, best.athlete_id().as_str())?;
     let performance = selected_performance(best, performances)?;
-    let school = dataset
-        .teams
-        .get(&performance.team)
-        .map(|team| team.school.as_str());
+    let school = performance_school(dataset, performance);
     let mut fields = Vec::with_capacity(38);
     fields.extend([
-        best.athlete_id().to_string(),
+        identity.athlete_id().to_owned(),
         comparison_classes::id(best)?,
         best.source.performance_id.to_string(),
         "unavailable".into(),
@@ -117,6 +118,7 @@ fn row(
     if dataset.semantic_policy()? == census_domain::model::EventSemantics::ResultGroups21 {
         fields.extend(["canonical_performance_id".into(), "unknown".into()]);
     }
+    fields.extend(identity.audit()?);
     Ok(fields)
 }
 
@@ -201,4 +203,14 @@ fn course(best: &SharedSelection) -> ReportResult<String> {
         },
         None => Ok("not_applicable".into()),
     }
+}
+
+fn performance_school<'a>(
+    dataset: &'a crate::export::ExportDataset,
+    performance: &census_domain::model::CanonicalPerformance,
+) -> Option<&'a str> {
+    dataset
+        .teams
+        .get(&performance.team)
+        .map(|team| team.school.as_str())
 }

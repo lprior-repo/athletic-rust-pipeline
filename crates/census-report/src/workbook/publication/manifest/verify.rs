@@ -6,12 +6,20 @@ use crate::workbook::Options;
 use std::path::Path;
 
 pub(super) fn decode(directory: &Path, manifest: &Manifest) -> ReportResult<ExportDataset> {
-    let dataset = ExportDataset::reopen_frozen(&directory.join("frozen-input.json"))?;
+    let frozen = manifest
+        .artifacts
+        .get("frozen-input.json")
+        .ok_or_else(|| invariant("publication lacks its frozen input".into()))?;
+    let dataset = ExportDataset::reopen_frozen_with_digest(
+        &directory.join("frozen-input.json"),
+        &frozen.sha256,
+    )?;
     if dataset.lineage != manifest.lineage {
         return Err(invariant(
             "manifest and frozen input lineage disagree".to_string(),
         ));
     }
+    manifest.ensure_dataset(&dataset)?;
     Ok(dataset)
 }
 
@@ -21,6 +29,7 @@ pub(in crate::workbook::publication) fn verify_prepared(
     options: &Options,
 ) -> ReportResult<()> {
     let manifest = directory::verify_directory(directory)?;
+    manifest.ensure_dataset(dataset)?;
     if manifest.lineage != dataset.lineage || manifest.selection != Selection::of(options) {
         return Err(invariant(
             "prepared publication differs from its captured input or selection".to_string(),
@@ -35,6 +44,7 @@ pub(in crate::workbook::publication) fn verify_prepared(
             "retained frozen bytes differ from the captured export input".to_string(),
         ));
     }
+    dataset.verify_staged_proof_objects(&directory.join("frozen-input.json"))?;
     let counts = super::super::verify_sidecars::verify(
         directory,
         dataset,
@@ -68,6 +78,7 @@ pub(super) fn verify_against(
     manifest: &Manifest,
     dataset: &ExportDataset,
 ) -> ReportResult<crate::workbook::verify::VerifiedWorkbook> {
+    manifest.ensure_dataset(dataset)?;
     let options = manifest.selection.options()?;
     let counts = super::super::verify_sidecars::verify(
         directory,

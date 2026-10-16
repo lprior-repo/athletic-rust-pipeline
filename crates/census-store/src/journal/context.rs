@@ -3,11 +3,17 @@ use sha2::{Digest, Sha256};
 
 use crate::{Store, StoreError, StoreResult};
 
+mod charge;
 mod encode;
+pub(crate) use charge::{
+    charge_context_object, measure_context_physical, verify_retained_charge, ContextCharge,
+};
 mod persist;
+mod physical_ref;
 mod stream;
 mod wire;
 
+pub(crate) use physical_ref::{ContextPhysicalPlan, ContextPhysicalRef};
 pub(crate) use stream::ContextRecordSink;
 
 pub(crate) const CONTEXT_RECORD_BYTES: usize = 1024 * 1024;
@@ -61,6 +67,7 @@ struct IndexEntry {
 
 enum Pass<'a> {
     Measure,
+    Charge(charge::ChargeTarget<'a>),
     Stage(persist::StageTarget<'a>),
 }
 
@@ -76,6 +83,29 @@ where
     F: Fn(&mut ContextRecordSink<'_>) -> StoreResult<()>,
 {
     let plan = run_pass(Pass::Measure, &emit)?;
+    stage_plan(store, plan, &emit)
+}
+
+pub(crate) fn stage_reserved_context<F>(
+    store: &Store,
+    permit: &crate::public_identity::ManualContextPermit<'_>,
+    emit: F,
+) -> StoreResult<StagedContextObject>
+where
+    F: Fn(&mut ContextRecordSink<'_>) -> StoreResult<()>,
+{
+    let root = permit.root_for(store)?;
+    let plan = run_pass(Pass::Measure, &emit)?;
+    if plan.staged.object != root {
+        return Err(refused("reserved context root changed"));
+    }
+    stage_plan(store, plan, &emit)
+}
+
+fn stage_plan<F>(store: &Store, plan: ObjectPlan, emit: &F) -> StoreResult<StagedContextObject>
+where
+    F: Fn(&mut ContextRecordSink<'_>) -> StoreResult<()>,
+{
     let mut physical = persist::PhysicalDigests::new()?;
     let target = persist::StageTarget::open(store, &plan, &mut physical)?;
     let presence = target.presence();

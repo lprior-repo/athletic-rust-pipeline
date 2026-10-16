@@ -74,14 +74,7 @@ pub(in crate::public_identity) fn validate_retained(
             &previous,
             history.records(),
         )?;
-        if let HeldWitness::Manual(manual) = held {
-            superseded_material.insert(
-                crate::public_identity::local_adjudication::fence::manual_material(
-                    reader,
-                    &manual.adjudication,
-                )?,
-            );
-        }
+        held.retain_superseded_material(reader, &mut superseded_material)?;
     }
     if prefix.head() != history.projection().head() {
         return Err(PublicIdentityError::Corrupt("historical ledger head").into());
@@ -90,12 +83,52 @@ pub(in crate::public_identity) fn validate_retained(
 }
 
 impl HeldWitness {
+    fn retain_superseded_material(
+        &self,
+        reader: &impl Read,
+        superseded_material: &mut std::collections::BTreeSet<String>,
+    ) -> StoreResult<()> {
+        if let Self::MembershipWithheld(withheld) = self {
+            superseded_material.insert(
+                crate::public_identity::membership_withholding::fence::material(
+                    reader,
+                    &withheld.adjudication,
+                )?,
+            );
+        }
+        if let Self::Manual(manual) = self {
+            superseded_material.insert(
+                crate::public_identity::local_adjudication::fence::manual_material(
+                    reader,
+                    &manual.adjudication,
+                )?,
+            );
+        }
+        Ok(())
+    }
+
     fn require_available(
         &self,
         reader: &impl Read,
         identity: &StoreIdentity,
         superseded_material: &std::collections::BTreeSet<String>,
     ) -> StoreResult<()> {
+        if let Self::Membership(held) = self {
+            let inputs = reader.context(&held.authority_context, identity)?;
+            let case = inputs
+                .cases
+                .iter()
+                .find(|case| case.id == held.request.case_id)
+                .ok_or(PublicIdentityError::NotReviewed)?;
+            let material =
+                crate::public_identity::authority::identity_material(&inputs, &case.member_ids)?;
+            if superseded_material.contains(&material) {
+                return Err(PublicIdentityError::Corrupt(
+                    "membership authority superseded by local adjudication",
+                )
+                .into());
+            }
+        }
         if let Self::Reviewed(reviewed) = self {
             let material = crate::public_identity::local_adjudication::fence::reviewed_material(
                 reader, identity, reviewed,
@@ -124,6 +157,10 @@ impl HeldWitness {
             Self::Source(held) => {
                 source(reader, &record.installation, version, held, record, prefix)
             }
+            Self::MembershipWithheld(held) => {
+                held.verify(reader, version, previous, prepared, records)
+            }
+            Self::Membership(held) => held.verify(reader, version, previous, prepared),
             Self::Manual(held) => held.verify(reader, version, previous, prepared, records),
             Self::Reviewed(held) => {
                 held.validate(version, prepared)?;

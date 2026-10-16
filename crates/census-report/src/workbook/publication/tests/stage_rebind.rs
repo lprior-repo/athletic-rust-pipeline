@@ -104,7 +104,7 @@ fn expired_requested_stage_reloads_rebound_epoch_and_publishes() -> TestResult {
     f.unchanged_previous()?;
     let evidence = f.store.evidence_generation();
     let derived = f.store.derived_generation();
-    let censuses = crate::workbook::Censuses::of(&f.dataset, &f.store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&f.dataset, &f.store.out_dir(), &[])?;
     let published = stage.publish(&f.dataset, &f.options, |directory| {
         crate::workbook::write_artifacts(directory, &f.dataset, &f.options, &censuses)
     })?;
@@ -145,7 +145,7 @@ fn rebound_requested_stage_still_refuses_changed_evidence_and_keeps_prior_bundle
     let stage = Stage::begin(&f.dataset, &f.store, &f.options)?;
     let rebound = f.rebound()?;
     check!(eq; rebound.state, State::Requested);
-    let censuses = crate::workbook::Censuses::of(&f.dataset, &f.store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&f.dataset, &f.store.out_dir(), &[])?;
     let result = stage.publish(&f.dataset, &f.options, |directory| {
         let counts =
             crate::workbook::write_artifacts(directory, &f.dataset, &f.options, &censuses)?;

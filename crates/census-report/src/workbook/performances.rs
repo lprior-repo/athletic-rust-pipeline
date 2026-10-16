@@ -49,16 +49,39 @@ pub(super) fn write_performance_sheets(
     derivation: &Derivation<'_>,
 ) -> ReportResult<()> {
     let rows = PerformanceRows::build(derivation)?;
-    write_partitions(book, path, rows, DATA_ROWS_PER_SHEET)
+    let header = COLUMNS
+        .iter()
+        .map(|(label, _)| {
+            Cell::text(
+                if derivation.dataset().selected_profile_id().is_some() && *label == "Athlete ID" {
+                    "Retained Candidate ID"
+                } else {
+                    label
+                },
+            )
+        })
+        .collect();
+    write_partitions_with_header(book, path, rows, DATA_ROWS_PER_SHEET, header)
 }
 
+#[cfg(test)]
 fn write_partitions(
     book: &mut Workbook,
     path: &Path,
     rows: impl IntoIterator<Item = ReportResult<PerformanceRow>>,
     per_sheet: usize,
 ) -> ReportResult<()> {
-    let layout = PartitionLayout::new();
+    write_partitions_with_header(book, path, rows, per_sheet, header())
+}
+
+fn write_partitions_with_header(
+    book: &mut Workbook,
+    path: &Path,
+    rows: impl IntoIterator<Item = ReportResult<PerformanceRow>>,
+    per_sheet: usize,
+    header: Vec<Cell>,
+) -> ReportResult<()> {
+    let layout = PartitionLayout::new(header);
     let mut rows = rows.into_iter();
     if per_sheet == 0 {
         let first = rows.next().transpose()?;
@@ -87,10 +110,10 @@ struct PartitionRows<'a, I> {
 }
 
 impl PartitionLayout {
-    fn new() -> Self {
+    fn new(header: Vec<Cell>) -> Self {
         Self {
             widths: COLUMNS.iter().map(|(_, width)| *width).collect(),
-            header: header(),
+            header,
             last_column: COLUMNS.len().saturating_sub(1),
         }
     }
@@ -148,6 +171,7 @@ impl PartitionLayout {
     }
 }
 
+#[cfg(test)]
 fn header() -> Vec<Cell> {
     COLUMNS
         .iter()

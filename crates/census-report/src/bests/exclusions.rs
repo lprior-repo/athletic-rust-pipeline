@@ -46,6 +46,7 @@ impl CombinedExclusion {
 pub struct SelectionOutcome {
     pub selections: Vec<SharedSelection>,
     pub combined_exclusions: Vec<CombinedExclusion>,
+    pub participation_exclusions: Vec<super::ParticipationExclusion>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]

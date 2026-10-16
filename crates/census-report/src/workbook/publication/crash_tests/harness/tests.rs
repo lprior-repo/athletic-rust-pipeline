@@ -228,3 +228,81 @@ fn successful_callback_cannot_hide_cleanup_failure() -> TestResult {
     check!(eq; error.cleanup.status.as_ref().err().map(ToString::to_string), Some("wait failure".to_owned()));
     Ok(())
 }
+
+#[test]
+fn sigterm_timeout_reaps_owned_child_without_kill() -> TestResult {
+    let directory = tempfile::tempdir_in("/tmp")?;
+    let root = directory.path().to_path_buf();
+    let socket = root.join("cleanup.sock");
+    let listener = UnixListener::bind(&socket)?;
+    let result = with_terminated_child(command("idle", &socket)?, directory, |child| {
+        wait_checkpoint(
+            listener,
+            child,
+            "intent",
+            WaitBudget {
+                polls: 0,
+                ..budget()
+            },
+        )?;
+        Ok(())
+    })
+    .map(|_| ());
+    let error = failure(result)?;
+    check!(eq; error.primary.to_string(), "checkpoint accept timed out");
+    let status = error
+        .cleanup
+        .status
+        .as_ref()
+        .map_err(|error| error.to_string())?;
+    check!(eq; status.signal(), Some(15));
+    check!(eq; error.cleanup.inspection_error.is_none(), true);
+    check!(eq; error.cleanup.kill_error.is_none(), true);
+    check!(eq; root.exists(), false);
+    Ok(())
+}
+
+#[test]
+fn sigterm_wrong_checkpoint_keeps_read_failure_and_reaps_child() -> TestResult {
+    let directory = tempfile::tempdir_in("/tmp")?;
+    let socket = directory.path().join("cleanup.sock");
+    let listener = UnixListener::bind(&socket)?;
+    let result = with_terminated_child(command("wrong", &socket)?, directory, |child| {
+        wait_checkpoint(listener, child, "intent", budget())?;
+        Ok(())
+    })
+    .map(|_| ());
+    let error = failure(result)?;
+    let primary = error
+        .primary
+        .downcast_ref::<io::Error>()
+        .ok_or("checkpoint error")?;
+    check!(eq; primary.kind(), io::ErrorKind::InvalidData);
+    let status = error
+        .cleanup
+        .status
+        .as_ref()
+        .map_err(|error| error.to_string())?;
+    check!(eq; status.signal(), Some(15));
+    check!(eq; error.cleanup.inspection_error.is_none(), true);
+    check!(eq; error.cleanup.kill_error.is_none(), true);
+    Ok(())
+}
+
+#[test]
+fn sigterm_already_reaped_child_keeps_value_and_owned_directory() -> TestResult {
+    let directory = tempfile::tempdir_in("/tmp")?;
+    let root = directory.path().to_path_buf();
+    let socket = root.join("cleanup.sock");
+    let (value, directory) =
+        with_terminated_child(command("exit", &socket)?, directory, |child| {
+            check!(eq; child.wait()?.code(), Some(23));
+            Ok("selected child result")
+        })?;
+    check!(eq; value, "selected child result");
+    check!(eq; directory.path(), root.as_path());
+    check!(eq; root.is_dir(), true);
+    directory.close()?;
+    check!(eq; root.exists(), false);
+    Ok(())
+}

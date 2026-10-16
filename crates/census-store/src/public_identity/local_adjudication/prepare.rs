@@ -1,11 +1,12 @@
-use super::{affected, claims, LocalAdjudicationInventoryV1, PreparedLocalAdjudicationV1};
-use crate::clock::{Clock, SystemClock};
+mod capture;
+use super::{
+    admission, affected, claims, LocalAdjudicationInventoryV1, PreparedLocalAdjudicationV1,
+};
 use crate::public_identity::{codec, context, PublicIdentityError, PublicIdentityWriterV1};
 use crate::{Store, StoreResult, StoreRevision};
 use census_domain::model::AthleteCandidateId;
 use census_domain::public_identity_history::local_adjudication::{
-    LocalEvidenceBasisV1, LocalIdentityAdjudicationRecordV2, LocalIdentitySplitV1,
-    LOCAL_ADJUDICATION_POLICY,
+    LocalIdentityAdjudicationRecordV2, LocalIdentitySplitV1,
 };
 use census_domain::public_identity_history::{
     prepare_next, HistoryProjection, HistoryRequest, PublicAthleteId, PublicResolution,
@@ -24,7 +25,12 @@ impl PublicIdentityWriterV1 {
         let snapshot = store.snapshot_locked();
         let inputs = context::Inputs::capture(&snapshot)?;
         let members = members(&inputs, ledger.history.projection(), canonical)?;
-        let claims = claims::inventory(&inputs, &members)?;
+        let claims = claims::membership_inventory(
+            &inputs,
+            &members,
+            ledger.history.projection(),
+            ledger.history.records(),
+        )?;
         let authority_context = inputs.measure_context(&self.identity)?;
         let affected = affected::Inputs::capture(&snapshot, &self.identity, &authority_context)?;
         let affected_record_keys = affected.record_keys(&inputs, &members)?;
@@ -45,6 +51,24 @@ impl PublicIdentityWriterV1 {
         expected: StoreRevision<'s>,
         head: &RegistryHead,
     ) -> StoreResult<PreparedLocalAdjudicationV1<'s>> {
+        let staged = self.reserve_local_adjudication(store, operation, request, expected, head)?;
+        let [authority, affected] = &staged.permits;
+        staged
+            .inputs
+            .stage_admitted(store, &self.identity, authority)?;
+        staged.affected.stage_admitted(store, affected)?;
+        validate_current(self, store, expected, &staged.prepared.record)?;
+        Ok(staged.prepared)
+    }
+
+    pub(in crate::public_identity) fn reserve_local_adjudication<'s>(
+        &self,
+        store: &'s Store,
+        operation: &str,
+        request: LocalIdentitySplitV1,
+        expected: StoreRevision<'s>,
+        head: &RegistryHead,
+    ) -> StoreResult<ReservedPreparation<'s>> {
         validate_request(&request)?;
         let guard = store.lock_appends();
         expected.ensure_current(store, operation)?;
@@ -54,47 +78,75 @@ impl PublicIdentityWriterV1 {
             return Err(PublicIdentityError::HeadMoved.into());
         }
         validate_prior(&request, ledger.history.records())?;
-        let snapshot = store.snapshot_locked();
-        let inputs = context::Inputs::capture(&snapshot)?;
-        let members = members(&inputs, ledger.history.projection(), &request.canonical)?;
-        validate_case(&inputs, &request, &members)?;
-        let claims = claims::inventory(&inputs, &members)?;
-        let authority_context = inputs.measure_context(&self.identity)?;
-        let affected = affected::Inputs::capture(&snapshot, &self.identity, &authority_context)?;
-        if affected.record_keys(&inputs, &members)? != request.affected_record_keys {
-            return Err(PublicIdentityError::Corrupt("manual affected record inventory").into());
+        let reserved = admission::load(store, &self.identity, operation)?;
+        if let Some(reserved) = &reserved {
+            reserved.require_request(operation, &request, expected, head)?;
         }
-        drop(guard);
-        let authority_context = inputs.stage(store, &self.identity)?.object_id().to_owned();
-        let affected_context = affected.stage(store)?.object_id().to_owned();
-        let record = LocalIdentityAdjudicationRecordV2 {
-            version: 2,
-            policy: LOCAL_ADJUDICATION_POLICY.into(),
-            store: self.identity.clone(),
-            operation: operation.into(),
-            expected_head: head.clone(),
-            evidence_generation: snapshot.evidence_generation(),
-            derived_generation: snapshot.derived_generation(),
-            snapshot_sequence: snapshot.sequence(),
-            authority_context,
-            affected_context,
-            members,
-            request,
-            observed_at: SystemClock.today_iso8601(),
-            evidence_basis: LocalEvidenceBasisV1::RetainedObservationOnly,
+        let snapshot = store.snapshot_locked();
+        let captured = capture::capture(
+            &snapshot,
+            &self.identity,
+            &request,
+            ledger.history.projection(),
+            ledger.history.records(),
+            reserved.as_ref(),
+        )?;
+        let charges = [
+            captured.inputs.admission_charge(store, &self.identity)?,
+            captured.affected.admission_charge(store)?,
+        ];
+        let record = match &reserved {
+            Some(reserved) => {
+                reserved.require_allowance(&charges)?;
+                reserved.split_record()?.clone()
+            }
+            None => capture::fresh_record(
+                self, operation, request, head, &snapshot, &captured, &charges,
+            ),
         };
-        let history = prepare_history(&record, &claims, ledger.history.projection())?;
+        let history = prepare_history(&record, &captured.claims, ledger.history.projection())?;
         preview_witness(&record, &history)?;
-        validate_current(self, store, expected, &record)?;
-        Ok(PreparedLocalAdjudicationV1 {
-            record,
-            expected,
-            history,
-        })
+        let reservation = match reserved {
+            Some(reservation) => reservation,
+            None => admission::reserve(store, record.clone(), charges)?,
+        };
+        let permits = reservation.permits(store);
+        drop(guard);
+        Ok(ReservedPreparation::new(
+            captured, record, expected, history, permits,
+        ))
     }
 }
 
-pub(super) fn members(
+pub(in crate::public_identity) struct ReservedPreparation<'s> {
+    pub(in crate::public_identity) permits: [admission::Permit<'s>; 2],
+    pub(in crate::public_identity) inputs: context::Inputs,
+    pub(in crate::public_identity) affected: affected::Inputs,
+    pub(in crate::public_identity) prepared: PreparedLocalAdjudicationV1<'s>,
+}
+
+impl<'s> ReservedPreparation<'s> {
+    fn new(
+        captured: capture::Captured,
+        record: LocalIdentityAdjudicationRecordV2,
+        expected: StoreRevision<'s>,
+        history: census_domain::public_identity_history::PreparedHistoryRecord,
+        permits: [admission::Permit<'s>; 2],
+    ) -> Self {
+        Self {
+            permits,
+            inputs: captured.inputs,
+            affected: captured.affected,
+            prepared: PreparedLocalAdjudicationV1 {
+                record,
+                expected,
+                history,
+            },
+        }
+    }
+}
+
+pub(in crate::public_identity) fn members(
     inputs: &context::Inputs,
     projection: &HistoryProjection,
     canonical: &PublicAthleteId,
@@ -139,7 +191,11 @@ pub(super) fn validate_prior(
             .ok_or(PublicIdentityError::Corrupt(
                 "manual superseded merge missing",
             ))?;
-        if record.digest != prior.digest || !matches!(record.request, HistoryRequest::Merge { .. })
+        if record.digest != prior.digest
+            || !matches!(
+                record.request,
+                HistoryRequest::Merge { .. } | HistoryRequest::BindCandidateMembership { .. }
+            )
         {
             return Err(PublicIdentityError::Corrupt("manual superseded merge mismatch").into());
         }

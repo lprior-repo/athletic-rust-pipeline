@@ -56,7 +56,7 @@ fn reopen_job(
     directory: &Path,
     archive: &Path,
 ) -> ReportResult<ExportDataset> {
-    let retained = super::archive::reopen(archive, |lineage| preflight(store, job, lineage))?;
+    let retained = super::archive::reopen(archive, None, |lineage| preflight(store, job, lineage))?;
     retained.ensure_current(store)?;
     sync_directory(directory)?;
     Ok(retained)

@@ -130,6 +130,9 @@ impl<'a> ContextRecordSink<'a> {
         if let Pass::Stage(target) = &mut self.pass {
             target.stage_chunk(index, &self.chunk, &digest)?;
         }
+        if let Pass::Charge(target) = &mut self.pass {
+            target.chunk(index, &self.chunk, &digest)?;
+        }
         self.chunk_digests.push(digest);
         self.chunk.clear();
         Ok(())
@@ -142,6 +145,9 @@ impl<'a> ContextRecordSink<'a> {
         let digest = index_digest(&self.page)?;
         if let Pass::Stage(target) = &mut self.pass {
             target.stage_page(page, &self.page, &digest)?;
+        }
+        if let Pass::Charge(target) = &mut self.pass {
+            target.page(page, &self.page)?;
         }
         self.page_digests.push(digest);
         self.page.clear();

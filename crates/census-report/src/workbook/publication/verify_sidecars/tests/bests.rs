@@ -110,7 +110,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     let inputs = Inputs::new(&dataset, &options)?;
 
     let output = directory.path().join("bests");
-    write(&output, &rows, "co2027", dataset.semantic_policy()?)?;
+    write(&output, &rows, "co2027", &dataset)?;
     super::super::bests::verify(&output, &inputs, 3, &rows)?;
 
     rewrite_cell(&output.join("best-results-co2027.csv"), "best_value", "999")?;
@@ -124,7 +124,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     );
 
     let jsonl_output = directory.path().join("bests-jsonl");
-    write(&jsonl_output, &rows, "co2027", dataset.semantic_policy()?)?;
+    write(&jsonl_output, &rows, "co2027", &dataset)?;
     let jsonl = jsonl_output.join("best-results-co2027.jsonl");
     let line = std::fs::read_to_string(&jsonl)?;
     std::fs::write(&jsonl, format!("{line}{line}"))?;

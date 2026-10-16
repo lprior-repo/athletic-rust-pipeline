@@ -17,6 +17,7 @@ impl HistoryProjection {
         check_shape(members, evidence)?;
         self.require_oldest_is_canonical(canonical, members)?;
         self.check_coverage(members, evidence)?;
+        self.check_membership_merge_bound(members)?;
         let binding_ids = self.merge_binding_ids(evidence);
         let carried = self.carried_revocations(members);
         self.apply_redirect(canonical, members, binding_ids, carried, sequence)
@@ -59,10 +60,9 @@ impl HistoryProjection {
     }
 
     fn merge_binding_ids(&self, evidence: &CandidateDecisionReference) -> BTreeSet<String> {
-        self.bindings
-            .values()
-            .filter(|binding| evidence.members.contains(&binding.claim.candidate))
-            .map(|binding| binding.claim.id.clone())
+        self.claims()
+            .filter(|(_, candidate, _)| evidence.members.contains(candidate))
+            .map(|(id, _, _)| id.to_owned())
             .collect()
     }
 

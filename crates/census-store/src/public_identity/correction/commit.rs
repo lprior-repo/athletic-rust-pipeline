@@ -165,9 +165,7 @@ fn repeated(
 ) -> StoreResult<Option<ReviewedIdentityCommitOutcomeV1>> {
     match operation::repeated(store, operation, digest, ledger)? {
         Some(operation::Replayed::Reviewed(outcome)) => Ok(Some(outcome)),
-        Some(operation::Replayed::Source(_) | operation::Replayed::Manual(_)) => {
-            Err(PublicIdentityError::OperationConflict.into())
-        }
+        Some(_) => Err(PublicIdentityError::OperationConflict.into()),
         None => Ok(None),
     }
 }

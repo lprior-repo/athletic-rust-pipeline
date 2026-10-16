@@ -6,12 +6,23 @@ use crate::report::{derivation::in_run_scope, Derivation};
 use census_domain::{JurisdictionBucket, UsJurisdiction};
 use std::collections::HashSet;
 
+mod current_affiliation;
+mod identity;
+
+#[cfg(test)]
+pub(crate) mod tests;
+
 pub(super) fn append(report: &mut CoverageReport, derivation: &Derivation<'_>) -> ReportResult<()> {
     let dataset = derivation.dataset();
-    let scanned = Scanned::of(dataset);
+    let scanned = Scanned::of(dataset)?;
     let states = school_state_index(&scanned.schools);
     let mut buckets = raw_buckets(&scanned, &states);
-    raw_pr_support(&mut buckets, &scanned, dataset)?;
+    if matches!(
+        derivation.current_affiliations(),
+        crate::export::CurrentAffiliationView::Historical
+    ) {
+        raw_pr_support(&mut buckets, &scanned, dataset)?;
+    }
     let contact = ContactPlane::of(&dataset.coverage_evidence.coach_lanes);
     let all_buckets = UsJurisdiction::ALL
         .iter()
@@ -26,19 +37,8 @@ pub(super) fn append(report: &mut CoverageReport, derivation: &Derivation<'_>) -
     );
     append_population_notes(report, derivation, &raw)?;
     append_lifecycle(report, derivation);
-    append_outside(report, derivation, &raw);
-    append_gaps(report, derivation, &retained_gaps);
-    report.off_cohort_athletes = scanned
-        .athletes
-        .iter()
-        .filter(|athlete| {
-            in_run_scope(
-                jurisdiction_of(&states, athlete.school.as_str()),
-                derivation.jurisdictions(),
-            )
-        })
-        .filter(|athlete| !super::in_requested_year(athlete, derivation.grad_year()))
-        .count();
+    current_affiliation::append(report, derivation, &raw, &retained_gaps);
+    report.off_cohort_athletes = current_affiliation::off_cohort(derivation, &scanned.athletes);
     Ok(())
 }
 
@@ -146,6 +146,7 @@ fn append_outside(
     derivation: &Derivation<'_>,
     raw: &[super::JurisdictionCoverage],
 ) {
+    let label = current_affiliation::outside_label(derivation);
     for row in raw
         .iter()
         .filter(|row| !in_run_scope(row.jurisdiction, derivation.jurisdictions()))
@@ -161,7 +162,7 @@ fn append_outside(
         {
             continue;
         }
-        report.notes.push(format!("retained outside requested jurisdictions {}: schools={} athletes={} coaches={} meets={} performances={} source_population={} contact_state={} contact_attempted={} contact_pending={} contact_failed={} contact_blocked={} contact_refusal={} contact_exhausted={}",
+        report.notes.push(format!("{label} {}: schools={} athletes={} coaches={} meets={} performances={} source_population={} contact_state={} contact_attempted={} contact_pending={} contact_failed={} contact_blocked={} contact_refusal={} contact_exhausted={}",
             row.jurisdiction.code(), row.schools, row.athletes, row.coaches, row.meets,
             row.performances, population_text(row.source_population), super::state_slug(row.state),
             row.contact.attempted, row.contact.pending, row.contact.failed, row.contact.blocked,
@@ -197,7 +198,16 @@ fn append_gaps(
     derivation: &Derivation<'_>,
     gaps: &[super::CoverageGap],
 ) {
+    let label = current_affiliation::gap_label(derivation);
     for gap in gaps.iter().filter(|gap| gap.count > 0) {
+        if gap.class == super::GapClass::MissingPrSupport
+            && matches!(
+                derivation.current_affiliations(),
+                crate::export::CurrentAffiliationView::Selected(_)
+            )
+        {
+            continue;
+        }
         if gap.class == super::GapClass::MissingPrSupport
             && gap
                 .jurisdiction
@@ -212,7 +222,7 @@ fn append_gaps(
             "outside requested jurisdictions"
         };
         report.notes.push(format!(
-            "retained raw gap {disposition}: jurisdiction={} class={} unit={} count={}",
+            "{label} {disposition}: jurisdiction={} class={} unit={} count={}",
             gap.jurisdiction.code(),
             gap.class.as_str(),
             gap.unit,
@@ -267,10 +277,7 @@ fn append_population_notes(
     raw: &[super::JurisdictionCoverage],
 ) -> ReportResult<()> {
     let raw_total = totals(raw.iter());
-    let outside = totals(
-        raw.iter()
-            .filter(|row| !in_run_scope(row.jurisdiction, derivation.jurisdictions())),
-    );
+    let outside = current_affiliation::outside_totals(derivation, raw);
     let excluded = remainder(raw_total, report.read, outside)?;
     report.notes.push(format!(
         "publication coverage: evidence_scope={} requested_jurisdictions={} cohort={}",
@@ -280,11 +287,9 @@ fn append_population_notes(
             .grad_year()
             .map_or_else(|| "all".into(), |year| year.to_string())
     ));
-    report.notes.push(format!("retained canonical population reconciliation: raw [{}] = publication [{}] + known outside requested jurisdictions [{}] + evidence/cohort excluded [{}]",
-        super::totals_text(&raw_total), super::totals_text(&report.read),
-        super::totals_text(&outside), super::totals_text(&excluded)));
+    identity::append(report, derivation, raw_total, outside, excluded)?;
     report.notes.push("retained raw PR support outside the national census scope (AK/HI) is unmeasured; no missing-PR-support conclusion is made for those jurisdictions".into());
-    report.notes.push("UNPLACED is retained because jurisdiction is unknown; it does not certify membership in any requested jurisdiction or a completed jurisdiction denominator".into());
+    current_affiliation::placement_note(report, derivation);
     report.notes.push("event catalog and terminal access failures retain global frozen evidence; geographic filtering does not certify source completion".into());
     report.notes.push("jurisdiction state describes retained coach-lane status; it does not certify source-population completion or unknown denominator inclusion".into());
     Ok(())

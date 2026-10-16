@@ -10,6 +10,8 @@ pub enum RetainedMetadataError {
     ForeignResult,
     #[error("raw metadata body exceeds the declared read ceiling")]
     BodyBudget,
+    #[error("retained result session exceeds sixteen resident raw metadata captures")]
+    SessionBudget,
     #[error("raw metadata allocation failed")]
     Allocation(#[from] std::collections::TryReserveError),
     #[error(transparent)]

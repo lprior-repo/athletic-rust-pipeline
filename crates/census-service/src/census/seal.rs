@@ -160,7 +160,8 @@ fn assemble_evidence(
         request.scope,
         Some(cohort.get()),
         &request.jurisdictions,
-    );
+    )
+    .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
     let selected_coverage = report::coverage_report_for_derivation(&derivation)
         .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
     let retained_coverage = report::coverage_report(dataset, Some(cohort.get()))

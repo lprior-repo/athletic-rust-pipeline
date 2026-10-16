@@ -34,6 +34,8 @@ pub enum HistoryError {
     BindingConflict,
     #[error("source identifier reuse requires explicit nonoverlapping supersession")]
     SourceReuse,
+    #[error("source candidate membership requires independent source epoch evidence")]
+    SourceEpochEvidenceRequired,
     #[error("split partition does not exactly cover the affected bindings")]
     Partition,
     #[error("split would cut an accepted merge that was not explicitly revoked")]

@@ -36,7 +36,7 @@ pub(crate) fn run_report(
     };
     let dataset = ExportDataset::load(store)?;
     println!("jurisdictions={}", restriction_display(jurisdictions));
-    let derivation = Derivation::of(&dataset, scope, None, jurisdictions);
+    let derivation = Derivation::of(&dataset, scope, None, jurisdictions)?;
     let census = report::build_census(&derivation, &store.out_dir());
     let (json_path, csv_path) = report::write_census(store, &census, scope)?;
     println!("wrote {}", json_path.display());

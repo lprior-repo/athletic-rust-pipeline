@@ -11,6 +11,7 @@ use super::facts::AthleteTally;
 use super::profiles::profiles_of;
 use crate::bests::SharedSelection;
 use crate::report::ReportResult;
+use crate::workbook::public_identity::{Identity, SHEET_HEADERS};
 use cells::{
     event_list, gpa_source, headline_pr_summary, participation_flags, participation_metrics,
     pr_event_cells, profile_cells, public_recruiting_gpa, tf_flag,
@@ -26,7 +27,24 @@ pub(super) fn rows<'a>(
         .map(|athlete| (athlete, display_key(dataset, athlete)))
         .collect();
     ordered.sort_by(|left, right| left.1.cmp(&right.1));
-    let header = HEADERS.iter().map(|header| Cell::text(*header)).collect();
+    let header = HEADERS
+        .iter()
+        .copied()
+        .chain(
+            dataset
+                .public_identities
+                .into_iter()
+                .flat_map(|_| SHEET_HEADERS),
+        )
+        .map(|header| {
+            let header = match (dataset.public_identities, header) {
+                (Some(_), "Conflict Flag") => "Retained Source Conflict",
+                (Some(_), "Review Status") => "Identity Authority",
+                _ => header,
+            };
+            Cell::text(header)
+        })
+        .collect();
     std::iter::once(Ok(header)).chain(
         ordered
             .into_iter()
@@ -48,7 +66,8 @@ fn row_for(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> ReportResult<Ve
     let tally = dataset.tallies.get(athlete.id.as_str());
     let prs: Vec<&SharedSelection> = dataset.prs_of(athlete.id.as_str()).collect();
     let contacts = contact::scoped(dataset.contacts.get(school), athlete);
-    let mut cells = identity_cells(dataset, athlete);
+    let identity = Identity::of(dataset.public_identities, athlete.id.as_str())?;
+    let mut cells = identity_cells(dataset, athlete, identity.athlete_id());
     append_performance_cells(&mut cells, athlete, &prs, tally)?;
     append_staff_cells(&mut cells, &contacts);
     cells.extend(school_athletics_url(dataset, school));
@@ -56,8 +75,9 @@ fn row_for(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> ReportResult<Ve
     cells.extend(gpa_source());
     cells.extend(contact_cells(&contacts, contacts.preferred()));
     cells.extend(profile_cells(profiles_of(athlete)));
-    cells.extend(audit_cells(dataset, athlete, tally, &prs)?);
+    cells.extend(audit_cells(dataset, athlete, tally, &prs, &identity)?);
     cells.push(address_cell(dataset, athlete)?);
+    cells.extend(identity.audit()?.map(Cell::text));
     Ok(cells)
 }
 
@@ -106,7 +126,11 @@ fn address_cell(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> ReportResu
     }
 }
 
-fn identity_cells(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> Vec<Cell> {
+fn identity_cells(
+    dataset: &Dataset<'_>,
+    athlete: &CanonicalAthlete,
+    athlete_id: &str,
+) -> Vec<Cell> {
     let school = athlete.school.as_str();
     let school_id = dataset
         .schools
@@ -115,7 +139,7 @@ fn identity_cells(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> Vec<Cell
         .map_or(school, |value| value)
         .to_string();
     row!(
-        Cell::text(athlete.id.as_str()),
+        Cell::text(athlete_id),
         Cell::text(athlete.canonical_name.clone()),
         Cell::text(athlete.gender.stable_key().to_string()),
         Cell::Number(f64::from(athlete.grad_year.get())),
@@ -140,20 +164,28 @@ fn audit_cells(
     athlete: &CanonicalAthlete,
     tally: Option<&AthleteTally>,
     prs: &[&SharedSelection],
+    identity: &Identity<'_>,
 ) -> ReportResult<Vec<Cell>> {
-    let status = dataset
-        .identities
+    let historical_status = dataset
+        .source
+        .identities()
         .status(athlete.id.as_str())
         .map_err(census_store::StoreError::from)?;
-    let verification = verification_label(status);
+    let (status, verification) = match identity {
+        Identity::Selected(_) => ("accepted_public_identity", "retained_public_history"),
+        Identity::Historical(_) => (
+            historical_status.as_str(),
+            verification_label(historical_status),
+        ),
+    };
     Ok(row!(
         Cell::number(source_count(athlete))?,
-        Cell::text(status.as_str()),
+        Cell::text(status),
         Cell::text(coverage_state(
             tally.is_some_and(|t| t.performances > 0),
             !prs.is_empty()
         )),
-        flag(status == census_domain::model::IdentityStatus::RetainedConflict),
+        flag(historical_status == census_domain::model::IdentityStatus::RetainedConflict),
         Cell::text(verification),
     ))
 }
@@ -179,3 +211,6 @@ fn contact_cells(contacts: &ScopedContacts<'_>, preferred: Preferred<'_>) -> Vec
         Cell::text(preferred.observed_on),
     )
 }
+
+#[cfg(test)]
+mod tests;

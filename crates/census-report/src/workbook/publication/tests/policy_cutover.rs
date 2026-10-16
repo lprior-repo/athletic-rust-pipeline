@@ -49,7 +49,7 @@ fn cutover(grad_year: Option<i16>, prior_policy: u32) -> TestResult {
     ))?;
     check!(ne; identity, old.intent.request.identity);
     check!(eq; store.publication_read(&identity)?, None);
-    let censuses = crate::workbook::Censuses::of(&current, &store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&current, &store.out_dir(), &[])?;
     let published = crate::workbook::build_from(&current, &store, &options, &censuses)?;
     check!(ne; published, old.workbook);
     check!(eq; current_workbook(&root)?, published);

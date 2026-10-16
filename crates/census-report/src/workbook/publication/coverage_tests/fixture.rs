@@ -45,7 +45,7 @@ impl Captured {
             census_domain::model::serialized_digest(&JOB)?
         ));
         let options = super::super::fence_tests::options(None)?;
-        let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+        let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
         let workbook = crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
         Ok(Self {
             directory,

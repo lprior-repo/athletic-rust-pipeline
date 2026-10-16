@@ -70,7 +70,7 @@ fn alaska_current_athlete_stays_excluded_despite_wisconsin_venue() -> TestResult
     [Scope::Core, Scope::AllSources]
         .into_iter()
         .try_for_each(|scope| -> TestResult {
-            let derivation = Derivation::of(&dataset, scope, Some(2027), &[]);
+            let derivation = Derivation::of(&dataset, scope, Some(2027), &[])?;
             check!(eq; derivation.athletes().len(), 0);
             check!(eq; derivation.performances().len(), 0);
             check!(eq; derivation.schools().len(), 0);
@@ -99,7 +99,7 @@ fn retained_historical_parents_never_expand_directory_population_or_coverage_den
     outside.append_to(&store)?;
     let dataset = ExportDataset::load(&store)?;
     [Scope::Core, Scope::AllSources].into_iter().try_for_each(|scope| -> TestResult {
-        let derivation = Derivation::of(&dataset, scope, Some(2027), &[]);
+        let derivation = Derivation::of(&dataset, scope, Some(2027), &[])?;
         check!(eq; derivation.schools(), std::slice::from_ref(&fixture.current));
         check!(eq; derivation.athletes(), std::slice::from_ref(&fixture.athlete));
         check!(eq; derivation.coaches().len(), 0);
@@ -171,7 +171,7 @@ fn mixed_histories_keep_exact_selected_identities_unknowns_and_limit_prefixes() 
     check!(eq; dataset.performances.len(), 8);
     check!(eq; dataset.canonical_aliases.len(), 0);
     [Scope::Core, Scope::AllSources].into_iter().try_for_each(|scope| -> TestResult {
-        let derivation = Derivation::of(&dataset, scope, Some(2027), &[]);
+        let derivation = Derivation::of(&dataset, scope, Some(2027), &[])?;
         check!(eq; derivation.athletes().len(), 7);
         check!(eq; derivation.performances().len(), 7);
         let rows = build_from_dataset(&dataset, &options(scope))?;

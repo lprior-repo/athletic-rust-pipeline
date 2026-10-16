@@ -12,6 +12,7 @@ use crate::workbook::cells::{row, Cell};
 
 use super::{school_name_index, Family, QueueRow, StoreRows, SubjectIndex};
 
+mod candidates;
 mod catalog;
 mod conflicts;
 mod review;
@@ -210,7 +211,7 @@ fn unsupported_graduation(rows: &StoreRows) -> Family {
 
 pub(in crate::workbook) fn cohort_of(
     selection: &crate::report::Derivation<'_>,
-) -> Vec<CanonicalAthlete> {
+) -> ReportResult<Vec<CanonicalAthlete>> {
     crate::report::cohort_candidates(
         selection.dataset(),
         selection.scope(),
@@ -233,14 +234,19 @@ pub fn retained_records(
     jurisdictions: &[census_domain::UsJurisdiction],
 ) -> ReportResult<RetainedRecords> {
     let admission = crate::report::EventAdmission::of(dataset)?;
-    let derivation = crate::report::Derivation::of(dataset, Scope::AllSources, None, jurisdictions);
+    let derivation = crate::report::Derivation::for_publication(
+        dataset,
+        Scope::AllSources,
+        None,
+        jurisdictions,
+    )?;
     let rows = StoreRows::of(&derivation, school_year)?;
     let cohort = crate::report::cohort_candidates(
         dataset,
         Scope::AllSources,
         Some(GradYear::CO2027.get()),
         jurisdictions,
-    );
+    )?;
     let names = school_name_index(rows.schools);
     Ok(RetainedRecords {
         conflicts: labelled(conflict_families(&rows, &cohort, &names)?),

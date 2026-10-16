@@ -9,6 +9,7 @@ use super::{
 };
 
 mod atoms;
+mod candidate_membership;
 mod claims;
 mod containers;
 mod corrections;

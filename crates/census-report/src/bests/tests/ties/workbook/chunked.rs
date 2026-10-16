@@ -40,7 +40,7 @@ fn chunk_readback(
         jurisdictions: Vec::new(),
         school_year: SchoolYear::new(2026).ok_or("chunk fixture season")?,
     };
-    let censuses = crate::workbook::Censuses::of(&materialized, &reopened.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&materialized, &reopened.out_dir(), &[])?;
     let path = crate::workbook::build_from(&materialized, &reopened, &options, &censuses)?;
     let generation = path.parent().ok_or("chunk publication generation")?;
     artifacts::assert_bests(generation, expected, &row)?;

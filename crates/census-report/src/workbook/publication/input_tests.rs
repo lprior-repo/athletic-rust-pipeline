@@ -12,7 +12,7 @@ fn publication_fence_evidence_changed_during_render_refuses_intent() -> TestResu
     let old = crate::workbook::build(&store, &options)?;
     let bytes = std::fs::read(&old)?;
     let dataset = ExportDataset::for_job(&store, "evidence-during-render")?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let stage = Stage::begin(&dataset, &store, &options)?;
     let result = stage.publish(&dataset, &options, |directory| {
         let counts = crate::workbook::write_artifacts(directory, &dataset, &options, &censuses)?;
@@ -49,7 +49,7 @@ fn publication_fence_changed_recipe_cannot_receipt_another_bundle() -> TestResul
     let stage = Stage::begin(&dataset, &store, &options)?;
     let mut changed = options;
     changed.limit = Some(1);
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let result = stage.publish(&dataset, &changed, |directory| {
         crate::workbook::write_artifacts(directory, &dataset, &changed, &censuses)
     });
@@ -81,7 +81,7 @@ fn publication_fence_stale_snapshot_is_typed_input_refusal() -> TestResult {
         None,
     );
     store.append(Table::Schools, &school)?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let result = crate::workbook::build_from(&dataset, &store, &options, &censuses);
     match &result {
         Err(ReportError::Publication(PublicationError::InputFenceRefused { .. })) => {}
@@ -102,7 +102,7 @@ fn publication_fence_visible_requested_bundle_still_fences_new_intent() -> TestR
     let old = crate::workbook::build(&store, &options)?;
     let bytes = std::fs::read(&old)?;
     let dataset = ExportDataset::for_job(&store, "visible-requested")?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let mut other = options.clone();
     other.out = Some(temp.path().join("other"));
     let workbook = crate::workbook::build_from(&dataset, &store, &other, &censuses)?;

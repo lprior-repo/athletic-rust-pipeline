@@ -197,7 +197,7 @@ fn assert_artifacts(
 ) -> TestResult {
     let dataset = ExportDataset::load(store)?;
     let census = report::build_census(
-        &Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]),
+        &Derivation::of(&dataset, Scope::AllSources, Some(2027), &[])?,
         &store.out_dir(),
     );
     let (census_path, _) = report::write_census(store, &census, Scope::AllSources)?;
@@ -222,12 +222,7 @@ fn assert_artifacts(
     let winner = bests.first().ok_or("best field control")?;
     check!(eq; winner.source.performance_id, valid.id);
     check!(eq; winner.athlete.name.as_str(), "Brooklyn Brown");
-    let (jsonl, csv_path) = bests::write(
-        &root.join("bests"),
-        &bests,
-        "2027",
-        census_domain::model::EventSemantics::CURRENT,
-    )?;
+    let (jsonl, csv_path) = bests::write(&root.join("bests"), &bests, "2027", &dataset)?;
     let best_json: Value = serde_json::from_str(std::fs::read_to_string(jsonl)?.trim())?;
     check!(eq; best_json.get("performance_id"), Some(&json!(valid.id)));
     let mut csv = csv::Reader::from_path(csv_path)?;

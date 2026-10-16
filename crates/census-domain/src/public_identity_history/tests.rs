@@ -6,6 +6,7 @@ mod evidence;
 mod fixture;
 mod identity;
 mod matched_group;
+mod membership;
 mod revocation;
 mod split;
 

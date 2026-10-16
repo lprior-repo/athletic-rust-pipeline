@@ -58,7 +58,7 @@ fn generate(destination: &Path) -> Result<()> {
         jurisdictions: Vec::new(),
         school_year: ingest::school_year()?,
     };
-    let censuses = workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+    let censuses = workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let workbook = workbook::build_from(&dataset, &store, &options, &censuses)?;
     let generated = serde_json::json!({
         "record": "generated_policy18_dataset_counts",

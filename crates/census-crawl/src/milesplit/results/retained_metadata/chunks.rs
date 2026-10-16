@@ -1,8 +1,8 @@
 use super::error::invalid;
 use super::manifest::{Manifest, CHUNK_BYTES};
 use super::{read, RawMetadataArchiveRef, RetainedMetadataError};
+use crate::milesplit::RetainedJournalView;
 use base64::{engine::general_purpose::STANDARD, Engine};
-use census_store::StoreSnapshot;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -17,7 +17,7 @@ struct Chunk {
 }
 
 pub(super) fn body(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalView,
     archive: &RawMetadataArchiveRef,
     manifest: &Manifest,
     bytes: usize,

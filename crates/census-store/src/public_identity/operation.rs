@@ -7,6 +7,8 @@ use serde::Deserialize;
 
 pub(super) enum HeldWitness {
     Source(witness::Witness),
+    Membership(super::membership::SourceCandidateMembershipWitnessV1),
+    MembershipWithheld(Box<super::membership_withholding::MembershipWithholdingWitnessV1>),
     Reviewed(correction::ReviewedWitness),
     Manual(Box<local_adjudication::LocalAdjudicationWitnessV1>),
 }
@@ -24,7 +26,7 @@ impl HeldWitness {
             });
         }
         let version: StoreResult<Version> = codec::decode(key, bytes);
-        if bytes.len() > 65_536 && !matches!(&version, Ok(Version { version: 5 })) {
+        if bytes.len() > 65_536 && !matches!(&version, Ok(Version { version: 5 | 7 })) {
             return Err(crate::StoreError::RowTooLarge {
                 bytes: bytes.len(),
                 max: 65_536,
@@ -33,6 +35,10 @@ impl HeldWitness {
         let version = version?;
         match version.version {
             1 | 2 => codec::decode(key, bytes).map(Self::Source),
+            7 => codec::decode(key, bytes)
+                .map(Box::new)
+                .map(Self::MembershipWithheld),
+            6 => codec::decode(key, bytes).map(Self::Membership),
             3 => codec::decode(key, bytes).map(Self::Reviewed),
             5 => codec::decode(key, bytes).map(Box::new).map(Self::Manual),
             _ => Err(PublicIdentityError::Corrupt("unsupported identity witness version").into()),
@@ -41,6 +47,8 @@ impl HeldWitness {
     pub(super) fn operation(&self) -> &str {
         match self {
             Self::Source(held) => &held.operation,
+            Self::Membership(held) => &held.operation,
+            Self::MembershipWithheld(held) => &held.operation,
             Self::Reviewed(held) => &held.operation,
             Self::Manual(held) => &held.operation,
         }
@@ -49,25 +57,31 @@ impl HeldWitness {
         match self {
             Self::Source(held) => Some(&held.decision_id),
             Self::Reviewed(held) => Some(&held.decision_id),
-            Self::Manual(_) => None,
+            Self::Membership(held) => Some(&held.decision_id),
+            Self::Manual(_) | Self::MembershipWithheld(_) => None,
         }
     }
     pub(super) fn authority_context(&self) -> Option<&str> {
         match self {
             Self::Source(held) => held.authority_context.as_deref(),
             Self::Reviewed(held) => Some(&held.authority_context),
+            Self::Membership(held) => Some(&held.authority_context),
             Self::Manual(held) => Some(&held.adjudication.authority_context),
+            Self::MembershipWithheld(held) => Some(&held.adjudication.authority_context),
         }
     }
     pub(super) fn affected_context(&self) -> Option<&str> {
         match self {
             Self::Manual(held) => Some(&held.adjudication.affected_context),
-            Self::Source(_) | Self::Reviewed(_) => None,
+            Self::MembershipWithheld(held) => Some(&held.adjudication.affected_context),
+            Self::Source(_) | Self::Reviewed(_) | Self::Membership(_) => None,
         }
     }
     fn request_digest(&self) -> &str {
         match self {
             Self::Source(held) => &held.request_digest,
+            Self::Membership(held) => &held.request_digest,
+            Self::MembershipWithheld(held) => &held.request_digest,
             Self::Reviewed(held) => &held.request_digest,
             Self::Manual(held) => &held.request_digest,
         }
@@ -76,6 +90,8 @@ impl HeldWitness {
 
 pub(super) enum Replayed {
     Source(IdentityCommitOutcomeV1),
+    Membership(super::membership::SourceCandidateMembershipOutcomeV1),
+    MembershipWithheld(super::membership_withholding::MembershipWithholdingOutcomeV1),
     Reviewed(correction::ReviewedIdentityCommitOutcomeV1),
     Manual(local_adjudication::LocalAdjudicationCommitOutcomeV1),
 }
@@ -110,6 +126,14 @@ pub(super) fn repeated(
                 return Err(PublicIdentityError::OperationConflict.into());
             }
             return match held {
+                HeldWitness::MembershipWithheld(held) => held
+                    .outcome(record, true)
+                    .map(Replayed::MembershipWithheld)
+                    .map(Some),
+                HeldWitness::Membership(held) => held
+                    .outcome(record, true)
+                    .map(Replayed::Membership)
+                    .map(Some),
                 HeldWitness::Source(held) => {
                     held.outcome(record, true).map(Replayed::Source).map(Some)
                 }

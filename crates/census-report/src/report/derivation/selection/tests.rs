@@ -103,3 +103,4 @@ fn selecting_nothing_does_not_clone_rejected_members() {
 }
 
 mod population;
+mod public_identity;

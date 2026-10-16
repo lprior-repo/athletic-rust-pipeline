@@ -9,6 +9,13 @@ pub struct OwnedAcquisitionRef {
 }
 
 impl OwnedAcquisitionRef {
+    pub fn from_capture(meet_id: u64, capture: &FetchOutcome) -> Result<Self, CaptureWitnessError> {
+        let key = super::acquisition_manifest_key(meet_id, capture).map_err(|error| {
+            super::error::corrupt("owned acquisition reference", error.to_string())
+        })?;
+        Self::parse(&key)
+    }
+
     pub fn parse(key: &str) -> Result<Self, CaptureWitnessError> {
         if key.len() > 106 {
             return Err(CaptureWitnessError::Unsupported {

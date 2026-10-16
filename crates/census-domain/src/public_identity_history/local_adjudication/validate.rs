@@ -59,9 +59,10 @@ impl LocalIdentityAdjudicationRecordV2 {
 }
 
 fn rejectable(claim: &RetainedClaimV1) -> bool {
-    claim.section == RetainedIdentitySectionV1::Athlete
-        && (claim.claim_path.starts_with("/source_links/")
-            || claim.claim_path.starts_with("/identity_attestations/"))
+    claim.section == RetainedIdentitySectionV1::CandidateMembership
+        || (claim.section == RetainedIdentitySectionV1::Athlete
+            && (claim.claim_path.starts_with("/source_links/")
+                || claim.claim_path.starts_with("/identity_attestations/")))
 }
 
 fn text(value: &str, maximum: usize) -> Result<(), HistoryError> {

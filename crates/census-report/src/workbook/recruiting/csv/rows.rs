@@ -9,20 +9,25 @@ pub(super) fn record(
     school: Option<&CanonicalSchool>,
     contacts: &ScopedContacts<'_>,
     identity_status: &str,
+    athlete_id: &str,
 ) -> ReportResult<(impl Iterator<Item = String> + use<>, bool, bool)> {
     let (contacts, has_coach, has_email) = contact_cells(contacts, school)?;
-    let row = athlete_cells(athlete, school)
+    let row = athlete_cells(athlete, school, athlete_id)
         .into_iter()
         .chain(contacts)
         .chain([identity_status.to_owned(), evidence_sources(athlete)]);
     Ok((row, has_coach, has_email))
 }
 
-fn athlete_cells(athlete: &CanonicalAthlete, school: Option<&CanonicalSchool>) -> [String; 10] {
+fn athlete_cells(
+    athlete: &CanonicalAthlete,
+    school: Option<&CanonicalSchool>,
+    athlete_id: &str,
+) -> [String; 10] {
     let profiles = profiles_of(athlete);
     let [state, school_name, city] = school_cells(school);
     [
-        athlete.id.to_string(),
+        athlete_id.to_owned(),
         athlete.canonical_name.clone(),
         athlete.grad_year.get().to_string(),
         athlete.gender.stable_key().to_owned(),

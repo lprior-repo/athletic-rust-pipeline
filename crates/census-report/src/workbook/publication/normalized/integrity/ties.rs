@@ -1,5 +1,6 @@
 use super::{defect, matches_key, unique, PerformanceIndex};
 use crate::bests::{Parents, SharedSelection};
+use crate::export::public_identity::population::IdentityPopulation;
 use crate::report::{Derivation, EventAdmission, ReportResult};
 
 pub(super) fn validate(
@@ -15,6 +16,7 @@ pub(super) fn validate(
         ));
     }
     inventory(best)?;
+    let identities = IdentityPopulation::of(derivation.dataset())?;
     best.supporting_tied_candidate_ids()
         .iter()
         .try_for_each(|id| {
@@ -22,11 +24,8 @@ pub(super) fn validate(
                 .get(id)
                 .copied()
                 .ok_or_else(|| defect(format!("tie references unavailable candidate {id}")))?;
-            if derivation
-                .dataset()
-                .identities()
-                .canonical_id(performance.athlete.as_str())
-                != best.athlete_id().as_str()
+            if identities.canonical_candidate(performance.athlete.as_str())
+                != Some(best.athlete_id().as_str())
                 || best.measure().value(&performance.mark) != Some(best.result.value)
                 || !matches_key(performance, best, admission, parents)?
             {

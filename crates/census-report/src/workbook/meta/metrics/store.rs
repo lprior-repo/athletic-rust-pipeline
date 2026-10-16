@@ -1,3 +1,4 @@
+use crate::export::public_identity::population::{IdentityAdmission, IdentityPopulation};
 use crate::export::{DatasetLineage, ExportDataset};
 use crate::report::ReportResult;
 use crate::workbook::cells::{row, Cell};
@@ -5,8 +6,16 @@ use crate::workbook::cells::{row, Cell};
 pub(super) fn frozen_counters(dataset: &ExportDataset) -> ReportResult<Vec<Vec<Cell>>> {
     let mut cells = lineage_cells(&dataset.lineage);
     append_revisions(&mut cells, &dataset.lineage);
-    cells.push(row!("Frozen table", "Canonical records"));
+    let records = if dataset.selected_profile_id().is_some() {
+        "Retained records"
+    } else {
+        "Canonical records"
+    };
+    cells.push(row!("Frozen table", records));
     append_table_counts(&mut cells, dataset)?;
+    if dataset.selected_profile_id().is_some() {
+        append_identity_counts(&mut cells, dataset)?;
+    }
     Ok(cells)
 }
 
@@ -46,7 +55,14 @@ fn append_revisions(cells: &mut Vec<Vec<Cell>>, lineage: &DatasetLineage) {
 
 fn append_table_counts(cells: &mut Vec<Vec<Cell>>, dataset: &ExportDataset) -> ReportResult<()> {
     let counts = [
-        ("athletes", dataset.athletes.len()),
+        (
+            if dataset.selected_profile_id().is_some() {
+                "athlete candidates"
+            } else {
+                "athletes"
+            },
+            dataset.athletes.len(),
+        ),
         ("schools", dataset.schools.len()),
         ("teams", dataset.teams.len()),
         ("coaches", dataset.coaches.len()),
@@ -63,5 +79,46 @@ fn append_table_counts(cells: &mut Vec<Vec<Cell>>, dataset: &ExportDataset) -> R
         cells.push(row!(table, Cell::number(count)?));
         Ok::<_, crate::report::ReportError>(())
     })?;
+    Ok(())
+}
+
+fn append_identity_counts(cells: &mut Vec<Vec<Cell>>, dataset: &ExportDataset) -> ReportResult<()> {
+    let population = IdentityPopulation::of(dataset)?;
+    let count = |admission| {
+        dataset
+            .athletes
+            .iter()
+            .filter(|athlete| population.admission(athlete.id.as_str()) == admission)
+            .count()
+    };
+    let people = dataset
+        .athletes
+        .iter()
+        .filter(|athlete| {
+            let id = athlete.id.as_str();
+            population.admission(id) == IdentityAdmission::Accepted
+                && population.canonical_candidate(id) == Some(id)
+        })
+        .count();
+    cells.push(row!("Frozen identity audit", "Count"));
+    for (label, value) in [
+        ("Retained athlete candidate records", dataset.athletes.len()),
+        (
+            "Accepted candidate records",
+            count(IdentityAdmission::Accepted),
+        ),
+        (
+            "Withheld or unknown candidate records",
+            count(IdentityAdmission::Withheld),
+        ),
+        ("Absent candidate records", count(IdentityAdmission::Absent)),
+        ("Accepted public people", people),
+    ] {
+        cells.push(row!(label, Cell::number(value)?));
+    }
+    cells.push(row!(
+        "Candidate count meaning",
+        "candidate records are not distinct accepted people"
+    ));
     Ok(())
 }

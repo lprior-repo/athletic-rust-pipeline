@@ -20,9 +20,19 @@ pub(super) fn write(
     exclusions: &[CombinedExclusion],
     performances: &super::PerformanceIndex<'_>,
 ) -> ReportResult<u64> {
+    let header: Vec<_> = HEADER
+        .iter()
+        .map(|name| {
+            if dataset.selected_profile_id().is_some() && *name == "retained_athlete_id" {
+                "retained_candidate_id"
+            } else {
+                *name
+            }
+        })
+        .collect();
     super::write_csv(
         &directory.join("combined_exclusions.csv"),
-        &HEADER,
+        &header,
         |writer| {
             exclusions.iter().try_for_each(|row| {
                 let performance = performances.get(row.performance_id()).ok_or_else(|| {

@@ -17,7 +17,7 @@ fn accepted_alias_school_address(selected_address: Option<&str>) -> TestResult {
     accept_members(&store, &captured, &alternate)?;
     seed_coaches(&store, &captured, &alternate)?;
     let (path, dataset, _) = published(&store)?;
-    let canonical = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027), &[]);
+    let canonical = crate::report::Derivation::of(&dataset, Scope::AllSources, Some(2027), &[])?;
     let [athlete] = canonical.athletes() else {
         return Err("one accepted athlete required".into());
     };

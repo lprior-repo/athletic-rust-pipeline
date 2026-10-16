@@ -1,7 +1,7 @@
-use super::{collapse_athletes, in_run_scope};
+use super::{collapse_athletes, in_run_scope, Derivation};
 use crate::export::ExportDataset;
 use crate::report::coverage::{in_requested_year, jurisdiction_of, school_state_index};
-use crate::report::{is_core_evidenced, Scope};
+use crate::report::{is_core_evidenced, ReportResult, Scope};
 use census_domain::model::{CanonicalAthlete, Confidence};
 
 pub(super) fn publishable(athlete: &CanonicalAthlete, grad_year: Option<i16>) -> bool {
@@ -14,7 +14,16 @@ pub(crate) fn candidates(
     scope: Scope,
     grad_year: Option<i16>,
     jurisdictions: &[census_domain::UsJurisdiction],
-) -> Vec<CanonicalAthlete> {
+) -> ReportResult<Vec<CanonicalAthlete>> {
+    if dataset.selected_profile_id().is_some() {
+        let selection = Derivation::for_publication(dataset, scope, None, jurisdictions)?;
+        return Ok(selection
+            .athletes()
+            .iter()
+            .filter(|athlete| in_requested_year(athlete, grad_year))
+            .cloned()
+            .collect());
+    }
     let states = school_state_index(dataset.schools.values());
     let mut athletes = collapse_athletes(&dataset.athletes, &dataset.canonical_aliases);
     athletes.retain(|athlete| {
@@ -24,5 +33,5 @@ pub(crate) fn candidates(
         ) && (scope != Scope::Core || is_core_evidenced(athlete))
             && in_requested_year(athlete, grad_year)
     });
-    athletes
+    Ok(athletes)
 }

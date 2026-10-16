@@ -42,7 +42,7 @@ pub(super) fn report(derivation: &Derivation<'_>) -> ReportResult<CoverageReport
             .filter(|athlete| crate::report::is_core_evidenced(*athlete))
             .count(),
     };
-    apply_pr_support(&mut report, derivation)?;
+    apply_pr_support(&mut report, derivation, &admission)?;
     retained::append(&mut report, derivation)?;
     report.reconcile()?;
     Ok(report)
@@ -184,27 +184,19 @@ fn selected_totals(derivation: &Derivation<'_>) -> CoverageTotals {
     }
 }
 
-fn apply_pr_support(report: &mut CoverageReport, derivation: &Derivation<'_>) -> ReportResult<()> {
-    let bests = crate::bests::build_from_dataset(
-        derivation.dataset(),
-        &crate::bests::Options {
-            scope: derivation.scope(),
-            grad_year: derivation.grad_year(),
-            limit: None,
-            jurisdictions: derivation.jurisdictions().to_vec(),
-        },
-    )?;
-    let supported: HashSet<&str> = bests
+fn apply_pr_support(
+    report: &mut CoverageReport,
+    derivation: &Derivation<'_>,
+    admission: &crate::report::EventAdmission<'_>,
+) -> ReportResult<()> {
+    let outcome = crate::bests::build_from_derivation(derivation, admission, None)?;
+    let supported: HashSet<&str> = outcome
+        .selections
         .iter()
         .filter(|selection| selection.result.adjustment_kind.is_none())
         .map(|selection| selection.athlete_id().as_str())
         .collect();
-    pr_support::tally_pr_support(
-        report,
-        derivation.dataset(),
-        derivation.grad_year(),
-        &supported,
-    );
+    pr_support::tally_pr_support_for_derivation(report, derivation, &supported);
     pr_support::write_pr_gaps(report);
     Ok(())
 }

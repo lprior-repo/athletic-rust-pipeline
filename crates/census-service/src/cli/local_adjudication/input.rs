@@ -75,6 +75,7 @@ struct ClaimInput {
 enum SectionInput {
     Athlete,
     SourceObservation,
+    CandidateMembership,
 }
 
 #[derive(Deserialize)]
@@ -161,6 +162,7 @@ impl From<ClaimInput> for RetainedClaimV1 {
             candidate: value.candidate,
             section: match value.section {
                 SectionInput::Athlete => RetainedIdentitySectionV1::Athlete,
+                SectionInput::CandidateMembership => RetainedIdentitySectionV1::CandidateMembership,
                 SectionInput::SourceObservation => RetainedIdentitySectionV1::SourceObservation,
             },
             ordinal: value.ordinal,

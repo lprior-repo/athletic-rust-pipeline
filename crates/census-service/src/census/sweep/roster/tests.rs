@@ -11,6 +11,7 @@ use sha2::{Digest, Sha256};
 use std::num::NonZeroU32;
 
 mod locators;
+mod provenance;
 mod windows;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -82,7 +83,8 @@ fn athletes(store: &Store) -> Result<Vec<String>, Box<dyn std::error::Error>> {
 }
 
 #[tokio::test]
-async fn partial_roster_survives_reopen_and_corrected_body_adds_only_missing_facts() -> TestResult {
+async fn partial_roster_survives_reopen_and_corrected_body_retains_both_capture_bindings(
+) -> TestResult {
     let root = tempfile::tempdir()?;
     let run = run()?;
     {
@@ -104,7 +106,8 @@ async fn partial_roster_survives_reopen_and_corrected_body_adds_only_missing_fac
     let store = Store::open(root.path())?;
     apply(&store, &team(), &run, &capture(body("2027"))?).await?;
     apply(&store, &team(), &run, &capture(body("2027"))?).await?;
-    check!(eq; athletes(&store)?, vec!["Alice Runner".to_string(), "Bob Runner".to_string()]);
+    check!(eq; athletes(&store)?, vec!["Alice Runner".to_string(), "Alice Runner".to_string(), "Bob Runner".to_string()]);
+    check!(eq; store.scan::<CanonicalAthlete>(Table::Athletes)?.len(), 2);
     let mut schools = Vec::new();
     store
         .snapshot()

@@ -36,7 +36,11 @@ impl Row<'_> {
             .ok_or_else(|| defect(format!("unknown normalized column {name}")))
     }
 
-    pub(super) fn text(&self, name: &str, expected: impl Into<String>) -> ReportResult<()> {
+    pub(in crate::workbook::publication) fn text(
+        &self,
+        name: &str,
+        expected: impl Into<String>,
+    ) -> ReportResult<()> {
         Cell::text(expected).compare(self.path, self.index, self.column(name)?, self.get(name)?)
     }
 
@@ -68,7 +72,7 @@ impl Row<'_> {
     }
 }
 
-pub(super) fn table(
+pub(in crate::workbook::publication) fn table(
     directory: &Path,
     schema: (&str, &[&str]),
     expected: usize,

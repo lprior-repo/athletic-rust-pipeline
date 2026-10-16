@@ -177,6 +177,7 @@ fn journal_contains(ctx: &AdapterContext<'_>, phase: &str, key: &str) -> CrawlRe
 }
 
 pub use retained_metadata::{
-    read_retained_result_metadata, RawMetadataArchiveRef, RetainedMetadataError,
-    RetainedPerformanceDate, RetainedResultDivision, VerifiedRetainedResultMetadata,
+    read_retained_result_metadata, read_retained_result_metadata_from, RawMetadataArchiveRef,
+    RetainedMetadataError, RetainedPerformanceDate, RetainedResultDivision, RetainedResultSession,
+    VerifiedRetainedResultMetadata,
 };

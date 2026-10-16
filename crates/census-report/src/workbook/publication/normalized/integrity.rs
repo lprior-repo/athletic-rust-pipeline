@@ -1,5 +1,6 @@
 use super::{comparison_classes, defect, PerformanceIndex};
 use crate::bests::{Parents, SharedSelection};
+use crate::export::public_identity::population::IdentityPopulation;
 use crate::report::{Derivation, EventAdmission, ReportResult};
 use census_domain::model::performance_comparison::PrKey;
 use census_domain::model::CanonicalPerformance;
@@ -146,10 +147,8 @@ fn validate_best(
             ))
         })?;
     if &athlete.id != best.athlete_id()
-        || dataset
-            .identities()
-            .canonical_id(performance.athlete.as_str())
-            != athlete.id.as_str()
+        || IdentityPopulation::of(dataset)?.canonical_candidate(performance.athlete.as_str())
+            != Some(athlete.id.as_str())
         || performance.mark != best.result.mark
         || best.measure().value(&performance.mark) != Some(best.result.value)
         || athlete.gender != best.athlete.gender
@@ -249,3 +248,6 @@ fn source_matches(
             .meet(performance.meet.as_str())
             .is_some_and(|meet| meet.name == best.meet.name))
 }
+
+#[cfg(test)]
+mod tests;

@@ -78,7 +78,7 @@ fn scoped_stage_totals_reject_cross_jurisdiction_and_same_jurisdiction_overflow(
             Scope::AllSources,
             None,
             &[UsJurisdiction::Wisconsin, UsJurisdiction::Minnesota],
-        );
+        )?;
         let error = coverage_report_for_derivation(&derivation)
             .err()
             .ok_or("overflowing stage total was accepted")?;
@@ -112,7 +112,7 @@ fn scoped_stage_totals_accept_exact_capacity_without_saturation() -> TestResult 
         Scope::AllSources,
         None,
         &[UsJurisdiction::Wisconsin, UsJurisdiction::Minnesota],
-    );
+    )?;
     let report = coverage_report_for_derivation(&derivation)?;
     check!(eq; report.source_population.registered, Some(usize::MAX));
     Ok(())
@@ -140,7 +140,7 @@ fn scoped_stages_distinguish_measured_zero_and_partial_measurement() -> TestResu
     )?;
     let dataset = crate::export::ExportDataset::load(&store)?;
     let selected = [UsJurisdiction::Wisconsin, UsJurisdiction::Minnesota];
-    let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, None, &selected);
+    let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, None, &selected)?;
     let report = coverage_report_for_derivation(&derivation)?;
     check!(eq; report.source_population.registered, Some(16));
     check!(eq; report.source_population.attempted, Some(9));
@@ -159,13 +159,17 @@ fn scoped_stages_distinguish_measured_zero_and_partial_measurement() -> TestResu
         ),
     )?;
     let dataset = crate::export::ExportDataset::load(&store)?;
-    let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, None, &selected);
+    let derivation = crate::report::Derivation::of(&dataset, Scope::AllSources, None, &selected)?;
     let report = coverage_report_for_derivation(&derivation)?;
     check!(eq; report.source_population.registered, Some(16));
     check!(eq; report.source_population.attempted, None);
     check!(eq; report.source_population.captured, Some(0));
-    let unsupported =
-        crate::report::Derivation::of(&dataset, Scope::AllSources, None, &[UsJurisdiction::Alaska]);
+    let unsupported = crate::report::Derivation::of(
+        &dataset,
+        Scope::AllSources,
+        None,
+        &[UsJurisdiction::Alaska],
+    )?;
     let report = coverage_report_for_derivation(&unsupported)?;
     check!(eq; report.jurisdictions.len(), 1);
     check!(eq; report.source_population, SourcePopulation::default());

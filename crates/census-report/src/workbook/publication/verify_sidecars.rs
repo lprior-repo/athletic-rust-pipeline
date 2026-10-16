@@ -26,23 +26,15 @@ pub(super) fn verify(
     artifact_revision: u32,
 ) -> ReportResult<super::inventory::RowCounts> {
     super::versions::validate_policy(artifact_revision, dataset.lineage.policy_revision)?;
-    let inputs = input::Inputs::new(dataset, options)?;
+    let inputs = input::Inputs::for_revision(dataset, options, artifact_revision)?;
     catalog::verify(directory, &inputs)?;
     census::verify(directory, &inputs)?;
     recruiting::verify(directory, &inputs)?;
     contacts::verify(directory, &inputs)?;
     audit::verify(directory, &inputs)?;
-    let outcome = crate::bests::build_admitted_outcome(
-        &inputs.admission,
-        &crate::bests::Options {
-            scope: options.scope,
-            grad_year: options.grad_year,
-            limit: options.limit,
-            jurisdictions: options.jurisdictions.clone(),
-        },
-    )?;
+    let outcome = inputs.outcome()?;
     bests::verify(directory, &inputs, artifact_revision, &outcome.selections)?;
-    if matches!(artifact_revision, 3..=6) {
+    if matches!(artifact_revision, 3..=8) {
         return normalized::verify_outcome(directory, &inputs, artifact_revision, &outcome);
     }
     Ok(super::inventory::RowCounts::new())

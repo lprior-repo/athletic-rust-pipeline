@@ -16,8 +16,8 @@ use census_domain::model::{
 use census_domain::{JurisdictionBucket, UsJurisdiction};
 use std::collections::{BTreeMap, HashMap};
 
-pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
-    let scanned = Scanned::of(dataset);
+pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> super::ReportResult<Outcome> {
+    let scanned = Scanned::of(dataset)?;
     let school_state = school_state_index(&scanned.schools);
     let universe = Published::new(jurisdiction_buckets());
     let reads = reads::totals(&scanned.tables(), &school_state, &universe, grad_year);
@@ -47,7 +47,7 @@ pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
 
     let accepted_cohort = jurisdictions.iter().map(|row| row.athletes_core).sum();
 
-    Outcome {
+    Ok(Outcome {
         jurisdictions,
         gaps,
         read: reads.published,
@@ -59,7 +59,7 @@ pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
         raw_observations,
         scope_filtered,
         accepted_cohort,
-    }
+    })
 }
 
 pub(super) fn classify_population<'a>(

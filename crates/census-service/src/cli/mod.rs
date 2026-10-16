@@ -29,6 +29,7 @@ mod school_address_preflight;
 mod school_names;
 mod school_sites;
 mod seal;
+mod selected_publication;
 mod serve;
 mod source;
 mod store;

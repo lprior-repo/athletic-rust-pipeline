@@ -31,12 +31,17 @@ pub(super) struct Index {
 }
 
 impl Index {
-    pub(super) fn read(path: &Path, bytes: u64, rows: usize) -> ReportResult<Self> {
+    pub(super) fn read(
+        path: &Path,
+        bytes: u64,
+        rows: usize,
+        artifact_revision: u32,
+    ) -> ReportResult<Self> {
         if rows > MAX_ROWS || bytes > MAX_BYTES {
             return Err(error("normalized athletes exceed comparison input budget"));
         }
         let mut index = Self::empty();
-        visit_athletes(path, rows, |row| index.insert(row))?;
+        visit_athletes(path, rows, artifact_revision, |row| index.insert(row))?;
         Ok(index)
     }
 

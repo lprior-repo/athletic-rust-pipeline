@@ -13,6 +13,9 @@ pub(super) fn inputs(rows: &StoreRows<'_>) -> ReportResult<()> {
     admission.rows(rows.schools)?;
     admission.rows(rows.meets)?;
     admission.rows(rows.athletes)?;
+    if rows.source.selected_profile_id().is_some() {
+        admission.rows(&rows.source.athletes)?;
+    }
     admission.rows(rows.coaches)?;
     admission.rows(rows.verdicts)?;
     admission.rows(rows.review_cases)?;

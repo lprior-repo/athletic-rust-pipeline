@@ -169,3 +169,17 @@ fn a_prompt_that_cannot_be_flushed_does_not_consume_confirmation() {
     assert!(matches!(result, Err(ApprovalError::Io(_))));
     assert_eq!(input.position(), 0);
 }
+
+#[test]
+fn membership_approval_is_separately_bound_to_its_complete_record(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let record = serde_json::json!({"attachment": "retained", "withheld": ["membership:b"]});
+    let old = super::encode(&record)?;
+    let new = super::encode_for("local-source-membership-withholding-approval/v1", &record)?;
+    assert_ne!(old, new);
+    assert_ne!(
+        super::approval_digest(&new),
+        super::approval_digest_for("local-source-membership-withholding-approval/v1", &new)
+    );
+    Ok(())
+}

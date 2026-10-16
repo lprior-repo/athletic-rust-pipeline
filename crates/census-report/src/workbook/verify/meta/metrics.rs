@@ -10,6 +10,8 @@ use census_domain::model::{SchoolYear, SCHOOL_IDENTITY_FAMILY};
 
 use super::{header, number_row, text_row, Expect, Series, Sheet};
 
+mod identity;
+
 const HEADERS: [&str; 2] = ["Run metric", "Value"];
 
 const FROZEN_HEADERS: [&str; 2] = ["Frozen input", "Value"];
@@ -156,10 +158,25 @@ fn frozen_rows(dataset: &ExportDataset) -> ReportResult<Vec<Vec<Expect>>> {
         ),
         number_row("Export schema revision", f64::from(lineage.schema_revision)),
         number_row("Export policy revision", f64::from(lineage.policy_revision)),
-        text_row("Frozen table", "Canonical records"),
+        text_row(
+            "Frozen table",
+            if dataset.selected_profile_id().is_some() {
+                "Retained records"
+            } else {
+                "Canonical records"
+            },
+        ),
     ];
     for (table, read) in FROZEN_COUNTS {
+        let table = if table == "athletes" && dataset.selected_profile_id().is_some() {
+            "athlete candidates"
+        } else {
+            table
+        };
         rows.push(vec![Expect::text(table), Expect::count(read(dataset))?]);
+    }
+    if dataset.selected_profile_id().is_some() {
+        rows.extend(identity::expected(dataset)?);
     }
     Ok(rows)
 }

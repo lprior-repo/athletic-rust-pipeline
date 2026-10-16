@@ -1,6 +1,9 @@
 use super::super::cells::Cell;
 use crate::bests::{Conflict, SharedSelection};
+use crate::export::current_school::SelectedSchools;
+use crate::export::public_identity::VerifiedPublicIdentityView;
 use crate::report::{ReportError, ReportResult};
+use crate::workbook::public_identity::{Identity, SHEET_HEADERS};
 
 pub(super) const TITLE: &str = "PRs";
 
@@ -41,27 +44,63 @@ pub(super) const WIDTHS: [u16; 29] = [
     30, 24, 18, 16, 40,
 ];
 
-pub(super) fn rows(prs: &[SharedSelection]) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + '_ {
-    let header = HEADERS.iter().map(|header| Cell::text(*header)).collect();
-    std::iter::once(Ok(header)).chain(prs.iter().map(cells))
+pub(super) fn rows<'a>(
+    prs: &'a [SharedSelection],
+    view: Option<&'a VerifiedPublicIdentityView>,
+    schools: Option<&'a SelectedSchools<'a>>,
+) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + 'a {
+    let header = HEADERS
+        .iter()
+        .copied()
+        .map(|name| match (schools.is_some(), name) {
+            (true, "School") => "School at performance",
+            (true, "State") => "State at performance",
+            _ => name,
+        })
+        .chain(view.into_iter().flat_map(|_| SHEET_HEADERS))
+        .chain(
+            schools
+                .into_iter()
+                .flat_map(|_| ["Current school", "Current state", "Current school as-of"]),
+        )
+        .map(Cell::text)
+        .collect();
+    std::iter::once(Ok(header)).chain(prs.iter().map(move |pr| cells(pr, view, schools)))
 }
 
-fn cells(pr: &SharedSelection) -> ReportResult<Vec<Cell>> {
+fn cells(
+    pr: &SharedSelection,
+    view: Option<&VerifiedPublicIdentityView>,
+    schools: Option<&SelectedSchools<'_>>,
+) -> ReportResult<Vec<Cell>> {
+    let identity = Identity::of(view, pr.athlete_id().as_str())?;
     let mut cells = Vec::new();
     cells
         .try_reserve(HEADERS.len())
         .map_err(|error| ReportError::Invariant {
             detail: format!("reserving PR sheet cells: {error}"),
         })?;
-    cells.extend(identity_cells(pr));
+    cells.extend(identity_cells(pr, identity.athlete_id()));
     cells.extend(result_cells(pr)?);
     cells.extend(context_cells(pr));
+    cells.extend(identity.audit()?.map(Cell::text));
+    if let Some(schools) = schools {
+        let current = schools.fields(pr.athlete_id().as_str())?;
+        cells.extend(
+            [
+                current.current_school,
+                current.current_state,
+                current.current_school_as_of,
+            ]
+            .map(Cell::text),
+        );
+    }
     Ok(cells)
 }
 
-fn identity_cells(pr: &SharedSelection) -> [Cell; 9] {
+fn identity_cells(pr: &SharedSelection, athlete_id: &str) -> [Cell; 9] {
     [
-        Cell::text(pr.athlete_id().as_str()),
+        Cell::text(athlete_id),
         Cell::text(&pr.athlete.name),
         Cell::text(pr.athlete.gender.stable_key()),
         pr.athlete.school.as_deref().map_or(Cell::Empty, Cell::text),

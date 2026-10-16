@@ -4,6 +4,7 @@ use std::io::{BufRead, IsTerminal, Read, Write};
 
 mod command;
 mod input;
+mod membership;
 pub(super) use command::{run, LocalAdjudicationArgs};
 
 const APPROVAL_SCHEMA: &str = "local-identity-adjudication-approval/v1";
@@ -69,8 +70,17 @@ fn confirm<T: Serialize, R: BufRead, W: Write>(
     reader: &mut R,
     writer: &mut W,
 ) -> Result<VerifiedLocalAdjudication, ApprovalError> {
-    let encoded = encode(prepared)?;
-    let digest = approval_digest(&encoded);
+    confirm_for(APPROVAL_SCHEMA, prepared, reader, writer)
+}
+
+fn confirm_for<T: Serialize, R: BufRead, W: Write>(
+    schema: &'static str,
+    prepared: &T,
+    reader: &mut R,
+    writer: &mut W,
+) -> Result<VerifiedLocalAdjudication, ApprovalError> {
+    let encoded = encode_for(schema, prepared)?;
+    let digest = approval_digest_for(schema, &encoded);
     writer.write_all(
         b"Local operator identity adjudication. Review the complete prepared record:\n",
     )?;
@@ -99,17 +109,27 @@ fn verify_confirmation(digest: &str, response: &[u8]) -> Result<(), ApprovalErro
     Ok(())
 }
 
+#[cfg(test)]
 fn approval_digest(encoded: &[u8]) -> String {
+    approval_digest_for(APPROVAL_SCHEMA, encoded)
+}
+
+fn approval_digest_for(schema: &str, encoded: &[u8]) -> String {
     let mut digest = Sha256::new();
-    digest.update(APPROVAL_SCHEMA.as_bytes());
+    digest.update(schema.as_bytes());
     digest.update([0]);
     digest.update(encoded);
     format!("{:x}", digest.finalize())
 }
 
+#[cfg(test)]
 fn encode<T: Serialize>(prepared: &T) -> Result<Vec<u8>, ApprovalError> {
+    encode_for(APPROVAL_SCHEMA, prepared)
+}
+
+fn encode_for<T: Serialize>(schema: &'static str, prepared: &T) -> Result<Vec<u8>, ApprovalError> {
     let envelope = ApprovalEnvelope {
-        schema: APPROVAL_SCHEMA,
+        schema,
         actor: Actor::LocalOperator,
         prepared,
     };

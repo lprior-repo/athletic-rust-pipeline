@@ -1,6 +1,26 @@
 use super::*;
 
 #[test]
+fn input_revision_enrollment_does_not_make_a_store_fresh_for_installation() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let config = prepare(root.path())?;
+    let store = Store::open_existing(root.path())?;
+    store.enroll_public_identity_input_revisions_v2(store.snapshot().revision())?;
+    drop(store);
+    let mut control = Store::installation_control_existing(root.path())?;
+    let before = witness(&control.store)?;
+    check!(matches!(
+        control.enroll(&config),
+        Err(StoreError::Installation(
+            InstallationError::HistoricalStatePresent {
+                kind: HistoricalStateKind::Metadata,
+            }
+        ))
+    ));
+    equal(witness(&control.store)?, before)
+}
+
+#[test]
 fn metadata_row_size_refusal_precedes_non_utf8_key_refusal_without_enrollment_writes() -> TestResult
 {
     let root = tempfile::tempdir()?;

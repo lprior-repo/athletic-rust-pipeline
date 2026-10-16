@@ -46,6 +46,13 @@ fn check_capture(capture: &FetchOutcome, reference: &ResultSetRef) -> CrawlResul
         .into());
     }
     admission::check(&capture.body)?;
+    check_reference(capture, reference)
+}
+
+pub(in crate::milesplit::results) fn check_reference(
+    capture: &FetchOutcome,
+    reference: &ResultSetRef,
+) -> CrawlResult<()> {
     check_url(&reference.url, reference, "requested raw URL")?;
     check_url(&capture.url, reference, "captured raw URL")?;
     if let Some(url) = &capture.response_url {

@@ -105,7 +105,7 @@ fn run_bests_offline(
     let dataset = ExportDataset::load(store).context("reading export dataset for best marks")?;
     let rows = bests::build_from_dataset(&dataset, &options)?;
     let cohort = cohort_label(grad_year);
-    let (jsonl, csv) = bests::write(&store.out_dir(), &rows, &cohort, dataset.semantic_policy()?)
+    let (jsonl, csv) = bests::write(&store.out_dir(), &rows, &cohort, &dataset)
         .context("writing the best-mark sidecars")?;
     println!("cohort={cohort} rows={}", rows.len());
     println!("jurisdictions={}", restriction_display(jurisdictions));

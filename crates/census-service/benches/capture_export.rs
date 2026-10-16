@@ -60,7 +60,7 @@ fn operation(runtime: &Runtime, oracle: &Oracle) -> Result<Duration> {
     ingest::run(&store, runtime)?;
     let dataset = ExportDataset::load(&store)?;
     let options = options(directory.path())?;
-    let censuses = workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+    let censuses = workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let path = workbook::build_from(&dataset, &store, &options, &censuses)?;
     oracle.verify(&dataset)?;
     publication::verify_published(&path)?;

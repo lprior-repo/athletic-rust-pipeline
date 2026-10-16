@@ -4,6 +4,8 @@ use fjall::{Readable, Snapshot};
 
 mod acquisition;
 mod bounded;
+mod bounded_page;
+pub use bounded_page::{PhysicalObservationCursor, PhysicalObservationPage};
 #[path = "../keyed.rs"]
 mod keyed;
 mod legacy;
@@ -13,7 +15,10 @@ mod lineage;
 mod membership;
 mod merge;
 mod object;
+mod object_measure;
 mod object_read;
+mod paged_generation;
+pub(crate) use object::JournalRawRecords;
 pub(crate) use object_read::read_context_object;
 mod object_wire;
 mod operations;
@@ -61,6 +66,12 @@ impl<'s> StoreSnapshot<'s> {
                 derived_generation,
             ),
         }
+    }
+
+    pub fn public_identity_input_revisions_v2(
+        &self,
+    ) -> StoreResult<crate::PublicIdentityInputRevisionsV2> {
+        crate::input_revisions::read(&self.snapshot, self.meta)
     }
 
     pub fn revision(&self) -> crate::StoreRevision<'s> {

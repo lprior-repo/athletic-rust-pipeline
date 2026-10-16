@@ -1,7 +1,7 @@
 use super::error::invalid;
 use super::{read, CaptureReadBudget, RawMetadataArchiveRef, ResultSetRef, RetainedMetadataError};
+use crate::milesplit::RetainedJournalView;
 use crate::net::FetchOutcome;
-use census_store::StoreSnapshot;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::Value;
@@ -35,7 +35,7 @@ struct Capture {
 }
 
 pub(super) fn load(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalView,
     reference: &ResultSetRef,
     archive: &RawMetadataArchiveRef,
     budget: CaptureReadBudget,

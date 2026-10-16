@@ -9,6 +9,8 @@ use census_domain::model::{
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 
+mod selected;
+
 const STAGE: &str = "recruiting event admission";
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
@@ -49,6 +51,7 @@ impl<'a> EventAdmission<'a> {
     pub fn of(dataset: &'a ExportDataset) -> ReportResult<Self> {
         let semantics = dataset.semantic_policy()?;
         let catalog = RecruitingCatalogV1::with_policy(semantics);
+        let selection = selected::Selection::of(dataset)?;
         let meets = meet_sports(dataset)?;
         let mut rows = Vec::new();
         reserve::<AdmittedEvent<'_>>(dataset.events.len())?;
@@ -59,7 +62,7 @@ impl<'a> EventAdmission<'a> {
                 .get(&event.meet)
                 .copied()
                 .map_or(Sport::Unknown, |value| value);
-            let disposition = classify(&catalog, event, sport)?;
+            let disposition = selection.classify(&catalog, event, sport)?;
             budget.record(event)?;
             rows.push(AdmittedEvent {
                 event: &event.id,
@@ -148,19 +151,6 @@ impl<'a> EventAdmission<'a> {
             Some(EventDisposition::Excluded(_) | EventDisposition::Unresolved(_)) | None => None,
         }
     }
-}
-
-fn classify(
-    catalog: &RecruitingCatalogV1,
-    event: &CanonicalEvent,
-    sport: Sport,
-) -> ReportResult<EventDisposition> {
-    catalog
-        .classify(event, sport)
-        .map_err(|source| ReportError::Catalog {
-            event: event.id.clone(),
-            source,
-        })
 }
 
 fn meet_sports(dataset: &ExportDataset) -> ReportResult<HashMap<&MeetId, Sport>> {

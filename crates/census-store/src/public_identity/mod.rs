@@ -11,8 +11,17 @@ pub use local_adjudication::{
 };
 pub(crate) mod frozen;
 mod init;
+mod input_revisions;
 mod inventory;
+mod membership;
+mod membership_withholding;
+pub use membership::{SourceCandidateMembershipOutcomeV1, SourceCandidateMembershipRequestV1};
+pub use membership_withholding::{
+    MembershipWithholdingInventoryV1, MembershipWithholdingOutcomeV1,
+    PreparedMembershipWithholdingV1,
+};
 mod operation;
+pub mod paged_generation;
 pub(crate) mod qualification;
 mod retained;
 mod witness;
@@ -58,6 +67,13 @@ pub(crate) fn refuse_identity_write(
     Ok(())
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PublicIdentityAdmissionResource {
+    Bytes,
+    Roots,
+    Reservations,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum PublicIdentityError {
     #[error("public identity qualification requires a new empty root")]
@@ -73,6 +89,14 @@ pub enum PublicIdentityError {
     ForeignStore,
     #[error("public identity ledger is missing or inconsistent: {0}")]
     Corrupt(&'static str),
+    #[error(
+        "public identity admission capacity exhausted for {resource:?}: needed {needed}, available {available}"
+    )]
+    AdmissionCapacity {
+        resource: PublicIdentityAdmissionResource,
+        needed: u64,
+        available: u64,
+    },
     #[error("public identity registry head moved")]
     HeadMoved,
     #[error("public identity operation conflicts with its immutable receipt")]
@@ -109,3 +133,5 @@ impl IdentityCommitOutcomeV1 {
         self.replayed
     }
 }
+
+pub(crate) use local_adjudication::admission::Permit as ManualContextPermit;

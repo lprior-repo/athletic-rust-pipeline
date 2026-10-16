@@ -45,14 +45,14 @@ fn participation_verifies_query_profile_identity_and_policy_instead_of_trusting_
     let mut query = f.query()?;
     query.binding.profile = &foreign_profile;
     check!(matches!(
-        assess_participation(query, &observation),
+        assess_historical_participation(query, &observation),
         Err(ParticipationInputError::ProfileMismatch)
     ));
     let foreign_rule = ContractRefV1::new(1, 1, &"c".repeat(64))?;
     let mut query = f.query()?;
     query.binding.participation_rule = &foreign_rule;
     check!(matches!(
-        assess_participation(query, &observation),
+        assess_historical_participation(query, &observation),
         Err(ParticipationInputError::PolicyMismatch)
     ));
     Ok(())

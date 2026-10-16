@@ -78,7 +78,7 @@ fn assert_selection(dataset: &ExportDataset, fixture: &Fixture, scope: Scope) ->
 }
 
 fn assert_projection(dataset: &ExportDataset, fixture: &Fixture, scope: Scope) -> TestResult {
-    let derivation = Derivation::of(dataset, scope, Some(2027), &[]);
+    let derivation = Derivation::of(dataset, scope, Some(2027), &[])?;
     check!(eq; derivation.athletes(), std::slice::from_ref(&fixture.athlete));
     check!(eq; derivation.performances(), &[&fixture.performance]);
     let row =

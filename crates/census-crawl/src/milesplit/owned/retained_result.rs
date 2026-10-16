@@ -1,13 +1,15 @@
 use super::{
-    parse_owned_meet, read_retained_acquisition, CaptureReadBudget, OwnedAcquisitionRef,
-    OwnedPerformance, OwnedRejectionKind, VerifiedOwnedAcquisition, MAX_OWNED_ROWS,
-    OWNED_MEET_PHASE,
+    CaptureReadBudget, OwnedAcquisitionRef, OwnedPerformance, VerifiedOwnedAcquisition,
+    MAX_OWNED_ROWS, OWNED_MEET_PHASE,
 };
+use crate::milesplit::RetainedJournalView;
 use census_store::{JournalReadBudget, StoreSnapshot};
 use chrono::{DateTime, Utc};
 
 mod interpretation;
+mod session;
 mod types;
+pub(in crate::milesplit) use session::{OwnedResultSession, MAX_SESSION_CAPTURES};
 
 pub use types::{RetainedResultError, VerifiedRetainedOwnedResult};
 
@@ -17,33 +19,19 @@ pub fn read_retained_owned_result(
     locator: &str,
     budget: CaptureReadBudget,
 ) -> Result<VerifiedRetainedOwnedResult, RetainedResultError> {
-    check_locator(locator)?;
-    let acquisition = read_retained_acquisition(view, reference, budget)?;
-    let acquired_at = acquisition_time(&acquisition)?;
-    let page = parse_owned_meet(acquisition.body(), reference.meet_id())?;
-    if page
-        .rejected
-        .iter()
-        .any(|row| row.kind == OwnedRejectionKind::DuplicateResult)
-    {
-        return Err(RetainedResultError::DuplicateResult);
-    }
-    let row = page
-        .rows
-        .into_iter()
-        .find(|row| row.locator == locator)
-        .ok_or(RetainedResultError::LocatorMissing)?;
-    let interpretation_key = interpretation::verify(view, &acquisition, &row)?;
-    Ok(VerifiedRetainedOwnedResult::new(
-        view.sequence(),
-        acquisition,
-        acquired_at,
-        row,
-        interpretation_key,
-    ))
+    read_retained_owned_result_from(view, reference, locator, budget)
 }
 
-fn check_locator(locator: &str) -> Result<(), RetainedResultError> {
+pub fn read_retained_owned_result_from(
+    view: &impl RetainedJournalView,
+    reference: &OwnedAcquisitionRef,
+    locator: &str,
+    budget: CaptureReadBudget,
+) -> Result<VerifiedRetainedOwnedResult, RetainedResultError> {
+    OwnedResultSession::new(view, budget).read(reference, locator)
+}
+
+fn check_locator(locator: &str) -> Result<usize, RetainedResultError> {
     let index = locator
         .strip_prefix("data[")
         .and_then(|value| value.strip_suffix(']'))
@@ -52,7 +40,7 @@ fn check_locator(locator: &str) -> Result<(), RetainedResultError> {
         .filter(|value| value.bytes().all(|byte| byte.is_ascii_digit()))
         .and_then(|value| value.parse::<usize>().ok());
     match index {
-        Some(index) if index < MAX_OWNED_ROWS => Ok(()),
+        Some(index) if index < MAX_OWNED_ROWS => Ok(index),
         _ => Err(RetainedResultError::InvalidLocator),
     }
 }

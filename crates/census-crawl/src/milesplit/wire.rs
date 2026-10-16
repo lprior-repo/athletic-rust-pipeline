@@ -3,6 +3,10 @@ use census_domain::model::{Gender, GradYear};
 use census_domain::UsJurisdiction;
 use serde::Deserialize;
 
+mod current_roster;
+use current_roster::RosterTemporalEvidence;
+pub use current_roster::{CurrentRosterAssertion, RosterTemporalUnavailable};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Site {
     jurisdiction: UsJurisdiction,
@@ -105,11 +109,40 @@ pub struct RosterAthlete {
 pub struct LocatedRosterAthlete {
     athlete: RosterAthlete,
     locator: SourceRowLocator,
+    current_roster: RosterTemporalEvidence,
 }
 
 impl LocatedRosterAthlete {
     pub(in crate::milesplit) fn new(athlete: RosterAthlete, locator: SourceRowLocator) -> Self {
-        Self { athlete, locator }
+        Self {
+            athlete,
+            locator,
+            current_roster: RosterTemporalEvidence::Unavailable(
+                RosterTemporalUnavailable::MissingStatement,
+            ),
+        }
+    }
+
+    pub(in crate::milesplit) fn bind_current_roster(&mut self, assertion: CurrentRosterAssertion) {
+        self.current_roster = RosterTemporalEvidence::Current(assertion);
+    }
+
+    pub fn current_roster(&self) -> Option<&CurrentRosterAssertion> {
+        match &self.current_roster {
+            RosterTemporalEvidence::Current(proof) => Some(proof),
+            RosterTemporalEvidence::Unavailable(_) => None,
+        }
+    }
+
+    pub(in crate::milesplit) fn withhold_temporal(&mut self, reason: RosterTemporalUnavailable) {
+        self.current_roster = RosterTemporalEvidence::Unavailable(reason);
+    }
+
+    pub fn temporal_unavailability(&self) -> Option<RosterTemporalUnavailable> {
+        match self.current_roster {
+            RosterTemporalEvidence::Current(_) => None,
+            RosterTemporalEvidence::Unavailable(reason) => Some(reason),
+        }
     }
 
     pub fn athlete(&self) -> &RosterAthlete {

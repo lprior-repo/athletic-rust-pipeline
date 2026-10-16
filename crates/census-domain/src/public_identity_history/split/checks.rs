@@ -18,6 +18,19 @@ impl HistoryProjection {
             &split.affected_record_keys,
         )?;
         self.check_partition(split, affected)?;
+        split.partitions.iter().try_for_each(|partition| {
+            partition.binding_ids.iter().try_for_each(|id| {
+                if let Some(membership) = self.memberships.get(id) {
+                    if !partition
+                        .binding_ids
+                        .contains(&membership.claim.anchor_binding_id)
+                    {
+                        return Err(HistoryError::Invalid("source epoch evidence required"));
+                    }
+                }
+                Ok(())
+            })
+        })?;
         let mut work = 0;
         self.check_revocations(split, affected, &mut work)?;
         split.partitions.iter().try_for_each(|partition| {
@@ -40,9 +53,9 @@ impl HistoryProjection {
                 .iter()
                 .try_fold(BTreeSet::new(), |mut seen, partition| {
                     let represented = partition.binding_ids.iter().any(|id| {
-                        self.bindings.get(id).is_some_and(|binding| {
-                            binding.claim.candidate == partition.representative
-                        })
+                        self.bindings
+                            .get(id)
+                            .is_some_and(|entry| entry.claim.candidate == partition.representative)
                     });
                     if partition.binding_ids.is_empty() || !represented {
                         return Err(HistoryError::Partition);

@@ -31,11 +31,11 @@ const SHEETS: [&str; 9] = [
 fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> TestResult<std::path::PathBuf> {
     let dataset = crate::export::ExportDataset::load(store)?;
     let core = report::build_census(
-        &report::Derivation::of(&dataset, Scope::Core, None, &[]),
+        &report::Derivation::of(&dataset, Scope::Core, None, &[])?,
         &store.out_dir(),
     );
     let all_sources = report::build_census(
-        &report::Derivation::of(&dataset, Scope::AllSources, None, &[]),
+        &report::Derivation::of(&dataset, Scope::AllSources, None, &[])?,
         &store.out_dir(),
     );
     let bests = bests::build_from_dataset(
@@ -47,8 +47,8 @@ fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> TestResult<std::pat
             jurisdictions: Vec::new(),
         },
     )?;
-    let population = report::Derivation::of(&dataset, scope, None, &[]);
-    let recruiting = report::Derivation::of(&dataset, scope, Some(2027), &[]);
+    let population = report::Derivation::of(&dataset, scope, None, &[])?;
+    let recruiting = report::Derivation::of(&dataset, scope, Some(2027), &[])?;
     let path = dir.join("meta.xlsx");
     let admission = crate::report::EventAdmission::of(&dataset)?;
     let mut book = Workbook::new();

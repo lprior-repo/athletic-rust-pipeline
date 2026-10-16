@@ -75,7 +75,7 @@ pub(super) struct Series<'a, 'd> {
 impl Series<'_, '_> {
     fn sheets(&self) -> ReportResult<Vec<Sheet>> {
         let admission = crate::report::EventAdmission::of(self.dataset)?;
-        let cohort = cohort_of(self.recruiting);
+        let cohort = cohort_of(self.recruiting)?;
         let names = school_name_index(self.population.schools());
         let conflicts = conflict_families(self.rows, &cohort, &names)?;
         let review = review_families(self.rows, &cohort, &names, &admission)?;
@@ -87,7 +87,7 @@ impl Series<'_, '_> {
             sources::expected(self.censuses)?,
             coverage::expected(self.recruiting)?,
             queues::conflicts(&conflicts, self.index),
-            queues::review(&review, &self.dataset.verdicts, self.index),
+            queues::review(&review, &self.dataset.verdicts, self.index, self.dataset)?,
             self.metrics(&conflicts)?,
             mailboxes,
             research,
@@ -103,8 +103,8 @@ fn expected_sheets(expectations: &Expectations<'_>) -> ReportResult<Vec<Sheet>> 
     let dataset = expectations.dataset;
     let scope = expectations.derivation.scope();
     let jurisdictions = expectations.derivation.jurisdictions();
-    let population = Derivation::of(dataset, scope, None, jurisdictions);
-    let censuses = Censuses::of(dataset, &census_out(dataset), jurisdictions);
+    let population = Derivation::for_publication(dataset, scope, None, jurisdictions)?;
+    let censuses = Censuses::of(dataset, &census_out(dataset), jurisdictions)?;
     let rows = StoreRows::of(&population, expectations.school_year)?;
     let index = queues::Lookup::of(
         population.schools(),
@@ -219,3 +219,6 @@ mod tests;
 
 #[cfg(test)]
 mod year_tests;
+
+#[cfg(test)]
+mod selected_identity_tests;

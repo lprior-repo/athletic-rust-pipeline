@@ -1,6 +1,8 @@
 use super::{CoverageGap, CoverageReport, GapClass, JurisdictionBucket, Scope};
 use crate::export::ExportDataset;
-use std::collections::HashSet;
+use census_domain::model::CanonicalAthlete;
+use census_domain::UsJurisdiction;
+use std::collections::{HashMap, HashSet};
 
 pub(super) fn apply_pr_support(
     report: &mut CoverageReport,
@@ -21,7 +23,7 @@ pub(super) fn apply_pr_support(
         .filter(|selection| selection.result.adjustment_kind.is_none())
         .map(|selection| selection.athlete_id().as_str())
         .collect();
-    tally_pr_support(report, dataset, grad_year, &supported);
+    tally_pr_support(report, dataset, grad_year, &supported)?;
     write_pr_gaps(report);
     Ok(())
 }
@@ -31,18 +33,42 @@ pub(super) fn tally_pr_support(
     dataset: &ExportDataset,
     grad_year: Option<i16>,
     supported: &HashSet<&str>,
-) {
+) -> super::ReportResult<()> {
     let school_state = super::state::school_state_index(dataset.schools.values());
-    let athletes =
-        crate::report::derivation::collapse_athletes(&dataset.athletes, &dataset.canonical_aliases);
-    for athlete in &athletes {
+    let (athletes, _) = super::scan::athlete_population(dataset)?;
+    tally(report, &athletes, &school_state, grad_year, supported);
+    Ok(())
+}
+
+pub(super) fn tally_pr_support_for_derivation(
+    report: &mut CoverageReport,
+    derivation: &crate::report::Derivation<'_>,
+    supported: &HashSet<&str>,
+) {
+    tally(
+        report,
+        derivation.athletes(),
+        derivation.school_state(),
+        derivation.grad_year(),
+        supported,
+    );
+}
+
+fn tally(
+    report: &mut CoverageReport,
+    athletes: &[CanonicalAthlete],
+    school_state: &HashMap<&str, Option<UsJurisdiction>>,
+    grad_year: Option<i16>,
+    supported: &HashSet<&str>,
+) {
+    for athlete in athletes {
         if !super::state::in_requested_year(athlete, grad_year) {
             continue;
         }
         if !supported.contains(athlete.id.as_str()) {
             continue;
         }
-        let bucket = super::state::jurisdiction_of(&school_state, athlete.school.as_str());
+        let bucket = super::state::jurisdiction_of(school_state, athlete.school.as_str());
         bump_pr_support(report, bucket);
     }
 }

@@ -15,6 +15,7 @@ use super::{evidence, physical, TestResult};
 pub(super) const OPERATION: &str = "isolated-approved-manual-split-crash-v2";
 pub(super) const CHILD_NAME: &str = "manual::public_identity_manual_crash_child_fixture";
 const PLAN_FILE: &str = "manual-crash-plan.json";
+const PREPARED_FILE: &str = "manual-crash-original-prepared.json";
 const APPROVAL_FILE: &str = "manual-crash-approved.json";
 const APPROVAL_SCHEMA: &str = "local-identity-adjudication-approval/v1";
 
@@ -22,6 +23,7 @@ const APPROVAL_SCHEMA: &str = "local-identity-adjudication-approval/v1";
 #[serde(deny_unknown_fields)]
 pub(super) struct Plan {
     pub identity: StoreIdentity,
+    pub snapshot_sequence: u64,
     #[serde(deserialize_with = "decode_head")]
     pub head: RegistryHead,
     pub candidates: [AthleteCandidateId; 3],
@@ -45,11 +47,16 @@ impl Fixture {
         check!(root.is_absolute());
         Store::create_public_identity_qualification_v2(&root)?;
         let (store, writer) = Store::open_public_identity_qualification_v2(&root)?.into_parts();
+        writer.enroll_manual_context_admission_v1(&store)?;
         let plan = evidence::install(&store, &writer)?;
         check!(eq; plan.head.sequence, 4);
         check!(eq; store.snapshot().scan::<census_domain::model::AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?.len(), 4);
-        let prepared = prepare(&store, &writer, &plan)?;
+        let prepared = prepare_record(&store, &writer, &plan)?;
         check!(eq; prepared.record().expected_head, plan.head);
+        write_new(
+            &root.join(PREPARED_FILE),
+            &serde_json::to_vec(prepared.record())?,
+        )?;
         drop(prepared);
         write_new(&root.join(PLAN_FILE), &serde_json::to_vec(&plan)?)?;
         let evidence = store.evidence_generation();
@@ -105,7 +112,17 @@ pub(super) fn prepare<'s>(
     writer: &PublicIdentityWriterV1,
     plan: &Plan,
 ) -> TestResult<PreparedLocalAdjudicationV1<'s>> {
-    let original_sequence = store.snapshot().sequence();
+    let prepared = prepare_record(store, writer, plan)?;
+    let original: LocalIdentityAdjudicationRecordV2 = read_json(&store.root().join(PREPARED_FILE))?;
+    check!(eq; serde_json::to_vec(prepared.record())?, serde_json::to_vec(&original)?);
+    Ok(prepared)
+}
+
+fn prepare_record<'s>(
+    store: &'s Store,
+    writer: &PublicIdentityWriterV1,
+    plan: &Plan,
+) -> TestResult<PreparedLocalAdjudicationV1<'s>> {
     let prepared = writer.prepare_local_adjudication(
         store,
         OPERATION,
@@ -113,7 +130,7 @@ pub(super) fn prepare<'s>(
         store.snapshot().revision(),
         &plan.head,
     )?;
-    check!(eq; prepared.record().snapshot_sequence, original_sequence);
+    check!(eq; prepared.record().snapshot_sequence, plan.snapshot_sequence);
     Ok(prepared)
 }
 

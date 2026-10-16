@@ -30,6 +30,9 @@ pub(crate) fn run() -> Result<()> {
     if let Command::LocalIdentityAdjudication(args) = &cli.command {
         return local_adjudication::run(&cli, args);
     }
+    if let Command::SelectedPublication(args) = &cli.command {
+        return super::selected_publication::run(&cli, args);
+    }
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()?
@@ -44,7 +47,8 @@ async fn run_async(cli: Cli) -> Result<()> {
         args.validate_offline_store(cli.store.as_deref())?;
     }
     match &cli.command {
-        Command::CompareReference(_)
+        Command::SelectedPublication(_)
+        | Command::CompareReference(_)
         | Command::CaptureProtocol(_)
         | Command::Installation(_)
         | Command::Profile(_)

@@ -31,7 +31,7 @@ fn publication_fence_rejects_a_changed_expected_root() -> TestResult {
     let link = root.join("injected.tmp");
     std::os::unix::fs::symlink(Path::new("generations").join(name), &link)?;
     std::fs::rename(link, root.join("current"))?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let result = stage.publish(&dataset, &options, |path| {
         crate::workbook::write_artifacts(path, &dataset, &options, &censuses)
     });
@@ -79,7 +79,7 @@ fn publication_fence_run_binding_during_render_refuses_intent() -> TestResult {
     let old = crate::workbook::build(&store, &options)?;
     let bytes = std::fs::read(&old)?;
     let dataset = ExportDataset::for_job(&store, "late-run-binding")?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[]);
+    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let stage = Stage::begin(&dataset, &store, &options)?;
     let result = stage.publish(&dataset, &options, |directory| {
         let counts = crate::workbook::write_artifacts(directory, &dataset, &options, &censuses)?;

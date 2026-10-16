@@ -46,7 +46,7 @@ pub(super) fn write_meta_sheets(
     let rows = step("meta_rows", || {
         StoreRows::of(facts.population, facts.school_year)
     })?;
-    let cohort = cohort_of(facts.recruiting);
+    let cohort = cohort_of(facts.recruiting)?;
     let names = school_name_index(rows.schools);
     let conflicts = step("conflicts", || conflict_families(&rows, &cohort, &names))?;
     let review = step("review", || {
@@ -134,7 +134,7 @@ pub(in crate::workbook) struct StoreRows<'d> {
     schools: &'d [CanonicalSchool],
     meets: &'d [CanonicalMeet],
     athletes: &'d [CanonicalAthlete],
-    identities: std::sync::Arc<census_domain::model::AthleteIdentityProjection>,
+    source: &'d crate::export::ExportDataset,
     school_year: census_domain::model::SchoolYear,
     coaches: &'d [CanonicalCoach],
     verdicts: &'d [ReviewVerdictRecord],
@@ -149,7 +149,7 @@ impl<'d> StoreRows<'d> {
             schools: derivation.schools(),
             meets: derivation.meets(),
             athletes: derivation.athletes(),
-            identities: derivation.dataset().identities(),
+            source: derivation.dataset(),
             school_year,
             coaches: derivation.coaches(),
             verdicts: &derivation.dataset().verdicts,

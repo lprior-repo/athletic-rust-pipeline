@@ -84,7 +84,7 @@ fn cutover(revision: u32, interrupted: bool) -> TestResult {
     let lease = store.get_lease_record(identity.as_str())?;
     check!(matches!(preserved.state, State::Published { .. }));
     let censuses =
-        crate::workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions);
+        crate::workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions)?;
     let current = crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
     check!(ne; current.parent(), Some(old_directory.as_path()));
     check!(eq; super::super::verify_directory(current.parent().ok_or("new directory")?)?.schema_revision, crate::workbook::publication::ARTIFACT_REVISION);

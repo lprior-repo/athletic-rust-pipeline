@@ -48,7 +48,7 @@ pub(super) fn input(
     Ok(InputFence {
         lineage: Digest::parse(&dataset.lineage.store_identity)?,
         token: input_token(&dataset.lineage)?,
-        recipe: recipe(&dataset.lineage, options)?,
+        recipe: recipe_for_dataset(dataset, options)?,
         run_manifest: manifest.as_ref().map(digest).transpose()?,
         evidence_generation: snapshot.evidence_generation(),
         derived_generation: snapshot.derived_generation(),
@@ -59,6 +59,49 @@ pub(super) fn recipe(
     options: &Options,
 ) -> ReportResult<Digest> {
     recipe_for_artifact(lineage, options, super::ARTIFACT_REVISION)
+}
+
+pub(super) fn recipe_for_dataset(
+    dataset: &ExportDataset,
+    options: &Options,
+) -> ReportResult<Digest> {
+    super::selected::ensure_current_options(dataset, options)?;
+    let revision = super::selected::revision(dataset)?;
+    match super::selected::binding(revision, dataset)? {
+        Some(binding) => {
+            recipe_for_selected_revision(&dataset.lineage, options, &binding, revision)
+        }
+        None => recipe(&dataset.lineage, options),
+    }
+}
+
+pub(super) fn recipe_for_selected(
+    lineage: &crate::export::DatasetLineage,
+    options: &Options,
+    selected: &super::selected::SelectedProfile,
+) -> ReportResult<Digest> {
+    recipe_for_selected_revision(
+        lineage,
+        options,
+        selected,
+        super::selected::HISTORICAL_REVISION,
+    )
+}
+
+pub(super) fn recipe_for_selected_revision(
+    lineage: &crate::export::DatasetLineage,
+    options: &Options,
+    selected: &super::selected::SelectedProfile,
+    revision: u32,
+) -> ReportResult<Digest> {
+    super::selected::validate(revision, Some(selected))?;
+    super::versions::validate_policy(revision, lineage.policy_revision)?;
+    digest(&(
+        "athletic-publication-artifact-recipe-v1",
+        revision,
+        historical_recipe(lineage, options)?,
+        selected,
+    ))
 }
 
 pub(super) fn recipe_for_artifact(

@@ -20,9 +20,24 @@ pub(super) fn verify(
     inputs: &Inputs<'_>,
     expected: &[CombinedExclusion],
 ) -> ReportResult<u64> {
+    let candidate_column = if inputs.dataset.selected_profile_id().is_some() {
+        "retained_candidate_id"
+    } else {
+        "retained_athlete_id"
+    };
+    let header: Vec<_> = HEADER
+        .iter()
+        .map(|name| {
+            if *name == "retained_athlete_id" {
+                candidate_column
+            } else {
+                *name
+            }
+        })
+        .collect();
     rows::table(
         directory,
-        ("combined_exclusions.csv", HEADER),
+        ("combined_exclusions.csv", &header),
         expected.len(),
         &["performance_id"],
         |row| {
@@ -34,7 +49,7 @@ pub(super) fn verify(
                 .get(position)
                 .ok_or_else(|| rows::missing("combined exclusion", id))?;
             let (category, code) = reason(value.reason())?;
-            row.text("retained_athlete_id", value.athlete_id().as_str())?;
+            row.text(candidate_column, value.athlete_id().as_str())?;
             row.text("event_id", value.event_id().as_str())?;
             row.text("reason_category", category)?;
             row.text("reason_code", code)?;

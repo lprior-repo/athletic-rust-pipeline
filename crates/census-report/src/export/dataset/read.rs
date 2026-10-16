@@ -121,6 +121,7 @@ fn resolve(
     coverage_evidence: super::CoverageEvidence,
 ) -> ReportResult<Loaded> {
     Ok(Loaded {
+        selection: None,
         athletes: joined.0?,
         schools: joined.1?,
         teams: joined.2?,

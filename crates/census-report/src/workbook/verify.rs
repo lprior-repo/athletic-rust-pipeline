@@ -1,3 +1,4 @@
+pub(super) mod current_school;
 use crate::export::ExportDataset;
 use crate::report::ReportResult;
 use crate::workbook::Options;
@@ -14,6 +15,7 @@ pub(in crate::workbook) mod meta;
 mod performances;
 pub(in crate::workbook) mod postal;
 mod prs;
+pub(in crate::workbook) mod public_identity;
 mod reach;
 mod read;
 mod relays;
@@ -32,6 +34,7 @@ pub fn verify_frozen(
     dataset: &ExportDataset,
     options: &Options,
 ) -> ReportResult<VerifiedWorkbook> {
+    super::publication::selected::ensure_verification_options(dataset, options)?;
     let expectations = expectations::Expectations::of(dataset, options)?;
     let mut book = read::Book::open(path)?;
     let mut findings = report::Findings::default();

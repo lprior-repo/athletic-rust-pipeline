@@ -6,7 +6,7 @@ use super::{
     HistoryRequest, PublicAthleteId, RegistryHead, SplitRequest,
 };
 
-mod codec;
+pub(super) mod codec;
 mod validate;
 
 pub const LOCAL_ADJUDICATION_POLICY: &str = "local-operator-retained-identity-review/v2";
@@ -27,6 +27,7 @@ pub struct RetainedClaimV1 {
 pub enum RetainedIdentitySectionV1 {
     Athlete,
     SourceObservation,
+    CandidateMembership,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
