@@ -23,12 +23,6 @@ pub(super) const LANES: &[RefusedLane] = &[
         kind: RefusalKind::EngineeringGap,
     },
     RefusedLane {
-        jurisdiction: UsJurisdiction::Illinois,
-        arm: "ihsa", slug: "il_missing_coach_sources",
-        reason: "ITCCCA (`itccca.com`); Chicago Catholic League; ISBE nonpublic registration (`isbe.net`); IHSA conference route (`conf.htm` probe); school staff pages.",
-        kind: RefusalKind::EngineeringGap,
-    },
-    RefusedLane {
         jurisdiction: UsJurisdiction::Kentucky,
         arm: "arbiter_orgs", slug: "ky_missing_coach_sources",
         reason: "KHSAA member-directory route (`khsaa.org`); Kentucky Track & Cross Country Coaches Association; TFRRS KY; school sites (emails).",

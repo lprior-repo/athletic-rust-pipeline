@@ -11,6 +11,7 @@ pub(super) mod vt;
 
 pub(super) mod ca;
 pub(super) mod fl;
+pub(super) mod il;
 pub(super) mod ny;
 pub(super) mod tx;
 
@@ -81,6 +82,13 @@ pub(super) const LANES: &[Lane] = &[
         refusal: (fl::FL_REFUSAL_SLUG, fl::FL_TRUE_MISSING),
         kind: RefusalKind::EngineeringGap,
         lane: fl::lane,
+    },
+    Lane {
+        jurisdiction: UsJurisdiction::Illinois,
+        arm: il::IL_ARM,
+        refusal: (il::IL_REFUSAL_SLUG, il::IL_TRUE_MISSING),
+        kind: RefusalKind::EngineeringGap,
+        lane: il::lane,
     },
     Lane {
         jurisdiction: UsJurisdiction::Indiana,
