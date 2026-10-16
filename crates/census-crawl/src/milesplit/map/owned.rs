@@ -6,7 +6,7 @@ use census_domain::model::{
 use std::collections::HashMap;
 
 #[derive(Debug, Default)]
-pub(in crate::milesplit) struct ProviderSchools {
+pub(crate) struct ProviderSchools {
     bindings: HashMap<u64, Option<SchoolId>>,
 }
 
@@ -18,7 +18,7 @@ impl ProviderSchools {
         index
     }
 
-    pub(in crate::milesplit) fn absorb(&mut self, school: &CanonicalSchool) {
+    pub(crate) fn absorb(&mut self, school: &CanonicalSchool) {
         school
             .source_identities
             .iter()
@@ -35,15 +35,15 @@ impl ProviderSchools {
             });
     }
 
-    pub(in crate::milesplit) fn entries(&self) -> usize {
+    pub(crate) fn entries(&self) -> usize {
         self.bindings.len()
     }
 
-    pub(super) fn resolve(&self, team_id: u64) -> Option<&SchoolId> {
+    pub(crate) fn resolve(&self, team_id: u64) -> Option<&SchoolId> {
         self.bindings.get(&team_id).and_then(Option::as_ref)
     }
 
-    pub(super) fn unresolved_reason(&self, team_id: u64) -> &'static str {
+    pub(crate) fn unresolved_reason(&self, team_id: u64) -> &'static str {
         match self.bindings.get(&team_id) {
             Some(None) => "ambiguous MilesplitSchool provider teamID",
             _ => "missing exact positive MilesplitSchool provider teamID",

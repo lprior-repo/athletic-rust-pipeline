@@ -9,6 +9,7 @@ use super::StoreBatch;
 use crate::clock::{Clock, SystemClock};
 
 mod bounded;
+mod retained_capture;
 
 pub(crate) use bounded::encode_publication_entry;
 
@@ -74,6 +75,7 @@ fn checked_key(phase: &str, key: &str) -> StoreResult<Vec<u8>> {
     crate::journal::refuse_object_namespace(phase)?;
     crate::acquisition::codec::reject_generic_phase(phase)?;
     crate::public_identity::refuse_reserved(phase)?;
+    crate::evidence_subject_attachment::refuse_generic_phase(phase)?;
     let bytes = phase
         .len()
         .checked_add(key.len())

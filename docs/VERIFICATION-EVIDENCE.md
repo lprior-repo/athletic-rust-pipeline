@@ -1624,3 +1624,40 @@ Pre-existing dirty state from concurrent workers
 (`bounded.rs`/`counters.rs`/`objects.rs`/`collect.rs` GuardedSubject migration)
 was left stashed locally, not reverted or merged; unrelated `AGENTS.md`
 wording churn encountered mid-session was reverted.
+
+### Verified retained-original installation and reopen (2026-10-16 15:10 UTC)
+
+The native terminal callback reports exact
+`fcf24108126b56905d0e27e44e5aa68a85de12a8`, tree
+`f454f699671799d2ac216731729b79725b6fde5f`, passed formatting, all-target
+check, source lint and every selected scope listed below. Each command was guarded
+by the exact commit/tree and clean-checkout requirement. Persistent full logs are
+in `verification-fcf241-logs-20261016` under the existing Omarchy task directory.
+Three initial harness/preflight refusals and their corrected invocations remain
+recorded separately; they are not additional successful gates.
+
+The selected scopes include the genuine school-original installation positive,
+16 recorded intake/reopen controls, provider target 9, provider school 8, result
+ownership 6, located rows 3, domain attachment 42, Store attachment 23, retained
+capture 5, envelope 3, receipt 4, membership 3, participation readers 22, combined
+participation/profile domain 98, synthetic publication positive 1, and incoming
+Illinois 6, Colorado 6 and coach registry 5. Counts include the separately run
+positive within the recorded scope. No package-wide test run is claimed.
+
+The isolated strict-v3 consumer passed 1/1 separately. Its overlay was reversed
+and checkout restored clean. The original 50-entry producer inventory remained
+unchanged, inventory SHA256
+`e88edaaffb9f743068ac7c9fa555b05cd2c51779c43d851bd65c1470c6395235`.
+Four previously OS-denied publication-abort cases remained explicit exclusions.
+Recovered bb18 receipts lacked per-command commit/tree attribution and omitted
+coach tests; the separate old-63e run is not evidence about this candidate.
+
+This establishes retained original school/provider/result capture installation,
+bounded reopen, exact refusal preservation and source-backed school projection.
+The provider candidate remains unaccepted in these controls. Actual accepted
+person attribution, reviewed article/result attachment, dated school/eligibility,
+exact event correspondence and genuine selected-workbook replay remain pending.
+The separately authored attachment workflow and website-host reader are absent.
+Historical recovery/resource qualification and scale gates remain open. These
+runtime results are native callback evidence; cloud review verifies source
+identity and does not claim an independent runtime execution.

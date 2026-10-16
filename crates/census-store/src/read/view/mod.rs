@@ -10,6 +10,7 @@ pub use bounded_page::{PhysicalObservationCursor, PhysicalObservationPage};
 mod keyed;
 mod legacy;
 mod legacy_raw;
+pub(crate) use legacy_raw::envelope::JournalRawEnvelope;
 mod legacy_wire;
 mod lineage;
 mod membership;
@@ -28,6 +29,8 @@ pub(crate) use operations::enrich_retained_observations;
 pub(crate) use operations::RetainedEnrichment;
 mod public_identity;
 pub use public_identity::AcceptedPublicIdentitySnapshot;
+#[cfg(test)]
+mod receipt_prefix;
 mod regions;
 mod run;
 

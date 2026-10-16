@@ -8,6 +8,7 @@ mod fallible_checks;
 pub mod affiliation_candidates;
 pub mod core_scope;
 pub mod error;
+pub mod evidence_subject_attachment;
 pub mod jurisdiction;
 pub mod model;
 pub mod national_census;

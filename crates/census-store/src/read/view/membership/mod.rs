@@ -77,10 +77,31 @@ impl<'s> StoreSnapshot<'s> {
         budget: ReadBudget,
         mut visit: impl FnMut(&str) -> StoreResult<()>,
     ) -> StoreResult<JournalNamespaceInventory<'s>> {
+        self.for_each_journal_root_with_admission(
+            namespace,
+            budget,
+            &mut (),
+            |_| Ok(()),
+            |_, key| visit(key),
+        )
+    }
+
+    pub(crate) fn for_each_journal_root_with_admission<G>(
+        &self,
+        namespace: JournalNamespace<'_>,
+        budget: ReadBudget,
+        state: &mut G,
+        admit_row: impl FnMut(&mut G) -> StoreResult<()>,
+        mut visit: impl FnMut(&mut G, &str) -> StoreResult<()>,
+    ) -> StoreResult<JournalNamespaceInventory<'s>> {
         let mut roots = roots::RootTracker::new(namespace)?;
-        let fingerprint = self.scan_journal_namespace(namespace, budget, |key, raw| {
-            roots.accept(key, raw, &mut visit)
-        })?;
+        let fingerprint = self.scan_journal_namespace_with_admission(
+            namespace,
+            budget,
+            state,
+            admit_row,
+            |state, key, raw| roots.accept(key, raw, &mut |key| visit(state, key)),
+        )?;
         let logical_roots = roots.finish()?;
         Ok(JournalNamespaceInventory {
             fingerprint,

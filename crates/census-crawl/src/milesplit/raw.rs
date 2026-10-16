@@ -3,9 +3,10 @@ use crate::{CrawlError, CrawlResult};
 use census_domain::model::{SchoolYear, Sport};
 use serde::Deserialize;
 
-use super::raw_rows::{read_block, RawSection};
+use super::raw_rows::{read_block, RawBlock, RawSection};
 
 mod document;
+pub(crate) mod located;
 
 enum DatePrecision {
     Day,
@@ -55,10 +56,20 @@ fn parse_event(
     event: SportsEvent,
     precision: DatePrecision,
 ) -> CrawlResult<RawPage> {
+    parse_event_using(html, url, event, precision, read_block)
+}
+
+fn parse_event_using(
+    html: &str,
+    url: &str,
+    event: SportsEvent,
+    precision: DatePrecision,
+    read: impl FnOnce(&str, Option<Sport>, usize) -> CrawlResult<RawBlock>,
+) -> CrawlResult<RawPage> {
     let facts = page_facts(event, url, precision)?;
     let (block_start, block_text) =
         pre_block(html).ok_or_else(|| schema(url, "no <pre> result block"))?;
-    let block = read_block(block_text, facts.sport, block_start)?;
+    let block = read(block_text, facts.sport, block_start)?;
     if !block.qualified || block.sections.is_empty() {
         return Err(schema(
             url,

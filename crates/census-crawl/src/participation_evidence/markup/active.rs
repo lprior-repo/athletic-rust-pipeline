@@ -3,12 +3,15 @@ use census_store::{StoreError, StoreResult};
 use html5gum::{StartTag, Token};
 
 #[derive(Default)]
-pub(super) struct Active {
+pub(in crate::participation_evidence) struct Active {
     excluded: Vec<(Vec<u8>, bool)>,
 }
 
 impl Active {
-    pub(super) fn accept<S: html5gum::SpanBound>(&mut self, token: &Token<S>) -> StoreResult<bool> {
+    pub(in crate::participation_evidence) fn accept<S: html5gum::SpanBound>(
+        &mut self,
+        token: &Token<S>,
+    ) -> StoreResult<bool> {
         match token {
             Token::StartTag(tag) => {
                 let excluded = !self.excluded.is_empty() || forbidden(tag);
@@ -52,7 +55,7 @@ impl Active {
         }
     }
 
-    pub(super) fn finish(self) -> StoreResult<()> {
+    pub(in crate::participation_evidence) fn finish(self) -> StoreResult<()> {
         if self.excluded.is_empty() {
             Ok(())
         } else {

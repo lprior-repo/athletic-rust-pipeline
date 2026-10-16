@@ -4,6 +4,7 @@ use html5gum::{DefaultEmitter, StartTag, Token, Tokenizer};
 use std::ops::Range;
 
 mod active;
+pub(super) use active::Active;
 mod article;
 
 pub(super) fn status_article<'a>(html: &'a str, path: &str) -> StoreResult<Element<'a>> {

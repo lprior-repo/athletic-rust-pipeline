@@ -72,7 +72,7 @@ pub async fn fetch_meet_index(
     })
 }
 
-pub(super) fn validate_surface(body: &str, url: &str) -> CrawlResult<()> {
+pub(crate) fn validate_surface(body: &str, url: &str) -> CrawlResult<()> {
     if body.len() > 8 * 1024 * 1024 {
         return Err(CrawlError::Resource {
             resource: "index representation bytes",

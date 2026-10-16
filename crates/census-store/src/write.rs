@@ -124,6 +124,7 @@ impl Store {
         crate::journal::refuse_object_namespace(phase)?;
         crate::acquisition::codec::reject_generic_phase(phase)?;
         crate::public_identity::refuse_reserved(phase)?;
+        crate::evidence_subject_attachment::refuse_generic_phase(phase)?;
         let entry = serde_json::json!({
             "key": key,
             "at": SystemClock.today_iso8601(),
