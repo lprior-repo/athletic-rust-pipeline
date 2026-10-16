@@ -396,10 +396,13 @@ fragment/counter authority with `56ry`. Source-lane work such as MN staff `098i`
 IA Bound `zp10` and MI access refusal/school-site discovery `2gqi` remains owned
 by those issues, not duplicated by the matrix/compiler bead.
 
-Main and remote main reached `38b73aef` with the separately recorded R1 repair.
-Its Report evidence does not certify the unfinished current-only migration or
-clear its separately reported full-workspace failures. The preserved
-`integration/current-v2-main-20261016` worktree still contains an unfinished merge.
+The implementation checkout is the registered repository root on `main`.
+Verified repairs through `107d9b1c` are recorded in `VERIFICATION-EVIDENCE.md`;
+their results do not qualify another worktree or the current-only migration.
+The preserved `integration/current-v2-main-20261016` worktree is unmerged and
+unqualified: reference/preservation only, not a production editing target or a
+wholesale merge candidate. Its prototype receipt-intake SDK is absent from main.
+Confirm actual main interfaces before proposing or applying any migration.
 The older `fix/current-authority-fixtures-20261016` repair overlaps landed R1 work;
 do not merge it wholesale or mistake its failing snapshot for current-main status.
 

@@ -8,6 +8,7 @@ mod graph_records;
 mod identity;
 mod matched_group;
 mod membership;
+mod request_order;
 mod revocation;
 mod split;
 

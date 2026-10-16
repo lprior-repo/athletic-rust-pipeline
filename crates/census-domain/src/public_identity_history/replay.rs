@@ -156,9 +156,7 @@ impl HistoryProjection {
             return Err(HistoryError::Limit("records"));
         }
         self.check_request_budget(&record.request)?;
-        if request_order::normalize(record.request.clone())? != record.request {
-            return Err(HistoryError::Invalid("noncanonical request order"));
-        }
+        request_order::require_canonical(&record.request)?;
         if record::payload_digest(record)? != record.digest {
             return Err(HistoryError::Payload);
         }

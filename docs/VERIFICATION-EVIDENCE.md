@@ -1770,3 +1770,31 @@ Fmt `7d7bcf2d`, check `06f781db`, lint `7cc1c27a`; existing warnings remain.
 These results supersede the failed integrated run, not the separate outstanding
 release, migration, source-coverage, native-fault and resource obligations.
 
+
+### Main-only history allocation cleanup — 2026-10-16
+
+The registered repository root on `main` is the implementation target. The
+unmerged current-v2 worktree and its prototype SDK are preservation/reference
+only; no result below compiles or qualifies that tree.
+
+Replay now checks canonical request order through borrowed fields instead of
+cloning and sorting every request. Construction still normalizes its owned input.
+All seven variants keep canonical ordering rules and duplicate diagnostics for
+otherwise ordered fields; malformed permutations refuse without normalization.
+`StoreIdentity` serialization borrows the retained spelling; owned-string
+conversion validates and retains its input buffer. Public signatures, historical
+JSON spelling and digest payloads are unchanged. LSP identified 370 references
+before the codec change; existing exhaustive wire/spelling tests were retained.
+
+Main executed these commands with `CI` unset:
+
+- `tools/moon-local run pipeline:tests-scoped -- -p census-domain --lib -E 'test(public_identity_history) | test(model::store_identity)' --no-tests fail`: **142 passed**, 739 unselected (`f2d101cc`).
+- `tools/moon-local run pipeline:run-scoped -- -p census-domain --example canonical_history_smoke`: passed (`9c6bcfc9`). The controlled public-API executable checked exact birth/head, refusal of a validly rehashed descending record, unchanged accepted replay, retained owned-string allocation, and exact lower/upper/mixed/zero JSON spelling. It was removed after execution; the exercised source is preserved as `local://canonical-history-smoke-exercised-20261016.rs`.
+- `tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src pipeline:tests --force`: all four passed; **7,594 passed, 0 failed, 9 skipped** (`ceb9e345`). Fmt `32e71a9a`, check `cc6f2a65`, lint `b321e08d`; existing warnings remain.
+
+This is bounded cleanup, not a measured speedup or fully funded history decoder.
+`1itf` remains open: decoder scratch, graph storage, retained ownership and actual
+main interface approval still require implementation and qualification.
+No live Store was opened, reset or restarted; release/native/resource/source and
+UP/five-state/national acceptance remain separate outstanding obligations.
+
