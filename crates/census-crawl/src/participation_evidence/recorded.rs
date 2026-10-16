@@ -5,11 +5,16 @@ use crate::recording::RowSink;
 use crate::{CrawlResult, Recording};
 use census_store::{ReadBudget, RetainedCaptureRootSchemaV1, Store};
 
+mod attached_result;
 mod provider;
 mod provider_school;
 mod read;
 mod schools;
 
+pub use attached_result::{
+    with_attached_html_results, AttachedResultGapV1, IdentityLinkedHtmlResultDocumentV1,
+    IdentityLinkedHtmlResultRowV1,
+};
 pub use provider::{ProviderTargetIntakeDispositionV1, ProviderTargetWithheldV1};
 pub use provider_school::{
     read_recorded_provider_school, record_provider_school_intake, RecordedProviderSchoolV1,

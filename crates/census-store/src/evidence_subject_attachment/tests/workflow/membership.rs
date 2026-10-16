@@ -16,15 +16,15 @@ use census_domain::model::{
 };
 use census_domain::public_identity_history::PublicResolution;
 
-struct MergeFixture {
+pub(in crate::evidence_subject_attachment) struct MergeFixture {
     _directory: tempfile::TempDir,
-    store: Store,
-    writer: PublicIdentityWriterV1,
-    births: [IdentityCommitOutcomeV1; 2],
-    request: ReviewedIdentityRequestV1,
+    pub(in crate::evidence_subject_attachment) store: Store,
+    pub(in crate::evidence_subject_attachment) writer: PublicIdentityWriterV1,
+    pub(in crate::evidence_subject_attachment) births: [IdentityCommitOutcomeV1; 2],
+    pub(in crate::evidence_subject_attachment) request: ReviewedIdentityRequestV1,
 }
 
-fn ready_for_merge() -> TestResult<MergeFixture> {
+pub(in crate::evidence_subject_attachment) fn ready_for_merge() -> TestResult<MergeFixture> {
     let (directory, store, writer) = fixture()?;
     let mut first = subject("attachment-reviewed-merge", "93201")?;
     let source = SourceIdentity::new(SourceNamespace::TfrrsAthlete, "93202");

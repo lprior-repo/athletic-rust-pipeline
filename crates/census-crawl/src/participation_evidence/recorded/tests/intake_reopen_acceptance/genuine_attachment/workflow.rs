@@ -59,7 +59,9 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
             return Err(error);
         }
     };
-    if let Err(error) = replay_completed(&store, &sources, completed) {
+    if let Err(error) = replay_completed(&store, &sources, completed)
+        .and_then(|()| super::bridge::verify(&store, &sources, &installed, &outcome))
+    {
         drop(writer);
         drop(store);
         let observed = (|| -> TestResult {
@@ -71,7 +73,7 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
             require_originals(&store, &sources)?;
             installed.verify(&store)
         })();
-        replay_observation("chain", "replay-failure-reopen", observed);
+        replay_observation("chain", "replay-or-bridge-failure-reopen", observed);
         return Err(error);
     }
     drop(writer);

@@ -3,6 +3,7 @@ use ParticipationReason as Reason;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod documentary;
 mod evidence;
 mod fixture;
 mod metadata;

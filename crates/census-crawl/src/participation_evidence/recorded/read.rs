@@ -173,7 +173,7 @@ pub(super) fn retained<T: DeserializeOwned>(
     Ok(Some((decoded, held)))
 }
 
-fn ownership(error: RetainedResultOwnershipError) -> CrawlError {
+pub(super) fn ownership(error: RetainedResultOwnershipError) -> CrawlError {
     match error {
         RetainedResultOwnershipError::Capture(error) => error.into(),
         RetainedResultOwnershipError::Parser(error) => error,

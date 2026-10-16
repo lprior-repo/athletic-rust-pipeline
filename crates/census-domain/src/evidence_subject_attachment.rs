@@ -26,9 +26,9 @@ pub use grant::{AttachmentReplayGrantV1, AttachmentReplayUsageV1};
 pub use inventory::calculate_reviewed_reference_inventory_with_grant;
 pub use projection::{
     decode_and_replay_reviewed_references, decode_and_replay_reviewed_references_with_grant,
-    replay_checked_reviewed_references_with_grant, replay_reviewed_references,
-    replay_reviewed_references_with_grant, OwnedReviewedReferenceProjectionV1,
-    ReviewedReferenceProjectionV1,
+    project_checked_reviewed_references_with_grant, replay_checked_reviewed_references_with_grant,
+    replay_reviewed_references, replay_reviewed_references_with_grant,
+    OwnedReviewedReferenceProjectionV1, ReviewedReferenceProjectionV1,
 };
 pub use types::*;
 

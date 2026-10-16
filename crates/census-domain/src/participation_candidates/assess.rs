@@ -90,8 +90,11 @@ fn ownership(
     reasons: &mut ParticipationReasons,
 ) -> Result<(), ParticipationInputError> {
     match observation.ownership {
-        ResultOwnership::Bound { proof, .. } if visible(query, proof)? => {}
-        ResultOwnership::Bound { .. } | ResultOwnership::Missing => {
+        ResultOwnership::Bound { proof, .. } | ResultOwnership::DocumentaryBound { proof, .. }
+            if visible(query, proof)? => {}
+        ResultOwnership::Bound { .. }
+        | ResultOwnership::DocumentaryBound { .. }
+        | ResultOwnership::Missing => {
             reasons.add(Reason::ResultOwnershipUnresolved);
         }
         ResultOwnership::Conflicting => reasons.add(Reason::ResultOwnershipConflict),

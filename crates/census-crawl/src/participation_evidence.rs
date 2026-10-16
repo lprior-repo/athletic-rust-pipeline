@@ -6,6 +6,7 @@ mod capture;
 mod codec;
 mod markup;
 mod packet;
+pub mod physical_result;
 pub mod provider_school;
 pub mod provider_target;
 pub mod recorded;

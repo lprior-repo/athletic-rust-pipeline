@@ -73,6 +73,23 @@ pub fn replay_checked_reviewed_references_with_grant(
     expected_inventory: &AttachmentInventoryV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> Result<()> {
+    project_checked_reviewed_references_with_grant(
+        store,
+        records,
+        receipts,
+        expected_inventory,
+        grant,
+    )
+    .map(|_| ())
+}
+
+pub fn project_checked_reviewed_references_with_grant<'a>(
+    store: &StoreIdentity,
+    records: &'a super::checked::CheckedReviewedReferenceRecordsV1,
+    receipts: &[AttachmentReceiptBindingV1],
+    expected_inventory: &AttachmentInventoryV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> Result<ReviewedReferenceProjectionV1<'a>> {
     grant.admit(|grant| {
         limit("records", records.len(), ReplayLimits::SMALL.records)?;
         if records.len() != receipts.len() {
@@ -85,8 +102,7 @@ pub fn replay_checked_reviewed_references_with_grant(
             validate::record_shell(record, grant)?;
             validate_receipt(store, record, receipt, grant)?;
         }
-        project(records, expected_inventory, grant)?;
-        Ok(())
+        project(records, expected_inventory, grant)
     })
 }
 

@@ -2,7 +2,7 @@ use super::*;
 use crate::evidence_subject_attachment::AttachmentContextObjectV1;
 use chrono::{DateTime, Utc};
 
-pub(in super::super) struct InlineObject {
+pub(in crate::evidence_subject_attachment) struct InlineObject {
     pub reference: AttachmentObjectReferenceV1,
     pub bytes: Vec<u8>,
 }
@@ -28,7 +28,7 @@ impl InlineObject {
     }
 }
 
-pub(in super::super) struct Context {
+pub(in crate::evidence_subject_attachment) struct Context {
     pub objects: Vec<InlineObject>,
     pub subject: RetainedDocumentSubjectReferenceV1,
     pub reviewed: ReviewedAttachmentContextV1,

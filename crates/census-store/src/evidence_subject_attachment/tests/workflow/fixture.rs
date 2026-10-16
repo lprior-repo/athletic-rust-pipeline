@@ -10,7 +10,7 @@ use census_domain::model::CanonicalAthlete;
 use census_domain::public_identity_history::PublicAthleteId;
 use sha2::{Digest, Sha256};
 
-pub(super) struct Fixture {
+pub(in crate::evidence_subject_attachment) struct Fixture {
     pub directory: tempfile::TempDir,
     pub store: Store,
     pub writer: PublicIdentityWriterV1,
@@ -70,7 +70,7 @@ pub(super) fn reference(bytes: &[u8]) -> TestResult<AttachmentObjectReferenceV1>
     })
 }
 
-pub(super) fn inspect_first<'s>(
+pub(in crate::evidence_subject_attachment) fn inspect_first<'s>(
     store: &'s Store,
     target: &PublicAthleteId,
 ) -> TestResult<EvidenceSubjectAttachmentInspectionV1<'s>> {
@@ -82,7 +82,7 @@ pub(super) fn inspect_first<'s>(
     )
 }
 
-pub(super) fn prepare<'s>(
+pub(in crate::evidence_subject_attachment) fn prepare<'s>(
     store: &'s Store,
     inspection: EvidenceSubjectAttachmentInspectionV1<'s>,
     command: RetainedEvidenceSubjectAttachmentCommandV1,
@@ -97,7 +97,7 @@ pub(super) fn prepare<'s>(
     )?)
 }
 
-pub(super) fn apply(
+pub(in crate::evidence_subject_attachment) fn apply(
     store: &Store,
     prepared: PreparedEvidenceSubjectAttachmentV1<'_>,
 ) -> TestResult<Application> {
@@ -106,7 +106,9 @@ pub(super) fn apply(
     Ok(store.apply_evidence_subject_attachment_v1(prepared, &approval, &digest)?)
 }
 
-pub(super) fn first_record(store: &Store) -> TestResult<ReviewedReferenceRecordV1> {
+pub(in crate::evidence_subject_attachment) fn first_record(
+    store: &Store,
+) -> TestResult<ReviewedReferenceRecordV1> {
     let view = store.snapshot();
     let mut grant = AttachmentReplayGrantV1::new();
     let read = view.read_evidence_subject_attachment_references_v1(&mut grant)?;
@@ -117,7 +119,7 @@ pub(super) fn first_record(store: &Store) -> TestResult<ReviewedReferenceRecordV
         .clone())
 }
 
-pub(super) fn next_command(
+pub(in crate::evidence_subject_attachment) fn next_command(
     previous: &ReviewedReferenceRecordV1,
     operation: &str,
     inspection: &EvidenceSubjectAttachmentInspectionV1<'_>,
@@ -211,7 +213,9 @@ pub(super) fn preserved_except_single_attachment(
     Ok(())
 }
 
-pub(super) fn written(application: Application) -> TestResult<Receipt> {
+pub(in crate::evidence_subject_attachment) fn written(
+    application: Application,
+) -> TestResult<Receipt> {
     match application {
         Application::Written(receipt) => Ok(receipt),
         Application::Repeated(receipt) => {
@@ -221,4 +225,4 @@ pub(super) fn written(application: Application) -> TestResult<Receipt> {
 }
 
 mod context;
-pub(super) use context::{Context, InlineObject};
+pub(in crate::evidence_subject_attachment) use context::{Context, InlineObject};

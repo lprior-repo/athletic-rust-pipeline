@@ -2,6 +2,7 @@ use crate::{StoreResult, MAX_OPERATION_BYTES};
 use census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError;
 
 mod apply;
+mod current;
 mod encoding;
 mod inputs;
 mod inspection;
@@ -10,6 +11,9 @@ mod material;
 mod planning;
 mod prepare;
 mod retained;
+pub use current::{
+    CurrentEvidenceSubjectAttachmentReferencesV1, CurrentEvidenceSubjectAttachmentV1,
+};
 pub use inspection::{AttachmentInspectionRequestV1, EvidenceSubjectAttachmentInspectionV1};
 pub use material::AttachmentContextObjectV1;
 pub use prepare::{EvidenceSubjectAttachmentPreparationV1, PreparedEvidenceSubjectAttachmentV1};
