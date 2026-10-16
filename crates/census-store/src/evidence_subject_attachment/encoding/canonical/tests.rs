@@ -4,6 +4,51 @@ use std::cell::Cell;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
+fn private_raw_value_wrapper_is_not_equivalent_to_original_bytes() -> TestResult {
+    let raw = br#"{ "opaque" : [ 1, 2 ] }"#;
+    let value: &serde_json::value::RawValue = serde_json::from_slice(raw)?;
+    let wrapper = census_domain::model::serialized_bytes(&value)?;
+    check!(ne; wrapper.as_slice(), raw);
+    let mut grant = AttachmentReplayGrantV1::new();
+    check!(matches!(
+        require_canonical(&value, &wrapper, &mut grant),
+        Err(StoreError::EvidenceSubjectAttachment(Error::Corrupt(
+            "noncanonical private attachment wire"
+        )))
+    ));
+    check!(eq; grant.usage().traversal_steps(), 1);
+    check!(matches!(
+        grant.ensure_available(),
+        Err(EvidenceSubjectAttachmentError::Poisoned)
+    ));
+    Ok(())
+}
+
+#[test]
+fn private_metadata_strings_and_integer_extremes_match_issuance_bytes() -> TestResult {
+    #[derive(Serialize)]
+    struct Metadata<'a> {
+        text: &'a str,
+        unsigned: u64,
+        signed: i64,
+        position: u32,
+    }
+    let value = Metadata {
+        text: "quotes\" slash\\ newline\n\t\u{0} é 雪",
+        unsigned: u64::MAX,
+        signed: i64::MIN,
+        position: u32::MAX,
+    };
+    let issued = census_domain::model::serialized_bytes(&value)?;
+    check!(eq; serde_json::to_vec(&value)?, issued);
+    let mut grant = AttachmentReplayGrantV1::new();
+    require_canonical(&value, &issued, &mut grant)?;
+    check!(eq; grant.usage().traversal_steps(), 1);
+    check!(eq; grant.usage().encoded_bytes(), 0);
+    Ok(())
+}
+
+#[test]
 fn equality_pass_preserves_raw_value_bytes_without_retained_byte_charge() -> TestResult {
     let raw = br#"{ "opaque" : [ 1, 2 ] }"#;
     let value: &serde_json::value::RawValue = serde_json::from_slice(raw)?;

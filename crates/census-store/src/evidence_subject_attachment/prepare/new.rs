@@ -41,11 +41,11 @@ pub(super) fn prepare<'s>(
         .calculated_record_digest_with_grant(grant)
         .map_err(Error::Domain)?;
     let inputs = super::super::ledger::wire::EntryInputs {
-        capture: inspection.inputs.capture.reference().clone(),
-        token: inspection.inputs.token.reference().clone(),
+        capture: inspection.state.inputs.capture.reference().clone(),
+        token: inspection.state.inputs.token.reference().clone(),
     };
     ledger.append_proposed(view, record, introduced, inputs, grant)?;
-    ledger.validate_projection(&inspection.store, grant)?;
+    ledger.validate_projection(&inspection.state.store, grant)?;
     let record = ledger
         .records
         .last()
@@ -80,21 +80,23 @@ fn require_fences(
 ) -> StoreResult<()> {
     grant.charge_steps(1).map_err(Error::Domain)?;
     inspection
+        .state
         .revision
         .ensure_current(store, command.operation.as_str())?;
-    if command.store != inspection.store
-        || command.expected_public_head != inspection.head
+    if command.store != inspection.state.store
+        || command.expected_public_head != inspection.state.head
         || command.expected_evidence_generation != inspection.evidence_generation()
         || command.expected_derived_generation != inspection.derived_generation()
-        || command.action != inspection.action
-        || command.target != inspection.target
-        || command.reviewed_context.accepted_target_witness != inspection.witness
+        || command.action != inspection.state.action
+        || command.target != inspection.state.target
+        || command.reviewed_context.accepted_target_witness != inspection.state.witness
     {
         return Err(Error::InputMoved.into());
     }
-    if command.expected_attachment_inventory != inspection.ledger.inventory
+    if command.expected_attachment_inventory != inspection.state.ledger.inventory
         || command.expected_attachment_inventory != ledger.inventory
         || !inspection
+            .state
             .ledger
             .physical
             .fingerprint()
@@ -102,8 +104,8 @@ fn require_fences(
     {
         return Err(Error::InventoryMoved.into());
     }
-    super::super::inputs::require_head(view, &inspection.head, grant)?;
-    inspection.inputs.require_current(
+    super::super::inputs::require_head(view, &inspection.state.head, grant)?;
+    inspection.state.inputs.require_current(
         store,
         view,
         command.expected_evidence_generation,

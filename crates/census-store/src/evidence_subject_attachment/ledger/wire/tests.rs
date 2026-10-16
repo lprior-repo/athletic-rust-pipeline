@@ -1,5 +1,7 @@
 use super::*;
 
+mod parity;
+
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn reference() -> String {
@@ -86,5 +88,31 @@ fn duplicate_input_and_reference_fields_refuse_during_decode() -> TestResult {
         ));
         check!(eq; grant.usage().traversal_steps(), 1);
     }
+    Ok(())
+}
+
+#[test]
+fn reordered_outer_metadata_and_raw_wrapper_inputs_are_refused() -> TestResult {
+    let raw = format!(
+        r#"{{"record":{{}},"schema":"{SCHEMA}","introduced":[],"inputs":{}}}"#,
+        inputs()
+    );
+    let mut grant = AttachmentReplayGrantV1::new();
+    check!(matches!(
+        parse(raw.as_bytes(), &mut grant),
+        Err(StoreError::EvidenceSubjectAttachment(Error::Corrupt(
+            "noncanonical private attachment wire"
+        )))
+    ));
+    let wrapped =
+        census_domain::model::serialized_bytes(&serde_json::from_str::<&RawValue>(&inputs())?)?;
+    let raw = entry(std::str::from_utf8(&wrapped)?, "[]");
+    let mut grant = AttachmentReplayGrantV1::new();
+    check!(matches!(
+        parse(raw.as_bytes(), &mut grant),
+        Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
+            domain::EvidenceSubjectAttachmentError::Decoding(_)
+        )))
+    ));
     Ok(())
 }

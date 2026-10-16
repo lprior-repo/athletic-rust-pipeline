@@ -65,6 +65,7 @@ impl Store {
                 context,
             } => {
                 inspection
+                    .state
                     .revision
                     .ensure_origin(self, command.operation.as_str())?;
                 let grant = inspection

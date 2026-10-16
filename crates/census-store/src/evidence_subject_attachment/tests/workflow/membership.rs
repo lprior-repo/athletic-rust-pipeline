@@ -30,7 +30,7 @@ fn ready_for_merge() -> TestResult<MergeFixture> {
     let source = SourceIdentity::new(SourceNamespace::TfrrsAthlete, "93202");
     let mut second = CanonicalAthlete::new(
         &first.school,
-        &first.canonical_name,
+        "Synthetic Runner attachment-reviewed-merge-second",
         first.grad_year,
         first.gender,
         source.clone(),
@@ -42,6 +42,12 @@ fn ready_for_merge() -> TestResult<MergeFixture> {
         ),
         "2026-10-14",
     ));
+    check!(ne; first.candidate_key().index_id(), second.candidate_key().index_id());
+    let mut isolated = AthleteIdentityIndex::default();
+    isolated.observe(&first)?;
+    isolated.observe(&second)?;
+    check!(isolated.isolated_source(&first.id.cast()));
+    check!(isolated.isolated_source(&second.id.cast()));
     store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
     let first_birth = writer.establish_source_bound(
         &store,

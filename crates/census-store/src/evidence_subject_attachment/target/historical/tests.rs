@@ -1,6 +1,8 @@
 use super::*;
 use crate::StoreError;
 
+mod parity;
+
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn reference() -> String {

@@ -24,53 +24,49 @@ pub enum AttachmentInspectionRequestV1 {
 }
 
 pub struct EvidenceSubjectAttachmentInspectionV1<'s> {
-    pub(super) revision: StoreRevision<'s>,
-    pub(super) store: StoreIdentity,
-    pub(super) head: AttachmentPublicHeadV1,
-    pub(super) action: AttachmentActionV1,
-    pub(super) target: AttachmentTargetV1,
-    pub(super) witness: AttachmentDigestV1,
-    pub(super) inputs: Inputs,
-    pub(super) issued: Vec<EncodedObject>,
-    pub(super) prior_index: Option<usize>,
-    pub(super) ledger: Ledger<'s>,
+    pub(super) state: Box<issue::Issued<'s>>,
     pub(super) grant: Option<AttachmentReplayGrantV1>,
 }
 
 impl EvidenceSubjectAttachmentInspectionV1<'_> {
     pub fn store_identity(&self) -> &StoreIdentity {
-        &self.store
+        &self.state.store
     }
     pub fn public_head(&self) -> &AttachmentPublicHeadV1 {
-        &self.head
+        &self.state.head
     }
     pub fn inventory(&self) -> &AttachmentInventoryV1 {
-        &self.ledger.inventory
+        &self.state.ledger.inventory
     }
     pub fn action(&self) -> &AttachmentActionV1 {
-        &self.action
+        &self.state.action
     }
     pub fn target(&self) -> &AttachmentTargetV1 {
-        &self.target
+        &self.state.target
     }
     pub fn accepted_target_witness(&self) -> &AttachmentDigestV1 {
-        &self.witness
+        &self.state.witness
     }
     pub fn evidence_generation(&self) -> u64 {
-        self.revision.evidence_generation()
+        self.state.revision.evidence_generation()
     }
     pub fn derived_generation(&self) -> u64 {
-        self.revision.derived_generation()
+        self.state.revision.derived_generation()
     }
     pub fn prior_record(&self) -> Option<&ReviewedReferenceRecordV1> {
-        self.prior_index
-            .and_then(|index| self.ledger.records.get(index))
+        self.state
+            .prior_index
+            .and_then(|index| self.state.ledger.records.get(index))
     }
     pub fn issued_objects(&self) -> impl Iterator<Item = &AttachmentObjectReferenceV1> {
-        self.issued.iter().map(EncodedObject::reference).chain([
-            self.inputs.capture.reference(),
-            self.inputs.token.reference(),
-        ])
+        self.state
+            .objects
+            .iter()
+            .map(EncodedObject::reference)
+            .chain([
+                self.state.inputs.capture.reference(),
+                self.state.inputs.token.reference(),
+            ])
     }
 }
 
@@ -83,16 +79,7 @@ impl Store {
         let result = issue::inspect(self, request, &mut grant);
         match result {
             Ok(issued) => Ok(EvidenceSubjectAttachmentInspectionV1 {
-                revision: issued.revision,
-                store: issued.store,
-                head: issued.head,
-                action: issued.action,
-                target: issued.target,
-                witness: issued.witness,
-                inputs: issued.inputs,
-                issued: issued.objects,
-                prior_index: issued.prior_index,
-                ledger: issued.ledger,
+                state: Box::new(issued),
                 grant: Some(grant),
             }),
             Err(error) => {
@@ -102,3 +89,6 @@ impl Store {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

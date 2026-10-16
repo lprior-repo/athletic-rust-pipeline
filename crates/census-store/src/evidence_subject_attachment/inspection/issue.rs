@@ -1,17 +1,17 @@
 use super::*;
 use crate::{StoreError, StoreSnapshot};
 
-pub(super) struct Issued<'s> {
-    pub(super) revision: StoreRevision<'s>,
-    pub(super) store: StoreIdentity,
-    pub(super) head: AttachmentPublicHeadV1,
-    pub(super) action: AttachmentActionV1,
-    pub(super) target: AttachmentTargetV1,
-    pub(super) witness: AttachmentDigestV1,
-    pub(super) inputs: Inputs,
-    pub(super) objects: Vec<EncodedObject>,
-    pub(super) prior_index: Option<usize>,
-    pub(super) ledger: Ledger<'s>,
+pub(in super::super) struct Issued<'s> {
+    pub(in super::super) revision: StoreRevision<'s>,
+    pub(in super::super) store: StoreIdentity,
+    pub(in super::super) head: AttachmentPublicHeadV1,
+    pub(in super::super) action: AttachmentActionV1,
+    pub(in super::super) target: AttachmentTargetV1,
+    pub(in super::super) witness: AttachmentDigestV1,
+    pub(in super::super) inputs: Inputs,
+    pub(in super::super) objects: Vec<EncodedObject>,
+    pub(in super::super) prior_index: Option<usize>,
+    pub(in super::super) ledger: Ledger<'s>,
 }
 
 pub(super) fn inspect<'s>(

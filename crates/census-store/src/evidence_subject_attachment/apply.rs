@@ -89,8 +89,8 @@ fn apply(
     )?;
     let introduced = std::mem::take(introduced);
     let inputs = super::ledger::wire::EntryInputs {
-        capture: inspection.inputs.capture.reference().clone(),
-        token: inspection.inputs.token.reference().clone(),
+        capture: inspection.state.inputs.capture.reference().clone(),
+        token: inspection.state.inputs.token.reference().clone(),
     };
     let append = commit::FinalAppend {
         draft: &mut prepared.record,
@@ -109,11 +109,13 @@ fn require_new(
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
     inspection
+        .state
         .revision
         .ensure_current(store, command.operation.as_str())?;
     grant.charge_steps(1).map_err(Error::Domain)?;
     if ledger.inventory != command.expected_attachment_inventory
         || !inspection
+            .state
             .ledger
             .physical
             .fingerprint()
@@ -122,7 +124,7 @@ fn require_new(
         return Err(Error::InventoryMoved.into());
     }
     super::inputs::require_head(view, &command.expected_public_head, grant)?;
-    inspection.inputs.require_current(
+    inspection.state.inputs.require_current(
         store,
         view,
         command.expected_evidence_generation,

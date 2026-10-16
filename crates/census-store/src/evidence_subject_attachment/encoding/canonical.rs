@@ -27,11 +27,14 @@ fn checked(
         offset: 0,
         failure: None,
     };
-    let result = write_serialized(&mut sink, value);
+    let result = serde_json::to_writer(&mut sink, value);
     if let Some(error) = sink.failure {
         return Err(error);
     }
-    result?;
+    result.map_err(|source| StoreError::Json {
+        detail: "private attachment canonical serialization".into(),
+        source,
+    })?;
     if sink.offset != raw.len() {
         return Err(noncanonical());
     }

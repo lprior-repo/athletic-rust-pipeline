@@ -13,11 +13,10 @@ pub(super) fn introductions(
         return Err(Error::Corrupt("introduced context count").into());
     }
     let mut introduced = Vec::new();
-    for issued in inspection
-        .issued
-        .iter()
-        .chain([&inspection.inputs.capture, &inspection.inputs.token])
-    {
+    for issued in inspection.state.objects.iter().chain([
+        &inspection.state.inputs.capture,
+        &inspection.state.inputs.token,
+    ]) {
         if let Some(existing) = ledger.find_object(&issued.reference().digest, grant)? {
             if existing.reference() != issued.reference() {
                 return Err(Error::Corrupt("issued context reference redefined").into());
