@@ -12,7 +12,7 @@ use census_domain::UsJurisdiction;
 pub(super) fn selected() -> TestResult<QueryProfileV1> {
     Ok(QueryProfileV1::new(QueryProfileInputV1 {
         version: 1,
-        graduation_years: vec![GradYear::new(2026).ok_or("genuine cohort")?],
+        graduation_years: vec![GradYear::CO2027],
         jurisdictions: vec![UsJurisdiction::Michigan],
         regional_membership: RegionalMembershipV1::AllSelectedJurisdictions,
         discovery_priority: DiscoveryPriorityV1::Uniform,

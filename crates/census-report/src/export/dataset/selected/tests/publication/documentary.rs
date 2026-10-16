@@ -15,12 +15,34 @@ mod roundtrip;
 use fixture::{Expected, Fixture};
 
 fn inspect(dataset: &ExportDataset, expected: &[Expected]) -> TestResult<Value> {
+    let [athlete] = dataset.athletes.as_slice() else {
+        return Err("one genuine retained athlete".into());
+    };
+    check!(eq; athlete.grad_year.get(), 2026);
+    check!(eq; athlete.identity_in(&census_domain::model::SourceNamespace::MilesplitAthlete)
+        .ok_or("genuine retained provider identity")?.id, "7223777");
+    check!(dataset
+        .verified_public_identities()?
+        .public_id(athlete.id.as_str())
+        .is_some());
+    check!(eq; dataset.selected_authority()?.profile().input().graduation_years, vec![GradYear::CO2027]);
+    check!(eq; expected.len(), 3);
     check!(dataset.performances.is_empty());
     check!(dataset.teams.is_empty());
     let view = dataset.verified_participation()?;
     check!(view.unsupported_documentary().is_empty());
     check!(eq; view.documentary_rows().count(), 3);
     let options = bests_options(dataset)?;
+    check!(eq; options.grad_year, Some(2027));
+    check!(Some(athlete.grad_year.get()) != options.grad_year);
+    let derivation = crate::report::Derivation::of(
+        dataset,
+        options.scope,
+        options.grad_year,
+        &options.jurisdictions,
+    )?;
+    check!(derivation.athletes().is_empty());
+    check!(derivation.performances().is_empty());
     let outcome = crate::bests::build_with_exclusions(dataset, &options)?;
     check!(outcome.selections.is_empty());
     check!(eq; outcome.participation_exclusions.len(), 3);
@@ -32,6 +54,7 @@ fn inspect(dataset: &ExportDataset, expected: &[Expected]) -> TestResult<Value> 
     ];
     let mut observed = Vec::new();
     for (source, exclusion) in expected.iter().zip(&outcome.participation_exclusions) {
+        check!(eq; source.athlete, athlete.id);
         let row = view
             .documentary(&source.performance)
             .ok_or("genuine documentary observation")?;
