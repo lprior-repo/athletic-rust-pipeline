@@ -7,8 +7,8 @@ use census_store::{
 };
 use sha2::{Digest, Sha256};
 use std::path::Path;
-mod context;
-mod material;
+pub(super) mod context;
+pub(super) mod material;
 mod observe;
 mod preserve;
 

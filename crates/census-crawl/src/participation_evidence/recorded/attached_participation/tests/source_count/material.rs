@@ -8,7 +8,7 @@ use census_store::{
 use serde_json::value::RawValue;
 use std::collections::BTreeMap;
 
-pub(super) fn packet(
+pub(in super::super) fn packet(
     index: usize,
     schedule: &RetainedHtmlCaptureV1,
 ) -> TestResult<IndependentParticipationPacketV1> {
@@ -30,7 +30,7 @@ pub(super) fn packet(
     )?)
 }
 
-pub(super) fn read(
+pub(in super::super) fn read(
     store: &Store,
     packet: &IndependentParticipationPacketV1,
 ) -> TestResult<(
@@ -79,7 +79,7 @@ pub(super) fn read(
     Ok((leaves, recorded))
 }
 
-pub(super) fn schedule(store: &Store) -> TestResult<RetainedHtmlCaptureV1> {
+pub(in super::super) fn schedule(store: &Store) -> TestResult<RetainedHtmlCaptureV1> {
     let snapshot = store.snapshot();
     let mut grant = Grant::new();
     let owner = snapshot.read_current_evidence_subject_attachment_references_v1(&mut grant)?;

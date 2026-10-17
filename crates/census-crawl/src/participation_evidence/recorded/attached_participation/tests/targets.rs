@@ -15,6 +15,7 @@ use std::path::{Path, PathBuf};
 
 mod context;
 mod observe;
+mod supported;
 use context::Context;
 
 #[derive(Clone, Copy)]
@@ -29,6 +30,9 @@ pub(in crate::participation_evidence::recorded) fn verify_targets(
     let original = files(closed_root)?;
     for case in [TargetCase::Same, TargetCase::Other] {
         let result = scenario(closed_root, case);
+        check!(eq; files(closed_root)?, original);
+        result?;
+        let result = supported::scenario(closed_root, case);
         check!(eq; files(closed_root)?, original);
         result?;
     }

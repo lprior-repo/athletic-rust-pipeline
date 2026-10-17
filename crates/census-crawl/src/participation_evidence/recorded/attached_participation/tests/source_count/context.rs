@@ -2,7 +2,7 @@ use super::*;
 use census_store::AttachmentContextObjectV1;
 use chrono::{DateTime, Utc};
 
-pub(super) struct InlineObject {
+pub(in super::super) struct InlineObject {
     pub reference: AttachmentObjectReferenceV1,
     pub bytes: Vec<u8>,
 }
@@ -28,7 +28,7 @@ impl InlineObject {
     }
 }
 
-pub(super) struct Context {
+pub(in super::super) struct Context {
     pub objects: Vec<InlineObject>,
     pub subject: RetainedDocumentSubjectReferenceV1,
     pub reviewed: ReviewedAttachmentContextV1,
