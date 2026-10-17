@@ -187,12 +187,13 @@ fn selected_proof_versions_preserve_exact_numeric_wire_and_refuse_unknowns() -> 
     for (wire, expected) in [
         (1, super::Version::HistoricalContextV1),
         (2, super::Version::RetainedGraphV2),
+        (3, super::Version::ReviewedRosterGraphV3),
     ] {
         let decoded: super::Version = serde_json::from_value(json!(wire))?;
         check!(eq; decoded, expected);
         check!(eq; serde_json::to_value(decoded)?, json!(wire));
     }
-    for value in [json!(0), json!(3), json!(u32::MAX), json!(-1), json!("2")] {
+    for value in [json!(0), json!(4), json!(u32::MAX), json!(-1), json!("2")] {
         check!(matches!(
             serde_json::from_value::<super::Version>(value),
             Err(_)

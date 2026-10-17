@@ -67,7 +67,7 @@ impl ExportDataset {
             .ok_or_else(|| invalid("selected publication requires retained identity proofs"))?
             .require_current()?;
         let _checked =
-            census_domain::profile_execution::validate_selected_qualification_profile_v3(
+            census_domain::profile_execution::validate_current_selected_qualification_profile(
                 self.selected_authority()?.profile(),
             )
             .map_err(|source| {

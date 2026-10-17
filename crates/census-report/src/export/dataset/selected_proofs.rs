@@ -12,6 +12,8 @@ use std::path::{Path, PathBuf};
 
 mod identity;
 mod objects;
+mod version;
+pub(in crate::export::dataset) use version::Version;
 #[cfg(test)]
 mod tests;
 
@@ -35,34 +37,6 @@ pub(crate) struct SelectedProofs {
     objects: Vec<objects::Reference>,
     #[serde(skip)]
     objects_directory: Option<PathBuf>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "u32", into = "u32")]
-pub(in crate::export::dataset) enum Version {
-    HistoricalContextV1,
-    RetainedGraphV2,
-}
-
-impl TryFrom<u32> for Version {
-    type Error = &'static str;
-
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
-        match value {
-            1 => Ok(Self::HistoricalContextV1),
-            2 => Ok(Self::RetainedGraphV2),
-            _ => Err("unsupported selected proof envelope version"),
-        }
-    }
-}
-
-impl From<Version> for u32 {
-    fn from(value: Version) -> Self {
-        match value {
-            Version::HistoricalContextV1 => 1,
-            Version::RetainedGraphV2 => 2,
-        }
-    }
 }
 
 pub(crate) struct HydratedProofs {
@@ -114,7 +88,11 @@ impl SelectedProofs {
         let participation_digest = participation.install_replay(directory)?;
         let objects = objects::inventory(directory)?;
         let proofs = Self {
-            version: Version::RetainedGraphV2,
+            version: if affiliation.reviewed_roster() {
+                Version::ReviewedRosterGraphV3
+            } else {
+                Version::RetainedGraphV2
+            },
             affiliation,
             affiliation_digest,
             participation_digest,
@@ -146,7 +124,7 @@ impl SelectedProofs {
             Version::HistoricalContextV1 => dataset.replay_historical_public_identities(
                 self.public_identity.replay_historical(directory)?,
             )?,
-            Version::RetainedGraphV2 => dataset
+            Version::RetainedGraphV2 | Version::ReviewedRosterGraphV3 => dataset
                 .prepare_selected_public_identities(self.public_identity.replay(directory)?)?,
         }
         let affiliations = current_affiliation::replay_frozen(
@@ -181,7 +159,10 @@ impl SelectedProofs {
 
     pub(crate) fn require_current(&self) -> ReportResult<()> {
         self.validate()?;
-        if self.version != Version::RetainedGraphV2 {
+        if !matches!(
+            self.version,
+            Version::RetainedGraphV2 | Version::ReviewedRosterGraphV3
+        ) {
             return Err(invalid(
                 "historical selected identity proofs cannot authorize current publication",
             ));
@@ -211,7 +192,8 @@ impl SelectedProofs {
     }
 
     fn validate(&self) -> ReportResult<()> {
-        if !digest(&self.affiliation_digest)
+        if self.affiliation.reviewed_roster() != (self.version == Version::ReviewedRosterGraphV3)
+            || !digest(&self.affiliation_digest)
             || !digest(&self.participation_digest)
             || self.affiliation.digest()? != self.affiliation_digest
         {

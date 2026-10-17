@@ -50,6 +50,7 @@ pub(super) fn capture(
         profile: profile_object,
         observations,
         archives,
+        roster_family: None,
     };
     descriptor.validate(dataset, descriptor.observations.fingerprint())?;
     let pinned = PinnedCurrentAffiliations {
