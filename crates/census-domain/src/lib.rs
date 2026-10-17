@@ -16,6 +16,7 @@ pub mod participation_candidates;
 pub mod profile_execution;
 pub mod public_identity_history;
 pub mod public_identity_qualification;
+pub mod roster_affiliation_authority;
 pub mod school_directory;
 pub mod school_index;
 
