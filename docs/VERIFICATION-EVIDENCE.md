@@ -266,3 +266,44 @@ Its execution remains pending; no surviving old b85d-produced Report artifact
 is claimed. Historical policy controls remain distinct from an actual retained
 Report V3 generation. No later documentary semantic V4 or roster authority
 implementation is included in this publication layer.
+
+### Fresh actual-main frozen publication receipt (2026-10-17)
+
+Native gates passed on `24f593911c6cab8f1679199fd70547a701fced27`, tree
+`ed8428e420d1184e415e12874fda9b70e2b55d0a`; the checkout remained clean.
+All 21 requested scopes exited zero with zero failures. Pass/skipped counts:
+genuine producer 1/1726; Report dispatch 4/1249, historical 2/1251,
+collision 3/1250, refusal 10/1243, workbook guards 4/1249, genuine roundtrip
+1/1252, genuine refusal 1/1252, qualification union 7/1246; Store source parity
+32/1426, archive state 7/1451, capture sink 4/1454, current frozen 6/1452,
+historical target 5/1453, legacy bounds 4/1454; Crawl discovery 7/1720 and
+handoff 7/1720; Domain funding 26/934 and history 163/797; Service history-memory
+2/1068 and exact admission scope 39/1031. Scopes overlap; Report contributes
+32 selected executions. All previously excluded OS-denied selectors remain
+excluded, not semantic passes.
+
+Canonical `tools/moon-local` formatting, all-target check and source lint passed.
+Check retained ten Store-test dead-code warnings. An earlier direct
+`moon run pipeline:check` invocation exited one before compilation because the
+canonical launcher was required; that receipt is preserved separately.
+Lint ran with one build job, task `e00960f0`, exit zero, with six warnings
+(four Store, one Report, one athleticnet-browser). Its native logs are under
+`task/imports/layer3-lint-src-20261017.49O5xMpO`. No source was edited natively.
+
+The opt-in genuine roundtrip retained an actual Report V3 generation under
+`task/imports/layer3-report-20261017/evidence/retained-report-v3-archive`.
+Manifest SHA256: `923de2267a917a0113573f3641c67ff6c7428c52093542ed443d3637efe7c4f4`.
+Archive digest: `50b074a02d87073e1d30f5b24363b581c58a6e07e99bd84514ee90189934a17e`.
+Both Report and fresh original Store producer are the exact tested commit/tree
+above, not b85d or f38a. Original handoff SHA256:
+`bd73091f17772446d88cb8ac4fc54ea26e3c546eeadcb0f3d8667cc1a4545353`, snapshot 50.
+The archive has 15 files including 14 proofs; the original Store's 15-file exact
+set, sizes and SHA256 inventory were reverified unchanged. Raw evidence remains
+native. This establishes an independently retained pre-V4 generation for the
+next consumer gate, not that later gate's success.
+
+This receipt preserves the genuine CO2026/CO2027-selection negative result and
+all open positive eligibility, school, season, population, recovery and R1–R3
+acceptance limits above. Later semantic V4, identity-correction and reviewed
+roster implementations are outside this tested tree. This successor changes
+only this ledger; all source blobs and modes remain identical to the tested tree.
