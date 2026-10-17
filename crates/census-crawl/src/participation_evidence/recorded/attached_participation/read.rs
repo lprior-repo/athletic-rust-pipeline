@@ -1,6 +1,9 @@
 use super::*;
 use census_domain::evidence_subject_attachment::AttachmentSubjectRoleV1;
-use census_store::{ActiveAttachmentSubjectV1, DiscoveredAttachmentCaptureV1, RetainedCaptureLeafKindV1, RetainedCaptureRootSchemaV1, RetainedCaptureSlotV1};
+use census_store::{
+    ActiveAttachmentSubjectV1, DiscoveredAttachmentCaptureV1, RetainedCaptureLeafKindV1,
+    RetainedCaptureRootSchemaV1, RetainedCaptureSlotV1,
+};
 
 pub(super) fn sources<'a, 'v, 's>(
     view: View<'a, 'v, 's>,
@@ -23,7 +26,10 @@ pub(super) fn sources<'a, 'v, 's>(
         reserve(&mut sources, grant)?;
         sources.push(CheckedAttachedStatusV1 { recorded, binding });
     }
-    Ok(AttachedParticipationV1 { sources, unsupported })
+    Ok(AttachedParticipationV1 {
+        sources,
+        unsupported,
+    })
 }
 
 fn packet(
@@ -42,19 +48,35 @@ fn packet(
         return Err(invalid("attached status retained source owner differs").into());
     }
     match view {
-        View::Current(owner) => owner.snapshot().verify_retained_capture_leaf_v1(leaf, grant)?,
-        View::Frozen(owner) => owner.source().verify_retained_capture_leaf_v1(leaf, grant)?,
+        View::Current(owner) => owner
+            .snapshot()
+            .verify_retained_capture_leaf_v1(leaf, grant)?,
+        View::Frozen(owner) => owner
+            .source()
+            .verify_retained_capture_leaf_v1(leaf, grant)?,
     }
     let (store, sequence) = match view {
         View::Current(owner) => (owner.store_identity(), owner.snapshot_sequence()),
         View::Frozen(owner) => (owner.store_identity(), owner.snapshot_sequence()),
     };
-    bytes(grant, store.as_str().len().checked_add(leaf.root.key.len())
-        .ok_or(census_store::StoreError::CounterOverflow)?)?;
-    let reference = crate::participation_evidence::ParticipationEvidenceRefV1::parse(&leaf.root.key)?;
+    bytes(
+        grant,
+        store
+            .as_str()
+            .len()
+            .checked_add(leaf.root.key.len())
+            .ok_or(census_store::StoreError::CounterOverflow)?,
+    )?;
+    let reference =
+        crate::participation_evidence::ParticipationEvidenceRefV1::parse(&leaf.root.key)?;
     let recorded = super::super::read::read_independent_from(
-        view.source(), &reference, || Ok(store.clone()), sequence, grant,
-    )?.ok_or_else(|| invalid("attached status retained packet is missing"))?;
+        view.source(),
+        &reference,
+        || Ok(store.clone()),
+        sequence,
+        grant,
+    )?
+    .ok_or_else(|| invalid("attached status retained packet is missing"))?;
     if recorded.root() != &leaf.root {
         return Err(invalid("attached status packet root differs").into());
     }
@@ -67,10 +89,16 @@ fn bind<'a, 'v, 's>(
     grant: &mut Grant,
 ) -> CrawlResult<StatusBinding<'a, 's>> {
     let bound = match view {
-        View::Current(owner) => StatusBinding::Current(owner.bind_exact_subject(item.subject(), grant)?
-            .ok_or_else(|| invalid("attached status is no longer active"))?),
-        View::Frozen(owner) => StatusBinding::Frozen(owner.bind_exact_subject(item.subject(), grant)?
-            .ok_or_else(|| invalid("frozen attached status is no longer active"))?),
+        View::Current(owner) => StatusBinding::Current(
+            owner
+                .bind_exact_subject(item.subject(), grant)?
+                .ok_or_else(|| invalid("attached status is no longer active"))?,
+        ),
+        View::Frozen(owner) => StatusBinding::Frozen(
+            owner
+                .bind_exact_subject(item.subject(), grant)?
+                .ok_or_else(|| invalid("frozen attached status is no longer active"))?,
+        ),
     };
     bound.require_original_grant(grant)?;
     Ok(bound)

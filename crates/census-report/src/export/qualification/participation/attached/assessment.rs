@@ -35,7 +35,13 @@ pub(super) fn row(
             .map_err(source)?;
     let (outcome, reasons, semantic_refs) = match sources {
         AssessmentSources::HistoricalWithheld => {
-            let assessed = evaluate(&row, &identity, query, grant, linked.checked_document().capture().acquired_at())?;
+            let assessed = evaluate(
+                &row,
+                &identity,
+                query,
+                grant,
+                linked.checked_document().capture().acquired_at(),
+            )?;
             (assessed.0, assessed.1, Vec::new())
         }
         AssessmentSources::Current(sources) => facts::assess(sources, linked, index, query, grant)?,
@@ -81,8 +87,10 @@ fn append_semantic_references(
             .and_then(|bytes| bytes.checked_mul(4))
             .ok_or(census_store::StoreError::CounterOverflow)?;
         budget.charge(bytes, 1)?;
-        references.try_reserve_exact(1).map_err(|_| crate::grouping::GroupingError::Allocation {
-            stage: "selected documentary semantic references",
+        references.try_reserve_exact(1).map_err(|_| {
+            crate::grouping::GroupingError::Allocation {
+                stage: "selected documentary semantic references",
+            }
         })?;
         references.push(reference);
     }

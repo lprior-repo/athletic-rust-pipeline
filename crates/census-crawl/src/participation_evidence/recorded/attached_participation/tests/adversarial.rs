@@ -22,21 +22,30 @@ pub(in crate::participation_evidence::recorded) fn verify_adversarial(store: &St
 }
 
 #[derive(Clone, Copy)]
-enum Boundary { Measure, Bytes(usize), Steps(usize) }
+enum Boundary {
+    Measure,
+    Bytes(usize),
+    Steps(usize),
+}
 
 fn exercise(store: &Store, boundary: Boundary) -> TestResult<(usize, usize)> {
     let mut observed = (0, 0);
-    let attempts = match boundary { Boundary::Measure => 1, _ => 2 };
+    let attempts = match boundary {
+        Boundary::Measure => 1,
+        _ => 2,
+    };
     for short in 0..attempts {
         let snapshot = store.snapshot();
         let mut grant = Grant::new();
-        let current = snapshot.read_current_evidence_subject_attachment_references_v1(&mut grant)?;
-        let value = with_current_attached_participation(&current, &mut grant, |sources, grant| {
-            let plan = discover_current_html_results(&current, grant)?;
-            plan.with_group(0, grant, |linked, grant| {
-                Ok(boundary_row(sources, &linked, grant, boundary, short))
-            })
-        })??;
+        let current =
+            snapshot.read_current_evidence_subject_attachment_references_v1(&mut grant)?;
+        let value =
+            with_current_attached_participation(&current, &mut grant, |sources, grant| {
+                let plan = discover_current_html_results(&current, grant)?;
+                plan.with_group(0, grant, |linked, grant| {
+                    Ok(boundary_row(sources, &linked, grant, boundary, short))
+                })
+            })??;
         observed = value;
     }
     Ok(observed)
@@ -52,12 +61,22 @@ fn boundary_row<'s>(
     let before = grant.usage();
     match boundary {
         Boundary::Measure => {}
-        Boundary::Bytes(cost) => grant.charge_bytes(ReplayLimits::SMALL.total_text_bytes
-            .checked_sub(before.encoded_bytes()).and_then(|n| n.checked_sub(cost))
-            .and_then(|n| n.checked_add(short)).ok_or("byte boundary")?)?,
-        Boundary::Steps(cost) => grant.charge_steps(ReplayLimits::SMALL.traversal_steps
-            .checked_sub(before.traversal_steps()).and_then(|n| n.checked_sub(cost))
-            .and_then(|n| n.checked_add(short)).ok_or("step boundary")?)?,
+        Boundary::Bytes(cost) => grant.charge_bytes(
+            ReplayLimits::SMALL
+                .total_text_bytes
+                .checked_sub(before.encoded_bytes())
+                .and_then(|n| n.checked_sub(cost))
+                .and_then(|n| n.checked_add(short))
+                .ok_or("byte boundary")?,
+        )?,
+        Boundary::Steps(cost) => grant.charge_steps(
+            ReplayLimits::SMALL
+                .traversal_steps
+                .checked_sub(before.traversal_steps())
+                .and_then(|n| n.checked_sub(cost))
+                .and_then(|n| n.checked_add(short))
+                .ok_or("step boundary")?,
+        )?,
     }
     let start = grant.usage();
     let called = Cell::new(false);
@@ -69,10 +88,15 @@ fn boundary_row<'s>(
         Ok(())
     });
     if short == 1 {
-        let resource = match boundary { Boundary::Bytes(_) => "aggregate encoded bytes", _ => "aggregate traversal steps" };
-        check!(matches!(result, Err(crate::CrawlError::Store(census_store::StoreError::EvidenceSubjectAttachment(
+        let resource = match boundary {
+            Boundary::Bytes(_) => "aggregate encoded bytes",
+            _ => "aggregate traversal steps",
+        };
+        check!(
+            matches!(result, Err(crate::CrawlError::Store(census_store::StoreError::EvidenceSubjectAttachment(
             census_store::EvidenceSubjectAttachmentStoreError::Domain(census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError::Capacity { resource: found, .. })
-        ))) if found == resource));
+        ))) if found == resource)
+        );
         check!(!called.get());
         check!(grant.ensure_available().is_err());
         return Ok((0, 0));
@@ -82,12 +106,24 @@ fn boundary_row<'s>(
     grant.ensure_available()?;
     let after = grant.usage();
     match boundary {
-        Boundary::Bytes(_) => check!(eq; after.encoded_bytes(), ReplayLimits::SMALL.total_text_bytes),
-        Boundary::Steps(_) => check!(eq; after.traversal_steps(), ReplayLimits::SMALL.traversal_steps),
+        Boundary::Bytes(_) => {
+            check!(eq; after.encoded_bytes(), ReplayLimits::SMALL.total_text_bytes)
+        }
+        Boundary::Steps(_) => {
+            check!(eq; after.traversal_steps(), ReplayLimits::SMALL.traversal_steps)
+        }
         Boundary::Measure => {}
     }
-    Ok((after.encoded_bytes().checked_sub(start.encoded_bytes()).ok_or("byte delta")?,
-        after.traversal_steps().checked_sub(start.traversal_steps()).ok_or("step delta")?))
+    Ok((
+        after
+            .encoded_bytes()
+            .checked_sub(start.encoded_bytes())
+            .ok_or("byte delta")?,
+        after
+            .traversal_steps()
+            .checked_sub(start.traversal_steps())
+            .ok_or("step delta")?,
+    ))
 }
 
 fn callback_refusal(store: &Store) -> TestResult {
@@ -100,13 +136,20 @@ fn callback_refusal(store: &Store) -> TestResult {
         plan.with_group(0, grant, |linked, grant| {
             sources.with_row_facts(&linked, 0, grant, |_, _| {
                 called.set(true);
-                Err::<(), _>(census_store::StoreError::Refused { detail: "controlled semantic callback refusal".into() }.into())
+                Err::<(), _>(
+                    census_store::StoreError::Refused {
+                        detail: "controlled semantic callback refusal".into(),
+                    }
+                    .into(),
+                )
             })
         })
     });
     check!(called.get());
-    check!(matches!(result, Err(crate::CrawlError::Store(census_store::StoreError::Refused { detail }))
-        if detail == "controlled semantic callback refusal"));
+    check!(
+        matches!(result, Err(crate::CrawlError::Store(census_store::StoreError::Refused { detail }))
+        if detail == "controlled semantic callback refusal")
+    );
     check!(grant.ensure_available().is_err());
     Ok(())
 }

@@ -4,8 +4,9 @@ use crate::export::ExportDataset;
 use crate::grouping::Admission;
 use crate::report::{documentary_source_error as source, ReportResult};
 use census_crawl::participation_evidence::recorded::{
-    discover_current_html_results, discover_frozen_html_results, AttachmentHtmlResultDiscoveryV1,
-    with_current_attached_participation, with_frozen_attached_participation, AttachedParticipationV1,
+    discover_current_html_results, discover_frozen_html_results,
+    with_current_attached_participation, with_frozen_attached_participation,
+    AttachedParticipationV1, AttachmentHtmlResultDiscoveryV1,
 };
 use census_domain::affiliation_candidates::DeclaredFrozenView;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1 as Grant;
@@ -18,8 +19,8 @@ use std::num::NonZeroU64;
 use std::path::Path;
 
 mod assessment;
-mod facts;
 mod diagnostics;
+mod facts;
 pub(crate) use diagnostics::UnsupportedDocumentarySource;
 
 #[derive(Clone, Copy)]
@@ -59,8 +60,16 @@ pub(super) fn capture(
         let bundle = current.freeze_closure(&mut grant)?;
         let plan = discover_current_html_results(&current, &mut grant).map_err(source)?;
         let rows = with_current_attached_participation(&current, &mut grant, |sources, grant| {
-            Ok(collect(dataset, profile, captured_at, &plan, AssessmentSources::Current(sources), grant))
-        }).map_err(source)??;
+            Ok(collect(
+                dataset,
+                profile,
+                captured_at,
+                &plan,
+                AssessmentSources::Current(sources),
+                grant,
+            ))
+        })
+        .map_err(source)??;
         let descriptor = super::archive::capture_attachment(&bundle, directory, &mut grant)?;
         Ok((rows, descriptor))
     })();
@@ -77,7 +86,14 @@ pub(super) fn replay(
     descriptor: &super::archive::attachment::AttachmentClosureDescriptor,
     directory: &Path,
 ) -> ReportResult<Collected> {
-    replay_version(dataset, profile, captured_at, descriptor, directory, ReplaySemantics::HistoricalWithheld)
+    replay_version(
+        dataset,
+        profile,
+        captured_at,
+        descriptor,
+        directory,
+        ReplaySemantics::HistoricalWithheld,
+    )
 }
 
 pub(super) fn replay_current(
@@ -87,7 +103,14 @@ pub(super) fn replay_current(
     descriptor: &super::archive::attachment::AttachmentClosureDescriptor,
     directory: &Path,
 ) -> ReportResult<Collected> {
-    replay_version(dataset, profile, captured_at, descriptor, directory, ReplaySemantics::Current)
+    replay_version(
+        dataset,
+        profile,
+        captured_at,
+        descriptor,
+        directory,
+        ReplaySemantics::Current,
+    )
 }
 
 fn replay_version(
@@ -108,10 +131,27 @@ fn replay_version(
         )?;
         let plan = discover_frozen_html_results(&current, &mut grant).map_err(source)?;
         match semantics {
-            ReplaySemantics::HistoricalWithheld => collect(dataset, profile, captured_at, &plan, AssessmentSources::HistoricalWithheld, &mut grant),
-            ReplaySemantics::Current => with_frozen_attached_participation(&current, &mut grant, |sources, grant| {
-                Ok(collect(dataset, profile, captured_at, &plan, AssessmentSources::Current(sources), grant))
-            }).map_err(source)?,
+            ReplaySemantics::HistoricalWithheld => collect(
+                dataset,
+                profile,
+                captured_at,
+                &plan,
+                AssessmentSources::HistoricalWithheld,
+                &mut grant,
+            ),
+            ReplaySemantics::Current => {
+                with_frozen_attached_participation(&current, &mut grant, |sources, grant| {
+                    Ok(collect(
+                        dataset,
+                        profile,
+                        captured_at,
+                        &plan,
+                        AssessmentSources::Current(sources),
+                        grant,
+                    ))
+                })
+                .map_err(source)?
+            }
         }
     })();
     if result.is_err() {
@@ -150,7 +190,14 @@ fn collect(
             .with_group(index, grant, |linked, grant| {
                 Ok((|| -> ReportResult<()> {
                     for row_index in 0..linked.row_count() {
-                        let row = assessment::row(&linked, row_index, query, sources, grant, &mut budget)?;
+                        let row = assessment::row(
+                            &linked,
+                            row_index,
+                            query,
+                            sources,
+                            grant,
+                            &mut budget,
+                        )?;
                         reject_collision(dataset, &rows, row.performance_id(), &mut budget)?;
                         let search = rows
                             .len()

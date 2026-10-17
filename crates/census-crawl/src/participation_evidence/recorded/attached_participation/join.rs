@@ -8,7 +8,9 @@ pub(super) fn row<'a, 's>(
     index: usize,
     grant: &mut Grant,
 ) -> CrawlResult<Vec<CheckedDocumentarySourceFactsV1<'a>>> {
-    let row = linked.row(index).ok_or_else(|| invalid("documentary participation row missing"))?;
+    let row = linked
+        .row(index)
+        .ok_or_else(|| invalid("documentary participation row missing"))?;
     let result = row.attachment();
     result.require_original_grant(grant)?;
     unsupported(sources, result, grant)?;
@@ -35,22 +37,45 @@ pub(super) fn row<'a, 's>(
         if duplicate {
             continue;
         }
-        crate::participation_evidence::bound(facts.len().checked_add(1)
-            .ok_or(census_store::StoreError::CounterOverflow)?, 16, "attached participation source count")?;
-        let parser_bytes = linked.checked_document().original_document().len().checked_mul(4)
-            .and_then(|value| value.checked_add(256)).ok_or(census_store::StoreError::CounterOverflow)?;
+        crate::participation_evidence::bound(
+            facts
+                .len()
+                .checked_add(1)
+                .ok_or(census_store::StoreError::CounterOverflow)?,
+            16,
+            "attached participation source count",
+        )?;
+        let parser_bytes = linked
+            .checked_document()
+            .original_document()
+            .len()
+            .checked_mul(4)
+            .and_then(|value| value.checked_add(256))
+            .ok_or(census_store::StoreError::CounterOverflow)?;
         bytes(grant, parser_bytes)?;
-        let venue = crate::participation_evidence::result_context::documentary_result_venue(linked.checked_document())?;
-        let season = season(&linked.checked_document().parsed_page().meet.name, &venue, source);
+        let venue = crate::participation_evidence::result_context::documentary_result_venue(
+            linked.checked_document(),
+        )?;
+        let season = season(
+            &linked.checked_document().parsed_page().meet.name,
+            &venue,
+            source,
+        );
         reserve(&mut facts, grant)?;
         facts.push(CheckedDocumentarySourceFactsV1 {
-            source, record_digest: candidate.binding.record_digest(), season, cohort,
+            source,
+            record_digest: candidate.binding.record_digest(),
+            season,
+            cohort,
         });
     }
     Ok(facts)
 }
 
-fn same_view(status: &StatusBinding<'_, '_>, result: &DiscoveredResultAttachmentV1<'_, '_>) -> CrawlResult<()> {
+fn same_view(
+    status: &StatusBinding<'_, '_>,
+    result: &DiscoveredResultAttachmentV1<'_, '_>,
+) -> CrawlResult<()> {
     if status.store_identity() != result.store_identity()
         || status.snapshot_sequence() != result.snapshot_sequence()
         || status.accepted_public_head() != result.accepted_public_head()
@@ -80,14 +105,27 @@ fn applicability(
         || page.region.as_deref() != Some("MI")
         || page.school_year != source.school_year()
         || document.published_start() != source.day().as_str()
-        || document.published_end().is_some_and(|end| end != source.day().as_str())
+        || document
+            .published_end()
+            .is_some_and(|end| end != source.day().as_str())
     {
-        return Err(invalid("documentary status subject or dated participation applicability differs").into());
+        return Err(invalid(
+            "documentary status subject or dated participation applicability differs",
+        )
+        .into());
     }
-    Ok(cohort_agreement(parsed.grade, page.school_year, source.cohort()))
+    Ok(cohort_agreement(
+        parsed.grade,
+        page.school_year,
+        source.cohort(),
+    ))
 }
 
-pub(super) fn season(competition: &str, venue: &str, source: &VerifiedIndependentParticipationV1) -> DocumentarySeasonApplicabilityV1 {
+pub(super) fn season(
+    competition: &str,
+    venue: &str,
+    source: &VerifiedIndependentParticipationV1,
+) -> DocumentarySeasonApplicabilityV1 {
     match (competition == source.competition(), venue == source.venue()) {
         (true, true) => DocumentarySeasonApplicabilityV1::Exact,
         (false, true) => DocumentarySeasonApplicabilityV1::CompetitionMismatch,
@@ -96,20 +134,33 @@ pub(super) fn season(competition: &str, venue: &str, source: &VerifiedIndependen
     }
 }
 
-fn unsupported(sources: &AttachedParticipationV1<'_, '_>, result: &DiscoveredResultAttachmentV1<'_, '_>, grant: &mut Grant) -> CrawlResult<()> {
+fn unsupported(
+    sources: &AttachedParticipationV1<'_, '_>,
+    result: &DiscoveredResultAttachmentV1<'_, '_>,
+    grant: &mut Grant,
+) -> CrawlResult<()> {
     for status in &sources.unsupported {
         steps(grant, 1)?;
         status.require_original_grant(grant)?;
         same_view(status, result)?;
         if status.target().canonical_candidate == result.target().canonical_candidate {
-            return Err(invalid("documentary target has unsupported retained status authority").into());
+            return Err(
+                invalid("documentary target has unsupported retained status authority").into(),
+            );
         }
     }
     Ok(())
 }
 
-pub(super) fn cohort_agreement(grade: Option<census_domain::model::Grade>, year: census_domain::model::SchoolYear, expected: GradYear) -> DocumentaryCohortAgreementV1 {
-    if grade.and_then(|grade| GradYear::of(grade, year)).is_some_and(|observed| observed != expected) {
+pub(super) fn cohort_agreement(
+    grade: Option<census_domain::model::Grade>,
+    year: census_domain::model::SchoolYear,
+    expected: GradYear,
+) -> DocumentaryCohortAgreementV1 {
+    if grade
+        .and_then(|grade| GradYear::of(grade, year))
+        .is_some_and(|observed| observed != expected)
+    {
         DocumentaryCohortAgreementV1::Conflicting
     } else {
         DocumentaryCohortAgreementV1::Agreed
