@@ -45,66 +45,6 @@ pub fn parse_coach_cell(cell_html: &str) -> Option<CoachEntry> {
     Some(CoachEntry { name, email })
 }
 
-pub fn parse_sports_table(html: &str) -> Vec<(String, Option<CoachEntry>, Option<CoachEntry>)> {
-    let Some(table_start) = html.find("informationSportHeaderRow") else {
-        return Vec::new();
-    };
-    let Some(table) = html.get(table_start..) else {
-        return Vec::new();
-    };
-
-    let mut sections = Vec::new();
-    for chunk in table.split_inclusive("</tr>") {
-        if chunk.strip_suffix("</tr>").is_none() {
-            break;
-        }
-        let Some(open) = chunk.find("<tr") else {
-            continue;
-        };
-        let Some(row) = chunk.get(open..) else {
-            continue;
-        };
-
-        if row.contains("informationSportHeaderRow") {
-            continue;
-        }
-
-        let sport_raw = extract_td_text(row, 0);
-        let boys_raw = extract_td_text(row, 1);
-        let girls_raw = extract_td_text(row, 2);
-
-        let sport_label = strip_tags(&decode_entities(&sport_raw)).trim().to_string();
-        if parse_sport_label(&sport_label).is_some() {
-            let boys = parse_coach_cell(&boys_raw);
-            let girls = parse_coach_cell(&girls_raw);
-            if boys.is_some() || girls.is_some() {
-                sections.push((sport_label, boys, girls));
-            }
-        }
-    }
-
-    sections
-}
-
-fn extract_td_text(row: &str, index: usize) -> String {
-    let mut count = 0;
-    let mut rest = row;
-    while let Some(open) = rest.find("<td") {
-        let Some(from_td) = rest.get(open..) else {
-            break;
-        };
-        let Some((text, after)) = from_td.split_once("</td>") else {
-            break;
-        };
-        if count == index {
-            return text.to_string();
-        }
-        rest = after;
-        count = count.saturating_add(1);
-    }
-    String::new()
-}
-
 pub fn parse_ad_page(html: &str) -> AdPage {
     let mut ad = AdPage::default();
     let mut rows: Vec<&str> = Vec::new();

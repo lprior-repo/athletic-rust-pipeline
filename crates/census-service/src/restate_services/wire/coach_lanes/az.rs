@@ -1,8 +1,9 @@
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    PendingCoachLane, SchoolYear, SourceRef,
-};
+#[cfg(test)]
+use census_domain::model::{CoachLaneObligation, SchoolYear};
 use census_domain::UsJurisdiction;
+
+use super::policy::{ArmBasis, Lane, LanePolicy};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const AZ_ARM: &str = "aia";
 pub(super) const AZ_REFUSAL_SLUG: &str = "az_missing_coach_sources";
@@ -10,29 +11,14 @@ pub(super) const AZ_TRUE_MISSING: &str = "AIA member/sport-coach directory route
 
 const AZ_ARM_BASIS: &str = "`aia` is wired and sweepable for Arizona; the search JSON is school-level and the qualified school profile fixtures publish TF/XC head-coach names but no public coach mailboxes, while the administrative email directory requires login, so the lane records the work order's true-missing set instead of arming";
 
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Arizona,
-        season,
-        revision,
-        arm: AZ_ARM.to_string(),
-        arm_basis: AZ_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    pending.record(
-        CoachLaneStage::Blocked,
-        Some(refusal(observed_on)?),
-        CoachLaneResolution::unresolved(observed_on),
-    )
-}
-
-pub(super) fn refusal(observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(SourceRef::id(AZ_REFUSAL_SLUG), AZ_TRUE_MISSING, observed_on)
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::Arizona,
+    arm: AZ_ARM,
+    refusal: (AZ_REFUSAL_SLUG, AZ_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Text(AZ_ARM_BASIS),
+    policy: LanePolicy::Blocked,
+};
 
 #[cfg(test)]
 mod tests {

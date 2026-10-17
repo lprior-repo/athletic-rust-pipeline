@@ -1,4 +1,5 @@
 use super::{evidence, physical, TestResult};
+use crate::fixture_files::{read_json, write_new};
 use census_domain::public_identity_history::local_membership_withholding::{
     LocalMembershipWithholdV1, LocalMembershipWithholdingRecordV2, MembershipAttachmentV1,
 };
@@ -6,8 +7,7 @@ use census_domain::public_identity_history::{HistoryRequest, PublicResolution, R
 use census_store::{PublicIdentityWriterV1, SourceCandidateMembershipRequestV1, Store};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub(super) const CHILD_NAME: &str = "membership::membership_crash_child_fixture";
 const PLAN: &str = "membership-crash-plan.json";
@@ -67,9 +67,15 @@ impl Fixture {
             .accepted_public_identity_snapshot()?
             .ok_or("accepted fixture")?;
         let owner = accepted.resolve_public(&plan.attachment.owner)?;
-        let source_record =
-            serde_json::to_vec(accepted.history_records().first().ok_or("source birth")?)?;
-        write(&root.join(PLAN), &serde_json::to_vec(&plan)?)?;
+        let source_record = serde_json::to_vec(
+            accepted
+                .history_records()
+                .iter()
+                .find(|record| matches!(&record.request, HistoryRequest::Establish { binding, .. }
+                    if binding.id == plan.attachment.anchor_binding_id))
+                .ok_or("source birth anchor")?,
+        )?;
+        write_new(&root.join(PLAN), &serde_json::to_vec(&plan)?)?;
         drop(accepted);
         drop(snapshot);
         store.flush()?;
@@ -222,16 +228,9 @@ pub(super) fn child() -> TestResult {
     check!(eq; std::env::var(super::super::fixture::CHILD_CASE)?.as_str(), CHILD_NAME);
     let root =
         PathBuf::from(std::env::var_os(super::super::fixture::CHILD_ROOT).ok_or("child root")?);
-    let metadata = std::fs::symlink_metadata(root.join(PLAN))?;
-    check!(metadata.is_file() && metadata.len() <= 1_048_576);
-    let mut bytes = Vec::new();
-    std::fs::File::open(root.join(PLAN))?
-        .take(1_048_577)
-        .read_to_end(&mut bytes)?;
-    check!(bytes.len() <= 1_048_576);
-    let plan: Plan = serde_json::from_slice(&bytes)?;
+    let plan: Plan = read_json(&root.join(PLAN))?;
     let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
-    write(
+    write_new(
         &root.join("child-precommit-sequence.bin"),
         &store.snapshot().sequence().to_be_bytes(),
     )?;
@@ -263,14 +262,4 @@ pub(super) fn approval(
     digest.update([0]);
     digest.update(&bytes);
     Ok((bytes, format!("{:x}", digest.finalize())))
-}
-fn write(path: &Path, bytes: &[u8]) -> TestResult {
-    check!(bytes.len() <= 1_048_576);
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)?;
-    file.write_all(bytes)?;
-    file.sync_all()?;
-    Ok(())
 }

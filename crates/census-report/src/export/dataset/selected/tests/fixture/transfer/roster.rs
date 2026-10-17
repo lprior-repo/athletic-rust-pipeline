@@ -1,13 +1,11 @@
-use super::super::roster::{hash, retain};
+use super::super::roster::retain;
 use super::super::{Store, Table, TestResult};
-use census_crawl::milesplit::{parse_captured_roster, Site, TeamRef};
-use census_crawl::net::FetchOutcome;
+use census_crawl::milesplit::{Site, TeamRef};
 use census_domain::model::{AthleteId, SchoolId};
 use census_domain::model::{
     CanonicalAthlete, Evidence, PublishedGraduation, SourceIdentity, SourceNamespace, SourceRef,
     Sport,
 };
-use serde_json::json;
 
 pub(super) fn append(
     store: &Store,
@@ -57,26 +55,10 @@ pub(super) fn append(
         person.id
     );
     let body = format!(r#"<link rel="canonical" href="{}/roster"><section><h4>Current Roster</h4><ul id="rosterDataset"><li class="athlete-row data-row"><a href="{profile}">{}</a><div class="column-gender">f</div><div class="column-grad-year">2027</div><div class="data-point" data-season-id="1"><svg class="icon icon-no"></svg></div><div class="data-point" data-season-id="2"><svg class="icon icon-yes"></svg></div><div class="data-point" data-season-id="3"><svg class="icon icon-no"></svg></div></li></ul></section>"#, team.url, original.canonical_name).into_bytes();
-    let capture = FetchOutcome {
-        url: format!("{}/roster", team.url),
-        response_url: None,
-        method: "GET".into(),
-        status: 200,
-        content_digest: hash(&body),
-        bytes: body.len(),
-        fetched_at: "2026-10-01T23:50:00Z".into(),
-        from_cache: false,
-        content_type: Some("text/html".into()),
-        body,
-    };
-    let verdict =
-        parse_captured_roster(std::str::from_utf8(&capture.body)?, team.clone(), &capture)?;
-    let member = verdict
-        .roster()
-        .ok_or("roster")?
-        .athletes
-        .first()
-        .ok_or("roster member")?;
+    let outcome = super::super::roster::capture::parse(&team, body, "2026-10-01T23:50:00Z")?;
+    let capture = &outcome.capture;
+    let roster = outcome.verdict.roster().ok_or("captured roster")?;
+    let member = roster.athletes.first().ok_or("captured member")?;
     let published = member.athlete();
     check!(!published.indoor);
     check!(published.outdoor);
@@ -90,26 +72,16 @@ pub(super) fn append(
             .with_url(&published.profile_url),
     )?;
     check!(ne; &athlete.id, id);
-    let row = member.locator();
-    let end = row
-        .byte_offset
-        .checked_add(row.byte_length)
-        .ok_or("row span overflow")?;
-    let span = capture.body.get(row.byte_offset..end).ok_or("row span")?;
-    let key = format!(
-        "{}#capture={}&row={}&offset={}&length={}",
-        capture.url, capture.content_digest, row.ordinal, row.byte_offset, row.byte_length
-    );
     let mut evidence = Evidence::parsed(
         SourceRef::new(site.source_id(), Some(capture.url.clone())),
         &capture.fetched_at,
     );
-    evidence.note = Some(json!({
-        "role": "roster_positive_row_metadata_v1", "source_row_key": key,
-        "provider_team_id": team.id, "provider_athlete_id": published.athlete_id, "capture_url": capture.url,
-        "response_url": null, "capture_sha256": capture.content_digest, "capture_bytes": capture.bytes,
-        "fetched_at": capture.fetched_at, "row": row, "row_sha256": hash(span),
-    }).to_string());
+    evidence.note = Some(super::super::roster::capture::row_metadata(
+        capture,
+        &team,
+        &published.athlete_id,
+        member.locator(),
+    )?);
     athlete.published_graduations.push(PublishedGraduation {
         grad_year: published.grad_year,
         source: evidence.source.clone(),
@@ -118,6 +90,6 @@ pub(super) fn append(
     athlete.evidence.push(evidence);
     store.append(Table::Schools, &school)?;
     store.append(Table::Athletes, &athlete)?;
-    retain(store, &capture)?;
+    retain(store, capture)?;
     Ok((athlete.id, school.id))
 }

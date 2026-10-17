@@ -1,11 +1,10 @@
-use census_domain::model::{
-    CoachLaneError, CoachLaneEvidence, CoachLaneMailbox, CoachLaneObligation, CoachLaneRefusal,
-    CoachLaneResolution, CoachLaneRole, CoachLaneStage, CoachLaneTenure, PendingCoachLane,
-    SchoolYear, SourceRef, COACH_LANE_MAX_FRESHNESS_DAYS,
-};
+#[cfg(test)]
+use census_domain::model::{CoachLaneObligation, CoachLaneRole, CoachLaneTenure, SchoolYear, COACH_LANE_MAX_FRESHNESS_DAYS};
+use census_domain::model::CoachLaneMailbox;
 use census_domain::UsJurisdiction;
 
-use super::freshness_days;
+use super::policy::{ArmBasis, Lane, LanePolicy, RetainedCapture};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const UT_ARM: &str = "uhsaa";
 pub(super) const UT_REFUSAL_SLUG: &str = "ut_missing_coach_sources";
@@ -39,58 +38,27 @@ pub(super) const UT_CAPTURE_ON: &str = "2026-10-04";
 const UT_ARM_BASIS: &str = "the uhsaa descriptor declares school-coach contact, is admitted for Utah only, and TeamsArm::UhsaaDirectory walks the member directory and each school profile; the retained UHSAA captures are the held output of that walk";
 const UT_RESOLUTION_NOTE: &str = "the retained UHSAA 2026-10-04 captures: the member directory holds 324 anchors over 162 distinct schools, and the Alta, Murray and Herriman profiles publish a head coach with a mailto address for boys and girls cross country and track & field (twelve TF/XC rows over five coaches); profiles for the other 159 members are not part of this evidence set:";
 
-fn resolved_note() -> String {
-    let mut note = String::from(UT_RESOLUTION_NOTE);
-    for (path, digest) in UT_CAPTURES {
-        note.push_str(&format!(" {path} sha256 {digest};"));
-    }
-    note
-}
+const CAPTURE: RetainedCapture = RetainedCapture {
+    schools: UT_SCHOOLS,
+    contacts: UT_CONTACTS,
+    digest: UT_DIRECTORY_DIGEST,
+    captured_on: UT_CAPTURE_ON,
+    source_url: UT_SOURCE_URL,
+    mailbox: CoachLaneMailbox::Published,
+    note: UT_RESOLUTION_NOTE,
+    captures: &UT_CAPTURES,
+    stale_path: UT_DIRECTORY_PATH,
+    jurisdiction_name: "Utah",
+};
 
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Utah,
-        season,
-        revision,
-        arm: UT_ARM.to_string(),
-        arm_basis: UT_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    let freshness = freshness_days(UT_CAPTURE_ON, observed_on)?;
-    if freshness > COACH_LANE_MAX_FRESHNESS_DAYS {
-        return pending.record(
-            CoachLaneStage::Blocked,
-            Some(stale_refusal(freshness, observed_on)?),
-            CoachLaneResolution::unresolved(observed_on),
-        );
-    }
-    let evidence =
-        CoachLaneEvidence::new(UT_SCHOOLS, UT_CONTACTS, UT_DIRECTORY_DIGEST, UT_CAPTURE_ON)?
-            .with_source_url(UT_SOURCE_URL)?;
-    let resolution = CoachLaneResolution::resolved(
-        CoachLaneRole::Published,
-        CoachLaneTenure::Current,
-        CoachLaneMailbox::Published,
-        UT_CAPTURE_ON,
-        freshness,
-        resolved_note(),
-    )?;
-    pending.arm(evidence, resolution)
-}
-
-fn stale_refusal(freshness: u32, observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(
-        SourceRef::id(UT_ARM),
-        format!(
-            "the held uhsaa capture {UT_DIRECTORY_PATH} is {freshness} days old at lane creation, beyond the {COACH_LANE_MAX_FRESHNESS_DAYS}-day bound, so the Utah arm cannot retain it"
-        ),
-        observed_on,
-    )
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::Utah,
+    arm: UT_ARM,
+    refusal: (UT_REFUSAL_SLUG, UT_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Text(UT_ARM_BASIS),
+    policy: LanePolicy::RetainedCapture(&CAPTURE),
+};
 
 #[cfg(test)]
 mod tests {
@@ -202,10 +170,10 @@ mod tests {
     fn coach_lane_ut_stale_capture_records_a_blocked_refusal_without_closing() -> TestResult {
         check!(eq; freshness_days(UT_CAPTURE_ON, BOUNDARY_ON)?, COACH_LANE_MAX_FRESHNESS_DAYS);
         check!(eq; freshness_days(UT_CAPTURE_ON, STALE_ON)?, COACH_LANE_MAX_FRESHNESS_DAYS + 1);
-        let fresh = lane(season()?, 1, BOUNDARY_ON)?;
+        let fresh = super::super::evaluate(&POLICY, season()?, 1, BOUNDARY_ON)?;
         check!(eq; fresh.status(), CoachLaneStatus::Armed);
         check!(eq; fresh.resolution().freshness_days, COACH_LANE_MAX_FRESHNESS_DAYS);
-        let stale = lane(season()?, 1, STALE_ON)?;
+        let stale = super::super::evaluate(&POLICY, season()?, 1, STALE_ON)?;
         check!(eq; stale.status(), CoachLaneStatus::Blocked);
         check!(!stale.is_terminal());
         check!(stale.evidence().is_none());

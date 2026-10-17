@@ -27,197 +27,82 @@ pub(super) mod wa;
 mod missing;
 
 use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneStatus, SchoolYear, SourceRef,
+    CoachLaneError, CoachLaneObligation, CoachLaneStatus, SchoolYear,
 };
 use census_domain::UsJurisdiction;
 use chrono::NaiveDate;
 
-use crate::restate_services::plan::RefusalKind;
 use crate::restate_services::wire::{RefusedSource, SourcePlan};
 
-pub(super) struct Lane {
-    pub(super) jurisdiction: UsJurisdiction,
-    pub(super) arm: &'static str,
-    pub(super) refusal: (&'static str, &'static str),
-    pub(super) kind: RefusalKind,
-    pub(super) lane: fn(SchoolYear, u32, &str) -> Result<CoachLaneObligation, CoachLaneError>,
-}
+mod policy;
+use policy::{Acquisition, Lane, LanePolicy};
 
 pub(in crate::restate_services) fn refusal_slug(
     jurisdiction: UsJurisdiction,
 ) -> Option<&'static str> {
-    if let Some(row) = LANES.iter().find(|row| row.jurisdiction == jurisdiction) {
-        return Some(row.refusal.0);
-    }
-    missing::LANES
-        .iter()
-        .find(|row| row.jurisdiction == jurisdiction)
-        .map(|row| row.slug)
+    descriptor(jurisdiction).map(|row| row.refusal.0)
 }
 
-pub(super) const LANES: &[Lane] = &[
-    Lane {
-        jurisdiction: UsJurisdiction::Arizona,
-        arm: az::AZ_ARM,
-        refusal: (az::AZ_REFUSAL_SLUG, az::AZ_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: az::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::California,
-        arm: ca::CA_ARM,
-        refusal: (ca::CA_REFUSAL_SLUG, ca::CA_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: ca::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Colorado,
-        arm: co::CO_ARM,
-        refusal: (co::CO_REFUSAL_SLUG, co::CO_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: co::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Connecticut,
-        arm: ct::CT_ARM,
-        refusal: (ct::CT_REFUSAL_SLUG, ct::CT_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: ct::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Florida,
-        arm: fl::FL_ARM,
-        refusal: (fl::FL_REFUSAL_SLUG, fl::FL_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: fl::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Illinois,
-        arm: il::IL_ARM,
-        refusal: (il::IL_REFUSAL_SLUG, il::IL_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: il::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Indiana,
-        arm: indiana::IN_ARM,
-        refusal: (indiana::IN_REFUSAL_SLUG, indiana::IN_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: indiana::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Iowa,
-        arm: ia::IA_ARM,
-        refusal: (ia::IA_REFUSAL_SLUG, ia::IA_TRUE_MISSING),
-        kind: RefusalKind::AccessBlocked,
-        lane: ia::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Louisiana,
-        arm: la::LA_ARM,
-        refusal: (la::LA_REFUSAL_SLUG, la::LA_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: la::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Massachusetts,
-        arm: ma::MA_ARM,
-        refusal: (ma::MA_REFUSAL_SLUG, ma::MA_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: ma::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Michigan,
-        arm: mi::MI_ARM,
-        refusal: (mi::MI_REFUSAL_SLUG, mi::MI_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: mi::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Missouri,
-        arm: mo::MO_ARM,
-        refusal: (mo::MO_REFUSAL_SLUG, mo::MO_TRUE_MISSING),
-        kind: RefusalKind::AccessBlocked,
-        lane: mo::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Nevada,
-        arm: nv::NV_ARM,
-        refusal: (nv::NV_REFUSAL_SLUG, nv::NV_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: nv::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::NewJersey,
-        arm: nj::NJ_ARM,
-        refusal: (nj::NJ_REFUSAL_SLUG, nj::NJ_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: nj::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::NewYork,
-        arm: ny::NY_ARM,
-        refusal: (ny::NY_REFUSAL_SLUG, ny::NY_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: ny::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Oklahoma,
-        arm: ok::OK_ARM,
-        refusal: (ok::OK_REFUSAL_SLUG, ok::OK_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: ok::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Oregon,
-        arm: or::OR_ARM,
-        refusal: (or::OR_REFUSAL_SLUG, or::OR_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: or::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::SouthDakota,
-        arm: sd::SD_ARM,
-        refusal: (sd::SD_REFUSAL_SLUG, sd::SD_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: sd::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Texas,
-        arm: tx::TX_ARM,
-        refusal: (tx::TX_REFUSAL_SLUG, tx::TX_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: tx::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Utah,
-        arm: ut::UT_ARM,
-        refusal: (ut::UT_REFUSAL_SLUG, ut::UT_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: ut::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Vermont,
-        arm: vt::VT_ARM,
-        refusal: (vt::VT_REFUSAL_SLUG, vt::VT_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: vt::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Virginia,
-        arm: va::VA_ARM,
-        refusal: (va::VA_REFUSAL_SLUG, va::VA_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: va::lane,
-    },
-    Lane {
-        jurisdiction: UsJurisdiction::Washington,
-        arm: wa::WA_ARM,
-        refusal: (wa::WA_REFUSAL_SLUG, wa::WA_TRUE_MISSING),
-        kind: RefusalKind::EngineeringGap,
-        lane: wa::lane,
-    },
+fn descriptor(jurisdiction: UsJurisdiction) -> Option<&'static Lane> {
+    LANES.iter().copied().chain(missing::LANES.iter())
+        .find(|row| row.jurisdiction == jurisdiction)
+}
+
+const LANES: &[&Lane] = &[
+    &az::POLICY,
+    &ca::POLICY,
+    &co::POLICY,
+    &ct::POLICY,
+    &fl::POLICY,
+    &il::POLICY,
+    &indiana::POLICY,
+    &ia::POLICY,
+    &la::POLICY,
+    &ma::POLICY,
+    &mi::POLICY,
+    &mo::POLICY,
+    &nv::POLICY,
+    &nj::POLICY,
+    &ny::POLICY,
+    &ok::POLICY,
+    &or::POLICY,
+    &sd::POLICY,
+    &tx::POLICY,
+    &ut::POLICY,
+    &vt::POLICY,
+    &va::POLICY,
+    &wa::POLICY,
 ];
+
+fn evaluate(
+    row: &Lane,
+    season: SchoolYear,
+    revision: u32,
+    observed_on: &str,
+) -> Result<CoachLaneObligation, CoachLaneError> {
+    let acquisition = match row.policy {
+        LanePolicy::HeldCapture(_) => match census_crawl::registry::acquisition_refusal_for_source(row.arm) {
+            Some(reason) => Acquisition::Held(reason),
+            None => Acquisition::Available,
+        },
+        _ => Acquisition::Available,
+    };
+    row.evaluate(season, revision, observed_on, acquisition)
+}
+
+#[cfg(test)]
+fn accepted(
+    row: &Lane,
+    season: SchoolYear,
+    revision: u32,
+    observed_on: &str,
+) -> Result<CoachLaneObligation, CoachLaneError> {
+    let recorded = evaluate(row, season, revision, observed_on)?;
+    let acceptance = census_domain::model::CoachLaneAcceptance::new(
+        "census-ops", "jpx4.accepted_refusal", observed_on,
+    )?;
+    recorded.accept_refusal(acceptance)
+}
 
 pub(in crate::restate_services) fn freshness_days(
     capture_on: &str,
@@ -238,16 +123,15 @@ pub(in crate::restate_services) fn bind(
     revision: u32,
     observed_on: &str,
 ) -> Result<Option<CoachLaneObligation>, CoachLaneError> {
-    let Some(row) = LANES.iter().find(|row| row.jurisdiction == jurisdiction) else {
-        return missing::bind(plan, jurisdiction, season, revision, observed_on);
+    let Some(row) = descriptor(jurisdiction) else {
+        return Ok(None);
     };
-    let obligation = (row.lane)(season, revision, observed_on)?;
+    let obligation = evaluate(row, season, revision, observed_on)?;
     let armed = obligation.status() == CoachLaneStatus::Armed;
     if armed && !plan.sweepable.iter().any(|slug| slug.as_str() == row.arm) {
         return Err(CoachLaneError::OutOfRange { field: "arm" });
     }
-    let (slug, reason) = row.refusal;
-    let recorded = CoachLaneRefusal::new(SourceRef::id(slug), reason, observed_on)?;
+    let recorded = row.refusal(observed_on)?;
     let already_recorded = plan
         .refused
         .iter()
@@ -277,3 +161,7 @@ pub(super) fn capture_digest(path: &str) -> Result<String, Box<dyn std::error::E
 #[cfg(test)]
 #[path = "coach_lanes/registry_tests.rs"]
 mod registry_tests;
+
+#[cfg(test)]
+#[path = "coach_lanes/policy_tests.rs"]
+mod policy_tests;

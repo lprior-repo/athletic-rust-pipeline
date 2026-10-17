@@ -1,11 +1,10 @@
-use census_domain::model::{
-    CoachLaneError, CoachLaneEvidence, CoachLaneMailbox, CoachLaneObligation, CoachLaneRefusal,
-    CoachLaneResolution, CoachLaneRole, CoachLaneStage, CoachLaneTenure, PendingCoachLane,
-    SchoolYear, SourceRef, COACH_LANE_MAX_FRESHNESS_DAYS,
-};
+#[cfg(test)]
+use census_domain::model::{CoachLaneObligation, CoachLaneRole, CoachLaneTenure, SchoolYear, COACH_LANE_MAX_FRESHNESS_DAYS};
+use census_domain::model::CoachLaneMailbox;
 use census_domain::UsJurisdiction;
 
-use super::freshness_days;
+use super::policy::{ArmBasis, Lane, LanePolicy, RetainedCapture};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const IL_ARM: &str = "ihsa";
 pub(super) const IL_REFUSAL_SLUG: &str = "il_missing_coach_sources";
@@ -35,58 +34,27 @@ pub(super) const IL_CAPTURE_ON: &str = "2026-09-22";
 const IL_ARM_BASIS: &str = "the ihsa descriptor declares school-coach contact, is admitted for Illinois only, and TeamsArm::IhsaSchools walks the member directory and each school's staff2; the retained IHSA captures are the held output of that walk";
 const IL_RESOLUTION_NOTE: &str = "the retained IHSA 2026-09-22 staff2 captures: Abingdon-Avon 0101 publishes Boys XC Head Coach Mr. Barry Mink (mailbox bmink@atown276.net) with AD Mr. Reid Kelso; Dixon 0418 publishes Boys XC Head Coach Simon Thorpe (mailbox sthorpe@dps170.org) with AD Mr. Roger Fegan; Downers Grove North 0422 publishes 64 staff rows with 30 head-coach rows including Boys XC Head Coach John Sipple (mailbox jsipple@csd99.org) with AD Dave Rose; other member schools are not part of this evidence set:";
 
-fn resolved_note() -> String {
-    let mut note = String::from(IL_RESOLUTION_NOTE);
-    for (path, digest) in IL_CAPTURES {
-        note.push_str(&format!(" {path} sha256 {digest};"));
-    }
-    note
-}
+const CAPTURE: RetainedCapture = RetainedCapture {
+    schools: IL_SCHOOLS,
+    contacts: IL_CONTACTS,
+    digest: IL_DOWNERS_DIGEST,
+    captured_on: IL_CAPTURE_ON,
+    source_url: IL_SOURCE_URL,
+    mailbox: CoachLaneMailbox::Published,
+    note: IL_RESOLUTION_NOTE,
+    captures: &IL_CAPTURES,
+    stale_path: IL_ABINGDON_PATH,
+    jurisdiction_name: "Illinois",
+};
 
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Illinois,
-        season,
-        revision,
-        arm: IL_ARM.to_string(),
-        arm_basis: IL_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    let freshness = freshness_days(IL_CAPTURE_ON, observed_on)?;
-    if freshness > COACH_LANE_MAX_FRESHNESS_DAYS {
-        return pending.record(
-            CoachLaneStage::Blocked,
-            Some(stale_refusal(freshness, observed_on)?),
-            CoachLaneResolution::unresolved(observed_on),
-        );
-    }
-    let evidence =
-        CoachLaneEvidence::new(IL_SCHOOLS, IL_CONTACTS, IL_DOWNERS_DIGEST, IL_CAPTURE_ON)?
-            .with_source_url(IL_SOURCE_URL)?;
-    let resolution = CoachLaneResolution::resolved(
-        CoachLaneRole::Published,
-        CoachLaneTenure::Current,
-        CoachLaneMailbox::Published,
-        IL_CAPTURE_ON,
-        freshness,
-        resolved_note(),
-    )?;
-    pending.arm(evidence, resolution)
-}
-
-fn stale_refusal(freshness: u32, observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(
-        SourceRef::id(IL_ARM),
-        format!(
-            "the held ihsa capture {IL_ABINGDON_PATH} is {freshness} days old at lane creation, beyond the {COACH_LANE_MAX_FRESHNESS_DAYS}-day bound, so the Illinois arm cannot retain it"
-        ),
-        observed_on,
-    )
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::Illinois,
+    arm: IL_ARM,
+    refusal: (IL_REFUSAL_SLUG, IL_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Text(IL_ARM_BASIS),
+    policy: LanePolicy::RetainedCapture(&CAPTURE),
+};
 
 #[cfg(test)]
 mod tests {
@@ -207,10 +175,10 @@ mod tests {
     fn coach_lane_il_stale_capture_records_a_blocked_refusal_without_closing() -> TestResult {
         check!(eq; freshness_days(IL_CAPTURE_ON, BOUNDARY_ON)?, COACH_LANE_MAX_FRESHNESS_DAYS);
         check!(eq; freshness_days(IL_CAPTURE_ON, STALE_ON)?, COACH_LANE_MAX_FRESHNESS_DAYS + 1);
-        let fresh = lane(season()?, 1, BOUNDARY_ON)?;
+        let fresh = super::super::evaluate(&POLICY, season()?, 1, BOUNDARY_ON)?;
         check!(eq; fresh.status(), CoachLaneStatus::Armed);
         check!(eq; fresh.resolution().freshness_days, COACH_LANE_MAX_FRESHNESS_DAYS);
-        let stale = lane(season()?, 1, STALE_ON)?;
+        let stale = super::super::evaluate(&POLICY, season()?, 1, STALE_ON)?;
         check!(eq; stale.status(), CoachLaneStatus::Blocked);
         check!(!stale.is_terminal());
         check!(stale.evidence().is_none());

@@ -11,6 +11,8 @@ mod controller;
 mod evidence;
 #[path = "manual_admission_recovery/fixture.rs"]
 mod fixture;
+#[path = "public_identity_crash/fixture_files.rs"]
+mod fixture_files;
 #[path = "public_identity_crash/graph.rs"]
 mod graph;
 #[path = "manual_admission_recovery/membership.rs"]

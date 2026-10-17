@@ -2,8 +2,18 @@ use super::{
     capture, fixture_ad_centerville, fixture_ad_dublin, fixture_sports_centerville,
     fixture_sports_dublin, AD_FETCHED, SPORTS_FETCHED,
 };
-use crate::ohsaa::{school_entities, SearchResult};
+use crate::ohsaa::{DirectorPage, SportsPage, SearchResult};
 use census_domain::model::{CoachRole, Evidence, Gender, SourceNamespace, Sport};
+
+fn school_entities(
+    owner: &SearchResult,
+    sports: &crate::net::FetchOutcome,
+    ad: Option<&crate::net::FetchOutcome>,
+) -> anyhow::Result<crate::ohsaa::SchoolExtract> {
+    let sports = SportsPage::parse(owner, sports.clone())?;
+    let ad = ad.map(|capture| DirectorPage::parse(owner, capture.clone())).transpose()?;
+    crate::ohsaa::school_entities(&sports, ad.as_ref()).map_err(anyhow::Error::msg)
+}
 
 const DUBLIN_FACTS: [(&str, Option<Sport>, Gender, CoachRole); 5] = [
     (
@@ -67,7 +77,7 @@ fn cached_pages_keep_separate_capture_provenance_and_published_roles() -> anyhow
     let sr = dublin();
     let sports = capture(sr.sports_url(), fixture_sports_dublin(), SPORTS_FETCHED);
     let ad = capture(sr.ad_url(), fixture_ad_dublin(), AD_FETCHED);
-    let extract = school_entities(&sr, &sports, Some(&ad));
+    let extract = school_entities(&sr, &sports, Some(&ad))?;
     check!(eq; extract.school.name, "DUBLIN COFFMAN");
     check!(eq; extract.school.city.as_deref(), Some("Dublin"));
     check!(eq; extract.school.association.as_deref(), Some("ohsaa"));
@@ -108,10 +118,10 @@ fn cached_pages_keep_separate_capture_provenance_and_published_roles() -> anyhow
 }
 
 #[test]
-fn absent_ad_preserves_sports_without_creating_a_director() {
+fn absent_ad_preserves_sports_without_creating_a_director() -> anyhow::Result<()> {
     let sr = dublin();
     let sports = capture(sr.sports_url(), fixture_sports_dublin(), SPORTS_FETCHED);
-    let extract = school_entities(&sr, &sports, None);
+    let extract = school_entities(&sr, &sports, None)?;
     let names: Vec<_> = extract
         .coaches
         .iter()
@@ -125,10 +135,11 @@ fn absent_ad_preserves_sports_without_creating_a_director() {
         .coaches
         .iter()
         .all(|coach| coach.role == CoachRole::HeadCoach));
+    Ok(())
 }
 
 #[test]
-fn tba_coach_does_not_create_an_identity_or_mailbox() {
+fn tba_coach_does_not_create_an_identity_or_mailbox() -> anyhow::Result<()> {
     let sr = SearchResult {
         name: "CENTERVILLE".to_string(),
         city: "Centerville".to_string(),
@@ -140,13 +151,14 @@ fn tba_coach_does_not_create_an_identity_or_mailbox() {
         SPORTS_FETCHED,
     );
     let ad = capture(sr.ad_url(), fixture_ad_centerville(), AD_FETCHED);
-    let extract = school_entities(&sr, &sports, Some(&ad));
+    let extract = school_entities(&sr, &sports, Some(&ad))?;
     assert_eq!(extract.coaches.len(), 4);
     let girls_track = extract
         .coaches
         .iter()
         .find(|coach| coach.sport == Some(Sport::OutdoorTrack) && coach.gender == Gender::Girls);
     assert_eq!(girls_track, None);
+    Ok(())
 }
 
 #[test]
@@ -162,7 +174,7 @@ fn publisher_capture_urls_are_not_replaced_by_constructed_request_urls() -> anyh
         fixture_ad_dublin(),
         AD_FETCHED,
     );
-    let extract = school_entities(&sr, &sports, Some(&ad));
+    let extract = school_entities(&sr, &sports, Some(&ad))?;
     assert_capture(&extract.school.evidence[0], &sports)?;
     extract.coaches.iter().try_for_each(|coach| {
         let expected = if coach.role == CoachRole::AthleticDirector {

@@ -1,5 +1,5 @@
 use super::map::{school_entities, SearchResult};
-use super::pages::parse_ad_page;
+use super::checked::{DirectorPage, SportsPage};
 use super::Options;
 use crate::{AdapterContext, AdapterReport, CollectionDisposition, CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
@@ -9,7 +9,7 @@ mod appointments;
 mod fetch;
 mod search;
 mod write;
-use fetch::{fetch_page, PageKind, SchoolPages};
+use fetch::{fetch_page, SchoolPages};
 use search::resolve_schools;
 use write::{emit_school, persist_failure, Projection};
 
@@ -78,7 +78,7 @@ async fn process_school(
     report: &mut AdapterReport,
     tally: &mut Tally,
 ) -> CrawlResult<()> {
-    let sports = match fetch_page(ctx, sr, PageKind::Sports).await {
+    let sports = match fetch_page(ctx, sr, sr.sports_url(), SportsPage::parse).await {
         Ok(capture) => capture,
         Err(failure) => {
             failure.report(sr, "sports", report, tally)?;
@@ -87,20 +87,16 @@ async fn process_school(
             return Ok(());
         }
     };
-    let ad = fetch_page(ctx, sr, PageKind::AthleticDirector).await;
+    let ad = fetch_page(ctx, sr, sr.ad_url(), DirectorPage::parse).await;
     if let Err(failure) = &ad {
         failure.report(sr, "AD", report, tally)?;
     }
     let pages = SchoolPages { sports, ad };
-    let mut extract = school_entities(sr, &pages.sports, pages.ad.as_ref().ok());
-    if let Ok(capture) = &pages.ad {
-        let html = std::str::from_utf8(&capture.body).map_err(|error| CrawlError::Schema {
-            url: capture.url.clone(),
-            detail: error.to_string(),
-        })?;
+    let mut extract = school_entities(&pages.sports, pages.ad.as_ref().ok()).map_err(|detail| CrawlError::Invariant { detail: detail.to_string() })?;
+    if let Ok(page) = &pages.ad {
         tally.office_roles_skipped = tally
             .office_roles_skipped
-            .checked_add(parse_ad_page(html).office_roles.len())
+            .checked_add(page.page().office_roles.len())
             .ok_or_else(counter_error)?;
     }
     emit_school(

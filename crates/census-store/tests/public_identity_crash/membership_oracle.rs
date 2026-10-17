@@ -1,5 +1,5 @@
 use super::fixture::{Fixture, Mode};
-use super::physical::{Rows, State};
+use super::physical::{sole_added, State};
 use super::TestResult;
 use census_domain::model::{
     serialized_digest, AppliedAthleteIdentity, AthleteIdentityIndex, CanonicalAthlete,
@@ -232,16 +232,4 @@ fn attachment(
                 "decision": { "id": decision.id, "digest": serialized_digest(&decision)? } },
         }),
     ))
-}
-
-fn sole_added<'a>(before: &Rows, after: &'a Rows) -> TestResult<(&'a [u8], &'a [u8])> {
-    check!(eq; after.len(), before.len().checked_add(1).ok_or("row count overflow")?);
-    for (key, value) in before {
-        check!(eq; after.get(key), Some(value));
-    }
-    let (key, raw) = after
-        .iter()
-        .find(|(key, _)| !before.contains_key(*key))
-        .ok_or("one added row")?;
-    Ok((key, raw))
 }

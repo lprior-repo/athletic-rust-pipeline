@@ -4,6 +4,9 @@ mod fallible_checks;
 
 mod common;
 
+#[path = "common/capture_cache.rs"]
+mod capture_cache;
+
 #[path = "parity_mideast_mod/compiled.rs"]
 mod compiled;
 #[path = "parity_mideast_mod/ks.rs"]
@@ -28,36 +31,7 @@ const SEASON: i16 = 2026;
 const SEEDED_AT: &str = "2026-09-20T14:39:00Z";
 
 fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
-    use sha2::{Digest as _, Sha256};
-
-    let mut hasher = Sha256::new();
-    hasher.update(b"GET");
-    hasher.update([0x1f]);
-    hasher.update(url.as_bytes());
-    hasher.update([0x1f]);
-    let key: String = hasher.finalize()[..16]
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
-
-    let meta = serde_json::json!({
-        "url": url,
-        "method": "GET",
-        "status": 200,
-        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
-        "bytes": body.len(),
-        "fetched_at": SEEDED_AT,
-    });
-
-    let dir = cache_dir.to_path_buf();
-    std::fs::write(
-        dir.join(format!("{key}.meta.json")),
-        serde_json::to_string(&meta).context("serializing the seeded cache metadata")?,
-    )
-    .with_context(|| format!("writing the cache metadata for {url}"))?;
-    std::fs::write(dir.join(format!("{key}.body")), body)
-        .with_context(|| format!("writing the cache body for {url}"))?;
-    Ok(())
+    capture_cache::seed_response(cache_dir, url, body.as_bytes(), SEEDED_AT, capture_cache::Metadata::default())
 }
 
 fn seeded(dir: &Path, bodies: &[(&str, &str)]) -> Result<(Store, Fetcher)> {
@@ -74,7 +48,7 @@ fn seeded(dir: &Path, bodies: &[(&str, &str)]) -> Result<(Store, Fetcher)> {
         HashMap::new(),
         Vec::new(),
     )
-    .context("building the fetcher")?;
+    .context("building the fetcher")?.with_offline(true);
     Ok((store, fetcher))
 }
 

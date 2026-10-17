@@ -1,9 +1,11 @@
 use anyhow::{ensure, Context, Result};
 use calamine::{open_workbook, Reader, Xlsx};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::Path;
 
-type Row = BTreeMap<String, String>;
+#[path = "../../../common/csv_readback.rs"]
+mod csv_readback;
+use csv_readback::{csv_rows, field, Row};
 
 pub fn assert_publication(path: &Path) -> Result<()> {
     let directory = path.parent().context("publication directory")?;
@@ -114,29 +116,6 @@ fn workbook_rows(path: &Path) -> Result<()> {
         "captured results missing from independent workbook readback"
     );
     Ok(())
-}
-
-fn csv_rows(path: &Path) -> Result<Vec<Row>> {
-    let mut reader = csv::Reader::from_path(path)?;
-    let headers = reader.headers()?.clone();
-    reader
-        .records()
-        .map(|record| {
-            let record = record?;
-            ensure!(record.len() == headers.len(), "malformed normalized row");
-            Ok(headers
-                .iter()
-                .zip(record.iter())
-                .map(|(key, value)| (key.to_string(), value.to_string()))
-                .collect())
-        })
-        .collect()
-}
-
-fn field<'a>(row: &'a Row, name: &str) -> Result<&'a str> {
-    row.get(name)
-        .map(String::as_str)
-        .with_context(|| format!("missing column {name}"))
 }
 
 fn owned_url() -> String {

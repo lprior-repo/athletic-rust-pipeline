@@ -2,6 +2,9 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
+#[path = "common/capture_cache.rs"]
+mod capture_cache;
+
 use census_crawl::milesplit::{self, Site};
 use census_crawl::net::Fetcher;
 use census_domain::model::{
@@ -64,30 +67,11 @@ async fn configure_inventory(
 }
 
 fn seed_cache(cache: &Path, url: &str, body: &str) -> TestResult {
-    let mut hasher = Sha256::new();
-    hasher.update(b"GET");
-    hasher.update([0x1f]);
-    hasher.update(url.as_bytes());
-    hasher.update([0x1f]);
-    let key: String = hasher
-        .finalize()
-        .iter()
-        .take(16)
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
-    std::fs::create_dir_all(cache)?;
-    std::fs::write(cache.join(format!("{key}.body")), body)?;
-    let meta = serde_json::json!({
-        "url": url,
-        "response_url": null,
-        "method": "GET",
-        "status": 200,
-        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
-        "bytes": body.len(),
-        "fetched_at": CAPTURED_AT,
-        "content_type": "text/html; charset=utf-8",
-    });
-    std::fs::write(cache.join(format!("{key}.meta.json")), meta.to_string())?;
+    capture_cache::seed_response(cache, url, body.as_bytes(), CAPTURED_AT, capture_cache::Metadata {
+        content_type: Some("text/html; charset=utf-8"),
+        response_url: capture_cache::ResponseUrl::Null,
+        ..capture_cache::Metadata::default()
+    })?;
     Ok(())
 }
 
@@ -113,7 +97,7 @@ fn a_synthetic_owned_roster_pass_files_an_observation_per_published_athlete() ->
                 Duration::from_millis(1),
                 std::collections::HashMap::new(),
                 Vec::new(),
-            )?;
+            )?.with_offline(true);
             configure_inventory(&store, &fetcher, &first).await?;
             let capture = fetcher
                 .get(

@@ -1,10 +1,9 @@
 #[cfg(test)]
-use census_domain::model::CoachLaneAcceptance;
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    PendingCoachLane, SchoolYear, SourceRef,
-};
+use census_domain::model::{CoachLaneObligation, SchoolYear};
 use census_domain::UsJurisdiction;
+
+use super::policy::{ArmBasis, Lane, LanePolicy};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const VT_ARM: &str = "vpa";
 pub(super) const VT_REFUSAL_SLUG: &str = "vt_missing_coach_sources";
@@ -16,40 +15,14 @@ const ACCEPTED_BY: &str = "census-ops";
 #[cfg(test)]
 const ACCEPTANCE_EVENT: &str = "jpx4.accepted_refusal";
 
-pub(super) fn refusal(observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(SourceRef::id(VT_REFUSAL_SLUG), VT_TRUE_MISSING, observed_on)
-}
-
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Vermont,
-        season,
-        revision,
-        arm: VT_ARM.to_string(),
-        arm_basis: VT_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    pending.record(
-        CoachLaneStage::Blocked,
-        Some(refusal(observed_on)?),
-        CoachLaneResolution::unresolved(observed_on),
-    )
-}
-
-#[cfg(test)]
-pub(super) fn accepted(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let recorded = lane(season, revision, observed_on)?;
-    let acceptance = CoachLaneAcceptance::new(ACCEPTED_BY, ACCEPTANCE_EVENT, observed_on)?;
-    recorded.accept_refusal(acceptance)
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::Vermont,
+    arm: VT_ARM,
+    refusal: (VT_REFUSAL_SLUG, VT_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Text(VT_ARM_BASIS),
+    policy: LanePolicy::Blocked,
+};
 
 #[cfg(test)]
 mod tests {
@@ -100,7 +73,7 @@ mod tests {
 
     #[test]
     fn coach_lane_vt_records_the_work_order_refusal_without_closing() -> TestResult {
-        let recorded = lane(season()?, 1, OBSERVED_ON)?;
+        let recorded = super::super::evaluate(&POLICY, season()?, 1, OBSERVED_ON)?;
         check!(eq; recorded.id(), "coach_lane:VT:2026:1");
         check!(eq; recorded.status(), CoachLaneStatus::Blocked);
         check!(!recorded.is_terminal());
@@ -143,7 +116,7 @@ mod tests {
 
     #[test]
     fn coach_lane_vt_accepted_refusal_closes_the_lane_with_the_explicit_event() -> TestResult {
-        let closing = accepted(season()?, 1, OBSERVED_ON)?;
+        let closing = super::super::accepted(&POLICY, season()?, 1, OBSERVED_ON)?;
         check!(closing.is_terminal());
         check!(eq; closing.status(), CoachLaneStatus::AcceptedRefusal);
         check!(closing.refusal().is_some());

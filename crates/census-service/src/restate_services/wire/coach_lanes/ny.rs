@@ -1,8 +1,9 @@
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    PendingCoachLane, SchoolYear, SourceRef,
-};
+#[cfg(test)]
+use census_domain::model::{CoachLaneObligation, SchoolYear};
 use census_domain::UsJurisdiction;
+
+use super::policy::{ArmBasis, Lane, LanePolicy};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const NY_ARM: &str = "milesplit";
 pub(super) const NY_REFUSAL_SLUG: &str = "ny_missing_coach_sources";
@@ -10,29 +11,14 @@ pub(super) const NY_TRUE_MISSING: &str = "NYSED SEDREF (`p12.nysed.gov`); Sectio
 
 const NY_ARM_BASIS: &str = "the wired milesplit arm is the only New York coach-name surface the plan sweeps and the held NYSPHSAA, PSAL and milesplit bodies carry names and URLs without coach mailboxes, so the lane records the work order's true-missing set instead of arming";
 
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::NewYork,
-        season,
-        revision,
-        arm: NY_ARM.to_string(),
-        arm_basis: NY_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    pending.record(
-        CoachLaneStage::Blocked,
-        Some(refusal(observed_on)?),
-        CoachLaneResolution::unresolved(observed_on),
-    )
-}
-
-pub(super) fn refusal(observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(SourceRef::id(NY_REFUSAL_SLUG), NY_TRUE_MISSING, observed_on)
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::NewYork,
+    arm: NY_ARM,
+    refusal: (NY_REFUSAL_SLUG, NY_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Text(NY_ARM_BASIS),
+    policy: LanePolicy::Blocked,
+};
 
 #[cfg(test)]
 mod tests {

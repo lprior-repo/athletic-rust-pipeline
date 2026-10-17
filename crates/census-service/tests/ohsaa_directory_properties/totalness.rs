@@ -51,12 +51,12 @@ proptest! {
             results
         );
         prop_assert!(
-            sections.iter().all(|(label, _, _)| parse_sport_label(label).is_some()),
+            sections.iter().flatten().all(|(label, _, _)| parse_sport_label(label).is_some()),
             "a sport the pipeline does not track is not published: {:?}",
             sections
         );
         prop_assert!(
-            sections.iter().all(|(_, boys, girls)| {
+            sections.iter().flatten().all(|(_, boys, girls)| {
                 [boys, girls].into_iter().flatten().all(|entry| !entry.name.is_empty())
             }),
             "a coach without a name is not published: {:?}",

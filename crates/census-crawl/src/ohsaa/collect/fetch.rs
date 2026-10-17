@@ -2,13 +2,7 @@ use super::{SearchResult, Tally};
 use crate::net::{FetchError, FetchOptions, FetchOutcome};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 
-mod checked;
-
-#[derive(Clone, Copy, Debug)]
-pub(super) enum PageKind {
-    Sports,
-    AthleticDirector,
-}
+use crate::ohsaa::checked::{DirectorPage, PageError, SportsPage};
 
 pub(super) enum PageFailure {
     Http(FetchOutcome),
@@ -20,8 +14,8 @@ pub(super) enum PageFailure {
 }
 
 pub(super) struct SchoolPages {
-    pub(super) sports: FetchOutcome,
-    pub(super) ad: Result<FetchOutcome, PageFailure>,
+    pub(super) sports: SportsPage,
+    pub(super) ad: Result<DirectorPage, PageFailure>,
 }
 
 impl PageFailure {
@@ -91,16 +85,13 @@ impl PageFailure {
     }
 }
 
-#[tracing::instrument(skip(ctx, sr))]
-pub(super) async fn fetch_page(
+#[tracing::instrument(skip(ctx, sr, parse))]
+pub(super) async fn fetch_page<T>(
     ctx: &AdapterContext<'_>,
     sr: &SearchResult,
-    kind: PageKind,
-) -> Result<FetchOutcome, PageFailure> {
-    let url = match kind {
-        PageKind::Sports => sr.sports_url(),
-        PageKind::AthleticDirector => sr.ad_url(),
-    };
+    url: String,
+    parse: impl FnOnce(&SearchResult, FetchOutcome) -> Result<T, PageError>,
+) -> Result<T, PageFailure> {
     let options = FetchOptions {
         allow_not_found: true,
         ..ctx.fetch_options()
@@ -110,10 +101,7 @@ pub(super) async fn fetch_page(
         Ok(capture) => return Err(PageFailure::Http(capture)),
         Err(error) => return Err(PageFailure::Fetch(error)),
     };
-    match checked::validate(sr, kind, &capture) {
-        Ok(()) => Ok(capture),
-        Err(detail) => Err(PageFailure::Invalid { capture, detail }),
-    }
+    parse(sr, capture).map_err(|PageError { capture, detail }| PageFailure::Invalid { capture: *capture, detail })
 }
 
 #[cfg(test)]

@@ -24,14 +24,14 @@ pub(super) fn emit_school(
     report: &mut AdapterReport,
     tally: &mut Tally,
 ) -> CrawlResult<()> {
-    if !super::appointments::current(&projection.pages.sports, ctx.school_year) {
-        owe(report, &projection.pages.sports.url)?;
+    if !super::appointments::current(projection.pages.sports.capture(), ctx.school_year) {
+        owe(report, &projection.pages.sports.capture().url)?;
     }
     if projection
         .pages
         .ad
         .as_ref()
-        .is_ok_and(|capture| !super::appointments::current(capture, ctx.school_year))
+        .is_ok_and(|capture| !super::appointments::current(capture.capture(), ctx.school_year))
     {
         owe(report, &projection.school.ad_url())?;
     }
@@ -41,7 +41,7 @@ pub(super) fn emit_school(
     school_observations_of(
         &SourceNamespace::association_school(ASSOCIATION),
         std::slice::from_ref(&projection.extract.school),
-        &projection.pages.sports.fetched_at,
+        &projection.pages.sports.capture().fetched_at,
     )
     .iter()
     .try_for_each(|observation| {
@@ -49,9 +49,9 @@ pub(super) fn emit_school(
             .map(|_| ())
     })?;
     persist_coaches(ctx, &mut projection, report, tally)?;
-    persist_capture(ctx, projection.school, "sports", &projection.pages.sports)?;
+    persist_capture(ctx, projection.school, "sports", projection.pages.sports.capture())?;
     if let Ok(ad) = &projection.pages.ad {
-        persist_capture(ctx, projection.school, "ad", ad)?;
+        persist_capture(ctx, projection.school, "ad", ad.capture())?;
     }
     persist_outcome(ctx, &projection, evaluated_on, report)
 }
@@ -65,11 +65,11 @@ fn persist_coaches(
     let pages = projection.pages;
     projection.extract.coaches.iter_mut().try_for_each(|coach| {
         let capture = if coach.role == CoachRole::AthleticDirector {
-            pages.ad.as_ref().map_err(|_| CrawlError::Invariant {
+            pages.ad.as_ref().map(|page| page.capture()).map_err(|_| CrawlError::Invariant {
                 detail: "director without owned capture".to_owned(),
             })?
         } else {
-            &pages.sports
+            pages.sports.capture()
         };
         if let Err(error) = super::appointments::qualify(coach, capture) {
             super::fail(report, &capture.url, &error.to_string())?;
@@ -125,13 +125,13 @@ fn persist_outcome(
     report: &AdapterReport,
 ) -> CrawlResult<()> {
     let mut pending = Vec::new();
-    if !super::appointments::current(&projection.pages.sports, ctx.school_year)
+    if !super::appointments::current(projection.pages.sports.capture(), ctx.school_year)
         || report.unfinished.contains(&projection.school.sports_url())
     {
         pending.push(projection.school.sports_url());
     }
     if projection.pages.ad.as_ref().map_or(true, |capture| {
-        !super::appointments::current(capture, ctx.school_year)
+        !super::appointments::current(capture.capture(), ctx.school_year)
     }) || report.unfinished.contains(&projection.school.ad_url())
     {
         pending.push(projection.school.ad_url());
@@ -139,7 +139,7 @@ fn persist_outcome(
     let failure = projection.pages.ad.as_ref().err().map(PageFailure::payload);
     let payload = serde_json::json!({"ohsaa_id":projection.school.ohsaa_id,
         "state":if pending.is_empty() {"complete"} else {"partial"}, "pending_pages":pending,
-        "sports_capture":capture_note(&projection.pages.sports),"ad_capture":projection.pages.ad.as_ref().ok().map(capture_note),
+        "sports_capture":capture_note(projection.pages.sports.capture()),"ad_capture":projection.pages.ad.as_ref().ok().map(|page| capture_note(page.capture())),
         "failure":failure,"evaluated_on":evaluated_on,"school_year":ctx.school_year,"performance_as_of":ctx.performance_as_of});
     if pending.is_empty() {
         persist_completion(ctx, projection, &payload)?;
@@ -160,14 +160,14 @@ fn persist_completion(
 ) -> CrawlResult<()> {
     let binding = (
         &projection.school.ohsaa_id,
-        &projection.pages.sports.content_digest,
-        &projection.pages.sports.fetched_at,
+        &projection.pages.sports.capture().content_digest,
+        &projection.pages.sports.capture().fetched_at,
         projection
             .pages
             .ad
             .as_ref()
             .ok()
-            .map(|capture| (&capture.content_digest, &capture.fetched_at)),
+            .map(|capture| (&capture.capture().content_digest, &capture.capture().fetched_at)),
         ctx.school_year,
     );
     let digest = census_domain::model::serialized_digest(&binding).map_err(|source| {
