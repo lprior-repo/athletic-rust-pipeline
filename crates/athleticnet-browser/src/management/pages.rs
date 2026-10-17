@@ -1,4 +1,4 @@
-use crate::actor::Actor;
+use crate::actor::{Actor, BrowserOwnership};
 use crate::lifecycle::error::BrowserStartupError;
 use crate::navigation::{self, NavigationOutcome};
 use crate::pool::PageSlot;
@@ -84,7 +84,7 @@ impl Actor {
     }
 
     pub(super) async fn bootstrap(&mut self) -> Result<(), BrowserStartupError> {
-        if self.launched {
+        if self.ownership == BrowserOwnership::Launched {
             self.close_restored_pages()
                 .await
                 .map_err(|_| BrowserStartupError::BootstrapFailed)?;

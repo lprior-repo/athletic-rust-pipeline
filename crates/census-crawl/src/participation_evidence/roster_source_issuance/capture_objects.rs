@@ -94,7 +94,8 @@ pub fn prepare_retained_roster_capture_objects<'a>(
         budget::charge(packet.directory(), grant)?;
         budget::charge(packet.roster(), grant)?;
         original(evidence, grant, |_| packet.read())?;
-        derive(evidence, &packet, &parser, grant)
+        let body = packet.roster().body()?;
+        derive(evidence, &packet, &parser, &body, grant)
     });
     if result.is_err() {
         grant.poison();
@@ -106,10 +107,11 @@ pub(super) fn derive<'a>(
     evidence: &'a RosterSourceEvidenceV1,
     packet: &ProviderSchoolPacketV1,
     parser: &CheckedRosterParserManifestV1,
+    body: &str,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
     original(evidence, grant, |grant| {
-        format::derive(evidence, packet, parser.retained(), grant)
+        format::derive(evidence, packet, parser.retained(), body, grant)
     })
 }
 
@@ -140,9 +142,10 @@ pub(super) fn derive_retained<'a>(
     evidence: &'a RosterSourceEvidenceV1,
     packet: &ProviderSchoolPacketV1,
     parser: &super::manifest::RetainedRosterParserManifestV1,
+    body: &str,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
     original(evidence, grant, |grant| {
-        format::derive(evidence, packet, parser, grant)
+        format::derive(evidence, packet, parser, body, grant)
     })
 }

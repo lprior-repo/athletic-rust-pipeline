@@ -1,29 +1,92 @@
+use super::super::lifecycle::ActorExit;
 use super::super::SHUTDOWN_TIMEOUT;
 use super::Actor;
-use crate::drain::{count, DrainReport, Outcome};
+use crate::drain::{DrainReport, Outcome};
 use crate::lifecycle::error::BrowserStartupError;
 use tokio::time::Instant;
 
+#[path = "shutdown/process.rs"]
+mod process;
+#[path = "shutdown/quarantine.rs"]
+mod quarantine;
+use process::{CloseAttempt, ClosePhase};
+
 impl Actor {
+    pub(super) fn finish_shutdown(&mut self, exit: &ActorExit) {
+        if let Some(reply) = self.shutdown_reply.take() {
+            if reply.send(exit.report.clone()).is_err() {
+                tracing::debug!("browser shutdown report receiver dropped");
+            }
+        }
+        self.set_state(if exit.failure.is_some() {
+            crate::BrowserState::Restarting
+        } else {
+            crate::BrowserState::Stopped
+        });
+    }
+
+    pub(super) async fn handler_stopped(&mut self) -> ActorExit {
+        self.gate.revoke();
+        self.shutdown.cancel();
+        self.reject_pending(crate::BrowserError::Unavailable);
+        let (report, failure) = self.close_browser().await;
+        tracing::warn!(?report, "browser region drained after a handler failure");
+        let failure = match failure {
+            Some(error @ BrowserStartupError::DrainAccounting(_)) => error,
+            Some(error) => BrowserStartupError::HandlerStoppedCleanupFailed(error.to_string()),
+            None => BrowserStartupError::HandlerStopped,
+        };
+        let exit = ActorExit {
+            report,
+            failure: Some(failure),
+        };
+        self.finish_shutdown(&exit);
+        exit
+    }
+
     pub(super) async fn close_browser(&mut self) -> (DrainReport, Option<BrowserStartupError>) {
-        let deadline = match self.clock.now_instant().checked_add(SHUTDOWN_TIMEOUT) {
-            Some(deadline) => deadline,
-            None => self.clock.now_instant(),
+        let now = self.clock.now_instant();
+        let (deadline, mut failure) = match now.checked_add(SHUTDOWN_TIMEOUT) {
+            Some(deadline) => (deadline, None),
+            None => (
+                now,
+                Some(BrowserStartupError::ShutdownFailed(
+                    "browser cleanup deadline overflow".to_owned(),
+                )),
+            ),
         };
         self.cancel_and_drain(deadline).await;
         self.close_pages(deadline).await;
-        let failure = self.teardown_browser().await;
-        (std::mem::take(&mut self.region), failure)
+        let mut attempt = self.teardown_browser(ClosePhase::Graceful).await;
+        loop {
+            match attempt {
+                CloseAttempt::Reaped => {
+                    let failure = self
+                        .accounting_error
+                        .map(BrowserStartupError::DrainAccounting)
+                        .or(failure);
+                    return (std::mem::take(&mut self.region), failure);
+                }
+                CloseAttempt::StillOwned(error) => {
+                    self.report_cleanup_failure(&error);
+                    if failure.is_none() {
+                        failure = Some(error);
+                    }
+                    self.await_reap_command().await;
+                    attempt = self.teardown_browser(ClosePhase::ReapOnly).await;
+                }
+            }
+        }
     }
 
     async fn cancel_and_drain(&mut self, deadline: Instant) {
         self.observer_stop.cancel();
         self.drain_observers(deadline).await;
-        self.drain_fetch_jobs(deadline).await;
+        self.drain_fetch_jobs().await;
     }
 
     async fn drain_observers(&mut self, deadline: Instant) {
-        self.region.accept(count(self.observers.len()));
+        self.accept_drain_tasks(self.observers.len());
         while !self.observers.is_empty() {
             match tokio::time::timeout_at(deadline, self.observers.join_next()).await {
                 Ok(Some(result)) => {
@@ -32,7 +95,8 @@ impl Actor {
                         tracing::warn!(%error, "browser page observer failed during cleanup");
                     }
                     let finished = matches!(outcome, Outcome::Ok(_));
-                    self.region.record(&outcome);
+                    let accounting = self.region.record(&outcome);
+                    self.record_accounting(accounting);
                     if !finished {
                         break;
                     }
@@ -41,50 +105,32 @@ impl Actor {
                 Err(_) => break,
             }
         }
-        self.abort_observers(deadline).await;
+        self.abort_observers().await;
     }
 
-    async fn abort_observers(&mut self, deadline: Instant) {
+    async fn abort_observers(&mut self) {
         if self.observers.is_empty() {
             return;
         }
         self.observers.abort_all();
-        loop {
-            match tokio::time::timeout_at(deadline, self.observers.join_next()).await {
-                Ok(Some(result)) => self.region.record_killed(result.map(|_| ())),
-                Ok(None) => return,
-                Err(_) => break,
-            }
+        while let Some(result) = self.observers.join_next().await {
+            let accounting = self.region.record_killed(result.map(|_| ()));
+            self.record_accounting(accounting);
         }
-        let remaining = count(self.observers.len());
-        self.region.abandon(remaining);
-        tracing::warn!(
-            remaining,
-            "browser page observers unresolved at the shutdown deadline"
-        );
     }
 
-    async fn drain_fetch_jobs(&mut self, deadline: Instant) {
-        self.region.accept(count(self.jobs.len()));
+    async fn drain_fetch_jobs(&mut self) {
+        self.accept_drain_tasks(self.jobs.len());
         self.jobs.abort_all();
-        loop {
-            match tokio::time::timeout_at(deadline, self.jobs.join_next()).await {
-                Ok(Some(result)) => self.region.record_killed(result.map(|_| ())),
-                Ok(None) => return,
-                Err(_) => break,
-            }
+        while let Some(result) = self.jobs.join_next().await {
+            let accounting = self.region.record_killed(result.map(|_| ()));
+            self.record_accounting(accounting);
         }
-        let remaining = count(self.jobs.len());
-        self.region.abandon(remaining);
-        tracing::warn!(
-            remaining,
-            "browser fetch jobs unresolved at the shutdown deadline"
-        );
     }
 
     async fn close_pages(&mut self, deadline: Instant) {
-        for slot in self.pages.drain(..) {
-            match tokio::time::timeout_at(deadline, slot.page.close()).await {
+        for slot in &self.pages {
+            match tokio::time::timeout_at(deadline, slot.page.clone().close()).await {
                 Ok(Ok(())) => {}
                 Ok(Err(e)) => tracing::debug!("page close failed during shutdown: {e}"),
                 Err(_) => tracing::warn!("page close timed out during shutdown"),
@@ -92,77 +138,40 @@ impl Actor {
         }
     }
 
-    async fn teardown_browser(&mut self) -> Option<BrowserStartupError> {
-        let Some(browser) = self.browser.take() else {
-            return Some(BrowserStartupError::ShutdownFailed(
-                "browser already closed".to_string(),
-            ));
-        };
-        let failure = shutdown_browser_process(self.launched, browser).await;
-        match self.handler_join.take() {
-            Some(handle) => join_browser_handler(handle, failure).await,
-            None => failure,
-        }
-    }
-}
-
-async fn shutdown_browser_process(
-    launched: bool,
-    mut browser: chromiumoxide::Browser,
-) -> Option<BrowserStartupError> {
-    let mut failure: Option<BrowserStartupError> = None;
-    if launched {
-        match tokio::time::timeout(SHUTDOWN_TIMEOUT, browser.close()).await {
-            Ok(Ok(_)) => {}
-            Ok(Err(_)) => {
-                failure = Some(BrowserStartupError::ShutdownFailed(
-                    "browser close failed".to_string(),
-                ))
-            }
-            Err(_) => {
-                failure = Some(BrowserStartupError::ShutdownFailed(
-                    "browser close timed out".to_string(),
-                ))
+    async fn teardown_browser(&mut self, phase: ClosePhase) -> CloseAttempt {
+        if self.ownership == crate::actor::BrowserOwnership::Launched {
+            let Some(child) = self.child.as_mut() else {
+                return CloseAttempt::StillOwned(BrowserStartupError::ShutdownFailed(
+                    "launched browser lost its retained child".to_owned(),
+                ));
+            };
+            if let CloseAttempt::StillOwned(error) =
+                process::close(self.browser.as_mut(), child, phase).await
+            {
+                return CloseAttempt::StillOwned(error);
             }
         }
-        if failure.is_none() {
-            match tokio::time::timeout(SHUTDOWN_TIMEOUT, browser.wait()).await {
-                Ok(Ok(_)) => {}
-                Ok(Err(_)) => {
-                    failure = Some(BrowserStartupError::ShutdownFailed(
-                        "browser process wait failed".to_string(),
-                    ))
+        self.handler_stop.cancel();
+        if let Some(handle) = self.handler_join.as_mut() {
+            match process::join_handler(handle).await {
+                process::HandlerAttempt::Finished(result) => {
+                    drop(self.handler_join.take());
+                    if let Err(error) = result {
+                        return CloseAttempt::StillOwned(error);
+                    }
                 }
-                Err(_) => {
-                    failure = Some(BrowserStartupError::ShutdownFailed(
-                        "browser process wait timed out".to_string(),
-                    ))
+                process::HandlerAttempt::StillOwned(error) => {
+                    return CloseAttempt::StillOwned(error);
                 }
             }
         }
-    } else {
-        drop(browser);
+        drop(self.browser.take());
+        drop(self.child.take());
+        self.pages.clear();
+        CloseAttempt::Reaped
     }
-    failure
 }
 
-async fn join_browser_handler(
-    mut handle: tokio::task::JoinHandle<()>,
-    failure: Option<BrowserStartupError>,
-) -> Option<BrowserStartupError> {
-    match tokio::time::timeout(SHUTDOWN_TIMEOUT, &mut handle).await {
-        Ok(Ok(())) => failure,
-        Ok(Err(_)) => Some(BrowserStartupError::ShutdownFailed(
-            "browser handler panicked".to_string(),
-        )),
-        Err(_) => {
-            handle.abort();
-            if handle.await.is_err() {
-                tracing::warn!("browser handler aborted after shutdown timeout");
-            }
-            Some(BrowserStartupError::ShutdownFailed(
-                "browser handler wait timed out".to_string(),
-            ))
-        }
-    }
-}
+#[cfg(test)]
+#[path = "shutdown/tests.rs"]
+mod tests;

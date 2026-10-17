@@ -16,6 +16,7 @@ pub(super) enum SelectedInputOrigin {
     HistoricalReplay,
     HistoricalIdentityReplay,
     HistoricalParticipationReplay,
+    HistoricalDocumentaryReplay,
 }
 
 impl ExportDataset {
@@ -59,6 +60,7 @@ impl ExportDataset {
             SelectedInputOrigin::HistoricalReplay
                 | SelectedInputOrigin::HistoricalIdentityReplay
                 | SelectedInputOrigin::HistoricalParticipationReplay
+                | SelectedInputOrigin::HistoricalDocumentaryReplay
         ) {
             return Err(invalid(
                 "historical selected replay cannot authorize current publication",
@@ -68,15 +70,14 @@ impl ExportDataset {
             .as_ref()
             .ok_or_else(|| invalid("selected publication requires retained identity proofs"))?
             .require_current()?;
-        let _checked =
-            census_domain::profile_execution::validate_current_selected_qualification_profile(
-                self.selected_authority()?.profile(),
-            )
-            .map_err(|source| {
-                invalid(&format!(
-                    "unsupported selected publication profile: {source}"
-                ))
-            })?;
+        census_domain::profile_execution::validate_current_selected_qualification_profile(
+            self.selected_authority()?.profile(),
+        )
+        .map_err(|source| {
+            invalid(&format!(
+                "unsupported selected publication profile: {source}"
+            ))
+        })?;
         Ok(())
     }
 

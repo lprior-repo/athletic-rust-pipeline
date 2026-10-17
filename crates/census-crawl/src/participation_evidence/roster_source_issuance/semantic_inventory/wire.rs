@@ -56,8 +56,8 @@ pub(super) struct Member {
 #[serde(tag = "state", rename_all = "snake_case", deny_unknown_fields)]
 pub(super) enum Current {
     Available {
-        owner: String,
-        member: String,
+        owner: Box<str>,
+        member: Box<str>,
         row: SourceRowLocator,
         section: Span,
         container: Span,

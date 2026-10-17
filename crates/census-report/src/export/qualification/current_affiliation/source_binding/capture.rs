@@ -58,10 +58,4 @@ impl<'a> BoundRosterSourceViewV1<'a> {
     pub(in super::super) fn closure_reference(&self) -> &SourceBindingObjectV1 {
         &self.closure_object
     }
-
-    pub(in super::super) fn athlete_descriptor(
-        &self,
-    ) -> &physical_observations::PhysicalObservationDescriptor {
-        &self.closure.athletes
-    }
 }

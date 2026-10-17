@@ -56,7 +56,7 @@ pub(super) fn review(
             parser.retained().schema_bytes()?,
             parser.retained().configuration_bytes()?,
             parser.retained().dependencies_bytes()?,
-            capture.packet.roster().body()?.into_bytes(),
+            capture.roster_body.as_bytes().to_vec(),
             objects.metadata_bytes(grant)?.to_vec(),
             objects.interpretation_bytes(grant)?.to_vec(),
             capture.packet.encode()?,
@@ -107,7 +107,7 @@ pub(super) fn proposal(
         .ok_or("controlled source owner")?;
     let owner = SourceSubject::new(SourceNamespace::MilesplitSchool, source_id.id.clone())?;
     let program = SourceSubject::new(SourceNamespace::MilesplitTeam, source_id.id.clone())?;
-    let body = capture.packet.roster().body()?;
+    let body = &capture.roster_body;
     let url = capture.packet.roster().requested_url();
     let value = json!({
         "version":1,

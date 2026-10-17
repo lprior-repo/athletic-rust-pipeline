@@ -41,7 +41,7 @@ fn controlled_bound_source_replay_matches_after_unrelated_live_store_write() -> 
         .store
         .journal_done("controlled-after-freeze", "later", &true)?;
     let mut replay_grant = AttachmentReplayGrantV1::new();
-    let replayed = BoundRosterSourceViewV1::replay(
+    let (proof, replay_family) = BoundRosterSourceViewV1::with_replay(
         &dataset,
         &fixture.profile,
         &objects,
@@ -49,9 +49,8 @@ fn controlled_bound_source_replay_matches_after_unrelated_live_store_write() -> 
         &athletes,
         &family_ref,
         &mut replay_grant,
+        |replayed, grant| super::super::assess(&dataset, &fixture.profile, replayed, grant),
     )?;
-    let (proof, replay_family) =
-        super::super::assess(&dataset, &fixture.profile, &replayed, &mut replay_grant)?;
     let verified = proof.into_verified();
     check!(eq; verified.resolution(&capture.athlete.id), expected.resolution(&capture.athlete.id));
     check!(eq; verified.resolution(&capture.athlete.id).school(), Some(&capture.school.id));
@@ -147,7 +146,7 @@ fn controlled_conflict_and_complete_claim_inventory_survive_frozen_replay() -> T
         bytes: u64::try_from(family.bytes().len())?,
     };
     let mut replay_grant = AttachmentReplayGrantV1::new();
-    let replayed = BoundRosterSourceViewV1::replay(
+    let (proof, replay_family) = BoundRosterSourceViewV1::with_replay(
         &dataset,
         &fixture.profile,
         &objects,
@@ -155,9 +154,8 @@ fn controlled_conflict_and_complete_claim_inventory_survive_frozen_replay() -> T
         &athletes,
         &family_ref,
         &mut replay_grant,
+        |replayed, grant| super::super::assess(&dataset, &fixture.profile, replayed, grant),
     )?;
-    let (proof, replay_family) =
-        super::super::assess(&dataset, &fixture.profile, &replayed, &mut replay_grant)?;
     check!(eq; proof.into_verified().resolution(&first.athlete.id), &Resolution::Conflicted);
     check!(eq; replay_family.bytes(), family.bytes());
     Ok(())

@@ -39,7 +39,7 @@ pub(super) struct RosterSourceClosureV1 {
 
 enum Claims<'a> {
     Current(&'a CurrentRosterReviewedClaimsV1),
-    Frozen(ReplayedRosterReviewedClaimsV1),
+    Frozen(&'a ReplayedRosterReviewedClaimsV1),
 }
 
 pub(super) struct BoundRosterSourceViewV1<'a> {

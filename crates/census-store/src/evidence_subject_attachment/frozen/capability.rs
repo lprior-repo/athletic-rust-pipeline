@@ -42,14 +42,9 @@ impl<'a, 'b> FrozenCurrentEvidenceSubjectAttachmentV1<'a, 'b> {
         self.owner.snapshot_sequence()
     }
     pub fn require_original_grant(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<()> {
-        grant.ensure_available().map_err(Error::Domain)?;
-        let result = self
-            .owner
-            .ledger
-            .validate_projection(self.owner.store_identity(), grant);
-        if result.is_err() {
-            grant.poison();
-        }
-        result
+        self.owner
+            .continuation
+            .require(grant)
+            .map_err(|source| Error::Domain(source).into())
     }
 }

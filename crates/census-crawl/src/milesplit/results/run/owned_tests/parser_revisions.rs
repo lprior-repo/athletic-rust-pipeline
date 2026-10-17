@@ -1,4 +1,5 @@
 use super::*;
+use census_store::recorded::Recorded;
 use std::collections::BTreeMap;
 
 const HISTORICAL_PHASE: &str = "milesplit_result_sets_v5";
@@ -19,7 +20,7 @@ fn snapshot(store: &Store, phase: &str) -> TestResult<BTreeMap<String, serde_jso
 fn historical_completion(
     store: &Store,
     reference: &ResultSetRef,
-    recorded: &crate::recording::Recorded,
+    recorded: &Recorded,
 ) -> TestResult<String> {
     let mut payload = recorded
         .journal

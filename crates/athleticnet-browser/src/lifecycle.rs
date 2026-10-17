@@ -8,12 +8,22 @@ use tokio::{
     time::Instant,
 };
 
+pub(super) enum ActorJoinState {
+    Running(JoinHandle<ActorExit>),
+    Finished(ActorExit),
+    Unconfirmed(BrowserStartupError),
+}
+pub(crate) mod child;
 mod commands;
 pub(crate) mod error;
+mod exit;
+mod owner;
 mod shutdown;
 mod startup;
+pub use owner::{BrowserCleanupAttempt, BrowserExit, BrowserOwner, BrowserStartup};
 mod status;
 
+pub(super) use exit::ActorExit;
 pub(super) use status::{read_status, remaining_ms, write_state};
 
 pub struct BrowserManager {
@@ -21,18 +31,8 @@ pub struct BrowserManager {
     status: Arc<RwLock<BrowserStatus>>,
     cooldown_until: Arc<Mutex<Option<Instant>>>,
     gate: Arc<ProfileGate>,
-    #[allow(clippy::type_complexity)]
-    join: Arc<AsyncMutex<Option<JoinHandle<Result<(), BrowserStartupError>>>>>,
+    join: Arc<AsyncMutex<ActorJoinState>>,
     clock: Arc<dyn Clock>,
-}
-impl Drop for BrowserManager {
-    fn drop(&mut self) {
-        if let Ok(mut guard) = self.join.try_lock() {
-            if let Some(handle) = guard.take() {
-                handle.abort();
-            }
-        }
-    }
 }
 
 #[cfg(test)]

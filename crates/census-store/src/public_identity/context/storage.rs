@@ -34,27 +34,6 @@ pub(in crate::public_identity) fn charge_section_bytes(
 
 #[cfg(test)]
 impl Inputs {
-    pub(in crate::public_identity) fn admission_charge(
-        &self,
-        store: &Store,
-        lineage: &StoreIdentity,
-    ) -> StoreResult<crate::journal::context::ContextCharge> {
-        crate::journal::context::charge_context_object(store, |sink| {
-            self.emit_context(sink, lineage)
-        })
-    }
-
-    pub(in crate::public_identity) fn stage_admitted(
-        &self,
-        store: &Store,
-        lineage: &StoreIdentity,
-        permit: &crate::public_identity::local_adjudication::admission::Permit<'_>,
-    ) -> StoreResult<StagedContextObject> {
-        crate::journal::context::stage_reserved_context(store, permit, |sink| {
-            self.emit_context(sink, lineage)
-        })
-    }
-
     pub(in crate::public_identity) fn stage(
         &self,
         store: &Store,

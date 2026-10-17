@@ -8,14 +8,16 @@ pub(super) enum Decision {
 
 pub(super) fn install(
     store: &Store,
-    members: &[AthleteCandidateId; 2],
+    members: &[AthleteCandidateId],
     decision: Decision,
 ) -> TestResult<String> {
     let value = match decision {
         Decision::Same => "same_person",
         Decision::Different => "different_person",
     };
-    let [first, _] = members;
+    let first = members
+        .first()
+        .ok_or("controlled reviewed identity members")?;
     let subject = "Controlled synthetic reviewed-roster identity correction";
     let detail = format!("Controlled test {value}; no genuine source assertion or authenticated production human approval");
     let index = store.snapshot().athlete_identity_index()?;
@@ -45,8 +47,8 @@ pub(super) fn install(
     };
     let mut cases: Vec<ReviewCase> = store.snapshot().scan(Table::ReviewCases)?;
     let mut verdicts: Vec<ReviewVerdictRecord> = store.snapshot().scan(Table::IdentityVerdicts)?;
-    check!(cases.len() <= 2);
-    check!(verdicts.len() <= 2);
+    check!(cases.len() <= 3);
+    check!(verdicts.len() <= 3);
     check!(cases.iter().all(|old| old.id != case.id));
     for old in &mut cases {
         old.state = ReviewState::Superseded;

@@ -21,25 +21,31 @@ fn controlled_reviewed_transfer_preserves_old_school_performance_and_current_pos
 }
 
 fn exercise(case: Case) -> TestResult {
-    let transfer = setup::prepare(case)?;
+    let transfer = setup::prepare(case).map_err(|error| format!("transfer setup: {error}"))?;
     let objects = tempfile::tempdir()?;
     let archive = tempfile::tempdir()?;
     let output = tempfile::tempdir()?;
-    let dataset = capture(&transfer.fixture, objects.path())?;
+    let dataset = capture(&transfer.fixture, objects.path())
+        .map_err(|error| format!("transfer selected capture: {error}"))?;
     let before = inspect(&dataset, &transfer)?;
     let frozen = archive.path().join("controlled-transfer.json");
     let digest = dataset.archive_digest()?;
     let lineage = dataset.lineage.clone();
-    dataset.save_frozen(&frozen)?;
+    dataset
+        .save_frozen(&frozen)
+        .map_err(|error| format!("transfer frozen save: {error}"))?;
     let wire = inspect_wire(&frozen)?;
     inspect_family(&frozen, &wire, &transfer)?;
     let workbook = publish(
         &transfer.fixture,
         &dataset,
         &output.path().join("publication"),
-    )?;
+    )
+    .map_err(|error| format!("transfer publication: {error}"))?;
     let rows = readback::artifacts(&workbook, &dataset, &transfer)?;
-    let published_digest = published::verify_published(&workbook)?.generation_digest;
+    let published_digest = published::verify_published(&workbook)
+        .map_err(|error| format!("transfer artifact verification: {error}"))?
+        .generation_digest;
     drop(dataset);
     let Transfer {
         fixture,
@@ -55,10 +61,12 @@ fn exercise(case: Case) -> TestResult {
         address_digest,
         case,
     };
-    let reopened = ExportDataset::reopen_frozen_with_digest(&frozen, &digest)?;
+    let reopened = ExportDataset::reopen_frozen_with_digest(&frozen, &digest)
+        .map_err(|error| format!("transfer independent reopen: {error}"))?;
     check!(eq; inspect_retained(&reopened, &expected)?, before);
     let publication =
-        published::open_publication(&workbook, &lineage, Scope::AllSources, GradYear::CO2027)?;
+        published::open_publication(&workbook, &lineage, Scope::AllSources, GradYear::CO2027)
+            .map_err(|error| format!("transfer publication reopen: {error}"))?;
     check!(eq; inspect_retained(&publication.dataset, &expected)?, before);
     check!(eq; readback::retained_artifacts(&workbook, &publication.dataset, &expected)?, rows);
     check!(eq; published::verify_published(&workbook)?.generation_digest, published_digest);
@@ -198,7 +206,10 @@ fn inspect_family(frozen: &Path, wire: &Value, transfer: &Transfer) -> TestResul
         serde_json::from_value(closure.get("reviewed").ok_or("source reference")?.clone())?;
     let mut grant = AttachmentReplayGrantV1::new();
     let replay =
-        census_store::replay_frozen_roster_reviewed_claims_v1(&reviewed, &reference, &mut grant)?;
+        census_store::replay_frozen_roster_reviewed_claims_v1(&reviewed, &reference, &mut grant)
+            .map_err(|error| {
+                format!("transfer family replay ({} bytes): {error}", reviewed.len())
+            })?;
     let claims = replay.claims(&mut grant)?;
     check!(eq; claims.len(), 2);
     let mut days = std::collections::BTreeSet::new();

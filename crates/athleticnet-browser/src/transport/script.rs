@@ -19,37 +19,31 @@ pub(super) const FETCH_FUNCTION: &str = r#"async function(spec) {
             init.body = spec.body;
         }
         const response = await fetch(spec.url, init);
-        const reader = response.body && response.body.getReader();
-        if (typeof Uint8Array.prototype.toBase64 !== 'function') {
-            controller.abort();
-            clearTimeout(timer);
-            return {ok: false, error: 'body_unavailable'};
+        let body = response.body;
+        if (body) {
+            const draining = response.clone();
+            await response.body.cancel();
+            body = draining.body;
         }
-        if (!reader) {
-            clearTimeout(timer);
-            return {ok: true, error: null, status: response.status, body_base64: ''};
-        }
-        let bytes = new Uint8Array(Math.min(4096, spec.max_body));
-        let size = 0;
-        for (;;) {
-            const part = await reader.read();
-            if (part.done) break;
-            const nextSize = size + part.value.byteLength;
-            if (nextSize > spec.max_body) {
-                controller.abort();
-                clearTimeout(timer);
-                return {ok: false, error: 'payload_limit'};
+        const reader = body && body.getReader();
+        if (reader) {
+            let size = 0;
+            try {
+                for (;;) {
+                    const part = await reader.read();
+                    if (part.done) break;
+                    const nextSize = size + part.value.byteLength;
+                    if (!Number.isSafeInteger(nextSize) || nextSize > spec.max_body) {
+                        controller.abort();
+                        return {ok: false, error: 'payload_limit'};
+                    }
+                    size = nextSize;
+                }
+            } finally {
+                reader.releaseLock();
             }
-            if (nextSize > bytes.byteLength) {
-                const grown = new Uint8Array(Math.min(spec.max_body, Math.max(nextSize, bytes.byteLength * 2)));
-                grown.set(bytes.subarray(0, size));
-                bytes = grown;
-            }
-            bytes.set(part.value, size);
-            size = nextSize;
         }
-        clearTimeout(timer);
-        return {ok: true, error: null, status: response.status, body_base64: bytes.subarray(0, size).toBase64()};
+        return {ok: true, error: null, status: response.status};
     } catch (error) {
         return {ok: false, error: error && error.name === 'AbortError' ? 'aborted' : 'network'};
     } finally {

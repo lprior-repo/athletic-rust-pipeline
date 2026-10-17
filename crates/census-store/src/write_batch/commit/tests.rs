@@ -1,3 +1,5 @@
+mod offer_limits;
+
 use super::*;
 use crate::Table;
 use serde::Serialize;

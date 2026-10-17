@@ -3,6 +3,7 @@ use crate::tssaa::Options;
 use crate::Recording;
 use census_domain::model::SourceObservation;
 use census_domain::UsJurisdiction;
+use census_store::recorded::Recorded;
 use census_store::Table;
 
 #[test]
@@ -276,7 +277,7 @@ fn recording_retains_owned_observations_without_touching_store(
 }
 
 fn recorded_coaches(
-    recorded: &crate::Recorded,
+    recorded: &Recorded,
 ) -> anyhow::Result<Vec<census_domain::model::CanonicalCoach>> {
     let mut coaches: Vec<census_domain::model::CanonicalCoach> = recorded
         .rows

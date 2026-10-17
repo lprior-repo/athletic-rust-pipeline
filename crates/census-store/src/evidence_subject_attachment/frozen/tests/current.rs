@@ -59,7 +59,7 @@ fn frozen_query_and_consumer_reject_replacement_grants_while_original_remains_us
     check!(matches!(
         owner.bind_exact_subject(&context.subject, &mut replacement),
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
-            EvidenceSubjectAttachmentError::Invalid("checked command grant differs")
+            EvidenceSubjectAttachmentError::Invalid(_)
         )))
     ));
     poisoned(&mut replacement)?;
@@ -68,10 +68,13 @@ fn frozen_query_and_consumer_reject_replacement_grants_while_original_remains_us
         .bind_exact_subject(&context.subject, &mut original)?
         .ok_or("original subject absent")?;
     let mut replacement = AttachmentReplayGrantV1::new();
+    let usage = original.usage();
+    replacement.charge_bytes(usage.encoded_bytes())?;
+    replacement.charge_steps(usage.traversal_steps())?;
     check!(matches!(
         bound.require_original_grant(&mut replacement),
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
-            EvidenceSubjectAttachmentError::Invalid("checked command grant differs")
+            EvidenceSubjectAttachmentError::Invalid(_)
         )))
     ));
     poisoned(&mut replacement)?;

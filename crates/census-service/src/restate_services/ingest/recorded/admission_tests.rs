@@ -10,7 +10,7 @@ async fn prepared_recording_retains_shared_stage_budget() -> TestResult {
     let root = tempfile::tempdir()?;
     let store = Arc::new(census_store::Store::open(root.path())?);
     let region = Arc::new(Spawner::with_capacity(1));
-    let recorded = census_crawl::Recorded::default();
+    let recorded = census_store::recorded::Recorded::default();
     let encoded = serde_json::to_vec(&recorded)?;
     let manifest = serde_json::json!({"digest": format!("{:x}", Sha256::digest(&encoded)),
         "encoded_bytes": encoded.len(), "rows": 0});
@@ -21,7 +21,7 @@ async fn prepared_recording_retains_shared_stage_budget() -> TestResult {
         &recorded,
     )?;
     store.journal_done("meet_recorded_fragment_manifests_v1", &operation, &manifest)?;
-    let summary = census_crawl::recording::spool::FragmentSummary {
+    let summary = census_store::recorded::FragmentSummary {
         fragments: 1,
         digest: format!("{:x}", Sha256::digest(serde_json::to_vec(&manifest)?)),
         encoded_bytes: encoded.len(),

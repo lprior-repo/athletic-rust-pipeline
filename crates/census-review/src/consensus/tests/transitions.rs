@@ -1,8 +1,9 @@
 use super::support::{
     add_school, audit, batch, client, lane, options, row, state, Fixture, TestResult,
 };
-use crate::{run_lanes, ModelClient, ModelResponseFormat};
+use crate::{run_lanes, ModelClient};
 use census_domain::model::{CanonicalSchool, ReviewCase, ReviewState, ReviewVerdictRecord};
+use census_domain::review_model::ModelResponseFormat;
 use census_store::Table;
 
 fn changed_format(client: &ModelClient) -> TestResult<ModelClient> {

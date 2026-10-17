@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::num::NonZeroU64;
 use std::rc::Rc;
 
-use super::{HeldHistoryMemory, HistoryFundingError, HistoryMemoryBudget};
+use super::{HistoryFundingError, HistoryMemoryBudget};
 use crate::public_identity_history::funding::{
     ConstructionStorage, HistoryFunding, HistoryGrant, HistoryStorageError, OwnedHistoryBytes,
 };
@@ -11,6 +11,7 @@ mod absorb;
 mod guard;
 mod handles;
 mod lifetime;
+mod nested;
 mod quota;
 mod split;
 

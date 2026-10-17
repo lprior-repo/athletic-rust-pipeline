@@ -4,7 +4,8 @@ use census_domain::model::{ReviewCase, ReviewState};
 use census_store::Table;
 
 use super::support::{audit, batch, client, lane, options, row, state, Fixture, TestResult};
-use crate::{run_lanes, ModelClient, ModelOptions};
+use crate::{run_lanes, ModelClient};
+use census_domain::review_model::ModelOptions;
 
 #[test]
 fn retrying_a_failed_lane_reuses_the_other_lanes_exact_bound_advice() -> TestResult {

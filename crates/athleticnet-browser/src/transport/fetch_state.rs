@@ -2,18 +2,22 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use chromiumoxide::cdp::browser_protocol::network::{
-    EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent, EventResponseReceived,
-    EventResponseReceivedExtraInfo, RequestId,
+    EventDataReceived, EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent,
+    EventResponseReceived, EventResponseReceivedExtraInfo, RequestId,
 };
 use chromiumoxide::Page;
 use reqwest::header::CONTENT_TYPE;
 use tokio::time::timeout;
 
-use super::transfer::{classify_wire_total, refuse_excess_wire, WireTotal};
-use super::{capture, fail, matches_request, record_response, FetchResult, ResponseEvidence};
+use super::transfer::refuse_excess_wire;
+use super::{capture, matches_request, record_response, FetchResult, ResponseEvidence};
 use crate::challenge::html_body_challenge;
 use crate::request::RequestSpec;
 use crate::{gate::ProfileGate, BrowserError, BrowserResponse};
+
+use super::invocation::Invocation;
+use super::pending::PendingTransfers;
+use super::progress::WireTransfers;
 
 pub(super) enum FetchEvent {
     Evaluation(Result<FetchResult, BrowserError>),
@@ -21,6 +25,7 @@ pub(super) enum FetchEvent {
     Response(Arc<EventResponseReceived>),
     ExtraInfo(Arc<EventResponseReceivedExtraInfo>),
     Finished(Arc<EventLoadingFinished>),
+    Data(Arc<EventDataReceived>),
     Failed(Arc<EventLoadingFailed>),
     Closed,
     Timer,
@@ -31,11 +36,11 @@ pub(super) struct FetchCapture<'a> {
     pub(super) gate: &'a ProfileGate,
     pub(super) request: &'a RequestSpec,
     pub(super) request_body: Option<&'a str>,
+    pub(super) invocation: &'a Invocation,
     request_id: Option<RequestId>,
-    pending_response: Option<Arc<EventResponseReceived>>,
-    pending_finished: Option<RequestId>,
-    pending_encoded: Option<f64>,
+    pending: PendingTransfers,
     encoded_total: Option<f64>,
+    progress: WireTransfers,
     response: Option<ResponseEvidence>,
     loading_finished: bool,
     evaluation_result: Option<FetchResult>,
@@ -49,17 +54,18 @@ impl<'a> FetchCapture<'a> {
         gate: &'a ProfileGate,
         request: &'a RequestSpec,
         request_body: Option<&'a str>,
+        invocation: &'a Invocation,
     ) -> Self {
         Self {
             page,
             gate,
             request,
             request_body,
+            invocation,
             request_id: None,
-            pending_response: None,
-            pending_finished: None,
-            pending_encoded: None,
+            pending: PendingTransfers::default(),
             encoded_total: None,
+            progress: WireTransfers::default(),
             response: None,
             loading_finished: false,
             evaluation_result: None,
@@ -83,6 +89,7 @@ impl<'a> FetchCapture<'a> {
             FetchEvent::Response(event) => self.on_response(event)?,
             FetchEvent::ExtraInfo(event) => self.on_extra_info(&event),
             FetchEvent::Finished(event) => self.on_finished(event)?,
+            FetchEvent::Data(event) => self.on_data(&event)?,
             FetchEvent::Failed(event) => self.on_failed(&event)?,
             FetchEvent::Closed => return Err(BrowserError::Transport),
             FetchEvent::Timer => return Err(BrowserError::Timeout),
@@ -92,14 +99,12 @@ impl<'a> FetchCapture<'a> {
 
     pub(super) fn complete(&self) -> Result<bool, BrowserError> {
         if let Some(result) = self.evaluation_result.as_ref() {
-            if !result.ok && result.error.as_deref() == Some("payload_limit") {
-                return Err(BrowserError::PayloadLimit);
-            }
+            result.validate()?;
         }
         if self.evaluation_result.is_some() && self.response.is_some() && self.loading_finished {
             return Ok(true);
         }
-        Ok(self.evaluation_result.as_ref().is_some_and(|r| !r.ok) && self.loading_finished)
+        Ok(false)
     }
 
     async fn on_request(
@@ -107,12 +112,18 @@ impl<'a> FetchCapture<'a> {
         event: Arc<EventRequestWillBeSent>,
         remaining: Duration,
     ) -> Result<(), BrowserError> {
-        if !matches_request(&event, self.request) {
+        if self.request_id.as_ref() == Some(&event.request_id) {
+            return Err(if event.redirect_response.is_some() {
+                BrowserError::Redirect
+            } else {
+                BrowserError::Protocol
+            });
+        }
+        if !matches_request(&event, self.request) || !self.invocation.binding().matches(&event) {
             return Ok(());
         }
-        let id = event.request_id.clone();
-        if self.request_id.as_ref().is_some_and(|known| known != &id) {
-            return Ok(());
+        if self.request_id.is_some() {
+            return Err(BrowserError::Protocol);
         }
         let confirm = timeout(
             remaining,
@@ -128,23 +139,24 @@ impl<'a> FetchCapture<'a> {
         if event.redirect_response.is_some() {
             return Err(BrowserError::Redirect);
         }
-        if self.request_id.as_ref().is_some_and(|known| known != &id) {
-            return Err(BrowserError::Protocol);
-        }
+        let id = event.request_id.clone();
         self.request_id = Some(id.clone());
-        if let Some(pending) = self.pending_response.take() {
-            if pending.request_id == id {
+        self.progress.bind(&id);
+        if let Some(pending) = std::mem::take(&mut self.pending).take(&id) {
+            if let Some(response) = pending.response {
+                self.verify_response_url(&response)?;
                 record_response(
-                    &pending,
+                    &response,
                     &mut self.response,
                     &mut self.challenge_seen,
                     self.gate,
                 )?;
             }
-        }
-        if self.pending_finished.as_ref() == Some(&id) {
-            self.loading_finished = true;
-            self.encoded_total = self.pending_encoded.take();
+            if let Some(encoded) = pending.finished {
+                self.progress.finish(&id, encoded)?;
+                self.encoded_total = Some(encoded);
+                self.loading_finished = true;
+            }
         }
         Ok(())
     }
@@ -158,6 +170,10 @@ impl<'a> FetchCapture<'a> {
             return Ok(());
         }
         if self.request_id.as_ref() == Some(&event.request_id) {
+            if self.response.is_some() {
+                return Err(BrowserError::Protocol);
+            }
+            self.verify_response_url(&event)?;
             record_response(
                 &event,
                 &mut self.response,
@@ -165,7 +181,7 @@ impl<'a> FetchCapture<'a> {
                 self.gate,
             )?;
         } else if self.request_id.is_none() {
-            self.pending_response = Some(event);
+            self.pending.observe_response(event)?;
         }
         Ok(())
     }
@@ -178,13 +194,22 @@ impl<'a> FetchCapture<'a> {
         }
     }
 
-    fn on_finished(&mut self, event: Arc<EventLoadingFinished>) -> Result<(), BrowserError> {
-        if matches!(
-            classify_wire_total(event.encoded_data_length),
-            WireTotal::Malformed
-        ) {
-            return Err(BrowserError::Protocol);
+    fn on_data(&mut self, event: &EventDataReceived) -> Result<(), BrowserError> {
+        if self
+            .request_id
+            .as_ref()
+            .is_some_and(|id| id != &event.request_id)
+        {
+            return Ok(());
         }
+        self.progress.observe(
+            &event.request_id,
+            event.encoded_data_length,
+            event.data_length,
+        )
+    }
+
+    fn on_finished(&mut self, event: Arc<EventLoadingFinished>) -> Result<(), BrowserError> {
         if self
             .request_id
             .as_ref()
@@ -193,11 +218,13 @@ impl<'a> FetchCapture<'a> {
             return Ok(());
         }
         if self.request_id.as_ref() == Some(&event.request_id) {
+            self.progress
+                .finish(&event.request_id, event.encoded_data_length)?;
             self.loading_finished = true;
             self.encoded_total = Some(event.encoded_data_length);
         } else if self.request_id.is_none() {
-            self.pending_finished = Some(event.request_id.clone());
-            self.pending_encoded = Some(event.encoded_data_length);
+            self.pending
+                .observe_finished(&event.request_id, event.encoded_data_length)?;
         }
         Ok(())
     }
@@ -211,6 +238,13 @@ impl<'a> FetchCapture<'a> {
         }
         Ok(())
     }
+
+    fn verify_response_url(&self, event: &EventResponseReceived) -> Result<(), BrowserError> {
+        if event.response.url != self.request.url.as_str() {
+            return Err(BrowserError::Redirect);
+        }
+        Ok(())
+    }
 }
 
 pub(super) async fn complete_fetch(
@@ -219,16 +253,17 @@ pub(super) async fn complete_fetch(
     let page = capture.page;
     let gate = capture.gate;
     if !capture.loading_finished {
-        return Err(fail(page, gate, BrowserError::Timeout).await);
+        return Err(BrowserError::Timeout);
     }
     let evidence = capture.response.ok_or(BrowserError::Transport)?;
     let result = capture.evaluation_result.ok_or(BrowserError::Transport)?;
+    result.validate()?;
     if result.status != Some(evidence.status) {
         return Err(BrowserError::Protocol);
     }
-    refuse_excess_wire(result.ok, capture.encoded_total)?;
-    let encoded = result.body_base64.ok_or(BrowserError::Protocol)?;
-    let body = capture::decode_body(&encoded)?;
+    refuse_excess_wire(capture.encoded_total)?;
+    let request_id = capture.request_id.ok_or(BrowserError::Protocol)?;
+    let body = capture::capture_body(page, request_id).await?;
     let body_challenge = html_body_challenge(
         evidence
             .headers

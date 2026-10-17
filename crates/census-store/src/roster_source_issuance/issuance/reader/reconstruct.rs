@@ -71,12 +71,34 @@ pub(super) fn admission(
     }
     Ok(value)
 }
+fn review_references(
+    record: &ReviewRecord,
+    objects: &super::super::objects::Objects,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<(super::super::ObjectRef, super::super::ObjectRef)> {
+    record
+        .basis
+        .closure
+        .binary_search_by(|reference| reference.digest.cmp(&record.basis.review.digest))
+        .map_err(|_| Error::Corrupt("review source object absent"))?;
+    let review_bytes = objects
+        .get(&record.basis.review.digest)
+        .ok_or(Error::Corrupt("review semantic object absent"))?;
+    grant
+        .charge_bytes(review_bytes.len())
+        .map_err(super::super::super::source_error)?;
+    grant
+        .charge_steps(1)
+        .map_err(super::super::super::source_error)?;
+    let review: super::super::SemanticReview = codec::decode(review_bytes)?;
+    Ok((review.qualification, review.activation))
+}
 
 pub(super) fn claims(
     archive: &Archive,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<ReviewedRosterSourceClaimV1>> {
-    if archive.schema != "roster-reviewed-source-publication-closure-v1"
+    if archive.schema != super::ARCHIVE_SCHEMA
         || archive.source_store_lifecycle != super::super::super::LIFECYCLE
     {
         return Err(Error::Corrupt("review publication closure version").into());
@@ -88,7 +110,7 @@ pub(super) fn claims(
         &archive.receipts,
         &archive.store,
     )?;
-    let objects = objects(archive, grant)?;
+    let objects = Arc::new(objects(archive, grant)?);
     let source = frozen_source::FrozenRosterJournalSource::new(&archive.external, grant)?;
     let mut claims = Vec::new();
     let mut roots = BTreeSet::new();
@@ -116,19 +138,20 @@ pub(super) fn claims(
             return Err(Error::InspectedClosureChanged.into());
         }
         let evidence = evidence(archive, &proposal, held, grant)?;
-        let mut selected = super::super::objects::Objects::new();
+        let (qualification, activation) = review_references(&record, &objects, grant)?;
         for reference in &record.basis.closure {
-            let raw = super::super::ledger::object(&objects, reference)?;
+            super::super::ledger::object(&objects, reference)?;
             grant
-                .charge_bytes(raw.len())
+                .charge_steps(1)
                 .map_err(super::super::super::source_error)?;
-            selected.insert(reference.digest.clone(), raw.to_vec());
         }
         claims.push(ReviewedRosterSourceClaimV1 {
             proposal,
             evidence,
             record,
-            objects: selected,
+            objects: Arc::clone(&objects),
+            qualification,
+            activation,
         });
     }
     if roots.len() != archive.external.len() {

@@ -2,6 +2,7 @@ use super::*;
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use census_domain::model::{CanonicalSchool, SourceIdentity, SourceNamespace};
 use census_domain::UsJurisdiction;
+use census_store::recorded::Recorded;
 
 pub(super) const TROY: &[u8] = include_bytes!("../../../owned/fixtures/troy_725218.json");
 pub(super) const RELAYS: &[u8] =
@@ -120,7 +121,7 @@ pub(super) fn options(reference: &ResultSetRef) -> super::super::super::ResultSe
     }
 }
 
-pub(super) fn apply(store: &Store, recording: &crate::recording::Recorded) -> TestResult {
+pub(super) fn apply(store: &Store, recording: &Recorded) -> TestResult {
     let mut batch = store.write_batch();
     for rows in &recording.rows {
         batch.record_many(rows.table, &rows.rows)?;

@@ -80,6 +80,7 @@ pub mod read;
 mod roster_source_issuance;
 pub use roster_source_issuance::*;
 mod receipt;
+pub mod recorded;
 mod records;
 mod regions;
 mod rows;

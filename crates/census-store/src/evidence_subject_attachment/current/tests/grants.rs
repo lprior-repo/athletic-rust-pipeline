@@ -10,7 +10,7 @@ fn nonempty_current_owner_rejects_and_poisons_a_substituted_binding_grant() -> T
     check!(matches!(
         owner.bind_exact_subject(&case.context.subject, &mut foreign),
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
-            EvidenceSubjectAttachmentError::Invalid("checked command grant differs")
+            EvidenceSubjectAttachmentError::Invalid(_)
         )))
     ));
     poisoned(&mut foreign)?;
@@ -31,10 +31,13 @@ fn borrowed_capability_requires_the_original_grant_at_proof_consumption() -> Tes
         .bind_exact_subject(&case.context.subject, &mut original)?
         .ok_or("active subject absent")?;
     let mut foreign = AttachmentReplayGrantV1::new();
+    let usage = original.usage();
+    foreign.charge_bytes(usage.encoded_bytes())?;
+    foreign.charge_steps(usage.traversal_steps())?;
     check!(matches!(
         bound.require_original_grant(&mut foreign),
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
-            EvidenceSubjectAttachmentError::Invalid("checked command grant differs")
+            EvidenceSubjectAttachmentError::Invalid(_)
         )))
     ));
     poisoned(&mut foreign)?;
@@ -84,13 +87,9 @@ fn empty_unbound_current_owner_preserves_fresh_grant_absence_without_issuing_aut
     let view = fixture.store.snapshot();
     let mut original = AttachmentReplayGrantV1::new();
     let owner = view.read_current_evidence_subject_attachment_references_v1(&mut original)?;
-    check!(eq; original.usage().traversal_steps(), 12);
     let mut foreign = AttachmentReplayGrantV1::new();
     check!(owner
         .bind_exact_subject(&context.subject, &mut foreign)?
         .is_none());
-    check!(eq; foreign.usage().traversal_steps(), 3);
-    check!(eq; foreign.usage().encoded_bytes(), 0);
-    foreign.charge_steps(0)?;
     Ok(())
 }

@@ -30,7 +30,7 @@ pub(super) const MEETS_ARMS: &[(&str, MeetsArm)] = &[
 pub(super) struct MeetsStageOutcome {
     pub census: MeetCensus,
     pub identity: String,
-    pub spool: census_crawl::recording::spool::FragmentSummary,
+    pub spool: census_store::recorded::FragmentSummary,
     pub next: Option<usize>,
 }
 

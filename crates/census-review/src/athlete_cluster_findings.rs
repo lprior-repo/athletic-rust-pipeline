@@ -9,8 +9,8 @@ use census_store::{StoreResult, StoreSnapshot, Table};
 
 use super::athlete_clusters::RULE_REVIEWER;
 use super::cohort_evidence::CohortEvidence;
-use crate::athlete_verdict::HardContradiction;
 use crate::families::IDENTITY_FIELD;
+use census_domain::review_decision::HardContradiction;
 
 type SchoolNames = BTreeMap<SchoolId, String>;
 

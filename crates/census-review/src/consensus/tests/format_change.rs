@@ -22,10 +22,9 @@ fn reopened_case_reasks_changed_format_and_reuses_exact_unchanged_peer_advice() 
             reopened.state = ReviewState::Pending;
             fixture.store.replace(Table::ReviewCases, &reopened)?;
             let changed = crate::ModelClient::new(
-                original_clients[0]
-                    .options()
-                    .clone()
-                    .with_response_format(crate::ModelResponseFormat::PromptJson),
+                original_clients[0].options().clone().with_response_format(
+                    census_domain::review_model::ModelResponseFormat::PromptJson,
+                ),
             )?;
             let clients = [changed, original_clients[1].clone()];
             let report = run_lanes(&fixture.store, &clients, &options(), "format-change").await?;

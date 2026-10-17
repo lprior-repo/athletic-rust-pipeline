@@ -3,6 +3,7 @@ use super::*;
 use census_domain::model::{
     ReviewCase, ReviewPacket, ReviewVerdict, ReviewVerdictKind, VerdictBatch,
 };
+use census_domain::review_decision::{Adjudication, Admitted, Refusal};
 
 fn school_case() -> ReviewCase {
     ReviewCase::pending(

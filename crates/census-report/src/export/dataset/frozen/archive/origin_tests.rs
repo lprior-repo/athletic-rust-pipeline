@@ -166,6 +166,7 @@ fn wire_origin_cannot_grant_current_or_historical_authority() -> TestResult {
         "HistoricalReplay",
         "HistoricalIdentityReplay",
         "HistoricalParticipationReplay",
+        "HistoricalDocumentaryReplay",
     ] {
         let mut wire = original.clone();
         wire.get_mut("data")

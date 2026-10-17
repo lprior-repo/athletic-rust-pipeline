@@ -1,9 +1,10 @@
 use super::{budget, Recorded, RecordedBatch, RecordedJournal, RecordingState};
 use crate::{CrawlError, CrawlResult};
+use census_store::recorded::{FragmentManifest, FragmentSummary};
 use census_store::{
     ObservationBudget, Store, MAX_OBSERVATION_BATCH_BYTES, MAX_OBSERVATION_BATCH_ROWS,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::io::{self, Write};
 
@@ -25,21 +26,6 @@ impl std::fmt::Debug for Spool {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
-struct Manifest {
-    digest: String,
-    encoded_bytes: usize,
-    rows: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub struct FragmentSummary {
-    pub fragments: usize,
-    pub digest: String,
-    pub encoded_bytes: usize,
-    pub rows: usize,
-}
-
 pub(super) fn summary(state: &RecordingState) -> FragmentSummary {
     FragmentSummary {
         fragments: state.fragments,
@@ -57,7 +43,7 @@ pub fn verify_reference(
     let mut state = RecordingState::default();
     for index in 0..expected.fragments {
         let key = fragment_key(identity, index);
-        let manifest: Manifest = decode(required(store, MANIFEST_PHASE, &key)?, &key)?;
+        let manifest: FragmentManifest = decode(required(store, MANIFEST_PHASE, &key)?, &key)?;
         absorb_manifest(&mut state, &manifest)?;
         state.fragments = budget::add(state.fragments, 1)?;
     }
@@ -69,7 +55,7 @@ pub fn verify_reference(
     Ok(())
 }
 
-fn absorb_manifest(state: &mut RecordingState, manifest: &Manifest) -> CrawlResult<()> {
+fn absorb_manifest(state: &mut RecordingState, manifest: &FragmentManifest) -> CrawlResult<()> {
     let mut hash = HashWriter(state.fragment_digest.clone());
     serde_json::to_writer(&mut hash, manifest).map_err(|source| CrawlError::Decode {
         url: "meet spool reference digest".into(),
@@ -96,7 +82,7 @@ impl Spool {
             let Some(manifest_payload) = self.store.journal_payload(MANIFEST_PHASE, &key)? else {
                 break;
             };
-            let persisted: Manifest = decode(manifest_payload, &key)?;
+            let persisted: FragmentManifest = decode(manifest_payload, &key)?;
             let Some(fragment_payload) = self.store.journal_payload(FRAGMENT_PHASE, &key)? else {
                 return Err(invariant(format!(
                     "meet fragment manifest present without payload: {key}"
@@ -178,7 +164,7 @@ impl Spool {
                 .journal_done(FRAGMENT_PHASE, &key, &state.recorded)?;
         }
         if let Some(previous) = self.store.journal_payload(MANIFEST_PHASE, &key)? {
-            let previous: Manifest = decode(previous, &key)?;
+            let previous: FragmentManifest = decode(previous, &key)?;
             if previous != manifest {
                 return Err(invariant(format!("meet fragment manifest changed: {key}")));
             }
@@ -218,7 +204,7 @@ impl Spool {
 
 pub fn read_fragment(store: &Store, identity: &str, index: usize) -> CrawlResult<Recorded> {
     let key = fragment_key(identity, index);
-    let expected: Manifest = decode(required(store, MANIFEST_PHASE, &key)?, &key)?;
+    let expected: FragmentManifest = decode(required(store, MANIFEST_PHASE, &key)?, &key)?;
     budget::check(
         "meet fragment manifest bytes",
         expected.encoded_bytes,
@@ -251,7 +237,7 @@ fn decode<T: serde::de::DeserializeOwned>(payload: serde_json::Value, key: &str)
     })
 }
 
-fn manifest(recorded: &Recorded) -> CrawlResult<Manifest> {
+fn manifest(recorded: &Recorded) -> CrawlResult<FragmentManifest> {
     let encoded_bytes = ObservationBudget::request_bytes(recorded)?;
     let rows = row_count(&recorded.rows)?;
     budget::check("meet fragment rows", rows, MAX_OBSERVATION_BATCH_ROWS)?;
@@ -260,7 +246,7 @@ fn manifest(recorded: &Recorded) -> CrawlResult<Manifest> {
         url: "meet fragment digest".into(),
         source,
     })?;
-    Ok(Manifest {
+    Ok(FragmentManifest {
         digest: format!("{:x}", hash.0.finalize()),
         encoded_bytes,
         rows,

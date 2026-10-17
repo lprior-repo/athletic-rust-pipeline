@@ -22,8 +22,8 @@ fn replay_verifies_fragment_digest_and_the_journaled_reference() -> TestResult {
     let key = fragment_key("verified/0", 0);
     let original = read_fragment(&store, "verified/0", 0)?;
     check!(eq; read_fragment(&store, "verified/0", 0)?, original);
-    original.apply(&store, "verified-ingest")?;
-    original.apply(&store, "verified-ingest")?;
+    crate::recording::apply_recorded(&original, &store, "verified-ingest")?;
+    crate::recording::apply_recorded(&original, &store, "verified-ingest")?;
     check!(eq; store.walk_table(Table::Meets)?.rows, 1);
     let mut changed = original;
     let row = changed
@@ -37,7 +37,8 @@ fn replay_verifies_fragment_digest_and_the_journaled_reference() -> TestResult {
         read_fragment(&store, "verified/0", 0),
         Err(CrawlError::Invariant { .. })
     ));
-    let mut changed_manifest: Manifest = decode(required(&store, MANIFEST_PHASE, &key)?, &key)?;
+    let mut changed_manifest: FragmentManifest =
+        decode(required(&store, MANIFEST_PHASE, &key)?, &key)?;
     changed_manifest.digest = "0".repeat(64);
     store.journal_done(MANIFEST_PHASE, &key, &changed_manifest)?;
     check!(matches!(

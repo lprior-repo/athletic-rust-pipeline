@@ -1,5 +1,6 @@
 use super::*;
-use census_store::Store;
+use census_store::{Store, Table};
+use serde::Serialize;
 use serde_json::json;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;

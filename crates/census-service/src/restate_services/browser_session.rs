@@ -8,6 +8,8 @@ use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex as AsyncMutex, OwnedMutexGuard};
 
+#[path = "browser_session/startup.rs"]
+mod startup;
 pub const SESSION_KEY: &str = "profile-0";
 
 fn sanitized_url(url: &url::Url) -> String {
@@ -23,6 +25,8 @@ fn sanitized_url(url: &url::Url) -> String {
 struct Lane {
     epoch: u64,
     manager: Option<Arc<BrowserManager>>,
+    starting: bool,
+    failure: Option<String>,
 }
 
 #[derive(Clone)]
@@ -31,13 +35,19 @@ pub struct BrowserSession {
     clock: Arc<dyn EngineClock>,
     lane: Arc<AsyncMutex<Lane>>,
     admission: Arc<AsyncMutex<()>>,
+    region: Arc<crate::spawn::Spawner>,
 }
 
 impl BrowserSession {
-    pub fn new(settings: BrowserSettings, clock: Arc<dyn EngineClock>) -> Self {
+    pub fn new(
+        settings: BrowserSettings,
+        clock: Arc<dyn EngineClock>,
+        region: Arc<crate::spawn::Spawner>,
+    ) -> Self {
         Self {
             settings: Arc::new(settings),
             clock,
+            region,
             lane: Arc::new(AsyncMutex::new(Lane::default())),
             admission: Arc::new(AsyncMutex::new(())),
         }
@@ -49,25 +59,44 @@ impl BrowserSession {
 
     async fn begin_launch(&self) -> Result<u64, HandlerError> {
         let mut lane = self.lane.lock().await;
-        if let Some(manager) = &lane.manager {
-            if manager.is_alive() {
-                return Err(TerminalError::new(
-                    "the browser lane is already started in this endpoint process: one process \
-                     owns the profile and a second manager is a corruption path, not a second \
-                     lane; stop the lane before starting it again",
-                )
-                .into());
-            }
+        if lane.manager.is_some() || lane.starting {
+            return Err(TerminalError::new(
+                "the browser lane still owns a manager; complete its physical shutdown before \
+                 starting another manager",
+            )
+            .into());
         }
-        lane.manager = None;
-        lane.epoch = lane.epoch.saturating_add(1);
+        lane.epoch = lane
+            .epoch
+            .checked_add(1)
+            .ok_or_else(|| TerminalError::new("the browser lane launch sequence is exhausted"))?;
+        lane.starting = true;
+        lane.failure = None;
         Ok(lane.epoch)
     }
 
-    async fn record_stop(&self) -> Option<Arc<BrowserManager>> {
+    async fn record_stop(&self, expected: &Arc<BrowserManager>) -> Result<(), HandlerError> {
         let mut lane = self.lane.lock().await;
-        lane.epoch = lane.epoch.saturating_add(1);
-        lane.manager.take()
+        if lane.manager.is_none() && !lane.starting {
+            return Ok(());
+        }
+        if !lane
+            .manager
+            .as_ref()
+            .is_some_and(|held| Arc::ptr_eq(held, expected))
+        {
+            return Err(TerminalError::new(
+                "the completed browser shutdown does not own the retained manager",
+            )
+            .into());
+        }
+        let next = lane
+            .epoch
+            .checked_add(1)
+            .ok_or_else(|| TerminalError::new("the browser lane shutdown sequence is exhausted"))?;
+        lane.manager = None;
+        lane.epoch = next;
+        Ok(())
     }
 
     fn foreign_origin_refusal(&self, request: &RequestSpec) -> Option<String> {
@@ -100,15 +129,55 @@ impl BrowserSession {
         })
     }
 
+    async fn shutdown_current(&self, key: &str) -> Result<BrowserSessionDrain, HandlerError> {
+        let manager = {
+            let lane = self.lane.lock().await;
+            if let Some(m) = lane.manager.clone() {
+                m
+            } else if lane.starting {
+                return Ok(BrowserSessionDrain {
+                    key: key.to_string(),
+                    drain: DrainCounts::default(),
+                    error: Some(
+                        "the browser lane is starting and cannot be shut down yet".to_string(),
+                    ),
+                });
+            } else {
+                return Ok(BrowserSessionDrain {
+                    key: key.to_string(),
+                    drain: DrainCounts::default(),
+                    error: None,
+                });
+            }
+        };
+        let (report, error) = manager.shutdown().await;
+        let error = error.map(|error| error.to_string()).or_else(|| {
+            (report.remaining != 0)
+                .then(|| "the browser shutdown still owns unfinished work".to_string())
+        });
+        if error.is_none() {
+            self.record_stop(&manager).await?;
+        } else {
+            self.lane.lock().await.failure = error.clone();
+        }
+        Ok(BrowserSessionDrain {
+            key: key.to_string(),
+            drain: report.into(),
+            error,
+        })
+    }
     async fn reading(&self, key: &str) -> BrowserSessionStatus {
-        let Some(manager) = self.lane.lock().await.manager.clone() else {
+        let lane = self.lane.lock().await;
+        let Some(manager) = lane.manager.clone() else {
             return BrowserSessionStatus {
                 key: key.to_string(),
-                running: false,
+                running: lane.starting,
                 status: None,
-                error: None,
+                error: lane.failure.clone(),
             };
         };
+        let retained_failure = lane.failure.clone();
+        drop(lane);
         let (status, error) = match manager.inspect().await {
             Ok(status) => (Some(status), None),
             Err(error) => (None, Some(error.to_string())),
@@ -117,7 +186,7 @@ impl BrowserSession {
             key: key.to_string(),
             running: manager.is_alive(),
             status,
-            error,
+            error: error.or(retained_failure),
         }
     }
 }
@@ -204,33 +273,7 @@ impl BrowserSession {
         ctx: ObjectContext<'_>,
     ) -> Result<Json<BrowserSessionStatus>, HandlerError> {
         let key = ctx.key().to_string();
-        let _admission = self.launch_admission().await;
-        let epoch = self.begin_launch().await?;
-        let settings = Arc::clone(&self.settings);
-        let clock = Arc::clone(&self.clock);
-        let launched = match settings.cdp_endpoint.clone() {
-            Some(endpoint) => BrowserManager::connect(endpoint, (*settings).clone(), clock).await,
-            None => BrowserManager::launch((*settings).clone(), clock).await,
-        };
-        let manager = launched.map_err(|error| {
-            TerminalError::new(format!("the browser lane could not start: {error}"))
-        })?;
-        let mut lane = self.lane.lock().await;
-        if lane.epoch != epoch {
-            drop(lane);
-            let (report, error) = manager.shutdown().await;
-            let detail = error.map_or_else(String::new, |error| {
-                format!("; the launched manager reported: {error}")
-            });
-            return Err(TerminalError::new(format!(
-                "the browser launch was superseded by a stop before it could be installed, so the \
-                 launched process was shut down instead of installed with drain {:?}{detail}",
-                DrainCounts::from(report)
-            ))
-            .into());
-        }
-        lane.manager = Some(Arc::new(manager));
-        drop(lane);
+        self.start_owned().await?;
         Ok(Json(self.reading(&key).await))
     }
 
@@ -241,19 +284,7 @@ impl BrowserSession {
         ctx: ObjectContext<'_>,
     ) -> Result<Json<BrowserSessionDrain>, HandlerError> {
         let key = ctx.key().to_string();
-        let Some(manager) = self.record_stop().await else {
-            return Ok(Json(BrowserSessionDrain {
-                key,
-                drain: DrainCounts::default(),
-                error: None,
-            }));
-        };
-        let (report, error) = manager.shutdown().await;
-        Ok(Json(BrowserSessionDrain {
-            key,
-            drain: report.into(),
-            error: error.map(|error| error.to_string()),
-        }))
+        Ok(Json(self.shutdown_current(&key).await?))
     }
 }
 

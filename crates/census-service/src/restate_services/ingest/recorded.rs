@@ -79,7 +79,7 @@ impl Ingest {
         &self,
         identity: String,
         index: usize,
-        spool: census_crawl::recording::spool::FragmentSummary,
+        spool: census_store::recorded::FragmentSummary,
         operation: String,
     ) -> Result<Charged<census_crawl::PreparedRecorded>, HandlerError> {
         admit_reference(&identity, index, &spool, &operation)?;
@@ -110,7 +110,8 @@ impl Ingest {
                 })?;
                 super::validate_rows(batch.table, rows)
             })?;
-            let prepared = recorded.prepare(&operation).map_err(collect_error)?;
+            let prepared = census_crawl::recording::prepare_recorded(recorded, &operation)
+                .map_err(collect_error)?;
             Ok::<_, crate::restate_services::JobError>(permit.into_charged(prepared))
         })
         .await
@@ -135,7 +136,7 @@ pub(super) fn admit(operation: &str, cursor: Option<&str>) -> Result<(), Handler
 fn admit_reference(
     identity: &str,
     index: usize,
-    spool: &census_crawl::recording::spool::FragmentSummary,
+    spool: &census_store::recorded::FragmentSummary,
     operation: &str,
 ) -> Result<(), HandlerError> {
     admit(operation, None)?;

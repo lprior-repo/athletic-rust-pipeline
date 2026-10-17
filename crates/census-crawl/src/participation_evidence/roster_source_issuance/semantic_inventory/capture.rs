@@ -21,13 +21,10 @@ pub(super) fn inventory(
     budget::charge(&checked.reference(), grant)?;
     grant.charge_bytes(metadata.len()).map_err(domain)?;
     grant.charge_bytes(parser_manifest.len()).map_err(domain)?;
-    let kernel = kernel::compiled()?;
-    grant.charge_bytes(kernel.len()).map_err(domain)?;
-    grant
-        .charge_steps(kernel.len().div_ceil(32).max(1))
-        .map_err(domain)?;
-    let kernel_text =
-        std::str::from_utf8(kernel).map_err(|_| invalid("kernel document is not UTF8"))?;
+    let (kernel_text, kernel_digest) = kernel::compiled_identity()?;
+    let kernel_bytes = kernel_text.len();
+    grant.charge_bytes(kernel_bytes).map_err(domain)?;
+    grant.charge_steps(1).map_err(domain)?;
     let mut members = Vec::new();
     for member in &roster.athletes {
         grant.charge_steps(1).map_err(domain)?;
@@ -46,8 +43,8 @@ pub(super) fn inventory(
             crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1
                 .into(),
         kernel_document: kernel_text.into(),
-        kernel_digest: hash(kernel),
-        kernel_bytes: u64::try_from(kernel.len())
+        kernel_digest: kernel_digest.to_string(),
+        kernel_bytes: u64::try_from(kernel_bytes)
             .map_err(|_| census_store::StoreError::CounterOverflow)?,
         packet: checked.reference().as_str().into(),
         parser_manifest: hash(parser_manifest),

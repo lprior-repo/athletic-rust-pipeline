@@ -65,7 +65,7 @@ pub(super) fn review_forged(
             parser.retained().schema_bytes()?,
             parser.retained().configuration_bytes()?,
             parser.retained().dependencies_bytes()?,
-            capture.packet.roster().body()?.into_bytes(),
+            capture.roster_body.as_bytes().to_vec(),
             objects.metadata_bytes(grant)?.to_vec(),
             forged,
             capture.packet.encode()?,

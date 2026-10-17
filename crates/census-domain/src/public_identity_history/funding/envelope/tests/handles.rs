@@ -45,3 +45,34 @@ fn distinct_budgets_of_equal_size_never_share_owner_or_quota() -> TestResult {
     ));
     Ok(())
 }
+
+struct AlternateHost(NonZeroU64);
+
+impl super::super::HeldHistoryMemory for AlternateHost {
+    fn reserved_bytes(&self) -> NonZeroU64 {
+        self.0
+    }
+}
+
+#[test]
+fn different_parent_types_cannot_transfer_quota_between_ledgers() -> TestResult {
+    let (first_budget, _) = bounded_budget(8)?;
+    let second_budget = HistoryMemoryBudget::new(AlternateHost(
+        NonZeroU64::new(8).ok_or("invalid test capacity")?,
+    ));
+    let mut first = first_budget.funding();
+    let mut second = second_budget.funding();
+    let mut left = first.reserve(storage(4)?)?;
+    let right = second.reserve(storage(3)?)?;
+    check!(eq; left.try_absorb(right), Err(HistoryFundingError::ForeignOwner));
+    check!(eq; left.reserved_bytes().get(), 4);
+    let returned = second.reserve(storage(8)?)?;
+    check!(eq; returned.reserved_bytes().get(), 8);
+    check!(matches!(
+        first.reserve(storage(5)?),
+        Err(HistoryFundingError::NoBytes)
+    ));
+    drop(left);
+    check!(eq; first.reserve(storage(8)?)?.reserved_bytes().get(), 8);
+    Ok(())
+}

@@ -7,9 +7,10 @@ use serde_json::Value;
 
 use super::binding_support::{assert_preserved, rows, Fixture};
 use super::options;
-use crate::athlete_verdict::HardContradiction;
 use crate::consensus::tests::support::{audit, batch, client, lane, row, TestResult};
-use crate::{run_lanes, triage, Adjudication, Admitted, Refusal, ReviewFamily, ReviewReport};
+use crate::{run_lanes, triage, ReviewFamily, ReviewReport};
+use census_domain::review_decision::HardContradiction;
+use census_domain::review_decision::{Adjudication, Admitted, Refusal};
 
 fn contradictory_rows() -> TestResult<Vec<CanonicalAthlete>> {
     let mut candidates = rows()?;

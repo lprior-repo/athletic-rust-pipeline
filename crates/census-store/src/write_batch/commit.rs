@@ -99,7 +99,7 @@ impl<'store> StoreBatch<'store> {
         receipt_at: Option<chrono::DateTime<chrono::Utc>>,
     ) -> StoreResult<Option<Application>> {
         let store = self.store;
-        self.admit_source_access()?;
+        self.admit_observations()?;
         let access_capacity = conditional::source_access_capacity(&self)?;
         let (pages, journal, replacements, source_access) = (
             self.pages,

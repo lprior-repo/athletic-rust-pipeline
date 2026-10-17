@@ -1,8 +1,6 @@
 use anyhow::{bail, Context, Result};
-use census_review::{
-    reconcile_athletes, run_lanes, ModelClient, ModelOptions, ModelResponseFormat, ReviewFamily,
-    ReviewOptions,
-};
+use census_domain::review_model::{ModelOptions, ModelResponseFormat};
+use census_review::{reconcile_athletes, run_lanes, ModelClient, ReviewFamily, ReviewOptions};
 use census_store::Store;
 use clap::{Args, ValueEnum};
 

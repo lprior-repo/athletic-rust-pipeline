@@ -3,7 +3,7 @@ use crate::participation_evidence::{bound, codec, hash, invalid, json};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::roster_affiliation_authority::RosterParserClaimV1;
 use census_store::{EvidenceSubjectAttachmentStoreError, StoreResult};
-
+use std::sync::{Arc, Mutex, OnceLock};
 mod claim;
 mod format;
 mod validate;
@@ -12,10 +12,10 @@ pub use format::RosterParserWorkingTreeV1;
 
 const COMPILED: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/roster-parser-manifest-v1.json"));
 const VCS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/roster-parser-vcs-v1.json"));
-
+#[derive(Clone)]
 pub struct CompiledRosterParserManifestV1 {
-    retained: RetainedRosterParserManifestV1,
-    vcs: format::Vcs,
+    retained: Arc<RetainedRosterParserManifestV1>,
+    vcs: Arc<format::Vcs>,
 }
 
 #[derive(Debug)]
@@ -25,10 +25,13 @@ pub struct RetainedRosterParserManifestV1 {
 }
 
 pub struct CheckedRosterParserManifestV1 {
-    retained: RetainedRosterParserManifestV1,
+    retained: Arc<RetainedRosterParserManifestV1>,
 }
 
-pub fn compiled_roster_parser_manifest() -> StoreResult<CompiledRosterParserManifestV1> {
+static COMPILED_MANIFEST: OnceLock<CompiledRosterParserManifestV1> = OnceLock::new();
+static COMPILED_INITIALIZATION: Mutex<()> = Mutex::new(());
+
+fn compile_manifest() -> StoreResult<CompiledRosterParserManifestV1> {
     let retained = RetainedRosterParserManifestV1::decode(COMPILED)?;
     bound(VCS.len(), 1024, "roster parser VCS evidence")?;
     let vcs: format::Vcs = serde_json::from_slice(VCS).map_err(json)?;
@@ -38,7 +41,29 @@ pub fn compiled_roster_parser_manifest() -> StoreResult<CompiledRosterParserMani
             "compiled roster semantic policy differs from running parser",
         ));
     }
-    Ok(CompiledRosterParserManifestV1 { retained, vcs })
+    Ok(CompiledRosterParserManifestV1 {
+        retained: Arc::new(retained),
+        vcs: Arc::new(vcs),
+    })
+}
+
+pub fn compiled_roster_parser_manifest() -> StoreResult<CompiledRosterParserManifestV1> {
+    if let Some(compiled) = COMPILED_MANIFEST.get() {
+        return Ok(compiled.clone());
+    }
+    let _initialization = COMPILED_INITIALIZATION
+        .lock()
+        .map_err(|_| invalid("compiled roster parser initialization lock poisoned"))?;
+    if let Some(compiled) = COMPILED_MANIFEST.get() {
+        return Ok(compiled.clone());
+    }
+    COMPILED_MANIFEST
+        .set(compile_manifest()?)
+        .map_err(|_| invalid("compiled roster parser already initialized"))?;
+    COMPILED_MANIFEST
+        .get()
+        .cloned()
+        .ok_or_else(|| invalid("compiled roster parser initialization missing"))
 }
 
 impl CompiledRosterParserManifestV1 {
@@ -133,16 +158,35 @@ fn assess(
         format::MAX_MANIFEST,
         "roster parser replay bytes",
     )?;
-    let replay_bytes = bytes
+    grant
+        .ensure_available()
+        .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
+    let input_bytes = bytes
         .len()
-        .checked_add(COMPILED.len())
-        .and_then(|size| size.checked_mul(4))
+        .checked_mul(4)
         .ok_or(census_store::StoreError::CounterOverflow)?;
     grant
-        .charge_bytes(replay_bytes)
+        .charge_bytes(input_bytes)
         .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
     grant
-        .charge_steps(512)
+        .charge_steps(1)
+        .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
+    if bytes == COMPILED {
+        let compiled = compiled_roster_parser_manifest()?;
+        compiled.require_claim(claim)?;
+        return Ok(CheckedRosterParserManifestV1 {
+            retained: Arc::clone(&compiled.retained),
+        });
+    }
+    let additional_bytes = COMPILED
+        .len()
+        .checked_mul(4)
+        .ok_or(census_store::StoreError::CounterOverflow)?;
+    grant
+        .charge_bytes(additional_bytes)
+        .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
+    grant
+        .charge_steps(511)
         .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
     let retained = RetainedRosterParserManifestV1::decode(bytes)?;
     let compiled = compiled_roster_parser_manifest()?;
@@ -150,7 +194,9 @@ fn assess(
         1 => require_v1(&retained, &compiled, claim)?,
         _ => return Err(invalid("unsupported retained roster parser adapter")),
     }
-    Ok(CheckedRosterParserManifestV1 { retained })
+    Ok(CheckedRosterParserManifestV1 {
+        retained: Arc::new(retained),
+    })
 }
 
 fn require_v1(

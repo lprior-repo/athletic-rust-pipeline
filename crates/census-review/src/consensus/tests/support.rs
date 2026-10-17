@@ -8,7 +8,8 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use serde_json::Value;
 
-use crate::{ModelClient, ModelOptions, ReviewFamily, ReviewOptions};
+use crate::{ModelClient, ReviewFamily, ReviewOptions};
+use census_domain::review_model::ModelOptions;
 
 pub(crate) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 

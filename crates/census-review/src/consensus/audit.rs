@@ -1,4 +1,5 @@
 use census_domain::model::{ReviewPacket, VerdictBatch};
+use census_domain::review_model::ModelResponseFormat;
 use serde::{Deserialize, Serialize};
 
 use crate::ask::Answer;
@@ -44,7 +45,7 @@ pub(crate) struct LaneAudit {
     model: String,
     timeout_ms: u128,
     max_tokens: u32,
-    response_format: crate::ModelResponseFormat,
+    response_format: ModelResponseFormat,
     request_digest: Option<String>,
     pub(crate) status: String,
     error: Option<String>,

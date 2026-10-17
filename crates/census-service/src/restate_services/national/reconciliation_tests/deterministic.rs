@@ -62,11 +62,11 @@ async fn exercise(boundary: Boundary) -> TestResult<Journal> {
     let mut national = super::NationalCensus::new(Arc::new(fixtures::FixtureClock), jobs);
     national.review_lanes = Ok([
         census_review::ModelClient::new(
-            census_review::ModelOptions::local("http://127.0.0.1:1", "fixture")?
+            census_domain::review_model::ModelOptions::local("http://127.0.0.1:1", "fixture")?
                 .with_timeout(Duration::from_millis(100)),
         )?,
         census_review::ModelClient::new(
-            census_review::ModelOptions::local("http://127.0.0.1:2", "fixture")?
+            census_domain::review_model::ModelOptions::local("http://127.0.0.1:2", "fixture")?
                 .with_timeout(Duration::from_millis(100)),
         )?,
     ]);

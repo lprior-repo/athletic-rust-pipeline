@@ -4,7 +4,8 @@ use census_domain::model::{
     ReviewCase, ReviewCaseFact, ReviewVerdict, ReviewVerdictKind, VerdictBatch,
     ATHLETE_IDENTITY_FAMILY,
 };
-use census_review::{triage, Adjudication, Admitted, ReviewFamily};
+use census_domain::review_decision::{Adjudication, Admitted};
+use census_review::{triage, ReviewFamily};
 use common::{identity_case, packet_for, proposal};
 
 #[test]

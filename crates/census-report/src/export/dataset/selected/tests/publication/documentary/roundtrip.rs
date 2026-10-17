@@ -37,6 +37,7 @@ fn native_genuine_documentary_selected_publication_reopens_without_live_store_or
     check!(!store_path.exists());
     check!(!object_path.exists());
     let reopened = ExportDataset::reopen_frozen_with_digest(&frozen, &digest)?;
+    reopened.ensure_current_selected_write()?;
     check!(eq; reopened.lineage, lineage);
     check!(eq; inspect(&reopened, &expected)?, before);
     let publication =

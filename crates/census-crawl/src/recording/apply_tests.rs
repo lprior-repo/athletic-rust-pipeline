@@ -31,13 +31,13 @@ fn lost_ack_reopen_preserves_original_credit_without_duplicate_source_facts() ->
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path())?;
     let recorded = snapshot(&store, "next-page")?;
-    let first = recorded.apply(&store, "source-window")?;
+    let first = crate::recording::apply_recorded(&recorded, &store, "source-window")?;
     check!(eq; first.appended(), 2);
     check!(eq; meet_count(&store)?, 2);
     let captured_facts = store.snapshot().tables_digest(&[Table::Meets])?;
     drop(store);
     let store = Store::open(dir.path())?;
-    let repeated = recorded.apply(&store, "source-window")?;
+    let repeated = crate::recording::apply_recorded(&recorded, &store, "source-window")?;
     check!(eq; repeated.appended(), 0);
     check!(eq; repeated.receipt(), first.receipt());
     check!(eq; meet_count(&store)?, 2);
@@ -53,9 +53,17 @@ fn later_horizon_refreshes_frontier_without_reappending_accepted_capture_facts()
     let capture_store = Store::open(origin.path())?;
     let target = tempfile::tempdir()?;
     let store = Store::open(target.path())?;
-    snapshot(&capture_store, "page-2")?.apply(&store, "source-window")?;
+    crate::recording::apply_recorded(
+        &snapshot(&capture_store, "page-2")?,
+        &store,
+        "source-window",
+    )?;
     let captured_facts = store.snapshot().tables_digest(&[Table::Meets])?;
-    let later = snapshot(&capture_store, "exhausted")?.apply(&store, "source-window")?;
+    let later = crate::recording::apply_recorded(
+        &snapshot(&capture_store, "exhausted")?,
+        &store,
+        "source-window",
+    )?;
     check!(eq; later.appended(), 0);
     check!(eq; meet_count(&store)?, 2);
     check!(eq; store.snapshot().tables_digest(&[Table::Meets])?, captured_facts);
@@ -75,7 +83,7 @@ fn conflicting_later_capture_rejects_the_whole_application_without_publishing_ea
     standing.append_many(Table::Meets, &[json!({"id":"historic-b"})])?;
     standing.commit_once("source-b", &"c".repeat(64))?;
     let acknowledged_facts = store.snapshot().tables_digest(&[Table::Meets])?;
-    let result = recorded.apply(&store, "source-window");
+    let result = crate::recording::apply_recorded(&recorded, &store, "source-window");
     check!(matches!(result, Err(crate::CrawlError::Invariant { .. })));
     check!(eq; meet_count(&store)?, 1);
     check!(eq; store.snapshot().tables_digest(&[Table::Meets])?, acknowledged_facts);

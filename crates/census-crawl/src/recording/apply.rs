@@ -20,20 +20,22 @@ impl PreparedRecorded {
     }
 }
 
-impl Recorded {
-    pub fn prepare(self, prefix: &str) -> CrawlResult<PreparedRecorded> {
-        let (operation, digest) = identity(&self, prefix)?;
-        Ok(PreparedRecorded {
-            recorded: self,
-            operation,
-            digest,
-        })
-    }
+pub fn prepare_recorded(recorded: Recorded, prefix: &str) -> CrawlResult<PreparedRecorded> {
+    let (operation, digest) = identity(&recorded, prefix)?;
+    Ok(PreparedRecorded {
+        recorded,
+        operation,
+        digest,
+    })
+}
 
-    pub fn apply(&self, store: &Store, prefix: &str) -> CrawlResult<Application> {
-        let (operation, digest) = identity(self, prefix)?;
-        apply(self, store, &operation, &digest)
-    }
+pub fn apply_recorded(
+    recorded: &Recorded,
+    store: &Store,
+    prefix: &str,
+) -> CrawlResult<Application> {
+    let (operation, digest) = identity(recorded, prefix)?;
+    apply(recorded, store, &operation, &digest)
 }
 
 fn identity(recorded: &Recorded, prefix: &str) -> CrawlResult<(String, String)> {
@@ -84,7 +86,7 @@ fn validate(recorded: &Recorded) -> CrawlResult<()> {
         .effects
         .iter()
         .try_fold(empty_extent(), |previous, effect| {
-            effect.validate(recorded, &previous)?;
+            super::effect::validate(effect, recorded, &previous)?;
             Ok::<_, crate::CrawlError>(effect.clone())
         })?;
     Ok(())

@@ -1,4 +1,4 @@
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum BrowserStartupError {
     #[error("browser profile directory must be a real directory")]
     ProfileNotDirectory,
@@ -34,6 +34,10 @@ pub enum BrowserStartupError {
     ConnectFailed(String),
     #[error("browser bootstrap failed")]
     BootstrapFailed,
+    #[error("browser startup was cancelled")]
+    Cancelled,
+    #[error("browser lifecycle operation panicked")]
+    Panicked,
     #[error("browser actor stopped during startup")]
     ActorStopped,
     #[error("browser handler stopped")]
@@ -42,4 +46,6 @@ pub enum BrowserStartupError {
     HandlerStoppedCleanupFailed(String),
     #[error("browser shutdown failed: {0}")]
     ShutdownFailed(String),
+    #[error(transparent)]
+    DrainAccounting(#[from] crate::drain::DrainAccountingError),
 }

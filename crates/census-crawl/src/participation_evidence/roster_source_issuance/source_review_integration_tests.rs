@@ -9,9 +9,11 @@ use census_store::{
     RosterSourceReviewObjectsV1, Store,
 };
 
-#[path = "source_integration_setup.rs"]
-mod setup;
+use super::integration::setup;
 use setup::*;
+
+#[path = "source_admission_tests.rs"]
+mod admission;
 
 fn fields(operation: &str) -> TestResult<RosterSourceReviewFieldsV1> {
     Ok(RosterSourceReviewFieldsV1 {

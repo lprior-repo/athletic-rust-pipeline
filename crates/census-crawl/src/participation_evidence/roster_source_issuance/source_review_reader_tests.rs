@@ -5,9 +5,14 @@ use census_store::{
     ReviewedRosterSourceClaimV1,
 };
 
-#[path = "source_integration_setup.rs"]
-mod setup;
+use super::integration::setup;
 use setup::*;
+
+#[path = "source_frozen_canonical_tests.rs"]
+mod canonical;
+
+#[path = "source_frozen_encoding_tests.rs"]
+mod compact_wire;
 
 fn issued() -> TestResult<(tempfile::TempDir, census_store::Store)> {
     let (directory, store) = enrolled_store()?;

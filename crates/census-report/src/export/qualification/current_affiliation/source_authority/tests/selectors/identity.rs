@@ -53,7 +53,7 @@ fn controlled_recycled_provider_id_without_exact_physical_row_cannot_inherit_acc
             name,
             fixture::PhysicalProjection::Omit,
         )?;
-        check!(ne; recycled.packet.roster().body()?, accepted.packet.roster().body()?);
+        check!(ne; recycled.roster_body, accepted.roster_body);
         check!(fixture
             .store
             .scan::<CanonicalAthlete>(Table::Athletes)?

@@ -57,7 +57,7 @@ pub struct BrowserStatus {
     pub cooldown_ms: u64,
 }
 
-fn validate_cdp_endpoint(url: &Url) -> Result<(), BrowserStartupError> {
+pub(crate) fn validate_cdp_endpoint(url: &Url) -> Result<(), BrowserStartupError> {
     if url.scheme() != "http" && url.scheme() != "https" {
         return Err(BrowserStartupError::CdpBadScheme);
     }

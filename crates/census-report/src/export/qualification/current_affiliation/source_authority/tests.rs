@@ -6,6 +6,7 @@ use serde_json::{json, Value};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod closure_visibility;
 mod fixture;
 mod history;
 mod issuance;

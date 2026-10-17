@@ -91,7 +91,7 @@ pub(super) fn replay(
             .roster_family
             .as_ref()
             .ok_or_else(|| invalid("reviewed roster family root missing"))?;
-        let bound = BoundRosterSourceViewV1::replay(
+        BoundRosterSourceViewV1::with_replay(
             dataset,
             profile,
             objects,
@@ -99,11 +99,13 @@ pub(super) fn replay(
             &descriptor.observations,
             family,
             &mut grant,
-        )?;
-        let (pinned, _) = super::super::source_authority::assess_historical(
-            dataset, profile, &bound, &mut grant,
-        )?;
-        Ok(pinned)
+            |bound, grant| {
+                let (pinned, _) = super::super::source_authority::assess_historical(
+                    dataset, profile, bound, grant,
+                )?;
+                Ok(pinned)
+            },
+        )
     })();
     if result.is_err() {
         grant.poison();

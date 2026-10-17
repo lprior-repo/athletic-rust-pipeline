@@ -5,8 +5,8 @@ use census_domain::model::{
     ReviewCase, ReviewCaseFact, ReviewEvidenceFact, ReviewPacket, ReviewVerdict, ReviewVerdictKind,
     SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, ATHLETE_IDENTITY_FAMILY,
 };
+use census_domain::review_decision::Adjudication;
 use census_domain::UsJurisdiction;
-use census_review::Adjudication;
 use census_store::{Store, Table};
 
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;

@@ -23,15 +23,15 @@ pub(super) fn assess<'a>(
     };
     policies::assess(evidence, &contracts, proposal, grant)?;
     source::admission(evidence, proposal, grant)?;
-    let parser = parser(claim, grant)?;
-    let held = evidence.retained_root(grant)?;
-    let packet = source::packet(held, proposal, grant)?;
-    let body = source::capture(&packet, proposal, grant)?;
+    let parser = parser(claim, proposal, grant)?;
+    let packet = CheckedOriginalRosterPacket::read(evidence, proposal, grant)?;
+    let raw = packet.packet(grant)?;
+    let body = source::capture(raw, proposal, grant)?;
     let objects =
-        super::super::capture_objects::derive_retained(evidence, &packet, &parser, grant)?;
+        super::super::capture_objects::derive_retained(evidence, raw, &parser, &body, grant)?;
     let retained = interpretation::read(claim, &objects, grant)?;
     let checked = semantic_inventory::compare_original_raw_v1(
-        evidence,
+        &packet,
         &parser,
         objects.metadata_bytes(grant)?,
         &retained,
@@ -41,17 +41,8 @@ pub(super) fn assess<'a>(
     let (school, program) = binding::assess_projection(evidence, proposal, &checked, grant)?;
     claim.qualification_object(grant)?;
     claim.activation_object(grant)?;
-    let metadata = objects.metadata_bytes(grant)?;
     let interpretation =
         claim.object(proposal.capture().interpretation().digest().as_str(), grant)?;
-    grant
-        .charge_bytes(
-            metadata
-                .len()
-                .checked_add(interpretation.len())
-                .ok_or(census_store::StoreError::CounterOverflow)?,
-        )
-        .map_err(source::domain)?;
     evidence.require_original_grant(grant)?;
     Ok(HistoricalReviewedRosterSourceV2 {
         claim,
@@ -59,16 +50,16 @@ pub(super) fn assess<'a>(
         school,
         program,
         body,
-        metadata: metadata.to_vec(),
-        interpretation: interpretation.to_vec(),
+        objects,
+        interpretation,
     })
 }
 
 fn parser(
     claim: &ReviewedRosterSourceClaimV1,
+    proposal: &census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<RetainedRosterParserManifestV1> {
-    let proposal = claim.proposal(grant)?;
     let bytes = claim.object(proposal.parser().artifact().digest().as_str(), grant)?;
     source::source_reference(bytes, proposal.parser().artifact(), grant)?;
     grant

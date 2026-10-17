@@ -35,6 +35,7 @@ pub(super) fn admit(
     if effects.len() > 100_000 {
         return Err(refused("conditional effect count exceeds 100000"));
     }
+    admit_offered_observations(base, effects)?;
     let mut seen = HashSet::new();
     seen.try_reserve(effects.len())
         .map_err(|_| refused("allocating conditional operation membership"))?;
@@ -52,6 +53,26 @@ pub(super) fn admit(
         }
         Ok(())
     })
+}
+
+fn admit_offered_observations(
+    base: &StoreBatch<'_>,
+    effects: &[ConditionalBatch<'_, '_>],
+) -> StoreResult<()> {
+    std::iter::once(base)
+        .chain(effects.iter().map(|effect| &effect.batch))
+        .try_fold((0usize, 0usize), |(rows, bytes), batch| {
+            let (incoming_rows, incoming_bytes) = batch.pending_counts()?;
+            let rows = rows
+                .checked_add(incoming_rows)
+                .ok_or(StoreError::CounterOverflow)?;
+            let bytes = bytes
+                .checked_add(incoming_bytes)
+                .ok_or(StoreError::CounterOverflow)?;
+            super::source_access::admit_counts(rows, bytes)?;
+            Ok::<_, StoreError>((rows, bytes))
+        })?;
+    Ok(())
 }
 
 pub(super) fn admit_bytes(
@@ -104,7 +125,7 @@ pub(super) fn merge<'store>(
         base.source_access.extend(effect.batch.source_access);
         Ok::<_, StoreError>(())
     })?;
-    base.admit_source_access()?;
+    base.admit_observations()?;
     Ok(base)
 }
 

@@ -1,38 +1,8 @@
 use census_domain::model::{ReviewPacket, ReviewVerdict, ReviewVerdictKind, VerdictBatch};
+use census_domain::review_decision::{Adjudication, Admitted, Refusal};
 
 use super::families::IDENTITY_FIELD;
 use super::{athlete_verdict, ReviewFamily};
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Admitted {
-    pub field: String,
-    pub value: String,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Refusal {
-    WrongField,
-    InvalidValue,
-    AlreadyResolved,
-    UnnamedCase,
-    HardContradiction(crate::athlete_verdict::HardContradiction),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Adjudication {
-    Decided(Admitted),
-    Undecided,
-    Refused(Refusal),
-}
-
-impl Adjudication {
-    pub const fn admitted(&self) -> Option<&Admitted> {
-        match self {
-            Self::Decided(admitted) => Some(admitted),
-            Self::Undecided | Self::Refused(_) => None,
-        }
-    }
-}
 
 pub fn validate(
     family: ReviewFamily,

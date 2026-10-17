@@ -1,9 +1,7 @@
-use std::time::Duration;
-
 use census_domain::model::{ReviewPacket, VerdictBatch};
+use census_domain::review_model::{ModelContentFailure, ModelError, ModelOptions};
 use serde_json::Value;
 
-mod endpoint;
 mod request;
 mod response;
 
@@ -13,112 +11,14 @@ use response::message_content;
 use crate::model::response::parse_batch;
 
 pub(super) const MAX_TOKENS_CAP: u32 = 8192;
-const MAX_MODEL_LEN: usize = 256;
 const REQUEST_CAP: usize = 1_048_576;
 const RESPONSE_CAP: usize = 262_144;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ModelResponseFormat {
-    JsonSchema,
-    PromptJson,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ModelOptions {
-    endpoint: endpoint::ValidatedEndpoint,
-    model: String,
-    timeout: Duration,
-    max_tokens: u32,
-    response_format: ModelResponseFormat,
-}
-
-impl ModelOptions {
-    pub fn local(raw: &str, model: &str) -> Result<Self, ModelError> {
-        let endpoint = endpoint::ValidatedEndpoint::new(raw)?;
-
-        if model.len() > MAX_MODEL_LEN {
-            return Err(ModelError::InvalidEndpoint {
-                reason: "model name exceeds maximum length",
-            });
-        }
-        if model.trim().is_empty() {
-            return Err(ModelError::InvalidEndpoint {
-                reason: "model name must not be empty",
-            });
-        }
-
-        Ok(Self {
-            endpoint,
-            model: model.to_string(),
-            timeout: Duration::from_secs(180),
-            max_tokens: 1_536,
-            response_format: ModelResponseFormat::JsonSchema,
-        })
-    }
-
-    pub fn completions_url(&self) -> String {
-        self.endpoint.completions_url()
-    }
-
-    pub fn model_name(&self) -> &str {
-        &self.model
-    }
-
-    pub fn timeout(&self) -> Duration {
-        self.timeout
-    }
-
-    pub fn max_tokens(&self) -> u32 {
-        self.max_tokens
-    }
-    pub fn with_timeout(mut self, timeout: Duration) -> Self {
-        self.timeout = timeout;
-        self
-    }
-
-    pub fn with_max_tokens(mut self, max_tokens: u32) -> Self {
-        self.max_tokens = max_tokens;
-        self
-    }
-
-    pub fn response_format(&self) -> ModelResponseFormat {
-        self.response_format
-    }
-
-    pub fn with_response_format(mut self, response_format: ModelResponseFormat) -> Self {
-        self.response_format = response_format;
-        self
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ModelError {
-    #[error("invalid endpoint: {reason}")]
-    InvalidEndpoint { reason: &'static str },
-    #[error("model request timed out")]
-    RequestTimeout,
-    #[error("model request failed")]
-    RequestFailed,
-    #[error("model returned status {status}")]
-    Status { status: u16 },
-    #[error("model returned no message content")]
-    Empty,
-    #[error("model content is not a verdict batch: {reason}")]
-    Content { reason: &'static str },
-    #[error("request exceeds maximum size: {bytes} bytes")]
-    RequestTooLarge { bytes: usize },
-    #[error("response exceeds maximum size: {bytes} bytes")]
-    ResponseTooLarge { bytes: usize },
-}
-
-impl From<reqwest::Error> for ModelError {
-    fn from(_err: reqwest::Error) -> Self {
-        if _err.is_timeout() {
-            ModelError::RequestTimeout
-        } else {
-            ModelError::RequestFailed
-        }
+fn classify_transport_error(error: reqwest::Error) -> ModelError {
+    if error.is_timeout() {
+        ModelError::RequestTimeout
+    } else {
+        ModelError::RequestFailed
     }
 }
 
@@ -133,7 +33,7 @@ impl ModelClient {
         let http = reqwest::Client::builder()
             .no_proxy()
             .redirect(reqwest::redirect::Policy::none())
-            .timeout(options.timeout)
+            .timeout(options.timeout())
             .build()
             .map_err(|_| ModelError::RequestFailed)?;
         Ok(Self { http, options })
@@ -152,7 +52,8 @@ impl ModelClient {
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .body(body)
             .send()
-            .await?;
+            .await
+            .map_err(classify_transport_error)?;
         let status = response.status().as_u16();
         let content_length = response.content_length().map_or(0, |value| value);
         let declared_cap = u64::try_from(RESPONSE_CAP).map_or(u64::MAX, |value| value);
@@ -166,7 +67,7 @@ impl ModelClient {
             let chunk = match response.chunk().await {
                 Ok(Some(c)) => c,
                 Ok(None) => break,
-                Err(err) => return Err(ModelError::from(err)),
+                Err(err) => return Err(classify_transport_error(err)),
             };
             let grown = buf.len().saturating_add(chunk.len());
             if grown > RESPONSE_CAP {
@@ -180,11 +81,11 @@ impl ModelClient {
         }
 
         let text = String::from_utf8(buf).map_err(|_| ModelError::Content {
-            reason: "response body is not valid UTF-8",
+            reason: ModelContentFailure::InvalidUtf8,
         })?;
 
         let parsed: Value = serde_json::from_str(&text).map_err(|_| ModelError::Content {
-            reason: "response is not valid JSON",
+            reason: ModelContentFailure::InvalidJson,
         })?;
         let content = message_content(&parsed).ok_or(ModelError::Empty)?;
         parse_batch(&content)

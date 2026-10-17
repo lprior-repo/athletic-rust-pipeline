@@ -1,4 +1,5 @@
 use super::*;
+use census_store::recorded::{Recorded, RecordedBatch};
 
 pub(super) async fn synthetic_v4_date_projection(
     ctx: &AdapterContext<'_>,
@@ -32,7 +33,8 @@ pub(super) async fn synthetic_v4_date_projection(
     completion.payload["body_sha256"] = serde_json::json!(body_digest);
     completion.payload["projection_context"] = serde_json::json!(old_context);
     seed(ctx.fetcher, historical_body)?;
-    let applied = recorded.apply(ctx.store, "tfrrs-synthetic-date-v4-fixture")?;
+    let applied =
+        crate::recording::apply_recorded(&recorded, ctx.store, "tfrrs-synthetic-date-v4-fixture")?;
     check!(applied.written());
     check!(eq; snapshot(ctx.store, "crawl_effect_receipts_v1")?, expected_witnesses);
     check!(snapshot(ctx.store, PHASE)?.is_empty());
@@ -67,7 +69,7 @@ pub(super) fn entity_digest(store: &Store) -> TestResult<String> {
 }
 
 pub(super) fn assert_v2_witnesses(
-    recorded: &crate::recording::Recorded,
+    recorded: &Recorded,
 ) -> TestResult<BTreeMap<String, serde_json::Value>> {
     use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalTeam, SourceObservation};
     let mut expected = BTreeMap::new();
@@ -97,7 +99,7 @@ pub(super) fn assert_v2_witnesses(
 }
 
 pub(super) fn row_witnesses<T: serde::de::DeserializeOwned + serde::Serialize>(
-    batch: &crate::recording::RecordedBatch,
+    batch: &RecordedBatch,
 ) -> TestResult<Vec<(String, serde_json::Value)>> {
     batch
         .rows

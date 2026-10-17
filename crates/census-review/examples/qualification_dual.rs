@@ -2,9 +2,8 @@ use census_domain::model::{
     serialized_digest, CanonicalSchool, ReviewCase, ReviewPacket, ReviewState, ReviewVerdictRecord,
     SchoolId,
 };
-use census_review::{
-    run_lanes, ModelClient, ModelOptions, ModelResponseFormat, ReviewFamily, ReviewOptions,
-};
+use census_domain::review_model::{ModelOptions, ModelResponseFormat};
+use census_review::{run_lanes, ModelClient, ReviewFamily, ReviewOptions};
 use census_store::{Store, Table};
 use serde_json::Value;
 use std::{io::Write, path::Path, time::Duration};

@@ -178,7 +178,7 @@ pub use context::{
     assess_performance_date, school_observations_of, AdapterContext, CaptureContext,
     PerformanceDateAssessment, ResultsCaptureContext,
 };
-pub use recording::{PreparedRecorded, Recorded, RecordedBatch, RecordedJournal, Recording};
+pub use recording::{PreparedRecorded, Recording};
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;

@@ -1,4 +1,5 @@
 use super::*;
+use census_store::recorded::Recorded;
 
 fn mixed_body() -> TestResult<Vec<u8>> {
     let mut document: serde_json::Value =
@@ -18,7 +19,7 @@ fn mixed_body() -> TestResult<Vec<u8>> {
     Ok(serde_json::to_vec(&document)?)
 }
 
-fn apply_journal(store: &Store, recorded: &crate::recording::Recorded) -> TestResult {
+fn apply_journal(store: &Store, recorded: &Recorded) -> TestResult {
     let mut batch = store.write_batch();
     for entry in &recorded.journal {
         batch.journal_done(&entry.phase, &entry.key, &entry.payload)?;

@@ -26,6 +26,7 @@ pub(super) fn prepare(case: Case) -> TestResult<Transfer> {
         UsJurisdiction::Wisconsin,
         old_at,
     )?;
+    fixture.accept(&old.athlete.id)?;
     let mut current = fixture::install_dated(
         &fixture,
         "12440",
@@ -36,15 +37,8 @@ pub(super) fn prepare(case: Case) -> TestResult<Transfer> {
         fixture::AT,
     )?;
     let address_digest = postal(&fixture.store, &mut current.school)?;
-    let mut schools = fixture.store.scan::<CanonicalSchool>(Table::Schools)?;
-    let school = schools
-        .iter_mut()
-        .find(|school| school.id == current.school.id)
-        .ok_or("controlled current school")?;
-    *school = current.school.clone();
-    fixture.store.replace_many(Table::Schools, &schools)?;
+    fixture.store.append(Table::Schools, &current.school)?;
     super::super::super::history::append_performance(&fixture.store, &old.athlete, &old.school.id)?;
-    fixture.accept(&old.athlete.id)?;
     crate::export::qualification::current_affiliation::tests::identity::accept_pair(
         &fixture.store,
         &fixture.writer,
@@ -55,12 +49,14 @@ pub(super) fn prepare(case: Case) -> TestResult<Transfer> {
         &fixture,
         &old,
         "controlled-transfer-old-reviewed-occurrence",
-    )?;
+    )
+    .map_err(|error| format!("old roster review: {error}"))?;
     issuance::review(
         &fixture,
         &current,
         "controlled-transfer-current-reviewed-occurrence",
-    )?;
+    )
+    .map_err(|error| format!("current roster review: {error}"))?;
     Ok(Transfer {
         fixture,
         old,

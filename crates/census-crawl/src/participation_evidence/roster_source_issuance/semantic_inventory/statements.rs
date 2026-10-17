@@ -29,10 +29,11 @@ pub(super) fn current(
             reason: witness(reason),
         },
     };
-    grant.charge_bytes(64).map_err(domain)?;
+    let owner = compact_str(current.owner())?;
+    let member = compact_str(current.member())?;
     Ok(wire::Current::Available {
-        owner: current.owner().into(),
-        member: current.member().into(),
+        owner,
+        member,
         row: current.row(),
         section: current.section().into(),
         container: current.container().into(),
@@ -109,6 +110,14 @@ fn witness(value: RosterWitnessUnavailableV1) -> wire::WitnessGap {
         RosterWitnessUnavailableV1::OwnerInventoryLimit => wire::WitnessGap::OwnerInventoryLimit,
         RosterWitnessUnavailableV1::ResourceLimit => wire::WitnessGap::ResourceLimit,
     }
+}
+
+fn compact_str(value: &str) -> StoreResult<Box<str>> {
+    let mut s = String::new();
+    s.try_reserve_exact(value.len())
+        .map_err(|_| invalid("semantic inventory text allocation refused"))?;
+    s.push_str(value);
+    Ok(s.into_boxed_str())
 }
 
 fn hex(value: &[u8; 32]) -> String {

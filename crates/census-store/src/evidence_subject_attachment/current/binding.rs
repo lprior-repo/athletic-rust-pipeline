@@ -16,5 +16,6 @@ pub(super) fn bind<'a, 's>(
         record: parts.record,
         subject: parts.subject,
         receipt: parts.receipt,
+        continuation: &owner.continuation,
     }))
 }

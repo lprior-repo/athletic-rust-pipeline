@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use census_domain::model::SchoolYear;
+use census_domain::review_model::{ModelOptions, ModelResponseFormat};
 use census_reconcile::identity::WorkflowIdentity;
-use census_review::{ModelClient, ModelOptions, ModelResponseFormat, ReviewFamily, ReviewOptions};
+use census_review::{ModelClient, ReviewFamily, ReviewOptions};
 use census_store::MAX_ROWS_PER_TABLE;
 use restate_sdk::prelude::*;
 

@@ -23,7 +23,9 @@ mod response_wire;
 pub mod retry;
 pub(crate) mod transport;
 pub use lifecycle::error::BrowserStartupError;
-pub use lifecycle::BrowserManager;
+pub use lifecycle::{
+    BrowserCleanupAttempt, BrowserExit, BrowserManager, BrowserOwner, BrowserStartup,
+};
 pub use outcome::{
     BrowserCapture, BrowserError, BrowserFailure, BrowserOutcome, BrowserResponse, Verdict,
 };

@@ -28,7 +28,7 @@ fn genuine_school_originals_install_before_unaccepted_provider_projection() -> T
         RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1.phase(), reference.as_str(), payload.clone()).journal);
     check!(eq; recorded.rows.len(), 2);
     check!(eq; recorded.effects.len(), 0);
-    let prepared = recorded.prepare("genuine-school-originals")?;
+    let prepared = crate::recording::prepare_recorded(recorded, "genuine-school-originals")?;
     let first = prepared.apply(&store)?;
     check!(eq; first.appended(), 2);
     check!(eq; store.scan::<CanonicalSchool>(Table::Schools)?, vec![school.clone()]);
@@ -87,9 +87,9 @@ fn genuine_school_originals_install_before_unaccepted_provider_projection() -> T
         return Err("genuine installed school did not resolve provider target".into());
     };
     check!(eq; protected_state(&store)?, before_target);
-    let target_prepared = target_recording
-        .drain()
-        .prepare("genuine-school-provider-target")?;
+    let target_recorded = target_recording.drain();
+    let target_prepared =
+        crate::recording::prepare_recorded(target_recorded, "genuine-school-provider-target")?;
     let target_applied = target_prepared.apply(&store)?;
     check!(eq; target_applied.appended(), 4);
     no_public_birth(&store)?;

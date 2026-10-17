@@ -52,7 +52,7 @@ pub(super) fn read(
         .map_err(super::super::super::source_error)?;
     let current_input_token = view.attachment_input_revision_bytes()?;
     let mut archive = Archive {
-        schema: "roster-reviewed-source-publication-closure-v1".into(),
+        schema: super::ARCHIVE_SCHEMA.into(),
         store,
         selected_snapshot_sequence: view.sequence(),
         source_store_lifecycle: super::super::super::LIFECYCLE,

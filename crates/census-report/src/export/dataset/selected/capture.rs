@@ -18,10 +18,7 @@ impl ExportDataset {
     ) -> ReportResult<Self> {
         snapshot.ensure_origin(store)?;
         let profile = snapshot.selected_profile(selection)?;
-        let _supported =
-            census_domain::profile_execution::validate_current_selected_qualification_profile(
-                &profile,
-            )
+        census_domain::profile_execution::validate_current_selected_qualification_profile(&profile)
             .map_err(|error| invalid(&error.to_string()))?;
         preflight::admit(snapshot)?;
         let accepted = snapshot

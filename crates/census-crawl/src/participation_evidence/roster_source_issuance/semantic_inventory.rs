@@ -90,16 +90,7 @@ pub fn decode_untrusted_roster_semantic_inventory_v1(
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<DecodedUntrustedRosterSemanticInventoryV1> {
     let result = (|| {
-        grant.ensure_available().map_err(domain)?;
-        bound(bytes.len(), LIMIT, "roster semantic inventory")?;
-        grant.charge_bytes(bytes.len()).map_err(domain)?;
-        grant
-            .charge_steps(bytes.len().div_ceil(32).max(1))
-            .map_err(domain)?;
-        let inventory: wire::Inventory = serde_json::from_slice(bytes).map_err(json)?;
-        if inventory.schema != SCHEMA || inventory.interpretation != INTERPRETATION || inventory.provider_semantic_contract != crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1 {
-            return Err(invalid("unsupported roster semantic inventory"));
-        }
+        let inventory = decode_inventory(bytes, grant)?;
         let canonical = encoding::encode(&inventory, grant)?;
         if canonical != bytes {
             return Err(invalid("noncanonical roster semantic inventory"));
@@ -115,10 +106,48 @@ pub fn decode_untrusted_roster_semantic_inventory_v1(
     result
 }
 
+pub(super) struct UntrustedRetainedRosterSemanticInventoryV1<'a> {
+    bytes: &'a [u8],
+    inventory: wire::Inventory,
+}
+
+pub(super) fn decode_retained_for_replay<'a>(
+    bytes: &'a [u8],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<UntrustedRetainedRosterSemanticInventoryV1<'a>> {
+    let result = decode_inventory(bytes, grant)
+        .map(|inventory| UntrustedRetainedRosterSemanticInventoryV1 { bytes, inventory });
+    if result.is_err() {
+        grant.poison();
+    }
+    result
+}
+
+fn decode_inventory(
+    bytes: &[u8],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<wire::Inventory> {
+    grant.ensure_available().map_err(domain)?;
+    bound(bytes.len(), LIMIT, "roster semantic inventory")?;
+    grant.charge_bytes(bytes.len()).map_err(domain)?;
+    grant
+        .charge_steps(bytes.len().div_ceil(32).max(1))
+        .map_err(domain)?;
+    let inventory: wire::Inventory = serde_json::from_slice(bytes).map_err(json)?;
+    if inventory.schema != SCHEMA
+        || inventory.interpretation != INTERPRETATION
+        || inventory.provider_semantic_contract
+            != crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1
+    {
+        return Err(invalid("unsupported roster semantic inventory"));
+    }
+    Ok(inventory)
+}
+
 #[cfg(test)]
 mod tests;
 
-pub(in crate::participation_evidence) fn require_fixed_roster_semantic_kernel_v1() -> StoreResult<()>
+pub(in crate::participation_evidence) fn require_fixed_roster_semantic_kernel_v2() -> StoreResult<()>
 {
     kernel::compiled().map(|_| ())
 }

@@ -10,7 +10,10 @@ pub(crate) enum WireTotal {
 }
 
 pub(crate) fn classify_wire_total(encoded_data_length: f64) -> WireTotal {
-    if !encoded_data_length.is_finite() || encoded_data_length < 0.0 {
+    if !encoded_data_length.is_finite()
+        || encoded_data_length < 0.0
+        || encoded_data_length.fract() != 0.0
+    {
         return WireTotal::Malformed;
     }
     if encoded_data_length > MAX_ENCODED_RESPONSE_BYTES_F64 {
@@ -19,13 +22,7 @@ pub(crate) fn classify_wire_total(encoded_data_length: f64) -> WireTotal {
     WireTotal::WithinBudget
 }
 
-pub(crate) fn refuse_excess_wire(
-    evaluation_ok: bool,
-    encoded_total: Option<f64>,
-) -> Result<(), BrowserError> {
-    if !evaluation_ok {
-        return Ok(());
-    }
+pub(crate) fn refuse_excess_wire(encoded_total: Option<f64>) -> Result<(), BrowserError> {
     let Some(total) = encoded_total else {
         return Err(BrowserError::Protocol);
     };
@@ -73,9 +70,9 @@ mod tests {
 
     #[test]
     fn a_successful_capture_with_a_measured_wire_total_is_accepted() {
-        assert_eq!(refuse_excess_wire(true, Some(1_048_576.0)), Ok(()));
+        assert_eq!(refuse_excess_wire(Some(1_048_576.0)), Ok(()));
         assert_eq!(
-            refuse_excess_wire(true, Some(MAX_ENCODED_RESPONSE_BYTES_F64)),
+            refuse_excess_wire(Some(MAX_ENCODED_RESPONSE_BYTES_F64)),
             Ok(())
         );
     }
@@ -83,36 +80,32 @@ mod tests {
     #[test]
     fn a_successful_capture_with_an_excess_wire_total_is_refused() {
         assert_eq!(
-            refuse_excess_wire(true, Some(MAX_ENCODED_RESPONSE_BYTES_F64 + 1.0)),
+            refuse_excess_wire(Some(MAX_ENCODED_RESPONSE_BYTES_F64 + 1.0)),
             Err(BrowserError::PayloadLimit)
         );
     }
 
     #[test]
     fn a_successful_capture_without_a_wire_total_is_refused() {
-        assert_eq!(refuse_excess_wire(true, None), Err(BrowserError::Protocol));
+        assert_eq!(refuse_excess_wire(None), Err(BrowserError::Protocol));
     }
 
     #[test]
     fn a_successful_capture_with_a_malformed_wire_total_is_refused() {
         assert_eq!(
-            refuse_excess_wire(true, Some(f64::NAN)),
+            refuse_excess_wire(Some(f64::NAN)),
             Err(BrowserError::Protocol)
         );
-        assert_eq!(
-            refuse_excess_wire(true, Some(-1.0)),
-            Err(BrowserError::Protocol)
-        );
+        assert_eq!(refuse_excess_wire(Some(-1.0)), Err(BrowserError::Protocol));
     }
 
     #[test]
-    fn a_failed_evaluation_publishes_nothing_so_the_wire_gate_passes_through() {
-        assert_eq!(refuse_excess_wire(false, None), Ok(()));
+    fn fractional_wire_bytes_are_refused_without_rounding() {
+        assert_eq!(refuse_excess_wire(Some(0.5)), Err(BrowserError::Protocol));
         assert_eq!(
-            refuse_excess_wire(false, Some(MAX_ENCODED_RESPONSE_BYTES_F64 + 1.0)),
-            Ok(())
+            refuse_excess_wire(Some(1024.5)),
+            Err(BrowserError::Protocol)
         );
-        assert_eq!(refuse_excess_wire(false, Some(f64::NAN)), Ok(()));
     }
 
     #[test]
@@ -122,7 +115,7 @@ mod tests {
         assert_eq!(representation, Some(1368));
         assert!(representation.is_some_and(|value| value < 33_554_432));
         assert_eq!(
-            refuse_excess_wire(true, Some(40_000_000.0)),
+            refuse_excess_wire(Some(40_000_000.0)),
             Err(BrowserError::PayloadLimit)
         );
     }

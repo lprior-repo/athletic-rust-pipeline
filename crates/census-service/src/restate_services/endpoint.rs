@@ -98,7 +98,11 @@ pub fn build_endpoint(
         .bind(census_service(jurisdiction))
         .bind(census_service(NationalCensus::new(clock, jobs)));
     if let Some(settings) = serves_lane {
-        builder = builder.bind(BrowserSession::new(settings, Arc::new(SystemClock)));
+        builder = builder.bind(BrowserSession::new(
+            settings,
+            Arc::new(SystemClock),
+            Arc::clone(&region),
+        ));
     }
     let endpoint = builder.build();
     Ok(endpoint)

@@ -1,7 +1,7 @@
 use super::{measured_pair, TestResult};
 use crate::athlete_cluster_findings::Observed;
-use crate::athlete_verdict::HardContradiction;
 use census_domain::model::{AppliedIdentityKind, AthleteId, AthleteIdentityIndex, Gender};
+use census_domain::review_decision::HardContradiction;
 
 #[test]
 fn o8rm_review_gender_compatibility_matches_domain_for_every_order() -> TestResult {

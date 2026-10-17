@@ -1,6 +1,6 @@
 use std::num::NonZeroU64;
 
-use super::{Health, HeldHistoryMemory, HistoryFundingError, HistoryMemoryBudget};
+use super::{BudgetState, Health, HistoryFundingError};
 use crate::public_identity_history::funding::HistoryGrant;
 
 pub(super) enum Charge {
@@ -8,13 +8,13 @@ pub(super) enum Charge {
     Transferred,
 }
 
-pub struct HistoryMemoryGrant<'a, P> {
-    pub(super) budget: &'a HistoryMemoryBudget<P>,
+pub struct HistoryMemoryGrant<'a> {
+    pub(super) state: &'a std::sync::Mutex<BudgetState>,
     pub(super) bytes: NonZeroU64,
     pub(super) charge: Charge,
 }
 
-impl<P: HeldHistoryMemory> HistoryGrant for HistoryMemoryGrant<'_, P> {
+impl HistoryGrant for HistoryMemoryGrant<'_> {
     type Error = HistoryFundingError;
 
     fn reserved_bytes(&self) -> NonZeroU64 {
@@ -22,7 +22,7 @@ impl<P: HeldHistoryMemory> HistoryGrant for HistoryMemoryGrant<'_, P> {
     }
 
     fn same_owner(&self, other: &Self) -> bool {
-        std::ptr::eq(self.budget, other.budget)
+        std::ptr::eq(self.state, other.state)
     }
 
     fn try_absorb(&mut self, mut other: Self) -> Result<(), Self::Error> {
@@ -49,19 +49,25 @@ impl<P: HeldHistoryMemory> HistoryGrant for HistoryMemoryGrant<'_, P> {
             .ok_or(HistoryFundingError::InvalidSplit)?;
         self.bytes = remaining;
         Ok(Self {
-            budget: self.budget,
+            state: self.state,
             bytes,
             charge: Charge::Held,
         })
     }
 }
 
-impl<P> Drop for HistoryMemoryGrant<'_, P> {
+impl super::HeldHistoryMemory for HistoryMemoryGrant<'_> {
+    fn reserved_bytes(&self) -> NonZeroU64 {
+        self.bytes
+    }
+}
+
+impl Drop for HistoryMemoryGrant<'_> {
     fn drop(&mut self) {
         if matches!(self.charge, Charge::Transferred) {
             return;
         }
-        let mut state = match self.budget.state.lock() {
+        let mut state = match self.state.lock() {
             Ok(state) => state,
             Err(poisoned) => {
                 let mut state = poisoned.into_inner();

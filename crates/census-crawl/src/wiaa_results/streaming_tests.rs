@@ -110,7 +110,7 @@ fn one_large_artifact_flushes_rows_before_accumulating_the_artifact() -> TestRes
     spool::verify_reference(&store, "large-artifact/0", &summary)?;
     for ordinal in 0..summary.fragments {
         let recorded = spool::read_fragment(&store, "large-artifact/0", ordinal)?;
-        recorded.apply(&store, &format!("large/{ordinal}"))?;
+        crate::recording::apply_recorded(&recorded, &store, &format!("large/{ordinal}"))?;
     }
     check!(eq; store.walk_table(Table::Performances)?.rows, 10_000);
     eprintln!(
@@ -154,8 +154,11 @@ fn wiaa_cursor_keeps_the_frozen_catalogue_when_live_catalogues_change() -> TestR
             check!(more);
             let first_summary = first_recording.finish_fragments()?;
             for ordinal in 0..first_summary.fragments {
-                spool::read_fragment(&store, "frozen/0", ordinal)?
-                    .apply(&store, &format!("first/{ordinal}"))?;
+                crate::recording::apply_recorded(
+                    &spool::read_fragment(&store, "frozen/0", ordinal)?,
+                    &store,
+                    &format!("first/{ordinal}"),
+                )?;
             }
             for (url, _) in ARCHIVES {
                 super::tests::seed_result_cache(&fetcher, url, b"<html>catalogue replaced</html>")?;
