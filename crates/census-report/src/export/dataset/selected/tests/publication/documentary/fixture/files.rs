@@ -9,13 +9,13 @@ const MAX_BYTES: u64 = 256 * 1024 * 1024;
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-pub(super) struct File {
-    pub(super) path: String,
-    pub(super) bytes: u64,
-    pub(super) sha256: String,
+pub(in super::super) struct File {
+    pub(in super::super) path: String,
+    pub(in super::super) bytes: u64,
+    pub(in super::super) sha256: String,
 }
 
-pub(super) fn inventory(root: &Path) -> TestResult<Vec<File>> {
+pub(in super::super) fn inventory(root: &Path) -> TestResult<Vec<File>> {
     check!(root.is_absolute());
     check!(root
         .components()
@@ -62,7 +62,7 @@ pub(super) fn inventory(root: &Path) -> TestResult<Vec<File>> {
     Ok(files)
 }
 
-pub(super) fn verify(root: &Path, expected: &[File]) -> TestResult {
+pub(in super::super) fn verify(root: &Path, expected: &[File]) -> TestResult {
     check!(expected.len() <= MAX_FILES);
     check!(expected
         .windows(2)
@@ -75,7 +75,7 @@ pub(super) fn verify(root: &Path, expected: &[File]) -> TestResult {
     Ok(())
 }
 
-pub(super) fn copy(root: &Path, destination: &Path, expected: &[File]) -> TestResult {
+pub(in super::super) fn copy(root: &Path, destination: &Path, expected: &[File]) -> TestResult {
     verify(root, expected)?;
     std::fs::create_dir(destination)?;
     for file in expected {
@@ -88,7 +88,7 @@ pub(super) fn copy(root: &Path, destination: &Path, expected: &[File]) -> TestRe
     verify(root, expected)
 }
 
-pub(super) fn hex(value: &str, length: usize) -> bool {
+pub(in super::super) fn hex(value: &str, length: usize) -> bool {
     value.len() == length
         && value
             .bytes()

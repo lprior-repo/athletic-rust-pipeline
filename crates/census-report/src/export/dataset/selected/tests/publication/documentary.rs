@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 mod acquisition_cutoff;
 mod fixture;
 mod historical;
+mod historical_retained;
 mod refusals;
 mod roundtrip;
 

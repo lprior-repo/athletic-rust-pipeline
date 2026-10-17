@@ -5,7 +5,7 @@ use census_store::{Store, Table};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
-mod files;
+pub(super) mod files;
 mod profile;
 mod source;
 
