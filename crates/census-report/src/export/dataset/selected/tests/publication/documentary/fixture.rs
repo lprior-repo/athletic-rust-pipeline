@@ -86,6 +86,34 @@ impl Fixture {
         files::verify(&self.handoff.store_path, &self.handoff.files)
     }
 
+    pub(super) fn reopen(self) -> TestResult<Self> {
+        let Self { directory, store, profile, expected, handoff } = self;
+        let reopened = (|| -> TestResult<Store> {
+            files::verify(&handoff.store_path, &handoff.files)?;
+            let root = store.root().to_path_buf();
+            let identity = store.store_identity()?;
+            let sequence = store.snapshot().sequence();
+            let tables = store.snapshot().tables_digest(&Table::ALL)?;
+            let receipts = store.receipt_count()?;
+            drop(store);
+            let (reopened, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+            drop(writer);
+            check!(eq; reopened.store_identity()?, identity);
+            check!(eq; reopened.snapshot().sequence(), sequence);
+            check!(eq; reopened.snapshot().tables_digest(&Table::ALL)?, tables);
+            check!(eq; reopened.receipt_count()?, receipts);
+            files::verify(&handoff.store_path, &handoff.files)?;
+            Ok(reopened)
+        })();
+        match reopened {
+            Ok(store) => Ok(Self { directory, store, profile, expected, handoff }),
+            Err(error) => {
+                let _preserved = directory.keep();
+                Err(error)
+            }
+        }
+    }
+
     pub(super) fn close(self) -> TestResult {
         let Self {
             directory,
@@ -109,4 +137,9 @@ pub(super) fn copy_publication(workbook: &Path, destination: &Path) -> TestResul
     files::copy(generation, &target, &inventory)?;
     std::os::unix::fs::symlink(relative, destination.join("current"))?;
     Ok(target.join(workbook.file_name().ok_or("source workbook name")?))
+}
+
+pub(super) fn generation_inventory(directory: &Path) -> TestResult<Vec<(String, u64, String)>> {
+    Ok(files::inventory(directory)?.into_iter()
+        .map(|file| (file.path, file.bytes, file.sha256)).collect())
 }
