@@ -36,7 +36,11 @@ pub(super) struct Context {
 }
 
 impl Context {
-    pub fn synthetic(label: &str, store: &Store, packet: &IndependentParticipationPacketV1) -> TestResult<Self> {
+    pub fn synthetic(
+        label: &str,
+        store: &Store,
+        packet: &IndependentParticipationPacketV1,
+    ) -> TestResult<Self> {
         let (leaves, original) = material::read(store, packet)?;
         let checked = original.checked();
         let document = checked.subject();
@@ -60,12 +64,30 @@ impl Context {
             .map(|role| InlineObject::synthetic(&format!("{label}/{role}")))
             .collect::<TestResult<Vec<_>>>()?;
         let exact = [
-            format!("mhsaa_subject_dcc_event_day_v1\n{}\n{}", proof.capture(), proof.locator()).into_bytes(),
+            format!(
+                "mhsaa_subject_dcc_event_day_v1\n{}\n{}",
+                proof.capture(),
+                proof.locator()
+            )
+            .into_bytes(),
             document.locator().as_bytes().to_vec(),
-            format!("document_subject_v1\n{}\n{}\n{}\n{}\n{}", document.document_namespace(), document.native_document_id(), document.document_url(), document.body_sha256(), document.locator()).into_bytes(),
+            format!(
+                "document_subject_v1\n{}\n{}\n{}\n{}\n{}",
+                document.document_namespace(),
+                document.native_document_id(),
+                document.document_url(),
+                document.body_sha256(),
+                document.locator()
+            )
+            .into_bytes(),
         ];
         for (index, bytes) in (2..=4).zip(exact) {
-            *objects.get_mut(index).ok_or("synthetic exact object slot")? = InlineObject { reference: reference(&bytes)?, bytes };
+            *objects
+                .get_mut(index)
+                .ok_or("synthetic exact object slot")? = InlineObject {
+                reference: reference(&bytes)?,
+                bytes,
+            };
         }
         let digest = |index: usize| -> TestResult<AttachmentDigestV1> {
             Ok(objects
@@ -78,8 +100,18 @@ impl Context {
         let subject = RetainedDocumentSubjectReferenceV1 {
             namespace: text(document.document_namespace())?,
             native_id: Some(text(document.native_document_id())?),
-            capture: leaves.first().ok_or("status capture leaf")?.object.digest.clone(),
-            body: leaves.get(1).ok_or("status body leaf")?.object.digest.clone(),
+            capture: leaves
+                .first()
+                .ok_or("status capture leaf")?
+                .object
+                .digest
+                .clone(),
+            body: leaves
+                .get(1)
+                .ok_or("status body leaf")?
+                .object
+                .digest
+                .clone(),
             interpretation: digest(2)?,
             locator: digest(3)?,
             subject: digest(4)?,
@@ -158,7 +190,10 @@ impl Context {
     }
 
     pub fn borrowed(&self) -> Vec<AttachmentContextObjectV1<'_>> {
-        self.objects.iter().map(InlineObject::borrowed)
-            .chain(self.leaves.iter().map(AttachmentContextObjectV1::Retained)).collect()
+        self.objects
+            .iter()
+            .map(InlineObject::borrowed)
+            .chain(self.leaves.iter().map(AttachmentContextObjectV1::Retained))
+            .collect()
     }
 }
