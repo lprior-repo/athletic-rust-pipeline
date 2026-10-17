@@ -5,19 +5,16 @@ use census_store::{RetainedCaptureRootV1, RosterSourceEvidenceV1, StoreResult};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 
 mod source;
+pub mod capture_objects;
+pub mod policies;
 mod binding;
 pub use binding::{assess_existing_roster_binding, RosterExistingBindingAssessmentV1, RosterBindingUnverifiedReferenceV1};
 pub use source::assess_retained_roster_source;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RosterSourceUnverifiedJoinV1 {
-    CaptureOccurrence,
-    CaptureManifest,
-    CaptureInterpretationObject,
     ParserQualification,
-    ScopePolicy,
     ExistingSchoolProgramAndConflictInventory,
-    SchoolYearConvention,
     SemanticReview,
 }
 
@@ -28,9 +25,15 @@ pub struct RosterSourceEvidenceAssessmentV1<'a> {
     root: RetainedCaptureRootV1,
     checked: CheckedProviderSchoolPacketV1,
     scoped_rows: usize,
+    capture_objects: capture_objects::PreparedRosterCaptureObjectsV1<'a>,
 }
 
 impl RosterSourceEvidenceAssessmentV1<'_> {
+    pub fn capture_objects(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&capture_objects::PreparedRosterCaptureObjectsV1<'_>> {
+        self.require_original_grant(grant)?;
+        Ok(&self.capture_objects)
+    }
+
     pub fn parser_manifest(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&manifest::CheckedRosterParserManifestV1> {
         self.require_original_grant(grant)?;
         Ok(&self.parser_manifest)
@@ -72,13 +75,8 @@ impl RosterSourceEvidenceAssessmentV1<'_> {
     pub fn unverified_joins(&self) -> &'static [RosterSourceUnverifiedJoinV1] {
         use RosterSourceUnverifiedJoinV1::*;
         &[
-            CaptureOccurrence,
-            CaptureManifest,
-            CaptureInterpretationObject,
             ParserQualification,
-            ScopePolicy,
             ExistingSchoolProgramAndConflictInventory,
-            SchoolYearConvention,
             SemanticReview,
         ]
     }

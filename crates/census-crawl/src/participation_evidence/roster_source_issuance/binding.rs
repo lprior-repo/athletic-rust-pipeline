@@ -11,7 +11,6 @@ use census_store::{decode_physical_observation, Entity, RosterSourceEvidenceV1, 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RosterBindingUnverifiedReferenceV1 {
-    ProjectionMergeContractObject,
 }
 
 pub struct RosterExistingBindingAssessmentV1<'a, 'e> {
@@ -40,8 +39,7 @@ impl RosterExistingBindingAssessmentV1<'_, '_> {
     }
 
     pub fn unverified_references(&self) -> &'static [RosterBindingUnverifiedReferenceV1] {
-        use RosterBindingUnverifiedReferenceV1::*;
-        &[ProjectionMergeContractObject]
+        &[]
     }
 }
 

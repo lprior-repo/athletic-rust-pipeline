@@ -140,3 +140,6 @@ fn canonical_packet_allocation_requires_real_precharge() -> TestResult {
 
 #[path = "source_integration_tests.rs"]
 mod integration;
+
+#[path = "source_review_integration_tests.rs"]
+mod review_integration;

@@ -56,32 +56,32 @@ fn validate_enrollment(
     metadata: &Rows, records: &Rows, issued: &Rows,
     identity: &census_domain::model::StoreIdentity,
 ) -> StoreResult<()> {
-    if metadata.len() != 2 || !records.is_empty() || issued.len() != 1 {
+    if metadata.len() != 2 || issued.is_empty() {
         return Err(Error::Corrupt("enrollment inventory cardinality").into());
     }
     let enrolled: enrollment::EnrollmentRecord = codec::decode(find(metadata, ENROLLMENT)?)?;
     let head: enrollment::AuthorityHead = codec::decode(find(metadata, HEAD)?)?;
-    let (receipt_key, receipt_bytes) = issued.first()
+    let operation = format!("{OPERATION_PREFIX}{}", enrolled.command.operation.as_str());
+    let (receipt_key, receipt_bytes) = issued.iter().find(|(key, _)| key == operation.as_bytes())
         .ok_or(Error::Corrupt("missing enrollment receipt"))?;
     let receipt: Receipt = codec::decode(receipt_bytes)?;
-    let operation = format!("{OPERATION_PREFIX}{}", enrolled.command.operation.as_str());
+    let enrollment_digest = codec::digest(find(metadata, ENROLLMENT)?);
     let approval = enrollment::approval(&enrolled.command)?;
     enrollment::prepare::validate_command(&enrolled.command)?;
     if &enrolled.command.store != identity
         || enrolled.schema != "roster-source-enrollment-v1"
         || enrolled.approval_digest != codec::digest(&approval)
         || enrolled.committed_at < enrolled.command.reviewed_at
-        || head.version != 1 || head.ordinal != 0
-        || head.digest != codec::digest(find(metadata, ENROLLMENT)?)
+        || head.version != 1
         || receipt_key != operation.as_bytes()
         || receipt.operation != operation
-        || receipt.digest != head.digest
+        || receipt.digest != enrollment_digest
         || receipt.at != enrolled.committed_at.to_rfc3339()
         || receipt.appended != 0 || receipt.credited
     {
         return Err(Error::Corrupt("enrollment authority mismatch").into());
     }
-    Ok(())
+    super::issuance::ledger::validate(records, issued, identity, &enrollment_digest, &head)
 }
 
 fn find<'a>(rows: &'a Rows, key: &str) -> StoreResult<&'a [u8]> {
@@ -108,7 +108,8 @@ fn read_value(snapshot: &Snapshot, table: &Keyspace, key: &[u8], budget: &mut Ro
         .ok_or(Error::Corrupt("missing inventory value"))?;
     let length = usize::try_from(length).map_err(|_| Error::BudgetExceeded)?;
     budget.charge(length.checked_add(key.len()).ok_or(Error::BudgetExceeded)?)?;
-    if length > codec::MAX_BYTES { return Err(Error::BudgetExceeded.into()); }
+    let cap = if key.starts_with(super::issuance::OBJECT_PREFIX.as_bytes()) { 4 * 1024 * 1024 } else { codec::MAX_BYTES };
+    if length > cap { return Err(Error::BudgetExceeded.into()); }
     let value = snapshot.get(table, key).map_err(|source| StoreError::Read { source })?
         .ok_or(Error::Corrupt("missing inventory value"))?;
     if value.len() != length { return Err(Error::Corrupt("inventory length changed").into()); }

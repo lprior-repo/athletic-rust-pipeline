@@ -5,6 +5,8 @@ mod codec;
 mod enrollment;
 mod format;
 mod inspection;
+mod issuance;
+pub use issuance::{PreparedRosterSourceReviewV1, RosterSourceReviewFieldsV1, RosterSourceReviewObjectsV1};
 pub use inspection::{RosterIssuanceInspectionRequestV1, RosterIssuanceInspectionV1, RosterSourceEvidenceV1, RosterPhysicalProjectionRowV1};
 
 pub use budget::RosterStartupValidationBudgetV1;

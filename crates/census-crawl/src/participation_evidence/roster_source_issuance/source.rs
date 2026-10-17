@@ -21,11 +21,12 @@ pub(super) mod budget;
 pub fn assess_retained_roster_source<'a>(
     evidence: &'a RosterSourceEvidenceV1,
     retained_parser_manifest: &[u8],
+    retained_contracts: &super::policies::RosterInterpretationContractsV1<'_>,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<RosterSourceEvidenceAssessmentV1<'a>> {
     evidence.require_original_grant(grant)?;
-    let result = assess(evidence, retained_parser_manifest, proposal, grant);
+    let result = assess(evidence, retained_parser_manifest, retained_contracts, proposal, grant);
     if result.is_err() {
         grant.poison();
     }
@@ -35,6 +36,7 @@ pub fn assess_retained_roster_source<'a>(
 fn assess<'a>(
     evidence: &'a RosterSourceEvidenceV1,
     retained_parser_manifest: &[u8],
+    retained_contracts: &super::policies::RosterInterpretationContractsV1<'_>,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<RosterSourceEvidenceAssessmentV1<'a>> {
@@ -48,6 +50,7 @@ fn assess<'a>(
         }
         Ok(())
     })?;
+    original(evidence, grant, |grant| Ok(super::policies::assess(evidence, retained_contracts, proposal, grant)?))?;
     let parser_manifest = original(evidence, grant, |grant| {
         Ok(assess_retained_roster_parser_manifest(retained_parser_manifest, proposal.parser(), grant)?)
     })?;
@@ -61,6 +64,8 @@ fn assess<'a>(
         budget::charge(packet.roster(), grant)?;
         packet.read()
     })?;
+    let objects = super::capture_objects::derive(evidence, &packet, &parser_manifest, grant)?;
+    objects.require_proposal(proposal, grant)?;
     let scoped_rows = original(evidence, grant, |grant| scope(&checked, proposal, grant))?;
     evidence.require_original_grant(grant)?;
     Ok(RosterSourceEvidenceAssessmentV1 {
@@ -70,10 +75,11 @@ fn assess<'a>(
         root: held.root().clone(),
         checked,
         scoped_rows,
+        capture_objects: objects,
     })
 }
 
-fn original<T>(
+pub(super) fn original<T>(
     evidence: &RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
     operation: impl FnOnce(&mut AttachmentReplayGrantV1) -> CrawlResult<T>,
@@ -98,7 +104,7 @@ fn admission(
     Ok(())
 }
 
-fn source_reference(
+pub(super) fn source_reference(
     bytes: &[u8],
     reference: &RosterAuthorityObjectRefV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -209,7 +215,7 @@ fn size(value: usize) -> Result<u64, StoreError> {
     u64::try_from(value).map_err(|_| StoreError::CounterOverflow)
 }
 
-fn domain(error: EvidenceSubjectAttachmentError) -> StoreError {
+pub(super) fn domain(error: EvidenceSubjectAttachmentError) -> StoreError {
     EvidenceSubjectAttachmentStoreError::Domain(error).into()
 }
 
