@@ -10,8 +10,8 @@ mod profile;
 mod retention;
 mod source;
 
-pub(super) use source::Expected;
 pub(super) use retention::retain_v3_archive;
+pub(super) use source::Expected;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
