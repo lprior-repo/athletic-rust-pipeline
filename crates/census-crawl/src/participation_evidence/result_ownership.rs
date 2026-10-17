@@ -4,6 +4,7 @@ use census_domain::model::serialized_digest;
 use census_domain::participation_candidates::MAX_PARTICIPATION_FACTS;
 
 mod active;
+pub(super) mod discovery;
 mod selection;
 mod types;
 pub use types::{CheckedRetainedResultDocumentV1, CheckedRetainedResultRowV1};
@@ -51,17 +52,29 @@ pub fn read_retained_html_result_rows<'a>(
     let owned_pre = active::owned_pre(&body)?;
     selection::validate_spans(&body, requested, &owned_pre)?;
     let native = selection::native_document(capture.requested_url())?;
+    read_selected(capture, body, native, requested.len(), |locator| {
+        Ok(requested.contains(&locator.row))
+    })
+}
+
+fn read_selected<'a>(
+    capture: &'a RetainedHtmlCaptureV1,
+    body: String,
+    native: (String, String),
+    count: usize,
+    mut select: impl FnMut(&ProvisionalRawRowLocatorV1) -> crate::CrawlResult<bool>,
+) -> Result<CheckedRetainedResultDocumentV1<'a>> {
     let mut selected = Vec::new();
     selected
-        .try_reserve_exact(requested.len())
+        .try_reserve_exact(count)
         .map_err(|_| RetainedResultOwnershipError::Allocation)?;
     let parsed = parse_raw_located_bound(
         &body,
         capture.requested_url(),
         &|published, role| selection::require_owner(capture.requested_url(), published, role),
         &mut |locator, _| {
-            if requested.contains(&locator.row) {
-                if selected.len() >= requested.len() {
+            if select(&locator)? {
+                if selected.len() >= count {
                     return Err(crate::CrawlError::Schema {
                         url: capture.requested_url().into(),
                         detail: "duplicate successful locator".into(),
@@ -72,7 +85,7 @@ pub fn read_retained_html_result_rows<'a>(
             Ok(())
         },
     )?;
-    if selected.len() != requested.len() {
+    if selected.len() != count {
         return Err(RetainedResultOwnershipError::Invalid(
             "requested row is not an exact successful original row",
         ));

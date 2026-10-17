@@ -2,11 +2,14 @@ use crate::{Store, StoreResult, StoreRevision};
 
 use super::{ReadBudget, StoreSnapshot};
 
+mod contents;
 mod namespace;
 mod roots;
 mod scan;
 
+pub(crate) use contents::{JournalNamespaceContents, JournalNamespaceContentsInventory};
 pub use namespace::JournalNamespace;
+pub(crate) use scan::{admit as admit_namespace_budget, NamespaceScan};
 
 pub struct JournalNamespaceFingerprint<'s> {
     revision: StoreRevision<'s>,
@@ -92,21 +95,48 @@ impl<'s> StoreSnapshot<'s> {
         budget: ReadBudget,
         state: &mut G,
         admit_row: impl FnMut(&mut G) -> StoreResult<()>,
-        mut visit: impl FnMut(&mut G, &str) -> StoreResult<()>,
+        visit: impl FnMut(&mut G, &str) -> StoreResult<()>,
     ) -> StoreResult<JournalNamespaceInventory<'s>> {
-        let mut roots = roots::RootTracker::new(namespace)?;
-        let fingerprint = self.scan_journal_namespace_with_admission(
-            namespace,
-            budget,
-            state,
-            admit_row,
-            |state, key, raw| roots.accept(key, raw, &mut |key| visit(state, key)),
-        )?;
-        let logical_roots = roots.finish()?;
+        let inventory = retained_roots(self, namespace, budget, state, admit_row, visit)?;
         Ok(JournalNamespaceInventory {
-            fingerprint,
-            logical_roots,
+            fingerprint: JournalNamespaceFingerprint::from_contents(self, inventory.contents),
+            logical_roots: inventory.logical_roots,
         })
+    }
+}
+
+pub(crate) fn retained_roots<G>(
+    source: &impl super::retained_source::RetainedJournalReadSource,
+    namespace: JournalNamespace<'_>,
+    budget: ReadBudget,
+    state: &mut G,
+    admit: impl FnMut(&mut G) -> StoreResult<()>,
+    mut visit: impl FnMut(&mut G, &str) -> StoreResult<()>,
+) -> StoreResult<JournalNamespaceContentsInventory> {
+    let mut roots = roots::RootTracker::new(namespace)?;
+    let contents =
+        source.scan_journal_namespace(namespace, budget, state, admit, |state, key, raw| {
+            roots.accept(key, raw, &mut |key| visit(state, key))
+        })?;
+    let logical_roots = roots.finish()?;
+    Ok(JournalNamespaceContentsInventory {
+        contents,
+        logical_roots,
+    })
+}
+
+impl<'s> JournalNamespaceFingerprint<'s> {
+    pub(super) fn from_contents(
+        view: &StoreSnapshot<'s>,
+        contents: JournalNamespaceContents,
+    ) -> Self {
+        Self {
+            revision: view.revision(),
+            sequence: view.sequence(),
+            rows: contents.rows,
+            encoded_bytes: contents.encoded_bytes,
+            digest: contents.digest,
+        }
     }
 }
 

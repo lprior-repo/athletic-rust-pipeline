@@ -1,5 +1,5 @@
 use super::*;
-use crate::evidence_subject_attachment::ledger::Ledger;
+use crate::evidence_subject_attachment::ledger::VerifiedLedger;
 use census_domain::evidence_subject_attachment::{
     AttachmentPublicHeadV1, ReviewedReferenceRecordV1,
 };
@@ -46,8 +46,8 @@ struct Position {
     position: u32,
 }
 
-pub(in super::super) fn verify(
-    ledger: &Ledger<'_>,
+pub(in super::super) fn verify<P>(
+    ledger: &VerifiedLedger<P>,
     record: &ReviewedReferenceRecordV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
@@ -102,8 +102,8 @@ pub(in super::super) fn verify(
     Ok(())
 }
 
-fn require_origin(
-    ledger: &Ledger<'_>,
+fn require_origin<P>(
+    ledger: &VerifiedLedger<P>,
     record: &ReviewedReferenceRecordV1,
     witness: &Witness<'_>,
     grant: &mut AttachmentReplayGrantV1,

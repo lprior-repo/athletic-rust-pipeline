@@ -60,7 +60,7 @@ impl<'a> JournalNamespace<'a> {
         self.logical_prefix
     }
 
-    pub(super) fn physical_prefix(self) -> StoreResult<Vec<u8>> {
+    pub(crate) fn physical_prefix(self) -> StoreResult<Vec<u8>> {
         let mut prefix = Vec::new();
         prefix
             .try_reserve_exact(MAX_JOURNAL_KEY_BYTES)

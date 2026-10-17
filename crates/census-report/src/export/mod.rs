@@ -24,3 +24,8 @@ pub use provenance::{athletic_net_meet_identity, coach_source};
 
 #[cfg(test)]
 pub(crate) use dataset::selected::tests::fixture as selected_test_fixture;
+
+#[cfg(test)]
+pub(crate) use qualification::participation::UnsupportedDocumentarySource;
+#[cfg(test)]
+pub(crate) use qualification::DocumentaryParticipationRow;

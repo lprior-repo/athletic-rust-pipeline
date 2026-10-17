@@ -1,6 +1,6 @@
 use super::super::EvidenceSubjectAttachmentStoreError as Error;
 use super::{leaf, RetainedCaptureRootSchemaV1, RetainedCaptureRootV1};
-use crate::read::JournalRawEnvelope;
+use crate::read::{JournalRawEnvelope, RetainedJournalReadSource};
 use crate::{StoreError, StoreResult, StoreSnapshot};
 use census_domain::evidence_subject_attachment::{
     AttachmentDigestV1, AttachmentObjectReferenceV1, AttachmentReplayGrantV1,
@@ -41,8 +41,8 @@ impl StoreSnapshot<'_> {
     }
 }
 
-fn owned(
-    view: &StoreSnapshot<'_>,
+pub(in super::super) fn owned(
+    view: &impl RetainedJournalReadSource,
     schema: RetainedCaptureRootSchemaV1,
     key: &str,
     grant: &mut AttachmentReplayGrantV1,
@@ -57,7 +57,7 @@ fn owned(
 }
 
 pub(super) fn read_root(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalReadSource,
     expected: &RetainedCaptureRootV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<RetainedCaptureRootReadV1> {
@@ -70,7 +70,7 @@ pub(super) fn read_root(
 }
 
 fn pinned(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalReadSource,
     expected: &RetainedCaptureRootV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<RetainedCaptureRootReadV1> {
@@ -84,7 +84,7 @@ fn pinned(
 }
 
 fn complete(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalReadSource,
     schema: RetainedCaptureRootSchemaV1,
     key: &str,
     grant: &mut AttachmentReplayGrantV1,

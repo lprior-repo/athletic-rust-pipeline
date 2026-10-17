@@ -3,8 +3,8 @@ use crate::public_identity::paged_generation::{
     decode_attachment_capture_binding, require_attachment_retained_inputs,
 };
 
-pub(super) fn verify(
-    ledger: &Ledger<'_>,
+pub(super) fn verify<P>(
+    ledger: &VerifiedLedger<P>,
     record: &ReviewedReferenceRecordV1,
     inputs: &wire::EntryInputs,
     grant: &mut AttachmentReplayGrantV1,

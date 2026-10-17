@@ -12,6 +12,7 @@ use census_domain::evidence_subject_attachment::*;
 
 mod active;
 mod authority;
+mod borrowed;
 mod budget;
 mod external;
 mod grants;

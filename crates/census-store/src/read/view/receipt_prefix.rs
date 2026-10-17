@@ -27,34 +27,75 @@ impl StoreSnapshot<'_> {
         mut admit_row: impl FnMut(&mut G) -> StoreResult<()>,
         mut visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
     ) -> StoreResult<ReadCounts> {
+        let mut scan = ReceiptScan::new(prefix, budget)?;
+        for guard in self.snapshot.prefix(self.receipts, prefix) {
+            admit_row(state)?;
+            scan.charge_visit()?;
+            let key = guard.key().map_err(|source| StoreError::Read { source })?;
+            let raw = scan.read(
+                &key,
+                || {
+                    self.snapshot
+                        .size_of(self.receipts, &key)
+                        .map_err(|source| StoreError::Read { source })
+                },
+                || {
+                    self.snapshot
+                        .get(self.receipts, &key)
+                        .map_err(|source| StoreError::Read { source })
+                },
+            )?;
+            visit(state, &key, &raw)?;
+        }
+        Ok(scan.finish())
+    }
+}
+
+pub(crate) struct ReceiptScan {
+    counts: ReadCounts,
+    budget: ReadBudget,
+}
+
+impl ReceiptScan {
+    pub(crate) fn new(prefix: &[u8], budget: ReadBudget) -> StoreResult<Self> {
         if prefix.is_empty() || prefix.len() > MAX_OPERATION_BYTES {
             return Err(StoreError::Invariant {
                 detail: "invalid attachment receipt prefix".into(),
             });
         }
-        let mut counts = ReadCounts::default();
-        for guard in self.snapshot.prefix(self.receipts, prefix) {
-            admit_row(state)?;
-            counts.key_visits =
-                bounded::charge(counts.key_visits, 1, budget.rows, "attachment receipt rows")?;
-            let key = guard.key().map_err(|source| StoreError::Read { source })?;
-            if key.len() > MAX_OPERATION_BYTES {
-                return Err(StoreError::RowTooLarge {
-                    bytes: key.len(),
-                    max: MAX_OPERATION_BYTES,
-                });
-            }
-            let size = self
-                .snapshot
-                .size_of(self.receipts, &key)
-                .map_err(|source| StoreError::Read { source })?;
-            let raw = bounded::read_admitted(key.len(), size, &mut counts, budget, || {
-                self.snapshot
-                    .get(self.receipts, &key)
-                    .map_err(|source| StoreError::Read { source })
-            })?;
-            visit(state, &key, &raw)?;
+        Ok(Self {
+            counts: ReadCounts::default(),
+            budget,
+        })
+    }
+
+    pub(crate) fn charge_visit(&mut self) -> StoreResult<()> {
+        self.counts.key_visits = bounded::charge(
+            self.counts.key_visits,
+            1,
+            self.budget.rows,
+            "attachment receipt rows",
+        )?;
+        Ok(())
+    }
+
+    pub(crate) fn read<T: AsRef<[u8]>>(
+        &mut self,
+        key: &[u8],
+        size: impl FnOnce() -> StoreResult<Option<u32>>,
+        load: impl FnOnce() -> StoreResult<Option<T>>,
+    ) -> StoreResult<T> {
+        if key.len() > MAX_OPERATION_BYTES {
+            return Err(StoreError::RowTooLarge {
+                bytes: key.len(),
+                max: MAX_OPERATION_BYTES,
+            });
         }
-        Ok(counts)
+        let size = size()?;
+        bounded::read_admitted(key.len(), size, &mut self.counts, self.budget, load)
+    }
+
+    pub(crate) fn finish(self) -> ReadCounts {
+        self.counts
     }
 }

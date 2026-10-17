@@ -20,6 +20,8 @@ use std::num::NonZeroU64;
 use std::path::Path;
 
 mod archive;
+mod attached;
+pub(crate) use attached::UnsupportedDocumentarySource;
 mod budget;
 mod closure;
 mod context;
@@ -33,7 +35,9 @@ mod types;
 mod unresolved;
 mod validation;
 
-pub(crate) use archive::{ParticipationReplay, ParticipationReplayV1, ParticipationReplayV2};
+pub(crate) use archive::{
+    ParticipationReplay, ParticipationReplayV1, ParticipationReplayV2, ParticipationReplayV3,
+};
 pub(crate) use observations::BUDGET as PHYSICAL_OBSERVATION_BUDGET;
 pub(crate) use types::{ParticipationDiagnostic, PinnedParticipation, PinnedParticipationRow};
 const MAX_ARCHIVE_BYTES: u64 = 512 * 1024 * 1024;
@@ -87,16 +91,24 @@ impl PinnedParticipation {
             observations,
             journal: recorder.finish()?,
         };
-        let replay = ParticipationReplay::V2(ParticipationReplayV2 {
-            version: 2,
-            retained: replay,
-            independent,
+        let (documentary, attachment) =
+            attached::capture(dataset, snapshot, profile, captured_at, directory)?;
+        let replay = ParticipationReplay::V3(ParticipationReplayV3 {
+            version: 3,
+            retained: ParticipationReplayV2 {
+                version: 2,
+                retained: replay,
+                independent,
+            },
+            attachment,
         });
         Ok(Self {
             input_generation: dataset.lineage.input_generation.clone(),
             profile_id: profile.id().map_err(StoreError::from)?,
             participation_rule: profile.input().policies.participation.clone(),
             rows,
+            documentary: documentary.rows,
+            unsupported_documentary: documentary.unsupported,
             replay,
         })
     }
@@ -135,11 +147,26 @@ impl PinnedParticipation {
             roster_context,
             replay.independent(),
         )?;
+        let documentary = match &replay {
+            ParticipationReplay::V3(value) => attached::replay(
+                dataset,
+                profile,
+                retained.captured_at,
+                &value.attachment,
+                directory,
+            )?,
+            ParticipationReplay::V1(_) | ParticipationReplay::V2(_) => attached::Collected {
+                rows: BTreeMap::new(),
+                unsupported: Vec::new(),
+            },
+        };
         Ok(Self {
             input_generation: dataset.lineage.input_generation.clone(),
             profile_id: profile.id().map_err(StoreError::from)?,
             participation_rule: profile.input().policies.participation.clone(),
             rows,
+            documentary: documentary.rows,
+            unsupported_documentary: documentary.unsupported,
             replay,
         })
     }

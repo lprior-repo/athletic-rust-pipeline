@@ -19,7 +19,9 @@ fn row(
     token: PinnedParticipation,
     id: &census_domain::model::PerformanceId,
 ) -> TestResult<PinnedParticipationRow> {
-    let (_, _, _, mut rows, _) = token.into_parts();
+    let (_, _, _, mut rows, documentary, unsupported, _) = token.into_parts();
+    check!(documentary.is_empty());
+    check!(unsupported.is_empty());
     Ok(rows.remove(id).ok_or("assessment missing")?)
 }
 
@@ -43,7 +45,10 @@ async fn synthetic_scholastic_source_retains_archive_but_lacks_independent_statu
     let fixture = Fixture::prepare(Some("High School")).await?;
     let token = fixture.assess()?;
     let payload = serde_json::to_value(&token.replay)?;
-    assert_eq!(payload["version"], 2);
+    check!(eq; payload.get("version"), Some(&json!(3)));
+    check!(payload.get("attachment").is_some());
+    let payload = payload.get("retained").ok_or("retained V2 payload")?;
+    check!(eq; payload.get("version"), Some(&json!(2)));
     assert!(payload["independent"]["entries"]
         .as_object()
         .ok_or("independent entries")?
@@ -194,3 +199,5 @@ async fn reasons_union_is_empty_identity_commutative_associative_and_idempotent(
     }
     Ok(())
 }
+
+mod documentary_dispatch;

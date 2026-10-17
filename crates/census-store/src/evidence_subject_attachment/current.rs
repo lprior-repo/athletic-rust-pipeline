@@ -5,19 +5,52 @@ use census_domain::evidence_subject_attachment::{
 };
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 
+mod accepted;
 mod binding;
 mod capability;
+pub(super) mod discovery;
+pub(super) mod query;
+use accepted::AcceptedOwner;
 pub use capability::CurrentEvidenceSubjectAttachmentV1;
+pub use discovery::{
+    ActiveResultSubjectDiscoveryV1, ActiveResultSubjectV1, DiscoveredAttachmentCaptureV1,
+    DiscoveredAttachmentLocatorV1,
+};
 
 pub struct CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's> {
     view: &'v StoreSnapshot<'s>,
     ledger: Ledger<'s>,
-    accepted: AcceptedPublicIdentitySnapshot,
+    accepted: AcceptedOwner<'v>,
 }
 
 impl<'v, 's> CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's> {
     pub fn snapshot(&self) -> &StoreSnapshot<'s> {
         self.view
+    }
+
+    pub fn inventory(&self) -> &census_domain::evidence_subject_attachment::AttachmentInventoryV1 {
+        &self.ledger.inventory
+    }
+    pub fn store_identity(&self) -> &census_domain::model::StoreIdentity {
+        self.accepted.view().store_identity()
+    }
+    pub fn accepted_public_head(&self) -> &census_domain::public_identity_history::RegistryHead {
+        self.accepted.view().head()
+    }
+    pub fn snapshot_sequence(&self) -> u64 {
+        self.view.sequence()
+    }
+    pub fn discover_active_result_subjects_v1<'a>(
+        &'a self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<ActiveResultSubjectDiscoveryV1<'a>> {
+        discovery::discover(&self.ledger, self.accepted.view(), grant)
+    }
+    pub fn freeze_closure(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<super::frozen::FrozenEvidenceSubjectAttachmentBundleV1> {
+        super::frozen::capture(self.view, &self.ledger, self.accepted.view(), grant)
     }
 
     pub fn bind_exact_subject<'a>(
@@ -70,7 +103,7 @@ fn read<'v, 's>(
     Ok(CurrentEvidenceSubjectAttachmentReferencesV1 {
         view,
         ledger,
-        accepted,
+        accepted: AcceptedOwner::Owned(Box::new(accepted)),
     })
 }
 

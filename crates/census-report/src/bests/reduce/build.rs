@@ -109,6 +109,7 @@ fn reduce_derivation(
                 Err(reason) => exclusions.record(performance, reason),
             }
         })?;
+    participation_exclusions.admit_documentary(participation, derivation, limit)?;
     let selections = crate::bests::selection::publish(
         slots
             .into_iter()

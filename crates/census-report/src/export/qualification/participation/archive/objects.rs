@@ -49,6 +49,19 @@ pub(super) fn load<T: serde::de::DeserializeOwned + Serialize>(
     anchored_descriptor: &str,
     version: u32,
 ) -> ReportResult<T> {
+    let payload = load_bytes(directory, anchored_descriptor, version)?;
+    let value: T = serde_json::from_slice(&payload).map_err(encoding)?;
+    if matches!(version, 2 | 3) {
+        super::canonical::require(&value, &payload)?;
+    }
+    Ok(value)
+}
+
+pub(super) fn load_bytes(
+    directory: &Path,
+    anchored_descriptor: &str,
+    version: u32,
+) -> ReportResult<Vec<u8>> {
     let bytes = proof_objects::read(directory, anchored_descriptor, 32 * 1024)?;
     let descriptor: Descriptor = serde_json::from_slice(&bytes).map_err(encoding)?;
     if descriptor.version != version
@@ -84,11 +97,7 @@ pub(super) fn load<T: serde::de::DeserializeOwned + Serialize>(
     if hash(&payload) != descriptor.sha256 {
         return Err(invalid("participation replay payload digest differs"));
     }
-    let value: T = serde_json::from_slice(&payload).map_err(encoding)?;
-    if version == 2 {
-        super::canonical::require(&value, &payload)?;
-    }
-    Ok(value)
+    Ok(payload)
 }
 
 pub(super) fn version(directory: &Path, anchored_descriptor: &str) -> ReportResult<u32> {

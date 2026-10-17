@@ -4,6 +4,11 @@ use std::path::Path;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ReportError {
+    #[error("documentary participation source: {source}")]
+    Documentary {
+        #[source]
+        source: Box<super::DocumentarySourceError>,
+    },
     #[error("{code}: {0}", code = .0.code())]
     Resource(#[from] ExportResourceError),
     #[error("recruiting event {event} was refused: {source}")]

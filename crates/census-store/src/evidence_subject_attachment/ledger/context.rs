@@ -15,7 +15,7 @@ pub(super) fn find<'a>(
 }
 
 pub(super) fn accept(
-    view: &StoreSnapshot<'_>,
+    view: &impl RetainedJournalReadSource,
     prior: &[Vec<Material>],
     introduced: &[Material],
     record: &ReviewedReferenceRecordV1,

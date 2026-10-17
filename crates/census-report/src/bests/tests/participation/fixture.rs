@@ -1,4 +1,6 @@
 use super::*;
+
+mod selection;
 use crate::export::{VerifiedCurrentAffiliations, VerifiedParticipationView};
 use census_domain::affiliation_candidates::{DeclaredFrozenView, KnownBounds, ObjectRef};
 use census_domain::model::{
@@ -11,6 +13,7 @@ use census_domain::profile_execution::{
     selected_qualification_contract_ref_v3 as reference, ContractRoleV1 as Role,
 };
 use census_store::{PublicIdentityWriterV1, Store};
+pub(super) use selection::{observations, reasons, selected};
 use std::collections::BTreeMap;
 use std::num::NonZeroU64;
 
@@ -274,37 +277,4 @@ fn day(value: &str) -> TestResult<ProfileDate> {
 
 fn range(from: &str, through: &str) -> TestResult<ProfileDateRangeV1> {
     Ok(ProfileDateRangeV1::new(day(from)?, day(through)?)?)
-}
-
-pub(super) fn observations() -> TestResult<(TieFixture, Observation, Observation)> {
-    let fixture = TieFixture::new()?;
-    let case = numeric_cases()?.into_iter().next().ok_or("numeric case")?;
-    let slower = fixture.report(&case, "eligible-school-result", "2026-05-01")?;
-    let faster = fixture
-        .report(&case, "participation-candidate", "2026-05-02")?
-        .with_mark(case.better)?;
-    Ok((fixture, slower, faster))
-}
-
-pub(super) fn selected(
-    dataset: &ExportDataset,
-    view: &VerifiedParticipationView,
-    limit: Option<usize>,
-) -> TestResult<crate::bests::SelectionOutcome> {
-    Ok(crate::bests::reduce::build_outcome(
-        &crate::report::EventAdmission::of(dataset)?,
-        &Options {
-            scope: Scope::AllSources,
-            limit,
-            ..Options::default()
-        },
-        ParticipationSelection::Selected(view),
-    )?)
-}
-
-pub(super) fn reasons(row: &crate::bests::ParticipationExclusion) -> Vec<ParticipationReason> {
-    match row.reason() {
-        ParticipationExclusionReason::Assessment(reasons) => reasons.iter().collect(),
-        ParticipationExclusionReason::MissingParticipationEvidence => Vec::new(),
-    }
 }

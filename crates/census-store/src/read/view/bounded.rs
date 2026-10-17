@@ -176,13 +176,13 @@ impl PhysicalScan<'_> {
     }
 }
 
-pub(super) fn read_admitted(
+pub(super) fn read_admitted<T: AsRef<[u8]>>(
     key_bytes: usize,
     size: Option<u32>,
     counts: &mut ReadCounts,
     budget: ReadBudget,
-    load: impl FnOnce() -> StoreResult<Option<fjall::UserValue>>,
-) -> StoreResult<fjall::UserValue> {
+    load: impl FnOnce() -> StoreResult<Option<T>>,
+) -> StoreResult<T> {
     let size = size.ok_or_else(|| invariant("bounded observation size is missing"))?;
     let size = usize::try_from(size).map_err(|_| StoreError::CounterOverflow)?;
     if size > budget.record_bytes {
@@ -202,7 +202,7 @@ pub(super) fn read_admitted(
         "capture encoded bytes",
     )?;
     let raw = load()?.ok_or_else(|| invariant("admitted bounded observation is missing"))?;
-    if raw.len() != size {
+    if raw.as_ref().len() != size {
         return Err(invariant("admitted bounded observation size changed"));
     }
     Ok(raw)

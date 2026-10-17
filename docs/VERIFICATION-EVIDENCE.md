@@ -178,3 +178,132 @@ successor changes no tested source. Frozen Report/workbook publication remains
 the next layer; positive eligibility, current-school/status/season authority and
 national resource/recovery acceptance remain open. All 19 previously excluded
 OS-dependent selectors remain excluded; no production or live census was run.
+
+### Accepted identity borrowing prerequisite: exact 9e885 native receipt
+
+The parent reported the completed Omarchy verification of
+`9e88522a4d33de6ef83a891fd00e80cbba775e01` /
+`07cf398fc19354542731122288f21bd5e8597e48` from
+`verification-logs-accepted-snapshot-borrow-9e885-20261016`:
+
+- Borrowed-owner controls: 12 passed; complete current-owner scope: 39 passed;
+  attachment Store scope: 172 passed. These scopes overlap and are not summed.
+- The genuine A/B chain passed: both writes remained active, reopen preserved the
+  original/attachment inventories, and both ReplayOnly operations returned the
+  exact prior receipt without another append or credited change.
+- The existing genuine consumer retained the identity-linked V4-unresolved result and
+  exact preservation checks. This is the controlled documentary mechanism, not
+  a school, dated affiliation, status, season or eligibility acceptance claim.
+- Formatting, all-target check and source lint exited successfully. Check retained
+  ten test dead-code warnings; lint retained six forced argument-count warnings.
+  The executor reported the exact tree clean.
+
+The later frozen-closure/selected-report candidate is a separate source-reviewed
+successor. Its genuine selected capture, anchored hydration, output/readback and
+resource fit require their own pinned native result; the prerequisite counts
+above do not certify that new implementation.
+
+### Frozen documentary selection: verified native gates (2026-10-17)
+
+The parent reports successful Omarchy verification of
+`b85d533d24ffbea1ac6024e18d095eefd56abbbd` /
+`b2244f796249a967cc5a74a9d9d3fb89a86b4c9b`, preserving actual PR77 main
+`388a109f9a3cda760dc270fa270bf0581cf8fbc0` and its history-funding work.
+The completed genuine producer remains separately pinned to `f38a93a0`: A/B,
+reopen, both exact-receipt replays, current/frozen three-row discovery and the
+closed-Store handoff passed. Its original 15-file inventory was unchanged before
+and after each Report test; consumer revisions never relabel its provenance.
+
+Both actual Report selectors passed on `75ded2e9` and again on `b85d533d`:
+selected capture, anchored frozen hydration, eight-column exclusions, workbook
+publication/readback without live Store/source objects, and missing/tampered or
+self-consistently omitted history refusal preserving the prior publication.
+The supported selected profile is Class 2027; the genuine athlete remains 2026.
+Positive derivation, athlete CSV/workbook population and best marks are zero.
+All three documentary observations retain their true Unresolved outcome and
+CohortUnresolved, ParticipationContextUnresolved, HighSchoolStatusMissing and
+SummerBoundaryUnresolved reasons; no school/team/provider authority is invented.
+
+Exact final `b85d533d` native scope receipts (passed/failed/skipped): dispatch
+4/0/1249; historical V2/strict-V3 replay 2/0/1251; scope/outcome 7/0/1246;
+collision 3/0/1250; refusal/readback 10/0/1243; workbook guards 4/0/1249;
+genuine Report roundtrip 1/0/1252; genuine Report refusals 1/0/1252. These are
+32 overlapping selected executions, not a count of unique tests.
+Earlier exact `5d855f7f`/`2cd98571` receipts passed source parity 32, archive
+state 7, capture sink 4, frozen current owner 6, target history 5, legacy bounds 4,
+Crawl discovery 7, handoff 7, incoming Domain funding 26 and history 163, and
+Service history-memory 2 and exact admission scope 39. Scopes overlap.
+
+Final formatting, all-target check and source lint passed; check retained ten
+test dead-code warnings and lint six forced argument-count warnings. The tree
+was clean. An initial Moon 2.2.3 launch failed before tests; the successful run
+used pinned 2.2.4. All 19 OS-denied crash/fence/service selectors remain excluded;
+three newly observed PermissionDenied outcomes are not semantic passes.
+The earlier callback/import errors, unsupported test profile, RawValue test
+setup errors and lint failures were repaired in pinned successors, without
+relaxing source assertions, caps, historical decoding or publication policy.
+
+This closes the controlled genuine identity-linked negative-selection and
+anchored frozen/publication mechanism gate. It does not establish positive
+Class-2027 eligibility/population, genuine school/status/season authority,
+national resource/recovery acceptance, or full R1–R3 closure. A real late
+unsupported discovery group through capture/frozen reconstruction remains an
+explicit uncovered case; synthetic identity-keyed refusal controls are distinct.
+Publication of these local successors still requires its separately reviewed
+small-batch workflow and fresh main checks.
+
+### Actual-main frozen publication integration candidate (2026-10-17)
+
+This normal merge includes actual PR79 main
+`a984e89ffb111735cfd474b42bc2581b9153be9d` and the frozen Report source
+checkpoint with the separately audited opt-in archive retention hook. The
+historical receipts above certify their exact named trees only. Fresh native
+Store/Crawl/Report, incoming regression and static gates are required on this
+union before publication. The new test-only retention hook preserves the actual
+gated Report producer commit/tree separately from the original Store handoff
+producer and retains both the frozen archive JSON and its proof directory.
+Its execution remains pending; no surviving old b85d-produced Report artifact
+is claimed. Historical policy controls remain distinct from an actual retained
+Report V3 generation. No later documentary semantic V4 or roster authority
+implementation is included in this publication layer.
+
+### Fresh actual-main frozen publication receipt (2026-10-17)
+
+Native gates passed on `24f593911c6cab8f1679199fd70547a701fced27`, tree
+`ed8428e420d1184e415e12874fda9b70e2b55d0a`; the checkout remained clean.
+All 21 requested scopes exited zero with zero failures. Pass/skipped counts:
+genuine producer 1/1726; Report dispatch 4/1249, historical 2/1251,
+collision 3/1250, refusal 10/1243, workbook guards 4/1249, genuine roundtrip
+1/1252, genuine refusal 1/1252, qualification union 7/1246; Store source parity
+32/1426, archive state 7/1451, capture sink 4/1454, current frozen 6/1452,
+historical target 5/1453, legacy bounds 4/1454; Crawl discovery 7/1720 and
+handoff 7/1720; Domain funding 26/934 and history 163/797; Service history-memory
+2/1068 and exact admission scope 39/1031. Scopes overlap; Report contributes
+32 selected executions. All previously excluded OS-denied selectors remain
+excluded, not semantic passes.
+
+Canonical `tools/moon-local` formatting, all-target check and source lint passed.
+Check retained ten Store-test dead-code warnings. An earlier direct
+`moon run pipeline:check` invocation exited one before compilation because the
+canonical launcher was required; that receipt is preserved separately.
+Lint ran with one build job, task `e00960f0`, exit zero, with six warnings
+(four Store, one Report, one athleticnet-browser). Its native logs are under
+`task/imports/layer3-lint-src-20261017.49O5xMpO`. No source was edited natively.
+
+The opt-in genuine roundtrip retained an actual Report V3 generation under
+`task/imports/layer3-report-20261017/evidence/retained-report-v3-archive`.
+Manifest SHA256: `923de2267a917a0113573f3641c67ff6c7428c52093542ed443d3637efe7c4f4`.
+Archive digest: `50b074a02d87073e1d30f5b24363b581c58a6e07e99bd84514ee90189934a17e`.
+Both Report and fresh original Store producer are the exact tested commit/tree
+above, not b85d or f38a. Original handoff SHA256:
+`bd73091f17772446d88cb8ac4fc54ea26e3c546eeadcb0f3d8667cc1a4545353`, snapshot 50.
+The archive has 15 files including 14 proofs; the original Store's 15-file exact
+set, sizes and SHA256 inventory were reverified unchanged. Raw evidence remains
+native. This establishes an independently retained pre-V4 generation for the
+next consumer gate, not that later gate's success.
+
+This receipt preserves the genuine CO2026/CO2027-selection negative result and
+all open positive eligibility, school, season, population, recovery and R1–R3
+acceptance limits above. Later semantic V4, identity-correction and reviewed
+roster implementations are outside this tested tree. This successor changes
+only this ledger; all source blobs and modes remain identical to the tested tree.

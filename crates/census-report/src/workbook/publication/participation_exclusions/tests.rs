@@ -201,3 +201,5 @@ fn participation_audit_refuses_changed_assessment_or_missing_evidence() -> TestR
     check!(verify(directory.path(), &fixture.dataset, &missing, &outcome).is_err());
     Ok(())
 }
+
+mod documentary;

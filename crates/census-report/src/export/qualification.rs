@@ -1,5 +1,7 @@
+mod documentary;
 pub(super) mod participation;
 mod promotion;
+pub(crate) use documentary::DocumentaryParticipationRow;
 pub(crate) use participation::ParticipationDiagnostic;
 pub(super) mod current_affiliation;
 pub(super) mod physical_observations;
@@ -94,6 +96,8 @@ pub(crate) struct VerifiedParticipationView {
     profile_id: ProfileId,
     participation_rule: ContractRefV1,
     rows: BTreeMap<PerformanceId, ParticipationAssessment>,
+    documentary: BTreeMap<PerformanceId, DocumentaryParticipationRow>,
+    unsupported_documentary: Vec<participation::UnsupportedDocumentarySource>,
 }
 
 impl VerifiedParticipationView {
@@ -105,6 +109,22 @@ impl VerifiedParticipationView {
     }
     pub(crate) fn participation_rule(&self) -> &ContractRefV1 {
         &self.participation_rule
+    }
+    pub(crate) fn require_documentary_publication(&self) -> crate::report::ReportResult<()> {
+        let unsupported = self.unsupported_documentary();
+        if let Some(first) = unsupported.first() {
+            return Err(first.publication_error(unsupported.len())?);
+        }
+        Ok(())
+    }
+    pub(crate) fn unsupported_documentary(&self) -> &[participation::UnsupportedDocumentarySource] {
+        &self.unsupported_documentary
+    }
+    pub(crate) fn documentary_rows(&self) -> impl Iterator<Item = &DocumentaryParticipationRow> {
+        self.documentary.values()
+    }
+    pub(crate) fn documentary(&self, id: &PerformanceId) -> Option<&DocumentaryParticipationRow> {
+        self.documentary.get(id)
     }
     pub(crate) fn assessment(
         &self,
@@ -172,6 +192,8 @@ impl VerifiedParticipationView {
             profile_id,
             participation_rule,
             rows,
+            documentary: BTreeMap::new(),
+            unsupported_documentary: Vec::new(),
         }
     }
 }
@@ -230,5 +252,18 @@ impl ParticipationAssessment {
             evidence_refs,
             diagnostics,
         }
+    }
+}
+
+#[cfg(test)]
+impl VerifiedParticipationView {
+    pub(crate) fn fixture_with_documentary(
+        mut self,
+        documentary: BTreeMap<PerformanceId, DocumentaryParticipationRow>,
+        unsupported: Vec<participation::UnsupportedDocumentarySource>,
+    ) -> Self {
+        self.documentary = documentary;
+        self.unsupported_documentary = unsupported;
+        self
     }
 }
