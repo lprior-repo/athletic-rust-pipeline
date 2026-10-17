@@ -1,7 +1,7 @@
 use super::{files, Handoff, TestResult};
 use serde_json::json;
 use sha2::{Digest, Sha256};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 
 pub(in super::super) fn retain_v3_archive(
@@ -21,6 +21,11 @@ pub(in super::super) fn retain_v3_archive(
     check!(files::hex(&report_commit, 40));
     check!(files::hex(&report_tree, 40));
     let (handoff, handoff_digest) = handoff()?;
+    for source in [handoff.store_path.as_path(), archive_directory] {
+        let source = std::fs::canonicalize(source)?;
+        check!(!destination.starts_with(&source));
+        check!(!source.starts_with(&destination));
+    }
     files::verify(&handoff.store_path, &handoff.files)?;
     let inventory = files::inventory(archive_directory)?;
     check!(eq; frozen.parent(), Some(archive_directory));
@@ -76,8 +81,12 @@ fn handoff() -> TestResult<(Handoff, String)> {
     let metadata = std::fs::symlink_metadata(&path)?;
     check!(metadata.file_type().is_file());
     check!(metadata.len() <= 32 * 1024 * 1024);
-    let bytes = std::fs::read(path)?;
+    let file = std::fs::File::open(path)?;
+    check!(eq; file.metadata()?.len(), metadata.len());
+    let mut bytes = Vec::new();
+    file.take(32 * 1024 * 1024 + 1).read_to_end(&mut bytes)?;
     check!(bytes.len() <= 32 * 1024 * 1024);
+    check!(eq; u64::try_from(bytes.len())?, metadata.len());
     let handoff: Handoff = serde_json::from_slice(&bytes)?;
     check!(eq; handoff.schema, "genuine-documentary-report-handoff/v1");
     check!(eq; handoff.producer_commit, std::env::var("CENSUS_DOCUMENTARY_PRODUCER_COMMIT")?);
