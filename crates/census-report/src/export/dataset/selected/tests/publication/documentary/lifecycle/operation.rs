@@ -7,13 +7,13 @@ use census_store::{
     PreparedEvidenceSubjectAttachmentV1, Receipt, Store, Table,
 };
 
-pub(super) struct Revoked {
+pub(in super::super) struct Revoked {
     records: Vec<ReviewedReferenceRecordV1>,
     receipts: Vec<Receipt>,
     revocation: Receipt,
 }
 
-pub(super) fn revoke(store: &Store) -> TestResult<Revoked> {
+pub(in super::super) fn revoke(store: &Store) -> TestResult<Revoked> {
     let (records, receipts) = retained(store)?;
     check!(eq; records.len(), 2);
     check!(eq; receipts.len(), 2);

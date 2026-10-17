@@ -92,7 +92,9 @@ impl Fixture {
         Ok(fixture)
     }
 
-    pub(super) fn reopen_with_writer(self) -> TestResult<(Self, census_store::PublicIdentityWriterV1)> {
+    pub(super) fn reopen_with_writer(
+        self,
+    ) -> TestResult<(Self, census_store::PublicIdentityWriterV1)> {
         let Self {
             directory,
             store,
@@ -118,13 +120,16 @@ impl Fixture {
             Ok((reopened, writer))
         })();
         match reopened {
-            Ok((store, writer)) => Ok((Self {
-                directory,
-                store,
-                profile,
-                expected,
-                handoff,
-            }, writer)),
+            Ok((store, writer)) => Ok((
+                Self {
+                    directory,
+                    store,
+                    profile,
+                    expected,
+                    handoff,
+                },
+                writer,
+            )),
             Err(error) => {
                 let _preserved = directory.keep();
                 Err(error)

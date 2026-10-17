@@ -1,6 +1,6 @@
 use super::*;
 
-mod operation;
+pub(super) mod operation;
 mod oracle;
 
 #[test]
