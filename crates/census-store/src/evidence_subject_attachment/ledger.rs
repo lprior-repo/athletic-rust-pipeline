@@ -127,6 +127,14 @@ impl<'s> Ledger<'s> {
         store: &StoreIdentity,
         grant: &mut AttachmentReplayGrantV1,
     ) -> StoreResult<()> {
+        self.projection(store, grant).map(|_| ())
+    }
+
+    pub(super) fn projection<'a>(
+        &'a self,
+        store: &StoreIdentity,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<domain::ReviewedReferenceProjectionV1<'a>> {
         let mut receipts = Vec::new();
         for record in self.records.iter() {
             grant.charge_steps(1).map_err(Error::Domain)?;
@@ -136,14 +144,13 @@ impl<'s> Ledger<'s> {
                 record_digest: record.record_digest.clone(),
             });
         }
-        domain::replay_checked_reviewed_references_with_grant(
+        domain::project_checked_reviewed_references_with_grant(
             store,
             &self.records,
             &receipts,
             &self.inventory,
             grant,
         )
-        .map_err(Error::Domain)?;
-        Ok(())
+        .map_err(|source| Error::Domain(source).into())
     }
 }

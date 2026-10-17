@@ -41,6 +41,7 @@ pub(super) fn check_with_in_season(
     }
     super::in_season::check_facts(season)?;
     check_ownership(observation)?;
+    super::documentary::check(query, observation)?;
     check_proofs(query, observation, season)?;
     observation
         .eligibility_windows
@@ -81,7 +82,9 @@ fn proofs<'a>(
     season: InSeasonEvidence<'a>,
 ) -> impl Iterator<Item = ProofReference<'a>> {
     let ownership = match observation.ownership {
-        ResultOwnership::Bound { proof, .. } => Some(proof),
+        ResultOwnership::Bound { proof, .. } | ResultOwnership::DocumentaryBound { proof, .. } => {
+            Some(proof)
+        }
         ResultOwnership::Missing | ResultOwnership::Conflicting => None,
     };
     let cohort = match observation.cohort {

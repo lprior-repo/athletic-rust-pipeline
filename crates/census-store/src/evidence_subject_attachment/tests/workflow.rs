@@ -1,12 +1,12 @@
 mod fences;
-mod fixture;
+pub(in crate::evidence_subject_attachment) mod fixture;
 mod lifecycle;
 mod roots;
 
 mod accounting;
 mod context;
 mod corruption;
-mod membership;
+pub(in crate::evidence_subject_attachment) mod membership;
 mod physical;
 
 mod phase;

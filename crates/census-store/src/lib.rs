@@ -29,6 +29,7 @@ mod error;
 mod evidence_subject_attachment;
 pub use evidence_subject_attachment::{
     AttachmentContextObjectV1, AttachmentInspectionRequestV1,
+    CurrentEvidenceSubjectAttachmentReferencesV1, CurrentEvidenceSubjectAttachmentV1,
     EvidenceSubjectAttachmentInspectionV1, EvidenceSubjectAttachmentPreparationV1,
     EvidenceSubjectAttachmentStoreError, PreparedEvidenceSubjectAttachmentV1,
     RetainedCaptureLeafKindV1, RetainedCaptureLeafV1, RetainedCaptureRootReadV1,

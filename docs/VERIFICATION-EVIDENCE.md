@@ -84,3 +84,97 @@ non-ledger paths exact to the bounded checkpoint. This receipt-only successor
 changes no tested source. This establishes the bounded mechanism scope above;
 it does not close human approval, positive eligibility, current-school,
 documentary Report, or national resource/recovery acceptance.
+
+### Current documentary rows and exact wind interpretation (2026-10-16 21:47 UTC)
+
+The native terminal callback reports exact
+`19c21b4c5def3adb06abdaec8dd1ff4d51980055`, tree
+`43b3c0338707e9918c1843a2d0eb067b52476b5d`, passed genuine chain 1/1,
+literal inventory 1/1, wind/heat controls 26/26, raw readers 50/50, retained
+result ownership 6/6, current Store attachment 27/27, documentary domain 11/11,
+physical projector 10/10, attachment workflow 65/65, Store attachment 160/160,
+domain attachment 84/84, participation candidates 95/95 and recorded intake
+20/20. Scopes overlap and are not summed. Formatting and all-target check
+passed, with ten test-build dead-code warnings. Source lint failed 23
+`result_large_err` findings identifying the projector's source-error payload
+as at least 128 bytes; this was not an assertion or source-evidence failure.
+
+The narrow successor `75af7044e69779794a4ccd98ced36cd1e5dff787`, tree
+`26416a431c62c15aae47f89407b0320c7a084290`, boxed only that typed source
+payload and preserved its transparent display/source chain and raw conversion.
+Three added controls cover layout, typed capacity and concrete Store-error
+forwarding. Its native callback reports formatting, all-target check and source
+lint all exited zero, projector 13/13 (1700 skipped), and complete genuine chain
+1/1 (1712 skipped). Ten test-build dead-code and four forced argument-count
+warnings remain; no large-error lint remains. Logs are retained in
+`verification-logs-typed-error-repair-75af-20261016`; checkout ended clean.
+This error conversion has one ordinary fixed allocation on its error path;
+no hard allocation, whole-process memory or performance claim is implied.
+
+The complete genuine control still applies A and B, reopens the retained roots
+and receipts, and repeats both original commands with their original receipts.
+The added current raw-row consumer binds all three exact original result rows
+to active attachments and the current accepted target on one held view and
+original grant. Their wind readings are `Some(0.2)`, `None`, `None`. The actual
+controlled V4 assessment retains exactly four unresolved reasons: cohort,
+participation context, high-school status and summer boundary. The school label
+has no checked school/team binding; provider person/team IDs are not invented.
+
+The prior `3a219831` bridge assertion exposed wind hardcoded to None and its
+misclassification as heat. `58979164` corrected header-qualified wind/heat and
+passed the genuine bridge, but the existing NC wrapped-finals test then reported
+214 false skipped rows because its explicit `(Pl)` column was unrecognized.
+`19c21b4c` validates that bounded ancillary heat-local placing column without
+replacing global place; all original assertions, including `Some(0.2)`, remain.
+Corrected parsed context changes the exact context key; old affected captures
+and attachment subjects are not silently rewritten or authorized as new context.
+
+This verifies current source identity linkage, physical interpretation and the
+controlled unresolved evaluator route. SelectedProofs frozen documentary closure,
+selected exclusion/PR and workbook consumption, genuine school/status/season
+acceptance, explicit migration and national resource/recovery gates remain open.
+No live census, package-wide run or denied crash/fence retry is claimed. Results
+are parent-reported native callbacks; cloud review checks exact source equivalence.
+
+### Actual-main documentary integration candidate (2026-10-17)
+
+This normal merge retains actual merged main
+`5eba0bdc830fbf5091f8a7abdf18115274515606` and documentary checkpoint
+`03daef30320c4f6e093dd1901bf8f43f9bfd21bd` as parents. Layer 1 is now
+published through PR 78. The earlier documentary receipts above describe their
+exact historical tested trees, not this new union. Fresh native scoped current
+consumer, parser, ownership, incoming regression and static gates remain required
+before publishing this second layer. The incoming deletion of older ledger
+history remains preserved. No frozen Report or positive eligibility claim is added.
+
+### Actual-main documentary union native receipt (2026-10-17)
+
+Native verification passed exact commit
+`5839200285e301eda1583d3324d73c13214017c6`, tree
+`0c855016dc663862a592e3009cef1e7fcf67f513`. The 17 requested scoped
+selectors passed with zero failures: genuine chain 1 (1712 skipped), literal
+inventory 1 (1712), wind 26 (1687), raw readers 50 (1663), ownership 6 (1707),
+current Store 27 (1370), documentary domain 11 (949), physical projector 13
+(1700), workflow 65 (1332), Store attachment 160 (1237), domain attachment 84
+(876), participation 95 (865), intake 20 (1693), funding 26 (934), history 163
+(797), Service history memory 2 (1068), and scoped admission 39 (1031).
+These overlapping scopes are not summed. An additional Moon 2.2.3 startup
+attempt executed no tests; the canonical Moon 2.2.4 retry passed.
+
+The saved genuine output records A written and active on the held view, B
+written with both active, then reopen preserving two attachment roots and four
+original roots. Both original commands returned ReplayOnly with their exact
+original receipts, appended zero and credited false. Reopen precedes those
+successful replays; no additional successful post-replay reopen is claimed.
+Formatting and source lint exited zero. The first all-target check hit temporary
+storage quota; the task-local TMPDIR retry exited zero. Ten test-build dead-code
+and six forced argument-count warnings remain. The tested checkout ended clean.
+Native logs: `task/verification-logs-layer2-583920-20261017`.
+
+Independent preservation review verifies all 23 incoming non-ledger blobs/modes
+against actual main `5eba0bdc830fbf5091f8a7abdf18115274515606` and all other
+6,927 non-ledger entries against the documentary checkpoint. This receipt-only
+successor changes no tested source. Frozen Report/workbook publication remains
+the next layer; positive eligibility, current-school/status/season authority and
+national resource/recovery acceptance remain open. All 19 previously excluded
+OS-dependent selectors remain excluded; no production or live census was run.

@@ -1,5 +1,6 @@
 mod assess;
 mod checks;
+mod documentary;
 mod in_season;
 mod policy;
 mod reasons;

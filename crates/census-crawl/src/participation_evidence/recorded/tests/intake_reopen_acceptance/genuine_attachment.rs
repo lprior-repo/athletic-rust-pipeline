@@ -20,6 +20,7 @@ use census_domain::model::SourceNamespace;
 #[path = "provider_school/fixtures.rs"]
 mod school_fixtures;
 
+mod bridge;
 mod context;
 mod diagnostics;
 mod material;

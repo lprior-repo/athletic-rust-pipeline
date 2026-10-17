@@ -14,6 +14,8 @@ mod labels;
 mod precision_tests;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod wind_tests;
 
 use super::parse::html_unescape;
 use columns::{build_row, header_columns, row_cells, Columns};

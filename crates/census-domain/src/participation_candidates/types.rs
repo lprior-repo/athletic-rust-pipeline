@@ -42,6 +42,14 @@ pub enum ResultOwnership<'a> {
         source_result: ObjectRef<'a>,
         proof: ProofReference<'a>,
     },
+    DocumentaryBound {
+        performance: &'a PerformanceId,
+        source_result: ObjectRef<'a>,
+        subject: &'a crate::evidence_subject_attachment::RetainedDocumentSubjectReferenceV1,
+        attachment_record: &'a crate::evidence_subject_attachment::AttachmentRecordReferenceV1,
+        attachment_inventory: &'a crate::evidence_subject_attachment::AttachmentInventoryV1,
+        proof: ProofReference<'a>,
+    },
     Missing,
     Conflicting,
 }
@@ -179,6 +187,8 @@ pub enum ParticipationInputError {
     ForeignSubject,
     #[error("participation candidate source athlete is missing or exceeds its envelope")]
     InvalidSourceAthlete,
+    #[error("documentary result ownership references do not match the source subject")]
+    InvalidDocumentaryOwnership,
     #[error("participation candidate facts exceed the {MAX_PARTICIPATION_FACTS}-fact envelope")]
     TooManyFacts,
     #[error("participation candidate reuses a proof identity with different metadata")]

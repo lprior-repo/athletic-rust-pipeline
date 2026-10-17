@@ -2,6 +2,8 @@ use crate::hytek;
 use crate::result_file::ParsedRow;
 use census_domain::model::{EventKind, Mark, TimingMethod};
 
+mod tail;
+
 const BOUNDS: usize = 5;
 
 #[derive(Debug, Clone, Copy)]
@@ -10,6 +12,7 @@ pub(super) struct Columns {
     grade: Option<usize>,
     team: usize,
     mark: MarkColumn,
+    tail: tail::Layout,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -51,11 +54,13 @@ pub(super) fn header_columns(line: &str) -> Option<Columns> {
     if let Some((begin, offset)) = start {
         labels.read(line.get(begin..)?, offset);
     }
+    let mark = MarkColumn::from_label(labels.mark?)?;
     let columns = Columns {
         name: labels.name?,
         grade: labels.grade,
         team: labels.team?,
-        mark: MarkColumn::from_label(labels.mark?)?,
+        mark,
+        tail: labels.tail.finish(mark.end),
     };
     (columns.name < columns.team
         && columns.team < columns.mark.start
@@ -71,10 +76,12 @@ struct HeaderLabels {
     grade: Option<usize>,
     team: Option<usize>,
     mark: Option<(usize, usize)>,
+    tail: tail::Header,
 }
 
 impl HeaderLabels {
     fn read(&mut self, label: &str, offset: usize) {
+        self.tail.read(label, offset);
         if label.eq_ignore_ascii_case("Name") || label.eq_ignore_ascii_case("Athlete") {
             self.name = Some(offset);
         } else if label.eq_ignore_ascii_case("Yr") || label.eq_ignore_ascii_case("Grade") {
@@ -93,7 +100,7 @@ pub(super) struct Cells<'a> {
     pub(super) grade: &'a str,
     team: &'a str,
     mark: Option<&'a str>,
-    heat: Option<&'a str>,
+    tail: Result<tail::Cells<'a>, &'static str>,
     overflowed: bool,
 }
 
@@ -110,9 +117,6 @@ pub(super) fn row_cells(line: &str, columns: Columns) -> Cells<'_> {
     let token = mark_token(line, mark_end);
     let team_end = token.map_or(mark_start, |(start, _)| start.min(mark_start).max(team));
     let mark = token.and_then(|(_, token)| mark_shaped(token).then_some(token));
-    let tail = line
-        .get(mark_end..)
-        .map_or(Default::default(), core::convert::identity);
     Cells {
         place: line
             .get(..name)
@@ -130,7 +134,7 @@ pub(super) fn row_cells(line: &str, columns: Columns) -> Cells<'_> {
             .get(team..team_end)
             .map_or(Default::default(), core::convert::identity)
             .trim(),
-        heat: mark.and_then(|_| heat_token(tail)),
+        tail: tail::read(line, columns.mark.end, columns.tail),
         overflowed: layout_overflows(line, mark_start, mark_end, token),
         mark,
     }
@@ -195,12 +199,6 @@ fn layout_overflows(
     trailing || scattered || (touching && !covered)
 }
 
-fn heat_token(tail: &str) -> Option<&str> {
-    tail.split_whitespace()
-        .next()
-        .filter(|token| !token.starts_with('('))
-}
-
 fn mark_shaped(token: &str) -> bool {
     if token.eq_ignore_ascii_case("NT")
         || hytek::NO_MARK
@@ -226,6 +224,7 @@ pub(super) fn build_row(cells: &Cells<'_>, kind: &EventKind) -> Result<ParsedRow
         value => Some(value.parse::<u16>().map_err(|_| "invalid place")?),
     };
     let (mark, timing) = mark_of(mark, kind);
+    let tail = cells.tail?;
     Ok(ParsedRow {
         place,
         name: cells.name.to_string(),
@@ -233,8 +232,8 @@ pub(super) fn build_row(cells: &Cells<'_>, kind: &EventKind) -> Result<ParsedRow
         school: cells.team.to_string(),
         mark,
         timing,
-        wind_mps: None,
-        heat: cells.heat.map(str::to_string),
+        wind_mps: tail.wind,
+        heat: tail.heat.map(str::to_string),
         points: None,
         legs: Vec::new(),
     })
