@@ -183,7 +183,10 @@ fn selected_replay_origin(
             Ok(SelectedInputOrigin::HistoricalIdentityReplay)
         }
         (Version::ReviewedRosterGraphV3, 7) => {
-            census_domain::profile_execution::validate_selected_qualification_profile_v4(profile)
+            let _checked =
+                census_domain::profile_execution::validate_selected_qualification_profile_v4(
+                    profile,
+                )
                 .map_err(|error| invalid(&error.to_string()))?;
             Ok(SelectedInputOrigin::Current)
         }

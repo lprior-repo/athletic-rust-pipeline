@@ -78,8 +78,9 @@ pub(super) fn replay(
     descriptor: &FrozenAffiliationDescriptor,
     profile: &QueryProfileV1,
 ) -> ReportResult<PinnedCurrentAffiliations> {
-    census_domain::profile_execution::validate_selected_qualification_profile_v4(profile)
-        .map_err(|_| invalid("reviewed roster replay profile differs"))?;
+    let _checked =
+        census_domain::profile_execution::validate_selected_qualification_profile_v4(profile)
+            .map_err(|_| invalid("reviewed roster replay profile differs"))?;
     let mut grant = AttachmentReplayGrantV1::new();
     let result = (|| {
         let closure = SourceBindingObjectV1 {

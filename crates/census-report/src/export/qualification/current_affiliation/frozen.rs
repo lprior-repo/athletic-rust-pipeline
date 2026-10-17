@@ -29,8 +29,9 @@ pub(crate) fn capture(
     {
         return reviewed::capture(dataset, snapshot, objects_dir, &profile);
     }
-    census_domain::profile_execution::validate_selected_qualification_profile_v3(&profile)
-        .map_err(|_| invalid("unsupported affiliation capture profile"))?;
+    let _checked =
+        census_domain::profile_execution::validate_selected_qualification_profile_v3(&profile)
+            .map_err(|_| invalid("unsupported affiliation capture profile"))?;
     capture::capture(dataset, snapshot, objects_dir)
 }
 
