@@ -2,6 +2,8 @@ mod attach;
 mod authority;
 mod capture;
 mod origin;
+#[cfg(test)]
+mod test_authority;
 use super::{frozen, ExportDataset};
 use crate::export::{VerifiedCurrentAffiliations, VerifiedParticipationView};
 use crate::report::{ReportError, ReportResult};
