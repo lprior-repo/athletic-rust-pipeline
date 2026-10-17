@@ -19,13 +19,22 @@ pub(in super::super) fn revoke(store: &Store) -> TestResult<Revoked> {
     check!(eq; receipts.len(), 2);
     let original = records.last().ok_or("genuine B attachment")?;
     check!(eq; original.command.operation.as_str(), "genuine-reviewed-may15-b-v1");
+    let revocation = revoke_record(store, original, "genuine-documentary-controlled-revoke-v1")?;
+    Ok(Revoked { records, receipts, revocation })
+}
+
+pub(in super::super) fn revoke_record(
+    store: &Store,
+    original: &ReviewedReferenceRecordV1,
+    operation: &str,
+) -> TestResult<Receipt> {
     let before = state(store)?;
     let inspection =
         store.inspect_evidence_subject_attachment_v1(AttachmentInspectionRequestV1::Revoke {
             prior: original.reference(),
         })?;
     let mut command = original.command.clone();
-    command.operation = AttachmentTextV1::parse("genuine-documentary-controlled-revoke-v1")?;
+    command.operation = AttachmentTextV1::parse(operation)?;
     command.action = inspection.action().clone();
     command.target = inspection.target().clone();
     command.expected_public_head = inspection.public_head().clone();
@@ -53,11 +62,7 @@ pub(in super::super) fn revoke(store: &Store) -> TestResult<Revoked> {
         return Err("new genuine attachment revocation must write".into());
     };
     check!(eq; state(store)?, before);
-    Ok(Revoked {
-        records,
-        receipts,
-        revocation,
-    })
+    Ok(revocation)
 }
 
 pub(super) fn replay_and_require_revoked(store: &Store, original: &Revoked) -> TestResult {
