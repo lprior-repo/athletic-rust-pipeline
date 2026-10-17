@@ -4,13 +4,13 @@ use crate::participation_evidence::result_ownership::discovery::OriginalResultSp
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::{
-    ActiveResultSubjectDiscoveryV1, ActiveResultSubjectV1, DiscoveredAttachmentCaptureV1,
+    ActiveAttachmentSubjectDiscoveryV1, ActiveAttachmentSubjectV1, DiscoveredAttachmentCaptureV1,
     DiscoveredAttachmentLocatorV1, RetainedCaptureLeafKindV1, RetainedCaptureRootSchemaV1,
     RetainedCaptureSlotV1,
 };
 
 pub(super) fn all(
-    metadata: &ActiveResultSubjectDiscoveryV1<'_>,
+    metadata: &ActiveAttachmentSubjectDiscoveryV1<'_>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<(Vec<Member>, Vec<Diagnostic>)> {
     let count = metadata.subjects().len();
@@ -27,7 +27,7 @@ pub(super) fn all(
 }
 
 fn classify(
-    source: &ActiveResultSubjectV1<'_>,
+    source: &ActiveAttachmentSubjectV1<'_>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<Result<OriginalResultSpan, Gap>> {
     let DiscoveredAttachmentCaptureV1::Retained(leaf) = source.capture() else {

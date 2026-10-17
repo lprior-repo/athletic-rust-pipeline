@@ -83,7 +83,7 @@ impl<'b> FrozenCurrentEvidenceSubjectAttachmentReferencesV1<'b> {
     pub fn discover_active_result_subjects_v1<'a>(
         &'a self,
         grant: &mut AttachmentReplayGrantV1,
-    ) -> StoreResult<discovery::ActiveResultSubjectDiscoveryV1<'a>> {
+    ) -> StoreResult<discovery::ActiveAttachmentSubjectDiscoveryV1<'a>> {
         discovery::discover(&self.ledger, self.accepted, grant)
     }
     pub fn bind_exact_subject<'a>(

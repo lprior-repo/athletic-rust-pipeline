@@ -13,7 +13,7 @@ pub(super) mod query;
 use accepted::AcceptedOwner;
 pub use capability::CurrentEvidenceSubjectAttachmentV1;
 pub use discovery::{
-    ActiveResultSubjectDiscoveryV1, ActiveResultSubjectV1, DiscoveredAttachmentCaptureV1,
+    ActiveAttachmentSubjectDiscoveryV1, ActiveAttachmentSubjectV1, DiscoveredAttachmentCaptureV1,
     DiscoveredAttachmentLocatorV1,
 };
 
@@ -43,7 +43,7 @@ impl<'v, 's> CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's> {
     pub fn discover_active_result_subjects_v1<'a>(
         &'a self,
         grant: &mut AttachmentReplayGrantV1,
-    ) -> StoreResult<ActiveResultSubjectDiscoveryV1<'a>> {
+    ) -> StoreResult<ActiveAttachmentSubjectDiscoveryV1<'a>> {
         discovery::discover(&self.ledger, self.accepted.view(), grant)
     }
     pub fn freeze_closure(

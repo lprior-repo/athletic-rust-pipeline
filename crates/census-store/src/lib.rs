@@ -28,8 +28,8 @@ mod entities;
 mod error;
 mod evidence_subject_attachment;
 pub use evidence_subject_attachment::{
-    replay_frozen_evidence_subject_attachment_references_v1, ActiveResultSubjectDiscoveryV1,
-    ActiveResultSubjectV1, AttachmentContextObjectV1, AttachmentInspectionRequestV1,
+    replay_frozen_evidence_subject_attachment_references_v1, ActiveAttachmentSubjectDiscoveryV1,
+    ActiveAttachmentSubjectV1, AttachmentContextObjectV1, AttachmentInspectionRequestV1,
     CurrentEvidenceSubjectAttachmentReferencesV1, CurrentEvidenceSubjectAttachmentV1,
     DiscoveredAttachmentCaptureV1, DiscoveredAttachmentLocatorV1,
     EvidenceSubjectAttachmentInspectionV1, EvidenceSubjectAttachmentPreparationV1,

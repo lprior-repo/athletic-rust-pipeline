@@ -5,7 +5,7 @@ use census_domain::evidence_subject_attachment::{
     AttachmentReplayGrantV1, EvidenceSubjectAttachmentError,
 };
 use census_store::{
-    ActiveResultSubjectDiscoveryV1, CurrentEvidenceSubjectAttachmentReferencesV1,
+    ActiveAttachmentSubjectDiscoveryV1, CurrentEvidenceSubjectAttachmentReferencesV1,
     CurrentEvidenceSubjectAttachmentV1, FrozenCurrentEvidenceSubjectAttachmentReferencesV1,
     FrozenCurrentEvidenceSubjectAttachmentV1, FrozenRetainedCaptureSourceV1,
     RetainedCaptureRootReadV1, RetainedCaptureRootSchemaV1, StoreResult, StoreSnapshot,
@@ -53,7 +53,7 @@ impl<'a, 'v, 's> View<'a, 'v, 's> {
     pub(super) fn discover(
         self,
         grant: &mut AttachmentReplayGrantV1,
-    ) -> StoreResult<ActiveResultSubjectDiscoveryV1<'a>> {
+    ) -> StoreResult<ActiveAttachmentSubjectDiscoveryV1<'a>> {
         match self {
             Self::Current(current) => current.discover_active_result_subjects_v1(grant),
             Self::Frozen(current) => current.discover_active_result_subjects_v1(grant),

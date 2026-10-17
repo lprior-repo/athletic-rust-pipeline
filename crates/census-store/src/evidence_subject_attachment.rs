@@ -13,7 +13,7 @@ mod planning;
 mod prepare;
 mod retained;
 pub use current::{
-    ActiveResultSubjectDiscoveryV1, ActiveResultSubjectV1,
+    ActiveAttachmentSubjectDiscoveryV1, ActiveAttachmentSubjectV1,
     CurrentEvidenceSubjectAttachmentReferencesV1, CurrentEvidenceSubjectAttachmentV1,
     DiscoveredAttachmentCaptureV1, DiscoveredAttachmentLocatorV1,
 };

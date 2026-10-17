@@ -1,15 +1,15 @@
 use super::*;
 
-pub struct ActiveResultSubjectDiscoveryV1<'a> {
-    pub(super) rows: Vec<ActiveResultSubjectV1<'a>>,
+pub struct ActiveAttachmentSubjectDiscoveryV1<'a> {
+    pub(super) rows: Vec<ActiveAttachmentSubjectV1<'a>>,
 }
-impl<'a> ActiveResultSubjectDiscoveryV1<'a> {
-    pub fn subjects(&self) -> &[ActiveResultSubjectV1<'a>] {
+impl<'a> ActiveAttachmentSubjectDiscoveryV1<'a> {
+    pub fn subjects(&self) -> &[ActiveAttachmentSubjectV1<'a>] {
         &self.rows
     }
 }
 
-pub struct ActiveResultSubjectV1<'a> {
+pub struct ActiveAttachmentSubjectV1<'a> {
     pub(super) record: &'a ReviewedReferenceRecordV1,
     pub(super) subject: &'a RetainedDocumentSubjectReferenceV1,
     pub(super) capture: &'a Material,
@@ -37,7 +37,7 @@ pub enum DiscoveredAttachmentLocatorV1<'a> {
     Retained(&'a RetainedCaptureLeafV1),
 }
 
-impl ActiveResultSubjectV1<'_> {
+impl ActiveAttachmentSubjectV1<'_> {
     pub fn record(&self) -> &ReviewedReferenceRecordV1 {
         self.record
     }

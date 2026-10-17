@@ -5,13 +5,13 @@ use census_domain::evidence_subject_attachment::{
 };
 use census_domain::participation_candidates::MAX_PARTICIPATION_FACTS;
 use census_store::{
-    ActiveResultSubjectDiscoveryV1, DiscoveredAttachmentCaptureV1, RetainedCaptureRootV1,
+    ActiveAttachmentSubjectDiscoveryV1, DiscoveredAttachmentCaptureV1, RetainedCaptureRootV1,
 };
 use std::cmp::Ordering;
 use std::ops::Range;
 
 pub(super) fn insert(
-    metadata: &ActiveResultSubjectDiscoveryV1<'_>,
+    metadata: &ActiveAttachmentSubjectDiscoveryV1<'_>,
     members: &mut Vec<Member>,
     member: Member,
     grant: &mut AttachmentReplayGrantV1,
@@ -50,7 +50,7 @@ pub(super) fn insert(
 }
 
 pub(super) fn ranges(
-    metadata: &ActiveResultSubjectDiscoveryV1<'_>,
+    metadata: &ActiveAttachmentSubjectDiscoveryV1<'_>,
     members: &[Member],
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<Vec<Range<usize>>> {
@@ -90,7 +90,7 @@ fn push(groups: &mut Vec<Range<usize>>, range: Range<usize>) -> CrawlResult<()> 
 }
 
 fn compare(
-    metadata: &ActiveResultSubjectDiscoveryV1<'_>,
+    metadata: &ActiveAttachmentSubjectDiscoveryV1<'_>,
     left: usize,
     right: usize,
     grant: &mut AttachmentReplayGrantV1,
@@ -109,7 +109,7 @@ fn compare(
 }
 
 pub(super) fn key<'a>(
-    metadata: &'a ActiveResultSubjectDiscoveryV1<'_>,
+    metadata: &'a ActiveAttachmentSubjectDiscoveryV1<'_>,
     index: usize,
 ) -> CrawlResult<(&'a RetainedCaptureRootV1, &'a AttachmentObjectReferenceV1)> {
     let source = metadata

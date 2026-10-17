@@ -4,11 +4,11 @@ use crate::milesplit::SourceRowLocator;
 use crate::participation_evidence::result_ownership::discovery as source_rows;
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
-use census_store::ActiveResultSubjectDiscoveryV1;
+use census_store::ActiveAttachmentSubjectDiscoveryV1;
 
 pub(super) fn group<'s, T>(
     view: view::View<'_, '_, 's>,
-    metadata: &ActiveResultSubjectDiscoveryV1<'_>,
+    metadata: &ActiveAttachmentSubjectDiscoveryV1<'_>,
     members: &[Member],
     grant: &mut AttachmentReplayGrantV1,
     consume: impl for<'r> FnOnce(
@@ -27,7 +27,7 @@ pub(super) fn group<'s, T>(
 
 fn recover(
     view: view::View<'_, '_, '_>,
-    metadata: &ActiveResultSubjectDiscoveryV1<'_>,
+    metadata: &ActiveAttachmentSubjectDiscoveryV1<'_>,
     members: &[Member],
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<Vec<SourceRowLocator>> {
@@ -58,7 +58,7 @@ fn recover(
 fn locators(
     recorded: &super::super::RecordedHtmlResultCaptureV1,
     document: &crate::participation_evidence::result_ownership::CheckedRetainedResultDocumentV1<'_>,
-    metadata: &ActiveResultSubjectDiscoveryV1<'_>,
+    metadata: &ActiveAttachmentSubjectDiscoveryV1<'_>,
     members: &[Member],
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<Vec<SourceRowLocator>> {

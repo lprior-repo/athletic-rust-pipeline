@@ -2,7 +2,7 @@ use super::{domain, read, view, DiscoveredIdentityLinkedHtmlResultDocumentV1};
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::{
-    ActiveResultSubjectDiscoveryV1, CurrentEvidenceSubjectAttachmentReferencesV1,
+    ActiveAttachmentSubjectDiscoveryV1, CurrentEvidenceSubjectAttachmentReferencesV1,
     FrozenCurrentEvidenceSubjectAttachmentReferencesV1,
 };
 
@@ -16,7 +16,7 @@ use types::{Diagnostic, Member};
 
 pub struct AttachmentHtmlResultDiscoveryV1<'a, 'v, 's> {
     view: view::View<'a, 'v, 's>,
-    metadata: ActiveResultSubjectDiscoveryV1<'a>,
+    metadata: ActiveAttachmentSubjectDiscoveryV1<'a>,
     members: Vec<Member>,
     groups: Vec<std::ops::Range<usize>>,
     diagnostics: Vec<Diagnostic>,
