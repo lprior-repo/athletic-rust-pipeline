@@ -3,6 +3,7 @@ use census_domain::model::AthleteCandidateId;
 use census_domain::public_identity_history::{PublicAthleteId, PublicResolution};
 use census_store::{PublicIdentityWriterV1, Store, Table};
 
+mod attachment_retirement;
 mod controlled;
 mod correction;
 mod oracle;
@@ -45,9 +46,17 @@ fn run(branch: Branch) -> TestResult {
     let expected = oracle::corrected(&fixture.store, &controlled, corrected, merged, branch)?;
     prior.preserved(&root)?;
     let _revoked = super::lifecycle::operation::revoke(&fixture.store)?;
-    oracle::historical_status_target_moved(&fixture.store)?;
+    oracle::historical_status_target_moved(&fixture, objects.path())?;
+    prior.preserved(&root)?;
     drop(writer);
     let fixture = fixture.reopen()?;
+    check!(eq; oracle::corrected(&fixture.store, &controlled, corrected, merged, branch)?, expected);
+    oracle::historical_status_target_moved(&fixture, objects.path())?;
+    let retired = attachment_retirement::retire_status(&fixture.store)?;
+    retired.replay_without_reactivation(&fixture.store)?;
+    prior.preserved(&root)?;
+    let fixture = fixture.reopen()?;
+    retired.replay_without_reactivation(&fixture.store)?;
     check!(eq; oracle::corrected(&fixture.store, &controlled, corrected, merged, branch)?, expected);
     let current_objects = tempfile::tempdir()?;
     let dataset = fixture.capture(current_objects.path())?;

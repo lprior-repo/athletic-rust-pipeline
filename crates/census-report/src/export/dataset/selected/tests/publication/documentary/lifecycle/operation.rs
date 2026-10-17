@@ -20,7 +20,11 @@ pub(in super::super) fn revoke(store: &Store) -> TestResult<Revoked> {
     let original = records.last().ok_or("genuine B attachment")?;
     check!(eq; original.command.operation.as_str(), "genuine-reviewed-may15-b-v1");
     let revocation = revoke_record(store, original, "genuine-documentary-controlled-revoke-v1")?;
-    Ok(Revoked { records, receipts, revocation })
+    Ok(Revoked {
+        records,
+        receipts,
+        revocation,
+    })
 }
 
 pub(in super::super) fn revoke_record(

@@ -20,12 +20,15 @@ pub(in super::super) fn moved(fixture: &Fixture, objects: &Path) -> TestResult {
             AttachmentError::TargetMoved
         ))
     ));
-    check!(fixture.capture(objects).is_err());
+    capture_refuses_moved_status(fixture, objects)?;
     Ok(())
 }
 
-pub(in super::super) fn historical_status_target_moved(store: &Store) -> TestResult {
-    let snapshot = store.snapshot();
+pub(in super::super) fn historical_status_target_moved(
+    fixture: &Fixture,
+    objects: &Path,
+) -> TestResult {
+    let snapshot = fixture.store.snapshot();
     let mut grant = AttachmentReplayGrantV1::new();
     let retained = snapshot.read_evidence_subject_attachment_references_v1(&mut grant)?;
     check!(eq; retained.records().len(), 3);
@@ -48,5 +51,20 @@ pub(in super::super) fn historical_status_target_moved(store: &Store) -> TestRes
         check!(current.bind_exact_subject(subject, &mut grant)?.is_none());
     }
     check!(eq; census_crawl::participation_evidence::recorded::discover_current_html_results(&current, &mut grant)?.group_count(), 0);
+    capture_refuses_moved_status(fixture, objects)?;
+    Ok(())
+}
+
+fn capture_refuses_moved_status(fixture: &Fixture, objects: &Path) -> TestResult {
+    let error = match fixture.capture(objects) {
+        Err(error) => error,
+        Ok(_) => {
+            return Err("current V4 capture accepted stale active attachment authority".into())
+        }
+    };
+    check!(matches!(error.downcast_ref::<crate::report::ReportError>(),
+        Some(crate::report::ReportError::Documentary { source })
+        if matches!(source.as_ref(), crate::report::DocumentarySourceError::Crawl(
+            census_crawl::CrawlError::Store(StoreError::EvidenceSubjectAttachment(AttachmentError::TargetMoved))))));
     Ok(())
 }
