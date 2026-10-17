@@ -43,6 +43,7 @@ pub(crate) use retained_source::{
     RetainedJournalBytes, RetainedJournalReadSource,
 };
 mod regions;
+mod roster_source;
 mod run;
 
 pub use bounded::{decode_physical_observation, PhysicalReadAdmissionV1, ReadBudget, ReadCounts};
