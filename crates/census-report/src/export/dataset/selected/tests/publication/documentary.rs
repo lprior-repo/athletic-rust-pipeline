@@ -36,7 +36,10 @@ fn inspect(dataset: &ExportDataset, expected: &[Expected]) -> TestResult<Value> 
         .input()
         .graduation_years
         .clone();
-    check!(selected == vec![GradYear::CO2027] || selected == vec![GradYear::CO2026]);
+    check!(
+        selected == vec![GradYear::CO2027]
+            || selected == vec![GradYear::new(2026).ok_or("controlled CO2026 year")?]
+    );
     check!(eq; expected.len(), 3);
     check!(dataset.performances.is_empty());
     check!(dataset.teams.is_empty());

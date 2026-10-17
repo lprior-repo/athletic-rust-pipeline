@@ -60,7 +60,7 @@ fn native_genuine_documentary_selected_publication_reopens_without_live_store_or
 #[test]
 fn native_genuine_documentary_v4_co2026_stays_unresolved_with_current_frozen_parity() -> TestResult
 {
-    let fixture = Fixture::open_for(GradYear::CO2026)?;
+    let fixture = Fixture::open_for(GradYear::new(2026).ok_or("controlled CO2026 year")?)?;
     let objects = tempfile::tempdir()?;
     let archives = tempfile::tempdir()?;
     let dataset = fixture.capture(objects.path())?;

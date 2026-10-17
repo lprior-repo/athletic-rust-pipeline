@@ -53,7 +53,7 @@ pub(crate) struct PinnedCurrentAffiliations {
 
 impl PinnedCurrentAffiliations {
     #[cfg(test)]
-    pub(super) fn read(
+    pub(crate) fn read(
         dataset: &ExportDataset,
         snapshot: &StoreSnapshot<'_>,
     ) -> ReportResult<Self> {
