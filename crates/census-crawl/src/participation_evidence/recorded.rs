@@ -12,6 +12,7 @@ use attached_participation::tests::{
     verify_genuine as verify_genuine_attached_participation,
     verify_adversarial as verify_adversarial_attached_participation,
     verify_targets as verify_targets_attached_participation,
+    verify_source_count as verify_source_count_attached_participation,
 };
 mod provider;
 mod provider_school;

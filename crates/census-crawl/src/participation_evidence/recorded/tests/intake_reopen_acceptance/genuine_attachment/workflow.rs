@@ -86,7 +86,9 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
     drop(store);
     if let Err(error) = crate::participation_evidence::recorded::verify_targets_attached_participation(
         &directory.path().join("store"),
-    ) {
+    ).and_then(|()| crate::participation_evidence::recorded::verify_source_count_attached_participation(
+        &directory.path().join("store"),
+    )) {
         let _preserved = directory.keep();
         return Err(error);
     }

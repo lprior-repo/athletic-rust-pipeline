@@ -7,10 +7,12 @@ mod adversarial;
 mod fixture;
 mod genuine;
 mod targets;
+mod source_count;
 
 pub(in crate::participation_evidence::recorded) use genuine::verify_genuine;
 pub(in crate::participation_evidence::recorded) use adversarial::verify_adversarial;
 pub(in crate::participation_evidence::recorded) use targets::verify_targets;
+pub(in crate::participation_evidence::recorded) use source_count::verify_source_count;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 #[test]
