@@ -40,8 +40,50 @@ eligibility authority, selected frozen attachment/source closure and workbook
 consumption remain explicit integration gates, alongside migration and national
 resource/recovery qualification. No live census, full-package run or denied
 crash/fence retry is claimed. These are parent-reported native results; cloud
-review verifies source preservation. The earlier published 916bac branch remains
-unmerged after the recorded PR-creation action denial.
+review verifies source preservation. That receipt predates PR77, which subsequently landed the earlier 916bac
+checkpoint; the later complete attachment/replay work was not included.
+
+### First bounded-attachment publication layer (2026-10-17)
+
+This layer normally merges the verified e35b/3b279 checkpoint with actual PR77
+main `388a109f9a3cda760dc270fa270bf0581cf8fbc0`, retaining all incoming source
+and its ledger deletion. The preceding receipt belongs to the checkpoint; this
+new combined tree still requires its separately pinned native gate. Current
+documentary/parser and frozen selected-report successors remain separate layers.
+Historical acceptance remains in [the prior ledger](https://github.com/lprior-repo/athletic-rust-pipeline/blob/916bac065ab4a5ce7d64c96273ac30470cba8cf2/docs/VERIFICATION-EVIDENCE.md);
+the [full specification](NATIONAL-CENSUS-PLAN.md) remains authoritative.
+
+All 19 previously OS-denied crash/fence/service selectors remain excluded from
+this scoped verification. No failed permission outcome is a semantic pass, and
+no package-wide test fallback or retry of those selectors is authorized here.
+
+
+### First-layer exact-main union native receipt (2026-10-17)
+
+The native terminal callback reports commit
+`012f87af93070068d652af74cf04235901702a76`, tree
+`22d1a03c1aebfc27e7b625e2079cad6c3b05cb3b`, passed the separately pinned
+union gates. Actual scoped results were: genuine chain 1 passed / 0 failed /
+1673 skipped; literal inventory 1/0/1673; replay controls 19/0/1351; workflow
+65/0/1305; Store attachment 133/0/1237; domain attachment 84/0/865; recorded
+intake 20/0/1654; funding 26/0/923; public identity history 163/0/786; Service
+history memory 2/0/1068; exact `admission::` scope 39/0/1031. These selections
+overlap and are not summed. All 19 denied selectors remained excluded.
+
+A and B were written, the reopened inventory was preserved, and both
+ReplayOnly operations returned their exact original receipts with zero appended
+rows and no credited write. The successful observation reopens before replay;
+this is not a claim of a further reopen after successful replay. Formatting,
+all-target check and source lint passed; checkout ended clean. Ten test-build
+dead-code warnings and six forced argument-count warnings remain. Native logs:
+`/home/lewis/Documents/Codex/2026-10-15/task/imports/first-layer-012f87-20261017/logs`.
+
+Independent cloud review confirms all 23 incoming non-ledger blobs/modes exact
+to main `388a109f9a3cda760dc270fa270bf0581cf8fbc0` and all other 6,885
+non-ledger paths exact to the bounded checkpoint. This receipt-only successor
+changes no tested source. This establishes the bounded mechanism scope above;
+it does not close human approval, positive eligibility, current-school,
+documentary Report, or national resource/recovery acceptance.
 
 ### Current documentary rows and exact wind interpretation (2026-10-16 21:47 UTC)
 
@@ -93,8 +135,49 @@ selected exclusion/PR and workbook consumption, genuine school/status/season
 acceptance, explicit migration and national resource/recovery gates remain open.
 No live census, package-wide run or denied crash/fence retry is claimed. Results
 are parent-reported native callbacks; cloud review checks exact source equivalence.
-The published branch remains at 916bac after both PR-creation and later branch
-update action denials; neither this candidate nor the earlier 3b279 is published.
+
+### Actual-main documentary integration candidate (2026-10-17)
+
+This normal merge retains actual merged main
+`5eba0bdc830fbf5091f8a7abdf18115274515606` and documentary checkpoint
+`03daef30320c4f6e093dd1901bf8f43f9bfd21bd` as parents. Layer 1 is now
+published through PR 78. The earlier documentary receipts above describe their
+exact historical tested trees, not this new union. Fresh native scoped current
+consumer, parser, ownership, incoming regression and static gates remain required
+before publishing this second layer. The incoming deletion of older ledger
+history remains preserved. No frozen Report or positive eligibility claim is added.
+
+### Actual-main documentary union native receipt (2026-10-17)
+
+Native verification passed exact commit
+`5839200285e301eda1583d3324d73c13214017c6`, tree
+`0c855016dc663862a592e3009cef1e7fcf67f513`. The 17 requested scoped
+selectors passed with zero failures: genuine chain 1 (1712 skipped), literal
+inventory 1 (1712), wind 26 (1687), raw readers 50 (1663), ownership 6 (1707),
+current Store 27 (1370), documentary domain 11 (949), physical projector 13
+(1700), workflow 65 (1332), Store attachment 160 (1237), domain attachment 84
+(876), participation 95 (865), intake 20 (1693), funding 26 (934), history 163
+(797), Service history memory 2 (1068), and scoped admission 39 (1031).
+These overlapping scopes are not summed. An additional Moon 2.2.3 startup
+attempt executed no tests; the canonical Moon 2.2.4 retry passed.
+
+The saved genuine output records A written and active on the held view, B
+written with both active, then reopen preserving two attachment roots and four
+original roots. Both original commands returned ReplayOnly with their exact
+original receipts, appended zero and credited false. Reopen precedes those
+successful replays; no additional successful post-replay reopen is claimed.
+Formatting and source lint exited zero. The first all-target check hit temporary
+storage quota; the task-local TMPDIR retry exited zero. Ten test-build dead-code
+and six forced argument-count warnings remain. The tested checkout ended clean.
+Native logs: `task/verification-logs-layer2-583920-20261017`.
+
+Independent preservation review verifies all 23 incoming non-ledger blobs/modes
+against actual main `5eba0bdc830fbf5091f8a7abdf18115274515606` and all other
+6,927 non-ledger entries against the documentary checkpoint. This receipt-only
+successor changes no tested source. Frozen Report/workbook publication remains
+the next layer; positive eligibility, current-school/status/season authority and
+national resource/recovery acceptance remain open. All 19 previously excluded
+OS-dependent selectors remain excluded; no production or live census was run.
 
 ### Accepted identity borrowing prerequisite: exact 9e885 native receipt
 
@@ -119,22 +202,6 @@ The later frozen-closure/selected-report candidate is a separate source-reviewed
 successor. Its genuine selected capture, anchored hydration, output/readback and
 resource fit require their own pinned native result; the prerequisite counts
 above do not certify that new implementation.
-
-### PR77 reconciliation (2026-10-16 22:40 UTC)
-
-PR77 later merged as `388a109f9a3cda760dc270fa270bf0581cf8fbc0`. Its
-incoming ledger deletion is retained; the dated appendices above preserve only
-post-916bac local verification. Earlier ledger history remains at
-[the 916bac ledger](https://github.com/lprior-repo/athletic-rust-pipeline/blob/916bac065ab4a5ce7d64c96273ac30470cba8cf2/docs/VERIFICATION-EVIDENCE.md)
-and [the 88706b30 ledger](https://github.com/lprior-repo/athletic-rust-pipeline/blob/88706b30d9be0e35bea3bdf834b5fb737243133d/docs/VERIFICATION-EVIDENCE.md).
-The [full specification](NATIONAL-CENSUS-PLAN.md) and
-[consolidated review](https://github.com/lprior-repo/athletic-rust-pipeline/blob/8b15baf9257fc2bd76f77c51a83b641e3292ff41/docs/verification/2026-10-14-deep-codebase-review.md)
-remain separate.
-
-The local frozen documentary/selected-report source seal `bfd5a4d989eb87cf4a85304f92e82a7288bd69cc`
-has not yet received its combined native gate. The incoming history-funding and
-Service admission outputs are preserved exactly; disjoint source reconciliation
-is not runtime qualification or a claim that this new work is published.
 
 ### Frozen documentary selection: verified native gates (2026-10-17)
 
@@ -184,3 +251,81 @@ unsupported discovery group through capture/frozen reconstruction remains an
 explicit uncovered case; synthetic identity-keyed refusal controls are distinct.
 Publication of these local successors still requires its separately reviewed
 small-batch workflow and fresh main checks.
+
+### Actual-main frozen publication integration candidate (2026-10-17)
+
+This normal merge includes actual PR79 main
+`a984e89ffb111735cfd474b42bc2581b9153be9d` and the frozen Report source
+checkpoint with the separately audited opt-in archive retention hook. The
+historical receipts above certify their exact named trees only. Fresh native
+Store/Crawl/Report, incoming regression and static gates are required on this
+union before publication. The new test-only retention hook preserves the actual
+gated Report producer commit/tree separately from the original Store handoff
+producer and retains both the frozen archive JSON and its proof directory.
+Its execution remains pending; no surviving old b85d-produced Report artifact
+is claimed. Historical policy controls remain distinct from an actual retained
+Report V3 generation. No later documentary semantic V4 or roster authority
+implementation is included in this publication layer.
+
+### Fresh actual-main frozen publication receipt (2026-10-17)
+
+Native gates passed on `24f593911c6cab8f1679199fd70547a701fced27`, tree
+`ed8428e420d1184e415e12874fda9b70e2b55d0a`; the checkout remained clean.
+All 21 requested scopes exited zero with zero failures. Pass/skipped counts:
+genuine producer 1/1726; Report dispatch 4/1249, historical 2/1251,
+collision 3/1250, refusal 10/1243, workbook guards 4/1249, genuine roundtrip
+1/1252, genuine refusal 1/1252, qualification union 7/1246; Store source parity
+32/1426, archive state 7/1451, capture sink 4/1454, current frozen 6/1452,
+historical target 5/1453, legacy bounds 4/1454; Crawl discovery 7/1720 and
+handoff 7/1720; Domain funding 26/934 and history 163/797; Service history-memory
+2/1068 and exact admission scope 39/1031. Scopes overlap; Report contributes
+32 selected executions. All previously excluded OS-denied selectors remain
+excluded, not semantic passes.
+
+Canonical `tools/moon-local` formatting, all-target check and source lint passed.
+Check retained ten Store-test dead-code warnings. An earlier direct
+`moon run pipeline:check` invocation exited one before compilation because the
+canonical launcher was required; that receipt is preserved separately.
+Lint ran with one build job, task `e00960f0`, exit zero, with six warnings
+(four Store, one Report, one athleticnet-browser). Its native logs are under
+`task/imports/layer3-lint-src-20261017.49O5xMpO`. No source was edited natively.
+
+The opt-in genuine roundtrip retained an actual Report V3 generation under
+`task/imports/layer3-report-20261017/evidence/retained-report-v3-archive`.
+Manifest SHA256: `923de2267a917a0113573f3641c67ff6c7428c52093542ed443d3637efe7c4f4`.
+Archive digest: `50b074a02d87073e1d30f5b24363b581c58a6e07e99bd84514ee90189934a17e`.
+Both Report and fresh original Store producer are the exact tested commit/tree
+above, not b85d or f38a. Original handoff SHA256:
+`bd73091f17772446d88cb8ac4fc54ea26e3c546eeadcb0f3d8667cc1a4545353`, snapshot 50.
+The archive has 15 files including 14 proofs; the original Store's 15-file exact
+set, sizes and SHA256 inventory were reverified unchanged. Raw evidence remains
+native. This establishes an independently retained pre-V4 generation for the
+next consumer gate, not that later gate's success.
+
+This receipt preserves the genuine CO2026/CO2027-selection negative result and
+all open positive eligibility, school, season, population, recovery and R1–R3
+acceptance limits above. Later semantic V4, identity-correction and reviewed
+roster implementations are outside this tested tree. This successor changes
+only this ledger; all source blobs and modes remain identical to the tested tree.
+
+### Actual-main semantic and identity consumer union (2026-10-17)
+
+This normal merge combines the landed PR80 main
+`cea2fe8c9ebbcdc784be9797e6db409312217615` with the separately source-audited
+semantic V4 and identity-correction checkpoint
+`51c6de1c9abd1a6db3bb1521eb5a129c5692661d`.
+The preceding native receipts describe their exact earlier trees; this union
+requires fresh native tests, check and lint. Lightweight formatting is a
+separate source gate, not a compilation or runtime receipt.
+
+The independent retained V3 artifact remains the actual `24f593911c6cab8f1679199fd70547a701fced27`
+producer identified above. Current and historical consumers run in separate
+processes with their own authenticated producer environments. The historical
+V3 output-retention environment is unset for current V4 consumers; merging the
+existing opt-in hook does not relabel a new V4 generation as historical V3.
+Current V4 gates cover original-grant semantic joins, supported and unsupported
+target isolation, source-count boundaries, exact historical replay and real
+attachment/public-identity lifecycle changes. Genuine positive school,
+event-context, current-affiliation and population acceptance remains open.
+Reviewed roster authority, the later school-span witness and lifecycle9 model
+are not included in this union.
