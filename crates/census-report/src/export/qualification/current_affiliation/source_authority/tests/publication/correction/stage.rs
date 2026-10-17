@@ -1,10 +1,16 @@
 use super::super::retention::files;
 use super::*;
+use crate::export::public_identity::output::ResolutionAudit;
+use calamine::{open_workbook, Reader, Xlsx};
+use std::collections::BTreeMap;
+
+type Resolutions = BTreeMap<String, PublicResolution>;
 
 pub(super) struct Stage {
     pub dataset: ExportDataset,
     pub workbook: PathBuf,
     pub public: PublicAthleteId,
+    pub(super) resolutions: Resolutions,
     inventory: Value,
     observations: Value,
     rows: Value,
@@ -19,6 +25,7 @@ pub(super) struct Retained {
     rows: Value,
     identities: Value,
     digest: String,
+    resolutions: Resolutions,
 }
 
 impl Stage {
@@ -30,7 +37,9 @@ impl Stage {
         root: &Path,
     ) -> TestResult<Self> {
         check!(eq; identities.len(), 2);
+        let resolutions = oracle::candidate_resolutions(&fixture.store)?;
         let dataset = capture(fixture, objects)?;
+        resolution_view(&dataset, &resolutions)?;
         let view = dataset.verified_public_identities()?;
         let public = view
             .public_id(expected.athlete.as_str())
@@ -52,6 +61,7 @@ impl Stage {
         let observations = witness(&dataset, expected)?;
         let workbook = publish(fixture, &dataset, root)?;
         let rows = artifacts::readback(&workbook, &dataset, expected)?;
+        resolution_outputs(&workbook, &resolutions, expected)?;
         check!(eq; published::verify_published(&workbook)?.workbook.mapped_athletes, 1);
         check!(eq; published::current_workbook(root)?, workbook);
         let inventory = inventory(&workbook)?;
@@ -59,6 +69,7 @@ impl Stage {
             dataset,
             workbook,
             public,
+            resolutions,
             inventory,
             observations,
             rows,
@@ -81,6 +92,7 @@ impl Stage {
             observations,
             rows,
             identities,
+            resolutions,
             ..
         } = self;
         let lineage = dataset.lineage.clone();
@@ -93,6 +105,7 @@ impl Stage {
             rows,
             identities,
             digest,
+            resolutions,
         })
     }
 }
@@ -108,6 +121,8 @@ impl Retained {
         check!(eq; reopened.dataset.archive_digest()?, self.digest);
         check!(eq; witness(&reopened.dataset, expected)?, self.observations);
         check!(eq; identity_inventory(&reopened.dataset)?, self.identities);
+        resolution_view(&reopened.dataset, &self.resolutions)?;
+        resolution_outputs(&self.workbook, &self.resolutions, expected)?;
         check!(eq; artifacts::readback(&self.workbook, &reopened.dataset, expected)?, self.rows);
         check!(eq; reopened.workbook.mapped_athletes, 1);
         check!(eq; inventory(&self.workbook)?, self.inventory);
@@ -149,4 +164,71 @@ fn identity_inventory(dataset: &ExportDataset) -> TestResult<Value> {
             })
             .collect::<Vec<_>>(),
     )?)
+}
+
+fn resolution_view(dataset: &ExportDataset, expected: &Resolutions) -> TestResult {
+    check!(eq; dataset.athletes.len(), expected.len());
+    let view = dataset.verified_public_identities()?;
+    for (candidate, resolution) in expected {
+        check!(eq; view.candidate_resolution(candidate), Some(resolution));
+    }
+    Ok(())
+}
+
+fn resolution_outputs(workbook: &Path, expected: &Resolutions, selected: &Expected) -> TestResult {
+    let directory = workbook.parent().ok_or("identity output generation")?;
+    let mut reader = csv::Reader::from_path(directory.join("identity_aliases.csv"))?;
+    let headers = reader.headers()?.clone();
+    let column = |name| {
+        headers
+            .iter()
+            .position(|value| value == name)
+            .ok_or("alias identity column")
+    };
+    let mut seen = std::collections::BTreeSet::new();
+    for record in reader.records() {
+        let row = record?;
+        check!(seen.len() < expected.len());
+        let candidate = row.get(column("original_id")?).ok_or("alias candidate")?;
+        check!(seen.insert(candidate.to_owned()));
+        let resolution = expected
+            .get(candidate)
+            .ok_or("unexpected alias candidate")?;
+        let (id, status) = match resolution {
+            PublicResolution::Canonical(owner) => (&owner.public_id, "canonical"),
+            PublicResolution::Redirect { successor, .. } => (&successor.public_id, "redirect"),
+            PublicResolution::RevokedRedirect { successor, .. } => {
+                (&successor.public_id, "revoked_redirect")
+            }
+            _ => return Err("controlled candidate lacks unique oracle owner".into()),
+        };
+        check!(eq; row.get(column("public_athlete_id")?), Some(id.as_str()));
+        check!(eq; row.get(column("publication_identity_status")?), Some(status));
+        let actual: Value = serde_json::from_str(
+            row.get(column("identity_resolution")?)
+                .ok_or("alias resolution")?,
+        )?;
+        check!(eq; actual, serde_json::to_value(ResolutionAudit(resolution))?);
+    }
+    check!(eq; seen, expected.keys().cloned().collect());
+    let mut book: Xlsx<_> = open_workbook(workbook)?;
+    let range = book.worksheet_range("Athletes")?;
+    check!(eq; range.height(), 2);
+    let mut rows = range.rows();
+    let headers = rows.next().ok_or("Athletes headers")?;
+    let row = rows.next().ok_or("nonempty selected athlete")?;
+    let cell = |name| -> TestResult<String> {
+        let index = headers
+            .iter()
+            .position(|value| value.to_string() == name)
+            .ok_or("Athletes identity column")?;
+        Ok(row.get(index).ok_or("Athletes identity cell")?.to_string())
+    };
+    check!(eq; cell("Canonical Candidate ID")?, selected.athlete.as_str());
+    let resolution = expected
+        .get(selected.athlete.as_str())
+        .ok_or("selected oracle resolution")?;
+    let actual: Value = serde_json::from_str(&cell("Identity Resolution")?)?;
+    check!(eq; actual, serde_json::to_value(ResolutionAudit(resolution))?);
+    Ok(())
 }

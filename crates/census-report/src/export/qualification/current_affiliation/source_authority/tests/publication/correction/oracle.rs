@@ -103,3 +103,22 @@ pub(super) fn source_context(store: &Store) -> TestResult<Value> {
     let rows = athletes.iter().map(|row| json!({"id":row.id,"name":row.canonical_name,"school":row.school,"year":row.grad_year,"gender":row.gender,"source":row.source,"evidence":row.evidence})).collect::<Vec<_>>();
     Ok(json!({"physical":fixed,"athlete_source_context":rows}))
 }
+
+pub(super) fn candidate_resolutions(
+    store: &Store,
+) -> TestResult<std::collections::BTreeMap<String, PublicResolution>> {
+    let snapshot = store.snapshot();
+    let accepted = snapshot
+        .accepted_public_identity_snapshot()?
+        .ok_or("accepted identity oracle")?;
+    snapshot
+        .scan::<census_domain::model::CanonicalAthlete>(Table::Athletes)?
+        .into_iter()
+        .map(|row| {
+            Ok((
+                row.id.to_string(),
+                accepted.resolve_candidate(&row.id.cast())?,
+            ))
+        })
+        .collect()
+}

@@ -60,6 +60,7 @@ fn run(branch: Branch) -> TestResult {
     check!(eq; oracle::source_context(&fixture.store)?, context);
     let g2 = stage::Stage::capture(&fixture, &expected, &ids, objects.path(), &root)?;
     check!(eq; g2.dataset.verified_public_identities()?.head().sequence, corrected);
+    check!(ne; g2.resolutions, g1.resolutions);
     match branch {
         Branch::Split => check!(ne; g2.public, g1.public),
         Branch::RevokeRedundantMerge => check!(eq; g2.public, g1.public),
