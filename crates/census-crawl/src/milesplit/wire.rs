@@ -6,6 +6,11 @@ use serde::Deserialize;
 mod current_roster;
 use current_roster::RosterTemporalEvidence;
 pub use current_roster::{CurrentRosterAssertion, RosterTemporalUnavailable};
+pub(in crate::milesplit) use current_roster::checked_span;
+pub use current_roster::{
+    PublishedRosterOwnerKindV1, PublishedRosterOwnerTerminationV1, PublishedRosterOwnersV1,
+    PublishedRosterOwnerV1, RosterRowStatementsV1, RosterWitnessUnavailableV1,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Site {

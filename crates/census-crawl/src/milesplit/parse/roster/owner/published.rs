@@ -1,4 +1,4 @@
-use super::{match_owner, refuse, Owner};
+use super::{match_owner, refuse, DeclarationKind, Owner};
 use crate::milesplit::wire::TeamRef;
 use crate::CrawlResult;
 use serde::de::{SeqAccess, Visitor};
@@ -78,6 +78,7 @@ pub(super) fn document(
     base: &Url,
     team: &TeamRef,
     expected: Owner,
+    mut observe: impl FnMut(Owner, DeclarationKind),
 ) -> CrawlResult<bool> {
     if !body.trim_start().starts_with('{') {
         return Ok(false);
@@ -91,8 +92,9 @@ pub(super) fn document(
         .url
         .as_deref()
         .into_iter()
-        .chain(document.id.as_deref())
-        .try_fold(false, |found, raw| {
+        .map(|raw| (raw, DeclarationKind::JsonLdUrl))
+        .chain(document.id.as_deref().map(|raw| (raw, DeclarationKind::JsonLdId)))
+        .try_fold(false, |found, (raw, kind)| {
             if raw.trim().is_empty() || raw.trim().starts_with(['?', '#']) {
                 return Ok(found);
             }
@@ -104,7 +106,8 @@ pub(super) fn document(
             if matches!(document.kind, Kind::Team) && !team_path {
                 return Ok(found);
             }
-            match_owner(resolved.as_str(), team, expected, false)?;
+            let owner = match_owner(resolved.as_str(), team, expected, false)?;
+            observe(owner, kind);
             Ok(true)
         })
 }

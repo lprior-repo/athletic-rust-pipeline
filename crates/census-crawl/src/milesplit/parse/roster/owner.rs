@@ -7,6 +7,9 @@ use url::Url;
 
 use crate::milesplit::parse::markup;
 mod published;
+mod witness;
+pub(crate) use witness::parse_captured_roster_with_witness_v1;
+use crate::milesplit::wire::PublishedRosterOwnerKindV1 as DeclarationKind;
 
 #[derive(Clone, Copy)]
 struct Owner {
@@ -16,27 +19,27 @@ struct Owner {
 
 pub(super) fn validate_published(html: &str, team: &TeamRef) -> CrawlResult<bool> {
     let expected = requested_owner(team)?;
-    published_owner(html, team, expected)
+    published_owner(html, team, expected).map(|published| published.found)
 }
 
-pub(super) fn validate_capture(
+fn validate_capture(
     html: &str,
     team: &TeamRef,
     capture: &FetchOutcome,
-) -> CrawlResult<()> {
+) -> CrawlResult<witness::Published> {
     let expected = requested_owner(team)?;
     match_owner(&capture.url, team, expected, true)?;
     if let Some(final_url) = capture.response_url.as_deref() {
         match_owner(final_url, team, expected, true)?;
     }
     let published = published_owner(html, team, expected)?;
-    if capture.response_url.is_none() && !published {
+    if capture.response_url.is_none() && !published.found {
         return Err(refuse(
             team,
             "roster capture has neither an observed final owner nor a published owner",
         ));
     }
-    Ok(())
+    Ok(published)
 }
 
 fn requested_owner(team: &TeamRef) -> CrawlResult<Owner> {
@@ -111,7 +114,7 @@ fn url_owner(raw: &str, roster: bool) -> Option<Owner> {
     Some(Owner { id, jurisdiction })
 }
 
-fn match_owner(raw: &str, team: &TeamRef, expected: Owner, roster: bool) -> CrawlResult<()> {
+fn match_owner(raw: &str, team: &TeamRef, expected: Owner, roster: bool) -> CrawlResult<Owner> {
     let owner = url_owner(raw, roster).ok_or_else(|| {
         refuse(
             team,
@@ -129,27 +132,30 @@ fn match_owner(raw: &str, team: &TeamRef, expected: Owner, roster: bool) -> Craw
             "roster provenance identifies a conflicting provider team or jurisdiction",
         ));
     }
-    Ok(())
+    Ok(owner)
 }
 
-fn published_owner(html: &str, team: &TeamRef, expected: Owner) -> CrawlResult<bool> {
+fn published_owner(html: &str, team: &TeamRef, expected: Owner) -> CrawlResult<witness::Published> {
     let base = Url::parse(&team.url).map_err(|_| refuse(team, "invalid requested team URL"))?;
-    Tokenizer::new_with_emitter(html, markup::Markup::default()).try_fold(false, |found, token| {
+    let mut collector = witness::Collector::new(html);
+    let found = Tokenizer::new_with_emitter(html, markup::Markup::default()).try_fold(false, |found, token| {
         let declaration =
             token.map_err(|error| refuse(team, &format!("roster HTML input failed: {error}")))?;
-        let bytes = match declaration {
+        let bytes = match &declaration.declaration {
             markup::Declaration::Url(bytes) => bytes,
             markup::Declaration::Script(bytes) => {
-                let body = std::str::from_utf8(&bytes)
+                let body = std::str::from_utf8(bytes)
                     .map_err(|_| refuse(team, "published roster script is not UTF-8"))?;
-                return published::document(body, &base, team, expected)
+                return published::document(body, &base, team, expected, |owner, kind| {
+                    collector.observe(owner, kind, &declaration);
+                })
                     .map(|published| found || published);
             }
             markup::Declaration::Invalid => {
                 return Err(refuse(team, "roster HTML nesting exceeds representation"));
             }
         };
-        let raw = std::str::from_utf8(&bytes)
+        let raw = std::str::from_utf8(bytes)
             .map_err(|_| refuse(team, "published roster owner URL is not UTF-8"))?;
         if raw.trim().is_empty() || raw.trim().starts_with(['?', '#']) {
             return Err(refuse(
@@ -160,9 +166,19 @@ fn published_owner(html: &str, team: &TeamRef, expected: Owner) -> CrawlResult<b
         let resolved = base
             .join(raw)
             .map_err(|_| refuse(team, "malformed published roster owner URL"))?;
-        match_owner(resolved.as_str(), team, expected, false)?;
+        let owner = match_owner(resolved.as_str(), team, expected, false)?;
+        let kind = match declaration.kind {
+            markup::DeclarationKind::Canonical => DeclarationKind::Canonical,
+            markup::DeclarationKind::OpenGraph => DeclarationKind::OpenGraph,
+            markup::DeclarationKind::Twitter => DeclarationKind::Twitter,
+            markup::DeclarationKind::JsonLd | markup::DeclarationKind::Invalid => {
+                return Err(refuse(team, "roster declaration kind is inconsistent"));
+            }
+        };
+        collector.observe(owner, kind, &declaration);
         Ok(true)
-    })
+    })?;
+    Ok(collector.finish(found))
 }
 
 fn refuse(team: &TeamRef, detail: &str) -> CrawlError {

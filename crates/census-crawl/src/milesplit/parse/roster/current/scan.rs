@@ -3,6 +3,7 @@ use super::{Gap, TemporalResult};
 use html5gum::{DefaultEmitter, Span, Token, Tokenizer};
 use sha2::{Digest, Sha256};
 use std::ops::Range;
+use crate::milesplit::wire::RosterWitnessUnavailableV1 as WitnessGap;
 
 mod active;
 mod close;
@@ -20,6 +21,17 @@ struct Frame {
     roster: Option<usize>,
     heading: Vec<u8>,
     row: Option<usize>,
+    anchor: Option<AnchorStart>,
+}
+
+struct AnchorStart {
+    row: usize,
+    active_offset: usize,
+}
+
+struct Anchor {
+    raw: Range<usize>,
+    active: Range<usize>,
 }
 
 pub(super) struct Heading {
@@ -40,6 +52,17 @@ pub(super) struct Row {
     pub(super) scope: usize,
     pub(super) span: Range<usize>,
     pub(super) active: String,
+    anchors: Result<Vec<Anchor>, WitnessGap>,
+}
+
+impl Row {
+    pub(super) fn person(&self, selected: Range<usize>) -> Result<Range<usize>, WitnessGap> {
+        let mut anchors = self.anchors.as_ref().map_err(|reason| *reason)?
+            .iter().filter(|anchor| anchor.active == selected);
+        let person = anchors.next().ok_or(WitnessGap::MissingSourceSpan)?;
+        if anchors.next().is_some() { return Err(WitnessGap::MissingSourceSpan); }
+        Ok(person.raw.clone())
+    }
 }
 
 #[derive(Default)]
