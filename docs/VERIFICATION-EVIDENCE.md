@@ -56,3 +56,31 @@ the [full specification](NATIONAL-CENSUS-PLAN.md) remains authoritative.
 All 19 previously OS-denied crash/fence/service selectors remain excluded from
 this scoped verification. No failed permission outcome is a semantic pass, and
 no package-wide test fallback or retry of those selectors is authorized here.
+
+
+### First-layer exact-main union native receipt (2026-10-17)
+
+The native terminal callback reports commit
+`012f87af93070068d652af74cf04235901702a76`, tree
+`22d1a03c1aebfc27e7b625e2079cad6c3b05cb3b`, passed the separately pinned
+union gates. Actual scoped results were: genuine chain 1 passed / 0 failed /
+1673 skipped; literal inventory 1/0/1673; replay controls 19/0/1351; workflow
+65/0/1305; Store attachment 133/0/1237; domain attachment 84/0/865; recorded
+intake 20/0/1654; funding 26/0/923; public identity history 163/0/786; Service
+history memory 2/0/1068; exact `admission::` scope 39/0/1031. These selections
+overlap and are not summed. All 19 denied selectors remained excluded.
+
+A and B were written, the reopened inventory was preserved, and both
+ReplayOnly operations returned their exact original receipts with zero appended
+rows and no credited write. The successful observation reopens before replay;
+this is not a claim of a further reopen after successful replay. Formatting,
+all-target check and source lint passed; checkout ended clean. Ten test-build
+dead-code warnings and six forced argument-count warnings remain. Native logs:
+`/home/lewis/Documents/Codex/2026-10-15/task/imports/first-layer-012f87-20261017/logs`.
+
+Independent cloud review confirms all 23 incoming non-ledger blobs/modes exact
+to main `388a109f9a3cda760dc270fa270bf0581cf8fbc0` and all other 6,885
+non-ledger paths exact to the bounded checkpoint. This receipt-only successor
+changes no tested source. This establishes the bounded mechanism scope above;
+it does not close human approval, positive eligibility, current-school,
+documentary Report, or national resource/recovery acceptance.
