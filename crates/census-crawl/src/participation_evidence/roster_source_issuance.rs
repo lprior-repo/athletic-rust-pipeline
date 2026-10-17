@@ -7,13 +7,13 @@ use census_store::{RetainedCaptureRootV1, RosterSourceEvidenceV1, StoreResult};
 mod binding;
 pub mod capture_objects;
 pub mod policies;
-mod source;
 mod semantic;
-pub use semantic::{assess_reviewed_roster_source_v1, ReviewedRosterSourceAssessmentV1};
+mod source;
 pub use binding::{
     assess_existing_roster_binding, RosterBindingUnverifiedReferenceV1,
     RosterExistingBindingAssessmentV1,
 };
+pub use semantic::{assess_reviewed_roster_source_v1, ReviewedRosterSourceAssessmentV1};
 pub use source::assess_retained_roster_source;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,7 +85,10 @@ impl RosterSourceEvidenceAssessmentV1<'_> {
         Ok(&self.checked)
     }
 
-    pub fn retained_packet(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&ProviderSchoolPacketV1> {
+    pub fn retained_packet(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&ProviderSchoolPacketV1> {
         self.require_original_grant(grant)?;
         Ok(&self.retained_packet)
     }

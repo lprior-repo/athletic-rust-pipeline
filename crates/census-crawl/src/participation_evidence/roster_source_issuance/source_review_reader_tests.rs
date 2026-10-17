@@ -1,7 +1,5 @@
 use super::*;
-use crate::participation_evidence::roster_source_issuance::{
-    assess_reviewed_roster_source_v1,
-};
+use crate::participation_evidence::roster_source_issuance::assess_reviewed_roster_source_v1;
 use census_store::{
     replay_frozen_roster_reviewed_claims_v1, CurrentRosterReviewedClaimsV1,
     ReviewedRosterSourceClaimV1,
@@ -163,12 +161,16 @@ fn rehashed_frozen_selected_metadata_requires_original_publication_binding() -> 
 fn combined_semantic_capability_rejects_foreign_and_poisoned_grants() -> TestResult {
     let (_directory, store) = issued()?;
     let mut grant = AttachmentReplayGrantV1::new();
-    let current = store.snapshot().read_current_roster_reviewed_claims_v1(&mut grant)?;
+    let current = store
+        .snapshot()
+        .read_current_roster_reviewed_claims_v1(&mut grant)?;
     let claim = current.claims(&mut grant)?.first().ok_or("review absent")?;
     let mut foreign = AttachmentReplayGrantV1::new();
     check!(assess_reviewed_roster_source_v1(claim, &mut foreign).is_err());
     let assessed = assess_reviewed_roster_source_v1(claim, &mut grant)?;
-    check!(assessed.source(&mut AttachmentReplayGrantV1::new()).is_err());
+    check!(assessed
+        .source(&mut AttachmentReplayGrantV1::new())
+        .is_err());
     grant.poison();
     check!(assessed.qualification_object(&mut grant).is_err());
     check!(assessed.activation_object(&mut grant).is_err());
