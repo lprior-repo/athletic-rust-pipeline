@@ -69,7 +69,7 @@ struct Approval<'a> {
     prepared: &'a RosterEnrollmentCommandV1,
 }
 
-fn approval(command: &RosterEnrollmentCommandV1) -> crate::StoreResult<Vec<u8>> {
+pub(super) fn approval(command: &RosterEnrollmentCommandV1) -> crate::StoreResult<Vec<u8>> {
     super::codec::encode(&Approval {
         schema: "roster-source-enrollment-approval-v1",
         actor: command.actor,
