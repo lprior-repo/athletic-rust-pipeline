@@ -69,6 +69,9 @@ fn assess<'a>(
                 grant,
             )?
         }
+        "roster-retained-capture-interpretation-v3" => super::source::assess_retained_roster_source_v3(
+            claim.evidence(grant)?, parser, &contracts, proposal, grant,
+        )?,
         _ => {
             return Err(crate::participation_evidence::invalid(
                 "unsupported reviewed roster interpretation",

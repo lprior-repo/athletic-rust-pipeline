@@ -52,7 +52,8 @@ pub(in super::super) fn read_historical(
         .map_err(|_| invalid("reviewed roster interpretation version is invalid"))?;
     match version.schema {
         "roster-retained-capture-interpretation-v1" => return read(people, claim, grant),
-        "roster-retained-capture-interpretation-v2" => {}
+        "roster-retained-capture-interpretation-v2"
+        | "roster-retained-capture-interpretation-v3" => {}
         _ => return Err(invalid("unsupported reviewed roster interpretation")),
     }
     let assessment = checked(assess_reviewed_roster_source_historical_v2(claim, grant))?;

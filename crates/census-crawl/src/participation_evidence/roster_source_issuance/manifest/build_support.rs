@@ -8,6 +8,8 @@ mod format;
 mod inputs;
 #[path = "build_kernel.rs"]
 mod kernel;
+#[path = "build_kernel_row_local.rs"]
+mod row_local_kernel;
 #[path = "build_process.rs"]
 mod process;
 #[path = "build_scan.rs"]
@@ -28,6 +30,7 @@ pub fn generate() -> BuildResult<()> {
     }
     let destination = PathBuf::from(env::var("OUT_DIR")?);
     kernel::generate(root, &destination)?;
+    row_local_kernel::generate(root, &destination)?;
     let manifest_sha256 = inputs::digest("manifest", &bytes)?.sha256;
     std::fs::write(destination.join("roster-parser-manifest-v1.json"), bytes)?;
     let vcs = process::vcs(root, manifest_sha256)?;

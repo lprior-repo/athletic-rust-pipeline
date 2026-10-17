@@ -1,3 +1,5 @@
+#[path = "version3.rs"]
+pub(in crate::participation_evidence::roster_source_issuance) mod version3;
 use super::*;
 use crate::participation_evidence::provider_school::CheckedProviderSchoolPacketV1;
 use serde::Serialize;

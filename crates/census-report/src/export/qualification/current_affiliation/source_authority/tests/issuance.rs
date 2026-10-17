@@ -1,6 +1,7 @@
 use super::*;
 use census_crawl::participation_evidence::roster_source_issuance::{
     assess_existing_roster_binding, assess_retained_roster_source_v2,
+    assess_retained_roster_source_v3, prepare_retained_roster_capture_objects_v3,
     capture_objects::prepare_retained_roster_capture_objects_v2,
     manifest::{assess_retained_roster_parser_manifest, compiled_roster_parser_manifest},
     policies::compiled_roster_interpretation_contracts_v1,
@@ -14,11 +15,26 @@ use census_store::{
     RosterSourceReviewObjectsV1,
 };
 
+#[derive(Clone, Copy)]
+pub(super) enum CaptureRevision {
+    CompleteV2,
+    RowLocalV3,
+}
+
 pub(super) fn review(
     fixture: &fixture::Fixture,
     capture: &fixture::Capture,
     operation: &str,
 ) -> TestResult {
+    review_revision(fixture, capture, operation, CaptureRevision::CompleteV2).map(|_| ())
+}
+
+pub(super) fn review_revision(
+    fixture: &fixture::Fixture,
+    capture: &fixture::Capture,
+    operation: &str,
+    revision: CaptureRevision,
+) -> TestResult<Vec<u8>> {
     let schema = census_store::RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1;
     let retained = fixture
         .store
@@ -38,16 +54,17 @@ pub(super) fn review(
         .store
         .inspect_roster_source_issuance_v1(request, AttachmentReplayGrantV1::new())?;
     let (evidence, grant) = inspection.source_parts()?;
-    let proposal = proposal(capture, evidence, grant)?;
+    let proposal = proposal_revision(capture, evidence, grant, revision)?;
     let parser = compiled_roster_parser_manifest()?;
     let contracts = compiled_roster_interpretation_contracts_v1();
-    let source = assess_retained_roster_source_v2(
-        evidence,
-        parser.canonical_bytes(),
-        &contracts,
-        &proposal,
-        grant,
-    )?;
+    let source = match revision {
+        CaptureRevision::CompleteV2 => assess_retained_roster_source_v2(
+            evidence, parser.canonical_bytes(), &contracts, &proposal, grant,
+        )?,
+        CaptureRevision::RowLocalV3 => assess_retained_roster_source_v3(
+            evidence, parser.canonical_bytes(), &contracts, &proposal, grant,
+        )?,
+    };
     let binding = assess_existing_roster_binding(&source, grant)?;
     let objects = source.capture_objects(grant)?;
     let supplied = RosterSourceReviewObjectsV1 {
@@ -76,10 +93,11 @@ pub(super) fn review(
         .prepare_roster_source_review_v1(inspection, proposal, fields, supplied)?;
     let bytes = prepared.approval_bytes().to_vec();
     let digest = prepared.approval_digest().to_string();
+    check!(eq; super::super::hash(&bytes), digest);
     fixture
         .store
         .apply_roster_source_review_v1(prepared, &bytes, &digest)?;
-    Ok(())
+    Ok(bytes)
 }
 
 fn object(bytes: &[u8]) -> Value {
@@ -91,13 +109,25 @@ pub(super) fn proposal(
     evidence: &census_store::RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> TestResult<LocallyCheckedRosterIssuanceV1> {
+    proposal_revision(capture, evidence, grant, CaptureRevision::CompleteV2)
+}
+
+fn proposal_revision(
+    capture: &fixture::Capture,
+    evidence: &census_store::RosterSourceEvidenceV1,
+    grant: &mut AttachmentReplayGrantV1,
+    revision: CaptureRevision,
+) -> TestResult<LocallyCheckedRosterIssuanceV1> {
     let parser = compiled_roster_parser_manifest()?;
     let checked = assess_retained_roster_parser_manifest(
         parser.canonical_bytes(),
         &parser.parser_claim()?,
         grant,
     )?;
-    let objects = prepare_retained_roster_capture_objects_v2(evidence, &checked, grant)?;
+    let objects = match revision {
+        CaptureRevision::CompleteV2 => prepare_retained_roster_capture_objects_v2(evidence, &checked, grant)?,
+        CaptureRevision::RowLocalV3 => prepare_retained_roster_capture_objects_v3(evidence, &checked, grant)?,
+    };
     let contracts = compiled_roster_interpretation_contracts_v1();
     let source_id = capture
         .school
