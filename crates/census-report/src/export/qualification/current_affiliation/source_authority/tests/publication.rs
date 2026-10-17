@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 mod artifacts;
 mod failures;
 mod omission;
+mod retention;
 mod roundtrip;
 mod setup;
 mod transfer;
