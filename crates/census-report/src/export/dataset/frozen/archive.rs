@@ -182,6 +182,14 @@ fn selected_replay_origin(
                 .map_err(|error| invalid(&error.to_string()))?;
             Ok(SelectedInputOrigin::HistoricalIdentityReplay)
         }
+        (Version::ReviewedRosterGraphV3, 7) => {
+            let _checked =
+                census_domain::profile_execution::validate_selected_qualification_profile_v4(
+                    profile,
+                )
+                .map_err(|error| invalid(&error.to_string()))?;
+            Ok(SelectedInputOrigin::Current)
+        }
         (Version::RetainedGraphV2, 7) => {
             let rule = &profile.input().policies.participation;
             if rule == &participation_policy_v3().map_err(|error| invalid(&error.to_string()))? {

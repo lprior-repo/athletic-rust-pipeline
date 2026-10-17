@@ -95,3 +95,19 @@ pub(crate) fn is_reserved_operation(operation: &[u8]) -> bool {
 
 #[cfg(test)]
 mod tests;
+
+pub(crate) fn read_roster_retained_capture_root_v1(
+    source: &impl crate::read::RetainedJournalReadSource,
+    schema: RetainedCaptureRootSchemaV1,
+    key: &str,
+    grant: &mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1,
+) -> StoreResult<Option<RetainedCaptureRootReadV1>> {
+    grant
+        .ensure_available()
+        .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
+    let result = external::read_owned(source, schema, key, grant);
+    if result.is_err() {
+        grant.poison();
+    }
+    result
+}

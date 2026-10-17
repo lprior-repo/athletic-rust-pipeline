@@ -50,3 +50,8 @@ tempfile = "3"
 # The net layer's tests drive paused-time deadlines (`tokio::time::advance`), which needs the test
 # clock the runtime only exposes behind this feature.
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "test-util", "io-util"] }
+
+[build-dependencies]
+sha2 = "0.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

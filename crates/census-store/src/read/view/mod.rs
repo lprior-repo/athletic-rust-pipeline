@@ -43,9 +43,10 @@ pub(crate) use retained_source::{
     RetainedJournalBytes, RetainedJournalReadSource,
 };
 mod regions;
+mod roster_source;
 mod run;
 
-pub use bounded::{decode_physical_observation, ReadBudget, ReadCounts};
+pub use bounded::{decode_physical_observation, PhysicalReadAdmissionV1, ReadBudget, ReadCounts};
 pub use membership::{JournalNamespace, JournalNamespaceFingerprint, JournalNamespaceInventory};
 pub use object::{JournalDigest, JournalEntry, JournalObject, JournalRecord, JournalRecords};
 

@@ -12,7 +12,7 @@ pub use migrate::MigrationReport;
 
 pub const STORE_SCHEMA_VERSION: u32 = 2;
 pub const KEY_FORMAT_VERSION: u32 = 1;
-pub const LIFECYCLE_REVISION: u32 = 7;
+pub const LIFECYCLE_REVISION: u32 = crate::ROSTER_SOURCE_ISSUANCE_LIFECYCLE;
 const FRESH_LIFECYCLE_REVISION: u32 = 2;
 
 pub const DEFAULT_CACHE_BYTES: u64 = 1024 * 1024 * 1024;
@@ -64,6 +64,14 @@ pub(super) fn open_format(
     }
     let format = require_current(root, format)?;
     crate::input_revisions::validate_format(&db.snapshot(), meta_keyspace, &format)?;
+    crate::roster_source_issuance::validate_format(
+        &db.snapshot(),
+        meta_keyspace,
+        data[1],
+        data[2],
+        &format,
+        &mut crate::RosterStartupValidationBudgetV1::new(),
+    )?;
     let [_, journal, receipts] = data;
     crate::public_identity::require_legacy(
         &db.snapshot(),
@@ -99,6 +107,14 @@ pub(crate) fn require_semantic_format(
 ) -> StoreResult<StoreFormat> {
     let format = require_current(root, read_format(meta)?)?;
     crate::input_revisions::validate_format(&db.snapshot(), meta, &format)?;
+    crate::roster_source_issuance::validate_format(
+        &db.snapshot(),
+        meta,
+        journal,
+        receipts,
+        &format,
+        &mut crate::RosterStartupValidationBudgetV1::new(),
+    )?;
     crate::public_identity::require_legacy(&db.snapshot(), meta, journal, receipts, &format)?;
     let capture =
         crate::acquisition::qualification::declaration(&db.snapshot(), meta, journal, &format)?;

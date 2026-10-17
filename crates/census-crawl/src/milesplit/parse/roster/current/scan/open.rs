@@ -13,6 +13,7 @@ impl Scan {
         let inherited = self.stack.last().is_some_and(|parent| parent.inert);
         let hidden = tag.attributes.contains_key(b"hidden".as_slice());
         let inert = inherited || hidden || inert_tag(name);
+        let anchor = self.anchor_open(name, inert);
         if !inherited && !hidden && (!inert_tag(name) || name == b"svg") {
             self.append_tag(&tag)?;
         }
@@ -52,6 +53,7 @@ impl Scan {
             roster,
             heading: Vec::new(),
             row,
+            anchor,
         });
         Ok(())
     }
@@ -111,6 +113,7 @@ impl Scan {
             scope,
             span: span.end..0,
             active: String::new(),
+            anchors: Ok(Vec::new()),
         });
         self.active_row = Some(index);
         Ok(Some(index))

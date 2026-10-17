@@ -10,6 +10,7 @@ use std::path::Path;
 pub(super) mod assets;
 mod capture;
 mod descriptor;
+mod reviewed;
 
 pub(crate) use descriptor::FrozenAffiliationDescriptor;
 pub(super) use descriptor::ObjectRef;
@@ -22,6 +23,15 @@ pub(crate) fn capture(
     snapshot: &StoreSnapshot<'_>,
     objects_dir: &Path,
 ) -> ReportResult<(FrozenAffiliationDescriptor, PinnedCurrentAffiliations)> {
+    let profile = super::pinned_profile(dataset, snapshot)?;
+    if census_domain::profile_execution::validate_selected_qualification_profile_v4(&profile)
+        .is_ok()
+    {
+        return reviewed::capture(dataset, snapshot, objects_dir, &profile);
+    }
+    let _checked =
+        census_domain::profile_execution::validate_selected_qualification_profile_v3(&profile)
+            .map_err(|_| invalid("unsupported affiliation capture profile"))?;
     capture::capture(dataset, snapshot, objects_dir)
 }
 
@@ -38,6 +48,9 @@ pub(crate) fn replay(
     let profile: QueryProfileV1 = decode(objects_dir, &descriptor.profile, PROFILE_BYTES)?;
     super::validate_profile(dataset, &profile)?;
     aliases(dataset)?;
+    if descriptor.reviewed_roster() {
+        return reviewed::replay(dataset, objects_dir, descriptor, &profile);
+    }
     let source = assets::Source::open(objects_dir, &descriptor.archives)?;
     let archive = super::archive::Archive::frozen(source);
     let captures = super::capture::Captures::with_archive(archive);

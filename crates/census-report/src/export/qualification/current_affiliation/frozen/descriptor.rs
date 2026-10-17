@@ -30,9 +30,15 @@ pub(crate) struct FrozenAffiliationDescriptor {
     pub(super) profile: ObjectRef,
     pub(super) observations: physical_observations::PhysicalObservationDescriptor,
     pub(super) archives: ObjectRef,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(super) roster_family: Option<super::super::source_binding::SourceBindingObjectV1>,
 }
 
 impl FrozenAffiliationDescriptor {
+    pub(crate) fn reviewed_roster(&self) -> bool {
+        self.version == 2
+    }
+
     pub(crate) fn digest(&self) -> census_store::StoreResult<String> {
         census_domain::model::serialized_digest(self).map_err(StoreError::from)
     }
@@ -59,8 +65,10 @@ impl FrozenAffiliationDescriptor {
         dataset: &ExportDataset,
         expected: &str,
     ) -> census_store::StoreResult<()> {
-        if self.version != 1
-            || self.store_identity != dataset.lineage.store_identity
+        if !matches!(
+            (self.version, self.roster_family.is_some()),
+            (1, false) | (2, true)
+        ) || self.store_identity != dataset.lineage.store_identity
             || self.snapshot_sequence != dataset.lineage.snapshot_sequence
             || self.input_generation != dataset.lineage.input_generation
             || self.input_digest != dataset.lineage.input_digest
@@ -89,6 +97,14 @@ impl FrozenAffiliationDescriptor {
         self.profile.validate(PROFILE_BYTES)?;
         self.observations
             .validate(dataset, expected, observation_budget())?;
-        self.archives.validate(INVENTORY_BYTES)
+        self.archives.validate(INVENTORY_BYTES)?;
+        if let Some(family) = &self.roster_family {
+            ObjectRef {
+                digest: family.digest.clone(),
+                bytes: family.bytes,
+            }
+            .validate(8 * 1024 * 1024)?;
+        }
+        Ok(())
     }
 }

@@ -142,3 +142,6 @@ impl<'s> JournalNamespaceFingerprint<'s> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod preadmission_tests;

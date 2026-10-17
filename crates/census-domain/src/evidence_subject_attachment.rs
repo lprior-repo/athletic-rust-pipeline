@@ -22,7 +22,7 @@ pub use codec::{
     encode_reviewed_reference_with_grant,
 };
 pub use context::*;
-pub use grant::{AttachmentReplayGrantV1, AttachmentReplayUsageV1};
+pub use grant::{AttachmentReplayContinuationV1, AttachmentReplayGrantV1, AttachmentReplayUsageV1};
 pub use inventory::calculate_reviewed_reference_inventory_with_grant;
 pub use projection::{
     decode_and_replay_reviewed_references, decode_and_replay_reviewed_references_with_grant,

@@ -21,7 +21,7 @@ pub(super) fn read(html: &str, url: &str, ownership: Ownership<'_>) -> CrawlResu
         |selected, token| {
             let token =
                 token.map_err(|error| schema(url, &format!("raw HTML input failed: {error}")))?;
-            match token {
+            match token.declaration {
                 Declaration::Script(bytes) => script(&bytes, selected, url, &ownership),
                 Declaration::Url(bytes) => {
                     if let Ownership::Bound(check) = &ownership {
