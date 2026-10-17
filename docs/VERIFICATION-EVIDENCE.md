@@ -146,3 +146,35 @@ exact historical tested trees, not this new union. Fresh native scoped current
 consumer, parser, ownership, incoming regression and static gates remain required
 before publishing this second layer. The incoming deletion of older ledger
 history remains preserved. No frozen Report or positive eligibility claim is added.
+
+### Actual-main documentary union native receipt (2026-10-17)
+
+Native verification passed exact commit
+`5839200285e301eda1583d3324d73c13214017c6`, tree
+`0c855016dc663862a592e3009cef1e7fcf67f513`. The 17 requested scoped
+selectors passed with zero failures: genuine chain 1 (1712 skipped), literal
+inventory 1 (1712), wind 26 (1687), raw readers 50 (1663), ownership 6 (1707),
+current Store 27 (1370), documentary domain 11 (949), physical projector 13
+(1700), workflow 65 (1332), Store attachment 160 (1237), domain attachment 84
+(876), participation 95 (865), intake 20 (1693), funding 26 (934), history 163
+(797), Service history memory 2 (1068), and scoped admission 39 (1031).
+These overlapping scopes are not summed. An additional Moon 2.2.3 startup
+attempt executed no tests; the canonical Moon 2.2.4 retry passed.
+
+The saved genuine output records A written and active on the held view, B
+written with both active, then reopen preserving two attachment roots and four
+original roots. Both original commands returned ReplayOnly with their exact
+original receipts, appended zero and credited false. Reopen precedes those
+successful replays; no additional successful post-replay reopen is claimed.
+Formatting and source lint exited zero. The first all-target check hit temporary
+storage quota; the task-local TMPDIR retry exited zero. Ten test-build dead-code
+and six forced argument-count warnings remain. The tested checkout ended clean.
+Native logs: `task/verification-logs-layer2-583920-20261017`.
+
+Independent preservation review verifies all 23 incoming non-ledger blobs/modes
+against actual main `5eba0bdc830fbf5091f8a7abdf18115274515606` and all other
+6,927 non-ledger entries against the documentary checkpoint. This receipt-only
+successor changes no tested source. Frozen Report/workbook publication remains
+the next layer; positive eligibility, current-school/status/season authority and
+national resource/recovery acceptance remain open. All 19 previously excluded
+OS-dependent selectors remain excluded; no production or live census was run.
