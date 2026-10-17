@@ -17,7 +17,7 @@ mod schools;
 pub use attached_participation::{
     with_current_attached_participation, with_frozen_attached_participation,
     AttachedParticipationV1, CheckedDocumentaryParticipationFactsV1,
-    CheckedDocumentarySourceFactsV1, DocumentarySeasonApplicabilityV1,
+    CheckedDocumentarySourceFactsV1, DocumentaryCohortAgreementV1, DocumentarySeasonApplicabilityV1,
 };
 pub use attached_result::{
     discover_current_html_results, discover_frozen_html_results, with_attached_html_results,

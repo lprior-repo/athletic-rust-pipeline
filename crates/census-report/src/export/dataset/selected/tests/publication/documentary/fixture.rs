@@ -1,6 +1,6 @@
 use super::TestResult;
 use crate::export::ExportDataset;
-use census_domain::model::{ProfileSelectionV1, QueryProfileV1};
+use census_domain::model::{GradYear, ProfileSelectionV1, QueryProfileV1};
 use census_store::{Store, Table};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
@@ -35,6 +35,10 @@ pub(super) struct Fixture {
 
 impl Fixture {
     pub(super) fn open() -> TestResult<Self> {
+        Self::open_for(GradYear::CO2027)
+    }
+
+    pub(super) fn open_for(cohort: GradYear) -> TestResult<Self> {
         let receipt = std::env::var_os("CENSUS_DOCUMENTARY_HANDOFF_JSON")
             .ok_or("CENSUS_DOCUMENTARY_HANDOFF_JSON must name a completed genuine A/B handoff")?;
         let metadata = std::fs::symlink_metadata(&receipt)?;
@@ -60,7 +64,7 @@ impl Fixture {
         check!(eq; store.snapshot().tables_digest(&Table::ALL)?, handoff.tables_digest);
         check!(eq; store.receipt_count()?, 6);
         let expected = source::read(&store)?;
-        let profile = profile::selected()?;
+        let profile = profile::selected(cohort)?;
         store.register_profile(&profile)?;
         files::verify(&handoff.store_path, &handoff.files)?;
         Ok(Self {

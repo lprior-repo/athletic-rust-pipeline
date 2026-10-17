@@ -45,7 +45,7 @@ async fn synthetic_scholastic_source_retains_archive_but_lacks_independent_statu
     let fixture = Fixture::prepare(Some("High School")).await?;
     let token = fixture.assess()?;
     let payload = serde_json::to_value(&token.replay)?;
-    check!(eq; payload.get("version"), Some(&json!(3)));
+    check!(eq; payload.get("version"), Some(&json!(4)));
     check!(payload.get("attachment").is_some());
     let payload = payload.get("retained").ok_or("retained V2 payload")?;
     check!(eq; payload.get("version"), Some(&json!(2)));
@@ -201,3 +201,5 @@ async fn reasons_union_is_empty_identity_commutative_associative_and_idempotent(
 }
 
 mod documentary_dispatch;
+
+mod documentary_semantics;

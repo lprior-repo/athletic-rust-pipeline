@@ -2,6 +2,8 @@ use super::TestResult;
 use census_crawl::participation_evidence::physical_result::project_retained_html_result_identity;
 use census_crawl::participation_evidence::recorded::{
     discover_current_html_results, DiscoveredIdentityLinkedHtmlResultDocumentV1,
+    with_current_attached_participation, AttachedParticipationV1,
+    CheckedDocumentaryParticipationFactsV1, DocumentarySeasonApplicabilityV1,
 };
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{
@@ -15,6 +17,7 @@ pub(in super::super) struct Expected {
     pub event: EventId,
     pub athlete: AthleteId,
     pub references: Vec<String>,
+    pub semantic_references: Vec<String>,
 }
 
 pub(super) fn read(store: &Store) -> TestResult<Vec<Expected>> {
@@ -35,8 +38,9 @@ pub(super) fn read(store: &Store) -> TestResult<Vec<Expected>> {
     let plan = discover_current_html_results(&current, &mut grant)?;
     check!(eq; plan.group_count(), 1);
     check!(eq; plan.diagnostic_count(), 0);
-    let mut expected =
-        plan.with_group(0, &mut grant, |linked, grant| Ok(rows(&linked, grant)))??;
+    let mut expected = with_current_attached_participation(&current, &mut grant, |sources, grant| {
+        plan.with_group(0, grant, |linked, grant| Ok(rows(&linked, sources, grant)))
+    })??;
     expected.sort_by(|left, right| left.performance.cmp(&right.performance));
     check!(eq; expected.len(), 3);
     check!(expected
@@ -45,8 +49,9 @@ pub(super) fn read(store: &Store) -> TestResult<Vec<Expected>> {
     Ok(expected)
 }
 
-fn rows(
-    linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
+fn rows<'s>(
+    linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, 's>,
+    sources: &AttachedParticipationV1<'_, 's>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> TestResult<Vec<Expected>> {
     check!(eq; linked.row_count(), 3);
@@ -107,12 +112,32 @@ fn rows(
         .into_iter()
         .map(str::to_owned)
         .collect();
+        let semantic_references = sources.with_row_facts(linked, index, grant, |facts, _| {
+            Ok(semantic_references(facts))
+        })??;
         rows.push(Expected {
             performance: identity.performance_id().clone(),
             event: identity.event_id().clone(),
             athlete,
             references,
+            semantic_references,
         });
     }
     Ok(rows)
+}
+
+fn semantic_references(facts: CheckedDocumentaryParticipationFactsV1<'_>) -> TestResult<Vec<String>> {
+    let [item] = facts.sources() else { return Err("one genuine active A status source".into()); };
+    check!(eq; item.season(), DocumentarySeasonApplicabilityV1::CompetitionAndVenueMismatch);
+    let source = item.source();
+    check!(eq; source.cohort().get(), 2026);
+    check!(eq; source.status_proof().capture(), "2fb479da65fb5cd69a3bb4a6b8a5625c298cfe51cdf06a43efe5359bf31de57a");
+    check!(eq; source.status_proof().locator(), "html_bytes:113581:113939");
+    check!(eq; source.season_proof().capture(), "26833e4c45506da5d776eb844b106dcfb041f67f7916bec0fb59c950b99693eb");
+    let status = source.status_proof();
+    let season = source.season_proof();
+    Ok([source.reference().as_str(), item.attachment_record_digest(),
+        status.capture(), status.interpretation(), status.locator(),
+        season.capture(), season.interpretation(), season.locator(), source.season_scope()]
+        .into_iter().map(str::to_owned).collect())
 }

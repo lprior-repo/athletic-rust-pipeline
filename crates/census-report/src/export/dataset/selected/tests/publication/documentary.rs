@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 mod fixture;
 mod refusals;
 mod roundtrip;
+mod historical;
 
 use fixture::{Expected, Fixture};
 
@@ -25,7 +26,8 @@ fn inspect(dataset: &ExportDataset, expected: &[Expected]) -> TestResult<Value> 
         .verified_public_identities()?
         .public_id(athlete.id.as_str())
         .is_some());
-    check!(eq; dataset.selected_authority()?.profile().input().graduation_years, vec![GradYear::CO2027]);
+    let selected = dataset.selected_authority()?.profile().input().graduation_years.clone();
+    check!(selected == vec![GradYear::CO2027] || selected == vec![GradYear::CO2026]);
     check!(eq; expected.len(), 3);
     check!(dataset.performances.is_empty());
     check!(dataset.teams.is_empty());
@@ -33,8 +35,11 @@ fn inspect(dataset: &ExportDataset, expected: &[Expected]) -> TestResult<Value> 
     check!(view.unsupported_documentary().is_empty());
     check!(eq; view.documentary_rows().count(), 3);
     let options = bests_options(dataset)?;
-    check!(eq; options.grad_year, Some(2027));
-    check!(Some(athlete.grad_year.get()) != options.grad_year);
+    let (actual, mapped, disposition, tag) = match options.grad_year {
+        Some(2027) => (CandidateOutcome::Excluded, ParticipationOutcome::Excluded, ParticipationExclusionOutcome::Excluded, ParticipationDiagnostic::DocumentaryAssessmentExcluded),
+        Some(2026) => (CandidateOutcome::Unresolved, ParticipationOutcome::Unresolved, ParticipationExclusionOutcome::Unresolved, ParticipationDiagnostic::DocumentaryAssessmentUnresolved),
+        _ => return Err("controlled selected cohort".into()),
+    };
     let derivation = crate::report::Derivation::of(
         dataset,
         options.scope,
@@ -46,12 +51,12 @@ fn inspect(dataset: &ExportDataset, expected: &[Expected]) -> TestResult<Value> 
     let outcome = crate::bests::build_with_exclusions(dataset, &options)?;
     check!(outcome.selections.is_empty());
     check!(eq; outcome.participation_exclusions.len(), 3);
-    let reasons = vec![
-        ParticipationReason::CohortUnresolved,
+    let mut reasons = Vec::new();
+    if options.grad_year == Some(2027) { reasons.push(ParticipationReason::CohortOutsideSelection); }
+    reasons.extend([
         ParticipationReason::ParticipationContextUnresolved,
-        ParticipationReason::HighSchoolStatusMissing,
         ParticipationReason::SummerBoundaryUnresolved,
-    ];
+    ]);
     let mut observed = Vec::new();
     for (source, exclusion) in expected.iter().zip(&outcome.participation_exclusions) {
         check!(eq; source.athlete, athlete.id);
@@ -60,18 +65,18 @@ fn inspect(dataset: &ExportDataset, expected: &[Expected]) -> TestResult<Value> 
             .ok_or("genuine documentary observation")?;
         check!(eq; row.event_id(), &source.event);
         check!(eq; row.athlete_id(), &source.athlete);
-        check!(eq; row.domain_outcome(), CandidateOutcome::Unresolved);
-        check!(eq; row.assessment().outcome(), ParticipationOutcome::Unresolved);
+        check!(eq; row.domain_outcome(), actual);
+        check!(eq; row.assessment().outcome(), mapped);
         check!(eq; row.assessment().reasons().iter().collect::<Vec<_>>(), reasons);
-        check!(eq; row.assessment().evidence_refs(), source.references);
-        check!(eq; row.assessment().diagnostics(), &[ParticipationDiagnostic::DocumentaryAssessmentUnresolved, ParticipationDiagnostic::SchoolBindingUnresolved]);
+        check!(eq; row.assessment().evidence_refs(), expected_references(source));
+        check!(eq; row.assessment().diagnostics(), &[tag, ParticipationDiagnostic::SchoolBindingUnresolved]);
         check!(view.assessment(&source.performance).is_none());
         check!(eq; exclusion.performance_id(), &source.performance);
         check!(eq; exclusion.event_id(), &source.event);
         check!(eq; exclusion.athlete_id(), &source.athlete);
-        check!(eq; exclusion.outcome(), ParticipationExclusionOutcome::Unresolved);
-        check!(eq; exclusion.reason(), ParticipationExclusionReason::DocumentarySchoolBindingUnresolved { assessment: CandidateOutcome::Unresolved, reasons: row.assessment().reasons() });
-        observed.push(json!({"performance":source.performance,"event":source.event,"athlete":source.athlete,"actual":"Unresolved","disposition":"unresolved","reasons":reasons,"diagnostics":row.assessment().diagnostics(),"references":row.assessment().evidence_refs()}));
+        check!(eq; exclusion.outcome(), disposition);
+        check!(eq; exclusion.reason(), ParticipationExclusionReason::DocumentarySchoolBindingUnresolved { assessment: actual, reasons: row.assessment().reasons() });
+        observed.push(json!({"performance":source.performance,"event":source.event,"athlete":source.athlete,"actual":format!("{actual:?}"),"disposition":format!("{disposition:?}"),"reasons":reasons,"diagnostics":row.assessment().diagnostics(),"references":row.assessment().evidence_refs()}));
     }
     Ok(
         json!({"generation":view.input_generation(),"profile":view.profile_id(),"rule":view.participation_rule(),"rows":observed}),
@@ -125,10 +130,10 @@ fn csv(directory: &Path, dataset: &ExportDataset, expected: &[Expected]) -> Test
         check!(eq; row.get(0), Some(source.athlete.as_str()));
         check!(eq; row.get(1), Some(source.performance.as_str()));
         check!(eq; row.get(2), Some(source.event.as_str()));
-        check!(eq; row.get(3), Some("unresolved"));
+        check!(eq; row.get(3), Some("excluded"));
         check!(eq; row.get(4).ok_or("reasons")?, serde_json::to_string(&assessed.reasons().iter().collect::<Vec<_>>())?);
-        check!(eq; row.get(5), Some("[\"documentary_assessment_unresolved\",\"school_binding_unresolved\"]"));
-        check!(eq; row.get(6).ok_or("references")?, serde_json::to_string(&source.references)?);
+        check!(eq; row.get(5), Some("[\"documentary_assessment_excluded\",\"school_binding_unresolved\"]"));
+        check!(eq; row.get(6).ok_or("references")?, serde_json::to_string(&expected_references(source))?);
         check!(eq; row.get(7), Some(view.input_generation()));
     }
     Ok(())
@@ -145,12 +150,16 @@ fn attachment_object(dataset: &ExportDataset, directory: &Path) -> TestResult<St
     )?;
     check!(matches!(
         &replay,
-        crate::export::qualification::participation::ParticipationReplay::V3(_)
+        crate::export::qualification::participation::ParticipationReplay::V4(_)
     ));
     let wire = serde_json::to_value(replay)?;
     Ok(wire
         .pointer("/attachment/object")
         .and_then(Value::as_str)
-        .ok_or("required V3 closure")?
+        .ok_or("required V4 closure")?
         .into())
+}
+
+fn expected_references(source: &Expected) -> Vec<String> {
+    source.references.iter().chain(&source.semantic_references).cloned().collect()
 }
