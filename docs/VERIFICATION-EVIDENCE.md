@@ -135,3 +135,52 @@ The local frozen documentary/selected-report source seal `bfd5a4d989eb87cf4a8530
 has not yet received its combined native gate. The incoming history-funding and
 Service admission outputs are preserved exactly; disjoint source reconciliation
 is not runtime qualification or a claim that this new work is published.
+
+### Frozen documentary selection: verified native gates (2026-10-17)
+
+The parent reports successful Omarchy verification of
+`b85d533d24ffbea1ac6024e18d095eefd56abbbd` /
+`b2244f796249a967cc5a74a9d9d3fb89a86b4c9b`, preserving actual PR77 main
+`388a109f9a3cda760dc270fa270bf0581cf8fbc0` and its history-funding work.
+The completed genuine producer remains separately pinned to `f38a93a0`: A/B,
+reopen, both exact-receipt replays, current/frozen three-row discovery and the
+closed-Store handoff passed. Its original 15-file inventory was unchanged before
+and after each Report test; consumer revisions never relabel its provenance.
+
+Both actual Report selectors passed on `75ded2e9` and again on `b85d533d`:
+selected capture, anchored frozen hydration, eight-column exclusions, workbook
+publication/readback without live Store/source objects, and missing/tampered or
+self-consistently omitted history refusal preserving the prior publication.
+The supported selected profile is Class 2027; the genuine athlete remains 2026.
+Positive derivation, athlete CSV/workbook population and best marks are zero.
+All three documentary observations retain their true Unresolved outcome and
+CohortUnresolved, ParticipationContextUnresolved, HighSchoolStatusMissing and
+SummerBoundaryUnresolved reasons; no school/team/provider authority is invented.
+
+Exact final `b85d533d` native scope receipts (passed/failed/skipped): dispatch
+4/0/1249; historical V2/strict-V3 replay 2/0/1251; scope/outcome 7/0/1246;
+collision 3/0/1250; refusal/readback 10/0/1243; workbook guards 4/0/1249;
+genuine Report roundtrip 1/0/1252; genuine Report refusals 1/0/1252. These are
+32 overlapping selected executions, not a count of unique tests.
+Earlier exact `5d855f7f`/`2cd98571` receipts passed source parity 32, archive
+state 7, capture sink 4, frozen current owner 6, target history 5, legacy bounds 4,
+Crawl discovery 7, handoff 7, incoming Domain funding 26 and history 163, and
+Service history-memory 2 and exact admission scope 39. Scopes overlap.
+
+Final formatting, all-target check and source lint passed; check retained ten
+test dead-code warnings and lint six forced argument-count warnings. The tree
+was clean. An initial Moon 2.2.3 launch failed before tests; the successful run
+used pinned 2.2.4. All 19 OS-denied crash/fence/service selectors remain excluded;
+three newly observed PermissionDenied outcomes are not semantic passes.
+The earlier callback/import errors, unsupported test profile, RawValue test
+setup errors and lint failures were repaired in pinned successors, without
+relaxing source assertions, caps, historical decoding or publication policy.
+
+This closes the controlled genuine identity-linked negative-selection and
+anchored frozen/publication mechanism gate. It does not establish positive
+Class-2027 eligibility/population, genuine school/status/season authority,
+national resource/recovery acceptance, or full R1–R3 closure. A real late
+unsupported discovery group through capture/frozen reconstruction remains an
+explicit uncovered case; synthetic identity-keyed refusal controls are distinct.
+Publication of these local successors still requires its separately reviewed
+small-batch workflow and fresh main checks.
