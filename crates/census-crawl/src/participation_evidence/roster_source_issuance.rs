@@ -22,7 +22,10 @@ pub use binding::{
     RosterExistingBindingAssessmentV1,
 };
 pub use semantic::{assess_reviewed_roster_source_v1, ReviewedRosterSourceAssessmentV1};
-pub use source::{assess_retained_roster_source, assess_retained_roster_source_v2, assess_retained_roster_source_v3};
+pub use source::{
+    assess_retained_roster_source, assess_retained_roster_source_v2,
+    assess_retained_roster_source_v3,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RosterSourceUnverifiedJoinV1 {

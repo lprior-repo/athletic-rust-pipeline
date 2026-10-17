@@ -15,8 +15,13 @@ fn genuine_partial_preserves_all164_dispositions_and_abbott_admission() -> TestR
     check!(eq; rows.len(), 164);
     check!(eq; rows.iter().filter(|row| matches!(row.outcome, wire::Outcome::Admitted { .. })).count(), 146);
     check!(eq; rows.iter().filter(|row| matches!(row.outcome, wire::Outcome::Rejected { reason: crate::milesplit::RosterRejectionKind::InvalidGraduationYear })).count(), 18);
-    let abbott = rows.iter().filter(|row| row.provider_id == "13749843").collect::<Vec<_>>();
-    let [abbott] = abbott.as_slice() else { return Err("exactly one Abbott row".into()); };
+    let abbott = rows
+        .iter()
+        .filter(|row| row.provider_id == "13749843")
+        .collect::<Vec<_>>();
+    let [abbott] = abbott.as_slice() else {
+        return Err("exactly one Abbott row".into());
+    };
     check!(matches!(abbott.outcome, wire::Outcome::Admitted { .. }));
     check!(fixture::span(abbott.row)?.contains("13749843"));
     for (ordinal, row) in rows.iter().enumerate() {
@@ -32,8 +37,21 @@ fn rejected_unknown_overlap_duplicate_and_unfinished_refuse() -> TestResult {
     let checked = fixture::packet()?.read()?;
     for mutation in 0..5 {
         let mut verdict = checked.roster_verdict().clone();
-        let RosterVerdict::Partial { roster, rejected, unfinished } = &mut verdict else { return Err("partial fixture".into()); };
-        let overlap = roster.athletes.first().ok_or("admitted member")?.athlete().athlete_id.clone();
+        let RosterVerdict::Partial {
+            roster,
+            rejected,
+            unfinished,
+        } = &mut verdict
+        else {
+            return Err("partial fixture".into());
+        };
+        let overlap = roster
+            .athletes
+            .first()
+            .ok_or("admitted member")?
+            .athlete()
+            .athlete_id
+            .clone();
         let second = rejected.get(1).ok_or("second rejected row")?.clone();
         let first = rejected.first_mut().ok_or("rejected member")?;
         match mutation {
@@ -53,7 +71,12 @@ fn rejected_unknown_overlap_duplicate_and_unfinished_refuse() -> TestResult {
 fn genuine_compact_inventory_retains_partial_under_object_limit() -> TestResult {
     let checked = fixture::packet()?.read()?;
     let parser = super::super::manifest::compiled_roster_parser_manifest()?;
-    let bytes = capture(&checked, parser.canonical_bytes(), b"controlled metadata", &mut AttachmentReplayGrantV1::new())?;
+    let bytes = capture(
+        &checked,
+        parser.canonical_bytes(),
+        b"controlled metadata",
+        &mut AttachmentReplayGrantV1::new(),
+    )?;
     check!(bytes.len() < LIMIT);
     let value: wire::Inventory = serde_json::from_slice(&bytes)?;
     check!(matches!(value.disposition, wire::Disposition::Partial));

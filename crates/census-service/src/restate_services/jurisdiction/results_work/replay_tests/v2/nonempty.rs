@@ -1,8 +1,8 @@
 use super::branch_support as support;
 use super::*;
 use census_domain::model::{
-    CanonicalPerformance, CanonicalSchool, CentiMetres, ExactSeconds, HistoryWindow, Mark, Revision, SchoolYear, SourceIdentity,
-    SourceNamespace, SourceObservation,
+    CanonicalPerformance, CanonicalSchool, CentiMetres, ExactSeconds, HistoryWindow, Mark,
+    Revision, SchoolYear, SourceIdentity, SourceNamespace, SourceObservation,
 };
 use census_domain::UsJurisdiction;
 use census_store::Table;
@@ -75,7 +75,8 @@ async fn controlled_al_projection_nonempty_consumption_survives_lost_ack_same_ke
         check!(eq; f.fetcher.stats().await.physical_requests(), 0);
         super::super::readmit_same_key(f).await?;
         Ok(())
-    }).await;
+    })
+    .await;
     super::super::finish(&fixture, result, 3, resources).await
 }
 
@@ -103,9 +104,14 @@ fn controlled_fixture() -> TestResult<Fixture> {
     };
     let fixture = Fixture::with_inputs(CaptureProtocolVersion::V2, request, meet)?;
     crate::capture_cache::seed(fixture.fetcher.cache_dir(), RAW, RAW_BODY, AT, &[])?;
-    for (name, id) in [("Controlled school 38332", "38332"), ("Controlled school 4912", "4912")] {
+    for (name, id) in [
+        ("Controlled school 38332", "38332"),
+        ("Controlled school 4912", "4912"),
+    ] {
         let mut school = CanonicalSchool::new(UsJurisdiction::Alabama, name, name, None).0;
-        school.source_identities.push(SourceIdentity::new(SourceNamespace::MilesplitSchool, id));
+        school
+            .source_identities
+            .push(SourceIdentity::new(SourceNamespace::MilesplitSchool, id));
         fixture.store.append(Table::Schools, &school)?;
     }
     Ok(fixture)
@@ -128,16 +134,24 @@ fn retained_rows(fixture: &Fixture) -> TestResult<serde_json::Value> {
     require_exact_marks(&performances)?;
     check!(observations.iter().all(|row| row.observed_on() == AT));
     let expected = std::collections::BTreeSet::from([
-        "milesplit_result:201782263", "milesplit_result:201782277", "milesplit_result:201782806",
+        "milesplit_result:201782263",
+        "milesplit_result:201782277",
+        "milesplit_result:201782806",
     ]);
     check!(eq; performances.iter().map(|row| row.source_key.as_str()).collect::<std::collections::BTreeSet<_>>(), expected);
-    let source_keys = observations.iter().map(|row| match row {
-        SourceObservation::Athlete(row) => Ok(row.source_row_key.as_str()),
-        SourceObservation::School(_) => Err("unexpected school observation"),
-    }).collect::<Result<std::collections::BTreeSet<_>, _>>()?;
+    let source_keys = observations
+        .iter()
+        .map(|row| match row {
+            SourceObservation::Athlete(row) => Ok(row.source_row_key.as_str()),
+            SourceObservation::School(_) => Err("unexpected school observation"),
+        })
+        .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
     check!(eq; source_keys, expected);
     check!(performances.iter().all(|row| row.date == "2026-03-27"
-        && row.evidence.iter().all(|evidence| evidence.observed_on == AT)));
+        && row
+            .evidence
+            .iter()
+            .all(|evidence| evidence.observed_on == AT)));
     observations.sort_by_key(|row| row.id().to_owned());
     performances.sort_by(|left, right| left.source_key.cmp(&right.source_key));
     Ok(serde_json::json!({"observations": observations, "performances": performances}))
@@ -154,7 +168,9 @@ fn durable_snapshot(fixture: &Fixture) -> TestResult<serde_json::Value> {
 fn projection_receipts(fixture: &Fixture) -> TestResult<serde_json::Value> {
     let phase = "milesplit_result_sets_v6";
     let payloads = fixture.store.journal_payloads(phase)?;
-    let projected = payloads.iter().find(|row| row["disposition"] == "projection_applied")
+    let projected = payloads
+        .iter()
+        .find(|row| row["disposition"] == "projection_applied")
         .ok_or("nonempty projection receipt absent")?;
     check!(eq; projected["projected_rows"], 3);
     check!(eq; projected["jurisdiction"], "AL");
@@ -165,25 +181,37 @@ fn projection_receipts(fixture: &Fixture) -> TestResult<serde_json::Value> {
     check!(eq; projected["census_sealed"], false);
     let mut keys: Vec<_> = fixture.store.journal_keys(phase)?.into_iter().collect();
     keys.sort();
-    let values = keys.into_iter().map(|key| {
-        Ok((key.clone(), fixture.store.journal_payload(phase, &key)?))
-    }).collect::<TestResult<Vec<_>>>()?;
+    let values = keys
+        .into_iter()
+        .map(|key| Ok((key.clone(), fixture.store.journal_payload(phase, &key)?)))
+        .collect::<TestResult<Vec<_>>>()?;
     Ok(serde_json::to_value(values)?)
 }
 
 fn require_exact_marks(rows: &[CanonicalPerformance]) -> TestResult {
     for (source, expected) in [
-        ("milesplit_result:201782263", Mark::FieldImperial {
-            feet_mark: "13-9".to_owned(),
-            metres: CentiMetres::new(419),
-        }),
-        ("milesplit_result:201782277", Mark::FieldImperial {
-            feet_mark: "30-7".to_owned(),
-            metres: CentiMetres::new(932),
-        }),
-        ("milesplit_result:201782806", Mark::TimeSeconds(ExactSeconds::parse("12.40")?)),
+        (
+            "milesplit_result:201782263",
+            Mark::FieldImperial {
+                feet_mark: "13-9".to_owned(),
+                metres: CentiMetres::new(419),
+            },
+        ),
+        (
+            "milesplit_result:201782277",
+            Mark::FieldImperial {
+                feet_mark: "30-7".to_owned(),
+                metres: CentiMetres::new(932),
+            },
+        ),
+        (
+            "milesplit_result:201782806",
+            Mark::TimeSeconds(ExactSeconds::parse("12.40")?),
+        ),
     ] {
-        let row = rows.iter().find(|row| row.source_key == source)
+        let row = rows
+            .iter()
+            .find(|row| row.source_key == source)
             .ok_or("expected controlled performance absent")?;
         check!(eq; row.mark, expected);
     }

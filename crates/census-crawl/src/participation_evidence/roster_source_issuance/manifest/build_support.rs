@@ -8,10 +8,10 @@ mod format;
 mod inputs;
 #[path = "build_kernel.rs"]
 mod kernel;
-#[path = "build_kernel_row_local.rs"]
-mod row_local_kernel;
 #[path = "build_process.rs"]
 mod process;
+#[path = "build_kernel_row_local.rs"]
+mod row_local_kernel;
 #[path = "build_scan.rs"]
 mod scan;
 

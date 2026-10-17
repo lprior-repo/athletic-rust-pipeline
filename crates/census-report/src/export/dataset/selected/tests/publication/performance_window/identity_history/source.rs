@@ -40,18 +40,34 @@ pub(super) fn merge(fixture: &Fixture) -> TestResult<(String, PublicAthleteId, I
         &fixture.writer.head(&fixture.store)?,
     )?;
     original.add_identity(source.clone());
-    original.identity_attestations.push(claim(&source, "pr-school")?);
-    alias.identity_attestations.push(claim(&source, "pr-timer")?);
-    fixture.store.append_many(Table::Athletes, &[original.clone(), alias.clone()])?;
+    original
+        .identity_attestations
+        .push(claim(&source, "pr-school")?);
+    alias
+        .identity_attestations
+        .push(claim(&source, "pr-timer")?);
+    fixture
+        .store
+        .append_many(Table::Athletes, &[original.clone(), alias.clone()])?;
     let case_id = review(fixture, &original, &alias)?;
-    let accepted = fixture.store.snapshot().accepted_public_identity_snapshot()?.ok_or("births")?;
+    let accepted = fixture
+        .store
+        .snapshot()
+        .accepted_public_identity_snapshot()?
+        .ok_or("births")?;
     let canonical = match accepted.resolve_candidate(&original.id.cast())? {
-        census_domain::public_identity_history::PublicResolution::Canonical(value) => value.public_id,
+        census_domain::public_identity_history::PublicResolution::Canonical(value) => {
+            value.public_id
+        }
         _ => return Err("original canonical identity".into()),
     };
     let mut members = vec![canonical.clone(), birth.public_id().clone()];
     members.sort();
-    let request = ReviewedIdentityRequestV1::Merge { case_id: case_id.clone(), canonical: canonical.clone(), members };
+    let request = ReviewedIdentityRequestV1::Merge {
+        case_id: case_id.clone(),
+        canonical: canonical.clone(),
+        members,
+    };
     let outcome = fixture.writer.apply_reviewed_identity(
         &fixture.store,
         "controlled-pr-merge",
@@ -60,12 +76,18 @@ pub(super) fn merge(fixture: &Fixture) -> TestResult<(String, PublicAthleteId, I
         &fixture.writer.head(&fixture.store)?,
     )?;
     check!(!outcome.replayed());
-    let expected = [original.id, alias.id].into_iter()
-        .map(|candidate| (candidate.to_string(), canonical.clone())).collect();
+    let expected = [original.id, alias.id]
+        .into_iter()
+        .map(|candidate| (candidate.to_string(), canonical.clone()))
+        .collect();
     Ok((case_id, canonical, expected))
 }
 
-fn review(fixture: &Fixture, first: &CanonicalAthlete, second: &CanonicalAthlete) -> TestResult<String> {
+fn review(
+    fixture: &Fixture,
+    first: &CanonicalAthlete,
+    second: &CanonicalAthlete,
+) -> TestResult<String> {
     let members = vec![first.id.cast(), second.id.cast()];
     let subject = "Controlled synthetic eligible PR identity merge";
     let detail = "Synthetic independently published identity control; no production human approval";
@@ -95,11 +117,14 @@ fn review(fixture: &Fixture, first: &CanonicalAthlete, second: &CanonicalAthlete
         member_ids: case.member_ids.clone(),
     };
     let mut cases: Vec<ReviewCase> = fixture.store.snapshot().scan(Table::ReviewCases)?;
-    let mut verdicts: Vec<ReviewVerdictRecord> = fixture.store.snapshot().scan(Table::IdentityVerdicts)?;
+    let mut verdicts: Vec<ReviewVerdictRecord> =
+        fixture.store.snapshot().scan(Table::IdentityVerdicts)?;
     cases.push(case.clone());
     verdicts.push(verdict);
     fixture.store.replace_many(Table::ReviewCases, &cases)?;
-    fixture.store.replace_many(Table::IdentityVerdicts, &verdicts)?;
+    fixture
+        .store
+        .replace_many(Table::IdentityVerdicts, &verdicts)?;
     Ok(case.id)
 }
 

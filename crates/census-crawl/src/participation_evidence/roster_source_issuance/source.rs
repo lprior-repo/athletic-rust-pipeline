@@ -22,10 +22,17 @@ pub(super) mod budget;
 
 #[path = "source_entry.rs"]
 mod entry;
-pub use entry::{assess_retained_roster_source, assess_retained_roster_source_v2, assess_retained_roster_source_v3};
+pub use entry::{
+    assess_retained_roster_source, assess_retained_roster_source_v2,
+    assess_retained_roster_source_v3,
+};
 
 #[derive(Clone, Copy)]
-enum InterpretationVersion { OriginalV1, FullV2, RowLocalV3 }
+enum InterpretationVersion {
+    OriginalV1,
+    FullV2,
+    RowLocalV3,
+}
 
 fn assess<'a>(
     evidence: &'a RosterSourceEvidenceV1,
@@ -73,14 +80,36 @@ fn assess<'a>(
         packet.read()
     })?;
     let objects = match version {
-        InterpretationVersion::OriginalV1 => super::capture_objects::derive(evidence, &packet, &parser_manifest, &roster_body, grant)?,
-        InterpretationVersion::FullV2 => super::capture_objects::version2::derive(evidence, &packet, &checked, &parser_manifest, &roster_body, grant)?,
-        InterpretationVersion::RowLocalV3 => super::capture_objects::version2::version3::derive(evidence, &packet, &checked, &parser_manifest, &roster_body, grant)?,
+        InterpretationVersion::OriginalV1 => super::capture_objects::derive(
+            evidence,
+            &packet,
+            &parser_manifest,
+            &roster_body,
+            grant,
+        )?,
+        InterpretationVersion::FullV2 => super::capture_objects::version2::derive(
+            evidence,
+            &packet,
+            &checked,
+            &parser_manifest,
+            &roster_body,
+            grant,
+        )?,
+        InterpretationVersion::RowLocalV3 => super::capture_objects::version2::version3::derive(
+            evidence,
+            &packet,
+            &checked,
+            &parser_manifest,
+            &roster_body,
+            grant,
+        )?,
     };
     objects.require_proposal(proposal, grant)?;
     let scoped_rows = original(evidence, grant, |grant| match version {
         InterpretationVersion::RowLocalV3 => scope_row_local(&checked, proposal, grant),
-        InterpretationVersion::OriginalV1 | InterpretationVersion::FullV2 => scope(&checked, proposal, grant),
+        InterpretationVersion::OriginalV1 | InterpretationVersion::FullV2 => {
+            scope(&checked, proposal, grant)
+        }
     })?;
     evidence.require_original_grant(grant)?;
     Ok(RosterSourceEvidenceAssessmentV1 {

@@ -30,7 +30,14 @@ pub(super) fn assess<'a>(
     let objects =
         super::super::capture_objects::derive_retained(evidence, raw, &parser, &body, grant)?;
     let retained = interpretation::read(claim, &objects, grant)?;
-    let checked = replay(retained, &packet, &parser, objects.metadata_bytes(grant)?, proposal, grant)?;
+    let checked = replay(
+        retained,
+        &packet,
+        &parser,
+        objects.metadata_bytes(grant)?,
+        proposal,
+        grant,
+    )?;
     let (school, program) = binding::assess_projection(evidence, proposal, &checked, grant)?;
     claim.qualification_object(grant)?;
     claim.activation_object(grant)?;
@@ -58,12 +65,16 @@ fn replay(
 ) -> CrawlResult<CheckedProviderSchoolPacketV1> {
     match retained {
         interpretation::RetainedInventory::FullV1(retained) => {
-            let checked = semantic_inventory::compare_original_raw_v1(packet, parser, metadata, &retained, grant)?;
+            let checked = semantic_inventory::compare_original_raw_v1(
+                packet, parser, metadata, &retained, grant,
+            )?;
             source::scope(&checked, proposal, grant)?;
             Ok(checked)
         }
         interpretation::RetainedInventory::RowLocalV2(retained) => {
-            let checked = super::super::semantic_inventory_v2::compare(packet, parser, metadata, retained, grant)?;
+            let checked = super::super::semantic_inventory_v2::compare(
+                packet, parser, metadata, retained, grant,
+            )?;
             source::scope_row_local(&checked, proposal, grant)?;
             Ok(checked)
         }

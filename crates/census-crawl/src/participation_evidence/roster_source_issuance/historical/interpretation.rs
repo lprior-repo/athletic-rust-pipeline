@@ -38,7 +38,7 @@ pub(super) fn read<'a>(
         .map_err(source::domain)?;
     let value: Interpretation<'_> = serde_json::from_slice(bytes).map_err(json)?;
     if value.original_capture_interpretation.get().as_bytes()
-            != original.interpretation_bytes(grant)?
+        != original.interpretation_bytes(grant)?
     {
         return Err(
             invalid("unsupported or changed original historical roster interpretation").into(),
@@ -49,8 +49,15 @@ pub(super) fn read<'a>(
         return Err(invalid("noncanonical historical roster interpretation").into());
     }
     match value.schema {
-        "roster-retained-capture-interpretation-v2" => Ok(RetainedInventory::FullV1(semantic_inventory::decode_retained_for_replay(value.semantic_inventory.get().as_bytes(), grant)?)),
-        "roster-retained-capture-interpretation-v3" => Ok(RetainedInventory::RowLocalV2(value.semantic_inventory.get().as_bytes())),
+        "roster-retained-capture-interpretation-v2" => Ok(RetainedInventory::FullV1(
+            semantic_inventory::decode_retained_for_replay(
+                value.semantic_inventory.get().as_bytes(),
+                grant,
+            )?,
+        )),
+        "roster-retained-capture-interpretation-v3" => Ok(RetainedInventory::RowLocalV2(
+            value.semantic_inventory.get().as_bytes(),
+        )),
         _ => Err(invalid("unsupported retained roster interpretation version").into()),
     }
 }

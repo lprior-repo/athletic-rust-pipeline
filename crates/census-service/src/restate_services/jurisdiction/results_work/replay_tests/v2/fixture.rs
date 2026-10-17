@@ -32,8 +32,7 @@ pub(super) fn seed_prepared_body(
         return Err("v2 fixture owner absent".into());
     };
     let reference =
-        census_crawl::milesplit::ResultSetRef::parse(results_url)
-            .ok_or("fixture reference")?;
+        census_crawl::milesplit::ResultSetRef::parse(results_url).ok_or("fixture reference")?;
     let request = census_crawl::milesplit::owned_meet_request(
         &fixture.fetcher,
         &reference,

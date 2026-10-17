@@ -1,10 +1,11 @@
 use super::*;
 use census_crawl::participation_evidence::roster_source_issuance::{
     assess_existing_roster_binding, assess_retained_roster_source_v2,
-    assess_retained_roster_source_v3, prepare_retained_roster_capture_objects_v3,
+    assess_retained_roster_source_v3,
     capture_objects::prepare_retained_roster_capture_objects_v2,
     manifest::{assess_retained_roster_parser_manifest, compiled_roster_parser_manifest},
     policies::compiled_roster_interpretation_contracts_v1,
+    prepare_retained_roster_capture_objects_v3,
 };
 use census_domain::roster_affiliation_authority::{
     decode_roster_issuance_claim, LocallyCheckedRosterIssuanceV1, RosterAuthorityLimitsV1,
@@ -59,10 +60,18 @@ pub(super) fn review_revision(
     let contracts = compiled_roster_interpretation_contracts_v1();
     let source = match revision {
         CaptureRevision::CompleteV2 => assess_retained_roster_source_v2(
-            evidence, parser.canonical_bytes(), &contracts, &proposal, grant,
+            evidence,
+            parser.canonical_bytes(),
+            &contracts,
+            &proposal,
+            grant,
         )?,
         CaptureRevision::RowLocalV3 => assess_retained_roster_source_v3(
-            evidence, parser.canonical_bytes(), &contracts, &proposal, grant,
+            evidence,
+            parser.canonical_bytes(),
+            &contracts,
+            &proposal,
+            grant,
         )?,
     };
     let binding = assess_existing_roster_binding(&source, grant)?;
@@ -125,8 +134,12 @@ fn proposal_revision(
         grant,
     )?;
     let objects = match revision {
-        CaptureRevision::CompleteV2 => prepare_retained_roster_capture_objects_v2(evidence, &checked, grant)?,
-        CaptureRevision::RowLocalV3 => prepare_retained_roster_capture_objects_v3(evidence, &checked, grant)?,
+        CaptureRevision::CompleteV2 => {
+            prepare_retained_roster_capture_objects_v2(evidence, &checked, grant)?
+        }
+        CaptureRevision::RowLocalV3 => {
+            prepare_retained_roster_capture_objects_v3(evidence, &checked, grant)?
+        }
     };
     let contracts = compiled_roster_interpretation_contracts_v1();
     let source_id = capture

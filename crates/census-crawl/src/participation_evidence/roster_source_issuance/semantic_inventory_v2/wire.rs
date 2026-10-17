@@ -17,7 +17,10 @@ pub(super) struct Inventory {
 }
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub(super) enum Disposition { Complete, Partial }
+pub(super) enum Disposition {
+    Complete,
+    Partial,
+}
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct Row {

@@ -138,4 +138,3 @@ pub(super) fn generate(root: &Path, destination: &Path) -> BuildResult<()> {
     std::fs::write(destination.join("roster-semantic-kernel-v3.json"), bytes)?;
     Ok(())
 }
-

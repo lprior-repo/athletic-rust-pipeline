@@ -41,7 +41,14 @@ pub fn assess_retained_roster_source_v3<'a>(
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<RosterSourceEvidenceAssessmentV1<'a>> {
-    assess_version(evidence, retained_parser_manifest, retained_contracts, proposal, grant, InterpretationVersion::RowLocalV3)
+    assess_version(
+        evidence,
+        retained_parser_manifest,
+        retained_contracts,
+        proposal,
+        grant,
+        InterpretationVersion::RowLocalV3,
+    )
 }
 
 fn assess_version<'a>(

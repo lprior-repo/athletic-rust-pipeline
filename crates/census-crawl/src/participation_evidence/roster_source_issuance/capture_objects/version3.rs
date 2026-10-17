@@ -24,7 +24,10 @@ pub fn prepare_retained_roster_capture_objects_v3<'a>(
         grant.charge_steps(1).map_err(domain)?;
         if held.root().schema != census_store::RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
             || held.root().payload.digest.as_str() != hash(raw)
-            || held.root().payload.bytes != u64::try_from(raw.len()).map_err(|_| census_store::StoreError::CounterOverflow)? {
+            || held.root().payload.bytes
+                != u64::try_from(raw.len())
+                    .map_err(|_| census_store::StoreError::CounterOverflow)?
+        {
             return Err(invalid("row-local retained root mismatch").into());
         }
         let packet = ProviderSchoolPacketV1::decode(raw)?;
@@ -38,7 +41,9 @@ pub fn prepare_retained_roster_capture_objects_v3<'a>(
         let body = packet.roster().body()?;
         derive(evidence, &packet, &checked, &parser, &body, grant)
     });
-    if result.is_err() { grant.poison(); }
+    if result.is_err() {
+        grant.poison();
+    }
     result
 }
 
@@ -54,10 +59,19 @@ pub(in crate::participation_evidence::roster_source_issuance) fn derive<'a>(
     if checked.reference().as_str() != evidence.retained_root(grant)?.root().key {
         return Err(invalid("row-local capture packet differs from retained root").into());
     }
-    let inventory = super::super::super::semantic_inventory_v2::capture(checked, parser.retained().canonical_bytes(), &objects.metadata, grant)?;
+    let inventory = super::super::super::semantic_inventory_v2::capture(
+        checked,
+        parser.retained().canonical_bytes(),
+        &objects.metadata,
+        grant,
+    )?;
     let original: &RawValue = serde_json::from_slice(&objects.interpretation).map_err(json)?;
     let inventory: &RawValue = serde_json::from_slice(&inventory).map_err(json)?;
-    let value = Interpretation { schema: "roster-retained-capture-interpretation-v3", original_capture_interpretation: original, semantic_inventory: inventory };
+    let value = Interpretation {
+        schema: "roster-retained-capture-interpretation-v3",
+        original_capture_interpretation: original,
+        semantic_inventory: inventory,
+    };
     budget::charge_bounded(&value, grant, 64 * 1024)?;
     let bytes = serde_json::to_vec(&value).map_err(json)?;
     bound(bytes.len(), 64 * 1024, "row-local semantic interpretation")?;
