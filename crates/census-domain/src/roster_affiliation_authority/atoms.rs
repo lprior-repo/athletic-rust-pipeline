@@ -14,12 +14,16 @@ impl RosterAuthorityTextV1 {
             return Err(RosterAuthorityError::Invalid("text"));
         }
         let mut owned = String::new();
-        owned.try_reserve_exact(value.len()).map_err(|_| RosterAuthorityError::Allocation)?;
+        owned
+            .try_reserve_exact(value.len())
+            .map_err(|_| RosterAuthorityError::Allocation)?;
         owned.push_str(value);
         Ok(Self(owned))
     }
 
-    pub fn as_str(&self) -> &str { &self.0 }
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
 impl<'de> Deserialize<'de> for RosterAuthorityTextV1 {
@@ -44,13 +48,19 @@ pub struct RosterAuthorityDigestV1(String);
 
 impl RosterAuthorityDigestV1 {
     pub fn parse(value: &str) -> Result<Self> {
-        if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)) {
+        if value.len() != 64
+            || !value
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
             return Err(RosterAuthorityError::Invalid("SHA256"));
         }
         Ok(Self(RosterAuthorityTextV1::parse(value)?.0))
     }
 
-    pub fn as_str(&self) -> &str { &self.0 }
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
 impl<'de> Deserialize<'de> for RosterAuthorityDigestV1 {

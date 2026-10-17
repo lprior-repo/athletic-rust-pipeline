@@ -7,8 +7,12 @@ type TestResult<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 fn limits() -> TestResult<RosterAuthorityLimitsV1> {
     Ok(RosterAuthorityLimitsV1::new(64 * 1024, 8 * 1024 * 1024)?)
 }
-fn reference(id: u32) -> Value { json!({"digest": format!("{id:064x}"), "bytes": 64}) }
-fn contract() -> Value { json!({"version": 1, "revision": 1, "digest": "a".repeat(64)}) }
+fn reference(id: u32) -> Value {
+    json!({"digest": format!("{id:064x}"), "bytes": 64})
+}
+fn contract() -> Value {
+    json!({"version": 1, "revision": 1, "digest": "a".repeat(64)})
+}
 fn fixture() -> TestResult<Value> {
     let owner = SourceSubject::new(SourceNamespace::MilesplitSchool, "10002".into())?;
     let program_owner = SourceSubject::new(SourceNamespace::MilesplitTeam, "10002".into())?;
@@ -30,14 +34,20 @@ fn fixture() -> TestResult<Value> {
         "semantic_review_evidence":reference(14)
     }))
 }
-fn bytes(value: &Value) -> TestResult<Vec<u8>> { Ok(serde_json::to_vec(value)?) }
+fn bytes(value: &Value) -> TestResult<Vec<u8>> {
+    Ok(serde_json::to_vec(value)?)
+}
 fn field<'a>(value: &'a mut Value, path: &str) -> TestResult<&'a mut Value> {
-    value.pointer_mut(path).ok_or_else(|| format!("fixture field absent: {path}").into())
+    value
+        .pointer_mut(path)
+        .ok_or_else(|| format!("fixture field absent: {path}").into())
 }
 fn record() -> TestResult<Value> {
-    Ok(json!({"version":1, "lifecycle":"issuance_only_v1", "operation":"controlled-issue-1", "proposal":fixture()?,
+    Ok(
+        json!({"version":1, "lifecycle":"issuance_only_v1", "operation":"controlled-issue-1", "proposal":fixture()?,
         "store":"c".repeat(64), "snapshot_revision":1, "parent_inventory":reference(15), "negative_inventory":reference(16),
-        "negative_actions":0, "approval_envelope":reference(17), "review_provenance":reference(18), "issuance_receipt":reference(19)}))
+        "negative_actions":0, "approval_envelope":reference(17), "review_provenance":reference(18), "issuance_receipt":reference(19)}),
+    )
 }
 
 #[test]
@@ -82,8 +92,20 @@ fn mismatched_existing_binding_is_not_repaired() -> TestResult {
         ("/binding/program", json!("")),
         ("/binding/school", json!(" ")),
         ("/binding/snapshot_revision", json!(0)),
-        ("/binding/program_source", serde_json::to_value(SourceSubject::new(SourceNamespace::MilesplitTeam, "99999".into())?)?),
-        ("/binding/school_source", serde_json::to_value(SourceSubject::new(SourceNamespace::MilesplitAthlete, "10002".into())?)?),
+        (
+            "/binding/program_source",
+            serde_json::to_value(SourceSubject::new(
+                SourceNamespace::MilesplitTeam,
+                "99999".into(),
+            )?)?,
+        ),
+        (
+            "/binding/school_source",
+            serde_json::to_value(SourceSubject::new(
+                SourceNamespace::MilesplitAthlete,
+                "10002".into(),
+            )?)?,
+        ),
     ] {
         let mut raw = fixture()?;
         *field(&mut raw, path)? = replacement;
@@ -95,9 +117,12 @@ fn mismatched_existing_binding_is_not_repaired() -> TestResult {
 #[test]
 fn record_rejects_foreign_context_and_unsupported_negative_actions() -> TestResult {
     for (path, replacement) in [
-        ("/version", json!(2)), ("/lifecycle", json!("revocation_v1")),
-        ("/negative_actions", json!(1)), ("/snapshot_revision", json!(2)),
-        ("/store", json!("d".repeat(64))), ("/operation", json!("contains space")),
+        ("/version", json!(2)),
+        ("/lifecycle", json!("revocation_v1")),
+        ("/negative_actions", json!(1)),
+        ("/snapshot_revision", json!(2)),
+        ("/store", json!("d".repeat(64))),
+        ("/operation", json!("contains space")),
     ] {
         let mut raw = record()?;
         *field(&mut raw, path)? = replacement;
@@ -112,10 +137,16 @@ fn duplicate_unknown_and_missing_fields_refuse() -> TestResult {
     let duplicate = raw.replacen("\"version\":1", "\"version\":1,\"version\":1", 1);
     check!(decode_roster_issuance_claim(duplicate.as_bytes(), limits()?).is_err());
     let mut unknown = fixture()?;
-    unknown.as_object_mut().ok_or("fixture object")?.insert("another_capture".into(), json!({}));
+    unknown
+        .as_object_mut()
+        .ok_or("fixture object")?
+        .insert("another_capture".into(), json!({}));
     check!(decode_roster_issuance_claim(&bytes(&unknown)?, limits()?).is_err());
     let mut missing = fixture()?;
-    missing.as_object_mut().ok_or("fixture object")?.remove("semantic_review_evidence");
+    missing
+        .as_object_mut()
+        .ok_or("fixture object")?
+        .remove("semantic_review_evidence");
     check!(decode_roster_issuance_claim(&bytes(&missing)?, limits()?).is_err());
     Ok(())
 }
@@ -125,9 +156,17 @@ fn original_component_budget_and_record_boundary_are_enforced() -> TestResult {
     let raw = bytes(&fixture()?)?;
     let exact = RosterAuthorityLimitsV1::new(raw.len(), 14 * 64)?;
     check!(decode_roster_issuance_claim(&raw, exact).is_ok());
-    check!(decode_roster_issuance_claim(&raw, RosterAuthorityLimitsV1::new(raw.len(), 14 * 64 - 1)?).is_err());
+    check!(decode_roster_issuance_claim(
+        &raw,
+        RosterAuthorityLimitsV1::new(raw.len(), 14 * 64 - 1)?
+    )
+    .is_err());
     let shorter = raw.len().checked_sub(1).ok_or("length")?;
-    check!(decode_roster_issuance_claim(&raw, RosterAuthorityLimitsV1::new(shorter, 8 * 1024 * 1024)?).is_err());
+    check!(decode_roster_issuance_claim(
+        &raw,
+        RosterAuthorityLimitsV1::new(shorter, 8 * 1024 * 1024)?
+    )
+    .is_err());
     check!(RosterAuthorityLimitsV1::new(0, 1).is_err());
     check!(RosterAuthorityLimitsV1::new(64 * 1024 + 1, 1).is_err());
     check!(RosterAuthorityLimitsV1::new(1, 8 * 1024 * 1024 + 1).is_err());
@@ -150,7 +189,10 @@ fn object_limits_and_same_digest_different_length_refuse() -> TestResult {
     let mut conflicting = fixture()?;
     *field(&mut conflicting, "/capture/manifest/digest")? = json!(format!("{:064x}", 5));
     *field(&mut conflicting, "/capture/manifest/bytes")? = json!(65);
-    check!(matches!(decode_roster_issuance_claim(&bytes(&conflicting)?, limits()?), Err(RosterAuthorityError::ConflictingObjectReference)));
+    check!(matches!(
+        decode_roster_issuance_claim(&bytes(&conflicting)?, limits()?),
+        Err(RosterAuthorityError::ConflictingObjectReference)
+    ));
     Ok(())
 }
 
@@ -162,7 +204,11 @@ fn exact_object_limits_and_duplicate_bytes_have_bounded_accounting() -> TestResu
     check!(decode_roster_issuance_claim(&bytes(&raw)?, limits()?).is_ok());
     let mut shared = fixture()?;
     *field(&mut shared, "/capture/manifest")? = reference(5);
-    check!(decode_roster_issuance_claim(&bytes(&shared)?, RosterAuthorityLimitsV1::new(64 * 1024, 13 * 64)?).is_ok());
+    check!(decode_roster_issuance_claim(
+        &bytes(&shared)?,
+        RosterAuthorityLimitsV1::new(64 * 1024, 13 * 64)?
+    )
+    .is_ok());
     Ok(())
 }
 
@@ -170,8 +216,14 @@ fn exact_object_limits_and_duplicate_bytes_have_bounded_accounting() -> TestResu
 fn invalid_or_unbounded_url_and_timestamp_claims_refuse() -> TestResult {
     for (path, replacement) in [
         ("/capture/requested_url", "http://example.test/roster"),
-        ("/capture/requested_url", "https://user:secret@example.test/roster"),
-        ("/capture/requested_url", "https://example.test/roster#fragment"),
+        (
+            "/capture/requested_url",
+            "https://user:secret@example.test/roster",
+        ),
+        (
+            "/capture/requested_url",
+            "https://example.test/roster#fragment",
+        ),
         ("/capture/requested_url", "https://example.test/with space"),
         ("/capture/acquired_at", "2026-10-07"),
     ] {

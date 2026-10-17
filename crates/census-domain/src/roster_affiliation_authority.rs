@@ -1,15 +1,14 @@
-
 mod atoms;
 mod types;
 mod validate;
 
 pub use atoms::{RosterAuthorityDigestV1, RosterAuthorityTextV1};
-pub use types::{
-    LocallyCheckedRosterIssuanceV1, LocallyCheckedRosterRecordV1,
-    RosterAuthorityObjectRefV1, RosterAuthorityScopeV1, RosterCaptureClaimV1,
-    RosterExistingBindingClaimV1, RosterParserClaimV1,
-};
 use serde::Serialize;
+pub use types::{
+    LocallyCheckedRosterIssuanceV1, LocallyCheckedRosterRecordV1, RosterAuthorityObjectRefV1,
+    RosterAuthorityScopeV1, RosterCaptureClaimV1, RosterExistingBindingClaimV1,
+    RosterParserClaimV1,
+};
 
 pub const MAX_ROSTER_AUTHORITY_RECORD_BYTES: usize = 64 * 1024;
 pub const MAX_ROSTER_AUTHORITY_COMPONENT_BYTES: u64 = 8 * 1024 * 1024;
@@ -59,9 +58,20 @@ impl RosterAuthorityLimitsV1 {
         if record_bytes == 0 || component_bytes == 0 {
             return Err(RosterAuthorityError::Invalid("zero read grant"));
         }
-        charge("record bytes", size(record_bytes)?, size(MAX_ROSTER_AUTHORITY_RECORD_BYTES)?)?;
-        charge("component bytes", component_bytes, MAX_ROSTER_AUTHORITY_COMPONENT_BYTES)?;
-        Ok(Self { record_bytes, component_bytes })
+        charge(
+            "record bytes",
+            size(record_bytes)?,
+            size(MAX_ROSTER_AUTHORITY_RECORD_BYTES)?,
+        )?;
+        charge(
+            "component bytes",
+            component_bytes,
+            MAX_ROSTER_AUTHORITY_COMPONENT_BYTES,
+        )?;
+        Ok(Self {
+            record_bytes,
+            component_bytes,
+        })
     }
 }
 
@@ -89,7 +99,11 @@ fn admit(bytes: &[u8], limits: RosterAuthorityLimitsV1) -> Result<()> {
     if bytes.is_empty() {
         return Err(RosterAuthorityError::Invalid("empty record"));
     }
-    charge("record bytes", size(bytes.len())?, size(limits.record_bytes)?)
+    charge(
+        "record bytes",
+        size(bytes.len())?,
+        size(limits.record_bytes)?,
+    )
 }
 
 fn encode(value: &impl Serialize, limits: RosterAuthorityLimitsV1) -> Result<Vec<u8>> {
@@ -104,7 +118,11 @@ fn size(value: usize) -> Result<u64> {
 
 fn charge(resource: &'static str, needed: u64, available: u64) -> Result<()> {
     if needed > available {
-        return Err(RosterAuthorityError::Capacity { resource, needed, available });
+        return Err(RosterAuthorityError::Capacity {
+            resource,
+            needed,
+            available,
+        });
     }
     Ok(())
 }
