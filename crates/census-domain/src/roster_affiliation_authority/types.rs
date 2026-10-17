@@ -74,8 +74,8 @@ pub struct RosterCaptureClaimV1 {
     pub(in crate::roster_affiliation_authority) observed_day: ProfileDate,
     pub(in crate::roster_affiliation_authority) requested_url: RosterAuthorityTextV1,
     pub(in crate::roster_affiliation_authority) final_url: FinalUrl,
-    pub(in crate::roster_affiliation_authority) source_admission: RosterAuthorityObjectRefV1,
-    pub(in crate::roster_affiliation_authority) original_grant: RosterAuthorityObjectRefV1,
+    pub(in crate::roster_affiliation_authority) retained_source_admission: RosterAuthorityObjectRefV1,
+    pub(in crate::roster_affiliation_authority) verification_grant: RosterAuthorityObjectRefV1,
 }
 impl RosterCaptureClaimV1 {
     pub fn occurrence(&self) -> &RosterAuthorityDigestV1 { &self.occurrence }
@@ -88,8 +88,8 @@ impl RosterCaptureClaimV1 {
     pub fn observed_final_url(&self) -> Option<&str> {
         match &self.final_url { FinalUrl::Unknown => None, FinalUrl::Observed(url) => Some(url.as_str()) }
     }
-    pub fn source_admission(&self) -> &RosterAuthorityObjectRefV1 { &self.source_admission }
-    pub fn original_grant(&self) -> &RosterAuthorityObjectRefV1 { &self.original_grant }
+    pub fn retained_source_admission(&self) -> &RosterAuthorityObjectRefV1 { &self.retained_source_admission }
+    pub fn verification_grant(&self) -> &RosterAuthorityObjectRefV1 { &self.verification_grant }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -103,10 +103,11 @@ pub struct RosterExistingBindingClaimV1 {
     pub(in crate::roster_affiliation_authority) category: Gender,
     pub(in crate::roster_affiliation_authority) school_year: SchoolYear,
     pub(in crate::roster_affiliation_authority) year_convention: ContractRefV1,
-    pub(in crate::roster_affiliation_authority) school_row: RosterAuthorityObjectRefV1,
-    pub(in crate::roster_affiliation_authority) program_row: RosterAuthorityObjectRefV1,
+    pub(in crate::roster_affiliation_authority) projection_merge_contract: ContractRefV1,
+    pub(in crate::roster_affiliation_authority) school_projection: RosterAuthorityObjectRefV1,
+    pub(in crate::roster_affiliation_authority) program_projection: RosterAuthorityObjectRefV1,
     pub(in crate::roster_affiliation_authority) provider_packet: RosterAuthorityObjectRefV1,
-    pub(in crate::roster_affiliation_authority) conflict_inventory: RosterAuthorityObjectRefV1,
+    pub(in crate::roster_affiliation_authority) physical_projection_inventory: RosterAuthorityObjectRefV1,
     pub(in crate::roster_affiliation_authority) store: StoreIdentity,
     pub(in crate::roster_affiliation_authority) snapshot_revision: NonZeroU64,
 }
@@ -119,10 +120,11 @@ impl RosterExistingBindingClaimV1 {
     pub fn category(&self) -> Gender { self.category }
     pub fn school_year(&self) -> SchoolYear { self.school_year }
     pub fn year_convention(&self) -> &ContractRefV1 { &self.year_convention }
-    pub fn school_row(&self) -> &RosterAuthorityObjectRefV1 { &self.school_row }
-    pub fn program_row(&self) -> &RosterAuthorityObjectRefV1 { &self.program_row }
+    pub fn projection_merge_contract(&self) -> &ContractRefV1 { &self.projection_merge_contract }
+    pub fn school_projection(&self) -> &RosterAuthorityObjectRefV1 { &self.school_projection }
+    pub fn program_projection(&self) -> &RosterAuthorityObjectRefV1 { &self.program_projection }
     pub fn provider_packet(&self) -> &RosterAuthorityObjectRefV1 { &self.provider_packet }
-    pub fn conflict_inventory(&self) -> &RosterAuthorityObjectRefV1 { &self.conflict_inventory }
+    pub fn physical_projection_inventory(&self) -> &RosterAuthorityObjectRefV1 { &self.physical_projection_inventory }
     pub fn store(&self) -> &StoreIdentity { &self.store }
     pub fn snapshot_revision(&self) -> NonZeroU64 { self.snapshot_revision }
 }

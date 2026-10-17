@@ -21,12 +21,12 @@ fn fixture() -> TestResult<Value> {
         "capture": {"occurrence":"b".repeat(64), "body":reference(5), "manifest":reference(6),
             "interpretation":reference(7), "acquired_at":"2026-10-07T23:30:00-05:00", "observed_day":"2026-10-08",
             "requested_url":"https://oh.milesplit.com/teams/10002-mason/roster", "final_url":{"status":"unknown"},
-            "source_admission":reference(8), "original_grant":reference(9)},
+            "retained_source_admission":reference(8), "verification_grant":reference(9)},
         "binding": {"school":SchoolId::mint("sch", &["controlled-school"]),
             "program":TeamId::mint("team", &["controlled-program"]), "school_source":owner,
             "program_source":program_owner, "sport":"cross_country", "category":"girls", "school_year":2026,
-            "year_convention":contract(), "school_row":reference(10), "program_row":reference(11),
-            "provider_packet":reference(12), "conflict_inventory":reference(13), "store":"c".repeat(64), "snapshot_revision":1},
+            "year_convention":contract(), "projection_merge_contract":contract(), "school_projection":reference(10), "program_projection":reference(11),
+            "provider_packet":reference(12), "physical_projection_inventory":reference(13), "store":"c".repeat(64), "snapshot_revision":1},
         "semantic_review_evidence":reference(14)
     }))
 }
@@ -180,5 +180,19 @@ fn invalid_or_unbounded_url_and_timestamp_claims_refuse() -> TestResult {
         check!(decode_roster_issuance_claim(&bytes(&raw)?, limits()?).is_err());
     }
     check!(RosterAuthorityTextV1::parse(&"x".repeat(4097)).is_err());
+    Ok(())
+}
+
+#[test]
+fn unpublished_projection_wire_requires_explicit_merge_contract_and_new_names() -> TestResult {
+    let mut missing = fixture()?;
+    missing.get_mut("binding").and_then(Value::as_object_mut)
+        .ok_or("binding object")?.remove("projection_merge_contract");
+    check!(decode_roster_issuance_claim(&bytes(&missing)?, limits()?).is_err());
+    let mut old = fixture()?;
+    let binding = old.get_mut("binding").and_then(Value::as_object_mut).ok_or("binding object")?;
+    let projection = binding.remove("school_projection").ok_or("school projection")?;
+    binding.insert("school_row".into(), projection);
+    check!(decode_roster_issuance_claim(&bytes(&old)?, limits()?).is_err());
     Ok(())
 }

@@ -4,6 +4,8 @@ mod budget;
 mod codec;
 mod enrollment;
 mod format;
+mod inspection;
+pub use inspection::{RosterIssuanceInspectionRequestV1, RosterIssuanceInspectionV1, RosterSourceEvidenceV1, RosterPhysicalProjectionRowV1};
 
 pub use budget::RosterStartupValidationBudgetV1;
 pub use enrollment::{PreparedRosterEnrollmentV1, RosterEnrollmentCommandV1, RosterReviewActorV1,
@@ -58,3 +60,7 @@ pub(crate) fn is_reserved_operation(operation: &[u8]) -> bool {
 
 #[cfg(test)]
 mod tests;
+
+fn source_error(error: census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError) -> crate::StoreError {
+    crate::EvidenceSubjectAttachmentStoreError::Domain(error).into()
+}

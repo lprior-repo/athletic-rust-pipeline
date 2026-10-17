@@ -99,9 +99,9 @@ fn references(raw: &IssuanceWire) -> [&RosterAuthorityObjectRefV1; 14] {
         &raw.capture.body, &raw.binding.provider_packet,
         &raw.parser.artifact, &raw.parser.schema, &raw.parser.configuration,
         &raw.parser.dependencies, &raw.capture.manifest, &raw.capture.interpretation,
-        &raw.capture.source_admission, &raw.capture.original_grant,
-        &raw.binding.school_row, &raw.binding.program_row,
-        &raw.binding.conflict_inventory, &raw.semantic_review_evidence,
+        &raw.capture.retained_source_admission, &raw.capture.verification_grant,
+        &raw.binding.school_projection, &raw.binding.program_projection,
+        &raw.binding.physical_projection_inventory, &raw.semantic_review_evidence,
     ]
 }
 
