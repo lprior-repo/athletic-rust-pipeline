@@ -12,6 +12,8 @@ mod acquisition_cutoff;
 mod fixture;
 mod historical;
 mod historical_retained;
+mod identity_lifecycle;
+mod lifecycle;
 mod refusals;
 mod roundtrip;
 
