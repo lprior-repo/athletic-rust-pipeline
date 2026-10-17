@@ -76,7 +76,11 @@ fn append_semantic_references(
     budget: &mut Admission,
 ) -> ReportResult<()> {
     for reference in semantic {
-        budget.charge(reference.len(), 1)?;
+        let bytes = std::mem::size_of::<String>()
+            .checked_add(reference.len())
+            .and_then(|bytes| bytes.checked_mul(4))
+            .ok_or(census_store::StoreError::CounterOverflow)?;
+        budget.charge(bytes, 1)?;
         references.try_reserve_exact(1).map_err(|_| crate::grouping::GroupingError::Allocation {
             stage: "selected documentary semantic references",
         })?;

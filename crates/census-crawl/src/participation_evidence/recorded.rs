@@ -7,6 +7,8 @@ use census_store::{ReadBudget, RetainedCaptureRootSchemaV1, Store};
 
 mod attached_participation;
 mod attached_result;
+#[cfg(test)]
+use attached_participation::tests::verify_genuine as verify_genuine_attached_participation;
 mod provider;
 mod provider_school;
 mod read;
