@@ -10,6 +10,7 @@ pub mod physical_result;
 pub mod provider_school;
 pub mod provider_target;
 pub mod recorded;
+pub mod roster_source_issuance;
 mod result_context;
 pub mod result_ownership;
 mod schedule;
