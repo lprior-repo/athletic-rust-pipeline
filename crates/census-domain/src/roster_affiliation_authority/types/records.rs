@@ -16,11 +16,21 @@ pub(in crate::roster_affiliation_authority) struct IssuanceWire {
 #[serde(transparent)]
 pub struct LocallyCheckedRosterIssuanceV1(pub(in crate::roster_affiliation_authority) IssuanceWire);
 impl LocallyCheckedRosterIssuanceV1 {
-    pub fn scope(&self) -> &RosterAuthorityScopeV1 { &self.0.scope }
-    pub fn parser(&self) -> &RosterParserClaimV1 { &self.0.parser }
-    pub fn capture(&self) -> &RosterCaptureClaimV1 { &self.0.capture }
-    pub fn binding(&self) -> &RosterExistingBindingClaimV1 { &self.0.binding }
-    pub fn semantic_review_evidence(&self) -> &RosterAuthorityObjectRefV1 { &self.0.semantic_review_evidence }
+    pub fn scope(&self) -> &RosterAuthorityScopeV1 {
+        &self.0.scope
+    }
+    pub fn parser(&self) -> &RosterParserClaimV1 {
+        &self.0.parser
+    }
+    pub fn capture(&self) -> &RosterCaptureClaimV1 {
+        &self.0.capture
+    }
+    pub fn binding(&self) -> &RosterExistingBindingClaimV1 {
+        &self.0.binding
+    }
+    pub fn semantic_review_evidence(&self) -> &RosterAuthorityObjectRefV1 {
+        &self.0.semantic_review_evidence
+    }
     pub fn encode(&self, limits: RosterAuthorityLimitsV1) -> Result<Vec<u8>> {
         crate::roster_affiliation_authority::validate::issuance(&self.0, limits)?;
         crate::roster_affiliation_authority::encode(self, limits)
@@ -48,19 +58,45 @@ pub(in crate::roster_affiliation_authority) struct RecordWire {
 #[serde(transparent)]
 pub struct LocallyCheckedRosterRecordV1(pub(in crate::roster_affiliation_authority) RecordWire);
 impl LocallyCheckedRosterRecordV1 {
-    pub fn scope(&self) -> &RosterAuthorityScopeV1 { &self.0.proposal.scope }
-    pub fn parser(&self) -> &RosterParserClaimV1 { &self.0.proposal.parser }
-    pub fn capture(&self) -> &RosterCaptureClaimV1 { &self.0.proposal.capture }
-    pub fn binding(&self) -> &RosterExistingBindingClaimV1 { &self.0.proposal.binding }
-    pub fn semantic_review_evidence(&self) -> &RosterAuthorityObjectRefV1 { &self.0.proposal.semantic_review_evidence }
-    pub fn operation(&self) -> &str { self.0.operation.as_str() }
-    pub fn store(&self) -> &StoreIdentity { &self.0.store }
-    pub fn snapshot_revision(&self) -> NonZeroU64 { self.0.snapshot_revision }
-    pub fn parent_inventory(&self) -> &RosterAuthorityObjectRefV1 { &self.0.parent_inventory }
-    pub fn negative_inventory(&self) -> &RosterAuthorityObjectRefV1 { &self.0.negative_inventory }
-    pub fn approval_envelope(&self) -> &RosterAuthorityObjectRefV1 { &self.0.approval_envelope }
-    pub fn review_provenance(&self) -> &RosterAuthorityObjectRefV1 { &self.0.review_provenance }
-    pub fn issuance_receipt(&self) -> &RosterAuthorityObjectRefV1 { &self.0.issuance_receipt }
+    pub fn scope(&self) -> &RosterAuthorityScopeV1 {
+        &self.0.proposal.scope
+    }
+    pub fn parser(&self) -> &RosterParserClaimV1 {
+        &self.0.proposal.parser
+    }
+    pub fn capture(&self) -> &RosterCaptureClaimV1 {
+        &self.0.proposal.capture
+    }
+    pub fn binding(&self) -> &RosterExistingBindingClaimV1 {
+        &self.0.proposal.binding
+    }
+    pub fn semantic_review_evidence(&self) -> &RosterAuthorityObjectRefV1 {
+        &self.0.proposal.semantic_review_evidence
+    }
+    pub fn operation(&self) -> &str {
+        self.0.operation.as_str()
+    }
+    pub fn store(&self) -> &StoreIdentity {
+        &self.0.store
+    }
+    pub fn snapshot_revision(&self) -> NonZeroU64 {
+        self.0.snapshot_revision
+    }
+    pub fn parent_inventory(&self) -> &RosterAuthorityObjectRefV1 {
+        &self.0.parent_inventory
+    }
+    pub fn negative_inventory(&self) -> &RosterAuthorityObjectRefV1 {
+        &self.0.negative_inventory
+    }
+    pub fn approval_envelope(&self) -> &RosterAuthorityObjectRefV1 {
+        &self.0.approval_envelope
+    }
+    pub fn review_provenance(&self) -> &RosterAuthorityObjectRefV1 {
+        &self.0.review_provenance
+    }
+    pub fn issuance_receipt(&self) -> &RosterAuthorityObjectRefV1 {
+        &self.0.issuance_receipt
+    }
     pub fn encode(&self, limits: RosterAuthorityLimitsV1) -> Result<Vec<u8>> {
         crate::roster_affiliation_authority::validate::record(&self.0, limits)?;
         crate::roster_affiliation_authority::encode(self, limits)

@@ -1,10 +1,15 @@
 use super::types::{FinalUrl, IssuanceWire, RecordWire, RosterAuthorityObjectRefV1};
-use super::{charge, size, Result, RosterAuthorityError, RosterAuthorityLimitsV1, MAX_BODY_BYTES, MAX_OBJECT_BYTES};
+use super::{
+    charge, size, Result, RosterAuthorityError, RosterAuthorityLimitsV1, MAX_BODY_BYTES,
+    MAX_OBJECT_BYTES,
+};
 use crate::model::{Gender, SourceNamespace, Sport};
 use chrono::{DateTime, Utc};
 
 pub(super) fn issuance(raw: &IssuanceWire, limits: RosterAuthorityLimitsV1) -> Result<()> {
-    if raw.version != 1 { return Err(RosterAuthorityError::UnsupportedVersion); }
+    if raw.version != 1 {
+        return Err(RosterAuthorityError::UnsupportedVersion);
+    }
     scope(raw)?;
     capture(raw)?;
     if raw.parser.interpretation.as_str() != "milesplit-scoped-current-roster/v1" {
@@ -23,7 +28,8 @@ fn scope(raw: &IssuanceWire) -> Result<()> {
         || binding.school_source != scope.owner
         || binding.program_source.namespace() != &SourceNamespace::MilesplitTeam
         || binding.program_source.provider_id() != scope.owner.provider_id()
-        || binding.sport != scope.sport || binding.category != scope.category
+        || binding.sport != scope.sport
+        || binding.category != scope.category
     {
         return Err(RosterAuthorityError::BindingScopeMismatch);
     }
@@ -33,7 +39,8 @@ fn scope(raw: &IssuanceWire) -> Result<()> {
 }
 
 fn provider_key(value: &str) -> Result<()> {
-    if value.len() > 20 || value.starts_with('0')
+    if value.len() > 20
+        || value.starts_with('0')
         || !value.bytes().all(|byte| byte.is_ascii_digit())
         || !value.parse::<u64>().is_ok_and(|id| id > 0)
     {
@@ -44,7 +51,11 @@ fn provider_key(value: &str) -> Result<()> {
 
 fn identifier(value: &str) -> Result<()> {
     charge("identifier bytes", size(value.len())?, 512)?;
-    if value.is_empty() || value.chars().any(|ch| ch.is_whitespace() || ch.is_control()) {
+    if value.is_empty()
+        || value
+            .chars()
+            .any(|ch| ch.is_whitespace() || ch.is_control())
+    {
         return Err(RosterAuthorityError::Invalid("identifier"));
     }
     Ok(())
@@ -52,23 +63,40 @@ fn identifier(value: &str) -> Result<()> {
 
 fn capture(raw: &IssuanceWire) -> Result<()> {
     let capture = &raw.capture;
-    charge("acquisition timestamp bytes", size(capture.acquired_at.as_str().len())?, 64)?;
+    charge(
+        "acquisition timestamp bytes",
+        size(capture.acquired_at.as_str().len())?,
+        64,
+    )?;
     let instant = DateTime::parse_from_rfc3339(capture.acquired_at.as_str())
         .map_err(|_| RosterAuthorityError::Invalid("acquisition instant"))?;
     if instant.with_timezone(&Utc).date_naive().to_string() != capture.observed_day.as_str() {
         return Err(RosterAuthorityError::AcquisitionDayMismatch);
     }
     source_url(capture.requested_url.as_str())?;
-    if let FinalUrl::Observed(url) = &capture.final_url { source_url(url.as_str())?; }
-    charge("roster body bytes", capture.body.bytes.get(), MAX_BODY_BYTES)?;
-    charge("provider packet bytes", raw.binding.provider_packet.bytes.get(), MAX_BODY_BYTES)?;
+    if let FinalUrl::Observed(url) = &capture.final_url {
+        source_url(url.as_str())?;
+    }
+    charge(
+        "roster body bytes",
+        capture.body.bytes.get(),
+        MAX_BODY_BYTES,
+    )?;
+    charge(
+        "provider packet bytes",
+        raw.binding.provider_packet.bytes.get(),
+        MAX_BODY_BYTES,
+    )?;
     Ok(())
 }
 
 fn source_url(value: &str) -> Result<()> {
     let url = url::Url::parse(value).map_err(|_| RosterAuthorityError::Invalid("source URL"))?;
-    if url.scheme() != "https" || url.host_str().is_none() || !url.username().is_empty()
-        || url.password().is_some() || url.fragment().is_some()
+    if url.scheme() != "https"
+        || url.host_str().is_none()
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || url.fragment().is_some()
         || value.chars().any(char::is_whitespace)
     {
         return Err(RosterAuthorityError::Invalid("source URL"));
@@ -77,7 +105,9 @@ fn source_url(value: &str) -> Result<()> {
 }
 
 pub(super) fn record(raw: &RecordWire, limits: RosterAuthorityLimitsV1) -> Result<()> {
-    if raw.version != 1 { return Err(RosterAuthorityError::UnsupportedVersion); }
+    if raw.version != 1 {
+        return Err(RosterAuthorityError::UnsupportedVersion);
+    }
     if raw.lifecycle.as_str() != "issuance_only_v1" || raw.negative_actions != 0 {
         return Err(RosterAuthorityError::UnsupportedLifecycle);
     }
@@ -88,20 +118,35 @@ pub(super) fn record(raw: &RecordWire, limits: RosterAuthorityLimitsV1) -> Resul
         return Err(RosterAuthorityError::BindingScopeMismatch);
     }
     issuance(&raw.proposal, limits)?;
-    check_references(&references(&raw.proposal), &[
-        &raw.parent_inventory, &raw.negative_inventory, &raw.approval_envelope,
-        &raw.review_provenance, &raw.issuance_receipt,
-    ], limits)
+    check_references(
+        &references(&raw.proposal),
+        &[
+            &raw.parent_inventory,
+            &raw.negative_inventory,
+            &raw.approval_envelope,
+            &raw.review_provenance,
+            &raw.issuance_receipt,
+        ],
+        limits,
+    )
 }
 
 fn references(raw: &IssuanceWire) -> [&RosterAuthorityObjectRefV1; 14] {
     [
-        &raw.capture.body, &raw.binding.provider_packet,
-        &raw.parser.artifact, &raw.parser.schema, &raw.parser.configuration,
-        &raw.parser.dependencies, &raw.capture.manifest, &raw.capture.interpretation,
-        &raw.capture.retained_source_admission, &raw.capture.verification_grant,
-        &raw.binding.school_projection, &raw.binding.program_projection,
-        &raw.binding.physical_projection_inventory, &raw.semantic_review_evidence,
+        &raw.capture.body,
+        &raw.binding.provider_packet,
+        &raw.parser.artifact,
+        &raw.parser.schema,
+        &raw.parser.configuration,
+        &raw.parser.dependencies,
+        &raw.capture.manifest,
+        &raw.capture.interpretation,
+        &raw.capture.retained_source_admission,
+        &raw.capture.verification_grant,
+        &raw.binding.school_projection,
+        &raw.binding.program_projection,
+        &raw.binding.physical_projection_inventory,
+        &raw.semantic_review_evidence,
     ]
 }
 
@@ -113,7 +158,11 @@ fn check_references(
     charge("record proof references", size(extra.len())?, 5)?;
     let mut bytes = 0u64;
     for (index, reference) in primary.iter().chain(extra).enumerate() {
-        let ceiling = if index < 2 { MAX_BODY_BYTES } else { MAX_OBJECT_BYTES };
+        let ceiling = if index < 2 {
+            MAX_BODY_BYTES
+        } else {
+            MAX_OBJECT_BYTES
+        };
         charge("referenced object bytes", reference.bytes.get(), ceiling)?;
         let mut duplicate = false;
         for previous in primary.iter().chain(extra).take(index) {
@@ -125,7 +174,9 @@ fn check_references(
             }
         }
         if !duplicate {
-            bytes = bytes.checked_add(reference.bytes.get()).ok_or(RosterAuthorityError::Overflow)?;
+            bytes = bytes
+                .checked_add(reference.bytes.get())
+                .ok_or(RosterAuthorityError::Overflow)?;
             charge("component bytes", bytes, limits.component_bytes)?;
         }
     }
