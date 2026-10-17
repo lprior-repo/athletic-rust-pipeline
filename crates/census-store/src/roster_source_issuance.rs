@@ -6,7 +6,8 @@ mod enrollment;
 mod format;
 
 pub use budget::RosterStartupValidationBudgetV1;
-pub use enrollment::{PreparedRosterEnrollmentV1, RosterEnrollmentCommandV1, RosterReviewActorV1};
+pub use enrollment::{PreparedRosterEnrollmentV1, RosterEnrollmentCommandV1, RosterReviewActorV1,
+    RosterEnrollmentInputsV1, RosterEnrollmentReviewV1};
 pub(crate) use format::validate_format;
 
 pub(crate) const ROOT: &str = "roster_source_issuance/";

@@ -5,6 +5,9 @@ use serde::{Deserialize, Serialize};
 use crate::StoreRevision;
 
 mod apply;
+mod inspect;
+mod replay;
+pub use inspect::{RosterEnrollmentInputsV1, RosterEnrollmentReviewV1};
 pub(super) mod prepare;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

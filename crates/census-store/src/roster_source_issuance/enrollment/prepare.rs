@@ -4,7 +4,7 @@ use super::super::{RosterStartupValidationBudgetV1, LIFECYCLE, OPERATION_PREFIX}
 use crate::{Store, StoreResult, StoreRevision};
 
 impl Store {
-    pub fn prepare_roster_source_enrollment_v1<'s>(
+    pub(crate) fn prepare_roster_source_enrollment_command_v1<'s>(
         &'s self,
         expected: StoreRevision<'s>,
         command: RosterEnrollmentCommandV1,
