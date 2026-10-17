@@ -7,9 +7,11 @@ use std::path::{Path, PathBuf};
 
 mod files;
 mod profile;
+mod retention;
 mod source;
 
 pub(super) use source::Expected;
+pub(super) use retention::retain_v3_archive;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
