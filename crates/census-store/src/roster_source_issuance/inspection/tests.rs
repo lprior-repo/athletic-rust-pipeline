@@ -36,10 +36,13 @@ fn request(store: &Store) -> TestResult<RosterIssuanceInspectionRequestV1> {
     let key = codec::digest(&serde_json::to_vec(&packet)?);
     let schema = RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1;
     store.journal_done(schema.phase(), &key, &packet)?;
-    let held = store.snapshot().read_retained_capture_root_v1(schema, &key, &mut AttachmentReplayGrantV1::new())?
+    let held = store
+        .snapshot()
+        .read_retained_capture_root_v1(schema, &key, &mut AttachmentReplayGrantV1::new())?
         .ok_or("controlled root absent")?;
     Ok(RosterIssuanceInspectionRequestV1 {
-        root: held.root().clone(), school: SchoolId::mint("sch", &["controlled-request"]),
+        root: held.root().clone(),
+        school: SchoolId::mint("sch", &["controlled-request"]),
         program: TeamId::mint("team", &["controlled-request"]),
     })
 }
@@ -47,7 +50,8 @@ fn request(store: &Store) -> TestResult<RosterIssuanceInspectionRequestV1> {
 #[test]
 fn semantic_access_rejects_recharged_foreign_grant_before_swap_restore() -> TestResult {
     let (_directory, store) = enrolled()?;
-    let mut inspection = store.inspect_roster_source_issuance_v1(request(&store)?, AttachmentReplayGrantV1::new())?;
+    let mut inspection = store
+        .inspect_roster_source_issuance_v1(request(&store)?, AttachmentReplayGrantV1::new())?;
     let (evidence, grant) = inspection.source_parts()?;
     let usage = grant.usage();
     let mut foreign = AttachmentReplayGrantV1::new();
@@ -66,19 +70,29 @@ fn semantic_access_rejects_recharged_foreign_grant_before_swap_restore() -> Test
 fn changed_root_and_poisoned_grant_cannot_create_inspection() -> TestResult {
     let (_directory, store) = enrolled()?;
     let mut selected = request(&store)?;
-    selected.root.payload.bytes = selected.root.payload.bytes.checked_add(1).ok_or("overflow")?;
-    check!(store.inspect_roster_source_issuance_v1(selected, AttachmentReplayGrantV1::new()).is_err());
+    selected.root.payload.bytes = selected
+        .root
+        .payload
+        .bytes
+        .checked_add(1)
+        .ok_or("overflow")?;
+    check!(store
+        .inspect_roster_source_issuance_v1(selected, AttachmentReplayGrantV1::new())
+        .is_err());
     let selected = request(&store)?;
     let mut poisoned = AttachmentReplayGrantV1::new();
     poisoned.poison();
-    check!(store.inspect_roster_source_issuance_v1(selected, poisoned).is_err());
+    check!(store
+        .inspect_roster_source_issuance_v1(selected, poisoned)
+        .is_err());
     Ok(())
 }
 
 #[test]
 fn projection_manifest_commits_all_tables_and_exact_snapshot() -> TestResult {
     let (_directory, store) = enrolled()?;
-    let mut inspection = store.inspect_roster_source_issuance_v1(request(&store)?, AttachmentReplayGrantV1::new())?;
+    let mut inspection = store
+        .inspect_roster_source_issuance_v1(request(&store)?, AttachmentReplayGrantV1::new())?;
     let (evidence, grant) = inspection.source_parts()?;
     let first = evidence.physical_projection_manifest(grant)?;
     let second = evidence.physical_projection_manifest(grant)?;
@@ -95,14 +109,28 @@ fn projection_manifest_commits_all_tables_and_exact_snapshot() -> TestResult {
 fn arbitrary_school_observation_ids_are_in_the_complete_physical_inventory() -> TestResult {
     use census_domain::model::{SourceNamespace, SourceObservation, SourceSchoolObservation};
     let (_directory, store) = enrolled()?;
-    let mut observation = SourceSchoolObservation::new(SourceNamespace::MilesplitSchool,
-        "12439", "controlled-row", "Controlled source school", "2026-10-16");
+    let mut observation = SourceSchoolObservation::new(
+        SourceNamespace::MilesplitSchool,
+        "12439",
+        "controlled-row",
+        "Controlled source school",
+        "2026-10-16",
+    );
     observation.id = "arbitrary-hidden-school-subject".into();
-    store.append_many(crate::Table::SourceObservations, &[SourceObservation::School(observation)])?;
-    let mut inspection = store.inspect_roster_source_issuance_v1(request(&store)?, AttachmentReplayGrantV1::new())?;
+    store.append_many(
+        crate::Table::SourceObservations,
+        &[SourceObservation::School(observation)],
+    )?;
+    let mut inspection = store
+        .inspect_roster_source_issuance_v1(request(&store)?, AttachmentReplayGrantV1::new())?;
     let (evidence, grant) = inspection.source_parts()?;
     let rows = evidence.physical_projection(grant)?;
-    check!(rows.iter().any(|row| row.table() == crate::Table::SourceObservations
-        && row.key().windows(b"arbitrary-hidden-school-subject".len()).any(|bytes| bytes == b"arbitrary-hidden-school-subject")));
+    check!(rows
+        .iter()
+        .any(|row| row.table() == crate::Table::SourceObservations
+            && row
+                .key()
+                .windows(b"arbitrary-hidden-school-subject".len())
+                .any(|bytes| bytes == b"arbitrary-hidden-school-subject")));
     Ok(())
 }

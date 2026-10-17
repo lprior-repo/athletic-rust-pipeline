@@ -36,7 +36,9 @@ pub(super) fn require_reference(
     grant.charge_bytes(bytes.len()).map_err(domain)?;
     let length = u64::try_from(bytes.len()).map_err(|_| StoreError::CounterOverflow)?;
     if expected.bytes().get() != length || expected.digest().as_str() != hash(bytes) {
-        return Err(invalid("roster binding canonical object reference mismatch"));
+        return Err(invalid(
+            "roster binding canonical object reference mismatch",
+        ));
     }
     Ok(())
 }
@@ -62,7 +64,10 @@ pub(super) fn scan<T: Entity>(
         let row: T = decode_physical_observation(table, physical.key(), physical.bytes())?;
         inspect(&row)?;
         evidence.require_original_grant(grant)?;
-        if let Some(existing) = current.as_mut().filter(|item| item.entity_id() == row.entity_id()) {
+        if let Some(existing) = current
+            .as_mut()
+            .filter(|item| item.entity_id() == row.entity_id())
+        {
             budget::charge(existing, grant)?;
             budget::charge(&row, grant)?;
             existing.merge(row);
@@ -92,6 +97,8 @@ pub(super) fn publish<T: Entity>(
     evidence.require_original_grant(grant)
 }
 
-pub(super) fn domain(error: census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError) -> StoreError {
+pub(super) fn domain(
+    error: census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError,
+) -> StoreError {
     census_store::EvidenceSubjectAttachmentStoreError::Domain(error).into()
 }

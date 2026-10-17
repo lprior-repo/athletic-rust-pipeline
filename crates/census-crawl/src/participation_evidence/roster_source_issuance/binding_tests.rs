@@ -6,15 +6,23 @@ use serde_json::json;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn fixture() -> TestResult<(CanonicalSchool, CanonicalTeam, RosterExistingBindingClaimV1)> {
-    let (mut school, id) = CanonicalSchool::new(UsJurisdiction::Michigan, "School", "school", Some("City"));
-    school.source_identities.push(SourceIdentity::new(SourceNamespace::MilesplitSchool, "12439"));
+    let (mut school, id) =
+        CanonicalSchool::new(UsJurisdiction::Michigan, "School", "school", Some("City"));
+    school.source_identities.push(SourceIdentity::new(
+        SourceNamespace::MilesplitSchool,
+        "12439",
+    ));
     let year = SchoolYear::new(2026).ok_or("school year")?;
     let program = CanonicalTeam {
         id: CanonicalTeam::mint(&id, Sport::CrossCountry, Gender::Boys, year),
-        school: id.clone(), sport: Sport::CrossCountry, gender: Gender::Boys,
-        school_year: year, level: None,
+        school: id.clone(),
+        sport: Sport::CrossCountry,
+        gender: Gender::Boys,
+        school_year: year,
+        level: None,
         source_identities: vec![SourceIdentity::new(SourceNamespace::MilesplitTeam, "12439")],
-        evidence: Vec::new(), retained_conflicts: Vec::new(),
+        evidence: Vec::new(),
+        retained_conflicts: Vec::new(),
     };
     let contract = json!({"version":1, "revision":1, "digest":"a".repeat(64)});
     let object = json!({"digest":"b".repeat(64), "bytes":64});
@@ -45,7 +53,9 @@ fn alternate_owner_and_embedded_conflict_refuse() -> TestResult {
     alternate.id = census_domain::model::SchoolId::mint("sch", &["different"]);
     check!(school_row(&alternate, &binding, &school).is_err());
     let mut conflicted = team;
-    conflicted.retained_conflicts.push(RetainedConflict::new("controlled", "unrelated", "x", "x"));
+    conflicted
+        .retained_conflicts
+        .push(RetainedConflict::new("controlled", "unrelated", "x", "x"));
     check!(team_row(&conflicted, &binding).is_err());
     Ok(())
 }
@@ -63,8 +73,17 @@ fn another_team_in_same_scope_refuses_but_other_scope_is_distinct() -> TestResul
 
 #[test]
 fn observation_subject_cannot_hide_behind_unrestricted_id() -> TestResult {
-    let expected = SourceSchoolObservation::new(SourceNamespace::MilesplitSchool, "12439", "packet-row", "School", "2026-10-16");
-    check!(observation(&SourceObservation::School(expected.clone()), &expected)?);
+    let expected = SourceSchoolObservation::new(
+        SourceNamespace::MilesplitSchool,
+        "12439",
+        "packet-row",
+        "School",
+        "2026-10-16",
+    );
+    check!(observation(
+        &SourceObservation::School(expected.clone()),
+        &expected
+    )?);
     let mut hidden = expected.clone();
     hidden.id = "arbitrary-other-observation".into();
     check!(observation(&SourceObservation::School(hidden), &expected).is_err());
@@ -106,7 +125,9 @@ fn merged_projection_reference_requires_exact_digest_and_length() -> TestResult 
         json!({"digest":hash(&bytes), "bytes":bytes.len().checked_add(1).ok_or("length")?}),
     ] {
         let forged = serde_json::from_value(forged)?;
-        check!(projection_reference(&school, &forged, &mut AttachmentReplayGrantV1::new()).is_err());
+        check!(
+            projection_reference(&school, &forged, &mut AttachmentReplayGrantV1::new()).is_err()
+        );
     }
     Ok(())
 }
@@ -116,7 +137,11 @@ fn inventory_bytes_reference_rejects_tampered_payload() -> TestResult {
     let bytes = b"controlled canonical manifest";
     let exact = serde_json::from_value(json!({"digest":hash(bytes), "bytes":bytes.len()}))?;
     require_reference(bytes, &exact, &mut AttachmentReplayGrantV1::new())?;
-    check!(require_reference(b"controlled canonical manifesz", &exact,
-        &mut AttachmentReplayGrantV1::new()).is_err());
+    check!(require_reference(
+        b"controlled canonical manifesz",
+        &exact,
+        &mut AttachmentReplayGrantV1::new()
+    )
+    .is_err());
     Ok(())
 }

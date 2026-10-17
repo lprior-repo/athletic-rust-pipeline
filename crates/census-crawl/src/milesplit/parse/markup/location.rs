@@ -42,7 +42,9 @@ impl Default for Position {
 
 impl Position {
     pub(super) fn advance(&mut self, offset: isize) {
-        self.offset = self.offset.and_then(|value| value.checked_add_signed(offset));
+        self.offset = self
+            .offset
+            .and_then(|value| value.checked_add_signed(offset));
     }
 
     pub(super) fn open(&mut self) {
@@ -63,9 +65,16 @@ impl Position {
             Termination::Tag => self.tag_start,
             Termination::ScriptEnd | Termination::ScriptEof => self.script_start,
         };
-        let span = start.zip(self.offset).filter(|(start, end)| start < end)
+        let span = start
+            .zip(self.offset)
+            .filter(|(start, end)| start < end)
             .map(|(start, end)| start..end);
-        LocatedDeclaration { declaration, kind, span, termination }
+        LocatedDeclaration {
+            declaration,
+            kind,
+            span,
+            termination,
+        }
     }
 }
 

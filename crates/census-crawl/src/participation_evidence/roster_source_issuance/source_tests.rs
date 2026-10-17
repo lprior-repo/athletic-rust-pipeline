@@ -15,15 +15,22 @@ const URL: &str = "https://mi.milesplit.com/teams/12439-detroit-catholic-central
 
 fn retained(url: &str, body: &str) -> TestResult<RetainedHtmlCaptureV1> {
     let instant = DateTime::parse_from_rfc3339("2026-10-16T00:49:43Z")?.with_timezone(&Utc);
-    Ok(RetainedHtmlCaptureV1::new(url, url, 200, instant, body.as_bytes(),
+    Ok(RetainedHtmlCaptureV1::new(
+        url,
+        url,
+        200,
+        instant,
+        body.as_bytes(),
         RetainedHttpProvenanceV1 {
             request_method: "GET".into(),
             request_headers: Vec::new(),
-            response_header_bytes: b"HTTP/2 200\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n".to_vec(),
+            response_header_bytes: b"HTTP/2 200\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n"
+                .to_vec(),
             content_type: "text/html; charset=UTF-8".into(),
             body_encoding: RetainedBodyEncodingV1::Identity,
             started_at: instant,
-        })?)
+        },
+    )?)
 }
 
 fn fixture(body: &str) -> TestResult<ProviderSchoolPacketV1> {
@@ -63,8 +70,10 @@ fn proposal(packet: &ProviderSchoolPacketV1, body: &str) -> TestResult<Value> {
 }
 
 fn decode(value: &Value) -> TestResult<LocallyCheckedRosterIssuanceV1> {
-    Ok(decode_roster_issuance_claim(&serde_json::to_vec(value)?,
-        RosterAuthorityLimitsV1::new(64 * 1024, 8 * 1024 * 1024)?)?)
+    Ok(decode_roster_issuance_claim(
+        &serde_json::to_vec(value)?,
+        RosterAuthorityLimitsV1::new(64 * 1024, 8 * 1024 * 1024)?,
+    )?)
 }
 
 #[test]
@@ -83,12 +92,20 @@ fn source_capture_mismatch_and_unknown_final_url_refuse() -> TestResult {
     for (path, replacement) in [
         ("/capture/body/digest", json!("d".repeat(64))),
         ("/capture/final_url", json!({"status":"unknown"})),
-        ("/capture/requested_url", json!("https://mi.milesplit.com/teams/999-other/roster")),
+        (
+            "/capture/requested_url",
+            json!("https://mi.milesplit.com/teams/999-other/roster"),
+        ),
         ("/capture/acquired_at", json!("2026-10-16T00:49:44Z")),
     ] {
         let mut value = proposal(&packet, ROSTER)?;
         *value.pointer_mut(path).ok_or("fixture field")? = replacement;
-        check!(capture(&packet, &decode(&value)?, &mut AttachmentReplayGrantV1::new()).is_err());
+        check!(capture(
+            &packet,
+            &decode(&value)?,
+            &mut AttachmentReplayGrantV1::new()
+        )
+        .is_err());
     }
     Ok(())
 }
@@ -98,7 +115,12 @@ fn missing_current_statement_refuses_program_assessment() -> TestResult {
     let body = ROSTER.replace("<h4>Current Roster</h4>", "<h4>Past Roster</h4>");
     let packet = fixture(&body)?;
     let proposal = decode(&proposal(&packet, &body)?)?;
-    check!(scope(&packet.read()?, &proposal, &mut AttachmentReplayGrantV1::new()).is_err());
+    check!(scope(
+        &packet.read()?,
+        &proposal,
+        &mut AttachmentReplayGrantV1::new()
+    )
+    .is_err());
     Ok(())
 }
 
@@ -106,8 +128,14 @@ fn missing_current_statement_refuses_program_assessment() -> TestResult {
 fn utc_equivalent_timestamp_is_same_capture_instant() -> TestResult {
     let packet = fixture(ROSTER)?;
     let mut value = proposal(&packet, ROSTER)?;
-    *value.pointer_mut("/capture/acquired_at").ok_or("fixture instant")? = json!("2026-10-15T19:49:43-05:00");
-    capture(&packet, &decode(&value)?, &mut AttachmentReplayGrantV1::new())?;
+    *value
+        .pointer_mut("/capture/acquired_at")
+        .ok_or("fixture instant")? = json!("2026-10-15T19:49:43-05:00");
+    capture(
+        &packet,
+        &decode(&value)?,
+        &mut AttachmentReplayGrantV1::new(),
+    )?;
     Ok(())
 }
 
@@ -115,7 +143,9 @@ fn utc_equivalent_timestamp_is_same_capture_instant() -> TestResult {
 fn underdeclared_body_cannot_bypass_real_capture_precharge() -> TestResult {
     let packet = fixture(ROSTER)?;
     let mut value = proposal(&packet, ROSTER)?;
-    *value.pointer_mut("/capture/body/bytes").ok_or("fixture body size")? = json!(1);
+    *value
+        .pointer_mut("/capture/body/bytes")
+        .ok_or("fixture body size")? = json!(1);
     let proposal = decode(&value)?;
     let mut grant = AttachmentReplayGrantV1::new();
     let maximum = census_domain::public_identity_history::ReplayLimits::SMALL.total_text_bytes;

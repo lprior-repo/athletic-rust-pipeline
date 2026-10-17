@@ -69,11 +69,19 @@ impl Emitter for Markup {
 
     fn emit_eof(&mut self) {
         if !self.containers.is_empty() {
-            self.queue(Declaration::Invalid, DeclarationKind::Invalid, Termination::Tag);
+            self.queue(
+                Declaration::Invalid,
+                DeclarationKind::Invalid,
+                Termination::Tag,
+            );
         } else if self.script {
             self.script = false;
             let body = std::mem::take(&mut self.body);
-            self.queue(Declaration::Script(body), DeclarationKind::JsonLd, Termination::ScriptEof);
+            self.queue(
+                Declaration::Script(body),
+                DeclarationKind::JsonLd,
+                Termination::ScriptEof,
+            );
         }
     }
 

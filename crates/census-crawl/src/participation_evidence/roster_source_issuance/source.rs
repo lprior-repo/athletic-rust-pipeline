@@ -8,10 +8,12 @@ use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::{
     AttachmentReplayGrantV1, EvidenceSubjectAttachmentError,
 };
-use census_domain::roster_affiliation_authority::{LocallyCheckedRosterIssuanceV1, RosterAuthorityObjectRefV1};
+use census_domain::roster_affiliation_authority::{
+    LocallyCheckedRosterIssuanceV1, RosterAuthorityObjectRefV1,
+};
 use census_store::{
-    EvidenceSubjectAttachmentStoreError, RetainedCaptureRootReadV1,
-    RetainedCaptureRootSchemaV1, RosterSourceEvidenceV1, StoreError,
+    EvidenceSubjectAttachmentStoreError, RetainedCaptureRootReadV1, RetainedCaptureRootSchemaV1,
+    RosterSourceEvidenceV1, StoreError,
 };
 use chrono::{DateTime, Utc};
 
@@ -26,7 +28,13 @@ pub fn assess_retained_roster_source<'a>(
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<RosterSourceEvidenceAssessmentV1<'a>> {
     evidence.require_original_grant(grant)?;
-    let result = assess(evidence, retained_parser_manifest, retained_contracts, proposal, grant);
+    let result = assess(
+        evidence,
+        retained_parser_manifest,
+        retained_contracts,
+        proposal,
+        grant,
+    );
     if result.is_err() {
         grant.poison();
     }
@@ -50,11 +58,24 @@ fn assess<'a>(
         }
         Ok(())
     })?;
-    original(evidence, grant, |grant| Ok(super::policies::assess(evidence, retained_contracts, proposal, grant)?))?;
-    let parser_manifest = original(evidence, grant, |grant| {
-        Ok(assess_retained_roster_parser_manifest(retained_parser_manifest, proposal.parser(), grant)?)
+    original(evidence, grant, |grant| {
+        Ok(super::policies::assess(
+            evidence,
+            retained_contracts,
+            proposal,
+            grant,
+        )?)
     })?;
-    original(evidence, grant, |grant| admission(evidence, proposal, grant))?;
+    let parser_manifest = original(evidence, grant, |grant| {
+        Ok(assess_retained_roster_parser_manifest(
+            retained_parser_manifest,
+            proposal.parser(),
+            grant,
+        )?)
+    })?;
+    original(evidence, grant, |grant| {
+        admission(evidence, proposal, grant)
+    })?;
     let held = evidence.retained_root(grant)?;
     let packet = original(evidence, grant, |grant| packet(held, proposal, grant))?;
     original(evidence, grant, |grant| capture(&packet, proposal, grant))?;
@@ -96,10 +117,18 @@ fn admission(
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<()> {
     let admission = evidence.retained_source_admission_manifest(grant)?;
-    source_reference(&admission, proposal.capture().retained_source_admission(), grant)?;
+    source_reference(
+        &admission,
+        proposal.capture().retained_source_admission(),
+        grant,
+    )?;
     evidence.require_original_grant(grant)?;
     let verification = evidence.verification_grant_manifest(grant)?;
-    source_reference(&verification, proposal.capture().verification_grant(), grant)?;
+    source_reference(
+        &verification,
+        proposal.capture().verification_grant(),
+        grant,
+    )?;
     evidence.require_original_grant(grant)?;
     Ok(())
 }
@@ -111,9 +140,7 @@ pub(super) fn source_reference(
 ) -> CrawlResult<()> {
     grant.charge_steps(1).map_err(domain)?;
     grant.charge_bytes(bytes.len()).map_err(domain)?;
-    if reference.bytes().get() != size(bytes.len())?
-        || reference.digest().as_str() != hash(bytes)
-    {
+    if reference.bytes().get() != size(bytes.len())? || reference.digest().as_str() != hash(bytes) {
         return Err(invalid("roster source context object reference mismatch").into());
     }
     Ok(())
@@ -155,8 +182,8 @@ fn capture(
 ) -> CrawlResult<()> {
     let expected = proposal.capture();
     let retained = packet.roster();
-    let expected_bytes = usize::try_from(expected.body().bytes().get())
-        .map_err(|_| StoreError::CounterOverflow)?;
+    let expected_bytes =
+        usize::try_from(expected.body().bytes().get()).map_err(|_| StoreError::CounterOverflow)?;
     budget::charge(retained, grant)?;
     let body = retained.body()?;
     let instant = DateTime::parse_from_rfc3339(expected.acquired_at())
@@ -189,7 +216,8 @@ fn scope(
         return Err(invalid("roster source owner or interpretation mismatch").into());
     }
     let count = roster.athletes.iter().try_fold(0_usize, |count, member| {
-        let assertion = member.current_roster()
+        let assertion = member
+            .current_roster()
             .ok_or_else(|| invalid("roster source current statement absent"))?;
         if assertion.owner() != roster.team.id
             || assertion.member() != member.athlete().athlete_id

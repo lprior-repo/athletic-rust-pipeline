@@ -1,7 +1,7 @@
-use super::*;
 use super::super::super::codec;
-use serde::{Serialize, Deserialize};
+use super::*;
 use census_domain::evidence_subject_attachment::{AttachmentDigestV1, AttachmentObjectReferenceV1};
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 
 const MAX_BUNDLE: usize = 4 * 1024 * 1024;
@@ -12,11 +12,16 @@ pub struct FrozenRosterReviewedClaimsBundleV1 {
 }
 
 impl FrozenRosterReviewedClaimsBundleV1 {
-    pub fn bytes(&self) -> &[u8] { &self.bytes }
-    pub fn digest(&self) -> &str { self.reference.digest.as_str() }
-    pub fn reference(&self) -> &RosterFrozenReviewedClaimsReferenceV1 { &self.reference }
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+    pub fn digest(&self) -> &str {
+        self.reference.digest.as_str()
+    }
+    pub fn reference(&self) -> &RosterFrozenReviewedClaimsReferenceV1 {
+        &self.reference
+    }
 }
-
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -31,16 +36,31 @@ pub struct RosterFrozenReviewedClaimsReferenceV1 {
 }
 
 impl RosterFrozenReviewedClaimsReferenceV1 {
-    pub fn digest(&self) -> &str { self.digest.as_str() }
-    pub fn bytes(&self) -> u64 { self.bytes }
-    pub fn store_identity(&self) -> &StoreIdentity { &self.store }
-    pub fn selected_snapshot_sequence(&self) -> u64 { self.selected_snapshot_sequence }
-    pub fn authority_head(&self) -> &AttachmentObjectReferenceV1 { &self.authority_head }
-    pub fn current_input_token(&self) -> &AttachmentObjectReferenceV1 { &self.current_input_token }
+    pub fn digest(&self) -> &str {
+        self.digest.as_str()
+    }
+    pub fn bytes(&self) -> u64 {
+        self.bytes
+    }
+    pub fn store_identity(&self) -> &StoreIdentity {
+        &self.store
+    }
+    pub fn selected_snapshot_sequence(&self) -> u64 {
+        self.selected_snapshot_sequence
+    }
+    pub fn authority_head(&self) -> &AttachmentObjectReferenceV1 {
+        &self.authority_head
+    }
+    pub fn current_input_token(&self) -> &AttachmentObjectReferenceV1 {
+        &self.current_input_token
+    }
 }
 
 impl CurrentRosterReviewedClaimsV1 {
-    pub fn freeze_closure(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<FrozenRosterReviewedClaimsBundleV1> {
+    pub fn freeze_closure(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<FrozenRosterReviewedClaimsBundleV1> {
         self.require_original_grant(grant)?;
         let result = (|| {
             let bytes = encode(&self.archive, grant)?;
@@ -48,7 +68,9 @@ impl CurrentRosterReviewedClaimsV1 {
             self.require_original_grant(grant)?;
             Ok(FrozenRosterReviewedClaimsBundleV1 { bytes, reference })
         })();
-        if result.is_err() { grant.poison(); }
+        if result.is_err() {
+            grant.poison();
+        }
         result
     }
 }
@@ -59,63 +81,130 @@ pub fn replay_frozen_roster_reviewed_claims_v1(
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<ReplayedRosterReviewedClaimsV1> {
     let result = replay(bytes, expected, grant);
-    if result.is_err() { grant.poison(); }
+    if result.is_err() {
+        grant.poison();
+    }
     result
 }
 
-fn replay(bytes: &[u8], expected: &RosterFrozenReviewedClaimsReferenceV1, grant: &mut AttachmentReplayGrantV1) -> StoreResult<ReplayedRosterReviewedClaimsV1> {
-    let continuation = grant.checkpoint().map_err(super::super::super::source_error)?;
-    if bytes.len() > MAX_BUNDLE { return Err(Error::BudgetExceeded.into()); }
-    grant.charge_bytes(bytes.len().checked_mul(4).ok_or(Error::BudgetExceeded)?).map_err(super::super::super::source_error)?;
-    grant.charge_steps(512).map_err(super::super::super::source_error)?;
-    if expected.version != 1 || expected.bytes != u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)?
-        || codec::digest(bytes) != expected.digest.as_str() { return Err(Error::Corrupt("frozen reviewed closure digest").into()); }
-    let archive: Archive = serde_json::from_slice(bytes).map_err(|_| Error::Corrupt("frozen reviewed closure decoding"))?;
+fn replay(
+    bytes: &[u8],
+    expected: &RosterFrozenReviewedClaimsReferenceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<ReplayedRosterReviewedClaimsV1> {
+    let continuation = grant
+        .checkpoint()
+        .map_err(super::super::super::source_error)?;
+    if bytes.len() > MAX_BUNDLE {
+        return Err(Error::BudgetExceeded.into());
+    }
+    grant
+        .charge_bytes(bytes.len().checked_mul(4).ok_or(Error::BudgetExceeded)?)
+        .map_err(super::super::super::source_error)?;
+    grant
+        .charge_steps(512)
+        .map_err(super::super::super::source_error)?;
+    if expected.version != 1
+        || expected.bytes != u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)?
+        || codec::digest(bytes) != expected.digest.as_str()
+    {
+        return Err(Error::Corrupt("frozen reviewed closure digest").into());
+    }
+    let archive: Archive = serde_json::from_slice(bytes)
+        .map_err(|_| Error::Corrupt("frozen reviewed closure decoding"))?;
     let actual = reference(&archive, bytes, grant)?;
-    if actual.store != expected.store || actual.selected_snapshot_sequence != expected.selected_snapshot_sequence
-        || actual.authority_head != expected.authority_head || actual.current_input_token != expected.current_input_token {
+    if actual.store != expected.store
+        || actual.selected_snapshot_sequence != expected.selected_snapshot_sequence
+        || actual.authority_head != expected.authority_head
+        || actual.current_input_token != expected.current_input_token
+    {
         return Err(Error::Corrupt("frozen reviewed publication binding differs").into());
     }
-    if encode(&archive, grant)? != bytes { return Err(Error::Corrupt("noncanonical frozen reviewed closure").into()); }
+    if encode(&archive, grant)? != bytes {
+        return Err(Error::Corrupt("noncanonical frozen reviewed closure").into());
+    }
     let claims = reconstruct::claims(&archive, grant)?;
-    continuation.require(grant).map_err(super::super::super::source_error)?;
-    Ok(ReplayedRosterReviewedClaimsV1(CurrentRosterReviewedClaimsV1 { archive, claims, continuation }))
+    continuation
+        .require(grant)
+        .map_err(super::super::super::source_error)?;
+    Ok(ReplayedRosterReviewedClaimsV1(
+        CurrentRosterReviewedClaimsV1 {
+            archive,
+            claims,
+            continuation,
+        },
+    ))
 }
 
 fn encode(value: &impl Serialize, grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<u8>> {
-    grant.charge_steps(1).map_err(super::super::super::source_error)?;
+    grant
+        .charge_steps(1)
+        .map_err(super::super::super::source_error)?;
     let mut count = Count(0);
     serde_json::to_writer(&mut count, value).map_err(|_| Error::BudgetExceeded)?;
-    grant.charge_bytes(count.0).map_err(super::super::super::source_error)?;
-    let bytes = serde_json::to_vec(value).map_err(|_| Error::Corrupt("frozen reviewed closure encoding"))?;
-    if bytes.len() != count.0 { return Err(Error::Corrupt("frozen reviewed closure size changed").into()); }
+    grant
+        .charge_bytes(count.0)
+        .map_err(super::super::super::source_error)?;
+    let bytes = serde_json::to_vec(value)
+        .map_err(|_| Error::Corrupt("frozen reviewed closure encoding"))?;
+    if bytes.len() != count.0 {
+        return Err(Error::Corrupt("frozen reviewed closure size changed").into());
+    }
     Ok(bytes)
 }
 
 struct Count(usize);
 impl Write for Count {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        self.0 = self.0.checked_add(bytes.len()).ok_or_else(|| std::io::Error::other("roster frozen size overflow"))?;
-        if self.0 > MAX_BUNDLE { return Err(std::io::Error::other("roster frozen size cap")); }
+        self.0 = self
+            .0
+            .checked_add(bytes.len())
+            .ok_or_else(|| std::io::Error::other("roster frozen size overflow"))?;
+        if self.0 > MAX_BUNDLE {
+            return Err(std::io::Error::other("roster frozen size cap"));
+        }
         Ok(bytes.len())
     }
-    fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
 }
 
-fn reference(archive: &Archive, bytes: &[u8], grant: &mut AttachmentReplayGrantV1) -> StoreResult<RosterFrozenReviewedClaimsReferenceV1> {
-    let head = archive.metadata.iter().find(|(key, _)| key == super::super::super::HEAD.as_bytes())
-        .map(|(_, value)| value.as_slice()).ok_or(Error::Corrupt("frozen review head absent"))?;
+fn reference(
+    archive: &Archive,
+    bytes: &[u8],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<RosterFrozenReviewedClaimsReferenceV1> {
+    let head = archive
+        .metadata
+        .iter()
+        .find(|(key, _)| key == super::super::super::HEAD.as_bytes())
+        .map(|(_, value)| value.as_slice())
+        .ok_or(Error::Corrupt("frozen review head absent"))?;
     Ok(RosterFrozenReviewedClaimsReferenceV1 {
-        version: 1, digest: object_reference(bytes, grant)?.digest,
-        bytes: u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)?, store: archive.store.clone(),
+        version: 1,
+        digest: object_reference(bytes, grant)?.digest,
+        bytes: u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)?,
+        store: archive.store.clone(),
         selected_snapshot_sequence: archive.selected_snapshot_sequence,
-        authority_head: object_reference(head, grant)?, current_input_token: object_reference(&archive.current_input_token, grant)?,
+        authority_head: object_reference(head, grant)?,
+        current_input_token: object_reference(&archive.current_input_token, grant)?,
     })
 }
 
-fn object_reference(bytes: &[u8], grant: &mut AttachmentReplayGrantV1) -> StoreResult<AttachmentObjectReferenceV1> {
-    grant.charge_bytes(bytes.len()).map_err(super::super::super::source_error)?;
-    grant.charge_steps(1).map_err(super::super::super::source_error)?;
-    Ok(AttachmentObjectReferenceV1 { digest: AttachmentDigestV1::parse(&codec::digest(bytes)).map_err(super::super::super::source_error)?,
-        bytes: u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)? })
+fn object_reference(
+    bytes: &[u8],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<AttachmentObjectReferenceV1> {
+    grant
+        .charge_bytes(bytes.len())
+        .map_err(super::super::super::source_error)?;
+    grant
+        .charge_steps(1)
+        .map_err(super::super::super::source_error)?;
+    Ok(AttachmentObjectReferenceV1 {
+        digest: AttachmentDigestV1::parse(&codec::digest(bytes))
+            .map_err(super::super::super::source_error)?,
+        bytes: u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)?,
+    })
 }

@@ -1,5 +1,5 @@
-use super::*;
 use super::super::{published_owner, requested_owner};
+use super::*;
 use census_domain::affiliation_candidates::SourceSpan;
 use census_domain::UsJurisdiction;
 
@@ -8,9 +8,11 @@ const URL: &str = "https://wi.milesplit.com/teams/9001-synthetic/roster";
 
 fn team() -> TeamRef {
     TeamRef {
-        id: "9001".into(), slug: "synthetic".into(),
+        id: "9001".into(),
+        slug: "synthetic".into(),
         url: "https://wi.milesplit.com/teams/9001-synthetic".into(),
-        name: "Synthetic School".into(), city_state: "Synthetic, WI".into(),
+        name: "Synthetic School".into(),
+        city_state: "Synthetic, WI".into(),
     }
 }
 
@@ -23,9 +25,18 @@ fn read(html: &str) -> CrawlResult<Published> {
 fn all_canonical_meta_and_both_json_fields_remain_in_one_complete_inventory() -> TestResult {
     let prefix = "é雪\r\n";
     let parts = [
-        (format!("<link rel='canon&#105;cal' href='{URL}'>"), Kind::Canonical),
-        (format!("<meta property='og&#58;url' content='{URL}'>"), Kind::OpenGraph),
-        (format!("<meta name='twitter:url' content='{URL}'>"), Kind::Twitter),
+        (
+            format!("<link rel='canon&#105;cal' href='{URL}'>"),
+            Kind::Canonical,
+        ),
+        (
+            format!("<meta property='og&#58;url' content='{URL}'>"),
+            Kind::OpenGraph,
+        ),
+        (
+            format!("<meta name='twitter:url' content='{URL}'>"),
+            Kind::Twitter,
+        ),
     ];
     let json = format!("<script type='application/ld+json'>{{\"@type\":\"WebPage\",\"url\":\"{URL}\",\"@id\":\"{URL}\"}}</script>");
     let mut html = prefix.to_owned();
@@ -57,7 +68,11 @@ fn owner_statement_4096_is_retained_and_4097_only_withholds_new_witness() -> Tes
     let base = format!("<link data-pad='' rel='canonical' href='{URL}'>");
     for length in [4096usize, 4097] {
         let padding = length.checked_sub(base.len()).ok_or("padding")?;
-        let html = base.replacen("data-pad=''", &format!("data-pad='{}'", " ".repeat(padding)), 1);
+        let html = base.replacen(
+            "data-pad=''",
+            &format!("data-pad='{}'", " ".repeat(padding)),
+            1,
+        );
         check!(eq; html.len(), length);
         let published = read(&html)?;
         check!(published.found);
@@ -79,7 +94,10 @@ fn inventory_limit_never_hides_late_contrary_declarations() -> TestResult {
     let overflow = declaration.repeat(33);
     let read_overflow = read(&overflow)?;
     check!(read_overflow.found);
-    check!(matches!(read_overflow.witness, Err(Gap::OwnerInventoryLimit)));
+    check!(matches!(
+        read_overflow.witness,
+        Err(Gap::OwnerInventoryLimit)
+    ));
     for contrary in [
         "<meta property='og:url' content='https://wi.milesplit.com/teams/9002/roster'>",
         "<script type='application/ld+json'>{\"@type\":\"School\",\"@id\":\"https://wi.milesplit.com/teams/9002/roster\"}</script>",
@@ -105,7 +123,9 @@ fn absent_or_nested_metadata_is_not_upgraded_to_published_owner() -> TestResult 
 #[test]
 fn json_ld_eof_retains_existing_semantics_with_exact_end() -> TestResult {
     let prefix = "é雪\r\n";
-    let html = format!("{prefix}<script type='application/ld+json'>{{\"@type\":\"WebPage\",\"url\":\"{URL}\"}}");
+    let html = format!(
+        "{prefix}<script type='application/ld+json'>{{\"@type\":\"WebPage\",\"url\":\"{URL}\"}}"
+    );
     let witness = read(&html)?.witness?;
     let owner = witness.declarations().first().ok_or("owner")?;
     check!(eq; owner.termination(), Termination::ScriptEof);

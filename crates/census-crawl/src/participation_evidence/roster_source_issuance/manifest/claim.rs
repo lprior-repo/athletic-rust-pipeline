@@ -18,7 +18,10 @@ struct Claim<'a> {
     dependencies: Reference,
 }
 
-pub(super) fn derive(value: &format::Manifest, original: &[u8]) -> StoreResult<RosterParserClaimV1> {
+pub(super) fn derive(
+    value: &format::Manifest,
+    original: &[u8],
+) -> StoreResult<RosterParserClaimV1> {
     let claim = Claim {
         artifact: reference(original)?,
         interpretation: &value.semantic_policy,

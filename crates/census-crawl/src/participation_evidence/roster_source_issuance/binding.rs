@@ -3,15 +3,18 @@ use crate::participation_evidence::{hash, invalid, json};
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{
-    CanonicalSchool, CanonicalTeam, NaturalKey, RetainedConflict, SourceIdentity,
-    SourceNamespace, SourceObservation, SourceSchoolObservation,
+    CanonicalSchool, CanonicalTeam, NaturalKey, RetainedConflict, SourceIdentity, SourceNamespace,
+    SourceObservation, SourceSchoolObservation,
 };
-use census_domain::roster_affiliation_authority::{RosterAuthorityObjectRefV1, RosterExistingBindingClaimV1};
-use census_store::{decode_physical_observation, Entity, RosterSourceEvidenceV1, StoreError, StoreResult, Table};
+use census_domain::roster_affiliation_authority::{
+    RosterAuthorityObjectRefV1, RosterExistingBindingClaimV1,
+};
+use census_store::{
+    decode_physical_observation, Entity, RosterSourceEvidenceV1, StoreError, StoreResult, Table,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RosterBindingUnverifiedReferenceV1 {
-}
+pub enum RosterBindingUnverifiedReferenceV1 {}
 
 pub struct RosterExistingBindingAssessmentV1<'a, 'e> {
     source: &'a RosterSourceEvidenceAssessmentV1<'e>,
@@ -20,7 +23,10 @@ pub struct RosterExistingBindingAssessmentV1<'a, 'e> {
 }
 
 impl RosterExistingBindingAssessmentV1<'_, '_> {
-    pub fn evidence(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&RosterSourceEvidenceV1> {
+    pub fn evidence(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&RosterSourceEvidenceV1> {
         self.source.evidence(grant)
     }
 
@@ -64,23 +70,43 @@ fn assess<'a, 'e>(
     let checked = source.checked_packet(grant)?;
     let binding = proposal.binding();
     let mut school = None;
-    scan::<CanonicalSchool>(evidence, Table::Schools, grant,
+    scan::<CanonicalSchool>(
+        evidence,
+        Table::Schools,
+        grant,
         |row| school_row(row, binding, checked.school()),
-        |row| select(&mut school, row, binding.school().as_str()))?;
+        |row| select(&mut school, row, binding.school().as_str()),
+    )?;
     let mut program = None;
-    scan::<CanonicalTeam>(evidence, Table::Teams, grant,
+    scan::<CanonicalTeam>(
+        evidence,
+        Table::Teams,
+        grant,
         |row| team_row(row, binding),
-        |row| select(&mut program, row, binding.program().as_str()))?;
-    scan::<RetainedConflict>(evidence, Table::Conflicts, grant,
-        no_global_conflict, |_| Ok(()))?;
+        |row| select(&mut program, row, binding.program().as_str()),
+    )?;
+    scan::<RetainedConflict>(
+        evidence,
+        Table::Conflicts,
+        grant,
+        no_global_conflict,
+        |_| Ok(()),
+    )?;
     let mut observations = 0_usize;
-    scan::<SourceObservation>(evidence, Table::SourceObservations, grant,
+    scan::<SourceObservation>(
+        evidence,
+        Table::SourceObservations,
+        grant,
         |row| {
             if observation(row, checked.observation())? {
-                observations = observations.checked_add(1).ok_or(StoreError::CounterOverflow)?;
+                observations = observations
+                    .checked_add(1)
+                    .ok_or(StoreError::CounterOverflow)?;
             }
             Ok(())
-        }, |row| observation(&row, checked.observation()).map(|_| ()))?;
+        },
+        |row| observation(&row, checked.observation()).map(|_| ()),
+    )?;
     if observations == 0 {
         return Err(invalid("roster binding exact packet observation missing").into());
     }
@@ -90,15 +116,19 @@ fn assess<'a, 'e>(
     team_row(&program, binding)?;
     references(evidence, binding, &school, &program, grant)?;
     evidence.require_original_grant(grant)?;
-    Ok(RosterExistingBindingAssessmentV1 { source, school, program })
+    Ok(RosterExistingBindingAssessmentV1 {
+        source,
+        school,
+        program,
+    })
 }
 
-mod rows;
 mod projection;
-use rows::{school_row, team_row, observation, select, no_global_conflict};
-use projection::{scan, references};
+mod rows;
 #[cfg(test)]
 use projection::{projection_reference, require_reference};
+use projection::{references, scan};
+use rows::{no_global_conflict, observation, school_row, select, team_row};
 
 #[cfg(test)]
 #[path = "binding_tests.rs"]

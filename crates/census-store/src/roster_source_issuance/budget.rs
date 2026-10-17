@@ -8,7 +8,10 @@ pub struct RosterStartupValidationBudgetV1 {
 
 impl RosterStartupValidationBudgetV1 {
     pub fn new() -> Self {
-        Self { rows: 4096, bytes: 16 * 1024 * 1024 }
+        Self {
+            rows: 4096,
+            bytes: 16 * 1024 * 1024,
+        }
     }
 
     pub(super) fn charge(&mut self, bytes: usize) -> StoreResult<()> {
@@ -31,5 +34,7 @@ impl RosterStartupValidationBudgetV1 {
 }
 
 impl Default for RosterStartupValidationBudgetV1 {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

@@ -238,12 +238,20 @@ fn invalid_or_unbounded_url_and_timestamp_claims_refuse() -> TestResult {
 #[test]
 fn unpublished_projection_wire_requires_explicit_merge_contract_and_new_names() -> TestResult {
     let mut missing = fixture()?;
-    missing.get_mut("binding").and_then(Value::as_object_mut)
-        .ok_or("binding object")?.remove("projection_merge_contract");
+    missing
+        .get_mut("binding")
+        .and_then(Value::as_object_mut)
+        .ok_or("binding object")?
+        .remove("projection_merge_contract");
     check!(decode_roster_issuance_claim(&bytes(&missing)?, limits()?).is_err());
     let mut old = fixture()?;
-    let binding = old.get_mut("binding").and_then(Value::as_object_mut).ok_or("binding object")?;
-    let projection = binding.remove("school_projection").ok_or("school projection")?;
+    let binding = old
+        .get_mut("binding")
+        .and_then(Value::as_object_mut)
+        .ok_or("binding object")?;
+    let projection = binding
+        .remove("school_projection")
+        .ok_or("school projection")?;
     binding.insert("school_row".into(), projection);
     check!(decode_roster_issuance_claim(&bytes(&old)?, limits()?).is_err());
     Ok(())
@@ -253,11 +261,24 @@ fn unpublished_projection_wire_requires_explicit_merge_contract_and_new_names() 
 fn derived_review_reference_revalidates_the_entire_claim_budget() -> TestResult {
     let raw = fixture()?;
     let claim = decode_roster_issuance_claim(&bytes(&raw)?, limits()?)?;
-    check!(claim.clone().with_semantic_review_reference(&"f".repeat(64), 0, limits()?).is_err());
-    check!(claim.clone().with_semantic_review_reference(&"f".repeat(64), 64 * 1024 + 1, limits()?).is_err());
-    let changed = claim.clone().with_semantic_review_reference(&"f".repeat(64), 100, limits()?)?;
+    check!(claim
+        .clone()
+        .with_semantic_review_reference(&"f".repeat(64), 0, limits()?)
+        .is_err());
+    check!(claim
+        .clone()
+        .with_semantic_review_reference(&"f".repeat(64), 64 * 1024 + 1, limits()?)
+        .is_err());
+    let changed = claim
+        .clone()
+        .with_semantic_review_reference(&"f".repeat(64), 100, limits()?)?;
     check!(eq; changed.semantic_review_evidence().bytes().get(), 100);
-    check!(claim.with_semantic_review_reference(&"f".repeat(64), 100,
-        RosterAuthorityLimitsV1::new(1, 8 * 1024 * 1024)?).is_err());
+    check!(claim
+        .with_semantic_review_reference(
+            &"f".repeat(64),
+            100,
+            RosterAuthorityLimitsV1::new(1, 8 * 1024 * 1024)?
+        )
+        .is_err());
     Ok(())
 }

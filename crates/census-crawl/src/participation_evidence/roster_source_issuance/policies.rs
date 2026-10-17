@@ -15,13 +15,23 @@ pub struct RosterInterpretationContractsV1<'a> {
 }
 
 pub fn compiled_roster_interpretation_contracts_v1() -> RosterInterpretationContractsV1<'static> {
-    RosterInterpretationContractsV1 { scope: SCOPE, year: YEAR, projection_merge: MERGE }
+    RosterInterpretationContractsV1 {
+        scope: SCOPE,
+        year: YEAR,
+        projection_merge: MERGE,
+    }
 }
 
 impl RosterInterpretationContractsV1<'_> {
-    pub fn scope_reference(&self) -> StoreResult<ContractRefV1> { reference(self.scope) }
-    pub fn year_reference(&self) -> StoreResult<ContractRefV1> { reference(self.year) }
-    pub fn projection_merge_reference(&self) -> StoreResult<ContractRefV1> { reference(self.projection_merge) }
+    pub fn scope_reference(&self) -> StoreResult<ContractRefV1> {
+        reference(self.scope)
+    }
+    pub fn year_reference(&self) -> StoreResult<ContractRefV1> {
+        reference(self.year)
+    }
+    pub fn projection_merge_reference(&self) -> StoreResult<ContractRefV1> {
+        reference(self.projection_merge)
+    }
 }
 
 pub(super) fn assess(
@@ -32,7 +42,9 @@ pub(super) fn assess(
 ) -> StoreResult<()> {
     evidence.require_original_grant(grant)?;
     let result = check(evidence, retained, proposal, grant);
-    if result.is_err() { grant.poison(); }
+    if result.is_err() {
+        grant.poison();
+    }
     result
 }
 
@@ -45,23 +57,38 @@ fn check(
     for (actual, expected, claimed) in [
         (retained.scope, SCOPE, proposal.scope().policy()),
         (retained.year, YEAR, proposal.binding().year_convention()),
-        (retained.projection_merge, MERGE, proposal.binding().projection_merge_contract()),
+        (
+            retained.projection_merge,
+            MERGE,
+            proposal.binding().projection_merge_contract(),
+        ),
     ] {
         evidence.require_original_grant(grant)?;
-        if actual.len() > 4096 { return Err(invalid("roster interpretation contract capacity")); }
-        grant.charge_bytes(actual.len()).map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
-        grant.charge_steps(1).map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
+        if actual.len() > 4096 {
+            return Err(invalid("roster interpretation contract capacity"));
+        }
+        grant
+            .charge_bytes(actual.len())
+            .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
+        grant
+            .charge_steps(1)
+            .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
         if actual != expected || reference(actual)? != *claimed {
             return Err(invalid("roster retained interpretation contract mismatch"));
         }
     }
-    if SchoolYear::from_date(proposal.capture().observed_day().as_str()) != Some(proposal.binding().school_year()) {
+    if SchoolYear::from_date(proposal.capture().observed_day().as_str())
+        != Some(proposal.binding().school_year())
+    {
         return Err(invalid("roster existing program key year mismatch"));
     }
     evidence.require_original_grant(grant)
 }
 
 fn reference(bytes: &[u8]) -> StoreResult<ContractRefV1> {
-    if bytes.len() > 4096 { return Err(invalid("roster interpretation contract capacity")); }
-    ContractRefV1::new(1, 1, &hash(bytes)).map_err(|_| invalid("roster interpretation contract reference"))
+    if bytes.len() > 4096 {
+        return Err(invalid("roster interpretation contract capacity"));
+    }
+    ContractRefV1::new(1, 1, &hash(bytes))
+        .map_err(|_| invalid("roster interpretation contract reference"))
 }

@@ -1,8 +1,8 @@
 use super::{markup, Owner};
 use crate::milesplit::wire::{
     checked_span, PublishedRosterOwnerKindV1 as Kind,
-    PublishedRosterOwnerTerminationV1 as Termination, PublishedRosterOwnersV1,
-    PublishedRosterOwnerV1, RosterWitnessUnavailableV1 as Gap, TeamRef,
+    PublishedRosterOwnerTerminationV1 as Termination, PublishedRosterOwnerV1,
+    PublishedRosterOwnersV1, RosterWitnessUnavailableV1 as Gap, TeamRef,
 };
 use crate::milesplit::RosterVerdict;
 use crate::net::FetchOutcome;
@@ -20,17 +20,34 @@ pub(super) struct Collector<'a> {
 
 impl<'a> Collector<'a> {
     pub(super) fn new(html: &'a str) -> Self {
-        Self { html, declarations: Ok(Vec::new()) }
+        Self {
+            html,
+            declarations: Ok(Vec::new()),
+        }
     }
 
-    pub(super) fn observe(&mut self, owner: Owner, kind: Kind, location: &markup::LocatedDeclaration) {
-        let Err(reason) = self.push(owner, kind, location) else { return; };
+    pub(super) fn observe(
+        &mut self,
+        owner: Owner,
+        kind: Kind,
+        location: &markup::LocatedDeclaration,
+    ) {
+        let Err(reason) = self.push(owner, kind, location) else {
+            return;
+        };
         self.declarations = Err(reason);
     }
 
-    fn push(&mut self, owner: Owner, kind: Kind, location: &markup::LocatedDeclaration) -> Result<(), Gap> {
+    fn push(
+        &mut self,
+        owner: Owner,
+        kind: Kind,
+        location: &markup::LocatedDeclaration,
+    ) -> Result<(), Gap> {
         let declarations = self.declarations.as_mut().map_err(|reason| *reason)?;
-        if declarations.len() >= 32 { return Err(Gap::OwnerInventoryLimit); }
+        if declarations.len() >= 32 {
+            return Err(Gap::OwnerInventoryLimit);
+        }
         let span = location.span.clone().ok_or(Gap::MissingSourceSpan)?;
         let span = checked_span(self.html, span)?;
         let termination = match location.termination {
@@ -38,14 +55,24 @@ impl<'a> Collector<'a> {
             markup::Termination::ScriptEnd => Termination::ScriptEnd,
             markup::Termination::ScriptEof => Termination::ScriptEof,
         };
-        let declaration = PublishedRosterOwnerV1::checked((owner.id, owner.jurisdiction), kind, span, termination)?;
-        declarations.try_reserve(1).map_err(|_| Gap::ResourceLimit)?;
+        let declaration = PublishedRosterOwnerV1::checked(
+            (owner.id, owner.jurisdiction),
+            kind,
+            span,
+            termination,
+        )?;
+        declarations
+            .try_reserve(1)
+            .map_err(|_| Gap::ResourceLimit)?;
         declarations.push(declaration);
         Ok(())
     }
 
     pub(super) fn finish(self, found: bool) -> Published {
-        Published { found, witness: self.declarations.and_then(PublishedRosterOwnersV1::checked) }
+        Published {
+            found,
+            witness: self.declarations.and_then(PublishedRosterOwnersV1::checked),
+        }
     }
 }
 

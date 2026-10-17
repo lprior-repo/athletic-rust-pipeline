@@ -93,7 +93,12 @@ pub(super) fn document(
         .as_deref()
         .into_iter()
         .map(|raw| (raw, DeclarationKind::JsonLdUrl))
-        .chain(document.id.as_deref().map(|raw| (raw, DeclarationKind::JsonLdId)))
+        .chain(
+            document
+                .id
+                .as_deref()
+                .map(|raw| (raw, DeclarationKind::JsonLdId)),
+        )
         .try_fold(false, |found, (raw, kind)| {
             if raw.trim().is_empty() || raw.trim().starts_with(['?', '#']) {
                 return Ok(found);

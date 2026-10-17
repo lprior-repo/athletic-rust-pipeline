@@ -1,6 +1,6 @@
 use crate::milesplit::wire::{
-    CurrentRosterAssertion, LocatedRosterAthlete, RosterTemporalUnavailable as Gap, TeamRef,
-    RosterRowStatementsV1, RosterWitnessUnavailableV1,
+    CurrentRosterAssertion, LocatedRosterAthlete, RosterRowStatementsV1,
+    RosterTemporalUnavailable as Gap, RosterWitnessUnavailableV1, TeamRef,
 };
 use scan::{scan, Scan};
 #[cfg(test)]
@@ -90,7 +90,9 @@ fn statements(
     heading: &scan::Heading,
     fields: &super::Fields<'_>,
 ) -> Result<RosterRowStatementsV1, RosterWitnessUnavailableV1> {
-    let selected = fields.link.captures(&row.active)
+    let selected = fields
+        .link
+        .captures(&row.active)
         .and_then(|capture| capture.get(0))
         .ok_or(RosterWitnessUnavailableV1::MissingSourceSpan)?;
     let person = row.person(selected.range())?;

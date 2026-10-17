@@ -5,22 +5,36 @@ pub(super) fn school_row(
     binding: &RosterExistingBindingClaimV1,
     packet: &CanonicalSchool,
 ) -> StoreResult<()> {
-    let owner = owns(&row.source_identities, SourceNamespace::MilesplitSchool,
-        binding.school_source().provider_id());
+    let owner = owns(
+        &row.source_identities,
+        SourceNamespace::MilesplitSchool,
+        binding.school_source().provider_id(),
+    );
     if owner || &row.id == binding.school() {
-        if !owner || &row.id != binding.school() || !row.retained_conflicts.is_empty()
+        if !owner
+            || &row.id != binding.school()
+            || !row.retained_conflicts.is_empty()
             || !row.same_natural_key(packet)
         {
-            return Err(invalid("roster binding ambiguous or conflicted school owner"));
+            return Err(invalid(
+                "roster binding ambiguous or conflicted school owner",
+            ));
         }
     }
     Ok(())
 }
 
-pub(super) fn team_row(row: &CanonicalTeam, binding: &RosterExistingBindingClaimV1) -> StoreResult<()> {
-    let owner = owns(&row.source_identities, SourceNamespace::MilesplitTeam,
-        binding.program_source().provider_id());
-    let scope = row.sport == binding.sport() && row.gender == binding.category()
+pub(super) fn team_row(
+    row: &CanonicalTeam,
+    binding: &RosterExistingBindingClaimV1,
+) -> StoreResult<()> {
+    let owner = owns(
+        &row.source_identities,
+        SourceNamespace::MilesplitTeam,
+        binding.program_source().provider_id(),
+    );
+    let scope = row.sport == binding.sport()
+        && row.gender == binding.category()
         && row.school_year == binding.school_year();
     if owner && (&row.school != binding.school() || !row.retained_conflicts.is_empty()) {
         return Err(invalid("roster binding conflicted program owner"));
@@ -34,14 +48,21 @@ pub(super) fn team_row(row: &CanonicalTeam, binding: &RosterExistingBindingClaim
 }
 
 pub(super) fn no_global_conflict(_: &RetainedConflict) -> StoreResult<()> {
-    Err(invalid("roster binding requires all global conflicts absent"))
+    Err(invalid(
+        "roster binding requires all global conflicts absent",
+    ))
 }
 
 pub(super) fn owns(identities: &[SourceIdentity], namespace: SourceNamespace, id: &str) -> bool {
-    identities.iter().any(|identity| identity.namespace == namespace && identity.id == id)
+    identities
+        .iter()
+        .any(|identity| identity.namespace == namespace && identity.id == id)
 }
 
-pub(super) fn observation(row: &SourceObservation, expected: &SourceSchoolObservation) -> StoreResult<bool> {
+pub(super) fn observation(
+    row: &SourceObservation,
+    expected: &SourceSchoolObservation,
+) -> StoreResult<bool> {
     match row {
         SourceObservation::School(actual) => {
             let subject = actual.namespace == expected.namespace
@@ -56,10 +77,12 @@ pub(super) fn observation(row: &SourceObservation, expected: &SourceSchoolObserv
         }
         SourceObservation::Athlete(_) => {
             if row.id() == expected.id {
-                return Err(invalid("roster binding school observation ID has foreign object"));
+                return Err(invalid(
+                    "roster binding school observation ID has foreign object",
+                ));
             }
             Ok(false)
-        },
+        }
     }
 }
 

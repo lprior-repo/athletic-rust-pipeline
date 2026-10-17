@@ -7,14 +7,18 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 #[test]
 fn declaration_offsets_follow_original_bytes_after_utf8_entities_and_crlf() -> TestResult {
     let prefix = "é雪\r\n&amp;<!-- <link rel=canonical href=decoy> -->";
-    let declaration = "<meta property='og&#58;url' content='https://wi.milesplit.com/teams/9001/roster'>";
+    let declaration =
+        "<meta property='og&#58;url' content='https://wi.milesplit.com/teams/9001/roster'>";
     let html = format!("{prefix}{declaration}tail");
     let tokens = Tokenizer::new_with_emitter(html.as_str(), Markup::default())
         .collect::<Result<Vec<_>, _>>()?;
     check!(eq; tokens.len(), 1);
     let token = tokens.first().ok_or("located declaration")?;
     check!(matches!(token.kind, DeclarationKind::OpenGraph));
-    let end = prefix.len().checked_add(declaration.len()).ok_or("offset")?;
+    let end = prefix
+        .len()
+        .checked_add(declaration.len())
+        .ok_or("offset")?;
     check!(eq; token.span.clone(), Some(prefix.len()..end));
     check!(eq; html.get(token.span.clone().ok_or("span")?), Some(declaration));
     check!(matches!(&token.declaration, Declaration::Url(bytes)

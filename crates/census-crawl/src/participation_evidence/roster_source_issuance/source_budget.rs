@@ -4,11 +4,18 @@ use census_store::{StoreError, StoreResult};
 use serde::Serialize;
 use std::io::{Error, Write};
 
-pub(in crate::participation_evidence::roster_source_issuance) fn charge(value: &impl Serialize, grant: &mut AttachmentReplayGrantV1) -> StoreResult<()> {
+pub(in crate::participation_evidence::roster_source_issuance) fn charge(
+    value: &impl Serialize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
     charge_bounded(value, grant, MAX_PACKET)
 }
 
-pub(in crate::participation_evidence::roster_source_issuance) fn charge_bounded(value: &impl Serialize, grant: &mut AttachmentReplayGrantV1, limit: usize) -> StoreResult<()> {
+pub(in crate::participation_evidence::roster_source_issuance) fn charge_bounded(
+    value: &impl Serialize,
+    grant: &mut AttachmentReplayGrantV1,
+    limit: usize,
+) -> StoreResult<()> {
     grant.ensure_available().map_err(domain)?;
     grant.charge_steps(1).map_err(domain)?;
     let bytes = measure(value, limit)?;
@@ -16,7 +23,11 @@ pub(in crate::participation_evidence::roster_source_issuance) fn charge_bounded(
 }
 
 fn measure(value: &impl Serialize, limit: usize) -> StoreResult<usize> {
-    let mut sink = Counter { bytes: 0, limit, failure: None };
+    let mut sink = Counter {
+        bytes: 0,
+        limit,
+        failure: None,
+    };
     let result = serde_json::to_writer(&mut sink, value);
     if let Some(error) = sink.failure {
         return Err(error);
@@ -33,7 +44,10 @@ struct Counter {
 
 impl Counter {
     fn count(&mut self, bytes: usize) -> StoreResult<()> {
-        let total = self.bytes.checked_add(bytes).ok_or(StoreError::CounterOverflow)?;
+        let total = self
+            .bytes
+            .checked_add(bytes)
+            .ok_or(StoreError::CounterOverflow)?;
         bound(total, self.limit, "roster source serialization measurement")?;
         self.bytes = total;
         Ok(())

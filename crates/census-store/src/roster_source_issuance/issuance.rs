@@ -1,24 +1,32 @@
 use super::{inspection::RosterIssuanceInspectionV1, RosterReviewActorV1};
 use census_domain::model::{ContractRefV1, StoreIdentity};
-use census_domain::roster_affiliation_authority::{LocallyCheckedRosterIssuanceV1, RosterAuthorityTextV1};
+use census_domain::roster_affiliation_authority::{
+    LocallyCheckedRosterIssuanceV1, RosterAuthorityTextV1,
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-mod review;
-mod qualification;
-mod objects;
-mod prepare;
 mod apply;
-mod preflight;
 pub(super) mod ledger;
-mod replay;
+mod objects;
+mod preflight;
+mod prepare;
+mod qualification;
 mod reader;
-pub use reader::{CurrentRosterReviewedClaimsV1, ReplayedRosterReviewedClaimsV1, ReviewedRosterSourceClaimV1, FrozenRosterReviewedClaimsBundleV1, RosterFrozenReviewedClaimsReferenceV1, replay_frozen_roster_reviewed_claims_v1};
+mod replay;
+mod review;
+pub use reader::{
+    replay_frozen_roster_reviewed_claims_v1, CurrentRosterReviewedClaimsV1,
+    FrozenRosterReviewedClaimsBundleV1, ReplayedRosterReviewedClaimsV1,
+    ReviewedRosterSourceClaimV1, RosterFrozenReviewedClaimsReferenceV1,
+};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum RosterSourceReviewDecisionV1 { QualifyAndActivateExactCaptureRepresentation }
+pub enum RosterSourceReviewDecisionV1 {
+    QualifyAndActivateExactCaptureRepresentation,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -46,10 +54,21 @@ pub struct PreparedRosterSourceReviewV1<'s> {
 }
 
 impl PreparedRosterSourceReviewV1<'_> {
-    pub fn approval_bytes(&self) -> &[u8] { &self.approval }
-    pub fn approval_digest(&self) -> &str { &self.approval_digest }
-    pub fn reviewed_proposal_bytes(&self) -> &[u8] { &self.record.proposal }
-    pub fn source_parts(&mut self) -> crate::StoreResult<(&super::RosterSourceEvidenceV1, &mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1)> {
+    pub fn approval_bytes(&self) -> &[u8] {
+        &self.approval
+    }
+    pub fn approval_digest(&self) -> &str {
+        &self.approval_digest
+    }
+    pub fn reviewed_proposal_bytes(&self) -> &[u8] {
+        &self.record.proposal
+    }
+    pub fn source_parts(
+        &mut self,
+    ) -> crate::StoreResult<(
+        &super::RosterSourceEvidenceV1,
+        &mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1,
+    )> {
         self.inspection.source_parts()
     }
 }
@@ -115,7 +134,11 @@ fn proposal(bytes: &[u8]) -> crate::StoreResult<LocallyCheckedRosterIssuanceV1> 
         .map_err(|_| super::RosterSourceIssuanceStoreError::Corrupt("reviewed proposal").into())
 }
 
-fn limits() -> crate::StoreResult<census_domain::roster_affiliation_authority::RosterAuthorityLimitsV1> {
-    census_domain::roster_affiliation_authority::RosterAuthorityLimitsV1::new(64 * 1024, 8 * 1024 * 1024)
-        .map_err(|_| super::RosterSourceIssuanceStoreError::BudgetExceeded.into())
+fn limits(
+) -> crate::StoreResult<census_domain::roster_affiliation_authority::RosterAuthorityLimitsV1> {
+    census_domain::roster_affiliation_authority::RosterAuthorityLimitsV1::new(
+        64 * 1024,
+        8 * 1024 * 1024,
+    )
+    .map_err(|_| super::RosterSourceIssuanceStoreError::BudgetExceeded.into())
 }

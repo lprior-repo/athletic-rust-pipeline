@@ -65,7 +65,11 @@ pub(super) fn open_format(
     let format = require_current(root, format)?;
     crate::input_revisions::validate_format(&db.snapshot(), meta_keyspace, &format)?;
     crate::roster_source_issuance::validate_format(
-        &db.snapshot(), meta_keyspace, data[1], data[2], &format,
+        &db.snapshot(),
+        meta_keyspace,
+        data[1],
+        data[2],
+        &format,
         &mut crate::RosterStartupValidationBudgetV1::new(),
     )?;
     let [_, journal, receipts] = data;
@@ -104,7 +108,11 @@ pub(crate) fn require_semantic_format(
     let format = require_current(root, read_format(meta)?)?;
     crate::input_revisions::validate_format(&db.snapshot(), meta, &format)?;
     crate::roster_source_issuance::validate_format(
-        &db.snapshot(), meta, journal, receipts, &format,
+        &db.snapshot(),
+        meta,
+        journal,
+        receipts,
+        &format,
         &mut crate::RosterStartupValidationBudgetV1::new(),
     )?;
     crate::public_identity::require_legacy(&db.snapshot(), meta, journal, receipts, &format)?;

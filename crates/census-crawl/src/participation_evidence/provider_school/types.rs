@@ -1,5 +1,7 @@
 use super::super::invalid;
-use crate::milesplit::{PublishedRosterOwnersV1, RosterVerdict, RosterWitnessUnavailableV1, SourceRowLocator};
+use crate::milesplit::{
+    PublishedRosterOwnersV1, RosterVerdict, RosterWitnessUnavailableV1, SourceRowLocator,
+};
 use crate::CollectionDisposition;
 use census_domain::model::{CanonicalSchool, SourceSchoolObservation};
 use census_store::StoreResult;
@@ -104,7 +106,11 @@ impl CheckedProviderSchoolPacketV1 {
     pub fn directory_proof(&self) -> &ProviderSchoolDirectoryProofV1 {
         &self.directory_proof
     }
-    pub fn published_roster_owners_v1(&self) -> Result<&PublishedRosterOwnersV1, RosterWitnessUnavailableV1> {
-        self.published_roster_owners.as_ref().map_err(|reason| *reason)
+    pub fn published_roster_owners_v1(
+        &self,
+    ) -> Result<&PublishedRosterOwnersV1, RosterWitnessUnavailableV1> {
+        self.published_roster_owners
+            .as_ref()
+            .map_err(|reason| *reason)
     }
 }

@@ -1,8 +1,8 @@
+use crate::StoreRevision;
 use census_domain::model::StoreIdentity;
 use census_domain::roster_affiliation_authority::RosterAuthorityTextV1;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::StoreRevision;
 
 mod apply;
 mod inspect;
@@ -11,7 +11,9 @@ pub use inspect::{RosterEnrollmentInputsV1, RosterEnrollmentReviewV1};
 pub(super) mod prepare;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub enum RosterReviewActorV1 { LocalOperator }
+pub enum RosterReviewActorV1 {
+    LocalOperator,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -35,8 +37,12 @@ pub struct PreparedRosterEnrollmentV1<'s> {
 }
 
 impl PreparedRosterEnrollmentV1<'_> {
-    pub fn approval_bytes(&self) -> &[u8] { &self.approval }
-    pub fn approval_digest(&self) -> &str { &self.approval_digest }
+    pub fn approval_bytes(&self) -> &[u8] {
+        &self.approval
+    }
+    pub fn approval_digest(&self) -> &str {
+        &self.approval_digest
+    }
 }
 
 #[derive(Serialize, Deserialize)]

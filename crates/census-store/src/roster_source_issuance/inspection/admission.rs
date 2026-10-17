@@ -28,24 +28,34 @@ struct VerificationGrant<'a> {
 }
 
 impl RosterSourceEvidenceV1 {
-    pub fn retained_source_admission_manifest(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<u8>> {
+    pub fn retained_source_admission_manifest(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<Vec<u8>> {
         self.require_original_grant(grant)?;
         let held = self.retained_root(grant)?;
         let value = RetainedAdmission {
             schema: "roster-retained-source-admission-v1",
-            store: self.store_identity(), inspected_sequence: self.snapshot_sequence(),
-            school: self.requested_school(), program: self.requested_program(),
-            root: held.root(), admission: "completed-exact-provider-school-root",
+            store: self.store_identity(),
+            inspected_sequence: self.snapshot_sequence(),
+            school: self.requested_school(),
+            program: self.requested_program(),
+            root: held.root(),
+            admission: "completed-exact-provider-school-root",
             original_http_authorization: "unknown",
         };
         encode(self, &value, grant)
     }
 
-    pub fn verification_grant_manifest(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<u8>> {
+    pub fn verification_grant_manifest(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<Vec<u8>> {
         self.require_original_grant(grant)?;
         let held = self.retained_root(grant)?;
         let value = VerificationGrant {
-            schema: "roster-source-verification-grant-policy-v1", root: held.root(),
+            schema: "roster-source-verification-grant-policy-v1",
+            root: held.root(),
             encoded_bytes: ReplayLimits::SMALL.total_text_bytes,
             traversal_steps: ReplayLimits::SMALL.traversal_steps,
             policy: "one-original-origin-monotonic-usage-poison-on-error-no-reset",
@@ -55,10 +65,20 @@ impl RosterSourceEvidenceV1 {
     }
 }
 
-fn encode(evidence: &RosterSourceEvidenceV1, value: &impl Serialize, grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<u8>> {
+fn encode(
+    evidence: &RosterSourceEvidenceV1,
+    value: &impl Serialize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Vec<u8>> {
     let result = super::super::codec::encode_with_source_grant(value, grant);
     match result {
-        Ok(bytes) => { evidence.require_original_grant(grant)?; Ok(bytes) }
-        Err(error) => { grant.poison(); Err(error) }
+        Ok(bytes) => {
+            evidence.require_original_grant(grant)?;
+            Ok(bytes)
+        }
+        Err(error) => {
+            grant.poison();
+            Err(error)
+        }
     }
 }

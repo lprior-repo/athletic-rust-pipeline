@@ -41,7 +41,9 @@ impl CurrentRosterAssertion {
         &self.heading_sha256
     }
 
-    pub fn source_statements_v1(&self) -> Result<&RosterRowStatementsV1, RosterWitnessUnavailableV1> {
+    pub fn source_statements_v1(
+        &self,
+    ) -> Result<&RosterRowStatementsV1, RosterWitnessUnavailableV1> {
         self.statements.as_ref().map_err(|reason| *reason)
     }
 
@@ -110,9 +112,15 @@ impl RosterRowStatementsV1 {
         })
     }
 
-    pub fn person(&self) -> SourceSpan { self.person }
-    pub fn membership(&self) -> SourceSpan { self.membership }
-    pub fn temporal(&self) -> SourceSpan { self.temporal }
+    pub fn person(&self) -> SourceSpan {
+        self.person
+    }
+    pub fn membership(&self) -> SourceSpan {
+        self.membership
+    }
+    pub fn temporal(&self) -> SourceSpan {
+        self.temporal
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -147,15 +155,33 @@ impl PublishedRosterOwnerV1 {
         span: SourceSpan,
         termination: PublishedRosterOwnerTerminationV1,
     ) -> Result<Self, RosterWitnessUnavailableV1> {
-        if owner.0 == 0 { return Err(RosterWitnessUnavailableV1::MissingPublishedOwner); }
-        Ok(Self { provider_id: owner.0, jurisdiction: owner.1, kind, span, termination })
+        if owner.0 == 0 {
+            return Err(RosterWitnessUnavailableV1::MissingPublishedOwner);
+        }
+        Ok(Self {
+            provider_id: owner.0,
+            jurisdiction: owner.1,
+            kind,
+            span,
+            termination,
+        })
     }
 
-    pub fn provider_id(&self) -> u64 { self.provider_id }
-    pub fn jurisdiction(&self) -> Option<UsJurisdiction> { self.jurisdiction }
-    pub fn kind(&self) -> PublishedRosterOwnerKindV1 { self.kind }
-    pub fn span(&self) -> SourceSpan { self.span }
-    pub fn termination(&self) -> PublishedRosterOwnerTerminationV1 { self.termination }
+    pub fn provider_id(&self) -> u64 {
+        self.provider_id
+    }
+    pub fn jurisdiction(&self) -> Option<UsJurisdiction> {
+        self.jurisdiction
+    }
+    pub fn kind(&self) -> PublishedRosterOwnerKindV1 {
+        self.kind
+    }
+    pub fn span(&self) -> SourceSpan {
+        self.span
+    }
+    pub fn termination(&self) -> PublishedRosterOwnerTerminationV1 {
+        self.termination
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -176,7 +202,9 @@ impl PublishedRosterOwnersV1 {
         Ok(Self { declarations })
     }
 
-    pub fn declarations(&self) -> &[PublishedRosterOwnerV1] { &self.declarations }
+    pub fn declarations(&self) -> &[PublishedRosterOwnerV1] {
+        &self.declarations
+    }
 }
 
 pub(in crate::milesplit) fn checked_span(
@@ -186,6 +214,5 @@ pub(in crate::milesplit) fn checked_span(
     if html.get(span.clone()).is_none() || span.start >= span.end {
         return Err(RosterWitnessUnavailableV1::MissingSourceSpan);
     }
-    SourceSpan::new(span.start, span.end)
-        .map_err(|_| RosterWitnessUnavailableV1::SourceSpanLimit)
+    SourceSpan::new(span.start, span.end).map_err(|_| RosterWitnessUnavailableV1::SourceSpanLimit)
 }

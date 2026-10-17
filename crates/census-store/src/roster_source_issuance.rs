@@ -6,12 +6,23 @@ mod enrollment;
 mod format;
 mod inspection;
 mod issuance;
-pub use issuance::{CurrentRosterReviewedClaimsV1, ReplayedRosterReviewedClaimsV1, ReviewedRosterSourceClaimV1, FrozenRosterReviewedClaimsBundleV1, RosterFrozenReviewedClaimsReferenceV1, replay_frozen_roster_reviewed_claims_v1, PreparedRosterSourceReviewV1, RosterSourceReviewFieldsV1, RosterSourceReviewDecisionV1, RosterSourceReviewObjectsV1};
-pub use inspection::{RosterIssuanceInspectionRequestV1, RosterIssuanceInspectionV1, RosterSourceEvidenceV1, RosterPhysicalProjectionRowV1};
+pub use inspection::{
+    RosterIssuanceInspectionRequestV1, RosterIssuanceInspectionV1, RosterPhysicalProjectionRowV1,
+    RosterSourceEvidenceV1,
+};
+pub use issuance::{
+    replay_frozen_roster_reviewed_claims_v1, CurrentRosterReviewedClaimsV1,
+    FrozenRosterReviewedClaimsBundleV1, PreparedRosterSourceReviewV1,
+    ReplayedRosterReviewedClaimsV1, ReviewedRosterSourceClaimV1,
+    RosterFrozenReviewedClaimsReferenceV1, RosterSourceReviewDecisionV1,
+    RosterSourceReviewFieldsV1, RosterSourceReviewObjectsV1,
+};
 
 pub use budget::RosterStartupValidationBudgetV1;
-pub use enrollment::{PreparedRosterEnrollmentV1, RosterEnrollmentCommandV1, RosterReviewActorV1,
-    RosterEnrollmentInputsV1, RosterEnrollmentReviewV1};
+pub use enrollment::{
+    PreparedRosterEnrollmentV1, RosterEnrollmentCommandV1, RosterEnrollmentInputsV1,
+    RosterEnrollmentReviewV1, RosterReviewActorV1,
+};
 pub(crate) use format::validate_format;
 
 pub(crate) const ROOT: &str = "roster_source_issuance/";
@@ -65,6 +76,8 @@ pub(crate) fn is_reserved_operation(operation: &[u8]) -> bool {
 #[cfg(test)]
 mod tests;
 
-fn source_error(error: census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError) -> crate::StoreError {
+fn source_error(
+    error: census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError,
+) -> crate::StoreError {
     crate::EvidenceSubjectAttachmentStoreError::Domain(error).into()
 }

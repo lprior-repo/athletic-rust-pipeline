@@ -113,7 +113,8 @@ pub struct RosterCaptureClaimV1 {
     pub(in crate::roster_affiliation_authority) observed_day: ProfileDate,
     pub(in crate::roster_affiliation_authority) requested_url: RosterAuthorityTextV1,
     pub(in crate::roster_affiliation_authority) final_url: FinalUrl,
-    pub(in crate::roster_affiliation_authority) retained_source_admission: RosterAuthorityObjectRefV1,
+    pub(in crate::roster_affiliation_authority) retained_source_admission:
+        RosterAuthorityObjectRefV1,
     pub(in crate::roster_affiliation_authority) verification_grant: RosterAuthorityObjectRefV1,
 }
 impl RosterCaptureClaimV1 {
@@ -167,7 +168,8 @@ pub struct RosterExistingBindingClaimV1 {
     pub(in crate::roster_affiliation_authority) school_projection: RosterAuthorityObjectRefV1,
     pub(in crate::roster_affiliation_authority) program_projection: RosterAuthorityObjectRefV1,
     pub(in crate::roster_affiliation_authority) provider_packet: RosterAuthorityObjectRefV1,
-    pub(in crate::roster_affiliation_authority) physical_projection_inventory: RosterAuthorityObjectRefV1,
+    pub(in crate::roster_affiliation_authority) physical_projection_inventory:
+        RosterAuthorityObjectRefV1,
     pub(in crate::roster_affiliation_authority) store: StoreIdentity,
     pub(in crate::roster_affiliation_authority) snapshot_revision: NonZeroU64,
 }

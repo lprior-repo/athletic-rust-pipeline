@@ -1,14 +1,17 @@
 pub mod manifest;
 use super::provider_school::CheckedProviderSchoolPacketV1;
+use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
 use census_store::{RetainedCaptureRootV1, RosterSourceEvidenceV1, StoreResult};
-use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 
-mod source;
+mod binding;
 pub mod capture_objects;
 pub mod policies;
-mod binding;
-pub use binding::{assess_existing_roster_binding, RosterExistingBindingAssessmentV1, RosterBindingUnverifiedReferenceV1};
+mod source;
+pub use binding::{
+    assess_existing_roster_binding, RosterBindingUnverifiedReferenceV1,
+    RosterExistingBindingAssessmentV1,
+};
 pub use source::assess_retained_roster_source;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,17 +32,26 @@ pub struct RosterSourceEvidenceAssessmentV1<'a> {
 }
 
 impl RosterSourceEvidenceAssessmentV1<'_> {
-    pub fn capture_objects(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&capture_objects::PreparedRosterCaptureObjectsV1<'_>> {
+    pub fn capture_objects(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&capture_objects::PreparedRosterCaptureObjectsV1<'_>> {
         self.require_original_grant(grant)?;
         Ok(&self.capture_objects)
     }
 
-    pub fn parser_manifest(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&manifest::CheckedRosterParserManifestV1> {
+    pub fn parser_manifest(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&manifest::CheckedRosterParserManifestV1> {
         self.require_original_grant(grant)?;
         Ok(&self.parser_manifest)
     }
 
-    pub fn evidence(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&RosterSourceEvidenceV1> {
+    pub fn evidence(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&RosterSourceEvidenceV1> {
         self.require_original_grant(grant)?;
         Ok(self.evidence)
     }
@@ -48,7 +60,10 @@ impl RosterSourceEvidenceAssessmentV1<'_> {
         self.evidence.require_original_grant(grant)
     }
 
-    pub fn proposal(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&LocallyCheckedRosterIssuanceV1> {
+    pub fn proposal(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&LocallyCheckedRosterIssuanceV1> {
         self.require_original_grant(grant)?;
         Ok(&self.proposal)
     }
@@ -58,7 +73,10 @@ impl RosterSourceEvidenceAssessmentV1<'_> {
         Ok(&self.root)
     }
 
-    pub fn checked_packet(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&CheckedProviderSchoolPacketV1> {
+    pub fn checked_packet(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&CheckedProviderSchoolPacketV1> {
         self.require_original_grant(grant)?;
         Ok(&self.checked)
     }

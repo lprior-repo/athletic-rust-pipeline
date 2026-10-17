@@ -35,8 +35,14 @@ fn poisoned_grant_cannot_issue_or_resume_continuation() -> TestResult {
     let mut grant = AttachmentReplayGrantV1::new();
     let checkpoint = grant.checkpoint()?;
     grant.poison();
-    check!(matches!(grant.checkpoint(), Err(EvidenceSubjectAttachmentError::Poisoned)));
-    check!(matches!(checkpoint.require(&mut grant), Err(EvidenceSubjectAttachmentError::Poisoned)));
+    check!(matches!(
+        grant.checkpoint(),
+        Err(EvidenceSubjectAttachmentError::Poisoned)
+    ));
+    check!(matches!(
+        checkpoint.require(&mut grant),
+        Err(EvidenceSubjectAttachmentError::Poisoned)
+    ));
     Ok(())
 }
 
@@ -56,11 +62,21 @@ fn authority_check_rejects_temporary_swap_before_original_is_restored() -> TestR
 fn checkpoint_and_continuation_each_charge_existing_exact_step_cap() -> TestResult {
     let limit = crate::public_identity_history::ReplayLimits::SMALL.traversal_steps;
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(limit.checked_sub(2).ok_or(EvidenceSubjectAttachmentError::Overflow)?)?;
+    grant.charge_steps(
+        limit
+            .checked_sub(2)
+            .ok_or(EvidenceSubjectAttachmentError::Overflow)?,
+    )?;
     let checkpoint = grant.checkpoint()?;
     checkpoint.require(&mut grant)?;
     check!(eq; grant.usage().traversal_steps(), limit);
-    check!(matches!(checkpoint.require(&mut grant), Err(EvidenceSubjectAttachmentError::Capacity { resource: "aggregate traversal steps", .. })));
+    check!(matches!(
+        checkpoint.require(&mut grant),
+        Err(EvidenceSubjectAttachmentError::Capacity {
+            resource: "aggregate traversal steps",
+            ..
+        })
+    ));
     check!(grant.ensure_available().is_err());
     Ok(())
 }

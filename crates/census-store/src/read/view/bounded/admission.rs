@@ -1,13 +1,18 @@
+use super::{
+    charge, decode_physical_observation, invariant, read_admitted, PhysicalScan,
+    PhysicalScanResult, ReadBudget, ReadCounts, StoreSnapshot,
+};
 use crate::{Entity, StoreError, StoreResult, Table};
 use fjall::Readable;
-use super::{charge, decode_physical_observation, invariant, read_admitted, PhysicalScan,
-    PhysicalScanResult, ReadBudget, ReadCounts, StoreSnapshot};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhysicalReadAdmissionV1 {
     KeyProbe,
     ValueSizeProbe,
-    Value { key_bytes: usize, value_bytes: usize },
+    Value {
+        key_bytes: usize,
+        value_bytes: usize,
+    },
 }
 
 impl StoreSnapshot<'_> {
@@ -19,7 +24,9 @@ impl StoreSnapshot<'_> {
         admit: impl FnMut(&mut C, PhysicalReadAdmissionV1) -> StoreResult<()>,
         visit: impl FnMut(&mut C, T, &[u8], &[u8], u64) -> StoreResult<()>,
     ) -> StoreResult<ReadCounts> {
-        Ok(self.scan_physical_admitted(table, budget, PhysicalScan::Whole, context, admit, visit)?.counts)
+        Ok(self
+            .scan_physical_admitted(table, budget, PhysicalScan::Whole, context, admit, visit)?
+            .counts)
     }
 
     pub(super) fn scan_physical_admitted<T: Entity, C>(
@@ -37,7 +44,9 @@ impl StoreSnapshot<'_> {
         let mut rows = mode.rows(self, &prefix);
         loop {
             admit(context, PhysicalReadAdmissionV1::KeyProbe)?;
-            let Some(guard) = rows.next() else { break; };
+            let Some(guard) = rows.next() else {
+                break;
+            };
             if matches!(mode, PhysicalScan::Whole) {
                 charge(counts.key_visits, 1, budget.rows, "capture physical rows")?;
             }
@@ -57,7 +66,8 @@ impl StoreSnapshot<'_> {
             let mut admitted = counts;
             admitted.key_visits =
                 charge(counts.key_visits, 1, budget.rows, "capture physical rows")?;
-            let raw = self.load_physical_observation(&key, &mut admitted, budget, context, &mut admit);
+            let raw =
+                self.load_physical_observation(&key, &mut admitted, budget, context, &mut admit);
             let raw = match raw {
                 Err(error) if mode.can_continue(&error, counts, budget) => {
                     return Ok(PhysicalScanResult {
@@ -95,9 +105,17 @@ impl StoreSnapshot<'_> {
             .size_of(self.entities, key)
             .map_err(|source| StoreError::Read { source })?;
         read_admitted(key.len(), size, counts, budget, || {
-            let value_bytes = usize::try_from(size.ok_or_else(|| invariant("bounded observation size is missing"))?)
-                .map_err(|_| StoreError::CounterOverflow)?;
-            admit(context, PhysicalReadAdmissionV1::Value { key_bytes: key.len(), value_bytes })?;
+            let value_bytes = usize::try_from(
+                size.ok_or_else(|| invariant("bounded observation size is missing"))?,
+            )
+            .map_err(|_| StoreError::CounterOverflow)?;
+            admit(
+                context,
+                PhysicalReadAdmissionV1::Value {
+                    key_bytes: key.len(),
+                    value_bytes,
+                },
+            )?;
             self.snapshot
                 .get(self.entities, key)
                 .map_err(|source| StoreError::Read { source })

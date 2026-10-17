@@ -24,7 +24,8 @@ fn public_historical_replay_ignores_later_input_generations() -> TestResult {
     let (_directory, store, _writer) = crate::public_identity_tests::support::fixture()?;
     let command = command(&store)?;
     let operation = command.operation.as_str().to_owned();
-    let prepared = store.prepare_roster_source_enrollment_command_v1(store.snapshot().revision(), command)?;
+    let prepared =
+        store.prepare_roster_source_enrollment_command_v1(store.snapshot().revision(), command)?;
     let approved = prepared.approval_bytes().to_vec();
     let digest = prepared.approval_digest().to_owned();
     let first = store.apply_roster_source_enrollment_v1(prepared, &approved, &digest)?;
@@ -37,7 +38,9 @@ fn public_historical_replay_ignores_later_input_generations() -> TestResult {
     let replay = store.replay_roster_source_enrollment_v1(&operation, &digest)?;
     check!(eq; replay.receipt(), first.receipt());
     check!(eq; crate::public_identity_tests::support::retained_state(&store)?, before);
-    check!(store.replay_roster_source_enrollment_v1("changed", &digest).is_err());
+    check!(store
+        .replay_roster_source_enrollment_v1("changed", &digest)
+        .is_err());
     Ok(())
 }
 
@@ -62,12 +65,17 @@ fn advance_generation(store: &Store) -> TestResult {
 #[test]
 fn foreign_inspection_and_stale_preparation_refuse() -> TestResult {
     let (_directory, store, _writer) = crate::public_identity_tests::support::fixture()?;
-    let (_other_directory, other, _other_writer) = crate::public_identity_tests::support::fixture()?;
+    let (_other_directory, other, _other_writer) =
+        crate::public_identity_tests::support::fixture()?;
     let foreign = other.inspect_roster_source_enrollment_v1()?;
-    check!(store.prepare_roster_source_enrollment_v1(foreign, review()?).is_err());
+    check!(store
+        .prepare_roster_source_enrollment_v1(foreign, review()?)
+        .is_err());
     let inputs = store.inspect_roster_source_enrollment_v1()?;
     advance_generation(&store)?;
-    check!(store.prepare_roster_source_enrollment_v1(inputs, review()?).is_err());
+    check!(store
+        .prepare_roster_source_enrollment_v1(inputs, review()?)
+        .is_err());
     check!(eq; store.store_format()?.lifecycle_revision, Some(7));
     Ok(())
 }
@@ -80,7 +88,9 @@ fn stale_prepared_public_enrollment_cannot_commit() -> TestResult {
     let approved = prepared.approval_bytes().to_vec();
     let digest = prepared.approval_digest().to_owned();
     advance_generation(&store)?;
-    check!(store.apply_roster_source_enrollment_v1(prepared, &approved, &digest).is_err());
+    check!(store
+        .apply_roster_source_enrollment_v1(prepared, &approved, &digest)
+        .is_err());
     check!(eq; store.store_format()?.lifecycle_revision, Some(7));
     Ok(())
 }

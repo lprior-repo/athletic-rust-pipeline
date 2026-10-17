@@ -6,8 +6,8 @@ mod emit;
 mod fields;
 mod inert;
 mod location;
-pub(in crate::milesplit) use location::{DeclarationKind, LocatedDeclaration, Termination};
 use location::Position;
+pub(in crate::milesplit) use location::{DeclarationKind, LocatedDeclaration, Termination};
 
 pub(in crate::milesplit) enum Declaration {
     Url(Vec<u8>),
@@ -71,7 +71,11 @@ impl Markup {
             self.containers.open(container)
         };
         if !valid {
-            self.queue(Declaration::Invalid, DeclarationKind::Invalid, Termination::Tag);
+            self.queue(
+                Declaration::Invalid,
+                DeclarationKind::Invalid,
+                Termination::Tag,
+            );
         }
         true
     }
@@ -80,7 +84,11 @@ impl Markup {
         if self.closing && self.tag.bytes() == b"script" {
             if self.script {
                 let body = std::mem::take(&mut self.body);
-                self.queue(Declaration::Script(body), DeclarationKind::JsonLd, Termination::ScriptEnd);
+                self.queue(
+                    Declaration::Script(body),
+                    DeclarationKind::JsonLd,
+                    Termination::ScriptEnd,
+                );
             }
             self.script = false;
         }
@@ -101,11 +109,16 @@ impl Markup {
                     value.eq_ignore_ascii_case(b"og:url")
                         || value.eq_ignore_ascii_case(b"twitter:url")
                 })
-                .map(|value| (Attribute::Content, if value.eq_ignore_ascii_case(b"og:url") {
-                    DeclarationKind::OpenGraph
-                } else {
-                    DeclarationKind::Twitter
-                })),
+                .map(|value| {
+                    (
+                        Attribute::Content,
+                        if value.eq_ignore_ascii_case(b"og:url") {
+                            DeclarationKind::OpenGraph
+                        } else {
+                            DeclarationKind::Twitter
+                        },
+                    )
+                }),
             b"script" => {
                 self.script = self
                     .fields

@@ -1,9 +1,9 @@
 use super::super::{MAX_ROWS, MAX_ROW_BYTES};
 use super::{Gap, TemporalResult};
+use crate::milesplit::wire::RosterWitnessUnavailableV1 as WitnessGap;
 use html5gum::{DefaultEmitter, Span, Token, Tokenizer};
 use sha2::{Digest, Sha256};
 use std::ops::Range;
-use crate::milesplit::wire::RosterWitnessUnavailableV1 as WitnessGap;
 
 mod active;
 mod close;
@@ -57,10 +57,16 @@ pub(super) struct Row {
 
 impl Row {
     pub(super) fn person(&self, selected: Range<usize>) -> Result<Range<usize>, WitnessGap> {
-        let mut anchors = self.anchors.as_ref().map_err(|reason| *reason)?
-            .iter().filter(|anchor| anchor.active == selected);
+        let mut anchors = self
+            .anchors
+            .as_ref()
+            .map_err(|reason| *reason)?
+            .iter()
+            .filter(|anchor| anchor.active == selected);
         let person = anchors.next().ok_or(WitnessGap::MissingSourceSpan)?;
-        if anchors.next().is_some() { return Err(WitnessGap::MissingSourceSpan); }
+        if anchors.next().is_some() {
+            return Err(WitnessGap::MissingSourceSpan);
+        }
         Ok(person.raw.clone())
     }
 }

@@ -81,10 +81,15 @@ impl StoreSnapshot<'_> {
         mode: PhysicalScan<'_>,
         mut visit: impl FnMut(T, &[u8], &[u8], u64) -> StoreResult<()>,
     ) -> StoreResult<PhysicalScanResult> {
-        self.scan_physical_admitted(table, budget, mode, &mut (), |_, _| Ok(()),
-            |_, row, key, raw, bytes| visit(row, key, raw, bytes))
+        self.scan_physical_admitted(
+            table,
+            budget,
+            mode,
+            &mut (),
+            |_, _| Ok(()),
+            |_, row, key, raw, bytes| visit(row, key, raw, bytes),
+        )
     }
-
 }
 
 pub(super) enum PhysicalScan<'a> {

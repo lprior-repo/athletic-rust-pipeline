@@ -93,7 +93,11 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
     let format = super::require_current(root, super::read_format(&meta)?)?;
     crate::input_revisions::validate_format(&db.snapshot(), &meta, &format)?;
     crate::roster_source_issuance::validate_format(
-        &db.snapshot(), &meta, &journal, &receipts, &format,
+        &db.snapshot(),
+        &meta,
+        &journal,
+        &receipts,
+        &format,
         &mut crate::RosterStartupValidationBudgetV1::new(),
     )?;
     let keyspaces = ExistingKeyspaces {

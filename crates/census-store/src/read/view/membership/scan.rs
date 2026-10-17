@@ -47,9 +47,7 @@ impl<'s> StoreSnapshot<'s> {
         admit_row: impl FnMut(&mut G) -> StoreResult<()>,
         visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
     ) -> StoreResult<JournalNamespaceContents> {
-        self.scan_journal_namespace_core(
-            namespace, budget, state, |_, _| Ok(()), admit_row, visit,
-        )
+        self.scan_journal_namespace_core(namespace, budget, state, |_, _| Ok(()), admit_row, visit)
     }
 
     pub(crate) fn scan_journal_namespace_preadmitted<G>(
@@ -87,13 +85,23 @@ impl<'s> StoreSnapshot<'s> {
             scan.charge_visit()?;
             let key = guard.key().map_err(|source| StoreError::Read { source })?;
             preadmit(state, PhysicalReadAdmissionV1::ValueSizeProbe)?;
-            let length = self.snapshot.size_of(self.journal, &key)
+            let length = self
+                .snapshot
+                .size_of(self.journal, &key)
                 .map_err(|source| StoreError::Read { source })?
                 .ok_or_else(|| namespace.refusal("namespace value size is missing"))?;
             let length = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
             scan.require_size(key.len(), length)?;
-            preadmit(state, PhysicalReadAdmissionV1::Value { key_bytes: key.len(), value_bytes: length })?;
-            let raw = self.snapshot.get(self.journal, &key)
+            preadmit(
+                state,
+                PhysicalReadAdmissionV1::Value {
+                    key_bytes: key.len(),
+                    value_bytes: length,
+                },
+            )?;
+            let raw = self
+                .snapshot
+                .get(self.journal, &key)
                 .map_err(|source| StoreError::Read { source })?
                 .ok_or_else(|| namespace.refusal("namespace value is missing"))?;
             if raw.len() != length {
@@ -104,7 +112,6 @@ impl<'s> StoreSnapshot<'s> {
         }
         Err(namespace.refusal("namespace scan did not prove exhaustion"))
     }
-
 }
 
 pub(crate) struct NamespaceScan {
@@ -134,12 +141,20 @@ impl NamespaceScan {
     }
 
     fn require_size(&self, key_bytes: usize, value_bytes: usize) -> StoreResult<()> {
-        let key_limit = MAX_JOURNAL_KEY_BYTES.checked_add(5).ok_or(StoreError::CounterOverflow)?;
+        let key_limit = MAX_JOURNAL_KEY_BYTES
+            .checked_add(5)
+            .ok_or(StoreError::CounterOverflow)?;
         size(key_bytes, key_limit)?;
         size(value_bytes, self.budget.record_bytes)?;
-        let total = key_bytes.checked_add(value_bytes).ok_or(StoreError::CounterOverflow)?;
-        charge(self.bytes, u64::try_from(total).map_err(|_| StoreError::CounterOverflow)?,
-            self.budget.bytes, "journal encoded bytes")?;
+        let total = key_bytes
+            .checked_add(value_bytes)
+            .ok_or(StoreError::CounterOverflow)?;
+        charge(
+            self.bytes,
+            u64::try_from(total).map_err(|_| StoreError::CounterOverflow)?,
+            self.budget.bytes,
+            "journal encoded bytes",
+        )?;
         Ok(())
     }
 

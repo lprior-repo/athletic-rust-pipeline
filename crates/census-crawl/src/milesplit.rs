@@ -38,11 +38,11 @@ pub use owned::{
     read_retained_owned_result, read_retained_owned_result_from, RetainedResultError,
     VerifiedRetainedOwnedResult,
 };
+pub(crate) use parse::parse_captured_roster_with_witness_v1;
 pub use parse::{
     has_next_page, parse_captured_roster, parse_meet_index, parse_meet_result_files, parse_roster,
     parse_team_index, TeamIndexRead,
 };
-pub(crate) use parse::parse_captured_roster_with_witness_v1;
 pub(crate) use raw::located::{parse_raw_located_bound, ProvisionalRawRowLocatorV1};
 pub use raw::{parse_raw, RawPage};
 pub use raw_issue::{RawGradeIssue, RawGradeIssueKind};
@@ -56,10 +56,10 @@ pub use roster::{
     SourceRowLocator,
 };
 pub use wire::{
-    CurrentRosterAssertion, LocatedRosterAthlete, MeetRef, MeetResultFile, ResultSetRef, Roster,
-    RosterAthlete, RosterTemporalUnavailable, Season, Site, TeamRef,
-    PublishedRosterOwnerKindV1, PublishedRosterOwnerTerminationV1, PublishedRosterOwnersV1,
-    PublishedRosterOwnerV1, RosterRowStatementsV1, RosterWitnessUnavailableV1,
+    CurrentRosterAssertion, LocatedRosterAthlete, MeetRef, MeetResultFile,
+    PublishedRosterOwnerKindV1, PublishedRosterOwnerTerminationV1, PublishedRosterOwnerV1,
+    PublishedRosterOwnersV1, ResultSetRef, Roster, RosterAthlete, RosterRowStatementsV1,
+    RosterTemporalUnavailable, RosterWitnessUnavailableV1, Season, Site, TeamRef,
 };
 
 #[cfg(test)]

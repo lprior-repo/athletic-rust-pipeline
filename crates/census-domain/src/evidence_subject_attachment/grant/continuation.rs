@@ -11,7 +11,10 @@ pub struct AttachmentReplayContinuationV1 {
 impl AttachmentReplayGrantV1 {
     pub fn checkpoint(&mut self) -> Result<AttachmentReplayContinuationV1> {
         let origin = self.issue_origin()?;
-        Ok(AttachmentReplayContinuationV1 { origin, floor: self.usage() })
+        Ok(AttachmentReplayContinuationV1 {
+            origin,
+            floor: self.usage(),
+        })
     }
 }
 
@@ -22,7 +25,9 @@ impl AttachmentReplayContinuationV1 {
             if usage.encoded_bytes() < self.floor.encoded_bytes()
                 || usage.traversal_steps() < self.floor.traversal_steps()
             {
-                return Err(EvidenceSubjectAttachmentError::Invalid("grant continuation usage regressed"));
+                return Err(EvidenceSubjectAttachmentError::Invalid(
+                    "grant continuation usage regressed",
+                ));
             }
             grant.require_origin(&self.origin)
         })
