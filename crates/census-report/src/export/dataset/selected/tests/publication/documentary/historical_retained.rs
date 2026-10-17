@@ -1,5 +1,5 @@
-use super::*;
 use super::fixture::files;
+use super::*;
 use crate::export::qualification::participation::ParticipationReplay;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -30,8 +30,11 @@ struct Retention {
 
 #[test]
 fn native_independently_retained_v3_replays_unchanged_without_live_store() -> TestResult {
-    let path = PathBuf::from(std::env::var_os("CENSUS_DOCUMENTARY_V3_RETENTION_JSON")
-        .ok_or("CENSUS_DOCUMENTARY_V3_RETENTION_JSON must name the independent V3 retention manifest")?);
+    let path = PathBuf::from(
+        std::env::var_os("CENSUS_DOCUMENTARY_V3_RETENTION_JSON").ok_or(
+            "CENSUS_DOCUMENTARY_V3_RETENTION_JSON must name the independent V3 retention manifest",
+        )?,
+    );
     let bytes = manifest_bytes(&path)?;
     let expected_digest = std::env::var("CENSUS_DOCUMENTARY_V3_RETENTION_SHA256")?;
     check!(files::hex(&expected_digest, 64));
@@ -84,11 +87,19 @@ impl Retention {
         inventory_shape(&self.store_files)?;
         inventory_shape(&self.archive_files)?;
         check!(eq; self.archive, "archive/genuine-documentary.json");
-        check!(self.archive_files.iter().any(|file| file.path == "genuine-documentary.json"));
-        check!(self.archive_files.iter().any(|file| file.path.starts_with("genuine-documentary.json.proofs/")));
+        check!(self
+            .archive_files
+            .iter()
+            .any(|file| file.path == "genuine-documentary.json"));
+        check!(self
+            .archive_files
+            .iter()
+            .any(|file| file.path.starts_with("genuine-documentary.json.proofs/")));
         check!(self.archive_files.iter().all(|file| {
             file.path == "genuine-documentary.json"
-                || file.path.strip_prefix("genuine-documentary.json.proofs/")
+                || file
+                    .path
+                    .strip_prefix("genuine-documentary.json.proofs/")
                     .is_some_and(|name| files::hex(name, 64))
         }));
         Ok(())
@@ -98,13 +109,19 @@ impl Retention {
 fn inventory_shape(inventory: &[files::File]) -> TestResult {
     check!(!inventory.is_empty());
     check!(inventory.len() <= 4096);
-    check!(inventory.windows(2).all(|pair| matches!(pair, [left, right] if left.path < right.path)));
+    check!(inventory
+        .windows(2)
+        .all(|pair| matches!(pair, [left, right] if left.path < right.path)));
     let mut total = 0u64;
     for file in inventory {
         check!(!file.path.is_empty() && file.path.len() <= 4096);
-        check!(Path::new(&file.path).components().all(|part| matches!(part, std::path::Component::Normal(_))));
+        check!(Path::new(&file.path)
+            .components()
+            .all(|part| matches!(part, std::path::Component::Normal(_))));
         check!(files::hex(&file.sha256, 64));
-        total = total.checked_add(file.bytes).ok_or("retained inventory byte overflow")?;
+        total = total
+            .checked_add(file.bytes)
+            .ok_or("retained inventory byte overflow")?;
         check!(total <= 256 * 1024 * 1024);
     }
     Ok(())
@@ -126,8 +143,15 @@ fn manifest_bytes(path: &Path) -> TestResult<Vec<u8>> {
 }
 
 fn require_v3(dataset: &ExportDataset, frozen: &Path) -> TestResult {
-    let proofs = serde_json::to_value(dataset.selected_proofs.as_ref().ok_or("retained selected proofs")?)?;
-    let descriptor = proofs.get("participation_digest").and_then(Value::as_str)
+    let proofs = serde_json::to_value(
+        dataset
+            .selected_proofs
+            .as_ref()
+            .ok_or("retained selected proofs")?,
+    )?;
+    let descriptor = proofs
+        .get("participation_digest")
+        .and_then(Value::as_str)
         .ok_or("retained participation descriptor")?;
     let directory = frozen.with_file_name("genuine-documentary.json.proofs");
     let replay = ParticipationReplay::load(&directory, descriptor)?;
@@ -142,7 +166,10 @@ fn observations(dataset: &ExportDataset) -> TestResult<Value> {
     check!(eq; athlete.grad_year.get(), 2026);
     check!(eq; athlete.identity_in(&census_domain::model::SourceNamespace::MilesplitAthlete)
         .ok_or("retained provider identity")?.id, "7223777");
-    check!(dataset.verified_public_identities()?.public_id(athlete.id.as_str()).is_some());
+    check!(dataset
+        .verified_public_identities()?
+        .public_id(athlete.id.as_str())
+        .is_some());
     check!(eq; dataset.selected_authority()?.profile().input().graduation_years, vec![GradYear::CO2027]);
     check!(dataset.performances.is_empty());
     check!(dataset.teams.is_empty());
@@ -150,18 +177,28 @@ fn observations(dataset: &ExportDataset) -> TestResult<Value> {
     check!(view.unsupported_documentary().is_empty());
     check!(eq; view.documentary_rows().count(), 3);
     let options = bests_options(dataset)?;
-    let derivation = crate::report::Derivation::of(dataset, options.scope, options.grad_year, &options.jurisdictions)?;
+    let derivation = crate::report::Derivation::of(
+        dataset,
+        options.scope,
+        options.grad_year,
+        &options.jurisdictions,
+    )?;
     check!(derivation.athletes().is_empty());
     check!(derivation.performances().is_empty());
     let bests = crate::bests::build_with_exclusions(dataset, &options)?;
     check!(bests.selections.is_empty());
     check!(eq; bests.participation_exclusions.len(), 3);
-    let reasons = vec![ParticipationReason::CohortUnresolved,
-        ParticipationReason::ParticipationContextUnresolved, ParticipationReason::HighSchoolStatusMissing,
-        ParticipationReason::SummerBoundaryUnresolved];
+    let reasons = vec![
+        ParticipationReason::CohortUnresolved,
+        ParticipationReason::ParticipationContextUnresolved,
+        ParticipationReason::HighSchoolStatusMissing,
+        ParticipationReason::SummerBoundaryUnresolved,
+    ];
     let mut rows = Vec::new();
     for exclusion in &bests.participation_exclusions {
-        let row = view.documentary(exclusion.performance_id()).ok_or("retained documentary row")?;
+        let row = view
+            .documentary(exclusion.performance_id())
+            .ok_or("retained documentary row")?;
         check!(eq; row.athlete_id(), &athlete.id);
         check!(eq; row.event_id(), exclusion.event_id());
         check!(eq; row.athlete_id(), exclusion.athlete_id());
@@ -178,5 +215,7 @@ fn observations(dataset: &ExportDataset) -> TestResult<Value> {
             "actual":"Unresolved","disposition":"unresolved","reasons":reasons,
             "diagnostics":row.assessment().diagnostics(),"references":row.assessment().evidence_refs()}));
     }
-    Ok(json!({"generation":view.input_generation(),"profile":view.profile_id(),"rule":view.participation_rule(),"rows":rows}))
+    Ok(
+        json!({"generation":view.input_generation(),"profile":view.profile_id(),"rule":view.participation_rule(),"rows":rows}),
+    )
 }
