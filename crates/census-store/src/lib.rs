@@ -279,7 +279,6 @@ impl Store {
         backup::http_cache_integrity(self.root())
     }
 }
-
 #[cfg(test)]
 #[path = "backup_tests.rs"]
 mod backup_tests;
