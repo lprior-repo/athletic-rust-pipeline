@@ -57,18 +57,18 @@ pub(crate) struct PinnedParticipation {
     pub(super) replay: super::archive::ParticipationReplay,
 }
 
+pub(crate) type PinnedParticipationParts = (
+    String,
+    ProfileId,
+    ContractRefV1,
+    BTreeMap<PerformanceId, PinnedParticipationRow>,
+    BTreeMap<PerformanceId, super::super::DocumentaryParticipationRow>,
+    Vec<super::UnsupportedDocumentarySource>,
+    super::archive::ParticipationReplay,
+);
+
 impl PinnedParticipation {
-    pub(crate) fn into_parts(
-        self,
-    ) -> (
-        String,
-        ProfileId,
-        ContractRefV1,
-        BTreeMap<PerformanceId, PinnedParticipationRow>,
-        BTreeMap<PerformanceId, super::super::DocumentaryParticipationRow>,
-        Vec<super::UnsupportedDocumentarySource>,
-        super::archive::ParticipationReplay,
-    ) {
+    pub(crate) fn into_parts(self) -> PinnedParticipationParts {
         (
             self.input_generation,
             self.profile_id,

@@ -51,7 +51,7 @@ async fn replay_v1_dispatch_keeps_wire_and_cannot_issue_documentary_capabilities
     let fixture = Fixture::prepare(Some("High School")).await?;
     let current = fixture.assess()?;
     let historical: ParticipationReplayV1 =
-        serde_json::from_value(serde_json::to_value(current.replay.retained())?)?;
+        serde_json::from_slice(&serde_json::to_vec(current.replay.retained())?)?;
     let expected = serde_json::to_vec(&historical)?;
     let directory = fixture.objects();
     let descriptor = historical.install(&directory)?;
@@ -73,8 +73,9 @@ async fn v3_missing_or_altered_attachment_never_falls_back_to_valid_nested_v2() 
     let current = fixture.assess()?;
     let original = serde_json::to_value(&current.replay)?;
     let directory = fixture.objects();
-    let nested: ParticipationReplayV2 =
-        serde_json::from_value(original.get("retained").ok_or("nested V2")?.clone())?;
+    let nested: ParticipationReplayV2 = serde_json::from_slice(&serde_json::to_vec(
+        original.get("retained").ok_or("nested V2")?,
+    )?)?;
     let v2 = ParticipationReplay::V2(nested);
     let v2_descriptor = v2.install(&directory)?;
     check!(matches!(
@@ -99,7 +100,8 @@ async fn v3_missing_or_altered_attachment_never_falls_back_to_valid_nested_v2() 
     *missing_object
         .pointer_mut("/attachment/object")
         .ok_or("attachment object digest")? = json!("f".repeat(64));
-    let malformed: ParticipationReplayV3 = serde_json::from_value(missing_object)?;
+    let malformed: ParticipationReplayV3 =
+        serde_json::from_slice(&serde_json::to_vec(&missing_object)?)?;
     let malformed = ParticipationReplay::V3(malformed).install(&directory)?;
     check!(matches!(
         ParticipationReplay::load(&directory, &malformed)?,

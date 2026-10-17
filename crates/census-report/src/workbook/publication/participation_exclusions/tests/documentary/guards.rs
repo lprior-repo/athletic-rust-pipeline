@@ -142,17 +142,40 @@ fn unsupported_documentary_identity_survives_diagnostics_and_refuses_publication
         subject.clone(),
         reason,
     );
+    let later = crate::export::UnsupportedDocumentarySource::fixture(
+        record.clone(),
+        subject.clone(),
+        "unsupported_capture_schema",
+    );
     let changed = fixture
         .view()?
-        .fixture_with_documentary(rows()?, vec![unsupported]);
+        .fixture_with_documentary(rows()?, vec![unsupported, later]);
     check!(eq; changed.documentary_rows().count(), 3);
-    let [diagnostic] = changed.unsupported_documentary() else {
+    let [diagnostic, later] = changed.unsupported_documentary() else {
         return Err("exact unsupported identity diagnostic".into());
     };
     check!(eq; diagnostic.record(), &record);
     check!(eq; diagnostic.subject(), &subject);
     check!(eq; diagnostic.reason(), reason);
-    check!(changed.require_documentary_publication().is_err());
+    check!(eq; later.record(), &record);
+    check!(eq; later.subject(), &subject);
+    check!(eq; later.reason(), "unsupported_capture_schema");
+    let error = match changed.require_documentary_publication() {
+        Err(error) => error,
+        Ok(()) => return Err("unsupported source must refuse publication".into()),
+    };
+    let crate::report::ReportError::Invariant { detail } = error else {
+        return Err("identity-keyed documentary refusal".into());
+    };
+    let detail: serde_json::Value = serde_json::from_str(&detail)?;
+    check!(eq; detail, serde_json::json!({
+        "message": "unsupported documentary discovery requires an identity-keyed publication format",
+        "total": 2,
+        "reported": 1,
+        "record": record,
+        "subject": subject,
+        "reason": reason,
+    }));
     check!(write(directory.path(), &fixture.dataset, &changed, &outcome).is_err());
     check!(verify(directory.path(), &fixture.dataset, &changed, &outcome).is_err());
     check!(eq; std::fs::read(directory.path().join(FILE))?, before);

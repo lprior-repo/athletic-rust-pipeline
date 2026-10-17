@@ -111,8 +111,9 @@ impl VerifiedParticipationView {
         &self.participation_rule
     }
     pub(crate) fn require_documentary_publication(&self) -> crate::report::ReportResult<()> {
-        if !self.unsupported_documentary.is_empty() {
-            return Err(crate::report::ReportError::Invariant { detail: "unsupported documentary discovery requires an identity-keyed publication format".into() });
+        let unsupported = self.unsupported_documentary();
+        if let Some(first) = unsupported.first() {
+            return Err(first.publication_error(unsupported.len())?);
         }
         Ok(())
     }

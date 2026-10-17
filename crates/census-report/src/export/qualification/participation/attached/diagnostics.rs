@@ -1,4 +1,6 @@
 use super::*;
+
+mod refusal;
 use census_domain::evidence_subject_attachment::{
     AttachmentRecordReferenceV1, RetainedDocumentSubjectReferenceV1,
 };
