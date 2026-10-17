@@ -74,7 +74,8 @@ impl Harness {
             Duration::from_millis(1),
             HashMap::new(),
             Vec::new(),
-        )?.with_offline(true);
+        )?
+        .with_offline(true);
         Ok(Self {
             _dir: dir,
             fetcher,

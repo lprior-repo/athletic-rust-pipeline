@@ -474,12 +474,8 @@ fn supersession_case_in_order(reversed: bool) -> TestResult {
     let store = Store::open(directory.path())?;
 
     let retained_case = seed_retained_supersession_case(&store, "detail")?;
-    let (resolved_case, verdict) = resolved_supersession_case(
-        &store,
-        &retained_case,
-        "new detail",
-        "resolves cluster",
-    )?;
+    let (resolved_case, verdict) =
+        resolved_supersession_case(&store, &retained_case, "new detail", "resolves cluster")?;
 
     if reversed {
         store.replace(Table::IdentityVerdicts, &verdict)?;
@@ -645,12 +641,8 @@ fn supersession_records_durable_transition_provenance() -> TestResult {
 
     let old_case = seed_retained_supersession_case(&store, "old policy detail")?;
     store.replace(Table::ReviewCases, &old_case)?;
-    let (new_case, verdict) = resolved_supersession_case(
-        &store,
-        &old_case,
-        "new detail",
-        "new policy",
-    )?;
+    let (new_case, verdict) =
+        resolved_supersession_case(&store, &old_case, "new detail", "new policy")?;
     store.replace(Table::ReviewCases, &new_case)?;
     store.replace(Table::IdentityVerdicts, &verdict)?;
 

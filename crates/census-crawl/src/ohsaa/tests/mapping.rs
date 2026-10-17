@@ -2,7 +2,7 @@ use super::{
     capture, fixture_ad_centerville, fixture_ad_dublin, fixture_sports_centerville,
     fixture_sports_dublin, AD_FETCHED, SPORTS_FETCHED,
 };
-use crate::ohsaa::{DirectorPage, SportsPage, SearchResult};
+use crate::ohsaa::{DirectorPage, SearchResult, SportsPage};
 use census_domain::model::{CoachRole, Evidence, Gender, SourceNamespace, Sport};
 
 fn school_entities(
@@ -11,7 +11,9 @@ fn school_entities(
     ad: Option<&crate::net::FetchOutcome>,
 ) -> anyhow::Result<crate::ohsaa::SchoolExtract> {
     let sports = SportsPage::parse(owner, sports.clone())?;
-    let ad = ad.map(|capture| DirectorPage::parse(owner, capture.clone())).transpose()?;
+    let ad = ad
+        .map(|capture| DirectorPage::parse(owner, capture.clone()))
+        .transpose()?;
     crate::ohsaa::school_entities(&sports, ad.as_ref()).map_err(anyhow::Error::msg)
 }
 

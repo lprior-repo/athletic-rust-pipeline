@@ -36,7 +36,9 @@ fn fixture_transport_preserves_bytes_and_refuses_overwrite() -> TestResult {
     write_new(&path, bytes)?;
     check!(eq; std::fs::read(&path)?.as_slice(), bytes.as_slice());
     check!(eq; read_json::<serde_json::Value>(&path)?, serde_json::json!({"value": 17}));
-    let error = write_new(&path, b"changed").err().ok_or("overwrite accepted")?;
+    let error = write_new(&path, b"changed")
+        .err()
+        .ok_or("overwrite accepted")?;
     check!(eq; error.downcast_ref::<std::io::Error>().ok_or("overwrite error")?.kind(), std::io::ErrorKind::AlreadyExists);
     check!(eq; std::fs::read(&path)?.as_slice(), bytes.as_slice());
     Ok(())

@@ -49,7 +49,12 @@ pub(super) fn emit_school(
             .map(|_| ())
     })?;
     persist_coaches(ctx, &mut projection, report, tally)?;
-    persist_capture(ctx, projection.school, "sports", projection.pages.sports.capture())?;
+    persist_capture(
+        ctx,
+        projection.school,
+        "sports",
+        projection.pages.sports.capture(),
+    )?;
     if let Ok(ad) = &projection.pages.ad {
         persist_capture(ctx, projection.school, "ad", ad.capture())?;
     }
@@ -65,9 +70,13 @@ fn persist_coaches(
     let pages = projection.pages;
     projection.extract.coaches.iter_mut().try_for_each(|coach| {
         let capture = if coach.role == CoachRole::AthleticDirector {
-            pages.ad.as_ref().map(|page| page.capture()).map_err(|_| CrawlError::Invariant {
-                detail: "director without owned capture".to_owned(),
-            })?
+            pages
+                .ad
+                .as_ref()
+                .map(|page| page.capture())
+                .map_err(|_| CrawlError::Invariant {
+                    detail: "director without owned capture".to_owned(),
+                })?
         } else {
             pages.sports.capture()
         };
@@ -162,12 +171,12 @@ fn persist_completion(
         &projection.school.ohsaa_id,
         &projection.pages.sports.capture().content_digest,
         &projection.pages.sports.capture().fetched_at,
-        projection
-            .pages
-            .ad
-            .as_ref()
-            .ok()
-            .map(|capture| (&capture.capture().content_digest, &capture.capture().fetched_at)),
+        projection.pages.ad.as_ref().ok().map(|capture| {
+            (
+                &capture.capture().content_digest,
+                &capture.capture().fetched_at,
+            )
+        }),
         ctx.school_year,
     );
     let digest = census_domain::model::serialized_digest(&binding).map_err(|source| {

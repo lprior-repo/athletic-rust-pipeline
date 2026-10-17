@@ -44,5 +44,6 @@ pub(crate) fn row_metadata(
         "capture_url": capture.url, "response_url": null,
         "capture_sha256": capture.content_digest, "capture_bytes": capture.bytes,
         "fetched_at": capture.fetched_at, "row": row, "row_sha256": hash(span),
-    }).to_string())
+    })
+    .to_string())
 }

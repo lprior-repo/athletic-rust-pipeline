@@ -27,7 +27,12 @@ pub(super) const POLICY: Lane = Lane {
     arm: CT_ARM,
     refusal: (CT_REFUSAL_SLUG, CT_TRUE_MISSING),
     kind: RefusalKind::EngineeringGap,
-    basis: ArmBasis::Capture { text: CT_ARM_BASIS, source_url: Some(CT_SOURCE_URL), path: CT_CAPTURE_PATH, digest: CT_CAPTURE_DIGEST },
+    basis: ArmBasis::Capture {
+        text: CT_ARM_BASIS,
+        source_url: Some(CT_SOURCE_URL),
+        path: CT_CAPTURE_PATH,
+        digest: CT_CAPTURE_DIGEST,
+    },
     policy: LanePolicy::Blocked,
 };
 

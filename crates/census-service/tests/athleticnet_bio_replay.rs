@@ -37,10 +37,13 @@ enum CrossCountryFixture {
 }
 
 fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
-    capture_cache::seed(cache_dir, url, body.as_bytes(), "2026-09-22T12:00:00Z", &[(
-        "Accept".to_string(),
-        "application/json".to_string(),
-    )])
+    capture_cache::seed(
+        cache_dir,
+        url,
+        body.as_bytes(),
+        "2026-09-22T12:00:00Z",
+        &[("Accept".to_string(), "application/json".to_string())],
+    )
 }
 
 fn bio_url(athlete_id: u64, sport: &str) -> String {
@@ -80,7 +83,8 @@ impl Harness {
             Duration::from_millis(1),
             HashMap::new(),
             Vec::new(),
-        )?.with_offline(true);
+        )?
+        .with_offline(true);
         let registry = dir.path().join("registry.txt");
         fs::write(&registry, format!("{ATHLETE_ID},AK\n")).context("writing the registry")?;
         Ok(Self {

@@ -100,7 +100,12 @@ impl Lane {
         match self.basis {
             ArmBasis::Text(text) => text.to_string(),
             ArmBasis::MissingReason => self.refusal.1.to_string(),
-            ArmBasis::Capture { text, source_url, path, digest } => match source_url {
+            ArmBasis::Capture {
+                text,
+                source_url,
+                path,
+                digest,
+            } => match source_url {
                 Some(url) => format!("{text} {url} {path} sha256 {digest}"),
                 None => format!("{text} {path} sha256 {digest}"),
             },
@@ -126,9 +131,9 @@ impl RetainedCapture {
             )?;
             return blocked(pending, refusal, observed_on);
         }
-        let evidence = CoachLaneEvidence::new(
-            self.schools, self.contacts, self.digest, self.captured_on,
-        )?.with_source_url(self.source_url)?;
+        let evidence =
+            CoachLaneEvidence::new(self.schools, self.contacts, self.digest, self.captured_on)?
+                .with_source_url(self.source_url)?;
         let resolution = CoachLaneResolution::resolved(
             CoachLaneRole::Published,
             CoachLaneTenure::Current,
@@ -141,10 +146,12 @@ impl RetainedCapture {
     }
 
     pub(super) fn resolved_note(&self) -> String {
-        self.captures.iter().fold(self.note.to_string(), |mut note, (path, digest)| {
-            note.push_str(&format!(" {path} sha256 {digest};"));
-            note
-        })
+        self.captures
+            .iter()
+            .fold(self.note.to_string(), |mut note, (path, digest)| {
+                note.push_str(&format!(" {path} sha256 {digest};"));
+                note
+            })
     }
 }
 

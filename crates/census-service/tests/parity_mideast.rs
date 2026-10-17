@@ -31,7 +31,13 @@ const SEASON: i16 = 2026;
 const SEEDED_AT: &str = "2026-09-20T14:39:00Z";
 
 fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
-    capture_cache::seed_response(cache_dir, url, body.as_bytes(), SEEDED_AT, capture_cache::Metadata::default())
+    capture_cache::seed_response(
+        cache_dir,
+        url,
+        body.as_bytes(),
+        SEEDED_AT,
+        capture_cache::Metadata::default(),
+    )
 }
 
 fn seeded(dir: &Path, bodies: &[(&str, &str)]) -> Result<(Store, Fetcher)> {
@@ -48,7 +54,8 @@ fn seeded(dir: &Path, bodies: &[(&str, &str)]) -> Result<(Store, Fetcher)> {
         HashMap::new(),
         Vec::new(),
     )
-    .context("building the fetcher")?.with_offline(true);
+    .context("building the fetcher")?
+    .with_offline(true);
     Ok((store, fetcher))
 }
 

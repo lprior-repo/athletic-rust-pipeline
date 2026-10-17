@@ -27,10 +27,16 @@ pub(super) fn seed(
     acquired_at: &str,
     headers: &[(String, String)],
 ) -> Result<()> {
-    seed_response(cache, url, body, acquired_at, Metadata {
-        headers: Some(headers),
-        ..Metadata::default()
-    })
+    seed_response(
+        cache,
+        url,
+        body,
+        acquired_at,
+        Metadata {
+            headers: Some(headers),
+            ..Metadata::default()
+        },
+    )
 }
 
 pub(super) fn seed_response(
@@ -40,7 +46,10 @@ pub(super) fn seed_response(
     acquired_at: &str,
     metadata: Metadata<'_>,
 ) -> Result<()> {
-    let representation = metadata.headers.map(RepresentationHeaders::canonical).transpose()?;
+    let representation = metadata
+        .headers
+        .map(RepresentationHeaders::canonical)
+        .transpose()?;
     let mut key = Sha256::new();
     key.update(b"GET");
     key.update([0x1f]);

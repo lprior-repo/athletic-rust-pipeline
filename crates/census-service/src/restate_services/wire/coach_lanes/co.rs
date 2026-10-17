@@ -1,6 +1,8 @@
-#[cfg(test)]
-use census_domain::model::{CoachLaneObligation, CoachLaneRole, CoachLaneTenure, SchoolYear, COACH_LANE_MAX_FRESHNESS_DAYS};
 use census_domain::model::CoachLaneMailbox;
+#[cfg(test)]
+use census_domain::model::{
+    CoachLaneObligation, CoachLaneRole, CoachLaneTenure, SchoolYear, COACH_LANE_MAX_FRESHNESS_DAYS,
+};
 use census_domain::UsJurisdiction;
 
 use super::policy::{ArmBasis, Lane, LanePolicy, RetainedCapture};

@@ -22,7 +22,12 @@ pub(super) const POLICY: Lane = Lane {
     arm: FL_ARM,
     refusal: (FL_REFUSAL_SLUG, FL_TRUE_MISSING),
     kind: RefusalKind::EngineeringGap,
-    basis: ArmBasis::Capture { text: FL_ARM_BASIS, source_url: None, path: FL_CAPTURE_PATH, digest: FL_CAPTURE_DIGEST },
+    basis: ArmBasis::Capture {
+        text: FL_ARM_BASIS,
+        source_url: None,
+        path: FL_CAPTURE_PATH,
+        digest: FL_CAPTURE_DIGEST,
+    },
     policy: LanePolicy::Blocked,
 };
 

@@ -26,7 +26,9 @@ fn projection_uses_only_checked_rows_before_owned_table_close() -> anyhow::Resul
         capture(owner.sports_url(), OWNED_AND_FOREIGN, SPORTS_FETCHED),
     )?;
     let extract = school_entities(&page, None).map_err(anyhow::Error::msg)?;
-    let facts: Vec<_> = extract.coaches.iter()
+    let facts: Vec<_> = extract
+        .coaches
+        .iter()
         .map(|coach| (coach.name.as_str(), coach.sport, coach.gender))
         .collect();
     check!(eq; facts, vec![("Owned Coach", Some(Sport::CrossCountry), Gender::Boys)]);
@@ -44,14 +46,19 @@ fn checked_projection_refuses_pairing_a_foreign_director_page() -> anyhow::Resul
         capture(owner.sports_url(), OWNED_AND_FOREIGN, SPORTS_FETCHED),
     )?;
     let foreign = SearchResult {
-        name: "CENTERVILLE".to_string(), city: "Centerville".to_string(), ohsaa_id: "336".to_string(),
+        name: "CENTERVILLE".to_string(),
+        city: "Centerville".to_string(),
+        ohsaa_id: "336".to_string(),
     };
     let ad = DirectorPage::parse(
         &foreign,
-        capture(foreign.ad_url(), super::fixture_ad_centerville(), AD_FETCHED),
+        capture(
+            foreign.ad_url(),
+            super::fixture_ad_centerville(),
+            AD_FETCHED,
+        ),
     )?;
     let error = school_entities(&sports, Some(&ad)).err();
     check!(eq; error, Some("sports and director pages belong to different school owners"));
     Ok(())
 }
-

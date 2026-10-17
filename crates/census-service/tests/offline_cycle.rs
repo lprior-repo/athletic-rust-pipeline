@@ -13,7 +13,6 @@ mod preparation;
 
 #[path = "common/workbook_population.rs"]
 mod workbook_population;
-use workbook_population::{unique_athlete_ids, xlsx_rows};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventIdentity, EventKind, EventSpecification,
@@ -26,6 +25,7 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::TempDir;
+use workbook_population::{unique_athlete_ids, xlsx_rows};
 
 const MEET_DATE: &str = "2026-05-02";
 const SOURCE_URL: &str = "https://example.test/offline-cycle/results";

@@ -5,9 +5,9 @@ pub mod pages;
 pub mod parse;
 use census_domain::UsJurisdiction;
 
+pub use checked::{parse_sports_table, DirectorPage, SportsPage};
 pub use collect::collect;
 pub use map::{school_entities, AdPage, CoachEntry, SchoolExtract, SearchResult};
-pub use checked::{parse_sports_table, DirectorPage, SportsPage};
 pub use pages::{parse_ad_page, parse_coach_cell, parse_sport_label};
 pub use parse::{parse_search, resolve_school_name, strip_honorific};
 

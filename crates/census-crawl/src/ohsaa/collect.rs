@@ -1,5 +1,5 @@
-use super::map::{school_entities, SearchResult};
 use super::checked::{DirectorPage, SportsPage};
+use super::map::{school_entities, SearchResult};
 use super::Options;
 use crate::{AdapterContext, AdapterReport, CollectionDisposition, CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
@@ -92,7 +92,11 @@ async fn process_school(
         failure.report(sr, "AD", report, tally)?;
     }
     let pages = SchoolPages { sports, ad };
-    let mut extract = school_entities(&pages.sports, pages.ad.as_ref().ok()).map_err(|detail| CrawlError::Invariant { detail: detail.to_string() })?;
+    let mut extract = school_entities(&pages.sports, pages.ad.as_ref().ok()).map_err(|detail| {
+        CrawlError::Invariant {
+            detail: detail.to_string(),
+        }
+    })?;
     if let Ok(page) = &pages.ad {
         tally.office_roles_skipped = tally
             .office_roles_skipped

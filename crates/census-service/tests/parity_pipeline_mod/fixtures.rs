@@ -195,10 +195,20 @@ fn archive_page(url: &str, artifacts: &[&ResultArtifact]) -> String {
 }
 
 fn seed(cache: &Path, url: &str, body: &str) -> Result<()> {
-    capture_cache::seed_response(cache, url, body.as_bytes(), super::constants::WIAA_CAPTURED_AT, capture_cache::Metadata {
-        content_type: Some(if url.ends_with(".txt") { "text/plain" } else { "text/html" }),
-        ..capture_cache::Metadata::default()
-    })
+    capture_cache::seed_response(
+        cache,
+        url,
+        body.as_bytes(),
+        super::constants::WIAA_CAPTURED_AT,
+        capture_cache::Metadata {
+            content_type: Some(if url.ends_with(".txt") {
+                "text/plain"
+            } else {
+                "text/html"
+            }),
+            ..capture_cache::Metadata::default()
+        },
+    )
 }
 
 fn ids_of<T>(rows: &[T], id: impl Fn(&T) -> &str) -> BTreeSet<String> {

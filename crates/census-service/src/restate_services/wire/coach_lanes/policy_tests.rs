@@ -10,10 +10,42 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 fn retained_policy_preserves_capture_zero_and_inclusive_freshness_boundaries() -> TestResult {
     let season = SchoolYear::new(2026).ok_or("season")?;
     for (row, captured, boundary, stale, schools, contacts, mailbox) in [
-        (&co::POLICY, "2026-09-27", "2027-11-01", "2027-11-02", 378, 50, CoachLaneMailbox::Unpublished),
-        (&il::POLICY, "2026-09-22", "2027-10-27", "2027-10-28", 3, 3, CoachLaneMailbox::Published),
-        (&ut::POLICY, "2026-10-04", "2027-11-08", "2027-11-09", 162, 12, CoachLaneMailbox::Published),
-        (&sd::POLICY, "2026-10-07", "2027-11-11", "2027-11-12", 3, 6, CoachLaneMailbox::Unpublished),
+        (
+            &co::POLICY,
+            "2026-09-27",
+            "2027-11-01",
+            "2027-11-02",
+            378,
+            50,
+            CoachLaneMailbox::Unpublished,
+        ),
+        (
+            &il::POLICY,
+            "2026-09-22",
+            "2027-10-27",
+            "2027-10-28",
+            3,
+            3,
+            CoachLaneMailbox::Published,
+        ),
+        (
+            &ut::POLICY,
+            "2026-10-04",
+            "2027-11-08",
+            "2027-11-09",
+            162,
+            12,
+            CoachLaneMailbox::Published,
+        ),
+        (
+            &sd::POLICY,
+            "2026-10-07",
+            "2027-11-11",
+            "2027-11-12",
+            3,
+            6,
+            CoachLaneMailbox::Unpublished,
+        ),
     ] {
         for (date, freshness) in [(captured, 0), (boundary, 400)] {
             let lane = row.evaluate(season, 1, date, Acquisition::Available)?;
@@ -30,7 +62,9 @@ fn retained_policy_preserves_capture_zero_and_inclusive_freshness_boundaries() -
         check!(expired.evidence().is_none());
         let refusal = expired.refusal().ok_or("stale refusal")?;
         check!(eq; refusal.source().id.as_str(), row.arm);
-        check!(refusal.reason().contains("is 401 days old at lane creation, beyond the 400-day bound"));
+        check!(refusal
+            .reason()
+            .contains("is 401 days old at lane creation, beyond the 400-day bound"));
         check!(eq; row.evaluate(season, 1, "2026-09-01", Acquisition::Available),
             Err(CoachLaneError::OutOfRange { field: "resolution.freshness_days" }));
     }
@@ -58,14 +92,29 @@ fn all_failed_bindings_preserve_plan_and_historical_validation_order() -> TestRe
         let mut plan = SourcePlan::default();
         let before = serde_json::to_vec(&plan)?;
         let field = match jurisdiction {
-            UsJurisdiction::Arizona | UsJurisdiction::California | UsJurisdiction::Colorado
-            | UsJurisdiction::Connecticut | UsJurisdiction::Florida | UsJurisdiction::Illinois
-            | UsJurisdiction::Indiana | UsJurisdiction::Iowa | UsJurisdiction::Louisiana
-            | UsJurisdiction::Massachusetts | UsJurisdiction::Michigan | UsJurisdiction::Missouri
-            | UsJurisdiction::Nevada | UsJurisdiction::NewJersey | UsJurisdiction::NewYork
-            | UsJurisdiction::Oklahoma | UsJurisdiction::Oregon | UsJurisdiction::SouthDakota
-            | UsJurisdiction::Texas | UsJurisdiction::Utah | UsJurisdiction::Vermont
-            | UsJurisdiction::Virginia | UsJurisdiction::Washington => "revision",
+            UsJurisdiction::Arizona
+            | UsJurisdiction::California
+            | UsJurisdiction::Colorado
+            | UsJurisdiction::Connecticut
+            | UsJurisdiction::Florida
+            | UsJurisdiction::Illinois
+            | UsJurisdiction::Indiana
+            | UsJurisdiction::Iowa
+            | UsJurisdiction::Louisiana
+            | UsJurisdiction::Massachusetts
+            | UsJurisdiction::Michigan
+            | UsJurisdiction::Missouri
+            | UsJurisdiction::Nevada
+            | UsJurisdiction::NewJersey
+            | UsJurisdiction::NewYork
+            | UsJurisdiction::Oklahoma
+            | UsJurisdiction::Oregon
+            | UsJurisdiction::SouthDakota
+            | UsJurisdiction::Texas
+            | UsJurisdiction::Utah
+            | UsJurisdiction::Vermont
+            | UsJurisdiction::Virginia
+            | UsJurisdiction::Washington => "revision",
             _ => "refusal.observed_on",
         };
         check!(eq; bind(&mut plan, jurisdiction, season, 0, "invalid"),

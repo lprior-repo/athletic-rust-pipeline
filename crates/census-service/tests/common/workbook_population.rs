@@ -10,7 +10,10 @@ pub(super) fn xlsx_rows(path: &Path, sheet: &str) -> TestResult<usize> {
     let range = book.worksheet_range(sheet)?;
     Ok(range
         .rows()
-        .filter(|row| row.iter().any(|cell| !matches!(cell, calamine::Data::Empty)))
+        .filter(|row| {
+            row.iter()
+                .any(|cell| !matches!(cell, calamine::Data::Empty))
+        })
         .count())
 }
 

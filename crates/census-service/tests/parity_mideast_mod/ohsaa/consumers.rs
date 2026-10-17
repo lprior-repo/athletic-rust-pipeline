@@ -166,7 +166,8 @@ fn ohsaa_coffman_consumers_receive_published_people_with_capture_provenance() ->
     )?;
     let checked_sports = ohsaa::SportsPage::parse(result, sports.clone())?;
     let checked_ad = ohsaa::DirectorPage::parse(result, ad.clone())?;
-    let extract = ohsaa::school_entities(&checked_sports, Some(&checked_ad)).map_err(anyhow::Error::msg)?;
+    let extract =
+        ohsaa::school_entities(&checked_sports, Some(&checked_ad)).map_err(anyhow::Error::msg)?;
     assert_coffman_consumers(&extract.school, &extract.coaches, &sports, &ad)
 }
 

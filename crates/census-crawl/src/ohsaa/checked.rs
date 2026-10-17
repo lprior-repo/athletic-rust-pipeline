@@ -37,29 +37,55 @@ impl std::fmt::Display for PageError {
 impl std::error::Error for PageError {}
 
 impl SportsPage {
-    pub(super) fn owner(&self) -> &SearchResult { &self.owner }
-    pub(super) fn capture(&self) -> &FetchOutcome { &self.capture }
-    pub(super) fn rows(&self) -> &[SportRow] { &self.rows }
+    pub(super) fn owner(&self) -> &SearchResult {
+        &self.owner
+    }
+    pub(super) fn capture(&self) -> &FetchOutcome {
+        &self.capture
+    }
+    pub(super) fn rows(&self) -> &[SportRow] {
+        &self.rows
+    }
 
     pub fn parse(owner: &SearchResult, capture: FetchOutcome) -> Result<Self, PageError> {
         let rows = document(owner, &capture).and_then(parse_sports_table);
         match rows {
-            Ok(rows) => Ok(Self { owner: owner.clone(), capture, rows }),
-            Err(detail) => Err(PageError { capture: Box::new(capture), detail: detail.to_string() }),
+            Ok(rows) => Ok(Self {
+                owner: owner.clone(),
+                capture,
+                rows,
+            }),
+            Err(detail) => Err(PageError {
+                capture: Box::new(capture),
+                detail: detail.to_string(),
+            }),
         }
     }
 }
 
 impl DirectorPage {
-    pub(super) fn owner(&self) -> &SearchResult { &self.owner }
-    pub(super) fn capture(&self) -> &FetchOutcome { &self.capture }
-    pub(super) fn page(&self) -> &AdPage { &self.page }
+    pub(super) fn owner(&self) -> &SearchResult {
+        &self.owner
+    }
+    pub(super) fn capture(&self) -> &FetchOutcome {
+        &self.capture
+    }
+    pub(super) fn page(&self) -> &AdPage {
+        &self.page
+    }
 
     pub fn parse(owner: &SearchResult, capture: FetchOutcome) -> Result<Self, PageError> {
         let page = document(owner, &capture).and_then(parse_director);
         match page {
-            Ok(page) => Ok(Self { owner: owner.clone(), capture, page }),
-            Err(detail) => Err(PageError { capture: Box::new(capture), detail: detail.to_string() }),
+            Ok(page) => Ok(Self {
+                owner: owner.clone(),
+                capture,
+                page,
+            }),
+            Err(detail) => Err(PageError {
+                capture: Box::new(capture),
+                detail: detail.to_string(),
+            }),
         }
     }
 }
@@ -130,7 +156,8 @@ pub fn parse_sports_table(html: &str) -> Result<Vec<SportRow>, &'static str> {
         }
         let boys = checked_coach_cell(boys)?;
         let girls = checked_coach_cell(girls)?;
-        rows.try_reserve(1).map_err(|_| "sports row allocation failed")?;
+        rows.try_reserve(1)
+            .map_err(|_| "sports row allocation failed")?;
         rows.push((label, boys, girls));
         Ok(rows)
     })?;

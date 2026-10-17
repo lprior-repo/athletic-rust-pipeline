@@ -67,11 +67,17 @@ async fn configure_inventory(
 }
 
 fn seed_cache(cache: &Path, url: &str, body: &str) -> TestResult {
-    capture_cache::seed_response(cache, url, body.as_bytes(), CAPTURED_AT, capture_cache::Metadata {
-        content_type: Some("text/html; charset=utf-8"),
-        response_url: capture_cache::ResponseUrl::Null,
-        ..capture_cache::Metadata::default()
-    })?;
+    capture_cache::seed_response(
+        cache,
+        url,
+        body.as_bytes(),
+        CAPTURED_AT,
+        capture_cache::Metadata {
+            content_type: Some("text/html; charset=utf-8"),
+            response_url: capture_cache::ResponseUrl::Null,
+            ..capture_cache::Metadata::default()
+        },
+    )?;
     Ok(())
 }
 
@@ -97,7 +103,8 @@ fn a_synthetic_owned_roster_pass_files_an_observation_per_published_athlete() ->
                 Duration::from_millis(1),
                 std::collections::HashMap::new(),
                 Vec::new(),
-            )?.with_offline(true);
+            )?
+            .with_offline(true);
             configure_inventory(&store, &fetcher, &first).await?;
             let capture = fetcher
                 .get(

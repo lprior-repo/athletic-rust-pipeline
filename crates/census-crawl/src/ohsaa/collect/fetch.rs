@@ -101,7 +101,10 @@ pub(super) async fn fetch_page<T>(
         Ok(capture) => return Err(PageFailure::Http(capture)),
         Err(error) => return Err(PageFailure::Fetch(error)),
     };
-    parse(sr, capture).map_err(|PageError { capture, detail }| PageFailure::Invalid { capture: *capture, detail })
+    parse(sr, capture).map_err(|PageError { capture, detail }| PageFailure::Invalid {
+        capture: *capture,
+        detail,
+    })
 }
 
 #[cfg(test)]

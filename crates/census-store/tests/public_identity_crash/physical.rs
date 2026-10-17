@@ -67,7 +67,11 @@ fn sole_added_requires_exact_prior_bytes_and_one_new_key() -> TestResult {
     check!(eq; sole_added(&before, &after)?, (&[2][..], &[20][..]));
     for invalid in [
         before.clone(),
-        Rows::from([(vec![1], vec![10]), (vec![2], vec![20]), (vec![3], vec![30])]),
+        Rows::from([
+            (vec![1], vec![10]),
+            (vec![2], vec![20]),
+            (vec![3], vec![30]),
+        ]),
         Rows::from([(vec![1], vec![11]), (vec![2], vec![20])]),
         Rows::from([(vec![2], vec![20]), (vec![3], vec![30])]),
     ] {

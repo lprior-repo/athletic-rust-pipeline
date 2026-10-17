@@ -134,16 +134,19 @@ fn ohsaa_dublin(
         "Dublin Coffman search and sports owners disagree"
     );
     ensure!(
-        ohsaa::parse_sports_table(sports).map_err(anyhow::Error::msg)?
+        ohsaa::parse_sports_table(sports)
+            .map_err(anyhow::Error::msg)?
             .iter()
             .find(|(label, ..)| label == "Cross Country")
             .is_some_and(|(_, boys, _)| boys.is_some()),
         "Dublin Coffman must publish a boys cross-country coach"
     );
     let page = ohsaa::parse_ad_page(ad);
-    let checked_sports = ohsaa::SportsPage::parse(result, seeded_capture(&result.sports_url(), sports))?;
+    let checked_sports =
+        ohsaa::SportsPage::parse(result, seeded_capture(&result.sports_url(), sports))?;
     let checked_ad = ohsaa::DirectorPage::parse(result, seeded_capture(&result.ad_url(), ad))?;
-    let extract = ohsaa::school_entities(&checked_sports, Some(&checked_ad)).map_err(anyhow::Error::msg)?;
+    let extract =
+        ohsaa::school_entities(&checked_sports, Some(&checked_ad)).map_err(anyhow::Error::msg)?;
     ensure!(
         !extract.coaches.is_empty(),
         "Dublin Coffman pair yielded no coaches"
@@ -179,11 +182,7 @@ fn ohsaa_office_roles(
     })
 }
 
-fn ohsaa_malformed(
-    rows: &[ohsaa::SearchResult],
-    sports: &str,
-    ad: &str,
-) -> Result<()> {
+fn ohsaa_malformed(rows: &[ohsaa::SearchResult], sports: &str, ad: &str) -> Result<()> {
     ensure!(
         rows.len() == 1,
         "duplicate OHSAA rows must collapse to one school"
@@ -201,14 +200,23 @@ fn ohsaa_malformed(
         ohsaa::parse_ad_page(ad).director.is_none(),
         "malformed AD yielded a director"
     );
-    let sports_error = ohsaa::SportsPage::parse(result, seeded_capture(&result.sports_url(), sports))
-        .err().context("ERROR (000) must not own the requested school")?;
-    ensure!(sports_error.detail == "page belongs to a different school or a publisher error owner",
-        "malformed sports owner refusal changed: {}", sports_error.detail);
+    let sports_error =
+        ohsaa::SportsPage::parse(result, seeded_capture(&result.sports_url(), sports))
+            .err()
+            .context("ERROR (000) must not own the requested school")?;
+    ensure!(
+        sports_error.detail == "page belongs to a different school or a publisher error owner",
+        "malformed sports owner refusal changed: {}",
+        sports_error.detail
+    );
     let ad_error = ohsaa::DirectorPage::parse(result, seeded_capture(&result.ad_url(), ad))
-        .err().context("ERROR (000) must not own the requested school")?;
-    ensure!(ad_error.detail == "page belongs to a different school or a publisher error owner",
-        "malformed director owner refusal changed: {}", ad_error.detail);
+        .err()
+        .context("ERROR (000) must not own the requested school")?;
+    ensure!(
+        ad_error.detail == "page belongs to a different school or a publisher error owner",
+        "malformed director owner refusal changed: {}",
+        ad_error.detail
+    );
     Ok(())
 }
 
@@ -228,9 +236,11 @@ fn ohsaa_centerville(corpus: &mut Corpus, sports: &str, ad: &str) -> Result<()> 
         result.name == ad_header.name && result.ohsaa_id == ad_header.ohsaa_id,
         "Centerville sports and AD owners disagree"
     );
-    let checked_sports = ohsaa::SportsPage::parse(&result, seeded_capture(&result.sports_url(), sports))?;
+    let checked_sports =
+        ohsaa::SportsPage::parse(&result, seeded_capture(&result.sports_url(), sports))?;
     let checked_ad = ohsaa::DirectorPage::parse(&result, seeded_capture(&result.ad_url(), ad))?;
-    let extract = ohsaa::school_entities(&checked_sports, Some(&checked_ad)).map_err(anyhow::Error::msg)?;
+    let extract =
+        ohsaa::school_entities(&checked_sports, Some(&checked_ad)).map_err(anyhow::Error::msg)?;
     ensure!(
         !extract.coaches.is_empty(),
         "Centerville pair yielded no coaches"

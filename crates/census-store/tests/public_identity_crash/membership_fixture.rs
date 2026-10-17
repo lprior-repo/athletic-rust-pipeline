@@ -71,8 +71,10 @@ impl Fixture {
             accepted
                 .history_records()
                 .iter()
-                .find(|record| matches!(&record.request, HistoryRequest::Establish { binding, .. }
-                    if binding.id == plan.attachment.anchor_binding_id))
+                .find(|record| {
+                    matches!(&record.request, HistoryRequest::Establish { binding, .. }
+                    if binding.id == plan.attachment.anchor_binding_id)
+                })
                 .ok_or("source birth anchor")?,
         )?;
         write_new(&root.join(PLAN), &serde_json::to_vec(&plan)?)?;

@@ -66,8 +66,10 @@ fn source_url_ownership_and_conflict_changes_cannot_reuse_another_snapshots_advi
                     }
                 }
                 let new_digest = &audit(&changed.store)?["evidence_digest"];
-                check!(new_digest != &old_digest,
-                    "expected unequal: left={new_digest:?} right={old_digest:?}");
+                check!(
+                    new_digest != &old_digest,
+                    "expected unequal: left={new_digest:?} right={old_digest:?}"
+                );
                 check!(eq; &audit(&changed.store)?["outcome"], "agreement");
                 check!(eq; &row(&changed.store)?.case_id, &changed.case.id);
                 check!(eq; &row(&changed.store)?.subject_id, &changed.case.subject_id);

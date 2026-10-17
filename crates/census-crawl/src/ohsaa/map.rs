@@ -59,7 +59,11 @@ pub fn school_entities(
         .into_iter()
         .chain(sports_coaches(&school_id, sports))
         .collect();
-    Ok(SchoolExtract { school, school_id, coaches })
+    Ok(SchoolExtract {
+        school,
+        school_id,
+        coaches,
+    })
 }
 
 fn sports_coaches<'a>(
@@ -71,7 +75,13 @@ fn sports_coaches<'a>(
         [(boys, Gender::Boys), (girls, Gender::Girls)]
             .into_iter()
             .filter_map(move |(entry, gender)| {
-                Some(sport_coach(school_id, sport?, entry.as_ref()?.clone(), gender, page.capture()))
+                Some(sport_coach(
+                    school_id,
+                    sport?,
+                    entry.as_ref()?.clone(),
+                    gender,
+                    page.capture(),
+                ))
             })
     })
 }

@@ -26,9 +26,7 @@ pub(super) mod wa;
 
 mod missing;
 
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneStatus, SchoolYear,
-};
+use census_domain::model::{CoachLaneError, CoachLaneObligation, CoachLaneStatus, SchoolYear};
 use census_domain::UsJurisdiction;
 use chrono::NaiveDate;
 
@@ -44,7 +42,10 @@ pub(in crate::restate_services) fn refusal_slug(
 }
 
 fn descriptor(jurisdiction: UsJurisdiction) -> Option<&'static Lane> {
-    LANES.iter().copied().chain(missing::LANES.iter())
+    LANES
+        .iter()
+        .copied()
+        .chain(missing::LANES.iter())
         .find(|row| row.jurisdiction == jurisdiction)
 }
 
@@ -81,10 +82,12 @@ fn evaluate(
     observed_on: &str,
 ) -> Result<CoachLaneObligation, CoachLaneError> {
     let acquisition = match row.policy {
-        LanePolicy::HeldCapture(_) => match census_crawl::registry::acquisition_refusal_for_source(row.arm) {
-            Some(reason) => Acquisition::Held(reason),
-            None => Acquisition::Available,
-        },
+        LanePolicy::HeldCapture(_) => {
+            match census_crawl::registry::acquisition_refusal_for_source(row.arm) {
+                Some(reason) => Acquisition::Held(reason),
+                None => Acquisition::Available,
+            }
+        }
         _ => Acquisition::Available,
     };
     row.evaluate(season, revision, observed_on, acquisition)
@@ -99,7 +102,9 @@ fn accepted(
 ) -> Result<CoachLaneObligation, CoachLaneError> {
     let recorded = evaluate(row, season, revision, observed_on)?;
     let acceptance = census_domain::model::CoachLaneAcceptance::new(
-        "census-ops", "jpx4.accepted_refusal", observed_on,
+        "census-ops",
+        "jpx4.accepted_refusal",
+        observed_on,
     )?;
     recorded.accept_refusal(acceptance)
 }

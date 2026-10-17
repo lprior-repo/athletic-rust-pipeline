@@ -153,7 +153,10 @@ fn parse_sports_table_handles_tba() -> TestResult {
 #[test]
 fn parse_sports_table_malformed_is_refused() {
     let sections = parse_sports_table(fixture_sports_malformed());
-    assert_eq!(sections.err(), Some("recognized complete page table is absent"));
+    assert_eq!(
+        sections.err(),
+        Some("recognized complete page table is absent")
+    );
 }
 
 #[test]
