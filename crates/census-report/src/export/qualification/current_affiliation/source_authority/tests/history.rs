@@ -11,7 +11,11 @@ fn evidence() -> Evidence {
     )
 }
 
-fn append_performance(store: &Store, athlete: &CanonicalAthlete, school: &SchoolId) -> TestResult {
+pub(super) fn append_performance(
+    store: &Store,
+    athlete: &CanonicalAthlete,
+    school: &SchoolId,
+) -> TestResult {
     let season = SchoolYear::new(2025).ok_or("fixture season")?;
     let team = CanonicalTeam {
         id: CanonicalTeam::mint(school, Sport::OutdoorTrack, Gender::Boys, season),

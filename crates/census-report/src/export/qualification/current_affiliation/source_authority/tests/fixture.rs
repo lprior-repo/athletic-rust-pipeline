@@ -152,4 +152,6 @@ pub(super) fn profile(as_of: &str) -> TestResult<QueryProfileV1> {
 
 #[path = "fixture_install.rs"]
 mod installation;
-pub(super) use installation::{install, install_padded, install_row, PhysicalProjection};
+pub(super) use installation::{
+    install, install_dated, install_padded, install_row, PhysicalProjection,
+};

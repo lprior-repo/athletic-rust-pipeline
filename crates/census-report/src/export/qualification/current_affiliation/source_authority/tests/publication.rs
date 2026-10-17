@@ -9,6 +9,7 @@ mod failures;
 mod omission;
 mod roundtrip;
 mod setup;
+mod transfer;
 
 use setup::{Case, Expected};
 

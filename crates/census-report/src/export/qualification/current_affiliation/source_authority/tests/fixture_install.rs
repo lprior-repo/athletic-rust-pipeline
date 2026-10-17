@@ -45,9 +45,66 @@ pub(in super::super) fn install_row(
     name: &str,
     physical: PhysicalProjection,
 ) -> TestResult<Capture> {
-    let url = format!("https://mi.milesplit.com/teams/{team}-controlled/roster");
+    install_context(
+        fixture,
+        team,
+        person,
+        sport,
+        published_owner,
+        padding,
+        name,
+        physical,
+        UsJurisdiction::Michigan,
+        AT,
+    )
+}
+
+pub(in super::super) fn install_dated(
+    fixture: &Fixture,
+    team: &str,
+    person: &str,
+    sport: Sport,
+    published_owner: bool,
+    jurisdiction: UsJurisdiction,
+    at: &str,
+) -> TestResult<Capture> {
+    install_context(
+        fixture,
+        team,
+        person,
+        sport,
+        published_owner,
+        0,
+        "Runner, Controlled",
+        PhysicalProjection::Retain,
+        jurisdiction,
+        at,
+    )
+}
+
+fn install_context(
+    fixture: &Fixture,
+    team: &str,
+    person: &str,
+    sport: Sport,
+    published_owner: bool,
+    padding: usize,
+    name: &str,
+    physical: PhysicalProjection,
+    jurisdiction: UsJurisdiction,
+    at: &str,
+) -> TestResult<Capture> {
+    let site = Site::for_jurisdiction(jurisdiction);
+    let host = site.host();
+    let state = jurisdiction.code();
+    let label = if jurisdiction == UsJurisdiction::Michigan {
+        "Michigan"
+    } else {
+        state
+    };
+    let url = format!("https://{host}/teams/{team}-controlled/roster");
     let directory = format!(
-        r#"<html><head><meta name="application-name" content="MileSplit Michigan"><link rel="canonical" href="https://mi.milesplit.com/teams"></head><body><table><tr><td><a href="https://mi.milesplit.com/teams/{team}-controlled">Controlled School {team}</a></td><td>Novi, MI, USA</td></tr></table></body></html>"#
+        r#"<html><head><meta name="application-name" content="MileSplit {label}"><link rel="canonical" href="https://{host}/teams"></head><body><table><tr><td><a href="https://{host}/teams/{team}-controlled">Controlled School {team}</a></td><td>Novi, {state}, USA</td></tr></table></body></html>"#
     );
     let owner = if published_owner {
         format!(r#"<link rel="canonical" href="{url}">"#)
@@ -62,11 +119,11 @@ pub(in super::super) fn install_row(
     };
     let padding = " ".repeat(padding);
     let body = format!(
-        r#"<html><head>{owner}</head><body><section><h4>Current Roster</h4><ul id="rosterDataset"><li class="athlete-row data-row">{padding}<a href="https://mi.milesplit.com/athletes/{person}-controlled">{name}</a><div class="column-gender">m</div><div class="column-grad-year">2027</div><div class="data-point" data-season-id="{season}"><svg class="icon icon-yes"></svg></div></li></ul></section></body></html>"#
+        r#"<html><head>{owner}</head><body><section><h4>Current Roster</h4><ul id="rosterDataset"><li class="athlete-row data-row">{padding}<a href="https://{host}/athletes/{person}-controlled">{name}</a><div class="column-gender">m</div><div class="column-grad-year">2027</div><div class="data-point" data-season-id="{season}"><svg class="icon icon-yes"></svg></div></li></ul></section></body></html>"#
     );
     let packet = ProviderSchoolPacketV1::new(
-        retained("https://mi.milesplit.com/teams", &directory)?,
-        retained(&url, &body)?,
+        retained(&format!("https://{host}/teams"), &directory, at)?,
+        retained(&url, &body, at)?,
     )?;
     let checked = packet.read()?;
     let school = checked.school().clone();
@@ -91,15 +148,9 @@ pub(in super::super) fn install_row(
         slug: "controlled".into(),
         url: url.trim_end_matches("/roster").into(),
         name: school.name.clone(),
-        city_state: "Novi, MI".into(),
+        city_state: format!("Novi, {state}"),
     };
-    let (_, athletes, _) = roster_entities(
-        &team_ref,
-        &roster.athletes,
-        year,
-        AT,
-        &Site::for_jurisdiction(UsJurisdiction::Michigan),
-    )?;
+    let (_, athletes, _) = roster_entities(&team_ref, &roster.athletes, year, at, &site)?;
     let mut athlete = athletes
         .into_iter()
         .next()
@@ -126,7 +177,7 @@ pub(in super::super) fn install_row(
         .ok_or("controlled roster evidence")?;
     evidence.source.url = Some(url.clone());
     evidence.note = Some(serde_json::to_string(
-        &json!({"role":"roster_positive_row_metadata_v1","source_row_key":key,"provider_team_id":team,"provider_athlete_id":person,"capture_url":url,"response_url":url,"capture_sha256":digest,"capture_bytes":body.len(),"fetched_at":AT,"row":row,"row_sha256":super::super::hash(span)}),
+        &json!({"role":"roster_positive_row_metadata_v1","source_row_key":key,"provider_team_id":team,"provider_athlete_id":person,"capture_url":url,"response_url":url,"capture_sha256":digest,"capture_bytes":body.len(),"fetched_at":at,"row":row,"row_sha256":super::super::hash(span)}),
     )?);
     fixture.store.append(Table::Schools, &school)?;
     fixture.store.append(Table::Teams, &program)?;
@@ -151,8 +202,8 @@ pub(in super::super) fn install_row(
     })
 }
 
-fn retained(url: &str, body: &str) -> TestResult<RetainedHtmlCaptureV1> {
-    let at = instant()?;
+fn retained(url: &str, body: &str, at: &str) -> TestResult<RetainedHtmlCaptureV1> {
+    let at = DateTime::parse_from_rfc3339(at)?.to_utc();
     Ok(RetainedHtmlCaptureV1::new(
         url,
         url,
