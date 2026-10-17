@@ -7,8 +7,8 @@ use super::{
 };
 use crate::{Store, StoreResult, StoreRevision};
 use census_domain::evidence_subject_attachment::{
-    AttachmentDigestV1, AttachmentReplayGrantV1, RetainedEvidenceSubjectAttachmentCommandV1,
-    ReviewedReferenceRecordV1,
+    AttachmentDigestV1, AttachmentReplayGrantV1, CheckedAttachmentCommandV1,
+    CheckedReviewedReferenceRecordV1, RetainedEvidenceSubjectAttachmentCommandV1,
 };
 
 mod context;
@@ -25,32 +25,57 @@ pub enum EvidenceSubjectAttachmentPreparationV1<'s, 'a> {
 
 pub struct PreparedEvidenceSubjectAttachmentV1<'s> {
     pub(super) revision: StoreRevision<'s>,
-    pub(super) record: ReviewedReferenceRecordV1,
     pub(super) approval: Vec<u8>,
     pub(super) state: PreparedState<'s>,
     pub(super) grant: AttachmentReplayGrantV1,
 }
 
+pub(super) struct NewPrepared<'s> {
+    pub(super) record: CheckedReviewedReferenceRecordV1,
+    pub(super) inspection: EvidenceSubjectAttachmentInspectionV1<'s>,
+    pub(super) introduced: Vec<Material>,
+}
+
+pub(super) struct ReplayPrepared<'s> {
+    pub(super) command: CheckedAttachmentCommandV1,
+    pub(super) approval_digest: AttachmentDigestV1,
+    pub(super) ledger: Ledger<'s>,
+    pub(super) index: usize,
+}
+
 pub(super) enum PreparedState<'s> {
-    New {
-        inspection: EvidenceSubjectAttachmentInspectionV1<'s>,
-        introduced: Vec<Material>,
-    },
-    Replay,
+    New(Box<NewPrepared<'s>>),
+    Replay(Box<ReplayPrepared<'s>>),
+}
+
+impl PreparedState<'_> {
+    pub(super) fn command(&self) -> &RetainedEvidenceSubjectAttachmentCommandV1 {
+        match self {
+            Self::New(input) => &input.record.command,
+            Self::Replay(input) => input.command.command(),
+        }
+    }
+
+    pub(super) fn approval_digest(&self) -> &AttachmentDigestV1 {
+        match self {
+            Self::New(input) => &input.record.approval_digest,
+            Self::Replay(input) => &input.approval_digest,
+        }
+    }
 }
 
 impl PreparedEvidenceSubjectAttachmentV1<'_> {
     pub fn command(&self) -> &RetainedEvidenceSubjectAttachmentCommandV1 {
-        &self.record.command
+        self.state.command()
     }
     pub fn approval_bytes(&self) -> &[u8] {
         &self.approval
     }
     pub fn approval_digest(&self) -> &AttachmentDigestV1 {
-        &self.record.approval_digest
+        self.state.approval_digest()
     }
     pub fn is_replay(&self) -> bool {
-        matches!(self.state, PreparedState::Replay)
+        matches!(self.state, PreparedState::Replay(_))
     }
 }
 
@@ -81,9 +106,8 @@ impl Store {
         };
         let result = prepare(self, command, proposed, &mut grant);
         match result {
-            Ok((revision, record, approval, state)) => Ok(PreparedEvidenceSubjectAttachmentV1 {
+            Ok((revision, approval, state)) => Ok(PreparedEvidenceSubjectAttachmentV1 {
                 revision,
-                record,
                 approval,
                 state,
                 grant,
@@ -96,12 +120,7 @@ impl Store {
     }
 }
 
-type PreparedParts<'s> = (
-    StoreRevision<'s>,
-    ReviewedReferenceRecordV1,
-    Vec<u8>,
-    PreparedState<'s>,
-);
+type PreparedParts<'s> = (StoreRevision<'s>, Vec<u8>, PreparedState<'s>);
 
 fn prepare<'s>(
     store: &'s Store,
@@ -131,15 +150,33 @@ fn prepare<'s>(
         drop(inspection);
         return replay::prepare(&view, &identity, command, true, grant);
     }
-    let (approval, retained) = replay::find(&mut inspection.state.ledger, &command, grant)?;
-    if let Some(record) = retained {
-        return Ok((view.revision(), record, approval, PreparedState::Replay));
+    match replay::find(&inspection.state.ledger, command, grant)? {
+        replay::Found::Repeated {
+            command,
+            approval,
+            approval_digest,
+            index,
+        } => {
+            let input = ReplayPrepared {
+                command,
+                approval_digest,
+                ledger: inspection.state.ledger,
+                index,
+            };
+            Ok((
+                view.revision(),
+                approval,
+                PreparedState::Replay(Box::new(input)),
+            ))
+        }
+        replay::Found::New { command, approval } => {
+            let input = new::NewPreparation {
+                command,
+                inspection,
+                supplied: context,
+                approval,
+            };
+            new::prepare(store, &view, input, grant)
+        }
     }
-    let input = new::NewPreparation {
-        command,
-        inspection,
-        supplied: context,
-        approval,
-    };
-    new::prepare(store, &view, input, grant)
 }

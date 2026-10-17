@@ -114,17 +114,6 @@ pub(super) fn position<T: PartialEq>(values: &[T], value: &T) -> TestResult<usiz
         .ok_or_else(|| "phase reference absent".into())
 }
 
-pub(super) fn object_position(
-    values: &[AttachmentObjectReferenceV1],
-    digest: &AttachmentDigestV1,
-) -> TestResult<usize> {
-    values
-        .iter()
-        .position(|item| &item.digest == digest)
-        .and_then(|index| index.checked_add(1))
-        .ok_or_else(|| "phase object absent".into())
-}
-
 pub(super) fn depth(
     values: &[AttachmentObjectReferenceV1],
     digest: &AttachmentDigestV1,

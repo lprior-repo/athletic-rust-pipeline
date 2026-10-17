@@ -51,7 +51,7 @@ pub(super) fn accept(
     Ok(())
 }
 
-fn declared(
+pub(in super::super) fn declared(
     references: &[AttachmentObjectReferenceV1],
     expected: &AttachmentObjectReferenceV1,
     grant: &mut AttachmentReplayGrantV1,

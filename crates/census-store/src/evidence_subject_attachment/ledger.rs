@@ -7,12 +7,14 @@ use crate::read::JournalNamespaceInventory;
 use crate::{Receipt, StoreError, StoreResult, StoreSnapshot};
 use census_domain::evidence_subject_attachment::{
     self as domain, AttachmentDigestV1, AttachmentInventoryV1, AttachmentObjectReferenceV1,
-    AttachmentReceiptBindingV1, AttachmentReplayGrantV1, ReviewedReferenceRecordV1,
+    AttachmentReceiptBindingV1, AttachmentReplayGrantV1, CheckedReviewedReferenceRecordV1,
+    CheckedReviewedReferenceRecordsV1, ReviewedReferenceRecordV1,
 };
 use census_domain::model::StoreIdentity;
 use census_domain::public_identity_history::ReplayLimits;
 
 mod context;
+pub(super) use context::declared;
 pub(super) mod fences;
 mod read;
 mod receipts;
@@ -20,7 +22,7 @@ mod refresh;
 pub(super) mod wire;
 
 pub(super) struct Ledger<'s> {
-    pub(super) records: Vec<ReviewedReferenceRecordV1>,
+    pub(super) records: CheckedReviewedReferenceRecordsV1,
     pub(super) receipts: Vec<Receipt>,
     pub(super) introductions: Vec<Vec<Material>>,
     pub(super) input_refs: Vec<wire::EntryInputs>,
@@ -82,17 +84,18 @@ impl<'s> Ledger<'s> {
     pub(super) fn append_proposed(
         &mut self,
         view: &StoreSnapshot<'_>,
-        record: ReviewedReferenceRecordV1,
+        record: CheckedReviewedReferenceRecordV1,
         introduced: Vec<Material>,
         inputs: wire::EntryInputs,
         grant: &mut AttachmentReplayGrantV1,
     ) -> StoreResult<AttachmentInventoryV1> {
         context::accept(view, &self.introductions, &introduced, &record, grant)?;
-        material::allocate(&mut self.records)?;
         material::allocate(&mut self.introductions)?;
         material::allocate(&mut self.input_refs)?;
         self.input_refs.push(inputs);
-        self.records.push(record);
+        self.records
+            .push_with_grant(record, grant)
+            .map_err(Error::Domain)?;
         self.introductions.push(introduced);
         let inventory =
             domain::calculate_reviewed_reference_inventory_with_grant(&self.records, grant)
@@ -125,7 +128,7 @@ impl<'s> Ledger<'s> {
         grant: &mut AttachmentReplayGrantV1,
     ) -> StoreResult<()> {
         let mut receipts = Vec::new();
-        for record in &self.records {
+        for record in self.records.iter() {
             grant.charge_steps(1).map_err(Error::Domain)?;
             material::allocate(&mut receipts)?;
             receipts.push(AttachmentReceiptBindingV1 {
@@ -133,7 +136,7 @@ impl<'s> Ledger<'s> {
                 record_digest: record.record_digest.clone(),
             });
         }
-        domain::replay_reviewed_references_with_grant(
+        domain::replay_checked_reviewed_references_with_grant(
             store,
             &self.records,
             &receipts,

@@ -12,7 +12,7 @@ pub(super) fn load<'s>(
         .map_err(|_| StoreError::CounterOverflow)?;
     let rows = usize::try_from(physical.fingerprint().physical_rows())
         .map_err(|_| StoreError::CounterOverflow)?;
-    let mut records = Vec::new();
+    let mut records = CheckedReviewedReferenceRecordsV1::new();
     let mut input_refs = Vec::new();
     let mut introductions = Vec::new();
     for key in keys {
@@ -27,12 +27,13 @@ pub(super) fn load<'s>(
                 "attachment root missing from held inventory",
             ))?;
         let (record, introduced, inputs) = wire::decode(&envelope, grant)?;
-        material::allocate(&mut records)?;
         material::allocate(&mut introductions)?;
         context::accept(view, &introductions, &introduced, &record, grant)?;
         material::allocate(&mut input_refs)?;
         input_refs.push(inputs);
-        records.push(record);
+        records
+            .push_with_grant(record, grant)
+            .map_err(Error::Domain)?;
         introductions.push(introduced);
     }
     let receipts = receipts::load(view, &records, grant)?;

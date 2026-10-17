@@ -68,7 +68,7 @@ pub(super) fn measure_with_grant(
     measure::measure(value, maximum)
 }
 
-fn encode_measured(
+pub(super) fn encode_measured(
     value: &impl Serialize,
     needed: usize,
     grant: &mut AttachmentReplayGrantV1,
@@ -104,16 +104,24 @@ impl RetainedEvidenceSubjectAttachmentCommandV1 {
                 ReplayLimits::SMALL.total_text_bytes,
             )?;
             validate::command(self, grant)?;
-            let value = Approval {
-                schema: APPROVAL_SCHEMA,
-                actor: self.actor,
-                prepared: self,
-            };
-            let needed = measure_with_grant(&value, maximum_bytes, grant)?;
-            grant.bytes(needed)?;
-            encode_measured(&value, needed, grant)
+            approval_bytes(self, maximum_bytes, grant)
         })
     }
+}
+
+pub(super) fn approval_bytes(
+    command: &RetainedEvidenceSubjectAttachmentCommandV1,
+    maximum_bytes: usize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> Result<Vec<u8>> {
+    let value = Approval {
+        schema: APPROVAL_SCHEMA,
+        actor: command.actor,
+        prepared: command,
+    };
+    let needed = measure_with_grant(&value, maximum_bytes, grant)?;
+    grant.bytes(needed)?;
+    encode_measured(&value, needed, grant)
 }
 
 #[derive(Serialize)]

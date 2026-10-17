@@ -83,11 +83,9 @@ pub(super) fn require_declared(
     expected: &AttachmentObjectReferenceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
-    for actual in command.reviewed_context.objects.as_slice() {
-        grant.charge_steps(1).map_err(Error::Domain)?;
-        if actual == expected {
-            return Ok(());
-        }
+    if super::super::ledger::declared(command.reviewed_context.objects.as_slice(), expected, grant)?
+    {
+        return Ok(());
     }
     Err(Error::Corrupt("issued preparation input omitted from command").into())
 }

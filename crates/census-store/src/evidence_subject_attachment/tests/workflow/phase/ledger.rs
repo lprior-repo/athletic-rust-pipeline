@@ -1,4 +1,4 @@
-use super::meter::{object_position, Meter};
+use super::meter::{depth, Meter};
 use super::model::Record;
 use super::{domain, model};
 use crate::public_identity_tests::support::TestResult;
@@ -15,12 +15,14 @@ pub(super) fn load(records: &[&Record], meter: &mut Meter) -> TestResult {
         meter.singles("entry parse and canonical equality", 2)?;
         meter.charge("domain record decode", 1)?;
         domain::record(record, meter)?;
+        meter.charge("fresh decoded record proof issuance", 1)?;
         meter.charge("entry timestamp comparison", 1)?;
         model::closure(
             records.get(..index).ok_or("ledger prefix absent")?,
             record,
             meter,
         )?;
+        meter.singles("fresh decoded record and collection origin", 2)?;
     }
     receipts(rows, meter)?;
     domain::inventory(rows, meter)?;
@@ -83,7 +85,7 @@ pub(super) fn fences(records: &[&Record], record: &Record, meter: &mut Meter) ->
     for reference in [capture, token] {
         meter.singles(
             "entry input-role declaration",
-            object_position(record.references(), &reference.digest)?,
+            depth(record.references(), &reference.digest)?,
         )?;
     }
     check!(model::find(records, &capture.digest, meter)?);
@@ -103,7 +105,7 @@ pub(super) fn history(records: &[&Record], record: &Record, meter: &mut Meter) -
     for reference in [group, capture, token] {
         meter.singles(
             "historical dependency declaration",
-            object_position(record.references(), &reference.digest)?,
+            depth(record.references(), &reference.digest)?,
         )?;
     }
     check!(model::find(records, &group.digest, meter)?);

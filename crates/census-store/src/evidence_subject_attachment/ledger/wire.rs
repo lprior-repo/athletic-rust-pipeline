@@ -35,10 +35,10 @@ pub(in super::super) struct Encoded<'a> {
 pub(super) fn decode(
     envelope: &JournalRawEnvelope,
     grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<(ReviewedReferenceRecordV1, Vec<Material>, EntryInputs)> {
+) -> StoreResult<(CheckedReviewedReferenceRecordV1, Vec<Material>, EntryInputs)> {
     let raw = envelope.payload().get().as_bytes();
     let decoded = parse(raw, grant)?;
-    let record = domain::decode_reviewed_reference_with_grant(
+    let record = domain::decode_checked_reviewed_reference_with_grant(
         decoded.record.get().as_bytes(),
         ReplayLimits::SMALL.total_text_bytes,
         grant,

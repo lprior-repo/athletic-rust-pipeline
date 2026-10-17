@@ -94,6 +94,11 @@ pub(super) fn record(record: &Record, meter: &mut Meter) -> TestResult {
     meter.singles("domain three digest groups", 6)
 }
 
+pub(super) fn record_shell(meter: &mut Meter) -> TestResult {
+    meter.singles("domain record admission and measure", 2)?;
+    meter.singles("domain three digest groups", 6)
+}
+
 pub(super) fn inventory(count: usize, meter: &mut Meter) -> TestResult {
     meter.charge("domain inventory reference traversal", count)?;
     meter.singles("domain inventory measure and hash", 2)
@@ -101,8 +106,9 @@ pub(super) fn inventory(count: usize, meter: &mut Meter) -> TestResult {
 
 pub(super) fn projection(records: &[&Record], meter: &mut Meter) -> TestResult {
     meter.singles("Store projected receipt construction", records.len())?;
-    for record in records {
-        self::record(record, meter)?;
+    meter.charge("checked projection collection origin or empty shape", 1)?;
+    for _ in records {
+        record_shell(meter)?;
         meter.singles("domain receipt measure and origin", 2)?;
     }
     let mut active = Vec::new();

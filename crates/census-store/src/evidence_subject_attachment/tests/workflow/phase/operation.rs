@@ -1,4 +1,4 @@
-use super::meter::{object_position, Meter};
+use super::meter::{depth, Meter};
 use super::model::Record;
 use super::{domain, ledger, model};
 use crate::evidence_subject_attachment::AttachmentInspectionRequestV1;
@@ -43,19 +43,23 @@ pub(super) fn prepare(prior: &[&Record], record: &Record, meter: &mut Meter) -> 
     meter.charge("preparation StoreIdentity", 1)?;
     ledger::refresh(prior, meter)?;
     domain::command(record, meter)?;
+    meter.charge("command proof issuance", 1)?;
+    meter.charge("checked approval origin", 1)?;
     meter.singles("approval measure and encode", 2)?;
     meter.singles("preparation operation lookup", prior.len())?;
     current_fences(meter)?;
     for reference in &record.issued {
         meter.singles(
             "issued input declaration",
-            object_position(record.references(), &reference.digest)?,
+            depth(record.references(), &reference.digest)?,
         )?;
     }
     model::introductions(prior, record, meter)?;
+    meter.charge("command to draft origin", 1)?;
     meter.singles("preparation three digest groups", 6)?;
     proposed(prior, record, meter)?;
-    meter.charge("restore previous ledger owner", 1)
+    meter.charge("restore previous ledger owner", 1)?;
+    meter.singles("restore collection origin and extracted owner issuance", 2)
 }
 
 pub(super) fn apply(prior: &[&Record], record: &Record, meter: &mut Meter) -> TestResult {
@@ -66,12 +70,17 @@ pub(super) fn apply(prior: &[&Record], record: &Record, meter: &mut Meter) -> Te
     if matches!(record.command.action, AttachmentActionV1::Attach { .. }) {
         meter.singles("apply accepted target one claim and full comparison", 8)?;
     }
+    meter.charge("checked commit time origin", 1)?;
     meter.charge("final commit time", 1)?;
     meter.singles("final record digest", 2)?;
-    domain::record(record, meter)?;
+    meter.charge("checked record encode origin", 1)?;
+    domain::record_shell(meter)?;
     meter.singles("final record encode measure and serialization", 2)?;
+    meter.charge("checked roundtrip origin", 1)?;
     meter.charge("final record decode", 1)?;
-    domain::record(record, meter)?;
+    meter.charge("complete decoded record equality", 1)?;
+    domain::record_shell(meter)?;
+    meter.charge("roundtrip record proof issuance", 1)?;
     proposed(prior, record, meter)?;
     meter.singles("inline journal key and envelope object", 4)?;
     meter.charge("prospective physical inline row", 1)?;
@@ -90,6 +99,7 @@ fn current_fences(meter: &mut Meter) -> TestResult {
 
 fn proposed(prior: &[&Record], record: &Record, meter: &mut Meter) -> TestResult {
     model::closure(prior, record, meter)?;
+    meter.singles("prospective record and collection origin", 2)?;
     let mut prospective = prior.to_vec();
     prospective.push(record);
     domain::inventory(prospective.len(), meter)?;

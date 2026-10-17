@@ -1,11 +1,13 @@
 use super::*;
 use crate::evidence_subject_attachment::{material::Material, plan::AttachmentJournalPlanV1};
 use crate::StoreSnapshot;
-use census_domain::evidence_subject_attachment::ReviewedReferenceRecordV1;
+use census_domain::evidence_subject_attachment::{
+    CheckedReviewedReferenceRecordV1, EvidenceSubjectAttachmentError,
+};
 use chrono::{DateTime, Utc};
 
 pub(super) struct FinalAppend<'a> {
-    pub(super) draft: &'a mut ReviewedReferenceRecordV1,
+    pub(super) draft: &'a mut CheckedReviewedReferenceRecordV1,
     pub(super) introduced: Vec<Material>,
     pub(super) inputs: super::super::ledger::wire::EntryInputs,
 }
@@ -33,26 +35,20 @@ fn commit_at<'s>(
         introduced,
         inputs,
     } = append;
-    grant.charge_steps(1).map_err(Error::Domain)?;
-    if committed_at < draft.command.reviewed_at {
-        return Err(Error::Corrupt("commit precedes explicit review").into());
-    }
-    draft.committed_at = committed_at;
-    draft.record_digest = draft
-        .calculated_record_digest_with_grant(grant)
+    draft
+        .set_committed_at_with_grant(committed_at, grant)
+        .map_err(|error| match error {
+            EvidenceSubjectAttachmentError::Invalid("commit precedes explicit review") => {
+                Error::Corrupt("commit precedes explicit review")
+            }
+            other => Error::Domain(other),
+        })?;
+    let encoded = draft
+        .encode_with_grant(4 * 1024 * 1024, grant)
         .map_err(Error::Domain)?;
-    let encoded = census_domain::evidence_subject_attachment::encode_reviewed_reference_with_grant(
-        draft,
-        4 * 1024 * 1024,
-        grant,
-    )
-    .map_err(Error::Domain)?;
-    let record = census_domain::evidence_subject_attachment::decode_reviewed_reference_with_grant(
-        &encoded,
-        4 * 1024 * 1024,
-        grant,
-    )
-    .map_err(Error::Domain)?;
+    let record = draft
+        .decode_roundtrip_with_grant(&encoded, 4 * 1024 * 1024, grant)
+        .map_err(Error::Domain)?;
     ledger.append_proposed(view, record, introduced, inputs, grant)?;
     ledger.validate_projection(&draft.command.store, grant)?;
     let record = ledger
