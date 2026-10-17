@@ -1,0 +1,116 @@
+use super::{codec, enrollment, RosterSourceIssuanceStoreError as Error};
+use super::{RosterStartupValidationBudgetV1, ENROLLMENT, HEAD, LIFECYCLE, OPERATION_PREFIX, ROOT};
+use crate::{Receipt, StoreError, StoreFormat, StoreResult};
+use fjall::{Keyspace, Readable, Snapshot};
+
+type Rows = Vec<(Vec<u8>, Vec<u8>)>;
+
+pub(crate) fn validate_format(
+    snapshot: &Snapshot,
+    meta: &Keyspace,
+    journal: &Keyspace,
+    receipts: &Keyspace,
+    format: &StoreFormat,
+    budget: &mut RosterStartupValidationBudgetV1,
+) -> StoreResult<()> {
+    let metadata = protected_rows(snapshot, meta, budget)?;
+    let records = protected_rows(snapshot, journal, budget)?;
+    let issued = scan(snapshot, receipts, OPERATION_PREFIX, budget)?;
+    if format.lifecycle_revision != Some(LIFECYCLE) {
+        if metadata.is_empty() && records.is_empty() && issued.is_empty() { return Ok(()); }
+        return Err(Error::Corrupt("roster state outside admitted lifecycle").into());
+    }
+    if format.schema_version != Some(2) || format.key_format != Some(1)
+        || format.migration_target.is_some()
+    {
+        return Err(Error::EnrollmentRequired.into());
+    }
+    let key = crate::Store::journal_key("export-lineage-v1", "store-identity");
+    if let Some(length) = snapshot.size_of(journal, &key).map_err(|source| StoreError::Read { source })? {
+        let bytes = usize::try_from(length).map_err(|_| Error::BudgetExceeded)?;
+        budget.charge(bytes.checked_add(key.len()).ok_or(Error::BudgetExceeded)?)?;
+    }
+    let identity = match crate::lineage::read(snapshot, journal)? {
+        crate::lineage::RetainedIdentity::Present(identity) => identity,
+        crate::lineage::RetainedIdentity::Absent => return Err(Error::Corrupt("missing origin lineage").into()),
+    };
+    validate_enrollment(&metadata, &records, &issued, &identity)
+}
+
+fn scan(
+    snapshot: &Snapshot,
+    table: &Keyspace,
+    prefix: &str,
+    budget: &mut RosterStartupValidationBudgetV1,
+) -> StoreResult<Rows> {
+    snapshot.prefix(table, prefix).take(4097).try_fold(Vec::new(), |mut rows, guard| {
+        let key = guard.key().map_err(|source| StoreError::Read { source })?;
+        let value = read_value(snapshot, table, &key, budget)?;
+        rows.try_reserve(1).map_err(|_| Error::BudgetExceeded)?;
+        rows.push((key.to_vec(), value.to_vec()));
+        Ok(rows)
+    })
+}
+
+fn validate_enrollment(
+    metadata: &Rows, records: &Rows, issued: &Rows,
+    identity: &census_domain::model::StoreIdentity,
+) -> StoreResult<()> {
+    if metadata.len() != 2 || !records.is_empty() || issued.len() != 1 {
+        return Err(Error::Corrupt("enrollment inventory cardinality").into());
+    }
+    let enrolled: enrollment::EnrollmentRecord = codec::decode(find(metadata, ENROLLMENT)?)?;
+    let head: enrollment::AuthorityHead = codec::decode(find(metadata, HEAD)?)?;
+    let (receipt_key, receipt_bytes) = issued.first()
+        .ok_or(Error::Corrupt("missing enrollment receipt"))?;
+    let receipt: Receipt = codec::decode(receipt_bytes)?;
+    let operation = format!("{OPERATION_PREFIX}{}", enrolled.command.operation.as_str());
+    let approval = enrollment::approval(&enrolled.command)?;
+    enrollment::prepare::validate_command(&enrolled.command)?;
+    if &enrolled.command.store != identity
+        || enrolled.schema != "roster-source-enrollment-v1"
+        || enrolled.approval_digest != codec::digest(&approval)
+        || enrolled.committed_at < enrolled.command.reviewed_at
+        || head.version != 1 || head.ordinal != 0
+        || head.digest != codec::digest(find(metadata, ENROLLMENT)?)
+        || receipt_key != operation.as_bytes()
+        || receipt.operation != operation
+        || receipt.digest != head.digest
+        || receipt.at != enrolled.committed_at.to_rfc3339()
+        || receipt.appended != 0 || receipt.credited
+    {
+        return Err(Error::Corrupt("enrollment authority mismatch").into());
+    }
+    Ok(())
+}
+
+fn find<'a>(rows: &'a Rows, key: &str) -> StoreResult<&'a [u8]> {
+    rows.iter().find(|(held, _)| held == key.as_bytes())
+        .map(|(_, bytes)| bytes.as_slice())
+        .ok_or_else(|| Error::Corrupt("missing enrollment metadata").into())
+}
+
+fn protected_rows(snapshot: &Snapshot, table: &Keyspace, budget: &mut RosterStartupValidationBudgetV1) -> StoreResult<Rows> {
+    let mut rows = scan(snapshot, table, ROOT, budget)?;
+    let phase = scan(snapshot, table, "roster_source_issuance\0", budget)?;
+    rows.try_reserve(phase.len().checked_add(1).ok_or(Error::BudgetExceeded)?)
+        .map_err(|_| Error::BudgetExceeded)?;
+    rows.extend(phase);
+    let bare = b"roster_source_issuance";
+    if snapshot.contains_key(table, bare).map_err(|source| StoreError::Read { source })? {
+        rows.push((bare.to_vec(), read_value(snapshot, table, bare, budget)?));
+    }
+    Ok(rows)
+}
+
+fn read_value(snapshot: &Snapshot, table: &Keyspace, key: &[u8], budget: &mut RosterStartupValidationBudgetV1) -> StoreResult<Vec<u8>> {
+    let length = snapshot.size_of(table, key).map_err(|source| StoreError::Read { source })?
+        .ok_or(Error::Corrupt("missing inventory value"))?;
+    let length = usize::try_from(length).map_err(|_| Error::BudgetExceeded)?;
+    budget.charge(length.checked_add(key.len()).ok_or(Error::BudgetExceeded)?)?;
+    if length > codec::MAX_BYTES { return Err(Error::BudgetExceeded.into()); }
+    let value = snapshot.get(table, key).map_err(|source| StoreError::Read { source })?
+        .ok_or(Error::Corrupt("missing inventory value"))?;
+    if value.len() != length { return Err(Error::Corrupt("inventory length changed").into()); }
+    Ok(value.to_vec())
+}
