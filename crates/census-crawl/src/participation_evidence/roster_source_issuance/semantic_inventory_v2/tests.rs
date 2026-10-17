@@ -63,3 +63,6 @@ fn genuine_compact_inventory_retains_partial_under_object_limit() -> TestResult 
     check!(eq; value.packet, checked.reference().as_str());
     Ok(())
 }
+
+#[path = "retained_tamper.rs"]
+mod retained_tamper;

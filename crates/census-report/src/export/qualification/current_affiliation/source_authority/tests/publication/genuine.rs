@@ -84,3 +84,63 @@ fn retained_inventory(frozen: &Path, source: &fixture::Capture, approved: &[u8])
     }
     Ok(value)
 }
+
+#[test]
+fn forged_candidate_for_rejected_original_row_cannot_obtain_current_affiliation_or_export(
+) -> TestResult {
+    let fixture = fixture::Fixture::new()?;
+    let source = original::install(&fixture)?;
+    let forged = original::forged_candidate_for_rejected_original_row(&fixture, &source)?;
+    fixture.accept(&source.athlete.id)?;
+    fixture.accept(&forged.id)?;
+    let approved = issuance::review_revision(
+        &fixture,
+        &source,
+        "genuine-rejected-target-controlled-review",
+        issuance::CaptureRevision::RowLocalV3,
+    )?;
+    let expected = Expected {
+        athlete: source.athlete.id.clone(),
+        current_school: source.school.id.clone(),
+        school_name: "Detroit Catholic Central".into(),
+        case: Case::Resolved,
+    };
+    let objects = tempfile::tempdir()?;
+    let archive = tempfile::tempdir()?;
+    let output = tempfile::tempdir()?;
+    let dataset = capture(&fixture, objects.path())?;
+    witness(&dataset, &expected)?;
+    rejected_target(&dataset, &forged.id)?;
+    let digest = dataset.archive_digest()?;
+    let frozen = archive.path().join("genuine-abbott-controlled-review.json");
+    dataset.save_frozen(&frozen)?;
+    retained_inventory(&frozen, &source, &approved)?;
+    let workbook = publish(&fixture, &dataset, &output.path().join("publication"))?;
+    let rows = artifacts::readback(&workbook, &dataset, &expected)?;
+    let affiliations = rows.get("affiliations").and_then(Value::as_array).ok_or("affiliation export audit")?;
+    let rejected = affiliations.iter().find(|row| row.get("retained_candidate_id").and_then(Value::as_str) == Some(forged.id.as_str())).ok_or("rejected target audit row")?;
+    check!(eq; rejected.get("resolution_status").and_then(Value::as_str), Some("current_affiliation_unknown"));
+    check!(eq; rejected.get("current_school_id").and_then(Value::as_str), Some(""));
+    check!(eq; rejected.get("unavailable_reasons").and_then(Value::as_str), Some("[\"archive_unavailable\"]"));
+    check!(eq; published::verify_published(&workbook)?.workbook.mapped_athletes, 1);
+    drop(dataset);
+    remove_sources(fixture, objects)?;
+    let reopened = ExportDataset::reopen_frozen_with_digest(&frozen, &digest)?;
+    witness(&reopened, &expected)?;
+    rejected_target(&reopened, &forged.id)?;
+    check!(eq; artifacts::readback(&workbook, &reopened, &expected)?, rows);
+    Ok(())
+}
+
+fn rejected_target(dataset: &ExportDataset, target: &AthleteId) -> TestResult {
+    check!(dataset.verified_public_identities()?.public_id(target.as_str()).is_some());
+    let affiliations = dataset.verified_current_affiliations()?;
+    let resolution = affiliations.resolution(target);
+    check!(eq; resolution.status(), "current_affiliation_unknown");
+    check!(resolution.school().is_none());
+    check!(eq; affiliations.audit(target).ok_or("rejected target audit")?.unavailable(), &["archive_unavailable".to_string()]);
+    let selected = crate::report::Derivation::selected(dataset, Scope::AllSources, Some(2027), &[UsJurisdiction::Michigan], affiliations)?;
+    check!(!selected.athletes().iter().any(|athlete| &athlete.id == target));
+    check!(eq; selected.affiliation_exclusions().get(target), Some(&crate::report::CurrentAffiliationExclusion::Unresolved));
+    Ok(())
+}

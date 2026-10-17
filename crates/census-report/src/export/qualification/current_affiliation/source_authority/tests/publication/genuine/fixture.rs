@@ -73,3 +73,47 @@ fn retained(manifest: &Value, label: &str, body: &[u8], headers: &[u8]) -> TestR
         },
     )?)
 }
+
+pub(super) fn forged_candidate_for_rejected_original_row(
+    fixture: &fixture::Fixture,
+    source: &fixture::Capture,
+) -> TestResult<CanonicalAthlete> {
+    let checked = source.packet.read()?;
+    let RosterVerdict::Partial { roster, rejected, unfinished } = checked.roster_verdict() else {
+        return Err("rejected target requires original partial roster".into());
+    };
+    check!(eq; roster.athletes.len(), 146);
+    check!(eq; rejected.len(), 18);
+    check!(unfinished.is_none());
+    let rejected = rejected.iter().find(|row| row.athlete_id.as_deref() == Some("14570860")).ok_or("genuine rejected Arabo identity")?;
+    check!(eq; rejected.kind, census_crawl::milesplit::RosterRejectionKind::InvalidGraduationYear);
+    check!(!roster.athletes.iter().any(|row| row.athlete().athlete_id == "14570860"));
+    let row = rejected.row;
+    let end = row.byte_offset.checked_add(row.byte_length).ok_or("rejected span overflow")?;
+    let span = ROSTER.get(row.byte_offset..end).ok_or("original rejected span")?;
+    let text = std::str::from_utf8(span)?;
+    let url = "https://mi.milesplit.com/athletes/14570860-augustine-arabo";
+    check!(text.contains(url));
+    check!(text.contains("Arabo, Augustine"));
+    check!(text.contains("column-grad-year\">0</div>"));
+    let identity = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14570860");
+    let mut forged = source.athlete.clone();
+    forged.canonical_name = "Augustine Arabo".into();
+    forged.known_names = vec!["Augustine Arabo".into()];
+    forged.grad_year = GradYear::CO2027;
+    forged.id = CanonicalAthlete::mint(&source.school.id, &forged.canonical_name, forged.grad_year, forged.gender, &identity);
+    forged.source = Some(identity);
+    forged.source_links.clear();
+    forged.public_profile_urls = vec![url.into()];
+    let evidence = forged.evidence.first_mut().ok_or("forged positive evidence")?;
+    let mut note: Value = serde_json::from_str(evidence.note.as_deref().ok_or("original positive metadata")?)?;
+    let capture_url = source.packet.roster().requested_url();
+    let digest = source.packet.roster().body_sha256();
+    *note.get_mut("source_row_key").ok_or("original row key")? = json!(format!("{capture_url}#capture={digest}&row={}&offset={}&length={}", row.ordinal, row.byte_offset, row.byte_length));
+    *note.get_mut("provider_athlete_id").ok_or("original provider id")? = json!("14570860");
+    *note.get_mut("row").ok_or("original locator")? = serde_json::to_value(row)?;
+    *note.get_mut("row_sha256").ok_or("original row digest")? = json!(super::super::super::super::hash(span));
+    evidence.note = Some(serde_json::to_string(&note)?);
+    fixture.store.append(Table::Athletes, &forged)?;
+    Ok(forged)
+}
