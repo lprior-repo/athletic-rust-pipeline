@@ -87,6 +87,12 @@ impl Fixture {
     }
 
     pub(super) fn reopen(self) -> TestResult<Self> {
+        let (fixture, writer) = self.reopen_with_writer()?;
+        drop(writer);
+        Ok(fixture)
+    }
+
+    pub(super) fn reopen_with_writer(self) -> TestResult<(Self, census_store::PublicIdentityWriterV1)> {
         let Self {
             directory,
             store,
@@ -94,7 +100,7 @@ impl Fixture {
             expected,
             handoff,
         } = self;
-        let reopened = (|| -> TestResult<Store> {
+        let reopened = (|| -> TestResult<(Store, census_store::PublicIdentityWriterV1)> {
             files::verify(&handoff.store_path, &handoff.files)?;
             let root = store.root().to_path_buf();
             let identity = store.store_identity()?;
@@ -104,22 +110,21 @@ impl Fixture {
             drop(store);
             let (reopened, writer) =
                 Store::open_public_identity_qualification_v3(&root)?.into_parts();
-            drop(writer);
             check!(eq; reopened.store_identity()?, identity);
             check!(eq; reopened.snapshot().sequence(), sequence);
             check!(eq; reopened.snapshot().tables_digest(&Table::ALL)?, tables);
             check!(eq; reopened.receipt_count()?, receipts);
             files::verify(&handoff.store_path, &handoff.files)?;
-            Ok(reopened)
+            Ok((reopened, writer))
         })();
         match reopened {
-            Ok(store) => Ok(Self {
+            Ok((store, writer)) => Ok((Self {
                 directory,
                 store,
                 profile,
                 expected,
                 handoff,
-            }),
+            }, writer)),
             Err(error) => {
                 let _preserved = directory.keep();
                 Err(error)
