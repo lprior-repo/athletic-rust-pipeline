@@ -162,7 +162,7 @@ pub fn read_recorded_independent_participation(
     read_independent_from(
         Source::Current(snapshot),
         reference,
-        snapshot.store_identity()?,
+        || snapshot.store_identity(),
         snapshot.sequence(),
         grant,
     )
@@ -171,7 +171,7 @@ pub fn read_recorded_independent_participation(
 pub(super) fn read_independent_from(
     source: Source<'_, '_>,
     reference: &ParticipationEvidenceRefV1,
-    store_identity: census_domain::model::StoreIdentity,
+    store_identity: impl FnOnce() -> census_store::StoreResult<census_domain::model::StoreIdentity>,
     snapshot_sequence: u64,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<Option<RecordedIndependentParticipationV1>> {
@@ -185,7 +185,7 @@ pub(super) fn read_independent_from(
         else {
             return Ok(None);
         };
-        let checked = packet.read(store_identity, snapshot_sequence)?;
+        let checked = packet.read(store_identity()?, snapshot_sequence)?;
         if checked.reference() != reference {
             return Err(invalid("recorded participation packet differs from its typed key").into());
         }
