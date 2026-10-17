@@ -36,8 +36,10 @@ mod unresolved;
 mod validation;
 
 pub(crate) use archive::{
-    ParticipationReplay, ParticipationReplayV1, ParticipationReplayV2, ParticipationReplayV3,
+    ParticipationReplay, ParticipationReplayV1, ParticipationReplayV2, ParticipationReplayV4,
 };
+#[cfg(test)]
+pub(crate) use archive::ParticipationReplayV3;
 pub(crate) use observations::BUDGET as PHYSICAL_OBSERVATION_BUDGET;
 pub(crate) use types::{ParticipationDiagnostic, PinnedParticipation, PinnedParticipationRow};
 const MAX_ARCHIVE_BYTES: u64 = 512 * 1024 * 1024;
@@ -93,8 +95,8 @@ impl PinnedParticipation {
         };
         let (documentary, attachment) =
             attached::capture(dataset, snapshot, profile, captured_at, directory)?;
-        let replay = ParticipationReplay::V3(ParticipationReplayV3 {
-            version: 3,
+        let replay = ParticipationReplay::V4(ParticipationReplayV4 {
+            version: 4,
             retained: ParticipationReplayV2 {
                 version: 2,
                 retained: replay,
@@ -149,6 +151,13 @@ impl PinnedParticipation {
         )?;
         let documentary = match &replay {
             ParticipationReplay::V3(value) => attached::replay(
+                dataset,
+                profile,
+                retained.captured_at,
+                &value.attachment,
+                directory,
+            )?,
+            ParticipationReplay::V4(value) => attached::replay_current(
                 dataset,
                 profile,
                 retained.captured_at,

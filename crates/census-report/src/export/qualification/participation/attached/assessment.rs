@@ -13,6 +13,7 @@ pub(super) fn row(
     linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
     index: usize,
     query: CandidateQuery<'_>,
+    sources: AssessmentSources<'_, '_, '_>,
     grant: &mut Grant,
     budget: &mut Admission,
 ) -> ReportResult<DocumentaryParticipationRow> {
@@ -32,13 +33,13 @@ pub(super) fn row(
     let identity =
         project_retained_html_result_identity(linked.checked_document(), index, &athlete)
             .map_err(source)?;
-    let assessed = evaluate(
-        &row,
-        &identity,
-        query,
-        grant,
-        linked.checked_document().capture().acquired_at(),
-    )?;
+    let (outcome, reasons, semantic_refs) = match sources {
+        AssessmentSources::HistoricalWithheld => {
+            let assessed = evaluate(&row, &identity, query, grant, linked.checked_document().capture().acquired_at())?;
+            (assessed.0, assessed.1, Vec::new())
+        }
+        AssessmentSources::Current(sources) => facts::assess(sources, linked, index, query, grant)?,
+    };
     let subject = attachment.subject();
     let references = [
         subject.capture.as_str(),
@@ -58,14 +59,30 @@ pub(super) fn row(
             stage: "selected documentary references",
         })?;
     owned_refs.extend(references.into_iter().map(str::to_owned));
+    append_semantic_references(&mut owned_refs, semantic_refs, budget)?;
     Ok(DocumentaryParticipationRow::school_unresolved(
         identity.performance_id().clone(),
         identity.event_id().clone(),
         athlete,
-        assessed.0,
-        assessed.1,
+        outcome,
+        reasons,
         owned_refs,
     ))
+}
+
+fn append_semantic_references(
+    references: &mut Vec<String>,
+    semantic: Vec<String>,
+    budget: &mut Admission,
+) -> ReportResult<()> {
+    for reference in semantic {
+        budget.charge(reference.len(), 1)?;
+        references.try_reserve_exact(1).map_err(|_| crate::grouping::GroupingError::Allocation {
+            stage: "selected documentary semantic references",
+        })?;
+        references.push(reference);
+    }
+    Ok(())
 }
 
 fn admit_row(
