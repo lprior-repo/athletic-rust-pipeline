@@ -142,7 +142,7 @@ fn manifest_bytes(path: &Path) -> TestResult<Vec<u8>> {
     Ok(bytes)
 }
 
-fn require_v3(dataset: &ExportDataset, frozen: &Path) -> TestResult {
+pub(super) fn require_v3(dataset: &ExportDataset, frozen: &Path) -> TestResult {
     let proofs = serde_json::to_value(
         dataset
             .selected_proofs

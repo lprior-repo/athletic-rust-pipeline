@@ -45,7 +45,15 @@ fn native_genuine_documentary_selected_publication_reopens_without_live_store_or
     check!(eq; inspect(&publication.dataset, &expected)?, before);
     csv(generation, &publication.dataset, &expected)?;
     check!(eq; publication::verify_published(&workbook)?.generation_digest, verified.generation_digest);
-    fixture::retain_v3_archive(archives.path(), &frozen, &digest, &lineage, &before)?;
+    check!(historical_retained::require_v3(&reopened, &frozen).is_err());
+    fixture::retain_v3_archive(
+        &reopened,
+        archives.path(),
+        &frozen,
+        &digest,
+        &lineage,
+        &before,
+    )?;
     Ok(())
 }
 

@@ -5,6 +5,7 @@ use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 
 pub(in super::super) fn retain_v3_archive(
+    dataset: &crate::export::ExportDataset,
     archive_directory: &Path,
     frozen: &Path,
     digest: &str,
@@ -14,6 +15,7 @@ pub(in super::super) fn retain_v3_archive(
     let Some(destination) = std::env::var_os("CENSUS_DOCUMENTARY_V3_ARCHIVE_DIR") else {
         return Ok(());
     };
+    super::super::historical_retained::require_v3(dataset, frozen)?;
     let destination = PathBuf::from(destination);
     require_destination(&destination)?;
     let report_commit = std::env::var("CENSUS_DOCUMENTARY_REPORT_PRODUCER_COMMIT")?;
