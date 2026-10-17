@@ -5,7 +5,7 @@ use census_store::{
 };
 use sha2::{Digest, Sha256};
 
-mod wire;
+pub(super) mod wire;
 
 #[test]
 fn controlled_rehashed_review_omission_refuses_against_original_authority_head() -> TestResult {
@@ -68,7 +68,7 @@ fn controlled_rehashed_review_omission_refuses_against_original_authority_head()
     Ok(())
 }
 
-fn admit_save_publish(
+pub(super) fn admit_save_publish(
     fixture: &fixture::Fixture,
     frozen: &Path,
     digest: &str,
@@ -90,6 +90,18 @@ fn admit_save_publish(
 }
 
 fn omit_review(path: &Path) -> TestResult<String> {
+    rewrite_review(
+        path,
+        wire::omit_latest,
+        "review complete inventory mismatch",
+    )
+}
+
+pub(super) fn rewrite_review(
+    path: &Path,
+    transform: impl FnOnce(&[u8]) -> TestResult<Vec<u8>>,
+    expected_error: &str,
+) -> TestResult<String> {
     let mut envelope = inspect_wire(path)?;
     let anchors = json!({"data":envelope.get("data"),"lineage":envelope.get("lineage"),"physical":envelope.pointer("/selected_proofs/affiliation/observations"),"family":envelope.pointer("/selected_proofs/affiliation/roster_family")});
     let directory = path.with_file_name(format!(
@@ -113,7 +125,7 @@ fn omit_review(path: &Path) -> TestResult<String> {
         .get("reviewed")
         .ok_or("controlled reviewed reference")?
         .clone();
-    let omitted = wire::omit_latest(&std::fs::read(directory.join(&old_bundle))?)?;
+    let omitted = transform(&std::fs::read(directory.join(&old_bundle))?)?;
     let bundle_digest = hash(&omitted);
     let reviewed = closure
         .get_mut("reviewed")
@@ -136,8 +148,8 @@ fn omit_review(path: &Path) -> TestResult<String> {
     check!(matches!(
         replay_frozen_roster_reviewed_claims_v1(&omitted, &reference, &mut grant),
         Err(StoreError::RosterSourceIssuance(
-            RosterSourceIssuanceStoreError::Corrupt("review complete inventory mismatch")
-        ))
+            RosterSourceIssuanceStoreError::Corrupt(detail)
+        )) if detail == expected_error
     ));
     let typed: crate::export::qualification::current_affiliation::source_binding::RosterSourceClosureV1 = serde_json::from_value(closure)?;
     let closure_bytes = serde_json::to_vec(&typed)?;

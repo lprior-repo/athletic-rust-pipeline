@@ -3,14 +3,14 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Archive {
+pub(in super::super) struct Archive {
     schema: String,
     store: StoreIdentity,
     selected_snapshot_sequence: u64,
     source_store_lifecycle: u32,
     current_input_token: Vec<u8>,
     metadata: Vec<(Vec<u8>, Vec<u8>)>,
-    records: Vec<(Vec<u8>, Vec<u8>)>,
+    pub(in super::super) records: Vec<(Vec<u8>, Vec<u8>)>,
     receipts: Vec<(Vec<u8>, Vec<u8>)>,
     physical: Vec<PhysicalRow>,
     external: Vec<ExternalPrefix>,
