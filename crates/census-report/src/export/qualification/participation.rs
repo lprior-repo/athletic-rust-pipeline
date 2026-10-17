@@ -49,6 +49,10 @@ impl PinnedParticipation {
         self.replay.fingerprints()
     }
 
+    pub(crate) fn is_historical_documentary_replay(&self) -> bool {
+        matches!(&self.replay, ParticipationReplay::V3(_))
+    }
+
     pub(crate) fn install_replay(&self, directory: &Path) -> ReportResult<String> {
         self.replay.install(directory)
     }

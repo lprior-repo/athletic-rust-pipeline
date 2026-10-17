@@ -1,5 +1,38 @@
 use super::*;
+use base64::engine::general_purpose::STANDARD;
+use base64::Engine;
 use serde::{Deserialize, Serialize};
+
+mod record_wire {
+    use super::*;
+
+    type Records = Vec<(Vec<u8>, Vec<u8>)>;
+
+    pub fn serialize<S: serde::Serializer>(
+        records: &[(Vec<u8>, Vec<u8>)],
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        serializer.collect_seq(
+            records
+                .iter()
+                .map(|(key, value)| (STANDARD.encode(key), STANDARD.encode(value))),
+        )
+    }
+
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Records, D::Error> {
+        Vec::<(String, String)>::deserialize(deserializer)?
+            .into_iter()
+            .map(|(key, value)| {
+                Ok((
+                    STANDARD.decode(key).map_err(serde::de::Error::custom)?,
+                    STANDARD.decode(value).map_err(serde::de::Error::custom)?,
+                ))
+            })
+            .collect()
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -10,6 +43,7 @@ pub(in super::super) struct Archive {
     source_store_lifecycle: u32,
     current_input_token: Vec<u8>,
     metadata: Vec<(Vec<u8>, Vec<u8>)>,
+    #[serde(with = "record_wire")]
     pub(in super::super) records: Vec<(Vec<u8>, Vec<u8>)>,
     receipts: Vec<(Vec<u8>, Vec<u8>)>,
     physical: Vec<PhysicalRow>,

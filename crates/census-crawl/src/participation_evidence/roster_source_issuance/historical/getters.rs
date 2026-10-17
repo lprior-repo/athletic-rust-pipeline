@@ -31,12 +31,11 @@ impl HistoricalReviewedRosterSourceV2<'_> {
         Ok(&self.body)
     }
     pub fn metadata_bytes(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&[u8]> {
-        self.require_original_grant(grant)?;
-        Ok(&self.metadata)
+        self.objects.metadata_bytes(grant)
     }
     pub fn interpretation_bytes(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&[u8]> {
         self.require_original_grant(grant)?;
-        Ok(&self.interpretation)
+        Ok(self.interpretation)
     }
     pub fn qualification_object(
         &self,

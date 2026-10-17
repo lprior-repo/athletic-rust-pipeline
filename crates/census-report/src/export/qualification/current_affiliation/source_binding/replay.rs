@@ -1,15 +1,19 @@
 use super::*;
 
-impl<'a> BoundRosterSourceViewV1<'a> {
-    pub(in super::super) fn replay(
-        dataset: &'a ExportDataset,
+impl BoundRosterSourceViewV1<'_> {
+    pub(in super::super) fn with_replay<T>(
+        dataset: &ExportDataset,
         profile: &QueryProfileV1,
-        objects: &'a Path,
+        objects: &Path,
         closure_object: &SourceBindingObjectV1,
         expected_athletes: &physical_observations::PhysicalObservationDescriptor,
         expected_family: &SourceBindingObjectV1,
         grant: &mut AttachmentReplayGrantV1,
-    ) -> ReportResult<Self> {
+        use_view: impl FnOnce(
+            &BoundRosterSourceViewV1<'_>,
+            &mut AttachmentReplayGrantV1,
+        ) -> ReportResult<T>,
+    ) -> ReportResult<T> {
         let result = (|| {
             dataset.ensure_input_binding()?;
             super::super::validate_profile(dataset, profile)?;
@@ -53,16 +57,16 @@ impl<'a> BoundRosterSourceViewV1<'a> {
             if claims.source_store_lifecycle() != 8 {
                 return Err(invalid("reviewed roster frozen source lifecycle differs").into());
             }
-            let bound = Self {
+            let bound = BoundRosterSourceViewV1 {
                 dataset,
                 objects,
-                claims: Claims::Frozen(claims),
+                claims: Claims::Frozen(&claims),
                 closure,
                 closure_object: closure_object.clone(),
                 expected_family: Some(expected_family.clone()),
             };
             bound.require_binding(dataset, profile, grant)?;
-            Ok(bound)
+            use_view(&bound, grant)
         })();
         if result.is_err() {
             grant.poison();

@@ -57,7 +57,7 @@ pub(super) async fn try_resolve_pending(
             index = index.checked_add(1).ok_or(BrowserError::Protocol)?;
             continue;
         };
-        refuse_excess_wire(true, Some(total))?;
+        refuse_excess_wire(Some(total))?;
         let pending = ledger.pending.remove(index);
         let resolved = resolve_binding(&pending.package, context)?;
         let Some(parsed) = resolved else {

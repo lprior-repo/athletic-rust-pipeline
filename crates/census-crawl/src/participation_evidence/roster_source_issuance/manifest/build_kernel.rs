@@ -2,7 +2,7 @@ use super::{format, inputs, process, BuildResult};
 use serde::Serialize;
 use std::path::Path;
 
-const SCHEMA: &str = "roster-semantic-kernel-dependencies/v1";
+const SCHEMA: &str = "roster-semantic-kernel-dependencies/v2";
 const MAX_DOCUMENT: usize = 64 * 1024;
 const SOURCES: &[&str] = &[
     "crates/census-crawl/src/disposition.rs",
@@ -122,6 +122,6 @@ pub(super) fn generate(root: &Path, destination: &Path) -> BuildResult<()> {
     if bytes.is_empty() || bytes.len() > MAX_DOCUMENT {
         return Err("semantic kernel document size exceeded".into());
     }
-    std::fs::write(destination.join("roster-semantic-kernel-v1.json"), bytes)?;
+    std::fs::write(destination.join("roster-semantic-kernel-v2.json"), bytes)?;
     Ok(())
 }

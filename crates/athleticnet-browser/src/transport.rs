@@ -19,7 +19,11 @@ mod capture;
 mod cleanup;
 mod fetch_loop;
 mod fetch_state;
+mod invocation;
+pub(crate) mod pending;
+pub(crate) mod progress;
 mod rankings;
+mod request_binding;
 mod script;
 pub(crate) mod transfer;
 pub(super) use capture::{capture_body, response_headers};
@@ -38,8 +42,13 @@ pub(crate) async fn subscribe<T: IntoEventKind>(
         .map_err(|_| BrowserError::Transport)
 }
 
-async fn fail(page: &Page, gate: &ProfileGate, original: BrowserError) -> BrowserError {
-    let result = cleanup::cleanup(page, gate).await;
+async fn fail(
+    page: &Page,
+    gate: &ProfileGate,
+    invocation: Option<&invocation::Invocation>,
+    original: BrowserError,
+) -> BrowserError {
+    let result = cleanup::cleanup(page, gate, invocation).await;
     if matches!(result, cleanup::CleanupResult::Unconfirmed) {
         warn!("cleanup unconfirmed — gate already revoked");
     }
@@ -57,11 +66,23 @@ struct FetchArguments<'a> {
     headers: &'a [(String, String)],
 }
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct FetchResult {
     ok: bool,
     error: Option<String>,
     status: Option<u16>,
-    body_base64: Option<String>,
+}
+
+impl FetchResult {
+    fn validate(&self) -> Result<(), BrowserError> {
+        match (self.ok, self.error.as_deref(), self.status) {
+            (true, None, Some(_)) => Ok(()),
+            (false, Some("payload_limit"), _) => Err(BrowserError::PayloadLimit),
+            (false, Some("aborted"), _) => Err(BrowserError::Timeout),
+            (false, Some("network"), _) => Err(BrowserError::Transport),
+            _ => Err(BrowserError::Protocol),
+        }
+    }
 }
 #[derive(Debug, Clone)]
 struct ResponseEvidence {
@@ -77,10 +98,38 @@ pub(crate) async fn fetch(
     gate: Arc<ProfileGate>,
     clock: &dyn Clock,
 ) -> Result<BrowserResponse, BrowserError> {
+    fetch_loop::timeout_millis(request_timeout)?;
+    fetch_loop::validate_request_headers(&request.headers)?;
     let snap = gate.snapshot();
     if !snap.ready {
         return Err(BrowserError::HumanRequired);
     }
+    let deadline = clock
+        .now_instant()
+        .checked_add(request_timeout)
+        .ok_or(BrowserError::Protocol)?;
+    let mut invocation = None;
+    let attempt = tokio::time::timeout_at(
+        deadline,
+        capture_attempt(page, request, deadline, &gate, clock, &mut invocation),
+    )
+    .await;
+    let error = match attempt {
+        Ok(Ok(response)) => return Ok(response),
+        Ok(Err(error)) => error,
+        Err(_) => BrowserError::Timeout,
+    };
+    Err(fail(page, &gate, invocation.as_ref(), error).await)
+}
+
+async fn capture_attempt(
+    page: &Page,
+    request: &RequestSpec,
+    deadline: tokio::time::Instant,
+    gate: &ProfileGate,
+    clock: &dyn Clock,
+    invocation_slot: &mut Option<invocation::Invocation>,
+) -> Result<BrowserResponse, BrowserError> {
     let listeners = subscribe_fetch(page).await?;
     let snap = gate.snapshot();
     if !snap.ready {
@@ -91,9 +140,22 @@ pub(crate) async fn fetch(
         .map(|body| serde_json::to_string(&body))
         .transpose()
         .map_err(|_| BrowserError::Protocol)?;
-    let mut capture = FetchCapture::new(page, &gate, request, request_body.as_deref());
-    drive_capture(&mut capture, listeners, request_timeout, clock).await?;
-    complete_fetch(capture).await
+    let remaining = deadline.saturating_duration_since(clock.now_instant());
+    let arguments = FetchArguments {
+        url: request.url.as_str(),
+        method: request_method(request),
+        body: request_body.as_deref(),
+        timeout_ms: fetch_loop::timeout_millis(remaining)?,
+        max_body: crate::protocol::MAX_SOURCE_RESPONSE_BYTES,
+        headers: request.headers.as_slice(),
+    };
+    *invocation_slot = Some(invocation::prepare(page, &arguments).await?);
+    let invocation = invocation_slot.as_ref().ok_or(BrowserError::Protocol)?;
+    let mut capture = FetchCapture::new(page, gate, request, request_body.as_deref(), invocation);
+    drive_capture(&mut capture, listeners, deadline, clock).await?;
+    let response = complete_fetch(capture).await?;
+    invocation::release(page, invocation).await?;
+    Ok(response)
 }
 
 fn request_method(request: &RequestSpec) -> &'static str {

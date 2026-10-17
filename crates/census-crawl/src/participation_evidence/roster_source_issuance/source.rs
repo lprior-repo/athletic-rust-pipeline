@@ -75,10 +75,11 @@ fn assess<'a>(
             &packet,
             &checked,
             &parser_manifest,
+            &roster_body,
             grant,
         )?
     } else {
-        super::capture_objects::derive(evidence, &packet, &parser_manifest, grant)?
+        super::capture_objects::derive(evidence, &packet, &parser_manifest, &roster_body, grant)?
     };
     objects.require_proposal(proposal, grant)?;
     let scoped_rows = original(evidence, grant, |grant| scope(&checked, proposal, grant))?;
@@ -102,9 +103,9 @@ pub(super) fn original<T>(
     operation: impl FnOnce(&mut AttachmentReplayGrantV1) -> CrawlResult<T>,
 ) -> CrawlResult<T> {
     evidence.require_original_grant(grant)?;
-    let result = operation(grant);
+    let value = operation(grant)?;
     evidence.require_original_grant(grant)?;
-    result
+    Ok(value)
 }
 
 pub(super) fn admission(

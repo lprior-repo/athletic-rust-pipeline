@@ -35,10 +35,10 @@ impl Sources {
         let recording = Recording::new();
         record_independent_participation_packet(store, &recording, &packet)?;
         record_retained_html_result_capture(store, &recording, &document)?;
-        let applied = recording
-            .drain()
-            .prepare("genuine-attachment-original-inputs")?
-            .apply(store)?;
+        let recorded = recording.drain();
+        let prepared =
+            crate::recording::prepare_recorded(recorded, "genuine-attachment-original-inputs")?;
+        let applied = prepared.apply(store)?;
         check!(eq; applied.appended(), 0);
         let snapshot = store.snapshot();
         let mut grant = AttachmentReplayGrantV1::new();

@@ -48,6 +48,7 @@ pub(super) fn derive<'a>(
     evidence: &'a RosterSourceEvidenceV1,
     packet: &ProviderSchoolPacketV1,
     parser: &super::super::manifest::RetainedRosterParserManifestV1,
+    body: &str,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
     let held = evidence.retained_root(grant)?;
@@ -65,7 +66,6 @@ pub(super) fn derive<'a>(
         return Err(invalid("retained capture timestamp differs").into());
     }
     budget::charge(capture, grant)?;
-    let body = original(evidence, grant, |_| Ok(capture.body()?))?;
     let day = instant.date_naive().to_string();
     let metadata = encode(
         evidence,

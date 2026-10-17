@@ -1,7 +1,8 @@
 use super::{ledger::Ledger, EvidenceSubjectAttachmentStoreError as Error};
 use crate::{AcceptedPublicIdentitySnapshot, StoreResult, StoreSnapshot};
 use census_domain::evidence_subject_attachment::{
-    AttachmentReplayGrantV1, AttachmentSubjectRoleV1, RetainedDocumentSubjectReferenceV1,
+    AttachmentReplayContinuationV1, AttachmentReplayGrantV1, AttachmentSubjectRoleV1,
+    RetainedDocumentSubjectReferenceV1,
 };
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 
@@ -21,6 +22,7 @@ pub struct CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's> {
     view: &'v StoreSnapshot<'s>,
     ledger: Ledger<'s>,
     accepted: AcceptedOwner<'v>,
+    continuation: AttachmentReplayContinuationV1,
 }
 
 impl<'v, 's> CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's> {
@@ -107,10 +109,12 @@ fn read<'v, 's>(
     {
         return Err(Error::TargetMoved.into());
     }
+    let continuation = grant.checkpoint().map_err(Error::Domain)?;
     Ok(CurrentEvidenceSubjectAttachmentReferencesV1 {
         view,
         ledger,
         accepted: AcceptedOwner::Owned(Box::new(accepted)),
+        continuation,
     })
 }
 

@@ -1,10 +1,10 @@
+use super::{read, AthleteVerdict};
 use census_domain::model::{ReviewCase, ReviewPacket, ReviewVerdict, ReviewVerdictKind};
+use census_domain::review_decision::{Adjudication, Admitted, HardContradiction, Refusal};
 
 use crate::packets::{case_fact, fact};
-use crate::verdicts::{validate, Adjudication, Admitted, Refusal};
+use crate::verdicts::validate;
 use crate::ReviewFamily;
-
-use super::{read, AthleteVerdict, HardContradiction};
 
 fn case() -> ReviewCase {
     ReviewCase::pending(

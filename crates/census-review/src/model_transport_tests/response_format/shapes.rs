@@ -1,7 +1,7 @@
 use super::*;
 use crate::model::response::parse_batch;
-use crate::ModelError;
 use census_domain::model::{ReviewVerdict, ReviewVerdictKind, VerdictBatch};
+use census_domain::review_model::ModelError;
 
 #[derive(Debug, Clone, Copy)]
 enum MalformedShape {

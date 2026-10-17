@@ -71,7 +71,7 @@ fn controlled_original_v2_receipt_replays_fixed_raw_semantics_before_historical_
         &mut grant,
     )?;
     check!(eq; checked.school(&mut grant)?.id, capture.school.id);
-    check!(eq; checked.roster_body(&mut grant)?, capture.packet.roster().body()?);
+    check!(eq; checked.roster_body(&mut grant)?, capture.roster_body);
     let (resolved, _) = fixture.assess()?;
     check!(eq; resolved.resolution(&capture.athlete.id).school(), Some(&capture.school.id));
     Ok(())

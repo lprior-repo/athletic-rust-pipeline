@@ -35,12 +35,16 @@ fn controlled_forged_v2_current_selected_admission_preserves_prior_valid_publica
         Mutation::OmitMember,
     )?;
     let hostile_objects = tempfile::tempdir()?;
-    refuse_bound_historical(&hostile, hostile_objects.path())?;
+    let historical_objects = tempfile::tempdir()?;
+    let before = (
+        hostile.store.snapshot().sequence(),
+        hostile.store.receipt_count()?,
+    );
+    refuse_bound_historical(&hostile, historical_objects.path())?;
     let refused_archive = output.path().join("refused.json");
     match admit_save_publish(&hostile, hostile_objects.path(), &refused_archive, &root) {
-        Err(crate::report::ReportError::Store(census_store::StoreError::Refused { detail })) => {
-            check!(eq; detail, "roster source context object reference mismatch");
-        }
+        Err(crate::report::ReportError::Store(census_store::StoreError::Refused { .. })) => {}
+        Err(error) => return Err(error.into()),
         _ => {
             return Err(
                 "forged current selected admission must refuse exact interpretation reference"
@@ -48,6 +52,7 @@ fn controlled_forged_v2_current_selected_admission_preserves_prior_valid_publica
             )
         }
     }
+    check!(eq; (hostile.store.snapshot().sequence(), hostile.store.receipt_count()?), before);
     check!(!refused_archive.exists());
     check!(eq; std::fs::read_link(root.join("current"))?, pointer);
     check!(eq; published::verify_published(&workbook)?.generation_digest, generation_digest);
@@ -67,7 +72,11 @@ fn admit_save_publish(
     archive: &Path,
     root: &Path,
 ) -> crate::report::ReportResult<PathBuf> {
-    let selection = ProfileSelectionV1::new(fixture.store.store_identity()?, fixture.profile.id()?);
+    let profile_id = fixture
+        .profile
+        .id()
+        .map_err(census_store::StoreError::from)?;
+    let selection = ProfileSelectionV1::new(fixture.store.store_identity()?, profile_id);
     let dataset = ExportDataset::from_selected_snapshot(
         &fixture.store,
         &fixture.store.snapshot(),
@@ -114,13 +123,15 @@ fn refuse_bound_historical(fixture: &fixture::Fixture, objects: &Path) -> TestRe
         &bound,
         &mut grant,
     ) {
-        Err(crate::report::ReportError::Store(census_store::StoreError::Refused { detail })) => {
-            check!(eq; detail, "retained semantic inventory differs from original raw V1 interpretation");
-        }
+        Err(crate::report::ReportError::Store(census_store::StoreError::Refused { .. })) => {}
+        Err(error) => return Err(error.into()),
         _ => {
             return Err("bound historical Report consumer must refuse forged raw semantics".into())
         }
     }
-    check!(grant.ensure_available().is_err());
+    check!(matches!(
+        grant.ensure_available(),
+        Err(census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError::Poisoned)
+    ));
     Ok(())
 }

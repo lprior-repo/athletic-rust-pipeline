@@ -376,3 +376,251 @@ R1/R2/R3 acceptance remain open. Unregistered Store9 enrollment/review preparati
 its shared predecessor helper preparation, and prospective partial-roster tests
 are preserved separately and excluded. The already sealed Domain school model
 is syntax/model-only; it does not enroll or authorize production school mappings.
+### Combined observation-offer admission — 2026-10-17
+
+`census-store` now admits the complete offered append/SourceAccess inventory before
+filtering repeated children. Empty SourceAccess no longer bypasses resolved
+observation admission. These are bounded R11 repairs, not the semantic-witness
+cutover or replacement/final-staged-cell budget qualification.
+
+Main used `env -u CI TMPDIR=/home/lewis/.cache/r14n-TpNM3q tools/moon-local run`:
+
+| Surface | Arguments and task identity | Observed result |
+|---|---|---|
+| Failing-before regressions | Focused `offer_limits` selection of `pipeline:tests-scoped`, `ae811781` | Three actual admission failures; exact 4,096-row boundary passed |
+| Fixed regressions | Focused `offer_limits` selection, `d5aa742b` | 4 passed |
+| Public Store executable | `pipeline:run-scoped -- -p census-store --example observation_offer_probe -- var/work-preservation-20261016-01e842a3-9981-4c1b-a7ba-6c2ffba1d7c7/store-offer-native-28857fcd-2fa9-400c-928f-65b55079909e`, `0df89c9d` | 4 cases passed, including typed row and receipt readback after reopen |
+| Full Store library | `pipeline:tests-scoped -- -p census-store --lib`, `25d3ee71` | 1,334 passed; 1 failed with actual `QuotaExceeded` while opening the socket-backup fixture's hardcoded `/tmp` Store |
+| Socket repair and unchanged admission regressions | `pipeline:tests-scoped -- -p census-store --lib -E 'test(backup_refuses_a_socket_in_the_store_tree) \| test(offer_limits::)' --no-tests fail`, `e46dead8` | 5 passed after restoring the five unauthorized helper edits; the socket fixture now honors `TMPDIR` |
+
+The executable admitted exactly 4,096 offered rows; refused 4,097, including a
+repeated 4,096-row child; and refused 8,552,697 combined bytes against 8,388,608.
+Refusals retained sequence/generation and published no new rows or receipts.
+The repeated-child case preserved its original receipt, including date, on reopen.
+Original append-credit partition, issued authorities, semantic sequences, immutable
+output witnesses, full replacement/staging budgets and current-runtime migration
+remain R11 work. Existing warning debt is not waived. These runs preceded the
+22-commit integration of remote main `5eba0bdc`; that combined tree requires its
+own acceptance.
+
+The HOME `TMPDIR` is explicit because `/tmp` returned real `EDQUOT` despite free
+filesystem space. No live Store, endpoint, historical identity or retained capture
+was opened, reset or restarted. These results are not release, native-fault,
+UP/five-state or national qualification.
+
+### Integrated library and native verification — 2026-10-17
+
+Scope: main `5eba0bdc` plus Main's admission, browser and dead-helper repairs.
+Commands use the HOME `TMPDIR` prefix above. Private SDK/replacement candidates
+are excluded from this receipt.
+
+| Command after `tools/moon-local run` | Task | Observed result |
+|---|---|---|
+| `pipeline:tests-scoped -- -p census-store -p athleticnet-browser --lib` | `b4e09dbb` | 1,483 passed; 2 skipped |
+| `pipeline:tests-scoped -- --workspace --exclude census-store --exclude athleticnet-browser --lib` | `de8e7343` | 5,139 passed; 1 skipped |
+| `pipeline:fmt pipeline:check pipeline:lint-src` | `0dcce1ae`, `3c56e971`, `37e2edd7` | All exited zero; lint retains six forced argument-count warnings |
+| `pipeline:run-scoped -- -p athleticnet-browser --example r14_binding_probe -- http://127.0.0.1:34269/ <fresh-profile> duplicate` | `2c35c69c` | Exact 28-byte OWNED body captured twice on one manager |
+| Same executable, `http://127.0.0.1:44309/ <fresh-profile> redirect` | `b3be8b73` | Explicit `Redirect/Terminal` refusal |
+| `pipeline:run-scoped -- -p athleticnet-browser --example r14_native_probe -- var/work-preservation-20261016-01e842a3-9981-4c1b-a7ba-6c2ffba1d7c7/r14-native-ec3a42a4-4c73-4184-b041-3b342b4c14b0` | `33486d41` | Normal capture, independent encoded/decoded limits and dropped-pending shutdown passed |
+
+The disjoint library runs total 6,622 passes and three unexecuted skips; this is
+not a claim about every integration, release or native-fault lane. The first
+combined invocation also forwarded test flags to fmt and failed on `-p`;
+the corrected static command above passed without those flags.
+
+All six native managers reported `Stopped`, `alive=false`, no shutdown failure
+and coherent drain certificates. The independent cumulative HTTP ledger retained
+40 duplicate-origin requests, nine source-origin requests and zero foreign
+requests. Exact commands/profiles and server records are retained in the session
+evidence; `<fresh-profile>` denotes the independently created retained directory,
+not a reusable profile or a literal executed argument.
+
+R11's semantic SDK/caller cutover, R12/R13 migration and current-resource
+qualification remain open. R14 still lacks complete host/Store admission and
+startup ownership; the native tee queue is not a certified whole-browser memory
+bound. No warning waiver, live-store reset or national-run readiness is claimed.
+
+### PR81 integration qualification — 2026-10-17
+
+Base: main `a2f3979ed0b6a7b7d430b296318a2c334138dfec`, tree
+`c656422ca29b2032f0ee7db7249ea03fc8c94b0e`, plus uncommitted integrated repairs.
+Fetching `origin/main` again yielded zero commits on either side. These are
+working-source receipts, not acceptance of an identified final commit.
+
+Commands use the explicit HOME `TMPDIR` prefix above, with matching `TMP`/`TEMP`
+and `MOON_RUST_BUILD_JOBS=2`. Every test command used `pipeline:tests-scoped`.
+
+| Surface | Task / actual selection | Result |
+|---|---|---|
+| Integrated static gates | fmt `301df0b3`; check `b2e1875b`; lint-src `b4481f51` | Exited zero. Check exposed one unused test import, subsequently removed with LSP; final-source rerun remains required. Lint reported ten forced arity advisories. |
+| Corrected semantic kernel V2 | `c2db9715`, `roster_source_issuance::semantic_inventory::kernel::tests::` | 3 passed, including source/dependency drift and retired-V1/unknown-schema refusal controls. |
+| Independent retained Report V3 and origin guards | `a54b9fb1`, original retained-V3 consumer plus `export::dataset::frozen::archive::origin_tests::` | 11 passed. Historical descriptor V3 now permits unchanged readback but cannot authorize a current write; current-profile positive controls remain intact. |
+| Actual browser lifecycle | `ae4f2393`, `browser_start_ready_stop_reaps_physically` and `cancelled_physical_startup_reaps_the_exact_process_and_returns_the_reservation`, with ignored tests explicitly enabled | 2 passed: real owned HTTP capture and stop/reap; cancellation of the exact pending physical child and reservation return. |
+| Bounded retained reader | `764e45b9`, example reader regressions | 4 passed: manifest byte boundary, rehashed CRC corruption, truncation/trailing bytes, and decoded-content mismatch. |
+| Ordered roster queue | Stopped at `e3b4c9ff`, source assessment scope | 20 passed; 1 failed because the original partial roster was incorrectly expected to satisfy complete-roster policy. No later scope in that invocation ran. Public refusal regression and continuation remain pending. |
+
+Original retained Report V3 was authenticated without rewriting its artifact:
+`retention.json` SHA256
+`923de2267a917a0113573f3641c67ff6c7428c52093542ed443d3637efe7c4f4`,
+producer `24f593911c6cab8f1679199fd70547a701fced27`,
+tree `ed8428e420d1184e415e12874fda9b70e2b55d0a`.
+Its replay does not depend on the unqualified reviewed-roster kernel V1.
+ADR-038 records the owner's explicit successor-kernel decision; fresh reviewed
+producer-A/changed-build-B qualification is still required.
+
+The browser fixture explicitly used Chrome for Testing `157.0.8103.6`,
+executable SHA256
+`ec4e78d65a5382c2b50aaf28c6a655a624973b3d3c711a2a4ae34369fd9a3444`.
+This is not a production browser-policy change or aggregate memory certification.
+The earlier zero-selected native-browser invocation is not a pass.
+
+The supplied handoff's 13 artifact checksums passed. Its paused draft was restored
+only into a separate sparse source worktree at exact base `b5b166bf`; all 27 file
+lengths and SHA256 values matched the manifest. No draft was activated or built.
+Historical-school issuance, the controlled 50→51 workbook, genuine nonempty
+qualification, service publication, representative resource/fault lanes, and
+UP/five-state/national acceptance remain open. No live Store was reset or opened.
+
+#### Reviewed-source replay resource correction — 2026-10-17
+
+Still an uncommitted working tree on PR81, not a qualified final producer.
+Moon `a3e7db9c` passed 14/14: the original transfer scenario produced and read
+back the workbook/normalized artifacts, deleted its sources, and independently
+reopened all retained cases. Kernel drift/predecessor, malformed compact rows,
+canonical corruption, claim visibility and foreign-origin controls also passed.
+The 4-MiB aggregate limit, 8,192 traversal limit and four-times-wire decode
+reservation were unchanged.
+
+The same controlled two-review recipe exposed numeric-byte record overhead;
+build metadata and receipts differ between observations:
+
+| Observed measure | Before (`e730ab57`) | After (`f5570f5e`) |
+|---|---:|---:|
+| Encoded `records` bytes | 679,089 | 285,169 |
+| Complete replay encoded-byte usage | Refused | 2,473,523 / 4,194,304 |
+| Complete replay traversal usage | Not reached | 7,662 / 8,192 |
+
+The after probe intentionally returned its diagnostic error after completing
+production phases; it is not a passing test. Its source/module were removed.
+No host-memory, throughput or national-scale qualification is inferred.
+ADR-038 records payload V2 and unchanged reference-shape V1; original source
+objects are not rewritten. The fixed 71-input source snapshot was independently
+checked as `44f43b9cac647c8733441cc0f88cd5f27c635381c9f357aae2f3aa8a04389c1f`.
+
+Static format/check passed `4e0e59fa`/`12de3ece`; source lint passed `233aed47`
+after correcting codec type complexity, with only authorized arity advisories.
+Broader Report qualification `a5199c18` was 30/37: seven failures remained in
+wire-mutation helpers, generation proof-root ownership and three-review current
+assessment. Their repair and final-source rerun remain required. Authenticated
+producer A/consumer B, PRIMARY 49/50/51 and national acceptance remain unqualified.
+
+Follow-on `2a403451` selected the same 37 Report cases: 35 passed, two failed.
+Wire mutation, separate proof-root ownership, historical write refusal and both
+three-review current assessments now pass. The two correction cases reach public
+identity authorization: the split oracle receives an earlier refusal; redundant
+merge/revocation returns `PublicIdentity(NotReviewed)`. Their different-person
+verdict currently contradicts the fixture's still-effective same-person
+corroboration (`identity_corroboration::separable`); no policy bypass is accepted.
+All-target check `d6a3d50a` passed after cache integration. Source lint and the
+remaining ordered scopes must be repeated after the correction repair.
+
+Correction follow-on: `90bd4a93` all-target check passed; `b30ac5a4` passed both
+original split/redundant-revocation scenarios. Their explicitly synthetic fixture
+now uses the established three-source AB/BC chain: no single provider identity
+corroborates all three subjects, so the different-person review is admissible
+without deleting evidence or changing policy. Split withdraws both original
+edges; redundant revocation withdraws only original AB, retaining independently
+reviewed AB and original BC. Original rows, source context, receipts and old IDs
+remain asserted, with three distinct new split identities and exact aliases.
+`ba1bf066` then passed all 37 ordinary Report cases, including actual nonempty
+workbook/normalized publication and independent source-deletion G0/G1/G2 reopen.
+These controlled cases do not certify genuine population coverage or PRIMARY.
+The final-source rerun `54ecfb86` passes all 37 cases, including the strengthened
+historical-refusal assertion comparing store history across both admissions.
+
+#### Genuine documentary reader and immutable capability — 2026-10-17
+
+`05714ec3` failed both genuine-handoff roundtrips at 4,195,454 encoded bytes
+against the unchanged 4,194,304-byte grant. Diagnostic `599a21ac` localized this
+before selected dataset capture: every borrowed attachment access rebuilt the
+already-validated immutable ledger projection and receipt vector.
+
+Current and frozen capability owners now checkpoint the original grant only
+after full initial ledger/target/closure validation. Consumption authenticates
+the existing opaque continuation; serialized data and policies do not change.
+
+| Scope | Observed command receipt | Result |
+|---|---|---|
+| Foreign equal-usage origin, poison, held source/inventory/store/snapshot/prefix fences | `fe7fddb7` | 10/10 passed; original grant remains usable |
+| Original genuine handoff, current publication and independent source-deletion replay | `d493f916` | 2/2 passed; original source files unchanged; unresolved cases remain withheld |
+| Original retained Report V3 and origin guards | `64e0d132` | 11/11 passed; original producer pins/checksum retained; current write returns typed `Invariant` |
+| Final-source format / all-target check / source lint | `5f4daa7a` / `70402512` / `8bfd96ba` | Exited zero; ten authorized forced-arity advisories remain |
+
+The genuine original-source reader completed all three original marks at
+3,980,795 encoded bytes and 6,535 traversal steps, within the original
+4-MiB/8,192 limits. These are admission counters, not peak-RSS measurements.
+Temporary diagnostics were removed immediately after the successful smoke.
+The fixed kernel's 71 actual source hashes still match `44f43b9c…89c1f`.
+All receipts remain working-source evidence on PR81, not final-commit,
+authenticated roster A/B, PRIMARY or national qualification.
+
+#### Diagnostic-free checkpoint and preserved caller migrations — 2026-10-17
+
+All 23 ordered handoff scopes passed on the final source (`bg_677`, raw receipt
+`artifact://2513`); the ordinary Report scope is `54ecfb86`. Diagnostic-free
+genuine roundtrip `b9e303b3` again passed both original-source cases. These
+supersede the pending reruns above without erasing their observed failures.
+
+| Changed surface | Receipt | Observed qualification |
+|---|---|---|
+| Canonical review model, HTTP transport, consensus and verdict callers | `c1d7b937`, `f76bf7e2` | Domain model 7/7; complete Review library 145/145 |
+| Browser actor/lifecycle and service replay | `806b848d`, `0841e348` | Browser library 117 passed, two ignored; service browser-session 9/9 |
+| Review CLI and history-memory callers | `3630d2ae` | 8/8 |
+| Nested funding and acquisition-domain transitions | `f0db1331` | 40/40 |
+| Conditional commit, source-access and local adjudication | `01824784` | 70/70 |
+| Recorded capture application and spool | `316f3a0e` | 15/15 |
+| Recorded-ingest admission and durable stage-result materialization | `17dfb438` | 11/11 |
+
+Commands used `env -u CI`, the owned task-local temporary directory,
+`MOON_RUST_BUILD_JOBS=2`, canonical `pipeline:tests-scoped` and `--no-tests fail`.
+These scopes do not establish native Restate recorded-handler crash recovery,
+all seventeen faults, authenticated roster A/B, PRIMARY or national acceptance.
+PRIMARY is tracked as `b8we` → `q01l` → `3fhg`, each with executable acceptance;
+none is claimed implemented by this checkpoint.
+
+#### PRIMARY: original school-cell ownership — 2026-10-17
+
+`b8we` ports only the sealed seven-path parser checkpoint. The public retained
+row reader now exposes an original-cell quote bound to the original
+body/row/context and absolute UTF-8 span, not reviewed school authority.
+Existing parsed-row/context wire and source references remain unchanged.
+
+`249964fb` failed one of 61 cases: the controlled duplicate-header fixture
+accidentally concatenated `TeamSchool`, so it had no qualified header. Correcting
+that controlled fixture to two separate aligned columns preserved the intended
+ambiguity and old-parser comparison; production checks were not weakened.
+`511f629f` then passed all 61 raw-row/ownership cases, including five school-span
+controls, UTF-8/CRLF, transformed cells, ambiguity and duplicate requests.
+
+Standalone `pipeline:run-scoped -- -p census-crawl --example
+smoke_result_school_statement` exited zero (`2224ade5`). It consumed the unchanged
+original fixture SHA256 `95350f13…cc19e5`, bound rows 527/540/572 to their exact
+`Detroit Catholic Central` cells and reproduced all three statement references
+after retained-capture serialization/reopen. The temporary executable was
+removed. This is source-parser integration, not authentic acquisition, reviewed
+correspondence, window authority or the required 50→51 workbook.
+
+Checkpoint `e1caef7c` is pushed to `origin/main`. Its precommit source receipts
+remain valid scoped evidence. One raw worker edited before RELEASE during the
+postcommit queue, so `bg_687` is not credited as uncontaminated exact-commit
+qualification. Subsequent qualification requires all source writers stopped.
+
+Source lint `1329754d` then rejected the candidate's 208-byte enum variant.
+The final quote borrows the immutable checked document's text and existing
+references instead of boxing or copying five source strings. Its lifetime is
+bound to that document; only the two newly computed digests are owned.
+All-target check `538ce06f`, source lint `aba33a0a` and the same 61 regressions
+`fb5e3111` passed. Standalone smoke `90001154` repeated the three original cells
+and identical retained-replay references on this borrowed implementation; its
+temporary executable was removed. Ten previously authorized arity advisories
+remain; no lint suppression or larger cap was added.

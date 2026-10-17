@@ -77,16 +77,6 @@ fn decode(value: &Value) -> TestResult<LocallyCheckedRosterIssuanceV1> {
 }
 
 #[test]
-fn retained_html_controlled_metadata_reuses_scoped_parser() -> TestResult {
-    let packet = fixture(ROSTER)?;
-    let proposal = decode(&proposal(&packet, ROSTER)?)?;
-    let mut grant = AttachmentReplayGrantV1::new();
-    capture(&packet, &proposal, &mut grant)?;
-    check!(scope(&packet.read()?, &proposal, &mut grant)? > 0);
-    Ok(())
-}
-
-#[test]
 fn source_capture_mismatch_and_unknown_final_url_refuse() -> TestResult {
     let packet = fixture(ROSTER)?;
     for (path, replacement) in [

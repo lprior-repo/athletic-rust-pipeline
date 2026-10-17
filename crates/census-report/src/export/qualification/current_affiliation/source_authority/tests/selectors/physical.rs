@@ -43,7 +43,7 @@ fn controlled_exact_row_with_changed_candidate_id_is_refused() -> TestResult {
     fixture.accept(&accepted.athlete.id)?;
     let mut changed = accepted.athlete.clone();
     changed.id = AthleteId::mint(
-        "ath",
+        "ath_subject",
         &["controlled-invalid-candidate-for-exact-source-row"],
     );
     check!(ne; changed.id, accepted.athlete.id);

@@ -35,7 +35,8 @@ pub fn prepare_retained_roster_capture_objects_v2<'a>(
         budget::charge(packet.directory(), grant)?;
         budget::charge(packet.roster(), grant)?;
         let checked = original(evidence, grant, |_| packet.read())?;
-        derive(evidence, &packet, &checked, &parser, grant)
+        let body = packet.roster().body()?;
+        derive(evidence, &packet, &checked, &parser, &body, grant)
     });
     if result.is_err() {
         grant.poison();
@@ -48,9 +49,10 @@ pub(in super::super) fn derive<'a>(
     packet: &ProviderSchoolPacketV1,
     checked: &CheckedProviderSchoolPacketV1,
     parser: &CheckedRosterParserManifestV1,
+    body: &str,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
-    let mut objects = super::derive(evidence, packet, parser, grant)?;
+    let mut objects = super::derive(evidence, packet, parser, body, grant)?;
     let inventory = super::super::semantic_inventory::capture(
         evidence,
         checked,

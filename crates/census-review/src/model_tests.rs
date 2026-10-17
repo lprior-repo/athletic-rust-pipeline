@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use super::*;
 use crate::consensus::tests::support::TestResult;
 use census_domain::model::{ReviewCaseFact, ReviewEvidenceFact, ReviewVerdict, ReviewVerdictKind};
@@ -248,13 +250,6 @@ fn empty_message_error_has_no_url() {
 }
 
 #[test]
-fn truncated_string_stays_on_char_boundary() {
-    let long = "e".repeat(10);
-    let cut = &long[..5];
-    assert_eq!(cut.len(), 5);
-}
-
-#[test]
 fn verdict_with_no_value_stays_a_verdict() {
     let empty = ReviewVerdict {
         case_id: "c".to_string(),
@@ -265,4 +260,37 @@ fn verdict_with_no_value_stays_a_verdict() {
         rationale: "unsure".to_string(),
     };
     assert!(!empty.proposes_a_value());
+}
+
+#[test]
+fn decoded_subsecond_timeout_still_bounds_the_actual_http_request() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            for timeout in [Duration::from_millis(100), Duration::from_nanos(500)] {
+                let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+                let address = listener.local_addr()?;
+                let options = ModelOptions::local(&format!("http://{address}"), "model")?
+                    .with_timeout(timeout);
+                let wire = serde_json::to_vec(&options)?;
+                let decoded: ModelOptions = serde_json::from_slice(&wire)?;
+                let client = ModelClient::new(decoded)?;
+                let packet = packet();
+                let stalled = async {
+                    let (stream, _) = listener.accept().await?;
+                    std::future::pending::<()>().await;
+                    drop(stream);
+                    Ok::<(), std::io::Error>(())
+                };
+                let started = std::time::Instant::now();
+                let result = tokio::select! {
+                    result = tokio::time::timeout(Duration::from_secs(2), client.adjudicate(&packet)) => result?,
+                    result = stalled => return Err(format!("stalled server completed: {result:?}").into()),
+                };
+                check!(matches!(result, Err(ModelError::RequestTimeout)));
+                check!(started.elapsed() >= timeout.saturating_sub(Duration::from_millis(50)));
+            }
+            Ok(())
+        })
 }

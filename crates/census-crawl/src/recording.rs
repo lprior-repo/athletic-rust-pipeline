@@ -1,7 +1,8 @@
 use std::sync::Mutex;
 
-use census_store::Table;
-use serde::{Deserialize, Serialize};
+use census_store::recorded::{
+    FragmentSummary, Recorded, RecordedBatch, RecordedEffect, RecordedJournal,
+};
 use serde_json::Value;
 
 use crate::CrawlResult;
@@ -19,48 +20,10 @@ pub(crate) mod projection;
 pub(crate) mod row;
 mod sink;
 pub mod spool;
-pub use apply::PreparedRecorded;
+pub use apply::{apply_recorded, prepare_recorded, PreparedRecorded};
 pub use budget::{RecordingUsage, MAX_RECORDED_BYTES, MAX_RECORDED_WORK};
-pub use effect::RecordedEffect;
 
 pub use sink::{RowApplication, RowBatch, RowSink};
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RecordedBatch {
-    pub table: Table,
-    pub rows: Vec<Value>,
-}
-
-impl RecordedBatch {
-    pub fn len(&self) -> usize {
-        self.rows.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RecordedJournal {
-    pub phase: String,
-    pub key: String,
-    pub payload: Value,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct Recorded {
-    pub rows: Vec<RecordedBatch>,
-    pub journal: Vec<RecordedJournal>,
-    #[serde(default)]
-    pub effects: Vec<RecordedEffect>,
-}
-
-impl Recorded {
-    pub fn is_empty(&self) -> bool {
-        self.rows.is_empty() && self.journal.is_empty()
-    }
-}
 
 #[derive(Debug, Default)]
 pub struct Recording {
@@ -115,7 +78,7 @@ impl Recording {
         self.spool.as_ref().map(|spool| spool.identity.as_str())
     }
 
-    pub fn finish_fragments(&self) -> crate::CrawlResult<spool::FragmentSummary> {
+    pub fn finish_fragments(&self) -> crate::CrawlResult<FragmentSummary> {
         let mut state = self.state();
         let spool = self
             .spool
@@ -208,7 +171,7 @@ impl Recording {
         if let Some(spool) = &self.spool {
             spool.admit(&mut state, &rows, &journal)?;
         }
-        let extent = RecordedEffect::pending(&state.recorded, &rows, &journal)?;
+        let extent = effect::pending(&state.recorded, &rows, &journal)?;
         mutation::append_state(&mut state, rows, journal, Some(extent))?;
         Ok(RowApplication::Admitted)
     }

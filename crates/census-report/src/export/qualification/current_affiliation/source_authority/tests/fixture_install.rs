@@ -111,15 +111,15 @@ fn install_context(
     } else {
         String::new()
     };
-    let season = match sport {
-        Sport::IndoorTrack => 1,
-        Sport::OutdoorTrack => 2,
-        Sport::CrossCountry => 3,
+    let [indoor, outdoor, xc] = match sport {
+        Sport::IndoorTrack => ["yes", "no", "no"],
+        Sport::OutdoorTrack => ["no", "yes", "no"],
+        Sport::CrossCountry => ["no", "no", "yes"],
         Sport::Unknown => return Err("controlled sport must be explicit".into()),
     };
     let padding = " ".repeat(padding);
     let body = format!(
-        r#"<html><head>{owner}</head><body><section><h4>Current Roster</h4><ul id="rosterDataset"><li class="athlete-row data-row">{padding}<a href="https://{host}/athletes/{person}-controlled">{name}</a><div class="column-gender">m</div><div class="column-grad-year">2027</div><div class="data-point" data-season-id="{season}"><svg class="icon icon-yes"></svg></div></li></ul></section></body></html>"#
+        r#"<html><head>{owner}</head><body><section><h4>Current Roster</h4><ul id="rosterDataset"><li class="athlete-row data-row">{padding}<a href="https://{host}/athletes/{person}-controlled">{name}</a><div class="column-gender">m</div><div class="column-grad-year">2027</div><div class="data-point" data-season-id="1"><svg class="icon icon-{indoor}"></svg></div><div class="data-point" data-season-id="2"><svg class="icon icon-{outdoor}"></svg></div><div class="data-point" data-season-id="3"><svg class="icon icon-{xc}"></svg></div></li></ul></section></body></html>"#
     );
     let packet = ProviderSchoolPacketV1::new(
         retained(&format!("https://{host}/teams"), &directory, at)?,
@@ -196,6 +196,7 @@ fn install_context(
     )?;
     Ok(Capture {
         packet,
+        roster_body: body,
         school,
         program,
         athlete,

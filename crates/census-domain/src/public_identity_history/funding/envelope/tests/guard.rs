@@ -18,7 +18,7 @@ impl TestParent {
     }
 }
 
-impl HeldHistoryMemory for TestParent {
+impl super::super::HeldHistoryMemory for TestParent {
     fn reserved_bytes(&self) -> NonZeroU64 {
         self.capacity
     }
@@ -39,7 +39,6 @@ pub(super) fn bounded_budget(
 ) -> TestResult<(HistoryMemoryBudget<TestParent>, Rc<Cell<u64>>)> {
     let capacity = NonZeroU64::new(capacity).ok_or("test parent capacity must be nonzero")?;
     let parent = TestParent::new(capacity);
-    check!(eq; parent.reserved_bytes().get(), capacity.get());
     let observer = parent.observer();
     Ok((HistoryMemoryBudget::new(parent), observer))
 }

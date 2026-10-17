@@ -2,6 +2,7 @@ use super::*;
 use crate::net::cache::content_digest;
 use crate::net::Fetcher;
 use census_domain::model::SchoolYear;
+use census_store::recorded::{Recorded, RecordedJournal};
 use census_store::Store;
 use std::collections::{BTreeMap, HashMap};
 
@@ -97,7 +98,7 @@ fn partial_persistence_network_metadata_to_cache_replay_is_an_exact_noop() -> Te
         ..context(&store, &fetcher)?
     };
     record_outcome(&ctx, &reference, &outcome)?;
-    check!(eq; recording.drain(), crate::recording::Recorded::default());
+    check!(eq; recording.drain(), Recorded::default());
     record_outcome(&context(&store, &fetcher)?, &reference, &outcome)?;
     check!(eq; snapshot(&store, OWNED_MEET_PHASE)?, originals);
     check!(eq; snapshot(&store, OWNED_CAPTURE_PHASE)?, captures);
@@ -134,7 +135,7 @@ fn partial_persistence_retains_new_acquisition_without_restaging_identical_sourc
         .collect();
     check!(eq;
         duplicate_rows,
-        Vec::<&crate::recording::RecordedJournal>::new()
+        Vec::<&RecordedJournal>::new()
     );
     let summaries: Vec<_> = recorded
         .journal

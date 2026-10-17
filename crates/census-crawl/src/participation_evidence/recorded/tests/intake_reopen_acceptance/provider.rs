@@ -18,7 +18,7 @@ fn genuine_provider_packet_reopens_exact_sources_without_unknown_school_birth() 
     check!(eq; recorded.journal, expected_journal(RetainedCaptureRootSchemaV1::ProviderTargetPacketV1.phase(),
         reference.as_str(), payload.clone()).journal);
     let expected_rows = retained_observations(&recorded)?;
-    let prepared = recorded.prepare("recorded-provider-reopen")?;
+    let prepared = crate::recording::prepare_recorded(recorded, "recorded-provider-reopen")?;
     let first = prepared.apply(&store)?;
     check!(eq; first.appended(), 3);
     check!(eq; non_observation_digest(&store)?, protected);
@@ -118,7 +118,8 @@ fn unavailable_and_conflicted_category_mutations_remain_retained_without_birth()
         check!(eq; retained_observations(&recorded)?.len(), 3);
         check!(eq; recorded.journal, expected_journal(RetainedCaptureRootSchemaV1::ProviderTargetPacketV1.phase(),
             reference.as_str(), payload.clone()).journal);
-        check!(eq; recorded.prepare("retained-category-mutation")?.apply(&store)?.appended(), 3);
+        let prepared = crate::recording::prepare_recorded(recorded, "retained-category-mutation")?;
+        check!(eq; prepared.apply(&store)?.appended(), 3);
         drop(store);
         let store = reopen(&directory)?;
         let snapshot = store.snapshot();

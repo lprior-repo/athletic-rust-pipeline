@@ -38,10 +38,11 @@ fn scenario(closed_root: &Path) -> TestResult {
         crate::participation_evidence::recorded::record_independent_participation_packet(
             &store, &recording, &packet,
         )?;
-        recording
-            .drain()
-            .prepare(&format!("synthetic-count-intake-{index}"))?
-            .apply(&store)?;
+        crate::recording::prepare_recorded(
+            recording.drain(),
+            &format!("synthetic-count-intake-{index}"),
+        )?
+        .apply(&store)?;
         let inspection = store.inspect_evidence_subject_attachment_v1(
             AttachmentInspectionRequestV1::Attach {
                 target: target.clone(),

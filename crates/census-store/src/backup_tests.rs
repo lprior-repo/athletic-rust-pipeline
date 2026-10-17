@@ -302,7 +302,7 @@ fn backup_refuses_a_symlink_in_the_store_tree_by_name() -> TestResult {
 #[cfg(unix)]
 #[test]
 fn backup_refuses_a_socket_in_the_store_tree() -> TestResult {
-    let dir = tempfile::tempdir_in("/tmp")?;
+    let dir = tempfile::tempdir()?;
     let root = dir.path().join("store");
     store_with(&root, &["Socketed"])?;
     let socket = root.join("http").join("cache.sock");

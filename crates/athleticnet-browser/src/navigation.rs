@@ -155,6 +155,10 @@ impl NavigationLoop<'_> {
                     let Some(event) = event else { return Err(BrowserError::Transport); };
                     state.on_failure(&event);
                 }
+                event = events.data.next() => {
+                    let Some(event) = event else { return Err(BrowserError::Transport); };
+                    state.on_data(&event)?;
+                }
                 _ = tokio::time::sleep(remaining) => return Err(BrowserError::Timeout),
             }
             if state.complete() {

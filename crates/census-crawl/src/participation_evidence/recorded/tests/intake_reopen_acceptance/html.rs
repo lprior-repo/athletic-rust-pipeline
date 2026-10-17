@@ -18,7 +18,7 @@ fn genuine_html_capture_reopens_exact_document_rows_without_person_attachment() 
     let recorded = recording.drain();
     check!(eq; recorded, expected_journal(RetainedCaptureRootSchemaV1::HtmlResultCaptureV1.phase(),
         &reference, payload.clone()));
-    let prepared = recorded.prepare("recorded-html-reopen")?;
+    let prepared = crate::recording::prepare_recorded(recorded, "recorded-html-reopen")?;
     let first = prepared.apply(&store)?;
     check!(eq; first.appended(), 0);
     retained_only_tables(&store, &tables)?;

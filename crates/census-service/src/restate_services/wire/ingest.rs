@@ -41,7 +41,7 @@ pub struct IngestRequest {
 pub struct RecordedIngestRequest {
     pub spool_identity: String,
     pub fragment: usize,
-    pub spool: census_crawl::recording::spool::FragmentSummary,
+    pub spool: census_store::recorded::FragmentSummary,
     pub operation_id: String,
     #[serde(default)]
     pub cursor: Option<String>,

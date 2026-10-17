@@ -31,6 +31,9 @@ fn run(branch: Branch) -> TestResult {
     let (fixture, expected) = setup::prepare(Case::Resolved)?;
     let controlled = control::install(&fixture.store, &fixture.writer)?;
     let objects = tempfile::tempdir()?;
+    for generation in ["g0", "g1", "g2"] {
+        std::fs::create_dir(objects.path().join(generation))?;
+    }
     let output = tempfile::tempdir()?;
     let root = output.path().join("publication");
     let claims = oracle::source_claims(&fixture.store)?;
@@ -38,18 +41,28 @@ fn run(branch: Branch) -> TestResult {
     let g0 = stage::Stage::capture(
         &fixture,
         &expected,
+        &controlled.candidates,
         &controlled.public,
-        objects.path(),
+        &objects.path().join("g0"),
         &root,
     )?;
     let merged = operations::merge(&fixture.store, &fixture.writer, &controlled)?;
+    let [_, merged_head] = merged;
     stage::stale(&g0.dataset, &fixture.store)?;
     g0.unchanged()?;
     check!(eq; oracle::source_claims(&fixture.store)?, claims);
     check!(eq; oracle::source_context(&fixture.store)?, context);
-    let merged_ids = vec![controlled.public[0].clone(), controlled.public[0].clone()];
-    let g1 = stage::Stage::capture(&fixture, &expected, &merged_ids, objects.path(), &root)?;
-    check!(eq; g1.dataset.verified_public_identities()?.head().sequence, merged);
+    let [canonical, ..] = &controlled.public;
+    let merged_ids = controlled.public.each_ref().map(|_| canonical.clone());
+    let g1 = stage::Stage::capture(
+        &fixture,
+        &expected,
+        &controlled.candidates,
+        &merged_ids,
+        &objects.path().join("g1"),
+        &root,
+    )?;
+    check!(eq; g1.dataset.verified_public_identities()?.head().sequence, merged_head);
     let corrected =
         operations::correct(&fixture.store, &fixture.writer, &controlled, merged, branch)?;
     stage::stale(&g1.dataset, &fixture.store)?;
@@ -58,7 +71,14 @@ fn run(branch: Branch) -> TestResult {
     let ids = oracle::corrected(&fixture.store, &controlled, corrected, merged, branch)?;
     check!(eq; oracle::source_claims(&fixture.store)?, claims);
     check!(eq; oracle::source_context(&fixture.store)?, context);
-    let g2 = stage::Stage::capture(&fixture, &expected, &ids, objects.path(), &root)?;
+    let g2 = stage::Stage::capture(
+        &fixture,
+        &expected,
+        &controlled.candidates,
+        &ids,
+        &objects.path().join("g2"),
+        &root,
+    )?;
     check!(eq; g2.dataset.verified_public_identities()?.head().sequence, corrected);
     check!(ne; g2.resolutions, g1.resolutions);
     match branch {

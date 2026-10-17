@@ -2,13 +2,44 @@ use crate::participation_evidence::{bound, hash, invalid, json};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::{EvidenceSubjectAttachmentStoreError, StoreResult};
 use serde::{Deserialize, Serialize};
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
-const SCHEMA: &str = "roster-semantic-kernel-dependencies/v1";
+struct CompiledKernelIdentity {
+    text: &'static str,
+    digest: String,
+}
+
+static COMPILED_IDENTITY: LazyLock<Option<CompiledKernelIdentity>> = LazyLock::new(|| {
+    if validate(COMPILED).is_err() {
+        return None;
+    }
+    match std::str::from_utf8(COMPILED) {
+        Ok(text) => Some(CompiledKernelIdentity {
+            text,
+            digest: hash(COMPILED),
+        }),
+        Err(_) => None,
+    }
+});
+
+pub(in crate::participation_evidence) fn compiled() -> StoreResult<&'static [u8]> {
+    compiled_identity()?;
+    Ok(COMPILED)
+}
+
+pub(in crate::participation_evidence) fn compiled_identity(
+) -> StoreResult<(&'static str, &'static str)> {
+    match COMPILED_IDENTITY.as_ref() {
+        Some(identity) => Ok((identity.text, identity.digest.as_str())),
+        None => Err(invalid("compiled immutable semantic kernel is unsupported")),
+    }
+}
+
+const SCHEMA: &str = "roster-semantic-kernel-dependencies/v2";
 const MAX_DOCUMENT: usize = 64 * 1024;
 const EXPECTED_SOURCE_DIGEST: &str =
-    "094c114d6218a7edfdfdda4e53cfafa2ec57c4abd8df9c2f7ad1685bb5cd7d92";
-const COMPILED: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v1.json"));
+    "44f43b9cac647c8733441cc0f88cd5f27c635381c9f357aae2f3aa8a04389c1f";
+const COMPILED: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v2.json"));
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -36,14 +67,6 @@ struct Input {
     bytes: u64,
 }
 
-pub(in crate::participation_evidence) fn compiled() -> StoreResult<&'static [u8]> {
-    static CHECKED: OnceLock<bool> = OnceLock::new();
-    if !*CHECKED.get_or_init(|| validate(COMPILED).is_ok()) {
-        return Err(invalid("compiled immutable semantic kernel is unsupported"));
-    }
-    Ok(COMPILED)
-}
-
 pub(in crate::participation_evidence) fn require_retained(
     retained: &[u8],
     grant: &mut AttachmentReplayGrantV1,
@@ -55,20 +78,11 @@ pub(in crate::participation_evidence) fn require_retained(
             "retained semantic kernel document",
         )?;
         grant
-            .charge_steps(1024)
+            .charge_steps(1)
             .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
         grant
-            .charge_bytes(
-                retained
-                    .len()
-                    .checked_mul(4)
-                    .ok_or(census_store::StoreError::CounterOverflow)?,
-            )
+            .charge_bytes(retained.len())
             .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
-        grant
-            .charge_bytes(COMPILED.len())
-            .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
-        validate(retained)?;
         if retained != compiled()? {
             return Err(invalid(
                 "retained semantic kernel dependencies differ from supported build",
@@ -171,15 +185,20 @@ mod tests {
 
     #[test]
     fn immutable_kernel_refuses_dependency_drift_and_unknown_schema() -> TestResult {
-        for field in ["dependencies", "schema"] {
+        for field in ["dependencies", "schema", "retired_predecessor"] {
             let mut kernel: Kernel = serde_json::from_slice(compiled()?)?;
             if field == "dependencies" {
                 kernel.dependencies.sha256 = "1".repeat(64);
+            } else if field == "retired_predecessor" {
+                kernel.schema = "roster-semantic-kernel-dependencies/v1".into();
             } else {
                 kernel.schema = "unsupported-kernel".into();
             }
             let mut grant = AttachmentReplayGrantV1::new();
-            check!(require_retained(&serde_json::to_vec(&kernel)?, &mut grant).is_err());
+            check!(matches!(
+                require_retained(&serde_json::to_vec(&kernel)?, &mut grant),
+                Err(census_store::StoreError::Refused { .. })
+            ));
         }
         Ok(())
     }

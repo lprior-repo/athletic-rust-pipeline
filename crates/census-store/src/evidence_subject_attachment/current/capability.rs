@@ -1,7 +1,8 @@
 use super::*;
 use crate::Receipt;
 use census_domain::evidence_subject_attachment::{
-    AttachmentInventoryV1, AttachmentTargetV1, ReviewedReferenceRecordV1,
+    AttachmentInventoryV1, AttachmentReplayContinuationV1, AttachmentTargetV1,
+    ReviewedReferenceRecordV1,
 };
 use census_domain::model::StoreIdentity;
 use census_domain::public_identity_history::RegistryHead;
@@ -13,6 +14,7 @@ pub struct CurrentEvidenceSubjectAttachmentV1<'a, 's> {
     pub(super) record: &'a ReviewedReferenceRecordV1,
     pub(super) subject: &'a RetainedDocumentSubjectReferenceV1,
     pub(super) receipt: &'a Receipt,
+    pub(super) continuation: &'a AttachmentReplayContinuationV1,
 }
 
 impl<'s> CurrentEvidenceSubjectAttachmentV1<'_, 's> {
@@ -41,13 +43,8 @@ impl<'s> CurrentEvidenceSubjectAttachmentV1<'_, 's> {
         self.accepted.head()
     }
     pub fn require_original_grant(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<()> {
-        grant.ensure_available().map_err(Error::Domain)?;
-        let result = self
-            .ledger
-            .validate_projection(self.accepted.store_identity(), grant);
-        if result.is_err() {
-            grant.poison();
-        }
-        result
+        self.continuation
+            .require(grant)
+            .map_err(|source| Error::Domain(source).into())
     }
 }

@@ -1,63 +1,65 @@
 use super::super::{
-    actor::{Actor, ActorHandles, BrowserConnection, Command, HandlerEvent},
+    actor::{Actor, ActorHandles, BrowserOwnership, Command, HandlerEvent},
     gate::ProfileGate,
-    pool, BrowserSettings, BrowserState, BrowserStatus,
+    BrowserSettings, BrowserState, BrowserStatus,
 };
+use super::child::OwnedChild;
 use super::error::BrowserStartupError;
-use super::BrowserManager;
+use super::owner::{BrowserOwner, BrowserStartup, Prepared};
+use super::{ActorJoinState, BrowserManager};
 use crate::clock::Clock;
-use chromiumoxide::{handler::HandlerConfig, Browser, BrowserConfig, Handler};
+use chromiumoxide::{Browser, Handler};
 use futures::StreamExt;
+use std::process::Stdio;
 use std::sync::{Arc, Mutex, RwLock};
+use tokio::process::Command as ProcCommand;
 use tokio::sync::{mpsc, oneshot, Mutex as AsyncMutex};
+use tokio_util::sync::CancellationToken;
 use tracing::Instrument;
 
 const QUEUE_MULTIPLIER: usize = 4;
 const HANDLER_QUEUE: usize = 256;
 
 impl BrowserManager {
-    #[tracing::instrument(skip_all, fields(tabs = settings.tabs, headed = settings.headed))]
-    pub async fn launch(
+    pub fn prepare_launch(
         settings: BrowserSettings,
         clock: Arc<dyn Clock>,
-    ) -> Result<Self, BrowserStartupError> {
+    ) -> Result<(BrowserStartup, BrowserOwner), BrowserStartupError> {
         settings.validate()?;
-        pool::prepare_profile(&settings).map_err(|_| BrowserStartupError::ProfileNotDirectory)?;
-        let config = browser_config(&settings)?;
-        let (browser, handler) = Browser::launch(config)
-            .await
-            .map_err(|error| BrowserStartupError::LaunchFailed(error.to_string()))?;
-        finish_startup(browser, handler, true, settings, clock).await
+        let command = build_launch_command(&settings)?;
+        Ok(BrowserOwner::prepare(
+            Prepared::Launch(command),
+            settings,
+            clock,
+        ))
     }
 
-    #[tracing::instrument(skip_all)]
-    pub async fn connect(
+    pub fn prepare_connect(
         cdp_url: url::Url,
         settings: BrowserSettings,
         clock: Arc<dyn Clock>,
-    ) -> Result<Self, BrowserStartupError> {
+    ) -> Result<(BrowserStartup, BrowserOwner), BrowserStartupError> {
         settings.validate()?;
-        let handler_config = HandlerConfig {
-            request_timeout: settings.request_timeout,
-            ..Default::default()
-        };
-        let (browser, handler) = Browser::connect_with_config(cdp_url.as_str(), handler_config)
-            .await
-            .map_err(|error| BrowserStartupError::ConnectFailed(error.to_string()))?;
-        finish_startup(browser, handler, false, settings, clock).await
+        crate::profile::validate_cdp_endpoint(&cdp_url)?;
+        Ok(BrowserOwner::prepare(
+            Prepared::Connect(cdp_url),
+            settings,
+            clock,
+        ))
     }
 }
 
-async fn finish_startup(
-    browser: Browser,
+pub(super) fn start_actor(
+    browser: (Browser, BrowserOwnership),
     handler: Handler,
-    launched: bool,
+    child: Option<OwnedChild>,
     settings: BrowserSettings,
     clock: Arc<dyn Clock>,
-) -> Result<BrowserManager, BrowserStartupError> {
+) -> Arc<BrowserManager> {
     let (tx, rx) = mpsc::channel(settings.tabs.saturating_mul(QUEUE_MULTIPLIER).max(1));
     let (handler_tx, handler_rx) = mpsc::channel(HANDLER_QUEUE);
-    let handler_join = spawn_handler(handler, handler_tx);
+    let handler_stop = CancellationToken::new();
+    let handler_join = spawn_handler(handler, handler_tx, handler_stop.clone());
     let status = Arc::new(RwLock::new(BrowserStatus {
         state: BrowserState::Restarting,
         active_requests: 0,
@@ -67,8 +69,8 @@ async fn finish_startup(
     let cooldown_until = Arc::new(Mutex::new(None));
     let gate = Arc::new(ProfileGate::new());
     let tabs = settings.tabs;
-    let actor = Actor::new(
-        BrowserConnection { browser, launched },
+    let mut actor = Actor::new(
+        browser,
         settings,
         rx,
         (handler_rx, handler_join),
@@ -77,76 +79,118 @@ async fn finish_startup(
             cooldown_until: cooldown_until.clone(),
             gate: gate.clone(),
             clock: clock.clone(),
+            handler_stop,
         },
     );
-    let span = tracing::info_span!("browser.actor", tabs, launched);
+    actor.child = child;
+    let span = tracing::info_span!("browser.actor", tabs);
     let join = tokio::spawn(actor.run().instrument(span));
-    let manager = BrowserManager {
+    Arc::new(BrowserManager {
         tx,
         status,
         cooldown_until,
         gate,
-        join: Arc::new(AsyncMutex::new(Some(join))),
+        join: Arc::new(AsyncMutex::new(ActorJoinState::Running(join))),
         clock,
-    };
-    finish_bootstrap(manager).await
+    })
 }
 
-async fn finish_bootstrap(manager: BrowserManager) -> Result<BrowserManager, BrowserStartupError> {
+pub(super) async fn bootstrap(manager: Arc<BrowserManager>) -> Result<(), BrowserStartupError> {
     let (reply, result) = oneshot::channel();
     manager
         .tx
         .send(Command::Bootstrap { reply })
         .await
         .map_err(|_| BrowserStartupError::ActorStopped)?;
-    let bootstrap_result = match result.await {
-        Ok(value) => value,
-        Err(_) => Err(BrowserStartupError::ActorStopped),
-    };
-    if let Err(error) = bootstrap_result {
-        let (report, failure) = manager.shutdown().await;
-        tracing::warn!(
-            ?report,
-            ?failure,
-            "browser drained after a bootstrap failure"
-        );
-        return Err(error);
-    }
-    Ok(manager)
+    result
+        .await
+        .map_err(|_| BrowserStartupError::ActorStopped)?
 }
 
 fn spawn_handler(
     handler: Handler,
     events: mpsc::Sender<HandlerEvent>,
+    stop: CancellationToken,
 ) -> tokio::task::JoinHandle<()> {
-    tokio::spawn(run_handler(handler, events).instrument(tracing::info_span!("browser.handler")))
+    tokio::spawn(
+        run_handler(handler, events, stop).instrument(tracing::info_span!("browser.handler")),
+    )
 }
 
-fn browser_config(settings: &BrowserSettings) -> Result<BrowserConfig, BrowserStartupError> {
-    let builder = BrowserConfig::builder()
-        .chrome_executable(&settings.executable)
-        .user_data_dir(&settings.profile_dir)
-        .request_timeout(settings.request_timeout);
-    let builder = if settings.headed {
-        builder.with_head()
-    } else {
-        builder
-    };
-    builder
-        .build()
-        .map_err(|_| BrowserStartupError::ConfigBuildFailed)
+const DEFAULT_ARGS: [&str; 24] = [
+    "--disable-background-networking",
+    "--enable-features=NetworkService,NetworkServiceInProcess",
+    "--disable-background-timer-throttling",
+    "--disable-backgrounding-occluded-windows",
+    "--disable-breakpad",
+    "--disable-client-side-phishing-detection",
+    "--disable-component-extensions-with-background-pages",
+    "--disable-default-apps",
+    "--disable-dev-shm-usage",
+    "--disable-features=TranslateUI",
+    "--disable-hang-monitor",
+    "--disable-ipc-flooding-protection",
+    "--disable-popup-blocking",
+    "--disable-prompt-on-repost",
+    "--disable-renderer-backgrounding",
+    "--disable-sync",
+    "--force-color-profile=srgb",
+    "--metrics-recording-only",
+    "--no-first-run",
+    "--enable-automation",
+    "--password-store=basic",
+    "--use-mock-keychain",
+    "--enable-blink-features=IdleDetection",
+    "--lang=en_US",
+];
+
+pub(super) fn build_launch_command(
+    settings: &BrowserSettings,
+) -> Result<ProcCommand, BrowserStartupError> {
+    let mut profile = std::ffi::OsString::new();
+    let profile_bytes = "--user-data-dir="
+        .len()
+        .checked_add(settings.profile_dir.as_os_str().len())
+        .ok_or(BrowserStartupError::ConfigBuildFailed)?;
+    profile
+        .try_reserve_exact(profile_bytes)
+        .map_err(|_| BrowserStartupError::ConfigBuildFailed)?;
+    profile.push("--user-data-dir=");
+    profile.push(settings.profile_dir.as_os_str());
+    let mut command = ProcCommand::new(&settings.executable);
+    command
+        .kill_on_drop(false)
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .args(DEFAULT_ARGS)
+        .arg("--remote-debugging-port=0")
+        .arg("--disable-extensions")
+        .arg(profile);
+    if !settings.headed {
+        command.args(["--headless", "--hide-scrollbars", "--mute-audio"]);
+    }
+    Ok(command)
 }
 
-async fn run_handler(mut handler: Handler, events: mpsc::Sender<HandlerEvent>) {
-    while let Some(result) = handler.next().await {
-        if result.is_err() {
-            if let Err(e) = events.send(HandlerEvent::Failed).await {
-                tracing::debug!("handler event send failed: {e}");
+async fn run_handler(
+    mut handler: Handler,
+    events: mpsc::Sender<HandlerEvent>,
+    stop: CancellationToken,
+) {
+    loop {
+        let result = tokio::select! {
+            biased;
+            _ = stop.cancelled() => return,
+            result = handler.next() => result,
+        };
+        if !matches!(result, Some(Ok(_))) {
+            if let Err(error) = events.send(HandlerEvent::Failed).await {
+                tracing::debug!(%error, "handler event send failed");
             }
             return;
         }
     }
-    if let Err(e) = events.send(HandlerEvent::Failed).await {
-        tracing::debug!("handler event send failed: {e}");
-    }
 }
+
+#[cfg(test)]
+mod tests;

@@ -29,6 +29,7 @@ thiserror = "2"
 tracing = "0.1"
 
 [dev-dependencies]
+base64 = "0.22"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "test-util", "io-util"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 fjall = "=3.1.10"

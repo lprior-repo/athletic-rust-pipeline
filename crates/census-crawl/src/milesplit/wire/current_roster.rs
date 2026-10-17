@@ -5,8 +5,8 @@ use std::ops::Range;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CurrentRosterAssertion {
-    pub(in crate::milesplit) owner: String,
-    pub(in crate::milesplit) member: String,
+    pub(in crate::milesplit) owner: Box<str>,
+    pub(in crate::milesplit) member: Box<str>,
     pub(in crate::milesplit) row: SourceRowLocator,
     pub(in crate::milesplit) section: std::ops::Range<usize>,
     pub(in crate::milesplit) container: std::ops::Range<usize>,

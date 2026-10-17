@@ -48,9 +48,11 @@ impl Actor {
     }
 
     pub(crate) fn reject_pending(&mut self, cause: BrowserError) {
-        let rejected = count(self.pending.len());
-        self.region.accept(rejected);
-        self.region.cancel(rejected);
+        let accounting = count(self.pending.len()).and_then(|rejected| {
+            self.region.accept(rejected)?;
+            self.region.cancel(rejected)
+        });
+        self.record_accounting(accounting);
         pool::reject_pending(&mut self.pending, cause);
     }
 }

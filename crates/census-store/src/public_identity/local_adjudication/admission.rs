@@ -5,14 +5,10 @@ pub(in crate::public_identity) mod graph;
 mod graph_wire;
 mod persist;
 pub(in crate::public_identity) mod preparation;
-#[cfg(test)]
-mod retry;
 use crate::journal::context::ContextCharge;
 use crate::public_identity::{codec, PublicIdentityAdmissionResource, PublicIdentityError};
 use crate::{Store, StoreError, StoreResult, MAX_JOURNAL_VALUE_BYTES};
 use census_domain::model::StoreIdentity;
-#[cfg(test)]
-pub(in crate::public_identity) use decision::Binding;
 use decision::Decision;
 use fjall::Readable;
 use serde::{Deserialize, Serialize};
@@ -182,24 +178,6 @@ pub(in crate::public_identity) fn load(
     .transpose()
 }
 
-impl Reservation {
-    #[cfg(test)]
-    pub(in crate::public_identity) fn require_allowance(
-        &self,
-        measured: &[ContextCharge; 2],
-    ) -> StoreResult<()> {
-        for (original, current) in self.charges.iter().zip(measured) {
-            if original.root != current.root
-                || current.bytes > original.bytes
-                || current.roots > original.roots
-            {
-                return Err(invalid());
-            }
-        }
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod capacity_tests;
 #[cfg(test)]
@@ -248,17 +226,6 @@ impl Permit<'_> {
             }
         }
         Ok(&self.root)
-    }
-}
-
-impl Reservation {
-    #[cfg(test)]
-    pub(in crate::public_identity) fn permits<'s>(&self, store: &'s Store) -> [Permit<'s>; 2] {
-        self.charges.each_ref().map(|charge| Permit {
-            store,
-            root: charge.root.clone(),
-            ready_required: charge.roots == 0,
-        })
     }
 }
 

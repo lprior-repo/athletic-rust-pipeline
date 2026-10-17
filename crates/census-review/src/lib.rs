@@ -36,10 +36,10 @@ use consensus::independent;
 pub use athlete_clusters::{reconcile_athletes, ReconcileReport, RULE_REVIEWER};
 pub use athlete_verdict::AthleteVerdict;
 pub use families::{ReviewFamily, ReviewOptions};
-pub use model::{ModelClient, ModelError, ModelOptions, ModelResponseFormat};
+pub use model::{build_request_body, ModelClient};
 pub use records::ReviewReport;
 pub use review_lanes::run_lanes_after;
-pub use verdicts::{triage, validate, Adjudication, Admitted, Refusal};
+pub use verdicts::{triage, validate};
 
 const CHECKPOINT_CASES: usize = 256;
 

@@ -11,6 +11,7 @@ pub(super) struct Columns {
     name: usize,
     grade: Option<usize>,
     team: usize,
+    repeated_team: bool,
     mark: MarkColumn,
     tail: tail::Layout,
 }
@@ -59,6 +60,7 @@ pub(super) fn header_columns(line: &str) -> Option<Columns> {
         name: labels.name?,
         grade: labels.grade,
         team: labels.team?,
+        repeated_team: labels.repeated_team,
         mark,
         tail: labels.tail.finish(mark.end),
     };
@@ -75,6 +77,7 @@ struct HeaderLabels {
     name: Option<usize>,
     grade: Option<usize>,
     team: Option<usize>,
+    repeated_team: bool,
     mark: Option<(usize, usize)>,
     tail: tail::Header,
 }
@@ -87,6 +90,7 @@ impl HeaderLabels {
         } else if label.eq_ignore_ascii_case("Yr") || label.eq_ignore_ascii_case("Grade") {
             self.grade = Some(offset);
         } else if label.eq_ignore_ascii_case("Team") || label.eq_ignore_ascii_case("School") {
+            self.repeated_team |= self.team.is_some();
             self.team = Some(offset);
         } else if label.eq_ignore_ascii_case("Time") || label.eq_ignore_ascii_case("Mark") {
             self.mark = Some((offset, offset.saturating_add(label.chars().count())));
@@ -99,6 +103,7 @@ pub(super) struct Cells<'a> {
     name: &'a str,
     pub(super) grade: &'a str,
     team: &'a str,
+    pub(super) school_span: Option<(usize, usize)>,
     mark: Option<&'a str>,
     tail: Result<tail::Cells<'a>, &'static str>,
     overflowed: bool,
@@ -117,6 +122,15 @@ pub(super) fn row_cells(line: &str, columns: Columns) -> Cells<'_> {
     let token = mark_token(line, mark_end);
     let team_end = token.map_or(mark_start, |(start, _)| start.min(mark_start).max(team));
     let mark = token.and_then(|(_, token)| mark_shaped(token).then_some(token));
+    let school = line.get(team..team_end).map(str::trim);
+    let school_span = school
+        .filter(|value| !value.is_empty() && !columns.repeated_team)
+        .and_then(|value| {
+            let cell = line.get(team..team_end)?;
+            let leading = cell.len().checked_sub(cell.trim_start().len())?;
+            let start = team.checked_add(leading)?;
+            Some((start, start.checked_add(value.len())?))
+        });
     Cells {
         place: line
             .get(..name)
@@ -134,6 +148,7 @@ pub(super) fn row_cells(line: &str, columns: Columns) -> Cells<'_> {
             .get(team..team_end)
             .map_or(Default::default(), core::convert::identity)
             .trim(),
+        school_span,
         tail: tail::read(line, columns.mark.end, columns.tail),
         overflowed: layout_overflows(line, mark_start, mark_end, token),
         mark,

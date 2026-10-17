@@ -9,12 +9,12 @@ use crate::participation_evidence::{
     RetainedHtmlCaptureV1, RetainedHttpProvenanceV1, SubjectOwnershipV1,
     PARTICIPATION_EVIDENCE_PHASE,
 };
-use crate::recording::{Recorded, RecordedJournal};
 use crate::{CrawlError, Recording};
 use census_domain::evidence_subject_attachment::{
     AttachmentReplayGrantV1, EvidenceSubjectAttachmentError,
 };
 use census_domain::model::Gender;
+use census_store::recorded::{Recorded, RecordedJournal};
 use census_store::{
     JournalReadBudget, ReadBudget, RetainedCaptureRootSchemaV1, RetainedCaptureRootV1, Store,
     StoreError, StoreSnapshot, Table,
@@ -183,7 +183,8 @@ fn install_for_refusal(
     prefix: &str,
 ) -> TestResult<RetainedState> {
     let journal = recorded.journal.clone();
-    let applied = recorded.prepare(prefix)?.apply(store)?;
+    let prepared = crate::recording::prepare_recorded(recorded, prefix)?;
+    let applied = prepared.apply(store)?;
     let snapshot = store.snapshot();
     let roots = journal
         .iter()

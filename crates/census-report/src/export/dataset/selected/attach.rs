@@ -1,4 +1,4 @@
-use super::invalid;
+use super::{invalid, SelectedInputOrigin};
 use crate::export::dataset::selected_proofs::{HydratedProofs, SelectedProofs};
 use crate::export::dataset::ExportDataset;
 use crate::export::public_identity::VerifiedPublicIdentityView;
@@ -52,6 +52,11 @@ impl ExportDataset {
         self.verified_public_identities()?;
         if hydrated.participation.fingerprints() != *authority.fingerprints() {
             return Err(invalid("selected participation physical authority differs"));
+        }
+        if matches!(self.selected_input_origin, SelectedInputOrigin::Current)
+            && hydrated.participation.is_historical_documentary_replay()
+        {
+            self.selected_input_origin = SelectedInputOrigin::HistoricalDocumentaryReplay;
         }
         let (participation, _) = VerifiedParticipationView::from_pinned(hydrated.participation);
         crate::bests::participation::ParticipationSelection::Selected(&participation)

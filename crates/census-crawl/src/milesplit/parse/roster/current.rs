@@ -99,13 +99,13 @@ fn statements(
     RosterRowStatementsV1::checked(html, person, row.span.clone(), heading.span.clone())
 }
 
-fn copy(value: &str) -> TemporalResult<String> {
+fn copy(value: &str) -> TemporalResult<Box<str>> {
     let mut result = String::new();
     result
         .try_reserve_exact(value.len())
         .map_err(|_| Gap::ResourceLimit)?;
     result.push_str(value);
-    Ok(result)
+    Ok(result.into_boxed_str())
 }
 
 #[cfg(test)]

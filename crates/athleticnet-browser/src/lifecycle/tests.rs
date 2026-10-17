@@ -2,7 +2,7 @@ use super::super::BrowserState;
 use super::status::usable_manager;
 
 #[test]
-fn only_a_terminal_stopped_manager_is_rebuilt() {
+fn only_a_terminal_stopped_status_is_unusable() {
     assert!(!usable_manager(BrowserState::Stopped));
     assert!(usable_manager(BrowserState::Ready));
     assert!(usable_manager(BrowserState::Challenged));

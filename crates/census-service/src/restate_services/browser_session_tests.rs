@@ -2,7 +2,6 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use athleticnet_browser::clock::SystemClock;
-use athleticnet_browser::drain::DrainReport;
 use athleticnet_browser::request::RequestAction;
 use url::Url;
 
@@ -10,6 +9,11 @@ use super::*;
 
 #[path = "browser_session_replay_tests.rs"]
 mod replay;
+
+#[path = "browser_session_tests/native_publication.rs"]
+mod native_publication;
+#[path = "browser_session_tests/physical_startup.rs"]
+mod physical_startup;
 
 fn settings() -> anyhow::Result<BrowserSettings> {
     Ok(BrowserSettings {
@@ -25,71 +29,11 @@ fn settings() -> anyhow::Result<BrowserSettings> {
 }
 
 fn session() -> anyhow::Result<BrowserSession> {
-    Ok(BrowserSession::new(settings()?, Arc::new(SystemClock)))
-}
-
-#[test]
-fn drain_counts_keep_every_counter() {
-    let report = DrainReport {
-        accepted: 7,
-        completed: 5,
-        cancelled: 2,
-        timed_out: 1,
-        aborted: 1,
-        panicked: 0,
-        remaining: 0,
-    };
-    let counts = DrainCounts::from(report);
-    assert_eq!(counts.accepted, 7);
-    assert_eq!(counts.completed, 5);
-    assert_eq!(counts.cancelled, 2);
-    assert_eq!(counts.timed_out, 1);
-    assert_eq!(counts.aborted, 1);
-    assert_eq!(counts.panicked, 0);
-    assert_eq!(counts.remaining, 0);
-}
-
-#[test]
-fn operator_replies_round_trip() -> anyhow::Result<()> {
-    let status = BrowserSessionStatus {
-        key: SESSION_KEY.to_string(),
-        running: false,
-        status: None,
-        error: Some("browser is unavailable".to_string()),
-    };
-    let json = serde_json::to_value(&status)?;
-    anyhow::ensure!(json["key"] == SESSION_KEY, "the key field moved: {json}");
-    anyhow::ensure!(
-        json["running"] == serde_json::Value::Bool(false),
-        "the running field moved: {json}"
-    );
-    anyhow::ensure!(
-        json["error"] == "browser is unavailable",
-        "the error field moved: {json}"
-    );
-    let read: BrowserSessionStatus = serde_json::from_value(json)?;
-    anyhow::ensure!(read.key == SESSION_KEY, "the key did not round trip");
-
-    let drain = BrowserSessionDrain {
-        key: SESSION_KEY.to_string(),
-        drain: DrainCounts::default(),
-        error: None,
-    };
-    let json = serde_json::to_value(&drain)?;
-    anyhow::ensure!(
-        json["drain"]["remaining"] == 0,
-        "the remaining counter moved: {json}"
-    );
-    anyhow::ensure!(
-        json["drain"]["accepted"] == 0,
-        "the accepted counter moved: {json}"
-    );
-    Ok(())
-}
-
-#[test]
-fn the_key_names_the_one_profile() {
-    assert_eq!(SESSION_KEY, "profile-0");
+    Ok(BrowserSession::new(
+        settings()?,
+        Arc::new(SystemClock),
+        Arc::new(crate::spawn::Spawner::new()),
+    ))
 }
 
 #[test]
@@ -203,23 +147,47 @@ async fn a_start_waits_for_an_in_flight_launch_instead_of_bumping_its_epoch() ->
 }
 
 #[tokio::test]
-async fn a_stop_during_a_launch_supersedes_it_without_installing_a_manager() -> anyhow::Result<()> {
+async fn an_exhausted_launch_sequence_refuses_without_reusing_ownership() -> anyhow::Result<()> {
     let session = session()?;
-    let epoch = session
-        .begin_launch()
+    session.lane.lock().await.epoch = u64::MAX;
+    anyhow::ensure!(session.begin_launch().await.is_err());
+    let lane = session.lane.lock().await;
+    check!(eq; lane.epoch, u64::MAX);
+    check!(lane.manager.is_none());
+    Ok(())
+}
+
+#[tokio::test]
+async fn cancelling_before_dedicated_registration_leaves_no_launch_epoch_or_admission(
+) -> anyhow::Result<()> {
+    let session = BrowserSession::new(
+        settings()?,
+        Arc::new(SystemClock),
+        Arc::new(crate::spawn::Spawner::with_capacity(1)),
+    );
+    let held = session
+        .region
+        .acquire_blocking()
         .await
-        .map_err(|error| anyhow::anyhow!("the launch could not begin: {error:?}"))?;
-    anyhow::ensure!(
-        session.record_stop().await.is_none(),
-        "a stop during a launch has no installed manager to drain"
-    );
-    anyhow::ensure!(
-        session.lane.lock().await.epoch != epoch,
-        "a stop recorded during the launch must supersede it"
-    );
-    anyhow::ensure!(
-        session.lane.lock().await.manager.is_none(),
-        "a superseded launch must not leave a manager installed"
-    );
+        .ok_or_else(|| anyhow::anyhow!("blocking slot missing"))?;
+    let mut starting = Box::pin(session.start_owned());
+    check!(futures::poll!(starting.as_mut()).is_pending());
+    drop(starting);
+    let lane = session.lane.lock().await;
+    check!(eq; lane.epoch, 0);
+    check!(!lane.starting);
+    check!(lane.manager.is_none());
+    drop(lane);
+    let reservation = match session
+        .region
+        .coordinator()
+        .try_reserve_profile(crate::admission::WORK_CLASS_BROWSER)
+    {
+        crate::admission::TryResult::Granted(reservation) => reservation,
+        other => anyhow::bail!("cancelled startup retained its coordination grant: {other:?}"),
+    };
+    drop(reservation);
+    let _admission = session.launch_admission().await;
+    drop(held);
     Ok(())
 }

@@ -13,11 +13,11 @@ struct Interpretation<'a> {
     semantic_inventory: &'a RawValue,
 }
 
-pub(super) fn read(
-    claim: &ReviewedRosterSourceClaimV1,
+pub(super) fn read<'a>(
+    claim: &'a ReviewedRosterSourceClaimV1,
     original: &PreparedRosterCaptureObjectsV1<'_>,
     grant: &mut AttachmentReplayGrantV1,
-) -> CrawlResult<semantic_inventory::DecodedUntrustedRosterSemanticInventoryV1> {
+) -> CrawlResult<semantic_inventory::UntrustedRetainedRosterSemanticInventoryV1<'a>> {
     let proposal = claim.proposal(grant)?;
     let capture = proposal.capture();
     source::source_reference(original.metadata_bytes(grant)?, capture.manifest(), grant)?;
@@ -27,7 +27,6 @@ pub(super) fn read(
         return Err(invalid("historical roster capture literal differs").into());
     }
     let bytes = claim.object(capture.interpretation().digest().as_str(), grant)?;
-    source::source_reference(bytes, capture.interpretation(), grant)?;
     grant.charge_bytes(bytes.len()).map_err(source::domain)?;
     grant
         .charge_steps(bytes.len().div_ceil(32).max(1))
@@ -45,10 +44,8 @@ pub(super) fn read(
     if serde_json::to_vec(&value).map_err(json)? != bytes {
         return Err(invalid("noncanonical historical roster interpretation").into());
     }
-    Ok(
-        semantic_inventory::decode_untrusted_roster_semantic_inventory_v1(
-            value.semantic_inventory.get().as_bytes(),
-            grant,
-        )?,
-    )
+    Ok(semantic_inventory::decode_retained_for_replay(
+        value.semantic_inventory.get().as_bytes(),
+        grant,
+    )?)
 }

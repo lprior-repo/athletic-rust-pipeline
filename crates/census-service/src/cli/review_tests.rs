@@ -1,7 +1,7 @@
 use super::command::Command;
 use super::review::{families_of, ReviewArgs};
 use super::Cli;
-use census_review::ModelResponseFormat;
+use census_domain::review_model::ModelResponseFormat;
 use clap::{error::ErrorKind, Parser};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;

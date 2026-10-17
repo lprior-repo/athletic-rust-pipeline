@@ -1,8 +1,10 @@
 use census_domain::model::{ReviewPacket, ReviewVerdict, VerdictBatch};
+use census_domain::review_decision::Adjudication;
 
-use super::model::{ModelClient, ModelError};
-use super::verdicts::{triage, Adjudication};
+use super::model::ModelClient;
+use super::verdicts::triage;
 use super::ReviewFamily;
+use census_domain::review_model::ModelError;
 
 pub(super) enum Answer {
     Failed(ModelError),

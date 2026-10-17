@@ -7,16 +7,20 @@ use census_domain::evidence_subject_attachment::{
 use census_domain::model::StoreIdentity;
 use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 mod bundle;
 mod current;
 mod frozen_source;
 mod reconstruct;
+mod record_wire;
 
 pub use bundle::{
     replay_frozen_roster_reviewed_claims_v1, FrozenRosterReviewedClaimsBundleV1,
     RosterFrozenReviewedClaimsReferenceV1,
 };
+
+const ARCHIVE_SCHEMA: &str = "roster-reviewed-source-publication-closure-v2";
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -27,10 +31,21 @@ struct Archive {
     source_store_lifecycle: u32,
     current_input_token: Vec<u8>,
     metadata: Vec<(Vec<u8>, Vec<u8>)>,
+    #[serde(with = "record_wire")]
     records: Vec<(Vec<u8>, Vec<u8>)>,
     receipts: Vec<(Vec<u8>, Vec<u8>)>,
     physical: Vec<PhysicalRow>,
     external: Vec<frozen_source::CapturedExternalPrefix>,
+}
+
+impl Archive {
+    fn authority_head(&self) -> StoreResult<&[u8]> {
+        self.metadata
+            .iter()
+            .find(|(key, _)| key == super::super::HEAD.as_bytes())
+            .map(|(_, raw)| raw.as_slice())
+            .ok_or_else(|| Error::Corrupt("selected authority head absent").into())
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -80,7 +95,9 @@ pub struct ReviewedRosterSourceClaimV1 {
     proposal: LocallyCheckedRosterIssuanceV1,
     evidence: RosterSourceEvidenceV1,
     record: ReviewRecord,
-    objects: super::objects::Objects,
+    objects: Arc<super::objects::Objects>,
+    qualification: super::ObjectRef,
+    activation: super::ObjectRef,
 }
 
 impl CurrentRosterReviewedClaimsV1 {
@@ -110,12 +127,7 @@ impl CurrentRosterReviewedClaimsV1 {
     }
     pub fn authority_head_bytes(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&[u8]> {
         self.require_original_grant(grant)?;
-        self.archive
-            .metadata
-            .iter()
-            .find(|(key, _)| key == super::super::HEAD.as_bytes())
-            .map(|(_, raw)| raw.as_slice())
-            .ok_or_else(|| Error::Corrupt("selected authority head absent").into())
+        self.archive.authority_head()
     }
 }
 
@@ -138,11 +150,7 @@ impl ReviewedRosterSourceClaimV1 {
         self.record.basis.operation.as_str()
     }
     pub fn object(&self, digest: &str, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&[u8]> {
-        self.evidence.require_original_grant(grant)?;
-        self.objects
-            .get(digest)
-            .map(Vec::as_slice)
-            .ok_or_else(|| Error::Corrupt("review source object absent").into())
+        self.object_entry(digest, grant).map(|(_, bytes)| bytes)
     }
     pub fn semantic_review_bytes(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&[u8]> {
         self.object(&self.record.basis.review.digest, grant)
@@ -155,36 +163,29 @@ impl ReviewedRosterSourceClaimV1 {
         &'a self,
         grant: &mut AttachmentReplayGrantV1,
     ) -> StoreResult<(&'a str, &'a [u8])> {
-        self.review_object(true, grant)
+        self.object_entry(&self.qualification.digest, grant)
     }
     pub fn activation_object<'a>(
         &'a self,
         grant: &mut AttachmentReplayGrantV1,
     ) -> StoreResult<(&'a str, &'a [u8])> {
-        self.review_object(false, grant)
+        self.object_entry(&self.activation.digest, grant)
     }
-    fn review_object<'a>(
+    fn object_entry<'a>(
         &'a self,
-        qualification: bool,
+        digest: &str,
         grant: &mut AttachmentReplayGrantV1,
     ) -> StoreResult<(&'a str, &'a [u8])> {
-        let bytes = self.semantic_review_bytes(grant)?;
-        grant
-            .charge_bytes(bytes.len())
-            .map_err(super::super::source_error)?;
-        grant.charge_steps(1).map_err(super::super::source_error)?;
-        let review: super::SemanticReview = super::super::codec::decode(bytes)?;
-        let reference = if qualification {
-            review.qualification
-        } else {
-            review.activation
-        };
-        let (digest, bytes) = self
-            .objects
-            .get_key_value(&reference.digest)
-            .ok_or(Error::Corrupt("review authority object absent"))?;
         self.evidence.require_original_grant(grant)?;
-        Ok((digest.as_str(), bytes))
+        self.record
+            .basis
+            .closure
+            .binary_search_by(|reference| reference.digest.as_str().cmp(digest))
+            .map_err(|_| Error::Corrupt("review source object absent"))?;
+        self.objects
+            .get_key_value(digest)
+            .map(|(digest, bytes)| (digest.as_str(), bytes.as_slice()))
+            .ok_or_else(|| Error::Corrupt("review source object absent").into())
     }
     pub fn original_input_token(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&[u8]> {
         self.object(&self.record.basis.input_token.digest, grant)

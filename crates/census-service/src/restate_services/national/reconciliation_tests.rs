@@ -1,15 +1,18 @@
+use std::time::Duration;
+
 use super::publication_tests::journal::Journal;
 use super::NationalCensus;
 use census_domain::model::{
     AppliedAthleteIdentity, CanonicalAthlete, IdentityStatus, ReviewCase, ReviewState,
     ReviewVerdictRecord,
 };
+use census_domain::review_model::ModelOptions;
 use census_report::export::ExportDataset;
 use census_report::report::{Derivation, Scope};
+use census_review::ModelClient;
 use census_store::{Store, Table};
 use restate_sdk::prelude::*;
 use std::sync::Arc;
-use std::time::Duration;
 
 mod deterministic;
 mod fixtures;
@@ -365,12 +368,12 @@ async fn drive(store: Arc<Store>) -> TestResult<Journal> {
     let jobs = crate::restate_services::Jobs::new(Arc::clone(&store), Arc::clone(&region));
     let mut national = NationalCensus::new(Arc::new(fixtures::FixtureClock), jobs);
     national.review_lanes = Ok([
-        census_review::ModelClient::new(
-            census_review::ModelOptions::local("http://127.0.0.1:1", "fixture")?
+        ModelClient::new(
+            ModelOptions::local("http://127.0.0.1:1", "fixture")?
                 .with_timeout(Duration::from_millis(100)),
         )?,
-        census_review::ModelClient::new(
-            census_review::ModelOptions::local("http://127.0.0.1:2", "fixture")?
+        ModelClient::new(
+            ModelOptions::local("http://127.0.0.1:2", "fixture")?
                 .with_timeout(Duration::from_millis(100)),
         )?,
     ]);

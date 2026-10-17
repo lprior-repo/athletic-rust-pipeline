@@ -109,12 +109,11 @@ fn verified_profile(
             ))
         })?;
     } else {
-        let _checked =
-            validate_current_selected_qualification_profile(profile).map_err(|source| {
-                super::invariant(format!(
-                    "unsupported selected publication profile: {source}"
-                ))
-            })?;
+        validate_current_selected_qualification_profile(profile).map_err(|source| {
+            super::invariant(format!(
+                "unsupported selected publication profile: {source}"
+            ))
+        })?;
     }
     dataset.verified_public_identities()?;
     Ok(profile)

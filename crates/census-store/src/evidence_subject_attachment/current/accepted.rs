@@ -48,9 +48,11 @@ fn read<'v, 's>(
     {
         return Err(Error::TargetMoved.into());
     }
+    let continuation = grant.checkpoint().map_err(Error::Domain)?;
     Ok(CurrentEvidenceSubjectAttachmentReferencesV1 {
         view,
         ledger,
         accepted: AcceptedOwner::Borrowed(accepted),
+        continuation,
     })
 }

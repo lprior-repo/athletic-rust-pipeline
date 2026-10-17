@@ -105,7 +105,7 @@ impl ProviderSchoolPacketV1 {
     }
 
     pub fn read_semantic_contract_v1(&self) -> CrawlResult<CheckedProviderSchoolPacketV1> {
-        super::roster_source_issuance::require_fixed_roster_semantic_kernel_v1()?;
+        super::roster_source_issuance::require_fixed_roster_semantic_kernel_v2()?;
         if self.version != 1 || self.interpretation != "milesplit_directory_roster_school_v1" {
             return Err(invalid("unsupported V1 provider school packet").into());
         }

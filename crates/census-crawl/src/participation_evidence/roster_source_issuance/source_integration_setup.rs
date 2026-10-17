@@ -1,5 +1,4 @@
 use super::*;
-use crate::participation_evidence::roster_source_issuance::assess_existing_roster_binding;
 use crate::participation_evidence::roster_source_issuance::manifest::compiled_roster_parser_manifest;
 use crate::participation_evidence::roster_source_issuance::policies::compiled_roster_interpretation_contracts_v1;
 use census_domain::model::{
@@ -10,13 +9,13 @@ use census_store::{
     RosterEnrollmentReviewV1, RosterIssuanceInspectionRequestV1, RosterReviewActorV1, Store, Table,
 };
 
-pub(super) const SMALL_DIRECTORY: &str = concat!(
+pub(in crate::participation_evidence::roster_source_issuance) const SMALL_DIRECTORY: &str = concat!(
     "<html><head><meta name=\"application-name\" content=\"MileSplit Michigan\">",
     "<link rel=\"canonical\" href=\"https://mi.milesplit.com/teams\"></head><body><table>",
     "<tr><td><a href=\"https://mi.milesplit.com/teams/12439-detroit-catholic-central\">",
     "Controlled School</a></td><td>Novi, MI, USA</td></tr></table></body></html>"
 );
-pub(super) const SMALL_ROSTER: &str = concat!(
+pub(in crate::participation_evidence::roster_source_issuance) const SMALL_ROSTER: &str = concat!(
     "<html><head><link rel=\"canonical\" href=\"https://mi.milesplit.com/teams/12439-detroit-catholic-central/roster\">",
     "</head><body><section><h4>Current Roster</h4><ul id=\"rosterDataset\">",
     "<li class=\"athlete-row data-row\"><a href=\"https://mi.milesplit.com/athletes/42-controlled\">",
@@ -50,8 +49,10 @@ pub(in crate::participation_evidence::roster_source_issuance) fn enrolled_store(
     Ok((directory, store))
 }
 
-pub(in crate::participation_evidence::roster_source_issuance) fn install(
+pub(in crate::participation_evidence::roster_source_issuance) fn install_body(
     store: &Store,
+    directory_body: &str,
+    roster_body: &str,
 ) -> TestResult<(
     ProviderSchoolPacketV1,
     CanonicalSchool,
@@ -59,8 +60,8 @@ pub(in crate::participation_evidence::roster_source_issuance) fn install(
     RosterIssuanceInspectionRequestV1,
 )> {
     let packet = ProviderSchoolPacketV1::new(
-        retained("https://mi.milesplit.com/teams", SMALL_DIRECTORY)?,
-        retained(URL, SMALL_ROSTER)?,
+        retained("https://mi.milesplit.com/teams", directory_body)?,
+        retained(URL, roster_body)?,
     )?;
     let checked = packet.read()?;
     let school = checked.school().clone();
@@ -105,18 +106,30 @@ pub(in crate::participation_evidence::roster_source_issuance) fn install(
     Ok((packet, school, program, request))
 }
 
+pub(in crate::participation_evidence::roster_source_issuance) fn install(
+    store: &Store,
+) -> TestResult<(
+    ProviderSchoolPacketV1,
+    CanonicalSchool,
+    CanonicalTeam,
+    RosterIssuanceInspectionRequestV1,
+)> {
+    install_body(store, SMALL_DIRECTORY, SMALL_ROSTER)
+}
+
 pub(super) fn object(bytes: &[u8]) -> Value {
     json!({"digest":hash(bytes), "bytes":bytes.len()})
 }
 
-pub(super) fn actual_proposal(
+pub(in crate::participation_evidence::roster_source_issuance) fn actual_proposal(
     packet: &ProviderSchoolPacketV1,
     school: &CanonicalSchool,
     program: &CanonicalTeam,
     evidence: &RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> TestResult<LocallyCheckedRosterIssuanceV1> {
-    let mut value = proposal(packet, SMALL_ROSTER)?;
+    let roster_body = packet.roster().body()?;
+    let mut value = proposal(packet, &roster_body)?;
     let compiled = compiled_roster_parser_manifest()?;
     let checked = crate::participation_evidence::roster_source_issuance::manifest::assess_retained_roster_parser_manifest(
         compiled.canonical_bytes(), &compiled.parser_claim()?, grant)?;

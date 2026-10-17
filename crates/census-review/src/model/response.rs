@@ -1,12 +1,11 @@
 use std::marker::PhantomData;
 
 use census_domain::model::{ReviewVerdict, ReviewVerdictKind, VerdictBatch};
+use census_domain::review_model::{ModelContentFailure, ModelError};
 use serde::de::value::{MapAccessDeserializer, StrDeserializer};
 use serde::de::{MapAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-
-use super::ModelError;
 
 pub(super) fn message_content(body: &Value) -> Option<String> {
     let message = body.get("choices")?.get(0)?.get("message")?;
@@ -94,7 +93,7 @@ fn deserialize_kind<'de, D: Deserializer<'de>>(
 pub fn parse_batch(content: &str) -> Result<VerdictBatch, ModelError> {
     let Object(wire): Object<WireBatch> =
         serde_json::from_str(content).map_err(|_| ModelError::Content {
-            reason: "not a verdict batch",
+            reason: ModelContentFailure::NotVerdictBatch,
         })?;
     if wire
         .verdicts
@@ -102,7 +101,7 @@ pub fn parse_batch(content: &str) -> Result<VerdictBatch, ModelError> {
         .any(|Object(verdict)| verdict.confidence > 100)
     {
         return Err(ModelError::Content {
-            reason: "confidence exceeds 100",
+            reason: ModelContentFailure::ConfidenceRange,
         });
     }
     Ok(VerdictBatch {

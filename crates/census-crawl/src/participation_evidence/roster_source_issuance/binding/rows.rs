@@ -10,16 +10,15 @@ pub(super) fn school_row(
         SourceNamespace::MilesplitSchool,
         binding.school_source().provider_id(),
     );
-    if owner || &row.id == binding.school() {
-        if !owner
+    if (owner || &row.id == binding.school())
+        && (!owner
             || &row.id != binding.school()
             || !row.retained_conflicts.is_empty()
-            || !row.same_natural_key(packet)
-        {
-            return Err(invalid(
-                "roster binding ambiguous or conflicted school owner",
-            ));
-        }
+            || !row.same_natural_key(packet))
+    {
+        return Err(invalid(
+            "roster binding ambiguous or conflicted school owner",
+        ));
     }
     Ok(())
 }
@@ -39,10 +38,10 @@ pub(super) fn team_row(
     if owner && (&row.school != binding.school() || !row.retained_conflicts.is_empty()) {
         return Err(invalid("roster binding conflicted program owner"));
     }
-    if (owner && scope) || &row.id == binding.program() {
-        if !owner || !scope || &row.id != binding.program() || &row.school != binding.school() {
-            return Err(invalid("roster binding ambiguous program scope"));
-        }
+    if ((owner && scope) || &row.id == binding.program())
+        && (!owner || !scope || &row.id != binding.program() || &row.school != binding.school())
+    {
+        return Err(invalid("roster binding ambiguous program scope"));
     }
     Ok(())
 }

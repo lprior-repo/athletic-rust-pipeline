@@ -22,6 +22,7 @@ pub(super) struct Capture {
     pub school: CanonicalSchool,
     pub program: CanonicalTeam,
     pub athlete: CanonicalAthlete,
+    pub roster_body: String,
 }
 
 impl Fixture {

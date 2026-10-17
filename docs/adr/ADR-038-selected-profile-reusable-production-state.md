@@ -58,6 +58,21 @@ Qualify fresh runs against the new contracts, including same-invocation recovery
 replay. Historical passing runs do not qualify the replacement. Section 7 inventories the
 pre-cutover implementation; it is not a requirement to retain those paths.
 
+### First qualification kernel — 2026-10-17
+
+Owner decision: qualify a distinctly versioned reviewed-roster kernel V2. Preserve
+PR81's original V1 source checkpoint, artifacts and producer pins; retire that
+unqualified predecessor from current issuance rather than claim V1 equivalence.
+Unsupported predecessor evidence refuses without mutation. Layout-dependent
+grant accounting belongs to the new qualification, not an inherited passing result.
+
+The independently retained Report V3 artifact from producer `24f593911c6cab8f1679199fd70547a701fced27`
+remains unchanged and requires separate historical replay acceptance. Read-only
+frozen compatibility does not authorize old acquisition or issuance runtimes.
+Fresh reviewed-roster A and changed-build B must carry their own authenticated
+source, kernel and artifact identities. This decision supplies no passing receipt.
+
+
 
 ## 2. Profile scope is immutable configuration
 
@@ -162,6 +177,40 @@ obligations remain; this lifecycle amendment waives no feature or acceptance gat
 A finished query database remains an optional, rebuildable consumer of accepted generations.
 This ADR neither chooses SQLite/DuckDB/PostgreSQL nor authorizes database creation, dual evidence
 writes, reverse synchronization or population of a query store.
+
+### Reviewed-source frozen container — 2026-10-17
+
+**Context:** the two-claim replay probe measured 679,089 encoded bytes in the
+numeric-byte `records` field of an approximately 721-KB container; the unchanged
+4-MiB grant refused historical artifact verification.
+
+**Decision:** payload schema `roster-reviewed-source-publication-closure-v2`
+encodes record key/value pairs as canonical padded base64, preserving their exact
+decoded bytes. Reference-shape V1, durable Store layout and source-object hashes
+do not change. Retain the aggregate cap and four-times-wire decode admission.
+
+**Consequences:** current issuance writes only payload V2; unqualified payload V1
+refuses explicitly, without migration, fallback or artifact relabeling. Original
+qualified Report V3 replay remains independent. Qualification requires actual
+source-free workbook/artifact readback and malformed/predecessor refusal; this
+decision is not a passing receipt.
+
+### Immutable attachment read capability — 2026-10-17
+
+Current and frozen owners fully validate their ledger, receipts, inventory,
+targets and source closure before capturing an opaque original-grant continuation.
+Borrowed capability access authenticates that continuation's origin and usage
+floor; it does not rebuild the unchanged projection. Owner data remains immutable
+for the borrow. Serialized formats, historical bytes and resource limits do not
+change; foreign or poisoned grants still refuse.
+
+### Original result school statement — 2026-10-17
+
+Retained-result parsing may expose a checked quote of the uniquely owned,
+untransformed school cell: absolute UTF-8 byte span, original body/row/context
+references and text digest. Missing, transformed or ambiguous cells withhold the
+quote. Existing parsed rows, context wire and IDs remain unchanged. This quote
+is source data, never a SchoolId, accepted affiliation or issuance authority.
 
 ## 6. Enrollment, migration and historical protection
 

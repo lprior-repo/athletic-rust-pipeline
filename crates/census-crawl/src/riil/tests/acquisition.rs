@@ -116,7 +116,7 @@ fn recording_defers_rows_and_completion_until_application() -> Result<(), Box<dy
             check!(eq; physical_counts(&store)?, vec![0, 0, 0]);
             check!(eq; store.journal_keys("riil_schools")?.len(), 0);
             let recorded = recording.drain();
-            recorded.apply(&store, "riil-recording-test")?;
+            crate::recording::apply_recorded(&recorded, &store, "riil-recording-test")?;
             check!(eq; physical_counts(&store)?, vec![1, 2, 1]);
             let replay = evaluate(&fetcher, &store, Some(&recording), "2026-10-03", "").await?;
             check!(eq; replay.rows, 0);

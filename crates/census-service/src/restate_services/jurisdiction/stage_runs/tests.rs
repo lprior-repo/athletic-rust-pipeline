@@ -61,7 +61,7 @@ fn meet_source_durable_result_does_not_materialize_the_season() -> TestResult {
             let legacy = legacy.drain();
             let legacy_encoded_bytes = serde_json::to_vec(&legacy)?.len();
             let expected = source_rows(&legacy)?;
-            legacy.apply(&baseline, "baseline")?;
+            census_crawl::recording::apply_recorded(&legacy, &baseline, "baseline")?;
             let mut emitted = Vec::new();
             let mut max_durable_bytes = 0usize;
             let mut census = crate::census::MeetCensus::default();
@@ -94,8 +94,8 @@ fn meet_source_durable_result_does_not_materialize_the_season() -> TestResult {
                     check!(recorded.rows.iter().map(|batch| batch.rows.len()).sum::<usize>() <= 4096);
                     check!(serde_json::to_vec(&recorded)?.len() <= 8 * 1024 * 1024);
                     emitted.extend(source_rows(&recorded)?);
-                    recorded.apply(&store, &key)?;
-                    recorded.apply(&store, &key)?;
+                    census_crawl::recording::apply_recorded(&recorded, &store, &key)?;
+                    census_crawl::recording::apply_recorded(&recorded, &store, &key)?;
                 }
                 if ordinal == 0 {
                     check!(eq; store.walk_table(Table::SourceMeets)?.rows, 1);
@@ -117,7 +117,7 @@ fn meet_source_durable_result_does_not_materialize_the_season() -> TestResult {
 }
 
 fn source_rows(
-    recorded: &census_crawl::Recorded,
+    recorded: &census_store::recorded::Recorded,
 ) -> Result<Vec<census_domain::model::SourceMeetRef>, serde_json::Error> {
     recorded
         .rows
@@ -133,12 +133,12 @@ fn oversized_archived_row_is_refused_before_meet_ingest_apply() -> TestResult {
     use sha2::{Digest, Sha256};
     let root = tempfile::tempdir()?;
     let store = Store::open(root.path())?;
-    let recorded = census_crawl::Recorded {
-        rows: vec![census_crawl::recording::RecordedBatch {
+    let recorded = census_store::recorded::Recorded {
+        rows: vec![census_store::recorded::RecordedBatch {
             table: Table::SourceMeets,
             rows: vec![serde_json::json!({"id": "oversized", "name": "x".repeat(1024 * 1024)})],
         }],
-        ..census_crawl::Recorded::default()
+        ..census_store::recorded::Recorded::default()
     };
     let encoded = serde_json::to_vec(&recorded)?;
     let key = census_crawl::recording::spool::fragment_key("oversized-send", 0);
@@ -189,14 +189,17 @@ fn meet_fragment_identities_fit_the_ingest_operation_budget() -> TestResult {
     let base = super::meet_fragment_base(&digest).map_err(sdk_error)?;
     check!(eq; base.len(), super::MEET_IDENTITY_DIGEST_BYTES);
     let identity = super::meet_fragment_identity(base, 12).map_err(sdk_error)?;
-    let recorded = census_crawl::Recorded {
-        rows: vec![census_crawl::recording::RecordedBatch {
+    let recorded = census_store::recorded::Recorded {
+        rows: vec![census_store::recorded::RecordedBatch {
             table: Table::SourceMeets,
             rows: vec![serde_json::json!({"id": "identity-budget"})],
         }],
-        ..census_crawl::Recorded::default()
+        ..census_store::recorded::Recorded::default()
     };
-    let prepared = recorded.prepare(&census_crawl::recording::spool::fragment_key(&identity, 0))?;
+    let prepared = census_crawl::recording::prepare_recorded(
+        recorded,
+        &census_crawl::recording::spool::fragment_key(&identity, 0),
+    )?;
     check!(
         prepared.operation().len() <= crate::restate_services::wire::ingest::MAX_OPERATION_ID_BYTES
     );

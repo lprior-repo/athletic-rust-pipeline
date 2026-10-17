@@ -1,5 +1,4 @@
 use super::*;
-use crate::check;
 use crate::evidence_subject_attachment::*;
 use crate::model::*;
 use crate::public_identity_history::PublicAthleteId;

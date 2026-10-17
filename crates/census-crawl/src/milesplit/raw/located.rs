@@ -9,6 +9,7 @@ pub(crate) struct ProvisionalRawRowLocatorV1 {
     pub(crate) event_index: usize,
     pub(crate) row_index: usize,
     pub(crate) row: SourceRowLocator,
+    pub(crate) school_span: Option<(usize, usize)>,
 }
 
 impl ProvisionalRawRowLocatorV1 {
@@ -27,6 +28,7 @@ impl ProvisionalRawRowLocatorV1 {
                 byte_offset,
                 byte_length,
             },
+            school_span: None,
         }
     }
 }

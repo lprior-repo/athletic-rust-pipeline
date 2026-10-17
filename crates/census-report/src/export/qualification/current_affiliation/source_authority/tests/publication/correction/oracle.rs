@@ -5,7 +5,7 @@ pub(super) fn corrected(
     store: &Store,
     fixture: &control::Controlled,
     sequence: u64,
-    merged: u64,
+    merged: [u64; 2],
     branch: Branch,
 ) -> TestResult<Vec<PublicAthleteId>> {
     let accepted = store
@@ -18,16 +18,25 @@ pub(super) fn corrected(
         .history_records()
         .last()
         .ok_or("correction record")?;
-    let [canonical, alias] = &fixture.public;
+    let [canonical, _, _] = &fixture.public;
     let expected = fixture
         .candidates
         .iter()
         .map(|candidate| resolved(accepted.resolve_candidate(candidate)?))
         .collect::<TestResult<Vec<_>>>()?;
+    let revoked = match branch {
+        Branch::Split => merged.to_vec(),
+        Branch::RevokeRedundantMerge => {
+            let [first, _] = merged;
+            vec![first]
+        }
+    };
     match branch {
         Branch::Split => {
             check!(matches!(&record.request, HistoryRequest::Split(row)
-                if row.partitions == fixture.partitions && row.revoke_merges == vec![merged]));
+                if row.partitions == fixture.partitions && row.revoke_merges == revoked
+                    && row.unresolved_bindings.is_empty()
+                    && row.affected_record_keys == fixture.affected));
             let PublicResolution::Ambiguous {
                 successors,
                 unresolved_bindings,
@@ -37,29 +46,45 @@ pub(super) fn corrected(
             else {
                 return Err("ambiguous split predecessor".into());
             };
-            check!(eq; successors.len(), 2);
+            check!(eq; successors.len(), 3);
             check!(!unresolved_bindings);
             check!(eq; changed_at, sequence);
-            check!(eq; revoked_merges, vec![merged]);
+            check!(eq; revoked_merges, revoked);
             check!(expected.iter().all(|id| !fixture.public.contains(id)));
-            check!(ne; expected.first(), expected.last());
+            check!(eq; expected.iter().collect::<std::collections::BTreeSet<_>>().len(), 3);
             for (candidate, id) in fixture.candidates.iter().zip(&expected) {
                 check!(successors
                     .iter()
                     .any(|row| &row.public_id == id && &row.representative_candidate == candidate));
+                check!(
+                    matches!(accepted.resolve_public(id)?, PublicResolution::Canonical(owner)
+                    if &owner.public_id == id && &owner.representative_candidate == candidate)
+                );
+                let partition = fixture
+                    .partitions
+                    .iter()
+                    .find(|row| &row.representative == candidate)
+                    .ok_or("original singleton partition")?;
+                check!(eq; accepted.component_bindings(id)?.into_iter().collect::<Vec<_>>(), partition.binding_ids);
             }
         }
         Branch::RevokeRedundantMerge => {
+            check!(matches!(&record.request, HistoryRequest::Revoke(row)
+                    if row.revoke_merges == revoked
+                        && row.affected_record_keys == fixture.affected));
+            check!(eq; expected, vec![canonical.clone(); 3]);
             check!(
-                matches!(&record.request, HistoryRequest::Revoke(row) if row.revoke_merges == vec![merged])
+                matches!(accepted.resolve_public(canonical)?, PublicResolution::Canonical(owner)
+                if owner.public_id == *canonical)
             );
-            check!(eq; expected, vec![canonical.clone(), canonical.clone()]);
         }
     }
-    check!(
-        matches!(accepted.resolve_public(alias)?, PublicResolution::RevokedRedirect { successor, changed_at, revoked_merges }
-        if Some(&successor.public_id) == expected.last() && changed_at == sequence && revoked_merges == vec![merged])
-    );
+    for (alias, expected_id) in fixture.public.iter().zip(&expected).skip(1) {
+        check!(
+            matches!(accepted.resolve_public(alias)?, PublicResolution::RevokedRedirect { successor, changed_at, revoked_merges }
+            if &successor.public_id == expected_id && changed_at == sequence && revoked_merges == revoked)
+        );
+    }
     Ok(expected)
 }
 

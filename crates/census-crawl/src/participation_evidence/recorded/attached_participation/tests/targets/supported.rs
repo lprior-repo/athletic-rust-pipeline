@@ -70,9 +70,7 @@ fn attach(
 ) -> TestResult {
     let recording = crate::Recording::new();
     record_independent_participation_packet(store, &recording, packet)?;
-    recording
-        .drain()
-        .prepare("controlled-supported-target-intake")?
+    crate::recording::prepare_recorded(recording.drain(), "controlled-supported-target-intake")?
         .apply(store)?;
     let inspection =
         store.inspect_evidence_subject_attachment_v1(AttachmentInspectionRequestV1::Attach {

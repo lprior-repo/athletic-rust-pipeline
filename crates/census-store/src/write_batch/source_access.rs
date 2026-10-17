@@ -52,14 +52,12 @@ impl StoreBatch<'_> {
         page_counts(&self.pages, &self.source_access)
     }
 
-    pub(super) fn admit_source_access(&self) -> StoreResult<()> {
-        if self.source_access.is_empty() {
-            return Ok(());
-        }
-        if self
-            .replacements
-            .iter()
-            .any(|held| held.table == Table::SourceAccess)
+    pub(super) fn admit_observations(&self) -> StoreResult<()> {
+        if !self.source_access.is_empty()
+            && self
+                .replacements
+                .iter()
+                .any(|held| held.table == Table::SourceAccess)
         {
             return Err(mixed());
         }

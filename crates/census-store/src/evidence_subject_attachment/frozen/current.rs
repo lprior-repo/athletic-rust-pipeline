@@ -6,7 +6,8 @@ use super::*;
 use crate::read::JournalNamespaceContentsInventory;
 use crate::AcceptedPublicIdentitySnapshot;
 use census_domain::evidence_subject_attachment::{
-    AttachmentInventoryV1, AttachmentSubjectRoleV1, RetainedDocumentSubjectReferenceV1,
+    AttachmentInventoryV1, AttachmentReplayContinuationV1, AttachmentSubjectRoleV1,
+    RetainedDocumentSubjectReferenceV1,
 };
 use census_domain::model::StoreIdentity;
 use census_domain::public_identity_history::RegistryHead;
@@ -16,6 +17,7 @@ pub struct FrozenCurrentEvidenceSubjectAttachmentReferencesV1<'b> {
     pub(super) source: FrozenRetainedCaptureSourceV1<'b>,
     pub(super) ledger: VerifiedLedger<JournalNamespaceContentsInventory>,
     pub(super) accepted: &'b AcceptedPublicIdentitySnapshot,
+    pub(super) continuation: AttachmentReplayContinuationV1,
 }
 
 pub fn replay_frozen_evidence_subject_attachment_references_v1<'b>(
@@ -57,10 +59,12 @@ fn read<'b>(
         return Err(Error::Corrupt("frozen attachment inventory differs").into());
     }
     roots::require(&source, &ledger, grant)?;
+    let continuation = grant.checkpoint().map_err(Error::Domain)?;
     Ok(FrozenCurrentEvidenceSubjectAttachmentReferencesV1 {
         source,
         ledger,
         accepted,
+        continuation,
     })
 }
 

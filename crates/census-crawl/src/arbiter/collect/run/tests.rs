@@ -23,6 +23,7 @@ use crate::net::{FetchOptions, Fetcher};
 use crate::{AdapterContext, Recording};
 use census_domain::model::{CanonicalCoach, CanonicalSchool, SchoolYear, SourceObservation};
 use census_domain::UsJurisdiction;
+use census_store::recorded::Recorded;
 use census_store::{Store, Table};
 use serde_json::{json, Value};
 use std::collections::{BTreeSet, HashMap};
@@ -197,8 +198,8 @@ fn pending(store: &Store, row: &OrgSchool) -> TestResult<Value> {
         .ok_or("owed marker")?)
 }
 
-fn apply_recorded(store: &Store, recorded: &crate::recording::Recorded) -> TestResult {
-    let application = recorded.apply(store, "arbiter-recovery-test")?;
+fn apply_recorded(store: &Store, recorded: &Recorded) -> TestResult {
+    let application = crate::recording::apply_recorded(recorded, store, "arbiter-recovery-test")?;
     let rows = [Table::Schools, Table::SourceObservations, Table::Coaches]
         .into_iter()
         .map(|table| store.walk_table(table))
@@ -210,7 +211,7 @@ fn apply_recorded(store: &Store, recorded: &crate::recording::Recorded) -> TestR
         .collect::<Result<Vec<_>, _>>()?;
     let receipts = store.receipt_count()?;
     check!(eq;
-        recorded.apply(store, "arbiter-recovery-test")?,
+        crate::recording::apply_recorded(recorded, store, "arbiter-recovery-test")?,
         census_store::Application::Repeated(application.receipt().clone())
     );
     check!(eq; store.receipt_count()?, receipts);

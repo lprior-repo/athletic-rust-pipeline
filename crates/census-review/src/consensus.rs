@@ -3,7 +3,8 @@ use census_store::{StoreError, StoreResult};
 
 use crate::ask::{ask_case, Answer};
 use crate::packets::SubjectIndex;
-use crate::{Adjudication, Admitted, ModelClient, ReviewFamily};
+use crate::{ModelClient, ReviewFamily};
+use census_domain::review_decision::{Adjudication, Admitted, Refusal};
 
 mod audit;
 pub(super) use audit::{Audit, LaneAudit};
@@ -228,8 +229,8 @@ pub(super) fn decide(asked: &Asked, current: Option<&ReviewPacket>) -> Consensus
                 rejected: false,
             }
         }
-        (Adjudication::Refused(crate::Refusal::HardContradiction(_)), _)
-        | (_, Adjudication::Refused(crate::Refusal::HardContradiction(_))) => {
+        (Adjudication::Refused(Refusal::HardContradiction(_)), _)
+        | (_, Adjudication::Refused(Refusal::HardContradiction(_))) => {
             unresolved("hard_contradiction", true)
         }
         (Adjudication::Refused(_), _) | (_, Adjudication::Refused(_)) => {

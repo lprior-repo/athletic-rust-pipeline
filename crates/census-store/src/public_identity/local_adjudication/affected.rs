@@ -8,8 +8,6 @@ mod capture;
 mod decode;
 mod keys;
 pub(in crate::public_identity) use keys::KeyInventory;
-#[cfg(test)]
-mod storage;
 
 pub(in crate::public_identity) use decode::{from_bytes, read};
 

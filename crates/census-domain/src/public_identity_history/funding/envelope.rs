@@ -4,7 +4,7 @@ use std::sync::Mutex;
 use super::{ConstructionStorage, HistoryFunding};
 
 mod grant;
-pub(crate) use grant::HistoryMemoryGrant;
+pub use grant::HistoryMemoryGrant;
 
 pub trait HeldHistoryMemory {
     fn reserved_bytes(&self) -> NonZeroU64;
@@ -56,23 +56,22 @@ impl<P: HeldHistoryMemory> HistoryMemoryBudget<P> {
         }
     }
 
-    pub fn funding(&self) -> HistoryBudgetFunding<'_, P> {
-        HistoryBudgetFunding { budget: self }
+    pub fn funding(&self) -> HistoryBudgetFunding<'_> {
+        HistoryBudgetFunding { state: &self.state }
     }
 }
 
-pub struct HistoryBudgetFunding<'a, P> {
-    budget: &'a HistoryMemoryBudget<P>,
+pub struct HistoryBudgetFunding<'a> {
+    state: &'a Mutex<BudgetState>,
 }
 
-impl<'a, P: HeldHistoryMemory> HistoryFunding for HistoryBudgetFunding<'a, P> {
+impl<'a> HistoryFunding for HistoryBudgetFunding<'a> {
     type Error = HistoryFundingError;
-    type Grant = HistoryMemoryGrant<'a, P>;
+    type Grant = HistoryMemoryGrant<'a>;
 
     fn reserve(&mut self, request: ConstructionStorage) -> Result<Self::Grant, Self::Error> {
         let bytes = request.reserved_bytes();
         let mut state = self
-            .budget
             .state
             .lock()
             .map_err(|_| HistoryFundingError::Poisoned)?;
@@ -93,14 +92,14 @@ impl<'a, P: HeldHistoryMemory> HistoryFunding for HistoryBudgetFunding<'a, P> {
         state.live = live;
         drop(state);
         Ok(HistoryMemoryGrant {
-            budget: self.budget,
+            state: self.state,
             bytes,
             charge: grant::Charge::Held,
         })
     }
 
     fn ensure_owner(&self, grant: &Self::Grant) -> Result<(), Self::Error> {
-        if std::ptr::eq(grant.budget, self.budget) {
+        if std::ptr::eq(grant.state, self.state) {
             Ok(())
         } else {
             Err(HistoryFundingError::ForeignOwner)

@@ -46,14 +46,18 @@ impl From<VersionTwo> for u8 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(try_from = "String", into = "String")]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
+#[serde(try_from = "String")]
 pub struct AcquisitionDigest(String);
 impl AcquisitionDigest {
     pub fn try_clone(&self) -> Result<Self, std::collections::TryReserveError> {
         try_text(&self.0).map(Self)
     }
     pub fn parse(value: &str) -> Result<Self, CaptureDomainError> {
+        Self::validate(value)?;
+        Ok(Self(value.to_string()))
+    }
+    fn validate(value: &str) -> Result<(), CaptureDomainError> {
         if value.len() != 64
             || !value
                 .bytes()
@@ -61,16 +65,25 @@ impl AcquisitionDigest {
         {
             return Err(CaptureDomainError::Invalid { field: "digest" });
         }
-        Ok(Self(value.to_string()))
+        Ok(())
     }
     pub fn as_str(&self) -> &str {
         &self.0
     }
 }
+impl Serialize for AcquisitionDigest {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
 impl TryFrom<String> for AcquisitionDigest {
     type Error = CaptureDomainError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::parse(&value)
+        Self::validate(&value)?;
+        Ok(Self(value))
     }
 }
 impl From<AcquisitionDigest> for String {

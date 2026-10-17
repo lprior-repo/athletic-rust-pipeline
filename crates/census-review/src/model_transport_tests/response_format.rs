@@ -9,7 +9,8 @@ use super::{serve, Reply};
 use crate::consensus::tests::support::{
     audit, batch, client, lane, options, row, state, Fixture, TestResult,
 };
-use crate::{run_lanes, ModelClient, ModelOptions, ModelResponseFormat};
+use crate::{run_lanes, ModelClient};
+use census_domain::review_model::{ModelOptions, ModelResponseFormat};
 
 async fn text_backend(
     contents: Vec<String>,

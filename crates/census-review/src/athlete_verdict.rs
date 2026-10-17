@@ -1,43 +1,13 @@
 use census_domain::model::{ReviewPacket, ReviewVerdict, ReviewVerdictKind};
+use census_domain::review_decision::{HardContradiction, Refusal};
 
 use super::families::IDENTITY_FIELD;
-use super::verdicts::Refusal;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AthleteVerdict {
     SamePerson,
     DifferentPerson,
     InsufficientEvidence,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HardContradiction {
-    GradYearEvidenceDiffers,
-    GenderDiffers,
-    RetainedSourceConflict,
-    DistinctProviderObjects,
-}
-
-impl HardContradiction {
-    pub const fn slug(self) -> &'static str {
-        match self {
-            Self::GradYearEvidenceDiffers => "grad_year_evidence_differs",
-            Self::GenderDiffers => "gender_differs",
-            Self::RetainedSourceConflict => "retained_source_conflict",
-            Self::DistinctProviderObjects => "distinct_provider_objects",
-        }
-    }
-}
-
-impl Refusal {
-    pub const fn rationale(self) -> Option<&'static str> {
-        match self {
-            Self::HardContradiction(flag) => Some(flag.slug()),
-            Self::WrongField | Self::InvalidValue | Self::AlreadyResolved | Self::UnnamedCase => {
-                None
-            }
-        }
-    }
 }
 
 impl AthleteVerdict {

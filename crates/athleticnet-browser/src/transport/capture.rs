@@ -93,9 +93,19 @@ pub(super) fn decode_body(encoded: &str) -> Result<Vec<u8>, BrowserError> {
     if decoded_len > max_decoded {
         return Err(BrowserError::PayloadLimit);
     }
-    BASE64_STANDARD
-        .decode(encoded.as_bytes())
-        .map_err(|_| BrowserError::Protocol)
+    let decoded_len = usize::try_from(decoded_len).map_err(|_| BrowserError::PayloadLimit)?;
+    let mut decoded = Vec::new();
+    decoded
+        .try_reserve_exact(decoded_len)
+        .map_err(|_| BrowserError::Unavailable)?;
+    decoded.resize(decoded_len, 0);
+    let actual = BASE64_STANDARD
+        .decode_slice(encoded.as_bytes(), &mut decoded)
+        .map_err(|_| BrowserError::Protocol)?;
+    if actual != decoded_len {
+        return Err(BrowserError::Protocol);
+    }
+    Ok(decoded)
 }
 
 pub(super) async fn matches_request_body(

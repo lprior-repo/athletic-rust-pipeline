@@ -127,11 +127,9 @@ mod navigation_wire {
             anyhow::ensure!(candidates.len() == 1);
             let bound = uniquely_bound(candidates, 1)?;
             anyhow::ensure!(bound.is_some());
-            anyhow::ensure!(super::super::super::transfer::refuse_excess_wire(
-                true,
-                Some(1_048_576.0)
-            )
-            .is_ok());
+            anyhow::ensure!(
+                super::super::super::transfer::refuse_excess_wire(Some(1_048_576.0)).is_ok()
+            );
         }
         Ok(())
     }
@@ -212,15 +210,15 @@ mod navigation_wire {
         let bound = uniquely_bound(candidates, 1)?.ok_or(anyhow::anyhow!("missing bound"))?;
         let _ = bound;
         anyhow::ensure!(matches!(
-            super::super::super::transfer::refuse_excess_wire(true, Some(40_000_000.0)),
+            super::super::super::transfer::refuse_excess_wire(Some(40_000_000.0)),
             Err(BrowserError::PayloadLimit)
         ));
         anyhow::ensure!(matches!(
-            super::super::super::transfer::refuse_excess_wire(true, Some(f64::NAN)),
+            super::super::super::transfer::refuse_excess_wire(Some(f64::NAN)),
             Err(BrowserError::Protocol)
         ));
         anyhow::ensure!(matches!(
-            super::super::super::transfer::refuse_excess_wire(true, None),
+            super::super::super::transfer::refuse_excess_wire(None),
             Err(BrowserError::Protocol)
         ));
         Ok(())
@@ -254,10 +252,10 @@ mod navigation_wire {
         let bound = uniquely_bound(candidates, 1)?.ok_or(anyhow::anyhow!("missing bound"))?;
         anyhow::ensure!(bound == RequestId::new("req-1"));
         anyhow::ensure!(
-            super::super::super::transfer::refuse_excess_wire(true, Some(1_048_576.0)).is_ok()
+            super::super::super::transfer::refuse_excess_wire(Some(1_048_576.0)).is_ok()
         );
         anyhow::ensure!(matches!(
-            super::super::super::transfer::refuse_excess_wire(true, Some(f64::NAN)),
+            super::super::super::transfer::refuse_excess_wire(Some(f64::NAN)),
             Err(BrowserError::Protocol)
         ));
         Ok(())
@@ -270,11 +268,11 @@ mod navigation_wire {
         let bound = uniquely_bound(candidates, 1)?.ok_or(anyhow::anyhow!("missing bound"))?;
         anyhow::ensure!(bound == RequestId::new("req-1"));
         anyhow::ensure!(matches!(
-            super::super::super::transfer::refuse_excess_wire(true, Some(f64::NEG_INFINITY)),
+            super::super::super::transfer::refuse_excess_wire(Some(f64::NEG_INFINITY)),
             Err(BrowserError::Protocol)
         ));
         anyhow::ensure!(matches!(
-            super::super::super::transfer::refuse_excess_wire(true, None),
+            super::super::super::transfer::refuse_excess_wire(None),
             Err(BrowserError::Protocol)
         ));
         Ok(())

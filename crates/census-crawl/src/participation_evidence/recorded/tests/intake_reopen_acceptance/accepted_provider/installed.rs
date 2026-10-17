@@ -27,10 +27,10 @@ pub(in super::super) fn install(
     let before = protected_state(&store)?;
     check!(eq; record_provider_school_intake(&store, &school_recording, &school_packet)?, checked.school().id);
     check!(eq; protected_state(&store)?, before);
-    let school = school_recording
-        .drain()
-        .prepare("accepted-provider-school")?
-        .apply(&store)?;
+    let school_recorded = school_recording.drain();
+    let school_prepared =
+        crate::recording::prepare_recorded(school_recorded, "accepted-provider-school")?;
+    let school = school_prepared.apply(&store)?;
     check!(eq; school.appended(), 2);
     let target = provider_packet(RESULTS)?;
     let target_recording = Recording::new();
@@ -41,10 +41,10 @@ pub(in super::super) fn install(
         return Err("genuine installed school must resolve provider target".into());
     };
     check!(eq; protected_state(&store)?, before);
-    let projected = target_recording
-        .drain()
-        .prepare("accepted-provider-target")?
-        .apply(&store)?;
+    let target_recorded = target_recording.drain();
+    let target_prepared =
+        crate::recording::prepare_recorded(target_recorded, "accepted-provider-target")?;
+    let projected = target_prepared.apply(&store)?;
     check!(eq; projected.appended(), 4);
     no_public_birth(&store)?;
     let athletes = store.snapshot().scan::<CanonicalAthlete>(Table::Athletes)?;

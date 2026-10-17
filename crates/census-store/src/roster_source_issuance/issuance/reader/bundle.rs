@@ -6,6 +6,11 @@ use std::io::Write;
 
 const MAX_BUNDLE: usize = 4 * 1024 * 1024;
 
+#[derive(Deserialize)]
+struct ArchiveSchema<'a> {
+    schema: &'a str,
+}
+
 pub struct FrozenRosterReviewedClaimsBundleV1 {
     bytes: Vec<u8>,
     reference: RosterFrozenReviewedClaimsReferenceV1,
@@ -110,19 +115,21 @@ fn replay(
     {
         return Err(Error::Corrupt("frozen reviewed closure digest").into());
     }
+    let schema: ArchiveSchema<'_> = serde_json::from_slice(bytes)
+        .map_err(|_| Error::Corrupt("frozen reviewed closure decoding"))?;
+    if schema.schema != super::ARCHIVE_SCHEMA {
+        return Err(Error::Corrupt("review publication closure version").into());
+    }
     let archive: Archive = serde_json::from_slice(bytes)
         .map_err(|_| Error::Corrupt("frozen reviewed closure decoding"))?;
-    let actual = reference(&archive, bytes, grant)?;
-    if actual.store != expected.store
-        || actual.selected_snapshot_sequence != expected.selected_snapshot_sequence
-        || actual.authority_head != expected.authority_head
-        || actual.current_input_token != expected.current_input_token
+    if archive.store != expected.store
+        || archive.selected_snapshot_sequence != expected.selected_snapshot_sequence
+        || object_reference(archive.authority_head()?, grant)? != expected.authority_head
+        || object_reference(&archive.current_input_token, grant)? != expected.current_input_token
     {
         return Err(Error::Corrupt("frozen reviewed publication binding differs").into());
     }
-    if encode(&archive, grant)? != bytes {
-        return Err(Error::Corrupt("noncanonical frozen reviewed closure").into());
-    }
+    require_canonical(&archive, bytes, grant)?;
     let claims = reconstruct::claims(&archive, grant)?;
     continuation
         .require(grant)
@@ -153,6 +160,46 @@ fn encode(value: &impl Serialize, grant: &mut AttachmentReplayGrantV1) -> StoreR
     Ok(bytes)
 }
 
+fn require_canonical(
+    value: &impl Serialize,
+    bytes: &[u8],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    grant
+        .charge_steps(1)
+        .map_err(super::super::super::source_error)?;
+    let mut matched = CanonicalMatch { bytes, offset: 0 };
+    serde_json::to_writer(&mut matched, value)
+        .map_err(|_| Error::Corrupt("noncanonical frozen reviewed closure"))?;
+    if matched.offset != bytes.len() {
+        return Err(Error::Corrupt("noncanonical frozen reviewed closure").into());
+    }
+    Ok(())
+}
+
+struct CanonicalMatch<'a> {
+    bytes: &'a [u8],
+    offset: usize,
+}
+
+impl Write for CanonicalMatch<'_> {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        let end = self
+            .offset
+            .checked_add(bytes.len())
+            .ok_or_else(|| std::io::Error::other("roster canonical offset overflow"))?;
+        if self.bytes.get(self.offset..end) != Some(bytes) {
+            return Err(std::io::Error::other("roster canonical bytes differ"));
+        }
+        self.offset = end;
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
 struct Count(usize);
 impl Write for Count {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
@@ -175,12 +222,7 @@ fn reference(
     bytes: &[u8],
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<RosterFrozenReviewedClaimsReferenceV1> {
-    let head = archive
-        .metadata
-        .iter()
-        .find(|(key, _)| key == super::super::super::HEAD.as_bytes())
-        .map(|(_, value)| value.as_slice())
-        .ok_or(Error::Corrupt("frozen review head absent"))?;
+    let head = archive.authority_head()?;
     Ok(RosterFrozenReviewedClaimsReferenceV1 {
         version: 1,
         digest: object_reference(bytes, grant)?.digest,

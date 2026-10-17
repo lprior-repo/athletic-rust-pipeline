@@ -1,8 +1,8 @@
 use chrono::Datelike;
 use restate_sdk::prelude::*;
 
-use census_crawl::Recorded;
 use census_domain::UsJurisdiction;
+use census_store::recorded::Recorded;
 
 pub(super) fn endpoint_of(slug: &str, jurisdiction: UsJurisdiction) -> String {
     format!("{slug}_{}", jurisdiction.code().to_ascii_lowercase())
@@ -86,7 +86,7 @@ mod tests {
     #[test]
     fn recorded_ingest_refuses_an_oversized_record_with_a_typed_error() {
         let recorded = Recorded {
-            rows: vec![census_crawl::RecordedBatch {
+            rows: vec![census_store::recorded::RecordedBatch {
                 table: census_store::Table::Schools,
                 rows: vec![serde_json::json!({"id":"s1", "payload":"x".repeat(1_048_576)})],
             }],
@@ -103,11 +103,11 @@ mod tests {
         let row = serde_json::json!({"id":"s1", "payload":"x".repeat(524_288)});
         let recorded = Recorded {
             rows: vec![
-                census_crawl::RecordedBatch {
+                census_store::recorded::RecordedBatch {
                     table: census_store::Table::Schools,
                     rows: vec![row.clone(); 8],
                 },
-                census_crawl::RecordedBatch {
+                census_store::recorded::RecordedBatch {
                     table: census_store::Table::Meets,
                     rows: vec![row; 8],
                 },
@@ -129,11 +129,11 @@ mod tests {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let recorded = Recorded {
             rows: vec![
-                census_crawl::RecordedBatch {
+                census_store::recorded::RecordedBatch {
                     table: census_store::Table::Schools,
                     rows: vec![serde_json::json!({"id":"é\\n"})],
                 },
-                census_crawl::RecordedBatch {
+                census_store::recorded::RecordedBatch {
                     table: census_store::Table::Meets,
                     rows: vec![
                         serde_json::json!({"id":"m1"}),
@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn journal_only_requests_cannot_bypass_the_encoded_request_ceiling() {
         let recorded = Recorded {
-            journal: vec![census_crawl::RecordedJournal {
+            journal: vec![census_store::recorded::RecordedJournal {
                 phase: "phase".to_string(),
                 key: "key".to_string(),
                 payload: serde_json::Value::String("x".repeat(8_388_608)),

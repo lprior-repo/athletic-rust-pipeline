@@ -1,11 +1,15 @@
 use super::{
     gate::ProfileGate,
+    lifecycle::ActorExit,
     navigation::NavigationOutcome,
-    pool::{self, PageSlot, Pending},
+    pool::{PageSlot, Pending},
     BrowserError, BrowserOutcome, BrowserResponse, BrowserSettings, BrowserState, BrowserStatus,
 };
 use crate::lifecycle::error::BrowserStartupError;
-use crate::{clock::Clock, drain::DrainReport};
+use crate::{
+    clock::Clock,
+    drain::{DrainAccountingError, DrainReport},
+};
 use chromiumoxide::Browser;
 use std::{
     collections::VecDeque,
@@ -17,21 +21,27 @@ use tokio::{
     time::Instant,
 };
 use tokio_util::sync::CancellationToken;
+mod accounting;
 #[path = "lifecycle_ops.rs"]
 mod lifecycle_ops;
+mod sequence;
 #[path = "shutdown.rs"]
 mod shutdown;
 #[path = "state.rs"]
 mod state;
+use sequence::CaptureSequence;
 
 const QUEUE_MULTIPLIER: usize = 4;
 
 pub(super) struct Actor {
     pub(super) browser: Option<Browser>,
+    pub(super) child: Option<crate::lifecycle::child::OwnedChild>,
+    pub(super) ownership: BrowserOwnership,
     pub(super) settings: BrowserSettings,
     pub(super) rx: mpsc::Receiver<Command>,
     pub(super) handler_rx: mpsc::Receiver<HandlerEvent>,
     pub(super) handler_join: Option<JoinHandle<()>>,
+    pub(super) handler_stop: CancellationToken,
     pub(super) jobs: JoinSet<JobResult>,
     pub(super) pages: Vec<PageSlot>,
     pub(super) pending: VecDeque<Pending>,
@@ -48,17 +58,17 @@ pub(super) struct Actor {
     pub(super) shutdown: CancellationToken,
     pub(super) recovery_used: bool,
     pub(super) panic_shutdown: bool,
-    pub(super) capture_sequence: u64,
-    pub(super) launched: bool,
+    capture_sequence: CaptureSequence,
     pub(super) clock: Arc<dyn Clock>,
     pub(super) region: DrainReport,
+    pub(super) accounting_error: Option<DrainAccountingError>,
 }
 
-pub(super) struct BrowserConnection {
-    pub(super) browser: Browser,
-    pub(super) launched: bool,
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum BrowserOwnership {
+    Launched,
+    Attached,
 }
-
 pub(super) struct ChallengeTarget {
     pub(super) url: url::Url,
     pub(super) post: bool,
@@ -102,11 +112,12 @@ pub(super) struct ActorHandles {
     pub(super) cooldown_until: Arc<Mutex<Option<Instant>>>,
     pub(super) gate: Arc<ProfileGate>,
     pub(super) clock: Arc<dyn Clock>,
+    pub(super) handler_stop: CancellationToken,
 }
 
 impl Actor {
     pub(super) fn new(
-        connection: BrowserConnection,
+        browser: (Browser, BrowserOwnership),
         settings: BrowserSettings,
         rx: mpsc::Receiver<Command>,
         handler_pair: (mpsc::Receiver<HandlerEvent>, JoinHandle<()>),
@@ -117,14 +128,18 @@ impl Actor {
             cooldown_until,
             gate,
             clock,
+            handler_stop,
         } = handles;
         let queue_capacity = settings.tabs.saturating_mul(QUEUE_MULTIPLIER).max(1);
         Self {
-            browser: Some(connection.browser),
+            browser: Some(browser.0),
+            child: None,
+            ownership: browser.1,
             settings,
             rx,
             handler_rx: handler_pair.0,
             handler_join: Some(handler_pair.1),
+            handler_stop,
             jobs: JoinSet::new(),
             pages: Vec::new(),
             pending: VecDeque::new(),
@@ -141,21 +156,57 @@ impl Actor {
             observer_stop: CancellationToken::new(),
             shutdown: CancellationToken::new(),
             panic_shutdown: false,
-            capture_sequence: 0,
-            launched: connection.launched,
+            capture_sequence: CaptureSequence::default(),
             clock,
             region: DrainReport::default(),
+            accounting_error: None,
         }
     }
 
-    pub(super) fn next_capture_nonce(&mut self) -> u64 {
-        let nonce = self.capture_sequence;
-        self.capture_sequence = self.capture_sequence.wrapping_add(1);
-        nonce
+    pub(super) fn next_capture_nonce(&mut self) -> Result<u64, BrowserError> {
+        self.capture_sequence.issue()
     }
 
     #[tracing::instrument(skip_all)]
-    pub(super) async fn run(mut self) -> Result<(), BrowserStartupError> {
+    pub(super) async fn run(mut self) -> ActorExit {
+        use futures::FutureExt;
+        use std::panic::AssertUnwindSafe;
+        match AssertUnwindSafe(self.run_loop()).catch_unwind().await {
+            Ok(exit) => exit,
+            Err(_) => self.finalize_panicked().await,
+        }
+    }
+
+    async fn finalize_panicked(&mut self) -> ActorExit {
+        use futures::FutureExt;
+        use std::panic::AssertUnwindSafe;
+        self.draining = true;
+        self.shutdown.cancel();
+        self.observer_stop.cancel();
+        self.gate.revoke();
+        self.reject_pending(BrowserError::Shutdown);
+        loop {
+            match AssertUnwindSafe(self.close_browser()).catch_unwind().await {
+                Ok((report, cleanup)) => {
+                    let failure = Some(match cleanup {
+                        Some(error) => {
+                            BrowserStartupError::ShutdownFailed(format!("actor panicked; {error}"))
+                        }
+                        None => BrowserStartupError::Panicked,
+                    });
+                    let exit = ActorExit { report, failure };
+                    self.finish_shutdown(&exit);
+                    return exit;
+                }
+                Err(_) => {
+                    tracing::error!("browser panic cleanup still owns physical resources");
+                    tokio::time::sleep(crate::SHUTDOWN_TIMEOUT).await;
+                }
+            }
+        }
+    }
+
+    async fn run_loop(&mut self) -> ActorExit {
         loop {
             if self.panic_shutdown || (self.draining && self.jobs.is_empty()) {
                 self.panic_shutdown = false;
@@ -163,32 +214,17 @@ impl Actor {
                 self.shutdown.cancel();
                 self.observer_stop.cancel();
                 self.gate.revoke();
-                pool::reject_pending(&mut self.pending, BrowserError::Shutdown);
+                self.reject_pending(BrowserError::Shutdown);
                 let (report, failure) = self.close_browser().await;
-                if let Some(reply) = self.shutdown_reply.take() {
-                    if reply.send(report).is_err() {
-                        tracing::debug!("browser shutdown report receiver dropped");
-                    }
-                }
-                self.set_state(BrowserState::Stopped);
-                return match failure {
-                    Some(error) => Err(error),
-                    None => Ok(()),
-                };
+                let exit = ActorExit { report, failure };
+                self.finish_shutdown(&exit);
+                return exit;
             }
             tokio::select! {
                 command = self.rx.recv() => self.command(command).await,
                 event = self.handler_rx.recv() => {
                     if event.is_none() || matches!(event, Some(HandlerEvent::Failed)) {
-                        self.gate.revoke();
-                        self.shutdown.cancel();
-                        pool::reject_pending(&mut self.pending, BrowserError::Unavailable);
-                        let (report, failure) = self.close_browser().await;
-                        tracing::warn!(?report, "browser region drained after a handler failure");
-                        return match failure {
-                            None => Err(BrowserStartupError::HandlerStopped),
-                            Some(error) => Err(BrowserStartupError::HandlerStoppedCleanupFailed(error.to_string())),
-                        };
+                        return self.handler_stopped().await;
                     }
                 }
                 job = self.jobs.join_next(), if !self.jobs.is_empty() => self.complete_job(job),
@@ -204,15 +240,5 @@ impl Actor {
             }
             self.schedule_pending();
         }
-    }
-}
-
-impl Drop for Actor {
-    fn drop(&mut self) {
-        if let Some(handle) = self.handler_join.take() {
-            handle.abort();
-        }
-        self.jobs.abort_all();
-        self.observers.abort_all();
     }
 }

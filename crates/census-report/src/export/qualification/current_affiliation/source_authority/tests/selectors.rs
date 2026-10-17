@@ -79,8 +79,12 @@ fn attach(
         observed_at: fixture::AT.into(),
         member_ids: case.member_ids.clone(),
     };
-    fixture.store.append(Table::ReviewCases, &case)?;
-    fixture.store.append(Table::IdentityVerdicts, &verdict)?;
+    fixture
+        .store
+        .replace_many(Table::ReviewCases, std::slice::from_ref(&case))?;
+    fixture
+        .store
+        .replace_many(Table::IdentityVerdicts, &[verdict])?;
     fixture.writer.extend_source_candidate(
         &fixture.store,
         operation,

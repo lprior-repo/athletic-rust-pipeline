@@ -15,7 +15,7 @@ fn genuine_participation_packet_reopens_exact_originals_without_provider_link() 
     check!(eq; protected_state(&store)?, before);
     let recorded = recording.drain();
     check!(eq; recorded, expected_journal(PARTICIPATION_EVIDENCE_PHASE, reference.as_str(), payload.clone()));
-    let prepared = recorded.prepare("recorded-participation-reopen")?;
+    let prepared = crate::recording::prepare_recorded(recorded, "recorded-participation-reopen")?;
     let first = prepared.apply(&store)?;
     check!(eq; first.appended(), 0);
     retained_only_tables(&store, &tables)?;

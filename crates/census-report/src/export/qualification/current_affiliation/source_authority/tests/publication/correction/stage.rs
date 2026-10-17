@@ -32,11 +32,13 @@ impl Stage {
     pub(super) fn capture(
         fixture: &fixture::Fixture,
         expected: &Expected,
+        candidates: &[AthleteCandidateId],
         identities: &[PublicAthleteId],
         objects: &Path,
         root: &Path,
     ) -> TestResult<Self> {
-        check!(eq; identities.len(), 2);
+        check!(eq; identities.len(), 3);
+        check!(eq; candidates.len(), 3);
         let resolutions = oracle::candidate_resolutions(&fixture.store)?;
         let dataset = capture(fixture, objects)?;
         resolution_view(&dataset, &resolutions)?;
@@ -46,16 +48,18 @@ impl Stage {
             .ok_or("qualified controlled public identity")?
             .clone();
         check!(eq; Some(&public), identities.first());
-        check!(eq; dataset.athletes.len(), 2);
-        let other = dataset
-            .athletes
-            .iter()
-            .find(|row| row.id != expected.athlete)
-            .ok_or("synthetic second candidate")?;
-        check!(eq; view.public_id(other.id.as_str()), identities.last());
+        check!(eq; dataset.athletes.len(), 3);
         let affiliations = dataset.verified_current_affiliations()?;
-        if identities.first() != identities.last() {
-            check!(eq; affiliations.resolution(&other.id).status(), "current_affiliation_unknown");
+        for (candidate, candidate_public) in candidates.iter().zip(identities) {
+            let row = dataset
+                .athletes
+                .iter()
+                .find(|row| row.id.as_str() == candidate.as_str())
+                .ok_or("controlled expected source candidate")?;
+            check!(eq; view.public_id(row.id.as_str()), Some(candidate_public));
+            if candidate_public != &public {
+                check!(eq; affiliations.resolution(&row.id).status(), "current_affiliation_unknown");
+            }
         }
         let identities = identity_inventory(&dataset)?;
         let observations = witness(&dataset, expected)?;

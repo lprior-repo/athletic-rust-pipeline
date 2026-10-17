@@ -1,10 +1,11 @@
 use std::time::Duration;
 
 use census_domain::model::VerdictBatch;
+use census_domain::review_model::{ModelError, ModelOptions};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-use super::{ModelClient, ModelError, ModelOptions};
+use super::ModelClient;
 use crate::consensus::tests::support::TestResult;
 
 #[path = "model_transport_tests/response_format.rs"]

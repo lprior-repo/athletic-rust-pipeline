@@ -13,7 +13,7 @@ pub use historical::{
     assess_reviewed_roster_source_historical_v2, HistoricalReviewedRosterSourceV2,
 };
 pub mod semantic_inventory;
-pub(in crate::participation_evidence) use semantic_inventory::require_fixed_roster_semantic_kernel_v1;
+pub(in crate::participation_evidence) use semantic_inventory::require_fixed_roster_semantic_kernel_v2;
 mod source;
 pub use binding::{
     assess_existing_roster_binding, RosterBindingUnverifiedReferenceV1,

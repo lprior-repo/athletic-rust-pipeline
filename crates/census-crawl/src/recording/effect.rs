@@ -1,57 +1,55 @@
-use super::{budget, once, Recorded, RecordedBatch, RecordedJournal};
+use super::{budget, once, Recorded, RecordedBatch, RecordedEffect, RecordedJournal};
 use crate::{CrawlError, CrawlResult};
-use serde::{Deserialize, Serialize};
 use std::ops::Range;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RecordedEffect {
-    pub rows: Range<usize>,
-    pub journal: Range<usize>,
-    pub witness: usize,
+pub(super) fn pending(
+    recorded: &Recorded,
+    rows: &[RecordedBatch],
+    journal: &[RecordedJournal],
+) -> CrawlResult<RecordedEffect> {
+    let rows = recorded.rows.len()..budget::add(recorded.rows.len(), rows.len())?;
+    let journal = recorded.journal.len()..budget::add(recorded.journal.len(), journal.len())?;
+    let witness = journal
+        .end
+        .checked_sub(1)
+        .ok_or_else(|| invariant("conditional effect requires a witness"))?;
+    Ok(RecordedEffect {
+        rows,
+        journal,
+        witness,
+    })
 }
 
-impl RecordedEffect {
-    pub(super) fn pending(
-        recorded: &Recorded,
-        rows: &[RecordedBatch],
-        journal: &[RecordedJournal],
-    ) -> CrawlResult<Self> {
-        let rows = recorded.rows.len()..budget::add(recorded.rows.len(), rows.len())?;
-        let journal = recorded.journal.len()..budget::add(recorded.journal.len(), journal.len())?;
-        let witness = journal
-            .end
-            .checked_sub(1)
-            .ok_or_else(|| invariant("conditional effect requires a witness"))?;
-        Ok(Self {
-            rows,
-            journal,
-            witness,
-        })
+pub(super) fn validate(
+    effect: &RecordedEffect,
+    recorded: &Recorded,
+    previous: &RecordedEffect,
+) -> CrawlResult<()> {
+    validate_range(&effect.rows, recorded.rows.len(), previous.rows.end)?;
+    validate_range(
+        &effect.journal,
+        recorded.journal.len(),
+        previous.journal.end,
+    )?;
+    if effect.journal.is_empty() || effect.journal.end.checked_sub(1) != Some(effect.witness) {
+        return Err(invariant(
+            "conditional effect witness is outside its journal range",
+        ));
     }
-
-    pub(super) fn validate(&self, recorded: &Recorded, previous: &Self) -> CrawlResult<()> {
-        validate_range(&self.rows, recorded.rows.len(), previous.rows.end)?;
-        validate_range(&self.journal, recorded.journal.len(), previous.journal.end)?;
-        if self.journal.is_empty() || self.journal.end.checked_sub(1) != Some(self.witness) {
-            return Err(invariant(
-                "conditional effect witness is outside its journal range",
-            ));
-        }
-        let entry = recorded
-            .journal
-            .get(self.witness)
-            .ok_or_else(|| invariant("conditional effect witness is missing"))?;
-        if entry.phase != once::PHASE {
-            return Err(invariant("conditional effect witness uses another phase"));
-        }
-        let digest = entry
-            .payload
-            .get("digest")
-            .and_then(serde_json::Value::as_str)
-            .ok_or_else(|| invariant("conditional effect witness has no digest"))?;
-        once::Effect::new(&entry.key, digest)?;
-        Ok(())
+    let entry = recorded
+        .journal
+        .get(effect.witness)
+        .ok_or_else(|| invariant("conditional effect witness is missing"))?;
+    if entry.phase != once::PHASE {
+        return Err(invariant("conditional effect witness uses another phase"));
     }
+    let digest = entry
+        .payload
+        .get("digest")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| invariant("conditional effect witness has no digest"))?;
+    once::Effect::new(&entry.key, digest)?;
+    Ok(())
 }
 
 fn validate_range(range: &Range<usize>, length: usize, previous_end: usize) -> CrawlResult<()> {

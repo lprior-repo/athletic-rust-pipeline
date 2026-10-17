@@ -46,6 +46,17 @@ impl Actor {
                 Some(slot) => slot.page.clone(),
                 None => continue,
             };
+            let nonce = match self.next_capture_nonce() {
+                Ok(nonce) => nonce,
+                Err(error) => {
+                    if item.reply.send(BrowserOutcome::failed(error)).is_err() {
+                        tracing::debug!("capture nonce refusal reply dropped");
+                    }
+                    self.gate.revoke();
+                    self.reject_pending(error);
+                    return;
+                }
+            };
             if let Some(slot) = self.pages.get_mut(slot) {
                 slot.busy = true;
             }
@@ -53,31 +64,32 @@ impl Actor {
                 url: item.request.url.clone(),
                 post: item.request.body().is_some(),
             });
-            let gate = self.gate.clone();
-            let shutdown = self.shutdown.clone();
-            let timeout = self.settings.request_timeout;
-            let request = item.request.clone();
-            let is_rankings = matches!(&request.action, crate::request::RequestAction::Rankings(_));
-            let nonce = self.next_capture_nonce();
-            let source_origin = self.settings.source_origin.clone();
-            let clock = self.clock.clone();
-            let span = tracing::info_span!("browser.job", slot, nonce);
-            self.jobs.spawn(
-                async move {
-                let result = if is_rankings {
-                    if let crate::request::RequestAction::Rankings(ref action) = request.action {
-                        tokio::select! {
-                            _ = shutdown.cancelled() => Err(BrowserError::Shutdown),
-                            result = transport::fetch_rankings(&page, action, timeout, gate, &source_origin, nonce, clock.as_ref()) => result,
+            self.spawn_fetch(slot, page, item, nonce);
+        }
+    }
+
+    fn spawn_fetch(&mut self, slot: usize, page: chromiumoxide::Page, item: Pending, nonce: u64) {
+        let gate = self.gate.clone();
+        let shutdown = self.shutdown.clone();
+        let timeout = self.settings.request_timeout;
+        let request = item.request.clone();
+        let source_origin = self.settings.source_origin.clone();
+        let clock = self.clock.clone();
+        let span = tracing::info_span!("browser.job", slot, nonce);
+        self.jobs.spawn(
+            async move {
+                let result = tokio::select! {
+                    _ = shutdown.cancelled() => Err(BrowserError::Shutdown),
+                    result = async {
+                        match &request.action {
+                            crate::request::RequestAction::Rankings(action) => {
+                                transport::fetch_rankings(&page, action, timeout, gate, &source_origin, nonce, clock.as_ref()).await
+                            }
+                            crate::request::RequestAction::Fetch {} => {
+                                transport::fetch(&page, &request, timeout, gate, clock.as_ref()).await
+                            }
                         }
-                    } else {
-                        Err(BrowserError::Protocol)
-                    }
-                } else {
-                    tokio::select! {
-                        _ = shutdown.cancelled() => Err(BrowserError::Shutdown),
-                        result = transport::fetch(&page, &request, timeout, gate, clock.as_ref()) => result,
-                    }
+                    } => result,
                 };
                 JobResult {
                     slot,
@@ -85,10 +97,9 @@ impl Actor {
                     reply: item.reply,
                     result,
                 }
-                }
-                .instrument(span),
-            );
-        }
+            }
+            .instrument(span),
+        );
     }
 
     pub(crate) fn complete_job(&mut self, job: Option<Result<JobResult, tokio::task::JoinError>>) {
@@ -134,7 +145,7 @@ impl Actor {
         self.jobs.abort_all();
         self.pages.iter_mut().for_each(|p| p.busy = false);
         self.gate.revoke();
-        crate::pool::reject_pending(&mut self.pending, cause);
+        self.reject_pending(cause);
         self.panic_shutdown = true;
     }
 }

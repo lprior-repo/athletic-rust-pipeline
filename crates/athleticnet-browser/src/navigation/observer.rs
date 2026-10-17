@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, Mutex};
 
 use chromiumoxide::cdp::browser_protocol::network::{
-    self, EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent, EventResponseReceived,
-    RequestId, ResourceType,
+    self, EventDataReceived, EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent,
+    EventResponseReceived, RequestId, ResourceType,
 };
 use chromiumoxide::cdp::browser_protocol::page::FrameId;
 use chromiumoxide::listeners::EventStream;
@@ -19,7 +19,7 @@ use super::super::{gate::ProfileGate, transport, BrowserError};
 use super::REDIRECT_ABORT;
 use crate::challenge::{cf_header_challenge, html_body_challenge};
 use crate::protocol::MAX_SOURCE_RESPONSE_BYTES;
-
+use crate::transport::progress::WireTransfers;
 const BODY_CAPTURE_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Clone, Debug)]
@@ -42,6 +42,8 @@ pub(crate) struct PageObserver {
     responses: EventStream<EventResponseReceived>,
     finished: EventStream<EventLoadingFinished>,
     failures: EventStream<EventLoadingFailed>,
+    data: EventStream<EventDataReceived>,
+    progress: WireTransfers,
 }
 
 static OBSERVATIONS: LazyLock<Mutex<HashMap<String, Observation>>> =
@@ -89,6 +91,10 @@ pub(crate) async fn start_observer(
         .event_listener::<EventLoadingFailed>()
         .await
         .map_err(|_| BrowserError::Transport)?;
+    let data = page
+        .event_listener::<EventDataReceived>()
+        .await
+        .map_err(|_| BrowserError::Transport)?;
     Ok(PageObserver {
         page,
         stop,
@@ -98,6 +104,8 @@ pub(crate) async fn start_observer(
         responses,
         finished,
         failures,
+        data,
+        progress: WireTransfers::default(),
     })
 }
 
@@ -122,6 +130,7 @@ impl PageObserver {
                     let Some(event) = event else { return Err(BrowserError::Transport); };
                     if !is_main_document_for(&event, &self.main_frame) { continue; }
                     latest_request_id = Some(event.request_id.clone());
+                    self.progress.bind(&event.request_id);
                     observation = empty_observation(event.request.url.clone());
                     body_futures.clear();
                 }
@@ -138,6 +147,13 @@ impl PageObserver {
                     if latest_request_id.is_some() {
                         let id = event.request_id.clone();
                         let total = event.encoded_data_length;
+                        if let Err(e) = self.progress.finish(&id, total) {
+                            tracing::debug!("stream validation failed: {e}");
+                            observation.failed = true;
+                            observation.body_complete = true;
+                            store_observation(&self.page, observation.clone())?;
+                            continue;
+                        }
                         body_futures.push(capture_body_bounded(self.page.clone(), id, total));
                     }
                 }
@@ -151,6 +167,18 @@ impl PageObserver {
                         observation.failed = true;
                         observation.body_complete = true;
                         store_observation(&self.page, observation.clone())?;
+                    }
+                }
+                event = self.data.next() => {
+                    let Some(event) = event else { return Err(BrowserError::Transport); };
+                    if !is_current(&latest_request_id, &event.request_id) { continue; }
+                    if latest_request_id.is_some() {
+                        if let Err(e) = self.progress.observe(&event.request_id, event.encoded_data_length, event.data_length) {
+                            observation.failed = true;
+                            observation.body_complete = true;
+                            tracing::debug!("stream observation failed: {e}");
+                            store_observation(&self.page, observation.clone())?;
+                        }
                     }
                 }
                 result = body_futures.next(), if !body_futures.is_empty() => {
@@ -202,11 +230,8 @@ impl PageObserver {
 async fn capture_body_bounded(
     page: Page,
     id: RequestId,
-    encoded_total: f64,
+    _encoded_total: f64,
 ) -> (RequestId, Result<Vec<u8>, BrowserError>) {
-    if let Err(wire) = transport::transfer::refuse_excess_wire(true, Some(encoded_total)) {
-        return (id, Err(wire));
-    }
     let body_result = timeout(
         BODY_CAPTURE_TIMEOUT,
         transport::capture_body(&page, id.clone()),

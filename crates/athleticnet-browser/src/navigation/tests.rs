@@ -191,32 +191,7 @@ fn pending_headers_replay_only_on_exact_request_id() -> Result<(), Box<dyn std::
     Ok(())
 }
 
-#[test]
-fn wire_is_classified_before_decode_without_zero_default() -> Result<(), Box<dyn std::error::Error>>
-{
-    use crate::transport::transfer::{classify_wire_total, refuse_excess_wire, WireTotal};
-    use crate::BrowserError;
-    check!(eq; classify_wire_total(0.0), WireTotal::WithinBudget);
-    check!(eq; classify_wire_total(1_048_576.0), WireTotal::WithinBudget);
-    check!(eq; classify_wire_total(40_000_000.0), WireTotal::Excess);
-    check!(eq; classify_wire_total(f64::NAN), WireTotal::Malformed);
-    check!(eq; classify_wire_total(f64::INFINITY), WireTotal::Malformed);
-    check!(eq; classify_wire_total(-1.0), WireTotal::Malformed);
-    check!(refuse_excess_wire(true, Some(1_048_576.0)).is_ok());
-    check!(matches!(
-        refuse_excess_wire(true, Some(40_000_000.0)),
-        Err(BrowserError::PayloadLimit)
-    ));
-    check!(matches!(
-        refuse_excess_wire(true, Some(f64::NAN)),
-        Err(BrowserError::Protocol)
-    ));
-    check!(
-        matches!(refuse_excess_wire(true, None), Err(BrowserError::Protocol)),
-        "a missing total waits as protocol, never as zero"
-    );
-    Ok(())
-}
+mod wire;
 
 #[test]
 fn challenge_only_revokes_the_gate() -> Result<(), Box<dyn std::error::Error>> {

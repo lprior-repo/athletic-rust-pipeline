@@ -1,8 +1,6 @@
-use crate::{
-    model::{MAX_TOKENS_CAP, REQUEST_CAP},
-    ModelError, ModelOptions, ModelResponseFormat,
-};
+use crate::model::{MAX_TOKENS_CAP, REQUEST_CAP};
 use census_domain::model::ReviewPacket;
+use census_domain::review_model::{ModelError, ModelOptions, ModelResponseFormat};
 use serde::ser::{Serialize, Serializer};
 
 #[derive(Default)]

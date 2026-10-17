@@ -1,6 +1,7 @@
 use super::*;
 use crate::milesplit::{OWNED_CAPTURE_PHASE, OWNED_MEET_PHASE};
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
+use census_store::recorded::RecordedJournal;
 use std::collections::BTreeMap;
 
 fn seed_acquisition(
@@ -207,7 +208,7 @@ fn identical_partial_owned_replay_stages_no_rows_rejections_or_summary_replaceme
                     entry.phase == OWNED_MEET_PHASE || entry.phase == OWNED_CAPTURE_PHASE
                 })
                 .collect();
-            check!(eq; owned, Vec::<&crate::recording::RecordedJournal>::new());
+            check!(eq; owned, Vec::<&RecordedJournal>::new());
             apply(&store, &recorded)?;
             check!(eq; super::replay::physical(&store)?, physical);
             check!(eq; journal(&store, OWNED_MEET_PHASE)?, originals);

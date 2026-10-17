@@ -56,7 +56,10 @@ fn native_independently_retained_v3_replays_unchanged_without_live_store() -> Te
         check!(dataset.lineage.snapshot_sequence >= retained.store_snapshot_sequence);
         require_v3(&dataset, &frozen)?;
         check!(eq; observations(&dataset)?, retained.observations);
-        check!(dataset.ensure_current_selected_write().is_err());
+        check!(matches!(
+            dataset.ensure_current_selected_write(),
+            Err(crate::report::ReportError::Invariant { .. })
+        ));
         drop(dataset);
         files::verify(&copy, &retained.archive_files)?;
         files::verify(&source, &retained.archive_files)?;
