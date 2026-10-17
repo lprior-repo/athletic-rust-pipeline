@@ -51,7 +51,7 @@ pub(super) fn load<T: serde::de::DeserializeOwned + Serialize>(
 ) -> ReportResult<T> {
     let payload = load_bytes(directory, anchored_descriptor, version)?;
     let value: T = serde_json::from_slice(&payload).map_err(encoding)?;
-    if matches!(version, 2 | 3) {
+    if matches!(version, 2..=4) {
         super::canonical::require(&value, &payload)?;
     }
     Ok(value)

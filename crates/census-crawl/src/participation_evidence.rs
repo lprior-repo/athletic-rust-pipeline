@@ -12,6 +12,7 @@ pub mod provider_target;
 pub mod recorded;
 mod result_context;
 pub mod result_ownership;
+pub mod roster_source_issuance;
 mod schedule;
 mod status;
 mod transport;

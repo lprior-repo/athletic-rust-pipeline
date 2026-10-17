@@ -89,6 +89,7 @@ impl Store {
             if key.starts_with(b"source_acquisition_attempt_")
                 || key.starts_with(b"public_identity")
                 || crate::evidence_subject_attachment::is_reserved_operation(&key)
+                || crate::roster_source_issuance::is_reserved_operation(&key)
             {
                 continue;
             }

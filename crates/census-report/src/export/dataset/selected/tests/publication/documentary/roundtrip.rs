@@ -45,6 +45,36 @@ fn native_genuine_documentary_selected_publication_reopens_without_live_store_or
     check!(eq; inspect(&publication.dataset, &expected)?, before);
     csv(generation, &publication.dataset, &expected)?;
     check!(eq; publication::verify_published(&workbook)?.generation_digest, verified.generation_digest);
-    fixture::retain_v3_archive(archives.path(), &frozen, &digest, &lineage, &before)?;
+    check!(historical_retained::require_v3(&reopened, &frozen).is_err());
+    fixture::retain_v3_archive(
+        &reopened,
+        archives.path(),
+        &frozen,
+        &digest,
+        &lineage,
+        &before,
+    )?;
+    Ok(())
+}
+
+#[test]
+fn native_genuine_documentary_v4_co2026_stays_unresolved_with_current_frozen_parity() -> TestResult
+{
+    let fixture = Fixture::open_for(GradYear::new(2026).ok_or("controlled CO2026 year")?)?;
+    let objects = tempfile::tempdir()?;
+    let archives = tempfile::tempdir()?;
+    let dataset = fixture.capture(objects.path())?;
+    let expected = fixture.expected.clone();
+    let before = inspect(&dataset, &expected)?;
+    attachment_object(&dataset, objects.path())?;
+    let frozen = archives.path().join("genuine-co2026.json");
+    dataset.save_frozen(&frozen)?;
+    let digest = dataset.archive_digest()?;
+    fixture.require_original_unchanged()?;
+    fixture.close()?;
+    objects.close()?;
+    drop(dataset);
+    let reopened = ExportDataset::reopen_frozen_with_digest(&frozen, &digest)?;
+    check!(eq; inspect(&reopened, &expected)?, before);
     Ok(())
 }

@@ -12,6 +12,7 @@ impl Store {
     pub fn credit_observations(&self, endpoint: &str, operation: &str) -> StoreResult<Credit> {
         crate::public_identity::refuse_reserved(operation)?;
         crate::evidence_subject_attachment::refuse_generic_operation(operation)?;
+        crate::roster_source_issuance::refuse_generic_operation(operation)?;
         if operation.starts_with("source_acquisition_attempt_") {
             return Err(crate::CaptureError::CaptureQualificationOptInRequired.into());
         }

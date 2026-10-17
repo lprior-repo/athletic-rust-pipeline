@@ -11,6 +11,7 @@ use census_store::{
 mod discovery;
 mod subject;
 mod types;
+mod venue;
 pub(super) mod view;
 
 pub use discovery::{
@@ -84,6 +85,7 @@ fn with_results<'s, T>(
             document: &document,
             root: recorded.root(),
             attachments,
+            venue: std::sync::OnceLock::new(),
         };
         consume(linked, grant).map(Some)
     })

@@ -11,17 +11,18 @@ use census_domain::evidence_subject_attachment::{
 mod types;
 use types::Locator;
 pub use types::{
-    ActiveResultSubjectDiscoveryV1, ActiveResultSubjectV1, DiscoveredAttachmentCaptureV1,
+    ActiveAttachmentSubjectDiscoveryV1, ActiveAttachmentSubjectV1, DiscoveredAttachmentCaptureV1,
     DiscoveredAttachmentLocatorV1,
 };
 
 pub(in super::super) fn discover<'a, P>(
     ledger: &'a VerifiedLedger<P>,
     accepted: &AcceptedPublicIdentitySnapshot,
+    role: AttachmentSubjectRoleV1,
     grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<ActiveResultSubjectDiscoveryV1<'a>> {
+) -> StoreResult<ActiveAttachmentSubjectDiscoveryV1<'a>> {
     grant.ensure_available().map_err(Error::Domain)?;
-    let result = discover_checked(ledger, accepted, grant);
+    let result = discover_checked(ledger, accepted, role, grant);
     if result.is_err() {
         grant.poison();
     }
@@ -31,8 +32,9 @@ pub(in super::super) fn discover<'a, P>(
 fn discover_checked<'a, P>(
     ledger: &'a VerifiedLedger<P>,
     accepted: &AcceptedPublicIdentitySnapshot,
+    role: AttachmentSubjectRoleV1,
     grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<ActiveResultSubjectDiscoveryV1<'a>> {
+) -> StoreResult<ActiveAttachmentSubjectDiscoveryV1<'a>> {
     let projection = ledger.projection(accepted.store_identity(), grant)?;
     grant
         .charge_steps(ledger.records.len())
@@ -41,7 +43,7 @@ fn discover_checked<'a, P>(
     for record in projection.active_records() {
         for subject in record.command.subjects.as_slice() {
             grant.charge_steps(1).map_err(Error::Domain)?;
-            if subject.role != AttachmentSubjectRoleV1::ResultRow {
+            if subject.role != role {
                 continue;
             }
             let capture = ledger.object(&subject.capture, grant)?;
@@ -68,10 +70,10 @@ fn discover_checked<'a, P>(
                 return Err(Error::Corrupt("active subject discovery metadata bound").into());
             }
             count
-                .checked_mul(std::mem::size_of::<ActiveResultSubjectV1<'_>>())
+                .checked_mul(std::mem::size_of::<ActiveAttachmentSubjectV1<'_>>())
                 .ok_or(crate::StoreError::CounterOverflow)?;
             material::allocate(&mut rows)?;
-            rows.push(ActiveResultSubjectV1 {
+            rows.push(ActiveAttachmentSubjectV1 {
                 record,
                 subject,
                 capture,
@@ -80,5 +82,5 @@ fn discover_checked<'a, P>(
             });
         }
     }
-    Ok(ActiveResultSubjectDiscoveryV1 { rows })
+    Ok(ActiveAttachmentSubjectDiscoveryV1 { rows })
 }

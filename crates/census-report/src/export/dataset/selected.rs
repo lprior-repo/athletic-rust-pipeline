@@ -2,6 +2,8 @@ mod attach;
 mod authority;
 mod capture;
 mod origin;
+#[cfg(test)]
+mod test_authority;
 use super::{frozen, ExportDataset};
 use crate::export::{VerifiedCurrentAffiliations, VerifiedParticipationView};
 use crate::report::{ReportError, ReportResult};
@@ -67,7 +69,7 @@ impl ExportDataset {
             .ok_or_else(|| invalid("selected publication requires retained identity proofs"))?
             .require_current()?;
         let _checked =
-            census_domain::profile_execution::validate_selected_qualification_profile_v3(
+            census_domain::profile_execution::validate_current_selected_qualification_profile(
                 self.selected_authority()?.profile(),
             )
             .map_err(|source| {

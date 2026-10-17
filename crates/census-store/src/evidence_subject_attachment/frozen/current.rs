@@ -6,7 +6,7 @@ use super::*;
 use crate::read::JournalNamespaceContentsInventory;
 use crate::AcceptedPublicIdentitySnapshot;
 use census_domain::evidence_subject_attachment::{
-    AttachmentInventoryV1, RetainedDocumentSubjectReferenceV1,
+    AttachmentInventoryV1, AttachmentSubjectRoleV1, RetainedDocumentSubjectReferenceV1,
 };
 use census_domain::model::StoreIdentity;
 use census_domain::public_identity_history::RegistryHead;
@@ -80,11 +80,18 @@ impl<'b> FrozenCurrentEvidenceSubjectAttachmentReferencesV1<'b> {
     pub fn snapshot_sequence(&self) -> u64 {
         self.source.archive.snapshot_sequence
     }
+    pub fn discover_active_subjects_v1<'a>(
+        &'a self,
+        role: AttachmentSubjectRoleV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<discovery::ActiveAttachmentSubjectDiscoveryV1<'a>> {
+        discovery::discover(&self.ledger, self.accepted, role, grant)
+    }
     pub fn discover_active_result_subjects_v1<'a>(
         &'a self,
         grant: &mut AttachmentReplayGrantV1,
-    ) -> StoreResult<discovery::ActiveResultSubjectDiscoveryV1<'a>> {
-        discovery::discover(&self.ledger, self.accepted, grant)
+    ) -> StoreResult<discovery::ActiveAttachmentSubjectDiscoveryV1<'a>> {
+        self.discover_active_subjects_v1(AttachmentSubjectRoleV1::ResultRow, grant)
     }
     pub fn bind_exact_subject<'a>(
         &'a self,

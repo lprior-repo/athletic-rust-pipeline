@@ -1,6 +1,28 @@
 use super::*;
 
 impl Scan {
+    pub(super) fn anchor_open(&self, name: &[u8], inert: bool) -> Option<AnchorStart> {
+        if name != b"a" || inert {
+            return None;
+        }
+        let row = self.active_row?;
+        let active_offset = self.rows.get(row)?.active.len();
+        Some(AnchorStart { row, active_offset })
+    }
+
+    pub(super) fn anchor_close(&mut self, frame: &Frame, end: Span<usize>) {
+        let Some(start) = &frame.anchor else {
+            return;
+        };
+        let Some(row) = self.rows.get_mut(start.row) else {
+            return;
+        };
+        let result = append_anchor(row, start.active_offset, frame.span.start..end.end);
+        if let Err(reason) = result {
+            row.anchors = Err(reason);
+        }
+    }
+
     pub(super) fn append(&mut self, html: &str, span: Span<usize>) -> TemporalResult<()> {
         let text = html.get(span.start..span.end).ok_or(Gap::MalformedMarkup)?;
         self.append_raw(text)
@@ -71,4 +93,19 @@ impl Scan {
         row.active.push_str(text);
         Ok(())
     }
+}
+
+fn append_anchor(row: &mut Row, active_offset: usize, raw: Range<usize>) -> Result<(), WitnessGap> {
+    let anchors = row.anchors.as_mut().map_err(|reason| *reason)?;
+    if anchors.len() >= MAX_ROW_BYTES {
+        return Err(WitnessGap::ResourceLimit);
+    }
+    anchors
+        .try_reserve(1)
+        .map_err(|_| WitnessGap::ResourceLimit)?;
+    anchors.push(Anchor {
+        raw,
+        active: active_offset..row.active.len(),
+    });
+    Ok(())
 }

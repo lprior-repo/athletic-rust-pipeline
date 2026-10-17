@@ -28,8 +28,8 @@ mod entities;
 mod error;
 mod evidence_subject_attachment;
 pub use evidence_subject_attachment::{
-    replay_frozen_evidence_subject_attachment_references_v1, ActiveResultSubjectDiscoveryV1,
-    ActiveResultSubjectV1, AttachmentContextObjectV1, AttachmentInspectionRequestV1,
+    replay_frozen_evidence_subject_attachment_references_v1, ActiveAttachmentSubjectDiscoveryV1,
+    ActiveAttachmentSubjectV1, AttachmentContextObjectV1, AttachmentInspectionRequestV1,
     CurrentEvidenceSubjectAttachmentReferencesV1, CurrentEvidenceSubjectAttachmentV1,
     DiscoveredAttachmentCaptureV1, DiscoveredAttachmentLocatorV1,
     EvidenceSubjectAttachmentInspectionV1, EvidenceSubjectAttachmentPreparationV1,
@@ -77,6 +77,8 @@ mod native_effect_checkpoint;
 mod native_worker_boundary;
 mod profiles;
 pub mod read;
+mod roster_source_issuance;
+pub use roster_source_issuance::*;
 mod receipt;
 mod records;
 mod regions;
@@ -103,8 +105,8 @@ pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
 pub use profiles::{ProfileRegistration, ProfileRegistryError, MAX_PROFILE_RECORD_BYTES};
 pub use read::{
     build_athlete_identity_projection, decode_physical_observation, AcceptedPublicIdentitySnapshot,
-    JournalReadBudget, PhysicalObservationCursor, PhysicalObservationPage, ReadBudget, ReadCounts,
-    StoreSnapshot,
+    JournalReadBudget, PhysicalObservationCursor, PhysicalObservationPage, PhysicalReadAdmissionV1,
+    ReadBudget, ReadCounts, StoreSnapshot,
 };
 pub use receipt::{
     Application, Credit, Pruned, Receipt, ReplayFrontier, ReplayWitness, MAX_DIGEST_BYTES,
@@ -277,7 +279,6 @@ impl Store {
         backup::http_cache_integrity(self.root())
     }
 }
-
 #[cfg(test)]
 #[path = "backup_tests.rs"]
 mod backup_tests;

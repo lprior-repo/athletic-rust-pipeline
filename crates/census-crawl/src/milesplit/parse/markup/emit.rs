@@ -1,8 +1,16 @@
-use super::{Declaration, Markup};
+use super::{Declaration, DeclarationKind, LocatedDeclaration, Markup, Termination};
 use html5gum::{Emitter, Error, State};
 
 impl Emitter for Markup {
-    type Token = Declaration;
+    type Token = LocatedDeclaration;
+
+    fn move_position(&mut self, offset: isize) {
+        self.position.advance(offset);
+    }
+
+    fn start_open_tag(&mut self) {
+        self.position.open();
+    }
 
     fn set_last_start_tag(&mut self, tag: Option<&[u8]>) {
         self.last_start_tag.clear();
@@ -61,10 +69,19 @@ impl Emitter for Markup {
 
     fn emit_eof(&mut self) {
         if !self.containers.is_empty() {
-            self.queued = Some(Declaration::Invalid);
+            self.queue(
+                Declaration::Invalid,
+                DeclarationKind::Invalid,
+                Termination::Tag,
+            );
         } else if self.script {
             self.script = false;
-            self.queued = Some(Declaration::Script(std::mem::take(&mut self.body)));
+            let body = std::mem::take(&mut self.body);
+            self.queue(
+                Declaration::Script(body),
+                DeclarationKind::JsonLd,
+                Termination::ScriptEof,
+            );
         }
     }
 

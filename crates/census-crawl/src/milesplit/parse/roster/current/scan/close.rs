@@ -47,6 +47,7 @@ impl Scan {
         } else if !frame.inert {
             self.append(html, span)?;
         }
+        self.anchor_close(&frame, span);
         if frame.inert {
             return Ok(());
         }

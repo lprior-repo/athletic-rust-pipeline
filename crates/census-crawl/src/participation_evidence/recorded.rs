@@ -5,12 +5,26 @@ use crate::recording::RowSink;
 use crate::{CrawlResult, Recording};
 use census_store::{ReadBudget, RetainedCaptureRootSchemaV1, Store};
 
+mod attached_participation;
 mod attached_result;
+#[cfg(test)]
+use attached_participation::tests::{
+    verify_adversarial as verify_adversarial_attached_participation,
+    verify_genuine as verify_genuine_attached_participation,
+    verify_source_count as verify_source_count_attached_participation,
+    verify_targets as verify_targets_attached_participation,
+};
 mod provider;
 mod provider_school;
 mod read;
 mod schools;
 
+pub use attached_participation::{
+    with_current_attached_participation, with_frozen_attached_participation,
+    AttachedParticipationV1, CheckedDocumentaryParticipationFactsV1,
+    CheckedDocumentarySourceFactsV1, DocumentaryCohortAgreementV1,
+    DocumentarySeasonApplicabilityV1,
+};
 pub use attached_result::{
     discover_current_html_results, discover_frozen_html_results, with_attached_html_results,
     AttachedResultGapV1, AttachmentHtmlResultDiscoveryGapV1, AttachmentHtmlResultDiscoveryV1,

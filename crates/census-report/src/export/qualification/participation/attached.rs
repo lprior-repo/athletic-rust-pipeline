@@ -4,7 +4,9 @@ use crate::export::ExportDataset;
 use crate::grouping::Admission;
 use crate::report::{documentary_source_error as source, ReportResult};
 use census_crawl::participation_evidence::recorded::{
-    discover_current_html_results, discover_frozen_html_results, AttachmentHtmlResultDiscoveryV1,
+    discover_current_html_results, discover_frozen_html_results,
+    with_current_attached_participation, with_frozen_attached_participation,
+    AttachedParticipationV1, AttachmentHtmlResultDiscoveryV1,
 };
 use census_domain::affiliation_candidates::DeclaredFrozenView;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1 as Grant;
@@ -18,7 +20,20 @@ use std::path::Path;
 
 mod assessment;
 mod diagnostics;
+mod facts;
 pub(crate) use diagnostics::UnsupportedDocumentarySource;
+
+#[derive(Clone, Copy)]
+pub(super) enum AssessmentSources<'a, 'b, 's> {
+    HistoricalWithheld,
+    Current(&'a AttachedParticipationV1<'b, 's>),
+}
+
+#[derive(Clone, Copy)]
+enum ReplaySemantics {
+    HistoricalWithheld,
+    Current,
+}
 
 pub(super) struct Collected {
     pub(super) rows: BTreeMap<PerformanceId, DocumentaryParticipationRow>,
@@ -44,7 +59,17 @@ pub(super) fn capture(
             )?;
         let bundle = current.freeze_closure(&mut grant)?;
         let plan = discover_current_html_results(&current, &mut grant).map_err(source)?;
-        let rows = collect(dataset, profile, captured_at, &plan, &mut grant)?;
+        let rows = with_current_attached_participation(&current, &mut grant, |sources, grant| {
+            Ok(collect(
+                dataset,
+                profile,
+                captured_at,
+                &plan,
+                AssessmentSources::Current(sources),
+                grant,
+            ))
+        })
+        .map_err(source)??;
         let descriptor = super::archive::capture_attachment(&bundle, directory, &mut grant)?;
         Ok((rows, descriptor))
     })();
@@ -61,6 +86,41 @@ pub(super) fn replay(
     descriptor: &super::archive::attachment::AttachmentClosureDescriptor,
     directory: &Path,
 ) -> ReportResult<Collected> {
+    replay_version(
+        dataset,
+        profile,
+        captured_at,
+        descriptor,
+        directory,
+        ReplaySemantics::HistoricalWithheld,
+    )
+}
+
+pub(super) fn replay_current(
+    dataset: &ExportDataset,
+    profile: &QueryProfileV1,
+    captured_at: DateTime<Utc>,
+    descriptor: &super::archive::attachment::AttachmentClosureDescriptor,
+    directory: &Path,
+) -> ReportResult<Collected> {
+    replay_version(
+        dataset,
+        profile,
+        captured_at,
+        descriptor,
+        directory,
+        ReplaySemantics::Current,
+    )
+}
+
+fn replay_version(
+    dataset: &ExportDataset,
+    profile: &QueryProfileV1,
+    captured_at: DateTime<Utc>,
+    descriptor: &super::archive::attachment::AttachmentClosureDescriptor,
+    directory: &Path,
+    semantics: ReplaySemantics,
+) -> ReportResult<Collected> {
     let mut grant = Grant::new();
     let result = (|| {
         let bundle: FrozenEvidenceSubjectAttachmentBundleV1 =
@@ -70,7 +130,29 @@ pub(super) fn replay(
             &bundle, accepted, &mut grant,
         )?;
         let plan = discover_frozen_html_results(&current, &mut grant).map_err(source)?;
-        collect(dataset, profile, captured_at, &plan, &mut grant)
+        match semantics {
+            ReplaySemantics::HistoricalWithheld => collect(
+                dataset,
+                profile,
+                captured_at,
+                &plan,
+                AssessmentSources::HistoricalWithheld,
+                &mut grant,
+            ),
+            ReplaySemantics::Current => {
+                with_frozen_attached_participation(&current, &mut grant, |sources, grant| {
+                    Ok(collect(
+                        dataset,
+                        profile,
+                        captured_at,
+                        &plan,
+                        AssessmentSources::Current(sources),
+                        grant,
+                    ))
+                })
+                .map_err(source)?
+            }
+        }
     })();
     if result.is_err() {
         grant.poison();
@@ -83,6 +165,7 @@ fn collect(
     profile: &QueryProfileV1,
     captured_at: DateTime<Utc>,
     plan: &AttachmentHtmlResultDiscoveryV1<'_, '_, '_>,
+    sources: AssessmentSources<'_, '_, '_>,
     grant: &mut Grant,
 ) -> ReportResult<Collected> {
     let profile_id = profile.id().map_err(census_store::StoreError::from)?;
@@ -107,7 +190,14 @@ fn collect(
             .with_group(index, grant, |linked, grant| {
                 Ok((|| -> ReportResult<()> {
                     for row_index in 0..linked.row_count() {
-                        let row = assessment::row(&linked, row_index, query, grant, &mut budget)?;
+                        let row = assessment::row(
+                            &linked,
+                            row_index,
+                            query,
+                            sources,
+                            grant,
+                            &mut budget,
+                        )?;
                         reject_collision(dataset, &rows, row.performance_id(), &mut budget)?;
                         let search = rows
                             .len()

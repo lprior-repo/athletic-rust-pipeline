@@ -9,10 +9,10 @@ use census_domain::profile_execution::{
 };
 use census_domain::UsJurisdiction;
 
-pub(super) fn selected() -> TestResult<QueryProfileV1> {
+pub(super) fn selected(cohort: GradYear) -> TestResult<QueryProfileV1> {
     Ok(QueryProfileV1::new(QueryProfileInputV1 {
         version: 1,
-        graduation_years: vec![GradYear::CO2027],
+        graduation_years: vec![cohort],
         jurisdictions: vec![UsJurisdiction::Michigan],
         regional_membership: RegionalMembershipV1::AllSelectedJurisdictions,
         discovery_priority: DiscoveryPriorityV1::Uniform,

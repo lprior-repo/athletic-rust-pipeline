@@ -5,6 +5,9 @@ use inert::{Container, Containers};
 mod emit;
 mod fields;
 mod inert;
+mod location;
+use location::Position;
+pub(in crate::milesplit) use location::{DeclarationKind, LocatedDeclaration, Termination};
 
 pub(in crate::milesplit) enum Declaration {
     Url(Vec<u8>),
@@ -23,7 +26,8 @@ pub(in crate::milesplit) struct Markup {
     containers: Containers,
     script: bool,
     body: Vec<u8>,
-    queued: Option<Declaration>,
+    queued: Option<LocatedDeclaration>,
+    position: Position,
 }
 
 impl Markup {
@@ -67,7 +71,11 @@ impl Markup {
             self.containers.open(container)
         };
         if !valid {
-            self.queued = Some(Declaration::Invalid);
+            self.queue(
+                Declaration::Invalid,
+                DeclarationKind::Invalid,
+                Termination::Tag,
+            );
         }
         true
     }
@@ -75,7 +83,12 @@ impl Markup {
     fn emit_declaration(&mut self) {
         if self.closing && self.tag.bytes() == b"script" {
             if self.script {
-                self.queued = Some(Declaration::Script(std::mem::take(&mut self.body)));
+                let body = std::mem::take(&mut self.body);
+                self.queue(
+                    Declaration::Script(body),
+                    DeclarationKind::JsonLd,
+                    Termination::ScriptEnd,
+                );
             }
             self.script = false;
         }
@@ -86,7 +99,7 @@ impl Markup {
             b"link" => self.fields.value(Attribute::Rel).and_then(|rel| {
                 rel.split(u8::is_ascii_whitespace)
                     .any(|token| token.eq_ignore_ascii_case(b"canonical"))
-                    .then_some(Attribute::Href)
+                    .then_some((Attribute::Href, DeclarationKind::Canonical))
             }),
             b"meta" => self
                 .fields
@@ -96,22 +109,39 @@ impl Markup {
                     value.eq_ignore_ascii_case(b"og:url")
                         || value.eq_ignore_ascii_case(b"twitter:url")
                 })
-                .map(|_| Attribute::Content),
+                .map(|value| {
+                    (
+                        Attribute::Content,
+                        if value.eq_ignore_ascii_case(b"og:url") {
+                            DeclarationKind::OpenGraph
+                        } else {
+                            DeclarationKind::Twitter
+                        },
+                    )
+                }),
             b"script" => {
                 self.script = self
                     .fields
                     .value(Attribute::Type)
                     .is_some_and(|kind| kind.eq_ignore_ascii_case(b"application/ld+json"));
+                if self.script {
+                    self.position.script();
+                }
                 None
             }
             _ => None,
         };
-        if let Some(attribute) = selected {
-            self.queued = Some(match self.fields.take(attribute) {
+        if let Some((attribute, kind)) = selected {
+            let declaration = match self.fields.take(attribute) {
                 Some(bytes) => Declaration::Url(bytes),
                 None => Declaration::Invalid,
-            });
+            };
+            self.queue(declaration, kind, Termination::Tag);
         }
+    }
+
+    fn queue(&mut self, declaration: Declaration, kind: DeclarationKind, termination: Termination) {
+        self.queued = Some(self.position.locate(declaration, kind, termination));
     }
 
     fn next_state(&mut self) -> Option<State> {

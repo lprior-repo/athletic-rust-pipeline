@@ -2,8 +2,8 @@ use crate::export::ExportDataset;
 use crate::report::ReportResult;
 use census_domain::model::{ContractRefV1, ProfileDate, ProfileId};
 use census_domain::profile_execution::{
-    validate_selected_qualification_profile_v1, validate_selected_qualification_profile_v2,
-    validate_selected_qualification_profile_v3,
+    validate_current_selected_qualification_profile, validate_selected_qualification_profile_v1,
+    validate_selected_qualification_profile_v2,
 };
 use serde::{Deserialize, Serialize};
 
@@ -109,11 +109,12 @@ fn verified_profile(
             ))
         })?;
     } else {
-        let _checked = validate_selected_qualification_profile_v3(profile).map_err(|source| {
-            super::invariant(format!(
-                "unsupported selected publication profile: {source}"
-            ))
-        })?;
+        let _checked =
+            validate_current_selected_qualification_profile(profile).map_err(|source| {
+                super::invariant(format!(
+                    "unsupported selected publication profile: {source}"
+                ))
+            })?;
     }
     dataset.verified_public_identities()?;
     Ok(profile)

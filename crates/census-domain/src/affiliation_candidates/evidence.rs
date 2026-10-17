@@ -163,6 +163,10 @@ pub struct SourceSpan {
 }
 
 impl SourceSpan {
+    pub fn range(self) -> std::ops::Range<usize> {
+        self.from..self.through_exclusive
+    }
+
     pub fn new(from: usize, through_exclusive: usize) -> Result<Self, AffiliationCandidateError> {
         let length = through_exclusive
             .checked_sub(from)

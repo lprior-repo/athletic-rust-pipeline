@@ -47,12 +47,21 @@ pub(crate) struct ParticipationReplayV3 {
     pub(super) attachment: attachment::AttachmentClosureDescriptor,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct ParticipationReplayV4 {
+    pub(super) version: u32,
+    pub(super) retained: ParticipationReplayV2,
+    pub(super) attachment: attachment::AttachmentClosureDescriptor,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub(crate) enum ParticipationReplay {
     V1(ParticipationReplayV1),
     V2(ParticipationReplayV2),
     V3(ParticipationReplayV3),
+    V4(ParticipationReplayV4),
 }
 
 impl ParticipationReplay {
@@ -61,6 +70,7 @@ impl ParticipationReplay {
             Self::V1(value) => value,
             Self::V2(value) => &value.retained,
             Self::V3(value) => &value.retained.retained,
+            Self::V4(value) => &value.retained.retained,
         }
     }
     pub(crate) fn independent(
@@ -70,6 +80,7 @@ impl ParticipationReplay {
             Self::V1(_) => None,
             Self::V2(value) => Some(&value.independent),
             Self::V3(value) => Some(&value.retained.independent),
+            Self::V4(value) => Some(&value.retained.independent),
         }
     }
     pub(crate) fn fingerprints(&self) -> std::collections::BTreeMap<String, String> {
@@ -83,6 +94,7 @@ impl ParticipationReplay {
             Self::V1(value) => value.install(directory),
             Self::V2(value) => objects::install(value, directory, 2),
             Self::V3(value) => objects::install(value, directory, 3),
+            Self::V4(value) => objects::install(value, directory, 4),
         }
     }
     pub(crate) fn load(
@@ -93,6 +105,7 @@ impl ParticipationReplay {
             1 => ParticipationReplayV1::load(directory, descriptor).map(Self::V1),
             2 => objects::load(directory, descriptor, 2).map(Self::V2),
             3 => objects::load(directory, descriptor, 3).map(Self::V3),
+            4 => objects::load(directory, descriptor, 4).map(Self::V4),
             _ => Err(super::invalid("unsupported participation replay descriptor version").into()),
         }
     }

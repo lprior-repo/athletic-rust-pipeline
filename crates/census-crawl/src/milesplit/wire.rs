@@ -4,8 +4,13 @@ use census_domain::UsJurisdiction;
 use serde::Deserialize;
 
 mod current_roster;
+pub(in crate::milesplit) use current_roster::checked_span;
 use current_roster::RosterTemporalEvidence;
 pub use current_roster::{CurrentRosterAssertion, RosterTemporalUnavailable};
+pub use current_roster::{
+    PublishedRosterOwnerKindV1, PublishedRosterOwnerTerminationV1, PublishedRosterOwnerV1,
+    PublishedRosterOwnersV1, RosterRowStatementsV1, RosterWitnessUnavailableV1,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Site {

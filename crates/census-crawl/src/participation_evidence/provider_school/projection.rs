@@ -4,7 +4,7 @@ use super::{
     CheckedProviderSchoolPacketV1, ProviderSchoolPacketRefV1, ProviderSchoolPacketV1,
     PROVIDER_SCHOOL_INTAKE_PHASE,
 };
-use crate::milesplit::{parse_captured_roster, roster_entities, Site};
+use crate::milesplit::{parse_captured_roster_with_witness_v1, roster_entities, Site};
 use crate::net::FetchOutcome;
 use crate::CrawlResult;
 use census_domain::model::{
@@ -20,7 +20,8 @@ pub(super) fn read(
 ) -> CrawlResult<CheckedProviderSchoolPacketV1> {
     let body = packet.roster.body()?;
     let fetch = fetch(packet.roster(), &body)?;
-    let roster_verdict = parse_captured_roster(&body, selected.team.clone(), &fetch)?;
+    let (roster_verdict, published_roster_owners) =
+        parse_captured_roster_with_witness_v1(&body, selected.team.clone(), &fetch)?;
     let date = packet.roster.acquired_at().format("%Y-%m-%d").to_string();
     let year = SchoolYear::from_date(&date)
         .ok_or_else(|| invalid("provider school acquisition year unsupported"))?;
@@ -65,6 +66,7 @@ pub(super) fn read(
         observation,
         roster_verdict,
         directory_proof: selected.proof,
+        published_roster_owners,
     })
 }
 

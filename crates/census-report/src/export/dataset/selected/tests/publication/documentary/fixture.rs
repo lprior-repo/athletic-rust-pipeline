@@ -1,11 +1,11 @@
 use super::TestResult;
 use crate::export::ExportDataset;
-use census_domain::model::{ProfileSelectionV1, QueryProfileV1};
+use census_domain::model::{GradYear, ProfileSelectionV1, QueryProfileV1};
 use census_store::{Store, Table};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
-mod files;
+pub(super) mod files;
 mod profile;
 mod retention;
 mod source;
@@ -37,6 +37,10 @@ pub(super) struct Fixture {
 
 impl Fixture {
     pub(super) fn open() -> TestResult<Self> {
+        Self::open_for(GradYear::CO2027)
+    }
+
+    pub(super) fn open_for(cohort: GradYear) -> TestResult<Self> {
         let receipt = std::env::var_os("CENSUS_DOCUMENTARY_HANDOFF_JSON")
             .ok_or("CENSUS_DOCUMENTARY_HANDOFF_JSON must name a completed genuine A/B handoff")?;
         let metadata = std::fs::symlink_metadata(&receipt)?;
@@ -62,7 +66,7 @@ impl Fixture {
         check!(eq; store.snapshot().tables_digest(&Table::ALL)?, handoff.tables_digest);
         check!(eq; store.receipt_count()?, 6);
         let expected = source::read(&store)?;
-        let profile = profile::selected()?;
+        let profile = profile::selected(cohort)?;
         store.register_profile(&profile)?;
         files::verify(&handoff.store_path, &handoff.files)?;
         Ok(Self {
@@ -88,6 +92,57 @@ impl Fixture {
         files::verify(&self.handoff.store_path, &self.handoff.files)
     }
 
+    pub(super) fn reopen(self) -> TestResult<Self> {
+        let (fixture, writer) = self.reopen_with_writer()?;
+        drop(writer);
+        Ok(fixture)
+    }
+
+    pub(super) fn reopen_with_writer(
+        self,
+    ) -> TestResult<(Self, census_store::PublicIdentityWriterV1)> {
+        let Self {
+            directory,
+            store,
+            profile,
+            expected,
+            handoff,
+        } = self;
+        let reopened = (|| -> TestResult<(Store, census_store::PublicIdentityWriterV1)> {
+            files::verify(&handoff.store_path, &handoff.files)?;
+            let root = store.root().to_path_buf();
+            let identity = store.store_identity()?;
+            let sequence = store.snapshot().sequence();
+            let tables = store.snapshot().tables_digest(&Table::ALL)?;
+            let receipts = store.receipt_count()?;
+            drop(store);
+            let (reopened, writer) =
+                Store::open_public_identity_qualification_v3(&root)?.into_parts();
+            check!(eq; reopened.store_identity()?, identity);
+            check!(eq; reopened.snapshot().sequence(), sequence);
+            check!(eq; reopened.snapshot().tables_digest(&Table::ALL)?, tables);
+            check!(eq; reopened.receipt_count()?, receipts);
+            files::verify(&handoff.store_path, &handoff.files)?;
+            Ok((reopened, writer))
+        })();
+        match reopened {
+            Ok((store, writer)) => Ok((
+                Self {
+                    directory,
+                    store,
+                    profile,
+                    expected,
+                    handoff,
+                },
+                writer,
+            )),
+            Err(error) => {
+                let _preserved = directory.keep();
+                Err(error)
+            }
+        }
+    }
+
     pub(super) fn close(self) -> TestResult {
         let Self {
             directory,
@@ -111,4 +166,11 @@ pub(super) fn copy_publication(workbook: &Path, destination: &Path) -> TestResul
     files::copy(generation, &target, &inventory)?;
     std::os::unix::fs::symlink(relative, destination.join("current"))?;
     Ok(target.join(workbook.file_name().ok_or("source workbook name")?))
+}
+
+pub(super) fn generation_inventory(directory: &Path) -> TestResult<Vec<(String, u64, String)>> {
+    Ok(files::inventory(directory)?
+        .into_iter()
+        .map(|file| (file.path, file.bytes, file.sha256))
+        .collect())
 }

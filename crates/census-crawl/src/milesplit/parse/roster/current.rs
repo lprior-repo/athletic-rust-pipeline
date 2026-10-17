@@ -1,5 +1,6 @@
 use crate::milesplit::wire::{
-    CurrentRosterAssertion, LocatedRosterAthlete, RosterTemporalUnavailable as Gap, TeamRef,
+    CurrentRosterAssertion, LocatedRosterAthlete, RosterRowStatementsV1,
+    RosterTemporalUnavailable as Gap, RosterWitnessUnavailableV1, TeamRef,
 };
 use scan::{scan, Scan};
 #[cfg(test)]
@@ -79,7 +80,23 @@ fn assertion(
         heading: heading.span.clone(),
         heading_sha256: heading.sha256,
         sports: [live.indoor, live.outdoor, live.xc],
+        statements: statements(html, active, heading, fields),
     })
+}
+
+fn statements(
+    html: &str,
+    row: &scan::Row,
+    heading: &scan::Heading,
+    fields: &super::Fields<'_>,
+) -> Result<RosterRowStatementsV1, RosterWitnessUnavailableV1> {
+    let selected = fields
+        .link
+        .captures(&row.active)
+        .and_then(|capture| capture.get(0))
+        .ok_or(RosterWitnessUnavailableV1::MissingSourceSpan)?;
+    let person = row.person(selected.range())?;
+    RosterRowStatementsV1::checked(html, person, row.span.clone(), heading.span.clone())
 }
 
 fn copy(value: &str) -> TemporalResult<String> {
@@ -93,3 +110,5 @@ fn copy(value: &str) -> TemporalResult<String> {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod witness_tests;

@@ -1,0 +1,90 @@
+use super::*;
+
+pub(super) fn assess<'a>(
+    claim: &'a ReviewedRosterSourceClaimV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<HistoricalReviewedRosterSourceV2<'a>> {
+    let proposal = claim.proposal(grant)?;
+    let evidence = claim.evidence(grant)?;
+    if evidence.requested_school() != proposal.binding().school()
+        || evidence.requested_program() != proposal.binding().program()
+        || evidence.store_identity() != proposal.binding().store()
+        || evidence.snapshot_sequence() != proposal.binding().snapshot_revision().get()
+    {
+        return Err(invalid("historical roster source snapshot lineage mismatch").into());
+    }
+    let contracts = policies::RosterInterpretationContractsV1 {
+        scope: claim.object(proposal.scope().policy().digest(), grant)?,
+        year: claim.object(proposal.binding().year_convention().digest(), grant)?,
+        projection_merge: claim.object(
+            proposal.binding().projection_merge_contract().digest(),
+            grant,
+        )?,
+    };
+    policies::assess(evidence, &contracts, proposal, grant)?;
+    source::admission(evidence, proposal, grant)?;
+    let parser = parser(claim, grant)?;
+    let held = evidence.retained_root(grant)?;
+    let packet = source::packet(held, proposal, grant)?;
+    let body = source::capture(&packet, proposal, grant)?;
+    let objects =
+        super::super::capture_objects::derive_retained(evidence, &packet, &parser, grant)?;
+    let retained = interpretation::read(claim, &objects, grant)?;
+    let checked = semantic_inventory::compare_original_raw_v1(
+        evidence,
+        &parser,
+        objects.metadata_bytes(grant)?,
+        &retained,
+        grant,
+    )?;
+    source::scope(&checked, proposal, grant)?;
+    let (school, program) = binding::assess_projection(evidence, proposal, &checked, grant)?;
+    claim.qualification_object(grant)?;
+    claim.activation_object(grant)?;
+    let metadata = objects.metadata_bytes(grant)?;
+    let interpretation =
+        claim.object(proposal.capture().interpretation().digest().as_str(), grant)?;
+    grant
+        .charge_bytes(
+            metadata
+                .len()
+                .checked_add(interpretation.len())
+                .ok_or(census_store::StoreError::CounterOverflow)?,
+        )
+        .map_err(source::domain)?;
+    evidence.require_original_grant(grant)?;
+    Ok(HistoricalReviewedRosterSourceV2 {
+        claim,
+        checked,
+        school,
+        program,
+        body,
+        metadata: metadata.to_vec(),
+        interpretation: interpretation.to_vec(),
+    })
+}
+
+fn parser(
+    claim: &ReviewedRosterSourceClaimV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<RetainedRosterParserManifestV1> {
+    let proposal = claim.proposal(grant)?;
+    let bytes = claim.object(proposal.parser().artifact().digest().as_str(), grant)?;
+    source::source_reference(bytes, proposal.parser().artifact(), grant)?;
+    grant
+        .charge_bytes(
+            bytes
+                .len()
+                .checked_mul(4)
+                .ok_or(census_store::StoreError::CounterOverflow)?,
+        )
+        .map_err(source::domain)?;
+    grant.charge_steps(512).map_err(source::domain)?;
+    let retained = RetainedRosterParserManifestV1::decode(bytes)?;
+    if retained.parser_claim()? != *proposal.parser() {
+        return Err(
+            invalid("historical roster parser claim differs from original manifest").into(),
+        );
+    }
+    Ok(retained)
+}

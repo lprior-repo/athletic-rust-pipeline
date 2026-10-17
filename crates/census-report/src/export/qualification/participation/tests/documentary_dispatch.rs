@@ -1,13 +1,13 @@
 use super::*;
 
 #[tokio::test]
-async fn current_capture_selects_v3_and_historical_v2_replay_keeps_exact_bytes_and_outcomes(
+async fn current_capture_selects_v4_and_historical_v2_replay_keeps_exact_bytes_and_outcomes(
 ) -> TestResult {
     let fixture = Fixture::prepare(Some("High School")).await?;
     let current = fixture.assess()?;
-    check!(matches!(&current.replay, ParticipationReplay::V3(_)));
-    let ParticipationReplay::V3(current) = current.replay else {
-        return Err("current V3 producer".into());
+    check!(matches!(&current.replay, ParticipationReplay::V4(_)));
+    let ParticipationReplay::V4(current) = current.replay else {
+        return Err("current V4 producer".into());
     };
     let historical = ParticipationReplay::V2(current.retained);
     let expected_wire = serde_json::to_vec(&historical)?;
@@ -71,7 +71,8 @@ async fn replay_v1_dispatch_keeps_wire_and_cannot_issue_documentary_capabilities
 async fn v3_missing_or_altered_attachment_never_falls_back_to_valid_nested_v2() -> TestResult {
     let fixture = Fixture::prepare(Some("High School")).await?;
     let current = fixture.assess()?;
-    let original = serde_json::to_value(&current.replay)?;
+    let mut original = serde_json::to_value(&current.replay)?;
+    *original.get_mut("version").ok_or("replay version")? = json!(3);
     let directory = fixture.objects();
     let nested: ParticipationReplayV2 = serde_json::from_slice(&serde_json::to_vec(
         original.get("retained").ok_or("nested V2")?,
@@ -133,7 +134,7 @@ async fn replay_dispatch_refuses_unknown_version_without_mutating_archives() -> 
     let current = fixture.assess()?;
     let payload = serde_json::to_value(&current.replay)?;
     let directory = fixture.objects();
-    for version in [0, 4, u32::MAX] {
+    for version in [0, 5, u32::MAX] {
         let descriptor = install_wire(&directory, version, &payload)?;
         let before = inventory(&directory)?;
         check!(ParticipationReplay::load(&directory, &descriptor).is_err());
@@ -142,7 +143,7 @@ async fn replay_dispatch_refuses_unknown_version_without_mutating_archives() -> 
     Ok(())
 }
 
-fn install_wire(directory: &Path, version: u32, payload: &Value) -> TestResult<String> {
+pub(super) fn install_wire(directory: &Path, version: u32, payload: &Value) -> TestResult<String> {
     let bytes = serde_json::to_vec(payload)?;
     check!(bytes.len() < 4 * 1024 * 1024);
     let chunk = crate::export::proof_objects::install(directory, &bytes)?;
@@ -165,7 +166,7 @@ fn install_wire(directory: &Path, version: u32, payload: &Value) -> TestResult<S
     )?)
 }
 
-fn inventory(directory: &Path) -> TestResult<BTreeMap<std::path::PathBuf, Vec<u8>>> {
+pub(super) fn inventory(directory: &Path) -> TestResult<BTreeMap<std::path::PathBuf, Vec<u8>>> {
     std::fs::read_dir(directory)?
         .map(|entry| {
             let path = entry?.path();

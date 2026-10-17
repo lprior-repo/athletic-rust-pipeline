@@ -307,3 +307,72 @@ all open positive eligibility, school, season, population, recovery and R1–R3
 acceptance limits above. Later semantic V4, identity-correction and reviewed
 roster implementations are outside this tested tree. This successor changes
 only this ledger; all source blobs and modes remain identical to the tested tree.
+
+### Actual-main semantic and identity consumer union (2026-10-17)
+
+This normal merge combines the landed PR80 main
+`cea2fe8c9ebbcdc784be9797e6db409312217615` with the separately source-audited
+semantic V4 and identity-correction checkpoint
+`51c6de1c9abd1a6db3bb1521eb5a129c5692661d`.
+The preceding native receipts describe their exact earlier trees; this union
+requires fresh native tests, check and lint. Lightweight formatting is a
+separate source gate, not a compilation or runtime receipt.
+
+The independent retained V3 artifact remains the actual `24f593911c6cab8f1679199fd70547a701fced27`
+producer identified above. Current and historical consumers run in separate
+processes with their own authenticated producer environments. The historical
+V3 output-retention environment is unset for current V4 consumers; merging the
+existing opt-in hook does not relabel a new V4 generation as historical V3.
+Current V4 gates cover original-grant semantic joins, supported and unsupported
+target isolation, source-count boundaries, exact historical replay and real
+attachment/public-identity lifecycle changes. Genuine positive school,
+event-context, current-affiliation and population acceptance remains open.
+Reviewed roster authority, the later school-span witness and lifecycle9 model
+are not included in this union.
+
+### Publication wrap-up: R1/R2/R3 source union (2026-10-17)
+
+The normal source union `923eb7e049c07a1ece232b604375e2ce0c738b3e`
+(tree `12f612934754831cdd30582668b09d305c904a81`) combines documentary
+checkpoint e077, reviewed-roster checkpoint 1163, and hostile semantic replay
+regression b5b166, retaining landed main cea2fe8 ancestry. Independent source
+preservation review found no merge conflict or fixed-kernel drift: all 71 pinned
+semantic files still hash to `094c114d6218a7edfdfdda4e53cfafa2ec57c4abd8df9c2f7ad1685bb5cd7d92`.
+Canonical cloud fmt-write `dea63fc3` and fmt `273da055` passed. These are source
+checks; the combined tree has not passed native check, lint or runtime gates.
+
+Native failure history remains material:
+- R1 e897: fmt passed; check failed on private test helper and absent CO2026 constant.
+- R1 92ab: fmt/check passed; lint failed on manual range pattern.
+- R1 4d0d: fmt/check/lint passed; genuine Crawl driver failed (0 passed, 1 failed,
+  1730 skipped) at aggregate encoded bytes needed 4717115, available 4194304.
+  No completed current handoff or downstream consumer result was produced.
+- R1 e077: fmt passed; check attempts failed with aws-lc temporary-filesystem
+  quota errors. Task-local temporary-directory recovery remains unverified.
+- R2 443476: fmt passed; check failed because enrollment::approval was private.
+- R2 5401: fmt passed; check failed on three discarded must_use validated-profile
+  results. The three-site 1163 repair preserves validation and error propagation;
+  its native gates were not run before the requested wrap-up.
+
+The e077 repair caches actual parsed venue data only within one immutable checked
+linked document, retaining original-grant/ledger charges. Count-boundary controls
+use new explicitly synthetic compact schedule captures; original genuine bytes
+remain intact. This is not proof that sixteen genuine schedules fit the budget.
+The exact failing genuine phase remains unknown pending the added bounded trace.
+
+Reviewed-roster source includes strict current provenance, receipt-bound V2
+semantic inventory, fixed raw-kernel replay, physical/identity anchors and
+controlled publication/correction/refusal tests. Its 200 ordinary tests plus
+mandatory retained producer, the additional hostile-reopen test, and actual
+producer-A/changed-build-B replay remain unqualified. No authentic R2 producer A
+artifact exists from these failed queues. Historical V1 receives no retroactive
+transcript or provenance waiver. The original independently retained Report V3
+artifact and its 24f593 producer pins above are unchanged.
+
+This is an explicit incomplete-development handoff, not production qualification.
+Genuine nonempty selected population/eligible best marks, reviewed historical
+school admission, service durable selected-publication integration, and full
+R1/R2/R3 acceptance remain open. Unregistered Store9 enrollment/review preparation,
+its shared predecessor helper preparation, and prospective partial-roster tests
+are preserved separately and excluded. The already sealed Domain school model
+is syntax/model-only; it does not enroll or authorize production school mappings.

@@ -1,6 +1,9 @@
 use super::{limit, EvidenceSubjectAttachmentError, ReplayLimits, Result};
 use std::sync::Arc;
 
+mod continuation;
+pub use continuation::AttachmentReplayContinuationV1;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AttachmentReplayUsageV1 {
     encoded_bytes: usize,

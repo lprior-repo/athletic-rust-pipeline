@@ -32,6 +32,8 @@ mod operation;
 pub mod paged_generation;
 pub(crate) mod qualification;
 mod retained;
+mod retained_declaration;
+pub(crate) use retained_declaration::retained_qualification_declaration_v1;
 mod witness;
 
 pub(crate) const LIFECYCLE: u32 =
@@ -57,7 +59,12 @@ pub use qualification::{PublicIdentityQualificationStore, PublicIdentityWriterV1
 pub(crate) fn is_qualification_lifecycle(revision: Option<u32>) -> bool {
     matches!(
         revision,
-        Some(LIFECYCLE | RETAINED_CONTEXT_LIFECYCLE | GRAPH_AUTHORITY_LIFECYCLE)
+        Some(
+            LIFECYCLE
+                | RETAINED_CONTEXT_LIFECYCLE
+                | GRAPH_AUTHORITY_LIFECYCLE
+                | crate::ROSTER_SOURCE_ISSUANCE_LIFECYCLE
+        )
     )
 }
 

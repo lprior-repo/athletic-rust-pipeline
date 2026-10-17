@@ -1,7 +1,7 @@
 use super::{ledger::Ledger, EvidenceSubjectAttachmentStoreError as Error};
 use crate::{AcceptedPublicIdentitySnapshot, StoreResult, StoreSnapshot};
 use census_domain::evidence_subject_attachment::{
-    AttachmentReplayGrantV1, RetainedDocumentSubjectReferenceV1,
+    AttachmentReplayGrantV1, AttachmentSubjectRoleV1, RetainedDocumentSubjectReferenceV1,
 };
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 
@@ -13,7 +13,7 @@ pub(super) mod query;
 use accepted::AcceptedOwner;
 pub use capability::CurrentEvidenceSubjectAttachmentV1;
 pub use discovery::{
-    ActiveResultSubjectDiscoveryV1, ActiveResultSubjectV1, DiscoveredAttachmentCaptureV1,
+    ActiveAttachmentSubjectDiscoveryV1, ActiveAttachmentSubjectV1, DiscoveredAttachmentCaptureV1,
     DiscoveredAttachmentLocatorV1,
 };
 
@@ -40,11 +40,18 @@ impl<'v, 's> CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's> {
     pub fn snapshot_sequence(&self) -> u64 {
         self.view.sequence()
     }
+    pub fn discover_active_subjects_v1<'a>(
+        &'a self,
+        role: AttachmentSubjectRoleV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<ActiveAttachmentSubjectDiscoveryV1<'a>> {
+        discovery::discover(&self.ledger, self.accepted.view(), role, grant)
+    }
     pub fn discover_active_result_subjects_v1<'a>(
         &'a self,
         grant: &mut AttachmentReplayGrantV1,
-    ) -> StoreResult<ActiveResultSubjectDiscoveryV1<'a>> {
-        discovery::discover(&self.ledger, self.accepted.view(), grant)
+    ) -> StoreResult<ActiveAttachmentSubjectDiscoveryV1<'a>> {
+        self.discover_active_subjects_v1(AttachmentSubjectRoleV1::ResultRow, grant)
     }
     pub fn freeze_closure(
         &self,

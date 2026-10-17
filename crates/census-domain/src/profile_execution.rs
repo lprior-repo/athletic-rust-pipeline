@@ -7,7 +7,12 @@ use crate::UsJurisdiction;
 mod components;
 mod descriptor;
 mod policy;
+mod reviewed_roster;
 mod role;
+pub use reviewed_roster::{
+    selected_qualification_contract_ref_v4, validate_current_selected_qualification_profile,
+    validate_selected_qualification_profile_v4, SupportedQualificationProfileV4,
+};
 mod selected_qualification;
 
 pub use descriptor::{

@@ -20,6 +20,8 @@ pub(crate) use frozen::{capture as capture_frozen, replay as replay_frozen};
 
 mod note;
 mod observation;
+mod source_authority;
+mod source_binding;
 
 #[cfg(test)]
 mod tests;
@@ -53,7 +55,7 @@ pub(crate) struct PinnedCurrentAffiliations {
 
 impl PinnedCurrentAffiliations {
     #[cfg(test)]
-    pub(super) fn read(
+    pub(crate) fn read(
         dataset: &ExportDataset,
         snapshot: &StoreSnapshot<'_>,
     ) -> ReportResult<Self> {
