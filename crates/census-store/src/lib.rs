@@ -105,7 +105,7 @@ pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
 pub use profiles::{ProfileRegistration, ProfileRegistryError, MAX_PROFILE_RECORD_BYTES};
 pub use read::{
     build_athlete_identity_projection, decode_physical_observation, AcceptedPublicIdentitySnapshot,
-    JournalReadBudget, PhysicalObservationCursor, PhysicalObservationPage, ReadBudget, ReadCounts,
+    JournalReadBudget, PhysicalObservationCursor, PhysicalObservationPage, PhysicalReadAdmissionV1, ReadBudget, ReadCounts,
     StoreSnapshot,
 };
 pub use receipt::{

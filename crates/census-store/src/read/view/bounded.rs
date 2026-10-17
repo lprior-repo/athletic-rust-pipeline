@@ -3,6 +3,9 @@ use fjall::Readable;
 
 use super::{merge, StoreSnapshot};
 
+mod admission;
+pub use admission::PhysicalReadAdmissionV1;
+
 #[derive(Debug, Clone, Copy)]
 pub struct ReadBudget {
     pub rows: u64,
@@ -78,69 +81,10 @@ impl StoreSnapshot<'_> {
         mode: PhysicalScan<'_>,
         mut visit: impl FnMut(T, &[u8], &[u8], u64) -> StoreResult<()>,
     ) -> StoreResult<PhysicalScanResult> {
-        let mut counts = ReadCounts::default();
-        let prefix = self.layout().prefix(table);
-        let rows = mode.rows(self, &prefix);
-        for guard in rows {
-            if matches!(mode, PhysicalScan::Whole) {
-                charge(counts.key_visits, 1, budget.rows, "capture physical rows")?;
-            }
-            let key = guard.key().map_err(|source| StoreError::Read { source })?;
-            if !key.starts_with(&prefix) {
-                break;
-            }
-            if matches!(mode, PhysicalScan::Page(_))
-                && counts.key_visits == budget.rows
-                && counts.decoded_rows > 0
-            {
-                return Ok(PhysicalScanResult {
-                    counts,
-                    next_key: Some(key),
-                });
-            }
-            let mut admitted = counts;
-            admitted.key_visits =
-                charge(counts.key_visits, 1, budget.rows, "capture physical rows")?;
-            let raw = self.load_physical_observation(&key, &mut admitted, budget);
-            let raw = match raw {
-                Err(error) if mode.can_continue(&error, counts, budget) => {
-                    return Ok(PhysicalScanResult {
-                        counts,
-                        next_key: Some(key),
-                    });
-                }
-                result => result?,
-            };
-            let row = decode_physical_observation(table, &key, &raw)?;
-            admitted.decoded_rows = counts
-                .decoded_rows
-                .checked_add(1)
-                .ok_or(StoreError::CounterOverflow)?;
-            visit(row, &key, &raw, admitted.encoded_bytes)?;
-            counts = admitted;
-        }
-        Ok(PhysicalScanResult {
-            counts,
-            next_key: None,
-        })
+        self.scan_physical_admitted(table, budget, mode, &mut (), |_, _| Ok(()),
+            |_, row, key, raw, bytes| visit(row, key, raw, bytes))
     }
 
-    fn load_physical_observation(
-        &self,
-        key: &[u8],
-        counts: &mut ReadCounts,
-        budget: ReadBudget,
-    ) -> StoreResult<fjall::UserValue> {
-        let size = self
-            .snapshot
-            .size_of(self.entities, key)
-            .map_err(|source| StoreError::Read { source })?;
-        read_admitted(key.len(), size, counts, budget, || {
-            self.snapshot
-                .get(self.entities, key)
-                .map_err(|source| StoreError::Read { source })
-        })
-    }
 }
 
 pub(super) enum PhysicalScan<'a> {
@@ -240,3 +184,7 @@ mod tests;
 #[cfg(test)]
 #[path = "physical_observation_tests.rs"]
 mod physical_observation_tests;
+
+#[cfg(test)]
+#[path = "bounded/admission_tests.rs"]
+mod admission_tests;
