@@ -4,6 +4,7 @@ use census_crawl::participation_evidence::roster_source_issuance::assess_reviewe
 #[path = "historical_semantic/issuance.rs"]
 mod forged_issuance;
 mod publication;
+mod reopen;
 mod wire;
 
 #[derive(Clone, Copy)]
