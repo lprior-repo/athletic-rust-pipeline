@@ -3,6 +3,7 @@ mod budget;
 mod codec;
 mod error;
 mod evidence;
+pub mod funding;
 mod graph;
 mod graph_reference;
 pub use graph_reference::GraphAuthorityReferenceV1;
