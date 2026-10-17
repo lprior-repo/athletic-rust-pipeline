@@ -8,6 +8,8 @@ use census_store::{
 use serde_json::value::RawValue;
 use std::collections::BTreeMap;
 
+mod schedule;
+
 pub(in super::super) fn packet(
     index: usize,
     schedule: &RetainedHtmlCaptureV1,
@@ -101,7 +103,7 @@ pub(in super::super) fn schedule(store: &Store) -> TestResult<RetainedHtmlCaptur
         .ok_or("original packet")?;
     check!(eq; reference(raw.get().as_bytes())?, leaf.root.payload);
     let fields: BTreeMap<String, Box<RawValue>> = serde_json::from_str(raw.get())?;
-    Ok(serde_json::from_str(
-        fields.get("schedule").ok_or("original schedule")?.get(),
-    )?)
+    let original: RetainedHtmlCaptureV1 =
+        serde_json::from_str(fields.get("schedule").ok_or("original schedule")?.get())?;
+    schedule::controlled(&original)
 }

@@ -11,6 +11,7 @@ mod fixture;
 mod genuine;
 mod source_count;
 mod targets;
+mod venue;
 
 pub(in crate::participation_evidence::recorded) use adversarial::verify_adversarial;
 pub(in crate::participation_evidence::recorded) use genuine::verify_genuine;

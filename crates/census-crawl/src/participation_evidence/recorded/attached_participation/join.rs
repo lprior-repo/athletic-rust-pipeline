@@ -45,20 +45,10 @@ pub(super) fn row<'a, 's>(
             16,
             "attached participation source count",
         )?;
-        let parser_bytes = linked
-            .checked_document()
-            .original_document()
-            .len()
-            .checked_mul(4)
-            .and_then(|value| value.checked_add(256))
-            .ok_or(census_store::StoreError::CounterOverflow)?;
-        bytes(grant, parser_bytes)?;
-        let venue = crate::participation_evidence::result_context::documentary_result_venue(
-            linked.checked_document(),
-        )?;
+        let venue = linked.documentary_venue(index, grant)?;
         let season = season(
             &linked.checked_document().parsed_page().meet.name,
-            &venue,
+            venue,
             source,
         );
         reserve(&mut facts, grant)?;

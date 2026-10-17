@@ -57,6 +57,7 @@ pub struct DiscoveredIdentityLinkedHtmlResultDocumentV1<'a, 's> {
     pub(super) document: &'a CheckedRetainedResultDocumentV1<'a>,
     pub(super) root: &'a RetainedCaptureRootV1,
     pub(super) attachments: super::view::Bindings<'a, 's>,
+    pub(super) venue: std::sync::OnceLock<String>,
 }
 
 impl<'a, 's> DiscoveredIdentityLinkedHtmlResultDocumentV1<'a, 's> {
