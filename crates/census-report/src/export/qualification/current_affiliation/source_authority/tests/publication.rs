@@ -1,3 +1,4 @@
+mod correction;
 use super::*;
 use crate::report::Scope;
 use crate::workbook::{self, publication as published, Censuses, Options};
