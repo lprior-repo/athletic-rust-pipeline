@@ -1,6 +1,6 @@
 use super::*;
 use crate::participation_evidence::roster_source_issuance::{
-    assess_existing_roster_binding, policies::RosterInterpretationContractsV1,
+    assess_reviewed_roster_source_v1,
 };
 use census_store::{
     replay_frozen_roster_reviewed_claims_v1, CurrentRosterReviewedClaimsV1,
@@ -24,24 +24,14 @@ fn reassess(
     claim: &ReviewedRosterSourceClaimV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> TestResult {
-    let proposal = claim.proposal(grant)?;
-    let parser = claim.object(proposal.parser().artifact().digest().as_str(), grant)?;
-    let contracts = RosterInterpretationContractsV1 {
-        scope: claim.object(proposal.scope().policy().digest(), grant)?,
-        year: claim.object(proposal.binding().year_convention().digest(), grant)?,
-        projection_merge: claim.object(
-            proposal.binding().projection_merge_contract().digest(),
-            grant,
-        )?,
-    };
-    let source =
-        assess_retained_roster_source(claim.evidence(grant)?, parser, &contracts, proposal, grant)?;
-    let binding = assess_existing_roster_binding(&source, grant)?;
-    check!(eq; &binding.school(grant)?.id, proposal.binding().school());
-    check!(eq; &binding.program(grant)?.id, proposal.binding().program());
-    let (qualification, bytes) = claim.qualification_object(grant)?;
+    let assessed = assess_reviewed_roster_source_v1(claim, grant)?;
+    let proposal = assessed.proposal(grant)?;
+    check!(eq; &assessed.school(grant)?.id, proposal.binding().school());
+    check!(eq; &assessed.program(grant)?.id, proposal.binding().program());
+    assessed.source(grant)?.retained_packet(grant)?;
+    let (qualification, bytes) = assessed.qualification_object(grant)?;
     check!(eq; qualification, hash(bytes));
-    let (activation, bytes) = claim.activation_object(grant)?;
+    let (activation, bytes) = assessed.activation_object(grant)?;
     check!(eq; activation, hash(bytes));
     check!(qualification != activation);
     Ok(())
@@ -166,5 +156,22 @@ fn rehashed_frozen_selected_metadata_requires_original_publication_binding() -> 
         )
         .is_err());
     }
+    Ok(())
+}
+
+#[test]
+fn combined_semantic_capability_rejects_foreign_and_poisoned_grants() -> TestResult {
+    let (_directory, store) = issued()?;
+    let mut grant = AttachmentReplayGrantV1::new();
+    let current = store.snapshot().read_current_roster_reviewed_claims_v1(&mut grant)?;
+    let claim = current.claims(&mut grant)?.first().ok_or("review absent")?;
+    let mut foreign = AttachmentReplayGrantV1::new();
+    check!(assess_reviewed_roster_source_v1(claim, &mut foreign).is_err());
+    let assessed = assess_reviewed_roster_source_v1(claim, &mut grant)?;
+    check!(assessed.source(&mut AttachmentReplayGrantV1::new()).is_err());
+    grant.poison();
+    check!(assessed.qualification_object(&mut grant).is_err());
+    check!(assessed.activation_object(&mut grant).is_err());
+    check!(assessed.school(&mut grant).is_err());
     Ok(())
 }

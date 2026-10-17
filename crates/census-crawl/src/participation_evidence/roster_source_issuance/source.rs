@@ -95,6 +95,7 @@ fn assess<'a>(
         proposal: proposal.clone(),
         root: held.root().clone(),
         checked,
+        retained_packet: packet,
         scoped_rows,
         capture_objects: objects,
     })

@@ -1,5 +1,5 @@
 pub mod manifest;
-use super::provider_school::CheckedProviderSchoolPacketV1;
+use super::provider_school::{CheckedProviderSchoolPacketV1, ProviderSchoolPacketV1};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
 use census_store::{RetainedCaptureRootV1, RosterSourceEvidenceV1, StoreResult};
@@ -8,6 +8,8 @@ mod binding;
 pub mod capture_objects;
 pub mod policies;
 mod source;
+mod semantic;
+pub use semantic::{assess_reviewed_roster_source_v1, ReviewedRosterSourceAssessmentV1};
 pub use binding::{
     assess_existing_roster_binding, RosterBindingUnverifiedReferenceV1,
     RosterExistingBindingAssessmentV1,
@@ -27,6 +29,7 @@ pub struct RosterSourceEvidenceAssessmentV1<'a> {
     proposal: LocallyCheckedRosterIssuanceV1,
     root: RetainedCaptureRootV1,
     checked: CheckedProviderSchoolPacketV1,
+    retained_packet: ProviderSchoolPacketV1,
     scoped_rows: usize,
     capture_objects: capture_objects::PreparedRosterCaptureObjectsV1<'a>,
 }
@@ -79,6 +82,11 @@ impl RosterSourceEvidenceAssessmentV1<'_> {
     ) -> StoreResult<&CheckedProviderSchoolPacketV1> {
         self.require_original_grant(grant)?;
         Ok(&self.checked)
+    }
+
+    pub fn retained_packet(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&ProviderSchoolPacketV1> {
+        self.require_original_grant(grant)?;
+        Ok(&self.retained_packet)
     }
 
     pub fn scoped_rows(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<usize> {
