@@ -93,8 +93,8 @@ mod tests {
 
     #[test]
     fn coach_lane_mo_lane_matches_the_shared_registry_signature() -> TestResult {
-        let entry: fn(SchoolYear, u32, &str) -> Result<CoachLaneObligation, CoachLaneError> = lane;
-        check!(eq; entry(season()?, 1, OBSERVED_ON)?.id(), "coach_lane:MO:2026:1");
+        let entry: fn(&Lane, SchoolYear, u32, &str) -> Result<CoachLaneObligation, CoachLaneError> = super::super::evaluate;
+        check!(eq; entry(&POLICY, season()?, 1, OBSERVED_ON)?.id(), "coach_lane:MO:2026:1");
         Ok(())
     }
 
