@@ -239,7 +239,7 @@ fn read_declaration(
         Some(RETAINED_CONTEXT_LIFECYCLE) => {
             PublicIdentityQualification::V2(codec::decode(DECLARATION, &raw)?)
         }
-        Some(census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE) => {
+        Some(census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE | crate::ROSTER_SOURCE_ISSUANCE_LIFECYCLE) => {
             PublicIdentityQualification::V3(codec::decode(DECLARATION, &raw)?)
         }
         _ => return Err(PublicIdentityError::Corrupt("qualification lifecycle").into()),

@@ -55,6 +55,10 @@ pub(crate) fn validate_preservation(
     receipts: &Keyspace,
 ) -> StoreResult<()> {
     let snapshot = db.snapshot();
+    crate::roster_source_issuance::validate_format(
+        &snapshot, meta, journal, receipts, &crate::format::read_format(meta)?,
+        &mut crate::RosterStartupValidationBudgetV1::new(),
+    )?;
     if !is_qualification_lifecycle(raw_lifecycle(&snapshot, meta)?)
         && !has_prefix(&snapshot, meta, "public_identity")?
         && !has_prefix(&snapshot, journal, "public_identity")?

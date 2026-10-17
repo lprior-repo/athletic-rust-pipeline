@@ -62,7 +62,7 @@ impl Inputs {
 
 pub(super) fn require_format(store: &Store) -> StoreResult<()> {
     let format = store.store_format()?;
-    if format.lifecycle_revision != Some(PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE)
+    if !matches!(format.lifecycle_revision, Some(PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE | crate::ROSTER_SOURCE_ISSUANCE_LIFECYCLE))
         || format.migration_target.is_some()
     {
         return Err(Error::InputMoved.into());

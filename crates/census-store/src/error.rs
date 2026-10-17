@@ -1,5 +1,7 @@
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
+    #[error(transparent)]
+    RosterSourceIssuance(#[from] crate::RosterSourceIssuanceStoreError),
     #[error("evidence subject attachment: {0}")]
     EvidenceSubjectAttachment(
         #[from]
