@@ -32,6 +32,8 @@ mod operation;
 pub mod paged_generation;
 pub(crate) mod qualification;
 mod retained;
+mod retained_declaration;
+pub(crate) use retained_declaration::retained_qualification_declaration_v1;
 mod witness;
 
 pub(crate) const LIFECYCLE: u32 =
