@@ -84,6 +84,12 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
     let prepared = handoff::prepare(&store, &sources);
     drop(writer);
     drop(store);
+    if let Err(error) = crate::participation_evidence::recorded::verify_targets_attached_participation(
+        &directory.path().join("store"),
+    ) {
+        let _preserved = directory.keep();
+        return Err(error);
+    }
     match prepared {
         Ok(Some(prepared)) => handoff::finish(prepared, directory),
         Ok(None) => Ok(()),

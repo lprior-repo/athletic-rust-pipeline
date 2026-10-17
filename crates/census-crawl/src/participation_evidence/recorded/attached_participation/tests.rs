@@ -6,9 +6,11 @@ use chrono::{DateTime, Utc};
 mod adversarial;
 mod fixture;
 mod genuine;
+mod targets;
 
 pub(in crate::participation_evidence::recorded) use genuine::verify_genuine;
 pub(in crate::participation_evidence::recorded) use adversarial::verify_adversarial;
+pub(in crate::participation_evidence::recorded) use targets::verify_targets;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 #[test]
