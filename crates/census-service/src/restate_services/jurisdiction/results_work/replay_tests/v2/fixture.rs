@@ -13,30 +13,49 @@ pub(super) struct Prepared {
 }
 
 pub(super) fn seed_prepared(fixture: &Fixture) -> TestResult<Prepared> {
+    seed_prepared_body(
+        fixture,
+        super::super::fixture::RESULTS_URL,
+        br#"{"data":[]}"#,
+        "2026-10-14T05:00:00Z",
+    )
+}
+
+pub(super) fn seed_prepared_body(
+    fixture: &Fixture,
+    results_url: &str,
+    body: &[u8],
+    observed_at: &str,
+) -> TestResult<Prepared> {
     let ResultsCaptureExecution::FreshQualification { writer, owner, .. } = fixture.capture()?
     else {
         return Err("v2 fixture owner absent".into());
     };
     let reference =
-        census_crawl::milesplit::ResultSetRef::parse(super::super::fixture::RESULTS_URL)
+        census_crawl::milesplit::ResultSetRef::parse(results_url)
             .ok_or("fixture reference")?;
     let request = census_crawl::milesplit::owned_meet_request(
         &fixture.fetcher,
         &reference,
         &Default::default(),
     )?;
-    let work = owner.for_owned_meet(census_domain::UsJurisdiction::Michigan, "725218", request)?;
+    let work = owner.for_owned_meet(reference.site.jurisdiction(), &reference.meet_id, request)?;
     let grant = writer.continuation_for_owned_meet(
         &fixture.store,
         &owner,
-        census_domain::UsJurisdiction::Michigan,
-        "725218",
+        reference.site.jurisdiction(),
+        &reference.meet_id,
     )?;
     let owned = fixture
         .store
         .register_acquisition_work(&owner, work, grant)?;
     let reserved = fixture.store.reserve_acquisition_attempt(owned)?;
-    let url = super::super::fixture::owned_url();
+    let url = format!(
+        "https://{}.milesplit.com/api/v1/meets/{}/performances?isMeetPro=0&fields={}",
+        reference.site.jurisdiction().code().to_ascii_lowercase(),
+        reference.meet_id,
+        census_crawl::milesplit::OWNED_FIELDS,
+    );
     let dispatched = fixture
         .store
         .arm_acquisition_dispatch(
@@ -44,15 +63,15 @@ pub(super) fn seed_prepared(fixture: &Fixture) -> TestResult<Prepared> {
             DispatchRequestV1::new(&url, ConditionalRequestV1::Unconditional)?,
         )?
         .into_observation();
-    let response = ResponseObservationV1::new(200, &url, "2026-10-14T05:00:00Z", Vec::new())?;
+    let response = ResponseObservationV1::new(200, &url, observed_at, Vec::new())?;
     let observed = fixture
         .store
         .record_acquisition_response(dispatched, response)?;
-    let body = br#"{"data":[]}"#.to_vec();
+    let body = body.to_vec();
     let digest = format!("{:x}", Sha256::digest(&body));
     let metadata = serde_json::to_vec_pretty(&serde_json::json!({
         "url":url,"response_url":url,"method":"GET","status":200,"content_digest":digest,
-        "bytes":body.len(),"fetched_at":"2026-10-14T05:00:00Z",
+        "bytes":body.len(),"fetched_at":observed_at,
     }))?;
     let input = PreparedCaptureInputV1::new(&digest, u64::try_from(body.len())?, metadata)?;
     let prepared = fixture.store.prepare_acquisition_capture(

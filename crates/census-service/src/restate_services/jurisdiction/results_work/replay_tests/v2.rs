@@ -6,6 +6,7 @@ use census_store::{AcquisitionTerminal, ImmutableAttemptResult, Receipt};
 
 mod branch_support;
 mod fixture;
+mod nonempty;
 mod protocol;
 mod refusal;
 mod retained;
