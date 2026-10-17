@@ -1,6 +1,6 @@
 use super::{CanonicalPerformance, ExportDataset, TestResult};
 use census_domain::model::{ProfileSelectionV1, QueryProfileV1};
-use census_store::Store;
+use census_store::{PublicIdentityWriterV1, Store};
 use std::path::{Path, PathBuf};
 
 mod evidence;
@@ -13,6 +13,7 @@ pub(super) use results::{raw_body, ResultCase, CASES};
 pub(super) struct Fixture {
     directory: tempfile::TempDir,
     pub store: Store,
+    pub writer: PublicIdentityWriterV1,
     pub selection: ProfileSelectionV1,
     pub eligible: CanonicalPerformance,
     pub stronger: CanonicalPerformance,
@@ -48,6 +49,7 @@ impl Fixture {
         Ok(Self {
             directory,
             store,
+            writer,
             selection,
             eligible,
             stronger,
