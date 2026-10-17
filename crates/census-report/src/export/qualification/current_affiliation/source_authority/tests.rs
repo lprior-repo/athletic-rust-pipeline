@@ -11,3 +11,5 @@ mod history;
 mod issuance;
 mod replay;
 mod selectors;
+
+mod publication;
