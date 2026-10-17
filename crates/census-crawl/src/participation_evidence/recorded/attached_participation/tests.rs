@@ -3,10 +3,12 @@ use crate::participation_evidence::{IndependentParticipationPacketV1, RetainedBo
 use census_domain::model::StoreIdentity;
 use chrono::{DateTime, Utc};
 
+mod adversarial;
 mod fixture;
 mod genuine;
 
 pub(in crate::participation_evidence::recorded) use genuine::verify_genuine;
+pub(in crate::participation_evidence::recorded) use adversarial::verify_adversarial;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 #[test]

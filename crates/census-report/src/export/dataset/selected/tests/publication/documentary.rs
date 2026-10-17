@@ -8,6 +8,7 @@ use census_domain::participation_candidates::{CandidateOutcome, ParticipationRea
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
+mod acquisition_cutoff;
 mod fixture;
 mod refusals;
 mod roundtrip;

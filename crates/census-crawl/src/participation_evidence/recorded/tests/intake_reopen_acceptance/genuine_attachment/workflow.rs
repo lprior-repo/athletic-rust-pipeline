@@ -65,6 +65,7 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
         .and_then(|()| super::bridge::verify(&store, &sources, &installed, &outcome))
         .and_then(|()| discovery_check::verify(&store, &sources))
         .and_then(|()| crate::participation_evidence::recorded::verify_genuine_attached_participation(&store))
+        .and_then(|()| crate::participation_evidence::recorded::verify_adversarial_attached_participation(&store))
     {
         drop(writer);
         drop(store);
