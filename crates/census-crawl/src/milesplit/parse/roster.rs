@@ -292,3 +292,6 @@ fn resource(resource: &'static str, requested: usize, limit: usize) -> CrawlErro
 
 #[cfg(test)]
 mod ownership_tests;
+
+#[cfg(test)]
+mod genuine_co2027;
