@@ -170,13 +170,18 @@ impl Reader<'_, '_> {
                         self.grade_issues.push(issue);
                     }
                 }
-                let locator = ProvisionalRawRowLocatorV1::new(
+                let mut locator = ProvisionalRawRowLocatorV1::new(
                     event_index,
                     section.rows.len(),
                     ordinal,
                     offset,
                     raw_line.len(),
                 );
+                if line == raw_line {
+                    locator.school_span = cells.school_span.and_then(|(start, end)| {
+                        Some((offset.checked_add(start)?, offset.checked_add(end)?))
+                    });
+                }
                 (self.successful)(locator, &row)?;
                 section.rows.push(row);
                 self.rows_parsed = self.rows_parsed.saturating_add(1);

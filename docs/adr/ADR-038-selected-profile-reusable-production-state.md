@@ -204,6 +204,14 @@ floor; it does not rebuild the unchanged projection. Owner data remains immutabl
 for the borrow. Serialized formats, historical bytes and resource limits do not
 change; foreign or poisoned grants still refuse.
 
+### Original result school statement — 2026-10-17
+
+Retained-result parsing may expose a checked quote of the uniquely owned,
+untransformed school cell: absolute UTF-8 byte span, original body/row/context
+references and text digest. Missing, transformed or ambiguous cells withhold the
+quote. Existing parsed rows, context wire and IDs remain unchanged. This quote
+is source data, never a SchoolId, accepted affiliation or issuance authority.
+
 ## 6. Enrollment, migration and historical protection
 
 No automatic migration or corpus import is authorized by this decision. Unknown/newer formats,

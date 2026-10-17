@@ -421,8 +421,8 @@ Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
 ### 7.5. Current execution checkpoint — 2026-10-17
 
-Base: PR81 `a2f3979e` plus uncommitted integration repairs, not a qualified final
-commit. [Receipts](VERIFICATION-EVIDENCE.md#pr81-integration-qualification--2026-10-17)
+Preserved checkpoint: PR81 `a2f3979e` integrated and pushed as `e1caef7c`; subsequent
+PRIMARY work is not final-product qualification. [Receipts](VERIFICATION-EVIDENCE.md#pr81-integration-qualification--2026-10-17)
 record actual selections and artifacts; Beads remains the ownership/dependency authority.
 
 | Requirement | Production surface / acceptance | Observed state | Next dependency |
@@ -432,6 +432,7 @@ record actual selections and artifacts; Beads remains the ownership/dependency a
 | A: genuine documentary path | Original authenticated producer handoff → public source reader → publication → source-free replay | PASS `b9e303b3`, diagnostic-free source, both cohorts; original files unchanged, unresolved cases withheld honestly | Exact-commit integration; not PRIMARY or population coverage |
 | A/R2: roster and transfer qualification | Public reviewed-source selection, workbook and frozen readback | All 23 ordered scopes PASS on final source; Report `54ecfb86` 37/37 includes transfer, identity corrections and source-free workbook/normalized replay | Authenticated producer A/changed-build B remains separate and NOT RUN |
 | R2: fixed semantics across builds | Successor kernel V2 controls; authentic retained producer A and changed-build B | Kernel controls PASS; authenticated A/B NOT RUN | Qualified clean producer and independent retained artifacts |
+| B/R1: original school-cell ownership | Public retained-result reader → exact source span → retained replay | PASS `fb5e3111` 61/61; final borrowed-quote smoke `90001154` binds three cells and identical replay references; no SchoolId issued | `q01l`: actual reviewed historical-school issuance |
 | B/R1: eligible PR then withdrawal | Public original-shaped intake → reviewed school/window evidence → workbook → independent G0/G1 reopen | NOT RUN; neither an empty export nor Domain enrollment preparation qualifies this cell | Beads `b8we` owned-cell parser → `q01l` checked school issuance → `3fhg` actual 50→51 publication/replay; one-piece flow |
 | C/D: reusable and population acceptance | R1–R15 production paths, UP/five-state comparison, incremental/recovery/resource lanes | NOT QUALIFIED; no national-run readiness implied | Remaining spec-linked acceptance owners |
 

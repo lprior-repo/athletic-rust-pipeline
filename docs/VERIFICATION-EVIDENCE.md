@@ -587,3 +587,40 @@ These scopes do not establish native Restate recorded-handler crash recovery,
 all seventeen faults, authenticated roster A/B, PRIMARY or national acceptance.
 PRIMARY is tracked as `b8we` → `q01l` → `3fhg`, each with executable acceptance;
 none is claimed implemented by this checkpoint.
+
+#### PRIMARY: original school-cell ownership — 2026-10-17
+
+`b8we` ports only the sealed seven-path parser checkpoint. The public retained
+row reader now exposes an original-cell quote bound to the original
+body/row/context and absolute UTF-8 span, not reviewed school authority.
+Existing parsed-row/context wire and source references remain unchanged.
+
+`249964fb` failed one of 61 cases: the controlled duplicate-header fixture
+accidentally concatenated `TeamSchool`, so it had no qualified header. Correcting
+that controlled fixture to two separate aligned columns preserved the intended
+ambiguity and old-parser comparison; production checks were not weakened.
+`511f629f` then passed all 61 raw-row/ownership cases, including five school-span
+controls, UTF-8/CRLF, transformed cells, ambiguity and duplicate requests.
+
+Standalone `pipeline:run-scoped -- -p census-crawl --example
+smoke_result_school_statement` exited zero (`2224ade5`). It consumed the unchanged
+original fixture SHA256 `95350f13…cc19e5`, bound rows 527/540/572 to their exact
+`Detroit Catholic Central` cells and reproduced all three statement references
+after retained-capture serialization/reopen. The temporary executable was
+removed. This is source-parser integration, not authentic acquisition, reviewed
+correspondence, window authority or the required 50→51 workbook.
+
+Checkpoint `e1caef7c` is pushed to `origin/main`. Its precommit source receipts
+remain valid scoped evidence. One raw worker edited before RELEASE during the
+postcommit queue, so `bg_687` is not credited as uncontaminated exact-commit
+qualification. Subsequent qualification requires all source writers stopped.
+
+Source lint `1329754d` then rejected the candidate's 208-byte enum variant.
+The final quote borrows the immutable checked document's text and existing
+references instead of boxing or copying five source strings. Its lifetime is
+bound to that document; only the two newly computed digests are owned.
+All-target check `538ce06f`, source lint `aba33a0a` and the same 61 regressions
+`fb5e3111` passed. Standalone smoke `90001154` repeated the three original cells
+and identical retained-replay references on this borrowed implementation; its
+temporary executable was removed. Ten previously authorized arity advisories
+remain; no lint suppression or larger cap was added.

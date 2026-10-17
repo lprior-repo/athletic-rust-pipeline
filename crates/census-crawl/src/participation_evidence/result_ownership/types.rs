@@ -68,7 +68,14 @@ pub struct CheckedRetainedResultRowV1<'a> {
     row: &'a ParsedRow,
 }
 
-impl CheckedRetainedResultRowV1<'_> {
+impl<'a> CheckedRetainedResultRowV1<'a> {
+    pub fn school_statement(&self) -> Result<ResultSchoolStatementV1<'a>> {
+        super::school::read(
+            self,
+            self.selected.locator.school_span,
+            self.document.capture,
+        )
+    }
     pub fn parsed_row(&self) -> &ParsedRow {
         self.row
     }
@@ -78,16 +85,16 @@ impl CheckedRetainedResultRowV1<'_> {
     pub fn locator(&self) -> SourceRowLocator {
         self.selected.locator.row
     }
-    pub fn original_row_digest(&self) -> &str {
+    pub fn original_row_digest(&self) -> &'a str {
         &self.selected.original_digest
     }
-    pub fn reference(&self) -> &str {
+    pub fn reference(&self) -> &'a str {
         &self.selected.reference
     }
-    pub fn context_reference(&self) -> &str {
+    pub fn context_reference(&self) -> &'a str {
         self.document.context_reference()
     }
-    pub fn original_row(&self) -> Result<&str> {
+    pub fn original_row(&self) -> Result<&'a str> {
         let row = self.locator();
         let end = row
             .byte_offset
