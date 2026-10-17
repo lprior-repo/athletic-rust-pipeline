@@ -30,6 +30,7 @@ pub struct RosterSourceEvidenceAssessmentV1<'a> {
     root: RetainedCaptureRootV1,
     checked: CheckedProviderSchoolPacketV1,
     retained_packet: ProviderSchoolPacketV1,
+    roster_body: String,
     scoped_rows: usize,
     capture_objects: capture_objects::PreparedRosterCaptureObjectsV1<'a>,
 }
@@ -87,6 +88,11 @@ impl RosterSourceEvidenceAssessmentV1<'_> {
     pub fn retained_packet(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&ProviderSchoolPacketV1> {
         self.require_original_grant(grant)?;
         Ok(&self.retained_packet)
+    }
+
+    pub fn roster_body(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&str> {
+        self.require_original_grant(grant)?;
+        Ok(&self.roster_body)
     }
 
     pub fn scoped_rows(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<usize> {

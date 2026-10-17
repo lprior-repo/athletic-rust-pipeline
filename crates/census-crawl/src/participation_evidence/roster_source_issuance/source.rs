@@ -78,7 +78,7 @@ fn assess<'a>(
     })?;
     let held = evidence.retained_root(grant)?;
     let packet = original(evidence, grant, |grant| packet(held, proposal, grant))?;
-    original(evidence, grant, |grant| capture(&packet, proposal, grant))?;
+    let roster_body = original(evidence, grant, |grant| capture(&packet, proposal, grant))?;
     let checked = original(evidence, grant, |grant| {
         budget::charge(&packet, grant)?;
         budget::charge(packet.directory(), grant)?;
@@ -96,6 +96,7 @@ fn assess<'a>(
         root: held.root().clone(),
         checked,
         retained_packet: packet,
+        roster_body,
         scoped_rows,
         capture_objects: objects,
     })
@@ -180,7 +181,7 @@ fn capture(
     packet: &ProviderSchoolPacketV1,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
-) -> CrawlResult<()> {
+) -> CrawlResult<String> {
     let expected = proposal.capture();
     let retained = packet.roster();
     let expected_bytes =
@@ -199,7 +200,7 @@ fn capture(
     {
         return Err(invalid("roster source capture mismatch").into());
     }
-    Ok(())
+    Ok(body)
 }
 
 fn scope(
