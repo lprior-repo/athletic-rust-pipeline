@@ -10,9 +10,9 @@ use std::path::{Path, PathBuf};
 
 mod acquisition_cutoff;
 mod fixture;
+mod historical;
 mod refusals;
 mod roundtrip;
-mod historical;
 
 use fixture::{Expected, Fixture};
 
@@ -27,7 +27,12 @@ fn inspect(dataset: &ExportDataset, expected: &[Expected]) -> TestResult<Value> 
         .verified_public_identities()?
         .public_id(athlete.id.as_str())
         .is_some());
-    let selected = dataset.selected_authority()?.profile().input().graduation_years.clone();
+    let selected = dataset
+        .selected_authority()?
+        .profile()
+        .input()
+        .graduation_years
+        .clone();
     check!(selected == vec![GradYear::CO2027] || selected == vec![GradYear::CO2026]);
     check!(eq; expected.len(), 3);
     check!(dataset.performances.is_empty());
@@ -37,8 +42,18 @@ fn inspect(dataset: &ExportDataset, expected: &[Expected]) -> TestResult<Value> 
     check!(eq; view.documentary_rows().count(), 3);
     let options = bests_options(dataset)?;
     let (actual, mapped, disposition, tag) = match options.grad_year {
-        Some(2027) => (CandidateOutcome::Excluded, ParticipationOutcome::Excluded, ParticipationExclusionOutcome::Excluded, ParticipationDiagnostic::DocumentaryAssessmentExcluded),
-        Some(2026) => (CandidateOutcome::Unresolved, ParticipationOutcome::Unresolved, ParticipationExclusionOutcome::Unresolved, ParticipationDiagnostic::DocumentaryAssessmentUnresolved),
+        Some(2027) => (
+            CandidateOutcome::Excluded,
+            ParticipationOutcome::Excluded,
+            ParticipationExclusionOutcome::Excluded,
+            ParticipationDiagnostic::DocumentaryAssessmentExcluded,
+        ),
+        Some(2026) => (
+            CandidateOutcome::Unresolved,
+            ParticipationOutcome::Unresolved,
+            ParticipationExclusionOutcome::Unresolved,
+            ParticipationDiagnostic::DocumentaryAssessmentUnresolved,
+        ),
         _ => return Err("controlled selected cohort".into()),
     };
     let derivation = crate::report::Derivation::of(
@@ -53,7 +68,9 @@ fn inspect(dataset: &ExportDataset, expected: &[Expected]) -> TestResult<Value> 
     check!(outcome.selections.is_empty());
     check!(eq; outcome.participation_exclusions.len(), 3);
     let mut reasons = Vec::new();
-    if options.grad_year == Some(2027) { reasons.push(ParticipationReason::CohortOutsideSelection); }
+    if options.grad_year == Some(2027) {
+        reasons.push(ParticipationReason::CohortOutsideSelection);
+    }
     reasons.extend([
         ParticipationReason::ParticipationContextUnresolved,
         ParticipationReason::SummerBoundaryUnresolved,
@@ -162,5 +179,10 @@ fn attachment_object(dataset: &ExportDataset, directory: &Path) -> TestResult<St
 }
 
 fn expected_references(source: &Expected) -> Vec<String> {
-    source.references.iter().chain(&source.semantic_references).cloned().collect()
+    source
+        .references
+        .iter()
+        .chain(&source.semantic_references)
+        .cloned()
+        .collect()
 }

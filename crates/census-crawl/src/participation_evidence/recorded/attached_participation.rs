@@ -4,7 +4,8 @@ use crate::participation_evidence::{invalid, VerifiedIndependentParticipationV1}
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1 as Grant;
 use census_store::{
-    CurrentEvidenceSubjectAttachmentReferencesV1, FrozenCurrentEvidenceSubjectAttachmentReferencesV1,
+    CurrentEvidenceSubjectAttachmentReferencesV1,
+    FrozenCurrentEvidenceSubjectAttachmentReferencesV1,
 };
 
 mod join;
@@ -14,7 +15,8 @@ mod types;
 
 pub use types::{
     AttachedParticipationV1, CheckedDocumentaryParticipationFactsV1,
-    CheckedDocumentarySourceFactsV1, DocumentarySeasonApplicabilityV1, DocumentaryCohortAgreementV1,
+    CheckedDocumentarySourceFactsV1, DocumentaryCohortAgreementV1,
+    DocumentarySeasonApplicabilityV1,
 };
 use types::{CheckedAttachedStatusV1, StatusBinding};
 
@@ -51,30 +53,42 @@ impl<'s> AttachedParticipationV1<'_, 's> {
         linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, 's>,
         index: usize,
         grant: &mut Grant,
-        consume: impl for<'f> FnOnce(CheckedDocumentaryParticipationFactsV1<'f>, &mut Grant) -> CrawlResult<T>,
+        consume: impl for<'f> FnOnce(
+            CheckedDocumentaryParticipationFactsV1<'f>,
+            &mut Grant,
+        ) -> CrawlResult<T>,
     ) -> CrawlResult<T> {
         super::read::with_grant(grant, |grant| {
             let facts = join::row(self, linked, index, grant)?;
-            consume(CheckedDocumentaryParticipationFactsV1 { sources: &facts }, grant)
+            consume(
+                CheckedDocumentaryParticipationFactsV1 { sources: &facts },
+                grant,
+            )
         })
     }
 }
 
 fn steps(grant: &mut Grant, count: usize) -> CrawlResult<()> {
-    grant.charge_steps(count).map_err(census_store::EvidenceSubjectAttachmentStoreError::from)
+    grant
+        .charge_steps(count)
+        .map_err(census_store::EvidenceSubjectAttachmentStoreError::from)
         .map_err(census_store::StoreError::from)?;
     Ok(())
 }
 
 fn bytes(grant: &mut Grant, count: usize) -> CrawlResult<()> {
-    grant.charge_bytes(count).map_err(census_store::EvidenceSubjectAttachmentStoreError::from)
+    grant
+        .charge_bytes(count)
+        .map_err(census_store::EvidenceSubjectAttachmentStoreError::from)
         .map_err(census_store::StoreError::from)?;
     Ok(())
 }
 
 fn reserve<T>(values: &mut Vec<T>, grant: &mut Grant) -> CrawlResult<()> {
     bytes(grant, std::mem::size_of::<T>())?;
-    values.try_reserve_exact(1).map_err(|_| invalid("attached participation allocation refused"))?;
+    values
+        .try_reserve_exact(1)
+        .map_err(|_| invalid("attached participation allocation refused"))?;
     Ok(())
 }
 

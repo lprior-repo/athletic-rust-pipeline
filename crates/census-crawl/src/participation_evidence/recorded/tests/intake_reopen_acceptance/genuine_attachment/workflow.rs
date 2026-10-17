@@ -64,8 +64,14 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
     if let Err(error) = replay_completed(&store, &sources, completed)
         .and_then(|()| super::bridge::verify(&store, &sources, &installed, &outcome))
         .and_then(|()| discovery_check::verify(&store, &sources))
-        .and_then(|()| crate::participation_evidence::recorded::verify_genuine_attached_participation(&store))
-        .and_then(|()| crate::participation_evidence::recorded::verify_adversarial_attached_participation(&store))
+        .and_then(|()| {
+            crate::participation_evidence::recorded::verify_genuine_attached_participation(&store)
+        })
+        .and_then(|()| {
+            crate::participation_evidence::recorded::verify_adversarial_attached_participation(
+                &store,
+            )
+        })
     {
         drop(writer);
         drop(store);
@@ -84,11 +90,16 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
     let prepared = handoff::prepare(&store, &sources);
     drop(writer);
     drop(store);
-    if let Err(error) = crate::participation_evidence::recorded::verify_targets_attached_participation(
-        &directory.path().join("store"),
-    ).and_then(|()| crate::participation_evidence::recorded::verify_source_count_attached_participation(
-        &directory.path().join("store"),
-    )) {
+    if let Err(error) =
+        crate::participation_evidence::recorded::verify_targets_attached_participation(
+            &directory.path().join("store"),
+        )
+        .and_then(|()| {
+            crate::participation_evidence::recorded::verify_source_count_attached_participation(
+                &directory.path().join("store"),
+            )
+        })
+    {
         let _preserved = directory.keep();
         return Err(error);
     }

@@ -2,11 +2,21 @@ use super::*;
 
 fn capture(url: &str, body: &[u8], headers: &[u8]) -> TestResult<RetainedHtmlCaptureV1> {
     let time = DateTime::parse_from_rfc3339("2026-10-16T00:10:00Z")?.with_timezone(&Utc);
-    Ok(RetainedHtmlCaptureV1::new(url, url, 200, time, body, RetainedHttpProvenanceV1 {
-        request_method: "GET".into(), request_headers: vec![("Accept".into(), "*/*".into())],
-        response_header_bytes: headers.to_vec(), content_type: "text/html; charset=utf-8".into(),
-        body_encoding: RetainedBodyEncodingV1::Identity, started_at: time,
-    })?)
+    Ok(RetainedHtmlCaptureV1::new(
+        url,
+        url,
+        200,
+        time,
+        body,
+        RetainedHttpProvenanceV1 {
+            request_method: "GET".into(),
+            request_headers: vec![("Accept".into(), "*/*".into())],
+            response_header_bytes: headers.to_vec(),
+            content_type: "text/html; charset=utf-8".into(),
+            body_encoding: RetainedBodyEncodingV1::Identity,
+            started_at: time,
+        },
+    )?)
 }
 
 pub(super) fn packet() -> TestResult<IndependentParticipationPacketV1> {

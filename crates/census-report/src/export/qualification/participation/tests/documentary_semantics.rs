@@ -24,7 +24,11 @@ async fn current_v4_missing_attachment_and_v3_payload_version_never_fall_back() 
     let original = serde_json::to_value(&current.replay)?;
     let directory = fixture.objects();
     let mut missing = original.clone();
-    missing.as_object_mut().ok_or("V4 object")?.remove("attachment").ok_or("attachment")?;
+    missing
+        .as_object_mut()
+        .ok_or("V4 object")?
+        .remove("attachment")
+        .ok_or("attachment")?;
     let mut wrong_shape = original.clone();
     *wrong_shape.get_mut("attachment").ok_or("attachment")? = json!({});
     let mut old_version = original;
@@ -39,9 +43,19 @@ async fn current_v4_missing_attachment_and_v3_payload_version_never_fall_back() 
     let before = super::documentary_dispatch::inventory(&directory)?;
     let snapshot = fixture.store.snapshot();
     let dataset = fixture.dataset(&snapshot)?;
-    let affiliations = crate::export::qualification::current_affiliation::PinnedCurrentAffiliations::read(&dataset, &snapshot)?;
-    check!(PinnedParticipation::replay(&dataset, &fixture.profile, &directory, &descriptor,
-        &current.fingerprints(), affiliations.roster_context()).is_err());
+    let affiliations =
+        crate::export::qualification::current_affiliation::PinnedCurrentAffiliations::read(
+            &dataset, &snapshot,
+        )?;
+    check!(PinnedParticipation::replay(
+        &dataset,
+        &fixture.profile,
+        &directory,
+        &descriptor,
+        &current.fingerprints(),
+        affiliations.roster_context()
+    )
+    .is_err());
     check!(eq; super::documentary_dispatch::inventory(&directory)?, before);
     Ok(())
 }

@@ -20,7 +20,10 @@ pub(super) enum StatusBinding<'a, 's> {
 }
 
 impl StatusBinding<'_, '_> {
-    pub(super) fn require_original_grant(&self, grant: &mut Grant) -> census_store::StoreResult<()> {
+    pub(super) fn require_original_grant(
+        &self,
+        grant: &mut Grant,
+    ) -> census_store::StoreResult<()> {
         match self {
             Self::Current(value) => value.require_original_grant(grant),
             Self::Frozen(value) => value.require_original_grant(grant),
@@ -65,7 +68,10 @@ impl StatusBinding<'_, '_> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DocumentaryCohortAgreementV1 { Agreed, Conflicting }
+pub enum DocumentaryCohortAgreementV1 {
+    Agreed,
+    Conflicting,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DocumentarySeasonApplicabilityV1 {
@@ -99,7 +105,9 @@ impl CheckedDocumentarySourceFactsV1<'_> {
     pub fn attachment_record_digest(&self) -> &str {
         self.record_digest
     }
-    pub fn cohort_agreement(&self) -> DocumentaryCohortAgreementV1 { self.cohort }
+    pub fn cohort_agreement(&self) -> DocumentaryCohortAgreementV1 {
+        self.cohort
+    }
     pub fn season(&self) -> DocumentarySeasonApplicabilityV1 {
         self.season
     }

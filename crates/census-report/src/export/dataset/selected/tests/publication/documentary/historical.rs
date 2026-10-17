@@ -6,13 +6,16 @@ use crate::export::qualification::participation::{
 use std::collections::BTreeMap;
 
 #[test]
-fn native_genuine_documentary_v3_archive_keeps_missing_facts_exact_bytes_and_outcomes() -> TestResult {
+fn native_genuine_documentary_v3_archive_keeps_missing_facts_exact_bytes_and_outcomes() -> TestResult
+{
     let fixture = Fixture::open()?;
     let objects = tempfile::tempdir()?;
     let dataset = fixture.capture(objects.path())?;
     inspect(&dataset, &fixture.expected)?;
     let proof = serde_json::to_value(dataset.selected_proofs.as_ref().ok_or("selected proofs")?)?;
-    let descriptor = proof.get("participation_digest").and_then(Value::as_str)
+    let descriptor = proof
+        .get("participation_digest")
+        .and_then(Value::as_str)
         .ok_or("participation descriptor")?;
     let current = ParticipationReplay::load(objects.path(), descriptor)?;
     check!(matches!(&current, ParticipationReplay::V4(_)));
@@ -32,14 +35,22 @@ fn native_genuine_documentary_v3_archive_keeps_missing_facts_exact_bytes_and_out
         let loaded = ParticipationReplay::load(objects.path(), &anchored)?;
         check!(matches!(&loaded, ParticipationReplay::V3(_)));
         check!(eq; serde_json::to_vec(&loaded)?, expected_wire);
-        let token = PinnedParticipation::replay(&dataset, &profile, objects.path(), &anchored,
-            &historical.fingerprints(), affiliations.roster_context())?;
+        let token = PinnedParticipation::replay(
+            &dataset,
+            &profile,
+            objects.path(),
+            &anchored,
+            &historical.fingerprints(),
+            affiliations.roster_context(),
+        )?;
         let (_, _, _, structured, documentary, unsupported, replay) = token.into_parts();
         check!(structured.is_empty());
         check!(unsupported.is_empty());
         check!(eq; documentary.len(), 3);
         for source in &expected {
-            let row = documentary.get(&source.performance).ok_or("historical genuine row")?;
+            let row = documentary
+                .get(&source.performance)
+                .ok_or("historical genuine row")?;
             check!(eq; row.domain_outcome(), CandidateOutcome::Unresolved);
             check!(eq; row.assessment().outcome(), ParticipationOutcome::Unresolved);
             check!(eq; row.event_id(), &source.event);
@@ -58,9 +69,11 @@ fn native_genuine_documentary_v3_archive_keeps_missing_facts_exact_bytes_and_out
 }
 
 fn inventory(directory: &Path) -> TestResult<BTreeMap<PathBuf, Vec<u8>>> {
-    std::fs::read_dir(directory)?.map(|entry| {
-        let path = entry?.path();
-        let bytes = std::fs::read(&path)?;
-        Ok((path, bytes))
-    }).collect()
+    std::fs::read_dir(directory)?
+        .map(|entry| {
+            let path = entry?.path();
+            let bytes = std::fs::read(&path)?;
+            Ok((path, bytes))
+        })
+        .collect()
 }
