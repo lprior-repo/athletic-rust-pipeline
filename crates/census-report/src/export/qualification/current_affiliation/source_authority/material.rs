@@ -1,6 +1,5 @@
 use super::*;
 use census_crawl::milesplit::{LocatedRosterAthlete, RosterRowStatementsV1};
-use census_crawl::participation_evidence::roster_source_issuance::assess_reviewed_roster_source_v1;
 use census_domain::model::{CanonicalSchool, SourceCapture, SourceNamespace, SourceRef};
 use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
 use census_store::ReviewedRosterSourceClaimV1;
@@ -27,61 +26,8 @@ pub(super) struct Member {
     pub(super) spans: Result<RosterRowStatementsV1, AuthorityGap>,
 }
 
-pub(super) fn read(
-    people: &identity::PersonIndex,
-    claim: &ReviewedRosterSourceClaimV1,
-    grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<Capture> {
-    let assessment = checked(assess_reviewed_roster_source_v1(claim, grant))?;
-    let source = assessment.source(grant)?;
-    encoding::admit(assessment.proposal(grant)?, grant)?;
-    let proposal = assessment.proposal(grant)?.clone();
-    let raw_body = source.roster_body(grant)?;
-    charge(grant, raw_body.len(), 1)?;
-    let body = raw_body.to_string();
-    let packet = source.checked_packet(grant)?;
-    let roster = packet
-        .roster_verdict()
-        .roster()
-        .ok_or_else(|| invalid("reviewed roster has no complete rows"))?;
-    let owner_span = owners(packet, &proposal)?;
-    let metadata = checked(SourceCapture::new(
-        proposal.scope().owner(),
-        proposal.capture().body().digest().as_str().into(),
-        proposal.capture().body().bytes().get(),
-        proposal.capture().observed_day().as_str().into(),
-        Some(proposal.capture().requested_url().into()),
-    ))?;
-    let objects = source.capture_objects(grant)?;
-    let copied_bytes = objects
-        .metadata_bytes(grant)?
-        .len()
-        .checked_add(objects.interpretation_bytes(grant)?.len())
-        .ok_or(StoreError::CounterOverflow)?;
-    charge(grant, copied_bytes, 1)?;
-    encoding::admit(assessment.school(grant)?, grant)?;
-    let members = roster
-        .athletes
-        .iter()
-        .map(|member| member_record(people, &proposal, member, grant))
-        .collect::<StoreResult<Vec<_>>>()?;
-    Ok(Capture {
-        source: SourceRef::new(
-            "milesplit".to_string(),
-            Some(proposal.capture().requested_url().into()),
-        ),
-        proposal,
-        school: assessment.school(grant)?.clone(),
-        body,
-        metadata,
-        manifest: objects.metadata_bytes(grant)?.to_vec(),
-        interpretation: objects.interpretation_bytes(grant)?.to_vec(),
-        qualification: assessment.qualification_object(grant)?.0.into(),
-        activation: assessment.activation_object(grant)?.0.into(),
-        owner_span,
-        members,
-    })
-}
+mod input;
+pub(super) use input::{read, read_historical};
 
 fn member_record(
     people: &identity::PersonIndex,

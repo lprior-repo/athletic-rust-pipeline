@@ -25,7 +25,8 @@ pub(super) const SMALL_ROSTER: &str = concat!(
     "<svg class=\"icon icon-yes\"></svg></div></li></ul></section></body></html>"
 );
 
-pub(super) fn enrolled_store() -> TestResult<(tempfile::TempDir, Store)> {
+pub(in crate::participation_evidence::roster_source_issuance) fn enrolled_store(
+) -> TestResult<(tempfile::TempDir, Store)> {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("controlled-roster");
     Store::create_public_identity_qualification_v3(&root)?;
@@ -49,7 +50,7 @@ pub(super) fn enrolled_store() -> TestResult<(tempfile::TempDir, Store)> {
     Ok((directory, store))
 }
 
-pub(super) fn install(
+pub(in crate::participation_evidence::roster_source_issuance) fn install(
     store: &Store,
 ) -> TestResult<(
     ProviderSchoolPacketV1,

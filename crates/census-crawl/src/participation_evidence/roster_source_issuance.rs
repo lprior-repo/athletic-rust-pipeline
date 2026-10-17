@@ -6,15 +6,21 @@ use census_store::{RetainedCaptureRootV1, RosterSourceEvidenceV1, StoreResult};
 
 mod binding;
 pub mod capture_objects;
+mod historical;
 pub mod policies;
 mod semantic;
+pub use historical::{
+    assess_reviewed_roster_source_historical_v2, HistoricalReviewedRosterSourceV2,
+};
+pub mod semantic_inventory;
+pub(in crate::participation_evidence) use semantic_inventory::require_fixed_roster_semantic_kernel_v1;
 mod source;
 pub use binding::{
     assess_existing_roster_binding, RosterBindingUnverifiedReferenceV1,
     RosterExistingBindingAssessmentV1,
 };
 pub use semantic::{assess_reviewed_roster_source_v1, ReviewedRosterSourceAssessmentV1};
-pub use source::assess_retained_roster_source;
+pub use source::{assess_retained_roster_source, assess_retained_roster_source_v2};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RosterSourceUnverifiedJoinV1 {

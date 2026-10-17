@@ -68,6 +68,21 @@ fn assess<'a, 'e>(
     let evidence = source.evidence(grant)?;
     let proposal = source.proposal(grant)?;
     let checked = source.checked_packet(grant)?;
+    let (school, program) = assess_projection(evidence, proposal, checked, grant)?;
+    Ok(RosterExistingBindingAssessmentV1 {
+        source,
+        school,
+        program,
+    })
+}
+
+pub(super) fn assess_projection(
+    evidence: &RosterSourceEvidenceV1,
+    proposal: &census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1,
+    checked: &crate::participation_evidence::provider_school::CheckedProviderSchoolPacketV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<(CanonicalSchool, CanonicalTeam)> {
+    evidence.require_original_grant(grant)?;
     let binding = proposal.binding();
     let mut school = None;
     scan::<CanonicalSchool>(
@@ -116,11 +131,7 @@ fn assess<'a, 'e>(
     team_row(&program, binding)?;
     references(evidence, binding, &school, &program, grant)?;
     evidence.require_original_grant(grant)?;
-    Ok(RosterExistingBindingAssessmentV1 {
-        source,
-        school,
-        program,
-    })
+    Ok((school, program))
 }
 
 mod projection;

@@ -1,7 +1,7 @@
 use super::*;
 use census_crawl::participation_evidence::roster_source_issuance::{
-    assess_existing_roster_binding, assess_retained_roster_source,
-    capture_objects::prepare_retained_roster_capture_objects,
+    assess_existing_roster_binding, assess_retained_roster_source_v2,
+    capture_objects::prepare_retained_roster_capture_objects_v2,
     manifest::{assess_retained_roster_parser_manifest, compiled_roster_parser_manifest},
     policies::compiled_roster_interpretation_contracts_v1,
 };
@@ -41,7 +41,7 @@ pub(super) fn review(
     let proposal = proposal(capture, evidence, grant)?;
     let parser = compiled_roster_parser_manifest()?;
     let contracts = compiled_roster_interpretation_contracts_v1();
-    let source = assess_retained_roster_source(
+    let source = assess_retained_roster_source_v2(
         evidence,
         parser.canonical_bytes(),
         &contracts,
@@ -86,7 +86,7 @@ fn object(bytes: &[u8]) -> Value {
     json!({"digest":super::super::hash(bytes),"bytes":bytes.len()})
 }
 
-fn proposal(
+pub(super) fn proposal(
     capture: &fixture::Capture,
     evidence: &census_store::RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -97,7 +97,7 @@ fn proposal(
         &parser.parser_claim()?,
         grant,
     )?;
-    let objects = prepare_retained_roster_capture_objects(evidence, &checked, grant)?;
+    let objects = prepare_retained_roster_capture_objects_v2(evidence, &checked, grant)?;
     let contracts = compiled_roster_interpretation_contracts_v1();
     let source_id = capture
         .school

@@ -8,6 +8,8 @@ use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
 use census_store::{RosterSourceEvidenceV1, StoreResult};
 
 mod format;
+pub(super) mod version2;
+pub use version2::prepare_retained_roster_capture_objects_v2;
 
 pub struct PreparedRosterCaptureObjectsV1<'a> {
     evidence: &'a RosterSourceEvidenceV1,
@@ -107,7 +109,7 @@ pub(super) fn derive<'a>(
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
     original(evidence, grant, |grant| {
-        format::derive(evidence, packet, parser, grant)
+        format::derive(evidence, packet, parser.retained(), grant)
     })
 }
 
@@ -131,5 +133,16 @@ fn replay_parser(
         Ok(super::manifest::assess_retained_roster_parser_manifest(
             bytes, &claim, grant,
         )?)
+    })
+}
+
+pub(super) fn derive_retained<'a>(
+    evidence: &'a RosterSourceEvidenceV1,
+    packet: &ProviderSchoolPacketV1,
+    parser: &super::manifest::RetainedRosterParserManifestV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
+    original(evidence, grant, |grant| {
+        format::derive(evidence, packet, parser, grant)
     })
 }

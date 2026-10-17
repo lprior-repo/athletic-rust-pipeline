@@ -99,8 +99,9 @@ pub(super) fn replay(
             family,
             &mut grant,
         )?;
-        let (pinned, _) =
-            super::super::source_authority::assess(dataset, profile, &bound, &mut grant)?;
+        let (pinned, _) = super::super::source_authority::assess_historical(
+            dataset, profile, &bound, &mut grant,
+        )?;
         Ok(pinned)
     })();
     if result.is_err() {

@@ -47,7 +47,7 @@ struct Interpretation<'a> {
 pub(super) fn derive<'a>(
     evidence: &'a RosterSourceEvidenceV1,
     packet: &ProviderSchoolPacketV1,
-    parser: &CheckedRosterParserManifestV1,
+    parser: &super::super::manifest::RetainedRosterParserManifestV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
     let held = evidence.retained_root(grant)?;
@@ -89,7 +89,7 @@ pub(super) fn derive<'a>(
         grant,
     )?;
     let occurrence = digest(evidence, &metadata, grant)?;
-    let parser_bytes = parser.retained().canonical_bytes();
+    let parser_bytes = parser.canonical_bytes();
     let parser_digest = digest(evidence, parser_bytes, grant)?;
     let interpretation = encode(
         evidence,

@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 
 mod artifacts;
 mod failures;
+mod historical_build;
+mod historical_semantic;
 mod omission;
 mod retention;
 mod roundtrip;

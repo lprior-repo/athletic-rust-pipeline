@@ -9,7 +9,7 @@ const MAX_FILE_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_TOTAL_BYTES: u64 = 256 * 1024 * 1024;
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
-pub(super) struct File {
+pub(in super::super) struct File {
     path: String,
     bytes: u64,
     sha256: String,
@@ -36,7 +36,7 @@ pub(super) fn disjoint(destination: &Path, source: &Path) -> TestResult {
     Ok(())
 }
 
-pub(super) fn inventory(root: &Path) -> TestResult<Vec<File>> {
+pub(in super::super) fn inventory(root: &Path) -> TestResult<Vec<File>> {
     check!(std::fs::symlink_metadata(root)?.file_type().is_dir());
     let mut pending = vec![root.to_path_buf()];
     let mut files = Vec::new();
@@ -76,7 +76,7 @@ pub(super) fn inventory(root: &Path) -> TestResult<Vec<File>> {
     Ok(files)
 }
 
-pub(super) fn read(path: &Path) -> TestResult<Vec<u8>> {
+pub(in super::super) fn read(path: &Path) -> TestResult<Vec<u8>> {
     let metadata = std::fs::symlink_metadata(path)?;
     check!(metadata.file_type().is_file());
     check!(metadata.len() <= MAX_FILE_BYTES);
@@ -116,11 +116,11 @@ pub(super) fn write(path: &Path, bytes: &[u8]) -> TestResult {
     Ok(())
 }
 
-pub(super) fn digest(bytes: &[u8]) -> String {
+pub(in super::super) fn digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
-pub(super) fn revision(name: &str) -> TestResult<String> {
+pub(in super::super) fn revision(name: &str) -> TestResult<String> {
     let value = std::env::var(name)?;
     check!(
         value.len() == 40

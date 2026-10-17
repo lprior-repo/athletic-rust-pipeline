@@ -20,26 +20,9 @@ use chrono::{DateTime, Utc};
 #[path = "source_budget.rs"]
 pub(super) mod budget;
 
-pub fn assess_retained_roster_source<'a>(
-    evidence: &'a RosterSourceEvidenceV1,
-    retained_parser_manifest: &[u8],
-    retained_contracts: &super::policies::RosterInterpretationContractsV1<'_>,
-    proposal: &LocallyCheckedRosterIssuanceV1,
-    grant: &mut AttachmentReplayGrantV1,
-) -> CrawlResult<RosterSourceEvidenceAssessmentV1<'a>> {
-    evidence.require_original_grant(grant)?;
-    let result = assess(
-        evidence,
-        retained_parser_manifest,
-        retained_contracts,
-        proposal,
-        grant,
-    );
-    if result.is_err() {
-        grant.poison();
-    }
-    result
-}
+#[path = "source_entry.rs"]
+mod entry;
+pub use entry::{assess_retained_roster_source, assess_retained_roster_source_v2};
 
 fn assess<'a>(
     evidence: &'a RosterSourceEvidenceV1,
@@ -47,6 +30,7 @@ fn assess<'a>(
     retained_contracts: &super::policies::RosterInterpretationContractsV1<'_>,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
+    semantic_inventory: bool,
 ) -> CrawlResult<RosterSourceEvidenceAssessmentV1<'a>> {
     original(evidence, grant, |_| {
         if evidence.requested_school() != proposal.binding().school()
@@ -85,7 +69,17 @@ fn assess<'a>(
         budget::charge(packet.roster(), grant)?;
         packet.read()
     })?;
-    let objects = super::capture_objects::derive(evidence, &packet, &parser_manifest, grant)?;
+    let objects = if semantic_inventory {
+        super::capture_objects::version2::derive(
+            evidence,
+            &packet,
+            &checked,
+            &parser_manifest,
+            grant,
+        )?
+    } else {
+        super::capture_objects::derive(evidence, &packet, &parser_manifest, grant)?
+    };
     objects.require_proposal(proposal, grant)?;
     let scoped_rows = original(evidence, grant, |grant| scope(&checked, proposal, grant))?;
     evidence.require_original_grant(grant)?;
@@ -113,7 +107,7 @@ pub(super) fn original<T>(
     result
 }
 
-fn admission(
+pub(super) fn admission(
     evidence: &RosterSourceEvidenceV1,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -148,7 +142,7 @@ pub(super) fn source_reference(
     Ok(())
 }
 
-fn packet(
+pub(super) fn packet(
     held: &RetainedCaptureRootReadV1,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -177,7 +171,7 @@ fn packet(
     Ok(packet)
 }
 
-fn capture(
+pub(super) fn capture(
     packet: &ProviderSchoolPacketV1,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -203,7 +197,7 @@ fn capture(
     Ok(body)
 }
 
-fn scope(
+pub(super) fn scope(
     checked: &CheckedProviderSchoolPacketV1,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -251,4 +245,4 @@ pub(super) fn domain(error: EvidenceSubjectAttachmentError) -> StoreError {
 
 #[cfg(test)]
 #[path = "source_tests.rs"]
-mod tests;
+pub(super) mod tests;

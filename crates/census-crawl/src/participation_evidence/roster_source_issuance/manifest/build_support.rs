@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 mod format;
 #[path = "build_inputs.rs"]
 mod inputs;
+#[path = "build_kernel.rs"]
+mod kernel;
 #[path = "build_process.rs"]
 mod process;
 #[path = "build_scan.rs"]
@@ -25,6 +27,7 @@ pub fn generate() -> BuildResult<()> {
         return Err("roster parser manifest encoded size exceeded".into());
     }
     let destination = PathBuf::from(env::var("OUT_DIR")?);
+    kernel::generate(root, &destination)?;
     let manifest_sha256 = inputs::digest("manifest", &bytes)?.sha256;
     std::fs::write(destination.join("roster-parser-manifest-v1.json"), bytes)?;
     let vcs = process::vcs(root, manifest_sha256)?;

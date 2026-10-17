@@ -5,7 +5,7 @@ use crate::participation_evidence::roster_source_issuance::policies::compiled_ro
 use census_store::RosterIssuanceInspectionRequestV1;
 
 #[path = "source_integration_setup.rs"]
-mod setup;
+pub(in crate::participation_evidence::roster_source_issuance) mod setup;
 use setup::*;
 
 #[test]

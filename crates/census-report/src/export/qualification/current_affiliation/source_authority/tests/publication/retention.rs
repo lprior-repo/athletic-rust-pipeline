@@ -3,7 +3,7 @@ use census_crawl::participation_evidence::roster_source_issuance::manifest::{
     compiled_roster_parser_manifest, RosterParserWorkingTreeV1,
 };
 
-mod files;
+pub(super) mod files;
 
 #[test]
 fn controlled_reviewed_roster_retains_independent_producer_archive() -> TestResult {

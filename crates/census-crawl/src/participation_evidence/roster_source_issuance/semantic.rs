@@ -40,8 +40,42 @@ fn assess<'a>(
             grant,
         )?,
     };
-    let source =
-        assess_retained_roster_source(claim.evidence(grant)?, parser, &contracts, proposal, grant)?;
+    let interpretation =
+        claim.object(proposal.capture().interpretation().digest().as_str(), grant)?;
+    grant
+        .charge_bytes(interpretation.len())
+        .map_err(super::source::domain)?;
+    grant.charge_steps(1).map_err(super::source::domain)?;
+    #[derive(serde::Deserialize)]
+    struct Version<'v> {
+        schema: &'v str,
+    }
+    let version: Version<'_> =
+        serde_json::from_slice(interpretation).map_err(crate::participation_evidence::json)?;
+    let source = match version.schema {
+        "roster-retained-capture-interpretation-v1" => assess_retained_roster_source(
+            claim.evidence(grant)?,
+            parser,
+            &contracts,
+            proposal,
+            grant,
+        )?,
+        "roster-retained-capture-interpretation-v2" => {
+            super::source::assess_retained_roster_source_v2(
+                claim.evidence(grant)?,
+                parser,
+                &contracts,
+                proposal,
+                grant,
+            )?
+        }
+        _ => {
+            return Err(crate::participation_evidence::invalid(
+                "unsupported reviewed roster interpretation",
+            )
+            .into())
+        }
+    };
     let binding = assess_existing_roster_binding(&source, grant)?;
     super::source::budget::charge(binding.school(grant)?, grant)?;
     let school = binding.school(grant)?.clone();

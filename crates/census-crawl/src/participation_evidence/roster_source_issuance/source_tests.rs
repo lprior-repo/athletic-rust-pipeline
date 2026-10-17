@@ -169,7 +169,7 @@ fn canonical_packet_allocation_requires_real_precharge() -> TestResult {
 }
 
 #[path = "source_integration_tests.rs"]
-mod integration;
+pub(in crate::participation_evidence::roster_source_issuance) mod integration;
 
 #[path = "source_review_integration_tests.rs"]
 mod review_integration;
