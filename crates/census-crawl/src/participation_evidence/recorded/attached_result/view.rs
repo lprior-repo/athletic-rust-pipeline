@@ -2,7 +2,7 @@ use super::{domain, subject, RecordedHtmlResultCaptureV1};
 use crate::participation_evidence::result_ownership::CheckedRetainedResultDocumentV1;
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::{
-    AttachmentReplayGrantV1, EvidenceSubjectAttachmentError,
+    AttachmentReplayGrantV1, AttachmentSubjectRoleV1, EvidenceSubjectAttachmentError,
 };
 use census_store::{
     ActiveAttachmentSubjectDiscoveryV1, CurrentEvidenceSubjectAttachmentReferencesV1,
@@ -32,7 +32,7 @@ impl Source<'_, '_> {
 }
 
 #[derive(Clone, Copy)]
-pub(super) enum View<'a, 'v, 's> {
+pub(in super::super) enum View<'a, 'v, 's> {
     Current(&'a CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's>),
     Frozen(&'a FrozenCurrentEvidenceSubjectAttachmentReferencesV1<'s>),
 }
@@ -43,10 +43,21 @@ pub(super) enum Bindings<'a, 's> {
 }
 
 impl<'a, 'v, 's> View<'a, 'v, 's> {
-    pub(super) fn source(self) -> Source<'a, 's> {
+    pub(in super::super) fn source(self) -> Source<'a, 's> {
         match self {
             Self::Current(current) => Source::Current(current.snapshot()),
             Self::Frozen(current) => Source::Frozen(current.source()),
+        }
+    }
+
+    pub(in super::super) fn discover_role(
+        self,
+        role: AttachmentSubjectRoleV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<ActiveAttachmentSubjectDiscoveryV1<'a>> {
+        match self {
+            Self::Current(current) => current.discover_active_subjects_v1(role, grant),
+            Self::Frozen(current) => current.discover_active_subjects_v1(role, grant),
         }
     }
 

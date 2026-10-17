@@ -18,10 +18,11 @@ pub use types::{
 pub(in super::super) fn discover<'a, P>(
     ledger: &'a VerifiedLedger<P>,
     accepted: &AcceptedPublicIdentitySnapshot,
+    role: AttachmentSubjectRoleV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<ActiveAttachmentSubjectDiscoveryV1<'a>> {
     grant.ensure_available().map_err(Error::Domain)?;
-    let result = discover_checked(ledger, accepted, grant);
+    let result = discover_checked(ledger, accepted, role, grant);
     if result.is_err() {
         grant.poison();
     }
@@ -31,6 +32,7 @@ pub(in super::super) fn discover<'a, P>(
 fn discover_checked<'a, P>(
     ledger: &'a VerifiedLedger<P>,
     accepted: &AcceptedPublicIdentitySnapshot,
+    role: AttachmentSubjectRoleV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<ActiveAttachmentSubjectDiscoveryV1<'a>> {
     let projection = ledger.projection(accepted.store_identity(), grant)?;
@@ -41,7 +43,7 @@ fn discover_checked<'a, P>(
     for record in projection.active_records() {
         for subject in record.command.subjects.as_slice() {
             grant.charge_steps(1).map_err(Error::Domain)?;
-            if subject.role != AttachmentSubjectRoleV1::ResultRow {
+            if subject.role != role {
                 continue;
             }
             let capture = ledger.object(&subject.capture, grant)?;

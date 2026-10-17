@@ -21,6 +21,22 @@ pub fn retained_result_venue(source: &VerifiedRetainedResultMetadata) -> StoreRe
     )
 }
 
+pub fn documentary_result_venue(
+    source: &super::result_ownership::CheckedRetainedResultDocumentV1<'_>,
+) -> StoreResult<String> {
+    bound(
+        source.original_document().len(),
+        MAX_BODY,
+        "participation result context body bytes",
+    )?;
+    read(
+        source.original_document(),
+        source.capture().requested_url(),
+        &source.parsed_page().meet.name,
+        source.published_start(),
+    )
+}
+
 fn read(html: &str, owner: &str, name: &str, date: &str) -> StoreResult<String> {
     markup::canonical(html, owner)?;
     let scripts = markup::elements(html, b"script", None)?;
