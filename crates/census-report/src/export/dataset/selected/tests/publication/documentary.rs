@@ -9,6 +9,7 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
 mod fixture;
+mod lifecycle;
 mod refusals;
 mod roundtrip;
 

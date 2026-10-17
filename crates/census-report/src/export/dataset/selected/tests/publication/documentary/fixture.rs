@@ -87,7 +87,13 @@ impl Fixture {
     }
 
     pub(super) fn reopen(self) -> TestResult<Self> {
-        let Self { directory, store, profile, expected, handoff } = self;
+        let Self {
+            directory,
+            store,
+            profile,
+            expected,
+            handoff,
+        } = self;
         let reopened = (|| -> TestResult<Store> {
             files::verify(&handoff.store_path, &handoff.files)?;
             let root = store.root().to_path_buf();
@@ -96,7 +102,8 @@ impl Fixture {
             let tables = store.snapshot().tables_digest(&Table::ALL)?;
             let receipts = store.receipt_count()?;
             drop(store);
-            let (reopened, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+            let (reopened, writer) =
+                Store::open_public_identity_qualification_v3(&root)?.into_parts();
             drop(writer);
             check!(eq; reopened.store_identity()?, identity);
             check!(eq; reopened.snapshot().sequence(), sequence);
@@ -106,7 +113,13 @@ impl Fixture {
             Ok(reopened)
         })();
         match reopened {
-            Ok(store) => Ok(Self { directory, store, profile, expected, handoff }),
+            Ok(store) => Ok(Self {
+                directory,
+                store,
+                profile,
+                expected,
+                handoff,
+            }),
             Err(error) => {
                 let _preserved = directory.keep();
                 Err(error)
@@ -140,6 +153,8 @@ pub(super) fn copy_publication(workbook: &Path, destination: &Path) -> TestResul
 }
 
 pub(super) fn generation_inventory(directory: &Path) -> TestResult<Vec<(String, u64, String)>> {
-    Ok(files::inventory(directory)?.into_iter()
-        .map(|file| (file.path, file.bytes, file.sha256)).collect())
+    Ok(files::inventory(directory)?
+        .into_iter()
+        .map(|file| (file.path, file.bytes, file.sha256))
+        .collect())
 }
