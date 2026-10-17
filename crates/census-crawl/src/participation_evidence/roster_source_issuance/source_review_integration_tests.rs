@@ -14,12 +14,13 @@ use setup::*;
 fn fields(operation: &str) -> TestResult<RosterSourceReviewFieldsV1> {
     Ok(RosterSourceReviewFieldsV1 {
         operation: RosterAuthorityTextV1::parse(operation)?, actor: RosterReviewActorV1::LocalOperator,
+        decision: census_store::RosterSourceReviewDecisionV1::QualifyAndActivateExactCaptureRepresentation,
         reviewed_at: DateTime::parse_from_rfc3339("2026-10-16T00:49:43Z")?.to_utc(),
         rationale: RosterAuthorityTextV1::parse("Controlled local reviewed claims; no authority grant")?,
     })
 }
 
-fn prepare<'a>(store: &'a Store, operation: &str, extra_bytes: Option<usize>) -> TestResult<PreparedRosterSourceReviewV1<'a>> {
+pub(super) fn prepare<'a>(store: &'a Store, operation: &str, extra_bytes: Option<usize>) -> TestResult<PreparedRosterSourceReviewV1<'a>> {
     let (packet, school, program, request) = install(store)?;
     let mut inspection = store.inspect_roster_source_issuance_v1(request, AttachmentReplayGrantV1::new())?;
     let (evidence, grant) = inspection.source_parts()?;

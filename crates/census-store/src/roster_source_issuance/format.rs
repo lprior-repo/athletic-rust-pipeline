@@ -3,7 +3,8 @@ use super::{RosterStartupValidationBudgetV1, ENROLLMENT, HEAD, LIFECYCLE, OPERAT
 use crate::{Receipt, StoreError, StoreFormat, StoreResult};
 use fjall::{Keyspace, Readable, Snapshot};
 
-type Rows = Vec<(Vec<u8>, Vec<u8>)>;
+pub(super) type Rows = Vec<(Vec<u8>, Vec<u8>)>;
+use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 
 pub(crate) fn validate_format(
     snapshot: &Snapshot,
@@ -13,9 +14,9 @@ pub(crate) fn validate_format(
     format: &StoreFormat,
     budget: &mut RosterStartupValidationBudgetV1,
 ) -> StoreResult<()> {
-    let metadata = protected_rows(snapshot, meta, budget)?;
-    let records = protected_rows(snapshot, journal, budget)?;
-    let issued = scan(snapshot, receipts, OPERATION_PREFIX, budget)?;
+    let metadata = protected_rows(snapshot, meta, budget, None)?;
+    let records = protected_rows(snapshot, journal, budget, None)?;
+    let issued = scan(snapshot, receipts, OPERATION_PREFIX, budget, None)?;
     if format.lifecycle_revision != Some(LIFECYCLE) {
         if metadata.is_empty() && records.is_empty() && issued.is_empty() { return Ok(()); }
         return Err(Error::Corrupt("roster state outside admitted lifecycle").into());
@@ -37,22 +38,28 @@ pub(crate) fn validate_format(
     validate_enrollment(&metadata, &records, &issued, &identity)
 }
 
-fn scan(
+pub(super) fn scan(
     snapshot: &Snapshot,
     table: &Keyspace,
     prefix: &str,
     budget: &mut RosterStartupValidationBudgetV1,
+    mut grant: Option<&mut AttachmentReplayGrantV1>,
 ) -> StoreResult<Rows> {
-    snapshot.prefix(table, prefix).take(4097).try_fold(Vec::new(), |mut rows, guard| {
+    if let Some(grant) = grant.as_deref_mut() { grant.charge_steps(1).map_err(super::source_error)?; }
+    let mut iterator = snapshot.prefix(table, prefix);
+    let mut rows = Vec::new();
+    for _ in 0..4097 {
+        if let Some(grant) = grant.as_deref_mut() { grant.charge_steps(2).map_err(super::source_error)?; }
+        let Some(guard) = iterator.next() else { return Ok(rows); };
         let key = guard.key().map_err(|source| StoreError::Read { source })?;
-        let value = read_value(snapshot, table, &key, budget)?;
+        let value = read_value(snapshot, table, &key, budget, grant.as_deref_mut())?;
         rows.try_reserve(1).map_err(|_| Error::BudgetExceeded)?;
-        rows.push((key.to_vec(), value.to_vec()));
-        Ok(rows)
-    })
+        rows.push((key.to_vec(), value));
+    }
+    Err(Error::BudgetExceeded.into())
 }
 
-fn validate_enrollment(
+pub(super) fn validate_enrollment(
     metadata: &Rows, records: &Rows, issued: &Rows,
     identity: &census_domain::model::StoreIdentity,
 ) -> StoreResult<()> {
@@ -90,26 +97,33 @@ fn find<'a>(rows: &'a Rows, key: &str) -> StoreResult<&'a [u8]> {
         .ok_or_else(|| Error::Corrupt("missing enrollment metadata").into())
 }
 
-fn protected_rows(snapshot: &Snapshot, table: &Keyspace, budget: &mut RosterStartupValidationBudgetV1) -> StoreResult<Rows> {
-    let mut rows = scan(snapshot, table, ROOT, budget)?;
-    let phase = scan(snapshot, table, "roster_source_issuance\0", budget)?;
+pub(super) fn protected_rows(snapshot: &Snapshot, table: &Keyspace, budget: &mut RosterStartupValidationBudgetV1, mut grant: Option<&mut AttachmentReplayGrantV1>) -> StoreResult<Rows> {
+    let mut rows = scan(snapshot, table, ROOT, budget, grant.as_deref_mut())?;
+    let phase = scan(snapshot, table, "roster_source_issuance\0", budget, grant.as_deref_mut())?;
     rows.try_reserve(phase.len().checked_add(1).ok_or(Error::BudgetExceeded)?)
         .map_err(|_| Error::BudgetExceeded)?;
     rows.extend(phase);
     let bare = b"roster_source_issuance";
+    if let Some(grant) = grant.as_deref_mut() { grant.charge_steps(1).map_err(super::source_error)?; }
     if snapshot.contains_key(table, bare).map_err(|source| StoreError::Read { source })? {
-        rows.push((bare.to_vec(), read_value(snapshot, table, bare, budget)?));
+        rows.push((bare.to_vec(), read_value(snapshot, table, bare, budget, grant)?));
     }
     Ok(rows)
 }
 
-fn read_value(snapshot: &Snapshot, table: &Keyspace, key: &[u8], budget: &mut RosterStartupValidationBudgetV1) -> StoreResult<Vec<u8>> {
+fn read_value(snapshot: &Snapshot, table: &Keyspace, key: &[u8], budget: &mut RosterStartupValidationBudgetV1, mut grant: Option<&mut AttachmentReplayGrantV1>) -> StoreResult<Vec<u8>> {
+    if let Some(grant) = grant.as_deref_mut() { grant.charge_steps(1).map_err(super::source_error)?; }
     let length = snapshot.size_of(table, key).map_err(|source| StoreError::Read { source })?
         .ok_or(Error::Corrupt("missing inventory value"))?;
     let length = usize::try_from(length).map_err(|_| Error::BudgetExceeded)?;
     budget.charge(length.checked_add(key.len()).ok_or(Error::BudgetExceeded)?)?;
     let cap = if key.starts_with(super::issuance::OBJECT_PREFIX.as_bytes()) { 4 * 1024 * 1024 } else { codec::MAX_BYTES };
     if length > cap { return Err(Error::BudgetExceeded.into()); }
+    if let Some(grant) = grant {
+        let interpreted = length.checked_add(key.len()).and_then(|size| size.checked_mul(4)).ok_or(Error::BudgetExceeded)?;
+        grant.charge_bytes(interpreted).map_err(super::source_error)?;
+        grant.charge_steps(32).map_err(super::source_error)?;
+    }
     let value = snapshot.get(table, key).map_err(|source| StoreError::Read { source })?
         .ok_or(Error::Corrupt("missing inventory value"))?;
     if value.len() != length { return Err(Error::Corrupt("inventory length changed").into()); }

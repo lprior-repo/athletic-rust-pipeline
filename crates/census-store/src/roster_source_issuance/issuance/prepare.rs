@@ -43,7 +43,8 @@ fn prepare(
     inspection.grant.charge_steps(1).map_err(super::super::source_error)?;
     let basis_bytes = review::proposal_basis(&proposal)?;
     let proposal_review_basis = objects::insert(&mut objects, &basis_bytes, &mut inspection.grant)?;
-    let semantic = review::semantic(inspection, &proposal, fields, proposal_review_basis.clone(), input_token.clone(), prior_head.clone())?;
+    let (qualification, activation) = super::qualification::derive(&proposal, &proposal_review_basis, fields.decision, &mut objects, &mut inspection.grant)?;
+    let semantic = review::semantic(inspection, &proposal, fields, proposal_review_basis.clone(), input_token.clone(), prior_head.clone(), qualification, activation)?;
     let raw = codec::encode_with_source_grant(&semantic, &mut inspection.grant)?;
     let review = objects::insert(&mut objects, &raw, &mut inspection.grant)?;
     inspection.grant.charge_bytes(64 * 1024).map_err(super::super::source_error)?;

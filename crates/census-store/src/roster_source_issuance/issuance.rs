@@ -6,18 +6,26 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 mod review;
+mod qualification;
 mod objects;
 mod prepare;
 mod apply;
 mod preflight;
 pub(super) mod ledger;
 mod replay;
+mod reader;
+pub use reader::{CurrentRosterReviewedClaimsV1, ReplayedRosterReviewedClaimsV1, ReviewedRosterSourceClaimV1, FrozenRosterReviewedClaimsBundleV1, RosterFrozenReviewedClaimsReferenceV1, replay_frozen_roster_reviewed_claims_v1};
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RosterSourceReviewDecisionV1 { QualifyAndActivateExactCaptureRepresentation }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RosterSourceReviewFieldsV1 {
     pub operation: RosterAuthorityTextV1,
     pub actor: RosterReviewActorV1,
+    pub decision: RosterSourceReviewDecisionV1,
     pub reviewed_at: DateTime<Utc>,
     pub rationale: RosterAuthorityTextV1,
 }
@@ -88,6 +96,8 @@ pub(super) struct SemanticReview {
     provenance: String,
     fields: RosterSourceReviewFieldsV1,
     decision: String,
+    qualification: ObjectRef,
+    activation: ObjectRef,
     store: StoreIdentity,
     input_token: ObjectRef,
     prior_head: ObjectRef,

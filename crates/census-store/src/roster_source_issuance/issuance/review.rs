@@ -25,6 +25,8 @@ pub(super) fn semantic(
     proposal_basis: ObjectRef,
     input_token: ObjectRef,
     prior_head: ObjectRef,
+    qualification: ObjectRef,
+    activation: ObjectRef,
 ) -> StoreResult<SemanticReview> {
     if fields.operation.as_str().len() > 256 || fields.operation.as_str().starts_with(super::super::OPERATION_PREFIX) {
         return Err(Error::Corrupt("review operation").into());
@@ -35,7 +37,7 @@ pub(super) fn semantic(
     Ok(SemanticReview {
         schema: "roster-source-semantic-review-v1".into(),
         provenance: "explicit-unauthenticated-local-operator".into(), fields,
-        decision: "qualify-exact-capture-representation-claims".into(), store: inspection.store.clone(),
+        decision: "qualify-and-activate-exact-capture-representation-claims".into(), qualification, activation, store: inspection.store.clone(),
         input_token, prior_head, proposal_basis,
         scope_policy: proposal.scope().policy().clone(), year_convention: proposal.binding().year_convention().clone(),
         projection_merge_contract: proposal.binding().projection_merge_contract().clone(),

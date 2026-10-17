@@ -143,3 +143,6 @@ mod integration;
 
 #[path = "source_review_integration_tests.rs"]
 mod review_integration;
+
+#[path = "source_review_reader_tests.rs"]
+mod review_reader;

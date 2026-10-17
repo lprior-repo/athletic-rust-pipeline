@@ -13,7 +13,7 @@ pub struct RosterSourceEvidenceV1 {
 }
 
 impl RosterSourceEvidenceV1 {
-    pub(super) fn new(
+    pub(in crate::roster_source_issuance) fn new(
         store: census_domain::model::StoreIdentity,
         snapshot_sequence: u64,
         school: census_domain::model::SchoolId,

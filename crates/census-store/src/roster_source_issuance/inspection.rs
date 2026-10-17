@@ -7,7 +7,7 @@ use fjall::Readable;
 
 mod evidence;
 mod admission;
-mod inventory;
+pub(super) mod inventory;
 mod manifest;
 pub use evidence::RosterSourceEvidenceV1;
 pub use inventory::RosterPhysicalProjectionRowV1;

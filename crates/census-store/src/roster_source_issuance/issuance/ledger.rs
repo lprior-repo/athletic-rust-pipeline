@@ -63,19 +63,19 @@ pub(super) fn validate_record(record: &ReviewRecord, objects: &super::objects::O
     { return Err(Error::Corrupt("review basis or approval mismatch").into()); }
     let mut previous: Option<&str> = None;
     let mut bytes = 0_usize;
-    let mut selected = BTreeMap::new();
     for reference in &basis.closure {
         if previous.is_some_and(|value| value >= reference.digest.as_str()) { return Err(Error::Corrupt("review closure order").into()); }
         previous = Some(&reference.digest);
         bytes = bytes.checked_add(object(objects, reference)?.len()).ok_or(Error::BudgetExceeded)?;
         if bytes > 8 * 1024 * 1024 { return Err(Error::BudgetExceeded.into()); }
-        selected.insert(reference.digest.clone(), object(objects, reference)?.to_vec());
     }
-    let objects = &selected;
+    require_own_closure(record)?;
     object(objects, &basis.prior_head)?;
     let proposal = super::proposal(&basis.proposal)?;
     super::objects::require_proposal(objects, &proposal)?;
     if proposal.binding().store() != identity || proposal.binding().snapshot_revision().get() != basis.inspected_sequence
+        || basis.physical_inventory.digest != proposal.binding().physical_projection_inventory().digest().as_str()
+        || u64::try_from(basis.physical_inventory.bytes).map_err(|_| Error::BudgetExceeded)? != proposal.binding().physical_projection_inventory().bytes().get()
         || object(objects, &basis.proposal_review_basis)? != super::review::proposal_basis(&proposal)?
     { return Err(Error::Corrupt("review proposal lineage").into()); }
     let review: super::SemanticReview = codec::decode(object(objects, &basis.review)?)?;
@@ -90,7 +90,7 @@ fn validate_semantic(
 ) -> StoreResult<()> {
     let basis = &record.basis;
     if review.schema != "roster-source-semantic-review-v1" || review.provenance != "explicit-unauthenticated-local-operator"
-        || review.decision != "qualify-exact-capture-representation-claims" || review.store != basis.store
+        || review.decision != "qualify-and-activate-exact-capture-representation-claims" || review.store != basis.store
         || review.fields.operation != basis.operation || review.fields.reviewed_at > record.committed_at
         || review.input_token != basis.input_token || review.prior_head != basis.prior_head
         || review.proposal_basis != basis.proposal_review_basis
@@ -98,6 +98,10 @@ fn validate_semantic(
         || &review.projection_merge_contract != proposal.binding().projection_merge_contract()
         || basis.review.digest != proposal.semantic_review_evidence().digest().as_str()
     { return Err(Error::Corrupt("retained semantic review mismatch").into()); }
+    for reference in [&review.qualification, &review.activation] {
+        if !basis.closure.iter().any(|held| held == reference) { return Err(Error::Corrupt("review activation outside closure").into()); }
+    }
+    super::qualification::require(proposal, review, objects)?;
     for reference in [&review.scope_policy, &review.year_convention, &review.projection_merge_contract] {
         if reference.revision().get() != 1 || !objects.contains_key(reference.digest()) {
             return Err(Error::Corrupt("retained semantic contract missing").into());
@@ -114,4 +118,23 @@ pub(super) fn object<'a>(objects: &'a super::objects::Objects, reference: &Objec
     let raw = objects.get(&reference.digest).ok_or(Error::Corrupt("review closure object absent"))?;
     if raw.len() != reference.bytes { return Err(Error::Corrupt("review closure object length").into()); }
     Ok(raw)
+}
+
+fn require_own_closure(record: &ReviewRecord) -> StoreResult<()> {
+    let proposal = super::proposal(&record.basis.proposal)?;
+    let parser = proposal.parser();
+    let capture = proposal.capture();
+    let binding = proposal.binding();
+    for digest in [parser.artifact().digest().as_str(), parser.schema().digest().as_str(), parser.configuration().digest().as_str(),
+        parser.dependencies().digest().as_str(), capture.body().digest().as_str(), capture.manifest().digest().as_str(),
+        capture.interpretation().digest().as_str(), capture.retained_source_admission().digest().as_str(), capture.verification_grant().digest().as_str(),
+        binding.school_projection().digest().as_str(), binding.program_projection().digest().as_str(), binding.provider_packet().digest().as_str(),
+        binding.physical_projection_inventory().digest().as_str(), proposal.semantic_review_evidence().digest().as_str(),
+        &record.basis.prior_head.digest, &record.basis.input_token.digest, &record.basis.proposal_review_basis.digest,
+        proposal.scope().policy().digest(), binding.year_convention().digest(), binding.projection_merge_contract().digest()] {
+        if !record.basis.closure.iter().any(|reference| reference.digest == digest) {
+            return Err(Error::Corrupt("review reference outside own closure").into());
+        }
+    }
+    Ok(())
 }

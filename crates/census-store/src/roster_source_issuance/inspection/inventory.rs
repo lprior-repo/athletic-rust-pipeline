@@ -10,12 +10,14 @@ pub struct RosterPhysicalProjectionRowV1 {
 }
 
 impl RosterPhysicalProjectionRowV1 {
+    pub(in crate::roster_source_issuance) fn from_checked_parts(table: Table, key: Vec<u8>, bytes: Vec<u8>) -> Self { Self { table, key, bytes } }
+    pub(in crate::roster_source_issuance) fn into_parts(self) -> (Table, Vec<u8>, Vec<u8>) { (self.table, self.key, self.bytes) }
     pub fn table(&self) -> Table { self.table }
     pub fn key(&self) -> &[u8] { &self.key }
     pub fn bytes(&self) -> &[u8] { &self.bytes }
 }
 
-pub(super) fn collect(view: &StoreSnapshot<'_>, grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<RosterPhysicalProjectionRowV1>> {
+pub(in crate::roster_source_issuance) fn collect(view: &StoreSnapshot<'_>, grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<RosterPhysicalProjectionRowV1>> {
     let mut inventory = Inventory { rows: Vec::new(), bytes: 0 };
     inventory.table::<CanonicalSchool>(view, Table::Schools, grant)?;
     inventory.table::<CanonicalTeam>(view, Table::Teams, grant)?;

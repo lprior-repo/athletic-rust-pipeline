@@ -6,7 +6,7 @@ mod enrollment;
 mod format;
 mod inspection;
 mod issuance;
-pub use issuance::{PreparedRosterSourceReviewV1, RosterSourceReviewFieldsV1, RosterSourceReviewObjectsV1};
+pub use issuance::{CurrentRosterReviewedClaimsV1, ReplayedRosterReviewedClaimsV1, ReviewedRosterSourceClaimV1, FrozenRosterReviewedClaimsBundleV1, RosterFrozenReviewedClaimsReferenceV1, replay_frozen_roster_reviewed_claims_v1, PreparedRosterSourceReviewV1, RosterSourceReviewFieldsV1, RosterSourceReviewDecisionV1, RosterSourceReviewObjectsV1};
 pub use inspection::{RosterIssuanceInspectionRequestV1, RosterIssuanceInspectionV1, RosterSourceEvidenceV1, RosterPhysicalProjectionRowV1};
 
 pub use budget::RosterStartupValidationBudgetV1;
@@ -31,6 +31,8 @@ pub enum RosterSourceIssuanceStoreError {
     OperationConflict,
     #[error("roster source authority input changed")]
     InputMoved,
+    #[error("roster current source no longer matches the exact inspected closure")]
+    InspectedClosureChanged,
     #[error("roster source authority approval differs")]
     ApprovalMismatch,
     #[error("roster source authority validation budget exhausted")]
