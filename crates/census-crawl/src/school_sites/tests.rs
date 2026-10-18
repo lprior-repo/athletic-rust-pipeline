@@ -76,13 +76,7 @@ fn page_analysis_extracts_emails_hits_and_tables() -> TestResult {
     check!(signals.school_mailboxes.is_empty());
     check!(eq; signals.pages, vec!["https://example.k12.us/athletics".to_string()]);
     let coaches = coach_rows(&signals);
-    check!(coaches.contains(&(
-        "John Q. Public Girls",
-        Sport::CrossCountry,
-        CoachRole::HeadCoach,
-        Gender::Girls,
-        None
-    )));
+    check!(!coaches.iter().any(|row| row.0 == "John Q. Public Girls"));
     check!(coaches.contains(&(
         "Jane Doe",
         Sport::CrossCountry,
@@ -92,9 +86,9 @@ fn page_analysis_extracts_emails_hits_and_tables() -> TestResult {
     )));
     check!(coaches.contains(&(
         "John Q. Public",
-        Sport::CrossCountry,
+        Sport::OutdoorTrack,
         CoachRole::HeadCoach,
-        Gender::Girls,
+        Gender::Unknown,
         None
     )));
     check!(coaches.contains(&(

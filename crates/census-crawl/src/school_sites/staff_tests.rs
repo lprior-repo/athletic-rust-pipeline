@@ -236,3 +236,127 @@ fn staff_sports_reuse_the_shared_contact_classifier() -> TestResult {
     check!(eq; crate::coach_contacts::parse_sport("Indoor Volleyball"), None);
     Ok(())
 }
+
+fn profile(name: &str, role: &str, mailbox: &str) -> String {
+    format!(
+        "<ul class='profile-list-box'><li>{name}</li><li>{role}</li>\
+        <li><a href='mailto:{mailbox}'>{mailbox}</a></li></ul>"
+    )
+}
+
+#[test]
+fn generic_profile_binds_director_mailbox_without_inventing_team_or_owner() -> TestResult {
+    let mut signals = Signals::default();
+    let url = "https://lotusschool.org/athletics-dpt/";
+    analyse(
+        &Rules::new()?,
+        url,
+        &profile(
+            "Deon Jackson",
+            "Athletic Director",
+            "djackson@lotusschool.org",
+        ),
+        &mut signals,
+    )?;
+    check!(eq; signals.staff_contacts.len(), 1);
+    let hit = signals.staff_contacts.first().ok_or("director candidate")?;
+    check!(eq; hit.name, "Deon Jackson");
+    check!(eq; hit.published_role, "Athletic Director");
+    check!(eq; hit.email, "djackson@lotusschool.org");
+    check!(eq; hit.role, CoachRole::AthleticDirector);
+    check!(eq; hit.url, url);
+    check!(hit.sport.is_none());
+    check!(eq; hit.gender, census_domain::model::Gender::Unknown);
+    check!(
+        hit.published_school.is_empty()
+            && hit.member_id.is_empty()
+            && hit.category_id.is_empty()
+            && hit.published_sport.is_empty()
+            && hit.published_level.is_empty()
+    );
+    check!(signals.school_mailboxes.is_empty() && signals.emails.is_empty());
+    check!(eq; signals.staff_pages, vec![url]);
+    Ok(())
+}
+
+#[test]
+fn generic_profiles_do_not_borrow_adjacent_student_mailboxes() -> TestResult {
+    let html = format!(
+        "{}{}{}",
+        profile("Deon Jackson", "Athletic Director", "djackson@school.org"),
+        profile(
+            "Jane Student",
+            "Student Athletic Director",
+            "student@school.org"
+        ),
+        profile("Alex Player", "Head Coach Football", "player@school.org")
+    );
+    let mut signals = Signals::default();
+    analyse(
+        &Rules::new()?,
+        "https://school.org/staff",
+        &html,
+        &mut signals,
+    )?;
+    check!(eq; signals.staff_contacts.len(), 1);
+    check!(eq; signals.staff_contacts.first().map(|hit| hit.email.as_str()), Some("djackson@school.org"));
+    Ok(())
+}
+
+#[test]
+fn generic_profiles_reject_ambiguous_nested_and_inert_contacts() -> TestResult {
+    let valid = profile("Deon Jackson", "Athletic Director", "director@school.org");
+    let cases = [
+        valid.replace("Athletic Director", "Student Athletic Director"),
+        valid.replace("Athletic Director", "Not Athletic Director"),
+        valid.replace("Athletic Director", "Contact the Athletic Director"),
+        valid.replace("Deon Jackson", "Jane Doe (Student)"),
+        valid.replace("Deon Jackson", "Jane Doe Student"),
+        valid.replace("<li><a", "<li>Student contact Jane Doe <a"),
+        valid.replace(">director@school.org</a>", ">student@school.org</a>"),
+        valid.replace("Athletic Director", ""),
+        valid.replace(
+            "</a>",
+            "</a><a href='mailto:student@school.org'>Student</a>",
+        ),
+        valid.replace("Deon Jackson", "<div>Deon Jackson</div>"),
+        valid.replace("Athletic Director", "<script>Athletic Director</script>"),
+        valid.replace(
+            "Athletic Director",
+            "Athletic<!-- gap --> Director<li>Other Person</li>",
+        ),
+        format!("<template>{valid}</template>"),
+        format!("<script>{valid}</script>"),
+        format!("<!-- {valid} -->"),
+        valid.replace("profile-list-box", "student-profile"),
+    ];
+    for html in cases {
+        let mut signals = Signals::default();
+        let result = analyse(
+            &Rules::new()?,
+            "https://school.org/staff",
+            &html,
+            &mut signals,
+        );
+        check!(signals.staff_contacts.is_empty());
+        if result.is_ok() {
+            check!(signals.school_mailboxes.is_empty());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn generic_profile_budget_is_not_silent_empty() -> TestResult {
+    let html = profile("Deon Jackson", "Athletic Director", "director@school.org").repeat(321);
+    let mut signals = Signals::default();
+    check!(analyse(
+        &Rules::new()?,
+        "https://school.org/staff",
+        &html,
+        &mut signals
+    )
+    .is_err());
+    check!(signals.staff_contacts.is_empty());
+    Ok(())
+}

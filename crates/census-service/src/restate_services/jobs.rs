@@ -267,6 +267,7 @@ pub fn collect_error(error: CrawlError) -> JobError {
         | CrawlError::Domain(..)
         | CrawlError::Directory(..)
         | CrawlError::Arithmetic { .. }
+        | CrawlError::ParserBudget { .. }
         | CrawlError::Resource { .. }
         | CrawlError::OwnedParseResource(..)
         | CrawlError::OwnedCaptureResource(_)

@@ -61,6 +61,11 @@ pub enum CrawlError {
         requested: usize,
         limit: usize,
     },
+    #[error("{resource} parser budget exhausted: {detail}")]
+    ParserBudget {
+        resource: &'static str,
+        detail: String,
+    },
     #[error(transparent)]
     OwnedParseResource(#[from] crate::milesplit::OwnedParseResourceFailure),
     #[error(transparent)]

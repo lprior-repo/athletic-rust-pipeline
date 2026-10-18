@@ -8,7 +8,10 @@ mod research_failure;
 mod row;
 mod source_research;
 mod staff;
-pub(crate) use generic::{inert_markup_kind, inspect_staff_links, school_mailbox_candidates};
+pub(crate) use generic::{
+    inert_markup_kind, inspect_staff_links, school_coach_blocks, school_mailbox_candidates,
+    staff_profile_candidates, SchoolCoachBlock,
+};
 pub(crate) use map::Capture as StaffCapture;
 pub(crate) use research_failure::{
     fetch as contact_fetch_failure, status as contact_status_failure,

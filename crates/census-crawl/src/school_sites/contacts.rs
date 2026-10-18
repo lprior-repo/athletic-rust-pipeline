@@ -93,7 +93,10 @@ pub fn apply_contact_capture(
             detail: "school contact page is not UTF-8".to_owned(),
         })?;
         if let Err(error) = super::analyse(&super::Rules::new()?, locator, text, &mut signals) {
-            state = if matches!(error, CrawlError::Resource { .. }) {
+            state = if matches!(
+                error,
+                CrawlError::Resource { .. } | CrawlError::ParserBudget { .. }
+            ) {
                 Outcome::Partial
             } else {
                 Outcome::Failed
@@ -153,7 +156,13 @@ fn append(
 
 fn program_outcome(program: &CoachContactProgram, signals: &super::Signals) -> Outcome {
     let candidate = match program {
-        CoachContactProgram::SchoolAthletics => !signals.ad_hits.is_empty(),
+        CoachContactProgram::SchoolAthletics => {
+            !signals.ad_hits.is_empty()
+                || signals
+                    .staff_contacts
+                    .iter()
+                    .any(|hit| hit.role == census_domain::model::CoachRole::AthleticDirector)
+        }
         CoachContactProgram::Team { sport, gender } => signals.coach_hits.iter().any(|hit| {
             hit.sport == *sport
                 && (hit.gender == *gender
