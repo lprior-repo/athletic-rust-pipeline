@@ -750,3 +750,40 @@ PR85 (`53eac1aa`) was then fast-forwarded with the batch preserved. It does not
 change the pinned kernel sources or execution configuration. The receipts above
 precede that merge; clean-commit static and changed-build qualification are pending.
 
+#### Clean changed-build qualification — 2026-10-18
+
+Clean source B `8524c803e202f9d929f1f745cbebe414093b40ac`, tree
+`953f09cf22d6bfdf181fb62ac4238f27bb2c68e6`, is pushed to main with PR84/85.
+Execution used `env -u CI`, two build jobs and task-local temporary storage.
+
+| Surface | Receipt | Result |
+|---|---|---|
+| Format / all-target check / lint | `63fe4ad9` / `efd58d9d` / `3831ac88` | PASS; forced arity advisories disclosed |
+| Trusted AST / no-comments / panic extraction | `9d7b4756` / `630a6523` / `00fba436` | PASS; 4,812 owned Rust files in lexical checks |
+| Source/robots regression lane | `dc916900` | PASS |
+| Selected/genuine publication lane, excluding `publication::crash::` | `60074802` | PASS; workbook/normalized and offline source proofs |
+| Independent authenticated A→B | `2f55b17d` | PASS; all three original A cases, original inventory/pins unchanged, unsupported current claims and tampered proof refused |
+| Original row-local pre/post generations, standalone strict reopen + real selector | `1dce2283` | PASS; every selected-row field equals its original committed oracle |
+
+A remains producer `1ab843c4` and the manifest pinned above; it was not rebuilt.
+The row-local probe used the original synthetic R3 generations, not a relabeled
+R2 A. Their frozen SHA256 values are `b145c0274228c12550d5ed4d3d78274a1131152a3838003a891cec3aa1aa9c09`
+and `6dd00892fc430e69bb31a91b4583a4ba21eda6a23e2c5e79570507ef0fa320f8`.
+The original JSONL oracle hashes are `9cc34fc9e65772e39a9d322b559615e6e5a8aaaf42b4bdde12d98004acbf3b6a`
+and `4ff1c5321b4f3f00fcd83d8bcb60b7d38e97044df6b0f90906c584b9ed4186b7`.
+Both reproduced performance `perf_babff0c646e861c8`, value 4191000, date
+2026-03-27 and Detroit Catholic Central through the production selector.
+Consumer source SHA256 `19fa56e6be6697700171cf7d5b0d00fc5a9f17df6cf295c05cc5c029e0ab04f8`
+is preserved at `/home/lewis/.cache/r2-kernel-baseline-Os9ai0/row-local-replay-probe.rs`;
+the throwaway repository example was removed.
+
+Scope correction: the earlier `9008e0b5` inherited a 42-case selector containing
+the publication-crash subtree despite historical denial exclusions. Its observed
+outcomes do not authorize those actions or close denied fault obligations.
+The clean B lane explicitly excludes that subtree; no further denied
+crash/fence/service retry is authorized by this checkpoint.
+
+This closes the integrated static/structural checkpoint and these scoped replay
+cases, not PRIMARY, full R1–R15 acceptance, representative resource bounds,
+genuine five-state population or national readiness.
+
