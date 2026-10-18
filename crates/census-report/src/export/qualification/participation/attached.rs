@@ -7,6 +7,7 @@ use census_crawl::participation_evidence::recorded::{
     discover_current_html_results, discover_frozen_html_results,
     with_current_attached_participation, with_frozen_attached_participation,
     AttachedParticipationV1, AttachmentHtmlResultDiscoveryV1,
+    DiscoveredIdentityLinkedHtmlResultDocumentV1,
 };
 use census_domain::affiliation_candidates::DeclaredFrozenView;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1 as Grant;
@@ -19,8 +20,14 @@ use std::num::NonZeroU64;
 use std::path::Path;
 
 mod assessment;
+mod bound;
+mod descriptor;
 mod diagnostics;
 mod facts;
+mod guards;
+mod mapped;
+mod shared;
+mod validate;
 pub(crate) use diagnostics::UnsupportedDocumentarySource;
 
 #[derive(Clone, Copy)]
@@ -38,6 +45,23 @@ enum ReplaySemantics {
 pub(super) struct Collected {
     pub(super) rows: BTreeMap<PerformanceId, DocumentaryParticipationRow>,
     pub(super) unsupported: Vec<UnsupportedDocumentarySource>,
+    pub(super) mapped: BTreeMap<PerformanceId, super::PinnedParticipationRow>,
+}
+pub(super) fn school_bound(
+    dataset: &ExportDataset,
+    profile: &QueryProfileV1,
+    captured_at: DateTime<Utc>,
+    school: &census_store::ReplayedResultSchoolCorrespondencesV1<'_>,
+    grant: &mut Grant,
+) -> ReportResult<Collected> {
+    bound::collect(dataset, profile, captured_at, school, grant)
+}
+pub(super) fn capture_descriptor(
+    dataset: &ExportDataset,
+    snapshot: &StoreSnapshot<'_>,
+    directory: &Path,
+) -> ReportResult<super::archive::attachment::AttachmentClosureDescriptor> {
+    descriptor::capture(dataset, snapshot, directory)
 }
 
 pub(super) fn capture(
@@ -188,59 +212,64 @@ fn collect(
     for index in 0..plan.group_count() {
         let result = plan
             .with_group(index, grant, |linked, grant| {
-                Ok((|| -> ReportResult<()> {
-                    for row_index in 0..linked.row_count() {
-                        let row = assessment::row(
-                            &linked,
-                            row_index,
-                            query,
-                            sources,
-                            grant,
-                            &mut budget,
-                        )?;
-                        reject_collision(dataset, &rows, row.performance_id(), &mut budget)?;
-                        let search = rows
-                            .len()
-                            .checked_add(1)
-                            .ok_or(census_store::StoreError::CounterOverflow)?;
-                        let owner =
-                            std::mem::size_of::<(PerformanceId, DocumentaryParticipationRow)>()
-                                .checked_add(row.performance_id().as_str().len())
-                                .ok_or(census_store::StoreError::CounterOverflow)?;
-                        budget.charge(owner, search)?;
-                        rows.insert(row.performance_id().clone(), row);
-                    }
-                    Ok(())
-                })())
+                Ok(collect_group(
+                    dataset,
+                    query,
+                    sources,
+                    &linked,
+                    grant,
+                    &mut budget,
+                    &mut rows,
+                ))
             })
             .map_err(source)?;
         result?;
     }
-    Ok(Collected { rows, unsupported })
+    Ok(Collected {
+        rows,
+        unsupported,
+        mapped: BTreeMap::new(),
+    })
 }
-
+fn collect_group(
+    dataset: &ExportDataset,
+    query: CandidateQuery<'_>,
+    sources: AssessmentSources<'_, '_, '_>,
+    linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
+    grant: &mut Grant,
+    budget: &mut Admission,
+    rows: &mut BTreeMap<PerformanceId, DocumentaryParticipationRow>,
+) -> ReportResult<()> {
+    for row_index in 0..linked.row_count() {
+        let row = assessment::row(linked, row_index, query, sources, grant, budget)?;
+        guards::admit(dataset, rows, row, budget)?;
+    }
+    Ok(())
+}
+fn reject_extended(
+    dataset: &ExportDataset,
+    rows: &BTreeMap<PerformanceId, DocumentaryParticipationRow>,
+    mapped: &BTreeMap<PerformanceId, super::PinnedParticipationRow>,
+    id: &PerformanceId,
+    budget: &mut Admission,
+) -> ReportResult<()> {
+    guards::extended(dataset, rows, mapped, id, budget)
+}
+fn reject_mapped_duplicate(
+    rows: &BTreeMap<PerformanceId, DocumentaryParticipationRow>,
+    mapped: &BTreeMap<PerformanceId, super::PinnedParticipationRow>,
+    id: &PerformanceId,
+    budget: &mut Admission,
+) -> ReportResult<()> {
+    guards::mapped_duplicate(rows, mapped, id, budget)
+}
 fn reject_collision(
     dataset: &ExportDataset,
     rows: &BTreeMap<PerformanceId, DocumentaryParticipationRow>,
     id: &PerformanceId,
     budget: &mut Admission,
 ) -> ReportResult<()> {
-    for performance in &dataset.performances {
-        budget.charge(0, 1)?;
-        if &performance.id == id {
-            return Err(invalid("documentary performance collides with structured source").into());
-        }
-    }
-    for prior in rows.keys() {
-        budget.charge(0, 1)?;
-        if prior == id {
-            return Err(invalid(
-                "documentary performance has duplicate or conflicting source observations",
-            )
-            .into());
-        }
-    }
-    Ok(())
+    guards::collision(dataset, rows, id, budget)
 }
 
 fn domain(

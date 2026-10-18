@@ -55,13 +55,14 @@ impl SelectedProofs {
         profile: &QueryProfileV1,
         expected_fingerprints: &BTreeMap<String, String>,
         directory: &Path,
+        identity: &census_store::FrozenPublicIdentityBundleV2,
+        school: Option<crate::export::qualification::participation::SchoolContext<'_, '_>>,
     ) -> ReportResult<(Self, HydratedProofs)> {
         require_binding(dataset, profile, expected_fingerprints)?;
         require_physical_roots(snapshot, expected_fingerprints)?;
         objects::require_empty(directory)?;
-        let bundle = snapshot.freeze_public_identity_v2()?;
-        dataset.prepare_selected_public_identities(bundle.replay()?)?;
-        let public_identity = identity::Bundle::capture(directory, &bundle)?;
+        dataset.prepare_selected_public_identities(identity.replay()?)?;
+        let public_identity = identity::Bundle::capture(directory, identity)?;
         let (affiliation, affiliations) =
             current_affiliation::capture_frozen(dataset, snapshot, directory)?;
         let affiliation_digest = affiliation.digest()?;
@@ -79,6 +80,7 @@ impl SelectedProofs {
             affiliation.observations(),
             expected_athletes,
             affiliations.roster_context(),
+            school,
         )?;
         if participation.fingerprints() != *expected_fingerprints {
             return Err(invalid(

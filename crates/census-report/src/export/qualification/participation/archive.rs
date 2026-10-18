@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 pub(super) mod attachment;
 mod canonical;
 mod objects;
+pub(crate) mod school;
 pub(super) use attachment::{capture_attachment, replay_attachment};
 pub(super) use objects::hash;
+pub(crate) use school::{capture_school, load_school, SchoolClosure, SchoolClosureDescriptor};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -53,6 +55,8 @@ pub(crate) struct ParticipationReplayV4 {
     pub(super) version: u32,
     pub(super) retained: ParticipationReplayV2,
     pub(super) attachment: attachment::AttachmentClosureDescriptor,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) school: Option<SchoolClosureDescriptor>,
 }
 
 #[derive(Debug, Serialize)]

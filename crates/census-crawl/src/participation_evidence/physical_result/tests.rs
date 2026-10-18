@@ -10,6 +10,7 @@ mod fixture;
 mod identity;
 mod refusals;
 mod replay;
+mod selected_row;
 
 type TestResult<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 

@@ -110,58 +110,103 @@ fn valid_projection_prefixes_share_one_traversal_budget_and_never_return_a_parti
 ) -> TestResult {
     let mut records = Vec::new();
     append(&mut records, command("first")?)?;
-    let mut last_success = 0;
-    for index in 1..=128 {
-        let result = replay_reviewed_references(
+    let previous = records.last().ok_or("prior record")?;
+    let command = next(previous, "replacement")?;
+    append(&mut records, command)?;
+    let receipts = receipts(&records);
+    let expected = inventory(&records)?;
+
+    let required_steps = measure_replay_traversal_steps(&store()?, &records, &receipts, &expected)?;
+
+    let short_precharge = AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+        .checked_sub(required_steps)
+        .and_then(|n| n.checked_add(1))
+        .ok_or("short precharge overflow")?;
+    let mut short = AttachmentReplayGrantV1::new();
+    short.charge_steps(short_precharge)?;
+    check!(matches!(
+        replay_reviewed_references_with_grant(
             &store()?,
             &records,
-            &receipts(&records),
-            &inventory(&records)?,
-        );
-        match result {
-            Ok(projection) => {
-                check!(eq; projection.records().len(), records.len());
-                check!(eq; projection.active_records().count(), 1);
-                last_success = records.len();
-            }
-            Err(EvidenceSubjectAttachmentError::Capacity {
-                resource: "aggregate traversal steps",
-                needed,
-                available,
-            }) => {
-                check!(last_success > 0);
-                check!(eq; records.len(), last_success + 1);
-                check!(needed > available);
-                check!(eq; available, AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS);
-                return Ok(());
-            }
-            Err(error) => return Err(error.into()),
+            &receipts,
+            &expected,
+            &mut short,
+        ),
+        Err(EvidenceSubjectAttachmentError::Capacity {
+            resource: "aggregate traversal steps",
+            needed,
+            available,
+        }) if needed > available
+            && available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+    ));
+    check!(eq; short.usage().traversal_steps(), AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS);
+    check!(matches!(
+        replay_reviewed_references_with_grant(
+            &store()?,
+            &records,
+            &receipts,
+            &expected,
+            &mut short,
+        ),
+        Err(EvidenceSubjectAttachmentError::Poisoned)
+    ));
+
+    let exact_precharge = AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+        .checked_sub(required_steps)
+        .ok_or("exact precharge underflow")?;
+    let mut exact = AttachmentReplayGrantV1::new();
+    exact.charge_steps(exact_precharge)?;
+    let projection = replay_reviewed_references_with_grant(
+        &store()?,
+        &records,
+        &receipts,
+        &expected,
+        &mut exact,
+    )?;
+    check!(eq; projection.records().len(), records.len());
+    check!(eq; exact.usage().traversal_steps(), AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS);
+    Ok(())
+}
+
+fn measure_replay_traversal_steps(
+    store: &StoreIdentity,
+    records: &[ReviewedReferenceRecordV1],
+    receipts: &[AttachmentReceiptBindingV1],
+    expected: &AttachmentInventoryV1,
+) -> TestResult<usize> {
+    let mut grant = AttachmentReplayGrantV1::new();
+    match replay_reviewed_references_with_grant(store, records, receipts, expected, &mut grant) {
+        Ok(projection) => {
+            check!(eq; projection.records().len(), records.len());
+            Ok(grant.usage().traversal_steps())
         }
-        let previous = records.last().ok_or("prior record")?;
-        let command = next(previous, &format!("replacement-{index}"))?;
-        append(&mut records, command)?;
+        Err(error) => Err(error.into()),
     }
-    Err("projection traversal budget was reset or not charged".into())
 }
 
 #[test]
 fn bulk_decoder_admits_total_raw_bytes_before_any_record_parse() -> TestResult {
-    let per_record = ReplayLimits::SMALL.total_text_bytes;
-    let first = vec![0u8; per_record];
-    let second = vec![0u8; per_record];
-    let overflow = b"x";
-    let raw: [&[u8]; 3] = [first.as_slice(), second.as_slice(), overflow];
-    let receipt = AttachmentReceiptBindingV1 {
-        operation: text("unused")?,
-        record_digest: digest("unused")?,
-    };
+    let record = seal(command("first valid record")?)?;
+    let encoded = encode_reviewed_reference(&record, ReplayLimits::SMALL.total_text_bytes)?;
+    let raw_size = encoded.len();
+    let padding = AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+        .checked_sub(raw_size)
+        .and_then(|n| n.checked_add(1))
+        .ok_or("byte padding overflow")?;
+    let mut grant = AttachmentReplayGrantV1::new();
+    grant.charge_bytes(padding)?;
+    let zero = vec![0u8; raw_size];
     check!(matches!(
-        decode_and_replay_reviewed_references(
+        decode_and_replay_reviewed_references_with_grant(
             &store()?,
-            &raw,
-            &[receipt.clone(), receipt.clone(), receipt],
+            &[zero.as_slice()],
+            &[AttachmentReceiptBindingV1 {
+                operation: record.command.operation.clone(),
+                record_digest: record.record_digest.clone(),
+            }],
             &AttachmentInventoryV1::empty()?,
-            per_record
+            ReplayLimits::SMALL.total_text_bytes,
+            &mut grant
         ),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate encoded bytes",
@@ -170,34 +215,47 @@ fn bulk_decoder_admits_total_raw_bytes_before_any_record_parse() -> TestResult {
         }) if available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES
             && needed.checked_sub(available) == Some(1)
     ));
+    check!(eq; grant.usage().encoded_bytes(), padding);
     Ok(())
 }
 
 #[test]
 fn bulk_decoder_charges_the_provisional_record_before_parsing_a_later_record() -> TestResult {
-    let per_record = ReplayLimits::SMALL.total_text_bytes;
     let record = seal(command("first valid record")?)?;
-    let mut first = encode_reviewed_reference(&record, per_record)?;
-    first.resize(per_record - 1, b' ');
-    let second = vec![0u8; per_record];
-    let raw: [&[u8]; 2] = [first.as_slice(), second.as_slice()];
-    let receipt = AttachmentReceiptBindingV1 {
-        operation: record.command.operation.clone(),
-        record_digest: record.record_digest.clone(),
-    };
+    let encoded = encode_reviewed_reference(&record, ReplayLimits::SMALL.total_text_bytes)?;
+    let raw_size = encoded.len();
+    let second_raw = b"{";
+    let precharge = AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+        .checked_sub(raw_size)
+        .and_then(|n| n.checked_sub(second_raw.len()))
+        .ok_or("remaining bytes underflow")?;
+    let mut grant = AttachmentReplayGrantV1::new();
+    grant.charge_bytes(precharge)?;
     check!(matches!(
-        decode_and_replay_reviewed_references(
+        decode_and_replay_reviewed_references_with_grant(
             &store()?,
-            &raw,
-            &[receipt.clone(), receipt],
+            &[encoded.as_slice(), second_raw],
+            &[
+                AttachmentReceiptBindingV1 {
+                    operation: record.command.operation.clone(),
+                    record_digest: record.record_digest.clone(),
+                },
+                AttachmentReceiptBindingV1 {
+                    operation: text("unused")?,
+                    record_digest: digest("unused")?,
+                }
+            ],
             &AttachmentInventoryV1::empty()?,
-            per_record
+            ReplayLimits::SMALL.total_text_bytes,
+            &mut grant
         ),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate encoded bytes",
             needed,
             available,
-        }) if needed > available && available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+        }) if needed > available
+            && available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES
     ));
+    check!(eq; grant.usage().encoded_bytes(), AttachmentReplayGrantV1::MAX_ENCODED_BYTES);
     Ok(())
 }

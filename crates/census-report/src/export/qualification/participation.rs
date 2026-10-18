@@ -19,7 +19,7 @@ use std::collections::BTreeMap;
 use std::num::NonZeroU64;
 use std::path::Path;
 
-mod archive;
+pub(in crate::export) mod archive;
 mod attached;
 pub(crate) use attached::UnsupportedDocumentarySource;
 mod budget;
@@ -30,6 +30,9 @@ mod independent;
 mod note;
 mod observations;
 mod resolve;
+mod school_context;
+pub(in crate::export) mod school_projection;
+pub(crate) use school_context::SchoolContext;
 mod support;
 mod types;
 mod unresolved;
@@ -65,6 +68,7 @@ impl PinnedParticipation {
         athletes: &PhysicalObservationDescriptor,
         expected_athletes: &str,
         roster_context: VerifiedRosterContext<'_>,
+        school: Option<SchoolContext<'_, '_>>,
     ) -> ReportResult<Self> {
         validation::live(dataset, snapshot, profile)?;
         roster_context.require_binding(dataset, profile)?;
@@ -94,6 +98,7 @@ impl PinnedParticipation {
             independent,
             rows,
             directory,
+            school,
         )
     }
 
@@ -122,7 +127,7 @@ impl PinnedParticipation {
             retained.snapshot_sequence,
             &bytes,
         )?;
-        let rows = assess(
+        let mut rows = assess(
             dataset,
             profile,
             &journal,
@@ -131,8 +136,14 @@ impl PinnedParticipation {
             roster_context,
             replay.independent(),
         )?;
-        let documentary =
-            replay_documentary(dataset, profile, retained.captured_at, &replay, directory)?;
+        let documentary = school_context::replay_documentary(
+            dataset,
+            profile,
+            retained.captured_at,
+            &replay,
+            directory,
+        )?;
+        rows.extend(documentary.mapped);
         Ok(Self {
             input_generation: dataset.lineage.input_generation.clone(),
             profile_id: profile.id().map_err(StoreError::from)?,
@@ -153,8 +164,9 @@ fn seal_live(
     observations: Vec<PhysicalObservationDescriptor>,
     recorder: census_crawl::milesplit::RecordingRetainedJournal<'_, '_>,
     independent: census_crawl::participation_evidence::IndependentParticipationBundleV1,
-    rows: BTreeMap<PerformanceId, PinnedParticipationRow>,
+    mut rows: BTreeMap<PerformanceId, PinnedParticipationRow>,
     directory: &Path,
+    school: Option<SchoolContext<'_, '_>>,
 ) -> ReportResult<PinnedParticipation> {
     let replay = ParticipationReplayV1 {
         version: 1,
@@ -169,8 +181,9 @@ fn seal_live(
         observations,
         journal: recorder.finish()?,
     };
-    let (documentary, attachment) =
-        attached::capture(dataset, snapshot, profile, captured_at, directory)?;
+    let (documentary, attachment, school) =
+        school_context::collect_live(dataset, snapshot, profile, captured_at, directory, school)?;
+    rows.extend(documentary.mapped);
     let replay = ParticipationReplay::V4(ParticipationReplayV4 {
         version: 4,
         retained: ParticipationReplayV2 {
@@ -179,6 +192,7 @@ fn seal_live(
             independent,
         },
         attachment,
+        school,
     });
     Ok(PinnedParticipation {
         input_generation: dataset.lineage.input_generation.clone(),
@@ -189,27 +203,6 @@ fn seal_live(
         unsupported_documentary: documentary.unsupported,
         replay,
     })
-}
-
-fn replay_documentary(
-    dataset: &ExportDataset,
-    profile: &QueryProfileV1,
-    captured_at: DateTime<Utc>,
-    replay: &ParticipationReplay,
-    directory: &Path,
-) -> ReportResult<attached::Collected> {
-    match replay {
-        ParticipationReplay::V3(value) => {
-            attached::replay(dataset, profile, captured_at, &value.attachment, directory)
-        }
-        ParticipationReplay::V4(value) => {
-            attached::replay_current(dataset, profile, captured_at, &value.attachment, directory)
-        }
-        ParticipationReplay::V1(_) | ParticipationReplay::V2(_) => Ok(attached::Collected {
-            rows: BTreeMap::new(),
-            unsupported: Vec::new(),
-        }),
-    }
 }
 
 fn assess(

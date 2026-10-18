@@ -45,7 +45,10 @@ impl<'a> Records<'a> {
         })
     }
 
-    pub(super) fn bind(&mut self, binding: &super::provenance::Binding<'_>) -> CrawlResult<()> {
+    pub(super) fn bind(
+        &mut self,
+        binding: &census_crawl::participation_evidence::recorded::roster_provenance::Binding<'_>,
+    ) -> CrawlResult<()> {
         if self.members.len() != self.athletes.len()
             || self.members.len() != self.athlete_observations.len()
         {

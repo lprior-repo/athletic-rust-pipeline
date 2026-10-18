@@ -39,7 +39,7 @@ impl Default for AttachmentReplayGrantV1 {
 }
 
 impl AttachmentReplayGrantV1 {
-    pub const MAX_ENCODED_BYTES: usize = 9 * 1024 * 1024;
+    pub const MAX_ENCODED_BYTES: usize = 16 * 1024 * 1024;
     pub const MAX_TRAVERSAL_STEPS: usize = 131_072;
 
     pub fn new() -> Self {

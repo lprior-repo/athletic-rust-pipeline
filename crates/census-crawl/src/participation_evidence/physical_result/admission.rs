@@ -64,6 +64,24 @@ pub(super) fn count(needed: usize) -> Result<()> {
     }
     bound(needed, MAX_PARTICIPATION_FACTS, "selected rows")
 }
+pub(super) fn single(
+    document: &CheckedRetainedResultDocumentV1<'_>,
+    row_index: usize,
+    target: &ProposedHtmlResultTargetV1<'_>,
+) -> Result<()> {
+    count(document.selected_count())?;
+    context(document)?;
+    let row = document
+        .row(row_index)
+        .ok_or(Error::Invalid("selected original row missing"))?;
+    let input_bytes = selected(&row, target)?;
+    let needed = input_bytes
+        .checked_mul(OUTPUT_COPY_FACTOR)
+        .and_then(|bytes| bytes.checked_add(ROW_OUTPUT_OVERHEAD))
+        .and_then(|bytes| bytes.checked_add(SHARED_OUTPUT_BYTES))
+        .ok_or(Error::Overflow)?;
+    bound(needed, MAX_PACKET, "estimated encoded output bytes")
+}
 
 fn context(document: &CheckedRetainedResultDocumentV1<'_>) -> Result<()> {
     let page = document.parsed_page();

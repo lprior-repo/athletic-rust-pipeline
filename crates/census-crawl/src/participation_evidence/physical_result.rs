@@ -85,6 +85,26 @@ pub fn project_retained_html_result_identity(
     admission::identity(document, &row, proposed_athlete)?;
     project::identity(document, &row, proposed_athlete)
 }
+pub fn project_retained_html_result_row<'a, 'capture>(
+    document: &'a CheckedRetainedResultDocumentV1<'capture>,
+    row_index: usize,
+    target: &ProposedHtmlResultTargetV1<'_>,
+) -> Result<UnadmittedHtmlResultProjectionV1<'a, 'capture>> {
+    admission::single(document, row_index, target)?;
+    let meet = project::meet(document)?;
+    let source = document
+        .row(row_index)
+        .ok_or(HtmlResultProjectionError::Invalid(
+            "selected original row missing",
+        ))?;
+    let row = project::row(document, &meet, &source, target)?;
+    let rows = one(row)?;
+    Ok(UnadmittedHtmlResultProjectionV1 {
+        document,
+        meet,
+        rows,
+    })
+}
 
 fn one<T>(value: T) -> Result<Vec<T>> {
     let mut output = Vec::new();

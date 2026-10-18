@@ -18,7 +18,7 @@ mod counts;
 mod effects;
 pub(crate) mod journal;
 mod metadata;
-mod provenance;
+use census_crawl::participation_evidence::recorded::roster_provenance;
 pub(super) mod refusal;
 mod summary;
 #[cfg(test)]
@@ -109,7 +109,7 @@ async fn apply(
 ) -> CrawlResult<Application> {
     let commit = Commit::new(store, team, run, read)?;
     let outcome = match read.verdict.roster() {
-        Some(roster) => match provenance::Binding::new(&read.capture, team, &read.verdict) {
+        Some(roster) => match roster_provenance::Binding::new(&read.capture, team, &read.verdict) {
             Ok(binding) => apply_roster(&commit, roster, run, &binding).await,
             Err(error) => Err(error),
         },
@@ -122,7 +122,7 @@ async fn apply_roster(
     commit: &Commit<'_>,
     roster: &Roster,
     run: &RosterRun<'_>,
-    binding: &provenance::Binding<'_>,
+    binding: &roster_provenance::Binding<'_>,
 ) -> CrawlResult<Application> {
     let counts = Counts::new()?;
     stream::try_unfold((0, counts), |(offset, mut counts)| async move {

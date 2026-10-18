@@ -1,5 +1,7 @@
 use census_crawl::milesplit::SourceRowLocator;
-use census_crawl::participation_evidence::provider_school::ProviderSchoolPacketV1;
+use census_crawl::participation_evidence::provider_school::{
+    ProviderSchoolPacketRefV1, ProviderSchoolPacketV1,
+};
 use census_crawl::participation_evidence::provider_target::SourceTargetPacketV1;
 use census_crawl::participation_evidence::recorded::{
     record_provider_school_intake, record_provider_target_intake, ProviderTargetIntakeDispositionV1,
@@ -67,11 +69,17 @@ pub(super) struct RowLocator {
 pub(super) struct InstalledSource {
     pub(super) directory: tempfile::TempDir,
     pub(super) store: Store,
+    pub(super) identity_writer: census_store::PublicIdentityWriterV1,
     pub(super) school: SchoolId,
     pub(super) public: PublicAthleteId,
     pub(super) candidate: AthleteCandidateId,
     pub(super) source_records: Vec<SourceReference>,
     pub(super) row_locators: Vec<RowLocator>,
+}
+
+pub(super) struct CurrentSchoolInput {
+    pub(super) school: SchoolId,
+    pub(super) reference: ProviderSchoolPacketRefV1,
 }
 
 pub(super) fn capture(
@@ -227,10 +235,10 @@ pub(super) fn install() -> TestResult<InstalledSource> {
 
     require_originals(&store, &source_records)?;
 
-    drop(writer);
     Ok(InstalledSource {
         directory,
         store,
+        identity_writer: writer,
         school,
         public,
         candidate,

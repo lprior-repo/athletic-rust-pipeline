@@ -18,6 +18,9 @@ use attached_participation::tests::{
 mod provider;
 mod provider_school;
 mod read;
+mod roster_projection;
+pub mod roster_provenance;
+pub use roster_projection::record_provider_roster_intake;
 mod schools;
 mod window;
 

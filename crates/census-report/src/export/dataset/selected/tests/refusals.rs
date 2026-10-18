@@ -59,7 +59,9 @@ async fn all_independent_physical_roots_are_enforced_on_capture_and_replay() -> 
             &fixture.store.snapshot(),
             &profile,
             &roots,
-            fresh.path()
+            fresh.path(),
+            &fixture.store.snapshot().freeze_public_identity_v2()?,
+            None,
         )
         .is_err());
         check!(std::fs::read_dir(fresh.path())?.next().is_none());

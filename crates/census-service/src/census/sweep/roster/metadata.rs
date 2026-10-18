@@ -66,7 +66,7 @@ fn common(team: &TeamRef, observed_on: &str) -> CrawlResult<usize> {
 fn window_len(rows: &[LocatedRosterAthlete], common: usize) -> CrawlResult<usize> {
     let initial = add(
         add(scale(common, 32)?, 16 * 1024)?,
-        super::provenance::MAX_WINDOW_ATTACHMENT_BYTES,
+        census_crawl::participation_evidence::recorded::roster_provenance::MAX_WINDOW_ATTACHMENT_BYTES,
     )?;
     let outcome =
         rows.iter()

@@ -49,53 +49,12 @@ pub(super) fn row(
     seal_row(&row, &identity, athlete, assessed, budget)
 }
 
-fn append_semantic_references(
-    references: &mut Vec<String>,
-    semantic: Vec<String>,
-    budget: &mut Admission,
-) -> ReportResult<()> {
-    for reference in semantic {
-        let bytes = std::mem::size_of::<String>()
-            .checked_add(reference.len())
-            .and_then(|bytes| bytes.checked_mul(4))
-            .ok_or(census_store::StoreError::CounterOverflow)?;
-        budget.charge(bytes, 1)?;
-        references.try_reserve_exact(1).map_err(|_| {
-            crate::grouping::GroupingError::Allocation {
-                stage: "selected documentary semantic references",
-            }
-        })?;
-        references.push(reference);
-    }
-    Ok(())
-}
-
 fn admit_row(
     budget: &mut Admission,
     identity: &census_crawl::participation_evidence::physical_result::ProposedHtmlResultIdentityV1,
     references: &[&str],
 ) -> ReportResult<()> {
-    let bytes = references
-        .iter()
-        .map(|value| value.len())
-        .chain([
-            identity.performance_id().as_str().len(),
-            identity.event_id().as_str().len(),
-            identity.athlete().as_str().len(),
-        ])
-        .try_fold(
-            std::mem::size_of::<DocumentaryParticipationRow>()
-                .checked_add(std::mem::size_of_val(references))
-                .ok_or(census_store::StoreError::CounterOverflow)?,
-            |held, bytes| {
-                held.checked_add(bytes)
-                    .ok_or(census_store::StoreError::CounterOverflow)
-            },
-        )?
-        .checked_mul(4)
-        .ok_or(census_store::StoreError::CounterOverflow)?;
-    budget.charge(bytes, 1)?;
-    Ok(())
+    super::shared::admit_documentary(budget, identity, references)
 }
 
 fn evaluate(
@@ -139,27 +98,9 @@ fn seal_row(
     budget: &mut Admission,
 ) -> ReportResult<DocumentaryParticipationRow> {
     let (outcome, reasons, semantic_refs) = assessed;
-    let attachment = row.attachment();
-    let subject = attachment.subject();
-    let references = [
-        subject.capture.as_str(),
-        subject.body.as_str(),
-        subject.interpretation.as_str(),
-        subject.locator.as_str(),
-        subject.context.as_str(),
-        row.checked_row().original_row_digest(),
-        attachment.record().record_digest.as_str(),
-        attachment.inventory().digest.as_str(),
-    ];
-    admit_row(budget, identity, &references)?;
-    let mut owned_refs = Vec::new();
-    owned_refs
-        .try_reserve_exact(references.len())
-        .map_err(|_| crate::grouping::GroupingError::Allocation {
-            stage: "selected documentary references",
-        })?;
-    owned_refs.extend(references.into_iter().map(str::to_owned));
-    append_semantic_references(&mut owned_refs, semantic_refs, budget)?;
+    let base = super::shared::base_refs(row);
+    admit_row(budget, identity, &base)?;
+    let owned_refs = super::shared::build_owned(&base, semantic_refs, budget)?;
     Ok(DocumentaryParticipationRow::school_unresolved(
         identity.performance_id().clone(),
         identity.event_id().clone(),

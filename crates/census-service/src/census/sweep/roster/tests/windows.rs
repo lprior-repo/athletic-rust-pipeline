@@ -41,8 +41,11 @@ fn large_read() -> Result<RosterOutcome, Box<dyn std::error::Error>> {
 
 async fn persist_prefix(store: &Store, run: &RosterRun<'_>, read: &RosterOutcome) -> TestResult {
     let roster = read.verdict.roster().ok_or("missing roster")?;
-    let binding =
-        super::super::provenance::Binding::new(&read.capture, &roster.team, &read.verdict)?;
+    let binding = census_crawl::participation_evidence::recorded::roster_provenance::Binding::new(
+        &read.capture,
+        &roster.team,
+        &read.verdict,
+    )?;
     let first = Window::next(roster, 0, binding.observed_on())?.ok_or("missing first window")?;
     let prefix = first.athletes().len();
     let commit = Commit::new(store, &roster.team, run, read)?;

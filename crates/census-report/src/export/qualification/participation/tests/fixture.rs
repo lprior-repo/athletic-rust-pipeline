@@ -164,6 +164,7 @@ impl Fixture {
             &athletes,
             athletes.fingerprint(),
             affiliations.roster_context(),
+            None,
         )?)
     }
 }

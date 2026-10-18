@@ -62,6 +62,9 @@ impl<'a, 'capture> UnadmittedHtmlResultProjectionV1<'a, 'capture> {
     pub fn rows(&self) -> &[UnadmittedHtmlResultRowV1] {
         &self.rows
     }
+    pub fn into_proposed_entities(self) -> (CanonicalMeet, Vec<UnadmittedHtmlResultRowV1>) {
+        (self.meet, self.rows)
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -96,5 +99,8 @@ impl UnadmittedHtmlResultRowV1 {
     }
     pub fn proposed_performance(&self) -> &CanonicalPerformance {
         &self.performance
+    }
+    pub fn into_proposed_entities(self) -> (CanonicalEvent, CanonicalTeam, CanonicalPerformance) {
+        (self.event, self.team, self.performance)
     }
 }

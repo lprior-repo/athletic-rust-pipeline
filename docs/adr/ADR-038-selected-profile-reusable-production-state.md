@@ -77,9 +77,10 @@ source, kernel and artifact identities. This decision supplies no passing receip
 **Context:** structural repairs change the source identity of the immutable
 reviewed-roster kernels. Their original dependency documents cannot be repinned.
 
-**Decision:** use current dependency epochs 4 (full inventory) and 5 (row-local).
+**Decision:** use current dependency epochs 8 (full inventory) and 9 (row-local).
 These are implementation identities, not qualification-profile or inventory-wire
-versions. One current interpreter recomputes the original source inputs.
+versions. PR86 changed a pinned source input and dependency context; the preceding
+6/7 documents remain immutable. One current interpreter recomputes original inputs.
 
 Read-only adapter V1 accepts only the original whole-document SHA-256 pins:
 
@@ -87,9 +88,13 @@ Read-only adapter V1 accepts only the original whole-document SHA-256 pins:
 |---|---|
 | 2 | `71ef18570ab2683c9f498e2f66983d6a782900fd2647eff4101864b782ecaa46` |
 | 3 | `7352af3bf097e5c91a890809b1fa52e700469b3bbccb308eb445fe49fcf48f38` |
+| 4 | `435df869dd5994102f1aee7bebafb8f1cfc3afe5d99e8c2c60ae892be14b80d2` |
+| 5 | `60fd1056573363a7985af568568db1f9b82f4b39d38f9e3efa3034beb3c63fe0` |
+| 6 | `ba3d52bbc2673fc3f386815a39ed09702b5e2c68b528ca8eecf630d5f45ea8fd` |
+| 7 | `b49bfad4374e7a664c08977bc62428e40e8c8e0063d33235796e5eb3b03c2f65` |
 
 The adapter also pins the supported current compiler/configuration/lock context;
-PR84's changed dependency context requires its own qualification. Historical
+PR86's changed dependency context requires its own qualification. Historical
 canonical bytes, original grant ownership and every non-kernel semantic field,
 including rejected dispositions, must agree. Unknown identities or contexts refuse.
 
@@ -260,22 +265,25 @@ leaf binds the exact whole packet, not a capture leaf that another packet may
 already own. The kind is refused on other roots/slots. Original bodies and distinct
 subject-heading/window-paragraph proof locations remain retained and replayable.
 
-Current roster dependency kernels advance to 6/7 with the actual 94-input closure,
-including retained-leaf/schema validation. Exact historical 2/3 and 4/5 byte pins
-remain read-only under the approved compiler/configuration/dependency context;
-current captures cannot claim those epochs. Roster interpretation semantics and
-the original retained artifacts are not relabeled or regenerated.
+The full-window input introduced dependency epochs 6/7 with a 94-input closure,
+including retained-leaf/schema validation. Those exact byte identities are now
+read-only alongside 2/3 and 4/5; current captures emit only 8/9. Roster interpretation
+semantics and original retained artifacts are not relabeled or regenerated.
 
 ### Reviewed-school resource boundary — 2026-10-17
 
-The current aggregate checked-read/workflow grant is 9 MiB (9,437,184 bytes)
+The current aggregate checked-read/workflow grant is 16 MiB (16,777,216 bytes)
 and 131,072 traversal steps. Individual encoded objects and retained physical
 inventory remain bounded at 4 MiB; structural limits are unchanged.
 
 The authorized 8-MiB grant admitted genuine A after removing a duplicate
 preparation-time retained-body decode. Genuine B still required a derived
 8,609,689 accounted bytes, including its journal envelope and receipt.
-The 2026-10-18 byte increase retains every remaining allocation charge.
+The authorized 2026-10-18 increases retain every remaining allocation charge.
+The integrated documentary workflow exceeded the former 9-MiB grant at
+10,152,626 cumulative encoded bytes. The 16-MiB grant clears that refusal;
+this is accounted read/work volume, not a resident-memory allowance or a
+national-run qualification.
 
 The unchanged-wire refresh path reuses historical declaration, input and target
 checks already proven at load. It still verifies every material against the

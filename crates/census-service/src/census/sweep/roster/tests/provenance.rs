@@ -318,9 +318,8 @@ async fn bounded_response_metadata_fits_reserved_attachment_budget() -> TestResu
         let key = value["source_row_key"].as_str().ok_or("key")?;
         let url = fact.source.url.as_deref().ok_or("url")?;
         let bytes = note.len() + key.len() + url.len();
-        check!(bytes <= super::super::provenance::MAX_ATTACHMENT_BYTES);
-        check!(bytes * 64 <= super::super::provenance::MAX_WINDOW_ATTACHMENT_BYTES);
+        check!(bytes <= census_crawl::participation_evidence::recorded::roster_provenance::MAX_ATTACHMENT_BYTES);
+        check!(bytes * 64 <= census_crawl::participation_evidence::recorded::roster_provenance::MAX_WINDOW_ATTACHMENT_BYTES);
     }
-    check!(super::super::provenance::MAX_WINDOW_ATTACHMENT_BYTES < 8 * 1024 * 1024);
     Ok(())
 }

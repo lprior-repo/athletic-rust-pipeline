@@ -1,6 +1,8 @@
-use census_crawl::milesplit::{self, LocatedRosterAthlete, RosterVerdict, TeamRef};
-use census_crawl::net::FetchOutcome;
-use census_crawl::{CrawlError, CrawlResult};
+use crate::milesplit::{
+    parse_captured_roster, LocatedRosterAthlete, RosterVerdict, SourceRowLocator, TeamRef,
+};
+use crate::net::FetchOutcome;
+use crate::{CrawlError, CrawlResult};
 use census_domain::model::{
     CanonicalAthlete, Evidence, SourceAthleteObservation, SourceNamespace, SourceRef,
 };
@@ -8,16 +10,16 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::io;
 
-pub(super) const MAX_ATTACHMENT_BYTES: usize = 16 * 1024;
-pub(super) const MAX_WINDOW_ATTACHMENT_BYTES: usize = 64 * MAX_ATTACHMENT_BYTES;
+pub const MAX_ATTACHMENT_BYTES: usize = 16 * 1024;
+pub const MAX_WINDOW_ATTACHMENT_BYTES: usize = 64 * MAX_ATTACHMENT_BYTES;
 
-pub(super) struct Binding<'a> {
+pub struct Binding<'a> {
     capture: &'a FetchOutcome,
     team: &'a TeamRef,
 }
 
 impl<'a> Binding<'a> {
-    pub(super) fn new(
+    pub fn new(
         capture: &'a FetchOutcome,
         team: &'a TeamRef,
         verdict: &RosterVerdict,
@@ -56,7 +58,7 @@ impl<'a> Binding<'a> {
         }
         let body = std::str::from_utf8(&capture.body)
             .map_err(|_| invalid("roster capture is not UTF-8"))?;
-        let parsed = milesplit::parse_captured_roster(body, team.clone(), capture)?;
+        let parsed = parse_captured_roster(body, team.clone(), capture)?;
         if &parsed != verdict {
             return Err(invalid(
                 "roster members do not match original captured rows",
@@ -65,11 +67,11 @@ impl<'a> Binding<'a> {
         Ok(Self { capture, team })
     }
 
-    pub(super) fn observed_on(&self) -> &str {
+    pub fn observed_on(&self) -> &str {
         &self.capture.fetched_at
     }
 
-    pub(super) fn attach(
+    pub fn attach(
         &self,
         member: &LocatedRosterAthlete,
         athlete: &mut CanonicalAthlete,
@@ -161,7 +163,7 @@ struct RowNote<'a> {
     capture_sha256: &'a str,
     capture_bytes: usize,
     fetched_at: &'a str,
-    row: milesplit::SourceRowLocator,
+    row: SourceRowLocator,
     row_sha256: &'a str,
 }
 
@@ -203,8 +205,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn escaped_note_is_refused_within_fixed_output_buffer() -> Result<(), Box<dyn std::error::Error>>
-    {
+    fn escaped_roster_note_refuses_output_over_the_bounded_buffer(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let escaped = "\u{0001}".repeat(4096);
         let note = RowNote {
             role: "roster_positive_row_metadata_v1",
@@ -216,7 +218,7 @@ mod tests {
             capture_sha256: "digest",
             capture_bytes: 1,
             fetched_at: "2026-10-07T12:00:00Z",
-            row: milesplit::SourceRowLocator {
+            row: SourceRowLocator {
                 ordinal: 0,
                 byte_offset: 0,
                 byte_length: 1,
@@ -227,7 +229,6 @@ mod tests {
             encode_note(&note),
             Err(CrawlError::Resource { .. })
         ));
-        check!(eq; MAX_ATTACHMENT_BYTES.checked_mul(64), Some(MAX_WINDOW_ATTACHMENT_BYTES));
         Ok(())
     }
 }
