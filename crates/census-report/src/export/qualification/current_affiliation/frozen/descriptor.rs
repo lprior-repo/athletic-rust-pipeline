@@ -36,7 +36,7 @@ pub(crate) struct FrozenAffiliationDescriptor {
 
 impl FrozenAffiliationDescriptor {
     pub(crate) fn reviewed_roster(&self) -> bool {
-        self.version == 2
+        matches!(self.version, 2 | 3)
     }
 
     pub(crate) fn digest(&self) -> census_store::StoreResult<String> {
@@ -67,7 +67,7 @@ impl FrozenAffiliationDescriptor {
     ) -> census_store::StoreResult<()> {
         if !matches!(
             (self.version, self.roster_family.is_some()),
-            (1, false) | (2, true)
+            (1, false) | (2 | 3, true)
         ) || self.store_identity != dataset.lineage.store_identity
             || self.snapshot_sequence != dataset.lineage.snapshot_sequence
             || self.input_generation != dataset.lineage.input_generation

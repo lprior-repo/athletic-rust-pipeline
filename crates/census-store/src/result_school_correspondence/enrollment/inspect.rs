@@ -57,26 +57,7 @@ pub(super) fn inspect(
         } else {
             ResultSchoolPriorCapabilityV1::IdentityOnly { qualification }
         };
-        let retained = super::super::read::prior(
-            &snapshot,
-            &store.meta,
-            &store.journal,
-            &store.receipts,
-            &prior,
-            grant,
-        )?;
-        if let super::super::wire::PriorProof::IdentityAndRosterSource {
-            enrollment,
-            receipt,
-        } = retained
-        {
-            crate::roster_source_issuance::validate_roster_enrollment_proof_v1(
-                &enrollment,
-                &receipt,
-                &store_identity,
-                grant,
-            )?;
-        }
+        validate_retained_prior(&snapshot, store, &prior, &store_identity, grant)?;
         let (token, head) = inputs(&view, grant)?;
         Ok(Inspected {
             revision: view.revision(),
@@ -103,4 +84,34 @@ pub(in super::super) fn inputs(
         digest: ResultSchoolDigestV1::parse(&head.digest).map_err(grant_error)?,
     };
     Ok((token, head))
+}
+
+fn validate_retained_prior(
+    snapshot: &fjall::Snapshot,
+    store: &Store,
+    prior: &ResultSchoolPriorCapabilityV1,
+    store_identity: &StoreIdentity,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    let retained = super::super::read::prior(
+        snapshot,
+        &store.meta,
+        &store.journal,
+        &store.receipts,
+        prior,
+        grant,
+    )?;
+    if let super::super::wire::PriorProof::IdentityAndRosterSource {
+        enrollment,
+        receipt,
+    } = retained
+    {
+        crate::roster_source_issuance::validate_roster_enrollment_proof_v1(
+            &enrollment,
+            &receipt,
+            store_identity,
+            grant,
+        )?;
+    }
+    Ok(())
 }

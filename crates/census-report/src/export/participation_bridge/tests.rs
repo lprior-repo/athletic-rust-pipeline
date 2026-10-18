@@ -109,7 +109,6 @@ async fn foreign_generation_subject_result_and_date_are_refused() -> TestResult 
         ),
         Err(SourceParticipationError::ForeignSnapshot)
     ));
-    // These direct projections reach source validation without append-only merging.
     for field in [
         "result",
         "missing owner",

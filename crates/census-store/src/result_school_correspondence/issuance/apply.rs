@@ -66,18 +66,29 @@ fn verify_live_guards(
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
     revision.ensure_current(store, command.operation.as_str())?;
-    let (format, live_head) =
-        view.with_roster_source_snapshot_v1(|snapshot, meta, _, _| -> StoreResult<_> {
-            let format = super::super::read::snapshot_format(snapshot, meta, grant)?;
-            let raw = super::super::read::value(
-                snapshot,
-                meta,
-                super::super::wire::HEAD.as_bytes(),
-                grant,
-            )?;
-            let head: super::super::wire::AuthorityHead = super::super::codec::decode(&raw, grant)?;
-            Ok((format, head))
-        })?;
+    let (format, live_head) = verify_snapshot_format(view, grant)?;
+    verify_format_version(&format)?;
+    verify_input_guards(view, revision, command, grant)?;
+    verify_ledger_consistency(command, ledger, &live_head)?;
+    verify_attachment_fence(view, attachment_fence, store, grant)?;
+    verify_no_duplicate_operation(store, command)?;
+    Ok(())
+}
+
+fn verify_snapshot_format(
+    view: &crate::StoreSnapshot<'_>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<(crate::StoreFormat, super::super::wire::AuthorityHead)> {
+    view.with_roster_source_snapshot_v1(|snapshot, meta, _, _| -> StoreResult<_> {
+        let format = super::super::read::snapshot_format(snapshot, meta, grant)?;
+        let raw =
+            super::super::read::value(snapshot, meta, super::super::wire::HEAD.as_bytes(), grant)?;
+        let head: super::super::wire::AuthorityHead = super::super::codec::decode(&raw, grant)?;
+        Ok((format, head))
+    })
+}
+
+fn verify_format_version(format: &crate::StoreFormat) -> StoreResult<()> {
     if format.lifecycle_revision != Some(super::super::LIFECYCLE)
         || format.schema_version != Some(2)
         || format.key_format != Some(1)
@@ -85,6 +96,15 @@ fn verify_live_guards(
     {
         return Err(Error::EnrollmentRequired.into());
     }
+    Ok(())
+}
+
+fn verify_input_guards(
+    view: &crate::StoreSnapshot<'_>,
+    revision: &StoreRevision<'_>,
+    command: &ResultSchoolReviewCommandV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
     let (fresh_token, fresh_head) = super::super::enrollment::inspect::inputs(view, grant)?;
     if command.input_token != fresh_token || command.accepted_head != fresh_head {
         return Err(Error::InputMoved.into());
@@ -94,6 +114,14 @@ fn verify_live_guards(
     {
         return Err(Error::InputMoved.into());
     }
+    Ok(())
+}
+
+fn verify_ledger_consistency(
+    command: &ResultSchoolReviewCommandV1,
+    ledger: &super::ledger::Ledger,
+    live_head: &super::super::wire::AuthorityHead,
+) -> StoreResult<()> {
     if live_head.schema != "result-school-authority-head-v1"
         || live_head.inventory != ledger.inventory
         || live_head.inventory != command.expected_inventory
@@ -101,6 +129,15 @@ fn verify_live_guards(
     {
         return Err(Error::InputMoved.into());
     }
+    Ok(())
+}
+
+fn verify_attachment_fence(
+    view: &crate::StoreSnapshot<'_>,
+    attachment_fence: &crate::read::JournalNamespaceInventory<'_>,
+    store: &Store,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
     let current = crate::CurrentEvidenceSubjectAttachmentReferencesV1::current_physical_inventory(
         view, grant,
     )?;
@@ -111,6 +148,13 @@ fn verify_live_guards(
     {
         return Err(Error::InputMoved.into());
     }
+    Ok(())
+}
+
+fn verify_no_duplicate_operation(
+    store: &Store,
+    command: &ResultSchoolReviewCommandV1,
+) -> StoreResult<()> {
     if store
         .receipt(&super::super::wire::issuance_operation(command))?
         .is_some()
@@ -127,19 +171,7 @@ fn commit(
     context: Vec<super::super::source::Material>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Application> {
-    let evidence_generation = store.generations.next_entities()?;
-    let checked = CheckedResultSchoolCommandV1::check(command, grant).map_err(Error::Domain)?;
-    let committed_at = Utc::now();
-    let record =
-        prepare_result_school_record_v1(checked, committed_at, grant).map_err(Error::Domain)?;
-    let operation = super::super::wire::issuance_operation(&record.command);
-    let receipt = Receipt {
-        operation,
-        digest: record.record_digest.as_str().into(),
-        at: committed_at.to_rfc3339(),
-        appended: 0,
-        credited: false,
-    };
+    let (evidence_generation, record, receipt) = prepare_evidence(store, command, grant)?;
     let record_key = super::super::wire::record_key(ledger.records.len())?;
     ledger.inventory = next_result_school_inventory_v1(&ledger.inventory, &record, grant)
         .map_err(Error::Domain)?;
@@ -182,4 +214,25 @@ fn commit(
         .map_err(|source| StoreError::Write { source })?;
     store.generations.publish_entities(evidence_generation);
     Ok(Application::Written(receipt))
+}
+
+fn prepare_evidence(
+    store: &Store,
+    command: ResultSchoolReviewCommandV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<(u64, ResultSchoolReviewedRecordV1, Receipt)> {
+    let evidence_generation = store.generations.next_entities()?;
+    let checked = CheckedResultSchoolCommandV1::check(command, grant).map_err(Error::Domain)?;
+    let committed_at = Utc::now();
+    let record =
+        prepare_result_school_record_v1(checked, committed_at, grant).map_err(Error::Domain)?;
+    let operation = super::super::wire::issuance_operation(&record.command);
+    let receipt = Receipt {
+        operation,
+        digest: record.record_digest.as_str().into(),
+        at: committed_at.to_rfc3339(),
+        appended: 0,
+        credited: false,
+    };
+    Ok((evidence_generation, record, receipt))
 }

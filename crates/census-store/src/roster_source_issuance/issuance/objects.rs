@@ -50,6 +50,19 @@ pub(super) fn collect(
 ) -> StoreResult<Objects> {
     let mut objects = Objects::new();
     let (evidence, grant) = inspection.source_parts()?;
+    retain_contracts(&mut objects, grant, supplied, proposal)?;
+    retain_root_payload(&mut objects, evidence, grant, proposal)?;
+    retain_descriptors(&mut objects, evidence, grant, proposal)?;
+    evidence.require_original_grant(grant)?;
+    Ok(objects)
+}
+
+fn retain_contracts(
+    objects: &mut Objects,
+    grant: &mut AttachmentReplayGrantV1,
+    supplied: RosterSourceReviewObjectsV1,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+) -> StoreResult<()> {
     for (bytes, reference) in [
         (supplied.scope_policy, proposal.scope().policy()),
         (
@@ -64,22 +77,40 @@ pub(super) fn collect(
         if bytes.len() > 4096 {
             return Err(Error::BudgetExceeded.into());
         }
-        let actual = insert(&mut objects, &bytes, grant)?;
+        let actual = insert(objects, &bytes, grant)?;
         if reference.revision().get() != 1 || actual.digest != reference.digest() {
             return Err(Error::Corrupt("retained review contract mismatch").into());
         }
     }
     for bytes in supplied.objects {
-        insert(&mut objects, &bytes, grant)?;
+        insert(objects, &bytes, grant)?;
     }
+    Ok(())
+}
+
+fn retain_root_payload(
+    objects: &mut Objects,
+    evidence: &super::super::inspection::RosterSourceEvidenceV1,
+    grant: &mut AttachmentReplayGrantV1,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+) -> StoreResult<()> {
     let root = evidence.retained_root(grant)?;
     if proposal.binding().provider_packet().digest().as_str() != root.root().key {
         return Err(Error::Corrupt("review provider root differs").into());
     }
-    insert(&mut objects, root.payload().get().as_bytes(), grant)?;
+    insert(objects, root.payload().get().as_bytes(), grant)?;
     for row in evidence.physical_projection(grant)? {
-        insert(&mut objects, row.bytes(), grant)?;
+        insert(objects, row.bytes(), grant)?;
     }
+    Ok(())
+}
+
+fn retain_descriptors(
+    objects: &mut Objects,
+    evidence: &super::super::inspection::RosterSourceEvidenceV1,
+    grant: &mut AttachmentReplayGrantV1,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+) -> StoreResult<()> {
     for (bytes, expected) in [
         (
             evidence.physical_projection_manifest(grant)?,
@@ -94,7 +125,7 @@ pub(super) fn collect(
             proposal.capture().verification_grant(),
         ),
     ] {
-        let actual = insert(&mut objects, &bytes, grant)?;
+        let actual = insert(objects, &bytes, grant)?;
         if actual.digest != expected.digest().as_str()
             || u64::try_from(actual.bytes).map_err(|_| Error::BudgetExceeded)?
                 != expected.bytes().get()
@@ -102,8 +133,7 @@ pub(super) fn collect(
             return Err(Error::Corrupt("review inspection descriptor differs").into());
         }
     }
-    evidence.require_original_grant(grant)?;
-    Ok(objects)
+    Ok(())
 }
 
 pub(super) fn require_proposal(

@@ -146,10 +146,7 @@ fn valid_projection_prefixes_share_one_traversal_budget_and_never_return_a_parti
 
 #[test]
 fn bulk_decoder_admits_total_raw_bytes_before_any_record_parse() -> TestResult {
-    // Two 4MiB buffers and one 1-byte buffer = 8MiB+1 total raw bytes.
-    // Each individual raw is within the 4MiB per-record limit, so the preflight
-    // aggregate check (not per-record) must reject before any JSON parse.
-    let per_record = ReplayLimits::SMALL.total_text_bytes; // 4MiB
+    let per_record = ReplayLimits::SMALL.total_text_bytes;
     let first = vec![0u8; per_record];
     let second = vec![0u8; per_record];
     let overflow = b"x";
@@ -178,14 +175,7 @@ fn bulk_decoder_admits_total_raw_bytes_before_any_record_parse() -> TestResult {
 
 #[test]
 fn bulk_decoder_charges_the_provisional_record_before_parsing_a_later_record() -> TestResult {
-    // First record: valid sealed record padded to 4MiB-1 bytes.
-    // Second record: 4MiB of garbage (malformed JSON).
-    // Raw total: 8MiB-1, which fits the 8MiB aggregate grant.
-    // Preflight charges all raw bytes, leaving 1 byte remaining.
-    // Parsing and validating the first record charges additional bytes (record + receipt validation),
-    // which exceeds the 1-byte remainder, causing a Capacity error before the second record's
-    // malformed JSON is ever decoded.
-    let per_record = ReplayLimits::SMALL.total_text_bytes; // 4MiB
+    let per_record = ReplayLimits::SMALL.total_text_bytes;
     let record = seal(command("first valid record")?)?;
     let mut first = encode_reviewed_reference(&record, per_record)?;
     first.resize(per_record - 1, b' ');

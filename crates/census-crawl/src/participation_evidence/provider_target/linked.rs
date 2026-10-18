@@ -12,69 +12,99 @@ pub(super) fn read(
     capture: &RetainedHtmlCaptureV1,
     profile: &CheckedMileSplitProfileSubjectV1,
 ) -> StoreResult<CompetitionCategoryEvidenceV1> {
+    let meet = check_team(capture, profile)?;
+    let html = capture.body()?;
+    markup::canonical(&html, capture.requested_url())?;
+    let context = context::read(capture, &html, profile)?;
+    let selected = select_rows(capture, &html, profile, &meet, &context)?;
+    Ok(classify(selected))
+}
+
+fn check_team(
+    capture: &RetainedHtmlCaptureV1,
+    profile: &CheckedMileSplitProfileSubjectV1,
+) -> StoreResult<String> {
     let (meet, team) = urls::team_result(capture.requested_url())?;
     if team != profile.school.id {
         return Err(invalid(
             "linked result requested team differs from profile owner",
         ));
     }
-    let html = capture.body()?;
-    markup::canonical(&html, capture.requested_url())?;
-    let context = context::read(capture, &html, profile)?;
-    let selected = markup::elements(&html, b"tr", None)?.into_iter().try_fold(
+    Ok(meet)
+}
+
+fn select_rows(
+    capture: &RetainedHtmlCaptureV1,
+    html: &str,
+    profile: &CheckedMileSplitProfileSubjectV1,
+    meet: &str,
+    context: &context::Context,
+) -> StoreResult<Vec<CheckedLinkedCompetitionCategoryV1>> {
+    markup::elements(html, b"tr", None)?.into_iter().try_fold(
         Vec::new(),
         |mut selected, row| -> StoreResult<Vec<_>> {
-            if row.attribute("data-team-row").is_none() {
-                return Ok(selected);
-            }
-            let cells = markup::elements(row.html, b"td", Some("meetTeams__participant"))?;
-            let cell = markup::single(cells)?;
-            let links = markup::elements(cell.html, b"a", None)?;
-            let target_text = row.attribute("data-search") == Some(profile.name.as_str())
-                || markup::text(cell.html)? == profile.name;
-            if links.is_empty() {
-                if target_text {
-                    return Err(invalid(
-                        "target-looking linked row has no participant ownership",
-                    ));
-                }
-                return Ok(selected);
-            }
-            let link = markup::single(links)?;
-            let person = urls::person(
-                link.attribute("href")
-                    .ok_or_else(|| invalid("linked result subject href absent"))?,
-            )?;
-            if person.id != profile.person.id {
-                if target_text {
-                    return Err(invalid(
-                        "target-looking linked row has changed participant ownership",
-                    ));
-                }
-                return Ok(selected);
-            }
-            if markup::text(link.html)? != profile.name
-                || row.attribute("data-search") != Some(profile.name.as_str())
-            {
-                return Err(invalid("same-ID linked row subject name differs"));
-            }
-            bound(
-                selected
-                    .len()
-                    .checked_add(1)
-                    .ok_or(StoreError::CounterOverflow)?,
-                64,
-                "provider target same-ID rows",
-            )?;
-            let checked = checked_row(capture, &row, &meet, &context)?;
-            selected
-                .try_reserve(1)
-                .map_err(|_| invalid("linked category row allocation refused"))?;
-            selected.push(checked);
+            consider_row(capture, &row, profile, meet, context, &mut selected)?;
             Ok(selected)
         },
+    )
+}
+
+fn consider_row(
+    capture: &RetainedHtmlCaptureV1,
+    row: &markup::Element<'_>,
+    profile: &CheckedMileSplitProfileSubjectV1,
+    meet: &str,
+    context: &context::Context,
+    selected: &mut Vec<CheckedLinkedCompetitionCategoryV1>,
+) -> StoreResult<()> {
+    if row.attribute("data-team-row").is_none() {
+        return Ok(());
+    }
+    let cells = markup::elements(row.html, b"td", Some("meetTeams__participant"))?;
+    let cell = markup::single(cells)?;
+    let links = markup::elements(cell.html, b"a", None)?;
+    let target_text = row.attribute("data-search") == Some(profile.name.as_str())
+        || markup::text(cell.html)? == profile.name;
+    if links.is_empty() {
+        if target_text {
+            return Err(invalid(
+                "target-looking linked row has no participant ownership",
+            ));
+        }
+        return Ok(());
+    }
+    let link = markup::single(links)?;
+    let person = urls::person(
+        link.attribute("href")
+            .ok_or_else(|| invalid("linked result subject href absent"))?,
     )?;
-    Ok(classify(selected))
+    if person.id != profile.person.id {
+        if target_text {
+            return Err(invalid(
+                "target-looking linked row has changed participant ownership",
+            ));
+        }
+        return Ok(());
+    }
+    if markup::text(link.html)? != profile.name
+        || row.attribute("data-search") != Some(profile.name.as_str())
+    {
+        return Err(invalid("same-ID linked row subject name differs"));
+    }
+    bound(
+        selected
+            .len()
+            .checked_add(1)
+            .ok_or(StoreError::CounterOverflow)?,
+        64,
+        "provider target same-ID rows",
+    )?;
+    let checked = checked_row(capture, row, meet, context)?;
+    selected
+        .try_reserve(1)
+        .map_err(|_| invalid("linked category row allocation refused"))?;
+    selected.push(checked);
+    Ok(())
 }
 
 fn checked_row(

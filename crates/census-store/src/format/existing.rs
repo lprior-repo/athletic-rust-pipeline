@@ -3,6 +3,7 @@ use std::path::Path;
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 use fjall::Database;
 
+mod marker;
 mod public_identity;
 
 use crate::{Store, StoreError, StoreResult};
@@ -83,7 +84,7 @@ impl Store {
 }
 
 pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> StoreResult<Store> {
-    existing_marker(root)?;
+    marker::require(root)?;
     let db = Database::builder(root.join(crate::DB_DIR))
         .cache_size(cache_bytes)
         .open()
@@ -91,23 +92,7 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
     require_keyspaces(&db)?;
     let (db, entities, journal, meta, receipts) = crate::keyspaces(db)?;
     let format = super::require_current(root, super::read_format(&meta)?)?;
-    crate::input_revisions::validate_format(&db.snapshot(), &meta, &format)?;
-    crate::result_school_correspondence::validate_format(
-        &db.snapshot(),
-        &meta,
-        &journal,
-        &receipts,
-        &format,
-        &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
-    )?;
-    crate::roster_source_issuance::validate_format(
-        &db.snapshot(),
-        &meta,
-        &journal,
-        &receipts,
-        &format,
-        &mut crate::RosterStartupValidationBudgetV1::new(),
-    )?;
+    validate_store_format(&db, &meta, &journal, &receipts, &format)?;
     let keyspaces = ExistingKeyspaces {
         db,
         entities,
@@ -157,6 +142,33 @@ pub(crate) fn require_keyspaces(db: &Database) -> StoreResult<()> {
             });
         }
     }
+    Ok(())
+}
+
+fn validate_store_format(
+    db: &Database,
+    meta: &fjall::Keyspace,
+    journal: &fjall::Keyspace,
+    receipts: &fjall::Keyspace,
+    format: &crate::StoreFormat,
+) -> StoreResult<()> {
+    crate::input_revisions::validate_format(&db.snapshot(), meta, format)?;
+    crate::result_school_correspondence::validate_format(
+        &db.snapshot(),
+        meta,
+        journal,
+        receipts,
+        format,
+        &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
+    )?;
+    crate::roster_source_issuance::validate_format(
+        &db.snapshot(),
+        meta,
+        journal,
+        receipts,
+        format,
+        &mut crate::RosterStartupValidationBudgetV1::new(),
+    )?;
     Ok(())
 }
 
@@ -234,23 +246,6 @@ fn control_store(
         appends: std::sync::Arc::new(std::sync::Mutex::new(())),
         staging: std::sync::Arc::new(std::sync::Mutex::new(())),
     })
-}
-
-fn existing_marker(root: &Path) -> StoreResult<()> {
-    let path = root.join(crate::DB_DIR).join("version");
-    let metadata = std::fs::metadata(&path).map_err(|source| StoreError::Io {
-        path: path.clone(),
-        source,
-    })?;
-    if !metadata.is_file() {
-        return Err(StoreError::Refused {
-            detail: format!(
-                "existing Fjall marker {} is not a regular file",
-                path.display()
-            ),
-        });
-    }
-    Ok(())
 }
 
 #[cfg(test)]

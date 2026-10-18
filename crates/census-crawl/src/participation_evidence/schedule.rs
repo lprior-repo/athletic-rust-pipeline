@@ -12,20 +12,34 @@ pub(super) struct Season {
 }
 
 pub(super) fn read(capture: &RetainedHtmlCaptureV1, day: &ProfileDate) -> StoreResult<Season> {
+    let url = season_url(capture)?;
+    let edition = season_edition(&url)?;
+    let year = school_year(edition, day)?;
+    let html = capture.body()?;
+    markup::canonical(&html, capture.requested_url())?;
+    check_edition(&html, edition)?;
+    let row = select_row(&html, year, day)?;
+    season_fields(capture, year, &row)
+}
+
+fn season_url(capture: &RetainedHtmlCaptureV1) -> StoreResult<url::Url> {
     let url =
         url::Url::parse(capture.requested_url()).map_err(|_| invalid("season URL invalid"))?;
     if url.host_str() != Some("dccshamrocks.net") || url.query().is_some() {
         return Err(invalid("unsupported in-season issuer"));
     }
-    let edition = url
-        .path()
+    Ok(url)
+}
+
+fn season_edition(url: &url::Url) -> StoreResult<&str> {
+    url.path()
         .strip_prefix("/sports/track-and-field/schedule/")
-        .ok_or_else(|| invalid("unsupported school sport schedule path"))?;
-    let year = school_year(edition, day)?;
-    let html = capture.body()?;
-    markup::canonical(&html, capture.requested_url())?;
+        .ok_or_else(|| invalid("unsupported school sport schedule path"))
+}
+
+fn check_edition(html: &str, edition: &str) -> StoreResult<()> {
     let heading = markup::single(
-        markup::elements(&html, b"h2", None)?
+        markup::elements(html, b"h2", None)?
             .into_iter()
             .filter(|item| item.html.contains("Track and Field Schedule"))
             .collect(),
@@ -33,7 +47,15 @@ pub(super) fn read(capture: &RetainedHtmlCaptureV1, day: &ProfileDate) -> StoreR
     if markup::text(heading.html)? != format!("{edition} Track and Field Schedule") {
         return Err(invalid("school schedule edition differs from source URL"));
     }
-    let rows = markup::elements(&html, b"li", Some("sidearm-schedule-game"))?;
+    Ok(())
+}
+
+fn select_row<'a>(
+    html: &'a str,
+    year: SchoolYear,
+    day: &ProfileDate,
+) -> StoreResult<markup::Element<'a>> {
+    let rows = markup::elements(html, b"li", Some("sidearm-schedule-game"))?;
     let selected = rows
         .into_iter()
         .map(|row| {
@@ -49,13 +71,20 @@ pub(super) fn read(capture: &RetainedHtmlCaptureV1, day: &ProfileDate) -> StoreR
             Ok((row, event_day(&markup::text(span.html)?, year)?))
         })
         .collect::<StoreResult<Vec<_>>>()?;
-    let row = markup::single(
+    markup::single(
         selected
             .into_iter()
             .filter(|(_, date)| date == day)
             .map(|(row, _)| row)
             .collect(),
-    )?;
+    )
+}
+
+fn season_fields(
+    capture: &RetainedHtmlCaptureV1,
+    year: SchoolYear,
+    row: &markup::Element<'_>,
+) -> StoreResult<Season> {
     let game = row
         .attribute("data-game-id")
         .ok_or_else(|| invalid("schedule game identity absent"))?;

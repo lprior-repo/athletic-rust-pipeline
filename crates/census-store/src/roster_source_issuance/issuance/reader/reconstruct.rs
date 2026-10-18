@@ -121,41 +121,56 @@ pub(super) fn claims(
         grant
             .charge_steps(1)
             .map_err(super::super::super::source_error)?;
-        let record: ReviewRecord = codec::decode(raw)?;
-        let proposal = super::super::proposal(&record.basis.proposal)?;
-        if proposal.binding().snapshot_revision().get() > archive.selected_snapshot_sequence {
-            return Err(Error::Corrupt("review inspection follows publication").into());
-        }
-        let admitted = admission(&proposal, &objects, grant)?;
-        roots.insert((admitted.root.schema.phase(), admitted.root.key.clone()));
-        let held = source
-            .read_root(admitted.root.schema, &admitted.root.key, grant)?
-            .ok_or(Error::InspectedClosureChanged)?;
-        if held.root() != &admitted.root {
-            return Err(Error::InspectedClosureChanged.into());
-        }
-        let evidence = evidence(archive, &proposal, held, &objects, grant)?;
-        let (qualification, activation) = review_references(&record, &objects, grant)?;
-        for reference in &record.basis.closure {
-            super::super::ledger::object(&objects, reference)?;
-            grant
-                .charge_steps(1)
-                .map_err(super::super::super::source_error)?;
-        }
-        claims.push(ReviewedRosterSourceClaimV1 {
-            proposal,
-            evidence,
-            record,
-            objects: Arc::clone(&objects),
-            qualification,
-            activation,
-        });
+        let (claim, root) = claim_for_record(archive, raw, &objects, &source, grant)?;
+        roots.insert(root);
+        claims.push(claim);
     }
     if roots.len() != archive.external.len() {
         return Err(Error::Corrupt("review external closure differs").into());
     }
     claims.sort_by_key(|claim| claim.record.basis.next_ordinal);
     Ok(claims)
+}
+
+fn claim_for_record(
+    archive: &Archive,
+    raw: &[u8],
+    objects: &Arc<super::super::objects::Objects>,
+    source: &frozen_source::FrozenRosterJournalSource,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<(ReviewedRosterSourceClaimV1, (&'static str, String))> {
+    let record: ReviewRecord = codec::decode(raw)?;
+    let proposal = super::super::proposal(&record.basis.proposal)?;
+    if proposal.binding().snapshot_revision().get() > archive.selected_snapshot_sequence {
+        return Err(Error::Corrupt("review inspection follows publication").into());
+    }
+    let admitted = admission(&proposal, objects, grant)?;
+    let root = (admitted.root.schema.phase(), admitted.root.key.clone());
+    let held = source
+        .read_root(admitted.root.schema, &admitted.root.key, grant)?
+        .ok_or(Error::InspectedClosureChanged)?;
+    if held.root() != &admitted.root {
+        return Err(Error::InspectedClosureChanged.into());
+    }
+    let evidence = evidence(archive, &proposal, held, objects, grant)?;
+    let (qualification, activation) = review_references(&record, objects, grant)?;
+    for reference in &record.basis.closure {
+        super::super::ledger::object(objects, reference)?;
+        grant
+            .charge_steps(1)
+            .map_err(super::super::super::source_error)?;
+    }
+    Ok((
+        ReviewedRosterSourceClaimV1 {
+            proposal,
+            evidence,
+            record,
+            objects: Arc::clone(objects),
+            qualification,
+            activation,
+        },
+        root,
+    ))
 }
 
 fn evidence(

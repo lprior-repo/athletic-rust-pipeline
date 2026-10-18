@@ -88,22 +88,42 @@ pub(super) fn require_current(
         return Err(Error::InputMoved.into());
     }
 
-    let prior = super::super::read::prior(
-        &snapshot,
+    require_prior_proof(&snapshot, store, &command.prior, &command.store, grant)?;
+
+    let (token, head) = super::inspect::inputs(&store.snapshot_locked(), grant)?;
+    if token != command.input_token
+        || head != command.accepted_head
+        || revision.evidence_generation() != command.evidence_generation
+        || revision.derived_generation() != command.derived_generation
+    {
+        return Err(Error::InputMoved.into());
+    }
+    Ok(())
+}
+
+fn require_prior_proof(
+    snapshot: &fjall::Snapshot,
+    store: &Store,
+    prior: &ResultSchoolPriorCapabilityV1,
+    store_identity: &census_domain::model::StoreIdentity,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    let proof = super::super::read::prior(
+        snapshot,
         &store.meta,
         &store.journal,
         &store.receipts,
-        &command.prior,
+        prior,
         grant,
     )?;
     if let super::super::wire::PriorProof::IdentityAndRosterSource {
         enrollment,
         receipt,
-    } = prior
+    } = proof
     {
         let ResultSchoolPriorCapabilityV1::IdentityAndRosterSource {
             roster_enrollment, ..
-        } = &command.prior
+        } = prior
         else {
             return Err(Error::InputMoved.into());
         };
@@ -113,18 +133,9 @@ pub(super) fn require_current(
         crate::roster_source_issuance::validate_roster_enrollment_proof_v1(
             &enrollment,
             &receipt,
-            &command.store,
+            store_identity,
             grant,
         )?;
-    }
-
-    let (token, head) = super::inspect::inputs(&store.snapshot_locked(), grant)?;
-    if token != command.input_token
-        || head != command.accepted_head
-        || revision.evidence_generation() != command.evidence_generation
-        || revision.derived_generation() != command.derived_generation
-    {
-        return Err(Error::InputMoved.into());
     }
     Ok(())
 }

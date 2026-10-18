@@ -82,7 +82,7 @@ fn assess_bound(
     let physical = physical::read(dataset, bound, &materials, &mut audit, grant)?;
     let bytes = encoding::encode(
         &(
-            "roster-source-family-inventory-v1",
+            family_label(profile)?,
             materials
                 .iter()
                 .map(material::Capture::inventory)
@@ -114,6 +114,14 @@ fn assess_bound(
         audit,
     };
     Ok((pinned, family))
+}
+
+fn family_label(profile: &QueryProfileV1) -> StoreResult<&'static str> {
+    match profile.input().policies.affiliation.revision().get() {
+        5 => Ok("roster-source-family-inventory-v1"),
+        6 => Ok("roster-source-family-inventory-v2"),
+        _ => Err(invalid("unsupported reviewed roster family policy")),
+    }
 }
 
 fn charge(grant: &mut AttachmentReplayGrantV1, bytes: usize, steps: usize) -> StoreResult<()> {

@@ -51,14 +51,30 @@ pub(super) fn verify_outcome(
         crate::workbook::recruiting::bounded::WORKBOOK_GROUP_BUDGET,
     )?;
     let facts = facts::inventory(inputs, &schools, &coaches, bests, revision)?;
-    let mut counts = std::collections::BTreeMap::from([
+    let mut counts = core_counts(
+        directory, inputs, bests, &schools, &coaches, &facts, revision,
+    )?;
+    insert_exclusion_counts(directory, inputs, outcome, revision, &mut counts)?;
+    Ok(counts)
+}
+
+fn core_counts(
+    directory: &Path,
+    inputs: &Inputs<'_>,
+    bests: &[crate::bests::SharedSelection],
+    schools: &schools::Schools<'_>,
+    coaches: &[census_domain::model::CanonicalCoach],
+    facts: &facts::Facts<'_>,
+    revision: revision::Revision,
+) -> ReportResult<super::super::inventory::RowCounts> {
+    Ok(std::collections::BTreeMap::from([
         (
             "athletes.csv".into(),
             athletes::verify(directory, inputs, bests)?,
         ),
         (
             "schools.csv".into(),
-            schools::verify(directory, inputs, &schools)?,
+            schools::verify(directory, inputs, schools)?,
         ),
         (
             "comparison_classes.csv".into(),
@@ -70,18 +86,27 @@ pub(super) fn verify_outcome(
         ),
         (
             "coach_contacts.csv".into(),
-            contacts::verify(directory, inputs, &coaches, &schools)?,
+            contacts::verify(directory, inputs, coaches, schools)?,
         ),
         (
             "provenance.csv".into(),
-            facts::verify(directory, inputs, &facts)?,
+            facts::verify(directory, inputs, facts)?,
         ),
         ("coverage.csv".into(), coverage::verify(directory, inputs)?),
         (
             "identity_aliases.csv".into(),
             athletes::aliases(directory, inputs)?,
         ),
-    ]);
+    ]))
+}
+
+fn insert_exclusion_counts(
+    directory: &Path,
+    inputs: &Inputs<'_>,
+    outcome: &crate::bests::SelectionOutcome,
+    revision: revision::Revision,
+    counts: &mut super::super::inventory::RowCounts,
+) -> ReportResult<()> {
     if revision.has_exclusions() {
         counts.insert(
             "combined_exclusions.csv".into(),
@@ -103,7 +128,7 @@ pub(super) fn verify_outcome(
             )?,
         );
     }
-    Ok(counts)
+    Ok(())
 }
 
 pub(in crate::workbook) use rows::Row as NormalizedRow;

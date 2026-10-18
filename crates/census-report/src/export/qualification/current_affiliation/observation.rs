@@ -158,39 +158,21 @@ impl<'a> Reader<'a> {
         let member = validate_member(athlete, note, capture)?;
         let selected_sport = selected_sport(member, self.profile);
         self.audit.context.retain(&athlete.id, evidence)?;
-        if day != self.profile.input().as_of.as_str() {
-            self.audit.gap(id.clone(), Gap::OutsideCaptureDay)?;
-            return Ok(());
-        }
-        let mut evidence_refs = vec![note.source_row_key.clone(), capture.metadata_ref.clone()];
-        evidence_refs.sort();
-        evidence_refs.dedup();
-        for reference in &evidence_refs {
-            self.audit.reference(id, reference)?;
-        }
-        if !selected_sport {
-            self.audit.gap(id.clone(), Gap::OutsideSelectedSport)?;
-            return Ok(());
-        }
-        if matches!(self.interpretation, Interpretation::ScopedCurrentStatement) {
-            if let temporal::Outcome::Unavailable(diagnostic) = temporal::retain(
-                &mut self.audit.context,
-                &athlete.id,
-                evidence,
-                note,
-                member,
-                self.profile,
-            )? {
-                self.audit.gap(id.clone(), Gap::MissingTemporalAuthority)?;
-                if let Some(reason) = diagnostic {
-                    self.audit.gap(id.clone(), reason)?;
-                }
-                return Ok(());
-            }
-        }
-        let current = self.rows.entry(id.clone()).or_insert(Resolution::Unknown);
-        current.observe_school(school, evidence_refs);
-        Ok(())
+        observe_pinned(
+            &mut self.audit,
+            &mut self.rows,
+            self.interpretation,
+            self.profile,
+            id,
+            athlete,
+            evidence,
+            note,
+            member,
+            capture,
+            school,
+            &day,
+            selected_sport,
+        )
     }
 
     fn unavailable(&mut self, id: &AthleteId, day: &str, gap: Gap) -> StoreResult<()> {
@@ -227,4 +209,54 @@ impl<'a> Reader<'a> {
         }
         (self.rows, self.audit, self.captures.retention())
     }
+}
+
+fn observe_pinned(
+    audit: &mut RetainedAudit,
+    rows: &mut Outcomes,
+    interpretation: Interpretation,
+    profile: &QueryProfileV1,
+    id: &AthleteId,
+    athlete: &CanonicalAthlete,
+    evidence: &Evidence,
+    note: &RowNote,
+    member: &census_crawl::milesplit::LocatedRosterAthlete,
+    capture: &super::capture::CapturedRoster,
+    school: &CanonicalSchool,
+    day: &str,
+    selected_sport: bool,
+) -> StoreResult<()> {
+    if day != profile.input().as_of.as_str() {
+        audit.gap(id.clone(), Gap::OutsideCaptureDay)?;
+        return Ok(());
+    }
+    let mut evidence_refs = vec![note.source_row_key.clone(), capture.metadata_ref.clone()];
+    evidence_refs.sort();
+    evidence_refs.dedup();
+    for reference in &evidence_refs {
+        audit.reference(id, reference)?;
+    }
+    if !selected_sport {
+        audit.gap(id.clone(), Gap::OutsideSelectedSport)?;
+        return Ok(());
+    }
+    if matches!(interpretation, Interpretation::ScopedCurrentStatement) {
+        if let temporal::Outcome::Unavailable(diagnostic) = temporal::retain(
+            &mut audit.context,
+            &athlete.id,
+            evidence,
+            note,
+            member,
+            profile,
+        )? {
+            audit.gap(id.clone(), Gap::MissingTemporalAuthority)?;
+            if let Some(reason) = diagnostic {
+                audit.gap(id.clone(), reason)?;
+            }
+            return Ok(());
+        }
+    }
+    let current = rows.entry(id.clone()).or_insert(Resolution::Unknown);
+    current.observe_school(school, evidence_refs);
+    Ok(())
 }

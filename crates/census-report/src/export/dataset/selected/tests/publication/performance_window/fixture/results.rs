@@ -52,11 +52,24 @@ impl ResultCase {
 }
 
 pub(super) async fn append(store: &Store) -> TestResult<([CanonicalPerformance; 2], [String; 2])> {
+    append_located(store, None).await
+}
+
+pub(super) async fn append_reviewed(
+    store: &Store,
+) -> TestResult<([CanonicalPerformance; 2], [String; 2])> {
+    append_located(store, Some("Novi")).await
+}
+
+async fn append_located(
+    store: &Store,
+    city: Option<&str>,
+) -> TestResult<([CanonicalPerformance; 2], [String; 2])> {
     let mut school = CanonicalSchool::new(
         UsJurisdiction::Michigan,
         "Detroit Catholic Central",
         "detroit catholic central",
-        None,
+        city,
     )
     .0;
     school.source_identities.push(SourceIdentity::new(

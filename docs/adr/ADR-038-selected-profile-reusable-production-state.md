@@ -226,6 +226,18 @@ roots separately. Unqualified V1 refuses; qualified roster/report formats and
 original artifacts remain unchanged. The lifecycle-9 implementation is pending
 qualification; the delivery matrix records actual failures.
 
+### Reviewed secondary-person authority — 2026-10-17
+
+Qualification profile V5 gives affiliation/publication references revision 6,
+frozen affiliation descriptor 3 and source-family inventory V2. A reviewed
+roster may join a secondary provider person only through a history-authenticated
+SourceBound/SamePerson decision committing the exact current candidate row;
+all decision members must remain in one accepted public group. A correction
+clears prior secondary authority; only a later explicit accepted decision can
+restore it. Unproven links withhold. V4 descriptor 2/family V1 remains
+strict-primary under live and frozen interpretation. No Store migration,
+historical relabeling or passing acceptance receipt is implied.
+
 ## 6. Enrollment, migration and historical protection
 
 No automatic migration or corpus import is authorized by this decision. Unknown/newer formats,

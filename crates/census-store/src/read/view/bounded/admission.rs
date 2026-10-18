@@ -58,10 +58,7 @@ impl StoreSnapshot<'_> {
                 && counts.key_visits == budget.rows
                 && counts.decoded_rows > 0
             {
-                return Ok(PhysicalScanResult {
-                    counts,
-                    next_key: Some(key),
-                });
+                return Ok(next_page(counts, key));
             }
             let mut admitted = counts;
             admitted.key_visits =
@@ -70,10 +67,7 @@ impl StoreSnapshot<'_> {
                 self.load_physical_observation(&key, &mut admitted, budget, context, &mut admit);
             let raw = match raw {
                 Err(error) if mode.can_continue(&error, counts, budget) => {
-                    return Ok(PhysicalScanResult {
-                        counts,
-                        next_key: Some(key),
-                    });
+                    return Ok(next_page(counts, key));
                 }
                 result => result?,
             };
@@ -120,5 +114,12 @@ impl StoreSnapshot<'_> {
                 .get(self.entities, key)
                 .map_err(|source| StoreError::Read { source })
         })
+    }
+}
+
+fn next_page(counts: ReadCounts, key: fjall::UserKey) -> PhysicalScanResult {
+    PhysicalScanResult {
+        counts,
+        next_key: Some(key),
     }
 }

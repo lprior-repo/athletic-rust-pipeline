@@ -1,7 +1,10 @@
 use super::*;
+use census_domain::model::CanonicalAthlete;
 use census_domain::public_identity_history::{
     BindingClaim, BindingResolution, CandidateDecisionReference, HistoryRequest, PublicResolution,
 };
+
+mod bridge;
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub(super) enum PersonJoin {
@@ -9,6 +12,8 @@ pub(super) enum PersonJoin {
         athlete: AthleteId,
         decision: String,
         binding: String,
+        #[serde(skip_serializing_if = "BTreeSet::is_empty")]
+        secondary_candidates: BTreeSet<AthleteId>,
     },
     Unresolved {
         connected: Vec<AthleteId>,
@@ -23,6 +28,8 @@ pub(super) type PhysicalPeople = BTreeMap<String, BTreeSet<AthleteId>>;
 pub(super) struct Candidates {
     accepted: BTreeMap<String, (AthleteId, String)>,
     connected: BTreeSet<AthleteId>,
+    #[serde(skip_serializing_if = "BTreeSet::is_empty")]
+    secondary_candidates: BTreeSet<AthleteId>,
 }
 
 pub(super) fn index(
@@ -44,47 +51,66 @@ pub(super) fn index(
     for record in accepted.history_records() {
         encoding::admit(&record.request, grant)?;
         for (binding, decision) in bindings(&record.request) {
-            let person = checked(SourceSubject::new(
-                binding.source.namespace.clone(),
-                binding.source.identifier.clone(),
-            ))?;
-            let family = index.entry(person.logical_id().into()).or_default();
-            let Some(group) = view.group(binding.candidate.as_str()) else {
-                continue;
-            };
-            family.connected.insert(group.canonical_candidate().cast());
-            let BindingResolution::Resolved {
-                identity,
-                superseded_by: None,
-                ..
-            } = accepted.resolve_binding(&binding.id)?
-            else {
-                continue;
-            };
-            let public = match identity {
-                PublicResolution::Canonical(value)
-                | PublicResolution::Redirect {
-                    successor: value, ..
-                }
-                | PublicResolution::RevokedRedirect {
-                    successor: value, ..
-                } => value.public_id,
-                PublicResolution::Unknown
-                | PublicResolution::Unresolved
-                | PublicResolution::Ambiguous { .. } => continue,
-            };
-            if group.public_id() == Some(&public) {
-                family.accepted.insert(
-                    binding.id.clone(),
-                    (
-                        group.canonical_candidate().cast(),
-                        decision.evidence_digest.clone(),
-                    ),
-                );
-            }
+            retain_binding(view, accepted, &mut index, binding, decision)?;
         }
     }
+    let profile = dataset
+        .selected_authority()
+        .map_err(report_store)?
+        .profile();
+    if census_domain::profile_execution::validate_selected_qualification_profile_v5(profile).is_ok()
+    {
+        bridge::extend(dataset, &mut index, grant)?;
+    }
     Ok(index)
+}
+
+fn retain_binding(
+    view: &crate::export::public_identity::VerifiedPublicIdentityView,
+    accepted: &census_store::AcceptedPublicIdentitySnapshot,
+    index: &mut PersonIndex,
+    binding: &BindingClaim,
+    decision: &CandidateDecisionReference,
+) -> StoreResult<()> {
+    let person = checked(SourceSubject::new(
+        binding.source.namespace.clone(),
+        binding.source.identifier.clone(),
+    ))?;
+    let family = index.entry(person.logical_id().into()).or_default();
+    let Some(group) = view.group(binding.candidate.as_str()) else {
+        return Ok(());
+    };
+    family.connected.insert(group.canonical_candidate().cast());
+    let BindingResolution::Resolved {
+        identity,
+        superseded_by: None,
+        ..
+    } = accepted.resolve_binding(&binding.id)?
+    else {
+        return Ok(());
+    };
+    let public = match identity {
+        PublicResolution::Canonical(value)
+        | PublicResolution::Redirect {
+            successor: value, ..
+        }
+        | PublicResolution::RevokedRedirect {
+            successor: value, ..
+        } => value.public_id,
+        PublicResolution::Unknown
+        | PublicResolution::Unresolved
+        | PublicResolution::Ambiguous { .. } => return Ok(()),
+    };
+    if group.public_id() == Some(&public) {
+        family.accepted.insert(
+            binding.id.clone(),
+            (
+                group.canonical_candidate().cast(),
+                decision.evidence_digest.clone(),
+            ),
+        );
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -117,6 +143,7 @@ pub(super) fn join(
             athlete: athlete.clone(),
             decision: decision.clone(),
             binding: binding.clone(),
+            secondary_candidates: family.secondary_candidates.clone(),
         });
     }
     Ok(PersonJoin::Unresolved {
@@ -152,6 +179,19 @@ impl PersonJoin {
         match self {
             Self::Accepted { athlete: bound, .. } => bound == athlete,
             Self::Unresolved { connected, .. } => connected.contains(athlete),
+        }
+    }
+    pub(super) fn qualifies(&self, athlete: &CanonicalAthlete, person: &SourceSubject) -> bool {
+        match self {
+            Self::Accepted {
+                secondary_candidates,
+                ..
+            } => {
+                athlete.source.as_ref().is_some_and(|source| {
+                    source.namespace == *person.namespace() && source.id == person.provider_id()
+                }) || secondary_candidates.contains(&athlete.id)
+            }
+            Self::Unresolved { .. } => false,
         }
     }
 }

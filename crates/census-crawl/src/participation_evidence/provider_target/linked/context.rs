@@ -17,76 +17,95 @@ pub(super) fn read(
     profile: &CheckedMileSplitProfileSubjectV1,
 ) -> StoreResult<Context> {
     let school_proof = school(capture, html, profile)?;
-    let selected = markup::elements(html, b"script", None)?
-        .into_iter()
-        .try_fold(None, |selected, script| -> StoreResult<_> {
-            if !script
-                .attribute("type")
-                .is_some_and(|value| value.eq_ignore_ascii_case("application/ld+json"))
-            {
-                return Ok(selected);
-            }
-            let event: Event = json::script(script.html)?;
-            if event.graph.is_some() {
-                return Err(invalid("linked competition JSON-LD graph unsupported"));
-            }
-            let kind = event
-                .kind
-                .as_deref()
-                .ok_or_else(|| invalid("linked competition schema type absent"))?;
-            if !matches!(
-                kind,
-                "SportsEvent" | "https://schema.org/SportsEvent" | "http://schema.org/SportsEvent"
-            ) {
-                return Ok(selected);
-            }
-            if selected.is_some()
-                || event.url.as_deref() != Some(capture.requested_url())
-                || event
-                    .id
-                    .as_ref()
-                    .is_some_and(|id| id != capture.requested_url())
-                || event.sport.as_deref() != Some("Outdoor Track & Field")
-                || event
-                    .location
-                    .as_ref()
-                    .and_then(|location| location.0.address.as_ref())
-                    .and_then(|address| address.0.region.as_deref())
-                    != Some("MI")
-            {
-                return Err(invalid(
-                    "linked competition metadata owner or scope differs",
-                ));
-            }
-            let name = event
-                .name
-                .ok_or_else(|| invalid("linked competition name absent"))?;
-            bound(name.len(), 256, "linked competition name bytes")?;
-            if name.is_empty() {
-                return Err(invalid("linked competition name empty"));
-            }
-            let date = event
-                .start
-                .ok_or_else(|| invalid("linked competition date absent"))?;
-            if event.end.as_deref() != Some(date.as_str()) {
-                return Err(invalid("linked competition day is not exact"));
-            }
-            let day = ProfileDate::parse(&date)
-                .map_err(|_| invalid("linked competition day unsupported"))?;
-            Ok(Some((
-                name,
-                day,
-                ProviderTargetProofV1::new(capture, script.locator()),
-            )))
-        })?;
-    let (name, day, proof) =
-        selected.ok_or_else(|| invalid("linked competition metadata absent"))?;
+    let (name, day, proof) = event_metadata(capture, html)?;
     Ok(Context {
         name,
         day,
         proof,
         school_proof,
     })
+}
+
+fn event_metadata(
+    capture: &RetainedHtmlCaptureV1,
+    html: &str,
+) -> StoreResult<(String, ProfileDate, ProviderTargetProofV1)> {
+    let selected = markup::elements(html, b"script", None)?
+        .into_iter()
+        .try_fold(None, |selected, script| {
+            consider_script(capture, selected, &script)
+        })?;
+    selected.ok_or_else(|| invalid("linked competition metadata absent"))
+}
+
+fn consider_script(
+    capture: &RetainedHtmlCaptureV1,
+    selected: Option<(String, ProfileDate, ProviderTargetProofV1)>,
+    script: &markup::Element<'_>,
+) -> StoreResult<Option<(String, ProfileDate, ProviderTargetProofV1)>> {
+    if !script
+        .attribute("type")
+        .is_some_and(|value| value.eq_ignore_ascii_case("application/ld+json"))
+    {
+        return Ok(selected);
+    }
+    let event: Event = json::script(script.html)?;
+    if event.graph.is_some() {
+        return Err(invalid("linked competition JSON-LD graph unsupported"));
+    }
+    let kind = event
+        .kind
+        .as_deref()
+        .ok_or_else(|| invalid("linked competition schema type absent"))?;
+    if !matches!(
+        kind,
+        "SportsEvent" | "https://schema.org/SportsEvent" | "http://schema.org/SportsEvent"
+    ) {
+        return Ok(selected);
+    }
+    if selected.is_some()
+        || event.url.as_deref() != Some(capture.requested_url())
+        || event
+            .id
+            .as_ref()
+            .is_some_and(|id| id != capture.requested_url())
+        || event.sport.as_deref() != Some("Outdoor Track & Field")
+        || event
+            .location
+            .as_ref()
+            .and_then(|location| location.0.address.as_ref())
+            .and_then(|address| address.0.region.as_deref())
+            != Some("MI")
+    {
+        return Err(invalid(
+            "linked competition metadata owner or scope differs",
+        ));
+    }
+    let (name, day) = event_fields(event)?;
+    Ok(Some((
+        name,
+        day,
+        ProviderTargetProofV1::new(capture, script.locator()),
+    )))
+}
+
+fn event_fields(event: Event) -> StoreResult<(String, ProfileDate)> {
+    let name = event
+        .name
+        .ok_or_else(|| invalid("linked competition name absent"))?;
+    bound(name.len(), 256, "linked competition name bytes")?;
+    if name.is_empty() {
+        return Err(invalid("linked competition name empty"));
+    }
+    let date = event
+        .start
+        .ok_or_else(|| invalid("linked competition date absent"))?;
+    if event.end.as_deref() != Some(date.as_str()) {
+        return Err(invalid("linked competition day is not exact"));
+    }
+    let day =
+        ProfileDate::parse(&date).map_err(|_| invalid("linked competition day unsupported"))?;
+    Ok((name, day))
 }
 
 fn school(

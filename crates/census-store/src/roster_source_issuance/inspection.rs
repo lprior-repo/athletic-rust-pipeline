@@ -130,6 +130,29 @@ fn inspect<'s>(
     grant.charge_bytes(2 * 512).map_err(super::source_error)?;
     grant.charge_steps(8).map_err(super::source_error)?;
     let input_token = view.attachment_input_revision_bytes()?;
+    let raw = read_authority_head(store, grant)?;
+    continuation.require(grant).map_err(super::source_error)?;
+    let identity = view.store_identity()?;
+    let evidence = RosterSourceEvidenceV1::new(
+        identity.clone(),
+        view.sequence(),
+        request.school.clone(),
+        request.program.clone(),
+        held,
+        rows,
+        continuation,
+    );
+    Ok((
+        view.revision(),
+        identity,
+        input_token,
+        raw,
+        request,
+        evidence,
+    ))
+}
+
+fn read_authority_head(store: &Store, grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<u8>> {
     let snapshot = store.db.snapshot();
     let length = snapshot
         .size_of(&store.meta, HEAD)
@@ -147,25 +170,7 @@ fn inspect<'s>(
     if raw.len() != length {
         return Err(Error::Corrupt("authority head length").into());
     }
-    continuation.require(grant).map_err(super::source_error)?;
-    let identity = view.store_identity()?;
-    let evidence = RosterSourceEvidenceV1::new(
-        identity.clone(),
-        view.sequence(),
-        request.school.clone(),
-        request.program.clone(),
-        held,
-        rows,
-        continuation,
-    );
-    Ok((
-        view.revision(),
-        identity,
-        input_token,
-        raw.to_vec(),
-        request,
-        evidence,
-    ))
+    Ok(raw.to_vec())
 }
 
 #[cfg(test)]

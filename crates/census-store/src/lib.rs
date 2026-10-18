@@ -75,6 +75,7 @@ mod meta;
 mod native_effect_checkpoint;
 #[cfg(feature = "native-fault-injection")]
 mod native_worker_boundary;
+mod paths;
 mod profiles;
 pub mod read;
 mod result_school_correspondence;
@@ -208,26 +209,8 @@ fn keyspaces(db: Database) -> StoreResult<(Database, Keyspace, Keyspace, Keyspac
 }
 
 impl Store {
-    pub fn root(&self) -> &Path {
-        &self.root
-    }
-
     pub fn store_format(&self) -> StoreResult<StoreFormat> {
         format::read_format(&self.meta)
-    }
-
-    pub fn http_cache_dir(&self) -> PathBuf {
-        self.root.join("http")
-    }
-
-    pub fn out_dir(&self) -> PathBuf {
-        self.root.join("out")
-    }
-
-    pub fn table_path(&self, table: Table) -> PathBuf {
-        self.root
-            .join("entities")
-            .join(format!("{}.jsonl", table.file()))
     }
 
     pub fn flush(&self) -> StoreResult<()> {

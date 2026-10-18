@@ -24,9 +24,7 @@ pub(crate) fn capture(
     objects_dir: &Path,
 ) -> ReportResult<(FrozenAffiliationDescriptor, PinnedCurrentAffiliations)> {
     let profile = super::pinned_profile(dataset, snapshot)?;
-    if census_domain::profile_execution::validate_selected_qualification_profile_v4(&profile)
-        .is_ok()
-    {
+    if reviewed::descriptor_version(&profile).is_ok() {
         return reviewed::capture(dataset, snapshot, objects_dir, &profile);
     }
     let _checked =

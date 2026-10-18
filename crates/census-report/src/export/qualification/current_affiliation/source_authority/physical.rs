@@ -2,6 +2,12 @@ use super::super::note::RowNote;
 use super::*;
 use census_domain::model::CanonicalAthlete;
 
+#[derive(Clone, Copy)]
+enum PersonOwnership {
+    PrimaryOnly,
+    AcceptedSecondary,
+}
+
 #[derive(Debug, serde::Serialize)]
 pub(super) struct PhysicalGap {
     pub(super) athlete: AthleteId,
@@ -24,6 +30,15 @@ pub(super) fn read(
     grant: &mut AttachmentReplayGrantV1,
 ) -> ReportResult<PhysicalEvidence> {
     let view = dataset.verified_public_identities()?;
+    let profile = dataset.selected_authority()?.profile();
+    let ownership =
+        if census_domain::profile_execution::validate_selected_qualification_profile_v5(profile)
+            .is_ok()
+        {
+            PersonOwnership::AcceptedSecondary
+        } else {
+            PersonOwnership::PrimaryOnly
+        };
     let indexed = index(captures, grant)?;
     let mut result = PhysicalEvidence {
         gaps: Vec::new(),
@@ -31,36 +46,81 @@ pub(super) fn read(
         witnesses: Vec::new(),
     };
     bound.visit_athletes(grant, |athlete, grant| {
-        let group = view.group(athlete.id.as_str()).ok_or_else(|| invalid("physical roster subject absent from identity inventory"))?;
+        let group = view
+            .group(athlete.id.as_str())
+            .ok_or_else(|| invalid("physical roster subject absent from identity inventory"))?;
         let canonical = group.canonical_candidate().cast();
-        let observation_digest = census_domain::model::serialized_digest(&athlete)?;
-        for evidence in &athlete.evidence {
-            charge(grant, 0, 1)?;
-            let Some(note) = RowNote::read(evidence)? else { continue; };
-            audit.reference(&canonical, &note.source_row_key)?;
-            let members = indexed.get(&note.source_row_key).map_or(&[][..], Vec::as_slice);
-            let mut witnessed = false;
-            for (capture, member) in members {
-                matching(capture, member, &athlete, &note)?;
-                if !member.join.connected(&canonical) { continue; }
-                witnessed = true;
-                let witness = PhysicalWitness { member: member.id.clone(), candidate: athlete.id.clone(), canonical: canonical.clone(), observation_digest: observation_digest.clone(), evidence_digest: census_domain::model::serialized_digest(evidence)? };
-                encoding::admit(&witness, grant)?;
-                result.witnesses.push(witness);
-                result.supported.insert(member.id.clone());
-                if matches!(&member.join, identity::PersonJoin::Accepted { athlete: accepted, .. } if accepted == &canonical) && capture.owner_span.is_ok() && member.spans.is_ok() {
-                    retain(capture, member, &athlete, evidence, &note, audit)?;
-                }
-            }
-            if !witnessed {
-                if result.gaps.len() >= 200_000 { return Err(invalid("physical roster gap ceiling exceeded")); }
-                result.gaps.push(PhysicalGap { athlete: canonical.clone(), reference: note.source_row_key, reason: "missing_reviewed_source_authority" });
-                audit.gap(canonical.clone(), Gap::ArchiveUnavailable)?;
-            }
-        }
-        Ok(())
+        observe(
+            &mut result,
+            &indexed,
+            ownership,
+            &athlete,
+            &canonical,
+            grant,
+            audit,
+        )
     })?;
     Ok(result)
+}
+fn observe(
+    result: &mut PhysicalEvidence,
+    indexed: &Rows<'_>,
+    ownership: PersonOwnership,
+    athlete: &CanonicalAthlete,
+    canonical: &AthleteId,
+    grant: &mut AttachmentReplayGrantV1,
+    audit: &mut RetainedAudit,
+) -> StoreResult<()> {
+    let observation_digest = census_domain::model::serialized_digest(athlete)?;
+    for evidence in &athlete.evidence {
+        charge(grant, 0, 1)?;
+        let Some(note) = RowNote::read(evidence)? else {
+            continue;
+        };
+        audit.reference(canonical, &note.source_row_key)?;
+        let members = indexed
+            .get(&note.source_row_key)
+            .map_or(&[][..], Vec::as_slice);
+        let mut witnessed = false;
+        for (capture, member) in members {
+            if matches!(ownership, PersonOwnership::AcceptedSecondary) {
+                charge(grant, 0, athlete.source_links.len())?;
+            }
+            matching(capture, member, athlete, &note, ownership)?;
+            if !member.join.connected(canonical) {
+                continue;
+            }
+            witnessed = true;
+            let witness = PhysicalWitness {
+                member: member.id.clone(),
+                candidate: athlete.id.clone(),
+                canonical: canonical.clone(),
+                observation_digest: observation_digest.clone(),
+                evidence_digest: census_domain::model::serialized_digest(evidence)?,
+            };
+            encoding::admit(&witness, grant)?;
+            result.witnesses.push(witness);
+            result.supported.insert(member.id.clone());
+            if member.join.qualifies(athlete, &member.person)
+                && capture.owner_span.is_ok()
+                && member.spans.is_ok()
+            {
+                retain(capture, member, athlete, evidence, &note, audit)?;
+            }
+        }
+        if !witnessed {
+            if result.gaps.len() >= 200_000 {
+                return Err(invalid("physical roster gap ceiling exceeded"));
+            }
+            result.gaps.push(PhysicalGap {
+                athlete: canonical.clone(),
+                reference: note.source_row_key,
+                reason: "missing_reviewed_source_authority",
+            });
+            audit.gap(canonical.clone(), Gap::ArchiveUnavailable)?;
+        }
+    }
+    Ok(())
 }
 
 fn retain(
@@ -129,6 +189,7 @@ fn matching(
     member: &material::Member,
     athlete: &CanonicalAthlete,
     note: &RowNote,
+    ownership: PersonOwnership,
 ) -> StoreResult<()> {
     let source = member.located.athlete();
     let end = note
@@ -141,7 +202,7 @@ fn matching(
         .as_bytes()
         .get(note.row.byte_offset..end)
         .ok_or_else(|| invalid("physical roster row is outside capture"))?;
-    person(capture, member, athlete)?;
+    person(capture, member, athlete, ownership)?;
     if hash(bytes) != note.row_sha256
         || source.name != athlete.canonical_name
         || source.gender != athlete.gender
@@ -176,22 +237,27 @@ fn person(
     capture: &material::Capture,
     member: &material::Member,
     athlete: &CanonicalAthlete,
+    ownership: PersonOwnership,
 ) -> StoreResult<()> {
     let source = member.located.athlete();
+    let primary = athlete.source.as_ref().ok_or_else(|| {
+        invalid("physical roster row differs from its source-owned school candidate")
+    })?;
     let expected = CanonicalAthlete::mint(
         &capture.school.id,
         &source.name,
         source.grad_year,
         source.gender,
-        &member.person.source_identity(),
+        primary,
     );
-    if athlete.school != capture.school.id
-        || athlete.id != expected
-        || !athlete.source.as_ref().is_some_and(|source| {
-            source.namespace == *member.person.namespace()
-                && source.id == member.person.provider_id()
-        })
-    {
+    let owns = primary.namespace == *member.person.namespace()
+        && primary.id == member.person.provider_id();
+    let linked = !owns
+        && matches!(ownership, PersonOwnership::AcceptedSecondary)
+        && athlete.source_links.iter().any(|link| {
+            link.namespace == *member.person.namespace() && link.id == member.person.provider_id()
+        });
+    if athlete.school != capture.school.id || athlete.id != expected || !(owns || linked) {
         return Err(invalid(
             "physical roster row differs from its source-owned school candidate",
         ));

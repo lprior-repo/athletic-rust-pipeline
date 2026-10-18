@@ -160,8 +160,6 @@ mod tests {
                 "PROVENANCE.json omits {file}"
             );
         }
-        // The provenance pins shas for the two raw captures; the golden rows
-        // carry no stored sha, so only the raw pair is cross-checked here.
         for digest in [CO_DIRECTORY_DIGEST, CO_CHERRY_DIGEST] {
             check!(
                 PROVENANCE_JSON.contains(digest),

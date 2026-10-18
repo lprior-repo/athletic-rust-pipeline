@@ -33,7 +33,7 @@ pub(super) fn row(
     let identity =
         project_retained_html_result_identity(linked.checked_document(), index, &athlete)
             .map_err(source)?;
-    let (outcome, reasons, semantic_refs) = match sources {
+    let assessed = match sources {
         AssessmentSources::HistoricalWithheld => {
             let assessed = evaluate(
                 &row,
@@ -46,34 +46,7 @@ pub(super) fn row(
         }
         AssessmentSources::Current(sources) => facts::assess(sources, linked, index, query, grant)?,
     };
-    let subject = attachment.subject();
-    let references = [
-        subject.capture.as_str(),
-        subject.body.as_str(),
-        subject.interpretation.as_str(),
-        subject.locator.as_str(),
-        subject.context.as_str(),
-        row.checked_row().original_row_digest(),
-        attachment.record().record_digest.as_str(),
-        attachment.inventory().digest.as_str(),
-    ];
-    admit_row(budget, &identity, &references)?;
-    let mut owned_refs = Vec::new();
-    owned_refs
-        .try_reserve_exact(references.len())
-        .map_err(|_| crate::grouping::GroupingError::Allocation {
-            stage: "selected documentary references",
-        })?;
-    owned_refs.extend(references.into_iter().map(str::to_owned));
-    append_semantic_references(&mut owned_refs, semantic_refs, budget)?;
-    Ok(DocumentaryParticipationRow::school_unresolved(
-        identity.performance_id().clone(),
-        identity.event_id().clone(),
-        athlete,
-        outcome,
-        reasons,
-        owned_refs,
-    ))
+    seal_row(&row, &identity, athlete, assessed, budget)
 }
 
 fn append_semantic_references(
@@ -148,6 +121,71 @@ fn evaluate(
         query,
         acquired_at,
     )?;
+    assess_observation(row, identity, query, proof, grant)
+}
+
+fn seal_row(
+    row: &census_crawl::participation_evidence::recorded::DiscoveredIdentityLinkedHtmlResultRowV1<
+        '_,
+        '_,
+    >,
+    identity: &census_crawl::participation_evidence::physical_result::ProposedHtmlResultIdentityV1,
+    athlete: AthleteId,
+    assessed: (
+        census_domain::participation_candidates::CandidateOutcome,
+        census_domain::participation_candidates::ParticipationReasons,
+        Vec<String>,
+    ),
+    budget: &mut Admission,
+) -> ReportResult<DocumentaryParticipationRow> {
+    let (outcome, reasons, semantic_refs) = assessed;
+    let attachment = row.attachment();
+    let subject = attachment.subject();
+    let references = [
+        subject.capture.as_str(),
+        subject.body.as_str(),
+        subject.interpretation.as_str(),
+        subject.locator.as_str(),
+        subject.context.as_str(),
+        row.checked_row().original_row_digest(),
+        attachment.record().record_digest.as_str(),
+        attachment.inventory().digest.as_str(),
+    ];
+    admit_row(budget, identity, &references)?;
+    let mut owned_refs = Vec::new();
+    owned_refs
+        .try_reserve_exact(references.len())
+        .map_err(|_| crate::grouping::GroupingError::Allocation {
+            stage: "selected documentary references",
+        })?;
+    owned_refs.extend(references.into_iter().map(str::to_owned));
+    append_semantic_references(&mut owned_refs, semantic_refs, budget)?;
+    Ok(DocumentaryParticipationRow::school_unresolved(
+        identity.performance_id().clone(),
+        identity.event_id().clone(),
+        athlete,
+        outcome,
+        reasons,
+        owned_refs,
+    ))
+}
+
+fn assess_observation(
+    row: &census_crawl::participation_evidence::recorded::DiscoveredIdentityLinkedHtmlResultRowV1<
+        '_,
+        '_,
+    >,
+    identity: &census_crawl::participation_evidence::physical_result::ProposedHtmlResultIdentityV1,
+    query: CandidateQuery<'_>,
+    proof: ProofReference<'_>,
+    grant: &mut Grant,
+) -> ReportResult<(
+    census_domain::participation_candidates::CandidateOutcome,
+    census_domain::participation_candidates::ParticipationReasons,
+)> {
+    let attachment = row.attachment();
+    let athlete = identity.athlete();
+    let subject = attachment.subject();
     let bytes = attachment
         .record()
         .command

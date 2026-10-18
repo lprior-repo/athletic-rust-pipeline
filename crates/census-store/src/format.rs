@@ -7,6 +7,7 @@ use super::{generation, meta, Store, StoreError, StoreResult};
 
 pub(crate) mod existing;
 mod migrate;
+mod version;
 
 pub use migrate::MigrationReport;
 
@@ -210,7 +211,7 @@ fn classify(format: &StoreFormat) -> Verdict {
                 Verdict::Migrate("the store predates versioned schemas".to_string())
             }
         }
-        (Some(version), Some(key_format)) => classify_versioned(format, version, key_format),
+        (Some(version), Some(key_format)) => version::classify(format, version, key_format),
         (Some(version), None) => Verdict::Unknown(format!(
             "schema version {version} is recorded without a key format"
         )),
@@ -243,18 +244,6 @@ fn unsupported_version(format: &StoreFormat) -> Option<Verdict> {
         }),
         _ => None,
     })
-}
-
-fn classify_versioned(format: &StoreFormat, version: u32, key_format: u32) -> Verdict {
-    if format.created_by.is_none() || format.created_at.is_none() {
-        return Verdict::Unknown("creation lineage rows are missing".to_string());
-    }
-    if version < STORE_SCHEMA_VERSION || key_format < KEY_FORMAT_VERSION {
-        return Verdict::Migrate(format!(
-            "the store records schema version {version} and key format {key_format}"
-        ));
-    }
-    Verdict::Current
 }
 
 fn initialize(db: &Database, meta_keyspace: &Keyspace) -> StoreResult<()> {

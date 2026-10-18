@@ -39,3 +39,11 @@ pub(in super::super) fn profile() -> TestResult<QueryProfileV1> {
         include_provisional: ProvisionalInclusionV1::Exclude,
     })?)
 }
+
+pub(super) fn reviewed_profile() -> TestResult<QueryProfileV1> {
+    use census_domain::profile_execution::selected_qualification_contract_ref_v5;
+    let mut input = profile()?.input().clone();
+    input.policies.affiliation = selected_qualification_contract_ref_v5(Role::Affiliation)?;
+    input.policies.publication = selected_qualification_contract_ref_v5(Role::Publication)?;
+    Ok(QueryProfileV1::new(input)?)
+}

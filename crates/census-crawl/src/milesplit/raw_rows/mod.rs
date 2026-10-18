@@ -152,6 +152,17 @@ impl Reader<'_, '_> {
             ));
             return Ok(());
         };
+        self.ingest_row(raw_line, &line, ordinal, offset, columns)
+    }
+
+    fn ingest_row(
+        &mut self,
+        raw_line: &str,
+        line: &str,
+        ordinal: u32,
+        offset: usize,
+        columns: Columns,
+    ) -> CrawlResult<()> {
         let event_index = self.sections.len().saturating_sub(1);
         let Some(section) = self.sections.last_mut() else {
             self.skipped.push(describe_skip(
@@ -162,7 +173,7 @@ impl Reader<'_, '_> {
             ));
             return Ok(());
         };
-        let cells = row_cells(&line, columns);
+        let cells = row_cells(line, columns);
         match build_row(&cells, &section.kind) {
             Ok(row) => {
                 if row.grade.is_none() {
@@ -185,12 +196,14 @@ impl Reader<'_, '_> {
                 (self.successful)(locator, &row)?;
                 section.rows.push(row);
                 self.rows_parsed = self.rows_parsed.saturating_add(1);
+                Ok(())
             }
-            Err(reason) => self
-                .skipped
-                .push(describe_skip(raw_line, ordinal, offset, reason)),
+            Err(reason) => {
+                self.skipped
+                    .push(describe_skip(raw_line, ordinal, offset, reason));
+                Ok(())
+            }
         }
-        Ok(())
     }
 
     fn read_round(&mut self, line: &str) -> bool {

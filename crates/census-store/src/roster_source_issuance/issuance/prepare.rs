@@ -50,7 +50,41 @@ fn prepare(
 ) -> StoreResult<Prepared> {
     require_current(store, inspection, fields.operation.as_str())?;
     require_target(inspection, &proposal)?;
-    let mut objects = objects::collect(inspection, supplied, &proposal)?;
+    let (mut objects, prior, input_token, prior_head) =
+        anchored_closure(inspection, supplied, &proposal)?;
+    let (proposal_review_basis, review, semantic) = derived_review(
+        inspection,
+        &proposal,
+        fields,
+        &mut objects,
+        &input_token,
+        &prior_head,
+    )?;
+    let (record, approval) = complete_record(
+        inspection,
+        proposal,
+        semantic,
+        review,
+        proposal_review_basis,
+        input_token,
+        prior_head,
+        prior,
+        &objects,
+    )?;
+    Ok((record, objects, approval))
+}
+
+fn anchored_closure(
+    inspection: &mut RosterIssuanceInspectionV1<'_>,
+    supplied: RosterSourceReviewObjectsV1,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+) -> StoreResult<(
+    objects::Objects,
+    AuthorityHead,
+    super::ObjectRef,
+    super::ObjectRef,
+)> {
+    let mut objects = objects::collect(inspection, supplied, proposal)?;
     let prior: AuthorityHead = codec::decode(&inspection.authority_head)?;
     let input_token =
         objects::insert(&mut objects, &inspection.input_token, &mut inspection.grant)?;
@@ -67,18 +101,29 @@ fn prepare(
         .grant
         .charge_steps(1)
         .map_err(super::super::source_error)?;
-    let basis_bytes = review::proposal_basis(&proposal)?;
-    let proposal_review_basis = objects::insert(&mut objects, &basis_bytes, &mut inspection.grant)?;
+    Ok((objects, prior, input_token, prior_head))
+}
+
+fn derived_review(
+    inspection: &mut RosterIssuanceInspectionV1<'_>,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+    fields: RosterSourceReviewFieldsV1,
+    objects: &mut objects::Objects,
+    input_token: &super::ObjectRef,
+    prior_head: &super::ObjectRef,
+) -> StoreResult<(super::ObjectRef, super::ObjectRef, super::SemanticReview)> {
+    let basis_bytes = review::proposal_basis(proposal)?;
+    let proposal_review_basis = objects::insert(objects, &basis_bytes, &mut inspection.grant)?;
     let (qualification, activation) = super::qualification::derive(
-        &proposal,
+        proposal,
         &proposal_review_basis,
         fields.decision,
-        &mut objects,
+        objects,
         &mut inspection.grant,
     )?;
     let semantic = review::semantic(
         inspection,
-        &proposal,
+        proposal,
         fields,
         proposal_review_basis.clone(),
         input_token.clone(),
@@ -87,7 +132,7 @@ fn prepare(
         activation,
     )?;
     let raw = codec::encode_with_source_grant(&semantic, &mut inspection.grant)?;
-    let review = objects::insert(&mut objects, &raw, &mut inspection.grant)?;
+    let review = objects::insert(objects, &raw, &mut inspection.grant)?;
     inspection
         .grant
         .charge_bytes(64 * 1024)
@@ -96,15 +141,13 @@ fn prepare(
         .grant
         .charge_steps(1)
         .map_err(super::super::source_error)?;
-    let proposal = proposal
-        .with_semantic_review_reference(
-            &review.digest,
-            u64::try_from(review.bytes).map_err(|_| Error::BudgetExceeded)?,
-            super::limits()?,
-        )
-        .map_err(|_| Error::Corrupt("derived review claim reference"))?;
-    objects::require_proposal(&objects, &proposal)?;
-    let physical_inventory = super::ObjectRef {
+    Ok((proposal_review_basis, review, semantic))
+}
+
+fn physical_inventory_ref(
+    proposal: &LocallyCheckedRosterIssuanceV1,
+) -> StoreResult<super::ObjectRef> {
+    Ok(super::ObjectRef {
         digest: proposal
             .binding()
             .physical_projection_inventory()
@@ -119,7 +162,29 @@ fn prepare(
                 .get(),
         )
         .map_err(|_| Error::BudgetExceeded)?,
-    };
+    })
+}
+
+fn complete_record(
+    inspection: &mut RosterIssuanceInspectionV1<'_>,
+    proposal: LocallyCheckedRosterIssuanceV1,
+    semantic: super::SemanticReview,
+    review: super::ObjectRef,
+    proposal_review_basis: super::ObjectRef,
+    input_token: super::ObjectRef,
+    prior_head: super::ObjectRef,
+    prior: AuthorityHead,
+    objects: &objects::Objects,
+) -> StoreResult<(ReviewBasis, Vec<u8>)> {
+    let proposal = proposal
+        .with_semantic_review_reference(
+            &review.digest,
+            u64::try_from(review.bytes).map_err(|_| Error::BudgetExceeded)?,
+            super::limits()?,
+        )
+        .map_err(|_| Error::Corrupt("derived review claim reference"))?;
+    objects::require_proposal(objects, &proposal)?;
+    let physical_inventory = physical_inventory_ref(&proposal)?;
     let record = ReviewBasis {
         schema: "roster-source-reviewed-claims-basis-v1".into(),
         store: inspection.store.clone(),
@@ -134,7 +199,7 @@ fn prepare(
         review,
         proposal_review_basis,
         physical_inventory,
-        closure: objects::inventory(&objects),
+        closure: objects::inventory(objects),
     };
     inspection
         .grant
@@ -148,7 +213,7 @@ fn prepare(
     inspection
         .evidence
         .require_original_grant(&mut inspection.grant)?;
-    Ok((record, objects, approval))
+    Ok((record, approval))
 }
 
 pub(super) fn require_current(

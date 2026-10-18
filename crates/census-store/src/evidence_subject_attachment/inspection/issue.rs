@@ -33,21 +33,13 @@ pub(super) fn inspect<'s>(
     };
     let (action, selected, witness, objects, prior_index) = match request {
         AttachmentInspectionRequestV1::Revoke { prior } => {
-            let index = exact_prior(&ledger, &prior, grant)?;
-            let record = ledger
-                .records
-                .get(index)
-                .ok_or(StoreError::CounterOverflow)?;
+            let (selected, witness, objects, index) = revoked_target(&ledger, &prior, grant)?;
             (
                 AttachmentActionV1::Revoke { prior },
-                record.command.target.clone(),
-                record
-                    .command
-                    .reviewed_context
-                    .accepted_target_witness
-                    .clone(),
-                Vec::new(),
-                Some(index),
+                selected,
+                witness,
+                objects,
+                index,
             )
         }
         AttachmentInspectionRequestV1::Attach { target, prior } => {
@@ -82,6 +74,28 @@ type IssuedTarget = (
     Vec<EncodedObject>,
     Option<usize>,
 );
+
+fn revoked_target(
+    ledger: &Ledger<'_>,
+    prior: &AttachmentRecordReferenceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<IssuedTarget> {
+    let index = exact_prior(ledger, prior, grant)?;
+    let record = ledger
+        .records
+        .get(index)
+        .ok_or(StoreError::CounterOverflow)?;
+    Ok((
+        record.command.target.clone(),
+        record
+            .command
+            .reviewed_context
+            .accepted_target_witness
+            .clone(),
+        Vec::new(),
+        Some(index),
+    ))
+}
 
 fn attach(
     view: &StoreSnapshot<'_>,

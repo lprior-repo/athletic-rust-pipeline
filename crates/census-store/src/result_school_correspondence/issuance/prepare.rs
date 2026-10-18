@@ -38,10 +38,8 @@ pub(super) fn prepare<'s>(
                 &attachments,
                 grant,
             )?;
-            let (ledger, command) = validate_proposed(ledger, command, grant)?;
-            let attachment_fence = attachments.into_physical_inventory(grant)?;
-            let approval = super::super::wire::review_approval(&command, grant)?;
-            let digest = super::super::codec::digest(&approval, grant)?;
+            let (command, approval, digest, ledger, attachment_fence) =
+                seal_preparation(ledger, command, attachments, grant)?;
             Ok((
                 command,
                 approval,
@@ -61,6 +59,25 @@ pub(super) fn prepare<'s>(
         attachment_fence,
         grant,
     })
+}
+
+fn seal_preparation<'v, 's>(
+    ledger: super::ledger::Ledger,
+    command: ResultSchoolReviewCommandV1,
+    attachments: crate::CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<(
+    ResultSchoolReviewCommandV1,
+    Vec<u8>,
+    ResultSchoolDigestV1,
+    super::ledger::Ledger,
+    crate::read::JournalNamespaceInventory<'s>,
+)> {
+    let (ledger, command) = validate_proposed(ledger, command, grant)?;
+    let attachment_fence = attachments.into_physical_inventory(grant)?;
+    let approval = super::super::wire::review_approval(&command, grant)?;
+    let digest = super::super::codec::digest(&approval, grant)?;
+    Ok((command, approval, digest, ledger, attachment_fence))
 }
 
 pub(super) fn prepare_replay(

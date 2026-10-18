@@ -1,6 +1,7 @@
 use super::{
-    check_selection_configuration, selected_qualification_contract_ref_v3, ContractRoleV1,
-    ProfileExecutionError,
+    check_selection_configuration, selected_qualification_contract_ref_v3,
+    selected_qualification_contract_ref_v5, validate_selected_qualification_profile_v5,
+    ContractRoleV1, ProfileExecutionError,
 };
 use crate::model::{serialized_digest, ContractRefV1, QueryProfileV1};
 use serde::Serialize;
@@ -60,6 +61,10 @@ pub fn validate_current_selected_qualification_profile(
     profile: &QueryProfileV1,
 ) -> Result<(), ProfileExecutionError> {
     if profile.input().policies.affiliation
+        == selected_qualification_contract_ref_v5(ContractRoleV1::Affiliation)?
+    {
+        validate_selected_qualification_profile_v5(profile).map(|_| ())
+    } else if profile.input().policies.affiliation
         == selected_qualification_contract_ref_v4(ContractRoleV1::Affiliation)?
     {
         validate_selected_qualification_profile_v4(profile).map(|_| ())

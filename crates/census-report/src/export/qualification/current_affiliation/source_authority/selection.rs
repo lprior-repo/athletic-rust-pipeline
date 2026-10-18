@@ -44,40 +44,65 @@ pub(super) fn assess(
     ))?;
     let mut rows = BTreeMap::new();
     for athlete in subjects {
-        charge(grant, 0, 1)?;
-        let mut resolution = Resolution::Unknown;
-        let mut unsupported = missing.contains(&athlete);
-        for sport in &profile.input().sports {
-            let members = families.get(&athlete).map_or(&[][..], Vec::as_slice);
-            let inputs = assertions(
-                &athlete,
-                *sport,
-                members,
-                &physical.supported,
-                captures,
-                &evidence,
-                &published,
-                bounds,
-                audit,
-                grant,
-            )?;
-            unsupported |= inputs.gapped;
-            let request = CurrentAffiliationRequest {
-                athlete: &athlete,
-                profile,
-                sport: *sport,
-                known,
-                acquisition_cutoff: cutoff,
-                grant: selection_grant()?,
-            };
-            unsupported |= select(request, &inputs, &mut resolution, audit, grant)?;
-        }
-        if unsupported {
-            resolution.withhold();
-        }
-        rows.insert(athlete, resolution);
+        let (id, resolution) = resolve_athlete(
+            athlete,
+            &missing,
+            profile,
+            &families,
+            captures,
+            &evidence,
+            &published,
+            &physical.supported,
+            bounds,
+            known,
+            cutoff,
+            audit,
+            grant,
+        )?;
+        rows.insert(id, resolution);
     }
     Ok(rows)
+}
+
+fn resolve_athlete<'a>(
+    athlete: AthleteId,
+    missing: &BTreeSet<&AthleteId>,
+    profile: &'a QueryProfileV1,
+    families: &BTreeMap<AthleteId, Vec<(usize, usize)>>,
+    captures: &'a [material::Capture],
+    evidence: &'a [LocallyCheckedEvidence<'a>],
+    published: &'a [Vec<&'a SourceSubject>],
+    supported: &BTreeSet<String>,
+    bounds: KnownBounds<'a>,
+    known: DeclaredFrozenView<'a>,
+    cutoff: DateTime<Utc>,
+    audit: &mut RetainedAudit,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<(AthleteId, Resolution)> {
+    charge(grant, 0, 1)?;
+    let mut resolution = Resolution::Unknown;
+    let mut unsupported = missing.contains(&athlete);
+    for sport in &profile.input().sports {
+        let members = families.get(&athlete).map_or(&[][..], Vec::as_slice);
+        let inputs = assertions(
+            &athlete, *sport, members, supported, captures, evidence, published, bounds, audit,
+            grant,
+        )?;
+        unsupported |= inputs.gapped;
+        let request = CurrentAffiliationRequest {
+            athlete: &athlete,
+            profile,
+            sport: *sport,
+            known,
+            acquisition_cutoff: cutoff,
+            grant: selection_grant()?,
+        };
+        unsupported |= select(request, &inputs, &mut resolution, audit, grant)?;
+    }
+    if unsupported {
+        resolution.withhold();
+    }
+    Ok((athlete, resolution))
 }
 
 fn selection_grant() -> StoreResult<SelectionGrant> {

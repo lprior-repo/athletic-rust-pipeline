@@ -17,30 +17,8 @@ impl BoundRosterSourceViewV1<'_> {
         let result = (|| {
             dataset.ensure_input_binding()?;
             super::super::validate_profile(dataset, profile)?;
-            let bytes = object::read(objects, closure_object, 64 * 1024, grant)?;
-            let closure: RosterSourceClosureV1 =
-                serde_json::from_slice(&bytes).map_err(|source| StoreError::Decode {
-                    key: closure_object.digest.clone(),
-                    source,
-                })?;
-            if closure.version != 1
-                || &closure.athletes != expected_athletes
-                || closure.reviewed.store_identity().as_str() != dataset.lineage.store_identity
-                || closure.reviewed.selected_snapshot_sequence()
-                    != dataset.lineage.snapshot_sequence
-                || closure.acquisition_cutoff > closure.captured_at
-            {
-                return Err(invalid("reviewed roster frozen closure binding differs").into());
-            }
-            let lineage = object::read(objects, &closure.lineage, 64 * 1024, grant)?;
-            let retained: crate::export::DatasetLineage = serde_json::from_slice(&lineage)
-                .map_err(|source| StoreError::Decode {
-                    key: closure.lineage.digest.clone(),
-                    source,
-                })?;
-            if retained != dataset.lineage {
-                return Err(invalid("reviewed roster frozen lineage differs").into());
-            }
+            let closure = load_closure(objects, closure_object, dataset, expected_athletes, grant)?;
+            require_retained_lineage(objects, &closure, dataset, grant)?;
             closure
                 .athletes
                 .validate(dataset, closure.athletes.fingerprint(), budget())?;
@@ -70,4 +48,46 @@ impl BoundRosterSourceViewV1<'_> {
         }
         result
     }
+}
+
+fn load_closure(
+    objects: &Path,
+    closure_object: &SourceBindingObjectV1,
+    dataset: &ExportDataset,
+    expected_athletes: &physical_observations::PhysicalObservationDescriptor,
+    grant: &mut AttachmentReplayGrantV1,
+) -> ReportResult<RosterSourceClosureV1> {
+    let bytes = object::read(objects, closure_object, 64 * 1024, grant)?;
+    let closure: RosterSourceClosureV1 =
+        serde_json::from_slice(&bytes).map_err(|source| StoreError::Decode {
+            key: closure_object.digest.clone(),
+            source,
+        })?;
+    if closure.version != 1
+        || &closure.athletes != expected_athletes
+        || closure.reviewed.store_identity().as_str() != dataset.lineage.store_identity
+        || closure.reviewed.selected_snapshot_sequence() != dataset.lineage.snapshot_sequence
+        || closure.acquisition_cutoff > closure.captured_at
+    {
+        return Err(invalid("reviewed roster frozen closure binding differs").into());
+    }
+    Ok(closure)
+}
+
+fn require_retained_lineage(
+    objects: &Path,
+    closure: &RosterSourceClosureV1,
+    dataset: &ExportDataset,
+    grant: &mut AttachmentReplayGrantV1,
+) -> ReportResult<()> {
+    let lineage = object::read(objects, &closure.lineage, 64 * 1024, grant)?;
+    let retained: crate::export::DatasetLineage =
+        serde_json::from_slice(&lineage).map_err(|source| StoreError::Decode {
+            key: closure.lineage.digest.clone(),
+            source,
+        })?;
+    if retained != dataset.lineage {
+        return Err(invalid("reviewed roster frozen lineage differs").into());
+    }
+    Ok(())
 }

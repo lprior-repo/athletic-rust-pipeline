@@ -114,19 +114,23 @@ impl Store {
         self.journal_done_locked(phase, key, payload)
     }
 
-    pub(super) fn journal_done_locked<T: Serialize>(
-        &self,
-        phase: &str,
-        key: &str,
-        payload: &T,
-    ) -> StoreResult<()> {
+    fn admit_generic_journal_phase(&self, phase: &str) -> StoreResult<()> {
         crate::lineage::refuse_qualification_write(self, phase)?;
         crate::journal::refuse_object_namespace(phase)?;
         crate::acquisition::codec::reject_generic_phase(phase)?;
         crate::public_identity::refuse_reserved(phase)?;
         crate::evidence_subject_attachment::refuse_generic_phase(phase)?;
         crate::roster_source_issuance::refuse_generic_phase(phase)?;
-        crate::result_school_correspondence::refuse_generic_phase(phase)?;
+        crate::result_school_correspondence::refuse_generic_phase(phase)
+    }
+
+    pub(super) fn journal_done_locked<T: Serialize>(
+        &self,
+        phase: &str,
+        key: &str,
+        payload: &T,
+    ) -> StoreResult<()> {
+        self.admit_generic_journal_phase(phase)?;
         let entry = serde_json::json!({
             "key": key,
             "at": SystemClock.today_iso8601(),

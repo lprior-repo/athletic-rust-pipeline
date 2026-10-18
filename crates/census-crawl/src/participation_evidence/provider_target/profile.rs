@@ -12,56 +12,18 @@ pub(super) fn read(
     let person = urls::person(capture.requested_url())?;
     let html = capture.body()?;
     markup::canonical(&html, capture.requested_url())?;
-    let heading = markup::single(
-        markup::elements(&html, b"h1", None)?
-            .into_iter()
-            .filter(|node| node.attribute("id") == Some("athleteName"))
-            .collect(),
-    )?;
-    let name = bounded_text(&heading, 256)?;
+    let (heading, name) = heading_name(&html)?;
     let (person_gender, schema_name) = person_metadata(capture, &html)?;
     if name != schema_name {
         return Err(invalid("profile displayed and Person subject names differ"));
     }
     let info = markup::single(markup::elements(&html, b"p", Some("athlete-info"))?)?;
-    let school_node = markup::single(markup::elements(
-        info.html,
-        b"span",
-        Some("current-school"),
-    )?)?;
-    let school_link = markup::single(markup::elements(school_node.html, b"a", None)?)?;
-    let school = urls::school(
-        school_link
-            .attribute("href")
-            .ok_or_else(|| invalid("profile school owner link absent"))?,
-    )?;
-    let school_name = bounded_text(&school_link, 256)?;
+    let (school, school_name, school_node) = school_parts(&info)?;
     if markup::text(school_node.html)? != school_name {
         return Err(invalid("profile school text is ambiguous"));
     }
-    let cohort_node = markup::single(markup::elements(info.html, b"span", Some("grad-year"))?)?;
-    let cohort_text = bounded_text(&cohort_node, 32)?;
-    let year = cohort_text
-        .strip_prefix("Class of ")
-        .ok_or_else(|| invalid("profile published cohort format unsupported"))?;
-    if year.len() != 4 || !year.bytes().all(|byte| byte.is_ascii_digit()) {
-        return Err(invalid("profile cohort is not explicit"));
-    }
-    let cohort = year
-        .parse::<i16>()
-        .ok()
-        .and_then(GradYear::new)
-        .ok_or_else(|| invalid("profile cohort unsupported"))?;
-    let locality_node = markup::single(markup::elements(info.html, b"span", Some("city-state"))?)?;
-    let locality = bounded_text(&locality_node, 256)?;
-    if !locality
-        .strip_suffix(", MI")
-        .is_some_and(|city| !city.is_empty() && !city.contains(','))
-    {
-        return Err(invalid(
-            "profile locality is outside supported jurisdiction",
-        ));
-    }
+    let (cohort, cohort_node) = cohort_of(&info)?;
+    let (locality, locality_node) = locality_of(&info)?;
     let proofs = vec![
         ProviderTargetProofV1::new(capture, heading.locator()),
         relative(capture, info.span.start, &school_node)?,
@@ -78,6 +40,70 @@ pub(super) fn read(
         person_gender,
         proofs,
     })
+}
+
+fn heading_name(html: &str) -> StoreResult<(markup::Element<'_>, String)> {
+    let heading = markup::single(
+        markup::elements(html, b"h1", None)?
+            .into_iter()
+            .filter(|node| node.attribute("id") == Some("athleteName"))
+            .collect(),
+    )?;
+    let name = bounded_text(&heading, 256)?;
+    Ok((heading, name))
+}
+
+fn school_parts<'a>(
+    info: &markup::Element<'a>,
+) -> StoreResult<(
+    census_domain::model::SourceIdentity,
+    String,
+    markup::Element<'a>,
+)> {
+    let school_node = markup::single(markup::elements(
+        info.html,
+        b"span",
+        Some("current-school"),
+    )?)?;
+    let school_link = markup::single(markup::elements(school_node.html, b"a", None)?)?;
+    let school = urls::school(
+        school_link
+            .attribute("href")
+            .ok_or_else(|| invalid("profile school owner link absent"))?,
+    )?;
+    let school_name = bounded_text(&school_link, 256)?;
+    Ok((school, school_name, school_node))
+}
+
+fn cohort_of<'a>(info: &markup::Element<'a>) -> StoreResult<(GradYear, markup::Element<'a>)> {
+    let cohort_node = markup::single(markup::elements(info.html, b"span", Some("grad-year"))?)?;
+    let cohort_text = bounded_text(&cohort_node, 32)?;
+    let year = cohort_text
+        .strip_prefix("Class of ")
+        .ok_or_else(|| invalid("profile published cohort format unsupported"))?;
+    if year.len() != 4 || !year.bytes().all(|byte| byte.is_ascii_digit()) {
+        return Err(invalid("profile cohort is not explicit"));
+    }
+    let cohort = year
+        .parse::<i16>()
+        .ok()
+        .and_then(GradYear::new)
+        .ok_or_else(|| invalid("profile cohort unsupported"))?;
+    Ok((cohort, cohort_node))
+}
+
+fn locality_of<'a>(info: &markup::Element<'a>) -> StoreResult<(String, markup::Element<'a>)> {
+    let locality_node = markup::single(markup::elements(info.html, b"span", Some("city-state"))?)?;
+    let locality = bounded_text(&locality_node, 256)?;
+    if !locality
+        .strip_suffix(", MI")
+        .is_some_and(|city| !city.is_empty() && !city.contains(','))
+    {
+        return Err(invalid(
+            "profile locality is outside supported jurisdiction",
+        ));
+    }
+    Ok((locality, locality_node))
 }
 
 fn bounded_text(node: &markup::Element<'_>, maximum: usize) -> StoreResult<String> {

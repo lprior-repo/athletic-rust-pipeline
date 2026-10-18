@@ -42,12 +42,7 @@ fn apply(
         super::super::OPERATION_PREFIX,
         prepared.record.operation.as_str()
     );
-    if store
-        .db
-        .snapshot()
-        .contains_key(&store.receipts, &operation)
-        .map_err(|source| StoreError::Read { source })?
-    {
+    if replay_if_settled(store, &operation)? {
         return super::replay::replay(store, prepared.record.operation.as_str(), digest);
     }
     super::prepare::require_current(
@@ -56,6 +51,30 @@ fn apply(
         prepared.record.operation.as_str(),
     )?;
     let committed_at = Utc::now();
+    let (bytes, head, receipt) = seal_record(prepared, approved, digest, operation, committed_at)?;
+    prepared
+        .inspection
+        .evidence
+        .require_original_grant(&mut prepared.inspection.grant)?;
+    commit(store, prepared, &bytes, &head, &receipt)?;
+    Ok(Application::Written(receipt))
+}
+
+fn replay_if_settled(store: &Store, operation: &str) -> StoreResult<bool> {
+    store
+        .db
+        .snapshot()
+        .contains_key(&store.receipts, operation)
+        .map_err(|source| StoreError::Read { source })
+}
+
+fn seal_record(
+    prepared: &mut PreparedRosterSourceReviewV1<'_>,
+    approved: &[u8],
+    digest: &str,
+    operation: String,
+    committed_at: chrono::DateTime<chrono::Utc>,
+) -> StoreResult<(Vec<u8>, Vec<u8>, Receipt)> {
     let review: super::SemanticReview = codec::decode(
         prepared
             .objects
@@ -91,19 +110,17 @@ fn apply(
         ordinal: prepared.record.next_ordinal,
         digest: record_digest.clone(),
     })?;
-    let receipt = Receipt {
-        operation,
-        digest: record_digest,
-        at: committed_at.to_rfc3339(),
-        appended: 0,
-        credited: false,
-    };
-    prepared
-        .inspection
-        .evidence
-        .require_original_grant(&mut prepared.inspection.grant)?;
-    commit(store, prepared, &bytes, &head, &receipt)?;
-    Ok(Application::Written(receipt))
+    Ok((
+        bytes,
+        head,
+        Receipt {
+            operation,
+            digest: record_digest,
+            at: committed_at.to_rfc3339(),
+            appended: 0,
+            credited: false,
+        },
+    ))
 }
 
 fn commit(

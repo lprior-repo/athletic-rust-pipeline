@@ -183,11 +183,17 @@ fn selected_replay_origin(
             Ok(SelectedInputOrigin::HistoricalIdentityReplay)
         }
         (Version::ReviewedRosterGraphV3, 7) => {
-            let _checked =
-                census_domain::profile_execution::validate_selected_qualification_profile_v4(
-                    profile,
-                )
-                .map_err(|error| invalid(&error.to_string()))?;
+            use census_domain::profile_execution::{
+                validate_selected_qualification_profile_v4,
+                validate_selected_qualification_profile_v5,
+            };
+            if profile.input().policies.affiliation.revision().get() == 6 {
+                let _checked = validate_selected_qualification_profile_v5(profile)
+                    .map_err(|error| invalid(&error.to_string()))?;
+            } else {
+                let _checked = validate_selected_qualification_profile_v4(profile)
+                    .map_err(|error| invalid(&error.to_string()))?;
+            }
             Ok(SelectedInputOrigin::Current)
         }
         (Version::RetainedGraphV2, 7) => {

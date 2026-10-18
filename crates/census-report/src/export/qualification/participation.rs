@@ -84,39 +84,17 @@ impl PinnedParticipation {
             roster_context,
             Some(&independent),
         )?;
-        let replay = ParticipationReplayV1 {
-            version: 1,
-            store_identity: dataset.lineage.store_identity.clone(),
-            snapshot_sequence: snapshot.sequence(),
+        seal_live(
+            dataset,
+            snapshot,
+            profile,
             captured_at,
-            input_generation: dataset.lineage.input_generation.clone(),
-            input_digest: dataset.lineage.input_digest.clone(),
-            source_digest: dataset.lineage.source_digest.clone(),
-            profile_id: profile.id().map_err(StoreError::from)?,
-            profile: profile.clone(),
             observations,
-            journal: recorder.finish()?,
-        };
-        let (documentary, attachment) =
-            attached::capture(dataset, snapshot, profile, captured_at, directory)?;
-        let replay = ParticipationReplay::V4(ParticipationReplayV4 {
-            version: 4,
-            retained: ParticipationReplayV2 {
-                version: 2,
-                retained: replay,
-                independent,
-            },
-            attachment,
-        });
-        Ok(Self {
-            input_generation: dataset.lineage.input_generation.clone(),
-            profile_id: profile.id().map_err(StoreError::from)?,
-            participation_rule: profile.input().policies.participation.clone(),
+            recorder,
+            independent,
             rows,
-            documentary: documentary.rows,
-            unsupported_documentary: documentary.unsupported,
-            replay,
-        })
+            directory,
+        )
     }
 
     pub(crate) fn replay(
@@ -153,26 +131,8 @@ impl PinnedParticipation {
             roster_context,
             replay.independent(),
         )?;
-        let documentary = match &replay {
-            ParticipationReplay::V3(value) => attached::replay(
-                dataset,
-                profile,
-                retained.captured_at,
-                &value.attachment,
-                directory,
-            )?,
-            ParticipationReplay::V4(value) => attached::replay_current(
-                dataset,
-                profile,
-                retained.captured_at,
-                &value.attachment,
-                directory,
-            )?,
-            ParticipationReplay::V1(_) | ParticipationReplay::V2(_) => attached::Collected {
-                rows: BTreeMap::new(),
-                unsupported: Vec::new(),
-            },
-        };
+        let documentary =
+            replay_documentary(dataset, profile, retained.captured_at, &replay, directory)?;
         Ok(Self {
             input_generation: dataset.lineage.input_generation.clone(),
             profile_id: profile.id().map_err(StoreError::from)?,
@@ -182,6 +142,73 @@ impl PinnedParticipation {
             unsupported_documentary: documentary.unsupported,
             replay,
         })
+    }
+}
+
+fn seal_live(
+    dataset: &ExportDataset,
+    snapshot: &StoreSnapshot<'_>,
+    profile: &QueryProfileV1,
+    captured_at: DateTime<Utc>,
+    observations: Vec<PhysicalObservationDescriptor>,
+    recorder: census_crawl::milesplit::RecordingRetainedJournal<'_, '_>,
+    independent: census_crawl::participation_evidence::IndependentParticipationBundleV1,
+    rows: BTreeMap<PerformanceId, PinnedParticipationRow>,
+    directory: &Path,
+) -> ReportResult<PinnedParticipation> {
+    let replay = ParticipationReplayV1 {
+        version: 1,
+        store_identity: dataset.lineage.store_identity.clone(),
+        snapshot_sequence: snapshot.sequence(),
+        captured_at,
+        input_generation: dataset.lineage.input_generation.clone(),
+        input_digest: dataset.lineage.input_digest.clone(),
+        source_digest: dataset.lineage.source_digest.clone(),
+        profile_id: profile.id().map_err(StoreError::from)?,
+        profile: profile.clone(),
+        observations,
+        journal: recorder.finish()?,
+    };
+    let (documentary, attachment) =
+        attached::capture(dataset, snapshot, profile, captured_at, directory)?;
+    let replay = ParticipationReplay::V4(ParticipationReplayV4 {
+        version: 4,
+        retained: ParticipationReplayV2 {
+            version: 2,
+            retained: replay,
+            independent,
+        },
+        attachment,
+    });
+    Ok(PinnedParticipation {
+        input_generation: dataset.lineage.input_generation.clone(),
+        profile_id: profile.id().map_err(StoreError::from)?,
+        participation_rule: profile.input().policies.participation.clone(),
+        rows,
+        documentary: documentary.rows,
+        unsupported_documentary: documentary.unsupported,
+        replay,
+    })
+}
+
+fn replay_documentary(
+    dataset: &ExportDataset,
+    profile: &QueryProfileV1,
+    captured_at: DateTime<Utc>,
+    replay: &ParticipationReplay,
+    directory: &Path,
+) -> ReportResult<attached::Collected> {
+    match replay {
+        ParticipationReplay::V3(value) => {
+            attached::replay(dataset, profile, captured_at, &value.attachment, directory)
+        }
+        ParticipationReplay::V4(value) => {
+            attached::replay_current(dataset, profile, captured_at, &value.attachment, directory)
+        }
+        ParticipationReplay::V1(_) | ParticipationReplay::V2(_) => Ok(attached::Collected {
+            rows: BTreeMap::new(),
+            unsupported: Vec::new(),
+        }),
     }
 }
 

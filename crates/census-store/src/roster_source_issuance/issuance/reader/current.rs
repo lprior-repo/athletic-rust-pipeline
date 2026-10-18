@@ -35,22 +35,7 @@ fn capture_archive(
     view: &StoreSnapshot<'_>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Archive> {
-    let (lifecycle, metadata, records, receipts) =
-        view.with_roster_source_snapshot_v1(|snapshot, meta, journal, receipts| {
-            let lifecycle = lifecycle(snapshot, meta, grant)?;
-            let mut budget = RosterStartupValidationBudgetV1::new();
-            let metadata = format::protected_rows(snapshot, meta, &mut budget, Some(&mut *grant))?;
-            let records =
-                format::protected_rows(snapshot, journal, &mut budget, Some(&mut *grant))?;
-            let receipts = format::scan(
-                snapshot,
-                receipts,
-                super::super::super::OPERATION_PREFIX,
-                &mut budget,
-                Some(&mut *grant),
-            )?;
-            Ok((lifecycle, metadata, records, receipts))
-        })?;
+    let (lifecycle, metadata, records, receipts) = snapshot_protected(view, grant)?;
     grant
         .charge_bytes(1024)
         .map_err(super::super::super::source_error)?;
@@ -58,14 +43,7 @@ fn capture_archive(
         .charge_steps(8)
         .map_err(super::super::super::source_error)?;
     let store = view.store_identity()?;
-    let rows = super::super::super::inspection::inventory::collect(view, grant)?;
-    let physical = rows
-        .into_iter()
-        .map(|row| {
-            let (table, key, value) = row.into_parts();
-            PhysicalRow { table, key, value }
-        })
-        .collect();
+    let physical = physical_snapshot(view, grant)?;
     grant
         .charge_bytes(1024)
         .map_err(super::super::super::source_error)?;
@@ -92,6 +70,40 @@ fn capture_archive(
         inherited_enrollment_proof,
     };
     Ok(archive)
+}
+
+fn snapshot_protected(
+    view: &StoreSnapshot<'_>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<(u32, format::Rows, format::Rows, format::Rows)> {
+    view.with_roster_source_snapshot_v1(|snapshot, meta, journal, receipts| {
+        let lifecycle = lifecycle(snapshot, meta, grant)?;
+        let mut budget = RosterStartupValidationBudgetV1::new();
+        let metadata = format::protected_rows(snapshot, meta, &mut budget, Some(&mut *grant))?;
+        let records = format::protected_rows(snapshot, journal, &mut budget, Some(&mut *grant))?;
+        let receipts = format::scan(
+            snapshot,
+            receipts,
+            super::super::super::OPERATION_PREFIX,
+            &mut budget,
+            Some(&mut *grant),
+        )?;
+        Ok((lifecycle, metadata, records, receipts))
+    })
+}
+
+fn physical_snapshot(
+    view: &StoreSnapshot<'_>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Vec<PhysicalRow>> {
+    let rows = super::super::super::inspection::inventory::collect(view, grant)?;
+    Ok(rows
+        .into_iter()
+        .map(|row| {
+            let (table, key, value) = row.into_parts();
+            PhysicalRow { table, key, value }
+        })
+        .collect())
 }
 
 fn lifecycle(

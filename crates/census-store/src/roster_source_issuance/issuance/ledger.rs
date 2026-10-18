@@ -41,44 +41,16 @@ pub(in super::super) fn validate(
     let mut used_objects = BTreeSet::new();
     let mut used_operations = BTreeSet::new();
     for (ordinal, raw) in records {
-        let record: ReviewRecord = codec::decode(raw)?;
-        head.ordinal = head.ordinal.checked_add(1).ok_or(Error::BudgetExceeded)?;
-        if ordinal != head.ordinal || record.basis.next_ordinal != head.ordinal {
-            return Err(Error::Corrupt("review ordinal chain").into());
-        }
-        let prior = AuthorityHead {
-            version: 1,
-            ordinal: head.ordinal - 1,
-            digest: head.digest.clone(),
-        };
-        validate_record(&record, &objects, identity, &prior)?;
-        for reference in &record.basis.closure {
-            used_objects.insert(reference.digest.clone());
-        }
-        let operation = format!(
-            "{}{}",
-            super::super::OPERATION_PREFIX,
-            record.basis.operation.as_str()
-        );
-        if !used_operations.insert(operation.clone()) {
-            return Err(Error::OperationConflict.into());
-        }
-        let receipt: Receipt = codec::decode(
-            receipts
-                .iter()
-                .find(|(key, _)| key == operation.as_bytes())
-                .map(|(_, raw)| raw.as_slice())
-                .ok_or(Error::Corrupt("review receipt missing"))?,
+        check_chained(
+            &mut head,
+            ordinal,
+            raw,
+            &objects,
+            identity,
+            &mut used_objects,
+            &mut used_operations,
+            receipts,
         )?;
-        head.digest = codec::digest(raw);
-        if receipt.operation != operation
-            || receipt.digest != head.digest
-            || receipt.at != record.committed_at.to_rfc3339()
-            || receipt.appended != 0
-            || receipt.credited
-        {
-            return Err(Error::Corrupt("review receipt mismatch").into());
-        }
     }
     if expected.version != 1
         || expected.ordinal != head.ordinal
@@ -87,6 +59,57 @@ pub(in super::super) fn validate(
         || receipts.len() != used_operations.len() + 1
     {
         return Err(Error::Corrupt("review complete inventory mismatch").into());
+    }
+    Ok(())
+}
+
+fn check_chained(
+    head: &mut AuthorityHead,
+    ordinal: u64,
+    raw: &[u8],
+    objects: &super::objects::Objects,
+    identity: &StoreIdentity,
+    used_objects: &mut BTreeSet<String>,
+    used_operations: &mut BTreeSet<String>,
+    receipts: &Rows,
+) -> StoreResult<()> {
+    let record: ReviewRecord = codec::decode(raw)?;
+    head.ordinal = head.ordinal.checked_add(1).ok_or(Error::BudgetExceeded)?;
+    if ordinal != head.ordinal || record.basis.next_ordinal != head.ordinal {
+        return Err(Error::Corrupt("review ordinal chain").into());
+    }
+    let prior = AuthorityHead {
+        version: 1,
+        ordinal: head.ordinal - 1,
+        digest: head.digest.clone(),
+    };
+    validate_record(&record, objects, identity, &prior)?;
+    for reference in &record.basis.closure {
+        used_objects.insert(reference.digest.clone());
+    }
+    let operation = format!(
+        "{}{}",
+        super::super::OPERATION_PREFIX,
+        record.basis.operation.as_str()
+    );
+    if !used_operations.insert(operation.clone()) {
+        return Err(Error::OperationConflict.into());
+    }
+    let receipt: Receipt = codec::decode(
+        receipts
+            .iter()
+            .find(|(key, _)| key == operation.as_bytes())
+            .map(|(_, raw)| raw.as_slice())
+            .ok_or(Error::Corrupt("review receipt missing"))?,
+    )?;
+    head.digest = codec::digest(raw);
+    if receipt.operation != operation
+        || receipt.digest != head.digest
+        || receipt.at != record.committed_at.to_rfc3339()
+        || receipt.appended != 0
+        || receipt.credited
+    {
+        return Err(Error::Corrupt("review receipt mismatch").into());
     }
     Ok(())
 }

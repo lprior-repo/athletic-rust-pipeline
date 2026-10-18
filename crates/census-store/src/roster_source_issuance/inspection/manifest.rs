@@ -117,13 +117,13 @@ impl RosterSourceEvidenceV1 {
         let bytes = objects
             .get(reference.digest().as_str())
             .ok_or(Error::Corrupt("original physical manifest absent"))?;
+        grant.charge_bytes(bytes.len()).map_err(source_error)?;
+        grant.charge_steps(1).map_err(source_error)?;
         if u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)? != reference.bytes().get()
             || codec::digest(bytes) != reference.digest().as_str()
         {
             return Err(Error::InspectedClosureChanged.into());
         }
-        grant.charge_bytes(bytes.len()).map_err(source_error)?;
-        grant.charge_steps(1).map_err(source_error)?;
         let manifest: RetainedManifest = codec::decode(bytes)?;
         if manifest.schema != "roster-physical-projection-inventory-v1"
             || &manifest.store != store
@@ -143,29 +143,44 @@ impl RosterSourceEvidenceV1 {
         rows.try_reserve_exact(manifest.rows.len())
             .map_err(|_| Error::BudgetExceeded)?;
         for row in manifest.rows {
-            if !manifest.tables.contains(&row.table) {
-                return Err(Error::Corrupt("original physical table differs").into());
-            }
-            let raw = objects
-                .get(&row.encoded_digest)
-                .ok_or(Error::Corrupt("original physical row absent"))?;
-            if raw.len() != row.encoded_bytes || codec::digest(raw) != row.encoded_digest {
-                return Err(Error::InspectedClosureChanged.into());
-            }
-            grant
-                .charge_bytes(
-                    raw.len()
-                        .checked_add(row.physical_key.len())
-                        .ok_or(Error::BudgetExceeded)?,
-                )
-                .map_err(source_error)?;
-            grant.charge_steps(1).map_err(source_error)?;
-            rows.push(RosterPhysicalProjectionRowV1::from_checked_parts(
-                row.table,
-                row.physical_key,
-                raw.clone(),
-            ));
+            rows.push(materialize_retained_row(
+                objects,
+                row,
+                &manifest.tables,
+                grant,
+            )?);
         }
         Ok(rows)
     }
+}
+
+fn materialize_retained_row(
+    objects: &std::collections::BTreeMap<String, Vec<u8>>,
+    row: RetainedRow,
+    tables: &[Table; 4],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<RosterPhysicalProjectionRowV1> {
+    use super::super::{codec, source_error, RosterSourceIssuanceStoreError as Error};
+    if !tables.contains(&row.table) {
+        return Err(Error::Corrupt("original physical table differs").into());
+    }
+    let raw = objects
+        .get(&row.encoded_digest)
+        .ok_or(Error::Corrupt("original physical row absent"))?;
+    grant
+        .charge_bytes(
+            raw.len()
+                .checked_add(row.physical_key.len())
+                .ok_or(Error::BudgetExceeded)?,
+        )
+        .map_err(source_error)?;
+    grant.charge_steps(1).map_err(source_error)?;
+    if raw.len() != row.encoded_bytes || codec::digest(raw) != row.encoded_digest {
+        return Err(Error::InspectedClosureChanged.into());
+    }
+    Ok(RosterPhysicalProjectionRowV1::from_checked_parts(
+        row.table,
+        row.physical_key,
+        raw.clone(),
+    ))
 }

@@ -22,6 +22,31 @@ fn replay<'a>(
     sequence: u64,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<ReplayedResultSchoolCorrespondencesV1<'a>> {
+    validate_input_bytes(bytes, expected, grant)?;
+    let archive: archive::Archive<'_> = decode_and_validate_archive(bytes, store, sequence, grant)?;
+    let ledger = records::load(&archive, grant)?;
+    if &ledger.store != store {
+        return Err(Error::Corrupt("source closure enrollment origin").into());
+    }
+    let accepted = replay_identity(&archive, store, sequence, grant)?;
+    let attachments = replay_attachments(&archive, accepted, grant)?;
+    require_roots(&archive, &ledger, &attachments, grant)?;
+    let source = retained::Source::new(archive.external, grant)?;
+    verify_source_records(&ledger, &source, &attachments, grant)?;
+    let continuation = grant.checkpoint().map_err(grant_error)?;
+    Ok(ReplayedResultSchoolCorrespondencesV1 {
+        ledger,
+        source,
+        attachments,
+        continuation,
+        snapshot_sequence: sequence,
+    })
+}
+fn validate_input_bytes(
+    bytes: &[u8],
+    expected: &AttachmentObjectReferenceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
     if bytes.is_empty()
         || bytes.len()
             > census_domain::public_identity_history::ReplayLimits::SMALL.total_text_bytes
@@ -33,7 +58,16 @@ fn replay<'a>(
     if codec::digest(bytes, grant)? != expected.digest {
         return Err(Error::Corrupt("source closure digest").into());
     }
-    let archive: archive::Archive<'_> =
+    Ok(())
+}
+
+fn decode_and_validate_archive<'a>(
+    bytes: &'a [u8],
+    store: &StoreIdentity,
+    sequence: u64,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<archive::Archive<'a>> {
+    let archive: archive::Archive<'a> =
         serde_json::from_slice(bytes).map_err(|_| Error::Corrupt("source closure decoding"))?;
     if archive.schema == "result-school-source-closure-v1" {
         return Err(Error::Corrupt("unqualified source closure v1 unsupported").into());
@@ -45,10 +79,15 @@ fn replay<'a>(
         return Err(Error::Corrupt("source closure origin/snapshot/schema").into());
     }
     encoding::require_canonical(&archive, bytes, grant)?;
-    let ledger = records::load(&archive, grant)?;
-    if &ledger.store != store {
-        return Err(Error::Corrupt("source closure enrollment origin").into());
-    }
+    Ok(archive)
+}
+
+fn replay_identity(
+    archive: &archive::Archive<'_>,
+    store: &StoreIdentity,
+    sequence: u64,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<crate::AcceptedPublicIdentitySnapshot> {
     grant
         .charge_bytes(archive.identity.get().len())
         .map_err(grant_error)?;
@@ -59,45 +98,48 @@ fn replay<'a>(
     if accepted.store_identity() != store || accepted.snapshot_sequence() != sequence {
         return Err(Error::Corrupt("frozen identity origin/snapshot").into());
     }
-    let attachments =
-        crate::FrozenCurrentEvidenceSubjectAttachmentReferencesV1::from_borrowed_bytes(
-            archive.attachments.get().as_bytes(),
-            &archive.attachment_reference,
-            accepted,
-            grant,
-        )?;
-    require_roots(&archive, &ledger, &attachments, grant)?;
-    let source = retained::Source::new(archive.external, grant)?;
-    {
-        let source = retained::Combined::new(&source, attachments.source());
-        let records = attachments.retained_records(grant)?;
-        ledger
-            .records
-            .iter()
-            .zip(&ledger.contexts)
-            .try_for_each(|(record, materials)| {
-                super::super::source::require_accepted_head(
-                    &record.command.accepted_head,
-                    attachments.accepted_snapshot(),
-                    grant,
-                )?;
-                super::super::source::require_historical(
-                    &source,
-                    &record.command.source,
-                    materials,
-                    records,
-                    grant,
-                )
-            })?;
-    }
-    let continuation = grant.checkpoint().map_err(grant_error)?;
-    Ok(ReplayedResultSchoolCorrespondencesV1 {
-        ledger,
-        source,
-        attachments,
-        continuation,
-        snapshot_sequence: sequence,
-    })
+    Ok(accepted)
+}
+
+fn replay_attachments<'a>(
+    archive: &archive::Archive<'a>,
+    accepted: crate::AcceptedPublicIdentitySnapshot,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<crate::FrozenCurrentEvidenceSubjectAttachmentReferencesV1<'a>> {
+    crate::FrozenCurrentEvidenceSubjectAttachmentReferencesV1::from_borrowed_bytes(
+        archive.attachments.get().as_bytes(),
+        &archive.attachment_reference,
+        accepted,
+        grant,
+    )
+}
+
+fn verify_source_records(
+    ledger: &super::super::issuance::ledger::Ledger,
+    source: &retained::Source<'_>,
+    attachments: &crate::FrozenCurrentEvidenceSubjectAttachmentReferencesV1<'_>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    let source = retained::Combined::new(source, attachments.source());
+    let records = attachments.retained_records(grant)?;
+    ledger
+        .records
+        .iter()
+        .zip(&ledger.contexts)
+        .try_for_each(|(record, materials)| {
+            super::super::source::require_accepted_head(
+                &record.command.accepted_head,
+                attachments.accepted_snapshot(),
+                grant,
+            )?;
+            super::super::source::require_historical(
+                &source,
+                &record.command.source,
+                materials,
+                records,
+                grant,
+            )
+        })
 }
 
 mod records;

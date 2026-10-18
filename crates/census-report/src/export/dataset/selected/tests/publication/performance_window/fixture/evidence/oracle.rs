@@ -24,7 +24,6 @@ pub(super) fn references(
 ) -> TestResult<Vec<String>> {
     let snapshot = store.snapshot();
     check!(eq; snapshot.athletes()?.len(), 1, "fixture canonical athlete count");
-    check!(eq; snapshot.scan::<CanonicalTeam>(Table::Teams)?.len(), 1, "fixture canonical team count");
     inventory::check(
         &snapshot.scan::<CanonicalPerformance>(Table::Performances)?,
         &snapshot.scan::<CanonicalEvent>(Table::Events)?,

@@ -9,6 +9,20 @@ pub(in super::super::super) fn load(
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Ledger> {
     let enrollment: wire::Enrollment = codec::decode(&proof.enrollment, grant)?;
+    let (count, head) = validate_head(snapshot, meta, grant)?;
+    let mut ledger = build_ledger_skeleton(proof, enrollment, head)?;
+    charge_and_reserve(&mut ledger, count, grant)?;
+    load_all_records(snapshot, journal, receipts, &mut ledger, count, grant)?;
+    receipt_namespace(snapshot, receipts, &ledger, grant)?;
+    ledger.validate(grant)?;
+    Ok(ledger)
+}
+
+fn validate_head(
+    snapshot: &Snapshot,
+    meta: &Keyspace,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<(usize, wire::AuthorityHead)> {
     let raw = read::value(snapshot, meta, wire::HEAD.as_bytes(), grant)?;
     let head: wire::AuthorityHead = codec::decode(&raw, grant)?;
     if head.schema != "result-school-authority-head-v1"
@@ -19,14 +33,15 @@ pub(in super::super::super) fn load(
         return Err(Error::Corrupt("authority head").into());
     }
     let count = usize::try_from(head.inventory.records).map_err(|_| Error::BudgetExceeded)?;
-    grant
-        .charge_bytes(
-            count
-                .checked_mul(std::mem::size_of::<ResultSchoolReviewedRecordV1>())
-                .ok_or(Error::BudgetExceeded)?,
-        )
-        .map_err(grant_error)?;
-    let mut ledger = Ledger {
+    Ok((count, head))
+}
+
+fn build_ledger_skeleton(
+    proof: wire::Proof,
+    enrollment: wire::Enrollment,
+    head: wire::AuthorityHead,
+) -> StoreResult<Ledger> {
+    Ok(Ledger {
         store: enrollment.command.store,
         initial: enrollment.initial_inventory,
         inventory: head.inventory,
@@ -36,7 +51,21 @@ pub(in super::super::super) fn load(
         active_indices: Vec::new(),
         checked_roots: Vec::new(),
         proof,
-    };
+    })
+}
+
+fn charge_and_reserve(
+    ledger: &mut Ledger,
+    count: usize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    grant
+        .charge_bytes(
+            count
+                .checked_mul(std::mem::size_of::<ResultSchoolReviewedRecordV1>())
+                .ok_or(Error::BudgetExceeded)?,
+        )
+        .map_err(grant_error)?;
     ledger
         .records
         .try_reserve_exact(count)
@@ -49,6 +78,17 @@ pub(in super::super::super) fn load(
         .contexts
         .try_reserve_exact(count)
         .map_err(|_| Error::BudgetExceeded)?;
+    Ok(())
+}
+
+fn load_all_records(
+    snapshot: &Snapshot,
+    journal: &Keyspace,
+    receipts: &Keyspace,
+    ledger: &mut Ledger,
+    count: usize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
     let mut keys = snapshot.prefix(journal, NAME);
     (0..count).try_for_each(|ordinal| -> StoreResult<()> {
         grant.charge_steps(1).map_err(grant_error)?;
@@ -60,31 +100,40 @@ pub(in super::super::super) fn load(
         if key.as_ref() != wire::record_key(ordinal)?.as_bytes() {
             return Err(Error::Corrupt("record ordinal or namespace").into());
         }
-        let raw = read::entry_value(snapshot, journal, &key, grant)?;
-        let envelope = codec::decode_entry(&raw, grant)?;
-        if envelope.schema != "result-school-reviewed-entry-v1" {
-            return Err(Error::Corrupt("reviewed entry schema").into());
-        }
-        let record_bytes = codec::encode(&envelope.record, grant)?;
-        let record = decode_result_school_record_v1(&record_bytes, grant).map_err(Error::Domain)?;
-        let receipt = read::value(
-            snapshot,
-            receipts,
-            wire::issuance_operation(&record.command).as_bytes(),
-            grant,
-        )?;
-        ledger.receipts.push(codec::decode(&receipt, grant)?);
-        ledger.records.push(record);
-        ledger.contexts.push(envelope.context);
-        Ok(())
+        load_single_record(snapshot, journal, receipts, &key, ledger, grant)
     })?;
     if let Some(row) = keys.next() {
         row.key().map_err(|source| StoreError::Read { source })?;
         return Err(Error::Corrupt("extra issuance namespace row").into());
     }
-    receipt_namespace(snapshot, receipts, &ledger, grant)?;
-    ledger.validate(grant)?;
-    Ok(ledger)
+    Ok(())
+}
+
+fn load_single_record(
+    snapshot: &Snapshot,
+    journal: &Keyspace,
+    receipts: &Keyspace,
+    key: &[u8],
+    ledger: &mut Ledger,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    let raw = read::entry_value(snapshot, journal, key, grant)?;
+    let envelope = codec::decode_entry(&raw, grant)?;
+    if envelope.schema != "result-school-reviewed-entry-v1" {
+        return Err(Error::Corrupt("reviewed entry schema").into());
+    }
+    let record_bytes = codec::encode(&envelope.record, grant)?;
+    let record = decode_result_school_record_v1(&record_bytes, grant).map_err(Error::Domain)?;
+    let receipt = read::value(
+        snapshot,
+        receipts,
+        wire::issuance_operation(&record.command).as_bytes(),
+        grant,
+    )?;
+    ledger.receipts.push(codec::decode(&receipt, grant)?);
+    ledger.records.push(record);
+    ledger.contexts.push(envelope.context);
+    Ok(())
 }
 
 fn receipt_namespace(

@@ -5,6 +5,8 @@ use census_domain::public_identity_history::{PublicAthleteId, PublicResolution};
 use std::path::{Path, PathBuf};
 
 mod correction;
+mod retention;
+mod secondary_guards;
 mod source;
 
 type IdentityMap = std::collections::BTreeMap<String, PublicAthleteId>;
@@ -12,11 +14,18 @@ type IdentityMap = std::collections::BTreeMap<String, PublicAthleteId>;
 #[tokio::test]
 async fn controlled_eligible_pr_split_preserves_prior_publication_and_store_free_replay(
 ) -> TestResult {
-    let mut fixture = Fixture::synthetic_michigan().await?;
-    let profile = super::march_profile()?;
+    let (mut fixture, alias) = Fixture::synthetic_michigan_reviewed().await?;
+    let mut input = fixture
+        .store
+        .snapshot()
+        .profile(fixture.selection.profile_id())?
+        .input()
+        .clone();
+    input.performance_window = super::march_profile()?.input().performance_window.clone();
+    let profile = census_domain::model::QueryProfileV1::new(input)?;
     fixture.select(&profile)?;
     let original_proofs = fixture.proofs.clone();
-    let (case_id, original_public, merged_ids, alias_proof) = source::merge(&fixture)?;
+    let (case_id, original_public, merged_ids, alias_proof) = source::merge(&fixture, alias)?;
     for references in [&mut fixture.proofs.eligible, &mut fixture.proofs.excluded] {
         references.push(alias_proof.clone());
         references.sort();
@@ -25,7 +34,7 @@ async fn controlled_eligible_pr_split_preserves_prior_publication_and_store_free
     let prior_objects = super::super::super::temporary()?;
     let current_objects = super::super::super::temporary()?;
     let output = super::super::super::temporary()?;
-    let root = output.path().join("publication");
+    let root = retention::root(output.path())?;
     let prior = fixture.capture(prior_objects.path())?;
     check!(eq; prior.verified_public_identities()?.public_id(fixture.eligible.athlete.as_str()), Some(&original_public));
     check!(eq; prior.verified_public_identities()?.aliases().len(), 1);
@@ -72,6 +81,7 @@ async fn controlled_eligible_pr_split_preserves_prior_publication_and_store_free
     check!(!cache_path.exists());
     prior_publication.replay(&profile, &original_public)?;
     current_publication.replay(&profile, &original_public)?;
+    retention::receipt(&prior_publication.workbook, &current_publication.workbook)?;
     Ok(())
 }
 

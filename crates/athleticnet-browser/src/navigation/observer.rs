@@ -22,6 +22,8 @@ use crate::protocol::MAX_SOURCE_RESPONSE_BYTES;
 use crate::transport::progress::WireTransfers;
 const BODY_CAPTURE_TIMEOUT: Duration = Duration::from_secs(10);
 
+mod events;
+
 #[derive(Clone, Debug)]
 pub(super) struct Observation {
     pub(super) url: String,
@@ -129,68 +131,33 @@ impl PageObserver {
                 event = self.requests.next() => {
                     let Some(event) = event else { return Err(BrowserError::Transport); };
                     if !is_main_document_for(&event, &self.main_frame) { continue; }
-                    latest_request_id = Some(event.request_id.clone());
-                    self.progress.bind(&event.request_id);
-                    observation = empty_observation(event.request.url.clone());
+                    Self::note_request(&mut self.progress, &event, &mut observation, &mut latest_request_id);
                     body_futures.clear();
                 }
                 event = self.responses.next() => {
                     let Some(event) = event else { return Err(BrowserError::Transport); };
-                    if !is_current(&latest_request_id, &event.request_id) { continue; }
-                    if latest_request_id.is_some() {
-                        self.record_status(&mut observation, &event)?;
-                    }
+                    self.note_response(&latest_request_id, &event, &mut observation)?;
                 }
                 event = self.finished.next() => {
                     let Some(event) = event else { return Err(BrowserError::Transport); };
-                    if !is_current(&latest_request_id, &event.request_id) { continue; }
-                    if latest_request_id.is_some() {
-                        let id = event.request_id.clone();
-                        let total = event.encoded_data_length;
-                        if let Err(e) = self.progress.finish(&id, total) {
-                            tracing::debug!("stream validation failed: {e}");
-                            observation.failed = true;
-                            observation.body_complete = true;
-                            store_observation(&self.page, observation.clone())?;
-                            continue;
-                        }
+                    if let Some((id, total)) =
+                        Self::note_finished(&self.page, &mut self.progress, &latest_request_id, &event, &mut observation)?
+                    {
                         body_futures.push(capture_body_bounded(self.page.clone(), id, total));
                     }
                 }
                 event = self.failures.next() => {
                     let Some(event) = event else { return Err(BrowserError::Transport); };
-                    if !is_current(&latest_request_id, &event.request_id) { continue; }
-                    if latest_request_id.is_some() {
-                        if event.error_text == REDIRECT_ABORT || event.canceled == Some(true) {
-                            continue;
-                        }
-                        observation.failed = true;
-                        observation.body_complete = true;
-                        store_observation(&self.page, observation.clone())?;
-                    }
+                    self.note_failure(&latest_request_id, &event, &mut observation)?;
                 }
                 event = self.data.next() => {
                     let Some(event) = event else { return Err(BrowserError::Transport); };
-                    if !is_current(&latest_request_id, &event.request_id) { continue; }
-                    if latest_request_id.is_some() {
-                        if let Err(e) = self.progress.observe(&event.request_id, event.encoded_data_length, event.data_length) {
-                            observation.failed = true;
-                            observation.body_complete = true;
-                            tracing::debug!("stream observation failed: {e}");
-                            store_observation(&self.page, observation.clone())?;
-                        }
-                    }
+                    Self::note_data(&self.page, &mut self.progress, &latest_request_id, &event, &mut observation)?;
                 }
                 result = body_futures.next(), if !body_futures.is_empty() => {
                     let result: Option<(RequestId, Result<Vec<u8>, BrowserError>)> = result;
                     let Some((request_id, body_result)) = result else { continue };
-                    if latest_request_id.as_ref() != Some(&request_id) {
-                        continue;
-                    }
-                    match body_result {
-                        Ok(body) => self.record_body(&mut observation, &body)?,
-                        Err(e) => tracing::debug!("body capture failed: {e}"),
-                    }
+                    self.note_body(&latest_request_id, &request_id, body_result, &mut observation)?;
                 }
             }
         }

@@ -7,28 +7,26 @@ use census_domain::public_identity_history::PublicAthleteId;
 use census_store::{ReviewedIdentityRequestV1, Table};
 use sha2::{Digest, Sha256};
 
-mod roster;
-
 pub(super) fn merge(
     fixture: &Fixture,
+    alias: CanonicalAthlete,
 ) -> TestResult<(String, PublicAthleteId, IdentityMap, String)> {
-    let mut original = fixture
+    let original = fixture
         .store
         .snapshot()
         .athletes()?
         .into_iter()
         .find(|row| row.id == fixture.eligible.athlete)
         .ok_or("eligible source athlete")?;
-    let source = SourceIdentity::new(SourceNamespace::TfrrsAthlete, "990000117");
-    let mut alias = CanonicalAthlete::new(
-        &original.school,
-        "Controlled Synthetic PR Alias",
-        original.grad_year,
-        original.gender,
-        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "990000118"),
-    )?;
+    let source = alias.source.clone().ok_or("retained Tfrrs alias primary")?;
+    check!(eq; source.namespace, SourceNamespace::TfrrsAthlete);
+    check!(eq; source.id, "990000117");
+    check!(ne; original.id, alias.id);
+    check!(eq; alias.evidence.len(), 1);
+    check!(eq; alias.id, CanonicalAthlete::mint(
+        &alias.school, &alias.canonical_name, alias.grad_year, alias.gender, &source,
+    ));
     fixture.store.append(Table::Athletes, &alias)?;
-    alias = roster::append(&fixture.store, &alias.id)?;
     let proof = format!(
         "canonical_evidence:{}",
         census_domain::model::serialized_digest(
@@ -45,8 +43,18 @@ pub(super) fn merge(
         fixture.store.snapshot().revision(),
         &fixture.writer.head(&fixture.store)?,
     )?;
+    let (case_id, canonical, expected) = accept(fixture, original, alias, birth.public_id())?;
+    Ok((case_id, canonical, expected, proof))
+}
+
+fn accept(
+    fixture: &Fixture,
+    mut original: CanonicalAthlete,
+    mut alias: CanonicalAthlete,
+    birth: &PublicAthleteId,
+) -> TestResult<(String, PublicAthleteId, IdentityMap)> {
+    let source = alias.source.clone().ok_or("retained Tfrrs alias primary")?;
     original.add_identity(source.clone());
-    alias.add_identity(source.clone());
     original
         .identity_attestations
         .push(claim(&source, "pr-school")?);
@@ -68,7 +76,7 @@ pub(super) fn merge(
         }
         _ => return Err("original canonical identity".into()),
     };
-    let mut members = vec![canonical.clone(), birth.public_id().clone()];
+    let mut members = vec![canonical.clone(), birth.clone()];
     members.sort();
     let request = ReviewedIdentityRequestV1::Merge {
         case_id: case_id.clone(),
@@ -87,7 +95,7 @@ pub(super) fn merge(
         .into_iter()
         .map(|candidate| (candidate.to_string(), canonical.clone()))
         .collect();
-    Ok((case_id, canonical, expected, proof))
+    Ok((case_id, canonical, expected))
 }
 
 fn review(
