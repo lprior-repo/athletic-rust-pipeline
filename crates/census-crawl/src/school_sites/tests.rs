@@ -149,7 +149,7 @@ fn navigation_rules_match_the_prototype() -> TestResult {
     check!(eq; base_domain("www.schools.example.org"), "example.org");
     check!(eq; base_domain("example.com"), "example.com");
     check!(eq; rank_link("https://x/coaches", "Coaching Staff"), 1);
-    check!(eq; rank_link("https://x/athletics", "Athletics"), 2);
+    check!(eq; rank_link("https://x/athletics", "Athletics"), 1);
     check!(eq; rank_link("https://x/staff", "Staff Directory"), 1);
     check!(eq; rank_link("https://x/about", "About"), 3);
     check!(eq; resolve_href("https://x.org/home", "/coaches")?, "https://x.org/coaches");
@@ -287,7 +287,7 @@ fn navigation_prioritizes_explicit_sports_without_tracking_substrings() -> TestR
         check!(rules.interesting(href, "Learn more"));
         check!(eq; rank_link(href, "Learn more"), 1);
     }
-    check!(eq; rank_link("/activities/athletics/football", "Football"), 2);
+    check!(eq; rank_link("/activities/athletics/football", "Football"), 1);
     check!(eq; rank_link("/contact", "Contact"), 1);
     Ok(())
 }
@@ -398,8 +398,8 @@ fn navigation_classifies_bounded_decoded_paths_without_rewriting_requests() -> T
     for (href, label, rank) in [
         ("/athletics/%74rack", "Learn more", 0),
         ("/%63ontact-us", "Football and Volleyball Contacts", 1),
-        ("/athletics?next=/%66ootball", "Athletics", 2),
-        ("https://%66ootball.example/athletics", "Athletics", 2),
+        ("/athletics?next=/%66ootball", "Athletics", 1),
+        ("https://%66ootball.example/athletics", "Athletics", 1),
     ] {
         check!(rules.interesting(href, label));
         check!(eq; rank_link(href, label), rank);

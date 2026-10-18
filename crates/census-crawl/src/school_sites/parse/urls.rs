@@ -81,6 +81,9 @@ pub fn rank_link(href: &str, label: &str) -> u8 {
         return 0;
     }
     let blob = format!("{path} {label}").to_ascii_lowercase();
+    if blob.contains("athletic") || generic_hub_path(&path) {
+        return 1;
+    }
     if ["coach", "staff", "directory", "faculty", "contact"]
         .iter()
         .any(|word| blob.contains(word))
@@ -91,12 +94,13 @@ pub fn rank_link(href: &str, label: &str) -> u8 {
             .next()
             .is_some_and(|part| part.eq_ignore_ascii_case("activities"))
     {
-        return 1;
-    }
-    if blob.contains("athletic") {
         return 2;
     }
     3
+}
+
+pub fn document_url(url: &str) -> &str {
+    url.split_once('#').map_or(url, |(document, _)| document)
 }
 
 pub fn resolve_href(site: &str, href: &str) -> Result<String, url::ParseError> {

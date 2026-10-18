@@ -133,7 +133,15 @@ impl Run<'_> {
                     continue;
                 }
             };
-            if self.outcome.signals.pages.contains(&url) || !seen.insert(url.clone()) {
+            let document = parse::document_url(&url);
+            if self
+                .outcome
+                .signals
+                .pages
+                .iter()
+                .any(|page| parse::document_url(page) == document)
+                || !seen.insert(document.to_owned())
+            {
                 continue;
             }
             if let Some((effective_url, html)) = self.fetch(&url).await? {
