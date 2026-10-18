@@ -421,25 +421,25 @@ Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
 ### 7.5. Current execution checkpoint — 2026-10-18
 
-Qualified source: `661e500950afc4e0fa2302956faadac5a224304a`, tree
-`95cb6af04b1209f6d96a024629b721af0fb9442b`, including incoming PR91/92.
+Qualified and pushed source: `6486c253efed07dedee031ed758c45fe170ccbd3`, tree
+`53cc451cc773ec602dc520c52d617c09e0cc69ee`, including incoming PR91–93.
 Current dependency epochs 8/9 retain exact historical 2/3, 4/5 and 6/7 read-only pins.
 [Evidence](VERIFICATION-EVIDENCE.md#controlled-workbook-lifecycle-qualification).
 
 | Requirement | Code entrypoint | Test / command receipt | Tested revision | Result | Artifact | Next dependency |
 |---|---|---|---|---|---|---|
-| A: static checkpoint | `tools/moon-local` | fmt `577268e6`, check `157d9402`, lint `2477e516` | `661e5009` | PASS; arity advisories visible | Execution ledger | Current-seal authority fence |
-| A: structural/safety gate | Trusted AST; owned-source lexer; architecture contract | `4bec1427`; `ae90eb3f`; `4f24b050`; `2f6d4563` | `661e5009` | PASS: no file over 300, function over 60 or unresolved AST; existing boundary deviations visible | 4,894 lexical files; six empty orphan Rust files removed | Current-seal authority fence |
+| A: static checkpoint | `tools/moon-local` | fmt `b8e2ef89`, check `00d6567c`, lint `010d2603` | `6486c253` | PASS; arity advisories visible | Execution ledger | Current-seal authority fence |
+| A: structural/safety gate | Trusted AST; owned-source lexer; architecture contract | `14ef9da0`; `0f9ece70`; `2183e4e0`; `ae27310a` | `6486c253` | PASS: no file over 300, function over 60 or unresolved AST; existing boundary deviations visible | 4,900 lexical files; no unreachable source | Current-seal authority fence |
 | A: historical authority fence | Retained Report V3 consumer | `64e0d132` | PR81 + working repairs | PASS; not exact final-source qualification | Original retained V3, pins/checksum unchanged | Preserve artifact; rerun after integration |
 | A: genuine original-source replay | Documentary selected-publication roundtrip | `60074802` | `8524c803` | PASS; original unknowns remain withheld; crash subtree excluded | Original handoff/pins unchanged | Genuine positive population; controlled PRIMARY now qualified below |
 | A/R2: transfer and correction replay | Selected publication and inherited lifecycle-9 roster | `60074802`; source/robots `dc916900` | `8524c803` | PASS; actual workbook/normalized and Store-free readback | Scoped publication lane | Complete roster queue and genuine population |
-| R2: semantic equivalence across builds | Retained three-case producer/consumer | B `5eb6de5d` | A `1ab843c4`; B `661e5009` | PASS; original A inventory and pins unchanged | Manifest SHA256 `8897f37e…c35908`, unchanged | Remaining R2 acceptance; not universal kernel equivalence |
+| R2: semantic equivalence across builds | Retained three-case producer/consumer | B `0e907995` | A `1ab843c4`; B `6486c253` | PASS; original A inventory and pins unchanged | Manifest SHA256 `8897f37e…c35908`, unchanged | Remaining R2 acceptance; not universal kernel equivalence |
 | B/R1: original school-cell ownership | `CheckedRetainedResultRowV1::school_statement` | `fb5e3111`; smoke `90001154` | `3688a680` | PASS; source quote, no SchoolId authority | Original fixture SHA256 `95350f13…cc19e5`; identical replay references | Preserve source ownership in genuine population qualification |
 | B/R1: reviewed historical school | Public checked review → revoke → cold/frozen consumer | `cd041ce4`; inherited `0bd0d0b5` | `c99fca79` | PASS; source/scope, approval, foreign-origin and inherited lifecycle controls | Original historical proofs/pins unchanged; integrated PRIMARY qualified below | Genuine positive population |
 | B/R3: eligible PR identity correction | Reviewed V5 roster → merge/split → publication → Store-free replay | `60074802`; old row-local replay executable `1dce2283` | `8524c803` plus independent consumer | PASS; original pre/post selected rows reproduced exactly | Original private workbook generations and external pins unchanged | Remaining R3 consumers/service; not PRIMARY or population coverage |
 | B/R1: original controlled marks and date-scoped evidence | Original-shaped source intake; actual documentary review/revoke | `cd041ce4` | `c99fca79` | PASS; 49/50/51 rows retained; wrong-day evidence cannot authorize a result | Controlled intake and owned genuine backup/restore; integrated PRIMARY qualified below | Preserve original data and explicit exclusions |
 | B/R1: explicit full-window source input | Public window record/read; exact-root leaf; cold reopen | `cd041ce4`; actual CLI `12ba7242` | `c99fca79`; same-production precommit CLI | PASS for unaccepted source metadata | Private controlled source/proof; reviewed window-to-workbook lifecycle qualified below | Genuine source-backed window qualification |
-| B/R1: eligible PR then withdrawal | Public source/review → production selector → workbook/normalized → Store-free replay | `a232f527`, Nextest `7c119a02`; 169/169 connected cases | `661e5009` | PASS: 50→51; original command replay cannot reactivate 50; required-proof controls refuse | Retained G0/G1 workbooks and normalized outputs; ledger pins | Genuine positive population; not same-root atomic promotion |
+| B/R1: eligible PR then withdrawal | Public source/review → production selector → workbook/normalized → Store-free replay | `d1f838c6`, Nextest `ab6fa2b7`; 169/169 connected cases | `6486c253` | PASS: 50→51; replay cannot reactivate 50; required-proof controls refuse | Controlled pair pinned on `661e5009`; lifecycle rerun on pushed source | Genuine positive population; not same-root atomic promotion |
 | B/R1: current-seal authority freshness | `open_publication_for_seal` | Source review: raw evidence digest misses documentary withdrawal | `ccc4949d` | Runtime regression NOT RUN; repair in isolated worker lanes | No qualified fix yet | Compare authenticated authority inventories; preserve historical G0 and metadata-only progress |
 | C/D: reusable operation and population | R1–R15 production paths and comparison | Spec-linked owners | — | NOT QUALIFIED | No national acceptance artifact | UP/five-state coverage, reuse/recovery/resource evidence |
 
