@@ -421,25 +421,26 @@ Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
 ### 7.5. Current execution checkpoint — 2026-10-18
 
-Qualified source: `c99fca79a3ef647c06f116c83e2de705d2f2be5a`, tree
-`e419acdc1b87f2ab7447f36a89281ddbdff64702`.
-Current dependency epochs 6/7 retain exact historical 2/3 and 4/5 read-only pins.
-[Evidence](VERIFICATION-EVIDENCE.md#explicit-full-window-input-qualification).
+Qualified source: `cbd27d857ca6e9c1910d12fa10c8154249c04733`, tree
+`0c1c10281682ad44c22ccdf9ee13dddc5cc88f2e`.
+Current dependency epochs 8/9 retain exact historical 2/3, 4/5 and 6/7 read-only pins.
+[Evidence](VERIFICATION-EVIDENCE.md#controlled-workbook-lifecycle-qualification).
 
 | Requirement | Code entrypoint | Test / command receipt | Tested revision | Result | Artifact | Next dependency |
 |---|---|---|---|---|---|---|
-| A: static checkpoint | `tools/moon-local` | fmt `dc8053ea`, check `6bb1f22d`, lint `010ebe3f` | `c99fca79` | PASS; arity advisories visible | Execution ledger | PRIMARY |
-| A: structural/safety gate | Trusted AST; owned-source lexer | scan `cafefeeb` before final test addition; comments `0915aab3`; panic `37233b5b` | Precommit AST; `c99fca79` lexer | PASS in stated scope; no hard size violation or unresolved AST | Ledger; 4,833 Rust files checked lexically | Repeat AST on final PRIMARY source |
+| A: static checkpoint | `tools/moon-local` | fmt `fb65dce2`, check `efb62574`, lint `c3935b53` | `cbd27d85` | PASS; arity advisories visible | Execution ledger | Current-seal authority fence |
+| A: structural/safety gate | Trusted AST; owned-source lexer | scan `70029fa7`; comments `91f96ca1`; panic `f31bb269` | `cbd27d85` | PASS: no file over 300, function over 60 or unresolved AST | 27,092 callables; 2,528 production files; 4,895 lexical files | Preserve exact-source scope after incoming merges |
 | A: historical authority fence | Retained Report V3 consumer | `64e0d132` | PR81 + working repairs | PASS; not exact final-source qualification | Original retained V3, pins/checksum unchanged | Preserve artifact; rerun after integration |
 | A: genuine original-source replay | Documentary selected-publication roundtrip | `60074802` | `8524c803` | PASS; original unknowns remain withheld; crash subtree excluded | Original handoff/pins unchanged | Positive PRIMARY and population acceptance |
 | A/R2: transfer and correction replay | Selected publication and inherited lifecycle-9 roster | `60074802`; source/robots `dc916900` | `8524c803` | PASS; actual workbook/normalized and Store-free readback | Scoped publication lane | Complete roster queue and genuine population |
-| R2: semantic equivalence across builds | Retained three-case producer/consumer | A `d81c0fcc`; B `1b622cba` | A `1ab843c4`; B `c99fca79` | PASS; original A inventory and pins unchanged | Manifest SHA256 `8897f37e…c35908`, unchanged | Remaining R2 acceptance; not universal kernel equivalence |
+| R2: semantic equivalence across builds | Retained three-case producer/consumer | B `fcad7386` | A `1ab843c4`; B `cbd27d85` | PASS; original A inventory and pins unchanged | Manifest SHA256 `8897f37e…c35908`, unchanged | Remaining R2 acceptance; not universal kernel equivalence |
 | B/R1: original school-cell ownership | `CheckedRetainedResultRowV1::school_statement` | `fb5e3111`; smoke `90001154` | `3688a680` | PASS; source quote, no SchoolId authority | Original fixture SHA256 `95350f13…cc19e5`; identical replay references | Reviewed-school slice `q01l` closed; PRIMARY integration remains |
 | B/R1: reviewed historical school | Public checked review → revoke → cold/frozen consumer | `cd041ce4`; inherited `0bd0d0b5` | `c99fca79` | PASS; source/scope, approval, foreign-origin and inherited lifecycle controls | Original historical proofs/pins unchanged | Full-window review and full PRIMARY |
 | B/R3: eligible PR identity correction | Reviewed V5 roster → merge/split → publication → Store-free replay | `60074802`; old row-local replay executable `1dce2283` | `8524c803` plus independent consumer | PASS; original pre/post selected rows reproduced exactly | Original private workbook generations and external pins unchanged | Remaining R3 consumers/service; not PRIMARY or population coverage |
 | B/R1: original controlled marks and date-scoped evidence | Original-shaped source intake; actual documentary review/revoke | `cd041ce4` | `c99fca79` | PASS; 49/50/51 rows retained; wrong-day evidence cannot authorize a result | Controlled intake and owned genuine backup/restore | Reviewed source → selector → workbook |
 | B/R1: explicit full-window source input | Public window record/read; exact-root leaf; cold reopen | `cd041ce4`; actual CLI `12ba7242` | `c99fca79`; same-production precommit CLI | PASS for unaccepted source metadata; semantic refusals leave authority unchanged | Private controlled source/proof; no 50→51 workbook | Bind actual public review to existing full-window selector input |
-| B/R1: eligible PR then withdrawal | Production selector → workbook/normalized → frozen readback | `3fhg`: 50→51 | — | NOT RUN | No controlled 50→51 workbook yet | Explicit source-backed window; reviewed school; real revoke/replay |
+| B/R1: eligible PR then withdrawal | Public source/review → production selector → workbook/normalized → Store-free replay | `f2fa92de`, Nextest `ec97f8bb`; 167/167 connected cases | `cbd27d85` | PASS: 50→51; original command replay cannot reactivate 50; required-proof controls refuse | Retained G0/G1 workbooks and normalized outputs; ledger pins | Genuine positive population; not same-root atomic promotion |
+| B/R1: current-seal authority freshness | `open_publication_for_seal` | Source review: raw evidence digest misses documentary withdrawal | `ccc4949d` | Runtime regression NOT RUN; repair in isolated worker lanes | No qualified fix yet | Compare authenticated authority inventories; preserve historical G0 and metadata-only progress |
 | C/D: reusable operation and population | R1–R15 production paths and comparison | Spec-linked owners | — | NOT QUALIFIED | No national acceptance artifact | UP/five-state coverage, reuse/recovery/resource evidence |
 
 

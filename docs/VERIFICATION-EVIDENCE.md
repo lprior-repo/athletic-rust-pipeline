@@ -861,3 +861,72 @@ authority. Reviewed window-to-selector binding, the CO current roster, selected
 50/51 workbook generations, withdrawal/replay and final Store-free acceptance
 remain open in `3fhg`. National readiness remains unqualified.
 
+
+#### Controlled workbook lifecycle qualification
+
+Tested source `ccc4949d09042737602b5dccc4f55ab689459516`, tree
+`1f46b30440f0664447ba5e4cc2e57a7ce823b47d`, integrates remote main `529824de6`.
+Environment: CI unset; `MOON_RUST_BUILD_JOBS=2`; TMPDIR/TMP/TEMP
+`/home/lewis/.cache/r14n-TpNM3q`; canonical `tools/moon-local` only.
+
+| Exercised surface | Receipt | Result |
+|---|---|---|
+| `pipeline:fmt`, `pipeline:check`, `pipeline:lint-src` | `a08d5b44`, `a44bcc2e`, `645e8ab1` | PASS; arity advisories remain |
+| `pipeline:tests-scoped -- -p census-report -p census-crawl --lib -E …`: controlled publication, actual-parent conflicts, school-loader bounds, original-grant controls, genuine complete-inventory driver, kernels, markup, robots and adjacent selected-publication cases | `0e4d1f3a`; Nextest `8cc14086-b01c-41d3-aba9-c224804698b0` | PASS 109/109, exit 0; original documentary handoff and producer pins supplied |
+| Original retained A → changed-build B, `native_independent_reviewed_roster_producer_replays_all_cases_across_changed_build` | `28f26dbf` | PASS 1/1, exit 0; A `1ab843c4`, B exact source above; original manifest SHA256 `8897f37e3fabc92235a5ab2b3ea648553a4b07c76b1588e638d542acc2c35908` unchanged |
+| Independent Python ZIP/XML/CSV readback of the retained pair | Session execution; paths and hashes below | PASS: actual 50/51 cells, dates, MI historical school, CO current school/cutoff, eligible groups 2→1, tied groups 1; every manifest artifact length and SHA256 checked |
+| Trusted AST scan; owned-source comments / panic extraction | `17098bb1`; `709dbd3b` / `021cc463` | Scan: zero functions over 60 and zero unresolved sites, but FAIL against the 300-line file rule: contacts.rs had 312 lines. Lexical checks PASS, 4,894 Rust files and three rendered templates |
+
+The production path accepts independently reviewed dated CO roster membership,
+historical MI school correspondence and an explicit March 1–May 31 participation
+window. It retains original 49/50/51 records; 49 remains outside the window.
+G0 selects 50. The actual reviewed revoke of its sole May 15 status authority
+produces G1 selecting 51. Replaying the original command cannot reactivate 50.
+Both generations reopen after the original Store and transient source/proof roots
+close. Missing/tampered required attachment or school objects refuse. Actual
+team/meet/event parent conflicts refuse capture without altering clean history.
+
+Retained artifacts, private cache prefix `/home/lewis/.cache/r14n-TpNM3q/`:
+
+| Generation | Workbook under prefix | Workbook SHA256 |
+|---|---|---|
+| G0, sequence 110, 50.00 on 2026-05-15 | `.tmp0WtaQd/publication/generations/6fd3b76291c2a9ae5831fd61586053a9536740bc98e966080c6963c5428af0a9/workbook.xlsx` | `14539a30771c762e5d257de67fe30dd897ec3030ae5ea96fed2417e9643764d8` |
+| G1, sequence 116, 51.00 on 2026-05-16 | `.tmplu7teq/publication/generations/9ffc3f22d3c8584d7a12677904cdc40023b437c7029065b6ca6099a2663ecdf3/workbook.xlsx` | `daf6f436865c1022543f9c0ffd40439f720c7120edec98a9321bc72065b59094` |
+
+Failure history is not erased: integrated compile `94dabf83` failed on duplicate
+test-module registrations, repaired in the tested source. The earlier 109-case
+invocation, Nextest `6dd39e12-715d-417b-9888-d7a01ebe2927`, passed 107 and timed out
+two robots transport cases during an overlapping checkout. Both unchanged cases
+then passed separately (`1d06b093`, `40bbc54d`) and in the final 109-case run.
+The precise contention mechanism is unestablished; no timeout/assertion was weakened.
+An attempted duplicate thread override (`adc3a4bc`) was NOT RUN, a CLI usage error.
+
+Current dependency epochs are 8/9 with immutable historical 2/3, 4/5 and 6/7 pins;
+current participation wire remains V4. The 16 MiB aggregate allowance is not an RSS
+qualification. The checked school reader admits descriptor bounds/exact referenced
+length before body reads/allocation; school/attachment continuations retain the
+same original grant and borrowed authenticated attachment bytes.
+
+Subsequent qualified source `cbd27d857ca6e9c1910d12fa10c8154249c04733`, tree
+`0c1c10281682ad44c22ccdf9ee13dddc5cc88f2e`, moves the unchanged private contact
+commit phase into `contacts/persistence.rs` to repair that file-size finding.
+
+| Final-source qualification | Receipt | Result |
+|---|---|---|
+| Canonical fmt / all-target check / lint | `fb65dce2` / `efb62574` / `c3935b53` | PASS |
+| Same connected acceptance plus school-site collection/parsing | `f2fa92de`; Nextest `ec97f8bb-f86c-4146-8a1b-ecf1c701d891` | PASS 167/167; controlled workbook lifecycle included |
+| Original retained A → exact changed-build B | `fcad7386`; Nextest `ed8fe040-049f-4483-8695-2f45148df365` | PASS 1/1; original A manifest/inventory/pins unchanged |
+| Trusted AST / comments / panic extraction | `70029fa7` / `91f96ca1` / `f31bb269` | PASS: no file over 300, function over 60 or unresolved site; 27,092 callables, 2,528 production files, 4,895 lexical files and three templates |
+
+Intermediate failures: `1993300f` rejected an extra blank line after extraction.
+`827d7619` failed compilation when next-slice GPU wiring entered the gating
+checkout prematurely. Those seven files were preserved in a path-scoped stash;
+worker writes stopped, source restored, then the entire qualification chain above
+reran on the quiescent checkpoint. No partial next-slice code is qualified by it.
+
+Scope: controlled integration, not independently discovered population coverage,
+same-root atomic promotion/rollback or national resource acceptance. Historical
+denied fault selectors were not retried; the release umbrella was NOT RUN.
+Next concrete defect: current sealing compares raw source evidence but not
+documentary withdrawal inventories. Historical G0 must remain readable while
+current sealing refuses stale authority. Its new regression/fix is not yet qualified.
