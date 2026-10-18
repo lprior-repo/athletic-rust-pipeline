@@ -6,6 +6,14 @@ pub(super) async fn run_scenario(scenario: Scenario, url: &str) -> TestResult {
         .timeout(Duration::from_secs(5))
         .build()?;
     let mut request = fixtures::request()?;
+    let selected_workbook = if matches!(scenario, Scenario::SelectedFailedStage) {
+        Some(
+            crate::restate_services::jobs::selected_fixture::install()
+                .map_err(|error| error.to_string())?,
+        )
+    } else {
+        None
+    };
     if matches!(
         scenario,
         Scenario::ManagedComplete
@@ -21,13 +29,15 @@ pub(super) async fn run_scenario(scenario: Scenario, url: &str) -> TestResult {
         request.publication_contract =
             crate::restate_services::PublicationContract::SelectedPublicationV1;
         request.export_job = census_report::export::ExportJobRequest::SelectedPublicationV1 {
-            selection: census_domain::model::ProfileSelectionV1::new(
-                census_domain::model::StoreIdentity::parse(&"a".repeat(64))?,
-                census_domain::model::ProfileId::parse(&"b".repeat(64))?,
-            ),
+            selection: selected_workbook
+                .as_ref()
+                .ok_or("selected controlled workbook fixture missing")?
+                .selection()
+                .map_err(|error| error.to_string())?,
         };
     }
     let mut journal = journal::Journal::new(&request)?;
+    journal.selected_workbook = selected_workbook;
     match scenario {
         Scenario::ExternalControl => return super::external::local_control(&client, url).await,
         Scenario::Address(mode) => return binding::run(mode, &client, url).await,

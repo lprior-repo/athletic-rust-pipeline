@@ -455,6 +455,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "athleticnet-browser",
+ "base64",
  "bytes",
  "calamine",
  "census-crawl",

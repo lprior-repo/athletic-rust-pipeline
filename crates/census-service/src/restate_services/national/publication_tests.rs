@@ -363,10 +363,15 @@ fn assert_published(journal: &journal::Journal) -> TestResult {
         .find(|call| call.text(2).is_ok_and(|handler| handler == "publication"))
         .ok_or("national never called the journal-measuring publication handler")?;
     check!(eq; seal.text(6)?, format!("{}:seal:0", journal.identity));
-    let workbook = if managed {
-        fixtures::MANAGED_WORKBOOK
-    } else {
-        "out/publication/current/workbook.xlsx"
+    let workbook = match journal.original.publication_contract {
+        crate::restate_services::PublicationContract::SelectedPublicationV1 => journal
+            .selected_workbook_path
+            .as_deref()
+            .ok_or("selected National dispatch did not run the controlled workbook job")?,
+        crate::restate_services::PublicationContract::ManagedBundleV2 => fixtures::MANAGED_WORKBOOK,
+        crate::restate_services::PublicationContract::LegacySeparateV1 => {
+            "out/publication/current/workbook.xlsx"
+        }
     };
     check!(eq; serde_json::from_slice::<serde_json::Value>(seal.bytes(3)?)?, serde_json::json!({
         "grad_year": 2027, "all_sources": true, "workbook": workbook,
@@ -380,5 +385,28 @@ fn assert_published(journal: &journal::Journal) -> TestResult {
     check!(eq; report.get("jurisdictions").and_then(serde_json::Value::as_array).map(Vec::len), Some(count));
     check!(eq; report.get("failures"), Some(&serde_json::json!([])));
     check!(eq; report.get("owed"), Some(&serde_json::json!([])));
+    if journal.original.publication_contract
+        == crate::restate_services::PublicationContract::SelectedPublicationV1
+    {
+        let controlled = journal
+            .selected_workbook
+            .as_ref()
+            .ok_or("selected National controlled fixture missing")?;
+        let path = journal
+            .selected_workbook_path
+            .as_ref()
+            .ok_or("selected National workbook output missing")?;
+        let verified =
+            census_report::workbook::publication::verify_published(std::path::Path::new(path))?;
+        check!(verified.workbook.mapped_athletes > 0);
+        crate::restate_services::jobs::publication_tests::check_selected_output(
+            std::path::Path::new(path),
+            controlled.public_id(),
+            controlled.candidate_id(),
+            controlled.current_school_id(),
+            "50.00",
+        )
+        .map_err(|error| error.to_string())?;
+    }
     Ok(())
 }
