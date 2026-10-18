@@ -12,13 +12,10 @@ pub(super) fn canonical(
     school: &census_domain::model::SchoolId,
     budget: &mut Admission,
 ) -> ReportResult<()> {
-    if &event.meet != &meet.id {
+    if event.meet != meet.id {
         return Err(super::super::invalid("school-projected event differs from its meet").into());
     }
-    if &performance.event != &event.id
-        || &performance.meet != &meet.id
-        || &performance.team != &team.id
-    {
+    if performance.event != event.id || performance.meet != meet.id || performance.team != team.id {
         return Err(
             super::super::invalid("school-projected performance differs from its parents").into(),
         );

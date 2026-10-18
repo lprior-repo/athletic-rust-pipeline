@@ -28,7 +28,7 @@ async fn documentary_collision_with_structured_row_refuses_even_outside_positive
     check!(empty);
     let before = dataset.performances.clone();
     let mut budget = Admission::new("documentary collision test");
-    let error = reject_collision(&dataset, &BTreeMap::new(), &performance.id, &mut budget)
+    let error = guards::collision(&dataset, &BTreeMap::new(), &performance.id, &mut budget)
         .err()
         .ok_or("structured collision refusal")?;
     check!(error
@@ -67,7 +67,7 @@ fn documentary_duplicate_and_conflicting_identity_never_overwrite_prior_observat
             ParticipationReasons::default(),
             vec!["incoming-reference".into()],
         );
-        let error = reject_collision(&dataset, &rows, incoming.performance_id(), &mut budget)
+        let error = guards::collision(&dataset, &rows, incoming.performance_id(), &mut budget)
             .err()
             .ok_or("documentary collision refusal")?;
         check!(error
@@ -77,7 +77,7 @@ fn documentary_duplicate_and_conflicting_identity_never_overwrite_prior_observat
         check!(eq; rows.get(&id).ok_or("original row")?.assessment().evidence_refs(), &["original-reference".to_string()]);
     }
     let different = Id::mint("perf", &["distinct-documentary-observation"]);
-    reject_collision(&dataset, &rows, &different, &mut budget)?;
+    guards::collision(&dataset, &rows, &different, &mut budget)?;
     Ok(())
 }
 
@@ -100,7 +100,7 @@ fn documentary_collision_comparisons_cannot_reset_the_cumulative_work_admission(
     budget.charge(0, crate::grouping::STAGE_WORK)?;
     let different = Id::mint("perf", &["synthetic-documentary-next"]);
     check!(matches!(
-        reject_collision(&dataset, &rows, &different, &mut budget),
+        guards::collision(&dataset, &rows, &different, &mut budget),
         Err(crate::report::ReportError::Grouping(
             crate::grouping::GroupingError::BudgetExceeded {
                 resource: "work units",

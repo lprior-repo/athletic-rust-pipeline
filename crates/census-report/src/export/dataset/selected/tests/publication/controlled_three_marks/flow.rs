@@ -10,6 +10,8 @@ use census_domain::model::{GradYear, QueryProfileV1, SchoolId};
 use census_domain::public_identity_history::PublicAthleteId;
 use std::path::Path;
 
+mod parent_conflicts;
+
 fn reviewed_inputs(installed: &InstalledSource) -> TestResult<(SchoolId, AcceptedSource)> {
     let current = super::current_school_source::install(installed)?;
     super::current_school_identity::accept(installed, &current)?;
@@ -141,11 +143,13 @@ fn controlled_three_marks_selects_eligible_best_then_withdraws_to_next_and_reope
         objects1.path(),
         &output1.path().join("publication"),
     )?;
+    let withdrawn_digest = publication::verify_published(&workbook1)?.generation_digest;
     assert_output(&g1, &workbook1, &public, &current, &historical, true)?;
     let lineage1 = g1.lineage.clone();
     super::documentary_lifecycle::replay_without_reactivation(&installed, &accepted50)?;
     require_replay_selection(&installed, &profile, &workbook1, &current)?;
     check!(eq; publication::verify_published(&workbook0)?.generation_digest, original_digest);
+    check!(eq; publication::verify_published(&workbook1)?.generation_digest, withdrawn_digest);
     source::require_originals(&installed.store, &installed.source_records)?;
     drop(g0);
     drop(g1);

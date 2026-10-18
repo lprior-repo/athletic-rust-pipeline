@@ -180,9 +180,18 @@ async fn school_projection_accepts_clean_dataset_without_merged_conflicts() -> T
         .ok_or("event")?
         .clone();
 
-    check!(meet.retained_conflicts.is_empty(), "fixture meet must be clean");
-    check!(event.retained_conflicts.is_empty(), "fixture event must be clean");
-    check!(team.retained_conflicts.is_empty(), "fixture team must be clean");
+    check!(
+        meet.retained_conflicts.is_empty(),
+        "fixture meet must be clean"
+    );
+    check!(
+        event.retained_conflicts.is_empty(),
+        "fixture event must be clean"
+    );
+    check!(
+        team.retained_conflicts.is_empty(),
+        "fixture team must be clean"
+    );
 
     let mut budget = Admission::new("clean dataset no merged conflicts");
     canonical(
