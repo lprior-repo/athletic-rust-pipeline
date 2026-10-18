@@ -421,22 +421,23 @@ Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
 ### 7.5. Current execution checkpoint — 2026-10-18
 
-Qualified source: `8524c803e202f9d929f1f745cbebe414093b40ac`, tree
-`953f09cf22d6bfdf181fb62ac4238f27bb2c68e6`, pushed after integrating PR84/85.
+Qualified source: `78a3504d36db4b0a11e58de7a7329992a448ced8`, tree
+`4382777231c835bbe01dfecdbece41d7c65ecf47`.
 Current dependency epochs 4/5 preserve pinned read-only 2/3 replay.
-[Evidence](VERIFICATION-EVIDENCE.md#clean-changed-build-qualification--2026-10-18).
+[Evidence](VERIFICATION-EVIDENCE.md#reviewed-school-and-date-scoped-attachment-checkpoint).
 
 | Requirement | Code entrypoint | Test / command receipt | Tested revision | Result | Artifact | Next dependency |
 |---|---|---|---|---|---|---|
-| A: static checkpoint | `tools/moon-local` | fmt `63fe4ad9`, check `efd58d9d`, lint `3831ac88` | `8524c803` | PASS; authorized arity advisories visible | Execution ledger | PRIMARY |
+| A: static checkpoint | `tools/moon-local` | fmt `ffb15520`, check `071ae604`, lint `7e4134a3` | `78a3504d` | PASS; 18 arity advisories visible | Execution ledger | PRIMARY |
 | A: structural/safety gate | Trusted AST; owned-source lexer | scan `9d7b4756`; comments `630a6523`; panic extraction `00fba436` | `8524c803` | PASS; original and incoming hard size failures repaired | Original kernel documents unchanged | PRIMARY; no global release inference |
 | A: historical authority fence | Retained Report V3 consumer | `64e0d132` | PR81 + working repairs | PASS; not exact final-source qualification | Original retained V3, pins/checksum unchanged | Preserve artifact; rerun after integration |
 | A: genuine original-source replay | Documentary selected-publication roundtrip | `60074802` | `8524c803` | PASS; original unknowns remain withheld; crash subtree excluded | Original handoff/pins unchanged | Positive PRIMARY and population acceptance |
 | A/R2: transfer and correction replay | Selected publication and inherited lifecycle-9 roster | `60074802`; source/robots `dc916900` | `8524c803` | PASS; actual workbook/normalized and Store-free readback | Scoped publication lane | Complete roster queue and genuine population |
-| R2: semantic equivalence across builds | Retained three-case producer/consumer | A `d81c0fcc`; B `2f55b17d` | A `1ab843c4`; B `8524c803` | PASS; original A inventory, all-claim current refusal and tampered-proof refusal | Manifest SHA256 `8897f37e…c35908`, unchanged | Remaining R2 acceptance; not universal kernel equivalence |
+| R2: semantic equivalence across builds | Retained three-case producer/consumer | A `d81c0fcc`; B `fc0bca2d` | A `1ab843c4`; B `78a3504d` | PASS; original A inventory and pins unchanged | Manifest SHA256 `8897f37e…c35908`, unchanged | Remaining R2 acceptance; not universal kernel equivalence |
 | B/R1: original school-cell ownership | `CheckedRetainedResultRowV1::school_statement` | `fb5e3111`; smoke `90001154` | `3688a680` | PASS; source quote, no SchoolId authority | Original fixture SHA256 `95350f13…cc19e5`; identical replay references | `q01l` reviewed historical-school issuance |
-| B/R1: reviewed historical school | Public checked review → revoke → cold/frozen consumer | executable `59dcc2ff` | Working batch after `bd6cc556` | Cold accepted/revoked readback PASS; not PRIMARY | Original accepted-51/revoked-53 proofs/pins unchanged | Source-backed window and full PRIMARY |
+| B/R1: reviewed historical school | Public checked review → revoke → cold/frozen consumer | `9a322cd7`; CLI `7a27ad29` | `78a3504d` | PASS; exact source/scope, approval, foreign-origin and inherited lifecycle controls | Original accepted-51/revoked-53 proofs/pins unchanged | Source-backed window and full PRIMARY |
 | B/R3: eligible PR identity correction | Reviewed V5 roster → merge/split → publication → Store-free replay | `60074802`; old row-local replay executable `1dce2283` | `8524c803` plus independent consumer | PASS; original pre/post selected rows reproduced exactly | Original private workbook generations and external pins unchanged | Remaining R3 consumers/service; not PRIMARY or population coverage |
+| B/R1: original controlled marks and date-scoped evidence | Original-shaped source intake; actual documentary review/revoke | `9a322cd7` | `78a3504d` | PASS; 49/50/51 rows retained; wrong-day evidence cannot authorize a result | Controlled intake and owned genuine backup/restore | Full-window source, selector and workbook integration |
 | B/R1: eligible PR then withdrawal | Production selector → workbook/normalized → frozen readback | `3fhg`: 50→51 | — | NOT RUN | No controlled 50→51 workbook yet | Explicit source-backed window; reviewed school; real revoke/replay |
 | C/D: reusable operation and population | R1–R15 production paths and comparison | Spec-linked owners | — | NOT QUALIFIED | No national acceptance artifact | UP/five-state coverage, reuse/recovery/resource evidence |
 

@@ -787,3 +787,38 @@ This closes the integrated static/structural checkpoint and these scoped replay
 cases, not PRIMARY, full R1–R15 acceptance, representative resource bounds,
 genuine five-state population or national readiness.
 
+#### Reviewed-school and date-scoped attachment checkpoint
+
+Exact source `78a3504d36db4b0a11e58de7a7329992a448ced8`, tree
+`4382777231c835bbe01dfecdbece41d7c65ecf47`. Canonical Moon commands used
+`env -u CI`, `MOON_RUST_BUILD_JOBS=2` and task-local
+`TMPDIR/TMP/TEMP=/home/lewis/.cache/r14n-TpNM3q`; no live store was opened.
+
+| Exercised surface | Receipt | Result |
+|---|---|---|
+| `pipeline:fmt`, `pipeline:check`, `pipeline:lint-src` | `ffb15520`, `071ae604`, `7e4134a3` | PASS; 18 arity advisories retained |
+| `pipeline:tests-scoped --force -- -p census-crawl -p census-store -p census-domain -p census-report --lib`; genuine complete-inventory driver, controlled-three-mark intake, school-correspondence scenario, retained roots, ledger context, budget, enrollment/issuance, inherited enrollment and grant-continuation/shared-limit selectors | `9a322cd7` | PASS 37/37; full genuine driver included |
+| Source/markup/robots/kernel and selected-publication adjacent scopes, excluding documentary crash subtree | `239f0365` | 88 PASS, 2 FAIL because genuine handoff environment was missing |
+| The two genuine documentary roundtrips with original handoff and producer pins restored | `bf2d8395` | PASS 2/2; not a single 90/90 invocation |
+| Original retained A → changed-build B consumer | `fc0bca2d` | PASS; A `1ab843c4`, original manifest SHA256 `8897f37e3fabc92235a5ab2b3ea648553a4b07c76b1588e638d542acc2c35908` and inventory unchanged |
+| Actual `smoke_result_school_proof` CLI against original accepted/revoked manifests | `7a27ad29` | PASS; accepted `Some(sch_9b7a695d2cddd439)`, revoked `None` |
+
+Date-scoped documentary matching was reproduced failing against the original join
+(`e17d2b12`), then passed in the complete driver. Different-day records remain
+retained but cannot supply a positive fact; same-day contradictory scope still
+refuses. Withdrawal preserves original rows, locators, sources and receipts.
+The foreign-grant control now exercises a replenished foreign origin rather than
+pinning an incidental error string; the original authenticated grant remains usable.
+
+Duplicate immutable historical validation was removed, not charged work hidden.
+Finite traversal trials at 32,768 (`1ec3171d`) and 65,536 (`b006eeff`) still refused.
+The authorized 131,072-step allowance and 9 MiB aggregate byte allowance passed
+the full driver. Physical per-object bounds and the 16-source policy remain.
+This is not a representative national RSS/disk measurement or R14 closure.
+
+The controlled producer proves original 49/50/51 input retention and source-bound
+identity only. No full-window public review → selected 50 → workbook → revoke →
+selected 51 → independent frozen replay artifact exists yet. PRIMARY, population
+coverage and national readiness remain unqualified. Historical denied fault
+selectors were not retried.
+

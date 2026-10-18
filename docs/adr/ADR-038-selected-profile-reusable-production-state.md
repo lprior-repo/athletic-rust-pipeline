@@ -278,8 +278,9 @@ authority or historical evidence, and does not prove national-scale memory use.
 Private school source closure `result-school-source-closure-v2` shares roots
 already retained by the authenticated attachment closure and preserves school-only
 roots separately. Unqualified V1 refuses; qualified roster/report formats and
-original artifacts remain unchanged. The lifecycle-9 implementation is pending
-qualification; the delivery matrix records actual failures.
+original artifacts remain unchanged. Lifecycle-9 public review/revoke and cold/frozen
+readback passed on `78a3504d`; full eligible-PR/window publication remains separate
+and unqualified. See the delivery matrix and verification ledger.
 
 ### Reviewed secondary-person authority — 2026-10-17
 
