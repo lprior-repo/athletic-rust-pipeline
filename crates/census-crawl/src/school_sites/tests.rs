@@ -154,9 +154,9 @@ fn navigation_rules_match_the_prototype() -> TestResult {
     check!(eq; base_domain("www.example.k12.mo.us"), "k12.mo.us");
     check!(eq; base_domain("www.schools.example.org"), "example.org");
     check!(eq; base_domain("example.com"), "example.com");
-    check!(eq; rank_link("https://x/coaches", "Coaching Staff"), 0);
-    check!(eq; rank_link("https://x/athletics", "Athletics"), 1);
-    check!(eq; rank_link("https://x/staff", "Staff Directory"), 2);
+    check!(eq; rank_link("https://x/coaches", "Coaching Staff"), 1);
+    check!(eq; rank_link("https://x/athletics", "Athletics"), 2);
+    check!(eq; rank_link("https://x/staff", "Staff Directory"), 1);
     check!(eq; rank_link("https://x/about", "About"), 3);
     check!(eq; resolve_href("https://x.org/home", "/coaches")?, "https://x.org/coaches");
     check!(eq; resolve_href("https://x.org", "https://y.org/z")?, "https://y.org/z");
@@ -262,5 +262,118 @@ fn links_resolve_against_the_captured_document_url() -> TestResult {
     check!(eq; resolve_href(page, "../directory")?, "https://school.example/directory");
     check!(eq; resolve_href(page, "?sport=track")?, "https://school.example/athletics/staff.html?sport=track");
     check!(resolve_href("not a URL", "/coaches").is_err());
+    Ok(())
+}
+
+#[test]
+fn navigation_prioritizes_explicit_sports_without_tracking_substrings() -> TestResult {
+    let rules = Rules::new()?;
+    for (href, label) in [
+        ("/activities/athletics/track", "Track"),
+        ("/cross-country", "Cross Country"),
+        ("/sports/xc", "XC"),
+        ("/sports/tf", "TF"),
+        ("/teams/456", "Cross  Country"),
+        ("/teams/123", "Girls Track & Field"),
+    ] {
+        check!(rules.interesting(href, label));
+        check!(eq; rank_link(href, label), 0);
+    }
+    for (href, label) in [
+        ("/tracking", "Package tracking"),
+        ("/extracurricular", "Extracurricular"),
+        ("https://track.example/about", "About"),
+        ("//track.example/about", "About"),
+        ("/about?tracking=track", "About"),
+    ] {
+        check!(!rules.interesting(href, label));
+        check!(eq; rank_link(href, label), 3);
+    }
+    for href in ["/activities", "/Activities/", "/activities?view=all"] {
+        check!(rules.interesting(href, "Learn more"));
+        check!(eq; rank_link(href, "Learn more"), 1);
+    }
+    check!(eq; rank_link("/activities/athletics/football", "Football"), 2);
+    check!(eq; rank_link("/contact", "Contact"), 1);
+    Ok(())
+}
+
+#[test]
+fn navigation_ignores_slashes_in_authority_only_queries_and_fragments() -> TestResult {
+    let rules = Rules::new()?;
+    for href in [
+        "https://school.example?next=/track",
+        "https://school.example#next=/track",
+        "//school.example?next=/track",
+        "//school.example#next=/track",
+        "/about?next=https://tracker.example/xc",
+        "/about#next=https://tracker.example/xc",
+    ] {
+        check!(!rules.interesting(href, "About"));
+        check!(eq; rank_link(href, "About"), 3);
+    }
+    for href in [
+        "https://school.example/track?next=/about",
+        "https://school.example/track#next=/about",
+        "//school.example/track?next=/about",
+        "/track?next=/about",
+    ] {
+        check!(rules.interesting(href, "Learn more"));
+        check!(eq; rank_link(href, "Learn more"), 0);
+    }
+    Ok(())
+}
+
+#[test]
+fn navigation_excludes_unrelated_sports_before_generic_hints() -> TestResult {
+    let rules = Rules::new()?;
+    for (href, label) in [
+        ("/activities/athletics/football", "Football"),
+        ("/athletics/CHEERLEADING/coaches", "Coaching Staff"),
+        ("/teams/123", "Girls Volleyball Coaches"),
+        ("/athletics/basketball/staff", "Staff Directory"),
+        ("/athletics/baseball", "Contact"),
+        ("/athletics/softball", "Athletics"),
+        ("/athletics/soccer", "Athletics"),
+        ("/athletics/dance", "Athletics"),
+        ("/athletics/football", "Track"),
+        ("/football/coaches", "All Coaches"),
+    ] {
+        check!(!rules.interesting(href, label));
+    }
+    for (href, label) in [
+        ("/athletics", "All Sports"),
+        ("/athletics", "Football, Basketball and Track"),
+        ("/activities", "Football and Volleyball"),
+        ("/staff-directory", "Football and Volleyball Coaches"),
+        ("/coaches", "Football and Volleyball Coaches"),
+        ("/contact", "Football and Volleyball Contacts"),
+        ("/teams/456", "Football, Volleyball and XC"),
+        ("/athletics/staff-directory", "Athletic Staff"),
+        ("/contact", "Contact"),
+        ("/activities", "Activities"),
+        ("/athletics/track", "Track & Field"),
+        ("/cross-country", "Cross Country"),
+        ("https://football.example/athletics", "All Sports"),
+        ("/athletics?next=/football", "All Sports"),
+        ("/athletics#cheerleading", "All Sports"),
+        ("/staff/footballson", "Staff Directory"),
+    ] {
+        check!(rules.interesting(href, label));
+    }
+    Ok(())
+}
+
+#[test]
+fn navigation_does_not_admit_generic_hints_from_authorities_or_queries() -> TestResult {
+    let rules = Rules::new()?;
+    for href in [
+        "https://athletics.example/about", "//staff.example/about",
+        "/about?next=/athletics", "/about#contact", "https://school.example?next=/staff",
+    ] {
+        check!(!rules.interesting(href, "Learn more"));
+    }
+    check!(!rules.interesting(&format!("/athletics/{}", "a".repeat(4096)), "Athletics"));
+    check!(!rules.interesting("/athletics", &"a".repeat(4097)));
     Ok(())
 }

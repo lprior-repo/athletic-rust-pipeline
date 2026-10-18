@@ -78,3 +78,51 @@ async fn redirected_hits_bind_exact_captured_url_without_cross_capture_aliasing(
     check!(eq; fetcher.stats().await.physical_requests(), 0);
     Ok(())
 }
+
+#[tokio::test]
+async fn lakeview_shaped_navigation_excludes_unrelated_sports_with_spare_budget() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let fetcher = Fetcher::new(
+        dir.path(), None, Duration::ZERO, HashMap::new(),
+        vec!["school.example".to_owned()],
+    )?.with_offline(true);
+    let home = br#"<nav>
+        <a href="/activities/athletics/cheerleading">Cheerleading</a>
+        <a href="/activities/athletics/football">Football</a>
+        <a href="/activities/athletics/dance">Dance</a>
+        <a href="/activities/athletics/basketball">Basketball</a>
+        <a href="/activities/athletics/baseball">Baseball</a>
+        <a href="/activities/athletics/volleyball">Volleyball</a>
+        <a href="/cross-country">Cross Country</a>
+        <a href="/activities/athletics/track">Track</a>
+        <a href="/staff-directory">Staff Directory</a>
+        <a href="/activities">Activities</a>
+    </nav>"#;
+    cache(&fetcher, "https://school.example/", "https://school.example/", home, 200)?;
+    for path in [
+        "/robots.txt", "/cross-country", "/activities/athletics/track",
+        "/staff-directory", "/activities", "/activities/athletics/cheerleading",
+        "/activities/athletics/football", "/activities/athletics/dance",
+        "/activities/athletics/basketball", "/activities/athletics/baseball",
+        "/activities/athletics/volleyball",
+    ] {
+        let url = format!("https://school.example{path}");
+        cache(&fetcher, &url, &url, b"", 200)?;
+    }
+    let row = QueueRow {
+        state: "MN".to_owned(), name: "School".to_owned(),
+        website: "https://school.example/".to_owned(),
+    };
+    let outcome = crawl_site(&Rules::new()?, &fetcher, &row, false).await?;
+    let paths: Vec<_> = outcome.pages.iter().map(|page| page.url.as_str()).collect();
+    check!(eq; paths, vec![
+        "https://school.example/",
+        "https://school.example/cross-country",
+        "https://school.example/activities/athletics/track",
+        "https://school.example/staff-directory",
+        "https://school.example/activities",
+    ]);
+    check!(eq; (outcome.requests, outcome.errors), (5, 0));
+    check!(eq; fetcher.stats().await.physical_requests(), 0);
+    Ok(())
+}
