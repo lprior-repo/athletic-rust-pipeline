@@ -233,18 +233,6 @@ impl ExportDataset {
         Self::from_loaded(loaded, frozen::lineage(store, snapshot)?)
     }
 
-    pub fn ensure_store(&self, store: &Store) -> ReportResult<()> {
-        frozen::job::ensure_store(self, store)
-    }
-
-    pub fn ensure_current(&self, store: &Store) -> ReportResult<()> {
-        frozen::ensure_current(self, store)
-    }
-
-    pub fn ensure_snapshot(&self, snapshot: &census_store::StoreSnapshot<'_>) -> ReportResult<()> {
-        frozen::ensure_snapshot(self, snapshot)
-    }
-
     fn from_loaded(loaded: Loaded, lineage: DatasetLineage) -> ReportResult<Self> {
         let identity_projection = projection_of(&loaded)?;
         let canonical_aliases = aliases_of(&loaded.athletes, &identity_projection);

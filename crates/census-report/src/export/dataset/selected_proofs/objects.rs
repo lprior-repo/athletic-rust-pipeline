@@ -5,6 +5,7 @@ use census_store::StoreError;
 use serde::{Deserialize, Serialize};
 use std::path::{Component, Path};
 
+mod retained;
 const MAX_OBJECTS: usize = 16_384;
 const MAX_BYTES: u64 = 3 * 1024 * 1024 * 1024;
 const MAX_ANCESTORS: usize = 256;

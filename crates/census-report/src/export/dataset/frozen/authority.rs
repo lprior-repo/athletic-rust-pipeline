@@ -1,7 +1,20 @@
-use super::{invalid, ExportDataset, ReportResult, StoreSnapshot};
+use super::{invalid, ExportDataset, ReportResult, Store, StoreSnapshot};
+use crate::export::dataset::frozen;
 use census_store::AcceptedPublicIdentitySnapshot;
 
 impl ExportDataset {
+    pub fn ensure_store(&self, store: &Store) -> ReportResult<()> {
+        frozen::job::ensure_store(self, store)
+    }
+
+    pub fn ensure_current(&self, store: &Store) -> ReportResult<()> {
+        frozen::ensure_current(self, store)
+    }
+
+    pub fn ensure_snapshot(&self, snapshot: &census_store::StoreSnapshot<'_>) -> ReportResult<()> {
+        frozen::ensure_snapshot(self, snapshot)
+    }
+
     pub(crate) fn ensure_current_documentary_authority(
         &self,
         snapshot: &StoreSnapshot<'_>,
