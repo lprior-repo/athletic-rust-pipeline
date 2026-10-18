@@ -1,0 +1,146 @@
+diff --git a/crates/census-domain/src/result_school_correspondence.rs b/crates/census-domain/src/result_school_correspondence.rs
+index 30cdc4d4c..be1b10a58 100644
+--- a/crates/census-domain/src/result_school_correspondence.rs
++++ b/crates/census-domain/src/result_school_correspondence.rs
+@@ -201,3 +201,10 @@ fn digest_bytes(bytes: &[u8]) -> Result<ResultSchoolDigestV1> {
+ 
+ #[cfg(test)]
+ mod tests;
++
++pub fn encode_result_school_model_v1(
++    value: &(impl Serialize + ?Sized),
++    grant: &mut AttachmentReplayGrantV1,
++) -> Result<Vec<u8>> {
++    with_grant(grant, |grant| encode(value, grant))
++}
+diff --git a/crates/census-report/src/export/dataset/frozen/archive.rs b/crates/census-report/src/export/dataset/frozen/archive.rs
+index ac1cede39..e24f275e4 100644
+--- a/crates/census-report/src/export/dataset/frozen/archive.rs
++++ b/crates/census-report/src/export/dataset/frozen/archive.rs
+@@ -183,7 +183,10 @@ fn selected_replay_origin(
+             Ok(SelectedInputOrigin::HistoricalIdentityReplay)
+         }
+         (Version::ReviewedRosterGraphV3, 7) => {
+-            census_domain::profile_execution::validate_selected_qualification_profile_v4(profile)
++            let _checked =
++                census_domain::profile_execution::validate_selected_qualification_profile_v4(
++                    profile,
++                )
+                 .map_err(|error| invalid(&error.to_string()))?;
+             Ok(SelectedInputOrigin::Current)
+         }
+diff --git a/crates/census-report/src/export/qualification/current_affiliation/frozen.rs b/crates/census-report/src/export/qualification/current_affiliation/frozen.rs
+index 921de19b6..d82d95417 100644
+--- a/crates/census-report/src/export/qualification/current_affiliation/frozen.rs
++++ b/crates/census-report/src/export/qualification/current_affiliation/frozen.rs
+@@ -29,8 +29,9 @@ pub(crate) fn capture(
+     {
+         return reviewed::capture(dataset, snapshot, objects_dir, &profile);
+     }
+-    census_domain::profile_execution::validate_selected_qualification_profile_v3(&profile)
+-        .map_err(|_| invalid("unsupported affiliation capture profile"))?;
++    let _checked =
++        census_domain::profile_execution::validate_selected_qualification_profile_v3(&profile)
++            .map_err(|_| invalid("unsupported affiliation capture profile"))?;
+     capture::capture(dataset, snapshot, objects_dir)
+ }
+ 
+diff --git a/crates/census-report/src/export/qualification/current_affiliation/frozen/reviewed.rs b/crates/census-report/src/export/qualification/current_affiliation/frozen/reviewed.rs
+index 206a85154..999a798b3 100644
+--- a/crates/census-report/src/export/qualification/current_affiliation/frozen/reviewed.rs
++++ b/crates/census-report/src/export/qualification/current_affiliation/frozen/reviewed.rs
+@@ -78,8 +78,9 @@ pub(super) fn replay(
+     descriptor: &FrozenAffiliationDescriptor,
+     profile: &QueryProfileV1,
+ ) -> ReportResult<PinnedCurrentAffiliations> {
+-    census_domain::profile_execution::validate_selected_qualification_profile_v4(profile)
+-        .map_err(|_| invalid("reviewed roster replay profile differs"))?;
++    let _checked =
++        census_domain::profile_execution::validate_selected_qualification_profile_v4(profile)
++            .map_err(|_| invalid("reviewed roster replay profile differs"))?;
+     let mut grant = AttachmentReplayGrantV1::new();
+     let result = (|| {
+         let closure = SourceBindingObjectV1 {
+diff --git a/crates/census-store/src/roster_source_issuance.rs b/crates/census-store/src/roster_source_issuance.rs
+index 1d59d56d1..7e1e51d46 100644
+--- a/crates/census-store/src/roster_source_issuance.rs
++++ b/crates/census-store/src/roster_source_issuance.rs
+@@ -19,6 +19,9 @@ pub use issuance::{
+ };
+ 
+ pub use budget::RosterStartupValidationBudgetV1;
++pub(crate) use enrollment::proof::{
++    retained_enrollment_operation_v1, validate_roster_enrollment_proof_v1,
++};
+ pub use enrollment::{
+     PreparedRosterEnrollmentV1, RosterEnrollmentCommandV1, RosterEnrollmentInputsV1,
+     RosterEnrollmentReviewV1, RosterReviewActorV1,
+diff --git a/crates/census-store/src/roster_source_issuance/enrollment.rs b/crates/census-store/src/roster_source_issuance/enrollment.rs
+index b592daa7a..35dea940c 100644
+--- a/crates/census-store/src/roster_source_issuance/enrollment.rs
++++ b/crates/census-store/src/roster_source_issuance/enrollment.rs
+@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
+ 
+ mod apply;
+ mod inspect;
++pub(super) mod proof;
+ mod replay;
+ pub use inspect::{RosterEnrollmentInputsV1, RosterEnrollmentReviewV1};
+ pub(super) mod prepare;
+@@ -69,10 +70,13 @@ struct Approval<'a> {
+     prepared: &'a RosterEnrollmentCommandV1,
+ }
+ 
+-fn approval(command: &RosterEnrollmentCommandV1) -> crate::StoreResult<Vec<u8>> {
++pub(super) fn approval(command: &RosterEnrollmentCommandV1) -> crate::StoreResult<Vec<u8>> {
+     super::codec::encode(&Approval {
+         schema: "roster-source-enrollment-approval-v1",
+         actor: command.actor,
+         prepared: command,
+     })
+ }
++
++#[cfg(test)]
++mod proof_tests;
+diff --git a/crates/census-store/src/roster_source_issuance/format.rs b/crates/census-store/src/roster_source_issuance/format.rs
+index 48100e06e..740f7c980 100644
+--- a/crates/census-store/src/roster_source_issuance/format.rs
++++ b/crates/census-store/src/roster_source_issuance/format.rs
+@@ -1,6 +1,6 @@
+ use super::{codec, enrollment, RosterSourceIssuanceStoreError as Error};
+ use super::{RosterStartupValidationBudgetV1, ENROLLMENT, HEAD, LIFECYCLE, OPERATION_PREFIX, ROOT};
+-use crate::{Receipt, StoreError, StoreFormat, StoreResult};
++use crate::{StoreError, StoreFormat, StoreResult};
+ use fjall::{Keyspace, Readable, Snapshot};
+ 
+ pub(super) type Rows = Vec<(Vec<u8>, Vec<u8>)>;
+@@ -89,22 +89,13 @@ pub(super) fn validate_enrollment(
+         .iter()
+         .find(|(key, _)| key == operation.as_bytes())
+         .ok_or(Error::Corrupt("missing enrollment receipt"))?;
+-    let receipt: Receipt = codec::decode(receipt_bytes)?;
+-    let enrollment_digest = codec::digest(find(metadata, ENROLLMENT)?);
+-    let approval = enrollment::approval(&enrolled.command)?;
+-    enrollment::prepare::validate_command(&enrolled.command)?;
+-    if &enrolled.command.store != identity
+-        || enrolled.schema != "roster-source-enrollment-v1"
+-        || enrolled.approval_digest != codec::digest(&approval)
+-        || enrolled.committed_at < enrolled.command.reviewed_at
+-        || head.version != 1
+-        || receipt_key != operation.as_bytes()
+-        || receipt.operation != operation
+-        || receipt.digest != enrollment_digest
+-        || receipt.at != enrolled.committed_at.to_rfc3339()
+-        || receipt.appended != 0
+-        || receipt.credited
+-    {
++    let enrollment_digest = super::enrollment::proof::validate(
++        &enrolled,
++        find(metadata, ENROLLMENT)?,
++        receipt_bytes,
++        identity,
++    )?;
++    if head.version != 1 || receipt_key != operation.as_bytes() {
+         return Err(Error::Corrupt("enrollment authority mismatch").into());
+     }
+     super::issuance::ledger::validate(records, issued, identity, &enrollment_digest, &head)

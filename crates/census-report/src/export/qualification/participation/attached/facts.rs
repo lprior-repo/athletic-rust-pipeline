@@ -57,6 +57,7 @@ fn evaluate(
     let intervals = evidence::intervals(&facts, grant)?;
     let statuses = evidence::statuses(&facts, &intervals, &athlete, query)?;
     let windows = evidence::windows(&facts, &intervals, &athlete, query)?;
+    let full_windows = evidence::full_windows(&facts, &athlete, query, grant)?;
     let contexts = evidence::contexts(&facts, &athlete, query)?;
     let observation = ParticipationObservation {
         binding: query.binding,
@@ -74,7 +75,7 @@ fn evaluate(
         cohort: evidence::cohort(&facts, &athlete, query)?,
         contexts: &contexts,
         high_school_status: &statuses,
-        eligibility_windows: &[],
+        eligibility_windows: &full_windows,
     };
     step(grant, 1)?;
     let assessed = assess_participation_with_in_season(

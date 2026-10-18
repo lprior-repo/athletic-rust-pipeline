@@ -4,8 +4,8 @@ use census_crawl::participation_evidence::{
     IndependentParticipationProofV1,
 };
 use census_domain::participation_candidates::{
-    ContextFact, EligibilityWindowIdentity, HighSchoolStatusFact, InSeasonWindowFact,
-    ParticipationContext, StatusBasis, StudentStatus,
+    ContextFact, EligibilityWindowFact, EligibilityWindowIdentity, HighSchoolStatusFact,
+    InSeasonWindowFact, ParticipationContext, StatusBasis, StudentStatus,
 };
 
 pub(super) fn intervals(
@@ -42,18 +42,36 @@ pub(super) fn cohort<'a>(
     athlete: &'a AthleteId,
     query: CandidateQuery<'a>,
 ) -> ReportResult<CohortFact<'a>> {
-    let Some(first) = facts.sources().first() else {
+    let mut sources = facts
+        .sources()
+        .iter()
+        .map(|item| {
+            (
+                item.source().cohort(),
+                item.source().status_proof(),
+                item.cohort_agreement(),
+            )
+        })
+        .chain(facts.windows().iter().map(|item| {
+            (
+                item.source().cohort(),
+                item.source().boundary_proof(),
+                item.cohort_agreement(),
+            )
+        }));
+    let Some((year, source_proof, agreement)) = sources.next() else {
         return Ok(CohortFact::Missing);
     };
-    if facts.sources().iter().any(|item| {
-        item.source().cohort() != first.source().cohort()
-            || item.cohort_agreement() == DocumentaryCohortAgreementV1::Conflicting
-    }) {
+    if agreement == DocumentaryCohortAgreementV1::Conflicting
+        || sources.any(|(other, _, agreement)| {
+            other != year || agreement == DocumentaryCohortAgreementV1::Conflicting
+        })
+    {
         return Ok(CohortFact::Conflicting);
     }
     Ok(CohortFact::Resolved {
-        year: first.source().cohort(),
-        proof: proof(first.source().status_proof(), athlete, query)?,
+        year,
+        proof: proof(source_proof, athlete, query)?,
     })
 }
 
@@ -111,6 +129,35 @@ pub(super) fn windows<'a>(
                 boundary_proof: proof(item.source().season_proof(), athlete, query)?,
             });
         }
+    }
+    Ok(output)
+}
+
+pub(super) fn full_windows<'a>(
+    facts: &'a CheckedDocumentaryParticipationFactsV1<'a>,
+    athlete: &'a AthleteId,
+    query: CandidateQuery<'a>,
+    grant: &mut Grant,
+) -> ReportResult<Vec<EligibilityWindowFact<'a>>> {
+    let count = facts.windows().len();
+    let bytes = std::mem::size_of::<EligibilityWindowFact<'_>>()
+        .checked_mul(count)
+        .ok_or(census_store::StoreError::CounterOverflow)?;
+    grant.charge_bytes(bytes).map_err(domain)?;
+    step(grant, count)?;
+    let mut output = reserved(count)?;
+    for item in facts.windows() {
+        let window = item.source();
+        output.push(EligibilityWindowFact {
+            identity: EligibilityWindowIdentity {
+                school_year: window.school_year(),
+                cohort: window.cohort(),
+                participation_rule: query.binding.participation_rule,
+            },
+            interval: window.interval(),
+            documented_summer_end: window.documented_summer_end(),
+            boundary_proof: proof(window.boundary_proof(), athlete, query)?,
+        });
     }
     Ok(output)
 }

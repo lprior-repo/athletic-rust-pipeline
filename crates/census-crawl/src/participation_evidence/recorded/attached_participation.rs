@@ -12,13 +12,14 @@ mod join;
 mod read;
 mod subject;
 mod types;
+mod window_join;
 
 pub use types::{
     AttachedParticipationV1, CheckedDocumentaryParticipationFactsV1,
-    CheckedDocumentarySourceFactsV1, DocumentaryCohortAgreementV1,
+    CheckedDocumentarySourceFactsV1, CheckedDocumentaryWindowFactsV1, DocumentaryCohortAgreementV1,
     DocumentarySeasonApplicabilityV1,
 };
-use types::{CheckedAttachedStatusV1, StatusBinding};
+use types::{CheckedAttachedStatusV1, CheckedAttachedWindowV1, StatusBinding};
 
 pub fn with_current_attached_participation<'a, 'v, 's, T>(
     owner: &'a CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's>,
@@ -60,8 +61,12 @@ impl<'s> AttachedParticipationV1<'_, 's> {
     ) -> CrawlResult<T> {
         super::read::with_grant(grant, |grant| {
             let facts = join::row(self, linked, index, grant)?;
+            let windows = window_join::row(self, linked, index, grant)?;
             consume(
-                CheckedDocumentaryParticipationFactsV1 { sources: &facts },
+                CheckedDocumentaryParticipationFactsV1 {
+                    sources: &facts,
+                    windows: &windows,
+                },
                 grant,
             )
         })

@@ -8,6 +8,13 @@ pub(super) fn collect(
         .sources()
         .len()
         .checked_mul(9)
+        .and_then(|count| {
+            facts
+                .windows()
+                .len()
+                .checked_mul(5)
+                .and_then(|windows| count.checked_add(windows))
+        })
         .ok_or(census_store::StoreError::CounterOverflow)?;
     grant
         .charge_bytes(
@@ -36,11 +43,27 @@ pub(super) fn collect(
             season.locator(),
             item.source().season_scope(),
         ];
-        step(grant, values.len())?;
-        for value in values {
-            grant.charge_bytes(value.len()).map_err(domain)?;
-            output.push(value.to_owned());
-        }
+        append(&mut output, &values, grant)?;
+    }
+    for item in facts.windows() {
+        let proof = item.source().boundary_proof();
+        let values = [
+            item.source().reference().as_str(),
+            item.attachment_record_digest(),
+            proof.capture(),
+            proof.interpretation(),
+            proof.locator(),
+        ];
+        append(&mut output, &values, grant)?;
     }
     Ok(output)
+}
+
+fn append(output: &mut Vec<String>, values: &[&str], grant: &mut Grant) -> ReportResult<()> {
+    step(grant, values.len())?;
+    for value in values {
+        grant.charge_bytes(value.len()).map_err(domain)?;
+        output.push((*value).to_owned());
+    }
+    Ok(())
 }

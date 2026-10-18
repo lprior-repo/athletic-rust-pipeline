@@ -6,11 +6,17 @@ use census_store::{CurrentEvidenceSubjectAttachmentV1, FrozenCurrentEvidenceSubj
 
 pub struct AttachedParticipationV1<'a, 's> {
     pub(super) sources: Vec<CheckedAttachedStatusV1<'a, 's>>,
+    pub(super) windows: Vec<CheckedAttachedWindowV1<'a, 's>>,
     pub(super) unsupported: Vec<StatusBinding<'a, 's>>,
 }
 
 pub(super) struct CheckedAttachedStatusV1<'a, 's> {
     pub(super) recorded: super::super::RecordedIndependentParticipationV1,
+    pub(super) binding: StatusBinding<'a, 's>,
+}
+
+pub(super) struct CheckedAttachedWindowV1<'a, 's> {
+    pub(super) recorded: super::super::RecordedIndependentParticipationWindowV1,
     pub(super) binding: StatusBinding<'a, 's>,
 }
 
@@ -83,11 +89,16 @@ pub enum DocumentarySeasonApplicabilityV1 {
 
 pub struct CheckedDocumentaryParticipationFactsV1<'a> {
     pub(super) sources: &'a [CheckedDocumentarySourceFactsV1<'a>],
+    pub(super) windows: &'a [CheckedDocumentaryWindowFactsV1<'a>],
 }
 
 impl<'a> CheckedDocumentaryParticipationFactsV1<'a> {
     pub fn sources(&self) -> &[CheckedDocumentarySourceFactsV1<'a>] {
         self.sources
+    }
+
+    pub fn windows(&self) -> &[CheckedDocumentaryWindowFactsV1<'a>] {
+        self.windows
     }
 }
 
@@ -110,5 +121,27 @@ impl CheckedDocumentarySourceFactsV1<'_> {
     }
     pub fn season(&self) -> DocumentarySeasonApplicabilityV1 {
         self.season
+    }
+}
+
+pub struct CheckedDocumentaryWindowFactsV1<'a> {
+    pub(super) source: &'a crate::participation_evidence::VerifiedIndependentParticipationWindowV1,
+    pub(super) record_digest: &'a str,
+    pub(super) cohort: DocumentaryCohortAgreementV1,
+}
+
+impl CheckedDocumentaryWindowFactsV1<'_> {
+    pub fn source(
+        &self,
+    ) -> &crate::participation_evidence::VerifiedIndependentParticipationWindowV1 {
+        self.source
+    }
+
+    pub fn attachment_record_digest(&self) -> &str {
+        self.record_digest
+    }
+
+    pub fn cohort_agreement(&self) -> DocumentaryCohortAgreementV1 {
+        self.cohort
     }
 }

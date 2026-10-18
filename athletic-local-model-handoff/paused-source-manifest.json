@@ -1,0 +1,179 @@
+{
+  "base_commit": "b5b166bf90b525c388f65b06c8b0012276cdcc6c",
+  "base_tree": "2d3396e5ae12b37c6da360c87d991d5998975d4e",
+  "artifacts": {
+    "paused-r2-working-tree.patch": {
+      "bytes": 7145,
+      "sha256": "48ee5c2e050745735793e91bffa9887153ab2d7659f0d24e348144a69fe1e416"
+    },
+    "paused-unregistered-source.tar.gz": {
+      "bytes": 13939,
+      "sha256": "5740e08538feea4b4bebe08723aee05f44a0375bc788fe99eca39525ef96ac24"
+    }
+  },
+  "verification": "Applied patch to exact base tracked files in isolated temporary directory, extracted safe regular-file archive, compared all 27 restored files byte-for-byte to unchanged source worktree. No build executed.",
+  "files": [
+    {
+      "path": "crates/census-crawl/src/participation_evidence/roster_source_issuance/partial_source_tests.rs",
+      "kind": "untracked_archive",
+      "bytes": 2648,
+      "sha256": "735ed7b6140a521669c55aae7586b9673ec4f2a8fd3c3d02a8f086ab669ec553"
+    },
+    {
+      "path": "crates/census-crawl/src/participation_evidence/roster_source_issuance/partial_source_tests/fixture.rs",
+      "kind": "untracked_archive",
+      "bytes": 2970,
+      "sha256": "839d56c3d5181c00e2688b378ece5e1d6a444103c6752c4f8384f1ebe4f8c10f"
+    },
+    {
+      "path": "crates/census-crawl/src/participation_evidence/roster_source_issuance/partial_source_tests/projection.rs",
+      "kind": "untracked_archive",
+      "bytes": 4148,
+      "sha256": "443b9c4df458675336eeb15f3a21ab125b18cb6700ecc339946e8c14579277a0"
+    },
+    {
+      "path": "crates/census-domain/src/result_school_correspondence.rs",
+      "kind": "tracked_patch",
+      "bytes": 6375,
+      "sha256": "33b068464185b699fd9055844c1eb2f0515439a384326d228d194bd08eb587a9"
+    },
+    {
+      "path": "crates/census-report/src/export/dataset/frozen/archive.rs",
+      "kind": "tracked_patch",
+      "bytes": 8268,
+      "sha256": "0a6d84000d7cbed4d0f31e74f3a5732d41956ef0992bbc4ca96c025b0bf867f0"
+    },
+    {
+      "path": "crates/census-report/src/export/qualification/current_affiliation/frozen.rs",
+      "kind": "tracked_patch",
+      "bytes": 5365,
+      "sha256": "cdca4de9239a6491fbbaffc88d319dde2061f0a915b4753b8c96c63820392390"
+    },
+    {
+      "path": "crates/census-report/src/export/qualification/current_affiliation/frozen/reviewed.rs",
+      "kind": "tracked_patch",
+      "bytes": 4156,
+      "sha256": "42e9dbf5b29dbc02e515e1ad9e0945c4aee158f99919b0e13e8add45da92aea9"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence.rs",
+      "kind": "untracked_archive",
+      "bytes": 2830,
+      "sha256": "2fb978e13d3a801b45b82da2d94d9f7f875231680838fac39c6c30f913219fee"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/codec.rs",
+      "kind": "untracked_archive",
+      "bytes": 1124,
+      "sha256": "f0a36a2c521ba7cf18f5d5664303f64f988312c894541ec7d9201896f97d0248"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/enrollment.rs",
+      "kind": "untracked_archive",
+      "bytes": 1734,
+      "sha256": "16f71c504e2162e0d9def706e348c1287d4bde0f757eed627f6ccd49a848c566"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/enrollment/apply.rs",
+      "kind": "untracked_archive",
+      "bytes": 2532,
+      "sha256": "2517cf2799c81acaadea60c6418313d86dda7cd2c79e9fa2c0b919181b1ea4e5"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/enrollment/inspect.rs",
+      "kind": "untracked_archive",
+      "bytes": 3149,
+      "sha256": "49949c4e0fb302ddd1397427ccd880dbb351c58bd7eef60a0029c014ebac9fb7"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/enrollment/prepare.rs",
+      "kind": "untracked_archive",
+      "bytes": 3304,
+      "sha256": "7b0ddfbf7d1e4f64da850a992ee3c04db8a99454f0561b6e58be37d304c19228"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/enrollment/replay.rs",
+      "kind": "untracked_archive",
+      "bytes": 2455,
+      "sha256": "bbe3765ec59c1e3bcadbaa7df6199974044bb6728c4520fbc1d2778cb68b6af5"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/enrollment_tests.rs",
+      "kind": "untracked_archive",
+      "bytes": 1626,
+      "sha256": "a5f9f718d1f9fa2824d178568866b00cdcb746f9a7e3b0f306f4096739c6fb2a"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/enrollment_tests/lifecycle.rs",
+      "kind": "untracked_archive",
+      "bytes": 3483,
+      "sha256": "60ec9b5f0398de7335c015e9c74bd383cd39961a989efedf87d2c59f8b323bee"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/enrollment_tests/predecessor.rs",
+      "kind": "untracked_archive",
+      "bytes": 3328,
+      "sha256": "58d2815ce3d73a963e7326627e009be6fed021a8a40519b1f22d8842698611a2"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/enrollment_tests/refusal.rs",
+      "kind": "untracked_archive",
+      "bytes": 5555,
+      "sha256": "a6c935a1e4cb7d02f97f788f841896db64ef9b33601f115d8cb081f07132c62d"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/proof.rs",
+      "kind": "untracked_archive",
+      "bytes": 430,
+      "sha256": "932458a6286713e2cddae8f8ba78672670e4fd4f6c87afd8b724a2a8317bf277"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/proof/validate.rs",
+      "kind": "untracked_archive",
+      "bytes": 2626,
+      "sha256": "f7e937ef8503e88d2c2be79229c6a4ab203ccea7fd8e34ea263c3606f810efb7"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/read.rs",
+      "kind": "untracked_archive",
+      "bytes": 6007,
+      "sha256": "6667cc2627143227a62dd91f9efede753dc7b1d264a1ce08d12047e19df6ba0c"
+    },
+    {
+      "path": "crates/census-store/src/result_school_correspondence/wire.rs",
+      "kind": "untracked_archive",
+      "bytes": 2054,
+      "sha256": "573596172519f4f032a2720113e2b9239e77d7aeace05a72f051eb4e0e35b5e4"
+    },
+    {
+      "path": "crates/census-store/src/roster_source_issuance.rs",
+      "kind": "tracked_patch",
+      "bytes": 3063,
+      "sha256": "63c3c6c844fabc89ba542fd0329f5217f78c27cc8f737293c707221b4fe76e80"
+    },
+    {
+      "path": "crates/census-store/src/roster_source_issuance/enrollment.rs",
+      "kind": "tracked_patch",
+      "bytes": 2199,
+      "sha256": "e7ef4f8aa2fa045aeabb6f03b917940a2bab0ae126061f1b6ea31ce23777cb3b"
+    },
+    {
+      "path": "crates/census-store/src/roster_source_issuance/enrollment/proof.rs",
+      "kind": "untracked_archive",
+      "bytes": 3242,
+      "sha256": "704827cda8eb91395be7763a410985e18dc46b6e6a2dd7164836e3ed82740752"
+    },
+    {
+      "path": "crates/census-store/src/roster_source_issuance/enrollment/proof_tests.rs",
+      "kind": "untracked_archive",
+      "bytes": 6259,
+      "sha256": "ee733cbab14d0fb0aed50b47f4b24821636ec9faf8b44fcebc21696548c7edb2"
+    },
+    {
+      "path": "crates/census-store/src/roster_source_issuance/format.rs",
+      "kind": "tracked_patch",
+      "bytes": 6925,
+      "sha256": "749cb3120135e16b125d42bacad5236e4b37d3f4007dafd63d9dd5bdd0329761"
+    }
+  ]
+}

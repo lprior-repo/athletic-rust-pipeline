@@ -71,7 +71,7 @@ fn contains_source(
     Ok(false)
 }
 
-fn same_view(
+pub(super) fn same_view(
     status: &StatusBinding<'_, '_>,
     result: &DiscoveredResultAttachmentV1<'_, '_>,
 ) -> CrawlResult<()> {

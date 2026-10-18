@@ -1,0 +1,254 @@
+Source-only inventory at44347691dae1fbdb7d14c23e9419737955106ddb / treef0fa218b54be5d9043f02e59302d35a1a0dc2a4e.
+23 ordinary selector scopes,200 expected Unix test declarations; not native execution receipts. Stop at first error; no broad fallback. historical_build is excluded and separately mandatory with authenticated producer artifact. This source candidate is not qualified producerA.
+
+
+census-domain | 11 | roster_affiliation_authority::tests::
+roster_affiliation_authority::tests::controlled_claim_round_trip_preserves_utc_day_and_unknown_final_url
+roster_affiliation_authority::tests::capture_day_and_semantic_modes_are_not_inferred
+roster_affiliation_authority::tests::mismatched_existing_binding_is_not_repaired
+roster_affiliation_authority::tests::record_rejects_foreign_context_and_unsupported_negative_actions
+roster_affiliation_authority::tests::duplicate_unknown_and_missing_fields_refuse
+roster_affiliation_authority::tests::original_component_budget_and_record_boundary_are_enforced
+roster_affiliation_authority::tests::object_limits_and_same_digest_different_length_refuse
+roster_affiliation_authority::tests::exact_object_limits_and_duplicate_bytes_have_bounded_accounting
+roster_affiliation_authority::tests::invalid_or_unbounded_url_and_timestamp_claims_refuse
+roster_affiliation_authority::tests::unpublished_projection_wire_requires_explicit_merge_contract_and_new_names
+roster_affiliation_authority::tests::derived_review_reference_revalidates_the_entire_claim_budget
+
+census-domain | 5 | evidence_subject_attachment::grant::continuation::tests::
+evidence_subject_attachment::grant::continuation::tests::continuation_keeps_original_charges_and_accepts_only_original_grant
+evidence_subject_attachment::grant::continuation::tests::replenished_foreign_grant_does_not_satisfy_checkpoint
+evidence_subject_attachment::grant::continuation::tests::poisoned_grant_cannot_issue_or_resume_continuation
+evidence_subject_attachment::grant::continuation::tests::authority_check_rejects_temporary_swap_before_original_is_restored
+evidence_subject_attachment::grant::continuation::tests::checkpoint_and_continuation_each_charge_existing_exact_step_cap
+
+census-store | 13 | roster_source_issuance::tests::
+roster_source_issuance::tests::controlled_enrollment_is_explicit_atomic_and_replayable
+roster_source_issuance::tests::changed_approval_and_foreign_revision_do_not_enroll
+roster_source_issuance::tests::startup_budget_is_not_reset_after_exhaustion
+roster_source_issuance::tests::new_namespace_and_receipts_refuse_generic_writers
+roster_source_issuance::tests::copied_foreign_enrollment_cannot_supply_store_origin
+roster_source_issuance::tests::lifecycle_seven_refuses_unexpected_protected_phase_rows
+roster_source_issuance::tests::enrolled_store_cold_reopens_with_original_receipt_and_input_token
+roster_source_issuance::tests::changed_operation_does_not_create_second_enrollment
+roster_source_issuance::tests::partial_enrollment_cannot_be_recovered_as_admitted
+roster_source_issuance::tests::public_api::public_inspection_workflow_derives_private_token_encoding
+roster_source_issuance::tests::public_api::public_historical_replay_ignores_later_input_generations
+roster_source_issuance::tests::public_api::foreign_inspection_and_stale_preparation_refuse
+roster_source_issuance::tests::public_api::stale_prepared_public_enrollment_cannot_commit
+
+census-store | 4 | roster_source_issuance::inspection::tests::
+roster_source_issuance::inspection::tests::semantic_access_rejects_recharged_foreign_grant_before_swap_restore
+roster_source_issuance::inspection::tests::changed_root_and_poisoned_grant_cannot_create_inspection
+roster_source_issuance::inspection::tests::projection_manifest_commits_all_tables_and_exact_snapshot
+roster_source_issuance::inspection::tests::arbitrary_school_observation_ids_are_in_the_complete_physical_inventory
+
+census-store | 2 | roster_source_issuance::issuance::preflight::tests::
+roster_source_issuance::issuance::preflight::tests::resulting_inventory_byte_cap_is_exact
+roster_source_issuance::issuance::preflight::tests::resulting_inventory_row_cap_deduplicates_replacements
+
+census-store | 4 | roster_source_issuance::issuance::reader::frozen_source::tests::
+roster_source_issuance::issuance::reader::frozen_source::tests::complete_empty_prefix_is_missing_but_unknown_prefix_is_not
+roster_source_issuance::issuance::reader::frozen_source::tests::duplicate_unordered_and_foreign_rows_refuse
+roster_source_issuance::issuance::reader::frozen_source::tests::duplicate_prefixes_and_exhausted_or_foreign_grants_refuse
+roster_source_issuance::issuance::reader::frozen_source::tests::covered_malformed_envelope_is_not_silently_missing
+
+census-store | 3 | read::view::bounded::admission_tests::
+read::view::bounded::admission_tests::admitted_physical_read_orders_probes_values_and_visits_with_exact_bounded_parity
+read::view::bounded::admission_tests::admission_refusal_precedes_malformed_decode_and_visitor_at_each_physical_boundary
+read::view::bounded::admission_tests::empty_physical_scan_requires_initial_and_eof_admission_before_zero_counts
+
+census-store | 3 | read::view::membership::preadmission_tests::
+read::view::membership::preadmission_tests::preadmitted_namespace_keeps_normal_and_empty_legacy_counts_bytes_and_fingerprint
+read::view::membership::preadmission_tests::namespace_probe_refusals_preserve_sentinel_before_visit_and_at_eof
+read::view::membership::preadmission_tests::namespace_preadmission_keeps_legacy_row_record_and_total_budget_error_order
+
+census-crawl | 8 | participation_evidence::roster_source_issuance::manifest::tests::
+participation_evidence::roster_source_issuance::manifest::tests::compiled_identity_is_deterministic_and_retains_original_bytes
+participation_evidence::roster_source_issuance::manifest::tests::caller_supplied_digests_cannot_establish_compiled_provenance
+participation_evidence::roster_source_issuance::manifest::tests::altered_source_configuration_lock_and_policy_refuse_current_adapter
+participation_evidence::roster_source_issuance::manifest::tests::unknown_version_policy_extra_field_and_noncanonical_bytes_refuse
+participation_evidence::roster_source_issuance::manifest::tests::unknown_vcs_is_not_clean_and_vcs_does_not_relabel_content_identity
+participation_evidence::roster_source_issuance::manifest::tests::duplicate_or_missing_configuration_inputs_refuse
+participation_evidence::roster_source_issuance::manifest::tests::section_references_hash_exact_retained_section_bytes
+participation_evidence::roster_source_issuance::manifest::tests::exhausted_or_failed_manifest_assessment_poison_replay_grant
+
+census-crawl | 8 | participation_evidence::roster_source_issuance::binding::tests::
+participation_evidence::roster_source_issuance::binding::tests::exact_existing_school_and_program_pass_pure_binding_checks
+participation_evidence::roster_source_issuance::binding::tests::alternate_owner_and_embedded_conflict_refuse
+participation_evidence::roster_source_issuance::binding::tests::another_team_in_same_scope_refuses_but_other_scope_is_distinct
+participation_evidence::roster_source_issuance::binding::tests::observation_subject_cannot_hide_behind_unrestricted_id
+participation_evidence::roster_source_issuance::binding::tests::canonical_entity_collision_retains_refusal_evidence
+participation_evidence::roster_source_issuance::binding::tests::global_conflict_absence_policy_also_refuses_unrelated_conflicts
+participation_evidence::roster_source_issuance::binding::tests::merged_projection_reference_requires_exact_digest_and_length
+participation_evidence::roster_source_issuance::binding::tests::inventory_bytes_reference_rejects_tampered_payload
+
+census-crawl | 21 | participation_evidence::roster_source_issuance::source::tests::
+participation_evidence::roster_source_issuance::source::tests::retained_html_controlled_metadata_reuses_scoped_parser
+participation_evidence::roster_source_issuance::source::tests::source_capture_mismatch_and_unknown_final_url_refuse
+participation_evidence::roster_source_issuance::source::tests::missing_current_statement_refuses_program_assessment
+participation_evidence::roster_source_issuance::source::tests::utc_equivalent_timestamp_is_same_capture_instant
+participation_evidence::roster_source_issuance::source::tests::underdeclared_body_cannot_bypass_real_capture_precharge
+participation_evidence::roster_source_issuance::source::tests::canonical_packet_allocation_requires_real_precharge
+participation_evidence::roster_source_issuance::source::tests::integration::controlled_public_inspection_binds_exact_rows_and_refuses_foreign_grant
+participation_evidence::roster_source_issuance::source::tests::integration::controlled_inspection_rejects_substituted_parser_and_context_references
+participation_evidence::roster_source_issuance::source::tests::integration::controlled_inspection_refuses_wrong_retained_parser_manifest
+participation_evidence::roster_source_issuance::source::tests::integration::controlled_inspection_refuses_changed_requested_school_or_program
+participation_evidence::roster_source_issuance::source::tests::integration::capture_objects::controlled_capture_objects_bind_metadata_and_refuse_equivalent_offset_literal
+participation_evidence::roster_source_issuance::source::tests::integration::capture_objects::foreign_prechecked_manifest_cannot_bypass_exhausted_original_grant
+participation_evidence::roster_source_issuance::source::tests::integration::capture_objects::controlled_inspection_refuses_wrong_program_year_or_retained_policy
+participation_evidence::roster_source_issuance::source::tests::review_integration::controlled_review_applies_replays_and_reopens_without_authority_claim
+participation_evidence::roster_source_issuance::source::tests::review_integration::controlled_review_refuses_changed_approval_and_foreign_store
+participation_evidence::roster_source_issuance::source::tests::review_integration::controlled_review_refuses_stale_prepared_basis
+participation_evidence::roster_source_issuance::source::tests::review_integration::controlled_review_reopens_supplied_objects_at_and_above_record_limit
+participation_evidence::roster_source_issuance::source::tests::review_reader::controlled_current_and_frozen_review_rederive_same_source
+participation_evidence::roster_source_issuance::source::tests::review_reader::physical_change_refuses_current_but_preserves_selected_frozen_review
+participation_evidence::roster_source_issuance::source::tests::review_reader::rehashed_frozen_selected_metadata_requires_original_publication_binding
+participation_evidence::roster_source_issuance::source::tests::review_reader::combined_semantic_capability_rejects_foreign_and_poisoned_grants
+
+census-crawl | 3 | milesplit::parse::markup::location::tests::
+milesplit::parse::markup::location::tests::declaration_offsets_follow_original_bytes_after_utf8_entities_and_crlf
+milesplit::parse::markup::location::tests::raw_text_and_inert_decoys_do_not_produce_located_declarations
+milesplit::parse::markup::location::tests::json_ld_locations_cover_actual_element_or_exact_eof
+
+census-crawl | 5 | milesplit::parse::roster::current::witness_tests::
+milesplit::parse::roster::current::witness_tests::source_statements_map_selected_live_anchor_not_identical_inert_bytes
+milesplit::parse::roster::current::witness_tests::utf8_and_encoded_person_keep_original_anchor_offsets
+milesplit::parse::roster::current::witness_tests::membership_4096_is_retained_and_4097_keeps_old_current_assertion
+milesplit::parse::roster::current::witness_tests::unavailable_active_person_does_not_gain_a_statement_span
+milesplit::parse::roster::current::witness_tests::temporal_4096_witness_preserves_existing_4097_parser_refusal
+
+census-crawl | 5 | milesplit::parse::roster::owner::witness::tests::
+milesplit::parse::roster::owner::witness::tests::all_canonical_meta_and_both_json_fields_remain_in_one_complete_inventory
+milesplit::parse::roster::owner::witness::tests::owner_statement_4096_is_retained_and_4097_only_withholds_new_witness
+milesplit::parse::roster::owner::witness::tests::inventory_limit_never_hides_late_contrary_declarations
+milesplit::parse::roster::owner::witness::tests::absent_or_nested_metadata_is_not_upgraded_to_published_owner
+milesplit::parse::roster::owner::witness::tests::json_ld_eof_retains_existing_semantics_with_exact_end
+
+census-crawl | 15 | milesplit::parse::roster::current::tests::
+milesplit::parse::roster::current::tests::retained_mason_heading_proves_only_scoped_member_observation
+milesplit::parse::roster::current::tests::flags_and_graduation_year_without_current_statement_remain_undated
+milesplit::parse::roster::current::tests::unrelated_inert_or_different_section_heading_cannot_date_members
+milesplit::parse::roster::current::tests::tag_shaped_member_bytes_in_comment_do_not_receive_statement_authority
+milesplit::parse::roster::current::tests::current_statement_without_verified_document_owner_remains_untrusted
+milesplit::parse::roster::current::tests::actual_member_container_cannot_date_comment_template_or_hidden_fields
+milesplit::parse::roster::current::tests::duplicate_heading_or_dataset_container_is_ambiguous
+milesplit::parse::roster::current::tests::nonvoid_self_closing_syntax_does_not_end_inert_html_elements
+milesplit::parse::roster::current::tests::malformed_attributes_after_scope_creation_invalidate_temporal_authority
+milesplit::parse::roster::current::tests::escaped_text_and_quoted_attributes_cannot_reconstitute_live_member_markup
+milesplit::parse::roster::current::tests::heading_raw_bytes_are_bounded_and_hashed_once_per_scope
+milesplit::parse::roster::current::tests::section_closure_updates_only_its_index_and_depth_remains_bounded
+milesplit::parse::roster::current::tests::unsupported_tree_repair_contexts_cannot_own_current_roster_scope
+milesplit::parse::roster::current::tests::structural::unclosed_inert_elements_never_admit_current_membership
+milesplit::parse::roster::current::tests::structural::removing_canonical_link_keeps_independent_json_ld_owner
+
+census-crawl | 24 | milesplit::parse::roster::owner::tests::
+milesplit::parse::roster::owner::tests::ownerless_historical_fragment_cannot_establish_roster_affiliations
+milesplit::parse::roster::owner::tests::matching_published_owner_admits_historical_rows_without_fabricating_final_provenance
+milesplit::parse::roster::owner::tests::final_owner_binding_rejects_foreign_identity_and_jurisdiction
+milesplit::parse::roster::owner::tests::every_authoritative_owner_must_match_and_comments_cannot_prove_owner
+milesplit::parse::roster::owner::tests::unrelated_foreign_roster_navigation_and_embedded_entities_do_not_change_document_owner
+milesplit::parse::roster::owner::tests::contextual::style_canonical_text_cannot_establish_historical_roster_owner
+milesplit::parse::roster::owner::tests::contextual::textarea_canonical_text_cannot_establish_historical_roster_owner
+milesplit::parse::roster::owner::tests::contextual::title_canonical_text_cannot_establish_historical_roster_owner
+milesplit::parse::roster::owner::tests::contextual::xmp_canonical_text_cannot_establish_historical_roster_owner
+milesplit::parse::roster::owner::tests::contextual::quoted_attribute_markup_cannot_establish_historical_roster_owner
+milesplit::parse::roster::owner::tests::contextual::template_markup_cannot_establish_historical_roster_owner
+milesplit::parse::roster::owner::tests::contextual::noscript_markup_cannot_establish_historical_roster_owner
+milesplit::parse::roster::owner::tests::contextual::comments_and_script_strings_cannot_establish_historical_roster_owner
+milesplit::parse::roster::owner::tests::contextual::foreign_comment_and_script_strings_cannot_replace_actual_matching_owner
+milesplit::parse::roster::owner::tests::contextual::matching_comment_and_script_strings_cannot_replace_actual_foreign_owner
+milesplit::parse::roster::owner::tests::contextual::encoded_canonical_foreign_team_overrides_matching_observed_final_url
+milesplit::parse::roster::owner::tests::contextual::encoded_canonical_foreign_host_overrides_matching_observed_final_url
+milesplit::parse::roster::owner::tests::contextual::encoded_open_graph_foreign_team_overrides_matching_observed_final_url
+milesplit::parse::roster::owner::tests::contextual::encoded_open_graph_foreign_host_overrides_matching_observed_final_url
+milesplit::parse::roster::owner::tests::contextual::encoded_foreign_declarations_cannot_hide_behind_matching_historical_owner
+milesplit::parse::roster::owner::tests::contextual::actual_encoded_canonical_establishes_historical_roster_owner
+milesplit::parse::roster::owner::tests::contextual::actual_encoded_open_graph_establishes_historical_roster_owner
+milesplit::parse::roster::owner::tests::contextual::encoded_matching_declaration_inside_raw_text_still_cannot_establish_owner
+milesplit::parse::roster::owner::tests::contextual::ownerless_authentic_rows_remain_available_to_pure_parser_only
+
+census-crawl | 2 | milesplit::parse::roster::genuine_co2027::
+milesplit::parse::roster::genuine_co2027::genuine_retained_co2027_rows_project_source_population_without_identity_acceptance
+milesplit::parse::roster::genuine_co2027::genuine_retained_roster_refuses_a_different_observed_final_owner
+
+census-report | 34 | export::qualification::current_affiliation::source_authority::tests::
+export::qualification::current_affiliation::source_authority::tests::history::controlled_current_school_selection_preserves_performance_time_school_and_wire_bytes
+export::qualification::current_affiliation::source_authority::tests::history::historical_v3_and_reviewed_v4_profile_contracts_dispatch_without_reinterpretation
+export::qualification::current_affiliation::source_authority::tests::history::mixed_historical_and_reviewed_affiliation_publication_contracts_are_refused
+export::qualification::current_affiliation::source_authority::tests::publication::failures::controlled_reviewed_source_closure_loss_and_tamper_preserve_valid_publication
+export::qualification::current_affiliation::source_authority::tests::publication::historical_semantic::publication::controlled_forged_v2_current_selected_admission_preserves_prior_valid_publication
+export::qualification::current_affiliation::source_authority::tests::publication::historical_semantic::controlled_accepted_syntactic_v2_receipt_cannot_authorize_forged_semantic_inventory
+export::qualification::current_affiliation::source_authority::tests::publication::historical_semantic::controlled_original_v2_receipt_replays_fixed_raw_semantics_before_historical_publication
+export::qualification::current_affiliation::source_authority::tests::publication::omission::controlled_rehashed_review_omission_refuses_against_original_authority_head
+export::qualification::current_affiliation::source_authority::tests::publication::retention::files::retained_copy_preserves_inventory_and_refuses_overwrite
+export::qualification::current_affiliation::source_authority::tests::publication::retention::files::retained_destination_refuses_overlap_and_existing_paths
+export::qualification::current_affiliation::source_authority::tests::publication::retention::files::retained_inventory_refuses_symlink_leaf
+export::qualification::current_affiliation::source_authority::tests::publication::roundtrip::controlled_reviewed_roster_positive_selected_publication_reopens_offline_with_nonempty_athlete
+export::qualification::current_affiliation::source_authority::tests::publication::roundtrip::controlled_reviewed_roster_conflict_and_gap_publications_preserve_withholding_offline
+export::qualification::current_affiliation::source_authority::tests::publication::transfer::controlled_reviewed_transfer_preserves_old_school_performance_and_current_postal_geography_offline
+export::qualification::current_affiliation::source_authority::tests::replay::controlled_bound_source_replay_matches_after_unrelated_live_store_write
+export::qualification::current_affiliation::source_authority::tests::replay::controlled_source_adapter_refuses_foreign_grant_and_rebound_publication
+export::qualification::current_affiliation::source_authority::tests::replay::controlled_conflict_and_complete_claim_inventory_survive_frozen_replay
+export::qualification::current_affiliation::source_authority::tests::selectors::authority::controlled_checked_review_and_same_publication_identity_select_school_and_geography
+export::qualification::current_affiliation::source_authority::tests::selectors::authority::controlled_review_cannot_establish_unaccepted_person_identity
+export::qualification::current_affiliation::source_authority::tests::selectors::authority::controlled_connected_missing_owner_withholds_otherwise_resolved_school
+export::qualification::current_affiliation::source_authority::tests::selectors::authority::controlled_unrelated_missing_owner_does_not_poison_resolved_subject
+export::qualification::current_affiliation::source_authority::tests::selectors::authority::controlled_competing_school_claims_preserve_conflict_alongside_connected_owner_gap
+export::qualification::current_affiliation::source_authority::tests::selectors::gaps::controlled_unresolved_connected_person_in_another_sport_withholds_resolved_school
+export::qualification::current_affiliation::source_authority::tests::selectors::gaps::controlled_duplicate_physical_provider_alias_prevents_accepted_identity_selection
+export::qualification::current_affiliation::source_authority::tests::selectors::gaps::controlled_capture_exact_utc_day_cannot_be_reinterpreted_as_continuing_tenure
+export::qualification::current_affiliation::source_authority::tests::selectors::gaps::controlled_current_statement_without_bounded_source_spans_withholds_resolution
+export::qualification::current_affiliation::source_authority::tests::selectors::gaps::controlled_connected_physical_capture_without_review_withholds_resolved_school
+export::qualification::current_affiliation::source_authority::tests::selectors::identity::controlled_established_school_conflict_survives_cross_sport_unresolved_person
+export::qualification::current_affiliation::source_authority::tests::selectors::identity::controlled_recycled_provider_id_without_exact_physical_row_cannot_inherit_accepted_person
+export::qualification::current_affiliation::source_authority::tests::selectors::identity::controlled_provider_alias_connected_to_two_accepted_people_is_not_selected
+export::qualification::current_affiliation::source_authority::tests::selectors::physical::controlled_foreign_school_copied_row_note_is_refused_even_with_accepted_provider_id
+export::qualification::current_affiliation::source_authority::tests::selectors::physical::controlled_exact_row_with_changed_candidate_id_is_refused
+
+export::qualification::current_affiliation::source_authority::tests::publication::correction::controlled_reviewed_roster_split_changes_nonempty_publication_identity_and_preserves_g0
+export::qualification::current_affiliation::source_authority::tests::publication::correction::controlled_reviewed_roster_redundant_merge_revocation_preserves_nonempty_publication_and_g0
+
+census-report | 1 | export::dataset::frozen::archive::origin_tests::reviewed_roster::
+export::dataset::frozen::archive::origin_tests::reviewed_roster::reviewed_roster_requires_its_exact_profile_envelope_and_identity_graph
+
+census-report | 1 | export::dataset::selected_proofs::tests::selected_proof_versions_preserve_exact_numeric_wire_and_refuse_unknowns
+export::dataset::selected_proofs::tests::selected_proof_versions_preserve_exact_numeric_wire_and_refuse_unknowns
+
+census-crawl | 5 | participation_evidence::roster_source_issuance::semantic_inventory::tests::
+participation_evidence::roster_source_issuance::semantic_inventory::tests::controlled_semantic_inventory_codec_retains_all_rows_and_typed_gaps
+participation_evidence::roster_source_issuance::semantic_inventory::tests::controlled_semantic_codec_refuses_unknown_version_fields_and_noncanonical_bytes
+participation_evidence::roster_source_issuance::semantic_inventory::tests::controlled_semantic_codec_alone_does_not_certify_complete_inventory
+participation_evidence::roster_source_issuance::semantic_inventory::tests::capacity::genuine_dcc_partial146_inventory_cannot_be_truncated_to_co2027_complete45
+participation_evidence::roster_source_issuance::semantic_inventory::tests::capacity::controlled_semantic_inventory_encoding_refuses_exact_capacity_overflow
+
+census-crawl | 3 | participation_evidence::roster_source_issuance::semantic_inventory::kernel::tests::
+participation_evidence::roster_source_issuance::semantic_inventory::kernel::tests::immutable_kernel_accepts_only_exact_compiled_dependency_evidence
+participation_evidence::roster_source_issuance::semantic_inventory::kernel::tests::immutable_kernel_refuses_rehashed_source_drift
+participation_evidence::roster_source_issuance::semantic_inventory::kernel::tests::immutable_kernel_refuses_dependency_drift_and_unknown_schema
+
+census-domain | 20 | result_school_correspondence::tests::
+result_school_correspondence::tests::budget::measured_digest_exact_byte_and_step_caps_preserve_original_budget
+result_school_correspondence::tests::budget::canonical_record_byte_limit_is_exact_and_oversize_poisoned
+result_school_correspondence::tests::budget::exhausted_or_foreign_grant_cannot_prepare_or_reuse_checked_command
+result_school_correspondence::tests::invalid::malformed_school_scope_and_source_namespace_are_not_admitted
+result_school_correspondence::tests::invalid::malformed_calendar_dates_and_unknown_predecessor_capabilities_are_not_decoded
+result_school_correspondence::tests::invalid::exact_statement_text_requires_utf8_byte_length_and_raw_sha256
+result_school_correspondence::tests::invalid::zero_oversized_and_outside_body_objects_and_spans_are_refused
+result_school_correspondence::tests::invalid::changed_record_digest_unknown_fields_and_duplicate_fields_fail_closed
+result_school_correspondence::tests::inventory::repeated_complete_replay_is_byte_preserving_and_never_reactivates_revoked_claim
+result_school_correspondence::tests::inventory::receipt_order_foreign_store_missing_records_and_changed_inventory_refuse
+result_school_correspondence::tests::inventory::exact_input_and_person_context_are_committed_by_all_model_record_digests
+result_school_correspondence::tests::inventory::duplicate_operation_and_wrong_predecessor_never_reactivate_revoked_model_history
+result_school_correspondence::tests::replay::acceptance_revocation_keeps_complete_history_and_no_active_mapping
+result_school_correspondence::tests::replay::competing_schools_survive_instead_of_last_writer_selection
+result_school_correspondence::tests::replay::second_first_and_changed_immutable_revoke_refuse
+result_school_correspondence::tests::syntactic_command_retains_original_grant_without_school_admission
+result_school_correspondence::tests::exact_statement_boundaries_and_capacity_fail_closed
+result_school_correspondence::tests::exact_object_limit_and_duplicate_inventory_are_checked
+result_school_correspondence::tests::canonical_decoding_and_digest_refusal_poison_grant
+result_school_correspondence::tests::predecessor_capability_wire_preserves_seven_versus_eight
+
+Mandatory separately configured producer (1; ordinary200+producer1=201 distinct Unix tests):
+census-report | 1 | export::qualification::current_affiliation::source_authority::tests::publication::retention::controlled_reviewed_roster_retains_independent_producer_archive
+export::qualification::current_affiliation::source_authority::tests::publication::retention::controlled_reviewed_roster_retains_independent_producer_archive

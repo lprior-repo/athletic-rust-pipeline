@@ -1,4 +1,10 @@
+mod attachment;
+mod objects;
+mod point_source;
 mod producer;
+mod school_authority;
+mod school_issuance;
+mod school_review;
 mod source;
 mod window_intake;
 mod window_refusals;

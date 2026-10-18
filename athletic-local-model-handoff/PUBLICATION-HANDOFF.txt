@@ -1,0 +1,12 @@
+Final publication candidate50b02cf25534acd25b5fcd79b3229ebebb66253a
+Treec656422ca29b2032f0ee7db7249ea03fc8c94b0e
+Parent923eb7e049c07a1ece232b604375e2ce0c738b3e (source union)
+Bundlepublication-final.bundle SHA4ebece52cb9b2b8548ff7fbe3799bd29b3f5fde349d9eea99cbce16628ca787a
+Required prerequisites8fcabffa03896f7ec8f04f28f7e2dfd3002b7461 and cea2fe8c9ebbcdc784be9797e6db409312217615.
+AdvertisedHEAD exactcandidate. Verify SHA, bundle prerequisites, clean materialized commit/tree, and latest main before ordinary PR publication. Parent user explicitly requested wrap-up into main with incomplete gates disclosed; never force/admin or falsify checks.
+
+Normal source ancestry:49af4368939771c572c95febfc658ff86eff3210 merges e077+1163;923eb7 merges49af+b5. Final50b only adds47 lines to verification ledger. No source blob differs from formatted source union. Independent71-file kernel digest remains094c114d6218a7edfdfdda4e53cfafa2ec57c4abd8df9c2f7ad1685bb5cd7d92. No unregistered Store9/helper/partial prep imported.
+
+PR body is PR-BODY.md. Native1163 gates notrun; e077 check attempts infra101 temporary-filesystemquota;5401 failure was three must_use results, not a repeated private-helper failure. R2 actual producerA and downstream runtime qualification absent. Prior genuine4d0d capacity failure remains unreconciled at runtime. Full details in committed verification ledger.
+
+Separate paused preservation: paused-r2-working-tree.patch + paused-unregistered-source.tar.gz against paused-source-base.txt. These are not a qualified branch and must not be blindly applied: tracked diff also contains separately sealed visibility/must_use fixes. Original worktree remains untouched. Separate sealed parser school-span fb2234 remains outside this union and needs its own integration/runtime gate. Preserve original historical24f593 V3 artifact and all receipts.

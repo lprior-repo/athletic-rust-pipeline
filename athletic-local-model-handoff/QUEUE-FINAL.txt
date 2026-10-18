@@ -1,0 +1,83 @@
+Source-only inventory at44347691dae1fbdb7d14c23e9419737955106ddb / treef0fa218b54be5d9043f02e59302d35a1a0dc2a4e.
+23 ordinary selector scopes,200 expected Unix test declarations; not native execution receipts. Stop at first error; no broad fallback. historical_build is excluded and separately mandatory with authenticated producer artifact. This source candidate is not qualified producerA.
+
+
+# Expected 11
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-domain --lib -E 'test(roster_affiliation_authority::tests::)' --no-tests fail --success-output immediate
+
+# Expected 5
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-domain --lib -E 'test(evidence_subject_attachment::grant::continuation::tests::)' --no-tests fail --success-output immediate
+
+# Expected 13
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-store --lib -E 'test(roster_source_issuance::tests::)' --no-tests fail --success-output immediate
+
+# Expected 4
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-store --lib -E 'test(roster_source_issuance::inspection::tests::)' --no-tests fail --success-output immediate
+
+# Expected 2
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-store --lib -E 'test(roster_source_issuance::issuance::preflight::tests::)' --no-tests fail --success-output immediate
+
+# Expected 4
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-store --lib -E 'test(roster_source_issuance::issuance::reader::frozen_source::tests::)' --no-tests fail --success-output immediate
+
+# Expected 3
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-store --lib -E 'test(read::view::bounded::admission_tests::)' --no-tests fail --success-output immediate
+
+# Expected 3
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-store --lib -E 'test(read::view::membership::preadmission_tests::)' --no-tests fail --success-output immediate
+
+# Expected 8
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib -E 'test(participation_evidence::roster_source_issuance::manifest::tests::)' --no-tests fail --success-output immediate
+
+# Expected 8
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib -E 'test(participation_evidence::roster_source_issuance::binding::tests::)' --no-tests fail --success-output immediate
+
+# Expected 21
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib -E 'test(participation_evidence::roster_source_issuance::source::tests::)' --no-tests fail --success-output immediate
+
+# Expected 3
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib -E 'test(milesplit::parse::markup::location::tests::)' --no-tests fail --success-output immediate
+
+# Expected 5
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib -E 'test(milesplit::parse::roster::current::witness_tests::)' --no-tests fail --success-output immediate
+
+# Expected 5
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib -E 'test(milesplit::parse::roster::owner::witness::tests::)' --no-tests fail --success-output immediate
+
+# Expected 15
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib -E 'test(milesplit::parse::roster::current::tests::)' --no-tests fail --success-output immediate
+
+# Expected 24
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib -E 'test(milesplit::parse::roster::owner::tests::)' --no-tests fail --success-output immediate
+
+# Expected 2
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib -E 'test(milesplit::parse::roster::genuine_co2027::)' --no-tests fail --success-output immediate
+
+# Expected 34
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(export::qualification::current_affiliation::source_authority::tests::) & !test(export::qualification::current_affiliation::source_authority::tests::publication::historical_build::) & !test(export::qualification::current_affiliation::source_authority::tests::publication::retention::controlled_reviewed_roster_retains_independent_producer_archive)' --no-tests fail --success-output immediate
+
+# Expected 1
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(export::dataset::frozen::archive::origin_tests::reviewed_roster::)' --no-tests fail --success-output immediate
+
+# Expected 1
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(export::dataset::selected_proofs::tests::selected_proof_versions_preserve_exact_numeric_wire_and_refuse_unknowns)' --no-tests fail --success-output immediate
+
+# Expected 5
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib -E 'test(participation_evidence::roster_source_issuance::semantic_inventory::tests::)' --no-tests fail --success-output immediate
+
+# Expected 3
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-crawl --lib -E 'test(participation_evidence::roster_source_issuance::semantic_inventory::kernel::tests::)' --no-tests fail --success-output immediate
+
+# Expected 20
+env -u CI -u CENSUS_REVIEWED_ROSTER_RETENTION_DIR MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-domain --lib -E 'test(result_school_correspondence::tests::)' --no-tests fail --success-output immediate
+
+Reconciliation:97ce had198 ordinary tests plus1 mandatory producer. Two correction controls add2, yielding200 ordinary tests in23 scopes plus1 mandatory producer=201 distinct Unix tests. Report ordinary source_authority scope is34. The required-artifact historical consumer remains separate and adds1 only after authenticated A exists. Filesystem symlink control is Unix-only. No declaration count is an execution receipt.
+
+Mandatory separate producer: follow NATIVE-RETENTION-ADDENDUM.txt and NATIVE-TWO-BUILD-ADDENDUM.txt. Set CENSUS_REVIEWED_ROSTER_RETENTION_DIR to fresh absolute external path with canonical parent; set CENSUS_REVIEWED_ROSTER_REPORT_PRODUCER_COMMIT and CENSUS_REVIEWED_ROSTER_REPORT_PRODUCER_TREE to actual clean compiledA. Do not use source-only2e13 as qualifiedA without successful build/strict gates and artifact receipt.
+Run only producer selector with that environment:
+env -u CI MOON_RUST_BUILD_JOBS=2 tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(export::qualification::current_affiliation::source_authority::tests::publication::retention::controlled_reviewed_roster_retains_independent_producer_archive)' --no-tests fail --success-output immediate
+Require actual retention.json externalSHA and exact resolved/conflicted/missing-owner archives/proofs/publication inventory, original parser/VCS/claim pins, independent actualHEAD/tree/build evidence, selected counts1/0/0, and offline source removal/reopen receipts. A no-destination producer pass is not artifact evidence.
+
+ConsumerB is a distinct actual compiled build with changed Crawl/Domain/Store source manifest and compatible fixed kernel. Use exact mandatory environment and command in NATIVE-TWO-BUILD-ADDENDUM.txt. General regression command must never accidentally invoke historical_build without independently authenticatedAartifact.
+
+Native consolidated bundle roster-native-final.bundle prerequisite: 8fcabffa03896f7ec8f04f28f7e2dfd3002b7461. The older roster-complete-97ce.bundle instead requires ee053; use the native consolidated bundle for this handoff. Integrator owns bundle verification and main handoff. No native dispatch performed here.

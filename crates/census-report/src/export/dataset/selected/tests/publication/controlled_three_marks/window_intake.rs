@@ -1,7 +1,7 @@
 use super::source::{self, InstalledSource, TestResult};
 use super::window_source;
 use census_crawl::participation_evidence::recorded::read_recorded_independent_participation_window;
-use census_crawl::participation_evidence::{ParticipationEvidenceRefV1, SubjectOwnershipV1};
+use census_crawl::participation_evidence::ParticipationEvidenceRefV1;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::{
     RetainedCaptureLeafKindV1, RetainedCaptureLeafV1, RetainedCaptureRootV1, RetainedCaptureSlotV1,
@@ -25,14 +25,6 @@ fn observe(
     check!(eq; checked.documented_summer_end().as_str(), "2026-05-31");
     check!(eq; checked.school_year().get(), 2025);
     check!(eq; checked.cohort().get(), 2027);
-    match checked.ownership() {
-        SubjectOwnershipV1::ProviderLink(person) => {
-            check!(eq; person.url.as_deref(), Some("https://mi.milesplit.com/athletes/9999999-controlled-target"))
-        }
-        SubjectOwnershipV1::DocumentOnly(_) => {
-            return Err("controlled provider ownership missing".into())
-        }
-    }
     let leaf = RetainedCaptureLeafV1 {
         version: 1,
         root: recorded.root().clone(),

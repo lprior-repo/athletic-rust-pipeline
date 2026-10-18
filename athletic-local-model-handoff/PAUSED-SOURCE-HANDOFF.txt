@@ -1,0 +1,52 @@
+Paused source handoff: Store lifecycle 9 enrollment and partial roster controls
+
+Status
+Feature coding stopped. These files are a preservation checkpoint, not a merge-ready feature. No Store9 registration, production enrollment, review issuance, promotion, or lifecycle continuation is authorized by this artifact. No build or runtime success is claimed for the paused code.
+
+Exact restoration base
+b5b166bf90b525c388f65b06c8b0012276cdcc6c
+Original worktree: /tmp/roster-authority-model-0048
+
+Artifacts in this directory
+paused-r2-working-tree.patch
+ SHA256 48ee5c2e050745735793e91bffa9887153ab2d7659f0d24e348144a69fe1e416
+paused-unregistered-source.tar.gz
+ SHA256 5740e08538feea4b4bebe08723aee05f44a0375bc788fe99eca39525ef96ac24
+paused-source-manifest.json
+ SHA256 13fca954d20bb27a428d0563efd08620a9881703d1b889e2dc0f1038962616eb
+The manifest is authoritative for artifact hashes and all 27 file paths, byte counts, and SHA256 values. The tar contains 20 regular untracked files; the patch covers seven tracked files. Preserve both together.
+
+Restoration procedure for a local model
+1. Read repository AGENTS.md, ARCHITECTURE.md, and required local Rust skills. Follow the repository's command and ownership rules. Coordinate shared-file ownership with the integrator.
+2. Obtain the exact base commit from the repository or integrator's publication-union bundle. Verify the bundle with git bundle verify before fetching it. Do not assume an unrelated main checkout has this base.
+3. Create a separate clean worktree at the exact base:
+   git worktree add --detach /tmp/paused-store9-replay b5b166bf90b525c388f65b06c8b0012276cdcc6c
+4. Check both artifact SHA256 values against paused-source-manifest.json. Inspect tar member paths; they must be relative regular files without parent traversal. In the new worktree run:
+   git apply --check /workspace/shared/publication-wrap-0438/paused-r2-working-tree.patch
+   git apply /workspace/shared/publication-wrap-0438/paused-r2-working-tree.patch
+   tar -xzf /workspace/shared/publication-wrap-0438/paused-unregistered-source.tar.gz
+5. Verify each restored file's bytes and SHA256 against the manifest. Expect seven modified tracked paths and twenty untracked files at this exact base. Do not run git clean or reset on the original worktree.
+6. The patch also contains three Report visibility/must-use repairs that were separately sealed by the integrator. When continuing on newer main, do not blindly reapply those repairs or the complete patch. Compare each path to its manifest/base, preserve already-integrated fixes, and port only the unfinished Store9/partial-test changes after explicit ownership agreement.
+7. Do not register the paused subtree simply to make it compile. First finish the shared lifecycle contract below. Use only repository-sanctioned Moon commands and the agreed execution environment; no native or heavy build was performed as part of preservation.
+
+Implemented source checkpoint
+- Domain: bounded public canonical model encoder wrapper.
+- Store: unregistered result_school_correspondence root, bounded codec/read/wire, enrollment inspect/prepare/apply/ReplayOnly and held-Store proof-byte capture.
+- Original replay grant moves from inspection through preparation and application. Exact StoreRevision and input token/head fences precede the atomic marker/receipt/lifecycle write.
+- Explicit predecessor 7 or 8 is committed in the command; immutable prior qualification and optional roster enrollment/receipt are checked. The shared roster proof extraction reuses the existing validator; it does not replace full roster head/ledger validation.
+- Public raw-proof-to-authority reconstruction was removed after review. Only the exact held Store can construct the retained proof-byte wrapper. Static proof validation remains private.
+- Seven source tests are drafted under enrollment_tests. They include actual public predecessor enrollment, existing lifecycle8 cold reopen/backup, and same-current-input lifecycle9 replay. They do not prove lifecycle9 reopen or inherited lifecycle8 current/frozen continuation.
+- Three unregistered partial-source test files preserve preparation for a distinct row-local policy. They do not implement that policy or change the existing Complete-only contract.
+
+Known blockers and limits
+- Store9 module and StoreError conversion/shared exports remain unregistered. This checkpoint has not compiled or run.
+- Startup/version gates, protected generic-write admission, identity/attachment gates, and actual lifecycle9 reader paths are integrator-owned work still held.
+- Enrollment from7 must remain identity-only; from8 must preserve actual roster authority operations. A stored predecessor enum alone is insufficient evidence of operational preservation.
+- Actual9 frozen roster closure requires a versioned representation carrying actual lifecycle9 plus validated enrollment continuation. Never relabel9 as8, reinterpret old bytes, or create an arbitrary raw-proof authority constructor.
+- Original identity-graph lifecycle7, historical declaration/root IDs, receipts, input revision state, and old archive interpretation must remain unchanged.
+- No school-correspondence review issuance or qualified canonical performance promotion exists in this checkpoint.
+- Partial policy remains unimplemented: genuine rows include146 admitted plus18 invalid-graduation-year rejects. Any future distinct contract must retain every original disposition, enforce known disjoint rejected IDs and no unfinished/other rejection cases, and preserve old Complete-only semantics and fixed historical kernel pins. No positive population claim is supported.
+- Focused source audit reported no remaining concrete blocker in the isolated enrollment/proof delta after removing the raw-proof authority API. This does not clear compilation, startup integration, or preserved roster capability.
+
+Verification performed for this handoff
+The archived tracked patch matched the original worktree diff exactly. Every tar member matched its original untracked file. The patch was checked and applied to exact-base copies in an isolated temporary directory; all archive files were safely extracted there; all 27 reconstructed files matched the original worktree byte-for-byte. Original worktree and index were not modified. No test/build was run.

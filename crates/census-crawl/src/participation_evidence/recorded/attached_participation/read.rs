@@ -4,6 +4,7 @@ use census_store::{
     ActiveAttachmentSubjectV1, DiscoveredAttachmentCaptureV1, RetainedCaptureLeafKindV1,
     RetainedCaptureRootSchemaV1, RetainedCaptureSlotV1,
 };
+mod window;
 
 pub(super) fn sources<'a, 'v, 's>(
     view: View<'a, 'v, 's>,
@@ -12,8 +13,17 @@ pub(super) fn sources<'a, 'v, 's>(
     let metadata = view.discover_role(AttachmentSubjectRoleV1::AthleteStatus, grant)?;
     let mut sources = Vec::new();
     let mut unsupported = Vec::new();
+    let mut windows = Vec::new();
     for item in metadata.subjects() {
         steps(grant, 1)?;
+        if window::supported(item) {
+            let recorded = window::packet(view, item, grant)?;
+            subject::require_window(item, recorded.checked(), grant)?;
+            let binding = bind(view, item, grant)?;
+            reserve(&mut windows, grant)?;
+            windows.push(CheckedAttachedWindowV1 { recorded, binding });
+            continue;
+        }
         if !supported(item) {
             let binding = bind(view, item, grant)?;
             reserve(&mut unsupported, grant)?;
@@ -28,6 +38,7 @@ pub(super) fn sources<'a, 'v, 's>(
     }
     Ok(AttachedParticipationV1 {
         sources,
+        windows,
         unsupported,
     })
 }

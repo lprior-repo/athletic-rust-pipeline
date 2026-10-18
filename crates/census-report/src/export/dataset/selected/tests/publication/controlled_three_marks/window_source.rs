@@ -11,7 +11,7 @@ pub(super) const SOURCE_BODY: &str = concat!(
     "<html><head><link rel=\"canonical\" href=\"https://www.mhsaa.com/sports/boys-track-field/stories/controlled-full-window-2026\"></head><body>",
     "<article class=\"node__article\" data-path=\"/sports/boys-track-field/stories/controlled-full-window-2026\" data-nid=\"9999100\">",
     "<p class=\"publish-date\">March 1, 2026</p>",
-    "<h4><span class=\"text--secondary\"><a href=\"https://mi.milesplit.com/athletes/9999999-controlled-target\">Controlled Target</a> ♦ Detroit Catholic Central | Junior ♦ Track</span></h4>",
+    "<h4><span class=\"text--secondary\">Controlled Target ♦ Detroit Catholic Central | Junior ♦ Track</span></h4>",
     "<p>SYNTHETIC CONTROLLED. No genuine-source, authenticated human approval or NCAA certification claim.</p>",
     "<p class=\"participation-window\">Full documented participation window | school year: 2025-26 | cohort: 2027 | from: 2026-03-01 | through: 2026-05-31 | documented summer boundary: 2026-05-31</p>",
     "</article></body></html>"
