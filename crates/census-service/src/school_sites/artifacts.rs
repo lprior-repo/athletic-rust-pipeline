@@ -1,6 +1,7 @@
 use super::queue::QueueStats;
+use super::research::{CoachResearchStatus, ResearchStatus, SchoolMailboxCandidate};
 use anyhow::{Context, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::path::Path;
 
@@ -40,13 +41,19 @@ pub(super) fn write_report(path: &Path, report: &Report) -> Result<()> {
         .with_context(|| format!("writing {}", path.display()))
 }
 
-#[derive(Debug, Serialize)]
-pub struct SiteRecord {
+#[derive(Debug, Serialize, Deserialize)]
+pub(super) struct SiteRecord {
     pub state: String,
     pub school: String,
     pub website: String,
     pub pages: Vec<String>,
     pub page_evidence: Vec<census_crawl::school_sites::PageEvidence>,
+    #[serde(default)]
+    pub school_mailbox_candidates: Vec<SchoolMailboxCandidate>,
+    #[serde(default)]
+    pub research_status: ResearchStatus,
+    #[serde(default)]
+    pub coach_research_status: CoachResearchStatus,
     pub requests: usize,
     pub errors: usize,
     #[serde(skip_serializing_if = "Option::is_none")]

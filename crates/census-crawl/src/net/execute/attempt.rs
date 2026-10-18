@@ -10,6 +10,7 @@ use tokio::sync::OwnedMutexGuard;
 use tracing::warn;
 
 pub(super) struct FetchPlan<'a> {
+    pub(super) admission: crate::net::robots::Admission<'a>,
     pub(super) method: &'a str,
     pub(super) url: &'a str,
     pub(super) payload: Option<&'a RequestBody>,
@@ -34,6 +35,7 @@ impl Fetcher {
         let mut redirects: Vec<crate::net::RedirectHop> = Vec::new();
         let mut permit: Option<OwnedMutexGuard<()>> = None;
         for hop in 0..5 {
+            plan.admission.check(&current_url)?;
             let (host, _hop_permit) = self.admit_hop(plan, &current_url, hop, &mut permit).await?;
             let response = self.dispatch_at(&current_url, &host, plan, session).await?;
             let status = response.status().as_u16();

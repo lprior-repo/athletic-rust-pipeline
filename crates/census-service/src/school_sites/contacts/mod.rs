@@ -26,17 +26,10 @@ pub struct LaneRow {
 struct RowContext<'a> {
     school: &'a str,
     state: &'a str,
-    emails: &'a [String],
     evidence: &'a BTreeMap<&'a str, &'a PageEvidence>,
 }
 
 pub fn contact_rows(site: &PlannedSite, outcome: &SiteOutcome) -> Vec<LaneRow> {
-    let emails: Vec<String> = outcome
-        .signals
-        .emails
-        .iter()
-        .map(|email| email.to_ascii_lowercase())
-        .collect();
     let evidence: BTreeMap<&str, &PageEvidence> = outcome
         .pages
         .iter()
@@ -45,7 +38,6 @@ pub fn contact_rows(site: &PlannedSite, outcome: &SiteOutcome) -> Vec<LaneRow> {
     let context = RowContext {
         school: site.school.as_str(),
         state: site.state.code(),
-        emails: &emails,
         evidence: &evidence,
     };
     let mut seen: BTreeSet<(String, String, String, String)> = BTreeSet::new();
@@ -84,11 +76,7 @@ fn coach_row(
     )) {
         return None;
     }
-    let email = hit
-        .email
-        .as_deref()
-        .map(|value| value.to_ascii_lowercase())
-        .or_else(|| pick_email(context.emails, &person));
+    let email = hit.email.as_deref().map(|value| value.to_ascii_lowercase());
     Some(LaneRow {
         school: context.school.to_string(),
         city: String::new(),
@@ -122,7 +110,6 @@ fn director_row(
     )) {
         return None;
     }
-    let email = pick_email(context.emails, &person);
     Some(LaneRow {
         school: context.school.to_string(),
         city: String::new(),
@@ -132,7 +119,7 @@ fn director_row(
         coach_name: String::new(),
         public_professional_email: String::new(),
         ad_name: person,
-        ad_email: email.as_deref().map_or_else(String::new, str::to_string),
+        ad_email: String::new(),
         source_url: hit.url.clone(),
         last_observed: observed(context.evidence, &hit.url),
         verified_proof_digest: String::new(),
@@ -203,11 +190,6 @@ fn is_title_word(token: &str) -> bool {
     STOPWORDS.contains(&lowered.as_str())
         || BANNED_WORDS.contains(&lowered.as_str())
         || HONORIFICS.contains(&lowered.as_str())
-}
-
-fn pick_email(emails: &[String], person: &str) -> Option<String> {
-    let last = person.split_whitespace().last()?.to_lowercase();
-    emails.iter().find(|email| email.contains(&last)).cloned()
 }
 
 fn observed(evidence: &BTreeMap<&str, &PageEvidence>, url: &str) -> String {

@@ -3,6 +3,7 @@ mod contacts;
 mod execution;
 mod owners;
 mod queue;
+mod research;
 pub use execution::run;
 
 #[cfg(test)]

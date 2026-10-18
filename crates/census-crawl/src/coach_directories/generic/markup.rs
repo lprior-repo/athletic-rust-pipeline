@@ -102,7 +102,7 @@ impl Page {
             b"meta" if attribute(&tag, b"property") == Some("og:site_name") => {
                 self.owner(attribute(&tag, b"content"))
             }
-            b"p" | b"address" | b"li" | b"td" => {
+            b"p" | b"address" | b"li" | b"td" | b"div" => {
                 self.finish()?;
                 self.current = Some(Block::default());
             }
@@ -125,7 +125,9 @@ impl Page {
             if let Some(position) = self.inert.iter().rposition(|open| *open == kind) {
                 self.inert.truncate(position);
             }
-        } else if self.inert.is_empty() && matches!(name, b"p" | b"address" | b"li" | b"td") {
+        } else if self.inert.is_empty()
+            && matches!(name, b"p" | b"address" | b"li" | b"td" | b"div")
+        {
             self.finish()?;
         }
         Ok(())

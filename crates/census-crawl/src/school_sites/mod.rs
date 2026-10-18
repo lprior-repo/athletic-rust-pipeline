@@ -11,7 +11,7 @@ pub use run::crawl_site;
 #[path = "tests.rs"]
 mod tests;
 
-pub use parse::{analyse, AdHit, CoachHit, Rules, Signals};
+pub use parse::{analyse, AdHit, CoachHit, Rules, SchoolMailboxHit, Signals};
 
 pub const SOURCE_ID: &str = "school_sites";
 pub const MAX_SITE_PAGES: usize = 7;

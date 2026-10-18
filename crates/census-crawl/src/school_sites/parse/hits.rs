@@ -1,7 +1,7 @@
 use super::patterns::{CONTEXT_MAX, CONTEXT_RADIUS, MAX_TABLES, MAX_TABLE_ROWS, TITLE_WORDS};
 use super::text::{decode_entities, truncate};
 use super::Rules;
-use census_domain::model::{CoachRole, Gender, Sport};
+use census_domain::model::{CoachRole, Gender, SchoolMailboxPurpose, Sport};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CoachHit {
@@ -23,8 +23,16 @@ pub struct AdHit {
     pub title: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct SchoolMailboxHit {
+    pub purpose: SchoolMailboxPurpose,
+    pub email: String,
+    pub url: String,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Signals {
+    pub school_mailboxes: Vec<SchoolMailboxHit>,
     pub emails: Vec<String>,
     pub coach_hits: Vec<CoachHit>,
     pub ad_hits: Vec<AdHit>,
@@ -51,7 +59,19 @@ pub fn analyse(
     super::admission::page(rules, url, html, signals)?;
     let text = rules.visible_text(html);
     let title = rules.title_of(html);
-    let mut emails = harvest_emails(rules, html, &text);
+    let mailboxes = crate::coach_directories::school_mailbox_candidates(html.as_bytes())?;
+    super::admission::mailbox_rows(signals, mailboxes.len())?;
+    let mut emails = Vec::new();
+    for (purpose, raw) in mailboxes {
+        if let Some(email) = rules.sanitize_email(&raw) {
+            emails.push(email.clone());
+            signals.school_mailboxes.push(SchoolMailboxHit {
+                purpose,
+                email,
+                url: url.to_owned(),
+            });
+        }
+    }
     let flat = rules.flat_text(&text);
     collect_coaches(rules, url, &title, &flat, signals);
     collect_directors(rules, url, &title, &flat, signals);
@@ -61,22 +81,6 @@ pub fn analyse(
     combined.append(&mut emails);
     signals.emails = rules.sanitize_emails(combined.iter().map(String::as_str));
     Ok(())
-}
-
-fn harvest_emails(rules: &Rules, html: &str, text: &str) -> Vec<String> {
-    let mut emails: Vec<String> = rules
-        .mailto
-        .captures_iter(html)
-        .filter_map(|captures| captures.get(1))
-        .map(|matched| matched.as_str().to_string())
-        .collect();
-    emails.extend(
-        rules
-            .bare_mail
-            .find_iter(text)
-            .map(|matched| matched.as_str().to_string()),
-    );
-    emails
 }
 
 fn collect_coaches(rules: &Rules, url: &str, title: &str, flat: &str, signals: &mut Signals) {
@@ -183,10 +187,6 @@ fn table_hit(rules: &Rules, row: &str, url: &str, title: &str) -> Option<CoachHi
         return None;
     }
     let name = cells.iter().find_map(|cell| clean_person(rules, cell))?;
-    let email = cells
-        .iter()
-        .find_map(|cell| rules.bare_mail.find(cell))
-        .map(|matched| matched.as_str().to_string());
     Some(CoachHit {
         name,
         sport: sport_of(rules, &joined),
@@ -195,7 +195,7 @@ fn table_hit(rules: &Rules, row: &str, url: &str, title: &str) -> Option<CoachHi
         title: title.to_string(),
         role: role_of(rules, &joined),
         gender: gender_of(rules, &joined),
-        email,
+        email: None,
     })
 }
 
