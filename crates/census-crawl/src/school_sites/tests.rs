@@ -338,6 +338,8 @@ fn navigation_excludes_unrelated_sports_before_generic_hints() -> TestResult {
         ("/athletics/dance", "Athletics"),
         ("/athletics/football", "Track"),
         ("/football/coaches", "All Coaches"),
+        ("/football/staff", "Football and Volleyball Coaches"),
+        ("/volleyball/contact-us", "Track and Field"),
     ] {
         check!(!rules.interesting(href, label));
     }
@@ -346,6 +348,10 @@ fn navigation_excludes_unrelated_sports_before_generic_hints() -> TestResult {
         ("/athletics", "Football, Basketball and Track"),
         ("/activities", "Football and Volleyball"),
         ("/staff-directory", "Football and Volleyball Coaches"),
+        ("/staff", "Football and Volleyball Coaches"),
+        ("/directory", "Football and Volleyball Coaches"),
+        ("/faculty", "Football and Volleyball Coaches"),
+        ("/contact-us", "Football and Volleyball Coaches"),
         ("/coaches", "Football and Volleyball Coaches"),
         ("/contact", "Football and Volleyball Contacts"),
         ("/teams/456", "Football, Volleyball and XC"),

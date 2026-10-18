@@ -96,7 +96,10 @@ fn generic_hub_path(path: &str) -> bool {
         .rsplit('/')
         .next()
         .is_some_and(|part| {
-            ["athletics", "activities", "staff-directory", "coaches", "contact"]
+            [
+                "athletics", "activities", "staff-directory", "coaches", "contact",
+                "staff", "directory", "faculty", "contact-us",
+            ]
                 .iter()
                 .any(|hub| part.eq_ignore_ascii_case(hub))
         })
