@@ -9,8 +9,8 @@ struct Active {
 }
 
 pub(super) fn normalize(html: &str) -> CrawlResult<String> {
-    if html.len() > 1024 * 1024 {
-        return Err(schema("SIDEARM active markup exceeds 1 MiB"));
+    if html.len() > crate::school_sites::MAX_PAGE_BYTES {
+        return Err(schema("SIDEARM active markup exceeds 8 MiB"));
     }
     let mut emitter = DefaultEmitter::default();
     emitter.naively_switch_states(true);

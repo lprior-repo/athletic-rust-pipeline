@@ -264,3 +264,41 @@ fn links_resolve_against_the_captured_document_url() -> TestResult {
     check!(resolve_href("not a URL", "/coaches").is_err());
     Ok(())
 }
+
+#[test]
+fn school_page_byte_boundary_reaches_all_contact_parsers() -> TestResult {
+    let prefix = "<h1>Example High School</h1><article class='sidearm-staff'></article><p>School office: <a href='mailto:office@school.org'>office@school.org</a></p><!--";
+    let padding = super::MAX_PAGE_BYTES
+        .checked_sub(prefix.len())
+        .and_then(|size| size.checked_sub(3))
+        .ok_or("fixture padding")?;
+    let mut html = format!("{prefix}{}-->", "x".repeat(padding));
+    check!(eq; html.len(), super::MAX_PAGE_BYTES);
+    let rules = Rules::new()?;
+    let mut signals = Signals::default();
+    analyse(&rules, "https://school.org/contact", &html, &mut signals)?;
+    check!(eq; signals.school_mailboxes.len(), 1);
+    check!(eq; signals.staff_pages.len(), 1);
+    html.push(' ');
+    let previous = signals.clone();
+    check!(
+        matches!(analyse(&rules, "https://school.org/contact", &html, &mut signals),
+        Err(crate::CrawlError::Resource { requested, limit, .. })
+            if requested == super::MAX_PAGE_BYTES + 1 && limit == super::MAX_PAGE_BYTES)
+    );
+    check!(eq; signals, previous);
+    check!(crate::coach_directories::school_mailbox_candidates(html.as_bytes()).is_err());
+    check!(crate::sidearm_staff::parse_staff_directory(&html).is_err());
+    Ok(())
+}
+
+#[test]
+fn larger_page_budget_preserves_token_exhaustion_refusal() -> TestResult {
+    let html = format!(
+        "<h1>Example</h1><article class='sidearm-staff'></article>{}",
+        "<br>".repeat(65_537)
+    );
+    check!(crate::coach_directories::inspect_staff_links(html.as_bytes()).is_err());
+    check!(crate::sidearm_staff::parse_staff_directory(&html).is_err());
+    Ok(())
+}

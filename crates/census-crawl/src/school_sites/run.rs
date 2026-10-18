@@ -70,11 +70,11 @@ impl Run<'_> {
         };
         match self.fetcher.get_robots_checked(url, &options).await {
             Ok(capture) => {
-                if capture.body.len() > 1024 * 1024 {
+                if capture.body.len() > crate::school_sites::MAX_PAGE_BYTES {
                     return Err(CrawlError::Resource {
                         resource: "school site body bytes",
                         requested: capture.body.len(),
-                        limit: 1024 * 1024,
+                        limit: crate::school_sites::MAX_PAGE_BYTES,
                     });
                 }
                 let text = std::str::from_utf8(&capture.body)

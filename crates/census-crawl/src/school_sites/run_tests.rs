@@ -78,3 +78,62 @@ async fn redirected_hits_bind_exact_captured_url_without_cross_capture_aliasing(
     check!(eq; fetcher.stats().await.physical_requests(), 0);
     Ok(())
 }
+
+#[tokio::test]
+async fn fetch_admits_exact_school_page_budget_and_refuses_one_more_byte() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let fetcher = Fetcher::new(
+        dir.path(),
+        None,
+        Duration::ZERO,
+        HashMap::new(),
+        vec!["school.example".to_owned()],
+    )?
+    .with_offline(true);
+    cache(
+        &fetcher,
+        "https://school.example/robots.txt",
+        "https://school.example/robots.txt",
+        b"",
+        200,
+    )?;
+    let prefix = "<p>Head Track Coach Jane Doe</p><!--";
+    let padding = crate::school_sites::MAX_PAGE_BYTES
+        .checked_sub(prefix.len())
+        .and_then(|size| size.checked_sub(3))
+        .ok_or("fixture padding")?;
+    let mut body = format!("{prefix}{}-->", "x".repeat(padding));
+    cache(
+        &fetcher,
+        "https://school.example/exact",
+        "https://school.example/exact",
+        body.as_bytes(),
+        200,
+    )?;
+    body.push(' ');
+    cache(
+        &fetcher,
+        "https://school.example/over",
+        "https://school.example/over",
+        body.as_bytes(),
+        200,
+    )?;
+    let row = QueueRow {
+        state: "MI".to_owned(),
+        name: "School".to_owned(),
+        website: "https://school.example/exact".to_owned(),
+    };
+    let outcome = crawl_site(&Rules::new()?, &fetcher, &row, false).await?;
+    check!(eq; outcome.pages.len(), 1);
+    let row = QueueRow {
+        website: "https://school.example/over".to_owned(),
+        ..row
+    };
+    check!(
+        matches!(crawl_site(&Rules::new()?, &fetcher, &row, false).await,
+        Err(crate::CrawlError::Resource { requested, limit, .. })
+            if requested == crate::school_sites::MAX_PAGE_BYTES + 1 && limit == crate::school_sites::MAX_PAGE_BYTES)
+    );
+    check!(eq; fetcher.stats().await.physical_requests(), 0);
+    Ok(())
+}

@@ -174,3 +174,23 @@ fn office_mailbox_must_match_the_complete_visible_address() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn canonical_school_contact_body_uses_shared_eight_mib_boundary() -> TestResult {
+    let year = SchoolYear::new(2026).ok_or("year")?;
+    let prefix = format!("{}<!--", std::str::from_utf8(EXTRACT)?);
+    let padding = crate::school_sites::MAX_PAGE_BYTES
+        .checked_sub(prefix.len())
+        .and_then(|size| size.checked_sub(3))
+        .ok_or("fixture padding")?;
+    let mut body = format!("{prefix}{}-->", "x".repeat(padding));
+    let mut accepted = school();
+    apply_school_mailbox_capture(&mut accepted, year, &capture(body.as_bytes()))?;
+    check!(eq; accepted.mailbox_claims.len(), 1);
+    body.push(' ');
+    let mut refused = school();
+    apply_school_mailbox_capture(&mut refused, year, &capture(body.as_bytes()))?;
+    check!(refused.mailbox_claims.is_empty());
+    check!(eq; school_mailbox_research(&refused, Purpose::SchoolOffice, year), Outcome::Partial);
+    Ok(())
+}

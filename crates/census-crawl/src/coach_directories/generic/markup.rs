@@ -40,8 +40,8 @@ pub(super) struct Block {
 }
 
 pub(super) fn parse(body: &[u8]) -> ParseResult<Page> {
-    if body.len() > 1024 * 1024 {
-        return Err(error("official school contact page exceeds 1 MiB"));
+    if body.len() > crate::school_sites::MAX_PAGE_BYTES {
+        return Err(error("official school contact page exceeds 8 MiB"));
     }
     std::str::from_utf8(body)
         .map_err(|_| Failure::Decode("school contact page bytes are not UTF-8"))?;

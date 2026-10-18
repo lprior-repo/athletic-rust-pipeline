@@ -2,7 +2,11 @@ use super::{Rules, Signals};
 use crate::{CrawlError, CrawlResult};
 
 pub(super) fn page(rules: &Rules, url: &str, html: &str, signals: &Signals) -> CrawlResult<()> {
-    check("school site body bytes", html.len(), 1024 * 1024)?;
+    check(
+        "school site body bytes",
+        html.len(),
+        crate::school_sites::MAX_PAGE_BYTES,
+    )?;
     check("school site URL bytes", url.len(), 4096)?;
     check(
         "school site retained mailbox rows",

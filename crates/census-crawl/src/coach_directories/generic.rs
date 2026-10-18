@@ -99,13 +99,13 @@ pub fn apply_school_mailbox_capture(
         );
         return Ok(Vec::new());
     }
-    if capture.body.len() > 1024 * 1024 {
+    if capture.body.len() > crate::school_sites::MAX_PAGE_BYTES {
         record_capture(
             school,
             year,
             capture,
             Outcome::Partial,
-            "school contact body exceeds 1 MiB".to_owned(),
+            "school contact body exceeds 8 MiB".to_owned(),
         );
         return Ok(Vec::new());
     }
