@@ -7,8 +7,8 @@ pub(in super::super) mod context;
 
 #[derive(Clone, Copy)]
 pub(in super::super) enum KernelEpoch {
-    FullV4,
-    RowLocalV5,
+    FullV6,
+    RowLocalV7,
 }
 
 #[must_use]
@@ -47,6 +47,22 @@ const ROW_LOCAL: OriginalKernel = OriginalKernel {
         0x8f, 0x38,
     ],
 };
+const FULL_V4: OriginalKernel = OriginalKernel {
+    digest: "435df869dd5994102f1aee7bebafb8f1cfc3afe5d99e8c2c60ae892be14b80d2",
+    hash: [
+        0x43, 0x5d, 0xf8, 0x69, 0xdd, 0x59, 0x94, 0x10, 0x2f, 0x1a, 0xee, 0x7b, 0xeb, 0xaf, 0xb8,
+        0xf1, 0xcf, 0xc3, 0xaf, 0xe5, 0xd9, 0x9e, 0x8c, 0x2c, 0x60, 0xae, 0x89, 0x2b, 0xe1, 0x4b,
+        0x80, 0xd2,
+    ],
+};
+const ROW_LOCAL_V5: OriginalKernel = OriginalKernel {
+    digest: "60fd1056573363a7985af568568db1f9b82f4b39d38f9e3efa3034beb3c63fe0",
+    hash: [
+        0x60, 0xfd, 0x10, 0x56, 0x57, 0x33, 0x63, 0xa7, 0x98, 0x5a, 0xf5, 0x68, 0x56, 0x8d, 0xb1,
+        0xf9, 0xb8, 0x2f, 0x4b, 0x39, 0xd3, 0x8f, 0x9e, 0x3e, 0xfa, 0x30, 0x34, 0xbe, 0xb3, 0xc6,
+        0x3f, 0xe0,
+    ],
+};
 const EXECUTING_CONFIGURATION: [u8; 32] = [
     0xf0, 0x37, 0x64, 0x64, 0xdd, 0x91, 0xb5, 0xf6, 0x3e, 0x6b, 0x6b, 0xaa, 0xb4, 0xd9, 0x93, 0xd5,
     0xd1, 0x3d, 0x7c, 0x64, 0x41, 0x4e, 0x53, 0xd2, 0x73, 0xea, 0x77, 0x7d, 0xf4, 0xc8, 0x5d, 0x73,
@@ -79,14 +95,15 @@ pub(in super::super) fn bind_historical_v1(
                 bytes,
             });
         }
-        let original = match epoch {
-            KernelEpoch::FullV4 => &FULL,
-            KernelEpoch::RowLocalV5 => &ROW_LOCAL,
+        let candidates = match epoch {
+            KernelEpoch::FullV6 => [&FULL, &FULL_V4],
+            KernelEpoch::RowLocalV7 => [&ROW_LOCAL, &ROW_LOCAL_V5],
         };
         let actual: [u8; 32] = Sha256::digest(retained).into();
-        if actual != original.hash {
-            return Err(invalid("unsupported historical semantic kernel identity"));
-        }
+        let original = candidates
+            .into_iter()
+            .find(|candidate| candidate.hash == actual)
+            .ok_or_else(|| invalid("unsupported historical semantic kernel identity"))?;
         if configuration != &EXECUTING_CONFIGURATION {
             return Err(invalid(
                 "historical semantic kernel compiler/configuration/dependencies differ",

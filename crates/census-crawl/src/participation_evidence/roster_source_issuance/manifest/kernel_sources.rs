@@ -90,5 +90,7 @@ pub(super) const SOURCES: &[&str] = &[
     "crates/census-domain/src/model/records/source_observation.rs",
     "crates/census-domain/src/model/school.rs",
     "crates/census-domain/src/model/school_address.rs",
+    "crates/census-store/src/evidence_subject_attachment/external/leaf.rs",
+    "crates/census-store/src/evidence_subject_attachment/external/leaf/schema.rs",
     "crates/census-store/src/evidence_subject_attachment/external/root.rs",
 ];

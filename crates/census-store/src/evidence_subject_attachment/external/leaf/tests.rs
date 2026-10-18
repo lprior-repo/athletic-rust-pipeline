@@ -260,3 +260,4 @@ fn selected_capture_and_provenance_are_maps_with_unique_known_fields() -> TestRe
 }
 
 mod school;
+mod window;

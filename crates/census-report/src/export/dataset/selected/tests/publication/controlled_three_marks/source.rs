@@ -74,7 +74,7 @@ pub(super) struct InstalledSource {
     pub(super) row_locators: Vec<RowLocator>,
 }
 
-fn capture(
+pub(super) fn capture(
     url: &str,
     body: &[u8],
     headers: &[u8],

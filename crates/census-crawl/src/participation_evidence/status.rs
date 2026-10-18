@@ -11,6 +11,14 @@ pub(super) struct Status {
 }
 
 pub(super) fn read(capture: &RetainedHtmlCaptureV1) -> StoreResult<Status> {
+    let body = capture.body()?;
+    read_context(capture, &body).map(|(status, _)| status)
+}
+
+pub(super) fn read_context<'a>(
+    capture: &RetainedHtmlCaptureV1,
+    body: &'a str,
+) -> StoreResult<(Status, markup::Element<'a>)> {
     let url =
         url::Url::parse(capture.requested_url()).map_err(|_| invalid("status URL invalid"))?;
     if url.host_str() != Some("www.mhsaa.com")
@@ -19,9 +27,8 @@ pub(super) fn read(capture: &RetainedHtmlCaptureV1) -> StoreResult<Status> {
     {
         return Err(invalid("unsupported student-status issuer or sport"));
     }
-    let body = capture.body()?;
-    markup::canonical(&body, capture.requested_url())?;
-    let article = markup::status_article(&body, url.path())?;
+    markup::canonical(body, capture.requested_url())?;
+    let article = markup::status_article(body, url.path())?;
     if article.attribute("data-nid").is_none_or(|id| !numeric(id)) {
         return Err(invalid(
             "status article has no exact numeric document identity",
@@ -57,12 +64,15 @@ pub(super) fn read(capture: &RetainedHtmlCaptureV1) -> StoreResult<Status> {
         school,
     };
     let ownership = ownership(heading.html, &subject)?;
-    Ok(Status {
-        subject,
-        ownership,
-        day,
-        grade,
-    })
+    Ok((
+        Status {
+            subject,
+            ownership,
+            day,
+            grade,
+        },
+        article,
+    ))
 }
 
 fn subject_heading<'a>(html: &'a str, day: &ProfileDate) -> StoreResult<markup::Element<'a>> {

@@ -246,6 +246,26 @@ Withdrawing all matching-day reviews cannot promote another day's status.
 Grant origin is authenticated before the continuation usage floor; the floor
 still compares pre-charge usage. A replenished foreign grant remains foreign.
 
+### Explicit full-window source input — 2026-10-18
+
+`IndependentParticipationWindowPacketV1` records an explicitly stated full window,
+school year, cohort and documented summer boundary from one uniquely owned MHSAA
+article. Publication year/grade and declared cohort must agree. No schedule extrema
+or point-status dates infer a full window. This checked input is source metadata,
+not accepted eligibility or NCAA certification; public review and selector binding
+remain separate requirements.
+
+`ParticipationWindowPacketV1` uses its own retained phase and slot. Its `RootJson`
+leaf binds the exact whole packet, not a capture leaf that another packet may
+already own. The kind is refused on other roots/slots. Original bodies and distinct
+subject-heading/window-paragraph proof locations remain retained and replayable.
+
+Current roster dependency kernels advance to 6/7 with the actual 94-input closure,
+including retained-leaf/schema validation. Exact historical 2/3 and 4/5 byte pins
+remain read-only under the approved compiler/configuration/dependency context;
+current captures cannot claim those epochs. Roster interpretation semantics and
+the original retained artifacts are not relabeled or regenerated.
+
 ### Reviewed-school resource boundary — 2026-10-17
 
 The current aggregate checked-read/workflow grant is 9 MiB (9,437,184 bytes)

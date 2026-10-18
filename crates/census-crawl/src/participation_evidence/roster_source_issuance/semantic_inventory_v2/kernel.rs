@@ -42,7 +42,7 @@ pub(super) fn require_historical(
 ) -> StoreResult<CheckedKernelReplayV1> {
     match COMPILED_IDENTITY.as_ref() {
         Some(identity) => kernel_adapter::bind_historical_v1(
-            KernelEpoch::RowLocalV5,
+            KernelEpoch::RowLocalV7,
             retained,
             identity.text,
             identity.digest.as_str(),
@@ -56,11 +56,11 @@ pub(super) fn require_historical(
     }
 }
 
-const SCHEMA: &str = "roster-semantic-kernel-dependencies/v5";
+const SCHEMA: &str = "roster-semantic-kernel-dependencies/v7";
 const MAX_DOCUMENT: usize = 64 * 1024;
 const EXPECTED_SOURCE_DIGEST: &str =
-    "333559b103fd9853ea189eb78c2b59af8f6b671d452690abdc0e06abe7f8d20a";
-const COMPILED: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v5.json"));
+    "f452d626bd1a7c79135c07ff7958b99794ff875ca2a8f74977d2efd1f82f8a76";
+const COMPILED: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v7.json"));
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

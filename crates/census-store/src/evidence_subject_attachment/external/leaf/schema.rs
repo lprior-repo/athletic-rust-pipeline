@@ -17,6 +17,14 @@ struct Participation<'a> {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct Window<'a> {
+    version: u16,
+    #[serde(borrow)]
+    window: &'a RawValue,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Provider<'a> {
     version: u16,
     interpretation: &'a str,
@@ -53,6 +61,7 @@ pub(crate) enum CheckedRoot<'a> {
     },
     School(CheckedSchool<'a>),
     Html(capture::CheckedCapture<'a>),
+    Window(capture::CheckedCapture<'a>),
 }
 
 impl CheckedRoot<'_> {
@@ -80,6 +89,7 @@ impl CheckedRoot<'_> {
             (CheckedRoot::School(school), Slot::ProviderSchoolDirectory) => Ok(&school.directory),
             (CheckedRoot::School(school), Slot::ProviderSchoolRoster) => Ok(&school.roster),
             (CheckedRoot::Html(capture), Slot::SelfCapture) => Ok(capture),
+            (CheckedRoot::Window(capture), Slot::ParticipationWindow) => Ok(capture),
             _ => Err(Error::Corrupt("external root capture slot").into()),
         }
     }
@@ -92,6 +102,10 @@ pub(in crate::evidence_subject_attachment::external) fn checked<'a>(
 ) -> StoreResult<CheckedRoot<'a>> {
     match schema {
         Schema::HtmlResultCaptureV1 => Ok(CheckedRoot::Html(capture::checked(raw, grant)?)),
+        Schema::ParticipationWindowPacketV1 => {
+            let packet = window_packet(raw, grant)?;
+            Ok(CheckedRoot::Window(capture::checked(packet.window, grant)?))
+        }
         Schema::ProviderSchoolPacketV1 => {
             let packet = school_packet(raw, grant)?;
             Ok(CheckedRoot::School(CheckedSchool {
@@ -159,6 +173,14 @@ pub(super) fn select<'a>(
             }
         }
         Schema::ProviderSchoolPacketV1 => school(raw, slot, grant),
+        Schema::ParticipationWindowPacketV1 => {
+            let packet = window_packet(raw, grant)?;
+            capture::validate(packet.window, grant)?;
+            if slot != Slot::ParticipationWindow {
+                return Err(Error::Corrupt("external root capture slot").into());
+            }
+            Ok(packet.window)
+        }
         Schema::HtmlResultCaptureV1 => {
             capture::validate(raw, grant)?;
             if slot != Slot::SelfCapture {
@@ -205,6 +227,17 @@ fn school_packet<'a>(
     let packet: School<'a> = parse(raw, grant)?;
     if packet.version != 1 || packet.interpretation != "milesplit_directory_roster_school_v1" {
         return Err(Error::Corrupt("provider school root interpretation").into());
+    }
+    Ok(packet)
+}
+
+fn window_packet<'a>(
+    raw: &'a RawValue,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Window<'a>> {
+    let packet: Window<'a> = parse(raw, grant)?;
+    if packet.version != 1 {
+        return Err(Error::Corrupt("participation window root version").into());
     }
     Ok(packet)
 }

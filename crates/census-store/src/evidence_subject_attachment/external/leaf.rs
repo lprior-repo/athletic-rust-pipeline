@@ -19,6 +19,9 @@ pub(super) fn validate_root(
         super::RetainedCaptureRootSchemaV1::ParticipationPacketV1 => {
             RetainedCaptureSlotV1::ParticipationStatus
         }
+        super::RetainedCaptureRootSchemaV1::ParticipationWindowPacketV1 => {
+            RetainedCaptureSlotV1::ParticipationWindow
+        }
         super::RetainedCaptureRootSchemaV1::ProviderTargetPacketV1 => {
             RetainedCaptureSlotV1::ProviderProfile
         }
@@ -37,6 +40,7 @@ pub(super) fn validate_root(
 pub enum RetainedCaptureSlotV1 {
     ParticipationStatus,
     ParticipationSchedule,
+    ParticipationWindow,
     ProviderProfile,
     ProviderLinkedResults,
     SelfCapture,
@@ -49,6 +53,7 @@ pub enum RetainedCaptureSlotV1 {
 pub enum RetainedCaptureLeafKindV1 {
     CaptureJson,
     OriginalBody,
+    RootJson,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -83,7 +88,7 @@ fn verify_checked(
     if leaf.version != 1 {
         return Err(Error::Corrupt("external leaf version").into());
     }
-    read::with_checked(view, &leaf.root, grant, |_, root, grant| {
+    read::with_checked(view, &leaf.root, grant, |raw, root, grant| {
         let capture = root.select(leaf.slot)?;
         match leaf.kind {
             RetainedCaptureLeafKindV1::CaptureJson => {
@@ -91,6 +96,15 @@ fn verify_checked(
             }
             RetainedCaptureLeafKindV1::OriginalBody => {
                 capture.body_bytes(&leaf.object, grant).map(|_| ())
+            }
+            RetainedCaptureLeafKindV1::RootJson => {
+                if leaf.root.schema
+                    != super::RetainedCaptureRootSchemaV1::ParticipationWindowPacketV1
+                    || leaf.slot != RetainedCaptureSlotV1::ParticipationWindow
+                {
+                    return Err(Error::Corrupt("external root JSON kind differs").into());
+                }
+                capture::require_reference(raw.get().as_bytes(), &leaf.object, grant)
             }
         }
     })

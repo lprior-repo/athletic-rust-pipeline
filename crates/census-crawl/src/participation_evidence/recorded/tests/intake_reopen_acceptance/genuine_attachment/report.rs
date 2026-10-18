@@ -78,6 +78,11 @@ pub(super) fn catalog(sources: &Sources, objects: &Objects) -> TestResult {
                     match leaf.kind {
                         RetainedCaptureLeafKindV1::CaptureJson => &capture.original_json,
                         RetainedCaptureLeafKindV1::OriginalBody => &capture.original_body,
+                        RetainedCaptureLeafKindV1::RootJson => {
+                            return Err(
+                                "genuine capture emitter has no window packet source".into()
+                            );
+                        }
                     }
                 }
             };

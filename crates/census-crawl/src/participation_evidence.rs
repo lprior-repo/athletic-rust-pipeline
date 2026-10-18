@@ -17,6 +17,7 @@ mod schedule;
 mod status;
 mod transport;
 mod types;
+mod window;
 
 pub use bundle::IndependentParticipationBundleV1;
 pub use capture::RetainedHtmlCaptureV1;
@@ -26,6 +27,9 @@ pub use transport::{RetainedBodyEncodingV1, RetainedHttpProvenanceV1};
 pub use types::{
     DocumentSubjectV1, IndependentParticipationProofV1, ParticipationEvidenceRefV1,
     SubjectOwnershipV1, VerifiedIndependentParticipationV1,
+};
+pub use window::{
+    IndependentParticipationWindowPacketV1, VerifiedIndependentParticipationWindowV1,
 };
 
 pub const PARTICIPATION_EVIDENCE_PHASE: &str = "independent_participation_capture_v1";

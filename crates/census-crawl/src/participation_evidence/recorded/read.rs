@@ -218,7 +218,7 @@ pub(super) fn retained<T: DeserializeOwned>(
     retained_from(Source::Current(snapshot), schema, key, grant)
 }
 
-fn retained_from<T: DeserializeOwned>(
+pub(super) fn retained_from<T: DeserializeOwned>(
     source: Source<'_, '_>,
     schema: RetainedCaptureRootSchemaV1,
     key: &str,

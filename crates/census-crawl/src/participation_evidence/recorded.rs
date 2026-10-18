@@ -19,6 +19,7 @@ mod provider;
 mod provider_school;
 mod read;
 mod schools;
+mod window;
 
 pub use attached_participation::{
     with_current_attached_participation, with_frozen_attached_participation,
@@ -41,6 +42,10 @@ pub use read::{
     read_recorded_html_result_capture, read_recorded_independent_participation,
     read_recorded_provider_target, RecordedHtmlResultCaptureV1, RecordedIndependentParticipationV1,
     RecordedProviderTargetV1,
+};
+pub use window::{
+    read_recorded_independent_participation_window, record_independent_participation_window_packet,
+    RecordedIndependentParticipationWindowV1,
 };
 
 pub fn record_provider_target_intake(
