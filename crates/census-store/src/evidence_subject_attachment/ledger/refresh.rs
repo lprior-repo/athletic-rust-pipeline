@@ -24,7 +24,7 @@ pub(super) fn refresh(
     {
         return Err(Error::Corrupt("retained ledger positional lengths").into());
     }
-    contexts(ledger, view, grant)?;
+    verify_retained_materials(ledger, view, grant)?;
     let receipts = receipts::load(view, &ledger.records, grant)?;
     grant.charge_steps(1).map_err(Error::Domain)?;
     if receipts.len() != ledger.receipts.len() {
@@ -52,22 +52,14 @@ pub(super) fn refresh(
     Ok(true)
 }
 
-fn contexts(
+fn verify_retained_materials(
     ledger: &Ledger<'_>,
     view: &StoreSnapshot<'_>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
-    for (index, record) in ledger.records.iter().enumerate() {
+    for introduced in &ledger.introductions {
         grant.charge_steps(1).map_err(Error::Domain)?;
-        let prior = ledger
-            .introductions
-            .get(..index)
-            .ok_or(Error::Corrupt("retained ledger prior prefix"))?;
-        let introduced = ledger
-            .introductions
-            .get(index)
-            .ok_or(Error::Corrupt("retained ledger context position"))?;
-        context::accept(view, prior, introduced, record, grant)?;
+        context::verify_materials(view, introduced, grant)?;
     }
     Ok(())
 }

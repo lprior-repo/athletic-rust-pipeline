@@ -26,15 +26,10 @@ pub(super) fn row<'a, 's>(
             return Err(invalid("documentary status and result target disagree").into());
         }
         let source = candidate.recorded.checked();
-        let cohort = applicability(linked, &row, source, grant)?;
-        let mut duplicate = false;
-        for prior in &facts {
-            steps(grant, 1)?;
-            if prior.source.reference() == source.reference() {
-                duplicate = true;
-            }
-        }
-        if duplicate {
+        let Some(cohort) = applicability(linked, &row, source, grant)? else {
+            continue;
+        };
+        if contains_source(&facts, source, grant)? {
             continue;
         }
         crate::participation_evidence::bound(
@@ -62,6 +57,20 @@ pub(super) fn row<'a, 's>(
     Ok(facts)
 }
 
+fn contains_source(
+    facts: &[CheckedDocumentarySourceFactsV1<'_>],
+    source: &VerifiedIndependentParticipationV1,
+    grant: &mut Grant,
+) -> CrawlResult<bool> {
+    for prior in facts {
+        steps(grant, 1)?;
+        if prior.source.reference() == source.reference() {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 fn same_view(
     status: &StatusBinding<'_, '_>,
     result: &DiscoveredResultAttachmentV1<'_, '_>,
@@ -81,34 +90,38 @@ fn applicability(
     row: &crate::participation_evidence::recorded::DiscoveredIdentityLinkedHtmlResultRowV1<'_, '_>,
     source: &VerifiedIndependentParticipationV1,
     grant: &mut Grant,
-) -> CrawlResult<DocumentaryCohortAgreementV1> {
+) -> CrawlResult<Option<DocumentaryCohortAgreementV1>> {
     steps(grant, 10)?;
     let document = linked.checked_document();
     let page = document.parsed_page();
     let parsed = row.checked_row().parsed_row();
     if source.store_identity() != row.attachment().store_identity()
         || source.snapshot_sequence() != row.attachment().snapshot_sequence()
-        || source.subject().name() != parsed.name
-        || source.subject().school() != parsed.school
-        || row.checked_row().event().gender != Gender::Boys
-        || page.sport != Some(Sport::OutdoorTrack)
-        || page.region.as_deref() != Some("MI")
-        || page.school_year != source.school_year()
-        || document.published_start() != source.day().as_str()
+    {
+        return Err(invalid("documentary status source or attachment authority differs").into());
+    }
+    if document.published_start() != source.day().as_str()
         || document
             .published_end()
             .is_some_and(|end| end != source.day().as_str())
     {
-        return Err(invalid(
-            "documentary status subject or dated participation applicability differs",
-        )
-        .into());
+        return Ok(None);
     }
-    Ok(cohort_agreement(
+    if source.subject().name() != parsed.name || source.subject().school() != parsed.school {
+        return Err(invalid("documentary status subject or participation subject differs").into());
+    }
+    if row.checked_row().event().gender != Gender::Boys
+        || page.sport != Some(Sport::OutdoorTrack)
+        || page.region.as_deref() != Some("MI")
+        || page.school_year != source.school_year()
+    {
+        return Err(invalid("documentary status participation context differs").into());
+    }
+    Ok(Some(cohort_agreement(
         parsed.grade,
         page.school_year,
         source.cohort(),
-    ))
+    )))
 }
 
 pub(super) fn season(

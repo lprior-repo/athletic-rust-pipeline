@@ -1,9 +1,7 @@
 use super::*;
-use crate::StoreSnapshot;
 use census_domain::evidence_subject_attachment::AttachmentObjectReferenceV1;
 
 pub(super) fn introductions(
-    view: &StoreSnapshot<'_>,
     inspection: &EvidenceSubjectAttachmentInspectionV1<'_>,
     supplied: &[AttachmentContextObjectV1<'_>],
     ledger: &Ledger<'_>,
@@ -26,11 +24,7 @@ pub(super) fn introductions(
                 reference: issued.reference(),
                 bytes: issued.bytes(),
             };
-            insert(
-                &mut introduced,
-                Material::introduce(&input, view, grant)?,
-                grant,
-            )?;
+            insert(&mut introduced, Material::introduce(&input, grant)?, grant)?;
         }
     }
     for input in supplied {
@@ -42,11 +36,7 @@ pub(super) fn introductions(
         if ledger.find_object(&reference.digest, grant)?.is_some() {
             return Err(Error::Corrupt("context supplier reintroduces retained object").into());
         }
-        insert(
-            &mut introduced,
-            Material::introduce(input, view, grant)?,
-            grant,
-        )?;
+        insert(&mut introduced, Material::introduce(input, grant)?, grant)?;
     }
     Ok(introduced)
 }

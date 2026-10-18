@@ -22,6 +22,7 @@ impl AttachmentReplayContinuationV1 {
     pub fn require(&self, grant: &mut AttachmentReplayGrantV1) -> Result<()> {
         grant.admit(|grant| {
             let usage = grant.usage();
+            grant.require_origin(&self.origin)?;
             if usage.encoded_bytes() < self.floor.encoded_bytes()
                 || usage.traversal_steps() < self.floor.traversal_steps()
             {
@@ -29,7 +30,7 @@ impl AttachmentReplayContinuationV1 {
                     "grant continuation usage regressed",
                 ));
             }
-            grant.require_origin(&self.origin)
+            Ok(())
         })
     }
 }

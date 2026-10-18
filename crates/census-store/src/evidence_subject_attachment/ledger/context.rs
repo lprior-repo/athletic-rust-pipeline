@@ -99,6 +99,17 @@ fn ordered<'a, T, K: Ord>(
     }
     Ok(None)
 }
+pub(super) fn verify_materials(
+    view: &impl RetainedJournalReadSource,
+    introduced: &[Material],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    for material in introduced {
+        grant.charge_steps(1).map_err(Error::Domain)?;
+        material.verify(view, grant)?;
+    }
+    Ok(())
+}
 
 #[cfg(test)]
 mod tests;

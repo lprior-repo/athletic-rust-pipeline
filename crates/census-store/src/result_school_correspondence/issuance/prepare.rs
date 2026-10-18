@@ -28,8 +28,7 @@ pub(super) fn prepare<'s>(
             }
             let view = store.snapshot_locked();
             let (ledger, attachments) = require_current(store, &view, &revision, &command, grant)?;
-            let materials =
-                super::super::source::introduce(&view, &command.source, context, grant)?;
+            let materials = super::super::source::introduce(&command.source, context, grant)?;
             super::super::source::require_review(
                 &view,
                 &command,

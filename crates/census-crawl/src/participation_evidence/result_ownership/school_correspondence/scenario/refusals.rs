@@ -64,7 +64,7 @@ pub(super) fn verify(
         }
         check!(eq; setup::state(store)?, before);
     }
-    source_grant_refusal(store, input)?;
+    replenished_foreign_grant_cannot_build_school_proposal(store, input)?;
     foreign(store, proposal)?;
     check!(eq; setup::state(store)?, before);
     Ok(())
@@ -80,7 +80,10 @@ fn prior(store: &Store) -> TestResult<ResultSchoolPredecessorV1> {
     ))
 }
 
-fn source_grant_refusal(store: &Store, input: &setup::Input) -> TestResult {
+fn replenished_foreign_grant_cannot_build_school_proposal(
+    store: &Store,
+    input: &setup::Input,
+) -> TestResult {
     let snapshot = store.snapshot();
     let mut grant = AttachmentReplayGrantV1::new();
     let current = snapshot.read_current_evidence_subject_attachment_references_v1(&mut grant)?;
@@ -89,28 +92,42 @@ fn source_grant_refusal(store: &Store, input: &setup::Input) -> TestResult {
             .ok_or("school source")?;
     let plan = discover_current_html_results(&current, &mut grant)?;
     let scope = scope()?;
-    let result = plan.with_group(0, &mut grant, |linked, _| {
-        Ok(build_claim(
-            &current,
-            &linked,
-            0,
-            &provider,
-            scope,
-            &mut AttachmentReplayGrantV1::new(),
-        )
-        .err())
+    let mut foreign = AttachmentReplayGrantV1::new();
+    let (original, refusal) = plan.with_group(0, &mut grant, |linked, grant| {
+        let original = build_claim(&current, &linked, 0, &provider, scope.clone(), grant)?;
+        foreign
+            .charge_bytes(grant.usage().encoded_bytes())
+            .map_err(census_store::EvidenceSubjectAttachmentStoreError::from)
+            .map_err(StoreError::from)?;
+        foreign
+            .charge_steps(grant.usage().traversal_steps())
+            .map_err(census_store::EvidenceSubjectAttachmentStoreError::from)
+            .map_err(StoreError::from)?;
+        let _foreign_origin = foreign
+            .checkpoint()
+            .map_err(census_store::EvidenceSubjectAttachmentStoreError::from)
+            .map_err(StoreError::from)?;
+        Ok((
+            original,
+            build_claim(&current, &linked, 0, &provider, scope, &mut foreign).err(),
+        ))
     })?;
-    match result {
-        Some(crate::CrawlError::Store(StoreError::EvidenceSubjectAttachment(
-            census_store::EvidenceSubjectAttachmentStoreError::Domain(
-                EvidenceSubjectAttachmentError::Invalid(detail),
-            ),
-        ))) => {
-            check!(eq; detail, "grant continuation usage regressed");
-        }
-        Some(error) => return Err(format!("wrong source grant refusal: {error}").into()),
-        None => return Err("foreign grant built source proposal".into()),
-    }
+    check!(eq; original.claim().target.school, input.school);
+    check!(matches!(
+        refusal,
+        Some(crate::CrawlError::Store(
+            StoreError::EvidenceSubjectAttachment(
+                census_store::EvidenceSubjectAttachmentStoreError::Domain(
+                    EvidenceSubjectAttachmentError::Invalid(_)
+                )
+            )
+        ))
+    ));
+    check!(matches!(
+        foreign.ensure_available(),
+        Err(EvidenceSubjectAttachmentError::Poisoned)
+    ));
+    grant.ensure_available()?;
     Ok(())
 }
 

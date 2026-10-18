@@ -1,6 +1,6 @@
 use super::{EvidenceSubjectAttachmentStoreError as Error, RetainedCaptureLeafV1};
 use crate::read::RetainedJournalReadSource;
-use crate::{StoreError, StoreResult, StoreSnapshot};
+use crate::{StoreError, StoreResult};
 use census_domain::evidence_subject_attachment::{
     AttachmentObjectReferenceV1, AttachmentReplayGrantV1, EvidenceSubjectAttachmentError,
 };
@@ -39,7 +39,6 @@ impl Material {
 
     pub(crate) fn introduce(
         input: &AttachmentContextObjectV1<'_>,
-        view: &StoreSnapshot<'_>,
         grant: &mut AttachmentReplayGrantV1,
     ) -> StoreResult<Self> {
         grant.ensure_available().map_err(Error::Domain)?;
@@ -48,7 +47,6 @@ impl Material {
                 inline::encode(reference, bytes, grant)
             }
             AttachmentContextObjectV1::Retained(leaf) => {
-                view.verify_retained_capture_leaf_v1(leaf, grant)?;
                 let encoded = super::encoding::object(*leaf, grant)?;
                 grant.charge_steps(1).map_err(Error::Domain)?;
                 let leaf = serde_json::from_slice(encoded.bytes())

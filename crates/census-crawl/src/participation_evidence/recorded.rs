@@ -10,6 +10,7 @@ mod attached_result;
 #[cfg(test)]
 use attached_participation::tests::{
     verify_adversarial as verify_adversarial_attached_participation,
+    verify_date_scope as verify_date_scope_attached_participation,
     verify_genuine as verify_genuine_attached_participation,
     verify_source_count as verify_source_count_attached_participation,
     verify_targets as verify_targets_attached_participation,

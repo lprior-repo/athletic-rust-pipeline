@@ -106,6 +106,11 @@ fn genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports
                 &directory.path().join("store"),
             )
         })
+        .and_then(|()| {
+            crate::participation_evidence::recorded::verify_date_scope_attached_participation(
+                &directory.path().join("store"),
+            )
+        })
     {
         let _preserved = directory.keep();
         return Err(error);

@@ -60,15 +60,20 @@ fn measure(
         check!(eq; cold.checked_sub(warm), Some(parser_cost));
     }
     let mut foreign = Grant::new();
+    let refusal = linked.documentary_venue(0, &mut foreign);
     check!(matches!(
-        linked.documentary_venue(0, &mut foreign),
+        refusal,
         Err(crate::CrawlError::Store(
             StoreError::EvidenceSubjectAttachment(StoreAttachmentError::Domain(
                 DomainError::Invalid("checked command grant differs")
             ))
         ))
     ));
-    check!(foreign.ensure_available().is_err());
+    check!(matches!(
+        foreign.ensure_available(),
+        Err(DomainError::Poisoned)
+    ));
+    check!(linked.documentary_venue(0, &mut foreign).is_err());
     grant.ensure_available()?;
     check!(linked.documentary_venue(linked.row_count(), grant).is_err());
     check!(grant.ensure_available().is_err());

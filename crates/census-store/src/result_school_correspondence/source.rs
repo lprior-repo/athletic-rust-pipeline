@@ -15,7 +15,6 @@ mod target;
 pub(super) use review::require_review;
 
 pub(super) fn introduce(
-    view: &StoreSnapshot<'_>,
     source: &ResultSchoolSourceClaimV1,
     context: &[AttachmentContextObjectV1<'_>],
     grant: &mut AttachmentReplayGrantV1,
@@ -37,7 +36,7 @@ pub(super) fn introduce(
         .map_err(|_| Error::BudgetExceeded)?;
     context.iter().try_for_each(|input| {
         let material = match input {
-            AttachmentContextObjectV1::Inline { .. } => Material::introduce(input, view, grant)?,
+            AttachmentContextObjectV1::Inline { .. } => Material::introduce(input, grant)?,
             AttachmentContextObjectV1::Retained(leaf) => {
                 let bytes = codec::encode(*leaf, grant)?;
                 Material::Retained {

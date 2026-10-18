@@ -80,7 +80,7 @@ fn attach(
     check!(eq; &inspection.target().public_id, target);
     let context = context::Context::synthetic("controlled-supported-target", store, packet)?;
     let command = context.command("controlled-supported-target-attach", &inspection)?;
-    let objects = context.borrowed();
+    let objects = context.borrowed(store)?;
     let prepared = store.prepare_evidence_subject_attachment_v1(
         command,
         EvidenceSubjectAttachmentPreparationV1::New {

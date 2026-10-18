@@ -10,7 +10,7 @@ use std::path::Path;
 pub(super) mod context;
 pub(super) mod material;
 mod observe;
-mod preserve;
+pub(super) mod preserve;
 
 pub(in crate::participation_evidence::recorded) fn verify_source_count(
     closed_root: &Path,
@@ -52,7 +52,7 @@ fn scenario(closed_root: &Path) -> TestResult {
         let context =
             context::Context::synthetic(&format!("synthetic-count-{index}"), &store, &packet)?;
         let command = context.command(&format!("synthetic-count-attach-{index}"), &inspection)?;
-        let objects = context.borrowed();
+        let objects = context.borrowed(&store)?;
         let prepared = store.prepare_evidence_subject_attachment_v1(
             command,
             EvidenceSubjectAttachmentPreparationV1::New {

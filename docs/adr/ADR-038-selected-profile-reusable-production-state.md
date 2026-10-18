@@ -236,13 +236,39 @@ references and text digest. Missing, transformed or ambiguous cells withhold the
 quote. Existing parsed rows, context wire and IDs remain unchanged. This quote
 is source data, never a SchoolId, accepted affiliation or issuance authority.
 
+### Dated documentary status — 2026-10-18
+
+Point-status evidence contributes only on its documented event day. A different
+day with the same reviewed person is retained but contributes no positive fact.
+Held store, target, accepted head and inventory must agree before date filtering.
+Withdrawing all matching-day reviews cannot promote another day's status.
+
+Grant origin is authenticated before the continuation usage floor; the floor
+still compares pre-charge usage. A replenished foreign grant remains foreign.
+
 ### Reviewed-school resource boundary — 2026-10-17
 
-The owner's subsequent authorization permits a bounded increase to an 8-MiB
-aggregate checked-read grant and 32,768 aggregate traversal steps. Individual
-encoded objects remain bounded at 4 MiB; their structural limits are unchanged.
-This changes resource admission, not documentary authority or historical
-evidence. It does not establish process-memory or national-scale sufficiency.
+The current aggregate checked-read/workflow grant is 9 MiB (9,437,184 bytes)
+and 131,072 traversal steps. Individual encoded objects and retained physical
+inventory remain bounded at 4 MiB; structural limits are unchanged.
+
+The authorized 8-MiB grant admitted genuine A after removing a duplicate
+preparation-time retained-body decode. Genuine B still required a derived
+8,609,689 accounted bytes, including its journal envelope and receipt.
+The 2026-10-18 byte increase retains every remaining allocation charge.
+
+The supported 16-source scenario exceeded 32,768 steps during its tenth
+additional reviewed-source application, even after eliminating repeated
+immutable-ledger declaration checks during refresh. Under the subsequent
+authorization to loosen traversal limits, the finite work allowance is four
+times the prior ceiling. This is admission policy, not a measured national
+workload bound. Exact-limit refusal and complete-chain qualification remain
+required; there is no grant reset.
+
+Preparation validates introduced leaves once before returning checked state.
+Application revalidates them: retained-root replacement need not advance
+evidence/derived generations. This changes resource admission, not documentary
+authority or historical evidence, and does not prove national-scale memory use.
 
 Private school source closure `result-school-source-closure-v2` shares roots
 already retained by the authenticated attachment closure and preserves school-only

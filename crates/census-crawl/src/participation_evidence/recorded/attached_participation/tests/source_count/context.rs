@@ -189,11 +189,26 @@ impl Context {
         })
     }
 
-    pub fn borrowed(&self) -> Vec<AttachmentContextObjectV1<'_>> {
-        self.objects
+    pub fn borrowed(&self, store: &Store) -> TestResult<Vec<AttachmentContextObjectV1<'_>>> {
+        let snapshot = store.snapshot();
+        let mut grant = Grant::new();
+        let retained = snapshot.read_evidence_subject_attachment_references_v1(&mut grant)?;
+        let known = retained
+            .records()
             .iter()
+            .flat_map(|record| record.command.reviewed_context.objects.as_slice())
+            .collect::<std::collections::BTreeSet<_>>();
+        Ok(self
+            .objects
+            .iter()
+            .filter(|object| !known.contains(&object.reference))
             .map(InlineObject::borrowed)
-            .chain(self.leaves.iter().map(AttachmentContextObjectV1::Retained))
-            .collect()
+            .chain(
+                self.leaves
+                    .iter()
+                    .filter(|leaf| !known.contains(&leaf.object))
+                    .map(AttachmentContextObjectV1::Retained),
+            )
+            .collect())
     }
 }

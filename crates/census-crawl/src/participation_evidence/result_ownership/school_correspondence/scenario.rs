@@ -18,10 +18,12 @@ use sha2::{Digest, Sha256};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod approval;
 mod attachment;
 mod frozen;
 mod refusals;
 mod review;
+mod scope;
 mod setup;
 mod stale_subject;
 
@@ -75,6 +77,7 @@ fn public_original_school_review_revoke_replay_and_cold_reopen() -> TestResult {
     refusals::verify(&store, &input, &proposal)
         .map_err(|error| format!("verify school authority refusals: {error}"))?;
     let prior = review::record(&store)?;
+    approval::verify(&store, &proposal)?;
     let stale = refusals::prepare_stale(&store, &proposal)
         .map_err(|error| format!("prepare second school review: {error}"))?;
     setup::refresh_physical(&store, &input)?;

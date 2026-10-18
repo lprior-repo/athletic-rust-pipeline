@@ -23,7 +23,7 @@ pub(super) fn prepare<'s>(
     } = input;
     require_fences(store, view, &command, &inspection, grant)?;
     let introduced =
-        context::introductions(view, &inspection, supplied, &inspection.state.ledger, grant)?;
+        context::introductions(&inspection, supplied, &inspection.state.ledger, grant)?;
     let record = command
         .into_draft_with_grant(grant)
         .map_err(Error::Domain)?;

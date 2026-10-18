@@ -7,6 +7,7 @@ use census_domain::model::StoreIdentity;
 use chrono::{DateTime, Utc};
 
 mod adversarial;
+mod date_scope;
 mod fixture;
 mod genuine;
 mod source_count;
@@ -14,6 +15,7 @@ mod targets;
 mod venue;
 
 pub(in crate::participation_evidence::recorded) use adversarial::verify_adversarial;
+pub(in crate::participation_evidence::recorded) use date_scope::verify_date_scope;
 pub(in crate::participation_evidence::recorded) use genuine::verify_genuine;
 pub(in crate::participation_evidence::recorded) use source_count::verify_source_count;
 pub(in crate::participation_evidence::recorded) use targets::verify_targets;

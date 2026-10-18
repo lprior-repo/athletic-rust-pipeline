@@ -5,7 +5,7 @@ const MAX_FILES: usize = 4096;
 const MAX_BYTES: u64 = 512 * 1024 * 1024;
 const CHUNK: usize = 64 * 1024;
 
-pub(super) fn files(root: &Path) -> TestResult<BTreeMap<PathBuf, (u64, String)>> {
+pub(in super::super) fn files(root: &Path) -> TestResult<BTreeMap<PathBuf, (u64, String)>> {
     let mut pending = vec![root.to_path_buf()];
     let mut discovered = 1usize;
     let mut total = 0u64;
