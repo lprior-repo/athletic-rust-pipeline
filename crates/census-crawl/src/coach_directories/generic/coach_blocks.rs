@@ -22,7 +22,7 @@ struct Scope {
 }
 
 impl Collector {
-    pub(super) fn start(&mut self, tag: &html5gum::StartTag<()>) -> Result<(), Failure> {
+    pub(super) fn start(&mut self, tag: &html5gum::StartTag<usize>) -> Result<(), Failure> {
         if let Some(kind) = chrome(&tag.name) {
             self.finish()?;
             self.heading = None;

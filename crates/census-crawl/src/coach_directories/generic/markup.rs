@@ -1,5 +1,7 @@
 use census_domain::model::ContactResearchOutcome as Outcome;
-use html5gum::{DefaultEmitter, Token, Tokenizer};
+use html5gum::{DefaultEmitter, Tokenizer};
+
+mod tokens;
 
 type ParseResult<T> = Result<T, Failure>;
 
@@ -54,14 +56,15 @@ pub(super) fn parse(body: &[u8]) -> ParseResult<Page> {
     }
     std::str::from_utf8(body)
         .map_err(|_| Failure::Decode("school contact page bytes are not UTF-8"))?;
-    let mut emitter = DefaultEmitter::default();
+    let mut emitter = DefaultEmitter::<usize>::new_with_span();
     emitter.naively_switch_states(true);
     let mut page = Page::default();
     let mut tokens = Tokenizer::new_with_emitter(body, emitter);
     for token in tokens.by_ref().take(65_536) {
-        match page
-            .observe(token.map_err(|_| Failure::Decode("school contact tokenizer input failed"))?)
-        {
+        match page.observe(
+            body,
+            token.map_err(|_| Failure::Decode("school contact tokenizer input failed"))?,
+        ) {
             Ok(()) => {}
             Err(Failure::Budget(reason)) => {
                 page.limit(reason);
@@ -110,20 +113,7 @@ impl Page {
         }
     }
 
-    fn observe(&mut self, token: Token) -> ParseResult<()> {
-        match token {
-            Token::StartTag(tag) => self.start(tag),
-            Token::EndTag(tag) => self.end(&tag.name),
-            Token::String(text) if self.inert.is_empty() => self.text(&text),
-            Token::Error(error) => {
-                self.malformed(&format!("school contact HTML tokenizer error: {error:?}"));
-                Ok(())
-            }
-            _ => Ok(()),
-        }
-    }
-
-    fn start(&mut self, tag: html5gum::StartTag<()>) -> ParseResult<()> {
+    fn start(&mut self, tag: html5gum::StartTag<usize>) -> ParseResult<()> {
         if let Some(kind) = inert_kind(&tag.name) {
             self.profiles.invalidate();
             self.coach_blocks.finish()?;
@@ -265,7 +255,7 @@ impl Page {
     }
 }
 
-fn attribute<'a>(tag: &'a html5gum::StartTag<()>, name: &[u8]) -> Option<&'a str> {
+fn attribute<'a>(tag: &'a html5gum::StartTag<usize>, name: &[u8]) -> Option<&'a str> {
     tag.attributes
         .get(name)
         .and_then(|value| std::str::from_utf8(value).ok())

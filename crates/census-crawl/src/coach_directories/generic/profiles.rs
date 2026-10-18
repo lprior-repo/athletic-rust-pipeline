@@ -24,7 +24,7 @@ struct Cell {
 }
 
 impl Collector {
-    pub(super) fn start(&mut self, tag: &html5gum::StartTag<()>) -> Result<(), Failure> {
+    pub(super) fn start(&mut self, tag: &html5gum::StartTag<usize>) -> Result<(), Failure> {
         if self.current.is_none() {
             let recognized = tag.name.as_ref() == b"ul"
                 && tag
