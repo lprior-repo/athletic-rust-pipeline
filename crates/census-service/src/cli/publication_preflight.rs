@@ -8,6 +8,13 @@ use census_service::restate_services::{
 
 #[tracing::instrument(skip_all)]
 pub(super) async fn require_managed_publication(ingestion: &Ingress) -> Result<()> {
+    require_publication_contract(ingestion, PublicationContract::ManagedBundleV2).await
+}
+
+pub(super) async fn require_publication_contract(
+    ingestion: &Ingress,
+    contract: PublicationContract,
+) -> Result<()> {
     let Json(capabilities) = CensusIngressClient::from_client(ingestion.clone())
         .publication_capabilities()
         .call()
@@ -17,17 +24,17 @@ pub(super) async fn require_managed_publication(ingestion: &Ingress) -> Result<(
         .into_body()
         .map_err(census_service::ingress::error)
         .context("publication capability response is invalid; no invocation was submitted")?;
-    require_managed(&capabilities)
+    require_contract(&capabilities, contract)
 }
 
-fn require_managed(capabilities: &PublicationCapabilities) -> Result<()> {
-    if !capabilities
-        .publication_contracts
-        .contains(&PublicationContract::ManagedBundleV2)
-    {
-        bail!("endpoint does not advertise managed_bundle_v2; no invocation was submitted");
+fn require_contract(
+    capabilities: &PublicationCapabilities,
+    contract: PublicationContract,
+) -> Result<()> {
+    if capabilities.publication_contracts.contains(&contract) {
+        return Ok(());
     }
-    Ok(())
+    bail!("endpoint does not advertise {contract:?}; no invocation was submitted")
 }
 
 #[cfg(test)]

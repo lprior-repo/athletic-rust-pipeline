@@ -33,6 +33,8 @@ pub enum ExportGenerationError {
     InvalidChar { value: String },
     #[error("export key part {value:?} must not contain ':'")]
     InvalidKeyPart { value: String },
+    #[error("selected export request could not be serialized for workflow identity: {0}")]
+    SelectedRequestDigest(#[source] census_domain::model::CanonicalJsonError),
     #[error("--generation {value:?} is live-Restate only")]
     OfflineGeneration { value: String },
 }
@@ -157,11 +159,22 @@ pub fn workbook_request_key(
     ] {
         validate_key_part(part)?;
     }
-    Ok(run_key(
-        "workbook",
-        &[&year, scope, &limit, &places, out, &season],
-        generation,
-    ))
+    let base = [&year, scope, &limit, &places, out, &season];
+    match &request.export_job {
+        census_report::export::ExportJobRequest::LegacyV2 => {
+            Ok(run_key("workbook", &base, generation))
+        }
+        census_report::export::ExportJobRequest::SelectedPublicationV1 { selection } => {
+            let digest = census_domain::model::serialized_digest(selection)
+                .map_err(ExportGenerationError::SelectedRequestDigest)?;
+            let selected = format!("selected_v1_{digest}");
+            Ok(run_key(
+                "workbook",
+                &[&year, scope, &limit, &places, out, &season, &selected],
+                generation,
+            ))
+        }
+    }
 }
 
 mod browser_session;

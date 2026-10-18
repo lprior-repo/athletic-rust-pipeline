@@ -106,6 +106,7 @@ async fn run_workbook_live(
             .map(|path| path.to_string_lossy().into_owned()),
         school_year: Some(contact_season.get()),
         jurisdictions: jurisdictions.to_vec(),
+        export_job: census_report::export::ExportJobRequest::LegacyV2,
     };
     let WorkbookReply { path, .. } = live::workbook(Some(origin), request, &generation).await?;
     println!("wrote {path}");

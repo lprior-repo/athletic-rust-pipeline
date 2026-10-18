@@ -37,6 +37,27 @@ pub struct Censuses {
     pub all_sources: Census,
 }
 
+pub fn options_for_selected_dataset(
+    dataset: &crate::export::ExportDataset,
+    out: Option<PathBuf>,
+) -> ReportResult<Options> {
+    let profile = dataset.selected_authority()?.profile();
+    let input = profile.input();
+    let [cohort] = input.graduation_years.as_slice() else {
+        return Err(crate::report::ReportError::Invariant {
+            detail: "selected workbook profile must contain exactly one graduation year".into(),
+        });
+    };
+    Ok(Options {
+        grad_year: Some(cohort.get()),
+        out,
+        limit: None,
+        scope: Scope::AllSources,
+        jurisdictions: input.jurisdictions.clone(),
+        school_year: input.contact_school_year,
+    })
+}
+
 impl Censuses {
     pub fn of(
         dataset: &crate::export::ExportDataset,

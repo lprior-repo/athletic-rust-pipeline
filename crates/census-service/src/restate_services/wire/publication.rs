@@ -8,6 +8,7 @@ pub enum PublicationContract {
     #[default]
     LegacySeparateV1,
     ManagedBundleV2,
+    SelectedPublicationV1,
 }
 
 impl PublicationContract {
@@ -28,6 +29,7 @@ impl PublicationCapabilities {
             publication_contracts: vec![
                 PublicationContract::LegacySeparateV1,
                 PublicationContract::ManagedBundleV2,
+                PublicationContract::SelectedPublicationV1,
             ],
         }
     }

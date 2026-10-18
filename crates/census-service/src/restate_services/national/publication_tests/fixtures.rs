@@ -63,7 +63,7 @@ pub fn answer(call: &Frame, journal: &Journal) -> TestResult<Value> {
         }),
         ("Workbook", "run") => {
             let path = if journal.original.publication_contract
-                == crate::restate_services::PublicationContract::ManagedBundleV2
+                != crate::restate_services::PublicationContract::LegacySeparateV1
             {
                 MANAGED_WORKBOOK
             } else {

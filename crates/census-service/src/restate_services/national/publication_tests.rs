@@ -37,6 +37,7 @@ enum Scenario {
     Complete,
     ManagedComplete,
     ManagedFailedStage,
+    SelectedFailedStage,
     ManagedRefusedSeal,
     ManagedCompletedResume,
     ManagedExhaustedResume,
@@ -62,6 +63,11 @@ async fn managed_national_publication_binds_one_original_request_and_one_bundle(
 #[tokio::test]
 async fn managed_national_workbook_retry_preserves_the_same_call_and_request() -> TestResult {
     exercise(Scenario::ManagedFailedStage).await
+}
+
+#[tokio::test]
+async fn selected_national_workbook_retry_preserves_the_same_profile_request() -> TestResult {
+    exercise(Scenario::SelectedFailedStage).await
 }
 
 #[tokio::test]
@@ -175,7 +181,7 @@ async fn restricted(contract: crate::restate_services::PublicationContract) -> T
             let mut journal = journal::Journal::new(&request)?;
             journal.drive(&client, &url).await?;
             let expected = serde_json::json!(["MI", "MN", "IA", "IL", "CO"]);
-            let stages = if contract == crate::restate_services::PublicationContract::ManagedBundleV2 {
+            let stages = if contract != crate::restate_services::PublicationContract::LegacySeparateV1 {
                 vec!["Workbook"]
             } else {
                 vec!["Report", "Bests", "Workbook"]
@@ -316,7 +322,7 @@ fn publication_services(journal: &journal::Journal) -> TestResult<Vec<String>> {
 
 fn assert_published(journal: &journal::Journal) -> TestResult {
     let managed = journal.original.publication_contract
-        == crate::restate_services::PublicationContract::ManagedBundleV2;
+        != crate::restate_services::PublicationContract::LegacySeparateV1;
     let stages = if managed {
         vec!["Consolidate", "Workbook"]
     } else {
@@ -335,6 +341,21 @@ fn assert_published(journal: &journal::Journal) -> TestResult {
             .ok_or("publication stage absent")?;
         check!(eq; journal.calls.iter().filter(|call| call.text(1).is_ok_and(|name| name == stage)).count(), 1);
         check!(eq; call.text(5)?, format!("{}:{}", journal.identity, stage.to_ascii_lowercase()));
+    }
+    if journal.original.publication_contract
+        == crate::restate_services::PublicationContract::SelectedPublicationV1
+    {
+        let workbook = journal
+            .calls
+            .iter()
+            .find(|call| call.text(1).is_ok_and(|name| name == "Workbook"))
+            .ok_or("selected publication did not call Workbook")?;
+        let body: serde_json::Value = serde_json::from_slice(workbook.bytes(3)?)?;
+        check!(eq;
+            body.get("export_job"),
+            Some(&serde_json::to_value(&journal.original.export_job)?),
+            "the immutable profile selection reaches the workbook handler"
+        );
     }
     let seal = journal
         .calls

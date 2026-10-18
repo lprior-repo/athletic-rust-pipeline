@@ -111,6 +111,7 @@ fn workbook_keys_follow_the_selected_generation() -> TestResult {
         out: Some("/tmp/root-a".to_string()),
         school_year: Some(2026),
         jurisdictions: Vec::new(),
+        export_job: census_report::export::ExportJobRequest::LegacyV2,
     };
     let legacy = ExportGeneration::default_generation();
     let workbook_legacy = workbook_request_key(&request, &legacy)?;

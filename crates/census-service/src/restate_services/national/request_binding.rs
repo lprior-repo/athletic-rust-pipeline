@@ -12,7 +12,8 @@ pub(super) async fn prepare(
     ctx: &WorkflowContext<'_>,
     request: &mut NationalRequest,
 ) -> Result<(), HandlerError> {
-    if request.publication_contract == PublicationContract::ManagedBundleV2 {
+    validate_publication_request(request)?;
+    if request.publication_contract != PublicationContract::LegacySeparateV1 {
         ctx.set(KEY_ORIGINAL, Json(request.clone()));
     }
     super::redrive::bind_run(ctx, request).await?;
@@ -24,10 +25,32 @@ pub(super) async fn prepare(
             .await?;
         pin_address(address, digest, request.publication_contract)?;
     }
-    if request.publication_contract == PublicationContract::ManagedBundleV2 {
+    if request.publication_contract != PublicationContract::LegacySeparateV1 {
         ctx.set(KEY_BOUND, Json(request.clone()));
     }
     Ok(())
+}
+
+fn validate_publication_request(request: &NationalRequest) -> Result<(), HandlerError> {
+    let valid = match request.publication_contract {
+        PublicationContract::LegacySeparateV1 | PublicationContract::ManagedBundleV2 => {
+            matches!(
+                &request.export_job,
+                census_report::export::ExportJobRequest::LegacyV2
+            )
+        }
+        PublicationContract::SelectedPublicationV1 => matches!(
+            &request.export_job,
+            census_report::export::ExportJobRequest::SelectedPublicationV1 { .. }
+        ),
+    };
+    if valid {
+        return Ok(());
+    }
+    Err(TerminalError::new(
+        "national publication request contract and immutable profile selection disagree",
+    )
+    .into())
 }
 
 fn pin_address(
@@ -35,7 +58,7 @@ fn pin_address(
     digest: String,
     contract: PublicationContract,
 ) -> Result<(), HandlerError> {
-    if contract == PublicationContract::ManagedBundleV2
+    if contract != PublicationContract::LegacySeparateV1
         && address
             .expected_digest
             .as_ref()

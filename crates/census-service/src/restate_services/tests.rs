@@ -421,6 +421,7 @@ fn national_request(jurisdictions: Vec<UsJurisdiction>) -> TestResult<NationalRe
         revision: Revision(1),
         history: HistoryWindow::cohort("2026-09-22")?,
         publication_contract: super::PublicationContract::LegacySeparateV1,
+        export_job: census_report::export::ExportJobRequest::LegacyV2,
         jurisdictions,
         refresh: false,
         limit_per_state: None,
@@ -1066,6 +1067,7 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() -> Tes
         out: Some("/tmp/root-a".to_string()),
         school_year: Some(2026),
         jurisdictions: Vec::new(),
+        export_job: census_report::export::ExportJobRequest::LegacyV2,
     };
     let legacy = ExportGeneration::default_generation();
     let key = workbook_request_key(&request, &legacy)?;
@@ -1089,6 +1091,7 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() -> Tes
             out: request.out.clone(),
             school_year: request.school_year,
             jurisdictions: request.jurisdictions.clone(),
+            export_job: request.export_job.clone(),
         };
         edit(&mut other);
         Ok(workbook_request_key(
@@ -1147,6 +1150,42 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() -> Tes
     check!(
         workbook_request_key(&colon, &legacy).is_err(),
         "an empty output path must not collapse the workbook key grammar"
+    );
+    Ok(())
+}
+
+#[test]
+fn selected_workbook_request_identity_binds_the_versioned_profile_selection() -> TestResult {
+    let legacy = ExportGeneration::default_generation();
+    let selection = |owner: char, profile: char| -> TestResult<_> {
+        Ok(census_domain::model::ProfileSelectionV1::new(
+            census_domain::model::StoreIdentity::parse(&owner.to_string().repeat(64))?,
+            census_domain::model::ProfileId::parse(&profile.to_string().repeat(64))?,
+        ))
+    };
+    let selected_request = |selection| WorkbookRequest {
+        export_job: census_report::export::ExportJobRequest::SelectedPublicationV1 { selection },
+        ..WorkbookRequest::default()
+    };
+    let first = selected_request(selection('a', 'b')?);
+    let first_key = workbook_request_key(&first, &legacy)?;
+    check!(first_key.starts_with("workbook:all:all:all:all:.:unstated:selected_v1_"));
+    check!(!first_key.contains(&"a".repeat(64)));
+    check!(eq; workbook_request_key(&first, &legacy)?, first_key);
+    check!(ne;
+        workbook_request_key(&selected_request(selection('a', 'c')?), &legacy)?,
+        first_key,
+        "a different profile selection cannot reattach the selected workflow"
+    );
+    check!(ne;
+        workbook_request_key(&selected_request(selection('c', 'b')?), &legacy)?,
+        first_key,
+        "a different store identity cannot reattach the selected workflow"
+    );
+    check!(eq;
+        workbook_request_key(&WorkbookRequest::default(), &legacy)?,
+        "workbook:all:all:all:all:.:unstated:1",
+        "legacy workflow identity remains byte-for-byte stable"
     );
     Ok(())
 }
