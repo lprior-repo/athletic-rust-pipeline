@@ -36,7 +36,11 @@ pub(super) fn assess_offices(
             acquired_at: capture.fetched_at.clone(),
             source_sha256: Some(capture.content_digest.clone()),
             outcome: state,
-            reason: "assessed page-bound office purpose".to_owned(),
+            reason: page
+                .first_issue
+                .as_deref()
+                .map_or("assessed page-bound office purpose", |reason| reason)
+                .to_owned(),
         };
         let outcome = purpose_outcome(school, year, purpose, &attempt);
         append(
@@ -119,12 +123,7 @@ fn purpose_of(block: &markup::Block) -> Option<Purpose> {
 }
 
 pub(super) fn mailbox_candidates(body: &[u8]) -> crate::CrawlResult<Vec<(Purpose, String)>> {
-    let page = markup::parse(body).map_err(|error| super::schema(&error.to_string()))?;
-    if page.limited || page.malformed {
-        return Err(super::schema(
-            "school mailbox candidate page is incomplete or malformed",
-        ));
-    }
+    let page = super::checked_page(body, "school mailbox candidate page")?;
     Ok(page
         .blocks
         .iter()

@@ -3,6 +3,10 @@ use html5gum::{DefaultEmitter, Token, Tokenizer};
 
 type ParseResult<T> = Result<T, Failure>;
 
+#[path = "issue.rs"]
+mod issue;
+pub(super) use issue::Issue;
+
 #[derive(Debug, thiserror::Error)]
 pub(super) enum Failure {
     #[error("{0}")]
@@ -26,9 +30,12 @@ pub(super) struct Page {
     pub ambiguous: bool,
     pub malformed: bool,
     pub limited: bool,
+    pub first_issue: Option<Issue>,
     pub sidearm: bool,
     pub blocks: Vec<Block>,
     pub links: Vec<String>,
+    pub profiles: super::profiles::Collector,
+    pub coach_blocks: super::coach_blocks::Collector,
     inert: Vec<&'static [u8]>,
     current: Option<Block>,
 }
@@ -40,8 +47,10 @@ pub(super) struct Block {
 }
 
 pub(super) fn parse(body: &[u8]) -> ParseResult<Page> {
-    if body.len() > 1024 * 1024 {
-        return Err(error("official school contact page exceeds 1 MiB"));
+    if body.len() > crate::school_sites::MAX_PAGE_BYTES {
+        return Err(error(
+            "official school contact page exceeds page byte budget",
+        ));
     }
     std::str::from_utf8(body)
         .map_err(|_| Failure::Decode("school contact page bytes are not UTF-8"))?;
@@ -54,8 +63,8 @@ pub(super) fn parse(body: &[u8]) -> ParseResult<Page> {
             .observe(token.map_err(|_| Failure::Decode("school contact tokenizer input failed"))?)
         {
             Ok(()) => {}
-            Err(Failure::Budget(_)) => {
-                page.limited = true;
+            Err(Failure::Budget(reason)) => {
+                page.limit(reason);
                 page.current = None;
                 break;
             }
@@ -63,22 +72,51 @@ pub(super) fn parse(body: &[u8]) -> ParseResult<Page> {
         }
     }
     if tokens.next().is_some() {
-        page.limited = true;
+        page.limit("school contact page exceeds 65,536 HTML tokens");
         page.current = None;
     }
-    page.malformed |= !page.inert.is_empty();
-    page.finish()?;
+    if !page.inert.is_empty() {
+        page.malformed("school contact page ends with an unclosed inert scope");
+    }
+    if page.profiles.unfinished() {
+        page.malformed("school contact page ends with an unfinished staff profile");
+    }
+    let result = page.finish();
+    page.finish_result(result)?;
+    let result = page.coach_blocks.finish();
+    page.finish_result(result)?;
     Ok(page)
 }
 
 impl Page {
+    fn limit(&mut self, reason: &'static str) {
+        self.limited = true;
+        self.first_issue.get_or_insert(Issue::Budget(reason));
+    }
+
+    fn malformed(&mut self, reason: &str) {
+        self.malformed = true;
+        self.first_issue
+            .get_or_insert_with(|| Issue::Malformed(reason.to_owned()));
+    }
+
+    fn finish_result(&mut self, result: ParseResult<()>) -> ParseResult<()> {
+        match result {
+            Err(Failure::Budget(reason)) => {
+                self.limit(reason);
+                Ok(())
+            }
+            other => other,
+        }
+    }
+
     fn observe(&mut self, token: Token) -> ParseResult<()> {
         match token {
             Token::StartTag(tag) => self.start(tag),
             Token::EndTag(tag) => self.end(&tag.name),
             Token::String(text) if self.inert.is_empty() => self.text(&text),
-            Token::Error(_) => {
-                self.malformed = true;
+            Token::Error(error) => {
+                self.malformed(&format!("school contact HTML tokenizer error: {error:?}"));
                 Ok(())
             }
             _ => Ok(()),
@@ -87,6 +125,8 @@ impl Page {
 
     fn start(&mut self, tag: html5gum::StartTag<()>) -> ParseResult<()> {
         if let Some(kind) = inert_kind(&tag.name) {
+            self.profiles.invalidate();
+            self.coach_blocks.finish()?;
             if self.inert.len() >= 128 {
                 return Err(error("school contact page exceeds 128 inert scopes"));
             }
@@ -98,6 +138,8 @@ impl Page {
         if !self.inert.is_empty() {
             return Ok(());
         }
+        self.profiles.start(&tag)?;
+        self.coach_blocks.start(&tag)?;
         match tag.name.as_ref() {
             b"meta" if attribute(&tag, b"property") == Some("og:site_name") => {
                 self.owner(attribute(&tag, b"content"))
@@ -121,6 +163,10 @@ impl Page {
     }
 
     fn end(&mut self, name: &[u8]) -> ParseResult<()> {
+        if self.inert.is_empty() {
+            self.profiles.end(name);
+            self.coach_blocks.end(name)?;
+        }
         if let Some(kind) = inert_kind(name) {
             if let Some(position) = self.inert.iter().rposition(|open| *open == kind) {
                 self.inert.truncate(position);
@@ -187,6 +233,8 @@ impl Page {
     }
 
     fn text(&mut self, bytes: &[u8]) -> ParseResult<()> {
+        self.profiles.text(bytes)?;
+        self.coach_blocks.text(bytes)?;
         let Some(block) = &mut self.current else {
             return Ok(());
         };
@@ -247,3 +295,7 @@ pub(super) fn after<'a>(text: &'a str, prefix: &str) -> Option<&'a str> {
     }
     text.get(prefix.len()..)
 }
+
+#[cfg(test)]
+#[path = "reason_tests.rs"]
+mod reason_tests;

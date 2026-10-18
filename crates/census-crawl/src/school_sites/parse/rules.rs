@@ -3,7 +3,7 @@ use super::patterns::{
     COACH_PATTERNS, COMMENT, CROSS_COUNTRY, DOMAIN, GIRLS, HIDDEN_BLOCK, INTERESTING, JUNK_CONTEXT,
     LOCAL, OFF_LIMITS, PLATFORM, ROW, SPORT_HINT, TABLE, TABLE_HEADER, TAG, TITLE_TAG, TOKEN,
 };
-use super::urls::{base_domain, host_of};
+use super::urls::{base_domain, decoded_link_path, host_of, sport_link, unrelated_sport_link};
 use crate::directory::compile_pattern;
 use crate::{CrawlError, CrawlResult};
 use regex::Regex;
@@ -94,7 +94,13 @@ impl Rules {
     }
 
     pub fn interesting(&self, href: &str, label: &str) -> bool {
-        self.interesting.is_match(href) || self.interesting.is_match(label)
+        let Some(path) = decoded_link_path(href).filter(|_| label.len() <= 4096) else {
+            return false;
+        };
+        !unrelated_sport_link(&path, label)
+            && (self.interesting.is_match(&path)
+                || self.interesting.is_match(label)
+                || sport_link(&path, label))
     }
 
     pub fn followable(&self, href: &str, site: &str) -> bool {

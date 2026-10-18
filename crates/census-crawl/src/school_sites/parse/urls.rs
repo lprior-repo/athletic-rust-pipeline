@@ -29,15 +29,71 @@ pub fn base_domain(host: &str) -> String {
         .map_or_else(String::new, |tail| tail.join("."))
 }
 
+pub(super) fn sport_link(path: &str, label: &str) -> bool {
+    [path, label].into_iter().any(|text| {
+        let words = text
+            .split(|ch: char| !ch.is_ascii_alphanumeric())
+            .filter(|word| !word.is_empty());
+        words.clone().any(|word| {
+            ["track", "xc", "tf", "crosscountry"]
+                .iter()
+                .any(|sport| word.eq_ignore_ascii_case(sport))
+        }) || words.clone().zip(words.skip(1)).any(|(first, second)| {
+            first.eq_ignore_ascii_case("cross") && second.eq_ignore_ascii_case("country")
+        })
+    })
+}
+
+pub(super) fn decoded_link_path(href: &str) -> Option<std::borrow::Cow<'_, str>> {
+    if href.len() > 4096 {
+        return None;
+    }
+    let path = link_path(href);
+    if path.split('%').skip(1).any(|part| {
+        !part
+            .as_bytes()
+            .get(..2)
+            .is_some_and(|pair| pair.iter().all(u8::is_ascii_hexdigit))
+    }) {
+        return None;
+    }
+    percent_encoding::percent_decode_str(path)
+        .decode_utf8()
+        .ok()
+}
+
+fn link_path(href: &str) -> &str {
+    let location = href.split(['?', '#']).next().map_or("", |path| path);
+    let authority = location
+        .split_once("://")
+        .map(|(_, rest)| rest)
+        .or_else(|| location.strip_prefix("//"));
+    authority.map_or(location, |rest| {
+        rest.split_once('/').map_or("", |(_, path)| path)
+    })
+}
+
 pub fn rank_link(href: &str, label: &str) -> u8 {
-    let blob = format!("{href} {label}").to_ascii_lowercase();
-    if blob.contains("coach") {
+    let Some(path) = decoded_link_path(href).filter(|_| label.len() <= 4096) else {
+        return 3;
+    };
+    if sport_link(&path, label) {
         return 0;
     }
-    if blob.contains("athletic") {
+    let blob = format!("{path} {label}").to_ascii_lowercase();
+    if ["coach", "staff", "directory", "faculty", "contact"]
+        .iter()
+        .any(|word| blob.contains(word))
+        || label.trim().eq_ignore_ascii_case("activities")
+        || path
+            .trim_end_matches('/')
+            .rsplit('/')
+            .next()
+            .is_some_and(|part| part.eq_ignore_ascii_case("activities"))
+    {
         return 1;
     }
-    if blob.contains("staff") || blob.contains("directory") || blob.contains("faculty") {
+    if blob.contains("athletic") {
         return 2;
     }
     3
@@ -47,4 +103,64 @@ pub fn resolve_href(site: &str, href: &str) -> Result<String, url::ParseError> {
     url::Url::parse(site)
         .and_then(|base| base.join(href))
         .map(|url| url.to_string())
+}
+
+pub(super) fn unrelated_sport_link(path: &str, label: &str) -> bool {
+    unrelated_sport_text(path)
+        || (unrelated_sport_text(label) && !generic_hub_path(path) && !sport_link("", label))
+}
+
+fn generic_hub_path(path: &str) -> bool {
+    path.trim_end_matches('/')
+        .rsplit('/')
+        .next()
+        .is_some_and(|part| {
+            [
+                "athletics",
+                "activities",
+                "staff-directory",
+                "coaches",
+                "contact",
+                "staff",
+                "directory",
+                "faculty",
+                "contact-us",
+            ]
+            .iter()
+            .any(|hub| part.eq_ignore_ascii_case(hub))
+        })
+}
+
+fn unrelated_sport_text(text: &str) -> bool {
+    text.split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|word| !word.is_empty())
+        .any(|word| {
+            [
+                "football",
+                "basketball",
+                "baseball",
+                "softball",
+                "volleyball",
+                "soccer",
+                "wrestling",
+                "cheer",
+                "cheerleading",
+                "dance",
+                "golf",
+                "tennis",
+                "swimming",
+                "diving",
+                "lacrosse",
+                "hockey",
+                "gymnastics",
+                "bowling",
+                "waterpolo",
+                "badminton",
+                "fencing",
+                "rowing",
+                "rugby",
+            ]
+            .iter()
+            .any(|sport| word.eq_ignore_ascii_case(sport))
+        })
 }

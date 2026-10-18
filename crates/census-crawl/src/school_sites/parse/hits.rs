@@ -3,6 +3,11 @@ use super::text::{decode_entities, truncate};
 use super::Rules;
 use census_domain::model::{CoachRole, Gender, SchoolMailboxPurpose, Sport};
 
+mod coaches;
+
+#[cfg(test)]
+mod coach_boundary_tests;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CoachHit {
     pub name: String,
@@ -85,7 +90,7 @@ pub fn analyse(
         }
     }
     let flat = rules.flat_text(&text);
-    collect_coaches(rules, url, &title, &flat, signals);
+    coaches::collect(rules, url, &title, html, signals)?;
     collect_directors(rules, url, &title, &flat, signals);
     signals.pages.push(url.to_string());
     analyse_tables(rules, url, html, &title, signals);
@@ -93,33 +98,6 @@ pub fn analyse(
     combined.append(&mut emails);
     signals.emails = rules.sanitize_emails(combined.iter().map(String::as_str));
     Ok(())
-}
-
-fn collect_coaches(rules: &Rules, url: &str, title: &str, flat: &str, signals: &mut Signals) {
-    for pattern in &rules.coach {
-        for captures in pattern.captures_iter(flat) {
-            let Some(name) = captures
-                .get(1)
-                .and_then(|m| clean_person(rules, m.as_str()))
-            else {
-                continue;
-            };
-            let window = window_of(rules, flat, captures.get(0));
-            if rules.junk.is_match(&window) {
-                continue;
-            }
-            signals.coach_hits.push(CoachHit {
-                name,
-                sport: sport_of(rules, &window),
-                context: truncate(&window, CONTEXT_MAX).to_string(),
-                url: url.to_string(),
-                title: title.to_string(),
-                role: role_of(rules, &window),
-                gender: gender_of(rules, &window),
-                email: None,
-            });
-        }
-    }
 }
 
 fn collect_directors(rules: &Rules, url: &str, title: &str, flat: &str, signals: &mut Signals) {

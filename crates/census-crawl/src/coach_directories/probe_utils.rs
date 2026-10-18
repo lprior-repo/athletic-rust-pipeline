@@ -57,6 +57,7 @@ pub fn classify_error(error: &CrawlError) -> (&'static str, String) {
         },
         CrawlError::Decode { .. } => "json",
         CrawlError::Schema { .. } => "schema",
+        CrawlError::ParserBudget { .. } => "resource",
         CrawlError::Store(_) => "store",
         CrawlError::Io { .. } => "io",
         CrawlError::Capture(_)

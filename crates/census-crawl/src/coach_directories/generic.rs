@@ -1,6 +1,11 @@
+mod coach_blocks;
 mod markup;
 mod offices;
+mod profiles;
 mod research;
+
+pub(crate) use coach_blocks::Block as SchoolCoachBlock;
+pub(crate) use profiles::candidates as staff_profile_candidates;
 
 use crate::net::FetchOutcome;
 use crate::{AdapterContext, CrawlError, CrawlResult};
@@ -99,13 +104,13 @@ pub fn apply_school_mailbox_capture(
         );
         return Ok(Vec::new());
     }
-    if capture.body.len() > 1024 * 1024 {
+    if capture.body.len() > crate::school_sites::MAX_PAGE_BYTES {
         record_capture(
             school,
             year,
             capture,
             Outcome::Partial,
-            "school contact body exceeds 1 MiB".to_owned(),
+            "school contact body exceeds 8 MiB".to_owned(),
         );
         return Ok(Vec::new());
     }
@@ -240,17 +245,7 @@ mod publication_tests;
 mod tests;
 
 pub(crate) fn inspect_staff_links(body: &[u8]) -> CrawlResult<(bool, Vec<String>)> {
-    let page = markup::parse(body).map_err(|error| schema(&error.to_string()))?;
-    if page.limited {
-        return Err(CrawlError::Resource {
-            resource: "published staff discovery page",
-            requested: 65_537,
-            limit: 65_536,
-        });
-    }
-    if page.malformed {
-        return Err(schema("published staff discovery page is malformed"));
-    }
+    let page = checked_page(body, "published staff discovery page")?;
     Ok((page.sidearm, page.links))
 }
 
@@ -258,6 +253,32 @@ pub(crate) fn school_mailbox_candidates(body: &[u8]) -> CrawlResult<Vec<(Purpose
     offices::mailbox_candidates(body)
 }
 
+pub(crate) fn school_coach_blocks(body: &[u8]) -> CrawlResult<Vec<SchoolCoachBlock>> {
+    let page = checked_page(body, "published coach discovery page")?;
+    Ok(page.coach_blocks.blocks)
+}
+
 pub(crate) fn inert_markup_kind(name: &[u8]) -> Option<&'static [u8]> {
     markup::inert_kind(name)
+}
+
+fn checked_page(body: &[u8], resource: &'static str) -> CrawlResult<markup::Page> {
+    let page = markup::parse(body).map_err(|error| match error {
+        markup::Failure::Budget(reason) => CrawlError::ParserBudget {
+            resource,
+            detail: reason.to_owned(),
+        },
+        markup::Failure::Decode(reason) => schema(reason),
+    })?;
+    match page.first_issue.as_ref() {
+        Some(markup::Issue::Budget(reason)) => {
+            return Err(CrawlError::ParserBudget {
+                resource,
+                detail: (*reason).to_owned(),
+            })
+        }
+        Some(markup::Issue::Malformed(reason)) => return Err(schema(reason)),
+        None => {}
+    }
+    Ok(page)
 }

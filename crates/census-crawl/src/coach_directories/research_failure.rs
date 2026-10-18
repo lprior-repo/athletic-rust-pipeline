@@ -46,7 +46,8 @@ pub(super) fn crawl(error: &crate::CrawlError) -> Outcome {
         CrawlError::Fetch(error) => fetch(error),
         CrawlError::Directory(error) if error.is_resource() => Outcome::Partial,
         CrawlError::Directory(_) => Outcome::Ambiguous,
-        CrawlError::Resource { .. }
+        CrawlError::ParserBudget { .. }
+        | CrawlError::Resource { .. }
         | CrawlError::OwnedParseResource(_)
         | CrawlError::OwnedCaptureResource(_)
         | CrawlError::ConverterDeadline { .. } => Outcome::Partial,

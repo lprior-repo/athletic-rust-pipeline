@@ -23,8 +23,9 @@ pub(super) fn parse(
     url: &str,
     html: &str,
 ) -> CrawlResult<Option<Vec<StaffContactHit>>> {
+    let profiles = crate::coach_directories::staff_profile_candidates(rules, url, html.as_bytes())?;
     if !crate::coach_directories::inspect_staff_links(html.as_bytes())?.0 {
-        return Ok(None);
+        return Ok(profiles);
     }
     let directory = crate::sidearm_staff::parse_staff_directory(html)?;
     if directory.name.len() > 4096 || directory.members.len() > 320 {
@@ -33,7 +34,7 @@ pub(super) fn parse(
             detail: "staff candidate directory exceeds name or row budget".to_owned(),
         });
     }
-    let mut hits = Vec::new();
+    let mut hits = profiles.unwrap_or_default();
     for row in directory.members {
         if let Some(hit) = candidate(rules, url, &directory.name, row)? {
             hits.push(hit);

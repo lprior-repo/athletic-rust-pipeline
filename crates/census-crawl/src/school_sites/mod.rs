@@ -17,6 +17,7 @@ mod staff_tests;
 pub use parse::{analyse, AdHit, CoachHit, Rules, SchoolMailboxHit, Signals, StaffContactHit};
 
 pub const SOURCE_ID: &str = "school_sites";
+pub(crate) const MAX_PAGE_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_SITE_PAGES: usize = 7;
 pub const MAX_GUESS_PAGES: usize = 10;
 pub const MAX_SEARCH_PAGES: usize = 12;

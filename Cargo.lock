@@ -360,6 +360,7 @@ dependencies = [
  "http",
  "hyper",
  "indexmap",
+ "percent-encoding",
  "regex",
  "reqwest",
  "restate-sdk",

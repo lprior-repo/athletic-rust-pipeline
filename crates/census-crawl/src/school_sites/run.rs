@@ -1,16 +1,19 @@
 use super::{
-    analyse, parse, PageEvidence, QueueRow, Rules, Signals, SiteOutcome, GUESS_PATHS,
-    MAX_GUESS_PAGES, MAX_SEARCH_FOLLOW, MAX_SEARCH_PAGES, MAX_SITE_PAGES, MIN_GUESS_BODY,
-    SEARCH_QUERIES, WORDPRESS_MARKERS,
+    parse, PageEvidence, QueueRow, Rules, Signals, SiteOutcome, GUESS_PATHS, MAX_GUESS_PAGES,
+    MAX_SEARCH_FOLLOW, MAX_SEARCH_PAGES, MAX_SITE_PAGES, MIN_GUESS_BODY, SEARCH_QUERIES,
+    WORDPRESS_MARKERS,
 };
-use crate::net::{FetchOptions, Fetcher};
+use crate::net::{FetchOptions, FetchOutcome, Fetcher};
 use crate::{CrawlError, CrawlResult};
+
+mod analysis;
 
 struct Run<'a> {
     rules: &'a Rules,
     fetcher: &'a Fetcher,
     refresh: bool,
     outcome: SiteOutcome,
+    diagnostics: analysis::DiagnosticState,
 }
 
 #[tracing::instrument(skip(rules, fetcher, row))]
@@ -24,6 +27,7 @@ pub async fn crawl_site(
         rules,
         fetcher,
         refresh,
+        diagnostics: analysis::DiagnosticState::Collecting,
         outcome: SiteOutcome {
             signals: Signals::default(),
             requests: 0,
@@ -37,7 +41,9 @@ pub async fn crawl_site(
         return Ok(run.outcome);
     };
     let site = home_url.as_str();
-    analyse(rules, site, &home, &mut run.outcome.signals)?;
+    if !run.analyse_page(site, &home)? {
+        return Ok(run.outcome);
+    }
     let mut pool: Vec<_> = rules
         .anchor_candidates(&home)
         .into_iter()
@@ -45,10 +51,14 @@ pub async fn crawl_site(
         .collect();
     pool.sort_by_key(|(href, label)| parse::rank_link(href, label));
     run.follow(site, &pool).await?;
+    if run.diagnostics.exhausted() {
+        return Ok(run.outcome);
+    }
     if run.outcome.signals.coach_hits.is_empty() && pool.len() < 3 {
         run.guess(site).await?;
     }
-    if WORDPRESS_MARKERS.iter().any(|marker| home.contains(marker)) {
+    if !run.diagnostics.exhausted() && WORDPRESS_MARKERS.iter().any(|marker| home.contains(marker))
+    {
         run.search(site).await?;
     }
     run.outcome.signals.finish();
@@ -58,8 +68,11 @@ pub async fn crawl_site(
 impl Run<'_> {
     #[tracing::instrument(skip(self))]
     async fn fetch(&mut self, url: &str) -> CrawlResult<Option<(String, String)>> {
+        if self.diagnostics.exhausted() {
+            return Ok(None);
+        }
         if self.outcome.requests >= MAX_SEARCH_FOLLOW {
-            self.outcome.note = Some("school site request budget exhausted".to_owned());
+            self.record_issue(url, "request_budget: school site request budget exhausted")?;
             return Ok(None);
         }
         self.outcome.requests = self.outcome.requests.saturating_add(1);
@@ -69,32 +82,35 @@ impl Run<'_> {
             headers: Vec::new(),
         };
         match self.fetcher.get_robots_checked(url, &options).await {
-            Ok(capture) => {
-                if capture.body.len() > 1024 * 1024 {
-                    return Err(CrawlError::Resource {
-                        resource: "school site body bytes",
-                        requested: capture.body.len(),
-                        limit: 1024 * 1024,
-                    });
-                }
-                let text = std::str::from_utf8(&capture.body)
-                    .map_err(|_| CrawlError::Schema {
-                        url: url.to_owned(),
-                        detail: "school site is not UTF-8".to_owned(),
-                    })?
-                    .to_owned();
-                let effective_url = capture.response_url.map_or(capture.url, |url| url);
-                self.outcome.pages.push(PageEvidence {
-                    url: effective_url.clone(),
-                    digest: capture.content_digest,
-                    fetched_at: capture.fetched_at,
-                    status: capture.status,
-                });
-                Ok(Some((effective_url, text)))
-            }
+            Ok(capture) => self.capture(capture),
             Err(error) => {
-                self.outcome.errors = self.outcome.errors.saturating_add(1);
-                self.outcome.note = Some(error.to_string());
+                self.record_issue(url, &format!("fetch: {error}"))?;
+                Ok(None)
+            }
+        }
+    }
+
+    fn capture(&mut self, capture: FetchOutcome) -> CrawlResult<Option<(String, String)>> {
+        let url = capture.response_url.map_or(capture.url, |url| url);
+        self.outcome.pages.push(PageEvidence {
+            url: url.clone(),
+            digest: capture.content_digest,
+            fetched_at: capture.fetched_at,
+            status: capture.status,
+        });
+        if capture.body.len() > super::MAX_PAGE_BYTES {
+            let error = CrawlError::Resource {
+                resource: "school site body bytes",
+                requested: capture.body.len(),
+                limit: super::MAX_PAGE_BYTES,
+            };
+            self.record_issue(&url, &format!("resource: {error}"))?;
+            return Ok(None);
+        }
+        match std::str::from_utf8(&capture.body) {
+            Ok(text) => Ok(Some((url, text.to_owned()))),
+            Err(error) => {
+                self.record_issue(&url, &format!("schema: school site is not UTF-8: {error}"))?;
                 Ok(None)
             }
         }
@@ -104,18 +120,24 @@ impl Run<'_> {
     async fn follow(&mut self, site: &str, pool: &[(String, String)]) -> CrawlResult<()> {
         let mut seen = std::collections::BTreeSet::new();
         for (href, _) in pool.iter().take(parse::MAX_ANCHORS) {
-            if self.outcome.requests >= MAX_SITE_PAGES {
+            if self.outcome.requests >= MAX_SITE_PAGES || self.diagnostics.exhausted() {
                 break;
             }
-            let url = parse::resolve_href(site, href).map_err(|error| CrawlError::Schema {
-                url: site.to_owned(),
-                detail: format!("school link cannot be resolved: {error}"),
-            })?;
+            let url = match parse::resolve_href(site, href) {
+                Ok(url) => url,
+                Err(error) => {
+                    self.record_issue(
+                        site,
+                        &format!("schema: school link {href} cannot be resolved: {error}"),
+                    )?;
+                    continue;
+                }
+            };
             if self.outcome.signals.pages.contains(&url) || !seen.insert(url.clone()) {
                 continue;
             }
             if let Some((effective_url, html)) = self.fetch(&url).await? {
-                analyse(self.rules, &effective_url, &html, &mut self.outcome.signals)?;
+                self.analyse_page(&effective_url, &html)?;
             }
         }
         Ok(())
@@ -125,7 +147,7 @@ impl Run<'_> {
     async fn guess(&mut self, site: &str) -> CrawlResult<()> {
         let root = super::site_root(site);
         for guess in GUESS_PATHS {
-            if self.outcome.requests >= MAX_GUESS_PAGES {
+            if self.outcome.requests >= MAX_GUESS_PAGES || self.diagnostics.exhausted() {
                 break;
             }
             let url = format!("{root}{guess}");
@@ -135,7 +157,9 @@ impl Run<'_> {
             if self.rules.visible_text(&html).len() < MIN_GUESS_BODY {
                 continue;
             }
-            analyse(self.rules, &effective_url, &html, &mut self.outcome.signals)?;
+            if !self.analyse_page(&effective_url, &html)? {
+                continue;
+            }
             if !self.outcome.signals.coach_hits.is_empty() {
                 break;
             }
@@ -147,14 +171,16 @@ impl Run<'_> {
     async fn search(&mut self, site: &str) -> CrawlResult<()> {
         let root = super::site_root(site);
         for query in SEARCH_QUERIES {
-            if self.outcome.requests >= MAX_SEARCH_PAGES {
+            if self.outcome.requests >= MAX_SEARCH_PAGES || self.diagnostics.exhausted() {
                 break;
             }
             let url = format!("{root}/?s={query}");
             let Some((effective_url, html)) = self.fetch(&url).await? else {
                 continue;
             };
-            analyse(self.rules, &effective_url, &html, &mut self.outcome.signals)?;
+            if !self.analyse_page(&effective_url, &html)? {
+                continue;
+            }
             self.search_hits(&root, &html).await?;
         }
         Ok(())
@@ -174,8 +200,11 @@ impl Run<'_> {
                         .any(|needle| blob.contains(needle))
             });
         for (href, _) in hits.take(3) {
+            if self.diagnostics.exhausted() {
+                break;
+            }
             if let Some((effective_url, page)) = self.fetch(&href).await? {
-                analyse(self.rules, &effective_url, &page, &mut self.outcome.signals)?;
+                self.analyse_page(&effective_url, &page)?;
             }
         }
         Ok(())
@@ -185,3 +214,7 @@ impl Run<'_> {
 #[cfg(test)]
 #[path = "run_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "failure_tests.rs"]
+mod failure_tests;

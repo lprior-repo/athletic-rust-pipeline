@@ -240,3 +240,9 @@ mod research_tests;
 
 #[path = "staff_research_tests.rs"]
 mod staff_research_tests;
+
+#[path = "contact_slice_tests.rs"]
+mod contact_slice_tests;
+
+#[path = "queue_failure_tests.rs"]
+mod queue_failure_tests;
