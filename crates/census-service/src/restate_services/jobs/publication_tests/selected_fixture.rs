@@ -118,7 +118,7 @@ pub(in crate::restate_services) fn install() -> TestResult<Controlled> {
 
 pub(in crate::restate_services) fn revoke(controlled: &Controlled) -> TestResult {
     documentary_lifecycle::revoke(&controlled.installed, &controlled.accepted)?;
-    Ok(())
+    documentary_lifecycle::replay_without_reactivation(&controlled.installed, &controlled.accepted)
 }
 
 fn profile() -> TestResult<QueryProfileV1> {

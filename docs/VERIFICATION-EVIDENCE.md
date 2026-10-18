@@ -1123,3 +1123,33 @@ history: zero PRs, missing address/contact/coverage evidence remain explicit.
 Original-A changed-build replay, adjacent selected-publication regressions and
 exact-commit structural qualification remain pending; national readiness is not claimed.
 
+
+### Incoming selected-service integration — 2026-10-18
+
+Remote `1762f27b` merged without dropping the owner/resource repair. Its service
+`base64` dev-dependency changed the whole-lock context; original producer A was
+not regenerated. Before repair, consumer `821b9bdb` refused with
+`historical semantic kernel compiler/configuration/dependencies differ`.
+Complete native compiler/configuration was unchanged; lock SHA256 alone changed
+`687ef52c…b2d5e` → `5e5018c6…8ac54`. ADR-038 records the exact native transition.
+
+Current working closure:
+`4356a0b425795c1f73adf7df52e57d84fffb54faeda975f6e4f62e01460634c7`.
+Fmt `effa1f07`, all-target check `4fbfad87`, lint `6acbb334` and four historical
+authentication controls `ed4fa367` passed. Unknown contexts, changed original
+bytes, poisoned reuse and owner-policy downgrade still refuse; alternate-context
+admission is unchanged. Original-A changed-build qualification remains pending.
+
+The service silently discarded caller limit/scope. `80567678` exposed one
+published athlete despite a zero-limit request. The initial truncation oracle
+was incorrect: canonical selected exports forbid narrowing the profile population.
+Passing the options unchanged lets that existing policy refuse, rather than
+ignoring them or weakening the policy. `153d11a8` passed the corrected contract.
+`5768cf87` then passed all four managed/selected service cases: nonempty 50.00
+publication, unchanged retry, actual revoke plus original receipt replay without
+reactivation, independent fresh-process historical verification, and refused
+limit/Core overrides preserving the workbook and exact 49.00 exclusion.
+Canonical `workbook_job::build` has no old-name forwarding alias. Incoming
+readback helpers were grouped and key-to-itself assertions removed; source
+records, dates and review authority were not changed.
+

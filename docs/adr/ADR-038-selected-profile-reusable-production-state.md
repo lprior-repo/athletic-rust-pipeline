@@ -92,11 +92,23 @@ Read-only adapter V1 accepts only the original whole-document SHA-256 pins:
 | 5 | `60fd1056573363a7985af568568db1f9b82f4b39d38f9e3efa3034beb3c63fe0` |
 | 6 | `ba3d52bbc2673fc3f386815a39ed09702b5e2c68b528ca8eecf630d5f45ea8fd` |
 | 7 | `b49bfad4374e7a664c08977bc62428e40e8c8e0063d33235796e5eb3b03c2f65` |
+| 8, native context | `8a4c9f7f31199c9f856ed43f9905ed01741cfa506707c8cd472cc6032b331b6f` |
+| 9, native context | `94ad0cb66c947e1fdc1efd31cbd99c7d1aac3bbc580bf1e81debfd16bf188505` |
+| 8, alternate context | `9a4b8f629bfa43a1e706b8acc19498cf201876c583fec611355fbe006c4e97c3` |
+| 9, alternate context | `93351cb0eeff6d532402e831d6f61143d1b1f9e31e0a77a0629094ea46b5d34b` |
 
 The adapter also pins the supported current compiler/configuration/lock context;
 PR86's changed dependency context requires its own qualification. Historical
 canonical bytes, original grant ownership and every non-kernel semantic field,
 including rejected dispositions, must agree. Unknown identities or contexts refuse.
+
+The service `base64` dev-dependency changed the whole-lock hash from
+`687ef52c…b2d5e` to `5e5018c6…8ac54` (97,546 → 97,557 bytes), with identical
+native compiler/configuration. The reviewed native executing context is now
+`9e7f86bb6f374509c144ccf99fd3b2741b5512947840973299fe887c3db41210`.
+Only that exact transition is admitted; old document hashes and V1 owner behavior
+remain unchanged. The alternate `91910492…41c96f` lane gains no new-lock allowance.
+Original-A replay must qualify the resulting build; static equality is insufficient.
 
 **Consequences:** preserve original artifacts and producer pins; do not relabel
 them, reactivate old issuance claims or execute an old runtime. Qualification is

@@ -20,33 +20,37 @@ fn executing(epoch: KernelEpoch) -> (&'static str, &'static str) {
 }
 
 #[test]
-fn authentic_predecessors_bind_original_owner_policy_only_in_their_compiler_context() -> TestResult
-{
-    let cases: &[(KernelEpoch, &[u8])] = &[
+fn authentic_predecessors_bind_original_owner_policy_only_in_reviewed_execution_context(
+) -> TestResult {
+    let cases: &[(KernelEpoch, &[u8], &[u8; 32])] = &[
         (
             KernelEpoch::FullV10,
             include_bytes!("fixtures/kernel-v8-native.json"),
+            &EXECUTING_CONFIGURATION,
         ),
         (
             KernelEpoch::FullV10,
             include_bytes!("fixtures/kernel-v8-alternate.json"),
+            &ALTERNATE_CONFIGURATION,
         ),
         (
             KernelEpoch::RowLocalV11,
             include_bytes!("fixtures/kernel-v9-native.json"),
+            &EXECUTING_CONFIGURATION,
         ),
         (
             KernelEpoch::RowLocalV11,
             include_bytes!("fixtures/kernel-v9-alternate.json"),
+            &ALTERNATE_CONFIGURATION,
         ),
     ];
-    for &(epoch, retained) in cases {
+    for &(epoch, retained, allowed_context) in cases {
         let (current, digest) = executing(epoch);
         let configuration = context::digest(current.as_bytes())?;
         let mut grant = AttachmentReplayGrantV1::new();
         let bound =
             bind_historical_v1(epoch, retained, current, digest, &configuration, &mut grant);
-        if context::digest(retained)? == configuration {
+        if &configuration == allowed_context {
             let bound = bound?;
             bound.require_reference(
                 &format!("{:x}", Sha256::digest(retained)),
@@ -131,6 +135,34 @@ fn changed_predecessor_bytes_poison_replay_and_cannot_fall_back_to_current() -> 
                     census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError::Poisoned
                 )
             ))
+        ));
+    }
+    Ok(())
+}
+
+#[test]
+fn known_original_documents_refuse_an_unqualified_executing_context() -> TestResult {
+    for (epoch, retained) in [
+        (
+            KernelEpoch::FullV10,
+            include_bytes!("fixtures/kernel-v8-native.json").as_slice(),
+        ),
+        (
+            KernelEpoch::RowLocalV11,
+            include_bytes!("fixtures/kernel-v9-native.json").as_slice(),
+        ),
+    ] {
+        let (current, digest) = executing(epoch);
+        let mut configuration = context::digest(current.as_bytes())?;
+        configuration[0] ^= 1;
+        let mut grant = AttachmentReplayGrantV1::new();
+        check!(matches!(
+            bind_historical_v1(epoch, retained, current, digest, &configuration, &mut grant),
+            Err(StoreError::Refused { .. })
+        ));
+        check!(matches!(
+            grant.ensure_available(),
+            Err(census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError::Poisoned)
         ));
     }
     Ok(())

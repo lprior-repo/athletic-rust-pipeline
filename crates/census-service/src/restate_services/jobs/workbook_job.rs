@@ -15,7 +15,8 @@ pub(in super::super) fn build(
     let selected_options = match export_job {
         census_report::export::ExportJobRequest::LegacyV2 => options.clone(),
         census_report::export::ExportJobRequest::SelectedPublicationV1 { .. } => {
-            let selected = workbook::options_for_selected_dataset(&dataset, options.out.clone())?;
+            let mut selected =
+                workbook::options_for_selected_dataset(&dataset, options.out.clone())?;
             if selected.grad_year != options.grad_year
                 || selected.school_year != options.school_year
                 || jurisdiction_codes(&selected.jurisdictions)
@@ -25,6 +26,8 @@ pub(in super::super) fn build(
                     detail: "selected workbook profile disagrees with the bound national cohort, school year or jurisdictions".into(),
                 });
             }
+            selected.limit = options.limit;
+            selected.scope = options.scope;
             selected
         }
     };

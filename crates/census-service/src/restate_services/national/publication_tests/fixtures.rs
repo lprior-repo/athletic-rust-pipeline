@@ -63,7 +63,7 @@ pub fn answer(call: &Frame, journal: &mut Journal) -> TestResult<Value> {
                 school_year,
             };
             let job = format!("workbook:{}", call.text(5)?);
-            let reply = crate::restate_services::jobs::build_workbook(
+            let reply = crate::restate_services::jobs::workbook_job::build(
                 controlled.store(),
                 &options,
                 &job,
