@@ -1,5 +1,6 @@
 mod closure_grants;
 mod parent_conflicts;
+mod seal_authority;
 
 use super::documentary_material::Kind;
 use super::documentary_review::{self, AcceptedSource};
