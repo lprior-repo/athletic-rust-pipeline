@@ -71,6 +71,87 @@ async fn selected_national_workbook_retry_preserves_the_same_profile_request() -
 }
 
 #[tokio::test]
+async fn selected_workbook_endpoint_runs_the_reserved_handler_with_its_bound_profile() -> TestResult
+{
+    let controlled = crate::restate_services::jobs::selected_fixture::install()
+        .map_err(|error| error.to_string())?;
+    let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await?;
+    let url = format!("http://{}/invoke/Workbook/run", listener.local_addr()?);
+    let region = Arc::new(crate::spawn::Spawner::new());
+    let jobs = crate::restate_services::Jobs::new(
+        Arc::new(controlled.store().clone()),
+        Arc::clone(&region),
+    );
+    let endpoint = Endpoint::builder()
+        .bind(crate::restate_services::Workbook::new(jobs))
+        .build();
+    let (stop_tx, stop_rx) = tokio::sync::oneshot::channel();
+    let server = HttpServer::new(endpoint).serve_with_cancel(listener, async move {
+        match stop_rx.await {
+            Ok(()) | Err(_) => {}
+        }
+    });
+    let assertions = async move {
+        let result = tokio::time::timeout(Duration::from_secs(60), async {
+            let client = reqwest::Client::builder()
+                .http2_prior_knowledge()
+                .timeout(Duration::from_secs(45))
+                .build()?;
+            let request = crate::restate_services::WorkbookRequest {
+                grad_year: Some(2027),
+                limit: None,
+                scope: Some("all_sources".to_owned()),
+                out: None,
+                school_year: Some(2026),
+                jurisdictions: census_domain::UsJurisdiction::CENSUS_SCOPE.to_vec(),
+                export_job: census_report::export::ExportJobRequest::SelectedPublicationV1 {
+                    selection: controlled.selection().map_err(|error| error.to_string())?,
+                },
+            };
+            let payload = serde_json::to_vec(&request)?;
+            let mut journal = journal::Journal::new(&fixtures::request()?)?;
+            journal.invocation = "invocation-selected-workbook-endpoint".to_owned();
+            journal.identity = "selected-workbook-endpoint-fixture-v1".to_owned();
+            journal.entries = vec![codec::Frame::new(
+                0x0400,
+                codec::blob(14, &codec::value(&payload)?)?,
+            )];
+
+            journal.drive(&client, &url).await?;
+            let output = journal
+                .output
+                .as_ref()
+                .ok_or("Workbook endpoint did not complete the selected request")?;
+            let reply: crate::restate_services::WorkbookReply =
+                serde_json::from_value(output.clone())?;
+            check!(eq; reply.grad_year, Some(2027));
+            let publication = census_report::workbook::publication::verify_published(
+                std::path::Path::new(&reply.path),
+            )?;
+            check!(publication.workbook.mapped_athletes > 0);
+            crate::restate_services::jobs::publication_tests::check_selected_output(
+                std::path::Path::new(&reply.path),
+                controlled.public_id(),
+                controlled.candidate_id(),
+                controlled.current_school_id(),
+                "50.00",
+            )
+            .map_err(|error| error.to_string())?;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+        .await;
+        stop_tx
+            .send(())
+            .map_err(|_| "fixture Workbook endpoint lost its shutdown owner")?;
+        result??;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let ((), result) = tokio::join!(server, assertions);
+    region.drain(Duration::from_secs(5)).await?;
+    result
+}
+
+#[tokio::test]
 async fn managed_national_seal_refusal_never_rebuilds_its_bundle() -> TestResult {
     exercise(Scenario::ManagedRefusedSeal).await
 }
@@ -363,10 +444,15 @@ fn assert_published(journal: &journal::Journal) -> TestResult {
         .find(|call| call.text(2).is_ok_and(|handler| handler == "publication"))
         .ok_or("national never called the journal-measuring publication handler")?;
     check!(eq; seal.text(6)?, format!("{}:seal:0", journal.identity));
-    let workbook = if managed {
-        fixtures::MANAGED_WORKBOOK
-    } else {
-        "out/publication/current/workbook.xlsx"
+    let workbook = match journal.original.publication_contract {
+        crate::restate_services::PublicationContract::SelectedPublicationV1 => journal
+            .selected_workbook_path
+            .as_deref()
+            .ok_or("selected National dispatch did not run the controlled workbook job")?,
+        crate::restate_services::PublicationContract::ManagedBundleV2 => fixtures::MANAGED_WORKBOOK,
+        crate::restate_services::PublicationContract::LegacySeparateV1 => {
+            "out/publication/current/workbook.xlsx"
+        }
     };
     check!(eq; serde_json::from_slice::<serde_json::Value>(seal.bytes(3)?)?, serde_json::json!({
         "grad_year": 2027, "all_sources": true, "workbook": workbook,
@@ -380,5 +466,28 @@ fn assert_published(journal: &journal::Journal) -> TestResult {
     check!(eq; report.get("jurisdictions").and_then(serde_json::Value::as_array).map(Vec::len), Some(count));
     check!(eq; report.get("failures"), Some(&serde_json::json!([])));
     check!(eq; report.get("owed"), Some(&serde_json::json!([])));
+    if journal.original.publication_contract
+        == crate::restate_services::PublicationContract::SelectedPublicationV1
+    {
+        let controlled = journal
+            .selected_workbook
+            .as_ref()
+            .ok_or("selected National controlled fixture missing")?;
+        let path = journal
+            .selected_workbook_path
+            .as_ref()
+            .ok_or("selected National workbook output missing")?;
+        let verified =
+            census_report::workbook::publication::verify_published(std::path::Path::new(path))?;
+        check!(verified.workbook.mapped_athletes > 0);
+        crate::restate_services::jobs::publication_tests::check_selected_output(
+            std::path::Path::new(path),
+            controlled.public_id(),
+            controlled.candidate_id(),
+            controlled.current_school_id(),
+            "50.00",
+        )
+        .map_err(|error| error.to_string())?;
+    }
     Ok(())
 }
