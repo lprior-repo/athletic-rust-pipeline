@@ -13,8 +13,6 @@ use census_domain::model::{GradYear, QueryProfileV1, SchoolId};
 use census_domain::public_identity_history::PublicAthleteId;
 use std::path::Path;
 
-mod parent_conflicts;
-
 fn reviewed_inputs(installed: &InstalledSource) -> TestResult<(SchoolId, AcceptedSource)> {
     let current = super::current_school_source::install(installed)?;
     super::current_school_identity::accept(installed, &current)?;
