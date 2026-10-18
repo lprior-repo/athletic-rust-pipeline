@@ -822,3 +822,42 @@ selected 51 → independent frozen replay artifact exists yet. PRIMARY, populati
 coverage and national readiness remain unqualified. Historical denied fault
 selectors were not retried.
 
+#### Explicit full-window input qualification
+
+Exact source `c99fca79a3ef647c06f116c83e2de705d2f2be5a`, tree
+`e419acdc1b87f2ab7447f36a89281ddbdff64702`. Environment and exclusions match
+the preceding checkpoint: CI unset, two build jobs, task-local temporary storage,
+no live store or historically denied fault selectors.
+
+| Exercised surface | Receipt | Result |
+|---|---|---|
+| Canonical fmt / all-target check / source lint | `dc8053ea` / `6bb1f22d` / `010ebe3f` | PASS; arity advisories retained |
+| Checked window/root/parser and adjacent attachment/school/grant cases, including the full genuine A/B driver | `cd041ce4` | PASS 56/56 |
+| Actual inherited-nine nonempty roster and identity-only refusal functions | `0bd0d0b5` | PASS 2/2 |
+| Original retained A → changed-build B | `1b622cba` | PASS; original A `1ab843c4`, manifest/inventory/pins unchanged |
+| Owned-source comments / panic extraction | `0915aab3` / `37233b5b` | PASS; 4,833 files and three rendered templates |
+| Working-source trusted AST, before final semantic-refusal test was added | `cafefeeb` | 26,875 callables; no function over 60 logical lines, file over 300, or unresolved syntax; not final-source AST certification |
+| Actual temporary `smoke_participation_window` command, same production implementation before commit | `12ba7242` | PASS; public record → prepare/apply → read → close → reopen, `REOPEN_MATCH`; example removed |
+
+The earlier unchanged epoch pin correctly refused both input fixtures
+(`b0e20e88`: 13 PASS, 2 FAIL). Advancing the dependency document to 6/7 repaired
+that failure; it did not disable the immutable-kernel gate. The actual 94-input
+source digest is `f452d626bd1a7c79135c07ff7958b99794ff875ca2a8f74977d2efd1f82f8a76`.
+Exact 2/3 and 4/5 historical pins remain distinct from current captures.
+
+An erroneous inherited-module selector returned zero tests (`b7b5f386`, FAIL).
+The concrete existing function names then selected and passed both cases.
+No zero-selection pass is claimed.
+
+The isolated CLI retained explicit March 1–May 31, 2026 boundaries, summer end
+May 31, school year 2025-26 and cohort 2027. Original controlled HTML SHA256:
+`3133e9dfe1c658edd83045bb74e2764eb953d60d26d148b258622b06f6e01586`.
+Its boundary proof was `html_bytes:590:782`, distinct from the named heading
+`html_bytes:300:485`; all observed fields and references survived cold reopen.
+Original rows and source-bound identity also survived the window intake tests.
+
+Scope: functioning bounded public **source input**, not accepted participation
+authority. Reviewed window-to-selector binding, the CO current roster, selected
+50/51 workbook generations, withdrawal/replay and final Store-free acceptance
+remain open in `3fhg`. National readiness remains unqualified.
+
