@@ -16,6 +16,7 @@ mod read;
 pub(crate) mod selected;
 mod selected_proofs;
 
+pub(crate) use frozen::lineage as store_snapshot_lineage;
 pub(crate) use frozen::proof_objects;
 pub use frozen::{CancelOutcome, FrozenRoot};
 
@@ -119,7 +120,7 @@ pub fn store_identity(store: &Store) -> ReportResult<String> {
 pub fn store_lineage(store: &Store) -> ReportResult<DatasetLineage> {
     store.store_identity()?;
     let snapshot = store.snapshot();
-    frozen::lineage(store, &snapshot)
+    store_snapshot_lineage(store, &snapshot)
 }
 
 pub fn freeze_v2(store: &Store, job: &str) -> ReportResult<FrozenRoot> {

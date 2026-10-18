@@ -59,6 +59,9 @@ pub(super) fn collect(
         rows,
         unsupported,
         mapped,
+        documentary_authority: Some(
+            super::super::current_authority::DocumentaryAuthority::from_school(school, grant)?,
+        ),
     })
 }
 

@@ -197,6 +197,13 @@ bundle and its original freshness. Retrying a logical job may reuse only its own
 a changed profile/input/policy requires an explicit new publication identity. Corrections publish
 new artifacts; they never edit an artifact already given to a consumer.
 
+Current documentary sealing compares the retained attachment and historical-school
+inventories with current checked authority and accepted identity on one store
+snapshot. Raw-table equality or an unrelated journal sequence is not that fence.
+Historical opening verifies the original frozen authority without requiring it to
+remain current. Cache only authenticated in-memory metadata during hydration;
+do not recapture source bodies or introduce another replay format for this check.
+
 Keep three decisions separate: exact-build implementation qualification, configured-run
 completion with declared terminal gaps, and approval of a publication under its coverage rules.
 A profile registry, command success, old seal, large row count or passing focused suite proves

@@ -12,6 +12,7 @@ mod io;
 pub(super) mod job;
 
 mod archive;
+mod authority;
 mod semantics;
 pub(super) use semantics::{ensure_current_policy, ensure_semantic_policy, semantic_policy};
 mod budget;
@@ -126,7 +127,7 @@ pub(super) fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResul
     Ok(dataset)
 }
 
-pub(super) fn lineage(store: &Store, snapshot: &StoreSnapshot<'_>) -> ReportResult<DatasetLineage> {
+pub(crate) fn lineage(store: &Store, snapshot: &StoreSnapshot<'_>) -> ReportResult<DatasetLineage> {
     snapshot.ensure_origin(store)?;
     let store_identity = String::from(snapshot.store_identity()?);
     let bound = snapshot.run_manifest()?;
@@ -169,17 +170,7 @@ pub(super) fn ensure_snapshot(
     dataset: &ExportDataset,
     snapshot: &StoreSnapshot<'_>,
 ) -> ReportResult<()> {
-    if dataset
-        .selection
-        .as_ref()
-        .is_some_and(|binding| binding.authority.is_some())
-    {
-        let authority = dataset.selected_authority()?;
-        let accepted = snapshot
-            .accepted_public_identity_snapshot()?
-            .ok_or_else(|| invalid("selected authority disappeared from the current snapshot"))?;
-        authority.ensure_identity(&accepted)?;
-    }
+    let _ = authority::checked_identity(dataset, snapshot)?;
     if snapshot.tables_digest(&INPUT_TABLES)? != dataset.lineage.source_digest {
         return Err(invalid(
             "stale or foreign export input cannot publish changed source evidence",

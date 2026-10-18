@@ -19,7 +19,7 @@ fn row(
     token: PinnedParticipation,
     id: &census_domain::model::PerformanceId,
 ) -> TestResult<PinnedParticipationRow> {
-    let (_, _, _, mut rows, documentary, unsupported, _) = token.into_parts();
+    let (_, _, _, mut rows, documentary, unsupported, _, _) = token.into_parts();
     check!(documentary.is_empty());
     check!(unsupported.is_empty());
     Ok(rows.remove(id).ok_or("assessment missing")?)

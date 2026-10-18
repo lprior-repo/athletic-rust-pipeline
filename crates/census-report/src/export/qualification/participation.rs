@@ -26,6 +26,7 @@ mod budget;
 mod closure;
 mod context;
 mod contexts;
+pub(super) mod current_authority;
 mod independent;
 mod note;
 mod observations;
@@ -151,6 +152,7 @@ impl PinnedParticipation {
             rows,
             documentary: documentary.rows,
             unsupported_documentary: documentary.unsupported,
+            documentary_authority: documentary.documentary_authority,
             replay,
         })
     }
@@ -201,6 +203,7 @@ fn seal_live(
         rows,
         documentary: documentary.rows,
         unsupported_documentary: documentary.unsupported,
+        documentary_authority: documentary.documentary_authority,
         replay,
     })
 }

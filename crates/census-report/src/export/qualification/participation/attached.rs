@@ -45,6 +45,7 @@ pub(super) struct Collected {
     pub(super) rows: BTreeMap<PerformanceId, DocumentaryParticipationRow>,
     pub(super) unsupported: Vec<UnsupportedDocumentarySource>,
     pub(super) mapped: BTreeMap<PerformanceId, super::PinnedParticipationRow>,
+    pub(super) documentary_authority: Option<super::current_authority::DocumentaryAuthority>,
 }
 pub(super) fn school_bound(
     dataset: &ExportDataset,
@@ -75,17 +76,21 @@ pub(super) fn capture(
             )?;
         let bundle = current.freeze_closure(&mut grant)?;
         let plan = discover_current_html_results(&current, &mut grant).map_err(source)?;
-        let rows = with_current_attached_participation(&current, &mut grant, |sources, grant| {
-            Ok(collect(
-                dataset,
-                profile,
-                captured_at,
-                &plan,
-                AssessmentSources::Current(sources),
-                grant,
-            ))
-        })
-        .map_err(source)??;
+        let mut rows =
+            with_current_attached_participation(&current, &mut grant, |sources, grant| {
+                Ok(collect(
+                    dataset,
+                    profile,
+                    captured_at,
+                    &plan,
+                    AssessmentSources::Current(sources),
+                    grant,
+                ))
+            })
+            .map_err(source)??;
+        rows.documentary_authority = Some(
+            super::current_authority::DocumentaryAuthority::from_current_attachments(&current),
+        );
         let raw: &serde_json::value::RawValue = serde_json::from_slice(bundle.bytes())
             .map_err(|_| invalid("attachment closure bytes are not JSON"))?;
         let descriptor =
@@ -149,7 +154,7 @@ fn replay_version(
             &bundle, accepted, &mut grant,
         )?;
         let plan = discover_frozen_html_results(&current, &mut grant).map_err(source)?;
-        match semantics {
+        let collected = match semantics {
             ReplaySemantics::HistoricalWithheld => collect(
                 dataset,
                 profile,
@@ -171,7 +176,14 @@ fn replay_version(
                 })
                 .map_err(source)?
             }
-        }
+        };
+        let mut collected = collected?;
+        collected.documentary_authority = Some(
+            super::current_authority::DocumentaryAuthority::from_frozen_attachments(
+                &current, &mut grant,
+            )?,
+        );
+        Ok(collected)
     })();
     if result.is_err() {
         grant.poison();
@@ -224,6 +236,7 @@ fn collect(
         rows,
         unsupported,
         mapped: BTreeMap::new(),
+        documentary_authority: None,
     })
 }
 fn collect_group(

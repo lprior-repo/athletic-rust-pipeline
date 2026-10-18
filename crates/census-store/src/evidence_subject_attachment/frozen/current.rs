@@ -104,6 +104,13 @@ impl<'b> FrozenCurrentEvidenceSubjectAttachmentReferencesV1<'b> {
     pub fn inventory(&self) -> &AttachmentInventoryV1 {
         &self.ledger.inventory
     }
+    pub fn checked_inventory(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&AttachmentInventoryV1> {
+        self.require_original_grant(grant)?;
+        Ok(self.inventory())
+    }
     pub fn store_identity(&self) -> &StoreIdentity {
         self.accepted.view().store_identity()
     }

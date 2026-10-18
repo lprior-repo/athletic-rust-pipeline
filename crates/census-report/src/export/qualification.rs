@@ -98,6 +98,7 @@ pub(crate) struct VerifiedParticipationView {
     rows: BTreeMap<PerformanceId, ParticipationAssessment>,
     documentary: BTreeMap<PerformanceId, DocumentaryParticipationRow>,
     unsupported_documentary: Vec<participation::UnsupportedDocumentarySource>,
+    documentary_authority: Option<participation::current_authority::DocumentaryAuthority>,
 }
 
 impl VerifiedParticipationView {
@@ -131,6 +132,21 @@ impl VerifiedParticipationView {
         performance: &PerformanceId,
     ) -> Option<&ParticipationAssessment> {
         self.rows.get(performance)
+    }
+    pub(crate) fn require_current_documentary_authority(
+        &self,
+        snapshot: &census_store::StoreSnapshot<'_>,
+        accepted: &census_store::AcceptedPublicIdentitySnapshot,
+    ) -> crate::report::ReportResult<()> {
+        match &self.documentary_authority {
+            None => Err(census_store::StoreError::Refused {
+                detail: "documentary authority unavailable".into(),
+            }
+            .into()),
+            Some(authority) => authority
+                .require_current(snapshot, accepted)
+                .map_err(Into::into),
+        }
     }
 }
 
@@ -194,6 +210,7 @@ impl VerifiedParticipationView {
             rows,
             documentary: BTreeMap::new(),
             unsupported_documentary: Vec::new(),
+            documentary_authority: None,
         }
     }
 }

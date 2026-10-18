@@ -19,7 +19,7 @@ pub use dataset::{
     resident_generations, store_identity, store_lineage, to_export_dataset, CancelOutcome,
     DatasetLineage, ExportDataset, FrozenRoot,
 };
-pub(crate) use dataset::{proof_objects, MAX_FROZEN_INPUT_BYTES};
+pub(crate) use dataset::{proof_objects, store_snapshot_lineage, MAX_FROZEN_INPUT_BYTES};
 pub use provenance::{athletic_net_meet_identity, coach_source};
 
 #[cfg(test)]

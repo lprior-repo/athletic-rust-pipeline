@@ -12,6 +12,7 @@ impl VerifiedParticipationView {
             documentary,
             unsupported_documentary,
             replay,
+            documentary_authority,
         ) = pinned.into_parts();
         let rows = rows
             .into_iter()
@@ -41,6 +42,7 @@ impl VerifiedParticipationView {
                 rows,
                 documentary,
                 unsupported_documentary,
+                documentary_authority,
             },
             replay,
         )

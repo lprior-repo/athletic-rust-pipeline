@@ -80,6 +80,7 @@ pub(super) fn replay_documentary(
             rows: std::collections::BTreeMap::new(),
             mapped: std::collections::BTreeMap::new(),
             unsupported: Vec::new(),
+            documentary_authority: None,
         }),
     }
 }

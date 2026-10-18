@@ -55,6 +55,7 @@ pub(crate) struct PinnedParticipation {
     pub(super) unsupported_documentary: Vec<super::UnsupportedDocumentarySource>,
     pub(super) documentary: BTreeMap<PerformanceId, super::super::DocumentaryParticipationRow>,
     pub(super) replay: super::archive::ParticipationReplay,
+    pub(super) documentary_authority: Option<super::current_authority::DocumentaryAuthority>,
 }
 
 pub(crate) type PinnedParticipationParts = (
@@ -65,6 +66,7 @@ pub(crate) type PinnedParticipationParts = (
     BTreeMap<PerformanceId, super::super::DocumentaryParticipationRow>,
     Vec<super::UnsupportedDocumentarySource>,
     super::archive::ParticipationReplay,
+    Option<super::current_authority::DocumentaryAuthority>,
 );
 
 impl PinnedParticipation {
@@ -77,6 +79,7 @@ impl PinnedParticipation {
             self.documentary,
             self.unsupported_documentary,
             self.replay,
+            self.documentary_authority,
         )
     }
 }

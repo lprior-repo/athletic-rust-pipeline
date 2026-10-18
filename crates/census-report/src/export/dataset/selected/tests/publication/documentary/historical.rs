@@ -43,7 +43,7 @@ fn native_genuine_documentary_v3_archive_keeps_missing_facts_exact_bytes_and_out
             &historical.fingerprints(),
             affiliations.roster_context(),
         )?;
-        let (_, _, _, structured, documentary, unsupported, replay) = token.into_parts();
+        let (_, _, _, structured, documentary, unsupported, replay, _) = token.into_parts();
         check!(structured.is_empty());
         check!(unsupported.is_empty());
         check!(eq; documentary.len(), 3);

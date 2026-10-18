@@ -276,16 +276,19 @@ pub fn open_publication(
 
 pub fn open_publication_for_seal(
     path: &Path,
-    store_lineage: &DatasetLineage,
+    store: &census_store::Store,
     scope: Scope,
     cohort: GradYear,
     jurisdictions: &[census_domain::UsJurisdiction],
 ) -> ReportResult<OpenedPublication> {
     super::incident::check_workbook(path)?;
     let (directory, manifest) = verify::preflight(path)?;
-    super::seal::binding(&manifest, store_lineage, scope, cohort)?;
+    let snapshot = store.snapshot();
+    let current = crate::export::store_snapshot_lineage(store, &snapshot)?;
+    super::seal::binding(&manifest, &current, scope, cohort)?;
     super::seal::require_selection(&manifest, jurisdictions)?;
     let dataset = verify::decode(&directory, &manifest)?;
+    dataset.ensure_current_documentary_authority(&snapshot)?;
     let workbook = verify::verify_against(&directory, &manifest, &dataset)?;
     Ok(OpenedPublication {
         dataset,

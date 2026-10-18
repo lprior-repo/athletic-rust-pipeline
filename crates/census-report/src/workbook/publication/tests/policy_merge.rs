@@ -142,17 +142,16 @@ fn implicit_and_explicit_national_selection_bind_the_same_seal_scope() -> TestRe
             jurisdictions: published,
         };
         let path = crate::workbook::build(&store, &options)?;
-        let lineage = crate::export::store_lineage(&store)?;
         super::super::open_publication_for_seal(
             &path,
-            &lineage,
+            &store,
             options.scope,
             GradYear::CO2027,
             &requested,
         )?;
         check!(super::super::open_publication_for_seal(
             &path,
-            &lineage,
+            &store,
             options.scope,
             GradYear::CO2027,
             &[UsJurisdiction::Wisconsin]

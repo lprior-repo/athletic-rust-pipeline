@@ -12,7 +12,7 @@ fn open_for_seal(
 ) -> crate::report::ReportResult<publication::OpenedPublication> {
     publication::open_publication_for_seal(
         path,
-        &crate::export::store_lineage(store)?,
+        store,
         Scope::AllSources,
         GradYear::CO2027,
         &profile.input().jurisdictions,
