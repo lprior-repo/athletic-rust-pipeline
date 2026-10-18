@@ -142,8 +142,10 @@ fn best_sidecars(
             ("selection_policy_version", "21"),
         ],
     )?;
-    check!(eq; row.get("raw_mark").map(String::as_str), Some("unavailable"));
+    check!(eq; row.get("original_mark").map(String::as_str), Some(""));
+    check!(eq; row.get("adjustment_kind").map(String::as_str), Some(""));
     let headers = artifacts::headers_of(&directory.join("best-results-co2027.csv"))?;
+    check!(!headers.iter().any(|value| value == "raw_mark"));
     for name in [
         "athlete_id",
         "canonical_candidate_id",

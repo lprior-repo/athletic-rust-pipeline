@@ -2,6 +2,8 @@ use super::*;
 use census_domain::model::RetainedConflict;
 use census_store::Entity;
 
+mod merged;
+
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[derive(Clone, Copy)]
@@ -87,9 +89,18 @@ async fn school_projection_refuses_same_id_preconflicted_parent_fields() -> Test
     let original_school = team.school.clone();
     let mut divergent = team.clone();
     divergent.school = census_domain::model::Id::mint("school", &["contradictory", "entity"]);
-    dataset.teams.get_mut(&performance.team).ok_or("team")?.merge(divergent);
+    dataset
+        .teams
+        .get_mut(&performance.team)
+        .ok_or("team")?
+        .merge(divergent);
     check!(
-        !dataset.teams.get(&performance.team).ok_or("team")?.retained_conflicts.is_empty(),
+        !dataset
+            .teams
+            .get(&performance.team)
+            .ok_or("team")?
+            .retained_conflicts
+            .is_empty(),
         "Entity::merge must record an id collision"
     );
     let meet = dataset

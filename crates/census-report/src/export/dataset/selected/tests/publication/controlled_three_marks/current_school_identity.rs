@@ -10,7 +10,10 @@ use census_store::{SourceCandidateMembershipRequestV1, Table};
 const OBSERVED_AT: &str = "2026-10-16";
 const MEMBERSHIP_OPERATION: &str = "controlled-current-school-source-membership";
 
-fn co_candidate(installed: &InstalledSource, input: &CurrentSchoolInput) -> TestResult<AthleteCandidateId> {
+fn co_candidate(
+    installed: &InstalledSource,
+    input: &CurrentSchoolInput,
+) -> TestResult<AthleteCandidateId> {
     let rows: Vec<CanonicalAthlete> = installed.store.snapshot().scan(Table::Athletes)?;
     let mut found: Option<AthleteCandidateId> = None;
     for row in &rows {
@@ -131,7 +134,9 @@ fn require_owner(installed: &InstalledSource) -> TestResult {
         }
         PublicResolution::Unknown
         | PublicResolution::Unresolved
-        | PublicResolution::Ambiguous { .. } => Err("controlled original without registry root".into()),
+        | PublicResolution::Ambiguous { .. } => {
+            Err("controlled original without registry root".into())
+        }
     }
 }
 

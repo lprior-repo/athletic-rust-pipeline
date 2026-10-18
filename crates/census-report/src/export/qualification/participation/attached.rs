@@ -263,14 +263,6 @@ fn reject_mapped_duplicate(
 ) -> ReportResult<()> {
     guards::mapped_duplicate(rows, mapped, id, budget)
 }
-fn reject_collision(
-    dataset: &ExportDataset,
-    rows: &BTreeMap<PerformanceId, DocumentaryParticipationRow>,
-    id: &PerformanceId,
-    budget: &mut Admission,
-) -> ReportResult<()> {
-    guards::collision(dataset, rows, id, budget)
-}
 
 fn domain(
     error: census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError,
