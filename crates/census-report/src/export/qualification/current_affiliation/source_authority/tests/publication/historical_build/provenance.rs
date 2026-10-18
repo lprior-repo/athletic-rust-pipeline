@@ -71,23 +71,41 @@ pub(super) fn old_claim_refused_by_current(archive: &Path, manifest: &Value) -> 
         &objects,
         closure.get("reviewed").ok_or("reviewed reference")?,
     )?;
-    let mut grant = AttachmentReplayGrantV1::new();
-    let replayed =
-        census_store::replay_frozen_roster_reviewed_claims_v1(&source, &reference, &mut grant)?;
-    let claim = replayed
-        .claims(&mut grant)?
-        .first()
-        .ok_or("nonempty original reviewed source")?;
-    check!(eq; serde_json::to_value(claim.proposal(&mut grant)?.parser())?, *manifest.get("parser_claim").ok_or("original parser claim")?);
-    let result = census_crawl::participation_evidence::roster_source_issuance::assess_reviewed_roster_source_v1(claim, &mut grant);
-    let error = match result {
-        Ok(_) => return Err("old source provenance accepted by current assessment".into()),
-        Err(error) => error,
+
+    let claim_count = {
+        let mut original_grant = AttachmentReplayGrantV1::new();
+        let original_owner = census_store::replay_frozen_roster_reviewed_claims_v1(
+            &source,
+            &reference,
+            &mut original_grant,
+        )?;
+        let claims = original_owner.claims(&mut original_grant)?;
+        check!(!claims.is_empty(), "nonempty original reviewed source");
+        for claim in claims {
+            let parser = claim.proposal(&mut original_grant)?.parser();
+            check!(eq; serde_json::to_value(parser)?, *manifest.get("parser_claim").ok_or("original parser claim")?);
+        }
+        claims.len()
     };
-    check!(
-        matches!(error, census_crawl::CrawlError::Store(census_store::StoreError::Refused { detail }) if detail == "retained roster parser source provenance has no supported adapter")
-    );
-    check!(grant.ensure_available().is_err());
+
+    for index in 0..claim_count {
+        let mut grant = AttachmentReplayGrantV1::new();
+        let owner =
+            census_store::replay_frozen_roster_reviewed_claims_v1(&source, &reference, &mut grant)?;
+        let claim = owner
+            .claims(&mut grant)?
+            .get(index)
+            .ok_or("claim index within replayed owner")?;
+        let result = census_crawl::participation_evidence::roster_source_issuance::assess_reviewed_roster_source_v1(claim, &mut grant);
+        let error = match result {
+            Ok(_) => return Err("old source provenance accepted by current assessment".into()),
+            Err(error) => error,
+        };
+        check!(
+            matches!(error, census_crawl::CrawlError::Store(census_store::StoreError::Refused { detail }) if detail == "retained roster parser source provenance has no supported adapter")
+        );
+        check!(grant.ensure_available().is_err());
+    }
     Ok(())
 }
 

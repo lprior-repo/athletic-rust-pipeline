@@ -674,3 +674,37 @@ Readback charged 7,255,651 bytes / 14,497 steps for accepted and 6,247,136 bytes
 The original source fixture was not changed. This establishes historical-school
 review/replay only, not an eligibility window, the 50→51 selected workbook,
 population coverage, final-source release qualification or a completed bead.
+
+#### Integrated reviewed-source checkpoint — 2026-10-18
+
+Source `8910dadc86a156169f46d597ddaf08465f2953db`, tree
+`37bb696b67ad34b81a79e1eafd28894f93ad2e91`, is pushed to main and includes
+incoming `1c572509f`. Exact-commit execution used `env -u CI`, task-local
+`TMPDIR`/`TMP`/`TEMP=/home/lewis/.cache/r14n-TpNM3q`, and two build jobs.
+
+| Surface | Receipt | Result |
+|---|---|---|
+| Canonical format / all-target check / source lint | `999a2de4` / `653e8ba8` / `4e518f92` | PASS; forced arity advisories are not suppressed |
+| Selected-publication lane, original genuine inputs and inherited-nine roster | `edb1a9c2` | PASS; includes real eligible-PR merge/split, workbook/normalized readback, source-free generations and stale secondary-link withholding |
+| Exact and mixed V4/V5 policy/digest boundaries | `b16fb281` | PASS; unknown same-revision digests refuse for every role |
+| Independent school-proof executable | `64b0261d` | PASS; original accepted/revoked artifacts still yield school / no school after Store closure |
+| Owned-source lexical safety | `5e614a12` / `0e714b5b` | PASS before commit on identical Rust source; no comments or forbidden extraction |
+| Trusted structural scan | `d140349f` | FAIL: six unchanged immutable-kernel functions exceed 60 logical lines; zero files exceed 300 |
+| Fresh three-case roster producer | `eff29df5` | FAIL: retained copy omitted the required `publication/generations/<digest>` layout |
+
+The failed producer remains at `/home/lewis/.cache/r2-kernel-baseline-Os9ai0/producer-a`;
+it has no completed retention manifest and is not authenticated A. The layout
+repair requires a new clean producer identity and fresh destination. No old A
+has been relabeled; kernel pins were not changed.
+
+The earlier explicitly synthetic V5 control is retained under
+`/home/lewis/.cache/r14n-TpNM3q/r3-identity-ZZDVKy/publication/generations/`.
+Pre/post-split generations are `606910df143f90f769b02fc992fc4068fe49e33bd7ca2998cc8e252b72089b67`
+and `a43765dd1c6324980d8d7dba100a4c30fe81d4cefca18b3e8de40cc8f308d307`.
+Independent `review-readback` executions `ade02192` / `ba13f079` reported no
+artifact hash/length mismatches and read the actual XLSX sheets.
+Workbook SHA256 values are `145cd495f37d1e9b08f6ef15b1d9e94859714611e85e6cfc6a508b5605aa478c`
+and `aebe8065508b99c70d544eab08dd4ad191453211711db3740e35577cad3e57a9`.
+These are identity-correction controls, not PRIMARY's 50→51 workbook, genuine
+population coverage, authenticated R2 A/B, representative memory proof or national readiness.
+

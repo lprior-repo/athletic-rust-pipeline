@@ -209,6 +209,13 @@ exact result context/locator and expected school disposition. A configured
 `CENSUS_RESULT_SCHOOL_RETENTION_DIR` retains these artifacts from the public school-review
 qualification scenario. They prove school authority/revocation, not PR-window or national acceptance.
 
+For the controlled eligible-identity split case, optional
+`CENSUS_CONTROLLED_ELIGIBLE_IDENTITY_RETENTION_DIR` selects a fresh publication
+root beneath the canonical task `TMPDIR`; existing destinations refuse.
+The test prints pre/post-split workbook paths. Run
+`pipeline:xtask -- review-readback --bundle <workbook-parent>` on each generation. This synthetic
+Long Jump control is not the three-mark 50→51 or national acceptance artifact.
+
 The full test task is deliberately uncached because native fault/recovery checks observe processes,
 ports and durable state not represented by source hashes. Running it does not by itself certify all
 separately required native fault scenarios. A report-library cache hit cannot stand in for this lane.

@@ -419,22 +419,24 @@ quiescence. No worker runs builds mid-flight, weakens an oracle, changes source
 identity to fit a fixture, resets a live store or substitutes a historical binary.
 Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
-### 7.5. Current execution checkpoint — 2026-10-17
+### 7.5. Current execution checkpoint — 2026-10-18
 
-Pushed checkpoint: `3688a68015e7fcca1c8c5155ba536a18b3e12aab`, tree
-`7693f7e409e2db96d556076d435ba9a1e63552d7`. Subsequent lifecycle-9 work is
-unqualified. [Evidence](VERIFICATION-EVIDENCE.md#pr81-integration-qualification--2026-10-17);
-Beads owns task status and dependencies. PASS below is scoped, never national readiness.
+Pushed source: `8910dadc86a156169f46d597ddaf08465f2953db`, tree
+`37bb696b67ad34b81a79e1eafd28894f93ad2e91`, including incoming main through
+`1c572509f`. [Evidence](VERIFICATION-EVIDENCE.md#integrated-reviewed-source-checkpoint--2026-10-18).
+PASS is scoped; six immutable-kernel size failures still block full qualification.
 
 | Requirement | Code entrypoint | Test / command receipt | Tested revision | Result | Artifact | Next dependency |
 |---|---|---|---|---|---|---|
-| A: static checkpoint | `tools/moon-local` | fmt `a3a46f50`, check `538ce06f`, lint `aba33a0a` | `3688a680` | PASS; ten authorized arity advisories | Execution ledger | Repeat after lifecycle-9 integration |
+| A: static checkpoint | `tools/moon-local` | fmt `999a2de4`, check `653e8ba8`, lint `4e518f92` | `8910dadc` | PASS; authorized arity advisories remain visible | Execution ledger | Resolve hard structural gate separately |
+| A: structural/safety gate | Trusted AST; owned-source lexer | scan `d140349f`; comments `5e614a12`; panic extraction `0e714b5b` | Rust source committed as `8910dadc` | Safety PASS; size FAIL: six pinned kernel functions, no oversized files | Original kernel identities unchanged | Authentic A; explicit versioned historical interpreter qualification, no repinning |
 | A: historical authority fence | Retained Report V3 consumer | `64e0d132` | PR81 + working repairs | PASS; not exact final-source qualification | Original retained V3, pins/checksum unchanged | Preserve artifact; rerun after integration |
-| A: genuine original-source replay | Documentary selected-publication roundtrip | `886019a3` | `3688a680` | PASS, both cohorts; unknowns withheld | Original authenticated handoff; temporary readback, no delivered workbook | Positive PRIMARY and population acceptance |
-| A/R2: transfer and correction replay | Reviewed-source publication | `8516831e` | `3688a680` | PASS, 37 selected cases | Actual workbook/normalized readback and source-free G0/G1/G2 replay | Authenticated roster A/B |
-| R2: semantic equivalence across builds | Fixed kernel V2; retained producer/consumer | Separate A/B lane | — | NOT RUN | No authenticated roster A/B artifact yet | Qualified clean A, distinct changed build B |
+| A: genuine original-source replay | Documentary selected-publication roundtrip | `edb1a9c2` | `8910dadc` | PASS; original unknowns remain withheld | Original handoff/pins unchanged | Positive PRIMARY and population acceptance |
+| A/R2: transfer and correction replay | Selected publication and inherited lifecycle-9 roster | `edb1a9c2` | `8910dadc` | PASS; actual workbook/normalized and source-free generation readback | Scoped publication lane | Authenticated roster A/B |
+| R2: semantic equivalence across builds | Retained three-case producer/consumer | producer `eff29df5` | `8910dadc` | FAIL: copied publication omitted `generations/`; fix awaiting fresh producer | Failed partial artifact preserved; no authenticated A | Qualify fresh clean A, then changed B with original A pins |
 | B/R1: original school-cell ownership | `CheckedRetainedResultRowV1::school_statement` | `fb5e3111`; smoke `90001154` | `3688a680` | PASS; source quote, no SchoolId authority | Original fixture SHA256 `95350f13…cc19e5`; identical replay references | `q01l` reviewed historical-school issuance |
-| B/R1: reviewed historical school | Public checked review → revoke → cold/frozen consumer | Crawl `bb4c7858`; independent consumer `6905ff5f` | Uncommitted | Scoped PASS; broader regression and final-gate repair pending | Private accepted-51/revoked-53 proofs; pinned tamper refused | Inherited 7/8 current/frozen qualification; full affected regressions; landing |
+| B/R1: reviewed historical school | Public checked review → revoke → cold/frozen consumer | independent consumer `64b0261d` | `8910dadc` | Cold accepted/revoked readback PASS; not PRIMARY | Original accepted-51/revoked-53 proofs/pins unchanged | Exact-build public workflow regression; source-backed window and full PRIMARY |
+| B/R3: eligible PR identity correction | Reviewed V5 roster → merge/split → publication → Store-free replay | `edb1a9c2`; independent CLI `ade02192` / `ba13f079` | `8910dadc`; retained precommit synthetic control | PASS, including post-review raw-link mutation withholding | Two private owned workbook generations; all manifest artifact hashes agree | Remaining R3 consumer/service cases; not 50→51 or national coverage |
 | B/R1: eligible PR then withdrawal | Production selector → workbook/normalized → frozen readback | `3fhg`: 50→51 | — | NOT RUN | No controlled 50→51 workbook yet | Explicit source-backed window; reviewed school; real revoke/replay |
 | C/D: reusable operation and population | R1–R15 production paths and comparison | Spec-linked owners | — | NOT QUALIFIED | No national acceptance artifact | UP/five-state coverage, reuse/recovery/resource evidence |
 

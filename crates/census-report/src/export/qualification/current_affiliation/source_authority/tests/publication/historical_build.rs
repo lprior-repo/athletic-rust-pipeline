@@ -4,6 +4,7 @@ use super::*;
 mod authentication;
 mod cases;
 mod provenance;
+mod tamper;
 
 #[test]
 fn native_independent_reviewed_roster_producer_replays_all_cases_across_changed_build() -> TestResult
@@ -18,6 +19,7 @@ fn native_independent_reviewed_roster_producer_replays_all_cases_across_changed_
     {
         cases::replay(&retained, case)?;
     }
+    tamper::required_object_refuses(&retained)?;
     check!(eq; serde_json::to_value(files::inventory(&retained.root)?)?, retained.inventory);
     check!(eq; files::read(&retained.path)?, retained.bytes);
     provenance::current_qualification()?;

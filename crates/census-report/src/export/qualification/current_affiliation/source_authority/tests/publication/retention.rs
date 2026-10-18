@@ -92,8 +92,8 @@ fn retain_case(destination: &Path, name: &str, case: Case) -> TestResult<Value> 
     let retained = destination.join(name);
     std::fs::create_dir(&retained)?;
     let archive_files = files::copy(archive.path(), &retained.join("archive"))?;
-    let publication_root = retained.join("publication");
-    std::fs::create_dir(&publication_root)?;
+    let publication_root = retained.join("publication/generations");
+    std::fs::create_dir_all(&publication_root)?;
     let retained_generation =
         publication_root.join(generation.file_name().ok_or("retention generation name")?);
     let publication_files = files::copy(generation, &retained_generation)?;

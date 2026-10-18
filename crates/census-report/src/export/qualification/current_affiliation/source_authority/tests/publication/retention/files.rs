@@ -88,7 +88,7 @@ pub(in super::super) fn read(path: &Path) -> TestResult<Vec<u8>> {
     Ok(bytes)
 }
 
-pub(super) fn copy(source: &Path, destination: &Path) -> TestResult<Vec<File>> {
+pub(in super::super) fn copy(source: &Path, destination: &Path) -> TestResult<Vec<File>> {
     let before = inventory(source)?;
     check!(!before.is_empty());
     std::fs::create_dir(destination)?;
