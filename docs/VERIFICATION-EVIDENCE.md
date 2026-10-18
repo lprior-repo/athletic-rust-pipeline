@@ -930,3 +930,34 @@ denied fault selectors were not retried; the release umbrella was NOT RUN.
 Next concrete defect: current sealing compares raw source evidence but not
 documentary withdrawal inventories. Historical G0 must remain readable while
 current sealing refuses stale authority. Its new regression/fix is not yet qualified.
+
+Incoming-main integration: PR91/92 merged as `6ede05e6`. The first CLI selector
+used `--lib` and selected zero tests (`8f72db3c`, FAIL); the correct binary target
+passed five cases (`225302b9`). Connected cases passed 170/170 (`8b7834c4`), but
+strict AST `f44bb88c` rejected `run_national` at 61 logical lines.
+`6fd18a2c` extracts its unchanged invocation-announcement phase; the rerun passed
+169/169 connected cases, five CLI cases, original-A replay and structural/lexical
+checks. The long genuine driver was not repeated for this CLI-only extraction.
+Its subsequent architecture contract (`ad4e17c9`) found a missing reader
+classification and six empty orphan Rust files. `661e5009` classifies retained
+participation evidence as a non-acquiring reader and removes those empty cutover
+remnants. The quiescent final-source qualification below passed.
+
+Qualified integrated source `661e500950afc4e0fa2302956faadac5a224304a`, tree
+`95cb6af04b1209f6d96a024629b721af0fb9442b`:
+
+| Exact-source check | Receipt | Result |
+|---|---|---|
+| fmt / all-target check / lint | `577268e6` / `157d9402` / `2477e516` | PASS |
+| CLI binary publication notices; connected lifecycle and adjacent source cases; original A → B | `7d95defa`; `a232f527` (Nextest `7c119a02`); `5eb6de5d` | PASS 5/5; 169/169; 1/1; genuine long driver remains qualified on preceding `6ede05e6`, not rerun here |
+| Trusted AST / comments / panic extraction | `4bec1427` / `ae90eb3f` / `4f24b050` | PASS; no hard structural violation or unresolved AST; 4,894 lexical files and three templates |
+| Architecture contract | `2f6d4563` | PASS; 29 adapters, 24 readers, no unreachable source; existing crate-boundary deviation group remains visible |
+
+Independent ZIP/XML/CSV readback also verified every artifact checksum and actual
+PR/date/school cells in the latest controlled pair, under the same private cache
+prefix above. These are controlled-only workbooks, not a national population.
+
+| Generation | Workbook under private prefix | SHA256 |
+|---|---|---|
+| G0: 50.00, May 15, eligible groups 2 | `.tmpppSEuK/publication/generations/8e7470f941ad971969b3c6dbd1bba181e5bb43479afa5de2093f0192bea09a77/workbook.xlsx` | `ca8e270cdeef5a3f5f7ef6d8092647ea9d1a0bfc06cb8def0d3df5229bd8276c` |
+| G1: 51.00, May 16, eligible groups 1 | `.tmpHnXRgP/publication/generations/7f3afcab37915c5e19502c9659afe20c740a6ed146070fc875e303513be0ae46/workbook.xlsx` | `ca1f0ee502dccdf3cfde6999f324260d21439219d5110ccf2c20adb441f77d4f` |
