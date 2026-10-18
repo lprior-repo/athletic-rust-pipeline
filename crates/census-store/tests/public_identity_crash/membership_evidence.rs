@@ -7,10 +7,14 @@ use census_domain::model::{
 use census_domain::public_identity_history::HistoryRequest;
 use census_store::{PublicIdentityWriterV1, SourceCandidateMembershipRequestV1, Store, Table};
 
-pub(super) fn install(
+pub(crate) fn install(
     store: &Store,
     writer: &PublicIdentityWriterV1,
 ) -> TestResult<SourceCandidateMembershipRequestV1> {
+    let prior = store
+        .snapshot()
+        .accepted_public_identity_snapshot()?
+        .ok_or("prior snapshot")?;
     let first = subject("first")?;
     store.append(Table::Athletes, &first)?;
     let birth = writer.establish_source_bound(
@@ -29,7 +33,14 @@ pub(super) fn install(
     let accepted = snapshot
         .accepted_public_identity_snapshot()?
         .ok_or("birth snapshot")?;
-    let record = accepted.history_records().first().ok_or("birth record")?;
+    check!(eq; accepted.history_records().get(..prior.history_records().len()), Some(prior.history_records()));
+    let record = accepted
+        .history_records()
+        .iter()
+        .find(|record| {
+            record.sequence == birth.head().sequence && record.digest == birth.head().digest
+        })
+        .ok_or("returned birth record")?;
     let HistoryRequest::Establish { binding, .. } = &record.request else {
         return Err("source birth kind".into());
     };

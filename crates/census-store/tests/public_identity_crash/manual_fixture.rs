@@ -1,4 +1,4 @@
-use std::io::{Read, Write};
+use crate::fixture_files::{read_json, write_new};
 use std::path::{Path, PathBuf};
 
 use census_domain::model::{AthleteCandidateId, StoreIdentity};
@@ -7,7 +7,7 @@ use census_domain::public_identity_history::local_adjudication::{
 };
 use census_domain::public_identity_history::{PublicAthleteId, RegistryHead};
 use census_store::{PreparedLocalAdjudicationV1, PublicIdentityWriterV1, Store, Table};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use super::{evidence, physical, TestResult};
@@ -159,28 +159,6 @@ pub(super) fn child() -> TestResult {
 
 pub(super) fn read_approval(root: &Path) -> TestResult<Approval> {
     read_json(&root.join(APPROVAL_FILE))
-}
-
-fn write_new(path: &Path, bytes: &[u8]) -> TestResult {
-    check!(bytes.len() <= 1_048_576);
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)?;
-    file.write_all(bytes)?;
-    file.sync_all()?;
-    Ok(())
-}
-
-fn read_json<T: DeserializeOwned>(path: &Path) -> TestResult<T> {
-    let metadata = std::fs::symlink_metadata(path)?;
-    check!(metadata.is_file() && metadata.len() > 0 && metadata.len() <= 1_048_576);
-    let mut bytes = Vec::new();
-    std::fs::File::open(path)?
-        .take(1_048_577)
-        .read_to_end(&mut bytes)?;
-    check!(bytes.len() <= 1_048_576);
-    Ok(serde_json::from_slice(&bytes)?)
 }
 
 fn decode_head<'de, D: serde::Deserializer<'de>>(

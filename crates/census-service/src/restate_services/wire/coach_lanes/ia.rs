@@ -1,10 +1,9 @@
 #[cfg(test)]
-use census_domain::model::CoachLaneAcceptance;
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    PendingCoachLane, SchoolYear, SourceRef,
-};
+use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+
+use super::policy::{ArmBasis, Lane, LanePolicy};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const IA_ARM: &str = "bound";
 pub(super) const IA_REFUSAL_SLUG: &str = "ia_missing_coach_sources";
@@ -16,40 +15,14 @@ const ACCEPTED_BY: &str = "census-ops";
 #[cfg(test)]
 const ACCEPTANCE_EVENT: &str = "jpx4.accepted_refusal";
 
-pub(super) fn refusal(observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(SourceRef::id(IA_REFUSAL_SLUG), IA_TRUE_MISSING, observed_on)
-}
-
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Iowa,
-        season,
-        revision,
-        arm: IA_ARM.to_string(),
-        arm_basis: IA_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    pending.record(
-        CoachLaneStage::Blocked,
-        Some(refusal(observed_on)?),
-        CoachLaneResolution::unresolved(observed_on),
-    )
-}
-
-#[cfg(test)]
-pub(super) fn accepted(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let recorded = lane(season, revision, observed_on)?;
-    let acceptance = CoachLaneAcceptance::new(ACCEPTED_BY, ACCEPTANCE_EVENT, observed_on)?;
-    recorded.accept_refusal(acceptance)
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::Iowa,
+    arm: IA_ARM,
+    refusal: (IA_REFUSAL_SLUG, IA_TRUE_MISSING),
+    kind: RefusalKind::AccessBlocked,
+    basis: ArmBasis::Text(IA_ARM_BASIS),
+    policy: LanePolicy::Blocked,
+};
 
 #[cfg(test)]
 mod tests {
@@ -79,7 +52,7 @@ mod tests {
 
     #[test]
     fn coach_lane_ia_records_the_work_order_true_missing_reason() -> TestResult {
-        let recorded = refusal(OBSERVED_ON)?;
+        let recorded = POLICY.refusal(OBSERVED_ON)?;
         check!(eq; recorded.reason(), IA_TRUE_MISSING);
         check!(eq; recorded.source().id.as_str(), IA_REFUSAL_SLUG);
         check!(eq; recorded.observed_on(), OBSERVED_ON);
@@ -94,7 +67,7 @@ mod tests {
     fn coach_lane_ia_lane_records_the_refusal_without_closing_the_row() -> TestResult {
         let mut state = JurisdictionState::default();
         check!(coach_lane_owed(&state));
-        let row = lane(season()?, 1, OBSERVED_ON)?;
+        let row = super::super::evaluate(&POLICY, season()?, 1, OBSERVED_ON)?;
         check!(eq; row.id(), "coach_lane:IA:2026:1");
         check!(eq; row.status(), CoachLaneStatus::Blocked);
         check!(!row.is_terminal());
@@ -110,7 +83,7 @@ mod tests {
     #[test]
     fn coach_lane_ia_owner_acceptance_closes_the_row() -> TestResult {
         let mut state = JurisdictionState::default();
-        let closed = accepted(season()?, 1, OBSERVED_ON)?;
+        let closed = super::super::accepted(&POLICY, season()?, 1, OBSERVED_ON)?;
         check!(eq; closed.status(), CoachLaneStatus::AcceptedRefusal);
         check!(closed.is_terminal());
         check!(closed.evidence().is_none());

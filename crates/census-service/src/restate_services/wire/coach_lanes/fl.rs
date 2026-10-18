@@ -1,8 +1,9 @@
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    PendingCoachLane, SchoolYear, SourceRef,
-};
+#[cfg(test)]
+use census_domain::model::{CoachLaneObligation, SchoolYear};
 use census_domain::UsJurisdiction;
+
+use super::policy::{ArmBasis, Lane, LanePolicy};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const FL_ARM: &str = "home_campus";
 pub(super) const FL_REFUSAL_SLUG: &str = "fl_missing_coach_sources";
@@ -16,29 +17,19 @@ const FL_CAPTURE_FILE: &str =
 
 const FL_ARM_BASIS: &str = "the wired home_campus arm parses FHSAA school profiles, but the retained 2026-10-04 fl.log is an aggregate report of 880 schools and 3677 email rows, not page-bound role, current-tenure or source-origin evidence, so it cannot arm the lane:";
 
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Florida,
-        season,
-        revision,
-        arm: FL_ARM.to_string(),
-        arm_basis: format!("{FL_ARM_BASIS} {FL_CAPTURE_PATH} sha256 {FL_CAPTURE_DIGEST}"),
-        observed_on: observed_on.to_string(),
-    })?;
-    pending.record(
-        CoachLaneStage::Blocked,
-        Some(CoachLaneRefusal::new(
-            SourceRef::id(FL_REFUSAL_SLUG),
-            FL_TRUE_MISSING,
-            observed_on,
-        )?),
-        CoachLaneResolution::unresolved(observed_on),
-    )
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::Florida,
+    arm: FL_ARM,
+    refusal: (FL_REFUSAL_SLUG, FL_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Capture {
+        text: FL_ARM_BASIS,
+        source_url: None,
+        path: FL_CAPTURE_PATH,
+        digest: FL_CAPTURE_DIGEST,
+    },
+    policy: LanePolicy::Blocked,
+};
 
 #[cfg(test)]
 mod tests {
@@ -129,7 +120,7 @@ mod tests {
     #[test]
     fn coach_lane_fl_log_age_cannot_supply_missing_qualification_evidence() -> TestResult {
         for observed_on in [OBSERVED_ON, BOUNDARY_ON, STALE_ON] {
-            let recorded = lane(season()?, 1, observed_on)?;
+            let recorded = super::super::evaluate(&POLICY, season()?, 1, observed_on)?;
             check!(eq; recorded.status(), CoachLaneStatus::Blocked);
             check!(!recorded.is_terminal());
             check!(recorded.evidence().is_none());

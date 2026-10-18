@@ -10,7 +10,7 @@ use census_store::{IdentityCommitOutcomeV1, Receipt};
 use sha2::{Digest, Sha256};
 
 use super::fixture::{Fixture, OPERATION};
-use super::physical::{Rows, State};
+use super::physical::{sole_added, State};
 use super::TestResult;
 
 use super::graph;
@@ -195,16 +195,4 @@ fn verify_witness_and_receipt(
     };
     check!(eq; receipt_raw, serde_json::to_vec(&expected)?.as_slice());
     Ok(digest)
-}
-
-fn sole_added<'a>(before: &Rows, after: &'a Rows) -> TestResult<(&'a [u8], &'a [u8])> {
-    check!(eq; after.len(), before.len().checked_add(1).ok_or("fixture row count overflow")?);
-    for (key, value) in before {
-        check!(eq; after.get(key), Some(value));
-    }
-    let (key, value) = after
-        .iter()
-        .find(|(key, _)| !before.contains_key(*key))
-        .ok_or("one new physical row was not found")?;
-    Ok((key, value))
 }

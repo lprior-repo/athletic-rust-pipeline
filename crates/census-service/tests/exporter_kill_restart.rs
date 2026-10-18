@@ -2,7 +2,8 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
-use calamine::Reader;
+#[path = "common/workbook_population.rs"]
+mod workbook_population;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventIdentity, EventKind, EventSpecification,
@@ -17,6 +18,7 @@ use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 use tempfile::TempDir;
+use workbook_population::{unique_athlete_ids, xlsx_rows};
 
 const MEET_DATE: &str = "2026-05-02";
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -192,30 +194,6 @@ fn spawn_workbook(data_dir: &Path, out_path: &Path) -> TestResult<ChildGuard> {
         .stderr(Stdio::inherit())
         .spawn()?;
     Ok(ChildGuard { child })
-}
-
-fn xlsx_rows(path: &Path, sheet: &str) -> TestResult<usize> {
-    let mut book = calamine::open_workbook_auto(path)?;
-    let range = book.worksheet_range(sheet)?;
-    Ok(range
-        .rows()
-        .filter(|r| r.iter().any(|c| !matches!(c, calamine::Data::Empty)))
-        .count())
-}
-
-fn unique_athlete_ids(path: &Path) -> TestResult<HashSet<String>> {
-    let mut book = calamine::open_workbook_auto(path)?;
-    let range = book.worksheet_range("Athletes")?;
-    let mut ids = HashSet::new();
-    for row in range.rows().skip(1) {
-        match row.first() {
-            Some(calamine::Data::String(s)) if !s.is_empty() => {
-                ids.insert(s.clone());
-            }
-            _ => {}
-        }
-    }
-    Ok(ids)
 }
 
 fn verify_cli(store: &Path, xlsx: &Path) -> TestResult {

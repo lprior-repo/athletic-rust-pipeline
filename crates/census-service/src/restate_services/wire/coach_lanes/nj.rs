@@ -1,8 +1,9 @@
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    PendingCoachLane, SchoolYear, SourceRef,
-};
+#[cfg(test)]
+use census_domain::model::{CoachLaneObligation, SchoolYear};
 use census_domain::UsJurisdiction;
+
+use super::policy::{ArmBasis, Lane, LanePolicy};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const NJ_ARM: &str = "home_campus";
 pub(super) const NJ_REFUSAL_SLUG: &str = "nj_missing_coach_sources";
@@ -10,29 +11,14 @@ pub(super) const NJ_TRUE_MISSING: &str = "NJSIAA per-school details (restricted)
 
 const NJ_ARM_BASIS: &str = "`home_campus` is the only wired coach arm the New Jersey plan sweeps and its retained New Jersey run processed 0 schools (0 coach rows, 0 with email, 1 error: http status 405 for the cifsshome directory endpoint), the NJSIAA bodies are AD and school rows and the GMC TCA extract is effectively empty, so the lane records the work order's true-missing set instead of arming";
 
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::NewJersey,
-        season,
-        revision,
-        arm: NJ_ARM.to_string(),
-        arm_basis: NJ_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    pending.record(
-        CoachLaneStage::Blocked,
-        Some(refusal(observed_on)?),
-        CoachLaneResolution::unresolved(observed_on),
-    )
-}
-
-pub(super) fn refusal(observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(SourceRef::id(NJ_REFUSAL_SLUG), NJ_TRUE_MISSING, observed_on)
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::NewJersey,
+    arm: NJ_ARM,
+    refusal: (NJ_REFUSAL_SLUG, NJ_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Text(NJ_ARM_BASIS),
+    policy: LanePolicy::Blocked,
+};
 
 #[cfg(test)]
 mod tests {

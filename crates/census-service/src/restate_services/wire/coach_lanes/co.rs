@@ -1,11 +1,12 @@
+use census_domain::model::CoachLaneMailbox;
+#[cfg(test)]
 use census_domain::model::{
-    CoachLaneError, CoachLaneEvidence, CoachLaneMailbox, CoachLaneObligation, CoachLaneRefusal,
-    CoachLaneResolution, CoachLaneRole, CoachLaneStage, CoachLaneTenure, PendingCoachLane,
-    SchoolYear, SourceRef, COACH_LANE_MAX_FRESHNESS_DAYS,
+    CoachLaneObligation, CoachLaneRole, CoachLaneTenure, SchoolYear, COACH_LANE_MAX_FRESHNESS_DAYS,
 };
 use census_domain::UsJurisdiction;
 
-use super::freshness_days;
+use super::policy::{ArmBasis, Lane, LanePolicy, RetainedCapture};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const CO_ARM: &str = "chsaa";
 pub(super) const CO_REFUSAL_SLUG: &str = "co_missing_coach_sources";
@@ -35,58 +36,27 @@ pub(super) const CO_CAPTURE_ON: &str = "2026-09-27";
 const CO_ARM_BASIS: &str = "the chsaa descriptor declares school-coach contact, is admitted for Colorado only, and TeamsArm::ChsaaSchools walks the member directory and each school page; the retained CHSAA captures are the held output of that walk";
 const CO_RESOLUTION_NOTE: &str = "the retained CHSAA 2026-09-27 captures: the member directory holds 378 schools with street addresses; the Cherry Creek school page carries 50 coach rows with Head Coach and Assistant Coach titles including Boys Cross Country staff; neither held body carries a coach mailbox, so mailbox coverage remains the recorded true-missing work and the other 377 school pages are not part of this evidence set:";
 
-fn resolved_note() -> String {
-    let mut note = String::from(CO_RESOLUTION_NOTE);
-    for (path, digest) in CO_CAPTURES {
-        note.push_str(&format!(" {path} sha256 {digest};"));
-    }
-    note
-}
+const CAPTURE: RetainedCapture = RetainedCapture {
+    schools: CO_SCHOOLS,
+    contacts: CO_CONTACTS,
+    digest: CO_DIRECTORY_DIGEST,
+    captured_on: CO_CAPTURE_ON,
+    source_url: CO_SOURCE_URL,
+    mailbox: CoachLaneMailbox::Unpublished,
+    note: CO_RESOLUTION_NOTE,
+    captures: &CO_CAPTURES,
+    stale_path: CO_DIRECTORY_PATH,
+    jurisdiction_name: "Colorado",
+};
 
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Colorado,
-        season,
-        revision,
-        arm: CO_ARM.to_string(),
-        arm_basis: CO_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    let freshness = freshness_days(CO_CAPTURE_ON, observed_on)?;
-    if freshness > COACH_LANE_MAX_FRESHNESS_DAYS {
-        return pending.record(
-            CoachLaneStage::Blocked,
-            Some(stale_refusal(freshness, observed_on)?),
-            CoachLaneResolution::unresolved(observed_on),
-        );
-    }
-    let evidence =
-        CoachLaneEvidence::new(CO_SCHOOLS, CO_CONTACTS, CO_DIRECTORY_DIGEST, CO_CAPTURE_ON)?
-            .with_source_url(CO_SOURCE_URL)?;
-    let resolution = CoachLaneResolution::resolved(
-        CoachLaneRole::Published,
-        CoachLaneTenure::Current,
-        CoachLaneMailbox::Unpublished,
-        CO_CAPTURE_ON,
-        freshness,
-        resolved_note(),
-    )?;
-    pending.arm(evidence, resolution)
-}
-
-fn stale_refusal(freshness: u32, observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(
-        SourceRef::id(CO_ARM),
-        format!(
-            "the held chsaa capture {CO_DIRECTORY_PATH} is {freshness} days old at lane creation, beyond the {COACH_LANE_MAX_FRESHNESS_DAYS}-day bound, so the Colorado arm cannot retain it"
-        ),
-        observed_on,
-    )
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::Colorado,
+    arm: CO_ARM,
+    refusal: (CO_REFUSAL_SLUG, CO_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Text(CO_ARM_BASIS),
+    policy: LanePolicy::RetainedCapture(&CAPTURE),
+};
 
 #[cfg(test)]
 mod tests {
@@ -214,10 +184,10 @@ mod tests {
     fn coach_lane_co_stale_capture_records_a_blocked_refusal_without_closing() -> TestResult {
         check!(eq; freshness_days(CO_CAPTURE_ON, BOUNDARY_ON)?, COACH_LANE_MAX_FRESHNESS_DAYS);
         check!(eq; freshness_days(CO_CAPTURE_ON, STALE_ON)?, COACH_LANE_MAX_FRESHNESS_DAYS + 1);
-        let fresh = lane(season()?, 1, BOUNDARY_ON)?;
+        let fresh = super::super::evaluate(&POLICY, season()?, 1, BOUNDARY_ON)?;
         check!(eq; fresh.status(), CoachLaneStatus::Armed);
         check!(eq; fresh.resolution().freshness_days, COACH_LANE_MAX_FRESHNESS_DAYS);
-        let stale = lane(season()?, 1, STALE_ON)?;
+        let stale = super::super::evaluate(&POLICY, season()?, 1, STALE_ON)?;
         check!(eq; stale.status(), CoachLaneStatus::Blocked);
         check!(!stale.is_terminal());
         check!(stale.evidence().is_none());

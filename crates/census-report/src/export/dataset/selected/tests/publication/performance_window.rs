@@ -8,6 +8,7 @@ mod assertions;
 mod captures;
 mod dependency_loss;
 mod fixture;
+mod identity_history;
 mod readback;
 use fixture::Fixture;
 

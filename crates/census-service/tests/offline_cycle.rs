@@ -11,7 +11,8 @@ mod cross_source;
 #[path = "offline_cycle_mod/preparation.rs"]
 mod preparation;
 
-use calamine::Reader;
+#[path = "common/workbook_population.rs"]
+mod workbook_population;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventIdentity, EventKind, EventSpecification,
@@ -24,6 +25,7 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::TempDir;
+use workbook_population::{unique_athlete_ids, xlsx_rows};
 
 const MEET_DATE: &str = "2026-05-02";
 const SOURCE_URL: &str = "https://example.test/offline-cycle/results";
@@ -176,32 +178,6 @@ fn build_corpus(schools: usize) -> TestResult<Corpus> {
         }
     }
     Ok(corpus)
-}
-
-fn xlsx_rows(path: &Path, sheet: &str) -> TestResult<usize> {
-    let mut book = calamine::open_workbook_auto(path)?;
-    let range = book.worksheet_range(sheet)?;
-    Ok(range
-        .rows()
-        .filter(|row| {
-            row.iter()
-                .any(|cell| !matches!(cell, calamine::Data::Empty))
-        })
-        .count())
-}
-
-fn unique_athlete_ids(path: &Path) -> TestResult<HashSet<String>> {
-    let mut book = calamine::open_workbook_auto(path)?;
-    let range = book.worksheet_range("Athletes")?;
-    let mut ids = HashSet::new();
-    for row in range.rows().skip(1) {
-        if let Some(calamine::Data::String(id)) = row.first() {
-            if !id.is_empty() {
-                ids.insert(id.clone());
-            }
-        }
-    }
-    Ok(ids)
 }
 
 fn run_cycle(store: &Path, out: &Path) -> TestResult<std::process::Output> {

@@ -36,7 +36,8 @@ fn an_authentic_ownerless_fragment_remains_parseable_but_cannot_commit_an_acquir
                 Duration::from_millis(1),
                 std::collections::HashMap::new(),
                 Vec::new(),
-            )?;
+            )?
+            .with_offline(true);
             configure_inventory(&store, &fetcher, &team).await?;
             let capture = fetcher.get(&url, &FetchOptions::default()).await?;
             check!(eq; capture.response_url, None);

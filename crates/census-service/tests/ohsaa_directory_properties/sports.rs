@@ -129,6 +129,11 @@ proptest! {
     #[test]
     fn a_table_publishes_its_track_and_cross_country_rows(rows in sports_rows()) {
         let published = parse_sports_table(&render_sports(&rows));
+        if rows.iter().all(|row| row.sport == 2) {
+            prop_assert_eq!(published.err(), Some("sports table publishes no supported sport rows or structured absence"));
+            return Ok(());
+        }
+        let published = published.map_err(TestCaseError::fail)?;
         let mut expected: Vec<(String, Option<usize>, Option<usize>)> = Vec::new();
         for row in rows.iter() {
             let label = LABELS
@@ -139,9 +144,6 @@ proptest! {
                 continue;
             }
             let (boys, girls) = (named(&row.boys), named(&row.girls));
-            if boys.is_none() && girls.is_none() {
-                continue;
-            }
             expected.push((label.to_string(), boys, girls));
         }
         let projected: Vec<(String, Option<usize>, Option<usize>)> = published
@@ -158,7 +160,7 @@ proptest! {
         prop_assert_eq!(
             projected,
             expected,
-            "the rows published are the TF/XC rows that print a coach: {:?}",
+            "the checked rows are the TF/XC rows including structured absence: {:?}",
             published
         );
     }

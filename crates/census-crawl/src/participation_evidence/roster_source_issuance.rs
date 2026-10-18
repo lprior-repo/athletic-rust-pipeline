@@ -13,6 +13,8 @@ pub use historical::{
     assess_reviewed_roster_source_historical_v2, HistoricalReviewedRosterSourceV2,
 };
 pub mod semantic_inventory;
+mod semantic_inventory_v2;
+pub use capture_objects::version2::version3::prepare_retained_roster_capture_objects_v3;
 pub(in crate::participation_evidence) use semantic_inventory::require_fixed_roster_semantic_kernel_v2;
 mod source;
 pub use binding::{
@@ -20,7 +22,10 @@ pub use binding::{
     RosterExistingBindingAssessmentV1,
 };
 pub use semantic::{assess_reviewed_roster_source_v1, ReviewedRosterSourceAssessmentV1};
-pub use source::{assess_retained_roster_source, assess_retained_roster_source_v2};
+pub use source::{
+    assess_retained_roster_source, assess_retained_roster_source_v2,
+    assess_retained_roster_source_v3,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RosterSourceUnverifiedJoinV1 {

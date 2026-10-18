@@ -1,8 +1,9 @@
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    PendingCoachLane, SchoolYear, SourceRef,
-};
+#[cfg(test)]
+use census_domain::model::{CoachLaneObligation, SchoolYear};
 use census_domain::UsJurisdiction;
+
+use super::policy::{ArmBasis, Lane, LanePolicy};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const TX_ARM: &str = "coach_contacts";
 pub(super) const TX_REFUSAL_SLUG: &str = "tx_missing_coach_sources";
@@ -10,29 +11,14 @@ pub(super) const TX_TRUE_MISSING: &str = "TEA AskTED personnel downloads (`tealp
 
 const TX_ARM_BASIS: &str = "`coach_contacts` is the registry's Texas coach-mailbox surface and the plan already refuses it as an engineering gap; the held UIL alignments, prototype rows and school pages carry coach names without mailboxes, so the lane records the work order's true-missing set instead of arming";
 
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Texas,
-        season,
-        revision,
-        arm: TX_ARM.to_string(),
-        arm_basis: TX_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    pending.record(
-        CoachLaneStage::Blocked,
-        Some(refusal(observed_on)?),
-        CoachLaneResolution::unresolved(observed_on),
-    )
-}
-
-pub(super) fn refusal(observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(SourceRef::id(TX_REFUSAL_SLUG), TX_TRUE_MISSING, observed_on)
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::Texas,
+    arm: TX_ARM,
+    refusal: (TX_REFUSAL_SLUG, TX_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Text(TX_ARM_BASIS),
+    policy: LanePolicy::Blocked,
+};
 
 #[cfg(test)]
 mod tests {
@@ -141,7 +127,7 @@ mod tests {
 
     #[test]
     fn coach_lane_tx_arm_is_not_claimed_sweepable_by_an_arming_lane() -> TestResult {
-        let obligation = lane(season()?, 1, OBSERVED_ON)?;
+        let obligation = super::super::evaluate(&POLICY, season()?, 1, OBSERVED_ON)?;
         check!(eq; obligation.arm_name(), TX_ARM);
         check!(!obligation.is_terminal());
         check!(obligation.evidence().is_none());

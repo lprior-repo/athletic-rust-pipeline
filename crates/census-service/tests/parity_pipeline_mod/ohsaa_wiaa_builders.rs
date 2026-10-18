@@ -104,7 +104,6 @@ pub fn ohsaa_schools(corpus: &mut Corpus) -> Result<()> {
         &ads["ad_dublin_coffman.html"],
     )?;
     ohsaa_malformed(
-        corpus,
         &searches["search_duplicate_rows.html"],
         &sports["sports_malformed.html"],
         &ads["ad_malformed.html"],
@@ -136,17 +135,18 @@ fn ohsaa_dublin(
     );
     ensure!(
         ohsaa::parse_sports_table(sports)
+            .map_err(anyhow::Error::msg)?
             .iter()
             .find(|(label, ..)| label == "Cross Country")
             .is_some_and(|(_, boys, _)| boys.is_some()),
         "Dublin Coffman must publish a boys cross-country coach"
     );
     let page = ohsaa::parse_ad_page(ad);
-    let extract = ohsaa::school_entities(
-        result,
-        &seeded_capture(&result.sports_url(), sports),
-        Some(&seeded_capture(&result.ad_url(), ad)),
-    );
+    let checked_sports =
+        ohsaa::SportsPage::parse(result, seeded_capture(&result.sports_url(), sports))?;
+    let checked_ad = ohsaa::DirectorPage::parse(result, seeded_capture(&result.ad_url(), ad))?;
+    let extract =
+        ohsaa::school_entities(&checked_sports, Some(&checked_ad)).map_err(anyhow::Error::msg)?;
     ensure!(
         !extract.coaches.is_empty(),
         "Dublin Coffman pair yielded no coaches"
@@ -182,12 +182,7 @@ fn ohsaa_office_roles(
     })
 }
 
-fn ohsaa_malformed(
-    corpus: &mut Corpus,
-    rows: &[ohsaa::SearchResult],
-    sports: &str,
-    ad: &str,
-) -> Result<()> {
+fn ohsaa_malformed(rows: &[ohsaa::SearchResult], sports: &str, ad: &str) -> Result<()> {
     ensure!(
         rows.len() == 1,
         "duplicate OHSAA rows must collapse to one school"
@@ -198,28 +193,35 @@ fn ohsaa_malformed(
         "school owner incomplete"
     );
     ensure!(
-        ohsaa::parse_sports_table(sports).is_empty(),
-        "malformed sports yielded rows"
+        ohsaa::parse_sports_table(sports).err() == Some("recognized complete page table is absent"),
+        "malformed sports must refuse a missing supported table"
     );
     ensure!(
         ohsaa::parse_ad_page(ad).director.is_none(),
         "malformed AD yielded a director"
     );
-    let extract = ohsaa::school_entities(
-        result,
-        &seeded_capture(&result.sports_url(), sports),
-        Some(&seeded_capture(&result.ad_url(), ad)),
-    );
+    let sports_error =
+        ohsaa::SportsPage::parse(result, seeded_capture(&result.sports_url(), sports))
+            .err()
+            .context("ERROR (000) must not own the requested school")?;
     ensure!(
-        extract.coaches.is_empty(),
-        "malformed OHSAA pages fabricated coaches"
+        sports_error.detail == "page belongs to a different school or a publisher error owner",
+        "malformed sports owner refusal changed: {}",
+        sports_error.detail
     );
-    corpus.schools.push(extract.school);
+    let ad_error = ohsaa::DirectorPage::parse(result, seeded_capture(&result.ad_url(), ad))
+        .err()
+        .context("ERROR (000) must not own the requested school")?;
+    ensure!(
+        ad_error.detail == "page belongs to a different school or a publisher error owner",
+        "malformed director owner refusal changed: {}",
+        ad_error.detail
+    );
     Ok(())
 }
 
 fn ohsaa_centerville(corpus: &mut Corpus, sports: &str, ad: &str) -> Result<()> {
-    let sections = ohsaa::parse_sports_table(sports);
+    let sections = ohsaa::parse_sports_table(sports).map_err(anyhow::Error::msg)?;
     let track = sections
         .iter()
         .find(|(label, ..)| label == "Track & Field")
@@ -234,11 +236,11 @@ fn ohsaa_centerville(corpus: &mut Corpus, sports: &str, ad: &str) -> Result<()> 
         result.name == ad_header.name && result.ohsaa_id == ad_header.ohsaa_id,
         "Centerville sports and AD owners disagree"
     );
-    let extract = ohsaa::school_entities(
-        &result,
-        &seeded_capture(&result.sports_url(), sports),
-        Some(&seeded_capture(&result.ad_url(), ad)),
-    );
+    let checked_sports =
+        ohsaa::SportsPage::parse(&result, seeded_capture(&result.sports_url(), sports))?;
+    let checked_ad = ohsaa::DirectorPage::parse(&result, seeded_capture(&result.ad_url(), ad))?;
+    let extract =
+        ohsaa::school_entities(&checked_sports, Some(&checked_ad)).map_err(anyhow::Error::msg)?;
     ensure!(
         !extract.coaches.is_empty(),
         "Centerville pair yielded no coaches"

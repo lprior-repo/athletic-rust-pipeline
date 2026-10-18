@@ -5,6 +5,7 @@ use census_domain::model::Sport;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 mod collect;
+mod directory;
 mod mapping;
 
 const SPORTS_FETCHED: &str = "2026-09-01T10:00:00Z";
@@ -95,7 +96,7 @@ fn parse_search_empty_yields_empty_vec() {
 
 #[test]
 fn parse_sports_table_extracts_xc_coaches() -> TestResult {
-    let sections = parse_sports_table(fixture_sports_dublin());
+    let sections = parse_sports_table(fixture_sports_dublin())?;
     let xc = sections
         .iter()
         .find(|(label, _, _)| label == "Cross Country");
@@ -115,7 +116,7 @@ fn parse_sports_table_extracts_xc_coaches() -> TestResult {
 
 #[test]
 fn parse_sports_table_extracts_track_field() -> TestResult {
-    let sections = parse_sports_table(fixture_sports_dublin());
+    let sections = parse_sports_table(fixture_sports_dublin())?;
     let tf = sections
         .iter()
         .find(|(label, _, _)| label == "Track & Field");
@@ -132,7 +133,7 @@ fn parse_sports_table_extracts_track_field() -> TestResult {
 
 #[test]
 fn parse_sports_table_handles_tba() -> TestResult {
-    let sections = parse_sports_table(fixture_sports_centerville());
+    let sections = parse_sports_table(fixture_sports_centerville())?;
     let tf = sections
         .iter()
         .find(|(label, _, _)| label == "Track & Field");
@@ -150,11 +151,11 @@ fn parse_sports_table_handles_tba() -> TestResult {
 }
 
 #[test]
-fn parse_sports_table_malformed_yields_empty() {
+fn parse_sports_table_malformed_is_refused() {
     let sections = parse_sports_table(fixture_sports_malformed());
-    assert!(
-        sections.is_empty(),
-        "malformed HTML should yield 0 sections, not panic"
+    assert_eq!(
+        sections.err(),
+        Some("recognized complete page table is absent")
     );
 }
 

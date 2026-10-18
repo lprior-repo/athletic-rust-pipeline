@@ -3,7 +3,7 @@ use crate::common;
 use std::collections::BTreeSet;
 use std::path::Path;
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{ensure, Result};
 use census_crawl::net::Fetcher;
 use census_crawl::wiaa_results;
 use census_domain::model::{
@@ -11,7 +11,9 @@ use census_domain::model::{
     CanonicalSchool, CanonicalTeam, Sport,
 };
 use census_store::{Store, Table};
-use sha2::{Digest, Sha256};
+
+#[path = "../common/capture_cache.rs"]
+mod capture_cache;
 
 use super::fixture_builders;
 use super::ohsaa_wiaa_builders;
@@ -193,46 +195,20 @@ fn archive_page(url: &str, artifacts: &[&ResultArtifact]) -> String {
 }
 
 fn seed(cache: &Path, url: &str, body: &str) -> Result<()> {
-    let mut hasher = Sha256::new();
-    hasher.update(b"GET");
-    hasher.update([0x1f]);
-    hasher.update(url.as_bytes());
-    hasher.update([0x1f]);
-    let key = hex_prefix(hasher)?;
-    let body_path = cache.join(format!("{key}.body"));
-    let meta_path = cache.join(format!("{key}.meta.json"));
-    std::fs::write(&body_path, body.as_bytes())
-        .with_context(|| format!("seeding {}", body_path.display()))?;
-    let meta = serde_json::json!({
-        "url": url,
-        "method": "GET",
-        "status": 200,
-        "content_digest": content_digest(body.as_bytes()),
-        "bytes": body.len(),
-        "fetched_at": super::constants::WIAA_CAPTURED_AT,
-        "content_type": if url.ends_with(".txt") { "text/plain" } else { "text/html" },
-    });
-    std::fs::write(&meta_path, serde_json::to_vec_pretty(&meta)?)
-        .with_context(|| format!("seeding {}", meta_path.display()))?;
-    Ok(())
-}
-
-fn hex_prefix(hasher: Sha256) -> Result<String> {
-    let digest = hasher.finalize();
-    let head = digest
-        .get(..16)
-        .context("a sha256 digest is shorter than its 16-byte prefix")?;
-    Ok(head.iter().map(|byte| format!("{byte:02x}")).collect())
-}
-
-fn content_digest(body: &[u8]) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(body);
-    hasher
-        .finalize()
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
+    capture_cache::seed_response(
+        cache,
+        url,
+        body.as_bytes(),
+        super::constants::WIAA_CAPTURED_AT,
+        capture_cache::Metadata {
+            content_type: Some(if url.ends_with(".txt") {
+                "text/plain"
+            } else {
+                "text/html"
+            }),
+            ..capture_cache::Metadata::default()
+        },
+    )
 }
 
 fn ids_of<T>(rows: &[T], id: impl Fn(&T) -> &str) -> BTreeSet<String> {

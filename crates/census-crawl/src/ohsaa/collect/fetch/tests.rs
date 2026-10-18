@@ -54,10 +54,10 @@ impl Harness {
             return Ok((report, tally));
         }
         let pages = SchoolPages {
-            sports: sports_capture(),
+            sports: crate::ohsaa::SportsPage::parse(&sr, sports_capture())?,
             ad: Err(failure),
         };
-        let mut extract = school_entities(&sr, &pages.sports, None);
+        let mut extract = school_entities(&pages.sports, None).map_err(anyhow::Error::msg)?;
         emit_school(
             &ctx,
             Projection {

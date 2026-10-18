@@ -18,6 +18,15 @@ pub(super) struct CheckedOriginalRosterPacket<'a> {
 }
 
 impl<'a> CheckedOriginalRosterPacket<'a> {
+    #[cfg(test)]
+    pub(super) fn read_for_test(
+        evidence: &'a census_store::RosterSourceEvidenceV1,
+        proposal: &census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> CrawlResult<Self> {
+        Self::read(evidence, proposal, grant)
+    }
+
     fn read(
         evidence: &'a census_store::RosterSourceEvidenceV1,
         proposal: &census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1,

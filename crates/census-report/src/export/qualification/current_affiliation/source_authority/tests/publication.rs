@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 
 mod artifacts;
 mod failures;
+mod genuine;
 mod historical_build;
 mod historical_semantic;
 mod omission;

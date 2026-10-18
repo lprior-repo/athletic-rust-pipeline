@@ -12,6 +12,9 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use serde_json::json;
 
+#[path = "common/capture_cache.rs"]
+mod capture_cache;
+
 fn fixture(source: &str, file: &str) -> Result<String> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../census-crawl/tests/fixtures")
@@ -34,42 +37,13 @@ enum CrossCountryFixture {
 }
 
 fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
-    use census_crawl::net::RepresentationHeaders;
-    use sha2::{Digest, Sha256};
-
-    let representation = RepresentationHeaders::canonical(&[(
-        "Accept".to_string(),
-        "application/json".to_string(),
-    )])?;
-    let mut hasher = Sha256::new();
-    hasher.update(b"GET");
-    hasher.update([0x1f]);
-    hasher.update(url.as_bytes());
-    hasher.update([0x1f]);
-    hasher.update(representation.identity().as_bytes());
-    let key: String = hasher.finalize()[..16]
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
-    let meta = json!({
-        "url": url,
-        "method": "GET",
-        "status": 200,
-        "representation": representation,
-        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
-        "bytes": body.len(),
-        "fetched_at": "2026-09-22T12:00:00Z",
-    });
-    fs::create_dir_all(cache_dir)
-        .with_context(|| format!("creating cache dir {}", cache_dir.display()))?;
-    fs::write(cache_dir.join(format!("{key}.body")), body)
-        .with_context(|| format!("writing the cached body for {url}"))?;
-    fs::write(
-        cache_dir.join(format!("{key}.meta.json")),
-        serde_json::to_vec(&meta).context("serializing cache metadata")?,
+    capture_cache::seed(
+        cache_dir,
+        url,
+        body.as_bytes(),
+        "2026-09-22T12:00:00Z",
+        &[("Accept".to_string(), "application/json".to_string())],
     )
-    .with_context(|| format!("writing the cached metadata for {url}"))?;
-    Ok(())
 }
 
 fn bio_url(athlete_id: u64, sport: &str) -> String {
@@ -109,7 +83,8 @@ impl Harness {
             Duration::from_millis(1),
             HashMap::new(),
             Vec::new(),
-        )?;
+        )?
+        .with_offline(true);
         let registry = dir.path().join("registry.txt");
         fs::write(&registry, format!("{ATHLETE_ID},AK\n")).context("writing the registry")?;
         Ok(Self {

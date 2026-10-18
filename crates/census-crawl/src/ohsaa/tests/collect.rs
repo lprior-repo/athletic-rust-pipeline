@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 mod changed;
+mod directory;
 mod failures;
 mod owner;
 mod refused;

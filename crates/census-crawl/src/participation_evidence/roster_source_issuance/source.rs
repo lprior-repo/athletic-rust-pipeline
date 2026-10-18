@@ -22,7 +22,17 @@ pub(super) mod budget;
 
 #[path = "source_entry.rs"]
 mod entry;
-pub use entry::{assess_retained_roster_source, assess_retained_roster_source_v2};
+pub use entry::{
+    assess_retained_roster_source, assess_retained_roster_source_v2,
+    assess_retained_roster_source_v3,
+};
+
+#[derive(Clone, Copy)]
+enum InterpretationVersion {
+    OriginalV1,
+    FullV2,
+    RowLocalV3,
+}
 
 fn assess<'a>(
     evidence: &'a RosterSourceEvidenceV1,
@@ -30,7 +40,7 @@ fn assess<'a>(
     retained_contracts: &super::policies::RosterInterpretationContractsV1<'_>,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
-    semantic_inventory: bool,
+    version: InterpretationVersion,
 ) -> CrawlResult<RosterSourceEvidenceAssessmentV1<'a>> {
     original(evidence, grant, |_| {
         if evidence.requested_school() != proposal.binding().school()
@@ -69,20 +79,38 @@ fn assess<'a>(
         budget::charge(packet.roster(), grant)?;
         packet.read()
     })?;
-    let objects = if semantic_inventory {
-        super::capture_objects::version2::derive(
+    let objects = match version {
+        InterpretationVersion::OriginalV1 => super::capture_objects::derive(
+            evidence,
+            &packet,
+            &parser_manifest,
+            &roster_body,
+            grant,
+        )?,
+        InterpretationVersion::FullV2 => super::capture_objects::version2::derive(
             evidence,
             &packet,
             &checked,
             &parser_manifest,
             &roster_body,
             grant,
-        )?
-    } else {
-        super::capture_objects::derive(evidence, &packet, &parser_manifest, &roster_body, grant)?
+        )?,
+        InterpretationVersion::RowLocalV3 => super::capture_objects::version2::version3::derive(
+            evidence,
+            &packet,
+            &checked,
+            &parser_manifest,
+            &roster_body,
+            grant,
+        )?,
     };
     objects.require_proposal(proposal, grant)?;
-    let scoped_rows = original(evidence, grant, |grant| scope(&checked, proposal, grant))?;
+    let scoped_rows = original(evidence, grant, |grant| match version {
+        InterpretationVersion::RowLocalV3 => scope_row_local(&checked, proposal, grant),
+        InterpretationVersion::OriginalV1 | InterpretationVersion::FullV2 => {
+            scope(&checked, proposal, grant)
+        }
+    })?;
     evidence.require_original_grant(grant)?;
     Ok(RosterSourceEvidenceAssessmentV1 {
         evidence,
@@ -206,6 +234,23 @@ pub(super) fn scope(
     let RosterVerdict::Complete { roster } = checked.roster_verdict() else {
         return Err(invalid("roster source incomplete roster").into());
     };
+    scope_members(roster, proposal, grant)
+}
+
+pub(super) fn scope_row_local(
+    checked: &CheckedProviderSchoolPacketV1,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<usize> {
+    let roster = super::semantic_inventory_v2::checked_roster(checked, grant)?;
+    scope_members(roster, proposal, grant)
+}
+
+fn scope_members(
+    roster: &crate::milesplit::Roster,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<usize> {
     grant.charge_steps(roster.athletes.len()).map_err(domain)?;
     if roster.team.id != proposal.scope().owner().provider_id()
         || proposal.parser().interpretation() != CurrentRosterAssertion::INTERPRETATION_REVISION

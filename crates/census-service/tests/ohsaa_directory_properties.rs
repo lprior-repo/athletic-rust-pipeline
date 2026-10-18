@@ -45,5 +45,5 @@ fn the_committed_captures_read_the_same_way_twice() {
         format!("{:?}", parse_ad_page(AD))
     );
     assert!(parse_ad_page(AD).director.is_some());
-    assert!(!census_crawl::ohsaa::parse_sports_table(SPORTS).is_empty());
+    assert!(census_crawl::ohsaa::parse_sports_table(SPORTS).is_ok_and(|rows| !rows.is_empty()));
 }

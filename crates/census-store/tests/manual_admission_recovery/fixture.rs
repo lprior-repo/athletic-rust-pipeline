@@ -1,4 +1,4 @@
-use std::io::{Read, Write};
+use crate::fixture_files::{read_json, write_new};
 use std::path::PathBuf;
 
 use census_domain::model::{AthleteCandidateId, ReviewCase, ReviewVerdictRecord, StoreIdentity};
@@ -117,7 +117,7 @@ impl Fixture {
         writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
         let requests = requests(&store, &writer, mode)?;
         requests.prepare(&store, &writer, mode.other(), mode.other().operation())?;
-        write_plan(&root.join(PLAN), &requests)?;
+        write_new(&root.join(PLAN), &serde_json::to_vec(&requests)?)?;
         let identity = store.store_identity()?;
         let head = writer.head(&store)?;
         let evidence = store.evidence_generation();
@@ -190,31 +190,11 @@ fn requests(store: &Store, writer: &PublicIdentityWriterV1, mode: Mode) -> TestR
     })
 }
 
-fn write_plan(path: &std::path::Path, requests: &Requests) -> TestResult {
-    let bytes = serde_json::to_vec(requests)?;
-    check!(bytes.len() <= 1_048_576);
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)?;
-    file.write_all(&bytes)?;
-    file.sync_all()?;
-    Ok(())
-}
-
 pub(super) fn child() -> TestResult {
     check!(eq; std::env::var(CHILD_CASE)?.as_str(), CHILD_NAME);
     let root = PathBuf::from(std::env::var_os(CHILD_ROOT).ok_or("child root")?);
     check!(root.is_absolute());
-    let path = root.join(PLAN);
-    let metadata = std::fs::symlink_metadata(&path)?;
-    check!(metadata.is_file() && metadata.len() > 0 && metadata.len() <= 1_048_576);
-    let mut bytes = Vec::new();
-    std::fs::File::open(path)?
-        .take(1_048_577)
-        .read_to_end(&mut bytes)?;
-    check!(bytes.len() <= 1_048_576);
-    let requests: Requests = serde_json::from_slice(&bytes)?;
+    let requests: Requests = read_json(&root.join(PLAN))?;
     let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     requests.prepare(&store, &writer, requests.mode, requests.mode.operation())?;
     Err("manual admission child returned without graph recovery interruption".into())

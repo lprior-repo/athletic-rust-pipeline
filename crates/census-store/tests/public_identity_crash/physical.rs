@@ -47,3 +47,35 @@ pub(super) fn read(root: &Path) -> TestResult<State> {
     }
     Ok(State(spaces))
 }
+
+pub(super) fn sole_added<'a>(before: &Rows, after: &'a Rows) -> TestResult<(&'a [u8], &'a [u8])> {
+    check!(eq; after.len(), before.len().checked_add(1).ok_or("row count overflow")?);
+    for (key, value) in before {
+        check!(eq; after.get(key), Some(value));
+    }
+    let (key, raw) = after
+        .iter()
+        .find(|(key, _)| !before.contains_key(*key))
+        .ok_or("one added row")?;
+    Ok((key, raw))
+}
+
+#[test]
+fn sole_added_requires_exact_prior_bytes_and_one_new_key() -> TestResult {
+    let before = Rows::from([(vec![1], vec![10])]);
+    let after = Rows::from([(vec![1], vec![10]), (vec![2], vec![20])]);
+    check!(eq; sole_added(&before, &after)?, (&[2][..], &[20][..]));
+    for invalid in [
+        before.clone(),
+        Rows::from([
+            (vec![1], vec![10]),
+            (vec![2], vec![20]),
+            (vec![3], vec![30]),
+        ]),
+        Rows::from([(vec![1], vec![11]), (vec![2], vec![20])]),
+        Rows::from([(vec![2], vec![20]), (vec![3], vec![30])]),
+    ] {
+        check!(sole_added(&before, &invalid).is_err());
+    }
+    Ok(())
+}

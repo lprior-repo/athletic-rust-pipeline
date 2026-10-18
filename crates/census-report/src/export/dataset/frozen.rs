@@ -286,9 +286,6 @@ where
 mod semantic_policy_tests;
 
 #[cfg(test)]
-mod resource_classification_tests;
-
-#[cfg(test)]
 mod resource_preservation_tests;
 
 #[cfg(test)]

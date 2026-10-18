@@ -67,10 +67,17 @@ impl Fixture {
     }
 
     fn with_protocol(protocol: census_domain::model::CaptureProtocolVersion) -> TestResult<Self> {
+        Self::with_inputs(protocol, request()?, meet())
+    }
+
+    pub(super) fn with_inputs(
+        protocol: census_domain::model::CaptureProtocolVersion,
+        request: JurisdictionRequest,
+        meet: SourceMeetRef,
+    ) -> TestResult<Self> {
         let root = tempfile::tempdir()?;
         let (store, writer) = open(root.path(), protocol)?;
         let store = Arc::new(store);
-        let request = request()?;
         store.bind_run(&RunManifest {
             store_identity: writer.store_identity().as_str().to_owned(),
             run: CensusRun::new(request.season, request.revision.get()).ok_or("fixture run")?,
@@ -78,20 +85,20 @@ impl Fixture {
             jurisdictions: vec![request.jurisdiction],
         })?;
         let state = state(&request);
-        store.append(Table::SourceMeets, &meet())?;
+        store.append(Table::SourceMeets, &meet)?;
         let fetcher = Arc::new(
             Fetcher::new(
                 store.http_cache_dir(),
                 None,
                 Duration::ZERO,
                 HashMap::new(),
-                vec!["mi.milesplit.com".to_owned()],
+                request.authorized_hosts.clone(),
             )?
             .with_offline(true),
         );
         crate::capture_cache::seed(
             fetcher.cache_dir(),
-            RESULTS_URL,
+            &meet.results_url,
             MEET_PAGE,
             "2026-10-01T23:44:16Z",
             &[],

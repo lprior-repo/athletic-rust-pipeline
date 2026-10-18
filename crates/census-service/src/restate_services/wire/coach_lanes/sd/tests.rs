@@ -100,7 +100,7 @@ fn coach_lane_sd_policy_hold_precedes_capture_freshness() -> TestResult {
     let reason = census_crawl::registry::acquisition_refusal_for_source(SD_ARM)
         .ok_or("bound acquisition hold missing")?;
     for date in [OBSERVED_ON, BOUNDARY_ON, STALE_ON] {
-        let blocked = lane(season()?, 1, date)?;
+        let blocked = super::super::evaluate(&POLICY, season()?, 1, date)?;
         check!(eq; blocked.status(), CoachLaneStatus::Blocked);
         check!(!blocked.is_terminal());
         check!(blocked.evidence().is_none());
@@ -168,7 +168,7 @@ fn historical_armed() -> Result<CoachLaneObligation, CoachLaneError> {
             CoachLaneMailbox::Unpublished,
             SD_CAPTURE_ON,
             4,
-            resolved_note(),
+            CAPTURE.resolved_note(),
         )?,
     )
 }
@@ -211,7 +211,7 @@ fn coach_lane_sd_historical_armed_journal_preserves_capture_history_on_reopen() 
         ..JurisdictionState::default()
     };
     check!(!coach_lane_owed(&state));
-    check!(eq; lane(season()?, 1, OBSERVED_ON)?.status(), CoachLaneStatus::Blocked);
+    check!(eq; super::super::evaluate(&POLICY, season()?, 1, OBSERVED_ON)?.status(), CoachLaneStatus::Blocked);
     check!(eq; serde_json::to_vec(&historical)?, bytes);
     Ok(())
 }

@@ -126,7 +126,13 @@ fn ohsaa(capture: &Capture<'_>) -> Result<String> {
         return Ok(format!("search rows={rows}"));
     }
     if file.starts_with("sports_") {
-        let rows = ohsaa::parse_sports_table(body).len();
+        let rows = match ohsaa::parse_sports_table(body) {
+            Ok(rows) => rows.len(),
+            Err(detail) => {
+                anyhow::ensure!(refusal, "{file}: sports parser refused: {detail}");
+                return Ok(format!("sports refused={detail}"));
+            }
+        };
         if !refusal {
             ensure_rows(file, rows, "sport rows")?;
         }

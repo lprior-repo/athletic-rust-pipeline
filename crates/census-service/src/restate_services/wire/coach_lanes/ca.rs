@@ -1,8 +1,9 @@
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    PendingCoachLane, SchoolYear, SourceRef,
-};
+#[cfg(test)]
+use census_domain::model::{CoachLaneObligation, CoachLaneRefusal, SchoolYear};
 use census_domain::UsJurisdiction;
+
+use super::policy::{ArmBasis, Lane, LanePolicy};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const CA_ARM: &str = "home_campus";
 pub(super) const CA_REFUSAL_SLUG: &str = "ca_missing_coach_sources";
@@ -18,29 +19,14 @@ const CA_CAPTURE_FILE: &str =
 
 const CA_ARM_BASIS: &str = "home_campus is wired and remains sweepable, but var/home-campus-CA-20261004/pass2.log sha256 b1658ef1f62f9373fca3b4a1c4bd24b6c87a1e46818bea3ead435374c9da5cd4 records historical totals only (1717 schools, 6758 email rows); it supplies neither this run's executed obligation nor page-bound current role/tenure/mailbox proof, so those counts cannot arm or close a fresh coach lane";
 
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::California,
-        season,
-        revision,
-        arm: CA_ARM.to_string(),
-        arm_basis: CA_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    pending.record(
-        CoachLaneStage::Blocked,
-        Some(CoachLaneRefusal::new(
-            SourceRef::id(CA_REFUSAL_SLUG),
-            CA_TRUE_MISSING,
-            observed_on,
-        )?),
-        CoachLaneResolution::unresolved(observed_on),
-    )
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::California,
+    arm: CA_ARM,
+    refusal: (CA_REFUSAL_SLUG, CA_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Text(CA_ARM_BASIS),
+    policy: LanePolicy::Blocked,
+};
 
 #[cfg(test)]
 mod tests {
@@ -84,7 +70,7 @@ mod tests {
 
     #[test]
     fn coach_lane_ca_historical_counts_cannot_close_a_fresh_run() -> TestResult {
-        let recorded = lane(season()?, 1, "2026-10-12")?;
+        let recorded = super::super::evaluate(&POLICY, season()?, 1, "2026-10-12")?;
         check!(eq; recorded.status(), CoachLaneStatus::Blocked);
         check!(!recorded.is_terminal());
         check!(recorded.evidence().is_none());
@@ -139,9 +125,9 @@ mod tests {
 
     #[test]
     fn coach_lane_ca_stale_capture_records_a_blocked_refusal_without_closing() -> TestResult {
-        let fresh = lane(season()?, 1, "2027-11-08")?;
+        let fresh = super::super::evaluate(&POLICY, season()?, 1, "2027-11-08")?;
         check!(eq; fresh.status(), CoachLaneStatus::Blocked);
-        let stale = lane(season()?, 1, "2027-11-09")?;
+        let stale = super::super::evaluate(&POLICY, season()?, 1, "2027-11-09")?;
         check!(eq; stale.status(), CoachLaneStatus::Blocked);
         check!(!stale.is_terminal());
         check!(stale.evidence().is_none());

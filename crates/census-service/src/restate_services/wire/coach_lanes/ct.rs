@@ -1,8 +1,9 @@
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    PendingCoachLane, SchoolYear, SourceRef,
-};
+#[cfg(test)]
+use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+
+use super::policy::{ArmBasis, Lane, LanePolicy};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const CT_ARM: &str = "ciac";
 pub(super) const CT_REFUSAL_SLUG: &str = "ct_missing_coach_sources";
@@ -21,31 +22,19 @@ const CT_CAPTURE_FILE: &str = concat!(
 );
 const CT_ARM_BASIS: &str = "the registered ciac arm parses the 2026-10-04 FusionPoint directory into coach-name and role rows with phone numbers, not coach mailboxes or page-bound current-tenure evidence, so the held capture cannot arm the lane:";
 
-pub(super) fn refusal(observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(SourceRef::id(CT_REFUSAL_SLUG), CT_TRUE_MISSING, observed_on)
-}
-
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Connecticut,
-        season,
-        revision,
-        arm: CT_ARM.to_string(),
-        arm_basis: format!(
-            "{CT_ARM_BASIS} {CT_SOURCE_URL} {CT_CAPTURE_PATH} sha256 {CT_CAPTURE_DIGEST}"
-        ),
-        observed_on: observed_on.to_string(),
-    })?;
-    pending.record(
-        CoachLaneStage::Blocked,
-        Some(refusal(observed_on)?),
-        CoachLaneResolution::unresolved(observed_on),
-    )
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::Connecticut,
+    arm: CT_ARM,
+    refusal: (CT_REFUSAL_SLUG, CT_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Capture {
+        text: CT_ARM_BASIS,
+        source_url: Some(CT_SOURCE_URL),
+        path: CT_CAPTURE_PATH,
+        digest: CT_CAPTURE_DIGEST,
+    },
+    policy: LanePolicy::Blocked,
+};
 
 #[cfg(test)]
 mod tests {
@@ -76,7 +65,7 @@ mod tests {
 
     #[test]
     fn coach_lane_ct_records_the_phone_only_refusal_without_closing() -> TestResult {
-        let recorded = lane(season()?, 1, OBSERVED_ON)?;
+        let recorded = super::super::evaluate(&POLICY, season()?, 1, OBSERVED_ON)?;
         check!(eq; recorded.id(), "coach_lane:CT:2026:1");
         check!(eq; recorded.status(), CoachLaneStatus::Blocked);
         check!(!recorded.is_terminal());
@@ -126,7 +115,7 @@ mod tests {
 
     #[test]
     fn coach_lane_ct_true_missing_reason_is_the_work_order_line() -> TestResult {
-        let recorded = refusal(OBSERVED_ON)?;
+        let recorded = POLICY.refusal(OBSERVED_ON)?;
         check!(eq; recorded.reason(), CT_TRUE_MISSING);
         check!(eq; recorded.source().id.as_str(), CT_REFUSAL_SLUG);
         check!(WORK_ORDER.contains(CT_TRUE_MISSING));
@@ -136,7 +125,7 @@ mod tests {
     #[test]
     fn coach_lane_ct_capture_age_cannot_supply_missing_contact_evidence() -> TestResult {
         for observed_on in [OBSERVED_ON, BOUNDARY_ON, STALE_ON] {
-            let recorded = lane(season()?, 1, observed_on)?;
+            let recorded = super::super::evaluate(&POLICY, season()?, 1, observed_on)?;
             check!(eq; recorded.status(), CoachLaneStatus::Blocked);
             check!(!recorded.is_terminal());
             check!(recorded.evidence().is_none());

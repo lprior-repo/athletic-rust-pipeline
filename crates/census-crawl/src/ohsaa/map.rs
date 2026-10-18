@@ -1,4 +1,5 @@
-use super::pages::{parse_ad_page, parse_sport_label, parse_sports_table, published_absence};
+use super::checked::{DirectorPage, SportsPage};
+use super::pages::{parse_sport_label, published_absence};
 use super::parse::{nonempty, strip_honorific};
 use super::{AD_PATH, ASSOCIATION, HOST, SCHOOL_INFO_PATH, SOURCE_ID, SPORTS_PATH, STATE};
 use crate::net::FetchOutcome;
@@ -46,43 +47,43 @@ pub struct SchoolExtract {
 }
 
 pub fn school_entities(
-    result: &SearchResult,
-    sports: &FetchOutcome,
-    ad: Option<&FetchOutcome>,
-) -> SchoolExtract {
-    let (school, school_id) = school_from_result(result, sports);
+    sports: &SportsPage,
+    ad: Option<&DirectorPage>,
+) -> Result<SchoolExtract, &'static str> {
+    if ad.is_some_and(|ad| ad.owner() != sports.owner()) {
+        return Err("sports and director pages belong to different school owners");
+    }
+    let (school, school_id) = school_from_result(sports.owner(), sports.capture());
     let coaches = ad
-        .and_then(|capture| {
-            ad_coach(
-                parse_ad_page(&String::from_utf8_lossy(&capture.body)).director,
-                &school_id,
-                capture,
-            )
-        })
+        .and_then(|page| ad_coach(page.page().director.clone(), &school_id, page.capture()))
         .into_iter()
         .chain(sports_coaches(&school_id, sports))
         .collect();
-    SchoolExtract {
+    Ok(SchoolExtract {
         school,
         school_id,
         coaches,
-    }
+    })
 }
 
 fn sports_coaches<'a>(
     school_id: &'a SchoolId,
-    capture: &'a FetchOutcome,
+    page: &'a SportsPage,
 ) -> impl Iterator<Item = CanonicalCoach> + 'a {
-    parse_sports_table(&String::from_utf8_lossy(&capture.body))
-        .into_iter()
-        .flat_map(move |(label, boys, girls)| {
-            let sport = parse_sport_label(&label);
-            [(boys, Gender::Boys), (girls, Gender::Girls)]
-                .into_iter()
-                .filter_map(move |(entry, gender)| {
-                    Some(sport_coach(school_id, sport?, entry?, gender, capture))
-                })
-        })
+    page.rows().iter().flat_map(move |(label, boys, girls)| {
+        let sport = parse_sport_label(label);
+        [(boys, Gender::Boys), (girls, Gender::Girls)]
+            .into_iter()
+            .filter_map(move |(entry, gender)| {
+                Some(sport_coach(
+                    school_id,
+                    sport?,
+                    entry.as_ref()?.clone(),
+                    gender,
+                    page.capture(),
+                ))
+            })
+    })
 }
 
 fn school_from_result(

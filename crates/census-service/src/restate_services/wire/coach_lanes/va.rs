@@ -1,8 +1,9 @@
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    PendingCoachLane, SchoolYear, SourceRef,
-};
+#[cfg(test)]
+use census_domain::model::{CoachLaneObligation, SchoolYear};
 use census_domain::UsJurisdiction;
+
+use super::policy::{ArmBasis, Lane, LanePolicy};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const VA_ARM: &str = "milesplit";
 pub(super) const VA_REFUSAL_SLUG: &str = "va_missing_coach_sources";
@@ -10,29 +11,14 @@ pub(super) const VA_TRUE_MISSING: &str = "VHSL member directory (`vhsl.org`); VH
 
 const VA_ARM_BASIS: &str = "the wired milesplit arm is the only Virginia surface the plan sweeps with names and the held VDOE and VISAA bodies are school lists only while the VHSL qualified.json body is partial, so the lane records the work order's true-missing set instead of arming";
 
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Virginia,
-        season,
-        revision,
-        arm: VA_ARM.to_string(),
-        arm_basis: VA_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    pending.record(
-        CoachLaneStage::Blocked,
-        Some(refusal(observed_on)?),
-        CoachLaneResolution::unresolved(observed_on),
-    )
-}
-
-pub(super) fn refusal(observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(SourceRef::id(VA_REFUSAL_SLUG), VA_TRUE_MISSING, observed_on)
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::Virginia,
+    arm: VA_ARM,
+    refusal: (VA_REFUSAL_SLUG, VA_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Text(VA_ARM_BASIS),
+    policy: LanePolicy::Blocked,
+};
 
 #[cfg(test)]
 mod tests {

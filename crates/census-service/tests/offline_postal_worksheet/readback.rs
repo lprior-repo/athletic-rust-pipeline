@@ -2,13 +2,15 @@ use calamine::{open_workbook_auto, Reader};
 use census_domain::model::GradYear;
 use census_domain::UsJurisdiction;
 use census_report::export::ExportDataset;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::Path;
 
 use super::fixtures::{FIXTURE_CACHE_FETCHED_AT, RESULT_URL};
 use super::TestResult;
 
-type Row = BTreeMap<String, String>;
+#[path = "../common/csv_readback.rs"]
+mod csv_readback;
+use csv_readback::{csv_rows, field, Row};
 const NCES_URL: &str = "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2526_w_0a_050626.zip";
 const NCES_SHA: &str = "e01af083baa57b60f37571f9607aa8ebe9b225712563ec9f10fd8809fab661c8";
 const EXPECTED: [(&str, &str, &str, &str, &str); 3] = [
@@ -51,27 +53,6 @@ fn sheet(path: &Path, name: &str) -> TestResult<Vec<Row>> {
         .collect())
 }
 
-fn csv_rows(path: &Path) -> TestResult<Vec<Row>> {
-    let mut reader = csv::Reader::from_path(path)?;
-    let headers = reader.headers()?.clone();
-    reader
-        .records()
-        .map(|row| {
-            Ok(headers
-                .iter()
-                .zip(row?.iter())
-                .map(|(key, value)| (key.to_owned(), value.to_owned()))
-                .collect())
-        })
-        .collect()
-}
-
-fn field<'a>(row: &'a Row, key: &str) -> TestResult<&'a str> {
-    row.get(key)
-        .map(String::as_str)
-        .ok_or_else(|| format!("missing {key}").into())
-}
-
 pub(super) fn assert_population(path: &Path, dataset: &ExportDataset) -> TestResult {
     let expected: BTreeSet<_> = dataset
         .athletes
@@ -99,7 +80,7 @@ pub(super) fn assert_population(path: &Path, dataset: &ExportDataset) -> TestRes
         let actual = rows
             .iter()
             .map(|row| field(row, id).map(str::to_owned))
-            .collect::<TestResult<BTreeSet<_>>>()?;
+            .collect::<anyhow::Result<BTreeSet<_>>>()?;
         check!(eq; actual, expected);
         for row in rows {
             check!(eq; field(&row, state)?, "WI");

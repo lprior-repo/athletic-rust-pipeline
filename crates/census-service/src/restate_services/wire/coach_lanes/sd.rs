@@ -1,11 +1,13 @@
+use census_domain::model::CoachLaneMailbox;
+#[cfg(test)]
 use census_domain::model::{
-    CoachLaneError, CoachLaneEvidence, CoachLaneMailbox, CoachLaneObligation, CoachLaneRefusal,
-    CoachLaneResolution, CoachLaneRole, CoachLaneStage, CoachLaneTenure, PendingCoachLane,
-    SchoolYear, SourceRef, COACH_LANE_MAX_FRESHNESS_DAYS,
+    CoachLaneError, CoachLaneEvidence, CoachLaneObligation, CoachLaneResolution, CoachLaneRole,
+    CoachLaneTenure, PendingCoachLane, SchoolYear, COACH_LANE_MAX_FRESHNESS_DAYS,
 };
 use census_domain::UsJurisdiction;
 
-use super::freshness_days;
+use super::policy::{ArmBasis, Lane, LanePolicy, RetainedCapture};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const SD_ARM: &str = "bound";
 pub(super) const SD_REFUSAL_SLUG: &str = "sd_missing_coach_sources";
@@ -41,73 +43,27 @@ pub(super) const SD_CAPTURE_ON: &str = "2026-10-07";
 const SD_ARM_BASIS: &str = "the bound descriptor declares school-coach contact and is admitted for South Dakota, and TeamsArm::Bound walks each SDHSAA school's GoBound staff pages; the retained SD staff captures are the held output of that walk";
 const SD_RESOLUTION_NOTE: &str = "four retained 2026-27-season GoBound SDHSAA staff captures (Yankton boys and girls cross country, White River girls cross country, Faith boys cross country - the retained empty-staff edge) list Head Coach and Assistant Coach rows and publish no mailbox; the crawl cache records no fetch timestamp, so 2026-10-07 is their documented offline replay date (research/sources/bound/SOURCE_REPORT.md):";
 
-fn resolved_note() -> String {
-    let mut note = String::from(SD_RESOLUTION_NOTE);
-    for (path, digest) in SD_CAPTURES {
-        note.push_str(&format!(" {path} sha256 {digest};"));
-    }
-    note
-}
+const CAPTURE: RetainedCapture = RetainedCapture {
+    schools: SD_SCHOOLS,
+    contacts: SD_CONTACTS,
+    digest: SD_YANKTON_GIRLS_DIGEST,
+    captured_on: SD_CAPTURE_ON,
+    source_url: SD_SOURCE_URL,
+    mailbox: CoachLaneMailbox::Unpublished,
+    note: SD_RESOLUTION_NOTE,
+    captures: &SD_CAPTURES,
+    stale_path: SD_YANKTON_GIRLS_PATH,
+    jurisdiction_name: "South Dakota",
+};
 
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::SouthDakota,
-        season,
-        revision,
-        arm: SD_ARM.to_string(),
-        arm_basis: SD_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    if let Some(reason) = census_crawl::registry::acquisition_refusal_for_source(SD_ARM) {
-        return pending.record(
-            CoachLaneStage::Blocked,
-            Some(CoachLaneRefusal::new(
-                SourceRef::id(SD_ARM),
-                reason,
-                observed_on,
-            )?),
-            CoachLaneResolution::unresolved(observed_on),
-        );
-    }
-    let freshness = freshness_days(SD_CAPTURE_ON, observed_on)?;
-    if freshness > COACH_LANE_MAX_FRESHNESS_DAYS {
-        return pending.record(
-            CoachLaneStage::Blocked,
-            Some(stale_refusal(freshness, observed_on)?),
-            CoachLaneResolution::unresolved(observed_on),
-        );
-    }
-    let evidence = CoachLaneEvidence::new(
-        SD_SCHOOLS,
-        SD_CONTACTS,
-        SD_YANKTON_GIRLS_DIGEST,
-        SD_CAPTURE_ON,
-    )?
-    .with_source_url(SD_SOURCE_URL)?;
-    let resolution = CoachLaneResolution::resolved(
-        CoachLaneRole::Published,
-        CoachLaneTenure::Current,
-        CoachLaneMailbox::Unpublished,
-        SD_CAPTURE_ON,
-        freshness,
-        resolved_note(),
-    )?;
-    pending.arm(evidence, resolution)
-}
-
-fn stale_refusal(freshness: u32, observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(
-        SourceRef::id(SD_ARM),
-        format!(
-            "the held bound capture {SD_YANKTON_GIRLS_PATH} is {freshness} days old at lane creation, beyond the {COACH_LANE_MAX_FRESHNESS_DAYS}-day bound, so the South Dakota arm cannot retain it"
-        ),
-        observed_on,
-    )
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::SouthDakota,
+    arm: SD_ARM,
+    refusal: (SD_REFUSAL_SLUG, SD_TRUE_MISSING),
+    kind: RefusalKind::EngineeringGap,
+    basis: ArmBasis::Text(SD_ARM_BASIS),
+    policy: LanePolicy::HeldCapture(&CAPTURE),
+};
 
 #[cfg(test)]
 mod tests;

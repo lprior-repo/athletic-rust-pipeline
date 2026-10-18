@@ -38,8 +38,14 @@ pub(super) fn pr(path: &Path, expected: &Expected) -> TestResult {
     }
     check!(eq; row.get(column("Mark Value")?), Some(&Data::Float(4.191)));
     let athletes = book.worksheet_range("Athletes")?;
-    check!(athletes.rows().any(|row| row
+    check!(eq; athletes.height(), 2);
+    let mut rows = athletes.rows();
+    let headers = rows.next().ok_or("Athletes headers")?;
+    let column = headers
         .iter()
-        .any(|cell| cell.to_string() == expected.public_id)));
+        .position(|cell| cell.to_string() == "Athlete ID")
+        .ok_or("Athletes public identity column")?;
+    let row = rows.next().ok_or("selected athlete row")?;
+    check!(eq; row.get(column).map(ToString::to_string).as_deref(), Some(expected.public_id.as_str()));
     Ok(())
 }

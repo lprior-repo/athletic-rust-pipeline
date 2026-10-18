@@ -1,10 +1,9 @@
 #[cfg(test)]
-use census_domain::model::CoachLaneAcceptance;
-use census_domain::model::{
-    CoachLaneError, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    PendingCoachLane, SchoolYear, SourceRef,
-};
+use census_domain::model::{CoachLaneError, CoachLaneObligation, SchoolYear};
 use census_domain::UsJurisdiction;
+
+use super::policy::{ArmBasis, Lane, LanePolicy};
+use crate::restate_services::plan::RefusalKind;
 
 pub(super) const MO_ARM: &str = "mtccca";
 pub(super) const MO_REFUSAL_SLUG: &str = "mo_missing_coach_sources";
@@ -16,40 +15,14 @@ const ACCEPTED_BY: &str = "census-ops";
 #[cfg(test)]
 const ACCEPTANCE_EVENT: &str = "jpx4.accepted_refusal";
 
-pub(super) fn refusal(observed_on: &str) -> Result<CoachLaneRefusal, CoachLaneError> {
-    CoachLaneRefusal::new(SourceRef::id(MO_REFUSAL_SLUG), MO_TRUE_MISSING, observed_on)
-}
-
-pub(super) fn lane(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let pending = CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Missouri,
-        season,
-        revision,
-        arm: MO_ARM.to_string(),
-        arm_basis: MO_ARM_BASIS.to_string(),
-        observed_on: observed_on.to_string(),
-    })?;
-    pending.record(
-        CoachLaneStage::Blocked,
-        Some(refusal(observed_on)?),
-        CoachLaneResolution::unresolved(observed_on),
-    )
-}
-
-#[cfg(test)]
-pub(super) fn accepted(
-    season: SchoolYear,
-    revision: u32,
-    observed_on: &str,
-) -> Result<CoachLaneObligation, CoachLaneError> {
-    let recorded = lane(season, revision, observed_on)?;
-    let acceptance = CoachLaneAcceptance::new(ACCEPTED_BY, ACCEPTANCE_EVENT, observed_on)?;
-    recorded.accept_refusal(acceptance)
-}
+pub(super) const POLICY: Lane = Lane {
+    jurisdiction: UsJurisdiction::Missouri,
+    arm: MO_ARM,
+    refusal: (MO_REFUSAL_SLUG, MO_TRUE_MISSING),
+    kind: RefusalKind::AccessBlocked,
+    basis: ArmBasis::Text(MO_ARM_BASIS),
+    policy: LanePolicy::Blocked,
+};
 
 #[cfg(test)]
 mod tests {
@@ -72,7 +45,7 @@ mod tests {
 
     #[test]
     fn coach_lane_mo_records_the_work_order_true_missing_reason() -> TestResult {
-        let recorded = refusal(OBSERVED_ON)?;
+        let recorded = POLICY.refusal(OBSERVED_ON)?;
         check!(eq; recorded.reason(), MO_TRUE_MISSING);
         check!(eq; recorded.source().id.as_str(), MO_REFUSAL_SLUG);
         check!(eq; recorded.observed_on(), OBSERVED_ON);
@@ -87,7 +60,7 @@ mod tests {
     fn coach_lane_mo_lane_records_the_refusal_without_closing_the_row() -> TestResult {
         let mut state = JurisdictionState::default();
         check!(coach_lane_owed(&state));
-        let row = lane(season()?, 1, OBSERVED_ON)?;
+        let row = super::super::evaluate(&POLICY, season()?, 1, OBSERVED_ON)?;
         check!(eq; row.id(), "coach_lane:MO:2026:1");
         check!(eq; row.status(), CoachLaneStatus::Blocked);
         check!(!row.is_terminal());
@@ -103,7 +76,7 @@ mod tests {
     #[test]
     fn coach_lane_mo_owner_acceptance_closes_the_row() -> TestResult {
         let mut state = JurisdictionState::default();
-        let closed = accepted(season()?, 1, OBSERVED_ON)?;
+        let closed = super::super::accepted(&POLICY, season()?, 1, OBSERVED_ON)?;
         check!(eq; closed.status(), CoachLaneStatus::AcceptedRefusal);
         check!(closed.is_terminal());
         check!(closed.evidence().is_none());
@@ -120,8 +93,9 @@ mod tests {
 
     #[test]
     fn coach_lane_mo_lane_matches_the_shared_registry_signature() -> TestResult {
-        let entry: fn(SchoolYear, u32, &str) -> Result<CoachLaneObligation, CoachLaneError> = lane;
-        check!(eq; entry(season()?, 1, OBSERVED_ON)?.id(), "coach_lane:MO:2026:1");
+        let entry: fn(&Lane, SchoolYear, u32, &str) -> Result<CoachLaneObligation, CoachLaneError> =
+            super::super::evaluate;
+        check!(eq; entry(&POLICY, season()?, 1, OBSERVED_ON)?.id(), "coach_lane:MO:2026:1");
         Ok(())
     }
 
