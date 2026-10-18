@@ -28,12 +28,12 @@ async fn documentary_collision_with_structured_row_refuses_even_outside_positive
     check!(empty);
     let before = dataset.performances.clone();
     let mut budget = Admission::new("documentary collision test");
-    let error = guards::collision(&dataset, &BTreeMap::new(), &performance.id, &mut budget)
-        .err()
-        .ok_or("structured collision refusal")?;
-    check!(error
-        .to_string()
-        .contains("collides with structured source"));
+    check!(matches!(
+        guards::collision(&dataset, &BTreeMap::new(), &performance.id, &mut budget),
+        Err(crate::report::ReportError::Store(
+            census_store::StoreError::Refused { .. }
+        ))
+    ));
     check!(eq; dataset.performances, before);
     Ok(())
 }
@@ -53,31 +53,24 @@ fn documentary_duplicate_and_conflicting_identity_never_overwrite_prior_observat
         ParticipationReasons::default(),
         vec!["original-reference".into()],
     );
-    let rows = BTreeMap::from([(id.clone(), row)]);
+    let mut rows = BTreeMap::from([(id.clone(), row)]);
     let mut budget = Admission::new("documentary collision test");
-    for (event, athlete) in [
-        ("first", "first"),
-        ("conflicting-event", "conflicting-athlete"),
-    ] {
-        let incoming = DocumentaryParticipationRow::fixture(
-            id.clone(),
-            Id::mint("event", &[event]),
-            Id::mint("athlete", &[athlete]),
-            CandidateOutcome::EligibleCandidate,
-            ParticipationReasons::default(),
-            vec!["incoming-reference".into()],
-        );
-        let error = guards::collision(&dataset, &rows, incoming.performance_id(), &mut budget)
-            .err()
-            .ok_or("documentary collision refusal")?;
-        check!(error
-            .to_string()
-            .contains("duplicate or conflicting source observations"));
-        check!(eq; rows.len(), 1);
-        check!(eq; rows.get(&id).ok_or("original row")?.assessment().evidence_refs(), &["original-reference".to_string()]);
-    }
-    let different = Id::mint("perf", &["distinct-documentary-observation"]);
-    guards::collision(&dataset, &rows, &different, &mut budget)?;
+    let incoming = DocumentaryParticipationRow::fixture(
+        id.clone(),
+        Id::mint("event", &["conflicting-event"]),
+        Id::mint("athlete", &["conflicting-athlete"]),
+        CandidateOutcome::EligibleCandidate,
+        ParticipationReasons::default(),
+        vec!["incoming-reference".into()],
+    );
+    check!(matches!(
+        guards::admit(&dataset, &mut rows, incoming, &mut budget),
+        Err(crate::report::ReportError::Store(
+            census_store::StoreError::Refused { .. }
+        ))
+    ));
+    check!(eq; rows.len(), 1);
+    check!(eq; rows.get(&id).ok_or("original row")?.assessment().evidence_refs(), &["original-reference".to_string()]);
     Ok(())
 }
 

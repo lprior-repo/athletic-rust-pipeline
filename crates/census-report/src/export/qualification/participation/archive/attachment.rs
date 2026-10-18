@@ -14,7 +14,8 @@ pub(in crate::export::qualification::participation) struct AttachmentClosureDesc
 }
 
 pub(in crate::export::qualification::participation) fn capture_attachment(
-    bundle: &FrozenEvidenceSubjectAttachmentBundleV1,
+    raw: &serde_json::value::RawValue,
+    reference: &AttachmentObjectReferenceV1,
     directory: &Path,
     grant: &mut AttachmentReplayGrantV1,
 ) -> ReportResult<AttachmentClosureDescriptor> {
@@ -22,11 +23,9 @@ pub(in crate::export::qualification::participation) fn capture_attachment(
         .charge_steps(1)
         .map_err(census_store::EvidenceSubjectAttachmentStoreError::from)
         .map_err(census_store::StoreError::from)?;
-    let raw: &serde_json::value::RawValue = serde_json::from_slice(bundle.bytes())
-        .map_err(|_| super::super::invalid("attachment closure bytes are not JSON"))?;
     Ok(AttachmentClosureDescriptor {
         object: super::objects::install(&raw, directory, 3)?,
-        reference: bundle.reference().clone(),
+        reference: reference.clone(),
     })
 }
 

@@ -1,9 +1,13 @@
 use super::{invalid, SelectedAuthority};
-use crate::export::dataset::{frozen, read, ExportDataset};
+use crate::export::dataset::{frozen, read, ExportDataset, Loaded};
+use crate::export::qualification::participation::{archive, school_projection};
 use crate::export::qualification::SelectionBinding;
 use crate::report::ReportResult;
-use census_domain::model::ProfileSelectionV1;
-use census_store::{Store, StoreSnapshot};
+use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
+use census_domain::model::{ProfileSelectionV1, QueryProfileV1};
+use census_store::{
+    FrozenPublicIdentityBundleV2, ReplayedResultSchoolCorrespondencesV1, Store, StoreSnapshot,
+};
 use std::path::Path;
 
 #[path = "preflight.rs"]
@@ -28,25 +32,13 @@ impl ExportDataset {
         objects_directory: &Path,
         job: Option<&str>,
     ) -> ReportResult<Self> {
-        snapshot.ensure_origin(store)?;
-        let (profile, authority) = capture_authority(snapshot, selection)?;
+        let (profile, authority) = selected_authority(store, snapshot, selection)?;
         let mut loaded = read::all(snapshot)?;
         let mut lineage = frozen::lineage(store, snapshot)?;
         lineage.export_job = job.map(str::to_owned);
         let identity = snapshot.freeze_public_identity_v2()?;
-        let mut grant = census_domain::evidence_subject_attachment::AttachmentReplayGrantV1::new();
-        let school_closure = if snapshot
-            .result_school_enrollment_proof_v1(&mut grant)?
-            .is_some()
-        {
-            Some(
-                crate::export::qualification::participation::archive::capture_school(
-                    snapshot, &identity, &mut grant,
-                )?,
-            )
-        } else {
-            None
-        };
+        let mut grant = AttachmentReplayGrantV1::new();
+        let school_closure = capture_school(snapshot, &identity, &mut grant)?;
         let replayed_school = school_closure
             .as_ref()
             .map(|closure| {
@@ -57,9 +49,7 @@ impl ExportDataset {
                 )
             })
             .transpose()?;
-        if let Some(source) = &replayed_school {
-            extend_school_projection(source, &mut grant, &mut loaded)?;
-        }
+        extend_school(&mut loaded, replayed_school.as_ref(), &mut grant)?;
         let mut dataset = selected_dataset(loaded, lineage, &profile, authority)?;
         attach_selected_proofs(
             &mut dataset,
@@ -79,12 +69,12 @@ impl ExportDataset {
 
 struct SelectedProofInputs<'a, 'store, 'source> {
     snapshot: &'a StoreSnapshot<'store>,
-    profile: &'a census_domain::model::QueryProfileV1,
+    profile: &'a QueryProfileV1,
     objects_directory: &'a Path,
-    identity: &'a census_store::FrozenPublicIdentityBundleV2,
-    grant: &'a mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1,
-    closure: Option<&'a crate::export::qualification::participation::archive::SchoolClosure>,
-    source: Option<&'a census_store::ReplayedResultSchoolCorrespondencesV1<'source>>,
+    identity: &'a FrozenPublicIdentityBundleV2,
+    grant: &'a mut AttachmentReplayGrantV1,
+    closure: Option<&'a archive::SchoolClosure>,
+    source: Option<&'a ReplayedResultSchoolCorrespondencesV1<'source>>,
 }
 
 fn attach_selected_proofs(
@@ -112,9 +102,9 @@ fn attach_selected_proofs(
 }
 
 fn selected_dataset(
-    mut loaded: super::super::Loaded,
+    mut loaded: Loaded,
     lineage: super::super::DatasetLineage,
-    profile: &census_domain::model::QueryProfileV1,
+    profile: &QueryProfileV1,
     authority: SelectedAuthority,
 ) -> ReportResult<ExportDataset> {
     loaded.selection = Some(SelectionBinding {
@@ -128,10 +118,12 @@ fn selected_dataset(
     Ok(dataset)
 }
 
-fn capture_authority(
+fn selected_authority(
+    store: &Store,
     snapshot: &StoreSnapshot<'_>,
     selection: &ProfileSelectionV1,
-) -> ReportResult<(census_domain::model::QueryProfileV1, SelectedAuthority)> {
+) -> ReportResult<(QueryProfileV1, SelectedAuthority)> {
+    snapshot.ensure_origin(store)?;
     let profile = snapshot.selected_profile(selection)?;
     census_domain::profile_execution::validate_current_selected_qualification_profile(&profile)
         .map_err(|error| invalid(&error.to_string()))?;
@@ -141,16 +133,28 @@ fn capture_authority(
         .ok_or_else(|| invalid("selected publication has no retained public identity authority"))?;
     let authority = SelectedAuthority::capture(profile.clone(), snapshot, &accepted)?;
     authority.validate()?;
-    drop(accepted);
     Ok((profile, authority))
 }
 
-fn extend_school_projection(
-    source: &census_store::ReplayedResultSchoolCorrespondencesV1<'_>,
-    grant: &mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1,
-    loaded: &mut super::super::Loaded,
+fn capture_school(
+    snapshot: &StoreSnapshot<'_>,
+    identity: &FrozenPublicIdentityBundleV2,
+    grant: &mut AttachmentReplayGrantV1,
+) -> ReportResult<Option<archive::SchoolClosure>> {
+    if snapshot.result_school_enrollment_proof_v1(grant)?.is_some() {
+        Ok(Some(archive::capture_school(snapshot, identity, grant)?))
+    } else {
+        Ok(None)
+    }
+}
+
+fn extend_school(
+    loaded: &mut Loaded,
+    source: Option<&ReplayedResultSchoolCorrespondencesV1<'_>>,
+    grant: &mut AttachmentReplayGrantV1,
 ) -> ReportResult<()> {
-    let projection =
-        crate::export::qualification::participation::school_projection::collect(source, grant)?;
-    school::extend(loaded, projection)
+    if let Some(source) = source {
+        school::extend(loaded, school_projection::collect(source, grant)?)?;
+    }
+    Ok(())
 }

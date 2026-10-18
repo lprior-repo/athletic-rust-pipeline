@@ -38,6 +38,8 @@ fn replay<'a>(
         ledger,
         source,
         attachments,
+        attachment_json: archive.attachments,
+        attachment_reference: archive.attachment_reference,
         continuation,
         snapshot_sequence: sequence,
     })

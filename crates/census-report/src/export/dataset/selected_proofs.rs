@@ -66,12 +66,8 @@ impl SelectedProofs {
         let (affiliation, affiliations) =
             current_affiliation::capture_frozen(dataset, snapshot, directory)?;
         let affiliation_digest = affiliation.digest()?;
-        let expected_athletes = athlete_fingerprint(expected_fingerprints)?;
-        if affiliation.athlete_table_digest() != expected_athletes {
-            return Err(invalid(
-                "selected affiliation differs from the independent athlete fingerprint",
-            ));
-        }
+        let expected_athletes =
+            Self::require_affiliation_athletes(&affiliation, expected_fingerprints)?;
         let participation = PinnedParticipation::read(
             dataset,
             snapshot,
@@ -88,6 +84,42 @@ impl SelectedProofs {
             ));
         }
         let participation_digest = participation.install_replay(directory)?;
+        let proofs = Self::seal_capture(
+            affiliation,
+            affiliation_digest,
+            participation_digest,
+            public_identity,
+            directory,
+        )?;
+        Ok((
+            proofs,
+            HydratedProofs {
+                participation,
+                affiliations,
+            },
+        ))
+    }
+
+    fn require_affiliation_athletes<'a>(
+        affiliation: &FrozenAffiliationDescriptor,
+        expected_fingerprints: &'a BTreeMap<String, String>,
+    ) -> ReportResult<&'a str> {
+        let expected_athletes = athlete_fingerprint(expected_fingerprints)?;
+        if affiliation.athlete_table_digest() != expected_athletes {
+            return Err(invalid(
+                "selected affiliation differs from the independent athlete fingerprint",
+            ));
+        }
+        Ok(expected_athletes)
+    }
+
+    fn seal_capture(
+        affiliation: FrozenAffiliationDescriptor,
+        affiliation_digest: String,
+        participation_digest: String,
+        public_identity: identity::Bundle,
+        directory: &Path,
+    ) -> ReportResult<Self> {
         let objects = objects::inventory(directory)?;
         let proofs = Self {
             version: if affiliation.reviewed_roster() {
@@ -103,13 +135,7 @@ impl SelectedProofs {
             objects_directory: Some(directory.to_path_buf()),
         };
         proofs.validate()?;
-        Ok((
-            proofs,
-            HydratedProofs {
-                participation,
-                affiliations,
-            },
-        ))
+        Ok(proofs)
     }
 
     pub(crate) fn hydrate(

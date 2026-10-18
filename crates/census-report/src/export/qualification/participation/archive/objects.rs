@@ -62,11 +62,40 @@ pub(super) fn load_bytes(
     anchored_descriptor: &str,
     version: u32,
 ) -> ReportResult<Vec<u8>> {
+    load_bytes_with_limits(directory, anchored_descriptor, version, None, MAX_BYTES)
+}
+
+pub(super) fn load_bounded_bytes(
+    directory: &Path,
+    anchored_descriptor: &str,
+    version: u32,
+    expected_bytes: u64,
+    max_bytes: usize,
+) -> ReportResult<Vec<u8>> {
+    load_bytes_with_limits(
+        directory,
+        anchored_descriptor,
+        version,
+        Some(expected_bytes),
+        max_bytes,
+    )
+}
+
+fn load_bytes_with_limits(
+    directory: &Path,
+    anchored_descriptor: &str,
+    version: u32,
+    expected_bytes: Option<u64>,
+    max_bytes: usize,
+) -> ReportResult<Vec<u8>> {
+    if max_bytes > MAX_BYTES {
+        return Err(invalid("participation replay exceeds absolute maximum"));
+    }
     let bytes = proof_objects::read(directory, anchored_descriptor, 32 * 1024)?;
     let descriptor: Descriptor = serde_json::from_slice(&bytes).map_err(encoding)?;
     if descriptor.version != version
         || descriptor.bytes == 0
-        || descriptor.bytes > MAX_BYTES
+        || descriptor.bytes > max_bytes
         || descriptor.chunks.len() > MAX_CHUNKS
         || descriptor.chunks.len() != descriptor.bytes.div_ceil(CHUNK_BYTES)
         || serde_json::to_vec(&descriptor).map_err(encoding)? != bytes
@@ -74,6 +103,13 @@ pub(super) fn load_bytes(
         return Err(invalid(
             "participation replay descriptor shape or budget differs",
         ));
+    }
+    if let Some(expected) = expected_bytes {
+        let actual = u64::try_from(descriptor.bytes)
+            .map_err(|_| invalid("participation replay payload length overflow"))?;
+        if actual != expected {
+            return Err(invalid("participation replay payload length differs"));
+        }
     }
     let mut payload = Vec::new();
     payload

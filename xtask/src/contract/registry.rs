@@ -114,7 +114,7 @@ pub(super) fn admissions() -> Result<Check> {
     Ok(Check::violated(5, NAME, detail, failures))
 }
 
-const NON_ADAPTERS: [(&str, &str); 24] = [
+const NON_ADAPTERS: [(&str, &str); 25] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
@@ -136,6 +136,10 @@ const NON_ADAPTERS: [(&str, &str); 24] = [
     (
         "mhsaa_enrollment",
         "parses retained official enrollment text; acquisition and origin admission belong to the owning MHSAA producer",
+    ),
+    (
+        "participation_evidence",
+        "reads and records retained participation, roster and school evidence under the owning source's admission; it has no independent acquisition origin",
     ),
     (
         "private_assoc",

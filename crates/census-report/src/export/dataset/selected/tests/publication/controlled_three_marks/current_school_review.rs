@@ -94,14 +94,7 @@ fn prerequisite(
         .get_merged::<CanonicalSchool>(Table::Schools, input.school.as_str())?
         .ok_or("current school intake projection missing")?;
     let projected = project_program(&packet, &checked)?;
-    if view
-        .get_merged::<CanonicalTeam>(Table::Teams, projected.id.as_str())?
-        .is_none()
-    {
-        store.append(Table::Teams, &projected)?;
-    }
-    let program = store
-        .snapshot()
+    let program = view
         .get_merged::<CanonicalTeam>(Table::Teams, projected.id.as_str())?
         .ok_or("source-derived current program missing")?;
     let request = RosterIssuanceInspectionRequestV1 {

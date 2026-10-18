@@ -34,7 +34,10 @@ pub(super) fn parse(
             detail: "staff candidate directory exceeds name or row budget".to_owned(),
         });
     }
-    let mut hits = profiles.unwrap_or_default();
+    let mut hits = Vec::new();
+    if let Some(profiles) = profiles {
+        hits = profiles;
+    }
     for row in directory.members {
         if let Some(hit) = candidate(rules, url, &directory.name, row)? {
             hits.push(hit);

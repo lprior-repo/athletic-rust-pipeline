@@ -1,3 +1,7 @@
+mod closure_grants;
+mod durable_job;
+mod parent_conflicts;
+
 use super::documentary_material::Kind;
 use super::documentary_review::{self, AcceptedSource};
 use super::readback::{self, Expected};
@@ -9,9 +13,6 @@ use census_domain::evidence_subject_attachment::AttachmentPredecessorV1;
 use census_domain::model::{GradYear, QueryProfileV1, SchoolId};
 use census_domain::public_identity_history::PublicAthleteId;
 use std::path::Path;
-
-mod durable_job;
-mod parent_conflicts;
 
 fn reviewed_inputs(installed: &InstalledSource) -> TestResult<(SchoolId, AcceptedSource)> {
     let current = super::current_school_source::install(installed)?;
@@ -147,6 +148,8 @@ fn controlled_three_marks_selects_eligible_best_then_withdraws_to_next_and_reope
     let withdrawn_digest = publication::verify_published(&workbook1)?.generation_digest;
     assert_output(&g1, &workbook1, &public, &current, &historical, true)?;
     let lineage1 = g1.lineage.clone();
+    check!(lineage1.snapshot_sequence > lineage0.snapshot_sequence);
+    check!(publication::verify_published(&workbook1)?.generation_digest != original_digest);
     super::documentary_lifecycle::replay_without_reactivation(&installed, &accepted50)?;
     require_replay_selection(&installed, &profile, &workbook1, &current)?;
     check!(eq; publication::verify_published(&workbook0)?.generation_digest, original_digest);
