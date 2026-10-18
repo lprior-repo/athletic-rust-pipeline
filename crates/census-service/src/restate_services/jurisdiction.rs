@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use restate_sdk::prelude::*;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, OnceCell};
 
 use census_crawl::net::bridge::BrowserLane;
 use census_crawl::net::{Fetcher, PacingState};
@@ -25,6 +25,7 @@ mod athleticlive_tests;
 #[cfg(test)]
 mod binding_tests;
 pub(in crate::restate_services) mod capture_admission;
+mod pacing;
 mod pipeline;
 mod report;
 mod results_work;
@@ -53,7 +54,7 @@ pub struct JurisdictionCensus {
     clock: Arc<dyn Clock>,
     lane: Option<BrowserLane>,
     fetcher: Arc<Mutex<CachedFetcher>>,
-    pacing: Arc<PacingState>,
+    pacing: Arc<OnceCell<Arc<PacingState>>>,
     source_parallelism: Arc<OnceLock<usize>>,
     region: Arc<Spawner>,
     capture: super::CaptureExecution,
@@ -74,7 +75,7 @@ impl JurisdictionCensus {
             lane,
             capture,
             fetcher: Arc::new(Mutex::new(None)),
-            pacing: Arc::new(PacingState::new()),
+            pacing: Arc::new(OnceCell::new()),
             source_parallelism: Arc::new(OnceLock::new()),
             region: Arc::clone(jobs.region()),
             jobs,

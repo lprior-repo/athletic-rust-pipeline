@@ -5,6 +5,7 @@ mod gobound_policy;
 mod grants;
 mod prepared_v2;
 mod recovery;
+mod restart;
 use fixture::*;
 use std::sync::Arc;
 use tokio::net::TcpListener;
