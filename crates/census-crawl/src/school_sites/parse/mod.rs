@@ -13,6 +13,7 @@ pub use patterns::{
 pub use rules::Rules;
 pub use staff::StaffContactHit;
 pub use text::truncate;
+pub(super) use urls::document_url;
 pub use urls::{base_domain, rank_link, resolve_href};
 
 pub(crate) use patterns::HIDDEN_BLOCK;
