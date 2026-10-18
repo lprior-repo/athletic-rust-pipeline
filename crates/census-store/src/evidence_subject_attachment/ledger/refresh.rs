@@ -37,18 +37,7 @@ pub(super) fn refresh(
         }
     }
     ledger.receipts = receipts;
-    let inventory =
-        domain::calculate_reviewed_reference_inventory_with_grant(&ledger.records, grant)
-            .map_err(Error::Domain)?;
-    grant.charge_steps(1).map_err(Error::Domain)?;
-    if inventory != ledger.inventory {
-        return Err(Error::InventoryMoved.into());
-    }
     ledger.validate_projection(identity, grant)?;
-    for (record, inputs) in ledger.records.iter().zip(&ledger.input_refs) {
-        fences::verify(ledger, record, inputs, grant)?;
-        super::super::target::verify_historical(ledger, record, grant)?;
-    }
     Ok(true)
 }
 

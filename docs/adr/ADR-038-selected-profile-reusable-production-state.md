@@ -257,13 +257,18 @@ preparation-time retained-body decode. Genuine B still required a derived
 8,609,689 accounted bytes, including its journal envelope and receipt.
 The 2026-10-18 byte increase retains every remaining allocation charge.
 
-The supported 16-source scenario exceeded 32,768 steps during its tenth
-additional reviewed-source application, even after eliminating repeated
-immutable-ledger declaration checks during refresh. Under the subsequent
-authorization to loosen traversal limits, the finite work allowance is four
-times the prior ceiling. This is admission policy, not a measured national
-workload bound. Exact-limit refusal and complete-chain qualification remain
-required; there is no grant reset.
+The unchanged-wire refresh path reuses historical declaration, input and target
+checks already proven at load. It still verifies every material against the
+current view, reloads receipts and validates the store-bound projection. Changed
+wire takes the full checked-load path. There is no grant reset or omitted charge
+for remaining work.
+
+After removing repeated preparation and immutable-metadata validation, both
+32,768- and 65,536-step trials still refused the supported 16-source workflow.
+The finite allowance is four times the original ceiling, under the subsequent
+explicit authorization to loosen traversal limits. Every remaining operation
+stays charged; the source-count policy is not narrowed to fit the old quota.
+Exact-budget and complete-chain results belong in the verification ledger.
 
 Preparation validates introduced leaves once before returning checked state.
 Application revalidates them: retained-root replacement need not advance
