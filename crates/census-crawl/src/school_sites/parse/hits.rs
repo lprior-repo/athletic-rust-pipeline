@@ -1,4 +1,4 @@
-use super::patterns::{CONTEXT_MAX, CONTEXT_RADIUS, MAX_TABLES, MAX_TABLE_ROWS, TITLE_WORDS};
+use super::patterns::{CONTEXT_MAX, CONTEXT_RADIUS, TITLE_WORDS};
 use super::text::{decode_entities, truncate};
 use super::Rules;
 use census_domain::model::{CoachRole, Gender, SchoolMailboxPurpose, Sport};
@@ -64,6 +64,7 @@ pub fn analyse(
     signals: &mut Signals,
 ) -> crate::CrawlResult<()> {
     super::admission::page(rules, url, html, signals)?;
+    let tables = super::tables::discover(rules, html)?;
     let text = rules.visible_text(html);
     let title = rules.title_of(html);
     let mailboxes = crate::coach_directories::school_mailbox_candidates(html.as_bytes())?;
@@ -93,7 +94,7 @@ pub fn analyse(
     coaches::collect(rules, url, &title, html, signals)?;
     collect_directors(rules, url, &title, &flat, signals);
     signals.pages.push(url.to_string());
-    analyse_tables(rules, url, html, &title, signals);
+    analyse_tables(rules, url, &tables, &title, signals);
     let mut combined = std::mem::take(&mut signals.emails);
     combined.append(&mut emails);
     signals.emails = rules.sanitize_emails(combined.iter().map(String::as_str));
@@ -123,38 +124,20 @@ fn collect_directors(rules: &Rules, url: &str, title: &str, flat: &str, signals:
     }
 }
 
-fn analyse_tables(rules: &Rules, url: &str, html: &str, title: &str, signals: &mut Signals) {
-    for (table_index, table) in rules.table.captures_iter(html).enumerate() {
-        if table_index >= MAX_TABLES {
-            break;
-        }
-        let body = table.get(1).map_or("", |matched| matched.as_str());
-        let rows: Vec<&str> = rules
-            .row
-            .captures_iter(body)
-            .filter_map(|captures| captures.get(1))
-            .map(|matched| matched.as_str())
-            .collect();
-        if rows.len() < 2 {
-            continue;
-        }
-        if !rules.table_header.is_match(&header_of(rules, rows.first())) {
-            continue;
-        }
-        for row in rows.iter().skip(1).take(MAX_TABLE_ROWS) {
+fn analyse_tables(
+    rules: &Rules,
+    url: &str,
+    tables: &[super::tables::CandidateTable<'_>],
+    title: &str,
+    signals: &mut Signals,
+) {
+    for table in tables {
+        for row in &table.rows {
             if let Some(hit) = table_hit(rules, row, url, title) {
                 signals.coach_hits.push(hit);
             }
         }
     }
-}
-
-fn header_of(rules: &Rules, row: Option<&&str>) -> String {
-    rules
-        .collapse_spaces(&decode_entities(
-            &rules.tag.replace_all(row.map_or("", |value| *value), " "),
-        ))
-        .to_ascii_lowercase()
 }
 
 fn table_hit(rules: &Rules, row: &str, url: &str, title: &str) -> Option<CoachHit> {

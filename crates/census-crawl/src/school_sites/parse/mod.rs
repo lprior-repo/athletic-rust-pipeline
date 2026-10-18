@@ -3,6 +3,7 @@ mod hits;
 mod patterns;
 mod rules;
 mod staff;
+mod tables;
 mod text;
 mod urls;
 

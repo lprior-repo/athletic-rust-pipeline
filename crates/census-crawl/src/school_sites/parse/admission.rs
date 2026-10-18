@@ -47,11 +47,6 @@ pub(super) fn page(rules: &Rules, url: &str, html: &str, signals: &Signals) -> C
         )?;
     }
     check(
-        "school site tables",
-        rules.table.find_iter(html).take(9).count(),
-        8,
-    )?;
-    check(
         "school site table rows",
         rules.row.find_iter(html).take(321).count(),
         320,
