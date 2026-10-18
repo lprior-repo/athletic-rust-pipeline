@@ -208,6 +208,7 @@ pub(super) struct NationalReportArgs {
 
 mod observe;
 mod output;
+mod publication_notice;
 mod report;
 mod run;
 
