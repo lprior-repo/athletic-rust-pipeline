@@ -21,7 +21,6 @@ use std::path::Path;
 
 mod assessment;
 mod bound;
-mod descriptor;
 mod diagnostics;
 mod facts;
 mod guards;
@@ -56,13 +55,6 @@ pub(super) fn school_bound(
 ) -> ReportResult<Collected> {
     bound::collect(dataset, profile, captured_at, school, grant)
 }
-pub(super) fn capture_descriptor(
-    dataset: &ExportDataset,
-    snapshot: &StoreSnapshot<'_>,
-    directory: &Path,
-) -> ReportResult<super::archive::attachment::AttachmentClosureDescriptor> {
-    descriptor::capture(dataset, snapshot, directory)
-}
 
 pub(super) fn capture(
     dataset: &ExportDataset,
@@ -94,7 +86,10 @@ pub(super) fn capture(
             ))
         })
         .map_err(source)??;
-        let descriptor = super::archive::capture_attachment(&bundle, directory, &mut grant)?;
+        let raw: &serde_json::value::RawValue = serde_json::from_slice(bundle.bytes())
+            .map_err(|_| invalid("attachment closure bytes are not JSON"))?;
+        let descriptor =
+            super::archive::capture_attachment(raw, bundle.reference(), directory, &mut grant)?;
         Ok((rows, descriptor))
     })();
     if result.is_err() {

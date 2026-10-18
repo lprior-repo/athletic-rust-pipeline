@@ -1,3 +1,5 @@
+mod merged;
+
 use super::*;
 use census_domain::model::RetainedConflict;
 use census_store::Entity;

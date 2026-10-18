@@ -62,17 +62,13 @@ fn research_report(school: &CanonicalSchool, year: SchoolYear) -> AdapterReport 
     report
 }
 
-pub fn apply_contact_capture(
-    school: &mut CanonicalSchool,
+fn capture_outcome(
+    school: &CanonicalSchool,
     year: SchoolYear,
+    locator: &str,
     capture: &FetchOutcome,
-) -> CrawlResult<Vec<String>> {
-    let links = crate::coach_directories::apply_school_mailbox_capture(school, year, capture)?;
-    let locator = capture
-        .response_url
-        .as_deref()
-        .map_or(capture.url.as_str(), |url| url);
-    let mut state = school
+) -> Outcome {
+    school
         .contact_research
         .iter()
         .filter(|row| matches!(row.subject, Subject::SchoolMailbox(_)) && row.school_year == year)
@@ -84,7 +80,20 @@ pub fn apply_contact_capture(
         })
         .fold(Outcome::CompletedEmpty, |state, attempt| {
             state.combine(attempt.outcome.clone())
-        });
+        })
+}
+
+pub fn apply_contact_capture(
+    school: &mut CanonicalSchool,
+    year: SchoolYear,
+    capture: &FetchOutcome,
+) -> CrawlResult<Vec<String>> {
+    let links = crate::coach_directories::apply_school_mailbox_capture(school, year, capture)?;
+    let locator = capture
+        .response_url
+        .as_deref()
+        .map_or(capture.url.as_str(), |url| url);
+    let mut state = capture_outcome(school, year, locator, capture);
     let mut signals = super::Signals::default();
     let mut reason = "searched retained source page; candidate names never establish current tenure or mailbox claims".to_owned();
     if state.is_terminal() {

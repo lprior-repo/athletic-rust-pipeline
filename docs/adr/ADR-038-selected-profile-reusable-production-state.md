@@ -276,6 +276,16 @@ The current aggregate checked-read/workflow grant is 16 MiB (16,777,216 bytes)
 and 131,072 traversal steps. Individual encoded objects and retained physical
 inventory remain bounded at 4 MiB; structural limits are unchanged.
 
+School-bound V4 installs its mandatory attachment descriptor from the authenticated
+school closure under the original school and attachment grant continuations.
+It neither rereads the live snapshot nor starts another allowance. The optional
+school descriptor does not make absent historical school authority eligible.
+
+School-proof loading checks the 4-MiB reference ceiling and exact encoded payload
+length before payload reservation or chunk reads. Hash, canonical encoding and
+native proof validation still apply; owned proof and roster-body buffers transfer
+without a second full-body copy. These bounds are not process-memory measurements.
+
 The authorized 8-MiB grant admitted genuine A after removing a duplicate
 preparation-time retained-body decode. Genuine B still required a derived
 8,609,689 accounted bytes, including its journal envelope and receipt.
@@ -307,8 +317,8 @@ Private school source closure `result-school-source-closure-v2` shares roots
 already retained by the authenticated attachment closure and preserves school-only
 roots separately. Unqualified V1 refuses; qualified roster/report formats and
 original artifacts remain unchanged. Lifecycle-9 public review/revoke and cold/frozen
-readback passed on `78a3504d`; full eligible-PR/window publication remains separate
-and unqualified. See the delivery matrix and verification ledger.
+readback passed on `78a3504d`. Those historical receipts do not certify a later
+eligible-PR/window publication; use the current delivery matrix and verification ledger.
 
 ### Reviewed secondary-person authority — 2026-10-17
 

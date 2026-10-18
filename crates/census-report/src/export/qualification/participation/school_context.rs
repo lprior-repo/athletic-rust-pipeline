@@ -31,7 +31,9 @@ pub(super) fn collect_live(
                 context.source,
                 context.grant,
             )?;
-            let attachment = super::attached::capture_descriptor(dataset, snapshot, directory)?;
+            let (raw, reference) = context.source.retained_attachment_closure(context.grant)?;
+            let attachment =
+                super::archive::capture_attachment(raw, reference, directory, context.grant)?;
             let descriptor = context.closure.install(directory, context.grant)?;
             Ok((rows, attachment, Some(descriptor)))
         }

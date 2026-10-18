@@ -17,12 +17,17 @@ impl ResultSchoolSourceProofV1 {
     pub fn reference(&self) -> &AttachmentObjectReferenceV1 {
         &self.reference
     }
+    pub fn into_parts(self) -> (AttachmentObjectReferenceV1, Vec<u8>) {
+        (self.reference, self.bytes)
+    }
 }
 
 pub struct ReplayedResultSchoolCorrespondencesV1<'a> {
     pub(super) ledger: super::super::issuance::ledger::Ledger,
     pub(super) source: retained::Source<'a>,
     pub(super) attachments: FrozenCurrentEvidenceSubjectAttachmentReferencesV1<'a>,
+    pub(super) attachment_json: &'a serde_json::value::RawValue,
+    pub(super) attachment_reference: AttachmentObjectReferenceV1,
     pub(super) continuation: AttachmentReplayContinuationV1,
     pub(super) snapshot_sequence: u64,
 }
@@ -63,6 +68,17 @@ impl ReplayedResultSchoolCorrespondencesV1<'_> {
             self.require_original_grant(grant)?;
             self.attachments.require_original_grant(grant)?;
             Ok(&self.attachments)
+        })
+    }
+    pub fn retained_attachment_closure(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<(&serde_json::value::RawValue, &AttachmentObjectReferenceV1)> {
+        guarded(grant, |grant| {
+            self.require_original_grant(grant)?;
+            self.attachments.require_original_grant(grant)?;
+            grant.charge_steps(1).map_err(grant_error)?;
+            Ok((self.attachment_json, &self.attachment_reference))
         })
     }
     pub fn read_retained_capture_root_v1(

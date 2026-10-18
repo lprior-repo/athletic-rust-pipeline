@@ -3,12 +3,12 @@ use census_domain::evidence_subject_attachment::{
     AttachmentObjectReferenceV1, AttachmentReplayGrantV1, EvidenceSubjectAttachmentError,
 };
 use census_domain::model::StoreIdentity;
+use census_domain::public_identity_history::ReplayLimits;
 use census_store::{
     FrozenPublicIdentityBundleV2, ReplayedResultSchoolCorrespondencesV1, StoreError, StoreSnapshot,
 };
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct SchoolClosureDescriptor {
@@ -30,16 +30,8 @@ pub(crate) fn capture_school(
     grant.charge_steps(1).map_err(domain)?;
     let attachments = snapshot.read_current_evidence_subject_attachment_references_v1(grant)?;
     let current = snapshot.read_current_result_school_correspondences_v1(&attachments, grant)?;
-    let proof = current.freeze_closure(identity, grant)?;
-    let mut bytes = Vec::new();
-    bytes
-        .try_reserve_exact(proof.bytes().len())
-        .map_err(|_| invalid("school closure allocation refused"))?;
-    bytes.extend_from_slice(proof.bytes());
-    Ok(SchoolClosure {
-        bytes,
-        reference: proof.reference().clone(),
-    })
+    let (reference, bytes) = current.freeze_closure(identity, grant)?.into_parts();
+    Ok(SchoolClosure { bytes, reference })
 }
 
 pub(crate) fn load_school(
@@ -48,14 +40,21 @@ pub(crate) fn load_school(
     grant: &mut AttachmentReplayGrantV1,
 ) -> ReportResult<SchoolClosure> {
     grant.charge_steps(1).map_err(domain)?;
-    let bytes = super::objects::load_bytes(directory, &descriptor.object, 4)?;
+    let limit = ReplayLimits::SMALL.total_text_bytes;
+    let reference_limit =
+        u64::try_from(limit).map_err(|_| invalid("school closure reference limit overflow"))?;
+    if descriptor.reference.bytes == 0 || descriptor.reference.bytes > reference_limit {
+        return Err(invalid("school closure reference size differs").into());
+    }
+    let bytes = super::objects::load_bounded_bytes(
+        directory,
+        &descriptor.object,
+        4,
+        descriptor.reference.bytes,
+        limit,
+    )?;
     if bytes.is_empty() {
         return Err(invalid("school closure bytes absent").into());
-    }
-    let length =
-        u64::try_from(bytes.len()).map_err(|_| invalid("school closure length overflow"))?;
-    if length != descriptor.reference.bytes {
-        return Err(invalid("school closure length differs").into());
     }
     if super::objects::hash(&bytes) != descriptor.reference.digest.as_str() {
         return Err(invalid("school closure digest differs").into());
@@ -120,3 +119,6 @@ fn invalid(detail: &str) -> StoreError {
 fn domain(error: EvidenceSubjectAttachmentError) -> StoreError {
     census_store::EvidenceSubjectAttachmentStoreError::from(error).into()
 }
+
+#[cfg(test)]
+mod tests;

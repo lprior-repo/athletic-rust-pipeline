@@ -26,27 +26,7 @@ struct Cell {
 impl Collector {
     pub(super) fn start(&mut self, tag: &html5gum::StartTag<usize>) -> Result<(), Failure> {
         if self.current.is_none() {
-            let recognized = tag.name.as_ref() == b"ul"
-                && tag
-                    .attributes
-                    .get(b"class".as_slice())
-                    .is_some_and(|value| {
-                        value
-                            .split(|byte| byte.is_ascii_whitespace())
-                            .any(|class| class == b"profile-list-box")
-                    });
-            if !recognized {
-                return Ok(());
-            }
-            if self.recognized >= 320 {
-                return Err(Failure::Budget(
-                    "school contact page exceeds 320 staff profiles",
-                ));
-            }
-            self.recognized += 1;
-            self.current = Some(Profile::default());
-            self.stack.push(b"ul".to_vec());
-            return Ok(());
+            return self.start_profile(tag);
         }
         if self.stack.len() >= 32 {
             return Err(Failure::Budget("staff profile exceeds 32 nested elements"));
@@ -54,6 +34,7 @@ impl Collector {
         let Some(profile) = self.current.as_mut() else {
             return Ok(());
         };
+
         let name: &[u8] = tag.name.as_ref();
         if name == b"li" && self.stack.len() == 1 {
             if profile.cells.len() >= 3 {
@@ -69,35 +50,68 @@ impl Collector {
         {
             profile.invalid = true;
         }
-        if name == b"a" {
-            if let Some(href) = tag.attributes.get(b"href".as_slice()) {
-                let href = std::str::from_utf8(href)
-                    .map_err(|_| Failure::Decode("staff profile link is not UTF-8"))?;
-                if href.len() > 4096 {
-                    return Err(Failure::Budget("staff profile link exceeds 4096 bytes"));
-                }
-                if let Some(address) = markup::after(href, "mailto:") {
-                    if let Some(cell) = profile.cells.last_mut() {
-                        if cell.mailboxes.len() >= 2 {
-                            profile.invalid = true;
-                        } else {
-                            cell.mailboxes.push(
-                                address
-                                    .split('?')
-                                    .next()
-                                    .map_or(address, |address| address)
-                                    .to_owned(),
-                            );
-                        }
-                    }
-                }
-            }
-        }
+        Self::capture_mailto(profile, tag)?;
         if name == b"br" {
             self.text(b" ")?;
         } else {
             self.stack.push(name.to_vec());
         }
+        Ok(())
+    }
+
+    fn start_profile(&mut self, tag: &html5gum::StartTag<usize>) -> Result<(), Failure> {
+        if tag.name.as_ref() != b"ul" {
+            return Ok(());
+        }
+        let recognized = tag
+            .attributes
+            .get(b"class".as_slice())
+            .is_some_and(|value| {
+                value
+                    .split(|byte| byte.is_ascii_whitespace())
+                    .any(|class| class == b"profile-list-box")
+            });
+        if !recognized {
+            return Ok(());
+        }
+        if self.recognized >= 320 {
+            return Err(Failure::Budget(
+                "school contact page exceeds 320 staff profiles",
+            ));
+        }
+        self.recognized += 1;
+        self.current = Some(Profile::default());
+        self.stack.push(b"ul".to_vec());
+        Ok(())
+    }
+
+    fn capture_mailto(
+        profile: &mut Profile,
+        tag: &html5gum::StartTag<usize>,
+    ) -> Result<(), Failure> {
+        if tag.name.as_ref() != b"a" {
+            return Ok(());
+        }
+        let Some(href_bytes) = tag.attributes.get(b"href".as_slice()) else {
+            return Ok(());
+        };
+        let href = std::str::from_utf8(href_bytes)
+            .map_err(|_| Failure::Decode("staff profile link is not UTF-8"))?;
+        if href.len() > 4096 {
+            return Err(Failure::Budget("staff profile link exceeds 4096 bytes"));
+        }
+        let Some(address) = markup::after(href, "mailto:") else {
+            return Ok(());
+        };
+        let Some(cell) = profile.cells.last_mut() else {
+            return Ok(());
+        };
+        if cell.mailboxes.len() >= 2 {
+            profile.invalid = true;
+            return Ok(());
+        }
+        let clean = address.split('?').next().map_or(address, |a| a);
+        cell.mailboxes.push(clean.to_owned());
         Ok(())
     }
 
@@ -169,59 +183,85 @@ pub(crate) fn candidates(
     }
     let mut hits = Vec::new();
     for profile in page.profiles.rows {
-        let [name, role, mailbox] = profile.cells.as_slice() else {
-            continue;
-        };
-        if !name.mailboxes.is_empty() || !role.mailboxes.is_empty() || mailbox.mailboxes.len() != 1
-        {
-            continue;
+        if let Some(hit) = process_profile(rules, url, profile)? {
+            hits.push(hit);
         }
-        let published_role = crate::row_hygiene::clean_text(&role.text);
-        if ![
-            "athletic director",
-            "athletics director",
-            "director of athletics",
-        ]
-        .iter()
-        .any(|label| published_role.eq_ignore_ascii_case(label))
-            || crate::coach_contacts::parse_role(&published_role)
-                != Some(CoachRole::AthleticDirector)
-        {
-            continue;
-        }
-        let published_name = crate::row_hygiene::clean_text(&name.text);
-        let Some(name) = crate::school_sites::parse::clean_person(rules, &published_name)
-            .filter(|name| name == &published_name)
-        else {
-            continue;
-        };
-        let Some(name) = crate::row_hygiene::sanitize_person(&name)? else {
-            continue;
-        };
-        let Some(email) = mailbox
-            .mailboxes
-            .first()
-            .and_then(|email| rules.sanitize_email(email))
-        else {
-            continue;
-        };
-        if !crate::row_hygiene::clean_text(&mailbox.text).eq_ignore_ascii_case(&email) {
-            continue;
-        }
-        hits.push(StaffContactHit {
-            published_school: String::new(),
-            member_id: String::new(),
-            category_id: String::new(),
-            name,
-            published_role,
-            role: CoachRole::AthleticDirector,
-            published_sport: String::new(),
-            sport: None,
-            gender: Gender::Unknown,
-            published_level: String::new(),
-            email,
-            url: url.to_owned(),
-        });
     }
     Ok(Some(hits))
+}
+
+fn process_profile(
+    rules: &Rules,
+    url: &str,
+    profile: Profile,
+) -> CrawlResult<Option<StaffContactHit>> {
+    let cells = profile.cells.as_slice();
+    if cells.len() != 3 {
+        return Ok(None);
+    }
+    let [name, role, mailbox] = cells else {
+        return Ok(None);
+    };
+    if !name.mailboxes.is_empty() || !role.mailboxes.is_empty() || mailbox.mailboxes.len() != 1 {
+        return Ok(None);
+    }
+    let published_role = crate::row_hygiene::clean_text(&role.text);
+    let Some(role) = qualify_ad_role(&published_role) else {
+        return Ok(None);
+    };
+    let Some(name) = qualify_name(rules, &name.text)? else {
+        return Ok(None);
+    };
+    let Some(email) = mailbox
+        .mailboxes
+        .first()
+        .and_then(|email| rules.sanitize_email(email))
+    else {
+        return Ok(None);
+    };
+    if !crate::row_hygiene::clean_text(&mailbox.text).eq_ignore_ascii_case(&email) {
+        return Ok(None);
+    }
+    Ok(Some(StaffContactHit {
+        published_school: String::new(),
+        member_id: String::new(),
+        category_id: String::new(),
+        name,
+        published_role,
+        role,
+        published_sport: String::new(),
+        sport: None,
+        gender: Gender::Unknown,
+        published_level: String::new(),
+        email,
+        url: url.to_owned(),
+    }))
+}
+
+fn qualify_ad_role(text: &str) -> Option<CoachRole> {
+    if ![
+        "athletic director",
+        "athletics director",
+        "director of athletics",
+    ]
+    .iter()
+    .any(|label| text.eq_ignore_ascii_case(label))
+        || crate::coach_contacts::parse_role(text) != Some(CoachRole::AthleticDirector)
+    {
+        return None;
+    }
+    Some(CoachRole::AthleticDirector)
+}
+
+fn qualify_name(rules: &Rules, text: &str) -> CrawlResult<Option<String>> {
+    let published = crate::row_hygiene::clean_text(text);
+    let Some(cleaned) =
+        crate::school_sites::parse::clean_person(rules, &published).filter(|n| n == &published)
+    else {
+        return Ok(None);
+    };
+    let Some(sanitized) = crate::row_hygiene::sanitize_person(&cleaned)? else {
+        return Ok(None);
+    };
+    Ok(Some(sanitized))
 }

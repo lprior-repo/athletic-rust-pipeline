@@ -88,6 +88,29 @@ impl SelectedProofs {
             ));
         }
         let participation_digest = participation.install_replay(directory)?;
+        let proofs = Self::seal_capture(
+            affiliation,
+            affiliation_digest,
+            participation_digest,
+            public_identity,
+            directory,
+        )?;
+        Ok((
+            proofs,
+            HydratedProofs {
+                participation,
+                affiliations,
+            },
+        ))
+    }
+
+    fn seal_capture(
+        affiliation: FrozenAffiliationDescriptor,
+        affiliation_digest: String,
+        participation_digest: String,
+        public_identity: identity::Bundle,
+        directory: &Path,
+    ) -> ReportResult<Self> {
         let objects = objects::inventory(directory)?;
         let proofs = Self {
             version: if affiliation.reviewed_roster() {
@@ -103,13 +126,7 @@ impl SelectedProofs {
             objects_directory: Some(directory.to_path_buf()),
         };
         proofs.validate()?;
-        Ok((
-            proofs,
-            HydratedProofs {
-                participation,
-                affiliations,
-            },
-        ))
+        Ok(proofs)
     }
 
     pub(crate) fn hydrate(
