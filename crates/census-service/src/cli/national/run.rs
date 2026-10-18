@@ -95,11 +95,7 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
         )
         .await?;
         let handle = submit_national(origin, &ingestion, &identity, request).await?;
-        println!(
-            "{} invocation {}",
-            identity.as_str(),
-            handle.invocation_id()
-        );
+        announce_national_invocation(&identity, &handle);
         if args.detach {
             return Ok(());
         }
@@ -134,6 +130,17 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     Err(anyhow::anyhow!(
         "drive finished without a completed run report"
     ))
+}
+
+fn announce_national_invocation(
+    identity: &WorkflowIdentity,
+    handle: &InvocationHandle<CurrentRoute, Json<NationalReport>>,
+) {
+    println!(
+        "{} invocation {}",
+        identity.as_str(),
+        handle.invocation_id()
+    );
 }
 
 fn announce_resume(
