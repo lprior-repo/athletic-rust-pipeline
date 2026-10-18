@@ -39,7 +39,7 @@ pub fn prepare_retained_roster_capture_objects_v3<'a>(
         budget::charge(packet.roster(), grant)?;
         let checked = packet.read()?;
         let body = packet.roster().body()?;
-        derive(evidence, &held, &packet, &checked, &parser, &body, grant)
+        derive(evidence, &packet, &checked, &parser, &body, grant)
     });
     if result.is_err() {
         grant.poison();
@@ -49,16 +49,14 @@ pub fn prepare_retained_roster_capture_objects_v3<'a>(
 
 pub(in crate::participation_evidence::roster_source_issuance) fn derive<'a>(
     evidence: &'a RosterSourceEvidenceV1,
-    held: &census_store::RetainedCaptureRootReadV1,
     packet: &ProviderSchoolPacketV1,
     checked: &CheckedProviderSchoolPacketV1,
     parser: &CheckedRosterParserManifestV1,
     body: &str,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
-    let mut objects =
-        super::format::derive_from_held(evidence, held, packet, parser.retained(), body, grant)?;
-    if checked.reference().as_str() != held.root().key {
+    let mut objects = super::super::derive(evidence, packet, parser, body, grant)?;
+    if checked.reference().as_str() != evidence.retained_root(grant)?.root().key {
         return Err(invalid("row-local capture packet differs from retained root").into());
     }
     let inventory = super::super::super::semantic_inventory_v2::capture(
