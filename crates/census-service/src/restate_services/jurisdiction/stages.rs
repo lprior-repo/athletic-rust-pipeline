@@ -4,7 +4,7 @@ use std::time::Duration;
 use restate_sdk::prelude::*;
 
 use crate::census::CollectOptions;
-use census_crawl::net::Fetcher;
+use census_crawl::net::{Fetcher, PacingState};
 use census_crawl::{default_family_delays, default_host_delays};
 
 use super::JurisdictionCensus;
@@ -43,7 +43,9 @@ impl JurisdictionCensus {
                 return Ok(Arc::clone(fetcher));
             }
         }
-        let shared = Arc::new(self.build_fetcher(normalized.clone(), source_parallelism)?);
+        let pacing = self.restored_pacing().await?;
+        let shared =
+            Arc::new(self.build_fetcher(normalized.clone(), source_parallelism, pacing)?);
         *slot = Some((normalized, source_parallelism, Arc::clone(&shared)));
         Ok(shared)
     }
@@ -61,6 +63,7 @@ impl JurisdictionCensus {
         &self,
         hosts: Vec<String>,
         parallelism: usize,
+        pacing: Arc<PacingState>,
     ) -> Result<Fetcher, HandlerError> {
         let built = Fetcher::new(
             self.store.http_cache_dir(),
@@ -72,7 +75,7 @@ impl JurisdictionCensus {
         .map_err(|error| TerminalError::new(format!("the fetcher could not be built: {error}")))?
         .with_family_budgets(default_family_delays())
         .with_family_parallelism(parallelism)
-        .with_shared_pacing(Arc::clone(&self.pacing))
+        .with_shared_pacing(pacing)
         .with_origin_locks(crate::census::DEFAULT_ORIGIN_LOCK_ROOT);
         Ok(match &self.lane {
             Some(lane) => built.with_browser_lane(lane.clone()),

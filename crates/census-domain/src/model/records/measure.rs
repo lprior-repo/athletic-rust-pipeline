@@ -137,8 +137,17 @@ impl SourceAccessCondition {
 
     pub fn is_blocking(&self, now_iso8601: &str) -> bool {
         match self.cooldown_until.as_deref() {
-            Some(until) => until > now_iso8601,
+            Some(until) => match (
+                until.parse::<chrono::DateTime<chrono::Utc>>(),
+                now_iso8601.parse::<chrono::DateTime<chrono::Utc>>(),
+            ) {
+                (Ok(until), Ok(now)) => until > now,
+                _ => true,
+            },
             None => true,
         }
     }
 }
+
+#[cfg(test)]
+mod access_tests;
