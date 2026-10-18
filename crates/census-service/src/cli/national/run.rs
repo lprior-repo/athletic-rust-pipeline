@@ -118,7 +118,10 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
         ))?;
         print_national(&report, args.flags.json)?;
         match failure_exit(&report) {
-            Ok(()) => return Ok(()),
+            Ok(()) => {
+                super::publication_notice::show(&ingestion, &identity, &watched).await;
+                return Ok(());
+            }
             Err(error) if args.drive && cycle < cycles => {
                 ordinal = Some(announce_resume(ordinal, cycle, &error)?);
             }
