@@ -1,5 +1,6 @@
 use super::{
-    artifacts, owners, queue, research, Failure, PlannedSite, QueueStats, Report, SchoolSitesArgs,
+    artifacts, owners, queue, research, staff_research, Failure, PlannedSite, QueueStats, Report,
+    SchoolSitesArgs,
 };
 use anyhow::{Context, Result};
 use census_crawl::net::Fetcher;
@@ -174,6 +175,7 @@ impl State {
 
     pub(super) fn missing_site(&mut self, site: &PlannedSite, outcome: &SiteOutcome) -> Result<()> {
         let (school_mailbox_candidates, research_status) = research::project(outcome)?;
+        let (staff_contact_candidates, coach_research_status) = staff_research::project(outcome)?;
         let record = artifacts::SiteRecord {
             state: site.state.code().to_owned(),
             school: site.school.clone(),
@@ -182,7 +184,8 @@ impl State {
             page_evidence: outcome.pages.clone(),
             school_mailbox_candidates,
             research_status,
-            coach_research_status: research::CoachResearchStatus::Unsupported,
+            coach_research_status,
+            staff_contact_candidates,
             requests: outcome.requests,
             errors: outcome.errors,
             note: outcome.note.clone(),
@@ -196,15 +199,17 @@ impl State {
         bump(&mut self.report.requests, outcome.requests)?;
         bump(&mut self.report.errors, outcome.errors)?;
         bump(&mut self.report.crawled, 1)?;
-        match research_status {
-            research::ResearchStatus::NoQualifiedCandidateInInspectedPages => {
-                bump(&mut self.report.empty, 1)?;
-            }
-            research::ResearchStatus::Incomplete => self.fail(
+        if research_status == research::ResearchStatus::Incomplete
+            || coach_research_status == research::CoachResearchStatus::Incomplete
+        {
+            self.fail(
                 site,
-                "isolated school mailbox research is incomplete; inspect retained errors, note and page evidence".to_owned(),
-            )?,
-            research::ResearchStatus::Unknown | research::ResearchStatus::UnverifiedCandidates => {}
+                "isolated contact research is incomplete; inspect retained errors, note and page evidence".to_owned(),
+            )?;
+        } else if research_status == research::ResearchStatus::NoQualifiedCandidateInInspectedPages
+            && record.staff_contact_candidates.is_empty()
+        {
+            bump(&mut self.report.empty, 1)?;
         }
         Ok(())
     }

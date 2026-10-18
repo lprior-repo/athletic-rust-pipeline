@@ -4,6 +4,7 @@ mod execution;
 mod owners;
 mod queue;
 mod research;
+mod staff_research;
 pub use execution::run;
 
 #[cfg(test)]

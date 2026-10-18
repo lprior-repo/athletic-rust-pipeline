@@ -76,3 +76,22 @@ pub(super) fn mailbox_rows(signals: &Signals, incoming: usize) -> CrawlResult<()
         })?;
     check("school site retained mailbox rows", requested, 16_384)
 }
+
+pub(super) fn staff_rows(signals: &Signals, incoming: usize, pages: usize) -> CrawlResult<()> {
+    let requested = signals
+        .staff_contacts
+        .len()
+        .checked_add(incoming)
+        .ok_or_else(|| CrawlError::Arithmetic {
+            detail: "staff candidate count overflow".to_owned(),
+        })?;
+    check("school site retained staff rows", requested, 16_384)?;
+    let requested_pages = signals
+        .staff_pages
+        .len()
+        .checked_add(pages)
+        .ok_or_else(|| CrawlError::Arithmetic {
+            detail: "staff candidate page count overflow".to_owned(),
+        })?;
+    check("school site retained staff pages", requested_pages, 13)
+}

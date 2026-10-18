@@ -188,3 +188,30 @@ fn directory_without_school_name_returns_schema_error() -> TestResult {
     check!(matches!(result, Err(CrawlError::Schema { .. })));
     Ok(())
 }
+
+#[test]
+fn inactive_articles_cannot_shadow_active_staff_rows() -> TestResult {
+    let real = page(&member(
+        "real",
+        "Cross Country",
+        "Head Coach",
+        "var firstHalf = 'real'; var secondHalf = 'school.org';",
+    ));
+    let fake = page(&member(
+        "student",
+        "Cross Country",
+        "Student Head Coach",
+        "var firstHalf = 'student'; var secondHalf = 'school.org';",
+    ));
+    for prefix in [
+        format!("<!--{fake}-->"),
+        format!("<template>{fake}</template>"),
+        "<script>var sample = \"<article class='sidearm-staff'></article>\";</script>".to_owned(),
+    ] {
+        let directory = parse_staff_directory(&format!("{prefix}{real}"))?;
+        check!(eq; directory.members.len(), 1);
+        check!(eq; directory.members.first().map(|row| row.id.as_str()), Some("real"));
+        check!(eq; directory.members.first().map(|row| row.email.as_str()), Some("real@school.org"));
+    }
+    Ok(())
+}

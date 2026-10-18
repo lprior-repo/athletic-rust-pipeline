@@ -223,7 +223,7 @@ fn attribute<'a>(tag: &'a html5gum::StartTag<()>, name: &[u8]) -> Option<&'a str
         .and_then(|value| std::str::from_utf8(value).ok())
 }
 
-fn inert_kind(name: &[u8]) -> Option<&'static [u8]> {
+pub(super) fn inert_kind(name: &[u8]) -> Option<&'static [u8]> {
     match name {
         b"template" => Some(b"template"),
         b"svg" => Some(b"svg"),

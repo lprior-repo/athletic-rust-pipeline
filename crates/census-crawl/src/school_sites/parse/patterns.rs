@@ -160,7 +160,7 @@ pub(super) const SPORT_HINT: &str = r"(?i)Cross[-\s]?Country|XC|Track(?:\s*(?:&|
 
 pub(super) const TABLE_HEADER: &str = r"(?i)coach|sport|staff|name";
 
-pub(super) const HIDDEN_BLOCK: &str =
+pub(crate) const HIDDEN_BLOCK: &str =
     r"(?is)<(?:script|style|noscript)\b[^>]*>.*?</(?:script|style|noscript)\s*>";
 
 pub(super) const COMMENT: &str = r"(?s)<!--.*?-->";

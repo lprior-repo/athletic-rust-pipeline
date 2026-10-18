@@ -33,7 +33,7 @@ pub fn parse_sport(label: &str) -> Option<(Sport, Gender)> {
     }
     let sport = if lowered.contains("cross country") || lowered.contains("cross-country") {
         Sport::CrossCountry
-    } else if lowered.contains("indoor") {
+    } else if lowered.contains("indoor") && lowered.contains("track") {
         Sport::IndoorTrack
     } else if lowered.contains("track") {
         Sport::OutdoorTrack
@@ -50,7 +50,8 @@ pub fn parse_sport(label: &str) -> Option<(Sport, Gender)> {
     Some((sport, gender))
 }
 
-const NON_COACHING: [&str; 16] = [
+const NON_COACHING: [&str; 17] = [
+    "student",
     "secretary",
     "administrative assistant",
     "admin assistant",

@@ -32,6 +32,8 @@ pub struct SchoolMailboxHit {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Signals {
+    pub staff_contacts: Vec<super::StaffContactHit>,
+    pub staff_pages: Vec<String>,
     pub school_mailboxes: Vec<SchoolMailboxHit>,
     pub emails: Vec<String>,
     pub coach_hits: Vec<CoachHit>,
@@ -61,6 +63,16 @@ pub fn analyse(
     let title = rules.title_of(html);
     let mailboxes = crate::coach_directories::school_mailbox_candidates(html.as_bytes())?;
     super::admission::mailbox_rows(signals, mailboxes.len())?;
+    let staff = super::staff::parse(rules, url, html)?;
+    super::admission::staff_rows(
+        signals,
+        staff.as_ref().map_or(0, Vec::len),
+        usize::from(staff.is_some()),
+    )?;
+    if let Some(staff) = staff {
+        signals.staff_contacts.extend(staff);
+        signals.staff_pages.push(url.to_owned());
+    }
     let mut emails = Vec::new();
     for (purpose, raw) in mailboxes {
         if let Some(email) = rules.sanitize_email(&raw) {

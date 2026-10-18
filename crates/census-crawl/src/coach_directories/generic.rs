@@ -257,3 +257,7 @@ pub(crate) fn inspect_staff_links(body: &[u8]) -> CrawlResult<(bool, Vec<String>
 pub(crate) fn school_mailbox_candidates(body: &[u8]) -> CrawlResult<Vec<(Purpose, String)>> {
     offices::mailbox_candidates(body)
 }
+
+pub(crate) fn inert_markup_kind(name: &[u8]) -> Option<&'static [u8]> {
+    markup::inert_kind(name)
+}
