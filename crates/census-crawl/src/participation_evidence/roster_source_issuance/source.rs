@@ -97,6 +97,7 @@ fn assess<'a>(
         )?,
         InterpretationVersion::RowLocalV3 => super::capture_objects::version2::version3::derive(
             evidence,
+            &held,
             &packet,
             &checked,
             &parser_manifest,

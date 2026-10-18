@@ -103,6 +103,7 @@ pub(super) fn install(fixture: &fixture::Fixture) -> TestResult<fixture::Capture
         packet.reference()?.as_str(),
         &serde_json::to_value(&packet)?,
     )?;
+    verify_retained_journal_packet(fixture, &packet)?;
     Ok(fixture::Capture {
         packet,
         school,
@@ -233,4 +234,28 @@ pub(super) fn forged_candidate_for_rejected_original_row(
     evidence.note = Some(serde_json::to_string(&note)?);
     fixture.store.append(Table::Athletes, &forged)?;
     Ok(forged)
+}
+
+fn verify_retained_journal_packet(
+    fixture: &fixture::Fixture,
+    packet: &ProviderSchoolPacketV1,
+) -> TestResult {
+    let schema = census_store::RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1;
+    let mut grant = AttachmentReplayGrantV1::new();
+    let retained = fixture
+        .store
+        .snapshot()
+        .read_retained_capture_root_v1(schema, packet.reference()?.as_str(), &mut grant)?
+        .ok_or("genuine retained journal packet")?;
+    let raw = retained.payload().get().as_bytes();
+    let journal_encoding = serde_json::to_vec(&serde_json::to_value(packet)?)?;
+    let typed_encoding = packet.encode()?;
+    check!(eq; raw, journal_encoding.as_slice());
+    check!(ne; raw, typed_encoding.as_slice());
+    check!(ProviderSchoolPacketV1::decode(raw).is_err());
+    let decoded: ProviderSchoolPacketV1 = serde_json::from_slice(raw)?;
+    check!(eq; decoded.encode()?, typed_encoding);
+    check!(eq; decoded.reference()?.as_str(), retained.root().key.as_str());
+    check!(eq; super::super::super::super::hash(raw), retained.root().payload.digest.as_str());
+    Ok(())
 }

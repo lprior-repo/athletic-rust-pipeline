@@ -128,13 +128,39 @@ pub(in crate::participation_evidence::roster_source_issuance) fn actual_proposal
     evidence: &RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> TestResult<LocallyCheckedRosterIssuanceV1> {
+    actual_proposal_version(packet, school, program, evidence, grant, false)
+}
+
+pub(in crate::participation_evidence::roster_source_issuance) fn actual_proposal_v3(
+    packet: &ProviderSchoolPacketV1,
+    school: &CanonicalSchool,
+    program: &CanonicalTeam,
+    evidence: &RosterSourceEvidenceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> TestResult<LocallyCheckedRosterIssuanceV1> {
+    actual_proposal_version(packet, school, program, evidence, grant, true)
+}
+
+fn actual_proposal_version(
+    packet: &ProviderSchoolPacketV1,
+    school: &CanonicalSchool,
+    program: &CanonicalTeam,
+    evidence: &RosterSourceEvidenceV1,
+    grant: &mut AttachmentReplayGrantV1,
+    row_local: bool,
+) -> TestResult<LocallyCheckedRosterIssuanceV1> {
     let roster_body = packet.roster().body()?;
     let mut value = proposal(packet, &roster_body)?;
     let compiled = compiled_roster_parser_manifest()?;
     let checked = crate::participation_evidence::roster_source_issuance::manifest::assess_retained_roster_parser_manifest(
         compiled.canonical_bytes(), &compiled.parser_claim()?, grant)?;
-    let objects = crate::participation_evidence::roster_source_issuance::capture_objects::prepare_retained_roster_capture_objects(
-        evidence, &checked, grant)?;
+    let objects = if row_local {
+        crate::participation_evidence::roster_source_issuance::prepare_retained_roster_capture_objects_v3(
+            evidence, &checked, grant)?
+    } else {
+        crate::participation_evidence::roster_source_issuance::capture_objects::prepare_retained_roster_capture_objects(
+            evidence, &checked, grant)?
+    };
     let contracts = compiled_roster_interpretation_contracts_v1();
     for (path, replacement) in [
         (

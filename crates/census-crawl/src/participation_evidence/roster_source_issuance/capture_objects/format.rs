@@ -55,6 +55,18 @@ pub(super) fn derive<'a>(
     let raw = held.payload().get().as_bytes();
     grant.charge_bytes(raw.len()).map_err(domain)?;
     grant.charge_steps(1).map_err(domain)?;
+    derive_from_held(evidence, &held, packet, parser, body, grant)
+}
+
+pub(super) fn derive_from_held<'a>(
+    evidence: &'a RosterSourceEvidenceV1,
+    held: &census_store::RetainedCaptureRootReadV1,
+    packet: &ProviderSchoolPacketV1,
+    parser: &super::super::manifest::RetainedRosterParserManifestV1,
+    body: &str,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
+    let raw = held.payload().get().as_bytes();
     let literal: PacketLiteral = original(evidence, grant, |_| {
         Ok(serde_json::from_slice(raw).map_err(json)?)
     })?;
