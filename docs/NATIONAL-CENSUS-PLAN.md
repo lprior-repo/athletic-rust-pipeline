@@ -630,3 +630,84 @@ evidence, not fresh-run closure evidence, so CA records the nonterminal `ca_miss
 with the historical path, hash and deficiency retained in `arm_basis`. Capture counts and historical hashes
 remain preserved but are never fresh-run closure evidence. Qualification and reopen commands live in the
 bead-close handoffs; current source limitations live in the owning `SOURCE_REPORT.md` files.
+
+## 12. Refactoring and line-reduction plan — 2026-10-18
+
+This section is the canonical refactoring plan within the existing delivery plan, not a
+replacement product specification. Main owns shared contracts and integration. Finish the
+currently failing source-to-output acceptance slice before starting a broad consolidation.
+R1 eligibility-to-PR, R2 dated current affiliation and R3 reversible public identity remain
+separate acceptance obligations; an audit, refactor or passing component test closes none.
+
+### Evidence and honest reduction budget
+
+The retained `athletic-rust-removal-audit-20261017.zip` audit reports **677,932 physical
+first-party Rust lines in 4,635 files**, plus **111,199 generated vendor lines** excluded
+from first-party savings. Its pinned main is `a2f3979ed0b6a7b7d430b296318a2c334138dfec`,
+source-equivalent commit `50b02cf25534acd25b5fcd79b3229ebebb66253a`, tree
+`c656422ca29b2032f0ee7db7249ea03fc8c94b0e`. Archive SHA-256:
+`563f09eda97bd21329c0762d3ac7c081f0164540dc474ef2134412da7a9c90c7`.
+Its `AUDIT-SCOPE.md`, `START-HERE.md` and `conditional-subtotal-qa.md` distinguish
+source inspection from runtime proof; builds, tests and refactor qualification were not run.
+These are historical measured physical counts, including blanks/comments, not a fresh
+measurement of this checkout or executable statements.
+
+The later audit's overlap-adjusted **conditional net estimate is 5,700–13,285 lines**,
+including a 20–30-line seed-compatibility test reserve. This is neither achieved deletion
+nor a guaranteed positive lower bound: remaining correctness, compatibility and test costs
+can consume it. It does **not substantiate a 100,000-line removal commitment**. Do not add
+older bounded-audit estimates, overlapping helper totals, vendor code or whole rewrite
+footprints to it. Revalidate the pinned candidates against the current tree before assigning
+work; unpriced larger redesigns remain unpriced.
+
+### Design rule and bounded delivery order
+
+Use DDD ownership and a **pure functional core / imperative shell**: deterministic domain
+rules consume explicit values and return decisions; Store owns atomic persistence, Crawl
+owns source interpretation, Service owns durable orchestration, and Report owns projections.
+Give each business operation one canonical implementation. Thin adapters may differ in
+transport/effects, but must not duplicate policy. A wrapper that leaves two competing
+engines underneath is not consolidation. Avoid generic frameworks for merely similar code.
+
+| Order / owner | Small first slice and inspected candidate boundary | Required proof before retirement |
+|---|---|---|
+| 0 / Main + lane owners | Stabilize one genuine-source eligibility → PR → publication path, dated affiliation, and reviewed identity correction. | Preserve rejected/unknown outcomes; verify current and frozen consumers, exact publication readback and bounded full-operation resource usage. Controlled fixtures alone do not establish genuine-source closure. |
+| 1 / Service | One equivalent coach-lane construction pair under `crates/census-service/src/restate_services/wire/coach_lanes.rs` and `coach_lanes/`; use a closed descriptor and one pure policy operation only where semantics match. | Identical durable obligation IDs, refusal reasons, freshness and replay outcomes. Keep provider/state-specific rules and independent expected values; expand to other states only after the first slice passes. |
+| 2 / Crawl | Trace one checked directory row from `crates/census-crawl/src/ohsaa/checked.rs` through its actual consumer; retire a second interpretation only if still present on the current tree. | Parse-to-end, ownership, partial/blocked outcomes, source bytes and timestamps remain authoritative. Already repaired paths earn no new deletion credit. |
+| 3 / Store | Compare `crates/census-store/src/write.rs` and `write_batch/journal.rs`; share only equivalent fallible journal encoding, retaining distinct direct and batch commit shells. | Exact old-producer bytes, chunk boundaries, reserved namespaces, hash checks, crash/reopen behavior and atomicity. Coordinate incoming borrowed-decoder/physical-row work before touching these files. |
+| 4 / Service + Report | Route one CLI/service publication operation through the canonical application operation; reuse one immutable generation rooted at `crates/census-report/src/export/dataset.rs`. | Equivalent selected PRs, eligibility exclusions, ties, normalized outputs and workbook readback. Preserve offline publication, logical job keys, source authority and retry ownership; measure memory rather than infer improvement from fewer lines. |
+| 5 / owning crate | Consolidate narrowly duplicated test arrangement or pure mechanics after the production keeper is proven. | Preserve each negative, cancellation, tamper, historical and physical-state scenario. Independent expected-output/hash/readback oracles must not be generated by the implementation they test. |
+
+The audit prices the entire coach-lane operation at only **435–835 conditional net lines**,
+not its 5,866-line rewrite envelope (`START-HERE.md`). Other rows above are bounded starting
+points, not newly estimated savings. Public identity command-shell consolidation and broader
+archive/export redesigns follow only after their distinct approval, revocation, re-fencing,
+receipt and historical-consumer obligations are demonstrated; do not combine them with the
+first small slice.
+
+### Per-slice acceptance, measurement and rollback
+
+1. Record base commit, exact owned paths, callers, canonical keeper, retired path, preserved
+   invariants and independent acceptance cases. Reconcile concurrent ownership before editing.
+2. Characterize the existing genuine and adversarial behavior. Change one complete operation
+   through its consumer; migrate all current callers and remove its superseded execution path
+   in the same reviewed change. Preserve required historical semantics explicitly, without
+   routing old artifacts through today's policy or silently relabeling versions.
+3. Run repository Moon format/check/lint and focused tests, then applicable full/release and
+   fault gates before claiming qualification. Record exact revision, commands, exit status,
+   skipped prerequisites and remaining acceptance gaps in `VERIFICATION-EVIDENCE.md`.
+   Include source-deleted frozen replay, wrong-anchor/tamper refusal and no-mutation checks
+   where the slice touches authority or publication. Keep resource limits finite and measured.
+4. Re-measure the same tracked first-party Rust population at base and result, separately
+   reporting production, tests, generated/vendor and physical/nonblank counts. Report gross
+   removed, replacement added and **net** lines; do not count formatting compression, moving
+   code across crates, macros/generated tables, deleted tests or duplicated overlap as savings.
+   Record complexity, allocation and latency changes separately from line counts.
+5. Keep each slice independently revertible before deployment. Preserve original captures,
+   IDs, receipts, historical exports and stores. For persisted-state changes, require an
+   explicit versioned migration/reader and tested recovery plan before rollout; a Git revert
+   alone cannot undo durable effects. Refuse unsupported state without changing its bytes.
+
+Do not remove source/identity checks, independent verifiers, historical evidence or negative
+coverage to reach a quota. Main may approve a measured finite resource-limit adjustment;
+that is a separately evidenced operational change, not a refactoring saving or policy waiver.

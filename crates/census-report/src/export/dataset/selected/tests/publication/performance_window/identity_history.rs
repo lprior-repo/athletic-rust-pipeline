@@ -15,7 +15,13 @@ async fn controlled_eligible_pr_split_preserves_prior_publication_and_store_free
     let mut fixture = Fixture::synthetic_michigan().await?;
     let profile = super::march_profile()?;
     fixture.select(&profile)?;
-    let (case_id, original_public, merged_ids) = source::merge(&fixture)?;
+    let original_proofs = fixture.proofs.clone();
+    let (case_id, original_public, merged_ids, alias_proof) = source::merge(&fixture)?;
+    for references in [&mut fixture.proofs.eligible, &mut fixture.proofs.excluded] {
+        references.push(alias_proof.clone());
+        references.sort();
+        references.dedup();
+    }
     let prior_objects = super::super::super::temporary()?;
     let current_objects = super::super::super::temporary()?;
     let output = super::super::super::temporary()?;
@@ -35,6 +41,7 @@ async fn controlled_eligible_pr_split_preserves_prior_publication_and_store_free
     check!(fixture.publish(&prior, &root).is_err());
     check!(eq; std::fs::read_link(root.join("current"))?, pointer);
     prior_publication.preserved()?;
+    fixture.proofs = original_proofs;
     let current = fixture.capture(current_objects.path())?;
     check!(eq; current.performances, prior.performances);
     check!(eq; current.lineage.source_digest, prior.lineage.source_digest);

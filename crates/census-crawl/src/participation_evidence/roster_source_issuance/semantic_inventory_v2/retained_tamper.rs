@@ -36,53 +36,46 @@ fn genuine_retained_disposition_tampering_refuses_after_valid_replay_and_rehashe
     let (_directory, store) = setup::enrolled_store()?;
     let packet = fixture::packet()?;
     let original_packet = packet.encode()?;
-    let (school, program, request) = install(&store, &packet)?;
+    let (school, program, request) = install(&store, &packet, &serde_json::to_value(&packet)?)?;
+    let (proposal, metadata, original) = prepare(&store, &packet, &school, &program, &request)?;
+    let parser = manifest::compiled_roster_parser_manifest()?;
+    let envelope: Envelope<'_> = serde_json::from_slice(&original)?;
     for mutation in [
-        Mutation::DropRejected,
-        Mutation::ReclassifyRejected,
-        Mutation::AlterAbbott,
-        Mutation::Reorder,
+        None,
+        Some(Mutation::DropRejected),
+        Some(Mutation::ReclassifyRejected),
+        Some(Mutation::AlterAbbott),
+        Some(Mutation::Reorder),
     ] {
-        let selected = RosterIssuanceInspectionRequestV1 {
-            root: request.root.clone(),
-            school: school.id.clone(),
-            program: program.id.clone(),
-        };
-        let mut inspection =
-            store.inspect_roster_source_issuance_v1(selected, AttachmentReplayGrantV1::new())?;
+        let mut inspection = store.inspect_roster_source_issuance_v1(
+            selected(&request),
+            AttachmentReplayGrantV1::new(),
+        )?;
         let (evidence, grant) = inspection.source_parts()?;
-        let proposal = setup::actual_proposal(&packet, &school, &program, evidence, grant)?;
-        let parser = manifest::compiled_roster_parser_manifest()?;
-        let checked_parser = manifest::assess_retained_roster_parser_manifest(
-            parser.canonical_bytes(),
-            &parser.parser_claim()?,
-            grant,
-        )?;
-        let capture_objects = crate::participation_evidence::roster_source_issuance::prepare_retained_roster_capture_objects_v3(evidence, &checked_parser, grant)?;
-        let metadata = capture_objects.metadata_bytes(grant)?.to_vec();
-        let original = capture_objects.interpretation_bytes(grant)?.to_vec();
-        let envelope: Envelope<'_> = serde_json::from_slice(&original)?;
         let witness = CheckedOriginalRosterPacket::read_for_test(evidence, &proposal, grant)?;
-        let baseline = replay::compare(
-            &witness,
-            parser.retained(),
-            &metadata,
-            envelope.semantic_inventory.get().as_bytes(),
-            grant,
-        )?;
-        check!(eq; baseline.reference(), &packet.reference()?);
-        let RosterVerdict::Partial {
-            roster,
-            rejected,
-            unfinished,
-        } = baseline.roster_verdict()
-        else {
-            return Err("positive genuine replay must remain partial".into());
+        let Some(mutation) = mutation else {
+            let baseline = replay::compare(
+                &witness,
+                parser.retained(),
+                &metadata,
+                envelope.semantic_inventory.get().as_bytes(),
+                grant,
+            )?;
+            check!(eq; baseline.reference(), &packet.reference()?);
+            let RosterVerdict::Partial {
+                roster,
+                rejected,
+                unfinished,
+            } = baseline.roster_verdict()
+            else {
+                return Err("positive genuine replay must remain partial".into());
+            };
+            check!(eq; roster.athletes.len(), 146);
+            check!(eq; rejected.len(), 18);
+            check!(unfinished.is_none());
+            grant.ensure_available()?;
+            continue;
         };
-        check!(eq; roster.athletes.len(), 146);
-        check!(eq; rejected.len(), 18);
-        check!(unfinished.is_none());
-        grant.ensure_available()?;
         let changed = changed_envelope(&envelope, mutation)?;
         let reference: RosterAuthorityObjectRefV1 = serde_json::from_value(
             serde_json::json!({"digest":hash(&changed), "bytes":changed.len()}),
@@ -107,13 +100,60 @@ fn genuine_retained_disposition_tampering_refuses_after_valid_replay_and_rehashe
             parser.retained(),
             &metadata,
             envelope.semantic_inventory.get().as_bytes(),
-            grant
+            grant,
         )
         .is_err());
         check!(eq; packet.encode()?, original_packet);
     }
     fixture::original_bytes()?;
     Ok(())
+}
+
+#[path = "journal_boundary.rs"]
+mod journal_boundary;
+
+fn selected(request: &RosterIssuanceInspectionRequestV1) -> RosterIssuanceInspectionRequestV1 {
+    RosterIssuanceInspectionRequestV1 {
+        root: request.root.clone(),
+        school: request.school.clone(),
+        program: request.program.clone(),
+    }
+}
+
+fn prepare(
+    store: &Store,
+    packet: &crate::participation_evidence::provider_school::ProviderSchoolPacketV1,
+    school: &CanonicalSchool,
+    program: &CanonicalTeam,
+    request: &RosterIssuanceInspectionRequestV1,
+) -> TestResult<(
+    census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1,
+    Vec<u8>,
+    Vec<u8>,
+)> {
+    let proposal = {
+        let mut inspection = store
+            .inspect_roster_source_issuance_v1(selected(request), AttachmentReplayGrantV1::new())?;
+        let (evidence, grant) = inspection.source_parts()?;
+        setup::actual_proposal_v3(packet, school, program, evidence, grant)?
+    };
+    let mut inspection = store
+        .inspect_roster_source_issuance_v1(selected(request), AttachmentReplayGrantV1::new())?;
+    let (evidence, grant) = inspection.source_parts()?;
+    let parser = manifest::compiled_roster_parser_manifest()?;
+    let checked_parser = manifest::assess_retained_roster_parser_manifest(
+        parser.canonical_bytes(),
+        &parser.parser_claim()?,
+        grant,
+    )?;
+    let held = evidence.retained_root(grant)?;
+    check!(held.payload().get().as_bytes() != packet.encode()?);
+    let objects = crate::participation_evidence::roster_source_issuance::prepare_retained_roster_capture_objects_v3(evidence, &checked_parser, grant)?;
+    Ok((
+        proposal,
+        objects.metadata_bytes(grant)?.to_vec(),
+        objects.interpretation_bytes(grant)?.to_vec(),
+    ))
 }
 
 fn changed_envelope(original: &Envelope<'_>, mutation: Mutation) -> TestResult<Vec<u8>> {
@@ -163,6 +203,7 @@ fn changed_envelope(original: &Envelope<'_>, mutation: Mutation) -> TestResult<V
 fn install(
     store: &Store,
     packet: &crate::participation_evidence::provider_school::ProviderSchoolPacketV1,
+    payload: &serde_json::Value,
 ) -> TestResult<(
     CanonicalSchool,
     CanonicalTeam,
@@ -190,11 +231,7 @@ fn install(
     )?;
     let schema = RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1;
     let reference = packet.reference()?;
-    store.journal_done(
-        schema.phase(),
-        reference.as_str(),
-        &serde_json::to_value(packet)?,
-    )?;
+    store.journal_done(schema.phase(), reference.as_str(), payload)?;
     let held = store
         .snapshot()
         .read_retained_capture_root_v1(

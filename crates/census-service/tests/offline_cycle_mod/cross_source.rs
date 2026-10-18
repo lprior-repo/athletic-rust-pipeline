@@ -1,3 +1,5 @@
+use calamine::Reader;
+
 use super::readback::{assert_expected_bests, ExpectedBest};
 use super::*;
 

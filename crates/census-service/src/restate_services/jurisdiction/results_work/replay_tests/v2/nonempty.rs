@@ -21,7 +21,7 @@ const RAW_BODY: &[u8] = include_bytes!(concat!(
 ));
 
 #[tokio::test(flavor = "current_thread")]
-async fn controlled_al_projection_nonempty_consumption_survives_lost_ack_same_key_replay(
+async fn controlled_al_projection_nonempty_consumption_survives_lost_ack_same_key_replay_after_cold_reopen(
 ) -> TestResult {
     let provenance: serde_json::Value = serde_json::from_slice(include_bytes!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -36,22 +36,41 @@ async fn controlled_al_projection_nonempty_consumption_survives_lost_ack_same_ke
     check!(eq; fixture.store.walk_table(Table::SourceObservations)?.rows, 0);
     check!(eq; fixture.store.walk_table(Table::Performances)?.rows, 0);
     let resources = fixture.region.coordinator().remaining();
+    let mut journal = endpoint::input(&fixture)?;
     let f = &fixture;
+    let prepared_ref = &prepared;
+    let journal_ref = &mut journal;
     let result = endpoint::serve(&fixture, |client, url| async move {
-        let mut journal = endpoint::input(f)?;
-        let frames = endpoint::invoke(&client, &url, f, &journal).await?;
-        let plan = protocol::acknowledge(&mut journal, &frames, "results-v2-plan")?;
-        support::plan(&plan, &prepared, 1)?;
+        let frames = endpoint::invoke(&client, &url, f, journal_ref).await?;
+        let plan = protocol::acknowledge(journal_ref, &frames, "results-v2-plan")?;
+        support::plan(&plan, prepared_ref, 1)?;
         super::super::readmit_same_key(f).await?;
-        let frames = endpoint::invoke(&client, &url, f, &journal).await?;
-        let original = protocol::leave_unacknowledged(&mut journal, &frames, "results-v2-execute")?;
-        let truth = support::truth(f, &prepared, 1)?;
+        let frames = endpoint::invoke(&client, &url, f, journal_ref).await?;
+        let original = protocol::leave_unacknowledged(journal_ref, &frames, "results-v2-execute")?;
+        let truth = support::truth(f, prepared_ref, 1)?;
         support::retained(&truth, &plan)?;
         support::note(&original, "retained", &truth.receipt)?;
         check!(eq; original.per_source.first().ok_or("original source")?.rows, Some(3));
-        let rows = retained_rows(f)?;
-        let before = durable_snapshot(f)?;
-        let receipts = projection_receipts(f)?;
+        check!(eq; f.fetcher.stats().await.physical_requests(), 0);
+        super::super::readmit_same_key(f).await?;
+        Ok(())
+    })
+    .await;
+    super::super::finish(&fixture, result, 2, resources).await?;
+    let truth = support::truth(&fixture, &prepared, 1)?;
+    let rows = retained_rows(&fixture)?;
+    let before = durable_snapshot(&fixture)?;
+    let receipts = projection_receipts(&fixture)?;
+    let key = fixture.key().to_owned();
+    let fixture = fixture.cold_reopen_v2()?;
+    check!(eq; fixture.key(), key);
+    check!(eq; retained_rows(&fixture)?, rows);
+    check!(eq; projection_receipts(&fixture)?, receipts);
+    check!(eq; durable_snapshot(&fixture)?, before);
+    support::unchanged(&fixture, &prepared, 1, &truth)?;
+    let resources = fixture.region.coordinator().remaining();
+    let f = &fixture;
+    let result = endpoint::serve(&fixture, |client, url| async move {
         check!(eq; f.fetcher.stats().await.physical_requests(), 0);
         super::super::readmit_same_key(f).await?;
         let frames = endpoint::invoke(&client, &url, f, &journal).await?;
@@ -77,7 +96,7 @@ async fn controlled_al_projection_nonempty_consumption_survives_lost_ack_same_ke
         Ok(())
     })
     .await;
-    super::super::finish(&fixture, result, 3, resources).await
+    super::super::finish(&fixture, result, 1, resources).await
 }
 
 fn controlled_fixture() -> TestResult<Fixture> {

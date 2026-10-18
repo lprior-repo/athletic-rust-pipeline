@@ -86,6 +86,24 @@ impl Fixture {
         })?;
         let state = state(&request);
         store.append(Table::SourceMeets, &meet)?;
+        let fixture = Self::from_parts(root, store, writer, request, state)?;
+        crate::capture_cache::seed(
+            fixture.fetcher.cache_dir(),
+            &meet.results_url,
+            MEET_PAGE,
+            "2026-10-01T23:44:16Z",
+            &[],
+        )?;
+        Ok(fixture)
+    }
+
+    fn from_parts(
+        root: tempfile::TempDir,
+        store: Arc<Store>,
+        writer: census_store::CaptureWriterV1,
+        request: JurisdictionRequest,
+        state: JurisdictionState,
+    ) -> TestResult<Self> {
         let fetcher = Arc::new(
             Fetcher::new(
                 store.http_cache_dir(),
@@ -96,13 +114,6 @@ impl Fixture {
             )?
             .with_offline(true),
         );
-        crate::capture_cache::seed(
-            fetcher.cache_dir(),
-            &meet.results_url,
-            MEET_PAGE,
-            "2026-10-01T23:44:16Z",
-            &[],
-        )?;
         let region = Arc::new(crate::spawn::Spawner::with_capacity(1));
         let jobs = Jobs::new(Arc::clone(&store), Arc::clone(&region));
         let owner = JurisdictionCensus::new(
@@ -125,6 +136,32 @@ impl Fixture {
             state,
             bridge,
         })
+    }
+
+    pub(super) fn cold_reopen_v2(self) -> TestResult<Self> {
+        check!(*self.region.stopping().borrow());
+        let manifest = self.store.run_manifest()?;
+        let weak = Arc::downgrade(&self.store);
+        let Self {
+            _root,
+            store,
+            fetcher,
+            region,
+            jobs,
+            request,
+            state,
+            bridge,
+        } = self;
+        drop(bridge);
+        drop(jobs);
+        drop(fetcher);
+        drop(region);
+        drop(store);
+        check!(weak.upgrade().is_none());
+        let (store, writer) =
+            Store::open_capture_qualification_v2(_root.path().join("store"))?.into_parts();
+        check!(eq; store.run_manifest()?, manifest);
+        Self::from_parts(_root, Arc::new(store), writer, request, state)
     }
 
     pub(super) fn key(&self) -> &str {

@@ -1,14 +1,17 @@
 use super::{Fixture, IdentityMap, TestResult};
 use census_domain::model::{
-    AttestationQualification, CanonicalAthlete, Evidence, IdentityAttestation, ReviewCase,
-    ReviewState, ReviewVerdictRecord, SourceIdentity, SourceNamespace, SourceRef,
-    ATHLETE_IDENTITY_FAMILY,
+    AttestationQualification, CanonicalAthlete, IdentityAttestation, ReviewCase, ReviewState,
+    ReviewVerdictRecord, SourceIdentity, SourceNamespace, SourceRef, ATHLETE_IDENTITY_FAMILY,
 };
 use census_domain::public_identity_history::PublicAthleteId;
 use census_store::{ReviewedIdentityRequestV1, Table};
 use sha2::{Digest, Sha256};
 
-pub(super) fn merge(fixture: &Fixture) -> TestResult<(String, PublicAthleteId, IdentityMap)> {
+mod roster;
+
+pub(super) fn merge(
+    fixture: &Fixture,
+) -> TestResult<(String, PublicAthleteId, IdentityMap, String)> {
     let mut original = fixture
         .store
         .snapshot()
@@ -22,16 +25,19 @@ pub(super) fn merge(fixture: &Fixture) -> TestResult<(String, PublicAthleteId, I
         "Controlled Synthetic PR Alias",
         original.grad_year,
         original.gender,
-        source.clone(),
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "990000118"),
     )?;
-    alias.evidence.push(Evidence::parsed(
-        SourceRef::new(
-            "controlled synthetic PR identity fixture",
-            Some("https://controlled-pr-identity.test/athletes/990000117".into()),
-        ),
-        "2026-10-14",
-    ));
     fixture.store.append(Table::Athletes, &alias)?;
+    alias = roster::append(&fixture.store, &alias.id)?;
+    let proof = format!(
+        "canonical_evidence:{}",
+        census_domain::model::serialized_digest(
+            alias
+                .evidence
+                .first()
+                .ok_or("retained alias roster evidence")?
+        )?
+    );
     let birth = fixture.writer.establish_source_bound(
         &fixture.store,
         "controlled-pr-alias-birth",
@@ -40,6 +46,7 @@ pub(super) fn merge(fixture: &Fixture) -> TestResult<(String, PublicAthleteId, I
         &fixture.writer.head(&fixture.store)?,
     )?;
     original.add_identity(source.clone());
+    alias.add_identity(source.clone());
     original
         .identity_attestations
         .push(claim(&source, "pr-school")?);
@@ -80,7 +87,7 @@ pub(super) fn merge(fixture: &Fixture) -> TestResult<(String, PublicAthleteId, I
         .into_iter()
         .map(|candidate| (candidate.to_string(), canonical.clone()))
         .collect();
-    Ok((case_id, canonical, expected))
+    Ok((case_id, canonical, expected, proof))
 }
 
 fn review(
@@ -119,6 +126,9 @@ fn review(
     let mut cases: Vec<ReviewCase> = fixture.store.snapshot().scan(Table::ReviewCases)?;
     let mut verdicts: Vec<ReviewVerdictRecord> =
         fixture.store.snapshot().scan(Table::IdentityVerdicts)?;
+    for old in &mut cases {
+        old.state = ReviewState::Superseded;
+    }
     cases.push(case.clone());
     verdicts.push(verdict);
     fixture.store.replace_many(Table::ReviewCases, &cases)?;

@@ -38,7 +38,7 @@ pub(in crate::participation_evidence) fn compiled_identity(
 const SCHEMA: &str = "roster-semantic-kernel-dependencies/v3";
 const MAX_DOCUMENT: usize = 64 * 1024;
 const EXPECTED_SOURCE_DIGEST: &str =
-    "b5acba61a0e780ffa8159ba3078c0ed379317b9879905630894d1d07c98b6e63";
+    "1226f147c451534ac2c613d5683156570cdae3529f9f52d2bf489523a2d518df";
 const COMPILED: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v3.json"));
 
 #[derive(Serialize, Deserialize)]

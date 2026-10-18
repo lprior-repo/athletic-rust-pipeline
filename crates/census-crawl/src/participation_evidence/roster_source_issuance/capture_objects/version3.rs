@@ -30,7 +30,7 @@ pub fn prepare_retained_roster_capture_objects_v3<'a>(
         {
             return Err(invalid("row-local retained root mismatch").into());
         }
-        let packet = ProviderSchoolPacketV1::decode(raw)?;
+        let packet: ProviderSchoolPacketV1 = serde_json::from_slice(raw).map_err(json)?;
         budget::charge(&packet, grant)?;
         if packet.reference()?.as_str() != held.root().key {
             return Err(invalid("row-local retained packet key mismatch").into());
