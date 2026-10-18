@@ -5,7 +5,9 @@ use census_report::export::{decoded_generations, resident_generations};
 use census_report::workbook;
 use std::path::Path;
 
-type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+use super::selected_fixture;
+
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 fn options() -> TestResult<workbook::Options> {
     Ok(workbook::Options {
@@ -108,6 +110,226 @@ fn managed_workbook_job_refuses_changed_evidence_without_replacing_its_generatio
     check!(eq; decoded_generations(), decoded);
     check!(eq; std::fs::read(&reply.path)?, workbook_bytes);
     check!(eq; std::fs::read(generation.join("manifest.json"))?, manifest);
+    Ok(())
+}
+
+#[test]
+fn selected_workbook_service_job_publishes_and_fresh_process_verifies_retry_and_revocation(
+) -> TestResult {
+    const NAME: &str =
+        "selected_workbook_service_job_publishes_and_fresh_process_verifies_retry_and_revocation";
+    if !isolated(NAME)? {
+        return Ok(());
+    }
+    match std::env::var("CENSUS_SELECTED_WORKBOOK_VERIFY_PATH") {
+        Ok(path) => {
+            verify_selected_workbook(&path)?;
+            return Ok(());
+        }
+        Err(std::env::VarError::NotPresent) => {}
+        Err(error) => return Err(error.into()),
+    }
+
+    let controlled = selected_fixture::install()?;
+    let selection = controlled.selection()?;
+    let export_job = census_report::export::ExportJobRequest::SelectedPublicationV1 { selection };
+    let options = selected_options(controlled.profile())?;
+    let job = "controlled-selected-service-workbook-v1";
+    let first = build_workbook(controlled.store(), &options, job, &export_job)?;
+    let generation =
+        census_report::workbook::publication::verify_published(Path::new(&first.path))?;
+    check!(generation.workbook.mapped_athletes > 0);
+    check_selected_output(
+        Path::new(&first.path),
+        controlled.public_id(),
+        controlled.candidate_id(),
+        controlled.current_school_id(),
+        "50.00",
+    )?;
+    let bytes = std::fs::read(&first.path)?;
+    let manifest_path = Path::new(&first.path)
+        .parent()
+        .ok_or("selected workbook generation missing")?
+        .join("manifest.json");
+    let manifest = std::fs::read(&manifest_path)?;
+    let repeated = build_workbook(controlled.store(), &options, job, &export_job)?;
+    check!(eq; repeated.path, first.path);
+    check!(eq;
+        census_report::workbook::publication::verify_published(Path::new(&repeated.path))?.generation_digest,
+        generation.generation_digest
+    );
+
+    selected_fixture::revoke(&controlled)?;
+    check!(build_workbook(controlled.store(), &options, job, &export_job).is_err());
+    check!(eq; std::fs::read(&first.path)?, bytes);
+    check!(eq; std::fs::read(&manifest_path)?, manifest);
+    let child = std::process::Command::new(std::env::current_exe()?)
+        .args([
+            "--exact",
+            &format!("restate_services::jobs::publication_tests::{NAME}"),
+            "--test-threads=1",
+            "--nocapture",
+        ])
+        .env(
+            "CENSUS_PUBLICATION_COUNTER_TEST",
+            format!("restate_services::jobs::publication_tests::{NAME}"),
+        )
+        .env("CENSUS_SELECTED_WORKBOOK_VERIFY_PATH", &first.path)
+        .env(
+            "CENSUS_SELECTED_WORKBOOK_VERIFY_PUBLIC_ID",
+            controlled.public_id(),
+        )
+        .env(
+            "CENSUS_SELECTED_WORKBOOK_VERIFY_CANDIDATE_ID",
+            controlled.candidate_id(),
+        )
+        .env(
+            "CENSUS_SELECTED_WORKBOOK_VERIFY_SCHOOL_ID",
+            controlled.current_school_id(),
+        )
+        .current_dir(std::env::temp_dir())
+        .output()?;
+    check!(
+        child.status.success(),
+        "fresh-process verifier failed: {} {}",
+        String::from_utf8_lossy(&child.stdout),
+        String::from_utf8_lossy(&child.stderr)
+    );
+    check!(String::from_utf8_lossy(&child.stdout).contains("1 passed"));
+    Ok(())
+}
+
+pub(in crate::restate_services) fn selected_options(
+    profile: &census_domain::model::QueryProfileV1,
+) -> TestResult<workbook::Options> {
+    let [cohort] = profile.input().graduation_years.as_slice() else {
+        return Err("controlled selection must contain one cohort".into());
+    };
+    Ok(workbook::Options {
+        grad_year: Some(cohort.get()),
+        out: None,
+        limit: None,
+        scope: Scope::AllSources,
+        jurisdictions: profile.input().jurisdictions.clone(),
+        school_year: profile.input().contact_school_year,
+    })
+}
+
+fn verify_selected_workbook(path: &str) -> TestResult {
+    let verified = census_report::workbook::publication::verify_published(Path::new(path))?;
+    check!(verified.workbook.mapped_athletes > 0);
+    let public = std::env::var("CENSUS_SELECTED_WORKBOOK_VERIFY_PUBLIC_ID")?;
+    let candidate = std::env::var("CENSUS_SELECTED_WORKBOOK_VERIFY_CANDIDATE_ID")?;
+    let school = std::env::var("CENSUS_SELECTED_WORKBOOK_VERIFY_SCHOOL_ID")?;
+    check_selected_output(Path::new(path), &public, &candidate, &school, "50.00")?;
+    Ok(())
+}
+
+pub(in crate::restate_services) fn check_selected_output(
+    path: &Path,
+    public: &str,
+    candidate: &str,
+    school: &str,
+    mark: &str,
+) -> TestResult {
+    let generation = path
+        .parent()
+        .ok_or("selected workbook generation missing")?;
+    check_csv_row_field(
+        &generation.join("athletes.csv"),
+        "athlete_id",
+        public,
+        "athlete_id",
+        public,
+    )?;
+    check_csv_row_field(
+        &generation.join("athletes.csv"),
+        "athlete_id",
+        public,
+        "performance_availability",
+        "eligible_selected_mark",
+    )?;
+    check_csv_row_field(
+        &generation.join("athletes.csv"),
+        "athlete_id",
+        public,
+        "identity_status",
+        "accepted_public_identity",
+    )?;
+    check_csv_row_field(
+        &generation.join("best_marks.csv"),
+        "athlete_id",
+        public,
+        "display_mark",
+        mark,
+    )?;
+    check_csv_row_field(
+        &generation.join("current_affiliations.csv"),
+        "retained_candidate_id",
+        candidate,
+        "current_school_id",
+        school,
+    )?;
+    check_csv_row_field(
+        &generation.join("current_affiliations.csv"),
+        "retained_candidate_id",
+        candidate,
+        "resolution_status",
+        "resolved_at_selected_cutoff",
+    )?;
+    check_csv_row_field(
+        &generation.join("best-results-co2027.csv"),
+        "athlete_id",
+        public,
+        "athlete_id",
+        public,
+    )?;
+    Ok(())
+}
+
+fn check_csv_row_field(
+    path: &Path,
+    key_field: &str,
+    key: &str,
+    field: &str,
+    expected: &str,
+) -> TestResult {
+    let mut reader = csv::Reader::from_path(path)?;
+    let headers = reader.headers()?.clone();
+    let key_index = headers
+        .iter()
+        .position(|header| header == key_field)
+        .ok_or_else(|| format!("field {key_field} missing in {}", path.display()))?;
+    let value_index = headers
+        .iter()
+        .position(|header| header == field)
+        .ok_or_else(|| format!("field {field} missing in {}", path.display()))?;
+    let mut matched = None;
+    for row in reader.records() {
+        let row = row?;
+        if row.get(key_index) == Some(key) {
+            if matched.is_some() {
+                return Err(format!(
+                    "multiple rows with {key_field}={key:?} in {}",
+                    path.display()
+                )
+                .into());
+            }
+            matched = Some(row);
+        }
+    }
+    let row = matched
+        .ok_or_else(|| format!("row with {key_field}={key:?} missing in {}", path.display()))?;
+    let actual = row
+        .get(value_index)
+        .ok_or_else(|| format!("field {field} missing in matched row of {}", path.display()))?;
+    if actual != expected {
+        return Err(format!(
+            "{} field {field}: expected {expected:?}, got {actual:?}",
+            path.display()
+        )
+        .into());
+    }
     Ok(())
 }
 

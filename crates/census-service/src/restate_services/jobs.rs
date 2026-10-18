@@ -2,7 +2,11 @@ mod source_access;
 pub(super) mod workbook_job;
 
 #[cfg(test)]
-mod publication_tests;
+pub(super) mod publication_tests;
+
+#[cfg(test)]
+#[path = "jobs/publication_tests/selected_fixture.rs"]
+pub(super) mod selected_fixture;
 
 use std::path::PathBuf;
 use std::sync::Arc;

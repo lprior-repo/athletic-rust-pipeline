@@ -20,6 +20,8 @@ pub struct Journal {
     pub unfinished_rosters: bool,
     pub seal_refusals: usize,
     pub source_store: Option<std::sync::Arc<census_store::Store>>,
+    pub selected_workbook: Option<crate::restate_services::jobs::selected_fixture::Controlled>,
+    pub selected_workbook_path: Option<String>,
     pub(super) transcript: Option<transport::Transcript>,
     exchanges: usize,
 }
@@ -50,6 +52,8 @@ impl Journal {
             unfinished_rosters: false,
             seal_refusals: 0,
             source_store: None,
+            selected_workbook: None,
+            selected_workbook_path: None,
             transcript: None,
             exchanges: 0,
         })
@@ -94,11 +98,8 @@ impl Journal {
 
     pub fn release(&mut self) -> TestResult {
         let call = self.held.take().ok_or("no held publication stage")?;
-        self.append(codec::notification(
-            0x800D,
-            call.number(11)?,
-            &serde_json::to_vec(&fixtures::answer(&call, self)?)?,
-        )?)?;
+        let response = serde_json::to_vec(&fixtures::answer(&call, self)?)?;
+        self.append(codec::notification(0x800D, call.number(11)?, &response)?)?;
         self.hold_stage = None;
         Ok(())
     }
@@ -176,11 +177,8 @@ impl Journal {
         {
             self.held = Some(call.clone());
         } else {
-            self.append(codec::notification(
-                0x800D,
-                call.number(11)?,
-                &serde_json::to_vec(&fixtures::answer(call, self)?)?,
-            )?)?;
+            let response = serde_json::to_vec(&fixtures::answer(call, self)?)?;
+            self.append(codec::notification(0x800D, call.number(11)?, &response)?)?;
         }
         Ok(())
     }

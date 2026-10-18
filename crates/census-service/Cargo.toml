@@ -66,6 +66,7 @@ url = { version = "2.5", features = ["serde"] }
 calamine = "=0.36.1"
 
 [dev-dependencies]
+base64 = "0.22"
 criterion = "0.8"
 # The integration tests that exercise the store directly (backup/restore, recovery, kill/restart)
 # open a Fjall database themselves; production code reaches Fjall through `census-store`.
