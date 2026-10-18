@@ -13,6 +13,13 @@ use census_store::Table;
 const MAX_BODY: usize = 8 * 1024 * 1024;
 const MAX_FIELD: usize = 4096;
 
+struct RosterMetadata {
+    fetch: FetchOutcome,
+    site: Site,
+    observed_on: String,
+    year: SchoolYear,
+}
+
 pub fn record_provider_roster_intake(
     store: &census_store::Store,
     recording: &Recording,
@@ -103,30 +110,12 @@ fn write_complete_roster(
     roster: &Roster,
     roster_verdict: &RosterVerdict,
 ) -> CrawlResult<()> {
-    let roster_capture = packet.roster();
-    let body = roster_capture.body()?;
-    let body_len = body.len();
-    if body_len > MAX_BODY {
-        return Err(CrawlError::Resource {
-            resource: "roster body bytes",
-            requested: body_len,
-            limit: MAX_BODY,
-        });
-    }
-    let fetch = fetch_outcome(roster_capture, body)?;
-    let site = Site::for_jurisdiction(
-        checked
-            .school()
-            .state
-            .ok_or_else(|| invalid("provider roster jurisdiction missing"))?,
-    );
-    let observed_on = roster_capture
-        .acquired_at()
-        .to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true);
-    let date = roster_capture.acquired_at().format("%Y-%m-%d").to_string();
-    let year = SchoolYear::from_date(&date).ok_or_else(|| CrawlError::Invariant {
-        detail: "provider roster acquisition year unsupported".into(),
-    })?;
+    let RosterMetadata {
+        fetch,
+        site,
+        observed_on,
+        year,
+    } = roster_metadata(packet, checked)?;
     let team = &roster.team;
     let members = &roster.athletes;
     let (school, mut athletes, teams) = roster_entities(team, members, year, &observed_on, &site)?;
@@ -151,6 +140,42 @@ fn write_complete_roster(
         });
     result?;
     commit_projection(store, recording, &teams, &athletes, observations)
+}
+
+fn roster_metadata(
+    packet: &ProviderSchoolPacketV1,
+    checked: &CheckedProviderSchoolPacketV1,
+) -> CrawlResult<RosterMetadata> {
+    let roster_capture = packet.roster();
+    let body = roster_capture.body()?;
+    let body_len = body.len();
+    if body_len > MAX_BODY {
+        return Err(CrawlError::Resource {
+            resource: "roster body bytes",
+            requested: body_len,
+            limit: MAX_BODY,
+        });
+    }
+    let fetch = fetch_outcome(roster_capture, body)?;
+    let site = Site::for_jurisdiction(
+        checked
+            .school()
+            .state
+            .ok_or_else(|| invalid("provider roster jurisdiction missing"))?,
+    );
+    let observed_on = roster_capture
+        .acquired_at()
+        .to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true);
+    let date = roster_capture.acquired_at().format("%Y-%m-%d").to_string();
+    let year = SchoolYear::from_date(&date).ok_or_else(|| CrawlError::Invariant {
+        detail: "provider roster acquisition year unsupported".into(),
+    })?;
+    Ok(RosterMetadata {
+        fetch,
+        site,
+        observed_on,
+        year,
+    })
 }
 
 fn commit_projection(

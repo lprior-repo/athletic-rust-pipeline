@@ -1,6 +1,7 @@
 mod attach;
 mod authority;
 mod capture;
+mod job;
 mod origin;
 #[cfg(test)]
 mod test_authority;
@@ -55,6 +56,7 @@ impl ExportDataset {
             return Ok(());
         }
         self.ensure_input_binding()?;
+        self.ensure_job_commitment()?;
         if matches!(
             self.selected_input_origin,
             SelectedInputOrigin::HistoricalReplay

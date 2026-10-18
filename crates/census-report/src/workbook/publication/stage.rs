@@ -1,11 +1,18 @@
 use super::*;
 use census_store::publish::{Root, State};
 
+#[cfg(test)]
+mod testing;
+
 pub(in crate::workbook) struct Stage<'s> {
     root: PathBuf,
     directory: PathBuf,
     request: census_store::publish::Intent,
     store: &'s Store,
+    #[cfg(test)]
+    before_input_fence: Option<&'s dyn Fn() -> ReportResult<()>>,
+    #[cfg(test)]
+    after_input_intent: Option<&'s dyn Fn() -> ReportResult<()>>,
 }
 
 impl<'s> Stage<'s> {
@@ -14,51 +21,7 @@ impl<'s> Stage<'s> {
         store: &'s Store,
         options: &Options,
     ) -> ReportResult<Self> {
-        dataset.ensure_current_policy()?;
-        selected::ensure_current_options(dataset, options)?;
-        let root = match &options.out {
-            Some(root) => root.clone(),
-            None => store.out_dir().join("publication"),
-        };
-        lifecycle::preflight(&root)?;
-        incident::check_root(&root)?;
-        prepare_generations(&root)?;
-        let namespace = binding::namespace(&root)?;
-        let input = binding::input(dataset, store, options)?;
-        let identity =
-            binding::digest(&(&namespace, &dataset.lineage.input_generation, &input.recipe))?;
-        let mut prepared = recovery::prepare(store, &root, &namespace)?;
-        if let Some(retained) = store.publication_read(&identity)? {
-            recovery::include_history(&mut prepared, &root, &retained);
-        }
-        fence(&root, dataset)?;
-        let _namespace = lock_publication(&root)?;
-        recovery::reconcile(store, &root, &namespace, &prepared)?;
-        let request = match store.publication_read(&identity)? {
-            Some(retained) => retained,
-            None => {
-                let lease_epoch = store.publication_lease(&identity)?;
-                store.publication_request(census_store::publish::Request {
-                    namespace: namespace.clone(),
-                    identity,
-                    expected: pointer::read(&root)?,
-                    input,
-                    lease_epoch,
-                })?
-            }
-        };
-        if matches!(request.state, State::Requested) {
-            recovery::reconcile_requested(
-                store,
-                &root,
-                &request,
-                &Root::Absent,
-                &prepared.run_manifest,
-            )?;
-        }
-        let request = store
-            .publication_read(&request.request.identity)?
-            .ok_or_else(|| invariant("publication request disappeared".into()))?;
+        let (root, request) = prepare_request(dataset, store, options)?;
         let nonce = staging_nonce(&dataset.lineage.store_identity)?;
         let directory = root.join(format!(".staging.{nonce}"));
         std::fs::create_dir(&directory).map_err(|source| io_error(&directory, source))?;
@@ -67,6 +30,10 @@ impl<'s> Stage<'s> {
             directory,
             request,
             store,
+            #[cfg(test)]
+            before_input_fence: None,
+            #[cfg(test)]
+            after_input_intent: None,
         })
     }
 
@@ -115,13 +82,14 @@ impl<'s> Stage<'s> {
         let prepared = recovery::prepare(self.store, &self.root, &self.request.request.namespace)?;
         let started = std::time::Instant::now();
         let namespace = lock_publication(&self.root)?;
-        let result = recovery::reconcile(
+        let result = recovery::reconcile_with_dataset(
             self.store,
             &self.root,
             &self.request.request.namespace,
             &prepared,
+            Some(dataset),
         )
-        .and_then(|_| self.switch_pointer(&desired, &prepared.run_manifest));
+        .and_then(|_| self.switch_pointer(dataset, &desired, &prepared.run_manifest));
         drop(namespace);
         tracing::info!(
             critical_section_us = started.elapsed().as_micros(),
@@ -134,6 +102,7 @@ impl<'s> Stage<'s> {
 
     fn switch_pointer(
         &self,
+        dataset: &ExportDataset,
         desired: &census_store::publish::Digest,
         run_manifest: &Option<census_store::publish::Digest>,
     ) -> ReportResult<PathBuf> {
@@ -159,9 +128,9 @@ impl<'s> Stage<'s> {
             .into());
         }
         if actual == Root::Bundle(desired.clone()) && !matches!(retained.state, State::Requested) {
-            self.confirm_already_switched(&retained, desired)?;
+            self.confirm_already_switched(dataset, &retained, desired, run_manifest)?;
         } else {
-            self.execute_pointer_switch(&retained, desired, actual, run_manifest)?;
+            self.execute_pointer_switch(dataset, &retained, desired, actual, run_manifest)?;
         }
         Ok(self
             .root
@@ -171,6 +140,30 @@ impl<'s> Stage<'s> {
     }
 
     fn confirm_already_switched(
+        &self,
+        dataset: &ExportDataset,
+        retained: &census_store::publish::Intent,
+        desired: &census_store::publish::Digest,
+        run_manifest: &Option<census_store::publish::Digest>,
+    ) -> ReportResult<()> {
+        if dataset.selected_profile_id().is_none() || dataset.lineage.export_job.is_none() {
+            return self.confirm_legacy_switch(retained, desired);
+        }
+        let input = self
+            .store
+            .publication_fence(&retained.request, run_manifest)?;
+        dataset
+            .ensure_snapshot(&input.snapshot())
+            .map_err(binding::input_refused)?;
+        let intent = input.begin(input.intent(), desired)?;
+        sync_directory(&self.root).map_err(|error| protocol::uncertain(&intent, error))?;
+        input
+            .published(&intent, desired)
+            .map_err(|error| protocol::uncertain(&intent, error.into()))?;
+        Ok(())
+    }
+
+    fn confirm_legacy_switch(
         &self,
         retained: &census_store::publish::Intent,
         desired: &census_store::publish::Digest,
@@ -196,16 +189,30 @@ impl<'s> Stage<'s> {
 
     fn execute_pointer_switch(
         &self,
+        dataset: &ExportDataset,
         retained: &census_store::publish::Intent,
         desired: &census_store::publish::Digest,
         actual: census_store::publish::Root,
         run_manifest: &Option<census_store::publish::Digest>,
     ) -> ReportResult<()> {
+        #[cfg(test)]
+        if let Some(callback) = self.before_input_fence {
+            callback()?;
+        }
         let input = self
             .store
             .publication_fence(&retained.request, run_manifest)
             .map_err(binding::refused)?;
+        if dataset.selected_profile_id().is_some() && dataset.lineage.export_job.is_some() {
+            dataset
+                .ensure_snapshot(&input.snapshot())
+                .map_err(binding::input_refused)?;
+        }
         let intent = input.begin(input.intent(), desired)?;
+        #[cfg(test)]
+        if let Some(callback) = self.after_input_intent {
+            callback()?;
+        }
         checkpoint::reached("intent", &self.root)?;
         if actual != census_store::publish::Root::Bundle(desired.clone()) {
             pointer::switch(&self.root, desired)?;
@@ -223,4 +230,57 @@ impl<'s> Stage<'s> {
     pub(super) fn expected(&self) -> &census_store::publish::Root {
         &self.request.request.expected
     }
+}
+
+fn prepare_request(
+    dataset: &ExportDataset,
+    store: &Store,
+    options: &Options,
+) -> ReportResult<(PathBuf, census_store::publish::Intent)> {
+    dataset.ensure_current_policy()?;
+    selected::ensure_current_options(dataset, options)?;
+    let root = match &options.out {
+        Some(root) => root.clone(),
+        None => store.out_dir().join("publication"),
+    };
+    lifecycle::preflight(&root)?;
+    incident::check_root(&root)?;
+    prepare_generations(&root)?;
+    let namespace = binding::namespace(&root)?;
+    let input = binding::input(dataset, store, options)?;
+    let identity =
+        binding::digest(&(&namespace, &dataset.lineage.input_generation, &input.recipe))?;
+    let mut prepared = recovery::prepare(store, &root, &namespace)?;
+    if let Some(retained) = store.publication_read(&identity)? {
+        recovery::include_history(&mut prepared, &root, &retained);
+    }
+    fence(&root, dataset)?;
+    let _namespace = lock_publication(&root)?;
+    recovery::reconcile_with_dataset(store, &root, &namespace, &prepared, Some(dataset))?;
+    let request = match store.publication_read(&identity)? {
+        Some(retained) => retained,
+        None => {
+            let lease_epoch = store.publication_lease(&identity)?;
+            store.publication_request(census_store::publish::Request {
+                namespace: namespace.clone(),
+                identity,
+                expected: pointer::read(&root)?,
+                input,
+                lease_epoch,
+            })?
+        }
+    };
+    if matches!(request.state, State::Requested) {
+        recovery::reconcile_requested(
+            store,
+            &root,
+            &request,
+            &Root::Absent,
+            &prepared.run_manifest,
+        )?;
+    }
+    let request = store
+        .publication_read(&request.request.identity)?
+        .ok_or_else(|| invariant("publication request disappeared".into()))?;
+    Ok((root, request))
 }

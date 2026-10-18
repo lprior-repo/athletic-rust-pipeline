@@ -81,38 +81,21 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     let ingestion = ingress::client(origin)?;
     let watched = admitted_scope(&jurisdictions);
     let cycles = if args.drive { super::DRIVE_CYCLES } else { 1 };
+    let run = NationalRun {
+        cli,
+        args,
+        origin,
+        ingestion: &ingestion,
+        jurisdictions: &jurisdictions,
+        watched: &watched,
+        season,
+        revision,
+    };
     let mut ordinal = args.resume;
     for cycle in 1..=cycles {
-        let identity = resume::identity(season, revision, &jurisdictions, ordinal);
-        let request = national_request(
-            cli,
-            args,
-            &ingestion,
-            season,
-            revision,
-            &jurisdictions,
-            ordinal,
-        )
-        .await?;
-        let handle = submit_national(origin, &ingestion, &identity, request).await?;
-        announce_national_invocation(&identity, &handle);
-        if args.detach {
+        let Some((identity, report)) = run_national_cycle(&run, ordinal).await? else {
             return Ok(());
-        }
-        let report = observe(Watch {
-            handle: &handle,
-            ingestion: &ingestion,
-            jurisdictions: &watched,
-            season,
-            revision,
-            rounds: args.flags.rounds(),
-        })
-        .await
-        .with_context(|| format!(
-            "observation stopped for workflow {} invocation {}; rerun the same command to reattach without changing its resume ordinal",
-            identity.as_str(), handle.invocation_id()
-        ))?;
-        print_national(&report, args.flags.json)?;
+        };
         match failure_exit(&report) {
             Ok(()) => {
                 super::publication_notice::show(&ingestion, &identity, &watched).await;
@@ -130,6 +113,54 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     Err(anyhow::anyhow!(
         "drive finished without a completed run report"
     ))
+}
+
+struct NationalRun<'a> {
+    cli: &'a Cli,
+    args: &'a NationalArgs,
+    origin: &'a str,
+    ingestion: &'a Ingress,
+    jurisdictions: &'a [census_domain::UsJurisdiction],
+    watched: &'a [census_domain::UsJurisdiction],
+    season: census_domain::model::SchoolYear,
+    revision: Revision,
+}
+
+async fn run_national_cycle(
+    run: &NationalRun<'_>,
+    ordinal: Option<NonZeroU32>,
+) -> Result<Option<(WorkflowIdentity, NationalReport)>> {
+    let identity = resume::identity(run.season, run.revision, run.jurisdictions, ordinal);
+    let request = national_request(
+        run.cli,
+        run.args,
+        run.ingestion,
+        run.season,
+        run.revision,
+        run.jurisdictions,
+        ordinal,
+    )
+    .await?;
+    let handle = submit_national(run.origin, run.ingestion, &identity, request).await?;
+    announce_national_invocation(&identity, &handle);
+    if run.args.detach {
+        return Ok(None);
+    }
+    let report = observe(Watch {
+        handle: &handle,
+        ingestion: run.ingestion,
+        jurisdictions: run.watched,
+        season: run.season,
+        revision: run.revision,
+        rounds: run.args.flags.rounds(),
+    })
+    .await
+    .with_context(|| format!(
+        "observation stopped for workflow {} invocation {}; rerun the same command to reattach without changing its resume ordinal",
+        identity.as_str(), handle.invocation_id()
+    ))?;
+    print_national(&report, run.args.flags.json)?;
+    Ok(Some((identity, report)))
 }
 
 fn announce_national_invocation(
