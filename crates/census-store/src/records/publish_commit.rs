@@ -162,6 +162,9 @@ impl Store {
 }
 
 impl PublicationFence<'_> {
+    pub fn snapshot(&self) -> crate::StoreSnapshot<'_> {
+        self.store.snapshot_locked()
+    }
     pub fn intent(&self) -> &Intent {
         &self.intent
     }

@@ -1,8 +1,16 @@
+use super::super::ExportJobRequest;
 use super::super::{freeze_v2, to_export_dataset};
 use super::{invalid, io_error, store_identity, ExportDataset, ReportResult, Store};
 use std::path::{Path, PathBuf};
 
-pub(in crate::export::dataset) fn capture(store: &Store, job: &str) -> ReportResult<ExportDataset> {
+mod selected;
+pub(in crate::export::dataset) use selected::freshness::Freshness as SelectedJobFreshness;
+
+pub(in crate::export::dataset) fn capture(
+    store: &Store,
+    job: &str,
+    request: &ExportJobRequest,
+) -> ReportResult<ExportDataset> {
     if job.is_empty() || job.len() > 4096 {
         return Err(invalid("export job identity must contain 1..=4096 bytes"));
     }
@@ -12,7 +20,7 @@ pub(in crate::export::dataset) fn capture(store: &Store, job: &str) -> ReportRes
         .map_err(|source| io_error(&directory, source))?;
     let lock_path = directory.join(format!("{digest}.lock"));
     let _lock = super::capture_lock(&lock_path)?;
-    capture_locked(store, job, &directory, &digest)
+    capture_locked(store, job, &directory, &digest, request)
 }
 
 fn capture_locked(
@@ -20,8 +28,34 @@ fn capture_locked(
     job: &str,
     directory: &Path,
     digest: &str,
+    request: &ExportJobRequest,
 ) -> ReportResult<ExportDataset> {
     let archive = directory.join(format!("{digest}.json"));
+    let selected_root = directory.join(format!("{digest}.selected-v1"));
+    let legacy_present = selected::present(&archive)?;
+    let selected_present = selected::present(&selected_root)?
+        || selected::present(&selected::pending(&selected_root))?;
+    if legacy_present && selected_present {
+        return Err(invalid(
+            "export job has conflicting retained representations",
+        ));
+    }
+    match request {
+        ExportJobRequest::SelectedPublicationV1 { selection } => {
+            if legacy_present || selected::present(&super::freeze::directory(store, job)?)? {
+                return Err(invalid(
+                    "legacy export job cannot become selected publication",
+                ));
+            }
+            return selected::capture(store, job, selection, &selected_root);
+        }
+        ExportJobRequest::LegacyV2 if selected_present => {
+            return Err(invalid(
+                "selected export job cannot become legacy publication",
+            ));
+        }
+        ExportJobRequest::LegacyV2 => {}
+    }
     match std::fs::symlink_metadata(&archive) {
         Ok(_) => {
             return reopen_job(store, job, directory, &archive);

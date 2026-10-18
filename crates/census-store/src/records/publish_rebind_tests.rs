@@ -319,3 +319,18 @@ fn published_receipt_survives_atomic_rebind_and_reopen() -> TestResult {
     check!(eq; receipt.as_ref(), digest('1')?.as_str().as_bytes());
     Ok(())
 }
+
+#[test]
+fn publication_snapshot_is_captured_under_the_pointer_switch_write_fence() -> TestResult {
+    let (_directory, store, intent) = fixture()?;
+    let fence = store.publication_fence(&intent.request, &None)?;
+    let snapshot = fence.snapshot();
+    check!(store.appends.try_lock().is_err());
+    check!(eq; snapshot.evidence_generation(), intent.request.input.evidence_generation);
+    check!(eq; snapshot.derived_generation(), intent.request.input.derived_generation);
+    drop(snapshot);
+    drop(fence);
+    check!(store.appends.try_lock().is_ok());
+    store.journal_done("publication-fence-snapshot-test", "after-release", &true)?;
+    Ok(())
+}

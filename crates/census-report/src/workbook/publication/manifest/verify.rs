@@ -79,7 +79,15 @@ pub(super) fn verify_against(
     dataset: &ExportDataset,
 ) -> ReportResult<crate::workbook::verify::VerifiedWorkbook> {
     manifest.ensure_dataset(dataset)?;
-    let options = manifest.selection.options()?;
+    let mut options = manifest.selection.options()?;
+    if dataset.selected_profile_id().is_some() && !dataset.is_historical_selected_replay() {
+        options.jurisdictions = dataset
+            .selected_authority()?
+            .profile()
+            .input()
+            .jurisdictions
+            .clone();
+    }
     let counts = super::super::verify_sidecars::verify(
         directory,
         dataset,

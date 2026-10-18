@@ -6,6 +6,7 @@ mod composition;
 mod composition_replay;
 mod correction;
 pub(crate) mod fixture;
+mod jobs;
 mod preflight;
 mod public_derivation;
 mod publication;

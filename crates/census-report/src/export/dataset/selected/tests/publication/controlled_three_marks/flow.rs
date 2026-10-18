@@ -10,6 +10,7 @@ use census_domain::model::{GradYear, QueryProfileV1, SchoolId};
 use census_domain::public_identity_history::PublicAthleteId;
 use std::path::Path;
 
+mod durable_job;
 mod parent_conflicts;
 
 fn reviewed_inputs(installed: &InstalledSource) -> TestResult<(SchoolId, AcceptedSource)> {

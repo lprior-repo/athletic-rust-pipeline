@@ -156,3 +156,33 @@ mod catalog_tests;
 
 #[cfg(test)]
 mod scoped_coverage_tests;
+
+#[cfg(test)]
+pub(crate) fn build_before_input_fence(
+    dataset: &ExportDataset,
+    store: &Store,
+    options: &Options,
+    censuses: &super::Censuses,
+    callback: &dyn Fn() -> ReportResult<()>,
+) -> ReportResult<PathBuf> {
+    Stage::begin(dataset, store, options)?
+        .with_before_input_fence(callback)
+        .publish(dataset, options, |directory| {
+            super::write_artifacts(directory, dataset, options, censuses)
+        })
+}
+
+#[cfg(test)]
+pub(crate) fn build_after_input_intent(
+    dataset: &ExportDataset,
+    store: &Store,
+    options: &Options,
+    censuses: &super::Censuses,
+    callback: &dyn Fn() -> ReportResult<()>,
+) -> ReportResult<PathBuf> {
+    Stage::begin(dataset, store, options)?
+        .with_after_input_intent(callback)
+        .publish(dataset, options, |directory| {
+            super::write_artifacts(directory, dataset, options, censuses)
+        })
+}

@@ -169,6 +169,9 @@ pub(super) fn ensure_snapshot(
     dataset: &ExportDataset,
     snapshot: &StoreSnapshot<'_>,
 ) -> ReportResult<()> {
+    if let Some(freshness) = &dataset.selected_job_freshness {
+        freshness.require(snapshot, dataset.selected_authority()?.profile())?;
+    }
     if dataset
         .selection
         .as_ref()
