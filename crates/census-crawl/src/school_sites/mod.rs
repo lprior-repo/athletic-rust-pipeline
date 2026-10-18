@@ -11,7 +11,10 @@ pub use run::crawl_site;
 #[path = "tests.rs"]
 mod tests;
 
-pub use parse::{analyse, AdHit, CoachHit, Rules, SchoolMailboxHit, Signals};
+#[cfg(test)]
+mod staff_tests;
+
+pub use parse::{analyse, AdHit, CoachHit, Rules, SchoolMailboxHit, Signals, StaffContactHit};
 
 pub const SOURCE_ID: &str = "school_sites";
 pub const MAX_SITE_PAGES: usize = 7;
@@ -95,3 +98,5 @@ pub fn site_root(site: &str) -> String {
         None => site.to_string(),
     }
 }
+
+pub(crate) use parse::HIDDEN_BLOCK;

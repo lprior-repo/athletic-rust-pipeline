@@ -1,3 +1,5 @@
+mod active;
+
 use crate::directory::{compile_pattern, group};
 use crate::{CrawlError, CrawlResult};
 use regex::Regex;
@@ -30,6 +32,7 @@ struct Markup {
     attribute: Regex,
     literal: Regex,
     tag: Regex,
+    hidden: Regex,
 }
 
 impl Markup {
@@ -38,6 +41,7 @@ impl Markup {
             attribute: compile_pattern(ATTRIBUTE, "SIDEARM attributes")?,
             literal: compile_pattern(LITERAL, "SIDEARM published literals")?,
             tag: compile_pattern(TAG, "SIDEARM text tags")?,
+            hidden: compile_pattern(crate::school_sites::HIDDEN_BLOCK, "SIDEARM hidden text")?,
         })
     }
 
@@ -68,7 +72,8 @@ impl Markup {
     }
 
     fn text(&self, body: &str) -> String {
-        let stripped = self.tag.replace_all(body, " ");
+        let visible = self.hidden.replace_all(body, " ");
+        let stripped = self.tag.replace_all(&visible, " ");
         decode_entities(&stripped)
             .split_whitespace()
             .fold(String::new(), |mut text, word| {
@@ -102,6 +107,8 @@ pub fn parse_staff_directory(html: &str) -> CrawlResult<StaffDirectory> {
     if html.len() > crate::net::MAX_BODY_BYTES {
         return Err(schema("oversized SIDEARM staff directory"));
     }
+    let active = active::normalize(html)?;
+    let html = active.as_str();
     let markup = Markup::new()?;
     let article = elements(html, "<article", "</article>")
         .find(|(tag, _)| markup.has_class(tag, "sidearm-staff"))

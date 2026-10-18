@@ -1,5 +1,6 @@
 use super::queue::QueueStats;
 use super::research::{CoachResearchStatus, ResearchStatus, SchoolMailboxCandidate};
+use super::staff_research::StaffContactCandidate;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::io::Write;
@@ -54,6 +55,8 @@ pub(super) struct SiteRecord {
     pub research_status: ResearchStatus,
     #[serde(default)]
     pub coach_research_status: CoachResearchStatus,
+    #[serde(default)]
+    pub staff_contact_candidates: Vec<StaffContactCandidate>,
     pub requests: usize,
     pub errors: usize,
     #[serde(skip_serializing_if = "Option::is_none")]

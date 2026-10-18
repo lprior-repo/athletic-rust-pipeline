@@ -20,6 +20,9 @@ pub(super) enum CoachResearchStatus {
     #[default]
     Unknown,
     Unsupported,
+    UnverifiedCandidates,
+    NoQualifiedCandidateInRecognizedStaffPages,
+    Incomplete,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -45,22 +48,10 @@ pub(super) fn project(
             .iter()
             .any(|page| (200..300).contains(&page.status));
     for hit in &outcome.signals.school_mailboxes {
-        let Some(source) = outcome
-            .pages
-            .iter()
-            .find(|source| source.url == hit.url && (200..300).contains(&source.status))
-        else {
+        let Some(source) = capture_for(outcome, &hit.url) else {
             incomplete = true;
             continue;
         };
-        if outcome
-            .pages
-            .iter()
-            .any(|page| page.url == hit.url && page != source)
-        {
-            incomplete = true;
-            continue;
-        }
         bytes = bytes
             .checked_add(owners::serialized_size(&(hit, source))?)
             .context("school mailbox candidate byte counter overflow")?;
@@ -83,4 +74,16 @@ pub(super) fn project(
         ResearchStatus::UnverifiedCandidates
     };
     Ok((candidates, status))
+}
+
+pub(super) fn capture_for<'a>(outcome: &'a SiteOutcome, url: &str) -> Option<&'a PageEvidence> {
+    let source = outcome
+        .pages
+        .iter()
+        .find(|page| page.url == url && (200..300).contains(&page.status))?;
+    (!outcome
+        .pages
+        .iter()
+        .any(|page| page.url == url && page != source))
+    .then_some(source)
 }

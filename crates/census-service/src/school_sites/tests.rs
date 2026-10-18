@@ -43,6 +43,8 @@ fn contact_rows_carry_page_provenance() -> TestResult {
     let signals = Signals {
         emails: vec!["mlsmith@example.k12.us".to_string()],
         school_mailboxes: Vec::new(),
+        staff_contacts: Vec::new(),
+        staff_pages: Vec::new(),
         coach_hits: vec![hit("Mary Smith", Sport::CrossCountry, None)],
         ad_hits: vec![AdHit {
             name: "Robert Jones".to_string(),
@@ -235,3 +237,6 @@ mod canonical_tests;
 
 #[path = "research_tests.rs"]
 mod research_tests;
+
+#[path = "staff_research_tests.rs"]
+mod staff_research_tests;
