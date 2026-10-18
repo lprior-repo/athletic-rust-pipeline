@@ -978,3 +978,56 @@ Two local-GPU read-only reviews found no confirmed restart regression; those
 reviews did not execute tests. Native receipts above, not reviewer prose, qualify
 the behavior. Controlled `3fhg` is complete in scope; genuine positive population,
 current-seal documentary freshness and national readiness remain separate.
+
+#### Current-seal documentary withdrawal fence — 2026-10-18
+
+Qualified source `9fd8dcd386178588afa77d2ff9bb2c090eea0ff6`, tree
+`383c0e0677d85b8cb71a4fa29e84cdd2f1f6de88`. This supersedes the pending
+current-seal finding above, not the remaining population or national limitations.
+
+The real public-review regression failed before the fix (`0f04dea2`, Nextest
+`e8fd6f13`): “withdrawn authority admitted for current sealing”. Raw result
+digests stayed unchanged across documentary withdrawal. Current sealing now uses
+one Store snapshot and compares authenticated attachment/school inventories.
+No persisted format, participation replay version or body limit changed.
+Historical opening remains independent of current authority; ordinary journal
+progress does not invalidate a seal. Bootstrap capture still works before
+participation hydration.
+
+| Exact-source qualification | Receipt | Result |
+|---|---|---|
+| Canonical fmt / all-target check / lint | `d9247520` / `a1241ffa` / `ae4a70b4` | PASS; arity advisories visible |
+| Public-review 50→51 lifecycle, current seal, parent-conflict controls, genuine intake and adjacent cases | `bae6d269`, Nextest `61bf2735-8e17-474f-a0bd-28bd4b3a84a9` | PASS 172/172, including long genuine driver; nonzero selection |
+| Unmeasured / failed seal states | `4b550858`, Nextest `dcce155b` | PASS 2/2 |
+| CLI publication notices, actual readback and timeout behavior | `3eed9ee6`, Nextest `f9e46bca` | PASS 5/5 on the same quiescent source |
+| Original independently retained Report V3 | `4a4f1690`, Nextest `6bc84d4f` | PASS 1/1; original producer/pins unchanged |
+| Original roster A → changed-build B | `d1519cbd`, Nextest `400f7c87` | PASS 1/1; A `1ab843c4`, B `9fd8dcd3`, original manifest `8897f37e…c35908` |
+| Trusted AST / comments / panic extraction | `48882123` / `a1a938e8` / `180bfa5e` | PASS; no hard structural violation or unresolved AST; 27,124 callables, 2,528 production files, 4,903 lexical files and three templates |
+| Architecture contract | `5dc03072` | PASS; no unreachable source; existing five crate-boundary edges remain declared deviations |
+
+Commands used `env -u CI`, repository Moon entrypoints, task-local
+`TMPDIR`/`TMP`/`TEMP=/home/lewis/.cache/r14n-TpNM3q` and
+`MOON_RUST_BUILD_JOBS=2`; chain exited successfully. Full execution output:
+`artifact://3096`. The selected-publication crash subtree and historical denied
+fault selectors were excluded; release umbrella and representative national
+resource measurement were NOT RUN.
+
+Focused reproduction:
+
+```sh
+env -u CI tools/moon-local run pipeline:tests-scoped -- \
+  -p census-report --lib -E \
+  'test(seal_authority_withdrawal_blocks_current_seal_but_preserves_historical_publication) | test(controlled_three_marks_selects_eligible_best_then_withdraws_to_next_and_reopens)'
+```
+
+Intermediate `aff525df` failed compilation at one historical seven-element tuple
+consumer; the new cached, unpersisted authority field required its eighth discard.
+After repair, narrow `41046ad3` passed three cases, then the exact-source chain
+above passed. Local GPU/Sol reviews did not execute tests and are not substituted
+for these Native receipts.
+
+Scope: current documentary freshness only. The old Store is closed before the
+historical G0 readback; G0 still yields 50 while the current G1 yields 51.
+R2 current-roster inventory freshness, R3 durable selected service request/receipt,
+genuine target-cohort population, same-root promotion and national readiness
+remain separate acceptance cells.
