@@ -1,4 +1,4 @@
-use super::{limit, EvidenceSubjectAttachmentError, ReplayLimits, Result};
+use super::{limit, EvidenceSubjectAttachmentError, Result};
 use std::sync::Arc;
 
 mod continuation;
@@ -39,6 +39,9 @@ impl Default for AttachmentReplayGrantV1 {
 }
 
 impl AttachmentReplayGrantV1 {
+    pub const MAX_ENCODED_BYTES: usize = 8 * 1024 * 1024;
+    pub const MAX_TRAVERSAL_STEPS: usize = 32_768;
+
     pub fn new() -> Self {
         Self {
             usage: AttachmentReplayUsageV1 {
@@ -72,11 +75,7 @@ impl AttachmentReplayGrantV1 {
                 .encoded_bytes
                 .checked_add(bytes)
                 .ok_or(EvidenceSubjectAttachmentError::Overflow)?;
-            limit(
-                "aggregate encoded bytes",
-                needed,
-                ReplayLimits::SMALL.total_text_bytes,
-            )?;
+            limit("aggregate encoded bytes", needed, Self::MAX_ENCODED_BYTES)?;
             grant.usage.encoded_bytes = needed;
             Ok(())
         })
@@ -92,7 +91,7 @@ impl AttachmentReplayGrantV1 {
             limit(
                 "aggregate traversal steps",
                 needed,
-                ReplayLimits::SMALL.traversal_steps,
+                Self::MAX_TRAVERSAL_STEPS,
             )?;
             grant.usage.traversal_steps = needed;
             Ok(())

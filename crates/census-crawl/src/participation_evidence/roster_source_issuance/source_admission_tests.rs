@@ -21,7 +21,7 @@ fn public_capture_preparation_preserves_first_capacity_refusal_and_retained_inpu
     let parser = compiled_roster_parser_manifest()?;
     let checked = crate::participation_evidence::roster_source_issuance::manifest::assess_retained_roster_parser_manifest(
         parser.canonical_bytes(), &parser.parser_claim()?, grant)?;
-    let limit = census_domain::public_identity_history::ReplayLimits::SMALL.total_text_bytes;
+    let limit = AttachmentReplayGrantV1::MAX_ENCODED_BYTES;
     let remaining = limit
         .checked_sub(grant.usage().encoded_bytes())
         .ok_or("inspection already exceeded the grant")?;

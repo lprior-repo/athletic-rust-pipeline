@@ -15,12 +15,14 @@ mod frozen_source;
 mod reconstruct;
 mod record_wire;
 
+mod inherited;
 pub use bundle::{
     replay_frozen_roster_reviewed_claims_v1, FrozenRosterReviewedClaimsBundleV1,
     RosterFrozenReviewedClaimsReferenceV1,
 };
 
 const ARCHIVE_SCHEMA: &str = "roster-reviewed-source-publication-closure-v2";
+const INHERITED_ARCHIVE_SCHEMA: &str = "roster-reviewed-source-publication-closure-v3";
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -36,6 +38,8 @@ struct Archive {
     receipts: Vec<(Vec<u8>, Vec<u8>)>,
     physical: Vec<PhysicalRow>,
     external: Vec<frozen_source::CapturedExternalPrefix>,
+    #[serde(skip)]
+    inherited_enrollment_proof: Option<Vec<u8>>,
 }
 
 impl Archive {

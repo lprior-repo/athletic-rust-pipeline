@@ -11,6 +11,7 @@ use crate::{AcceptedPublicIdentitySnapshot, Receipt, Store, StoreError};
 use census_domain::evidence_subject_attachment::*;
 
 mod fences;
+mod owned;
 mod support;
 use support::*;
 

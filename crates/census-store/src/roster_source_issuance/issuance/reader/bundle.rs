@@ -6,11 +6,6 @@ use std::io::Write;
 
 const MAX_BUNDLE: usize = 4 * 1024 * 1024;
 
-#[derive(Deserialize)]
-struct ArchiveSchema<'a> {
-    schema: &'a str,
-}
-
 pub struct FrozenRosterReviewedClaimsBundleV1 {
     bytes: Vec<u8>,
     reference: RosterFrozenReviewedClaimsReferenceV1,
@@ -68,7 +63,7 @@ impl CurrentRosterReviewedClaimsV1 {
     ) -> StoreResult<FrozenRosterReviewedClaimsBundleV1> {
         self.require_original_grant(grant)?;
         let result = (|| {
-            let bytes = encode(&self.archive, grant)?;
+            let bytes = super::inherited::encode(&self.archive, grant)?;
             let reference = reference(&self.archive, &bytes, grant)?;
             self.require_original_grant(grant)?;
             Ok(FrozenRosterReviewedClaimsBundleV1 { bytes, reference })
@@ -115,13 +110,7 @@ fn replay(
     {
         return Err(Error::Corrupt("frozen reviewed closure digest").into());
     }
-    let schema: ArchiveSchema<'_> = serde_json::from_slice(bytes)
-        .map_err(|_| Error::Corrupt("frozen reviewed closure decoding"))?;
-    if schema.schema != super::ARCHIVE_SCHEMA {
-        return Err(Error::Corrupt("review publication closure version").into());
-    }
-    let archive: Archive = serde_json::from_slice(bytes)
-        .map_err(|_| Error::Corrupt("frozen reviewed closure decoding"))?;
+    let archive = super::inherited::decode(bytes, grant)?;
     if archive.store != expected.store
         || archive.selected_snapshot_sequence != expected.selected_snapshot_sequence
         || object_reference(archive.authority_head()?, grant)? != expected.authority_head
@@ -129,7 +118,6 @@ fn replay(
     {
         return Err(Error::Corrupt("frozen reviewed publication binding differs").into());
     }
-    require_canonical(&archive, bytes, grant)?;
     let claims = reconstruct::claims(&archive, grant)?;
     continuation
         .require(grant)
@@ -143,7 +131,10 @@ fn replay(
     ))
 }
 
-fn encode(value: &impl Serialize, grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<u8>> {
+pub(super) fn encode(
+    value: &impl Serialize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Vec<u8>> {
     grant
         .charge_steps(1)
         .map_err(super::super::super::source_error)?;
@@ -160,7 +151,7 @@ fn encode(value: &impl Serialize, grant: &mut AttachmentReplayGrantV1) -> StoreR
     Ok(bytes)
 }
 
-fn require_canonical(
+pub(super) fn require_canonical(
     value: &impl Serialize,
     bytes: &[u8],
     grant: &mut AttachmentReplayGrantV1,

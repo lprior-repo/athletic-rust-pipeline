@@ -49,7 +49,7 @@ fn public_owned_byte_refusal_never_issues_holder_or_resets_grant() -> TestResult
     let bytes = serde_json::to_vec(&payload())?.len();
     let before = retained_state(&store)?;
     let mut grant = AttachmentReplayGrantV1::new();
-    let prior = (4 * 1024 * 1024usize)
+    let prior = (AttachmentReplayGrantV1::MAX_ENCODED_BYTES)
         .checked_sub(bytes)
         .and_then(|n| n.checked_add(1))
         .ok_or("fixture underflow")?;
@@ -61,10 +61,11 @@ fn public_owned_byte_refusal_never_issues_holder_or_resets_grant() -> TestResult
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
             EvidenceSubjectAttachmentError::Capacity {
                 resource: "aggregate encoded bytes",
-                needed: 4_194_305,
-                available: 4_194_304,
+                needed,
+                available,
             }
-        )))
+        ))) if available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(eq; grant.usage().encoded_bytes(), prior);
     check!(eq; grant.usage().traversal_steps(), 46);
@@ -136,16 +137,21 @@ fn pinned_revalidation_uses_current_root_even_when_input_generations_match() -> 
     check!(eq; store.derived_generation(), derived);
     let before = retained_state(&store)?;
     let mut old_grant = AttachmentReplayGrantV1::new();
-    read_root(&original, &descriptor, &mut old_grant)?;
-    check!(eq; old_grant.usage().encoded_bytes(), 0);
+    let observed = with_checked(&original, &descriptor, &mut old_grant, |raw, _, _| {
+        Ok(raw.get().to_owned())
+    })?;
+    check!(eq; serde_json::from_str::<serde_json::Value>(&observed)?, payload());
     let mut current_grant = AttachmentReplayGrantV1::new();
     {
         let _guard = store.lock_appends();
         check!(matches!(
-            read_root(&store.snapshot_locked(), &descriptor, &mut current_grant),
-            Err(StoreError::EvidenceSubjectAttachment(Error::Corrupt(
-                "external root payload reference differs"
-            )))
+            with_checked(
+                &store.snapshot_locked(),
+                &descriptor,
+                &mut current_grant,
+                |_, _, _| Ok(())
+            ),
+            Err(StoreError::EvidenceSubjectAttachment(Error::Corrupt(_)))
         ));
     }
     check!(eq; retained_state(&store)?, before);

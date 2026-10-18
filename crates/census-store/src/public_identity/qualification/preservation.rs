@@ -55,12 +55,21 @@ pub(crate) fn validate_preservation(
     receipts: &Keyspace,
 ) -> StoreResult<()> {
     let snapshot = db.snapshot();
+    let retained_format = crate::format::read_format(meta)?;
+    crate::result_school_correspondence::validate_format(
+        &snapshot,
+        meta,
+        journal,
+        receipts,
+        &retained_format,
+        &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
+    )?;
     crate::roster_source_issuance::validate_format(
         &snapshot,
         meta,
         journal,
         receipts,
-        &crate::format::read_format(meta)?,
+        &retained_format,
         &mut crate::RosterStartupValidationBudgetV1::new(),
     )?;
     if !is_qualification_lifecycle(raw_lifecycle(&snapshot, meta)?)

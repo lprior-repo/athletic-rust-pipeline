@@ -138,7 +138,7 @@ fn underdeclared_body_cannot_bypass_real_capture_precharge() -> TestResult {
         .ok_or("fixture body size")? = json!(1);
     let proposal = decode(&value)?;
     let mut grant = AttachmentReplayGrantV1::new();
-    let maximum = census_domain::public_identity_history::ReplayLimits::SMALL.total_text_bytes;
+    let maximum = AttachmentReplayGrantV1::MAX_ENCODED_BYTES;
     grant.charge_bytes(maximum.checked_sub(1).ok_or("grant limit")?)?;
     let before = grant.usage().encoded_bytes();
     check!(capture(&packet, &proposal, &mut grant).is_err());
@@ -151,7 +151,7 @@ fn underdeclared_body_cannot_bypass_real_capture_precharge() -> TestResult {
 fn canonical_packet_allocation_requires_real_precharge() -> TestResult {
     let packet = fixture(ROSTER)?;
     let mut grant = AttachmentReplayGrantV1::new();
-    let maximum = census_domain::public_identity_history::ReplayLimits::SMALL.total_text_bytes;
+    let maximum = AttachmentReplayGrantV1::MAX_ENCODED_BYTES;
     grant.charge_bytes(maximum.checked_sub(1).ok_or("grant limit")?)?;
     check!(budget::charge(&packet, &mut grant).is_err());
     check!(grant.ensure_available().is_err());

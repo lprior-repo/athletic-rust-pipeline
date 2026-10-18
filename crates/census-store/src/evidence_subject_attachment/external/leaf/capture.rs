@@ -48,10 +48,39 @@ struct Provenance<'a> {
 }
 
 pub(super) fn validate(raw: &RawValue, grant: &mut AttachmentReplayGrantV1) -> StoreResult<()> {
-    let capture: Capture<'_> = schema::parse(raw, grant)?;
+    checked(raw, grant).map(|_| ())
+}
+
+pub(crate) struct CheckedCapture<'a> {
+    raw: &'a RawValue,
+    requested_url: &'a RawValue,
+    pub(crate) body_sha256: &'a str,
+    body_bytes: usize,
+    encoded: &'a str,
+}
+
+pub(in crate::evidence_subject_attachment::external) fn checked<'a>(
+    raw: &'a RawValue,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<CheckedCapture<'a>> {
+    let capture: Capture<'a> = schema::parse(raw, grant)?;
     let _provenance: Provenance<'_> = schema::parse(capture.provenance, grant)?;
-    encoded(&capture, grant)?;
-    Ok(())
+    from_capture(capture, raw, grant)
+}
+
+fn from_capture<'a>(
+    capture: Capture<'a>,
+    raw: &'a RawValue,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<CheckedCapture<'a>> {
+    let encoded = encoded(&capture, grant)?;
+    Ok(CheckedCapture {
+        raw,
+        requested_url: capture._requested_url,
+        body_sha256: capture.body_sha256,
+        body_bytes: capture.body_bytes,
+        encoded,
+    })
 }
 
 fn encoded<'a>(capture: &Capture<'a>, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&'a str> {
@@ -89,32 +118,57 @@ fn encoded<'a>(capture: &Capture<'a>, grant: &mut AttachmentReplayGrantV1) -> St
     Ok(text)
 }
 
-pub(super) fn require_body(
-    raw: &RawValue,
-    reference: &AttachmentObjectReferenceV1,
-    grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<()> {
-    let capture: Capture<'_> = schema::parse(raw, grant)?;
-    let text = encoded(&capture, grant)?;
-    if reference.bytes
-        != u64::try_from(capture.body_bytes).map_err(|_| StoreError::CounterOverflow)?
-        || reference.digest.as_str() != capture.body_sha256
-    {
-        return Err(Error::Corrupt("external body reference differs from capture").into());
+impl CheckedCapture<'_> {
+    pub(crate) fn requested_url(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<std::borrow::Cow<'_, str>> {
+        let raw = self.requested_url.get();
+        let inner = raw
+            .strip_prefix('"')
+            .and_then(|text| text.strip_suffix('"'))
+            .ok_or(Error::Corrupt("external capture requested URL type"))?;
+        if inner.contains('\\') {
+            grant.charge_bytes(raw.len()).map_err(Error::Domain)?;
+            serde_json::from_str(raw)
+                .map(std::borrow::Cow::Owned)
+                .map_err(|_| Error::Corrupt("external capture requested URL").into())
+        } else {
+            Ok(std::borrow::Cow::Borrowed(inner))
+        }
     }
-    grant.charge_steps(2).map_err(Error::Domain)?;
-    let mut decoded = Vec::new();
-    decoded
-        .try_reserve_exact(capture.body_bytes)
-        .map_err(|_| Error::Domain(EvidenceSubjectAttachmentError::Allocation))?;
-    decoded.resize(capture.body_bytes, 0);
-    let actual = STANDARD
-        .decode_slice(text, &mut decoded)
-        .map_err(|_| Error::Corrupt("external capture body base64 is invalid"))?;
-    if actual != capture.body_bytes {
-        return Err(Error::Corrupt("external body decoded length").into());
+
+    pub(in crate::evidence_subject_attachment::external) fn raw(&self) -> &RawValue {
+        self.raw
     }
-    require_reference(&decoded, reference, grant)
+
+    pub(crate) fn body_bytes(
+        &self,
+        reference: &AttachmentObjectReferenceV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<Vec<u8>> {
+        if reference.bytes
+            != u64::try_from(self.body_bytes).map_err(|_| StoreError::CounterOverflow)?
+            || reference.digest.as_str() != self.body_sha256
+        {
+            return Err(Error::Corrupt("external body reference differs from capture").into());
+        }
+        grant.charge_steps(2).map_err(Error::Domain)?;
+        grant.charge_bytes(self.body_bytes).map_err(Error::Domain)?;
+        let mut decoded = Vec::new();
+        decoded
+            .try_reserve_exact(self.body_bytes)
+            .map_err(|_| Error::Domain(EvidenceSubjectAttachmentError::Allocation))?;
+        decoded.resize(self.body_bytes, 0);
+        let actual = STANDARD
+            .decode_slice(self.encoded, &mut decoded)
+            .map_err(|_| Error::Corrupt("external capture body base64 is invalid"))?;
+        if actual != self.body_bytes {
+            return Err(Error::Corrupt("external body decoded length").into());
+        }
+        require_reference(&decoded, reference, grant)?;
+        Ok(decoded)
+    }
 }
 
 pub(super) fn require_reference(

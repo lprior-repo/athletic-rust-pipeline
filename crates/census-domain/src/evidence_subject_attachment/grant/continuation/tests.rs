@@ -60,7 +60,7 @@ fn authority_check_rejects_temporary_swap_before_original_is_restored() -> TestR
 
 #[test]
 fn checkpoint_and_continuation_each_charge_existing_exact_step_cap() -> TestResult {
-    let limit = crate::public_identity_history::ReplayLimits::SMALL.traversal_steps;
+    let limit = AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS;
     let mut grant = AttachmentReplayGrantV1::new();
     grant.charge_steps(
         limit

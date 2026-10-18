@@ -162,7 +162,7 @@ pub(super) fn require_current(
     inspection.revision.ensure_origin(store, operation)?;
     inspection.revision.ensure_current(store, operation)?;
     let current = store.store_format()?;
-    format::validate_format(
+    let lifecycle = format::validated_lifecycle(
         &store.db.snapshot(),
         &store.meta,
         &store.journal,
@@ -170,7 +170,7 @@ pub(super) fn require_current(
         &current,
         &mut super::super::RosterStartupValidationBudgetV1::new(),
     )?;
-    if current.lifecycle_revision != Some(super::super::LIFECYCLE) {
+    if lifecycle != Some(super::super::LIFECYCLE) {
         return Err(Error::EnrollmentRequired.into());
     }
     let view = store.snapshot_locked();

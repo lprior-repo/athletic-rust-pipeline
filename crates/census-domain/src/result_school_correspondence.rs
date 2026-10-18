@@ -10,6 +10,8 @@ pub use replay::{replay_result_school_records_v1, ResultSchoolProjectionV1};
 pub use types::*;
 
 pub const RESULT_SCHOOL_POLICY_V1: &str = "reviewed_exact_result_school_correspondence_v1";
+pub const RESULT_SCHOOL_PARSER_CONTRACT_V1: &[u8] = br#"{"version":1,"contract":"result-school-original-cell-v1","row_interpretation":"retained-milesplit-html-result-row/v1","statement_interpretation":"retained-milesplit-original-school-statement/v1","ownership":"unique-untransformed-original-school-cell","identity_minting":"forbidden"}"#;
+pub const RESULT_SCHOOL_YEAR_CONTRACT_V1: &[u8] = br#"{"version":1,"contract":"result-school-existing-program-key-year-v1","implementation":"SchoolYear::from_date","date":"performance-source-day","authority":"existing-program-key-only","academic-season-coverage":"unasserted","eligibility-window":"unasserted"}"#;
 pub const MAX_RESULT_SCHOOL_RECORD_BYTES: usize = 65_536;
 pub const MAX_RESULT_SCHOOL_RECORDS: usize = 256;
 pub const MAX_RESULT_SCHOOL_OBJECTS: usize = 32;
@@ -126,6 +128,11 @@ pub fn prepare_result_school_record_v1(
 ) -> Result<ResultSchoolReviewedRecordV1> {
     with_grant(grant, |grant| {
         let command = command.into_command(grant)?;
+        if committed_at < command.reviewed_at {
+            return Err(ResultSchoolCorrespondenceError::Invalid(
+                "record digest or time",
+            ));
+        }
         let prepared_digest = result_school_digest_v1(&command, grant)?;
         let approval_digest = digest_bytes(&result_school_approval_bytes_v1(&command, grant)?)?;
         let record_digest = result_school_digest_v1(
@@ -138,15 +145,13 @@ pub fn prepare_result_school_record_v1(
             ),
             grant,
         )?;
-        let record = ResultSchoolReviewedRecordV1 {
+        Ok(ResultSchoolReviewedRecordV1 {
             command,
             prepared_digest,
             approval_digest,
             committed_at,
             record_digest,
-        };
-        validate::record(&record, grant)?;
-        Ok(record)
+        })
     })
 }
 

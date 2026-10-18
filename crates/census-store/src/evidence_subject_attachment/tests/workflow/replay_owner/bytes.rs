@@ -1,8 +1,11 @@
 use super::*;
+use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
+use census_domain::public_identity_history::ReplayLimits;
 use serde::Deserialize;
 use serde_json::value::RawValue;
 
-const MAXIMUM: usize = 4 * 1024 * 1024;
+const AGGREGATE_MAXIMUM: usize = AttachmentReplayGrantV1::MAX_ENCODED_BYTES;
+const APPROVAL_MAXIMUM: usize = ReplayLimits::SMALL.total_text_bytes;
 
 #[derive(Deserialize)]
 struct Envelope {
@@ -54,12 +57,12 @@ fn work(case: &Committed) -> TestResult<ByteWork> {
     Ok(ByteWork {
         refresh,
         load: sum(&[refresh, entry.payload.get().len(), record_bytes])?,
-        approval: case.record.command.approval_bytes(MAXIMUM)?.len(),
+        approval: case.record.command.approval_bytes(APPROVAL_MAXIMUM)?.len(),
     })
 }
 
 fn leave_bytes(grant: &mut AttachmentReplayGrantV1, remaining: usize) -> TestResult {
-    let padding = MAXIMUM
+    let padding = AGGREGATE_MAXIMUM
         .checked_sub(grant.usage().encoded_bytes())
         .and_then(|value| value.checked_sub(remaining))
         .ok_or("replay byte padding underflow")?;
@@ -75,10 +78,10 @@ fn capacity(
         Err(StoreError::EvidenceSubjectAttachment(
             AttachmentError::Domain(EvidenceSubjectAttachmentError::Capacity {
                 resource: "aggregate encoded bytes",
-                needed: 4_194_305,
-                available: 4_194_304
+                needed,
+                available
             })
-        ))
+        )) if available == AGGREGATE_MAXIMUM && needed.checked_sub(available) == Some(1)
     ));
     Ok(())
 }
@@ -165,14 +168,14 @@ fn exact_replay_preparation_byte_limit_keeps_sticky_original_grant_poison() -> T
         },
     )?;
     check!(prepared.is_replay());
-    check!(eq; prepared.grant.usage().encoded_bytes(), MAXIMUM);
+    check!(eq; prepared.grant.usage().encoded_bytes(), AGGREGATE_MAXIMUM);
     check!(matches!(
         prepared.grant.charge_bytes(1),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate encoded bytes",
-            needed: 4_194_305,
-            available: 4_194_304
-        })
+            needed,
+            available
+        }) if available == AGGREGATE_MAXIMUM && needed.checked_sub(available) == Some(1)
     ));
     let approval = prepared.approval_bytes().to_vec();
     let digest = prepared.approval_digest().clone();
@@ -214,10 +217,10 @@ fn apply_boundary(one_short: bool) -> TestResult {
             Err(StoreError::EvidenceSubjectAttachment(
                 AttachmentError::Domain(EvidenceSubjectAttachmentError::Capacity {
                     resource: "aggregate encoded bytes",
-                    needed: 4_194_305,
-                    available: 4_194_304
+                    needed,
+                    available
                 })
-            ))
+            )) if available == AGGREGATE_MAXIMUM && needed.checked_sub(available) == Some(1)
         ));
     } else {
         check!(eq; result?, Application::Repeated(case.receipt));

@@ -20,17 +20,49 @@ impl<'a> FrozenRetainedCaptureSourceV1<'a> {
         bundle: &'a FrozenEvidenceSubjectAttachmentBundleV1,
         grant: &mut AttachmentReplayGrantV1,
     ) -> StoreResult<Self> {
+        Self::read_bytes(bundle.bytes(), bundle.reference(), grant)
+    }
+
+    pub(crate) fn read_bytes(
+        bytes: &'a [u8],
+        reference: &AttachmentObjectReferenceV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<Self> {
         grant.ensure_available().map_err(Error::Domain)?;
         let result = (|| {
-            super::bundle::require_reference(bundle.bytes(), bundle.reference(), grant)?;
+            super::bundle::require_reference(bytes, reference, grant)?;
             Ok(Self {
-                archive: archive::read(bundle.bytes(), grant)?,
+                archive: archive::read(bytes, grant)?,
             })
         })();
         if result.is_err() {
             grant.poison();
         }
         result
+    }
+
+    pub(crate) fn contains_retained_capture_root(
+        &self,
+        expected: &super::super::RetainedCaptureRootV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<bool> {
+        self.archive
+            .prefixes
+            .iter()
+            .skip(2)
+            .try_fold(false, |found, group| {
+                steps(grant, 1)?;
+                let root = group.root.as_ref().ok_or_else(outside)?;
+                if root.schema != expected.schema || root.key != expected.key {
+                    return Ok(found);
+                }
+                if root.payload.digest != expected.payload.digest.as_str()
+                    || root.payload.bytes != expected.payload.bytes
+                {
+                    return Err(Error::Corrupt("frozen external root descriptor differs").into());
+                }
+                Ok(true)
+            })
     }
 
     pub fn read_retained_capture_root_v1(

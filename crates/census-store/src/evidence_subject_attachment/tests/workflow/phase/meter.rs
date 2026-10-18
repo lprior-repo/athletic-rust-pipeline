@@ -1,11 +1,12 @@
 use crate::public_identity_tests::support::TestResult;
 use crate::{EvidenceSubjectAttachmentStoreError as AttachmentError, StoreError, StoreResult};
 use census_domain::evidence_subject_attachment::{
-    AttachmentDigestV1, AttachmentObjectReferenceV1, EvidenceSubjectAttachmentError,
+    AttachmentDigestV1, AttachmentObjectReferenceV1, AttachmentReplayGrantV1,
+    EvidenceSubjectAttachmentError,
 };
 use std::io::Write;
 
-pub(super) const LIMIT: usize = 8192;
+pub(super) const LIMIT: usize = AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS;
 
 #[derive(Debug, Clone)]
 pub(super) struct Refusal {

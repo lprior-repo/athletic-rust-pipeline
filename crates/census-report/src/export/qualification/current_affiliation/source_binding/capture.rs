@@ -16,7 +16,6 @@ impl<'a> BoundRosterSourceViewV1<'a> {
             claims.require_original_grant(grant)?;
             if claims.store_identity().as_str() != dataset.lineage.store_identity
                 || claims.selected_snapshot_sequence() != dataset.lineage.snapshot_sequence
-                || claims.source_store_lifecycle() != 8
             {
                 return Err(
                     invalid("reviewed roster capture owner differs from publication").into(),

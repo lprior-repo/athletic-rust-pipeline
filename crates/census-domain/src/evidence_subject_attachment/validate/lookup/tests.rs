@@ -1,6 +1,5 @@
 use super::*;
-use crate::evidence_subject_attachment::AttachmentObjectReferenceV1;
-use crate::public_identity_history::ReplayLimits;
+use crate::evidence_subject_attachment::{AttachmentObjectReferenceV1, AttachmentReplayGrantV1};
 
 type TestResult<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -71,18 +70,19 @@ fn exact_lookup_work_succeeds_and_one_less_preserves_sticky_capacity() -> TestRe
     let rows = rows(8)?;
     let expected = digest(2)?;
     let mut exact = Grant::new();
-    exact.charge_steps(ReplayLimits::SMALL.traversal_steps - 4)?;
+    exact.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS - 4)?;
     check!(eq; find(&rows, &expected, |row| &row.digest, &mut exact)?, rows.first());
-    check!(eq; exact.usage().traversal_steps(), ReplayLimits::SMALL.traversal_steps);
+    check!(eq; exact.usage().traversal_steps(), AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS);
     let mut short = Grant::new();
-    short.charge_steps(ReplayLimits::SMALL.traversal_steps - 3)?;
+    short.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS - 3)?;
     check!(matches!(
         find(&rows, &expected, |row| &row.digest, &mut short),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate traversal steps",
-            needed: 8193,
-            available: 8192
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     let usage = short.usage();
     check!(matches!(
@@ -104,7 +104,7 @@ fn exhausted_admission_precedes_key_access_and_empty_lookup_cannot_rehabilitate_
         visited: std::cell::Cell::new(false),
     }];
     let mut grant = Grant::new();
-    grant.charge_steps(ReplayLimits::SMALL.traversal_steps)?;
+    grant.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS)?;
     check!(matches!(
         find(
             &rows,
@@ -117,9 +117,10 @@ fn exhausted_admission_precedes_key_access_and_empty_lookup_cannot_rehabilitate_
         ),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate traversal steps",
-            needed: 8193,
-            available: 8192
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(!rows.first().ok_or("probe absent")?.visited.get());
     check!(matches!(

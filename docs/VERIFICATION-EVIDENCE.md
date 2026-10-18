@@ -624,3 +624,53 @@ All-target check `538ce06f`, source lint `aba33a0a` and the same 61 regressions
 and identical retained-replay references on this borrowed implementation; its
 temporary executable was removed. Ten previously authorized arity advisories
 remain; no lint suppression or larger cap was added.
+
+#### Reviewed school issuance — unqualified diagnostic checkpoint
+
+The working lifecycle-9 candidate is not pushed or qualified. All-target check
+`33d122c3` passed before subsequent source changes. Store `a9264d38` passed 16
+owner, enrollment and refusal cases, including revoked history after Store closure.
+These do not establish the genuine-source lifecycle or PRIMARY acceptance.
+
+Crawl `ef79f589` selected two cases; both failed. Second-review preparation needed
+8,276 traversal steps against 8,192. Accepted-school freeze attempted 8,258,926
+aggregate encoded bytes against the user-authorized 6,291,456. Per-object 4-MiB
+limits remain unchanged. Numeric instrumentation identified repeated provider
+packet parsing/admission and physical-root recapture; it is diagnostic only and
+must be removed before qualification. No representative RSS/disk claim follows.
+
+Commands used the canonical `pipeline:check` and `pipeline:tests-scoped` entrypoints,
+with `HOME=/home/lewis`, `TMPDIR`/`TMP`/`TEMP=/home/lewis/.cache/r14n-TpNM3q`,
+`MOON_RUST_BUILD_JOBS=2`, `CI` unset and documentary/roster retention overrides
+unset. Crawl filter: `test(participation_evidence::result_ownership::school_correspondence::scenario::)`;
+zero selected tests was configured to fail. All Root writers were stopped;
+private-cache GPU work and read-only investigation were not source writers.
+
+#### Reviewed school: accepted/revoked proof readback
+
+Working source uses the owner-authorized 8-MiB aggregate byte allowance and
+32,768 aggregate traversal steps. Individual object and namespace bounds were
+not raised. No process-RSS or national-scale sufficiency claim follows.
+
+| Surface | Receipt | Observed result |
+|---|---|---|
+| Physical-row whitespace guard | `510dd9af` → `dda2899c` | Reproduced outer-byte rewriting; repaired refusal passes while interior bytes remain exact |
+| Public school review/revoke/cold/frozen lifecycle | `bb4c7858` | PASS; withdrawn person authority also invalidates prepared school review without mutation |
+| Independent accepted/revoked consumer | `6905ff5f` | PASS after originating Store closure: original school / no active school |
+| Tampered proof, original pins | `c77f577a` | Expected exit 1; `source closure digest` refusal |
+| Domain attachment/school regressions | `29c704c4` | PASS |
+| Broader Store attachment/school regressions | `88acc427` | FAIL; stale constructor/recomputation expectations and per-object/aggregate fixture confusion under repair |
+
+The independent consumer used `pipeline:run-scoped -- -p census-crawl --example
+smoke_result_school_proof -- <accepted.manifest.json> <revoked.manifest.json>`.
+Private directory: `/home/lewis/.cache/q01l-source-proof-lOKbJ3`.
+Accepted proof SHA256: `73669ebe673897bb81e59ecfe4ea7fe6ba05a33ba38cb4a7ece4abee5d19caa7`;
+manifest: `a5112b6619552391ae77496bfaa894822f03fe94f2ee3f756e191d434773c1f1`.
+Revoked proof SHA256: `d4a4adad369738d6051498aea069ef9fc86cd7717182b2ece7f1f0a0530d6899`;
+manifest: `8fa60ff54ae2c8e9217af14d301ee87caaa0f48a9ee569a50ae6345534ab8f14`.
+Readback charged 7,255,651 bytes / 14,497 steps for accepted and 6,247,136 bytes /
+18,059 steps for revoked. These are grant counters, not memory measurements.
+
+The original source fixture was not changed. This establishes historical-school
+review/replay only, not an eligibility window, the 50→51 selected workbook,
+population coverage, final-source release qualification or a completed bead.

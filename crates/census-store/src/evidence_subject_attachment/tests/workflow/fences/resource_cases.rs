@@ -1,5 +1,5 @@
 use super::*;
-use census_domain::public_identity_history::ReplayLimits;
+use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 
 pub(super) fn a_held_structural_read_poisoned_by_step_exhaustion_never_resets_the_original_grant(
 ) -> TestResult {
@@ -14,17 +14,18 @@ pub(super) fn a_held_structural_read_poisoned_by_step_exhaustion_never_resets_th
     let before = retained_state(&fixture.store)?;
     let held = fixture.store.snapshot();
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(ReplayLimits::SMALL.traversal_steps)?;
+    grant.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS)?;
     let usage = grant.usage();
     check!(matches!(
         held.read_evidence_subject_attachment_references_v1(&mut grant),
         Err(StoreError::EvidenceSubjectAttachment(
             AttachmentError::Domain(EvidenceSubjectAttachmentError::Capacity {
                 resource: "aggregate traversal steps",
-                needed: 8_193,
-                available: 8_192,
+                needed,
+                available,
             })
-        ))
+        )) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(eq; grant.usage(), usage);
     check!(matches!(
@@ -51,16 +52,16 @@ pub(super) fn a_held_structural_read_poisoned_by_byte_exhaustion_preserves_origi
     let before = retained_state(&fixture.store)?;
     let held = fixture.store.snapshot();
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_bytes(ReplayLimits::SMALL.total_text_bytes)?;
+    grant.charge_bytes(AttachmentReplayGrantV1::MAX_ENCODED_BYTES)?;
     check!(
         matches!(held.read_evidence_subject_attachment_references_v1(&mut grant),
             Err(StoreError::EvidenceSubjectAttachment(AttachmentError::Domain(
-                EvidenceSubjectAttachmentError::Capacity { resource: "aggregate encoded bytes", needed, available: 4_194_304 }
-            ))) if needed > 4_194_304
+                EvidenceSubjectAttachmentError::Capacity { resource: "aggregate encoded bytes", needed, available }
+            ))) if available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES && needed > available
         )
     );
     let usage = grant.usage();
-    check!(eq; usage.encoded_bytes(), 4_194_304);
+    check!(eq; usage.encoded_bytes(), AttachmentReplayGrantV1::MAX_ENCODED_BYTES);
     check!(matches!(
         held.read_evidence_subject_attachment_references_v1(&mut grant),
         Err(StoreError::EvidenceSubjectAttachment(

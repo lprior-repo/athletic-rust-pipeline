@@ -81,17 +81,18 @@ fn zero_object_bytes_remain_invalid_after_strict_digest_order_admission() -> Tes
 fn exact_prelookup_work_refuses_before_the_first_midpoint_and_poison_is_sticky() -> TestResult {
     let candidate = command("first midpoint admission")?;
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(ReplayLimits::SMALL.traversal_steps - 51)?;
+    grant.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS - 51)?;
     check!(matches!(
         candidate.approval_bytes_with_grant(ReplayLimits::SMALL.total_text_bytes, &mut grant),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate traversal steps",
-            needed: 8193,
-            available: 8192
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(eq; grant.usage().encoded_bytes(), 0);
-    check!(eq; grant.usage().traversal_steps(), ReplayLimits::SMALL.traversal_steps);
+    check!(eq; grant.usage().traversal_steps(), AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS);
     check!(matches!(
         grant.charge_steps(0),
         Err(EvidenceSubjectAttachmentError::Poisoned)

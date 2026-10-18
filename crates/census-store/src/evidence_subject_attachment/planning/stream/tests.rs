@@ -139,9 +139,13 @@ fn exhausted_work_or_buffer_bytes_refuse_before_serialization() -> TestResult {
     for work in [true, false] {
         let mut grant = AttachmentReplayGrantV1::new();
         if work {
-            grant.charge_steps(8192)?;
+            grant.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS)?;
         } else {
-            grant.charge_bytes(4_194_304usize.checked_sub(499_999).ok_or("remaining")?)?;
+            grant.charge_bytes(
+                AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+                    .checked_sub(499_999)
+                    .ok_or("remaining")?,
+            )?;
         }
         let value = Visited(Cell::new(0));
         let result = rows(
@@ -152,9 +156,19 @@ fn exhausted_work_or_buffer_bytes_refuse_before_serialization() -> TestResult {
             &mut grant,
         );
         let (resource, needed, available) = if work {
-            ("aggregate traversal steps", 8193, 8192)
+            let available = AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS;
+            (
+                "aggregate traversal steps",
+                available.checked_add(1).ok_or("step cap overflow")?,
+                available,
+            )
         } else {
-            ("aggregate encoded bytes", 4_194_305, 4_194_304)
+            let available = AttachmentReplayGrantV1::MAX_ENCODED_BYTES;
+            (
+                "aggregate encoded bytes",
+                available.checked_add(1).ok_or("byte cap overflow")?,
+                available,
+            )
         };
         check!(
             matches!(result, Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
@@ -210,7 +224,7 @@ fn first_chunk_admission_retains_typed_primary_error() -> TestResult {
     let key = Store::journal_key(PHASE, KEY);
     let admitted = 500_000usize + 512 + key.len() + 667_180;
     grant.charge_bytes(
-        4_194_304usize
+        AttachmentReplayGrantV1::MAX_ENCODED_BYTES
             .checked_sub(admitted)
             .and_then(|n| n.checked_add(1))
             .ok_or("charge")?,
@@ -221,10 +235,11 @@ fn first_chunk_admission_retains_typed_primary_error() -> TestResult {
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
             EvidenceSubjectAttachmentError::Capacity {
                 resource: "aggregate encoded bytes",
-                needed: 4_194_305,
-                available: 4_194_304
+                needed,
+                available
             }
-        )))
+        ))) if available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(matches!(
         grant.ensure_available(),
@@ -252,11 +267,13 @@ fn exact_stream_byte_allowance_succeeds_and_one_less_refuses() -> TestResult {
     let value = "x".repeat(1_500_001);
     let raw = serialized_bytes(&value)?;
     let (required, _) = expected_cost(&raw)?;
-    let initial = 4_194_304usize.checked_sub(required).ok_or("initial")?;
+    let initial = AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+        .checked_sub(required)
+        .ok_or("initial")?;
     let mut exact = AttachmentReplayGrantV1::new();
     exact.charge_bytes(initial)?;
     check!(eq; super::super::encoded_rows(&value, KEY, &mut exact)?, legacy(&raw)?);
-    check!(eq; exact.usage().encoded_bytes(), 4_194_304);
+    check!(eq; exact.usage().encoded_bytes(), AttachmentReplayGrantV1::MAX_ENCODED_BYTES);
     let mut short = AttachmentReplayGrantV1::new();
     short.charge_bytes(initial.checked_add(1).ok_or("one short")?)?;
     check!(matches!(
@@ -264,10 +281,11 @@ fn exact_stream_byte_allowance_succeeds_and_one_less_refuses() -> TestResult {
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
             EvidenceSubjectAttachmentError::Capacity {
                 resource: "aggregate encoded bytes",
-                needed: 4_194_305,
-                available: 4_194_304
+                needed,
+                available
             }
-        )))
+        ))) if available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(matches!(
         short.ensure_available(),

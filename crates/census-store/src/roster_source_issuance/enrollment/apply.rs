@@ -22,7 +22,7 @@ impl Store {
             return Err(Error::ApprovalMismatch.into());
         }
         let current = self.store_format()?;
-        format::validate_format(
+        let lifecycle = format::validated_lifecycle(
             &self.db.snapshot(),
             &self.meta,
             &self.journal,
@@ -30,7 +30,7 @@ impl Store {
             &current,
             &mut RosterStartupValidationBudgetV1::new(),
         )?;
-        if current.lifecycle_revision == Some(LIFECYCLE) {
+        if lifecycle == Some(LIFECYCLE) {
             return replay(self, &prepared);
         }
         if current.lifecycle_revision != Some(7) || current.migration_target.is_some() {

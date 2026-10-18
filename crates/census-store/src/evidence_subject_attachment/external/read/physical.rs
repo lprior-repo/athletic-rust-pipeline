@@ -32,6 +32,20 @@ fn read_checked(
     key: &str,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Option<JournalRawEnvelope>> {
+    let Some(budget) = budget(view, schema, key, grant)? else {
+        return Ok(None);
+    };
+    let envelope = read_retained_journal_entry_raw_bounded(view, schema.phase(), key, budget)?
+        .ok_or(Error::Corrupt("external root disappeared from held view"))?;
+    Ok(Some(envelope))
+}
+
+pub(super) fn budget(
+    view: &impl RetainedJournalReadSource,
+    schema: RetainedCaptureRootSchemaV1,
+    key: &str,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Option<JournalReadBudget>> {
     steps(grant, 1)?;
     if key.len() != 64
         || !key
@@ -74,10 +88,7 @@ fn read_checked(
     steps(grant, passes)?;
     let measured =
         usize::try_from(physical.encoded_bytes()).map_err(|_| StoreError::CounterOverflow)?;
-    let budget = JournalReadBudget::new(measured.min(MAX_RETAINED_CAPTURE_ENVELOPE_BYTES))?;
-    let envelope = read_retained_journal_entry_raw_bounded(view, schema.phase(), key, budget)?
-        .ok_or(Error::Corrupt("external root disappeared from held view"))?;
-    Ok(Some(envelope))
+    JournalReadBudget::new(measured.min(MAX_RETAINED_CAPTURE_ENVELOPE_BYTES)).map(Some)
 }
 
 fn steps(grant: &mut AttachmentReplayGrantV1, count: usize) -> StoreResult<()> {

@@ -37,6 +37,92 @@ struct School<'a> {
     roster: &'a RawValue,
 }
 
+pub(crate) struct CheckedSchool<'a> {
+    pub(crate) directory: capture::CheckedCapture<'a>,
+    pub(crate) roster: capture::CheckedCapture<'a>,
+}
+
+pub(crate) enum CheckedRoot<'a> {
+    Participation {
+        status: capture::CheckedCapture<'a>,
+        schedule: capture::CheckedCapture<'a>,
+    },
+    Provider {
+        profile: capture::CheckedCapture<'a>,
+        linked_results: capture::CheckedCapture<'a>,
+    },
+    School(CheckedSchool<'a>),
+    Html(capture::CheckedCapture<'a>),
+}
+
+impl CheckedRoot<'_> {
+    pub(in crate::evidence_subject_attachment::external) fn select(
+        &self,
+        slot: Slot,
+    ) -> StoreResult<&capture::CheckedCapture<'_>> {
+        match (self, slot) {
+            (CheckedRoot::Participation { status, .. }, Slot::ParticipationStatus) => Ok(status),
+            (
+                CheckedRoot::Participation {
+                    status: _,
+                    schedule,
+                },
+                Slot::ParticipationSchedule,
+            ) => Ok(schedule),
+            (CheckedRoot::Provider { profile, .. }, Slot::ProviderProfile) => Ok(profile),
+            (
+                CheckedRoot::Provider {
+                    profile: _,
+                    linked_results,
+                },
+                Slot::ProviderLinkedResults,
+            ) => Ok(linked_results),
+            (CheckedRoot::School(school), Slot::ProviderSchoolDirectory) => Ok(&school.directory),
+            (CheckedRoot::School(school), Slot::ProviderSchoolRoster) => Ok(&school.roster),
+            (CheckedRoot::Html(capture), Slot::SelfCapture) => Ok(capture),
+            _ => Err(Error::Corrupt("external root capture slot").into()),
+        }
+    }
+}
+
+pub(in crate::evidence_subject_attachment::external) fn checked<'a>(
+    raw: &'a RawValue,
+    schema: Schema,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<CheckedRoot<'a>> {
+    match schema {
+        Schema::HtmlResultCaptureV1 => Ok(CheckedRoot::Html(capture::checked(raw, grant)?)),
+        Schema::ProviderSchoolPacketV1 => {
+            let packet = school_packet(raw, grant)?;
+            Ok(CheckedRoot::School(CheckedSchool {
+                directory: capture::checked(packet.directory, grant)?,
+                roster: capture::checked(packet.roster, grant)?,
+            }))
+        }
+        Schema::ParticipationPacketV1 => {
+            let packet: Participation<'a> = parse(raw, grant)?;
+            if packet.version != 1 {
+                return Err(Error::Corrupt("participation root version").into());
+            }
+            Ok(CheckedRoot::Participation {
+                status: capture::checked(packet.status, grant)?,
+                schedule: capture::checked(packet.schedule, grant)?,
+            })
+        }
+        Schema::ProviderTargetPacketV1 => {
+            let packet: Provider<'a> = parse(raw, grant)?;
+            if packet.version != 1
+                || packet.interpretation != "milesplit_profile_linked_competition_target_v1"
+            {
+                return Err(Error::Corrupt("provider root interpretation").into());
+            }
+            Ok(CheckedRoot::Provider {
+                profile: capture::checked(packet.profile, grant)?,
+                linked_results: capture::checked(packet.linked_results, grant)?,
+            })
+        }
+    }
+}
 pub(super) fn select<'a>(
     raw: &'a RawValue,
     schema: Schema,
@@ -102,10 +188,7 @@ fn school<'a>(
     slot: Slot,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<&'a RawValue> {
-    let packet: School<'a> = parse(raw, grant)?;
-    if packet.version != 1 || packet.interpretation != "milesplit_directory_roster_school_v1" {
-        return Err(Error::Corrupt("provider school root interpretation").into());
-    }
+    let packet = school_packet(raw, grant)?;
     capture::validate(packet.directory, grant)?;
     capture::validate(packet.roster, grant)?;
     match slot {
@@ -113,4 +196,15 @@ fn school<'a>(
         Slot::ProviderSchoolRoster => Ok(packet.roster),
         _ => Err(Error::Corrupt("external root capture slot").into()),
     }
+}
+
+fn school_packet<'a>(
+    raw: &'a RawValue,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<School<'a>> {
+    let packet: School<'a> = parse(raw, grant)?;
+    if packet.version != 1 || packet.interpretation != "milesplit_directory_roster_school_v1" {
+        return Err(Error::Corrupt("provider school root interpretation").into());
+    }
+    Ok(packet)
 }

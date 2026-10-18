@@ -7,8 +7,8 @@ use census_domain::evidence_subject_attachment::{
 };
 use serde::{Deserialize, Serialize};
 
-mod capture;
-mod schema;
+pub(super) mod capture;
+pub(super) mod schema;
 
 pub(super) fn validate_root(
     raw: &serde_json::value::RawValue,
@@ -61,7 +61,7 @@ pub struct RetainedCaptureLeafV1 {
     pub object: AttachmentObjectReferenceV1,
 }
 
-pub(in super::super) fn verify(
+pub(crate) fn verify(
     view: &impl RetainedJournalReadSource,
     leaf: &RetainedCaptureLeafV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -83,16 +83,17 @@ fn verify_checked(
     if leaf.version != 1 {
         return Err(Error::Corrupt("external leaf version").into());
     }
-    let root = read::read_root(view, &leaf.root, grant)?;
-    let selected = schema::select(root.payload(), leaf.root.schema, leaf.slot, grant)?;
-    match leaf.kind {
-        RetainedCaptureLeafKindV1::CaptureJson => {
-            capture::require_reference(selected.get().as_bytes(), &leaf.object, grant)
+    read::with_checked(view, &leaf.root, grant, |_, root, grant| {
+        let capture = root.select(leaf.slot)?;
+        match leaf.kind {
+            RetainedCaptureLeafKindV1::CaptureJson => {
+                capture::require_reference(capture.raw().get().as_bytes(), &leaf.object, grant)
+            }
+            RetainedCaptureLeafKindV1::OriginalBody => {
+                capture.body_bytes(&leaf.object, grant).map(|_| ())
+            }
         }
-        RetainedCaptureLeafKindV1::OriginalBody => {
-            capture::require_body(selected, &leaf.object, grant)
-        }
-    }
+    })
 }
 
 impl StoreSnapshot<'_> {

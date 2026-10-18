@@ -44,7 +44,7 @@ fn decoded_journal_and_receipt_keys_admit_exact_limits_before_one_over_refusal()
         FrozenSource::read(&exact, &mut AttachmentReplayGrantV1::new())?;
         let mut grant = AttachmentReplayGrantV1::new();
         grant.charge_steps(
-            8192_usize
+            AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
                 .checked_sub(before_decode)
                 .ok_or(StoreError::CounterOverflow)?,
         )?;
@@ -53,10 +53,11 @@ fn decoded_journal_and_receipt_keys_admit_exact_limits_before_one_over_refusal()
             Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
                 EvidenceSubjectAttachmentError::Capacity {
                     resource: "aggregate traversal steps",
-                    needed: 8193,
-                    available: 8192,
+                    needed,
+                    available,
                 }
-            )))
+            ))) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+                && needed.checked_sub(available) == Some(1)
         ));
         let over = sized_key(
             group,
@@ -64,7 +65,7 @@ fn decoded_journal_and_receipt_keys_admit_exact_limits_before_one_over_refusal()
         )?;
         let mut grant = AttachmentReplayGrantV1::new();
         grant.charge_steps(
-            8192_usize
+            AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
                 .checked_sub(before_decode)
                 .ok_or(StoreError::CounterOverflow)?,
         )?;
@@ -111,7 +112,11 @@ fn oversized_encoded_key_refuses_before_invalid_hex_or_decode_work() -> TestResu
         .ok_or("receipt key absent")? = Value::String("G".repeat(1026));
     let bad = adopt(serde_json::to_vec(&value)?)?;
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(8186)?;
+    grant.charge_steps(
+        AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            .checked_sub(6)
+            .ok_or(StoreError::CounterOverflow)?,
+    )?;
     check!(matches!(
         FrozenSource::read(&bad, &mut grant),
         Err(StoreError::BudgetExceeded {

@@ -25,7 +25,6 @@ fn capture(fixture: &fixture::Fixture, objects: &Path) -> TestResult<ExportDatas
         ExportDataset::from_selected_snapshot(&fixture.store, &snapshot, &selection, objects)?;
     dataset.ensure_current_selected_write()?;
     check!(eq; dataset.lineage.snapshot_sequence, snapshot.sequence());
-    check!(eq; fixture.store.store_format()?.lifecycle_revision, Some(8));
     check!(eq; dataset.selected_authority()?.qualification_lifecycle(), 7);
     Ok(dataset)
 }

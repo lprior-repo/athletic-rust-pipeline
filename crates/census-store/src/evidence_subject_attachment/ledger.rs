@@ -34,6 +34,13 @@ pub(super) struct VerifiedLedger<P> {
     pub(super) physical: P,
 }
 
+pub(super) fn physical_inventory<'s>(
+    view: &StoreSnapshot<'s>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<JournalNamespaceInventory<'s>> {
+    inventory::physical(view, grant)
+}
+
 impl<'s> Ledger<'s> {
     pub(super) fn load(
         view: &StoreSnapshot<'s>,

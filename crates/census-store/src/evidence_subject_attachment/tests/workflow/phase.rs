@@ -185,13 +185,18 @@ fn controlled_attach_revoke_and_new_target_first_match_independent_phase_work_or
 
 #[test]
 fn first_apply_accepts_exact_independently_counted_original_grant_boundary() -> TestResult {
-    boundary(8192, true)
+    boundary(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS, true)
 }
 
 #[test]
 fn first_apply_refuses_one_beyond_independently_counted_original_grant_boundary_without_writes(
 ) -> TestResult {
-    boundary(8193, false)
+    boundary(
+        AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            .checked_add(1)
+            .ok_or("phase work limit overflow")?,
+        false,
+    )
 }
 
 fn boundary(target: usize, completes: bool) -> TestResult {

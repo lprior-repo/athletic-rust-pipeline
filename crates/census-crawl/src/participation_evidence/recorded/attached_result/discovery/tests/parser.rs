@@ -90,15 +90,19 @@ fn discovery_recovery_preserves_original_grant_exhaustion() -> TestResult {
     let original = document()?;
     let requested = [span(&original.html, &original.first)?];
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(8192)?;
-    check!(matches!(source_rows::read(&original.capture, &requested, &mut grant),
+    let maximum = AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS;
+    let over = maximum.checked_add(1).ok_or("grant step overflow")?;
+    grant.charge_steps(maximum)?;
+    check!(
+        matches!(source_rows::read(&original.capture, &requested, &mut grant),
         Err(RetainedResultOwnershipError::Capture(census_store::StoreError::EvidenceSubjectAttachment(
             census_store::EvidenceSubjectAttachmentStoreError::Domain(
                 census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError::Capacity {
-                    resource: "aggregate traversal steps", needed: 8193, available: 8192,
+                    resource: "aggregate traversal steps", needed, available,
                 }
             )
-        )))));
+        ))) if needed == over && available == maximum)
+    );
     check!(matches!(
         grant.charge_steps(0),
         Err(census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError::Poisoned)

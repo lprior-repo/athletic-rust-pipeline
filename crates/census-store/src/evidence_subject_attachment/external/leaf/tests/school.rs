@@ -1,17 +1,27 @@
 use super::*;
 
 #[test]
-fn school_root_owns_both_capture_slots_with_existing_combined_cost() -> TestResult {
-    let body = b"controlled original school capture";
-    let capture = capture(body)?;
-    let packet = serde_json::json!({"version":1,"interpretation":"milesplit_directory_roster_school_v1","directory":capture,"roster":capture});
+fn school_root_owns_both_capture_slots_for_consumer_verification() -> TestResult {
+    let directory_body: &[u8] = b"controlled original school directory";
+    let roster_body: &[u8] = b"controlled original school roster";
+    let directory_capture = capture(directory_body)?;
+    let roster_capture = capture(roster_body)?;
+    let packet = serde_json::json!({"version":1,"interpretation":"milesplit_directory_roster_school_v1","directory":directory_capture,"roster":roster_capture});
     let raw = serde_json::to_string(&packet)?;
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path())?;
     check!(eq; Schema::ProviderSchoolPacketV1.phase(), "provider_school_intake_v1");
-    for slot in [
-        RetainedCaptureSlotV1::ProviderSchoolDirectory,
-        RetainedCaptureSlotV1::ProviderSchoolRoster,
+    for (slot, body, other_body) in [
+        (
+            RetainedCaptureSlotV1::ProviderSchoolDirectory,
+            directory_body,
+            roster_body,
+        ),
+        (
+            RetainedCaptureSlotV1::ProviderSchoolRoster,
+            roster_body,
+            directory_body,
+        ),
     ] {
         let leaf = install(
             &store,
@@ -25,8 +35,20 @@ fn school_root_owns_both_capture_slots_with_existing_combined_cost() -> TestResu
         store
             .snapshot()
             .verify_retained_capture_leaf_v1(&leaf, &mut grant)?;
-        check!(eq; grant.usage().traversal_steps(), 64);
-        check!(eq; grant.usage().encoded_bytes(), 0);
+        let mut swapped = leaf.clone();
+        swapped.object = reference(other_body)?;
+        let mut refused_grant = AttachmentReplayGrantV1::new();
+        check!(matches!(
+            store
+                .snapshot()
+                .verify_retained_capture_leaf_v1(&swapped, &mut refused_grant),
+            Err(StoreError::EvidenceSubjectAttachment(Error::Corrupt(_)))
+        ));
+        check!(matches!(
+            refused_grant.ensure_available(),
+            Err(EvidenceSubjectAttachmentError::Poisoned)
+        ));
+        check!(eq; retained_state(&store)?, before);
         let mut owned_grant = AttachmentReplayGrantV1::new();
         let held = store
             .snapshot()
@@ -37,8 +59,6 @@ fn school_root_owns_both_capture_slots_with_existing_combined_cost() -> TestResu
             )?
             .ok_or("missing school root")?;
         check!(eq; held.root(), &leaf.root);
-        check!(eq; owned_grant.usage().traversal_steps(), 50);
-        check!(eq; owned_grant.usage().encoded_bytes(), raw.len());
         check!(eq; retained_state(&store)?, before);
     }
     Ok(())

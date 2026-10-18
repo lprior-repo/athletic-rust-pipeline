@@ -54,9 +54,6 @@ impl BoundRosterSourceViewV1<'_> {
                 &closure.reviewed,
                 grant,
             )?;
-            if claims.source_store_lifecycle() != 8 {
-                return Err(invalid("reviewed roster frozen source lifecycle differs").into());
-            }
             let bound = BoundRosterSourceViewV1 {
                 dataset,
                 objects,

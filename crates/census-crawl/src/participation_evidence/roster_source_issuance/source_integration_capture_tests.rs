@@ -51,7 +51,7 @@ fn foreign_prechecked_manifest_cannot_bypass_exhausted_original_grant() -> TestR
     let mut foreign = AttachmentReplayGrantV1::new();
     let checked = crate::participation_evidence::roster_source_issuance::manifest::assess_retained_roster_parser_manifest(
         compiled.canonical_bytes(), &compiled.parser_claim()?, &mut foreign)?;
-    let maximum = census_domain::public_identity_history::ReplayLimits::SMALL.total_text_bytes;
+    let maximum = AttachmentReplayGrantV1::MAX_ENCODED_BYTES;
     let remaining = maximum
         .checked_sub(grant.usage().encoded_bytes())
         .ok_or("usage")?;

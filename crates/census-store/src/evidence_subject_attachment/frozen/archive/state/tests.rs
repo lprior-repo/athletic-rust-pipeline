@@ -109,7 +109,7 @@ fn private_metadata_counter_includes_rows_prefixes_and_keys_at_exact_boundary() 
 fn original_grant_exhaustion_precedes_private_row_and_prefix_counter_changes() -> TestResult {
     for prefix in [false, true] {
         let mut grant = AttachmentReplayGrantV1::new();
-        grant.charge_steps(8192)?;
+        grant.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS)?;
         let mut state = State::new(&mut grant);
         let result = if prefix {
             state.prefix()
@@ -121,10 +121,11 @@ fn original_grant_exhaustion_precedes_private_row_and_prefix_counter_changes() -
             Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
                 EvidenceSubjectAttachmentError::Capacity {
                     resource: "aggregate traversal steps",
-                    needed: 8193,
-                    available: 8192,
+                    needed,
+                    available,
                 }
-            )))
+            ))) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+                && needed.checked_sub(available) == Some(1)
         ));
         check!(eq; state.rows, 0);
         check!(eq; state.prefixes, 0);

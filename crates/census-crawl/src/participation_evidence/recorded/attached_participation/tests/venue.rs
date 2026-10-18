@@ -1,6 +1,5 @@
 use super::*;
 use census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError as DomainError;
-use census_domain::public_identity_history::ReplayLimits;
 use census_store::{
     EvidenceSubjectAttachmentStoreError as StoreAttachmentError, Store, StoreError, Table,
 };
@@ -83,7 +82,7 @@ fn boundary(
     cost: usize,
     short: usize,
 ) -> TestResult<usize> {
-    let limit = ReplayLimits::SMALL.total_text_bytes;
+    let limit = Grant::MAX_ENCODED_BYTES;
     let remaining = limit
         .checked_sub(grant.usage().encoded_bytes())
         .and_then(|n| n.checked_sub(cost))

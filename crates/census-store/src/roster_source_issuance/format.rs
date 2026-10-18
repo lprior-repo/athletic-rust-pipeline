@@ -1,6 +1,6 @@
 use super::{codec, enrollment, RosterSourceIssuanceStoreError as Error};
 use super::{RosterStartupValidationBudgetV1, ENROLLMENT, HEAD, LIFECYCLE, OPERATION_PREFIX, ROOT};
-use crate::{Receipt, StoreError, StoreFormat, StoreResult};
+use crate::{StoreError, StoreFormat, StoreResult};
 use fjall::{Keyspace, Readable, Snapshot};
 
 pub(super) type Rows = Vec<(Vec<u8>, Vec<u8>)>;
@@ -14,12 +14,37 @@ pub(crate) fn validate_format(
     format: &StoreFormat,
     budget: &mut RosterStartupValidationBudgetV1,
 ) -> StoreResult<()> {
+    validated_lifecycle(snapshot, meta, journal, receipts, format, budget).map(|_| ())
+}
+
+pub(super) fn validated_lifecycle(
+    snapshot: &Snapshot,
+    meta: &Keyspace,
+    journal: &Keyspace,
+    receipts: &Keyspace,
+    format: &StoreFormat,
+    budget: &mut RosterStartupValidationBudgetV1,
+) -> StoreResult<Option<u32>> {
     let metadata = protected_rows(snapshot, meta, budget, None)?;
     let records = protected_rows(snapshot, journal, budget, None)?;
     let issued = scan(snapshot, receipts, OPERATION_PREFIX, budget, None)?;
-    if format.lifecycle_revision != Some(LIFECYCLE) {
+    let lifecycle =
+        if format.lifecycle_revision == Some(crate::RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE) {
+            let prior = crate::result_school_correspondence::preserved_prior_capability(
+                snapshot,
+                meta,
+                journal,
+                receipts,
+                format,
+                &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
+            )?;
+            Some(prior.lifecycle())
+        } else {
+            format.lifecycle_revision
+        };
+    if lifecycle != Some(LIFECYCLE) {
         if metadata.is_empty() && records.is_empty() && issued.is_empty() {
-            return Ok(());
+            return Ok(lifecycle);
         }
         return Err(Error::Corrupt("roster state outside admitted lifecycle").into());
     }
@@ -43,7 +68,8 @@ pub(crate) fn validate_format(
             return Err(Error::Corrupt("missing origin lineage").into())
         }
     };
-    validate_enrollment(&metadata, &records, &issued, &identity)
+    validate_enrollment(&metadata, &records, &issued, &identity)?;
+    Ok(lifecycle)
 }
 
 pub(super) fn scan(
@@ -89,22 +115,13 @@ pub(super) fn validate_enrollment(
         .iter()
         .find(|(key, _)| key == operation.as_bytes())
         .ok_or(Error::Corrupt("missing enrollment receipt"))?;
-    let receipt: Receipt = codec::decode(receipt_bytes)?;
-    let enrollment_digest = codec::digest(find(metadata, ENROLLMENT)?);
-    let approval = enrollment::approval(&enrolled.command)?;
-    enrollment::prepare::validate_command(&enrolled.command)?;
-    if &enrolled.command.store != identity
-        || enrolled.schema != "roster-source-enrollment-v1"
-        || enrolled.approval_digest != codec::digest(&approval)
-        || enrolled.committed_at < enrolled.command.reviewed_at
-        || head.version != 1
-        || receipt_key != operation.as_bytes()
-        || receipt.operation != operation
-        || receipt.digest != enrollment_digest
-        || receipt.at != enrolled.committed_at.to_rfc3339()
-        || receipt.appended != 0
-        || receipt.credited
-    {
+    let enrollment_digest = enrollment::proof::validate(
+        &enrolled,
+        find(metadata, ENROLLMENT)?,
+        receipt_bytes,
+        identity,
+    )?;
+    if head.version != 1 || receipt_key != operation.as_bytes() {
         return Err(Error::Corrupt("enrollment authority mismatch").into());
     }
     super::issuance::ledger::validate(records, issued, identity, &enrollment_digest, &head)

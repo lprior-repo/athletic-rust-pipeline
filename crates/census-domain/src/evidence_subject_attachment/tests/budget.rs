@@ -3,29 +3,31 @@ use super::{fixture::*, *};
 #[test]
 fn aggregate_text_and_traversal_grants_do_not_reset_between_records() -> TestResult {
     let mut bytes = validate::Grant::new();
-    bytes.bytes(ReplayLimits::SMALL.total_text_bytes)?;
+    bytes.bytes(AttachmentReplayGrantV1::MAX_ENCODED_BYTES)?;
     check!(matches!(
         bytes.bytes(1),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate encoded bytes",
-            needed: 4_194_305,
-            available: 4_194_304,
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+            && needed.checked_sub(available) == Some(1)
     ));
     let mut steps = validate::Grant::new();
-    steps.steps(ReplayLimits::SMALL.traversal_steps)?;
+    steps.steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS)?;
     check!(matches!(
         steps.steps(1),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate traversal steps",
-            needed: 8_193,
-            available: 8_192,
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     let record = seal(command("charge")?)?;
     let mut grant = validate::Grant::new();
     let size = codec::measure(&record, ReplayLimits::SMALL.total_text_bytes)?;
-    grant.bytes(ReplayLimits::SMALL.total_text_bytes - size)?;
+    grant.bytes(AttachmentReplayGrantV1::MAX_ENCODED_BYTES - size)?;
     validate::record(&record, &mut grant)?;
     check!(matches!(
         validate::record(&record, &mut grant),
@@ -130,7 +132,7 @@ fn valid_projection_prefixes_share_one_traversal_budget_and_never_return_a_parti
                 check!(last_success > 0);
                 check!(eq; records.len(), last_success + 1);
                 check!(needed > available);
-                check!(eq; available, ReplayLimits::SMALL.traversal_steps);
+                check!(eq; available, AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS);
                 return Ok(());
             }
             Err(error) => return Err(error.into()),
@@ -144,8 +146,14 @@ fn valid_projection_prefixes_share_one_traversal_budget_and_never_return_a_parti
 
 #[test]
 fn bulk_decoder_admits_total_raw_bytes_before_any_record_parse() -> TestResult {
-    let bytes = vec![b'x'; ReplayLimits::SMALL.total_text_bytes];
-    let raw: [&[u8]; 2] = [&bytes, b"x"];
+    // Two 4MiB buffers and one 1-byte buffer = 8MiB+1 total raw bytes.
+    // Each individual raw is within the 4MiB per-record limit, so the preflight
+    // aggregate check (not per-record) must reject before any JSON parse.
+    let per_record = ReplayLimits::SMALL.total_text_bytes; // 4MiB
+    let first = vec![0u8; per_record];
+    let second = vec![0u8; per_record];
+    let overflow = b"x";
+    let raw: [&[u8]; 3] = [first.as_slice(), second.as_slice(), overflow];
     let receipt = AttachmentReceiptBindingV1 {
         operation: text("unused")?,
         record_digest: digest("unused")?,
@@ -154,33 +162,52 @@ fn bulk_decoder_admits_total_raw_bytes_before_any_record_parse() -> TestResult {
         decode_and_replay_reviewed_references(
             &store()?,
             &raw,
-            &[receipt.clone(), receipt],
+            &[receipt.clone(), receipt.clone(), receipt],
             &AttachmentInventoryV1::empty()?,
-            ReplayLimits::SMALL.total_text_bytes
+            per_record
         ),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate encoded bytes",
-            needed: 4_194_305,
-            available: 4_194_304
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+            && needed.checked_sub(available) == Some(1)
     ));
     Ok(())
 }
 
 #[test]
 fn bulk_decoder_charges_the_provisional_record_before_parsing_a_later_record() -> TestResult {
+    // First record: valid sealed record padded to 4MiB-1 bytes.
+    // Second record: 4MiB of garbage (malformed JSON).
+    // Raw total: 8MiB-1, which fits the 8MiB aggregate grant.
+    // Preflight charges all raw bytes, leaving 1 byte remaining.
+    // Parsing and validating the first record charges additional bytes (record + receipt validation),
+    // which exceeds the 1-byte remainder, causing a Capacity error before the second record's
+    // malformed JSON is ever decoded.
+    let per_record = ReplayLimits::SMALL.total_text_bytes; // 4MiB
     let record = seal(command("first valid record")?)?;
-    let mut first = encode_reviewed_reference(&record, ReplayLimits::SMALL.total_text_bytes)?;
-    first.resize(ReplayLimits::SMALL.total_text_bytes - 1, b' ');
-    let raw: [&[u8]; 2] = [&first, b"x"];
+    let mut first = encode_reviewed_reference(&record, per_record)?;
+    first.resize(per_record - 1, b' ');
+    let second = vec![0u8; per_record];
+    let raw: [&[u8]; 2] = [first.as_slice(), second.as_slice()];
     let receipt = AttachmentReceiptBindingV1 {
         operation: record.command.operation.clone(),
         record_digest: record.record_digest.clone(),
     };
-    check!(
-        matches!(decode_and_replay_reviewed_references(&store()?, &raw, &[receipt.clone(), receipt], &AttachmentInventoryV1::empty()?, ReplayLimits::SMALL.total_text_bytes),
-        Err(EvidenceSubjectAttachmentError::Capacity { resource: "aggregate encoded bytes", needed, available })
-            if needed > available && available == ReplayLimits::SMALL.total_text_bytes)
-    );
+    check!(matches!(
+        decode_and_replay_reviewed_references(
+            &store()?,
+            &raw,
+            &[receipt.clone(), receipt],
+            &AttachmentInventoryV1::empty()?,
+            per_record
+        ),
+        Err(EvidenceSubjectAttachmentError::Capacity {
+            resource: "aggregate encoded bytes",
+            needed,
+            available,
+        }) if needed > available && available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+    ));
     Ok(())
 }

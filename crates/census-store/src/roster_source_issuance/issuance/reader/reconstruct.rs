@@ -1,5 +1,6 @@
-use super::super::super::{codec, inspection::RosterPhysicalProjectionRowV1};
+use super::super::super::codec;
 use super::*;
+use serde::Deserialize;
 use std::collections::BTreeSet;
 
 #[derive(Deserialize)]
@@ -98,11 +99,7 @@ pub(super) fn claims(
     archive: &Archive,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<ReviewedRosterSourceClaimV1>> {
-    if archive.schema != super::ARCHIVE_SCHEMA
-        || archive.source_store_lifecycle != super::super::super::LIFECYCLE
-    {
-        return Err(Error::Corrupt("review publication closure version").into());
-    }
+    super::inherited::validate(archive, grant)?;
     validate_inventory(archive, grant)?;
     super::super::super::format::validate_enrollment(
         &archive.metadata,
@@ -137,7 +134,7 @@ pub(super) fn claims(
         if held.root() != &admitted.root {
             return Err(Error::InspectedClosureChanged.into());
         }
-        let evidence = evidence(archive, &proposal, held, grant)?;
+        let evidence = evidence(archive, &proposal, held, &objects, grant)?;
         let (qualification, activation) = review_references(&record, &objects, grant)?;
         for reference in &record.basis.closure {
             super::super::ledger::object(&objects, reference)?;
@@ -165,30 +162,19 @@ fn evidence(
     archive: &Archive,
     proposal: &LocallyCheckedRosterIssuanceV1,
     held: crate::RetainedCaptureRootReadV1,
+    objects: &super::super::objects::Objects,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<RosterSourceEvidenceV1> {
     let continuation = grant
         .checkpoint()
         .map_err(super::super::super::source_error)?;
-    let mut rows = Vec::new();
-    for row in &archive.physical {
-        grant
-            .charge_bytes(
-                row.key
-                    .len()
-                    .checked_add(row.value.len())
-                    .ok_or(Error::BudgetExceeded)?,
-            )
-            .map_err(super::super::super::source_error)?;
-        grant
-            .charge_steps(1)
-            .map_err(super::super::super::source_error)?;
-        rows.push(RosterPhysicalProjectionRowV1::from_checked_parts(
-            row.table,
-            row.key.clone(),
-            row.value.clone(),
-        ));
-    }
+    let rows = RosterSourceEvidenceV1::retained_physical_projection(
+        proposal.binding().physical_projection_inventory(),
+        &archive.store,
+        proposal.binding().snapshot_revision().get(),
+        objects,
+        grant,
+    )?;
     let evidence = RosterSourceEvidenceV1::new(
         archive.store.clone(),
         proposal.binding().snapshot_revision().get(),

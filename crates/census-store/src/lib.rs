@@ -77,6 +77,8 @@ mod native_effect_checkpoint;
 mod native_worker_boundary;
 mod profiles;
 pub mod read;
+mod result_school_correspondence;
+pub use result_school_correspondence::*;
 mod roster_source_issuance;
 pub use roster_source_issuance::*;
 mod receipt;

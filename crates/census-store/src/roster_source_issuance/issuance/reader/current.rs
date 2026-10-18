@@ -12,57 +12,7 @@ pub(super) fn read(
     let continuation = grant
         .checkpoint()
         .map_err(super::super::super::source_error)?;
-    let (metadata, records, receipts) =
-        view.with_roster_source_snapshot_v1(|snapshot, meta, journal, receipts| {
-            lifecycle(snapshot, meta, grant)?;
-            let mut budget = RosterStartupValidationBudgetV1::new();
-            let metadata = format::protected_rows(snapshot, meta, &mut budget, Some(&mut *grant))?;
-            let records =
-                format::protected_rows(snapshot, journal, &mut budget, Some(&mut *grant))?;
-            let receipts = format::scan(
-                snapshot,
-                receipts,
-                super::super::super::OPERATION_PREFIX,
-                &mut budget,
-                Some(&mut *grant),
-            )?;
-            Ok((metadata, records, receipts))
-        })?;
-    grant
-        .charge_bytes(1024)
-        .map_err(super::super::super::source_error)?;
-    grant
-        .charge_steps(8)
-        .map_err(super::super::super::source_error)?;
-    let store = view.store_identity()?;
-    format::validate_enrollment(&metadata, &records, &receipts, &store)?;
-    let rows = super::super::super::inspection::inventory::collect(view, grant)?;
-    let physical = rows
-        .into_iter()
-        .map(|row| {
-            let (table, key, value) = row.into_parts();
-            PhysicalRow { table, key, value }
-        })
-        .collect();
-    grant
-        .charge_bytes(1024)
-        .map_err(super::super::super::source_error)?;
-    grant
-        .charge_steps(8)
-        .map_err(super::super::super::source_error)?;
-    let current_input_token = view.attachment_input_revision_bytes()?;
-    let mut archive = Archive {
-        schema: super::ARCHIVE_SCHEMA.into(),
-        store,
-        selected_snapshot_sequence: view.sequence(),
-        source_store_lifecycle: super::super::super::LIFECYCLE,
-        current_input_token,
-        metadata,
-        records,
-        receipts,
-        physical,
-        external: Vec::new(),
-    };
+    let mut archive = capture_archive(view, grant)?;
     let roots = roots(&archive, grant)?;
     for root in roots {
         continuation
@@ -81,15 +31,79 @@ pub(super) fn read(
     })
 }
 
+fn capture_archive(
+    view: &StoreSnapshot<'_>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Archive> {
+    let (lifecycle, metadata, records, receipts) =
+        view.with_roster_source_snapshot_v1(|snapshot, meta, journal, receipts| {
+            let lifecycle = lifecycle(snapshot, meta, grant)?;
+            let mut budget = RosterStartupValidationBudgetV1::new();
+            let metadata = format::protected_rows(snapshot, meta, &mut budget, Some(&mut *grant))?;
+            let records =
+                format::protected_rows(snapshot, journal, &mut budget, Some(&mut *grant))?;
+            let receipts = format::scan(
+                snapshot,
+                receipts,
+                super::super::super::OPERATION_PREFIX,
+                &mut budget,
+                Some(&mut *grant),
+            )?;
+            Ok((lifecycle, metadata, records, receipts))
+        })?;
+    grant
+        .charge_bytes(1024)
+        .map_err(super::super::super::source_error)?;
+    grant
+        .charge_steps(8)
+        .map_err(super::super::super::source_error)?;
+    let store = view.store_identity()?;
+    let rows = super::super::super::inspection::inventory::collect(view, grant)?;
+    let physical = rows
+        .into_iter()
+        .map(|row| {
+            let (table, key, value) = row.into_parts();
+            PhysicalRow { table, key, value }
+        })
+        .collect();
+    grant
+        .charge_bytes(1024)
+        .map_err(super::super::super::source_error)?;
+    grant
+        .charge_steps(8)
+        .map_err(super::super::super::source_error)?;
+    let current_input_token = view.attachment_input_revision_bytes()?;
+    let inherited_enrollment_proof = inherited_proof(view, lifecycle, grant)?;
+    let archive = Archive {
+        schema: if inherited_enrollment_proof.is_some() {
+            super::INHERITED_ARCHIVE_SCHEMA.into()
+        } else {
+            super::ARCHIVE_SCHEMA.into()
+        },
+        store,
+        selected_snapshot_sequence: view.sequence(),
+        source_store_lifecycle: lifecycle,
+        current_input_token,
+        metadata,
+        records,
+        receipts,
+        physical,
+        external: Vec::new(),
+        inherited_enrollment_proof,
+    };
+    Ok(archive)
+}
+
 fn lifecycle(
     snapshot: &fjall::Snapshot,
     meta: &fjall::Keyspace,
     grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<()> {
+) -> StoreResult<u32> {
+    let mut lifecycle = None;
     for (key, expected) in [
         ("schema:store_version", Some(b"2".as_slice())),
         ("schema:key_format", Some(b"1".as_slice())),
-        ("schema:lifecycle_revision", Some(b"8".as_slice())),
+        ("schema:lifecycle_revision", None),
         ("schema:migrating_to", None),
     ] {
         grant
@@ -107,11 +121,34 @@ fn lifecycle(
         let value = snapshot
             .get(meta, key)
             .map_err(|source| StoreError::Read { source })?;
-        if value.as_ref().map(|raw| raw.as_ref()) != expected {
+        if key == "schema:lifecycle_revision" {
+            lifecycle = match value.as_ref().map(|raw| raw.as_ref()) {
+                Some(b"8") => Some(super::super::super::LIFECYCLE),
+                Some(b"9") => Some(crate::RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE),
+                _ => return Err(Error::EnrollmentRequired.into()),
+            };
+        } else if value.as_ref().map(|raw| raw.as_ref()) != expected {
             return Err(Error::EnrollmentRequired.into());
         }
     }
-    Ok(())
+    lifecycle.ok_or_else(|| Error::EnrollmentRequired.into())
+}
+
+fn inherited_proof(
+    view: &StoreSnapshot<'_>,
+    lifecycle: u32,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Option<Vec<u8>>> {
+    if lifecycle == super::super::super::LIFECYCLE {
+        return Ok(None);
+    }
+    let proof = view
+        .result_school_enrollment_proof_v1(grant)?
+        .ok_or(Error::EnrollmentRequired)?;
+    grant
+        .charge_bytes(proof.bytes().len())
+        .map_err(super::super::super::source_error)?;
+    Ok(Some(proof.bytes().to_vec()))
 }
 
 fn roots(

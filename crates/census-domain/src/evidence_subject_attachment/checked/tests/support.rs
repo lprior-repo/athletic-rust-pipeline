@@ -27,16 +27,16 @@ pub(super) fn capacity<T>(result: Result<T>) -> TestResult {
         result,
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate traversal steps",
-            needed: 8_193,
-            available: 8_192
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     Ok(())
 }
 
 pub(super) fn leave_steps(grant: &mut AttachmentReplayGrantV1, remaining: usize) -> TestResult {
-    let padding = ReplayLimits::SMALL
-        .traversal_steps
+    let padding = AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
         .checked_sub(grant.usage().traversal_steps())
         .and_then(|value| value.checked_sub(remaining))
         .ok_or("checked test padding underflow")?;

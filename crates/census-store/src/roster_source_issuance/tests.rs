@@ -232,3 +232,6 @@ fn partial_enrollment_cannot_be_recovered_as_admitted() -> TestResult {
 
 #[path = "tests/public_api.rs"]
 mod public_api;
+
+#[path = "tests/inherited_enrollment.rs"]
+mod inherited_enrollment;

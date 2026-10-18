@@ -1,12 +1,12 @@
 use super::{ledger::Ledger, EvidenceSubjectAttachmentStoreError as Error};
-use crate::{AcceptedPublicIdentitySnapshot, StoreResult, StoreSnapshot};
+use crate::{AcceptedPublicIdentitySnapshot, StoreError, StoreResult, StoreSnapshot};
 use census_domain::evidence_subject_attachment::{
     AttachmentReplayContinuationV1, AttachmentReplayGrantV1, AttachmentSubjectRoleV1,
     RetainedDocumentSubjectReferenceV1,
 };
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 
-mod accepted;
+pub(super) mod accepted;
 mod binding;
 mod capability;
 pub(super) mod discovery;
@@ -41,6 +41,69 @@ impl<'v, 's> CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's> {
     }
     pub fn snapshot_sequence(&self) -> u64 {
         self.view.sequence()
+    }
+    pub(crate) fn retained_records(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&[census_domain::evidence_subject_attachment::ReviewedReferenceRecordV1]> {
+        self.continuation.require(grant).map_err(Error::Domain)?;
+        Ok(&self.ledger.records)
+    }
+    pub(crate) fn accepted_snapshot(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&AcceptedPublicIdentitySnapshot> {
+        self.continuation.require(grant).map_err(Error::Domain)?;
+        Ok(self.accepted.view())
+    }
+    pub(crate) fn contains_retained_capture_root(
+        &self,
+        root: &crate::RetainedCaptureRootV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<bool> {
+        self.continuation.require(grant).map_err(Error::Domain)?;
+        let count = self
+            .ledger
+            .introductions
+            .iter()
+            .try_fold(0usize, |count, objects| {
+                count
+                    .checked_add(objects.len())
+                    .ok_or(StoreError::CounterOverflow)
+            })?;
+        grant.charge_steps(count).map_err(Error::Domain)?;
+        let mut found = false;
+        for material in self.ledger.introductions.iter().flatten() {
+            if let super::material::Material::Retained { leaf } = material {
+                if leaf.root.schema == root.schema && leaf.root.key == root.key {
+                    if &leaf.root != root {
+                        return Err(
+                            Error::Corrupt("retained capture root descriptor differs").into()
+                        );
+                    }
+                    found = true;
+                }
+            }
+        }
+        Ok(found)
+    }
+    pub(crate) fn into_physical_inventory(
+        self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<crate::read::JournalNamespaceInventory<'s>> {
+        self.continuation.require(grant).map_err(Error::Domain)?;
+        Ok(self.ledger.physical)
+    }
+    pub(crate) fn current_physical_inventory(
+        view: &StoreSnapshot<'s>,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<crate::read::JournalNamespaceInventory<'s>> {
+        grant.ensure_available().map_err(Error::Domain)?;
+        let result = super::ledger::physical_inventory(view, grant);
+        if result.is_err() {
+            grant.poison();
+        }
+        result
     }
     pub fn discover_active_subjects_v1<'a>(
         &'a self,

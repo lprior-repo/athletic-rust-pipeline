@@ -10,7 +10,6 @@ use crate::{
 use census_domain::evidence_subject_attachment::{
     AttachmentReplayGrantV1, EvidenceSubjectAttachmentError,
 };
-use census_domain::public_identity_history::ReplayLimits;
 
 const FIRST: &str = "attachment/v1/record/00000000000000000001";
 const SECOND: &str = "attachment/v1/record/00000000000000000002";
@@ -221,8 +220,7 @@ fn shared_grant_exhaustion_is_typed_and_sticky_before_retry_callback() -> TestRe
     let before = retained_state(&store)?;
     let view = store.snapshot();
     let mut grant = AttachmentReplayGrantV1::new();
-    let remaining = ReplayLimits::SMALL
-        .traversal_steps
+    let remaining = AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
         .checked_sub(1)
         .ok_or("step fixture underflow")?;
     grant.charge_steps(remaining)?;
@@ -242,13 +240,14 @@ fn shared_grant_exhaustion_is_typed_and_sticky_before_retry_callback() -> TestRe
         Err(StoreError::EvidenceSubjectAttachment(
             EvidenceSubjectAttachmentStoreError::Domain(EvidenceSubjectAttachmentError::Capacity {
                 resource: "aggregate traversal steps",
-                needed: 8_193,
-                available: 8_192,
+                needed,
+                available,
             })
-        ))
+        )) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
-    check!(eq; callbacks, vec![(8_192, FIRST.to_owned())]);
-    check!(eq; grant.usage().traversal_steps(), 8_192);
+    check!(eq; callbacks, vec![(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS, FIRST.to_owned())]);
+    check!(eq; grant.usage().traversal_steps(), AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS);
     check!(eq; retained_state(&store)?, before);
     let usage = grant.usage();
     let mut retry_callbacks = Vec::new();

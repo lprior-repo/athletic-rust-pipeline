@@ -8,6 +8,7 @@ pub(super) mod discovery;
 mod school;
 mod selection;
 pub use school::{CheckedResultSchoolStatementV1, ResultSchoolStatementV1};
+pub mod school_correspondence;
 mod types;
 pub use types::{CheckedRetainedResultDocumentV1, CheckedRetainedResultRowV1};
 

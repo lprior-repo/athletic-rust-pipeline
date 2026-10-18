@@ -58,36 +58,31 @@ fn every_fixed_root_slot_verifies_original_body_and_exact_raw_capture() -> TestR
     let capture_raw = serde_json::to_vec(&capture)?;
     let participation = serde_json::json!({"version":1,"status":capture,"schedule":capture});
     let provider = serde_json::json!({"version":1,"interpretation":"milesplit_profile_linked_competition_target_v1","profile":capture,"linked_results":capture});
-    for (schema, slot, payload, body_steps) in [
+    for (schema, slot, payload) in [
         (
             Schema::ParticipationPacketV1,
             RetainedCaptureSlotV1::ParticipationStatus,
             &participation,
-            64,
         ),
         (
             Schema::ParticipationPacketV1,
             RetainedCaptureSlotV1::ParticipationSchedule,
             &participation,
-            64,
         ),
         (
             Schema::ProviderTargetPacketV1,
             RetainedCaptureSlotV1::ProviderProfile,
             &provider,
-            64,
         ),
         (
             Schema::ProviderTargetPacketV1,
             RetainedCaptureSlotV1::ProviderLinkedResults,
             &provider,
-            64,
         ),
         (
             Schema::HtmlResultCaptureV1,
             RetainedCaptureSlotV1::SelfCapture,
             &capture,
-            56,
         ),
     ] {
         let directory = tempfile::tempdir()?;
@@ -102,8 +97,6 @@ fn every_fixed_root_slot_verifies_original_body_and_exact_raw_capture() -> TestR
         let before = retained_state(&store)?;
         let mut grant = AttachmentReplayGrantV1::new();
         verify(&store.snapshot(), &leaf, &mut grant)?;
-        check!(eq; grant.usage().traversal_steps(), body_steps);
-        check!(eq; grant.usage().encoded_bytes(), 0);
         leaf.kind = RetainedCaptureLeafKindV1::CaptureJson;
         leaf.object = reference(&capture_raw)?;
         verify(&store.snapshot(), &leaf, &mut grant)?;

@@ -15,8 +15,41 @@ fn controlled_reviewed_roster_conflict_and_gap_publications_preserve_withholding
     Ok(())
 }
 
+#[test]
+fn controlled_inherited_nine_publishes_current_school_and_reopens_offline() -> TestResult {
+    use census_domain::result_school_correspondence::{
+        ResultSchoolReviewActorV1, ResultSchoolTextV1,
+    };
+    let (fixture, expected) = setup::prepare(Case::Resolved)?;
+    let inputs = fixture
+        .store
+        .inspect_result_school_enrollment_v1(AttachmentReplayGrantV1::new())?;
+    let prepared = fixture.store.prepare_result_school_enrollment_v1(
+        inputs,
+        census_store::ResultSchoolEnrollmentReviewV1 {
+            operation: ResultSchoolTextV1::parse("controlled-publication-inherited-nine")?,
+            actor: ResultSchoolReviewActorV1::LocalOperator,
+            reviewed_at: DateTime::parse_from_rfc3339("2026-10-16T00:49:43Z")?.to_utc(),
+            rationale: ResultSchoolTextV1::parse(
+                "Controlled enrollment preserves existing reviewed roster authority",
+            )?,
+        },
+    )?;
+    let approval = prepared.approval_bytes().to_vec();
+    let digest = prepared.approval_digest().clone();
+    let applied = fixture
+        .store
+        .apply_result_school_enrollment_v1(prepared, &approval, &digest)?;
+    check!(applied.written());
+    roundtrip_prepared(fixture, expected)
+}
+
 fn roundtrip(case: Case) -> TestResult {
     let (fixture, expected) = setup::prepare(case)?;
+    roundtrip_prepared(fixture, expected)
+}
+
+fn roundtrip_prepared(fixture: fixture::Fixture, expected: Expected) -> TestResult {
     let objects = tempfile::tempdir()?;
     let archive = tempfile::tempdir()?;
     let output = tempfile::tempdir()?;

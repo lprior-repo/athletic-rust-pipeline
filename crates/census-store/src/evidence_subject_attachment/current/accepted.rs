@@ -1,12 +1,12 @@
 use super::*;
 
-pub(super) enum AcceptedOwner<'v> {
+pub(in crate::evidence_subject_attachment) enum AcceptedOwner<'v> {
     Owned(Box<AcceptedPublicIdentitySnapshot>),
     Borrowed(&'v AcceptedPublicIdentitySnapshot),
 }
 
 impl AcceptedOwner<'_> {
-    pub(super) fn view(&self) -> &AcceptedPublicIdentitySnapshot {
+    pub(in crate::evidence_subject_attachment) fn view(&self) -> &AcceptedPublicIdentitySnapshot {
         match self {
             Self::Owned(accepted) => accepted,
             Self::Borrowed(accepted) => accepted,

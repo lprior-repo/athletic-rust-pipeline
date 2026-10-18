@@ -41,7 +41,7 @@ pub(crate) const RETAINED_CONTEXT_LIFECYCLE: u32 =
 pub(crate) const GRAPH_AUTHORITY_LIFECYCLE: u32 =
     census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE;
 pub(crate) const OPERATION_PREFIX: &str = "public_identity_v1:";
-const DECLARATION: &str = "public_identity:v1:qualification";
+pub(crate) const DECLARATION: &str = "public_identity:v1:qualification";
 const HEAD: &str = "public_identity:v1:head";
 const HISTORY: &str = "public_identity:v1:history";
 pub const MAX_PUBLIC_IDENTITY_HISTORY_BYTES: usize = 16 * 1024 * 1024;
@@ -62,6 +62,7 @@ pub(crate) fn is_qualification_lifecycle(revision: Option<u32>) -> bool {
                 | RETAINED_CONTEXT_LIFECYCLE
                 | GRAPH_AUTHORITY_LIFECYCLE
                 | crate::ROSTER_SOURCE_ISSUANCE_LIFECYCLE
+                | crate::RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE
         )
     )
 }

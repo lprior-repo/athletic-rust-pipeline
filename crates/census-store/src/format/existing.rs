@@ -92,6 +92,14 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
     let (db, entities, journal, meta, receipts) = crate::keyspaces(db)?;
     let format = super::require_current(root, super::read_format(&meta)?)?;
     crate::input_revisions::validate_format(&db.snapshot(), &meta, &format)?;
+    crate::result_school_correspondence::validate_format(
+        &db.snapshot(),
+        &meta,
+        &journal,
+        &receipts,
+        &format,
+        &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
+    )?;
     crate::roster_source_issuance::validate_format(
         &db.snapshot(),
         &meta,

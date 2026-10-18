@@ -77,6 +77,7 @@ fn checked_key(phase: &str, key: &str) -> StoreResult<Vec<u8>> {
     crate::public_identity::refuse_reserved(phase)?;
     crate::evidence_subject_attachment::refuse_generic_phase(phase)?;
     crate::roster_source_issuance::refuse_generic_phase(phase)?;
+    crate::result_school_correspondence::refuse_generic_phase(phase)?;
     let bytes = phase
         .len()
         .checked_add(key.len())

@@ -8,7 +8,7 @@ mod frozen;
 mod inputs;
 mod inspection;
 mod ledger;
-mod material;
+pub(crate) mod material;
 mod planning;
 mod prepare;
 mod retained;
@@ -26,7 +26,7 @@ pub use inspection::{AttachmentInspectionRequestV1, EvidenceSubjectAttachmentIns
 pub use material::AttachmentContextObjectV1;
 pub use prepare::{EvidenceSubjectAttachmentPreparationV1, PreparedEvidenceSubjectAttachmentV1};
 pub use retained::RetainedEvidenceSubjectAttachmentReferencesV1;
-mod external;
+pub(crate) mod external;
 mod guard;
 mod keys;
 mod plan;

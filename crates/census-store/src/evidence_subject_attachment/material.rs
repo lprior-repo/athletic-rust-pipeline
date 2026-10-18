@@ -19,7 +19,7 @@ pub enum AttachmentContextObjectV1<'a> {
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "storage", deny_unknown_fields, rename_all = "snake_case")]
-pub(super) enum Material {
+pub(crate) enum Material {
     Inline {
         reference: AttachmentObjectReferenceV1,
         data: String,
@@ -30,14 +30,14 @@ pub(super) enum Material {
 }
 
 impl Material {
-    pub(super) fn reference(&self) -> &AttachmentObjectReferenceV1 {
+    pub(crate) fn reference(&self) -> &AttachmentObjectReferenceV1 {
         match self {
             Self::Inline { reference, .. } => reference,
             Self::Retained { leaf } => &leaf.object,
         }
     }
 
-    pub(super) fn introduce(
+    pub(crate) fn introduce(
         input: &AttachmentContextObjectV1<'_>,
         view: &StoreSnapshot<'_>,
         grant: &mut AttachmentReplayGrantV1,
@@ -62,7 +62,7 @@ impl Material {
         result
     }
 
-    pub(super) fn verify(
+    pub(crate) fn verify(
         &self,
         view: &impl RetainedJournalReadSource,
         grant: &mut AttachmentReplayGrantV1,
@@ -73,7 +73,7 @@ impl Material {
         }
     }
 
-    pub(super) fn inline_bytes(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<u8>> {
+    pub(crate) fn inline_bytes(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<u8>> {
         match self {
             Self::Inline { reference, data } => inline::decode(reference, data, grant),
             Self::Retained { .. } => {

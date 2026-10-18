@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 mod apply;
 mod inspect;
+pub(super) mod proof;
 mod replay;
 pub use inspect::{RosterEnrollmentInputsV1, RosterEnrollmentReviewV1};
 pub(super) mod prepare;

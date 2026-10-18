@@ -20,7 +20,7 @@ fn exhausted_measurement_and_encoding_do_not_visit_the_serializer() -> TestResul
     let visits = Cell::new(0);
     let value = Observed(&visits);
     let mut measurement = AttachmentReplayGrantV1::new();
-    measurement.charge_steps(ReplayLimits::SMALL.traversal_steps)?;
+    measurement.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS)?;
     check!(matches!(
         measure_with_grant(&value, 100, &mut measurement),
         Err(EvidenceSubjectAttachmentError::Capacity {
@@ -30,7 +30,7 @@ fn exhausted_measurement_and_encoding_do_not_visit_the_serializer() -> TestResul
     ));
     check!(eq; visits.get(), 0);
     let mut encoding = AttachmentReplayGrantV1::new();
-    encoding.charge_steps(ReplayLimits::SMALL.traversal_steps)?;
+    encoding.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS)?;
     check!(matches!(
         encode_measured(&value, 9, &mut encoding),
         Err(EvidenceSubjectAttachmentError::Capacity {
@@ -47,14 +47,15 @@ fn hash_exhaustion_visits_only_its_preceding_bounded_measurement() -> TestResult
     let visits = Cell::new(0);
     let value = Observed(&visits);
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(ReplayLimits::SMALL.traversal_steps - 1)?;
+    grant.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS - 1)?;
     check!(matches!(
         digest(&value, &mut grant),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate traversal steps",
-            needed: 8_193,
-            available: 8_192
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(eq; visits.get(), 1);
     check!(matches!(

@@ -64,7 +64,7 @@ impl CaptureBindingV2 {
     pub(in crate::public_identity) fn require_identity_graph_v3_format(&self) -> StoreResult<()> {
         let format = &self.0.format;
         if format.store_schema != 2 || format.key_format != 1
-            || !matches!(format.lifecycle_revision, census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE | crate::ROSTER_SOURCE_ISSUANCE_LIFECYCLE)
+            || !matches!(format.lifecycle_revision, census_domain::public_identity_qualification::PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE | crate::ROSTER_SOURCE_ISSUANCE_LIFECYCLE | crate::RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE)
         {
             return Err(crate::PublicIdentityError::Corrupt("graph authority capture format").into());
         }

@@ -25,6 +25,9 @@ fn apply_work(record: &Record, meter: &mut Meter) -> TestResult {
 }
 
 fn exercise(target: Option<usize>) -> TestResult {
+    let over = super::meter::LIMIT
+        .checked_add(1)
+        .ok_or("phase work limit overflow")?;
     let fixture = Fixture::new()?;
     let context = Context::synthetic("replay-owner-phase-boundary")?;
     let inspection = fixture.inspect()?;
@@ -68,11 +71,11 @@ fn exercise(target: Option<usize>) -> TestResult {
         "replay-owner",
         "apply",
     )?;
-    if target == Some(8193) {
+    if target == Some(over) {
         check!(application.is_none());
         let refusal = meter.refusal.as_ref().ok_or("replay work refusal absent")?;
         check!(eq; refusal.label, "replay exact owner command and digest equality");
-        check!(eq; refusal.needed, 8193);
+        check!(eq; refusal.needed, over);
     } else {
         check!(eq; application, Some(Application::Repeated(receipt)));
     }
@@ -87,12 +90,15 @@ fn unchanged_replay_owner_matches_independent_full_load_and_fresh_refresh_work()
 
 #[test]
 fn unchanged_replay_owner_completes_at_exact_same_grant_work_limit() -> TestResult {
-    exercise(Some(8192))
+    exercise(Some(super::meter::LIMIT))
 }
 
 #[test]
 fn unchanged_replay_owner_one_beyond_work_limit_refuses_at_final_exact_equality() -> TestResult {
-    exercise(Some(8193))
+    let over = super::meter::LIMIT
+        .checked_add(1)
+        .ok_or("phase work limit overflow")?;
+    exercise(Some(over))
 }
 
 #[test]
@@ -112,7 +118,10 @@ fn exact_replay_preparation_work_exhaustion_occurs_before_digest_copy_issuance()
     ledger::refresh(&[&modeled], &mut forecast)?;
     prepare_tail(&modeled, &mut forecast)?;
     let grant = inspection.grant.as_mut().ok_or("inspection grant absent")?;
-    let padding = 8193usize
+    let over = super::meter::LIMIT
+        .checked_add(1)
+        .ok_or("phase work limit overflow")?;
+    let padding = over
         .checked_sub(forecast.total)
         .and_then(|remaining| remaining.checked_sub(grant.usage().traversal_steps()))
         .ok_or("preparation work boundary padding underflow")?;
@@ -130,7 +139,7 @@ fn exact_replay_preparation_work_exhaustion_occurs_before_digest_copy_issuance()
         .as_ref()
         .ok_or("preparation work refusal absent")?;
     check!(eq; refusal.label, "replay approval digest copy");
-    check!(eq; refusal.needed, 8193);
+    check!(eq; refusal.needed, over);
     let before = retained_state(&fixture.store)?;
     check!(meter
         .result(

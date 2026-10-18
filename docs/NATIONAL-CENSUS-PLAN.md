@@ -421,20 +421,22 @@ Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
 ### 7.5. Current execution checkpoint — 2026-10-17
 
-Preserved checkpoint: PR81 `a2f3979e` integrated and pushed as `e1caef7c`; subsequent
-PRIMARY work is not final-product qualification. [Receipts](VERIFICATION-EVIDENCE.md#pr81-integration-qualification--2026-10-17)
-record actual selections and artifacts; Beads remains the ownership/dependency authority.
+Pushed checkpoint: `3688a68015e7fcca1c8c5155ba536a18b3e12aab`, tree
+`7693f7e409e2db96d556076d435ba9a1e63552d7`. Subsequent lifecycle-9 work is
+unqualified. [Evidence](VERIFICATION-EVIDENCE.md#pr81-integration-qualification--2026-10-17);
+Beads owns task status and dependencies. PASS below is scoped, never national readiness.
 
-| Requirement | Production surface / acceptance | Observed state | Next dependency |
-|---|---|---|---|
-| A: integrated static gates | Root Moon format, all-target check, source lint | PASS `5f4daa7a` / `70402512` / `8bfd96ba`; ten authorized arity advisories, not zero warnings | Exact-commit qualification after integration |
-| A: historical readback without current authority | Original retained Report V3 public frozen consumer | PASS `64e0d132`, original pins/checksum unchanged, typed current-write refusal and ten origin controls | Retain original artifact; no relabeling |
-| A: genuine documentary path | Original authenticated producer handoff → public source reader → publication → source-free replay | PASS `b9e303b3`, diagnostic-free source, both cohorts; original files unchanged, unresolved cases withheld honestly | Exact-commit integration; not PRIMARY or population coverage |
-| A/R2: roster and transfer qualification | Public reviewed-source selection, workbook and frozen readback | All 23 ordered scopes PASS on final source; Report `54ecfb86` 37/37 includes transfer, identity corrections and source-free workbook/normalized replay | Authenticated producer A/changed-build B remains separate and NOT RUN |
-| R2: fixed semantics across builds | Successor kernel V2 controls; authentic retained producer A and changed-build B | Kernel controls PASS; authenticated A/B NOT RUN | Qualified clean producer and independent retained artifacts |
-| B/R1: original school-cell ownership | Public retained-result reader → exact source span → retained replay | PASS `fb5e3111` 61/61; final borrowed-quote smoke `90001154` binds three cells and identical replay references; no SchoolId issued | `q01l`: actual reviewed historical-school issuance |
-| B/R1: eligible PR then withdrawal | Public original-shaped intake → reviewed school/window evidence → workbook → independent G0/G1 reopen | NOT RUN; neither an empty export nor Domain enrollment preparation qualifies this cell | Beads `b8we` owned-cell parser → `q01l` checked school issuance → `3fhg` actual 50→51 publication/replay; one-piece flow |
-| C/D: reusable and population acceptance | R1–R15 production paths, UP/five-state comparison, incremental/recovery/resource lanes | NOT QUALIFIED; no national-run readiness implied | Remaining spec-linked acceptance owners |
+| Requirement | Code entrypoint | Test / command receipt | Tested revision | Result | Artifact | Next dependency |
+|---|---|---|---|---|---|---|
+| A: static checkpoint | `tools/moon-local` | fmt `a3a46f50`, check `538ce06f`, lint `aba33a0a` | `3688a680` | PASS; ten authorized arity advisories | Execution ledger | Repeat after lifecycle-9 integration |
+| A: historical authority fence | Retained Report V3 consumer | `64e0d132` | PR81 + working repairs | PASS; not exact final-source qualification | Original retained V3, pins/checksum unchanged | Preserve artifact; rerun after integration |
+| A: genuine original-source replay | Documentary selected-publication roundtrip | `886019a3` | `3688a680` | PASS, both cohorts; unknowns withheld | Original authenticated handoff; temporary readback, no delivered workbook | Positive PRIMARY and population acceptance |
+| A/R2: transfer and correction replay | Reviewed-source publication | `8516831e` | `3688a680` | PASS, 37 selected cases | Actual workbook/normalized readback and source-free G0/G1/G2 replay | Authenticated roster A/B |
+| R2: semantic equivalence across builds | Fixed kernel V2; retained producer/consumer | Separate A/B lane | — | NOT RUN | No authenticated roster A/B artifact yet | Qualified clean A, distinct changed build B |
+| B/R1: original school-cell ownership | `CheckedRetainedResultRowV1::school_statement` | `fb5e3111`; smoke `90001154` | `3688a680` | PASS; source quote, no SchoolId authority | Original fixture SHA256 `95350f13…cc19e5`; identical replay references | `q01l` reviewed historical-school issuance |
+| B/R1: reviewed historical school | Public checked review → revoke → cold/frozen consumer | Crawl `bb4c7858`; independent consumer `6905ff5f` | Uncommitted | Scoped PASS; broader regression and final-gate repair pending | Private accepted-51/revoked-53 proofs; pinned tamper refused | Inherited 7/8 current/frozen qualification; full affected regressions; landing |
+| B/R1: eligible PR then withdrawal | Production selector → workbook/normalized → frozen readback | `3fhg`: 50→51 | — | NOT RUN | No controlled 50→51 workbook yet | Explicit source-backed window; reviewed school; real revoke/replay |
+| C/D: reusable operation and population | R1–R15 production paths and comparison | Spec-linked owners | — | NOT QUALIFIED | No national acceptance artifact | UP/five-state coverage, reuse/recovery/resource evidence |
 
 
 ## 8. F01–F15 acceptance ledger

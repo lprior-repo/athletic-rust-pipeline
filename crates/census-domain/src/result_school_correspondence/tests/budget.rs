@@ -1,5 +1,4 @@
 use super::*;
-use crate::public_identity_history::ReplayLimits;
 
 #[test]
 fn measured_digest_exact_byte_and_step_caps_preserve_original_budget() -> TestResult {
@@ -12,16 +11,14 @@ fn measured_digest_exact_byte_and_step_caps_preserve_original_budget() -> TestRe
             let mut grant = AttachmentReplayGrantV1::new();
             if bytes {
                 grant.charge_bytes(
-                    ReplayLimits::SMALL
-                        .total_text_bytes
+                    AttachmentReplayGrantV1::MAX_ENCODED_BYTES
                         .checked_sub(usage.encoded_bytes())
                         .and_then(|n| n.checked_add(short))
                         .ok_or("byte cap")?,
                 )?;
             } else {
                 grant.charge_steps(
-                    ReplayLimits::SMALL
-                        .traversal_steps
+                    AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
                         .checked_sub(usage.traversal_steps())
                         .and_then(|n| n.checked_add(short))
                         .ok_or("step cap")?,
@@ -30,10 +27,18 @@ fn measured_digest_exact_byte_and_step_caps_preserve_original_budget() -> TestRe
             let result = result_school_digest_v1(&value, &mut grant);
             if short == 0 {
                 check!(eq; result?, expected);
-                check!(grant.ensure_available().is_ok());
+                grant.ensure_available()?;
             } else {
-                check!(result.is_err());
-                check!(grant.ensure_available().is_err());
+                check!(matches!(
+                    result,
+                    Err(ResultSchoolCorrespondenceError::Grant(
+                        EvidenceSubjectAttachmentError::Capacity { .. }
+                    ))
+                ));
+                check!(matches!(
+                    grant.ensure_available(),
+                    Err(EvidenceSubjectAttachmentError::Poisoned)
+                ));
             }
         }
     }
@@ -67,8 +72,7 @@ fn exhausted_or_foreign_grant_cannot_prepare_or_reuse_checked_command() -> TestR
     let checked =
         CheckedResultSchoolCommandV1::check(command("controlled-exhausted")?, &mut original)?;
     original.charge_steps(
-        ReplayLimits::SMALL
-            .traversal_steps
+        AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
             .checked_sub(original.usage().traversal_steps())
             .ok_or("remaining steps")?,
     )?;

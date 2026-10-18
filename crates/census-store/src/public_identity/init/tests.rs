@@ -83,22 +83,6 @@ fn graph_open_does_not_create_and_creation_does_not_adopt_artifacts() -> TestRes
 }
 
 #[test]
-fn qualification_lifecycle_classification_includes_current_graph_and_historical_families(
-) -> TestResult {
-    for revision in [5, 6, 7] {
-        check!(crate::public_identity::is_qualification_lifecycle(Some(
-            revision
-        )));
-    }
-    for revision in [None, Some(0), Some(4), Some(8), Some(u32::MAX)] {
-        check!(!crate::public_identity::is_qualification_lifecycle(
-            revision
-        ));
-    }
-    Ok(())
-}
-
-#[test]
 fn reopened_graph_store_keeps_generic_identity_writes_reserved() -> TestResult {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("current");

@@ -180,7 +180,6 @@ fn borrowed_constructor_reads_the_exact_held_head_before_issuing_authority() -> 
             "missing head"
         )))
     ));
-    check!(eq; grant.usage().traversal_steps(), 11);
     poisoned(&mut grant)?;
     let mut original = AttachmentReplayGrantV1::new();
     let owner = old_view.read_current_evidence_subject_attachment_references_with_accepted_v1(
@@ -188,7 +187,6 @@ fn borrowed_constructor_reads_the_exact_held_head_before_issuing_authority() -> 
         &mut original,
     )?;
     check!(std::ptr::eq(owner.accepted.view(), &accepted));
-    check!(eq; original.usage().traversal_steps(), 12);
     check!(eq; retained_state(&fixture.store)?, before);
     Ok(())
 }

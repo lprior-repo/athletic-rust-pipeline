@@ -32,6 +32,12 @@ impl<'a> ResultSchoolProjectionV1<'a> {
             .zip(&self.states)
             .filter_map(|(record, state)| matches!(state, State::Active).then_some(record))
     }
+    pub fn active_record_indices(&self) -> impl Iterator<Item = usize> + '_ {
+        self.states
+            .iter()
+            .enumerate()
+            .filter_map(|(index, state)| matches!(state, State::Active).then_some(index))
+    }
 }
 
 pub fn replay_result_school_records_v1<'a>(

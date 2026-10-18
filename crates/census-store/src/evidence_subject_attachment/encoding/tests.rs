@@ -19,7 +19,7 @@ fn encoded_object_matches_exact_canonical_wire_and_three_pass_cost() -> TestResu
 #[test]
 fn exhausted_work_refuses_before_measurement() -> TestResult {
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(ReplayLimits::SMALL.traversal_steps)?;
+    grant.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS)?;
     let value = Visited {
         calls: Cell::new(0),
         changing: false,
@@ -44,7 +44,7 @@ fn exhausted_work_refuses_before_measurement() -> TestResult {
 #[test]
 fn retained_byte_refusal_precedes_allocating_encode() -> TestResult {
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_bytes(ReplayLimits::SMALL.total_text_bytes)?;
+    grant.charge_bytes(AttachmentReplayGrantV1::MAX_ENCODED_BYTES)?;
     let value = Visited {
         calls: Cell::new(0),
         changing: false,
@@ -66,7 +66,11 @@ fn retained_byte_refusal_precedes_allocating_encode() -> TestResult {
 #[test]
 fn exhausted_encoding_step_preserves_measurement_only() -> TestResult {
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(ReplayLimits::SMALL.traversal_steps - 1)?;
+    grant.charge_steps(
+        AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            .checked_sub(1)
+            .ok_or("encoding step bound")?,
+    )?;
     let value = Visited {
         calls: Cell::new(0),
         changing: false,

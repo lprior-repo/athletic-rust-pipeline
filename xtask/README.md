@@ -197,6 +197,18 @@ env -u CI tools/moon-local run pipeline:run-scoped -- -p census-service --bin ce
 These tasks do not replace workspace or release gates. Running a store-opening example against
 a serving store still violates the single-owner boundary; use isolated scratch or documented ingress.
 
+Historical-school proof readback opens no Store and performs no acquisition:
+
+```sh
+env -u CI tools/moon-local run pipeline:run-scoped -- -p census-crawl \
+  --example smoke_result_school_proof -- <accepted.manifest.json> <revoked.manifest.json>
+```
+
+Use the original manifests and adjacent proof files; the consumer checks their pins,
+exact result context/locator and expected school disposition. A configured
+`CENSUS_RESULT_SCHOOL_RETENTION_DIR` retains these artifacts from the public school-review
+qualification scenario. They prove school authority/revocation, not PR-window or national acceptance.
+
 The full test task is deliberately uncached because native fault/recovery checks observe processes,
 ports and durable state not represented by source hashes. Running it does not by itself certify all
 separately required native fault scenarios. A report-library cache hit cannot stand in for this lane.

@@ -9,6 +9,8 @@ use super::{Consolidated, Entity, Store, StoreError, StoreResult, StoreStats, Ta
 mod attachment_envelope_tests;
 #[cfg(test)]
 mod attachment_receipt_tests;
+#[cfg(test)]
+mod borrowed_journal_tests;
 mod directory;
 mod identity;
 mod journal_budget;
@@ -33,7 +35,8 @@ pub(crate) use view::RetainedEnrichment;
 pub(crate) use view::{accept_merged_row, publish_merged_row};
 pub(crate) use view::{
     admit_namespace_budget, for_each_retained_journal_root_with_admission,
-    read_retained_journal_entry_raw_bounded, retained_source_sealed, JournalNamespaceContents,
+    read_retained_journal_entry_raw_bounded, retained_source_sealed,
+    with_retained_journal_entry_raw_bounded, JournalNamespaceContents,
     JournalNamespaceContentsInventory, NamespaceScan, ReceiptScan, RetainedJournalBytes,
     RetainedJournalReadSource,
 };

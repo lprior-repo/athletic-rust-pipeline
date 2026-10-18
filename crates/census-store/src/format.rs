@@ -12,7 +12,7 @@ pub use migrate::MigrationReport;
 
 pub const STORE_SCHEMA_VERSION: u32 = 2;
 pub const KEY_FORMAT_VERSION: u32 = 1;
-pub const LIFECYCLE_REVISION: u32 = crate::ROSTER_SOURCE_ISSUANCE_LIFECYCLE;
+pub const LIFECYCLE_REVISION: u32 = crate::RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE;
 const FRESH_LIFECYCLE_REVISION: u32 = 2;
 
 pub const DEFAULT_CACHE_BYTES: u64 = 1024 * 1024 * 1024;
@@ -64,6 +64,14 @@ pub(super) fn open_format(
     }
     let format = require_current(root, format)?;
     crate::input_revisions::validate_format(&db.snapshot(), meta_keyspace, &format)?;
+    crate::result_school_correspondence::validate_format(
+        &db.snapshot(),
+        meta_keyspace,
+        data[1],
+        data[2],
+        &format,
+        &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
+    )?;
     crate::roster_source_issuance::validate_format(
         &db.snapshot(),
         meta_keyspace,
@@ -107,6 +115,14 @@ pub(crate) fn require_semantic_format(
 ) -> StoreResult<StoreFormat> {
     let format = require_current(root, read_format(meta)?)?;
     crate::input_revisions::validate_format(&db.snapshot(), meta, &format)?;
+    crate::result_school_correspondence::validate_format(
+        &db.snapshot(),
+        meta,
+        journal,
+        receipts,
+        &format,
+        &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
+    )?;
     crate::roster_source_issuance::validate_format(
         &db.snapshot(),
         meta,

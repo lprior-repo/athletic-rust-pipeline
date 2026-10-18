@@ -1,6 +1,5 @@
 use super::*;
 use crate::participation_evidence::recorded::discover_current_html_results;
-use census_domain::public_identity_history::ReplayLimits;
 use census_store::{Store, Table};
 use std::cell::Cell;
 
@@ -62,16 +61,14 @@ fn boundary_row<'s>(
     match boundary {
         Boundary::Measure => {}
         Boundary::Bytes(cost) => grant.charge_bytes(
-            ReplayLimits::SMALL
-                .total_text_bytes
+            Grant::MAX_ENCODED_BYTES
                 .checked_sub(before.encoded_bytes())
                 .and_then(|n| n.checked_sub(cost))
                 .and_then(|n| n.checked_add(short))
                 .ok_or("byte boundary")?,
         )?,
         Boundary::Steps(cost) => grant.charge_steps(
-            ReplayLimits::SMALL
-                .traversal_steps
+            Grant::MAX_TRAVERSAL_STEPS
                 .checked_sub(before.traversal_steps())
                 .and_then(|n| n.checked_sub(cost))
                 .and_then(|n| n.checked_add(short))
@@ -107,10 +104,10 @@ fn boundary_row<'s>(
     let after = grant.usage();
     match boundary {
         Boundary::Bytes(_) => {
-            check!(eq; after.encoded_bytes(), ReplayLimits::SMALL.total_text_bytes)
+            check!(eq; after.encoded_bytes(), Grant::MAX_ENCODED_BYTES)
         }
         Boundary::Steps(_) => {
-            check!(eq; after.traversal_steps(), ReplayLimits::SMALL.traversal_steps)
+            check!(eq; after.traversal_steps(), Grant::MAX_TRAVERSAL_STEPS)
         }
         Boundary::Measure => {}
     }

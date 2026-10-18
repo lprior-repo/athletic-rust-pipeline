@@ -212,6 +212,20 @@ references and text digest. Missing, transformed or ambiguous cells withhold the
 quote. Existing parsed rows, context wire and IDs remain unchanged. This quote
 is source data, never a SchoolId, accepted affiliation or issuance authority.
 
+### Reviewed-school resource boundary — 2026-10-17
+
+The owner's subsequent authorization permits a bounded increase to an 8-MiB
+aggregate checked-read grant and 32,768 aggregate traversal steps. Individual
+encoded objects remain bounded at 4 MiB; their structural limits are unchanged.
+This changes resource admission, not documentary authority or historical
+evidence. It does not establish process-memory or national-scale sufficiency.
+
+Private school source closure `result-school-source-closure-v2` shares roots
+already retained by the authenticated attachment closure and preserves school-only
+roots separately. Unqualified V1 refuses; qualified roster/report formats and
+original artifacts remain unchanged. The lifecycle-9 implementation is pending
+qualification; the delivery matrix records actual failures.
+
 ## 6. Enrollment, migration and historical protection
 
 No automatic migration or corpus import is authorized by this decision. Unknown/newer formats,

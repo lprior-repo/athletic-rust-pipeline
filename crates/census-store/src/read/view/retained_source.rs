@@ -54,6 +54,15 @@ pub(crate) fn read_retained_journal_entry_raw_bounded(
     })
 }
 
+pub(crate) fn with_retained_journal_entry_raw_bounded<R>(
+    source: &impl RetainedJournalReadSource,
+    phase: &str,
+    key: &str,
+    budget: JournalReadBudget,
+    visitor: impl Fn(&serde_json::value::RawValue) -> StoreResult<R>,
+) -> StoreResult<Option<R>> {
+    legacy::with_payload_bounded(source, phase, key, budget, visitor)
+}
 pub(crate) fn for_each_retained_journal_root_with_admission<G>(
     source: &impl RetainedJournalReadSource,
     namespace: JournalNamespace<'_>,

@@ -104,7 +104,7 @@ fn inspect<'s>(
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Inspected<'s>> {
     let current = store.store_format()?;
-    format::validate_format(
+    let lifecycle = format::validated_lifecycle(
         &store.db.snapshot(),
         &store.meta,
         &store.journal,
@@ -112,7 +112,7 @@ fn inspect<'s>(
         &current,
         &mut RosterStartupValidationBudgetV1::new(),
     )?;
-    if current.lifecycle_revision != Some(LIFECYCLE)
+    if lifecycle != Some(LIFECYCLE)
         || request.root.schema != RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
         || request.root.key.len() != 64
     {

@@ -137,24 +137,25 @@ fn exact_encoding_work_succeeds_and_one_less_refuses_before_the_final_pass() -> 
     let record = seal(command("encoding boundary")?)?;
     let maximum = ReplayLimits::SMALL.total_text_bytes;
     let mut exact = AttachmentReplayGrantV1::new();
-    exact.charge_steps(ReplayLimits::SMALL.traversal_steps - RECORD_ENCODE_WORK)?;
+    exact.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS - RECORD_ENCODE_WORK)?;
     check!(eq;
         encode_reviewed_reference_with_grant(&record, maximum, &mut exact)?,
         encode_reviewed_reference(&record, maximum)?
     );
     check!(eq;
         exact.usage().traversal_steps(),
-        ReplayLimits::SMALL.traversal_steps
+        AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
     );
     let mut short = AttachmentReplayGrantV1::new();
-    short.charge_steps(ReplayLimits::SMALL.traversal_steps - RECORD_ENCODE_WORK + 1)?;
+    short.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS - RECORD_ENCODE_WORK + 1)?;
     check!(matches!(
         encode_reviewed_reference_with_grant(&record, maximum, &mut short),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate traversal steps",
-            needed: 8_193,
-            available: 8_192
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(matches!(
         short.ensure_available(),
@@ -166,14 +167,15 @@ fn exact_encoding_work_succeeds_and_one_less_refuses_before_the_final_pass() -> 
 #[test]
 fn exhausted_work_refuses_before_decode_and_preserves_primary_capacity() -> TestResult {
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(ReplayLimits::SMALL.traversal_steps)?;
+    grant.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS)?;
     check!(matches!(
         decode_reviewed_reference_with_grant(b"x", 1, &mut grant),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate traversal steps",
-            needed: 8_193,
-            available: 8_192
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(eq; grant.usage().encoded_bytes(), 0);
     check!(matches!(

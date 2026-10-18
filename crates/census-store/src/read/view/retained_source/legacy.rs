@@ -39,6 +39,17 @@ fn legacy_get<'a>(
     source.journal_get(key)
 }
 
+pub(in crate::read::view) fn with_payload_bounded<R>(
+    source: &impl RetainedJournalReadSource,
+    phase: &str,
+    key: &str,
+    budget: JournalReadBudget,
+    visitor: impl Fn(&serde_json::value::RawValue) -> StoreResult<R>,
+) -> StoreResult<Option<R>> {
+    payload_bounded(source, phase, key, budget, |path, what, raw| {
+        super::super::legacy_raw::envelope::projected_entry(path, what, raw, budget, &visitor)
+    })
+}
 fn legacy_chunks<T>(
     source: &impl RetainedJournalReadSource,
     path: JournalPath<'_>,

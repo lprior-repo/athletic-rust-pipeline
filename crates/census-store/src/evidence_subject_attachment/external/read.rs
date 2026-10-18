@@ -9,7 +9,10 @@ use census_domain::evidence_subject_attachment::{
 use serde_json::value::RawValue;
 use sha2::{Digest, Sha256};
 
+mod borrowed;
+mod inventory;
 mod physical;
+pub(crate) use borrowed::{with_checked, CheckedCapture, CheckedRoot, CheckedSchool};
 
 pub struct RetainedCaptureRootReadV1 {
     root: RetainedCaptureRootV1,
@@ -41,7 +44,7 @@ impl StoreSnapshot<'_> {
     }
 }
 
-pub(in super::super) fn owned(
+pub(crate) fn owned(
     view: &impl RetainedJournalReadSource,
     schema: RetainedCaptureRootSchemaV1,
     key: &str,
@@ -54,33 +57,6 @@ pub(in super::super) fn owned(
             .map_err(Error::Domain)?;
     }
     Ok(completed)
-}
-
-pub(super) fn read_root(
-    view: &impl RetainedJournalReadSource,
-    expected: &RetainedCaptureRootV1,
-    grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<RetainedCaptureRootReadV1> {
-    grant.ensure_available().map_err(Error::Domain)?;
-    let result = pinned(view, expected, grant);
-    if result.is_err() {
-        grant.poison();
-    }
-    result
-}
-
-fn pinned(
-    view: &impl RetainedJournalReadSource,
-    expected: &RetainedCaptureRootV1,
-    grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<RetainedCaptureRootReadV1> {
-    let actual = complete(view, expected.schema, &expected.key, grant)?
-        .ok_or(Error::Corrupt("external root is absent or ambiguous"))?;
-    grant.charge_steps(1).map_err(Error::Domain)?;
-    if actual.root() != expected {
-        return Err(Error::Corrupt("external root payload reference differs").into());
-    }
-    Ok(actual)
 }
 
 fn complete(

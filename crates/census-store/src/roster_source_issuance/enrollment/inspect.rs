@@ -38,7 +38,7 @@ impl Store {
     pub fn inspect_roster_source_enrollment_v1(&self) -> StoreResult<RosterEnrollmentInputsV1<'_>> {
         let _guard = self.lock_appends();
         let current = self.store_format()?;
-        format::validate_format(
+        let lifecycle = format::validated_lifecycle(
             &self.db.snapshot(),
             &self.meta,
             &self.journal,
@@ -46,7 +46,7 @@ impl Store {
             &current,
             &mut RosterStartupValidationBudgetV1::new(),
         )?;
-        if !matches!(current.lifecycle_revision, Some(7 | LIFECYCLE)) {
+        if current.lifecycle_revision != Some(7) && lifecycle != Some(LIFECYCLE) {
             return Err(Error::EnrollmentRequired.into());
         }
         let view = self.snapshot_locked();

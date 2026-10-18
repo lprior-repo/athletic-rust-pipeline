@@ -80,19 +80,24 @@ fn decoder_pass_admission_refuses_before_read_and_remains_poisoned() -> TestResu
     install(&store, &root, "null", false)?;
     let before = retained_state(&store)?;
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(8_184)?;
+    grant.charge_steps(
+        AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            .checked_sub(8)
+            .ok_or("decoder admission steps absent")?,
+    )?;
     let result = read(&store.snapshot(), root.schema, &root.key, &mut grant);
     check!(matches!(
         result,
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
             EvidenceSubjectAttachmentError::Capacity {
                 resource: "aggregate traversal steps",
-                needed: 8_226,
-                available: 8_192
+                needed,
+                available
             }
-        )))
+        ))) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(2 * DECODER_PASS_SLOTS)
     ));
-    check!(eq; grant.usage().traversal_steps(), 8_192);
+    check!(eq; grant.usage().traversal_steps(), AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS);
     check!(matches!(
         read(&store.snapshot(), root.schema, &root.key, &mut grant),
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(

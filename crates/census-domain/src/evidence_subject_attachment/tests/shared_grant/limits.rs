@@ -3,36 +3,38 @@ use super::*;
 #[test]
 fn shared_byte_and_step_limits_are_exact_and_poison_later_admission() -> TestResult {
     let mut bytes = AttachmentReplayGrantV1::new();
-    bytes.charge_bytes(ReplayLimits::SMALL.total_text_bytes)?;
+    bytes.charge_bytes(AttachmentReplayGrantV1::MAX_ENCODED_BYTES)?;
     check!(matches!(
         bytes.charge_bytes(1),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate encoded bytes",
-            needed: 4_194_305,
-            available: 4_194_304,
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(eq;
         bytes.usage().encoded_bytes(),
-        ReplayLimits::SMALL.total_text_bytes
+        AttachmentReplayGrantV1::MAX_ENCODED_BYTES
     );
     check!(matches!(
         bytes.charge_steps(0),
         Err(EvidenceSubjectAttachmentError::Poisoned)
     ));
     let mut steps = AttachmentReplayGrantV1::new();
-    steps.charge_steps(ReplayLimits::SMALL.traversal_steps)?;
+    steps.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS)?;
     check!(matches!(
         steps.charge_steps(1),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate traversal steps",
-            needed: 8_193,
-            available: 8_192,
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(eq;
         steps.usage().traversal_steps(),
-        ReplayLimits::SMALL.traversal_steps
+        AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
     );
     check!(matches!(
         steps.charge_bytes(0),

@@ -3,7 +3,7 @@ use crate::{StoreResult, Table};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::StoreIdentity;
 use serde::ser::{SerializeSeq, Serializer};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
 struct Manifest<'a> {
@@ -84,4 +84,88 @@ fn encode(
     let bytes = super::super::codec::encode_with_source_grant(&manifest, grant)?;
     evidence.require_original_grant(grant)?;
     Ok(bytes)
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct RetainedManifest {
+    schema: String,
+    store: StoreIdentity,
+    snapshot_sequence: u64,
+    tables: [Table; 4],
+    rows: Vec<RetainedRow>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct RetainedRow {
+    table: Table,
+    physical_key: Vec<u8>,
+    encoded_bytes: usize,
+    encoded_digest: String,
+}
+
+impl RosterSourceEvidenceV1 {
+    pub(in crate::roster_source_issuance) fn retained_physical_projection(
+        reference: &census_domain::roster_affiliation_authority::RosterAuthorityObjectRefV1,
+        store: &StoreIdentity,
+        sequence: u64,
+        objects: &std::collections::BTreeMap<String, Vec<u8>>,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<Vec<RosterPhysicalProjectionRowV1>> {
+        use super::super::{codec, source_error, RosterSourceIssuanceStoreError as Error};
+        let bytes = objects
+            .get(reference.digest().as_str())
+            .ok_or(Error::Corrupt("original physical manifest absent"))?;
+        if u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)? != reference.bytes().get()
+            || codec::digest(bytes) != reference.digest().as_str()
+        {
+            return Err(Error::InspectedClosureChanged.into());
+        }
+        grant.charge_bytes(bytes.len()).map_err(source_error)?;
+        grant.charge_steps(1).map_err(source_error)?;
+        let manifest: RetainedManifest = codec::decode(bytes)?;
+        if manifest.schema != "roster-physical-projection-inventory-v1"
+            || &manifest.store != store
+            || manifest.snapshot_sequence != sequence
+            || manifest.tables
+                != [
+                    Table::Schools,
+                    Table::Teams,
+                    Table::Conflicts,
+                    Table::SourceObservations,
+                ]
+            || manifest.rows.len() > 4096
+        {
+            return Err(Error::InspectedClosureChanged.into());
+        }
+        let mut rows = Vec::new();
+        rows.try_reserve_exact(manifest.rows.len())
+            .map_err(|_| Error::BudgetExceeded)?;
+        for row in manifest.rows {
+            if !manifest.tables.contains(&row.table) {
+                return Err(Error::Corrupt("original physical table differs").into());
+            }
+            let raw = objects
+                .get(&row.encoded_digest)
+                .ok_or(Error::Corrupt("original physical row absent"))?;
+            if raw.len() != row.encoded_bytes || codec::digest(raw) != row.encoded_digest {
+                return Err(Error::InspectedClosureChanged.into());
+            }
+            grant
+                .charge_bytes(
+                    raw.len()
+                        .checked_add(row.physical_key.len())
+                        .ok_or(Error::BudgetExceeded)?,
+                )
+                .map_err(source_error)?;
+            grant.charge_steps(1).map_err(source_error)?;
+            rows.push(RosterPhysicalProjectionRowV1::from_checked_parts(
+                row.table,
+                row.physical_key,
+                raw.clone(),
+            ));
+        }
+        Ok(rows)
+    }
 }

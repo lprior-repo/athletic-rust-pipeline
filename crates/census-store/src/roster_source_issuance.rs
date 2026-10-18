@@ -19,6 +19,9 @@ pub use issuance::{
 };
 
 pub use budget::RosterStartupValidationBudgetV1;
+pub(crate) use enrollment::proof::{
+    retained_enrollment_operation_v1, validate_roster_enrollment_proof_v1,
+};
 pub use enrollment::{
     PreparedRosterEnrollmentV1, RosterEnrollmentCommandV1, RosterEnrollmentInputsV1,
     RosterEnrollmentReviewV1, RosterReviewActorV1,

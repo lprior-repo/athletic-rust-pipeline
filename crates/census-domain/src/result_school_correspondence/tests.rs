@@ -4,6 +4,7 @@ use crate::model::*;
 use crate::public_identity_history::PublicAthleteId;
 
 mod budget;
+mod construction;
 mod fixture;
 mod invalid;
 mod inventory;

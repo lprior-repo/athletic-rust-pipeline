@@ -45,6 +45,31 @@ pub(super) fn retained(
     )?;
     Ok((inventory, keys))
 }
+pub(super) fn physical<'s>(
+    view: &StoreSnapshot<'s>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<JournalNamespaceInventory<'s>> {
+    grant.charge_steps(2).map_err(Error::Domain)?;
+    let mut ordinal = 0u64;
+    let inventory = view.for_each_journal_root_with_admission(
+        JournalNamespace::whole_phase(PHASE)?,
+        budget(),
+        grant,
+        admit_row,
+        |grant, key| {
+            grant.charge_steps(1).map_err(Error::Domain)?;
+            let key_ordinal = keys::ordinal(key)?;
+            let expected = ordinal.checked_add(1).ok_or(StoreError::CounterOverflow)?;
+            if key_ordinal != expected {
+                return Err(Error::Corrupt("noncontiguous attachment records").into());
+            }
+            ordinal = key_ordinal;
+            grant.charge_bytes(key.len()).map_err(Error::Domain)?;
+            Ok(())
+        },
+    )?;
+    Ok(inventory)
+}
 
 fn admit_row(grant: &mut AttachmentReplayGrantV1) -> StoreResult<()> {
     grant

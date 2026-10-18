@@ -15,6 +15,31 @@ use setup::*;
 #[path = "source_admission_tests.rs"]
 mod admission;
 
+#[path = "../../../../census-store/src/roster_source_issuance/tests/inherited_public.rs"]
+mod inherited_public;
+
+fn issue_inherited_review(store: &Store, operation: &str) -> TestResult<Application> {
+    let prepared = prepare(store, operation, None)?;
+    let approved = prepared.approval_bytes().to_vec();
+    let digest = prepared.approval_digest().to_owned();
+    Ok(store.apply_roster_source_review_v1(prepared, &approved, &digest)?)
+}
+
+#[test]
+fn inherited_nine_preserves_nonempty_roster() -> TestResult {
+    let (directory, store) = enrolled_store()?;
+    inherited_public::inherited_eight_retains_review_and_frozen_replay(
+        store,
+        &directory.path().join("controlled-roster"),
+        issue_inherited_review,
+    )
+}
+
+#[test]
+fn inherited_nine_does_not_promote_identity_only() -> TestResult {
+    inherited_public::identity_only_nine_refuses_roster_authority()
+}
+
 fn fields(operation: &str) -> TestResult<RosterSourceReviewFieldsV1> {
     Ok(RosterSourceReviewFieldsV1 {
         operation: RosterAuthorityTextV1::parse(operation)?,

@@ -82,17 +82,18 @@ fn mismatch_and_unconsumed_suffix_refuse_with_sticky_primary_error() -> TestResu
 #[test]
 fn exhausted_equality_pass_refuses_before_serializer_entry() -> TestResult {
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(ReplayLimits::SMALL.traversal_steps)?;
+    grant.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS)?;
     let value = Visited(Cell::new(0));
     check!(matches!(
         require_canonical(&value, br#""x""#, &mut grant),
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
             EvidenceSubjectAttachmentError::Capacity {
                 resource: "aggregate traversal steps",
-                needed: 8193,
-                available: 8192
+                needed,
+                available
             }
-        )))
+        ))) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(eq; value.0.get(), 0);
     check!(matches!(

@@ -78,18 +78,23 @@ fn prior_sets_keep_chronological_search_and_complete_missing_comparisons() -> Te
 fn refused_midpoint_charge_poisons_nonempty_and_empty_retries() -> TestResult {
     let rows = materials(&[1, 3, 5, 7, 9, 11, 13])?;
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_steps(ReplayLimits::SMALL.traversal_steps - 1)?;
+    grant.charge_steps(
+        AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            .checked_sub(1)
+            .ok_or("step fixture underflow")?,
+    )?;
     check!(matches!(
         introduced_by_digest(&rows, &reference(1)?.digest, &mut grant),
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
             domain::EvidenceSubjectAttachmentError::Capacity {
                 resource: "aggregate traversal steps",
-                needed: 8193,
-                available: 8192
+                needed,
+                available
             }
-        )))
+        ))) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
-    check!(eq; grant.usage().traversal_steps(), 8192);
+    check!(eq; grant.usage().traversal_steps(), AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS);
     check!(matches!(
         introduced_by_digest(&rows, &reference(1)?.digest, &mut grant),
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(

@@ -10,7 +10,7 @@ fn borrowed_replay_and_later_planning_share_the_original_byte_grant() -> TestRes
     let size = codec::measure(&records[0], ReplayLimits::SMALL.total_text_bytes)?
         + codec::measure(&receipts[0], ReplayLimits::SMALL.total_text_bytes)?;
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_bytes(ReplayLimits::SMALL.total_text_bytes - size - 1)?;
+    grant.charge_bytes(AttachmentReplayGrantV1::MAX_ENCODED_BYTES - size - 1)?;
     grant.charge_steps(7)?;
     let projection = replay_reviewed_references_with_grant(
         &store()?,
@@ -23,7 +23,7 @@ fn borrowed_replay_and_later_planning_share_the_original_byte_grant() -> TestRes
     check!(eq; projection.inventory(), &expected);
     check!(eq;
         grant.usage().encoded_bytes(),
-        ReplayLimits::SMALL.total_text_bytes - 1
+        AttachmentReplayGrantV1::MAX_ENCODED_BYTES - 1
     );
     check!(grant.usage().traversal_steps() > 7);
     grant.charge_bytes(1)?;
@@ -47,7 +47,7 @@ fn owned_replay_charges_raw_and_validated_bytes_into_the_same_grant() -> TestRes
         + codec::measure(&records[0], ReplayLimits::SMALL.total_text_bytes)?
         + codec::measure(&receipts[0], ReplayLimits::SMALL.total_text_bytes)?;
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_bytes(ReplayLimits::SMALL.total_text_bytes - size)?;
+    grant.charge_bytes(AttachmentReplayGrantV1::MAX_ENCODED_BYTES - size)?;
     let projection = decode_and_replay_reviewed_references_with_grant(
         &store()?,
         &[&raw],
@@ -60,7 +60,7 @@ fn owned_replay_charges_raw_and_validated_bytes_into_the_same_grant() -> TestRes
     check!(eq; projection.inventory(), &expected);
     check!(eq;
         grant.usage().encoded_bytes(),
-        ReplayLimits::SMALL.total_text_bytes
+        AttachmentReplayGrantV1::MAX_ENCODED_BYTES
     );
     check!(matches!(
         grant.charge_bytes(1),
@@ -160,7 +160,7 @@ fn precharged_total_refuses_before_decoding_and_never_resets() -> TestResult {
         record_digest: digest("unused")?,
     };
     let mut grant = AttachmentReplayGrantV1::new();
-    grant.charge_bytes(ReplayLimits::SMALL.total_text_bytes)?;
+    grant.charge_bytes(AttachmentReplayGrantV1::MAX_ENCODED_BYTES)?;
     check!(matches!(
         decode_and_replay_reviewed_references_with_grant(
             &store()?,
@@ -172,9 +172,10 @@ fn precharged_total_refuses_before_decoding_and_never_resets() -> TestResult {
         ),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate encoded bytes",
-            needed: 4_194_305,
-            available: 4_194_304
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(matches!(
         grant.ensure_available(),
@@ -218,16 +219,16 @@ fn replay_uses_the_exact_remaining_step_budget() -> TestResult {
         &mut measured,
     )?;
     let steps = measured.usage().traversal_steps();
-    check!(steps > 0 && steps < ReplayLimits::SMALL.traversal_steps);
+    check!(steps > 0 && steps < AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS);
     let mut exact = AttachmentReplayGrantV1::new();
-    exact.charge_steps(ReplayLimits::SMALL.traversal_steps - steps)?;
+    exact.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS - steps)?;
     replay_reviewed_references_with_grant(&store()?, &records, &receipts, &expected, &mut exact)?;
     check!(eq;
         exact.usage().traversal_steps(),
-        ReplayLimits::SMALL.traversal_steps
+        AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
     );
     let mut one_over = AttachmentReplayGrantV1::new();
-    one_over.charge_steps(ReplayLimits::SMALL.traversal_steps - steps + 1)?;
+    one_over.charge_steps(AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS - steps + 1)?;
     check!(matches!(
         replay_reviewed_references_with_grant(
             &store()?,
@@ -238,9 +239,10 @@ fn replay_uses_the_exact_remaining_step_budget() -> TestResult {
         ),
         Err(EvidenceSubjectAttachmentError::Capacity {
             resource: "aggregate traversal steps",
-            needed: 8_193,
-            available: 8_192
-        })
+            needed,
+            available,
+        }) if available == AttachmentReplayGrantV1::MAX_TRAVERSAL_STEPS
+            && needed.checked_sub(available) == Some(1)
     ));
     check!(matches!(
         one_over.ensure_available(),

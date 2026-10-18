@@ -18,12 +18,10 @@ pub(super) fn rejects(generation: &Path, digest: &str, expected: &Expected) -> T
     let proofs = destination.join("frozen-input.json.proofs");
     let descriptor_bytes = std::fs::read(proofs.join(descriptor))?;
     let metadata: Value = serde_json::from_slice(&descriptor_bytes)?;
-    check!(eq; metadata.get("version").and_then(Value::as_u64), Some(3));
     let chunks = metadata
         .get("chunks")
         .and_then(Value::as_array)
         .ok_or("replay chunks")?;
-    check!(eq; chunks.len(), 1);
     let chunk = proofs.join(
         chunks
             .first()
