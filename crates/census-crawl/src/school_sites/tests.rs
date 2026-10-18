@@ -383,3 +383,27 @@ fn navigation_does_not_admit_generic_hints_from_authorities_or_queries() -> Test
     check!(!rules.interesting("/athletics", &"a".repeat(4097)));
     Ok(())
 }
+
+#[test]
+fn navigation_classifies_bounded_decoded_paths_without_rewriting_requests() -> TestResult {
+    let rules = Rules::new()?;
+    for href in [
+        "/athletics/%66ootball", "/athletics/f%6Fotball", "/athletics%2Ffootball",
+        "/athletics/%FF", "/athletics/%GG", "/athletics/%6", "/athletics/%",
+    ] {
+        check!(!rules.interesting(href, "Athletics"));
+    }
+    for (href, label, rank) in [
+        ("/athletics/%74rack", "Learn more", 0),
+        ("/%63ontact-us", "Football and Volleyball Contacts", 1),
+        ("/athletics?next=/%66ootball", "Athletics", 2),
+        ("https://%66ootball.example/athletics", "Athletics", 2),
+    ] {
+        check!(rules.interesting(href, label));
+        check!(eq; rank_link(href, label), rank);
+    }
+    check!(!rules.interesting("/about?next=/%74rack", "Learn more"));
+    check!(eq; resolve_href("https://school.example", "/athletics/%74rack")?,
+        "https://school.example/athletics/%74rack");
+    Ok(())
+}

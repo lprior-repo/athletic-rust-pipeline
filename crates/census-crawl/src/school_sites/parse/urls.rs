@@ -29,8 +29,8 @@ pub fn base_domain(host: &str) -> String {
         .map_or_else(String::new, |tail| tail.join("."))
 }
 
-pub(super) fn sport_link(href: &str, label: &str) -> bool {
-    [link_path(href), label].into_iter().any(|text| {
+pub(super) fn sport_link(path: &str, label: &str) -> bool {
+    [path, label].into_iter().any(|text| {
         let words = text
             .split(|ch: char| !ch.is_ascii_alphanumeric())
             .filter(|word| !word.is_empty());
@@ -44,7 +44,20 @@ pub(super) fn sport_link(href: &str, label: &str) -> bool {
     })
 }
 
-pub(super) fn link_path(href: &str) -> &str {
+pub(super) fn decoded_link_path(href: &str) -> Option<std::borrow::Cow<'_, str>> {
+    if href.len() > 4096 {
+        return None;
+    }
+    let path = link_path(href);
+    if path.split('%').skip(1).any(|part| {
+        !part.as_bytes().get(..2).is_some_and(|pair| pair.iter().all(u8::is_ascii_hexdigit))
+    }) {
+        return None;
+    }
+    percent_encoding::percent_decode_str(path).decode_utf8().ok()
+}
+
+fn link_path(href: &str) -> &str {
     let location = href.split(['?', '#']).next().map_or("", |path| path);
     let authority = location
         .split_once("://")
@@ -56,10 +69,12 @@ pub(super) fn link_path(href: &str) -> &str {
 }
 
 pub fn rank_link(href: &str, label: &str) -> u8 {
-    if sport_link(href, label) {
+    let Some(path) = decoded_link_path(href).filter(|_| label.len() <= 4096) else {
+        return 3;
+    };
+    if sport_link(&path, label) {
         return 0;
     }
-    let path = link_path(href);
     let blob = format!("{path} {label}").to_ascii_lowercase();
     if ["coach", "staff", "directory", "faculty", "contact"]
         .iter()
@@ -85,8 +100,7 @@ pub fn resolve_href(site: &str, href: &str) -> Result<String, url::ParseError> {
         .map(|url| url.to_string())
 }
 
-pub(super) fn unrelated_sport_link(href: &str, label: &str) -> bool {
-    let path = link_path(href);
+pub(super) fn unrelated_sport_link(path: &str, label: &str) -> bool {
     unrelated_sport_text(path)
         || (unrelated_sport_text(label) && !generic_hub_path(path) && !sport_link("", label))
 }
