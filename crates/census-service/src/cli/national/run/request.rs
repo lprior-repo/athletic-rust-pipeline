@@ -1,5 +1,9 @@
 use super::{Cli, Ingress, NationalArgs, NationalRequest, NonZeroU32, Result, Revision};
-use census_domain::{model::SchoolYear, UsJurisdiction};
+use census_domain::{
+    model::{ProfileId, ProfileSelectionV1, SchoolYear, StoreIdentity},
+    UsJurisdiction,
+};
+use census_report::export::ExportJobRequest;
 use census_service::restate_services::{
     HistoryWindow, PublicationContract, SchoolAddressJoinRequest,
 };
@@ -10,7 +14,7 @@ pub(super) async fn show_retained_request(
     identity: &census_reconcile::identity::WorkflowIdentity,
 ) -> Result<()> {
     let request = super::resume::retained_request(ingestion, identity).await?;
-    println!("existing invocation {} retains its bound managed_bundle_v2 request; submitted parameter changes were ignored", identity.as_str());
+    println!("existing invocation {} retains its bound publication request; submitted parameter changes were ignored", identity.as_str());
     println!("retained request\t{}", serde_json::to_string(&request)?);
     Ok(())
 }
@@ -47,11 +51,33 @@ fn fresh_request(
     jurisdictions: &[UsJurisdiction],
     history: HistoryWindow,
 ) -> Result<NationalRequest> {
+    let (publication_contract, export_job) = match (
+        args.selected_store_identity.as_deref(),
+        args.selected_profile_id.as_deref(),
+    ) {
+        (None, None) => (
+            PublicationContract::ManagedBundleV2,
+            ExportJobRequest::LegacyV2,
+        ),
+        (Some(store), Some(profile)) => (
+            PublicationContract::SelectedPublicationV1,
+            ExportJobRequest::SelectedPublicationV1 {
+                selection: ProfileSelectionV1::new(
+                    StoreIdentity::parse(store).map_err(anyhow::Error::msg)?,
+                    ProfileId::parse(profile).map_err(anyhow::Error::msg)?,
+                ),
+            },
+        ),
+        _ => anyhow::bail!(
+            "--selected-store-identity and --selected-profile-id must be supplied together"
+        ),
+    };
     Ok(NationalRequest {
         season,
         revision,
         history,
-        publication_contract: PublicationContract::ManagedBundleV2,
+        publication_contract,
+        export_job,
         jurisdictions: jurisdictions.to_vec(),
         refresh: args.refresh,
         limit_per_state: args.limit_per_state,

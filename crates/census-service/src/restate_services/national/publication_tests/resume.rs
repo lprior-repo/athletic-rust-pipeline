@@ -17,6 +17,16 @@ pub(super) async fn run_scenario(scenario: Scenario, url: &str) -> TestResult {
         request.publication_contract =
             crate::restate_services::PublicationContract::ManagedBundleV2;
     }
+    if matches!(scenario, Scenario::SelectedFailedStage) {
+        request.publication_contract =
+            crate::restate_services::PublicationContract::SelectedPublicationV1;
+        request.export_job = census_report::export::ExportJobRequest::SelectedPublicationV1 {
+            selection: census_domain::model::ProfileSelectionV1::new(
+                census_domain::model::StoreIdentity::parse(&"a".repeat(64))?,
+                census_domain::model::ProfileId::parse(&"b".repeat(64))?,
+            ),
+        };
+    }
     let mut journal = journal::Journal::new(&request)?;
     match scenario {
         Scenario::ExternalControl => return super::external::local_control(&client, url).await,
@@ -28,6 +38,7 @@ pub(super) async fn run_scenario(scenario: Scenario, url: &str) -> TestResult {
         Scenario::Complete => {}
         Scenario::ManagedComplete => {}
         Scenario::ManagedFailedStage => journal.hold_stage = Some("Workbook".to_owned()),
+        Scenario::SelectedFailedStage => journal.hold_stage = Some("Workbook".to_owned()),
         Scenario::ManagedRefusedSeal => journal.hold_stage = Some("Census".to_owned()),
         Scenario::CompletedResume | Scenario::ManagedCompletedResume => {
             journal.unfinished_rosters = true
@@ -103,6 +114,9 @@ pub(super) async fn run_scenario(scenario: Scenario, url: &str) -> TestResult {
         Scenario::FailedStage(stage) => resume_stage(&mut journal, &client, url, stage).await?,
         Scenario::RefusedSeal => refresh_seal(&mut journal, &client, url).await?,
         Scenario::ManagedFailedStage => {
+            resume_stage(&mut journal, &client, url, "Workbook").await?
+        }
+        Scenario::SelectedFailedStage => {
             resume_stage(&mut journal, &client, url, "Workbook").await?
         }
         Scenario::ManagedRefusedSeal => refresh_seal(&mut journal, &client, url).await?,

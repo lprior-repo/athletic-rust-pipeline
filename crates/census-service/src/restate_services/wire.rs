@@ -1,5 +1,6 @@
 use census_domain::model::{CoachLaneObligation, CoachLaneStage, Revision, SchoolYear};
 use census_domain::UsJurisdiction;
+use census_report::export::ExportJobRequest;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -144,6 +145,19 @@ pub struct WorkbookRequest {
     pub school_year: Option<i16>,
     #[serde(default)]
     pub jurisdictions: Vec<UsJurisdiction>,
+    #[serde(
+        default = "legacy_export_job_request",
+        skip_serializing_if = "is_legacy_export_job_request"
+    )]
+    pub export_job: ExportJobRequest,
+}
+
+fn legacy_export_job_request() -> ExportJobRequest {
+    ExportJobRequest::LegacyV2
+}
+
+fn is_legacy_export_job_request(request: &ExportJobRequest) -> bool {
+    matches!(request, ExportJobRequest::LegacyV2)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

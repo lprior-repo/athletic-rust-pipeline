@@ -26,7 +26,7 @@ pub(in crate::cli::national::run) async fn bound_request(
         .try_filter_map(|binding| futures::future::ready(resumable(binding)));
     futures::pin_mut!(bindings);
     let request = bindings.try_next().await?.ok_or_else(|| anyhow::anyhow!(
-        "national resume compatibility blocked: selected, base and prior workflows have no bound managed_bundle_v2 request; legacy or unbound work requires its compatible client; no invocation was submitted"
+        "national resume compatibility blocked: selected, base and prior workflows have no bound managed publication request; legacy or unbound work requires its compatible client; no invocation was submitted"
     ))?;
     validate_identity(&request, season, revision, jurisdictions)?;
     let history = super::history(ingestion, season, revision, jurisdictions).await?;
@@ -51,7 +51,7 @@ pub(in crate::cli::national::run) async fn retained_request(
 ) -> Result<NationalRequest> {
     let request = resumable(lookup(ingestion, identity.clone()).await?)?
         .ok_or_else(|| anyhow::anyhow!(
-            "managed publication attachment compatibility blocked: existing invocation has no bound managed_bundle_v2 request; observe legacy work with its compatible client"
+            "managed publication attachment compatibility blocked: existing invocation has no bound managed publication request; observe legacy work with its compatible client"
         ))?;
     validate_execution_identity(&request, identity)?;
     Ok(*request)
@@ -124,8 +124,8 @@ fn validate_execution_identity(
 }
 
 fn validate_managed(request: &NationalRequest) -> Result<()> {
-    if request.publication_contract != PublicationContract::ManagedBundleV2 {
-        bail!("national resume compatibility blocked: bound request is not managed_bundle_v2");
+    if request.publication_contract == PublicationContract::LegacySeparateV1 {
+        bail!("national resume compatibility blocked: bound request is not a managed publication contract");
     }
     if request
         .school_address

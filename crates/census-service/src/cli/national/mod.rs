@@ -114,6 +114,18 @@ pub(super) struct NationalArgs {
     )]
     #[arg(long)]
     limit_per_state: Option<usize>,
+    #[arg(
+        long,
+        value_name = "STORE_IDENTITY",
+        help = "Publish the selected profile owned by this store identity; requires --selected-profile-id"
+    )]
+    selected_store_identity: Option<String>,
+    #[arg(
+        long,
+        value_name = "PROFILE_ID",
+        help = "Versioned selected-publication profile ID; requires --selected-store-identity"
+    )]
+    selected_profile_id: Option<String>,
     #[arg(help = "Rosters one jurisdiction fetches concurrently")]
     #[arg(long, default_value_t = 4)]
     concurrency: usize,

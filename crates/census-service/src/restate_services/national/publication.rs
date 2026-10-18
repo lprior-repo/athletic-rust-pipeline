@@ -158,6 +158,7 @@ async fn workbook(
             out: None,
             school_year: Some(request.season.get()),
             jurisdictions: request.jurisdictions.clone(),
+            export_job: request.export_job.clone(),
         }))
         .call()
         .await?;

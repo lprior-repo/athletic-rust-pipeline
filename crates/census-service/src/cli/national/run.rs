@@ -33,14 +33,15 @@ pub(crate) async fn submit_national(
     request: NationalRequest,
 ) -> Result<InvocationHandle<CurrentRoute, Json<NationalReport>>> {
     let contract = request.publication_contract;
-    if contract == PublicationContract::ManagedBundleV2 {
-        crate::cli::publication_preflight::require_managed_publication(ingestion).await?;
+    if contract != PublicationContract::LegacySeparateV1 {
+        crate::cli::publication_preflight::require_publication_contract(ingestion, contract)
+            .await?;
     }
     let national = NationalCensusIngressClient::from_client(ingestion.clone(), identity.as_str());
     let handle = match national.run(Json(request)).send().await {
         Ok(submitted) => {
             if matches!(submitted.send_status(), SendStatus::PreviouslyAccepted) {
-                if contract == PublicationContract::ManagedBundleV2 {
+                if contract != PublicationContract::LegacySeparateV1 {
                     request::show_retained_request(ingestion, identity).await?;
                 } else {
                     println!(
@@ -58,7 +59,7 @@ pub(crate) async fn submit_national(
             submitted.invocation_handle()
         }
         Err(error) => {
-            if contract == PublicationContract::ManagedBundleV2 {
+            if contract != PublicationContract::LegacySeparateV1 {
                 request::show_retained_request(ingestion, identity).await?;
             }
             let handle = attach_existing(origin, ingestion, identity).await?;

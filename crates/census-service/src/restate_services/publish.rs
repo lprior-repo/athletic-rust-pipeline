@@ -236,6 +236,7 @@ impl Workbook {
             jurisdictions: normalize_jurisdictions(&request.jurisdictions)?,
             school_year,
         };
+        let export_job = request.export_job;
         let job = format!("workbook:{}", ctx.key());
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
@@ -243,7 +244,7 @@ impl Workbook {
         let reply = ctx
             .run(move || async move {
                 runtime::run_reserved(region, permit, move || {
-                    build_workbook(&store, &options, &job)
+                    build_workbook(&store, &options, &job, &export_job)
                 })
                 .await
                 .map(Json)

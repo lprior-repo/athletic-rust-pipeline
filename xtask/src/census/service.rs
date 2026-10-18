@@ -87,6 +87,7 @@ pub(super) fn workbook_request(options: &ExportRequest) -> Result<WorkbookReques
             .map(|path| path.display().to_string()),
         school_year: Some(school_year_i16(options.school_year)?),
         jurisdictions: Vec::new(),
+        export_job: census_report::export::ExportJobRequest::LegacyV2,
     })
 }
 

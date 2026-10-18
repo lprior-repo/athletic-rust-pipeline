@@ -32,7 +32,12 @@ fn managed_workbook_job_decodes_one_dataset_for_every_revision_six_artifact() ->
     seed(&store, "Original High School")?;
     let decoded = decoded_generations();
     let resident = resident_generations();
-    let reply = build_workbook(&store, &options()?, "managed-publication-fixture")?;
+    let reply = build_workbook(
+        &store,
+        &options()?,
+        "managed-publication-fixture",
+        &census_report::export::ExportJobRequest::LegacyV2,
+    )?;
     check!(eq; decoded_generations(), decoded.checked_add(1).ok_or("counter overflow")?);
     check!(eq; resident_generations(), resident);
     let generation = Path::new(&reply.path).parent().ok_or("generation absent")?;
@@ -82,15 +87,16 @@ fn managed_workbook_job_refuses_changed_evidence_without_replacing_its_generatio
     let store = Store::open(directory.path())?;
     seed(&store, "Original High School")?;
     let options = options()?;
-    let reply = build_workbook(&store, &options, "managed-retry-fixture")?;
+    let job = census_report::export::ExportJobRequest::LegacyV2;
+    let reply = build_workbook(&store, &options, "managed-retry-fixture", &job)?;
     let workbook_bytes = std::fs::read(&reply.path)?;
     let generation = Path::new(&reply.path).parent().ok_or("generation absent")?;
     let manifest = std::fs::read(generation.join("manifest.json"))?;
-    let repeated = build_workbook(&store, &options, "managed-retry-fixture")?;
+    let repeated = build_workbook(&store, &options, "managed-retry-fixture", &job)?;
     check!(eq; repeated.path, reply.path);
     seed(&store, "Later High School")?;
     let decoded = decoded_generations();
-    let error = build_workbook(&store, &options, "managed-retry-fixture")
+    let error = build_workbook(&store, &options, "managed-retry-fixture", &job)
         .err()
         .ok_or("changed source evidence reused the same job")?;
     check!(

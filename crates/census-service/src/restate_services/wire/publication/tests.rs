@@ -42,6 +42,33 @@ fn managed_contract_is_explicit_and_survives_original_request_binding() -> TestR
 }
 
 #[test]
+fn selected_contract_carries_a_versioned_profile_without_changing_legacy_shape() -> TestResult {
+    let mut original = legacy();
+    let selection = census_domain::model::ProfileSelectionV1::new(
+        census_domain::model::StoreIdentity::parse(&"a".repeat(64))?,
+        census_domain::model::ProfileId::parse(&"b".repeat(64))?,
+    );
+    let object = original.as_object_mut().ok_or("request object")?;
+    object.insert(
+        "publication_contract".into(),
+        json!("selected_publication_v1"),
+    );
+    object.insert(
+        "export_job".into(),
+        serde_json::to_value(
+            census_report::export::ExportJobRequest::SelectedPublicationV1 {
+                selection: selection.clone(),
+            },
+        )?,
+    );
+    let request: NationalRequest = serde_json::from_value(original.clone())?;
+    check!(eq; request.publication_contract, PublicationContract::SelectedPublicationV1);
+    check!(eq; request.export_job, census_report::export::ExportJobRequest::SelectedPublicationV1 { selection });
+    check!(eq; serde_json::to_value(request)?, original);
+    Ok(())
+}
+
+#[test]
 fn unbound_legacy_has_no_invented_request_or_contract() -> TestResult {
     check!(eq; serde_json::to_value(NationalRequestBinding::UnboundLegacy)?, json!({"status": "unbound_legacy"}));
     check!(serde_json::from_value::<NationalRequestBinding>(json!({"status": "bound"})).is_err());
@@ -66,7 +93,7 @@ fn unknown_publication_contract_is_not_accepted_as_legacy() -> TestResult {
 #[test]
 fn publication_capabilities_have_an_explicit_bounded_current_inventory() -> TestResult {
     check!(eq; serde_json::to_value(PublicationCapabilities::current())?, json!({
-        "publication_contracts": ["legacy_separate_v1", "managed_bundle_v2"]
+        "publication_contracts": ["legacy_separate_v1", "managed_bundle_v2", "selected_publication_v1"]
     }));
     for malformed in [
         json!({}),

@@ -38,6 +38,7 @@ pub(super) async fn publish_workbook_live(
         scope: Some(options.scope.as_str().to_string()),
         school_year: Some(options.school_year.get()),
         jurisdictions: options.jurisdictions.clone(),
+        export_job: census_report::export::ExportJobRequest::LegacyV2,
     };
     let WorkbookReply { path, .. } = live::workbook(Some(origin), request, generation).await?;
     println!("workbook\t{path}");
