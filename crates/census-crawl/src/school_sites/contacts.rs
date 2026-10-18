@@ -7,6 +7,10 @@ use census_domain::model::{
 mod persistence;
 use persistence::commit;
 
+mod assessment;
+#[cfg(test)]
+mod tests;
+
 #[tracing::instrument(skip(ctx, school))]
 pub async fn collect_contacts(
     ctx: &AdapterContext<'_>,
@@ -63,27 +67,6 @@ fn research_report(school: &CanonicalSchool, year: SchoolYear) -> AdapterReport 
     report
 }
 
-fn capture_outcome(
-    school: &CanonicalSchool,
-    year: SchoolYear,
-    locator: &str,
-    capture: &FetchOutcome,
-) -> Outcome {
-    school
-        .contact_research
-        .iter()
-        .filter(|row| matches!(row.subject, Subject::SchoolMailbox(_)) && row.school_year == year)
-        .flat_map(|row| &row.attempts)
-        .filter(|attempt| {
-            attempt.locator == locator
-                && attempt.acquired_at == capture.fetched_at
-                && attempt.source_sha256.as_deref() == Some(capture.content_digest.as_str())
-        })
-        .fold(Outcome::CompletedEmpty, |state, attempt| {
-            state.combine(attempt.outcome.clone())
-        })
-}
-
 pub fn apply_contact_capture(
     school: &mut CanonicalSchool,
     year: SchoolYear,
@@ -94,10 +77,10 @@ pub fn apply_contact_capture(
         .response_url
         .as_deref()
         .map_or(capture.url.as_str(), |url| url);
-    let mut state = capture_outcome(school, year, locator, capture);
+    let (mut state, mut reason) = assessment::capture_outcome(school, year, capture, locator);
     let mut signals = super::Signals::default();
-    let mut reason = "searched retained source page; candidate names never establish current tenure or mailbox claims".to_owned();
     if state.is_terminal() {
+        reason = "searched retained source page; candidate names never establish current tenure or mailbox claims".to_owned();
         let text = std::str::from_utf8(&capture.body).map_err(|_| CrawlError::Schema {
             url: locator.to_owned(),
             detail: "school contact page is not UTF-8".to_owned(),

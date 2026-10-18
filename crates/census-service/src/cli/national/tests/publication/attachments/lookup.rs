@@ -206,10 +206,13 @@ async fn managed_attached_observer_validates_ready_output_without_redriving() ->
             ("470 Not Ready", String::new()),
             ("200 OK", body),
         ]);
+        if accepted {
+            responses.push(("200 OK", "null".into()));
+        }
         let (captured, outcome) = exchange_mode(&["--drive"], responses, false).await?;
-        check!(eq; captured.len(), 6);
+        check!(eq; captured.len(), if accepted { 7 } else { 6 });
         assert_lookup(&captured, 3, None)?;
-        check!(captured.iter().skip(4).all(|(path, _)| path
+        check!(captured.iter().skip(4).take(2).all(|(path, _)| path
             == &format!("GET /restate/invocation/{RESOLVED_ID}/output HTTP/1.1\r\n")));
         check!(eq; outcome.is_ok(), accepted);
         if let Err(error) = outcome {

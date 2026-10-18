@@ -192,16 +192,16 @@ mod wire;
 pub use wire::{
     ArchiveCaptureActivity, ArchiveCaptureEpoch, ArchiveCaptureSample, ArchiveCaptureUnmeasured,
     ArchiveUnmeasuredReason, BestsReply, BestsRequest, BindRunReply, BindRunRequest,
-    CompletedTeams, ConsolidateReply, ConsolidateRequest, ConsolidatedTable, EndpointObservation,
-    HistoricalProgress, HistoryWindow, IncompleteTeams, IngestReply, IngestRequest, IngestState,
-    JurisdictionOpen, JurisdictionReport, JurisdictionRequest, JurisdictionState, NationalRequest,
-    NationalRequestBinding, OpenWorkReply, OpenWorkRequest, PublicationCapabilities,
-    PublicationContract, RefusedSource, ReportReply, ReportRequest, SchoolAddressJoinRequest,
-    SealItem, SealRef, SealReply, SealRequest, SourceObjectInventory, SourceObjectOpen, SourcePlan,
-    StageOutcome, StatusReply, SweepReport, SweepRequest, TableCount, TeamsAttemptProgress,
-    TeamsFailure, TeamsSourceFailure, TeamsSourceInspection, TeamsSourceOutcome,
-    TeamsSourceRequest, TeamsStage, WindowRequest, WorkbookReply, WorkbookRequest,
-    ARCHIVE_ACTIVITY_METRIC_VERSION,
+    CompletedTeams, ConsolidateReply, ConsolidateRequest, ConsolidatedTable, ContactStatus,
+    ContactSummary, EndpointObservation, HistoricalProgress, HistoryWindow, IncompleteTeams,
+    IngestReply, IngestRequest, IngestState, JurisdictionOpen, JurisdictionReport,
+    JurisdictionRequest, JurisdictionState, NationalRequest, NationalRequestBinding, OpenWorkReply,
+    OpenWorkRequest, PublicationCapabilities, PublicationContract, RefusedSource, ReportReply,
+    ReportRequest, SchoolAddressJoinRequest, SealItem, SealRef, SealReply, SealRequest,
+    SourceObjectInventory, SourceObjectOpen, SourcePlan, StageOutcome, StatusReply, SweepReport,
+    SweepRequest, TableCount, TeamsAttemptProgress, TeamsFailure, TeamsSourceFailure,
+    TeamsSourceInspection, TeamsSourceOutcome, TeamsSourceRequest, TeamsStage, WindowRequest,
+    WorkbookReply, WorkbookRequest, ARCHIVE_ACTIVITY_METRIC_VERSION,
 };
 
 pub use plan::{

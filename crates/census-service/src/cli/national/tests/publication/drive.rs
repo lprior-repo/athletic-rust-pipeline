@@ -6,6 +6,9 @@ use census_domain::national_census::{NationalCompleteness, NationalReport};
 mod fixtures;
 use fixtures::*;
 
+#[path = "drive/notice.rs"]
+mod notice;
+
 #[tokio::test]
 async fn national_drive_observation_errors_retain_selected_workflow_and_invocation() -> TestResult {
     for response in [
@@ -166,9 +169,10 @@ async fn national_drive_final_failure_or_owed_work_starts_resume_two_after_ready
     for report in [failed_report()?, owed_report()?] {
         let mut responses = vec![("200 OK", capabilities()?), accepted(), ready(&report)?];
         responses.extend(next_cycle(&complete_report()?)?);
+        responses.push(("200 OK", "null".into()));
         let (captured, outcome) = exchange_mode(&["--drive"], responses, false).await?;
         outcome?;
-        check!(eq; captured.len(), 9);
+        check!(eq; captured.len(), 10);
         let paths = send_paths(&captured);
         check!(eq; paths.len(), 2);
         check!(paths
@@ -190,6 +194,7 @@ async fn national_drive_selected_resume_preserves_bound_request_and_budgets() ->
     let mut responses = selected_prefix()?;
     responses.push(ready(&owed_report()?)?);
     responses.extend(next_cycle(&complete_report()?)?);
+    responses.push(("200 OK", "null".into()));
     let (captured, outcome) = exchange_mode(
         &["--drive", "--resume", "7", "--pass-budget", "999"],
         responses,
@@ -197,7 +202,7 @@ async fn national_drive_selected_resume_preserves_bound_request_and_budgets() ->
     )
     .await?;
     outcome?;
-    check!(eq; captured.len(), 11);
+    check!(eq; captured.len(), 12);
     let sends = captured
         .iter()
         .filter(|(path, _)| path.contains("/run/send "))
@@ -224,9 +229,12 @@ async fn national_drive_final_output_requires_explicit_drive_and_owed_work() -> 
         (vec![], owed_report()?, false),
         (vec!["--drive"], complete_report()?, true),
     ] {
-        let responses = vec![("200 OK", capabilities()?), accepted(), ready(&report)?];
+        let mut responses = vec![("200 OK", capabilities()?), accepted(), ready(&report)?];
+        if success {
+            responses.push(("200 OK", "null".into()));
+        }
         let (captured, outcome) = exchange_mode(&arguments, responses, false).await?;
-        check!(eq; captured.len(), 3);
+        check!(eq; captured.len(), if success { 4 } else { 3 });
         check!(eq; send_paths(&captured).len(), 1);
         check!(eq; outcome.is_ok(), success);
     }
