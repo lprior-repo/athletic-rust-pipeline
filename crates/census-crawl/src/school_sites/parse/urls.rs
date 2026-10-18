@@ -43,14 +43,8 @@ pub fn rank_link(href: &str, label: &str) -> u8 {
     3
 }
 
-pub fn resolve_href(site: &str, href: &str) -> String {
-    if href.starts_with("http") {
-        href.to_string()
-    } else {
-        format!(
-            "{}/{}",
-            site.trim_end_matches('/'),
-            href.trim_start_matches('/')
-        )
-    }
+pub fn resolve_href(site: &str, href: &str) -> Result<String, url::ParseError> {
+    url::Url::parse(site)
+        .and_then(|base| base.join(href))
+        .map(|url| url.to_string())
 }

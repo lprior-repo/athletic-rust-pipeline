@@ -1,4 +1,6 @@
-use super::{artifacts, owners, queue, Failure, PlannedSite, QueueStats, Report, SchoolSitesArgs};
+use super::{
+    artifacts, owners, queue, research, Failure, PlannedSite, QueueStats, Report, SchoolSitesArgs,
+};
 use anyhow::{Context, Result};
 use census_crawl::net::Fetcher;
 use census_crawl::school_sites::{
@@ -171,12 +173,16 @@ impl State {
     }
 
     pub(super) fn missing_site(&mut self, site: &PlannedSite, outcome: &SiteOutcome) -> Result<()> {
+        let (school_mailbox_candidates, research_status) = research::project(outcome)?;
         let record = artifacts::SiteRecord {
             state: site.state.code().to_owned(),
             school: site.school.clone(),
             website: site.website.clone(),
             pages: outcome.signals.pages.clone(),
             page_evidence: outcome.pages.clone(),
+            school_mailbox_candidates,
+            research_status,
+            coach_research_status: research::CoachResearchStatus::Unsupported,
             requests: outcome.requests,
             errors: outcome.errors,
             note: outcome.note.clone(),
@@ -185,11 +191,21 @@ impl State {
             "{}.json",
             queue_key(site.state.code(), &site.school)
         ));
+        owners::serialized_size(&record)?;
         artifacts::write_site(&path, &record)?;
         bump(&mut self.report.requests, outcome.requests)?;
         bump(&mut self.report.errors, outcome.errors)?;
         bump(&mut self.report.crawled, 1)?;
-        bump(&mut self.report.empty, 1)?;
+        match research_status {
+            research::ResearchStatus::NoQualifiedCandidateInInspectedPages => {
+                bump(&mut self.report.empty, 1)?;
+            }
+            research::ResearchStatus::Incomplete => self.fail(
+                site,
+                "isolated school mailbox research is incomplete; inspect retained errors, note and page evidence".to_owned(),
+            )?,
+            research::ResearchStatus::Unknown | research::ResearchStatus::UnverifiedCandidates => {}
+        }
         Ok(())
     }
 

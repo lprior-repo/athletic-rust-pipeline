@@ -47,6 +47,35 @@ impl PaceScope {
 }
 
 impl Fetcher {
+    #[tracing::instrument(skip(self))]
+    pub(super) async fn raise_robots_delay(
+        &self,
+        host: &str,
+        delay: Duration,
+    ) -> Result<(), FetchError> {
+        let _gate = self.host_gate(host).await;
+        let scope = self.pace_scope(host);
+        let kind = scope.kind();
+        let key = scope.into_key();
+        let mut buckets = match kind {
+            ScopeKind::Family => self.pacing.families.lock().await,
+            ScopeKind::Host => self.pacing.hosts.lock().await,
+        };
+        let state = buckets.get_mut(&key).ok_or_else(|| FetchError::Invariant {
+            detail: "robots pacing scope disappeared".to_owned(),
+        })?;
+        state.delay = state.delay.max(delay);
+        let earliest =
+            SystemClock
+                .now()
+                .checked_add(state.delay)
+                .ok_or_else(|| FetchError::Policy {
+                    detail: "robots pacing deadline overflowed".to_owned(),
+                })?;
+        state.next_allowed = Some(state.next_allowed.map_or(earliest, |at| at.max(earliest)));
+        Ok(())
+    }
+
     fn pace_scope(&self, host: &str) -> PaceScope {
         let host = host.trim().to_ascii_lowercase();
         match self.family_of(&host) {

@@ -5,7 +5,7 @@ mod rules;
 mod text;
 mod urls;
 
-pub use hits::{analyse, clean_person, AdHit, CoachHit, Signals};
+pub use hits::{analyse, clean_person, AdHit, CoachHit, SchoolMailboxHit, Signals};
 pub use patterns::{
     CONTEXT_MAX, CONTEXT_RADIUS, MAX_ANCHORS, MAX_TABLES, MAX_TABLE_ROWS, TITLE_MAX,
 };

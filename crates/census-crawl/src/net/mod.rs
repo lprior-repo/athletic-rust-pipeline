@@ -31,6 +31,7 @@ mod latency;
 mod origin_locks;
 mod representation;
 mod request;
+mod robots;
 mod time;
 
 #[cfg(test)]

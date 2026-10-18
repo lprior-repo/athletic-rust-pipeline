@@ -91,15 +91,11 @@ fn admit_block(
 
 fn purpose_of(block: &markup::Block) -> Option<Purpose> {
     let text = block.text.trim();
-    if after(
-        text,
-        "contact us anytime with questions or comments. email us at ",
-    )
-    .is_some()
-    {
-        return Some(Purpose::SchoolOffice);
-    }
     for (label, purpose) in [
+        (
+            "contact us anytime with questions or comments. email us at ",
+            Purpose::SchoolOffice,
+        ),
         ("school office", Purpose::SchoolOffice),
         ("main office", Purpose::SchoolOffice),
         ("athletics office", Purpose::AthleticsOffice),
@@ -108,14 +104,31 @@ fn purpose_of(block: &markup::Block) -> Option<Purpose> {
         if let Some(rest) = after(text, label) {
             let rest =
                 rest.trim_start_matches(|ch: char| ch.is_whitespace() || matches!(ch, ':' | '-'));
-            if block
-                .mailboxes
-                .iter()
-                .any(|mailbox| after(rest, mailbox).is_some())
-            {
+            if block.mailboxes.iter().any(|mailbox| {
+                rest.split_whitespace().next().is_some_and(|token| {
+                    token
+                        .trim_end_matches(['.', ',', ';', ':', '!', '?', ')', ']'])
+                        .eq_ignore_ascii_case(mailbox)
+                })
+            }) {
                 return Some(purpose);
             }
         }
     }
     None
+}
+
+pub(super) fn mailbox_candidates(body: &[u8]) -> crate::CrawlResult<Vec<(Purpose, String)>> {
+    let page = markup::parse(body).map_err(|error| super::schema(&error.to_string()))?;
+    if page.limited || page.malformed {
+        return Err(super::schema(
+            "school mailbox candidate page is incomplete or malformed",
+        ));
+    }
+    Ok(page
+        .blocks
+        .iter()
+        .filter(|block| block.mailboxes.len() == 1)
+        .filter_map(|block| Some((purpose_of(block)?, block.mailboxes.first()?.clone())))
+        .collect())
 }

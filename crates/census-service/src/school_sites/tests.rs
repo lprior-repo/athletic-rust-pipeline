@@ -42,6 +42,7 @@ fn person_cleaning_keeps_real_names_only() -> TestResult {
 fn contact_rows_carry_page_provenance() -> TestResult {
     let signals = Signals {
         emails: vec!["mlsmith@example.k12.us".to_string()],
+        school_mailboxes: Vec::new(),
         coach_hits: vec![hit("Mary Smith", Sport::CrossCountry, None)],
         ad_hits: vec![AdHit {
             name: "Robert Jones".to_string(),
@@ -86,7 +87,7 @@ fn contact_rows_carry_page_provenance() -> TestResult {
     check!(eq; coach.coach_name.as_str(), "Mary Smith");
     check!(eq; coach.sport.as_str(), "Cross Country");
     check!(eq; coach.role.as_str(), "Head Coach");
-    check!(eq; coach.public_professional_email.as_str(), "mlsmith@example.k12.us");
+    check!(eq; coach.public_professional_email.as_str(), "");
     check!(eq; coach.last_observed.as_str(), "2026-10-05");
     check!(eq; coach.state.as_str(), "MO");
     let director = rows.iter().find(|row| !row.ad_name.is_empty());
@@ -178,7 +179,7 @@ fn unmapped_states_are_counted_not_crawled() -> TestResult {
 }
 
 #[test]
-fn missing_owner_writes_an_empty_site_record() -> TestResult {
+fn missing_owner_retains_incomplete_site_record() -> TestResult {
     use super::execution::State;
 
     let temp_dir = tempfile::tempdir()?;
@@ -214,11 +215,11 @@ fn missing_owner_writes_an_empty_site_record() -> TestResult {
 
     check!(eq; result.planned, 1);
     check!(eq; result.crawled, 1);
-    check!(eq; result.empty, 1);
-    check!(eq; result.failed, 0);
-    check!(eq; result.failures.len(), 0);
+    check!(eq; result.empty, 0);
+    check!(eq; result.failed, 1);
+    check!(eq; result.failures.len(), 1);
     check!(eq; result.requests, 4);
-    check!(eq; result.errors, 3);
+    check!(eq; result.errors, 4);
 
     let record: serde_json::Value =
         serde_json::from_slice(&std::fs::read(out.join("WI__fault-probe-school.json"))?)?;
@@ -231,3 +232,6 @@ fn missing_owner_writes_an_empty_site_record() -> TestResult {
 
 #[path = "canonical_tests.rs"]
 mod canonical_tests;
+
+#[path = "research_tests.rs"]
+mod research_tests;

@@ -137,3 +137,40 @@ fn cen07_stale_capture_cannot_become_current_by_relabeling_request_year() -> Tes
     check!(eq; school_mailbox(&school, Purpose::SchoolOffice, year)?.map(|claim| claim.mailbox.as_str()), Some("current.office@cacmustangs.org"));
     Ok(())
 }
+
+#[test]
+fn generic_phrase_does_not_qualify_a_later_student_mailbox() -> TestResult {
+    let year = SchoolYear::new(2026).ok_or("year")?;
+    for block in [
+        r#"<p>Contact us anytime with questions or comments. Email us at the front desk. Student liaison: <a href="mailto:student@school.org">Student Jane Doe</a></p>"#,
+        r#"<li>Contact us anytime with questions or comments. Email us at <div><a href="mailto:student@school.org">student@school.org</a></div></li>"#,
+        r#"<li>School office: <div><a href="mailto:student@school.org">student@school.org</a></div></li>"#,
+    ] {
+        let body = format!(
+            r#"<meta property="og:site_name" content="Central Arkansas Christian Schools">{block}"#
+        );
+        let mut school = school();
+        apply_school_mailbox_capture(&mut school, year, &capture(body.as_bytes()))?;
+        check!(school.mailbox_claims.is_empty());
+        check!(school_mailbox_candidates(body.as_bytes())?.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
+fn office_mailbox_must_match_the_complete_visible_address() -> TestResult {
+    let year = SchoolYear::new(2026).ok_or("year")?;
+    for label in [
+        "School office: ",
+        "Contact us anytime with questions or comments. Email us at ",
+    ] {
+        let body = format!(
+            r#"<meta property="og:site_name" content="Central Arkansas Christian Schools"><p>{label}jane@school.org.uk Student liaison: <a href="mailto:jane@school.org">Jane</a></p>"#
+        );
+        let mut school = school();
+        apply_school_mailbox_capture(&mut school, year, &capture(body.as_bytes()))?;
+        check!(school.mailbox_claims.is_empty());
+        check!(school_mailbox_candidates(body.as_bytes())?.is_empty());
+    }
+    Ok(())
+}

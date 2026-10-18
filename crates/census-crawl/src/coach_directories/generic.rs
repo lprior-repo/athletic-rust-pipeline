@@ -58,7 +58,11 @@ async fn fetch(
         crate::school_sites::persist_contact_prefix(ctx, school, checkpoint)?;
         return Ok(Vec::new());
     }
-    let outcome = match ctx.fetcher.get(url, &ctx.fetch_options()).await {
+    let outcome = match ctx
+        .fetcher
+        .get_robots_checked(url, &ctx.fetch_options())
+        .await
+    {
         Ok(outcome) => outcome,
         Err(error) => {
             let attempt = ContactResearchAttempt {
@@ -248,4 +252,8 @@ pub(crate) fn inspect_staff_links(body: &[u8]) -> CrawlResult<(bool, Vec<String>
         return Err(schema("published staff discovery page is malformed"));
     }
     Ok((page.sidearm, page.links))
+}
+
+pub(crate) fn school_mailbox_candidates(body: &[u8]) -> CrawlResult<Vec<(Purpose, String)>> {
+    offices::mailbox_candidates(body)
 }

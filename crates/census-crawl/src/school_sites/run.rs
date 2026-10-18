@@ -33,9 +33,10 @@ pub async fn crawl_site(
         },
     };
     let site = row.website.trim();
-    let Some(home) = run.fetch(site).await? else {
+    let Some((home_url, home)) = run.fetch(site).await? else {
         return Ok(run.outcome);
     };
+    let site = home_url.as_str();
     analyse(rules, site, &home, &mut run.outcome.signals)?;
     let mut pool: Vec<_> = rules
         .anchor_candidates(&home)
@@ -56,7 +57,7 @@ pub async fn crawl_site(
 
 impl Run<'_> {
     #[tracing::instrument(skip(self))]
-    async fn fetch(&mut self, url: &str) -> CrawlResult<Option<String>> {
+    async fn fetch(&mut self, url: &str) -> CrawlResult<Option<(String, String)>> {
         if self.outcome.requests >= MAX_SEARCH_FOLLOW {
             self.outcome.note = Some("school site request budget exhausted".to_owned());
             return Ok(None);
@@ -67,7 +68,7 @@ impl Run<'_> {
             allow_not_found: false,
             headers: Vec::new(),
         };
-        match self.fetcher.get(url, &options).await {
+        match self.fetcher.get_robots_checked(url, &options).await {
             Ok(capture) => {
                 if capture.body.len() > 1024 * 1024 {
                     return Err(CrawlError::Resource {
@@ -82,13 +83,14 @@ impl Run<'_> {
                         detail: "school site is not UTF-8".to_owned(),
                     })?
                     .to_owned();
+                let effective_url = capture.response_url.map_or(capture.url, |url| url);
                 self.outcome.pages.push(PageEvidence {
-                    url: capture.response_url.map_or(capture.url, |url| url),
+                    url: effective_url.clone(),
                     digest: capture.content_digest,
                     fetched_at: capture.fetched_at,
                     status: capture.status,
                 });
-                Ok(Some(text))
+                Ok(Some((effective_url, text)))
             }
             Err(error) => {
                 self.outcome.errors = self.outcome.errors.saturating_add(1);
@@ -105,12 +107,15 @@ impl Run<'_> {
             if self.outcome.requests >= MAX_SITE_PAGES {
                 break;
             }
-            let url = parse::resolve_href(site, href);
+            let url = parse::resolve_href(site, href).map_err(|error| CrawlError::Schema {
+                url: site.to_owned(),
+                detail: format!("school link cannot be resolved: {error}"),
+            })?;
             if self.outcome.signals.pages.contains(&url) || !seen.insert(url.clone()) {
                 continue;
             }
-            if let Some(html) = self.fetch(&url).await? {
-                analyse(self.rules, &url, &html, &mut self.outcome.signals)?;
+            if let Some((effective_url, html)) = self.fetch(&url).await? {
+                analyse(self.rules, &effective_url, &html, &mut self.outcome.signals)?;
             }
         }
         Ok(())
@@ -124,13 +129,13 @@ impl Run<'_> {
                 break;
             }
             let url = format!("{root}{guess}");
-            let Some(html) = self.fetch(&url).await? else {
+            let Some((effective_url, html)) = self.fetch(&url).await? else {
                 continue;
             };
             if self.rules.visible_text(&html).len() < MIN_GUESS_BODY {
                 continue;
             }
-            analyse(self.rules, &url, &html, &mut self.outcome.signals)?;
+            analyse(self.rules, &effective_url, &html, &mut self.outcome.signals)?;
             if !self.outcome.signals.coach_hits.is_empty() {
                 break;
             }
@@ -146,10 +151,10 @@ impl Run<'_> {
                 break;
             }
             let url = format!("{root}/?s={query}");
-            let Some(html) = self.fetch(&url).await? else {
+            let Some((effective_url, html)) = self.fetch(&url).await? else {
                 continue;
             };
-            analyse(self.rules, &url, &html, &mut self.outcome.signals)?;
+            analyse(self.rules, &effective_url, &html, &mut self.outcome.signals)?;
             self.search_hits(&root, &html).await?;
         }
         Ok(())
@@ -169,10 +174,14 @@ impl Run<'_> {
                         .any(|needle| blob.contains(needle))
             });
         for (href, _) in hits.take(3) {
-            if let Some(page) = self.fetch(&href).await? {
-                analyse(self.rules, &href, &page, &mut self.outcome.signals)?;
+            if let Some((effective_url, page)) = self.fetch(&href).await? {
+                analyse(self.rules, &effective_url, &page, &mut self.outcome.signals)?;
             }
         }
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "run_tests.rs"]
+mod tests;

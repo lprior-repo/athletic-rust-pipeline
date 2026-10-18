@@ -198,6 +198,7 @@ mod tests {
                         success_url.clone_from(&requested);
                     }
                     let plan = FetchPlan {
+                        admission: crate::net::robots::Admission::Unrestricted,
                         method: "GET",
                         url: &requested,
                         payload: None,

@@ -78,19 +78,29 @@ fn setup(
 }
 
 fn seed_cache(dir: &std::path::Path) -> TestResult {
-    let mut hasher = Sha256::new();
-    hasher.update(b"GET\x1f");
-    hasher.update(URL.as_bytes());
-    hasher.update(b"\x1f");
-    let hash = format!("{:x}", hasher.finalize());
-    let key = hash.get(..32).ok_or("cache identity")?;
-    let meta = serde_json::json!({ "url": URL, "method": "GET", "status": 200,
-        "content_digest": format!("{:x}", Sha256::digest(CAPTURE)), "bytes": CAPTURE.len(),
-        "fetched_at": "2026-10-07T12:34:56Z", "content_type": "text/html" });
-    std::fs::write(dir.join(format!("{key}.body")), CAPTURE)?;
-    std::fs::write(
-        dir.join(format!("{key}.meta.json")),
-        serde_json::to_vec(&meta)?,
+    crate::capture_cache::seed_response(
+        dir,
+        URL,
+        CAPTURE,
+        "2026-10-07T12:34:56Z",
+        crate::capture_cache::Metadata {
+            content_type: Some("text/html"),
+            ..crate::capture_cache::Metadata::default()
+        },
+    )?;
+    seed_robots(dir, b"User-agent: *\nAllow: /\n")
+}
+
+fn seed_robots(dir: &std::path::Path, body: &[u8]) -> TestResult {
+    crate::capture_cache::seed_response(
+        dir,
+        "https://cacmustangs.org/robots.txt",
+        body,
+        &census_crawl::net::now_iso8601(),
+        crate::capture_cache::Metadata {
+            content_type: Some("text/plain"),
+            ..crate::capture_cache::Metadata::default()
+        },
     )?;
     Ok(())
 }
@@ -101,11 +111,11 @@ async fn source_bound_alias_acquires_mailbox_without_minting_unmatched_queue_pop
     let year = SchoolYear::new(2026).ok_or("year")?;
     let (dir, store, fetcher, args) = setup(&["CAC", "Unpublished Queue School"], year)?;
     let report = run(&fetcher, &args, &store).await?;
-    check!(eq; (report.planned, report.crawled, report.failed, report.emails), (2, 2, 0, 1));
-    check!(eq; report.empty, 1);
+    check!(eq; (report.planned, report.crawled, report.failed, report.emails), (2, 2, 1, 1));
+    check!(eq; report.empty, 0);
     check!(
-        report.failures.is_empty(),
-        "a missing canonical owner is crawled empty, not failed"
+        report.failures.len() == 1,
+        "incomplete isolated research remains visible"
     );
     let record = dir
         .path()
@@ -160,5 +170,25 @@ async fn default_jurisdiction_cannot_relabel_an_explicit_foreign_queue_subject()
         .ok_or("retained school")?;
     check!(eq; school_mailbox(&school, SchoolMailboxPurpose::SchoolOffice, year)?, None);
     check!(eq; school_mailbox_research(&school, SchoolMailboxPurpose::SchoolOffice, year), ContactResearchOutcome::Unattempted);
+    Ok(())
+}
+
+#[tokio::test]
+async fn disallowed_canonical_contact_capture_remains_blocked() -> TestResult {
+    let year = SchoolYear::new(2026).ok_or("year")?;
+    let (_dir, store, fetcher, args) = setup(&[NAME], year)?;
+    seed_robots(fetcher.cache_dir(), b"User-agent: *\nDisallow: /\n")?;
+    let report = run(&fetcher, &args, &store).await?;
+    check!(eq; (report.planned, report.crawled, report.failed, report.emails), (1, 1, 1, 0));
+    let school = store
+        .scan::<CanonicalSchool>(Table::Schools)?
+        .into_iter()
+        .next()
+        .ok_or("retained school")?;
+    check!(
+        school.mailbox_claims.is_empty(),
+        "robots refusal cannot create contact claims"
+    );
+    check!(eq; school_mailbox_research(&school, SchoolMailboxPurpose::SchoolOffice, year), ContactResearchOutcome::Blocked);
     Ok(())
 }

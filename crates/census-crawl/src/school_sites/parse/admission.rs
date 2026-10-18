@@ -5,6 +5,11 @@ pub(super) fn page(rules: &Rules, url: &str, html: &str, signals: &Signals) -> C
     check("school site body bytes", html.len(), 1024 * 1024)?;
     check("school site URL bytes", url.len(), 4096)?;
     check(
+        "school site retained mailbox rows",
+        signals.school_mailboxes.len(),
+        16_384,
+    )?;
+    check(
         "school site retained email rows",
         signals.emails.len(),
         16_384,
@@ -59,4 +64,15 @@ fn check(resource: &'static str, requested: usize, limit: usize) -> CrawlResult<
         });
     }
     Ok(())
+}
+
+pub(super) fn mailbox_rows(signals: &Signals, incoming: usize) -> CrawlResult<()> {
+    let requested = signals
+        .school_mailboxes
+        .len()
+        .checked_add(incoming)
+        .ok_or_else(|| CrawlError::Arithmetic {
+            detail: "school mailbox candidate count overflow".to_owned(),
+        })?;
+    check("school site retained mailbox rows", requested, 16_384)
 }

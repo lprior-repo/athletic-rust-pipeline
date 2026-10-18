@@ -72,10 +72,8 @@ fn page_analysis_extracts_emails_hits_and_tables() -> TestResult {
         &mut signals,
     )?;
     signals.finish();
-    check!(eq; signals.emails, vec![
-        "coach.smith@example.org".to_string(),
-        "mlee@example.org".to_string()
-    ]);
+    check!(signals.emails.is_empty());
+    check!(signals.school_mailboxes.is_empty());
     check!(eq; signals.pages, vec!["https://example.k12.us/athletics".to_string()]);
     let coaches = coach_rows(&signals);
     check!(coaches.contains(&(
@@ -104,7 +102,7 @@ fn page_analysis_extracts_emails_hits_and_tables() -> TestResult {
         Sport::CrossCountry,
         CoachRole::HeadCoach,
         Gender::Girls,
-        Some("mlee@example.org")
+        None
     )));
     Ok(())
 }
@@ -160,8 +158,8 @@ fn navigation_rules_match_the_prototype() -> TestResult {
     check!(eq; rank_link("https://x/athletics", "Athletics"), 1);
     check!(eq; rank_link("https://x/staff", "Staff Directory"), 2);
     check!(eq; rank_link("https://x/about", "About"), 3);
-    check!(eq; resolve_href("https://x.org/home", "/coaches"), "https://x.org/home/coaches");
-    check!(eq; resolve_href("https://x.org", "https://y.org/z"), "https://y.org/z");
+    check!(eq; resolve_href("https://x.org/home", "/coaches")?, "https://x.org/coaches");
+    check!(eq; resolve_href("https://x.org", "https://y.org/z")?, "https://y.org/z");
     check!(eq; site_root("https://x.org/pages/home"), "https://x.org");
     check!(eq; slug("Rock Bridge High School"), "rock-bridge-high-school");
     check!(eq; slug("Bishop DuBourg (St. Louis)"), "bishop-dubourg-st-louis");
@@ -177,5 +175,92 @@ fn queue_parsing_keeps_valid_rows_and_counts_rejections() -> TestResult {
     check!(eq; rejected, 1);
     check!(eq; rows.len(), 2);
     check!(eq; rows.first().map(|row| row.name.as_str()), Some("Rock Bridge High School"));
+    Ok(())
+}
+
+#[test]
+fn office_mailboxes_exclude_adjacent_students_and_unqualified_addresses() -> TestResult {
+    let rules = Rules::new()?;
+    let html = r#"<p>Track Coach Jane Doe</p>
+        <p>Student Jane Doe <a href="mailto:jane.doe@school.org">Email</a></p>
+        <p><a href="mailto:unlabelled@school.org">Contact</a></p>
+        <p>School office: <a href="mailto:office@school.org">office@school.org</a></p>
+        <p>Athletics office: <a href="mailto:athletics@school.org">athletics@school.org</a></p>"#;
+    let mut signals = Signals::default();
+    analyse(&rules, "https://school.org/contact", html, &mut signals)?;
+    signals.finish();
+    check!(eq; signals.emails, vec!["athletics@school.org", "office@school.org"]);
+    check!(eq; signals.school_mailboxes.len(), 2);
+    check!(signals
+        .school_mailboxes
+        .iter()
+        .all(|hit| hit.url == "https://school.org/contact"));
+    check!(signals.coach_hits.iter().all(|hit| hit.email.is_none()));
+    Ok(())
+}
+
+#[test]
+fn generic_school_contact_reuses_canonical_office_rule() -> TestResult {
+    let rules = Rules::new()?;
+    let html = r#"<p>Contact us anytime with questions or comments. Email us at <a href="mailto:contact@school.org">contact@school.org</a></p>"#;
+    let mut signals = Signals::default();
+    analyse(&rules, "https://school.org/contact", html, &mut signals)?;
+    check!(eq; signals.emails, vec!["contact@school.org"]);
+    check!(eq; signals.school_mailboxes.first().map(|hit| hit.purpose),
+        Some(census_domain::model::SchoolMailboxPurpose::SchoolOffice));
+    Ok(())
+}
+
+#[test]
+fn ambiguous_office_blocks_and_student_tables_produce_no_mailbox() -> TestResult {
+    let rules = Rules::new()?;
+    let html = r#"<p>School office: <a href="mailto:office@school.org">office@school.org</a>
+        Student <a href="mailto:student@school.org">student@school.org</a></p>
+        <table><tr><th>Sport</th><th>Coach</th><th>Email</th></tr>
+        <tr><td>Cross Country</td><td>Student Jane Doe</td><td>student@school.org</td></tr></table>"#;
+    let mut signals = Signals::default();
+    analyse(&rules, "https://school.org/contact", html, &mut signals)?;
+    check!(signals.emails.is_empty());
+    check!(signals.school_mailboxes.is_empty());
+    check!(signals.coach_hits.iter().all(|hit| hit.email.is_none()));
+    Ok(())
+}
+
+#[test]
+fn mailbox_budget_is_checked_before_appending() -> TestResult {
+    let rules = Rules::new()?;
+    let mut signals = Signals::default();
+    signals.school_mailboxes = vec![
+        super::SchoolMailboxHit {
+            purpose: census_domain::model::SchoolMailboxPurpose::SchoolOffice,
+            email: "office@school.org".to_owned(),
+            url: "https://school.org/contact".to_owned(),
+        };
+        16_383
+    ];
+    let html = r#"<p>School office: <a href="mailto:office@school.org">office@school.org</a></p>"#;
+    analyse(&rules, "https://school.org/contact", html, &mut signals)?;
+    check!(eq; signals.school_mailboxes.len(), 16_384);
+    let previous = signals.clone();
+    check!(matches!(
+        analyse(&rules, "https://school.org/contact", html, &mut signals),
+        Err(crate::CrawlError::Resource {
+            requested: 16_385,
+            limit: 16_384,
+            ..
+        })
+    ));
+    check!(eq; signals, previous);
+    Ok(())
+}
+
+#[test]
+fn links_resolve_against_the_captured_document_url() -> TestResult {
+    let page = "https://school.example/athletics/staff.html";
+    check!(eq; resolve_href(page, "/coaches")?, "https://school.example/coaches");
+    check!(eq; resolve_href(page, "coaches")?, "https://school.example/athletics/coaches");
+    check!(eq; resolve_href(page, "../directory")?, "https://school.example/directory");
+    check!(eq; resolve_href(page, "?sport=track")?, "https://school.example/athletics/staff.html?sport=track");
+    check!(resolve_href("not a URL", "/coaches").is_err());
     Ok(())
 }

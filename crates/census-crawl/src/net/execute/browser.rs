@@ -247,6 +247,7 @@ mod user_agent_policy_tests {
                 };
                 let representation = RepresentationHeaders::canonical(&options.headers)?;
                 let plan = FetchPlan {
+            admission: crate::net::robots::Admission::Unrestricted,
                     method: "GET",
                     url: URL,
                     payload: None,
