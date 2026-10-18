@@ -961,3 +961,20 @@ prefix above. These are controlled-only workbooks, not a national population.
 |---|---|---|
 | G0: 50.00, May 15, eligible groups 2 | `.tmpppSEuK/publication/generations/8e7470f941ad971969b3c6dbd1bba181e5bb43479afa5de2093f0192bea09a77/workbook.xlsx` | `ca8e270cdeef5a3f5f7ef6d8092647ea9d1a0bfc06cb8def0d3df5229bd8276c` |
 | G1: 51.00, May 16, eligible groups 1 | `.tmpHnXRgP/publication/generations/7f3afcab37915c5e19502c9659afe20c740a6ed146070fc875e303513be0ae46/workbook.xlsx` | `ca1f0ee502dccdf3cfde6999f324260d21439219d5110ccf2c20adb441f77d4f` |
+
+Concurrent PR93 then landed; the first push was correctly rejected, followed by a
+normal merge. Exact source `6486c253efed07dedee031ed758c45fe170ccbd3`, tree
+`53cc451cc773ec602dc520c52d617c09e0cc69ee`, was qualified and successfully pushed
+to remote main. Kernel inputs/pins remained unchanged.
+
+| Pushed-source qualification | Receipt | Result |
+|---|---|---|
+| fmt / check / lint | `b8e2ef89` / `00d6567c` / `010d2603` | PASS |
+| Actual cold pacing/restart and deadline cases | `1343460b` | PASS 13/13 |
+| CLI binary; connected lifecycle; original A → B | `2ab173bf`; `d1f838c6` (Nextest `ab6fa2b7`); `0e907995` | PASS 5/5; 169/169; 1/1 |
+| Trusted AST / comments / panic extraction / architecture contract | `14ef9da0` / `0f9ece70` / `2183e4e0` / `ae27310a` | PASS; no hard structural failure or unreachable source; 4,900 lexical files; existing boundary deviations visible |
+
+Two local-GPU read-only reviews found no confirmed restart regression; those
+reviews did not execute tests. Native receipts above, not reviewer prose, qualify
+the behavior. Controlled `3fhg` is complete in scope; genuine positive population,
+current-seal documentary freshness and national readiness remain separate.
