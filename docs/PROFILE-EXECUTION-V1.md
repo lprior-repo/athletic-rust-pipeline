@@ -4,13 +4,25 @@
 selected-profile reusable-production architecture. This document records current support only;
 its narrower compiler envelope does not reduce that target or enroll/migrate a production store.
 
-This is the pre-cutover implementation inventory, not a compatibility commitment.
-[ADR-038's new-only decision](adr/ADR-038-selected-profile-reusable-production-state.md#new-only-runtime-cutover--2026-10-15)
-requires its replacement and complete caller migration; that replacement is not yet qualified.
+## Executed integration subset
 
-This additive domain boundary checks a selected query profile against nine immutable,
-role-specific evidence-policy descriptors. It does not execute a recruiting publication,
-qualify a source, resolve an athlete, or certify completion.
+Source `4d0ba14e` qualifies controlled 49/50/51 publication, documentary withdrawal
+at current sealing, durable selected **library** jobs and original-artifact replay.
+[Exact receipts and limitations](VERIFICATION-EVIDENCE.md#pr9495-integrated-seal-and-durable-job-qualification--2026-10-18)
+and the [acceptance matrix](NATIONAL-CENSUS-PLAN.md#75-current-execution-checkpoint--2026-10-18)
+own those claims. Service/national workbook requests still use the unselected job
+path. Genuine positive population, accepted roster withdrawal, production enrollment
+and representative national resources are not qualified.
+
+## Profile compiler boundary
+
+The compiler inventory below is not an execution or compatibility commitment.
+[ADR-038's new-only decision](adr/ADR-038-selected-profile-reusable-production-state.md#new-only-runtime-cutover--2026-10-15)
+still requires complete caller migration.
+
+This domain boundary checks a selected query profile against nine immutable,
+role-specific evidence-policy descriptors. It does not itself execute a recruiting
+publication, qualify a source, resolve an athlete, or certify completion.
 
 `census_domain::profile_execution::compile_profile` returns a privately constructed,
 non-serializable `CompiledProfileV1` borrowing the original `QueryProfileV1`. A caller

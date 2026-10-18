@@ -1031,3 +1031,54 @@ historical G0 readback; G0 still yields 50 while the current G1 yields 51.
 R2 current-roster inventory freshness, R3 durable selected service request/receipt,
 genuine target-cohort population, same-root promotion and national readiness
 remain separate acceptance cells.
+
+#### PR94/95 integrated seal and durable-job qualification — 2026-10-18
+
+Qualified source `4d0ba14e28f57e458e55bc6587c23f9d55fcbc1a`, tree
+`3421284ef5d59bf0abd6eab1dbf0efed43a24a5c`. Both incoming PRs were merged normally.
+The only semantic merge conflict retained PR94's job-freshness check and the
+already-qualified identity check; it did not remove either fence.
+
+| Exact-source qualification | Receipt | Result |
+|---|---|---|
+| fmt / all-target check / source lint | `3f9f9aaa` / `f2f668f7` / `ab8b4838` | PASS; arity advisories visible |
+| Connected production publication/intake cases | `d0bbc1a8`, Nextest `4681402f-19d1-4aa1-a153-a7f28c288b00` | PASS 178/178; includes 50→51, cold G0, durable retry, final-fence withdrawal and interrupted-intent controls |
+| Seal states / CLI publication readback | `78f40e30` / `71443f15` | PASS 2/2 and 5/5 |
+| Original retained Report V3 / original roster A → B | `ae5369c8` / `e5a8e97b` | PASS 1/1 each; original producers, inventory and hashes unchanged |
+| Trusted AST / comments / panic extraction | `258bdcf7` / `768c8127` / `0ccc8a53` | PASS; no file over 300, function over 60 or unresolved AST; 27,183 callables, 2,537 production files, 4,915 lexical files and three templates |
+| Architecture contract | `3440d137` | PASS; existing five boundary edges remain declared deviations |
+
+Same canonical environment and bounded selectors as above; all commands exited
+successfully. Full output `artifact://3143`. Denied selectors and the crash subtree
+remain excluded. No release-umbrella, live census or representative national-resource
+pass is claimed.
+
+Intermediate source `0ba48d21` passed 178 cases (`81e17c65`) but scan `d78bb951`
+measured three files over 300 lines: dataset 301, selected proofs 306, manifest 302.
+The measurement command exited zero; structural acceptance nevertheless FAILED.
+Two GPU-coded cohesive extractions plus Main's facade move repaired that boundary;
+Native `fcfeec2e` then caught an accidentally removed `require_current` guard.
+Main restored the original guard, corrected two moved helper imports, and reran
+lint `3c378ec6`, check `dce3c08b` and fmt `73eb509e` before integrating PR95.
+The final-source receipts above supersede those attempts.
+
+Independent ZIP/XML/CSV inspection verified all artifact hashes, all normalized
+row counts, all eight mandatory family generation bindings, exact PR/date and
+current Colorado / historical Michigan school cells in this retained **controlled**
+pair produced on `0ba48d21`; these are not relabelled as final-source artifacts.
+Both use Store `2ee40b76…b2fddd` and the same public athlete ID.
+
+| Generation | Workbook under `/home/lewis/.cache/r14n-TpNM3q/` | SHA256 |
+|---|---|---|
+| G0: 50.00, May 15, eligible groups 2, sequence 110 | `.tmpu9QCEC/publication/generations/c068233f00f1d807d825d076470499226fe86f2feeae43d1d1b8d2efc9d93772/workbook.xlsx` | `c14570fb381f2a44fe32de5a6249c1323d454ceae22b14e0f0c7f9c337017e1c` |
+| G1: 51.00, May 16, eligible groups 1, sequence 117 | `.tmpfOcX78/publication/generations/bf0d0b83e688b4686374134f1ee6b7ec33c11cc602f3d38609699f43b83daa22/workbook.xlsx` | `069660cbf56f0ccbf3379cd792dbb146fa60aff473efc691ed75914a70a19136` |
+
+The first independent smoke used an incorrect expected Michigan display name
+with an added “High School” suffix. Original controlled input says
+“Detroit Catholic Central”; correcting that throwaway oracle, not product data,
+passed both workbooks. No permanent assertion or source evidence was weakened.
+
+Current limits: selected **library** jobs are qualified here, not the unselected
+service/national caller. Genuine retained input is grade 12 / CO2026 and preserves
+its calendar-label mismatch; it is not positive CO2027 coverage. Reviewed roster
+issuance does not yet provide an accepted exact-claim withdrawal operation.
