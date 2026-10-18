@@ -36,7 +36,7 @@ fn rows(group: &CapturedExternalPrefix, grant: &mut AttachmentReplayGrantV1) -> 
     let namespace = JournalNamespace::new(group.root.schema.phase(), &group.root.key)?;
     let budget = ReadBudget {
         rows: 6,
-        bytes: 4 * 1024 * 1024,
+        bytes: super::super::MAX_EXTERNAL_CAPTURE_BYTES,
         record_bytes: crate::MAX_JOURNAL_VALUE_BYTES,
     };
     admit_namespace_budget(budget)?;

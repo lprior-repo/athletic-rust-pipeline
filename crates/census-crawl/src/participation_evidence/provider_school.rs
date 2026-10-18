@@ -17,6 +17,8 @@ pub use types::{
 pub const PROVIDER_SCHOOL_INTAKE_PHASE: &str = "provider_school_intake_v1";
 pub const PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1: &str =
     "milesplit-directory-roster-semantic-kernel/v1";
+pub const PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2: &str =
+    "milesplit-directory-roster-semantic-kernel/v2";
 const INTERPRETATION: &str = "milesplit_directory_roster_school_v1";
 
 #[derive(Debug, Clone, Serialize)]
@@ -100,18 +102,34 @@ impl ProviderSchoolPacketV1 {
     ) -> CrawlResult<CheckedProviderSchoolPacketV1> {
         match contract {
             PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1 => self.read_semantic_contract_v1(),
+            PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2 => self.read_semantic_contract_v2(),
             _ => Err(invalid("unsupported provider school semantic contract").into()),
         }
     }
 
     pub fn read_semantic_contract_v1(&self) -> CrawlResult<CheckedProviderSchoolPacketV1> {
+        self.read_semantic_contract_with_policy(
+            crate::milesplit::RosterOwnerWitnessPolicy::Historical4096,
+        )
+    }
+
+    pub fn read_semantic_contract_v2(&self) -> CrawlResult<CheckedProviderSchoolPacketV1> {
+        self.read_semantic_contract_with_policy(
+            crate::milesplit::RosterOwnerWitnessPolicy::CurrentBody,
+        )
+    }
+
+    pub(in crate::participation_evidence) fn read_semantic_contract_with_policy(
+        &self,
+        policy: crate::milesplit::RosterOwnerWitnessPolicy,
+    ) -> CrawlResult<CheckedProviderSchoolPacketV1> {
         super::roster_source_issuance::require_current_roster_semantic_kernel()?;
         if self.version != 1 || self.interpretation != "milesplit_directory_roster_school_v1" {
-            return Err(invalid("unsupported V1 provider school packet").into());
+            return Err(invalid("unsupported provider school packet").into());
         }
         let reference = self.reference()?;
         let selected = directory::read(&self.directory, self.roster.requested_url())?;
-        projection::read(self, reference, selected)
+        projection::read(self, reference, selected, policy)
     }
 }
 

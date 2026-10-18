@@ -42,7 +42,7 @@ pub(super) fn require_historical(
 ) -> StoreResult<CheckedKernelReplayV1> {
     match COMPILED_IDENTITY.as_ref() {
         Some(identity) => kernel_adapter::bind_historical_v1(
-            KernelEpoch::FullV8,
+            KernelEpoch::FullV10,
             retained,
             identity.text,
             identity.digest.as_str(),
@@ -56,11 +56,12 @@ pub(super) fn require_historical(
     }
 }
 
-const SCHEMA: &str = "roster-semantic-kernel-dependencies/v8";
+const SCHEMA: &str = "roster-semantic-kernel-dependencies/v10";
 const MAX_DOCUMENT: usize = 64 * 1024;
 const EXPECTED_SOURCE_DIGEST: &str =
-    "ca099a9090cb457a6dc35444978663942366f228979a6541bb9dc3d7edd31e9d";
-const COMPILED: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v8.json"));
+    "8276371bdaa57aa840a0af672644fa1b63842885d27f81efda7e4292d8bd77da";
+const COMPILED: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v10.json"));
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -163,12 +164,14 @@ mod tests {
         let checked = require_historical(text.as_bytes(), &mut grant)?;
         let bytes = u64::try_from(text.len())?;
         checked.require_reference(digest, bytes)?;
-        check!(checked
-            .require_reference("not-the-kernel-digest", bytes)
-            .is_err());
-        check!(checked
-            .require_reference(digest, bytes.checked_add(1).ok_or("length")?)
-            .is_err());
+        check!(matches!(
+            checked.require_reference("not-the-kernel-digest", bytes),
+            Err(census_store::StoreError::Refused { .. })
+        ));
+        check!(matches!(
+            checked.require_reference(digest, bytes.checked_add(1).ok_or("length")?),
+            Err(census_store::StoreError::Refused { .. })
+        ));
         Ok(())
     }
 
@@ -178,8 +181,14 @@ mod tests {
         kernel.sources.first_mut().ok_or("kernel source")?.sha256 = "1".repeat(64);
         kernel.source_digest = hash(&serde_json::to_vec(&kernel.sources)?);
         let mut grant = AttachmentReplayGrantV1::new();
-        check!(require_historical(&serde_json::to_vec(&kernel)?, &mut grant).is_err());
-        check!(require_historical(COMPILED, &mut grant).is_err());
+        check!(matches!(
+            require_historical(&serde_json::to_vec(&kernel)?, &mut grant),
+            Err(census_store::StoreError::Refused { .. })
+        ));
+        check!(matches!(
+            grant.ensure_available(),
+            Err(census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError::Poisoned)
+        ));
         Ok(())
     }
 

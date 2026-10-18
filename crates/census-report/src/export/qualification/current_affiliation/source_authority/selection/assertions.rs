@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::affiliation_candidates::OwnerSourceSpan;
 
 pub(super) struct Inputs<'a> {
     pub(super) facts: Vec<LocallyCheckedAssertion<'a>>,
@@ -76,7 +77,7 @@ fn witness<'a>(
     audit: &mut RetainedAudit,
 ) -> StoreResult<
     Option<(
-        SourceSpan,
+        OwnerSourceSpan,
         &'a census_crawl::milesplit::RosterRowStatementsV1,
     )>,
 > {

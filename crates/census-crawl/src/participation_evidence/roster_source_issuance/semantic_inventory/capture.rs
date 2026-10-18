@@ -39,9 +39,7 @@ pub(super) fn inventory(
     Ok(wire::Inventory {
         schema: SCHEMA.into(),
         interpretation: INTERPRETATION.into(),
-        provider_semantic_contract:
-            crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1
-                .into(),
+        provider_semantic_contract: checked.semantic_contract().into(),
         kernel_document: std::borrow::Cow::Borrowed(kernel_text),
         kernel_digest: kernel_digest.to_string(),
         kernel_bytes: u64::try_from(kernel_bytes)

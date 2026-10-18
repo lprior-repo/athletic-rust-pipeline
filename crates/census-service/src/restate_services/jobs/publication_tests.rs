@@ -1,6 +1,8 @@
+use super::workbook_job::build;
 use super::*;
 use census_domain::model::CanonicalSchool;
 use census_report::export::{decoded_generations, resident_generations};
+use census_report::workbook;
 use std::path::Path;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -32,7 +34,7 @@ fn managed_workbook_job_decodes_one_dataset_for_every_revision_six_artifact() ->
     seed(&store, "Original High School")?;
     let decoded = decoded_generations();
     let resident = resident_generations();
-    let reply = build_workbook(
+    let reply = build(
         &store,
         &options()?,
         "managed-publication-fixture",
@@ -88,15 +90,15 @@ fn managed_workbook_job_refuses_changed_evidence_without_replacing_its_generatio
     seed(&store, "Original High School")?;
     let options = options()?;
     let job = census_report::export::ExportJobRequest::LegacyV2;
-    let reply = build_workbook(&store, &options, "managed-retry-fixture", &job)?;
+    let reply = build(&store, &options, "managed-retry-fixture", &job)?;
     let workbook_bytes = std::fs::read(&reply.path)?;
     let generation = Path::new(&reply.path).parent().ok_or("generation absent")?;
     let manifest = std::fs::read(generation.join("manifest.json"))?;
-    let repeated = build_workbook(&store, &options, "managed-retry-fixture", &job)?;
+    let repeated = build(&store, &options, "managed-retry-fixture", &job)?;
     check!(eq; repeated.path, reply.path);
     seed(&store, "Later High School")?;
     let decoded = decoded_generations();
-    let error = build_workbook(&store, &options, "managed-retry-fixture", &job)
+    let error = build(&store, &options, "managed-retry-fixture", &job)
         .err()
         .ok_or("changed source evidence reused the same job")?;
     check!(

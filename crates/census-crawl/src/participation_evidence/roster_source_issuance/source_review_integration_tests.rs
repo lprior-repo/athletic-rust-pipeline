@@ -14,6 +14,8 @@ use setup::*;
 
 #[path = "source_admission_tests.rs"]
 mod admission;
+#[path = "source_wire_boundary_tests.rs"]
+mod wire_boundary;
 
 #[path = "../../../../census-store/src/roster_source_issuance/tests/inherited_public.rs"]
 mod inherited_public;

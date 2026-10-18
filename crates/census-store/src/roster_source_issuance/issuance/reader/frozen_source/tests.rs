@@ -73,7 +73,7 @@ fn duplicate_unordered_and_foreign_rows_refuse() -> TestResult {
 }
 
 #[test]
-fn duplicate_prefixes_and_exhausted_or_foreign_grants_refuse() -> TestResult {
+fn duplicate_prefixes_and_foreign_grants_refuse() -> TestResult {
     let mut grant = AttachmentReplayGrantV1::new();
     check!(FrozenRosterJournalSource::new(&[prefix('a')?, prefix('a')?], &mut grant).is_err());
     let groups = vec![prefix('a')?];
@@ -84,11 +84,33 @@ fn duplicate_prefixes_and_exhausted_or_foreign_grants_refuse() -> TestResult {
         .read_root(groups[0].root.schema, &groups[0].root.key, &mut foreign)
         .is_err());
     check!(foreign.ensure_available().is_err());
-    let mut exhausted = AttachmentReplayGrantV1::new();
-    exhausted.charge_bytes(
-        census_domain::public_identity_history::ReplayLimits::SMALL.total_text_bytes,
-    )?;
-    check!(FrozenRosterJournalSource::new(&groups, &mut exhausted).is_err());
+    Ok(())
+}
+
+#[test]
+fn frozen_source_cannot_replenish_an_original_grant_at_its_encoded_byte_limit() -> TestResult {
+    use census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError;
+
+    let groups = vec![prefix('a')?];
+    let mut grant = AttachmentReplayGrantV1::new();
+    grant.charge_bytes(AttachmentReplayGrantV1::MAX_ENCODED_BYTES)?;
+    check!(matches!(
+        FrozenRosterJournalSource::new(&groups, &mut grant),
+        Err(StoreError::EvidenceSubjectAttachment(
+            crate::EvidenceSubjectAttachmentStoreError::Domain(
+                EvidenceSubjectAttachmentError::Capacity {
+                    resource: "aggregate encoded bytes",
+                    needed,
+                    available,
+                }
+            )
+        )) if available == AttachmentReplayGrantV1::MAX_ENCODED_BYTES && needed > available
+    ));
+    check!(eq; grant.usage().encoded_bytes(), AttachmentReplayGrantV1::MAX_ENCODED_BYTES);
+    check!(matches!(
+        grant.ensure_available(),
+        Err(EvidenceSubjectAttachmentError::Poisoned)
+    ));
     Ok(())
 }
 

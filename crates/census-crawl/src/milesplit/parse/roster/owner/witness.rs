@@ -1,8 +1,8 @@
 use super::{markup, Owner};
 use crate::milesplit::wire::{
-    checked_span, PublishedRosterOwnerKindV1 as Kind,
+    checked_owner_span, PublishedRosterOwnerKindV1 as Kind,
     PublishedRosterOwnerTerminationV1 as Termination, PublishedRosterOwnerV1,
-    PublishedRosterOwnersV1, RosterWitnessUnavailableV1 as Gap, TeamRef,
+    PublishedRosterOwnersV1, RosterOwnerWitnessPolicy, RosterWitnessUnavailableV1 as Gap, TeamRef,
 };
 use crate::milesplit::RosterVerdict;
 use crate::net::FetchOutcome;
@@ -15,13 +15,15 @@ pub(super) struct Published {
 
 pub(super) struct Collector<'a> {
     html: &'a str,
+    policy: RosterOwnerWitnessPolicy,
     declarations: Result<Vec<PublishedRosterOwnerV1>, Gap>,
 }
 
 impl<'a> Collector<'a> {
-    pub(super) fn new(html: &'a str) -> Self {
+    pub(super) fn new(html: &'a str, policy: RosterOwnerWitnessPolicy) -> Self {
         Self {
             html,
+            policy,
             declarations: Ok(Vec::new()),
         }
     }
@@ -49,7 +51,7 @@ impl<'a> Collector<'a> {
             return Err(Gap::OwnerInventoryLimit);
         }
         let span = location.span.clone().ok_or(Gap::MissingSourceSpan)?;
-        let span = checked_span(self.html, span)?;
+        let span = checked_owner_span(self.html, span, self.policy)?;
         let termination = match location.termination {
             markup::Termination::Tag => Termination::Tag,
             markup::Termination::ScriptEnd => Termination::ScriptEnd,
@@ -76,13 +78,28 @@ impl<'a> Collector<'a> {
     }
 }
 
+pub fn parse_captured_roster(
+    html: &str,
+    team: TeamRef,
+    capture: &FetchOutcome,
+) -> CrawlResult<RosterVerdict> {
+    parse_captured_roster_with_witness_v1(
+        html,
+        team,
+        capture,
+        RosterOwnerWitnessPolicy::CurrentBody,
+    )
+    .map(|(roster, _)| roster)
+}
+
 pub(crate) fn parse_captured_roster_with_witness_v1(
     html: &str,
     team: TeamRef,
     capture: &FetchOutcome,
+    policy: RosterOwnerWitnessPolicy,
 ) -> CrawlResult<(RosterVerdict, Result<PublishedRosterOwnersV1, Gap>)> {
     super::super::body_bound(html)?;
-    let published = super::validate_capture(html, &team, capture)?;
+    let published = super::validate_capture(html, &team, capture, policy)?;
     let roster = super::super::parse_rows(html, team, super::super::StatementAuthority::Owned)?;
     Ok((roster, published.witness))
 }

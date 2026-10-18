@@ -137,8 +137,11 @@ fn decode_inventory(
     let inventory: wire::Inventory = serde_json::from_slice(bytes).map_err(json)?;
     if inventory.schema != SCHEMA
         || inventory.interpretation != INTERPRETATION
-        || inventory.provider_semantic_contract
-            != crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1
+        || !matches!(
+            inventory.provider_semantic_contract.as_str(),
+            crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1
+                | crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2
+        )
     {
         return Err(invalid("unsupported roster semantic inventory"));
     }

@@ -163,6 +163,8 @@ pub struct SourceSpan {
 }
 
 impl SourceSpan {
+    pub const MAX_BYTES: usize = 4096;
+
     pub fn range(self) -> std::ops::Range<usize> {
         self.from..self.through_exclusive
     }
@@ -171,7 +173,7 @@ impl SourceSpan {
         let length = through_exclusive
             .checked_sub(from)
             .ok_or(AffiliationCandidateError::InvalidLocator)?;
-        if length == 0 || length > 4096 {
+        if length == 0 || length > Self::MAX_BYTES {
             return Err(AffiliationCandidateError::InvalidLocator);
         }
         Ok(Self {

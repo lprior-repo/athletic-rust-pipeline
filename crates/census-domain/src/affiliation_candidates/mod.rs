@@ -10,6 +10,7 @@ mod evidence;
 mod material_work;
 mod observed;
 mod outcome;
+mod owner_span;
 mod relationship;
 mod selection;
 mod selection_checks;
@@ -24,6 +25,7 @@ pub use observed::{
     PersonCandidate, RawAssertion, RawOwnership, RelationshipCandidate, SubjectGap,
 };
 pub use outcome::{CandidateOutcome, CandidateSelection, Disposition, FactDisposition};
+pub use owner_span::OwnerSourceSpan;
 pub use selection::{select_candidates, CandidateQuery, DeclaredFrozenView};
 pub use temporal::{CalendarCandidate, SportScope, TemporalGap, TemporalScope};
 

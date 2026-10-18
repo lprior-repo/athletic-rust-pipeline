@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::affiliation_candidates::OwnerSourceSpan;
 
 pub(super) fn assertion<'a>(
     capture: &'a material::Capture,
@@ -6,7 +7,7 @@ pub(super) fn assertion<'a>(
     evidence: &'a LocallyCheckedEvidence<'a>,
     known: KnownBounds<'a>,
     published: &'a [&'a SourceSubject],
-    owner_statement: SourceSpan,
+    owner_statement: OwnerSourceSpan,
     spans: &census_crawl::milesplit::RosterRowStatementsV1,
 ) -> StoreResult<LocallyCheckedAssertion<'a>> {
     checked(LocallyCheckedAssertion::check(RawAssertion {

@@ -107,6 +107,7 @@ fn witness(value: RosterWitnessUnavailableV1) -> wire::WitnessGap {
         }
         RosterWitnessUnavailableV1::MissingSourceSpan => wire::WitnessGap::MissingSourceSpan,
         RosterWitnessUnavailableV1::SourceSpanLimit => wire::WitnessGap::SourceSpanLimit,
+        RosterWitnessUnavailableV1::OwnerSourceSpanLimit => wire::WitnessGap::SourceSpanLimit,
         RosterWitnessUnavailableV1::OwnerInventoryLimit => wire::WitnessGap::OwnerInventoryLimit,
         RosterWitnessUnavailableV1::ResourceLimit => wire::WitnessGap::ResourceLimit,
     }

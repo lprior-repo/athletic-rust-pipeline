@@ -26,7 +26,11 @@ impl BoundRosterSourceViewV1<'_> {
                 digest: closure.reviewed.digest().into(),
                 bytes: closure.reviewed.bytes(),
             };
-            let source = object::read(objects, &source_ref, 4 * 1024 * 1024, grant)?;
+            let ceiling = u64::try_from(
+                census_store::RosterFrozenReviewedClaimsReferenceV1::MAX_ENCODED_BYTES,
+            )
+            .map_err(|_| StoreError::CounterOverflow)?;
+            let source = object::read(objects, &source_ref, ceiling, grant)?;
             let claims = census_store::replay_frozen_roster_reviewed_claims_v1(
                 &source,
                 &closure.reviewed,

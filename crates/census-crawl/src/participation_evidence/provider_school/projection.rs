@@ -4,6 +4,7 @@ use super::{
     CheckedProviderSchoolPacketV1, ProviderSchoolPacketRefV1, ProviderSchoolPacketV1,
     PROVIDER_SCHOOL_INTAKE_PHASE,
 };
+use crate::milesplit::RosterOwnerWitnessPolicy;
 use crate::milesplit::{parse_captured_roster_with_witness_v1, roster_entities, Site};
 use crate::net::FetchOutcome;
 use crate::CrawlResult;
@@ -17,11 +18,12 @@ pub(super) fn read(
     packet: &ProviderSchoolPacketV1,
     reference: ProviderSchoolPacketRefV1,
     selected: Selected,
+    policy: RosterOwnerWitnessPolicy,
 ) -> CrawlResult<CheckedProviderSchoolPacketV1> {
     let body = packet.roster.body()?;
     let fetch = fetch(packet.roster(), &body)?;
     let (roster_verdict, published_roster_owners) =
-        parse_captured_roster_with_witness_v1(&body, selected.team.clone(), &fetch)?;
+        parse_captured_roster_with_witness_v1(&body, selected.team.clone(), &fetch, policy)?;
     let date = packet.roster.acquired_at().format("%Y-%m-%d").to_string();
     let year = SchoolYear::from_date(&date)
         .ok_or_else(|| invalid("provider school acquisition year unsupported"))?;
@@ -62,6 +64,10 @@ pub(super) fn read(
     );
     Ok(CheckedProviderSchoolPacketV1 {
         reference,
+        semantic_contract: match policy {
+            RosterOwnerWitnessPolicy::Historical4096 => super::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
+            RosterOwnerWitnessPolicy::CurrentBody => super::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
+        },
         school,
         observation,
         roster_verdict,

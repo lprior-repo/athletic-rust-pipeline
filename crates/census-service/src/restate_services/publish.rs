@@ -8,8 +8,8 @@ use census_report::{bests, workbook};
 
 #[cfg(not(feature = "native-fault-injection"))]
 use super::jobs::consolidate_tables;
-use super::jobs::{build_bests, build_report, build_workbook};
-#[cfg(feature = "native-fault-injection")]
+use super::jobs::workbook_job::build;
+use super::jobs::{build_bests, build_report};
 use super::jobs::{consolidate_armed, consolidate_boundary};
 use super::wire::{
     BestsReply, BestsRequest, ConsolidateReply, ConsolidateRequest, ReportReply, ReportRequest,
@@ -244,7 +244,7 @@ impl Workbook {
         let reply = ctx
             .run(move || async move {
                 runtime::run_reserved(region, permit, move || {
-                    build_workbook(&store, &options, &job, &export_job)
+                    build(&store, &options, &job, &export_job)
                 })
                 .await
                 .map(Json)

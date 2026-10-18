@@ -35,7 +35,12 @@ fn ownerless_historical_fragment_cannot_establish_roster_affiliations() -> TestR
     let requested = team()?;
     let capture = historical(&requested);
     check!(matches!(
-        validate_capture(BODY, &requested, &capture),
+        validate_capture(
+            BODY,
+            &requested,
+            &capture,
+            RosterOwnerWitnessPolicy::CurrentBody
+        ),
         Err(CrawlError::Schema { .. })
     ));
     let parsed = crate::milesplit::parse_roster(BODY, requested)?;
@@ -62,7 +67,12 @@ fn matching_published_owner_admits_historical_rows_without_fabricating_final_pro
         "<link href='{}/roster' rel='canonical'>{BODY}",
         requested.url
     );
-    validate_capture(&body, &requested, &capture)?;
+    validate_capture(
+        &body,
+        &requested,
+        &capture,
+        RosterOwnerWitnessPolicy::CurrentBody,
+    )?;
     let parsed = crate::milesplit::parse_roster(&body, requested.clone())?;
     let roster = parsed
         .roster()
@@ -115,19 +125,34 @@ fn every_authoritative_owner_must_match_and_comments_cannot_prove_owner() -> Tes
     let matching = format!("<link rel='canonical' href='{}/roster'>", requested.url);
     let conflict = format!("{matching}<meta content='https://oh.milesplit.com/teams/52649/roster' property='og:url'>{BODY}");
     check!(matches!(
-        validate_capture(&conflict, &requested, &capture),
+        validate_capture(
+            &conflict,
+            &requested,
+            &capture,
+            RosterOwnerWitnessPolicy::CurrentBody
+        ),
         Err(CrawlError::Schema { .. })
     ));
     let foreign_json = r#"<script type="application/ld+json">{"@type":"WebPage","url":"https://oh.milesplit.com/teams/52649/roster"}</script>"#;
     check!(matches!(
-        validate_capture(foreign_json, &requested, &capture),
+        validate_capture(
+            foreign_json,
+            &requested,
+            &capture,
+            RosterOwnerWitnessPolicy::CurrentBody
+        ),
         Err(CrawlError::Schema { .. })
     ));
     let matching_json = format!(
         r#"<script type="application/ld+json">{{"@type":"WebPage","url":"{}/roster"}}</script>"#,
         requested.url
     );
-    validate_capture(&matching_json, &requested, &capture)?;
+    validate_capture(
+        &matching_json,
+        &requested,
+        &capture,
+        RosterOwnerWitnessPolicy::CurrentBody,
+    )?;
     for body in [
         format!("<!-- {matching} -->{BODY}"),
         format!("<script>const ignored = \"{matching}\";</script>{BODY}"),
@@ -137,7 +162,12 @@ fn every_authoritative_owner_must_match_and_comments_cannot_prove_owner() -> Tes
         ),
     ] {
         check!(matches!(
-            validate_capture(&body, &requested, &capture),
+            validate_capture(
+                &body,
+                &requested,
+                &capture,
+                RosterOwnerWitnessPolicy::CurrentBody
+            ),
             Err(CrawlError::Schema { .. })
         ));
     }
@@ -158,7 +188,12 @@ fn unrelated_foreign_roster_navigation_and_embedded_entities_do_not_change_docum
     let unrelated = r#"<a href="https://wi.milesplit.com/teams/26848/roster">Competitor</a><script type="application/ld+json">{"@type":"ItemList","itemListElement":{"@type":"SportsTeam","url":"https://wi.milesplit.com/teams/26848/roster"}}</script>"#;
     check!(!validate_published(unrelated, &requested)?);
     check!(matches!(
-        validate_capture(unrelated, &requested, &historical(&requested)),
+        validate_capture(
+            unrelated,
+            &requested,
+            &historical(&requested),
+            RosterOwnerWitnessPolicy::CurrentBody
+        ),
         Err(CrawlError::Schema { .. })
     ));
     Ok(())

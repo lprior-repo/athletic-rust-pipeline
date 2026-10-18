@@ -1,3 +1,4 @@
+use crate::milesplit::wire::RosterOwnerWitnessPolicy;
 use crate::milesplit::wire::TeamRef;
 use crate::net::FetchOutcome;
 use crate::{CrawlError, CrawlResult};
@@ -9,7 +10,9 @@ use crate::milesplit::parse::markup;
 mod published;
 mod witness;
 use crate::milesplit::wire::PublishedRosterOwnerKindV1 as DeclarationKind;
+pub use witness::parse_captured_roster;
 pub(crate) use witness::parse_captured_roster_with_witness_v1;
+use witness::Collector;
 
 #[derive(Clone, Copy)]
 struct Owner {
@@ -19,20 +22,22 @@ struct Owner {
 
 pub(super) fn validate_published(html: &str, team: &TeamRef) -> CrawlResult<bool> {
     let expected = requested_owner(team)?;
-    published_owner(html, team, expected).map(|published| published.found)
+    published_owner(html, team, expected, RosterOwnerWitnessPolicy::CurrentBody)
+        .map(|published| published.found)
 }
 
 fn validate_capture(
     html: &str,
     team: &TeamRef,
     capture: &FetchOutcome,
+    policy: RosterOwnerWitnessPolicy,
 ) -> CrawlResult<witness::Published> {
     let expected = requested_owner(team)?;
     match_owner(&capture.url, team, expected, true)?;
     if let Some(final_url) = capture.response_url.as_deref() {
         match_owner(final_url, team, expected, true)?;
     }
-    let published = published_owner(html, team, expected)?;
+    let published = published_owner(html, team, expected, policy)?;
     if capture.response_url.is_none() && !published.found {
         return Err(refuse(
             team,
@@ -135,9 +140,14 @@ fn match_owner(raw: &str, team: &TeamRef, expected: Owner, roster: bool) -> Craw
     Ok(owner)
 }
 
-fn published_owner(html: &str, team: &TeamRef, expected: Owner) -> CrawlResult<witness::Published> {
+fn published_owner(
+    html: &str,
+    team: &TeamRef,
+    expected: Owner,
+    policy: RosterOwnerWitnessPolicy,
+) -> CrawlResult<witness::Published> {
     let base = Url::parse(&team.url).map_err(|_| refuse(team, "invalid requested team URL"))?;
-    let mut collector = witness::Collector::new(html);
+    let mut collector = Collector::new(html, policy);
     let found = Tokenizer::new_with_emitter(html, markup::Markup::default()).try_fold(
         false,
         |found, token| {

@@ -4,7 +4,8 @@ use census_domain::UsJurisdiction;
 use serde::Deserialize;
 
 mod current_roster;
-pub(in crate::milesplit) use current_roster::checked_span;
+pub(in crate::milesplit) use current_roster::checked_owner_span;
+pub(crate) use current_roster::RosterOwnerWitnessPolicy;
 use current_roster::RosterTemporalEvidence;
 pub use current_roster::{CurrentRosterAssertion, RosterTemporalUnavailable};
 pub use current_roster::{

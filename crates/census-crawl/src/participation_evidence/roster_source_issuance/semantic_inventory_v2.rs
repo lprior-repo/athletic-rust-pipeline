@@ -62,9 +62,7 @@ fn inventory(
     let value = wire::Inventory {
         schema: SCHEMA.into(),
         policy: POLICY.into(),
-        provider_semantic_contract:
-            crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1
-                .into(),
+        provider_semantic_contract: checked.semantic_contract().into(),
         kernel_document: std::borrow::Cow::Borrowed(kernel),
         packet: checked.reference().as_str().into(),
         parser_manifest: hash(parser),

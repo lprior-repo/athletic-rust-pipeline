@@ -176,9 +176,15 @@ impl<'de> Visitor<'de> for DecodedBlobVisitor {
     }
 
     fn visit_str<E: serde::de::Error>(self, input: &str) -> Result<Self::Value, E> {
-        if input.len() > 4 * 1024 * 1024 {
+        let encoded_limit = self
+            .max_bytes
+            .checked_add(2)
+            .map(|bytes| bytes / 3)
+            .and_then(|blocks| blocks.checked_mul(4))
+            .ok_or_else(|| E::custom("record wire: encoded size overflow"))?;
+        if input.len() > encoded_limit {
             return Err(serde::de::Error::custom(
-                "record wire: base64 input exceeds 4MiB",
+                "record wire: base64 input exceeds encoded bound",
             ));
         }
 

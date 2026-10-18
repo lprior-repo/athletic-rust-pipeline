@@ -83,6 +83,7 @@ impl ProviderSchoolDirectoryProofV1 {
 #[derive(Debug)]
 pub struct CheckedProviderSchoolPacketV1 {
     pub(super) reference: ProviderSchoolPacketRefV1,
+    pub(super) semantic_contract: &'static str,
     pub(super) school: CanonicalSchool,
     pub(super) observation: SourceSchoolObservation,
     pub(super) roster_verdict: RosterVerdict,
@@ -93,6 +94,9 @@ pub struct CheckedProviderSchoolPacketV1 {
 impl CheckedProviderSchoolPacketV1 {
     pub fn reference(&self) -> &ProviderSchoolPacketRefV1 {
         &self.reference
+    }
+    pub fn semantic_contract(&self) -> &'static str {
+        self.semantic_contract
     }
     pub fn school(&self) -> &CanonicalSchool {
         &self.school

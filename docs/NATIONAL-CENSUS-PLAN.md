@@ -419,11 +419,11 @@ quiescence. No worker runs builds mid-flight, weakens an oracle, changes source
 identity to fit a fixture, resets a live store or substitutes a historical binary.
 Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
-### 7.5. Current execution checkpoint — 2026-10-18
+### 7.5. Latest qualified checkpoint — 2026-10-18
 
 Qualified source: `4d0ba14e28f57e458e55bc6587c23f9d55fcbc1a`, tree
 `3421284ef5d59bf0abd6eab1dbf0efed43a24a5c`, including incoming PR91–95.
-Current dependency epochs 8/9 retain exact historical 2/3, 4/5 and 6/7 read-only pins.
+That checkpoint used dependency epochs 8/9 with historical 2/3, 4/5 and 6/7 pins.
 [Evidence](VERIFICATION-EVIDENCE.md#controlled-workbook-lifecycle-qualification).
 
 | Requirement | Code entrypoint | Test / command receipt | Tested revision | Result | Artifact | Next dependency |
@@ -441,7 +441,7 @@ Current dependency epochs 8/9 retain exact historical 2/3, 4/5 and 6/7 read-only
 | B/R1: explicit full-window source input | Public window record/read; exact-root leaf; cold reopen | `cd041ce4`; actual CLI `12ba7242` | `c99fca79`; same-production precommit CLI | PASS for unaccepted source metadata | Private controlled source/proof; reviewed window-to-workbook lifecycle qualified below | Genuine source-backed window qualification |
 | B/R1: eligible PR then withdrawal | Public source/review → production selector → workbook/normalized → Store-free replay | `d0bbc1a8`, Nextest `4681402f`; 178/178 connected cases | `4d0ba14e` | PASS: 50→51; replay cannot reactivate 50; required-proof controls refuse | Independently checked controlled pair pinned on `0ba48d21`; lifecycle rerun on qualified source | Genuine positive population; not national or population acceptance |
 | B/R1: current-seal documentary freshness | `open_publication_for_seal` with one Store snapshot | Before `0f04dea2` FAIL; after `d0bbc1a8` PASS; state controls `78f40e30` PASS | `4d0ba14e` | PASS: revoked G0 refuses current seal; G1 seals; cold historical G0 and journal-only progress preserved | Controlled public-review lifecycle; authenticated existing inventories | R2 roster freshness remains separate |
-| B/R3: durable selected library job | `ExportDataset::for_job_request(SelectedPublicationV1)` | `d0bbc1a8`: retry, withdrawal at final fence, interrupted intent | `4d0ba14e` | PASS in library path | Bound request/frozen input and retained publication | Service `WorkbookRequest`/national caller still use unselected `for_job`; migrate explicitly |
+| B/R3: durable selected library job | `ExportDataset::for_job_request(SelectedPublicationV1)` | `d0bbc1a8`: retry, withdrawal at final fence, interrupted intent | `4d0ba14e` | PASS in library path | Bound request/frozen input and retained publication | PR96 adds explicit service/national selection; integrated request/options/receipt qualification remains `agv2` |
 | B/R1–R2: remaining authority seams | Documentary calendar correspondence; accepted roster change reader/writer | Source review only | `4d0ba14e` | NOT QUALIFIED: genuine calendar labels differ; roster authority is issuance-only | Genuine grade-12/CO2026 evidence unchanged; no target-cohort relabel | Checked calendar correspondence; reviewed exact-claim withdrawal; complete roster queue |
 | C/D: reusable operation and population | R1–R15 production paths and comparison | Spec-linked owners | — | NOT QUALIFIED | No national acceptance artifact | UP/five-state coverage, reuse/recovery/resource evidence |
 

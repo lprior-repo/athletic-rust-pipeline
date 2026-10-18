@@ -2,8 +2,8 @@ use super::{format, inputs, BuildResult};
 use serde::Serialize;
 use std::path::Path;
 
-const SCHEMA_V8: &str = "roster-semantic-kernel-dependencies/v8";
-const SCHEMA_V9: &str = "roster-semantic-kernel-dependencies/v9";
+const SCHEMA_V10: &str = "roster-semantic-kernel-dependencies/v10";
+const SCHEMA_V11: &str = "roster-semantic-kernel-dependencies/v11";
 const MAX_DOCUMENT: usize = 64 * 1024;
 
 #[path = "kernel_sources.rs"]
@@ -41,18 +41,18 @@ pub(super) fn generate(
     let source_digest = inputs::digest("kernel-sources", &serde_json::to_vec(&sources)?)?.sha256;
 
     let mut kernel = Kernel {
-        schema: SCHEMA_V8,
+        schema: SCHEMA_V10,
         source_digest: &source_digest,
         sources: &sources,
         configuration,
         dependencies,
     };
     let mut bytes = serde_json::to_vec(&kernel)?;
-    write_document(destination, "roster-semantic-kernel-v8.json", &bytes)?;
-    kernel.schema = SCHEMA_V9;
+    write_document(destination, "roster-semantic-kernel-v10.json", &bytes)?;
+    kernel.schema = SCHEMA_V11;
     bytes.clear();
     serde_json::to_writer(&mut bytes, &kernel)?;
-    write_document(destination, "roster-semantic-kernel-v9.json", &bytes)?;
+    write_document(destination, "roster-semantic-kernel-v11.json", &bytes)?;
 
     Ok(())
 }

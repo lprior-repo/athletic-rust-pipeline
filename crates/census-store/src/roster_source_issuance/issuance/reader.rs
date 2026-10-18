@@ -23,6 +23,7 @@ pub use bundle::{
 
 const ARCHIVE_SCHEMA: &str = "roster-reviewed-source-publication-closure-v2";
 const INHERITED_ARCHIVE_SCHEMA: &str = "roster-reviewed-source-publication-closure-v3";
+const MAX_EXTERNAL_CAPTURE_BYTES: u64 = 4 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

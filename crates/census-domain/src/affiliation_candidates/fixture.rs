@@ -135,7 +135,7 @@ impl Fixture {
             known: known(1, 3)?,
             membership_statement: span,
             person_statement: span,
-            owner_statement: span,
+            owner_statement: OwnerSourceSpan::new(0, BODY.len())?,
             temporal_statement: span,
         })
     }

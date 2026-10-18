@@ -272,16 +272,35 @@ leaf binds the exact whole packet, not a capture leaf that another packet may
 already own. The kind is refused on other roots/slots. Original bodies and distinct
 subject-heading/window-paragraph proof locations remain retained and replayable.
 
-The full-window input introduced dependency epochs 6/7 with a 94-input closure,
-including retained-leaf/schema validation. Those exact byte identities are now
-read-only alongside 2/3 and 4/5; current captures emit only 8/9. Roster interpretation
-semantics and original retained artifacts are not relabeled or regenerated.
+The full-window input introduced dependency epochs 6/7 with a 94-input closure.
+Exact kernels 2/3, 4/5, 6/7 and 8/9 remain historical, read-only identities; current
+captures emit 10/11 with a 96-input closure. Original artifacts are neither
+relabeled nor regenerated.
 
-### Reviewed-school resource boundary — 2026-10-17
+### Reviewed-roster owner spans — 2026-10-18
 
-The current aggregate checked-read/workflow grant is 16 MiB (16,777,216 bytes)
-and 131,072 traversal steps. Individual encoded objects and retained physical
-inventory remain bounded at 4 MiB; structural limits are unchanged.
+**Context:** an unchanged genuine roster has a 23,082-byte JSON-LD owner
+declaration. The former shared 4-KiB statement limit withheld that authority.
+
+**Decision:** only `OwnerSourceSpan` permits a borrowed range up to 2 MiB.
+Person, membership and temporal spans remain bounded at 4 KiB. Current provider
+contract V2 uses this owner policy; authenticated historical kernels select V1's
+original 4-KiB policy before collecting, comparing or returning checked evidence.
+The 32-declaration limit, first-failure precedence and late contrary-owner
+validation remain. Participation wire V4 and roster V2/V3 envelopes do not change.
+
+**Consequences:** preserve old unavailable outcomes, ranges and retained family
+hashes. Compiler/dependency context must match the exact known historical kernel;
+unknown identities, changed bytes or a mismatched provider contract refuse.
+
+### Reviewed-school resource boundary — 2026-10-18
+
+The aggregate checked-read/workflow grant is 64 MiB (67,108,864 bytes) and 131,072
+traversal steps. Individual source/school objects and physical inventory remain
+bounded at 4 MiB. The reviewed-roster frozen envelope is bounded at 8 MiB.
+Count encoded bytes before fallible reservation; preserve original grant ownership,
+poisoning and every charge. Base64 wire limits account for encoding expansion
+without increasing the 4-MiB decoded-object limit.
 
 School-bound V4 installs its mandatory attachment descriptor from the authenticated
 school closure under the original school and attachment grant continuations.
@@ -298,9 +317,12 @@ preparation-time retained-body decode. Genuine B still required a derived
 8,609,689 accounted bytes, including its journal envelope and receipt.
 The authorized 2026-10-18 increases retain every remaining allocation charge.
 The integrated documentary workflow exceeded the former 9-MiB grant at
-10,152,626 cumulative encoded bytes. The 16-MiB grant clears that refusal;
-this is accounted read/work volume, not a resident-memory allowance or a
-national-run qualification.
+10,152,626 cumulative encoded bytes; 16 MiB cleared that documentary refusal,
+not the complete roster workflow. The genuine partial-roster case subsequently
+required a roughly 6-MB envelope and approximately 40 MB cumulative replay work.
+The 8-MiB envelope/64-MiB work bounds admit that case without dropping physical
+inventory. These are workload admission limits, not resident-memory allowances
+or national-run qualification; exact-build resource evidence belongs in the ledger.
 
 The unchanged-wire refresh path reuses historical declaration, input and target
 checks already proven at load. It still verifies every material against the

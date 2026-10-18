@@ -12,19 +12,12 @@ use regex::Regex;
 
 mod current;
 mod owner;
+pub use owner::parse_captured_roster;
 pub(crate) use owner::parse_captured_roster_with_witness_v1;
 const MAX_BODY_BYTES: usize = 8 * 1024 * 1024;
 const MAX_ROWS: usize = 20_000;
 const MAX_ROW_BYTES: usize = 64 * 1024;
 const MAX_FIELD_BYTES: usize = 4096;
-
-pub fn parse_captured_roster(
-    html: &str,
-    team: TeamRef,
-    capture: &crate::net::FetchOutcome,
-) -> CrawlResult<RosterVerdict> {
-    parse_captured_roster_with_witness_v1(html, team, capture).map(|(roster, _)| roster)
-}
 
 pub fn parse_roster(html: &str, team: TeamRef) -> CrawlResult<RosterVerdict> {
     body_bound(html)?;

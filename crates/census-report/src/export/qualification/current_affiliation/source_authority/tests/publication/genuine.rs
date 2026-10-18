@@ -2,6 +2,8 @@ use super::*;
 
 #[path = "genuine/fixture.rs"]
 mod original;
+#[path = "genuine/resources.rs"]
+mod resources;
 
 #[test]
 fn genuine_partial_roster_controlled_review_selects_abbott_michigan_and_replays_publication_offline(
@@ -48,6 +50,13 @@ fn genuine_partial_roster_controlled_review_selects_abbott_michigan_and_replays_
     check!(eq; witness(&publication.dataset, &expected)?, before);
     check!(eq; artifacts::readback(&workbook, &publication.dataset, &expected)?, rows);
     check!(eq; published::verify_published(&workbook)?.generation_digest, verified.generation_digest);
+    resources::retain(
+        "genuine-abbott-controlled",
+        archive,
+        output,
+        &frozen,
+        &workbook,
+    )?;
     Ok(())
 }
 
@@ -169,6 +178,13 @@ fn forged_candidate_for_rejected_original_row_cannot_obtain_current_affiliation_
     witness(&reopened, &expected)?;
     rejected_target(&reopened, &forged.id)?;
     check!(eq; artifacts::readback(&workbook, &reopened, &expected)?, rows);
+    resources::retain(
+        "genuine-rejected-target",
+        archive,
+        output,
+        &frozen,
+        &workbook,
+    )?;
     Ok(())
 }
 

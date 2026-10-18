@@ -55,6 +55,7 @@ pub use roster::{
     RosterOutcome, RosterQuarantine, RosterRejection, RosterRejectionKind, RosterVerdict,
     SourceRowLocator,
 };
+pub(crate) use wire::RosterOwnerWitnessPolicy;
 pub use wire::{
     CurrentRosterAssertion, LocatedRosterAthlete, MeetRef, MeetResultFile,
     PublishedRosterOwnerKindV1, PublishedRosterOwnerTerminationV1, PublishedRosterOwnerV1,

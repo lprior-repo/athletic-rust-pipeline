@@ -2,7 +2,7 @@ use super::{
     historical, team, validate_capture, CrawlError, FetchOutcome, TeamRef, TestResult, BODY,
 };
 use crate::milesplit::parse::roster::parse_captured_roster;
-use crate::milesplit::{parse_roster, RosterVerdict};
+use crate::milesplit::{parse_roster, RosterOwnerWitnessPolicy, RosterVerdict};
 
 const MATCHING_URL: &str = "https://wi.milesplit.com/teams/52649-abbotsford/roster";
 const FOREIGN_TEAM_URL: &str =
@@ -28,7 +28,12 @@ fn assert_refused(synthetic_prefix: &str, response_url: Option<&str>) -> TestRes
     let (body, capture) = synthetic_prefixed_capture(&requested, synthetic_prefix, response_url);
     check!(
         matches!(
-            validate_capture(&body, &requested, &capture),
+            validate_capture(
+                &body,
+                &requested,
+                &capture,
+                RosterOwnerWitnessPolicy::CurrentBody
+            ),
             Err(CrawlError::Schema { .. })
         ),
         "synthetic prefix: {synthetic_prefix}"
@@ -47,7 +52,12 @@ fn assert_historical_rows_admitted(synthetic_prefix: &str) -> TestResult {
     let requested = team()?;
     let expected = parse_roster(BODY, requested.clone())?;
     let (body, capture) = synthetic_prefixed_capture(&requested, synthetic_prefix, None);
-    validate_capture(&body, &requested, &capture)?;
+    validate_capture(
+        &body,
+        &requested,
+        &capture,
+        RosterOwnerWitnessPolicy::CurrentBody,
+    )?;
     let actual = parse_captured_roster(&body, requested, &capture)?;
     check!(matches!(&expected, RosterVerdict::Complete { .. }));
     check!(matches!(&actual, RosterVerdict::Complete { .. }));

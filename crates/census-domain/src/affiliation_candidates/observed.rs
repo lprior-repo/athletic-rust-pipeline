@@ -1,6 +1,6 @@
 use super::{
-    AffiliationCandidateError, KnownBounds, LocallyCheckedEvidence, ObjectRef, SourceSpan,
-    SportScope, TemporalScope,
+    AffiliationCandidateError, KnownBounds, LocallyCheckedEvidence, ObjectRef, OwnerSourceSpan,
+    SourceSpan, SportScope, TemporalScope,
 };
 use crate::model::{AthleteId, SchoolId, SourceSubject, TeamId};
 
@@ -100,7 +100,7 @@ pub struct RawAssertion<'a> {
     pub known: KnownBounds<'a>,
     pub membership_statement: SourceSpan,
     pub person_statement: SourceSpan,
-    pub owner_statement: SourceSpan,
+    pub owner_statement: OwnerSourceSpan,
     pub temporal_statement: SourceSpan,
 }
 
@@ -132,14 +132,10 @@ impl<'a> LocallyCheckedAssertion<'a> {
         }
         raw.sport.check()?;
         raw.temporal.check(raw.sport, raw.evidence)?;
-        for span in [
-            raw.membership_statement,
-            raw.person_statement,
-            raw.owner_statement,
-            raw.temporal_statement,
-        ] {
-            span.read(raw.evidence)?;
-        }
+        raw.membership_statement.read(raw.evidence)?;
+        raw.person_statement.read(raw.evidence)?;
+        raw.owner_statement.read(raw.evidence)?;
+        raw.temporal_statement.read(raw.evidence)?;
         Ok(Self { raw })
     }
 

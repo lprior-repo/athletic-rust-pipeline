@@ -1,5 +1,6 @@
 use super::*;
 use census_crawl::milesplit::{LocatedRosterAthlete, RosterRowStatementsV1};
+use census_domain::affiliation_candidates::OwnerSourceSpan;
 use census_domain::model::{CanonicalSchool, SourceCapture, SourceNamespace, SourceRef};
 use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
 use census_store::ReviewedRosterSourceClaimV1;
@@ -14,7 +15,7 @@ pub(super) struct Capture {
     pub(super) interpretation: Vec<u8>,
     pub(super) qualification: String,
     pub(super) activation: String,
-    pub(super) owner_span: Result<Vec<SourceSpan>, AuthorityGap>,
+    pub(super) owner_span: Result<Vec<OwnerSourceSpan>, AuthorityGap>,
     pub(super) members: Vec<Member>,
 }
 
@@ -120,7 +121,7 @@ pub(super) enum AuthorityGap {
 fn owners(
     packet: &census_crawl::participation_evidence::provider_school::CheckedProviderSchoolPacketV1,
     proposal: &LocallyCheckedRosterIssuanceV1,
-) -> StoreResult<Result<Vec<SourceSpan>, AuthorityGap>> {
+) -> StoreResult<Result<Vec<OwnerSourceSpan>, AuthorityGap>> {
     let owners = packet.published_roster_owners_v1();
     Ok(match owners {
         Ok(owners) => {

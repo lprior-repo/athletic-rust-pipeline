@@ -197,8 +197,7 @@ fn capture(
     root: crate::RetainedCaptureRootV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<frozen_source::CapturedExternalPrefix> {
-    let remaining = census_domain::public_identity_history::ReplayLimits::SMALL
-        .total_text_bytes
+    let remaining = AttachmentReplayGrantV1::MAX_ENCODED_BYTES
         .checked_sub(grant.usage().encoded_bytes())
         .ok_or(Error::BudgetExceeded)?;
     let mut context = (grant, Vec::new());
@@ -206,7 +205,9 @@ fn capture(
         JournalNamespace::new(root.schema.phase(), &root.key)?,
         ReadBudget {
             rows: 6,
-            bytes: u64::try_from(remaining).map_err(|_| Error::BudgetExceeded)?,
+            bytes: u64::try_from(remaining)
+                .map_err(|_| Error::BudgetExceeded)?
+                .min(super::MAX_EXTERNAL_CAPTURE_BYTES),
             record_bytes: crate::MAX_JOURNAL_VALUE_BYTES,
         },
         &mut context,

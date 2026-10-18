@@ -4,7 +4,7 @@ use census_domain::evidence_subject_attachment::{AttachmentDigestV1, AttachmentO
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 
-const MAX_BUNDLE: usize = 4 * 1024 * 1024;
+const MAX_BUNDLE: usize = 8 * 1024 * 1024;
 
 pub struct FrozenRosterReviewedClaimsBundleV1 {
     bytes: Vec<u8>,
@@ -36,6 +36,8 @@ pub struct RosterFrozenReviewedClaimsReferenceV1 {
 }
 
 impl RosterFrozenReviewedClaimsReferenceV1 {
+    pub const MAX_ENCODED_BYTES: usize = MAX_BUNDLE;
+
     pub fn digest(&self) -> &str {
         self.digest.as_str()
     }
@@ -143,7 +145,11 @@ pub(super) fn encode(
     grant
         .charge_bytes(count.0)
         .map_err(super::super::super::source_error)?;
-    let bytes = serde_json::to_vec(value)
+    let mut bytes = Vec::new();
+    bytes
+        .try_reserve_exact(count.0)
+        .map_err(|_| Error::BudgetExceeded)?;
+    serde_json::to_writer(&mut bytes, value)
         .map_err(|_| Error::Corrupt("frozen reviewed closure encoding"))?;
     if bytes.len() != count.0 {
         return Err(Error::Corrupt("frozen reviewed closure size changed").into());

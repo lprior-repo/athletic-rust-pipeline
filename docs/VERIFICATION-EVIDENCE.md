@@ -1082,3 +1082,44 @@ Current limits: selected **library** jobs are qualified here, not the unselected
 service/national caller. Genuine retained input is grade 12 / CO2026 and preserves
 its calendar-label mismatch; it is not positive CO2027 coverage. Reviewed roster
 issuance does not yet provide an accepted exact-claim withdrawal operation.
+
+### Reviewed-roster owner/resource candidate — 2026-10-18
+
+Working source after PR96 (`6a05faf4`), not a final-commit qualification:
+96-input roster closure `8276371bdaa57aa840a0af672644fa1b63842885d27f81efda7e4292d8bd77da`.
+Canonical fmt `0db47b84`, all-target check `d679b99a` and lint `aa2a960c` exited
+zero; existing forced arity advisories remain visible.
+
+| Behavior | Executed evidence | Result |
+|---|---|---|
+| Complete ordered R2 queue, including genuine partial roster, rejected-row forgery, transfer/correction, frozen origin and source retention | 25 scopes, every selector nonzero; full command/output receipt below | PASS |
+| Original 8/9 bytes retain V1 owner policy and matching compiler context; current 10/11 refuse downgrade; changed bytes poison replay | `65d33861`, three authentication controls | PASS |
+| Genuine current-school publication and Store/source-free replay | `119461f9`, both genuine cases included in 40 Report cases | PASS under controlled public review |
+| 3 MiB + 1 and 4 MiB objects survive public review/freeze/source deletion/replay; oversized object/envelope and poisoned reuse refuse | `fe4690ac` includes the five public wire cases | PASS |
+
+Full invocation, source identity and 240 passing cases across 26 nonzero scopes:
+`/home/lewis/.cache/r14n-TpNM3q/ngmr-r2-d5bcb4db-8276371b.json`;
+stdout SHA256 `35a457e79766d9bb444e3432992ba5d983a2c7dd30c4a1140c6bb56b6b43736b`.
+No predecessor pass substitutes for these receipts.
+
+The genuine retained original remains SHA256 `246374a8…37e178`. Its 23,082-byte
+owner declaration now has a separately bounded borrowed span; person/row/date
+spans remain 4 KiB. Preserve all 164 dispositions, including 18 rejected rows.
+The repaired roster envelope/work bounds are 8/64 MiB; no physical inventory or
+charge was removed. Temporary phase/grant diagnostics were removed before this run.
+
+Retained positive workbook:
+`/home/lewis/.cache/r14n-TpNM3q/.tmpH5uFBd/publication/generations/33126823dade4379d6f5eedb0a62a916e77db688e0139ae05699c0604e1b630d/workbook.xlsx`,
+SHA256 `1fc28c23c8e0e38430c975f9b421c770be524fb2dc886107dac690a6a5c5cde1`.
+Receipt: `.tmptQnSjp/genuine-retention.json` under the same cache root.
+Test-process VmHWM was 112,345,088 bytes; final archive/output logical disk samples
+were 6,174,579 / 6,254,456 bytes. These exclude the deleted Store/source roots and
+are not peak disk, aggregate-process or national resource qualification.
+
+Independent OpenXML cells and all 24 advertised artifact hashes passed on the
+preceding `5f74dc53` smoke artifact (`a190f26f…1c596`), not relabeled as this output.
+That genuine R2 slice has one accepted athlete/current MI school and no performance
+history: zero PRs, missing address/contact/coverage evidence remain explicit.
+Original-A changed-build replay, adjacent selected-publication regressions and
+exact-commit structural qualification remain pending; national readiness is not claimed.
+

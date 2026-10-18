@@ -1,5 +1,5 @@
 use super::SourceRowLocator;
-use census_domain::affiliation_candidates::SourceSpan;
+use census_domain::affiliation_candidates::{OwnerSourceSpan, SourceSpan};
 use census_domain::UsJurisdiction;
 use std::ops::Range;
 
@@ -60,6 +60,12 @@ impl CurrentRosterAssertion {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RosterOwnerWitnessPolicy {
+    Historical4096,
+    CurrentBody,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RosterTemporalUnavailable {
     MissingStatement,
     AmbiguousStatement,
@@ -82,6 +88,11 @@ pub enum RosterWitnessUnavailableV1 {
     MissingSourceSpan,
     #[error("roster statement source span exceeds 4096 bytes")]
     SourceSpanLimit,
+    #[error(
+        "roster owner source span exceeds {} bytes",
+        OwnerSourceSpan::MAX_BYTES
+    )]
+    OwnerSourceSpanLimit,
     #[error("published roster owner inventory exceeds 32 declarations")]
     OwnerInventoryLimit,
     #[error("roster source witness allocation refused")]
@@ -144,7 +155,7 @@ pub struct PublishedRosterOwnerV1 {
     provider_id: u64,
     jurisdiction: Option<UsJurisdiction>,
     kind: PublishedRosterOwnerKindV1,
-    span: SourceSpan,
+    span: OwnerSourceSpan,
     termination: PublishedRosterOwnerTerminationV1,
 }
 
@@ -152,7 +163,7 @@ impl PublishedRosterOwnerV1 {
     pub(in crate::milesplit) fn checked(
         owner: (u64, Option<UsJurisdiction>),
         kind: PublishedRosterOwnerKindV1,
-        span: SourceSpan,
+        span: OwnerSourceSpan,
         termination: PublishedRosterOwnerTerminationV1,
     ) -> Result<Self, RosterWitnessUnavailableV1> {
         if owner.0 == 0 {
@@ -176,7 +187,7 @@ impl PublishedRosterOwnerV1 {
     pub fn kind(&self) -> PublishedRosterOwnerKindV1 {
         self.kind
     }
-    pub fn span(&self) -> SourceSpan {
+    pub fn span(&self) -> OwnerSourceSpan {
         self.span
     }
     pub fn termination(&self) -> PublishedRosterOwnerTerminationV1 {
@@ -215,4 +226,20 @@ pub(in crate::milesplit) fn checked_span(
         return Err(RosterWitnessUnavailableV1::MissingSourceSpan);
     }
     SourceSpan::new(span.start, span.end).map_err(|_| RosterWitnessUnavailableV1::SourceSpanLimit)
+}
+
+pub(in crate::milesplit) fn checked_owner_span(
+    html: &str,
+    span: Range<usize>,
+    policy: RosterOwnerWitnessPolicy,
+) -> Result<OwnerSourceSpan, RosterWitnessUnavailableV1> {
+    if html.get(span.clone()).is_none() || span.start >= span.end {
+        return Err(RosterWitnessUnavailableV1::MissingSourceSpan);
+    }
+    if policy == RosterOwnerWitnessPolicy::Historical4096 {
+        SourceSpan::new(span.start, span.end)
+            .map_err(|_| RosterWitnessUnavailableV1::SourceSpanLimit)?;
+    }
+    OwnerSourceSpan::new(span.start, span.end)
+        .map_err(|_| RosterWitnessUnavailableV1::OwnerSourceSpanLimit)
 }
