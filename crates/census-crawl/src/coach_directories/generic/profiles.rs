@@ -181,13 +181,21 @@ pub(crate) fn candidates(
     if page.profiles.recognized == 0 {
         return Ok(None);
     }
+    Ok(Some(process_profiles(rules, url, page.profiles.rows)?))
+}
+
+fn process_profiles(
+    rules: &Rules,
+    url: &str,
+    profiles: Vec<Profile>,
+) -> CrawlResult<Vec<StaffContactHit>> {
     let mut hits = Vec::new();
-    for profile in page.profiles.rows {
+    for profile in profiles {
         if let Some(hit) = process_profile(rules, url, profile)? {
             hits.push(hit);
         }
     }
-    Ok(Some(hits))
+    Ok(hits)
 }
 
 fn process_profile(

@@ -22,9 +22,20 @@ impl ExportDataset {
         selection: &ProfileSelectionV1,
         objects_directory: &Path,
     ) -> ReportResult<Self> {
+        Self::selected_snapshot_for_job(store, snapshot, selection, objects_directory, None)
+    }
+
+    pub(in crate::export::dataset) fn selected_snapshot_for_job(
+        store: &Store,
+        snapshot: &StoreSnapshot<'_>,
+        selection: &ProfileSelectionV1,
+        objects_directory: &Path,
+        job: Option<&str>,
+    ) -> ReportResult<Self> {
         let (profile, authority) = selected_authority(store, snapshot, selection)?;
         let mut loaded = read::all(snapshot)?;
-        let lineage = frozen::lineage(store, snapshot)?;
+        let mut lineage = frozen::lineage(store, snapshot)?;
+        lineage.export_job = job.map(str::to_owned);
         let identity = snapshot.freeze_public_identity_v2()?;
         let mut grant = AttachmentReplayGrantV1::new();
         let school_closure = capture_school(snapshot, &identity, &mut grant)?;
@@ -39,38 +50,72 @@ impl ExportDataset {
             })
             .transpose()?;
         extend_school(&mut loaded, replayed_school.as_ref(), &mut grant)?;
-        loaded.selection = Some(SelectionBinding {
-            profile_id: profile.id().map_err(census_store::StoreError::from)?,
-            as_of: profile.input().as_of.clone(),
-            participation_rule: Some(profile.input().policies.participation.clone()),
-            authority: Some(authority),
-        });
-        let mut dataset = Self::from_loaded(loaded, lineage)?;
-        dataset.selected_input_origin = super::super::SelectedInputOrigin::Current;
-        let fingerprints = dataset.selected_authority()?.fingerprints().clone();
-        let school_context =
-            school_closure
-                .as_ref()
-                .zip(replayed_school.as_ref())
-                .map(|(closure, source)| {
-                    crate::export::qualification::participation::SchoolContext {
-                        source,
-                        closure,
-                        grant: &mut grant,
-                    }
-                });
-        let (proofs, hydrated) = super::super::selected_proofs::SelectedProofs::capture(
+        let mut dataset = selected_dataset(loaded, lineage, &profile, authority)?;
+        attach_selected_proofs(
             &mut dataset,
-            snapshot,
-            &profile,
-            &fingerprints,
-            objects_directory,
-            &identity,
-            school_context,
+            SelectedProofInputs {
+                snapshot,
+                profile: &profile,
+                objects_directory,
+                identity: &identity,
+                grant: &mut grant,
+                closure: school_closure.as_ref(),
+                source: replayed_school.as_ref(),
+            },
         )?;
-        dataset.attach_selected_proofs(proofs, hydrated)?;
         Ok(dataset)
     }
+}
+
+struct SelectedProofInputs<'a, 'store, 'source> {
+    snapshot: &'a StoreSnapshot<'store>,
+    profile: &'a QueryProfileV1,
+    objects_directory: &'a Path,
+    identity: &'a FrozenPublicIdentityBundleV2,
+    grant: &'a mut AttachmentReplayGrantV1,
+    closure: Option<&'a archive::SchoolClosure>,
+    source: Option<&'a ReplayedResultSchoolCorrespondencesV1<'source>>,
+}
+
+fn attach_selected_proofs(
+    dataset: &mut ExportDataset,
+    inputs: SelectedProofInputs<'_, '_, '_>,
+) -> ReportResult<()> {
+    let fingerprints = dataset.selected_authority()?.fingerprints().clone();
+    let school_context = inputs.closure.zip(inputs.source).map(|(closure, source)| {
+        crate::export::qualification::participation::SchoolContext {
+            source,
+            closure,
+            grant: inputs.grant,
+        }
+    });
+    let (proofs, hydrated) = super::super::selected_proofs::SelectedProofs::capture(
+        dataset,
+        inputs.snapshot,
+        inputs.profile,
+        &fingerprints,
+        inputs.objects_directory,
+        inputs.identity,
+        school_context,
+    )?;
+    dataset.attach_selected_proofs(proofs, hydrated)
+}
+
+fn selected_dataset(
+    mut loaded: Loaded,
+    lineage: super::super::DatasetLineage,
+    profile: &QueryProfileV1,
+    authority: SelectedAuthority,
+) -> ReportResult<ExportDataset> {
+    loaded.selection = Some(SelectionBinding {
+        profile_id: profile.id().map_err(census_store::StoreError::from)?,
+        as_of: profile.input().as_of.clone(),
+        participation_rule: Some(profile.input().policies.participation.clone()),
+        authority: Some(authority),
+    });
+    let mut dataset = ExportDataset::from_loaded(loaded, lineage)?;
+    dataset.selected_input_origin = super::super::SelectedInputOrigin::Current;
+    Ok(dataset)
 }
 
 fn selected_authority(

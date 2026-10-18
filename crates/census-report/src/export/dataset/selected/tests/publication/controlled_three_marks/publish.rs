@@ -19,7 +19,8 @@ pub(super) fn publish(
     if authority.profile().id()? != profile.id()? {
         return Err("controlled publication profile differs from frozen authority".into());
     }
-    let [cohort] = profile.input().graduation_years.as_slice() else {
+    let selected_profile = authority.profile();
+    let [cohort] = selected_profile.input().graduation_years.as_slice() else {
         return Err("controlled publication requires one selected cohort".into());
     };
     let options = Options {
@@ -27,8 +28,8 @@ pub(super) fn publish(
         out: Some(root.to_path_buf()),
         limit: None,
         scope: Scope::AllSources,
-        jurisdictions: profile.input().jurisdictions.clone(),
-        school_year: profile.input().contact_school_year,
+        jurisdictions: selected_profile.input().jurisdictions.clone(),
+        school_year: selected_profile.input().contact_school_year,
     };
     Derivation::selected(
         dataset,

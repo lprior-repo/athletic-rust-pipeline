@@ -170,6 +170,9 @@ pub(super) fn ensure_snapshot(
     dataset: &ExportDataset,
     snapshot: &StoreSnapshot<'_>,
 ) -> ReportResult<()> {
+    if let Some(freshness) = &dataset.selected_job_freshness {
+        freshness.require(snapshot, dataset.selected_authority()?.profile())?;
+    }
     let _ = authority::checked_identity(dataset, snapshot)?;
     if snapshot.tables_digest(&INPUT_TABLES)? != dataset.lineage.source_digest {
         return Err(invalid(

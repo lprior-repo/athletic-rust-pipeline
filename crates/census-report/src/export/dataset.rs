@@ -12,6 +12,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 mod frozen;
+mod job_request;
+pub use job_request::ExportJobRequest;
 mod read;
 pub(crate) mod selected;
 mod selected_proofs;
@@ -86,6 +88,8 @@ pub struct ExportDataset {
     selected_proofs: Option<selected_proofs::SelectedProofs>,
     #[serde(skip)]
     selected_input_origin: SelectedInputOrigin,
+    #[serde(skip)]
+    selected_job_freshness: Option<frozen::job::SelectedJobFreshness>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -229,10 +233,6 @@ impl ExportDataset {
         Self::from_loaded(loaded, frozen::lineage(store, snapshot)?)
     }
 
-    pub fn for_job(store: &Store, job: &str) -> ReportResult<Self> {
-        frozen::job::capture(store, job)
-    }
-
     pub fn ensure_store(&self, store: &Store) -> ReportResult<()> {
         frozen::job::ensure_store(self, store)
     }
@@ -255,6 +255,7 @@ impl ExportDataset {
             verified_public_identities: None,
             selected_proofs: None,
             selected_input_origin: SelectedInputOrigin::Unqualified,
+            selected_job_freshness: None,
             athletes: loaded.athletes,
             canonical_aliases,
             schools: school_map(loaded.schools),

@@ -104,6 +104,10 @@ pub(super) struct Manifest {
 }
 
 impl Manifest {
+    pub(super) fn is_selected_job(&self) -> bool {
+        self.selected_profile.is_some() && self.lineage.export_job.is_some()
+    }
+
     pub(super) fn recipe(&self) -> ReportResult<census_store::publish::Digest> {
         super::selected::validate(self.schema_revision, self.selected_profile.as_ref())?;
         match &self.selected_profile {

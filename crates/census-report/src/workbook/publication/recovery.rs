@@ -2,6 +2,8 @@ use super::{pointer, protocol, PublicationError, RecoveryOutcome, ReportResult};
 use census_store::publish::{Digest, Intent, Root, State};
 use census_store::Store;
 use std::path::Path;
+mod job;
+pub(super) use job::reconcile;
 
 pub(super) struct Prepared {
     active: Option<Intent>,
@@ -60,13 +62,14 @@ fn retain_validation(prepared: &mut Prepared, result: ReportResult<std::fs::File
     }
 }
 
-pub(super) fn reconcile(
+pub(super) fn reconcile_with_dataset(
     store: &Store,
     root: &Path,
     namespace: &Digest,
     prepared: &Prepared,
+    dataset: Option<&crate::export::ExportDataset>,
 ) -> ReportResult<RecoveryOutcome> {
-    validate_pre_reconcile(store, root, namespace, prepared)?;
+    job::validate_pre_reconcile(store, root, namespace, prepared)?;
     if let Some(bundle) = &prepared.integrity {
         super::incident::record(root, bundle, &prepared.diagnostics)?;
         return Err(PublicationError::IntegrityIncident {
@@ -105,25 +108,8 @@ pub(super) fn reconcile(
         selected,
         desired,
         &prepared.run_manifest,
+        dataset,
     )
-}
-
-fn validate_pre_reconcile(
-    store: &Store,
-    root: &Path,
-    namespace: &Digest,
-    prepared: &Prepared,
-) -> ReportResult<()> {
-    if store.publication_active(namespace)? != prepared.active
-        || pointer::read(root).map_err(|error| error.to_string()) != prepared.observed
-    {
-        return Err(pointer::required(
-            root,
-            "publication changed during pre-fence validation; retry explicit recovery".into(),
-            Vec::new(),
-        ));
-    }
-    Ok(())
 }
 
 fn dispatch_intent_recovery(
@@ -133,6 +119,7 @@ fn dispatch_intent_recovery(
     selected: &Root,
     desired: &Digest,
     run_manifest: &Option<Digest>,
+    dataset: Option<&crate::export::ExportDataset>,
 ) -> ReportResult<RecoveryOutcome> {
     match &intent.state {
         State::Published { receipt } => Ok(RecoveryOutcome::HistoricalSuccess {
@@ -144,9 +131,15 @@ fn dispatch_intent_recovery(
             })
         }
         State::Superseded { desired } => another(selected, desired),
-        State::Intent { .. } => {
-            reconcile_intent(store, root, intent, selected, desired, run_manifest)
-        }
+        State::Intent { .. } => reconcile_intent(
+            store,
+            root,
+            intent,
+            selected,
+            desired,
+            run_manifest,
+            dataset,
+        ),
         State::Requested => reconcile_requested(store, root, intent, selected, run_manifest),
     }
 }
@@ -167,7 +160,19 @@ fn reconcile_intent(
     selected: &Root,
     desired: &Digest,
     run_manifest: &Option<Digest>,
+    dataset: Option<&crate::export::ExportDataset>,
 ) -> ReportResult<RecoveryOutcome> {
+    if let Some(dataset) = job::selected_input(root, desired, dataset)? {
+        return job::resume_selected(
+            store,
+            root,
+            intent,
+            selected,
+            desired,
+            run_manifest,
+            dataset,
+        );
+    }
     if *selected == Root::Bundle(desired.clone()) {
         return finalize_intent_published(store, root, intent, desired);
     }

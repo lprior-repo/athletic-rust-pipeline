@@ -22,6 +22,16 @@ fn journal_only_local_identity_correction_invalidates_current_selection_and_pres
     let profile = fixture::profile()?;
     fixture.store.register_profile(&profile)?;
     let selection = ProfileSelectionV1::new(fixture.store.store_identity()?, profile.id()?);
+    let job_request = crate::export::ExportJobRequest::SelectedPublicationV1 {
+        selection: selection.clone(),
+    };
+    let job_dataset = ExportDataset::for_job_request(
+        &fixture.store,
+        "selected-identity-correction-job-v1",
+        &job_request,
+    )?;
+    let job_generation = job_dataset.lineage.input_generation.clone();
+    drop(job_dataset);
     let objects = super::temporary()?;
     let held = fixture.store.snapshot();
     let dataset =
@@ -40,6 +50,7 @@ fn journal_only_local_identity_correction_invalidates_current_selection_and_pres
         .store
         .journal_done("selected-proof-unrelated", "progress", &true)?;
     dataset.ensure_current(&fixture.store)?;
+    check!(eq; ExportDataset::for_job_request(&fixture.store, "selected-identity-correction-job-v1", &job_request)?.lineage.input_generation, job_generation);
     let ReviewedIdentityRequestV1::Merge { case_id, .. } = &merge else {
         return Err("expected reviewed merge request".into());
     };
@@ -60,6 +71,12 @@ fn journal_only_local_identity_correction_invalidates_current_selection_and_pres
     check!(eq; fixture.store.snapshot().tables_digest(&Table::ALL)?, physical);
     check!(eq; crate::export::store_lineage(&fixture.store)?.source_digest, dataset.lineage.source_digest);
     check!(dataset.ensure_current(&fixture.store).is_err());
+    check!(ExportDataset::for_job_request(
+        &fixture.store,
+        "selected-identity-correction-job-v1",
+        &job_request
+    )
+    .is_err());
     check!(dataset.ensure_snapshot(&fixture.store.snapshot()).is_err());
     dataset.ensure_snapshot(&held)?;
     let fresh_objects = super::temporary()?;
