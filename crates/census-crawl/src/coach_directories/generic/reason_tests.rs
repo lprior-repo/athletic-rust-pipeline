@@ -67,12 +67,8 @@ fn canonical_attempt_retains_exact_parser_reason_and_source() -> TestResult {
         "x".repeat(4097)
     )
     .into_bytes();
-    let (mut school, _) = CanonicalSchool::new(
-        UsJurisdiction::Michigan,
-        "Example School",
-        "example school",
-        None,
-    );
+    let (mut school, _) =
+        CanonicalSchool::new(UsJurisdiction::Michigan, "Example School", "example", None);
     school.school_website = Some("https://school.example/".to_owned());
     let capture = FetchOutcome {
         url: "https://school.example/contact".to_owned(),

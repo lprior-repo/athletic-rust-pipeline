@@ -6,13 +6,13 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-const ROOT: &str = "https://school.example";
+const ROOT: &str = "https://school.org";
 
 #[tokio::test]
 async fn malformed_first_school_retains_failure_and_valid_next_school_artifact() -> TestResult {
     queue_retains_next_school(
         b"<template><a href='/must-not-follow'>Coaches</a>",
-        "https://school.example/bad: schema:",
+        "https://school.org/bad: schema:",
     )
     .await
 }
@@ -51,7 +51,7 @@ async fn queue_retains_next_school(first: &[u8], marker: &str) -> TestResult {
         None,
         Duration::ZERO,
         HashMap::new(),
-        vec!["school.example".to_owned()],
+        vec!["school.org".to_owned()],
     )?
     .with_offline(true);
     seed(fetcher.cache_dir(), first)?;
@@ -81,7 +81,7 @@ async fn queue_retains_next_school(first: &[u8], marker: &str) -> TestResult {
     check!(eq; bad.research_status, research::ResearchStatus::Incomplete);
     let note = bad.note.as_deref().ok_or("retained diagnostic")?;
     check!(note.contains(marker));
-    check!(note.starts_with("https://school.example/bad:"));
+    check!(note.starts_with("https://school.org/bad:"));
     check!(note.len() <= 1024 * 1024);
     check!(bad.school_mailbox_candidates.is_empty());
     check!(bad.staff_contact_candidates.is_empty());
@@ -92,7 +92,7 @@ async fn queue_retains_next_school(first: &[u8], marker: &str) -> TestResult {
     check!(good
         .school_mailbox_candidates
         .iter()
-        .any(|hit| hit.mailbox == "office@school.example"));
+        .any(|hit| hit.mailbox == "office@school.org"));
     check!(store.scan::<CanonicalSchool>(Table::Schools)?.is_empty());
     check!(out.join("report.json").is_file());
     check!(eq; fetcher.stats().await.physical_requests(), 0);
@@ -101,8 +101,7 @@ async fn queue_retains_next_school(first: &[u8], marker: &str) -> TestResult {
 
 fn seed(cache: &std::path::Path, first: &[u8]) -> TestResult {
     let now = census_crawl::net::now_iso8601();
-    let good =
-        b"<p>School office <a href='mailto:office@school.example'>office@school.example</a></p>";
+    let good = b"<p>School office <a href='mailto:office@school.org'>office@school.org</a></p>";
     for (path, body) in [
         ("/robots.txt", b"User-agent: *\nAllow: /\n".as_slice()),
         ("/bad", first),
