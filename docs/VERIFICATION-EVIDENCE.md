@@ -708,3 +708,45 @@ and `aebe8065508b99c70d544eab08dd4ad191453211711db3740e35577cad3e57a9`.
 These are identity-correction controls, not PRIMARY's 50→51 workbook, genuine
 population coverage, authenticated R2 A/B, representative memory proof or national readiness.
 
+#### Kernel structural qualification — 2026-10-18
+
+Incoming PR84 (`bd6cc556`) is integrated without resetting the working batch.
+The quiescent batch introduces current kernel dependency epochs 4/5, preserving
+the original whole-document 2/3 pins under ADR-038's read-only adapter. Exact
+clean changed-build B qualification remains pending.
+
+| Surface | Receipt | Result |
+|---|---|---|
+| Final batch format / all-target check / lint | `c9926339` / `6d112a2c` / `265b230a` | PASS; arity advisories visible |
+| Trusted AST / no-comments / panic extraction | `63a93b7a` / `087baac7` / `55ef55e0` | PASS on the same production source before final test-only repair |
+| Source, grant and robots boundaries | `16bd5382` | PASS; includes real local HTTP denial/redirect/cache cases |
+| Selected-publication and genuine documentary lane | `9008e0b5` | PASS; actual workbook, normalized, correction and Store-free readback |
+| Accepted/revoked school-proof executable | `59dcc2ff` | PASS; original school / no school, original pins unchanged |
+| Authentic three-case producer A | `d81c0fcc` | PASS on clean `1ab843c498b9096b7812a2a50702dbcc74237f6f`, tree `0e0ddd0f53c445cdb54a0b496fbec92a9eec7d07` |
+
+A was retained with `CENSUS_REVIEWED_ROSTER_RETENTION_DIR` set to
+`/home/lewis/.cache/r2-kernel-baseline-Os9ai0/producer-a-1ab843c4`.
+Its `retention.json` SHA256 is
+`8897f37e3fabc92235a5ab2b3ea648553a4b07c76b1588e638d542acc2c35908`;
+182 inventoried files exclude the manifest itself. Resolved/conflicted/missing-owner
+selected counts are 1/0/0. The failed `eff29df5` directory remains unchanged.
+
+Earlier batch checks `7dc466ce` (extraction type/borrow errors), `ebebdf31`
+(three lint errors) and `25617016` (two remaining size failures) failed before
+repair. Source lane `74de993e` exposed an obsolete expectation that reinstalling
+unchanged input invalidates an immutable inspection. Replacement case `eb15dc60`
+proves a real school correction changes the current input token while retaining
+the original reviewed input, then replays after deleting the owned original Store.
+The full source lane subsequently passed; no production refusal was suppressed.
+
+The current execution-context pin explicitly accounts for PR84's changed Crawl
+configuration and lockfile. Main independently verified original kernel copies
+against their authenticated retained records; receipt:
+`/home/lewis/.cache/r2-kernel-baseline-Os9ai0/main-verified-original-kernels.json`.
+Unknown historical documents or execution contexts still refuse. No PRIMARY
+50→51 workbook, representative resource result or national readiness is implied.
+
+PR85 (`53eac1aa`) was then fast-forwarded with the batch preserved. It does not
+change the pinned kernel sources or execution configuration. The receipts above
+precede that merge; clean-commit static and changed-build qualification are pending.
+

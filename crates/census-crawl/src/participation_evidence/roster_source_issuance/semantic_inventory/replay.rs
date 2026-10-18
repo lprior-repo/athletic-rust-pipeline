@@ -16,21 +16,19 @@ pub(in crate::participation_evidence::roster_source_issuance) fn compare_origina
         if parser.semantic_policy() != INTERPRETATION {
             return Err(invalid("unsupported retained roster semantic policy").into());
         }
-        let kernel = retained.inventory.kernel_document.as_bytes();
-        kernel::require_retained(kernel, grant)?;
-        let (compiled_text, compiled_digest) = kernel::compiled_identity()?;
-        if retained.inventory.kernel_digest != compiled_digest
-            || retained.inventory.kernel_bytes
-                != u64::try_from(compiled_text.len())
-                    .map_err(|_| census_store::StoreError::CounterOverflow)?
-        {
-            return Err(invalid("historical semantic kernel reference mismatch").into());
-        }
+        let kernel =
+            kernel::require_historical(retained.inventory.kernel_document.as_bytes(), grant)?;
+        kernel.require_reference(
+            &retained.inventory.kernel_digest,
+            retained.inventory.kernel_bytes,
+        )?;
         budget::charge(packet.directory(), grant)?;
         budget::charge(packet.roster(), grant)?;
         let checked = packet.read_semantic_contract(PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1)?;
         let recomputed = capture::inventory(&checked, parser.canonical_bytes(), metadata, grant)?;
-        if encoding::encode(&recomputed, grant)?.as_slice() != retained.bytes {
+        if encoding::encode(&retained.inventory, grant)?.as_slice() != retained.bytes
+            || !comparison::same_outcome(&retained.inventory, &recomputed)
+        {
             return Err(invalid(
                 "retained semantic inventory differs from original raw V1 interpretation",
             )

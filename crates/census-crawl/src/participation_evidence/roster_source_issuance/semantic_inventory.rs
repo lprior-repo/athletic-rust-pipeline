@@ -7,6 +7,7 @@ use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::{RosterSourceEvidenceV1, StoreResult};
 
 mod capture;
+mod comparison;
 mod encoding;
 pub(in crate::participation_evidence) mod kernel;
 mod replay;
@@ -147,7 +148,7 @@ fn decode_inventory(
 #[cfg(test)]
 mod tests;
 
-pub(in crate::participation_evidence) fn require_fixed_roster_semantic_kernel_v2() -> StoreResult<()>
+pub(in crate::participation_evidence) fn require_current_roster_semantic_kernel() -> StoreResult<()>
 {
-    kernel::compiled().map(|_| ())
+    kernel::compiled_identity().map(|_| ())
 }

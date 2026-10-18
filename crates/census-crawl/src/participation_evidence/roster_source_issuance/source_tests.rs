@@ -1,4 +1,5 @@
 use super::*;
+use crate::milesplit::CurrentRosterAssertion;
 use crate::participation_evidence::{
     RetainedBodyEncodingV1, RetainedHtmlCaptureV1, RetainedHttpProvenanceV1,
 };
@@ -105,7 +106,7 @@ fn missing_current_statement_refuses_program_assessment() -> TestResult {
     let body = ROSTER.replace("<h4>Current Roster</h4>", "<h4>Past Roster</h4>");
     let packet = fixture(&body)?;
     let proposal = decode(&proposal(&packet, &body)?)?;
-    check!(scope(
+    check!(scope::scope(
         &packet.read()?,
         &proposal,
         &mut AttachmentReplayGrantV1::new()

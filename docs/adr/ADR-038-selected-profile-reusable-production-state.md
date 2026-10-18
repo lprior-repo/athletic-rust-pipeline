@@ -72,7 +72,31 @@ frozen compatibility does not authorize old acquisition or issuance runtimes.
 Fresh reviewed-roster A and changed-build B must carry their own authenticated
 source, kernel and artifact identities. This decision supplies no passing receipt.
 
+### Current implementation kernels and read-only replay
 
+**Context:** structural repairs change the source identity of the immutable
+reviewed-roster kernels. Their original dependency documents cannot be repinned.
+
+**Decision:** use current dependency epochs 4 (full inventory) and 5 (row-local).
+These are implementation identities, not qualification-profile or inventory-wire
+versions. One current interpreter recomputes the original source inputs.
+
+Read-only adapter V1 accepts only the original whole-document SHA-256 pins:
+
+| Original epoch | Kernel document SHA-256 |
+|---|---|
+| 2 | `71ef18570ab2683c9f498e2f66983d6a782900fd2647eff4101864b782ecaa46` |
+| 3 | `7352af3bf097e5c91a890809b1fa52e700469b3bbccb308eb445fe49fcf48f38` |
+
+The adapter also pins the supported current compiler/configuration/lock context;
+PR84's changed dependency context requires its own qualification. Historical
+canonical bytes, original grant ownership and every non-kernel semantic field,
+including rejected dispositions, must agree. Unknown identities or contexts refuse.
+
+**Consequences:** preserve original artifacts and producer pins; do not relabel
+them, reactivate old issuance claims or execute an old runtime. Qualification is
+artifact-specific, not a universal equivalence claim. The acceptance ledger must
+record authentic producer A and a distinct changed-build B before closure.
 
 ## 2. Profile scope is immutable configuration
 

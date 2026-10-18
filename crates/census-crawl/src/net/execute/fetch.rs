@@ -70,19 +70,7 @@ impl Fetcher {
             return Err(FetchError::Offline { url: url.into() });
         }
 
-        let (host, origin) = request_target(url)?;
-        if let Some(reason) = crate::registry::acquisition_refusal_for_host(&host) {
-            return Err(FetchError::Policy {
-                detail: reason.to_string(),
-            });
-        }
-        self.origin_locks.ensure(&origin)?;
-        if let Some(refusal) = self.refused_admission(&host, url).await {
-            return Err(refusal);
-        }
-        if self.host_blocked(&host, &crate::net::now_iso8601()).await {
-            return Err(FetchError::Cooldown { host: host.clone() });
-        }
+        let host = self.admit_transport_host(url).await?;
         let gate = self.host_gate(&host).await;
         let plan = FetchPlan {
             admission,
@@ -106,6 +94,23 @@ impl Fetcher {
             .and_then(|outcome| admission.accept(outcome));
         self.record_transport(started, &outcome).await;
         outcome
+    }
+
+    async fn admit_transport_host(&self, url: &str) -> Result<String, FetchError> {
+        let (host, origin) = request_target(url)?;
+        if let Some(reason) = crate::registry::acquisition_refusal_for_host(&host) {
+            return Err(FetchError::Policy {
+                detail: reason.to_string(),
+            });
+        }
+        self.origin_locks.ensure(&origin)?;
+        if let Some(refusal) = self.refused_admission(&host, url).await {
+            return Err(refusal);
+        }
+        if self.host_blocked(&host, &crate::net::now_iso8601()).await {
+            return Err(FetchError::Cooldown { host });
+        }
+        Ok(host)
     }
 
     async fn fetch_admitted_transport(

@@ -5,6 +5,7 @@ use crate::participation_evidence::{bound, hash, invalid, json};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::StoreResult;
 
+mod comparison;
 mod kernel;
 mod replay;
 mod rows;
@@ -32,6 +33,16 @@ pub(super) fn capture(
     metadata: &[u8],
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<u8>> {
+    let value = inventory(checked, parser, metadata, grant)?;
+    encode(&value, grant)
+}
+
+fn inventory(
+    checked: &CheckedProviderSchoolPacketV1,
+    parser: &[u8],
+    metadata: &[u8],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<wire::Inventory> {
     let rows = rows::inventory(checked.roster_verdict(), grant)?;
     let roster = checked
         .roster_verdict()
@@ -46,7 +57,7 @@ pub(super) fn capture(
         ),
         grant,
     )?;
-    let kernel = kernel::compiled()?;
+    let (kernel, _) = kernel::compiled_identity()?;
     grant.charge_bytes(kernel.len()).map_err(domain)?;
     let value = wire::Inventory {
         schema: SCHEMA.into(),
@@ -54,9 +65,7 @@ pub(super) fn capture(
         provider_semantic_contract:
             crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1
                 .into(),
-        kernel_document: std::str::from_utf8(kernel)
-            .map_err(|_| invalid("row-local kernel UTF8"))?
-            .into(),
+        kernel_document: std::borrow::Cow::Borrowed(kernel),
         packet: checked.reference().as_str().into(),
         parser_manifest: hash(parser),
         metadata: hash(metadata),
@@ -70,7 +79,7 @@ pub(super) fn capture(
         },
         rows,
     };
-    encode(&value, grant)
+    Ok(value)
 }
 
 fn encode(

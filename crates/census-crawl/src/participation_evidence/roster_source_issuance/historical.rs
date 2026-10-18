@@ -11,6 +11,7 @@ use census_store::{ReviewedRosterSourceClaimV1, StoreResult};
 mod assessment;
 mod getters;
 mod interpretation;
+pub(super) mod kernel_adapter;
 
 pub(super) struct CheckedOriginalRosterPacket<'a> {
     evidence: &'a census_store::RosterSourceEvidenceV1,

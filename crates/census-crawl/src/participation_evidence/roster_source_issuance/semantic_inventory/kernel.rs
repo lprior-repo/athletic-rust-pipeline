@@ -1,31 +1,33 @@
+use super::super::historical::kernel_adapter::{self, CheckedKernelReplayV1, KernelEpoch};
 use crate::participation_evidence::{bound, hash, invalid, json};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
-use census_store::{EvidenceSubjectAttachmentStoreError, StoreResult};
+use census_store::StoreResult;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
 struct CompiledKernelIdentity {
     text: &'static str,
     digest: String,
+    configuration: [u8; 32],
 }
 
 static COMPILED_IDENTITY: LazyLock<Option<CompiledKernelIdentity>> = LazyLock::new(|| {
     if validate(COMPILED).is_err() {
         return None;
     }
+    let configuration = match kernel_adapter::context::digest(COMPILED) {
+        Ok(value) => value,
+        Err(_) => return None,
+    };
     match std::str::from_utf8(COMPILED) {
         Ok(text) => Some(CompiledKernelIdentity {
             text,
             digest: hash(COMPILED),
+            configuration,
         }),
         Err(_) => None,
     }
 });
-
-pub(in crate::participation_evidence) fn compiled() -> StoreResult<&'static [u8]> {
-    compiled_identity()?;
-    Ok(COMPILED)
-}
 
 pub(in crate::participation_evidence) fn compiled_identity(
 ) -> StoreResult<(&'static str, &'static str)> {
@@ -34,12 +36,31 @@ pub(in crate::participation_evidence) fn compiled_identity(
         None => Err(invalid("compiled immutable semantic kernel is unsupported")),
     }
 }
+pub(super) fn require_historical(
+    retained: &[u8],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<CheckedKernelReplayV1> {
+    match COMPILED_IDENTITY.as_ref() {
+        Some(identity) => kernel_adapter::bind_historical_v1(
+            KernelEpoch::FullV4,
+            retained,
+            identity.text,
+            identity.digest.as_str(),
+            &identity.configuration,
+            grant,
+        ),
+        None => {
+            grant.poison();
+            Err(invalid("compiled immutable semantic kernel is unsupported"))
+        }
+    }
+}
 
-const SCHEMA: &str = "roster-semantic-kernel-dependencies/v2";
+const SCHEMA: &str = "roster-semantic-kernel-dependencies/v4";
 const MAX_DOCUMENT: usize = 64 * 1024;
 const EXPECTED_SOURCE_DIGEST: &str =
-    "44f43b9cac647c8733441cc0f88cd5f27c635381c9f357aae2f3aa8a04389c1f";
-const COMPILED: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v2.json"));
+    "333559b103fd9853ea189eb78c2b59af8f6b671d452690abdc0e06abe7f8d20a";
+const COMPILED: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v4.json"));
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -65,35 +86,6 @@ struct Input {
     path: String,
     sha256: String,
     bytes: u64,
-}
-
-pub(in crate::participation_evidence) fn require_retained(
-    retained: &[u8],
-    grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<()> {
-    let result = (|| {
-        bound(
-            retained.len(),
-            MAX_DOCUMENT,
-            "retained semantic kernel document",
-        )?;
-        grant
-            .charge_steps(1)
-            .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
-        grant
-            .charge_bytes(retained.len())
-            .map_err(EvidenceSubjectAttachmentStoreError::Domain)?;
-        if retained != compiled()? {
-            return Err(invalid(
-                "retained semantic kernel dependencies differ from supported build",
-            ));
-        }
-        Ok(())
-    })();
-    if result.is_err() {
-        grant.poison();
-    }
-    result
 }
 
 fn validate(bytes: &[u8]) -> StoreResult<()> {
@@ -165,28 +157,36 @@ mod tests {
     type TestResult = Result<(), Box<dyn std::error::Error>>;
 
     #[test]
-    fn immutable_kernel_accepts_only_exact_compiled_dependency_evidence() -> TestResult {
-        let bytes = compiled()?;
+    fn compiled_kernel_binds_digest_and_length() -> TestResult {
+        let (text, digest) = compiled_identity()?;
         let mut grant = AttachmentReplayGrantV1::new();
-        require_retained(bytes, &mut grant)?;
+        let checked = require_historical(text.as_bytes(), &mut grant)?;
+        let bytes = u64::try_from(text.len())?;
+        checked.require_reference(digest, bytes)?;
+        check!(checked
+            .require_reference("not-the-kernel-digest", bytes)
+            .is_err());
+        check!(checked
+            .require_reference(digest, bytes.checked_add(1).ok_or("length")?)
+            .is_err());
         Ok(())
     }
 
     #[test]
     fn immutable_kernel_refuses_rehashed_source_drift() -> TestResult {
-        let mut kernel: Kernel = serde_json::from_slice(compiled()?)?;
+        let mut kernel: Kernel = serde_json::from_slice(COMPILED)?;
         kernel.sources.first_mut().ok_or("kernel source")?.sha256 = "1".repeat(64);
         kernel.source_digest = hash(&serde_json::to_vec(&kernel.sources)?);
         let mut grant = AttachmentReplayGrantV1::new();
-        check!(require_retained(&serde_json::to_vec(&kernel)?, &mut grant).is_err());
-        check!(require_retained(compiled()?, &mut grant).is_err());
+        check!(require_historical(&serde_json::to_vec(&kernel)?, &mut grant).is_err());
+        check!(require_historical(COMPILED, &mut grant).is_err());
         Ok(())
     }
 
     #[test]
     fn immutable_kernel_refuses_dependency_drift_and_unknown_schema() -> TestResult {
         for field in ["dependencies", "schema", "retired_predecessor"] {
-            let mut kernel: Kernel = serde_json::from_slice(compiled()?)?;
+            let mut kernel: Kernel = serde_json::from_slice(COMPILED)?;
             if field == "dependencies" {
                 kernel.dependencies.sha256 = "1".repeat(64);
             } else if field == "retired_predecessor" {
@@ -196,7 +196,7 @@ mod tests {
             }
             let mut grant = AttachmentReplayGrantV1::new();
             check!(matches!(
-                require_retained(&serde_json::to_vec(&kernel)?, &mut grant),
+                require_historical(&serde_json::to_vec(&kernel)?, &mut grant),
                 Err(census_store::StoreError::Refused { .. })
             ));
         }

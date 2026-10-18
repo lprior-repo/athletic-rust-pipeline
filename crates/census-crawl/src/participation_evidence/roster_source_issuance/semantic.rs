@@ -32,14 +32,40 @@ fn assess<'a>(
 ) -> CrawlResult<ReviewedRosterSourceAssessmentV1<'a>> {
     let proposal = claim.proposal(grant)?;
     let parser = claim.object(proposal.parser().artifact().digest().as_str(), grant)?;
-    let contracts = RosterInterpretationContractsV1 {
+    let contracts = load_contracts(claim, proposal, grant)?;
+    let version = load_interpretation_version(claim, proposal, grant)?;
+    let source = assess_source_by_version(claim, parser, &contracts, proposal, version, grant)?;
+    let (school, program) = load_binding_programs(&source, grant)?;
+    claim.qualification_object(grant)?;
+    claim.activation_object(grant)?;
+    source.require_original_grant(grant)?;
+    Ok(ReviewedRosterSourceAssessmentV1 {
+        claim,
+        source,
+        school,
+        program,
+    })
+}
+fn load_contracts<'a>(
+    claim: &'a ReviewedRosterSourceClaimV1,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<RosterInterpretationContractsV1<'a>> {
+    Ok(RosterInterpretationContractsV1 {
         scope: claim.object(proposal.scope().policy().digest(), grant)?,
         year: claim.object(proposal.binding().year_convention().digest(), grant)?,
         projection_merge: claim.object(
             proposal.binding().projection_merge_contract().digest(),
             grant,
         )?,
-    };
+    })
+}
+
+fn load_interpretation_version<'a>(
+    claim: &'a ReviewedRosterSourceClaimV1,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<&'a str> {
     let interpretation =
         claim.object(proposal.capture().interpretation().digest().as_str(), grant)?;
     grant
@@ -52,53 +78,60 @@ fn assess<'a>(
     }
     let version: Version<'_> =
         serde_json::from_slice(interpretation).map_err(crate::participation_evidence::json)?;
-    let source = match version.schema {
+    Ok(version.schema)
+}
+
+fn assess_source_by_version<'a>(
+    claim: &'a ReviewedRosterSourceClaimV1,
+    parser: &[u8],
+    contracts: &RosterInterpretationContractsV1<'a>,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+    version: &str,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<RosterSourceEvidenceAssessmentV1<'a>> {
+    match version {
         "roster-retained-capture-interpretation-v1" => assess_retained_roster_source(
             claim.evidence(grant)?,
             parser,
-            &contracts,
+            contracts,
             proposal,
             grant,
-        )?,
+        ),
         "roster-retained-capture-interpretation-v2" => {
             super::source::assess_retained_roster_source_v2(
                 claim.evidence(grant)?,
                 parser,
-                &contracts,
+                contracts,
                 proposal,
                 grant,
-            )?
+            )
         }
         "roster-retained-capture-interpretation-v3" => {
             super::source::assess_retained_roster_source_v3(
                 claim.evidence(grant)?,
                 parser,
-                &contracts,
+                contracts,
                 proposal,
                 grant,
-            )?
-        }
-        _ => {
-            return Err(crate::participation_evidence::invalid(
-                "unsupported reviewed roster interpretation",
             )
-            .into())
         }
-    };
-    let binding = assess_existing_roster_binding(&source, grant)?;
+        _ => Err(crate::participation_evidence::invalid(
+            "unsupported reviewed roster interpretation",
+        )
+        .into()),
+    }
+}
+
+fn load_binding_programs<'a>(
+    source: &'a RosterSourceEvidenceAssessmentV1<'a>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<(CanonicalSchool, CanonicalTeam)> {
+    let binding = assess_existing_roster_binding(source, grant)?;
     super::source::budget::charge(binding.school(grant)?, grant)?;
     let school = binding.school(grant)?.clone();
     super::source::budget::charge(binding.program(grant)?, grant)?;
     let program = binding.program(grant)?.clone();
-    claim.qualification_object(grant)?;
-    claim.activation_object(grant)?;
-    source.require_original_grant(grant)?;
-    Ok(ReviewedRosterSourceAssessmentV1 {
-        claim,
-        source,
-        school,
-        program,
-    })
+    Ok((school, program))
 }
 
 impl ReviewedRosterSourceAssessmentV1<'_> {

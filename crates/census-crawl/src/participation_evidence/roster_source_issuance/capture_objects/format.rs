@@ -89,26 +89,8 @@ pub(super) fn derive<'a>(
         grant,
     )?;
     let occurrence = digest(evidence, &metadata, grant)?;
-    let parser_bytes = parser.canonical_bytes();
-    let parser_digest = digest(evidence, parser_bytes, grant)?;
-    let interpretation = encode(
-        evidence,
-        &Interpretation {
-            schema: "roster-retained-capture-interpretation-v1",
-            metadata: Reference {
-                digest: &occurrence,
-                bytes: metadata.len(),
-            },
-            parser_manifest: Reference {
-                digest: &parser_digest,
-                bytes: parser_bytes.len(),
-            },
-            current_roster_revision: CurrentRosterAssertion::INTERPRETATION_REVISION,
-            temporal_scope: "exact_utc_capture_day",
-            normalized_utc_day: &day,
-        },
-        grant,
-    )?;
+    let interpretation =
+        build_interpretation(evidence, &metadata, &occurrence, parser, &day, grant)?;
     Ok(PreparedRosterCaptureObjectsV1 {
         evidence,
         metadata,
@@ -141,4 +123,34 @@ fn digest(
         grant.charge_bytes(bytes.len()).map_err(domain)?;
         Ok(hash(bytes))
     })
+}
+fn build_interpretation(
+    evidence: &RosterSourceEvidenceV1,
+    metadata: &[u8],
+    occurrence: &str,
+    parser: &super::super::manifest::RetainedRosterParserManifestV1,
+    day: &str,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<Vec<u8>> {
+    let parser_bytes = parser.canonical_bytes();
+    let parser_digest = digest(evidence, parser_bytes, grant)?;
+    let interpretation = encode(
+        evidence,
+        &Interpretation {
+            schema: "roster-retained-capture-interpretation-v1",
+            metadata: Reference {
+                digest: occurrence,
+                bytes: metadata.len(),
+            },
+            parser_manifest: Reference {
+                digest: &parser_digest,
+                bytes: parser_bytes.len(),
+            },
+            current_roster_revision: CurrentRosterAssertion::INTERPRETATION_REVISION,
+            temporal_scope: "exact_utc_capture_day",
+            normalized_utc_day: day,
+        },
+        grant,
+    )?;
+    Ok(interpretation)
 }

@@ -22,15 +22,17 @@ pub(in crate::participation_evidence::roster_source_issuance) fn compare(
             || inventory.provider_semantic_contract != crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1 {
             return Err(invalid("unsupported row-local retained semantics").into());
         }
-        kernel::require_retained(inventory.kernel_document.as_bytes(), grant)?;
+        let _kernel = kernel::require_historical(inventory.kernel_document.as_bytes(), grant)?;
         let packet = original.packet(grant)?;
         budget::charge(packet.directory(), grant)?;
         budget::charge(packet.roster(), grant)?;
         let checked = packet.read_semantic_contract(
             crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
         )?;
-        let recomputed = capture(&checked, parser.canonical_bytes(), metadata, grant)?;
-        if recomputed != retained {
+        let recomputed = super::inventory(&checked, parser.canonical_bytes(), metadata, grant)?;
+        if encode(&inventory, grant)?.as_slice() != retained
+            || !comparison::same_outcome(&inventory, &recomputed)
+        {
             return Err(
                 invalid("row-local retained inventory differs from original capture").into(),
             );

@@ -33,6 +33,19 @@ impl RetainedHttpProvenanceV1 {
             "participation response header bytes",
         )?;
         bound(self.content_type.len(), 128, "participation MIME bytes")?;
+        self.validate_request_headers()?;
+        if self.request_method != "GET"
+            || self.started_at > completed_at
+            || !self
+                .content_type
+                .eq_ignore_ascii_case("text/html; charset=utf-8")
+        {
+            return Err(invalid("participation transport provenance is unsupported"));
+        }
+        self.validate_response_headers()
+    }
+
+    fn validate_request_headers(&self) -> StoreResult<()> {
         self.request_headers.iter().try_for_each(|(key, value)| {
             bound(key.len(), 128, "participation request header name")?;
             bound(value.len(), 2048, "participation request header value")?;
@@ -43,15 +56,10 @@ impl RetainedHttpProvenanceV1 {
                 return Err(invalid("participation request header is invalid"));
             }
             Ok(())
-        })?;
-        if self.request_method != "GET"
-            || self.started_at > completed_at
-            || !self
-                .content_type
-                .eq_ignore_ascii_case("text/html; charset=utf-8")
-        {
-            return Err(invalid("participation transport provenance is unsupported"));
-        }
+        })
+    }
+
+    fn validate_response_headers(&self) -> StoreResult<()> {
         let headers = std::str::from_utf8(&self.response_header_bytes)
             .map_err(|_| invalid("participation response headers are not UTF-8"))?;
         let blocks: Vec<_> = headers

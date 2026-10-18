@@ -2,7 +2,7 @@ use super::*;
 use crate::participation_evidence::roster_source_issuance::assess_reviewed_roster_source_v1;
 use census_store::{
     replay_frozen_roster_reviewed_claims_v1, CurrentRosterReviewedClaimsV1,
-    ReviewedRosterSourceClaimV1,
+    ReviewedRosterSourceClaimV1, Table,
 };
 
 use super::integration::setup;
@@ -96,36 +96,55 @@ fn controlled_current_and_frozen_review_rederive_same_source() -> TestResult {
 }
 
 #[test]
-fn physical_change_refuses_current_but_preserves_selected_frozen_review() -> TestResult {
-    let (_directory, store) = issued()?;
+fn school_correction_preserves_original_review_and_store_free_replay() -> TestResult {
+    let (directory, store) = issued()?;
     let mut grant = AttachmentReplayGrantV1::new();
     let current = store
         .snapshot()
         .read_current_roster_reviewed_claims_v1(&mut grant)?;
+    let original_input = current
+        .claims(&mut grant)?
+        .first()
+        .ok_or("original review absent")?
+        .original_input_token(&mut grant)?
+        .to_vec();
     let frozen = current.freeze_closure(&mut grant)?;
-    install(&store)?;
-    let result = store
+    let (_, mut school, _, _) = install(&store)?;
+    let mut repeated_grant = AttachmentReplayGrantV1::new();
+    let repeated = store
         .snapshot()
-        .read_current_roster_reviewed_claims_v1(&mut AttachmentReplayGrantV1::new());
-    check!(matches!(
-        result,
-        Err(census_store::StoreError::RosterSourceIssuance(
-            census_store::RosterSourceIssuanceStoreError::InspectedClosureChanged
-        ))
-    ));
+        .read_current_roster_reviewed_claims_v1(&mut repeated_grant)?;
+    first(&repeated, &mut repeated_grant)?;
+    school.name = "Controlled Renamed School".into();
+    store.append(Table::Schools, &school)?;
+    let mut corrected_grant = AttachmentReplayGrantV1::new();
+    let corrected = store
+        .snapshot()
+        .read_current_roster_reviewed_claims_v1(&mut corrected_grant)?;
+    first(&corrected, &mut corrected_grant)?;
+    check!(eq; original_input.as_slice(), corrected
+        .claims(&mut corrected_grant)?
+        .first().ok_or("corrected review absent")?
+        .original_input_token(&mut corrected_grant)?);
+    let corrected_frozen = corrected.freeze_closure(&mut corrected_grant)?;
+    check!(
+        frozen.reference().current_input_token()
+            != corrected_frozen.reference().current_input_token()
+    );
+    drop(store);
+    directory.close()?;
     let mut replay_grant = AttachmentReplayGrantV1::new();
     let replay = replay_frozen_roster_reviewed_claims_v1(
         frozen.bytes(),
         frozen.reference(),
         &mut replay_grant,
     )?;
-    reassess(
-        replay
-            .claims(&mut replay_grant)?
-            .first()
-            .ok_or("replayed review absent")?,
-        &mut replay_grant,
-    )?;
+    let claim = replay
+        .claims(&mut replay_grant)?
+        .first()
+        .ok_or("replayed review absent")?;
+    check!(eq; original_input.as_slice(), claim.original_input_token(&mut replay_grant)?);
+    reassess(claim, &mut replay_grant)?;
     Ok(())
 }
 

@@ -68,14 +68,14 @@ fn replay(
             let checked = semantic_inventory::compare_original_raw_v1(
                 packet, parser, metadata, &retained, grant,
             )?;
-            source::scope(&checked, proposal, grant)?;
+            source::scope::scope(&checked, proposal, grant)?;
             Ok(checked)
         }
         interpretation::RetainedInventory::RowLocalV2(retained) => {
             let checked = super::super::semantic_inventory_v2::compare(
                 packet, parser, metadata, retained, grant,
             )?;
-            source::scope_row_local(&checked, proposal, grant)?;
+            source::scope::scope_row_local(&checked, proposal, grant)?;
             Ok(checked)
         }
     }

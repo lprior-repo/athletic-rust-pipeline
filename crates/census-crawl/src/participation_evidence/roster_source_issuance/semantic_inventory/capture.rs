@@ -42,7 +42,7 @@ pub(super) fn inventory(
         provider_semantic_contract:
             crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1
                 .into(),
-        kernel_document: kernel_text.into(),
+        kernel_document: std::borrow::Cow::Borrowed(kernel_text),
         kernel_digest: kernel_digest.to_string(),
         kernel_bytes: u64::try_from(kernel_bytes)
             .map_err(|_| census_store::StoreError::CounterOverflow)?,

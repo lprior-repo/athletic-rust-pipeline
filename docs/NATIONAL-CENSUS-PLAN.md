@@ -421,22 +421,22 @@ Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
 ### 7.5. Current execution checkpoint — 2026-10-18
 
-Pushed source: `8910dadc86a156169f46d597ddaf08465f2953db`, tree
-`37bb696b67ad34b81a79e1eafd28894f93ad2e91`, including incoming main through
-`1c572509f`. [Evidence](VERIFICATION-EVIDENCE.md#integrated-reviewed-source-checkpoint--2026-10-18).
-PASS is scoped; six immutable-kernel size failures still block full qualification.
+Incoming main through `53eac1aa` (PR84/85) is integrated. The kernel batch uses
+current dependency epochs 4/5 and explicitly pinned read-only 2/3 replay.
+Receipts below predate PR85; exact clean changed-build B qualification is pending.
+[Evidence](VERIFICATION-EVIDENCE.md#kernel-structural-qualification--2026-10-18).
 
 | Requirement | Code entrypoint | Test / command receipt | Tested revision | Result | Artifact | Next dependency |
 |---|---|---|---|---|---|---|
-| A: static checkpoint | `tools/moon-local` | fmt `999a2de4`, check `653e8ba8`, lint `4e518f92` | `8910dadc` | PASS; authorized arity advisories remain visible | Execution ledger | Resolve hard structural gate separately |
-| A: structural/safety gate | Trusted AST; owned-source lexer | scan `d140349f`; comments `5e614a12`; panic extraction `0e714b5b` | Rust source committed as `8910dadc` | Safety PASS; size FAIL: six pinned kernel functions, no oversized files | Original kernel identities unchanged | Authentic A; explicit versioned historical interpreter qualification, no repinning |
+| A: static checkpoint | `tools/moon-local` | fmt `c9926339`, check `6d112a2c`, lint `265b230a` | Working batch after `bd6cc556` | PASS; authorized arity advisories remain visible | Execution ledger | Clean commit and changed-build B |
+| A: structural/safety gate | Trusted AST; owned-source lexer | scan `63a93b7a`; comments `087baac7`; panic extraction `55ef55e0` | Same production source; before final test-only repair | PASS; original six and incoming PR84 size failures repaired | Original kernel documents unchanged | Exact clean-source qualification |
 | A: historical authority fence | Retained Report V3 consumer | `64e0d132` | PR81 + working repairs | PASS; not exact final-source qualification | Original retained V3, pins/checksum unchanged | Preserve artifact; rerun after integration |
-| A: genuine original-source replay | Documentary selected-publication roundtrip | `edb1a9c2` | `8910dadc` | PASS; original unknowns remain withheld | Original handoff/pins unchanged | Positive PRIMARY and population acceptance |
-| A/R2: transfer and correction replay | Selected publication and inherited lifecycle-9 roster | `edb1a9c2` | `8910dadc` | PASS; actual workbook/normalized and source-free generation readback | Scoped publication lane | Authenticated roster A/B |
-| R2: semantic equivalence across builds | Retained three-case producer/consumer | producer `eff29df5` | `8910dadc` | FAIL: copied publication omitted `generations/`; fix awaiting fresh producer | Failed partial artifact preserved; no authenticated A | Qualify fresh clean A, then changed B with original A pins |
+| A: genuine original-source replay | Documentary selected-publication roundtrip | `9008e0b5` | Working batch after `bd6cc556` | PASS; original unknowns remain withheld | Original handoff/pins unchanged | Positive PRIMARY and population acceptance |
+| A/R2: transfer and correction replay | Selected publication and inherited lifecycle-9 roster | `9008e0b5`; source/robots `16bd5382` | Working batch after `bd6cc556` | PASS; workbook/normalized readback, source-free generations and original-inspection retention | Scoped publication lane | Authenticated roster A/B |
+| R2: semantic equivalence across builds | Retained three-case producer/consumer | producer `d81c0fcc`; B pending | A `1ab843c4`, tree `0e0ddd0f` | A PASS, selected 1/0/0; changed-build B NOT RUN | Manifest SHA256 `8897f37e…c35908`; 182 inventoried files | Distinct clean B, original A pins, all-claim negative and tampered-proof refusal |
 | B/R1: original school-cell ownership | `CheckedRetainedResultRowV1::school_statement` | `fb5e3111`; smoke `90001154` | `3688a680` | PASS; source quote, no SchoolId authority | Original fixture SHA256 `95350f13…cc19e5`; identical replay references | `q01l` reviewed historical-school issuance |
-| B/R1: reviewed historical school | Public checked review → revoke → cold/frozen consumer | independent consumer `64b0261d` | `8910dadc` | Cold accepted/revoked readback PASS; not PRIMARY | Original accepted-51/revoked-53 proofs/pins unchanged | Exact-build public workflow regression; source-backed window and full PRIMARY |
-| B/R3: eligible PR identity correction | Reviewed V5 roster → merge/split → publication → Store-free replay | `edb1a9c2`; independent CLI `ade02192` / `ba13f079` | `8910dadc`; retained precommit synthetic control | PASS, including post-review raw-link mutation withholding | Two private owned workbook generations; all manifest artifact hashes agree | Remaining R3 consumer/service cases; not 50→51 or national coverage |
+| B/R1: reviewed historical school | Public checked review → revoke → cold/frozen consumer | executable `59dcc2ff` | Working batch after `bd6cc556` | Cold accepted/revoked readback PASS; not PRIMARY | Original accepted-51/revoked-53 proofs/pins unchanged | Source-backed window and full PRIMARY |
+| B/R3: eligible PR identity correction | Reviewed V5 roster → merge/split → publication → Store-free replay | `9008e0b5`; prior independent CLI `ade02192` / `ba13f079` | Working batch; retained precommit synthetic control | PASS, including post-review raw-link mutation withholding | Two private owned workbook generations | Original row-local kernel replay; remaining R3 consumers/service; not 50→51 or population coverage |
 | B/R1: eligible PR then withdrawal | Production selector → workbook/normalized → frozen readback | `3fhg`: 50→51 | — | NOT RUN | No controlled 50→51 workbook yet | Explicit source-backed window; reviewed school; real revoke/replay |
 | C/D: reusable operation and population | R1–R15 production paths and comparison | Spec-linked owners | — | NOT QUALIFIED | No national acceptance artifact | UP/five-state coverage, reuse/recovery/resource evidence |
 

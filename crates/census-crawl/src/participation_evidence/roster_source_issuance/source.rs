@@ -1,5 +1,7 @@
-use super::{manifest::assess_retained_roster_parser_manifest, RosterSourceEvidenceAssessmentV1};
-use crate::milesplit::{CurrentRosterAssertion, RosterVerdict};
+use super::{
+    capture_objects::PreparedRosterCaptureObjectsV1,
+    manifest::assess_retained_roster_parser_manifest, RosterSourceEvidenceAssessmentV1,
+};
 use crate::participation_evidence::provider_school::{
     CheckedProviderSchoolPacketV1, ProviderSchoolPacketV1,
 };
@@ -16,6 +18,8 @@ use census_store::{
     RosterSourceEvidenceV1, StoreError,
 };
 use chrono::{DateTime, Utc};
+#[path = "source_scope.rs"]
+pub(super) mod scope;
 
 #[path = "source_budget.rs"]
 pub(super) mod budget;
@@ -43,14 +47,7 @@ fn assess<'a>(
     version: InterpretationVersion,
 ) -> CrawlResult<RosterSourceEvidenceAssessmentV1<'a>> {
     original(evidence, grant, |_| {
-        if evidence.requested_school() != proposal.binding().school()
-            || evidence.requested_program() != proposal.binding().program()
-            || evidence.store_identity() != proposal.binding().store()
-            || evidence.snapshot_sequence() != proposal.binding().snapshot_revision().get()
-        {
-            return Err(invalid("roster source snapshot lineage mismatch").into());
-        }
-        Ok(())
+        require_snapshot_lineage(evidence, proposal)
     })?;
     original(evidence, grant, |grant| {
         Ok(super::policies::assess(
@@ -70,47 +67,18 @@ fn assess<'a>(
     original(evidence, grant, |grant| {
         admission(evidence, proposal, grant)
     })?;
-    let held = evidence.retained_root(grant)?;
-    let packet = original(evidence, grant, |grant| packet(held, proposal, grant))?;
-    let roster_body = original(evidence, grant, |grant| capture(&packet, proposal, grant))?;
-    let checked = original(evidence, grant, |grant| {
-        budget::charge(&packet, grant)?;
-        budget::charge(packet.directory(), grant)?;
-        budget::charge(packet.roster(), grant)?;
-        packet.read()
-    })?;
-    let objects = match version {
-        InterpretationVersion::OriginalV1 => super::capture_objects::derive(
-            evidence,
-            &packet,
-            &parser_manifest,
-            &roster_body,
-            grant,
-        )?,
-        InterpretationVersion::FullV2 => super::capture_objects::version2::derive(
-            evidence,
-            &packet,
-            &checked,
-            &parser_manifest,
-            &roster_body,
-            grant,
-        )?,
-        InterpretationVersion::RowLocalV3 => super::capture_objects::version2::version3::derive(
-            evidence,
-            &packet,
-            &checked,
-            &parser_manifest,
-            &roster_body,
-            grant,
-        )?,
-    };
-    objects.require_proposal(proposal, grant)?;
-    let scoped_rows = original(evidence, grant, |grant| match version {
-        InterpretationVersion::RowLocalV3 => scope_row_local(&checked, proposal, grant),
-        InterpretationVersion::OriginalV1 | InterpretationVersion::FullV2 => {
-            scope(&checked, proposal, grant)
-        }
-    })?;
+    let (held, packet, roster_body, checked) = load_retained_content(evidence, proposal, grant)?;
+    let objects = derive_objects(
+        evidence,
+        &packet,
+        &checked,
+        &parser_manifest,
+        &roster_body,
+        proposal,
+        version,
+        grant,
+    )?;
+    let scoped_rows = derive_scoped_rows(evidence, &checked, proposal, version, grant)?;
     evidence.require_original_grant(grant)?;
     Ok(RosterSourceEvidenceAssessmentV1 {
         evidence,
@@ -122,6 +90,92 @@ fn assess<'a>(
         roster_body,
         scoped_rows,
         capture_objects: objects,
+    })
+}
+
+fn require_snapshot_lineage(
+    evidence: &RosterSourceEvidenceV1,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+) -> CrawlResult<()> {
+    if evidence.requested_school() != proposal.binding().school()
+        || evidence.requested_program() != proposal.binding().program()
+        || evidence.store_identity() != proposal.binding().store()
+        || evidence.snapshot_sequence() != proposal.binding().snapshot_revision().get()
+    {
+        return Err(invalid("roster source snapshot lineage mismatch").into());
+    }
+    Ok(())
+}
+
+fn load_retained_content<'a>(
+    evidence: &'a RosterSourceEvidenceV1,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<(
+    &'a RetainedCaptureRootReadV1,
+    ProviderSchoolPacketV1,
+    String,
+    CheckedProviderSchoolPacketV1,
+)> {
+    let held = evidence.retained_root(grant)?;
+    let packet = original(evidence, grant, |grant| packet(held, proposal, grant))?;
+    let roster_body = original(evidence, grant, |grant| capture(&packet, proposal, grant))?;
+    let checked = original(evidence, grant, |grant| {
+        budget::charge(&packet, grant)?;
+        budget::charge(packet.directory(), grant)?;
+        budget::charge(packet.roster(), grant)?;
+        packet.read()
+    })?;
+    Ok((held, packet, roster_body, checked))
+}
+
+fn derive_objects<'a>(
+    evidence: &'a RosterSourceEvidenceV1,
+    packet: &ProviderSchoolPacketV1,
+    checked: &CheckedProviderSchoolPacketV1,
+    parser_manifest: &super::manifest::CheckedRosterParserManifestV1,
+    roster_body: &str,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+    version: InterpretationVersion,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
+    let objects = match version {
+        InterpretationVersion::OriginalV1 => {
+            super::capture_objects::derive(evidence, packet, parser_manifest, roster_body, grant)?
+        }
+        InterpretationVersion::FullV2 => super::capture_objects::version2::derive(
+            evidence,
+            packet,
+            checked,
+            parser_manifest,
+            roster_body,
+            grant,
+        )?,
+        InterpretationVersion::RowLocalV3 => super::capture_objects::version2::version3::derive(
+            evidence,
+            packet,
+            checked,
+            parser_manifest,
+            roster_body,
+            grant,
+        )?,
+    };
+    objects.require_proposal(proposal, grant)?;
+    Ok(objects)
+}
+
+fn derive_scoped_rows(
+    evidence: &RosterSourceEvidenceV1,
+    checked: &CheckedProviderSchoolPacketV1,
+    proposal: &LocallyCheckedRosterIssuanceV1,
+    version: InterpretationVersion,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<usize> {
+    original(evidence, grant, |grant| match version {
+        InterpretationVersion::RowLocalV3 => scope::scope_row_local(checked, proposal, grant),
+        InterpretationVersion::OriginalV1 | InterpretationVersion::FullV2 => {
+            scope::scope(checked, proposal, grant)
+        }
     })
 }
 
@@ -224,61 +278,6 @@ pub(super) fn capture(
         return Err(invalid("roster source capture mismatch").into());
     }
     Ok(body)
-}
-
-pub(super) fn scope(
-    checked: &CheckedProviderSchoolPacketV1,
-    proposal: &LocallyCheckedRosterIssuanceV1,
-    grant: &mut AttachmentReplayGrantV1,
-) -> CrawlResult<usize> {
-    let RosterVerdict::Complete { roster } = checked.roster_verdict() else {
-        return Err(invalid("roster source incomplete roster").into());
-    };
-    scope_members(roster, proposal, grant)
-}
-
-pub(super) fn scope_row_local(
-    checked: &CheckedProviderSchoolPacketV1,
-    proposal: &LocallyCheckedRosterIssuanceV1,
-    grant: &mut AttachmentReplayGrantV1,
-) -> CrawlResult<usize> {
-    let roster = super::semantic_inventory_v2::checked_roster(checked, grant)?;
-    scope_members(roster, proposal, grant)
-}
-
-fn scope_members(
-    roster: &crate::milesplit::Roster,
-    proposal: &LocallyCheckedRosterIssuanceV1,
-    grant: &mut AttachmentReplayGrantV1,
-) -> CrawlResult<usize> {
-    grant.charge_steps(roster.athletes.len()).map_err(domain)?;
-    if roster.team.id != proposal.scope().owner().provider_id()
-        || proposal.parser().interpretation() != CurrentRosterAssertion::INTERPRETATION_REVISION
-    {
-        return Err(invalid("roster source owner or interpretation mismatch").into());
-    }
-    let count = roster.athletes.iter().try_fold(0_usize, |count, member| {
-        let assertion = member
-            .current_roster()
-            .ok_or_else(|| invalid("roster source current statement absent"))?;
-        if assertion.owner() != roster.team.id
-            || assertion.member() != member.athlete().athlete_id
-            || assertion.row() != member.locator()
-        {
-            return Err(invalid("roster source scoped member mismatch"));
-        }
-        if member.athlete().gender == proposal.scope().category()
-            && assertion.supports(proposal.scope().sport())
-        {
-            count.checked_add(1).ok_or(StoreError::CounterOverflow)
-        } else {
-            Ok(count)
-        }
-    })?;
-    if count == 0 {
-        return Err(invalid("roster source program scope absent").into());
-    }
-    Ok(count)
 }
 
 fn size(value: usize) -> Result<u64, StoreError> {

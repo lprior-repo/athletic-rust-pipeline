@@ -6,15 +6,40 @@ pub(super) fn inventory(
     verdict: &RosterVerdict,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<wire::Row>> {
-    let (roster, rejected): (&Roster, &[RosterRejection]) = match verdict {
-        RosterVerdict::Complete { roster } => (roster, &[]),
+    let (roster, rejected) = extract_verdict(verdict)?;
+    let count = count_rows(roster, rejected)?;
+    charge_rows(count, grant)?;
+    let mut rows = Vec::new();
+    rows.try_reserve_exact(count)
+        .map_err(|_| invalid("row-local row allocation refused"))?;
+    let mut identities = BTreeSet::new();
+    inventory_admitted(roster, &mut identities, &mut rows, grant)?;
+    inventory_rejected(rejected, &mut identities, &mut rows)?;
+    finalize_rows(rows)
+}
+fn finalize_rows(mut rows: Vec<wire::Row>) -> StoreResult<Vec<wire::Row>> {
+    rows.sort_by_key(|value| value.row.ordinal);
+    validate_spans(&rows)?;
+    Ok(rows)
+}
+fn extract_verdict(
+    verdict: &RosterVerdict,
+) -> Result<(&Roster, &[RosterRejection]), census_store::StoreError> {
+    match verdict {
+        RosterVerdict::Complete { roster } => Ok((roster, &[])),
         RosterVerdict::Partial {
             roster,
             rejected,
             unfinished: None,
-        } if !rejected.is_empty() => (roster, rejected),
-        _ => return Err(invalid("row-local roster unfinished or quarantined")),
-    };
+        } if !rejected.is_empty() => Ok((roster, rejected)),
+        _ => Err(invalid("row-local roster unfinished or quarantined")),
+    }
+}
+
+fn count_rows(
+    roster: &Roster,
+    rejected: &[RosterRejection],
+) -> Result<usize, census_store::StoreError> {
     let count = roster
         .athletes
         .len()
@@ -24,6 +49,13 @@ pub(super) fn inventory(
     if roster.athletes.is_empty() {
         return Err(invalid("row-local admitted population absent"));
     }
+    Ok(count)
+}
+
+fn charge_rows(
+    count: usize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> Result<(), census_store::StoreError> {
     grant
         .charge_steps(
             count
@@ -38,13 +70,18 @@ pub(super) fn inventory(
                 .ok_or(census_store::StoreError::CounterOverflow)?,
         )
         .map_err(domain)?;
-    let mut rows = Vec::new();
-    rows.try_reserve_exact(count)
-        .map_err(|_| invalid("row-local row allocation refused"))?;
-    let mut identities = BTreeSet::new();
+    Ok(())
+}
+
+fn inventory_admitted<'a>(
+    roster: &'a Roster,
+    identities: &mut BTreeSet<&'a str>,
+    rows: &mut Vec<wire::Row>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
     for member in &roster.athletes {
         let id = &member.athlete().athlete_id;
-        unique(&mut identities, id)?;
+        unique(identities, id)?;
         rows.push(wire::Row {
             row: member.locator(),
             provider_id: id.clone(),
@@ -53,12 +90,20 @@ pub(super) fn inventory(
             },
         });
     }
+    Ok(())
+}
+
+fn inventory_rejected<'a>(
+    rejected: &'a [RosterRejection],
+    identities: &mut BTreeSet<&'a str>,
+    rows: &mut Vec<wire::Row>,
+) -> StoreResult<()> {
     for rejected in rejected {
         let id = rejected
             .athlete_id
             .as_deref()
             .ok_or_else(|| invalid("row-local rejected identity unknown"))?;
-        unique(&mut identities, id)?;
+        unique(identities, id)?;
         rows.push(wire::Row {
             row: rejected.row,
             provider_id: id.into(),
@@ -67,9 +112,7 @@ pub(super) fn inventory(
             },
         });
     }
-    rows.sort_by_key(|value| value.row.ordinal);
-    validate_spans(&rows)?;
-    Ok(rows)
+    Ok(())
 }
 
 fn unique<'a>(identities: &mut BTreeSet<&'a str>, id: &'a str) -> StoreResult<()> {

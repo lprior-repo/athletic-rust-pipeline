@@ -1,6 +1,7 @@
 use crate::milesplit::{SourceRowLocator, TeamRef};
 use census_domain::model::{CanonicalSchool, Gender, GradYear, SourceSchoolObservation};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -8,7 +9,7 @@ pub(super) struct Inventory {
     pub(super) schema: String,
     pub(super) interpretation: String,
     pub(super) provider_semantic_contract: String,
-    pub(super) kernel_document: String,
+    pub(super) kernel_document: Cow<'static, str>,
     pub(super) kernel_digest: String,
     pub(super) kernel_bytes: u64,
     pub(super) packet: String,
@@ -22,7 +23,7 @@ pub(super) struct Inventory {
     pub(super) members: Vec<Member>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct Directory {
     pub(super) capture: String,
@@ -38,7 +39,7 @@ pub(super) struct Directory {
     pub(super) anchor: SourceRowLocator,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct Member {
     pub(super) roster_name: String,
@@ -52,7 +53,7 @@ pub(super) struct Member {
     pub(super) current: Current,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(tag = "state", rename_all = "snake_case", deny_unknown_fields)]
 pub(super) enum Current {
     Available {
@@ -71,7 +72,7 @@ pub(super) enum Current {
     },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(tag = "state", rename_all = "snake_case", deny_unknown_fields)]
 pub(super) enum Statements {
     Available {
@@ -84,14 +85,14 @@ pub(super) enum Statements {
     },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(tag = "state", rename_all = "snake_case", deny_unknown_fields)]
 pub(super) enum Owners {
     Available { declarations: Vec<Owner> },
     Unavailable { reason: WitnessGap },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct Owner {
     pub(super) provider_id: u64,
@@ -101,7 +102,7 @@ pub(super) struct Owner {
     pub(super) termination: OwnerTermination,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum OwnerKind {
     Canonical,
@@ -110,14 +111,14 @@ pub(super) enum OwnerKind {
     JsonLdUrl,
     JsonLdId,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum OwnerTermination {
     Tag,
     ScriptEnd,
     ScriptEof,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum WitnessGap {
     MissingPublishedOwner,
@@ -126,7 +127,7 @@ pub(super) enum WitnessGap {
     OwnerInventoryLimit,
     ResourceLimit,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum TemporalGap {
     MissingStatement,
@@ -136,7 +137,7 @@ pub(super) enum TemporalGap {
     InactiveMember,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct Span {
     pub(super) start: usize,

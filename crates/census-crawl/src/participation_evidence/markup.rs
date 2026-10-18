@@ -63,33 +63,7 @@ pub(super) fn elements<'a>(
                     }
                 }
                 Token::EndTag(tag) if tag.name.as_slice() == name => {
-                    if active.as_ref().is_some_and(|(_, depth, _)| *depth > 1) {
-                        if let Some((_, depth, _)) = active.as_mut() {
-                            *depth = depth.checked_sub(1).ok_or(StoreError::CounterOverflow)?;
-                        }
-                        return Ok(());
-                    }
-                    if let Some((start, _, attributes)) = active.take() {
-                        bound(
-                            output
-                                .len()
-                                .checked_add(1)
-                                .ok_or(StoreError::CounterOverflow)?,
-                            512,
-                            "participation statement elements",
-                        )?;
-                        output
-                            .try_reserve(1)
-                            .map_err(|_| invalid("participation element allocation refused"))?;
-                        let body = html
-                            .get(start..tag.span.end)
-                            .ok_or_else(|| invalid("participation statement span invalid"))?;
-                        output.push(Element {
-                            html: body,
-                            span: start..tag.span.end,
-                            attributes,
-                        });
-                    }
+                    finish_element(html, &mut active, &tag, &mut output)?;
                 }
                 _ => {}
             }
@@ -133,6 +107,41 @@ fn attributes(tag: &StartTag<usize>) -> StoreResult<Vec<(String, String)>> {
             ))
         })
         .collect()
+}
+fn finish_element<'a>(
+    html: &'a str,
+    active: &mut Option<(usize, usize, ElementAttributes)>,
+    tag: &html5gum::EndTag<usize>,
+    output: &mut Vec<Element<'a>>,
+) -> StoreResult<()> {
+    if let Some((_, depth, _)) = active.as_mut() {
+        if *depth > 1 {
+            *depth = depth.checked_sub(1).ok_or(StoreError::CounterOverflow)?;
+            return Ok(());
+        }
+    }
+    if let Some((start, _, attributes)) = active.take() {
+        bound(
+            output
+                .len()
+                .checked_add(1)
+                .ok_or(StoreError::CounterOverflow)?,
+            512,
+            "participation statement elements",
+        )?;
+        output
+            .try_reserve(1)
+            .map_err(|_| invalid("participation element allocation refused"))?;
+        let body = html
+            .get(start..tag.span.end)
+            .ok_or_else(|| invalid("participation statement span invalid"))?;
+        output.push(Element {
+            html: body,
+            span: start..tag.span.end,
+            attributes,
+        });
+    }
+    Ok(())
 }
 
 pub(super) fn text(html: &str) -> StoreResult<String> {
