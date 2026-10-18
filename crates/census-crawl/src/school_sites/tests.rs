@@ -374,8 +374,11 @@ fn navigation_excludes_unrelated_sports_before_generic_hints() -> TestResult {
 fn navigation_does_not_admit_generic_hints_from_authorities_or_queries() -> TestResult {
     let rules = Rules::new()?;
     for href in [
-        "https://athletics.example/about", "//staff.example/about",
-        "/about?next=/athletics", "/about#contact", "https://school.example?next=/staff",
+        "https://athletics.example/about",
+        "//staff.example/about",
+        "/about?next=/athletics",
+        "/about#contact",
+        "https://school.example?next=/staff",
     ] {
         check!(!rules.interesting(href, "Learn more"));
     }
@@ -388,8 +391,13 @@ fn navigation_does_not_admit_generic_hints_from_authorities_or_queries() -> Test
 fn navigation_classifies_bounded_decoded_paths_without_rewriting_requests() -> TestResult {
     let rules = Rules::new()?;
     for href in [
-        "/athletics/%66ootball", "/athletics/f%6Fotball", "/athletics%2Ffootball",
-        "/athletics/%FF", "/athletics/%GG", "/athletics/%6", "/athletics/%",
+        "/athletics/%66ootball",
+        "/athletics/f%6Fotball",
+        "/athletics%2Ffootball",
+        "/athletics/%FF",
+        "/athletics/%GG",
+        "/athletics/%6",
+        "/athletics/%",
     ] {
         check!(!rules.interesting(href, "Athletics"));
     }

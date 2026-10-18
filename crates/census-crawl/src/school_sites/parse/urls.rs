@@ -50,11 +50,16 @@ pub(super) fn decoded_link_path(href: &str) -> Option<std::borrow::Cow<'_, str>>
     }
     let path = link_path(href);
     if path.split('%').skip(1).any(|part| {
-        !part.as_bytes().get(..2).is_some_and(|pair| pair.iter().all(u8::is_ascii_hexdigit))
+        !part
+            .as_bytes()
+            .get(..2)
+            .is_some_and(|pair| pair.iter().all(u8::is_ascii_hexdigit))
     }) {
         return None;
     }
-    percent_encoding::percent_decode_str(path).decode_utf8().ok()
+    percent_encoding::percent_decode_str(path)
+        .decode_utf8()
+        .ok()
 }
 
 fn link_path(href: &str) -> &str {
@@ -111,11 +116,18 @@ fn generic_hub_path(path: &str) -> bool {
         .next()
         .is_some_and(|part| {
             [
-                "athletics", "activities", "staff-directory", "coaches", "contact",
-                "staff", "directory", "faculty", "contact-us",
+                "athletics",
+                "activities",
+                "staff-directory",
+                "coaches",
+                "contact",
+                "staff",
+                "directory",
+                "faculty",
+                "contact-us",
             ]
-                .iter()
-                .any(|hub| part.eq_ignore_ascii_case(hub))
+            .iter()
+            .any(|hub| part.eq_ignore_ascii_case(hub))
         })
 }
 
@@ -124,10 +136,29 @@ fn unrelated_sport_text(text: &str) -> bool {
         .filter(|word| !word.is_empty())
         .any(|word| {
             [
-                "football", "basketball", "baseball", "softball", "volleyball",
-                "soccer", "wrestling", "cheer", "cheerleading", "dance", "golf",
-                "tennis", "swimming", "diving", "lacrosse", "hockey", "gymnastics",
-                "bowling", "waterpolo", "badminton", "fencing", "rowing", "rugby",
+                "football",
+                "basketball",
+                "baseball",
+                "softball",
+                "volleyball",
+                "soccer",
+                "wrestling",
+                "cheer",
+                "cheerleading",
+                "dance",
+                "golf",
+                "tennis",
+                "swimming",
+                "diving",
+                "lacrosse",
+                "hockey",
+                "gymnastics",
+                "bowling",
+                "waterpolo",
+                "badminton",
+                "fencing",
+                "rowing",
+                "rugby",
             ]
             .iter()
             .any(|sport| word.eq_ignore_ascii_case(sport))

@@ -154,7 +154,8 @@ pub(super) const PLATFORM: &str = r"(?i)bigteams\.com|arbiterwebsites\.com|arbit
 
 pub(super) const JUNK_CONTEXT: &str = r"(?i)search results|connect directly|cookie|privacy policy|terms of use|memories|hall of fame|induct|obituar|passed away|in memory|former coach|retired|alumni|class of 19|yearbook|in memoriam";
 
-pub(super) const INTERESTING: &str = r"(?i)coach|athletic|staff|directory|contact|faculty|\bactivities\b";
+pub(super) const INTERESTING: &str =
+    r"(?i)coach|athletic|staff|directory|contact|faculty|\bactivities\b";
 
 pub(super) const SPORT_HINT: &str = r"(?i)Cross[-\s]?Country|XC|Track(?:\s*(?:&|and)\s*Field)?";
 

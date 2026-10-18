@@ -83,9 +83,13 @@ async fn redirected_hits_bind_exact_captured_url_without_cross_capture_aliasing(
 async fn lakeview_shaped_navigation_excludes_unrelated_sports_with_spare_budget() -> TestResult {
     let dir = tempfile::tempdir()?;
     let fetcher = Fetcher::new(
-        dir.path(), None, Duration::ZERO, HashMap::new(),
+        dir.path(),
+        None,
+        Duration::ZERO,
+        HashMap::new(),
         vec!["school.example".to_owned()],
-    )?.with_offline(true);
+    )?
+    .with_offline(true);
     let home = br#"<nav>
         <a href="/activities/athletics/cheerleading">Cheerleading</a>
         <a href="/activities/athletics/football">Football</a>
@@ -98,19 +102,32 @@ async fn lakeview_shaped_navigation_excludes_unrelated_sports_with_spare_budget(
         <a href="/staff-directory">Staff Directory</a>
         <a href="/activities">Activities</a>
     </nav>"#;
-    cache(&fetcher, "https://school.example/", "https://school.example/", home, 200)?;
+    cache(
+        &fetcher,
+        "https://school.example/",
+        "https://school.example/",
+        home,
+        200,
+    )?;
     for path in [
-        "/robots.txt", "/cross-country", "/activities/athletics/track",
-        "/staff-directory", "/activities", "/activities/athletics/cheerleading",
-        "/activities/athletics/football", "/activities/athletics/dance",
-        "/activities/athletics/basketball", "/activities/athletics/baseball",
+        "/robots.txt",
+        "/cross-country",
+        "/activities/athletics/track",
+        "/staff-directory",
+        "/activities",
+        "/activities/athletics/cheerleading",
+        "/activities/athletics/football",
+        "/activities/athletics/dance",
+        "/activities/athletics/basketball",
+        "/activities/athletics/baseball",
         "/activities/athletics/volleyball",
     ] {
         let url = format!("https://school.example{path}");
         cache(&fetcher, &url, &url, b"", 200)?;
     }
     let row = QueueRow {
-        state: "MN".to_owned(), name: "School".to_owned(),
+        state: "MN".to_owned(),
+        name: "School".to_owned(),
         website: "https://school.example/".to_owned(),
     };
     let outcome = crawl_site(&Rules::new()?, &fetcher, &row, false).await?;
