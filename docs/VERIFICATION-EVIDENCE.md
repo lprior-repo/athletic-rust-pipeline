@@ -1940,3 +1940,72 @@ had written14 unqualified test lines despite its private-only boundary. Exact
 history attribution and the quarantined proposal preceded surgical removal;
 the clean-source assertion was not bypassed. Authentic-A and optimized build
 on this follow-on remain NOT RUN.
+
+### Native copied-census and historical-context feedback — 2026-10-19
+
+Pushed `b9c4d483` (tree`3568dbfdddc1446c7527db8f58a092b586afc023`)
+passed authentic original-A debug replay (`cebae6d2`,1/1) and optimized portable
+build (`69e4c223`). The optimized CLI then refused the first original-A workbook:
+compiler/configuration/dependency context differed. Remaining cases did not run.
+The exact portable-context candidate in ADR038 is not qualified by those debug
+passes. Original producer/artifacts/pins remain unchanged.
+
+Actual isolated Restate+endpoint/CLI pagination passed (`bg_279`): full inventory
+257,205 obligations; default256 details/46,159 encoded bytes; continuation offset256
+returned2/15,680 bytes. All257 controlled-prefix keys appeared once, global counts
+were unchanged, continuation remained nonempty, and stale/invalid requests
+returned400. This was not a walk of all257,205 obligations. Two earlier harness
+failures used wrong counter fields and are preserved. Both private services exited0;
+original live deployment and its oversized journal response were unchanged. `hkxq`
+is closed for this bounded diagnostic contract, not national coverage.
+
+| Actual copied-census publication | Result | Wall time | Peak RSS | Swaps |
+|---|---|---:|---:|---:|
+| Generation04, original policy21 profile | FAIL: current Event22 required | 3.83s | 1,246,320 KiB | 0 |
+| Generation05, explicitly registered policy22 profile | FAIL:1,065,627 traversal steps required;131,072 available | 116.34s | 7,185,348 KiB | 0 |
+
+Both used immutable `b9c4d483`, the same cold-restored Store17d…,16-GiB scope and
+zero swap. Generation05's private profile6905… changes only the Event reference;
+the original3f… profile returned an identical payload. This is explicit
+diagnostic configuration evolution, not a reset, live activation or new national
+acquisition. Neither attempt produced a workbook. The authorized next candidate
+retains4-GiB encoded admission and raises finite traversal to16,777,216; runtime
+qualification on that candidate is NOT RUN.
+
+On the uncommitted parser/context candidate, canonical focused tests `a06dab90`
+passed14/14. Public native parser probes executed unchanged genuine bodies:
+`aa0aeb6d` retained all50 first-page MSHSL schools despite the footer
+(SHA`d89e07a9cdec413c1196a2359e599b0fbbd88338460317742e8e869013237365`);
+`8dd65500` retained429 Colorado teams and one exact malformed-row refusal,
+`Partial`, bytes26178–26394
+(SHA`2e8db8098a20fc3edb70624f2fd937e602e07d691312fa01bb38fb3c440d74ee`).
+No Colorado parser change was justified. These prove source parsing, not complete
+state populations, eligible marks, statewide roster receipts or a national workbook.
+
+The first actual workbook regression on the adapter candidate (`cf1028e4`) FAILED:
+`compiled immutable semantic kernel is unsupported`. Domain110/110 (`f0b8d068`),
+Store218/218 (`247b6880`) and Crawl20/20 (`c1cb57e3`) passed before that failure;
+the adjacent report command did not run. Comparing actual96-file inventories found
+only`historical/kernel_adapter.rs` changed. The Domain traversal grant is not in
+that closure; increasing its limit was not the cause of this refusal.
+
+The connected repair pins exact executing source`5343f508…110b80e9` in both kernel
+owners and includes the new registry in the97-file inventory. Four superseded
+V12/V13 documents retain their exact hashes and V2 owner policy: native bytes were
+extracted read-only from immutable37e414b1 CLI, portable bytes copied unchanged from
+the b9 build cache. The old binary was not executed. Independent SHA checks match
+source/cache and fixture bytes; private receipt`diagnostic-kernel-grant4g-recovery.json`
+records full pins. A GPU draft's fabricated expected hashes were rejected before
+execution; the integrated matrix uses authentic bytes, with downgrade, epoch,
+tamper, foreign-context and poisoned-grant refusals. No arbitrary kernel or reverse
+portable→native compatibility was added. Exact-case runtime requalification follows;
+recovery and constant equality alone are not acceptance.
+
+Final connected source requalification passed: format`cd34d4e0`,
+check`9ff0eb4b`, lint`df76b8f3` (configured arity advisories remain),
+actual controlled50→withdraw51 workbook`ae0ec063`(1/1), kernel/parser/discovery
+contracts`2bca0635`(23/23), and selected recipe/current-authority/identity-cutover
+cases`4bd9e3db`(6/6). The previously failing workbook reached publication and
+source-free reopen without relaxing an assertion. The origin-filter arm selected
+no tests; the6-case result is not an origin-suite claim. Clean-commit authentic-A,
+optimized three-workbook CLI verification and national generation06 remain NOT RUN.

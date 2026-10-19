@@ -2,6 +2,8 @@ use super::*;
 use std::sync::LazyLock;
 
 mod af9;
+mod grant4g;
+mod portable;
 
 type TestResult<E = Box<dyn std::error::Error>> = Result<(), E>;
 

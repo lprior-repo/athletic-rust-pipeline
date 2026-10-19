@@ -56,7 +56,9 @@ fn authentic_af9_documents_obey_the_real_compiled_context_fence() -> TestResult 
         let mut grant = AttachmentReplayGrantV1::new();
         let result =
             bind_historical_v1(epoch, retained, current, digest, &configuration, &mut grant);
-        if configuration == EXECUTING_CONFIGURATION {
+        if configuration == EXECUTING_CONFIGURATION
+            || configuration == PORTABLE_EXECUTING_CONFIGURATION
+        {
             let checked = result?;
             checked.require_reference(expected_digest, 21_507)?;
             checked.require_semantic_contract(PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2)?;

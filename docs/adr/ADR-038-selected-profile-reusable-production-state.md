@@ -123,6 +123,22 @@ Only that exact transition is admitted; old document hashes and V1 owner behavio
 remain unchanged. The alternate `91910492…41c96f` lane gains no new-lock allowance.
 Original-A replay must qualify the resulting build; static equality is insufficient.
 
+**2026-10-19 portable-context qualification:** candidate
+`f4fe30b9c6e15dce5de20c698fbdd22d2eccf63de86d820c3a887e73393de387`
+has identical compiler, configuration-file and dependency identities to the native
+lane, with different build-profile flags. Only this exact executing context may
+extend already-known kernels whose required context is `9e7f86bb…db41210`;
+the alternate lane and unknown contexts remain refused. Qualification requires
+the optimized CLI to verify the unchanged original-A corpus, not merely a debug
+consumer or constant comparison. The ledger records whether that execution passed.
+
+The adapter amendment changes the executing source closure to
+`5343f50812694f9a616e701f8492ce822af4ea7337c6ff04e90bd063110b80e9`;
+both semantic inventory owners pin it exactly. Its new registry module is included
+in that97-file closure. Four original V12/V13 native/portable documents from source
+closure`68194f31…74490` remain exact historical identities with their original V2
+owner policy. Unknown documents and reverse portable→native execution still refuse.
+
 **Consequences:** preserve original artifacts and producer pins; do not relabel
 them, reactivate old issuance claims or execute an old runtime. Qualification is
 artifact-specific, not a universal equivalence claim. The acceptance ledger must
@@ -346,11 +362,13 @@ bound; calendar enrollment and record-bundle limits are unchanged.
 Count encoded bytes before fallible reservation; preserve original grant ownership,
 poisoning and every charge. Base64 expansion does not enlarge decoded-object limits.
 
-**2026-10-19 amendment:** the aggregate encoded grant is 4 GiB (4,294,967,296
-bytes); traversal remains 131,072 steps. A retained national diagnostic required
-1,719,214,944 encoded bytes. Original-owner, poison and pre-allocation admission
-rules remain mandatory. This is a bounded capacity change, not RSS or national
-acceptance; exact executions belong in the verification ledger.
+**2026-10-19 amendments:** the aggregate encoded grant is 4 GiB (4,294,967,296
+bytes), and aggregate traversal is bounded at 16,777,216 steps. Retained national
+diagnostics required 1,719,214,944 encoded bytes and then at least 1,065,627 steps,
+exceeding the original limits. Original-owner, poison and pre-allocation admission
+rules remain mandatory; per-object limits are unchanged. These are authorized,
+bounded capacity changes, not RSS or national acceptance. The verification ledger
+records each actual refusal and subsequent execution.
 
 School-bound V4 installs its mandatory attachment descriptor from the authenticated
 school closure under the original school and attachment grant continuations.

@@ -7,6 +7,7 @@ use crate::participation_evidence::provider_school::{
     PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1, PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 pub(in super::super) mod context;
+mod grant4g;
 
 #[derive(Clone, Copy)]
 pub(in super::super) enum KernelEpoch {
@@ -112,6 +113,10 @@ const EXECUTING_CONFIGURATION: [u8; 32] = [
     0x9e, 0x7f, 0x86, 0xbb, 0x6f, 0x37, 0x45, 0x09, 0xc1, 0x44, 0xcc, 0xf9, 0x9f, 0xd3, 0xb2, 0x74,
     0x1b, 0x55, 0x12, 0x94, 0x78, 0x40, 0x97, 0x32, 0x99, 0xfe, 0x88, 0x7c, 0x3d, 0xb4, 0x12, 0x10,
 ];
+const PORTABLE_EXECUTING_CONFIGURATION: [u8; 32] = [
+    0xf4, 0xfe, 0x30, 0xb9, 0xc6, 0xe1, 0x5d, 0xce, 0x5d, 0xe2, 0x0c, 0x69, 0x8f, 0xbd, 0xd2, 0x2d,
+    0x2e, 0xcc, 0xf6, 0x3d, 0xe8, 0x6d, 0x82, 0x0c, 0x3a, 0x88, 0x7e, 0x73, 0x39, 0x3d, 0xe3, 0x87,
+];
 const ALTERNATE_CONFIGURATION: [u8; 32] = [
     0x91, 0x91, 0x04, 0x92, 0x40, 0x74, 0xec, 0x58, 0xa3, 0xa2, 0x1b, 0x1d, 0x0a, 0xd4, 0x67, 0xb8,
     0xc6, 0x3c, 0x9f, 0x9c, 0x15, 0x5f, 0x27, 0xa4, 0xd3, 0x20, 0x4c, 0x14, 0x74, 0x41, 0xc9, 0x6f,
@@ -177,7 +182,7 @@ const QUALIFIED_ROW_LOCAL_V11: OriginalKernel = OriginalKernel {
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 
-fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 6] {
+fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 8] {
     match epoch {
         KernelEpoch::Full => [
             &FULL,
@@ -186,6 +191,8 @@ fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 6] {
             &FULL_V8,
             &FULL_V8_ALTERNATE,
             &QUALIFIED_FULL_V10,
+            &grant4g::FULL_NATIVE,
+            &grant4g::FULL_PORTABLE,
         ],
         KernelEpoch::RowLocal => [
             &ROW_LOCAL,
@@ -194,6 +201,8 @@ fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 6] {
             &ROW_LOCAL_V9,
             &ROW_LOCAL_V9_ALTERNATE,
             &QUALIFIED_ROW_LOCAL_V11,
+            &grant4g::ROW_LOCAL_NATIVE,
+            &grant4g::ROW_LOCAL_PORTABLE,
         ],
     }
 }
@@ -231,7 +240,10 @@ pub(in super::super) fn bind_historical_v1(
             .into_iter()
             .find(|candidate| candidate.hash == actual)
             .ok_or_else(|| invalid("unsupported historical semantic kernel identity"))?;
-        if configuration != original.configuration {
+        if configuration != original.configuration
+            && !(configuration == &PORTABLE_EXECUTING_CONFIGURATION
+                && original.configuration == &EXECUTING_CONFIGURATION)
+        {
             return Err(invalid(
                 "historical semantic kernel compiler/configuration/dependencies differ",
             ));

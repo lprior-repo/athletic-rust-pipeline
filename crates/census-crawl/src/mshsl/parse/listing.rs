@@ -10,6 +10,7 @@ use crate::mshsl::{MAX_LISTING_BYTES, SCHOOL_LIST_URL};
 use crate::{CrawlError, CrawlResult, SCHOOL_BINDINGS};
 
 const ROW_MARKER: &str = "<div class=\"views-row\">";
+const SCHOOL_LINK_PREFIX: &str = "href=\"/schools/";
 const TITLE_MARKER: &str = "school-teaser__title";
 const LOCALITY_MARKER: &str = "class=\"locality\"";
 
@@ -75,18 +76,26 @@ fn city(segment: &str, locality: &Regex) -> CrawlResult<Option<String>> {
         _ => Err(schema("listing row has multiple localities")),
     }
 }
+fn is_school_owned(segment: &str) -> bool {
+    segment.contains("school-teaser") || segment.contains(SCHOOL_LINK_PREFIX)
+}
 
 fn read_row<'a>(
     segment: &'a str,
     link: &Regex,
     locality: &Regex,
-) -> CrawlResult<(&'a str, String, Option<String>)> {
-    if segment.matches(TITLE_MARKER).count() != 1 {
-        return Err(schema("listing row must contain one school title"));
+) -> CrawlResult<Option<(&'a str, String, Option<String>)>> {
+    if !is_school_owned(segment) {
+        return Ok(None);
+    }
+    match segment.matches(TITLE_MARKER).count() {
+        0 => return Err(schema("owned school row is missing its title")),
+        1 => {}
+        _ => return Err(schema("listing row must contain one school title")),
     }
     let capture = link
         .captures(segment)
-        .ok_or_else(|| schema("listing row has no school link"))?;
+        .ok_or_else(|| schema("owned school row has malformed school link"))?;
     let slug = capture
         .get(1)
         .ok_or_else(|| schema("listing slug capture is missing"))?
@@ -100,7 +109,7 @@ fn read_row<'a>(
         return Err(schema("listing row has an invalid school identity"));
     }
     let city = city(segment, locality)?;
-    Ok((slug, name, city))
+    Ok(Some((slug, name, city)))
 }
 
 fn append<'a>(
@@ -156,8 +165,17 @@ pub fn parse_school_list(html: &str) -> CrawlResult<Vec<SchoolListRow>> {
     let mut rows = Vec::new();
     let mut seen = HashMap::new();
     for segment in segments {
-        let (slug, name, city) = read_row(segment, link, locality)?;
+        let Some((slug, name, city)) = read_row(segment, link, locality)? else {
+            continue;
+        };
         append(&mut rows, &mut seen, slug, name, city)?;
+    }
+    if rows.is_empty() {
+        return Err(schema("listing contained no recognized school rows"));
     }
     Ok(rows)
 }
+
+#[cfg(test)]
+#[path = "listing/structural_tests.rs"]
+mod structural_tests;
