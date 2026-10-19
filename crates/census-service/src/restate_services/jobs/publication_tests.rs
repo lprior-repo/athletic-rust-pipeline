@@ -12,6 +12,9 @@ pub(in crate::restate_services) use readback::check_selected_output;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
+#[allow(dead_code, unused_imports)]
+mod report_split_fixture;
+
 fn options() -> TestResult<workbook::Options> {
     Ok(workbook::Options {
         grad_year: Some(2027),
@@ -175,6 +178,17 @@ fn selected_workbook_service_job_publishes_and_fresh_process_verifies_retry_and_
         controlled.current_school_id(),
     )?;
     Ok(())
+}
+
+#[tokio::test]
+async fn selected_workbook_service_after_split_reopens_successors_and_preserves_prior_generation(
+) -> TestResult {
+    const NAME: &str =
+        "selected_workbook_service_after_split_reopens_successors_and_preserves_prior_generation";
+    if !isolated(NAME)? {
+        return Ok(());
+    }
+    report_split_fixture::service_split_acceptance().await
 }
 
 pub(in crate::restate_services) fn selected_options(

@@ -7,6 +7,9 @@
 mod fallible_checks;
 
 #[cfg(test)]
+pub(crate) use census_report::workbook;
+
+#[cfg(test)]
 #[path = "../tests/common/capture_cache.rs"]
 pub(crate) mod capture_cache;
 
