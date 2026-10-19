@@ -123,7 +123,7 @@ impl<'a> ReportGroup<'a> {
             self.candidates.clear();
             return;
         };
-        let completion_conflict = policy == census_domain::model::EventSemantics::ResultGroups21
+        let completion_conflict = policy.uses_result_groups()
             && candidate.performance.combined_completion
                 != incumbent.performance.combined_completion;
         if completion_conflict || observed_value(&candidate) != observed_value(incumbent) {
@@ -140,7 +140,7 @@ impl<'a> ReportGroup<'a> {
             })
             .or_insert(candidate.value);
         if candidate.wins_over(incumbent)
-            || (policy == census_domain::model::EventSemantics::ResultGroups21
+            || (policy.uses_result_groups()
                 && candidate.value == incumbent.value
                 && candidate.performance.id == incumbent.performance.id
                 && provenance::compare(candidate.performance, incumbent.performance).is_lt())

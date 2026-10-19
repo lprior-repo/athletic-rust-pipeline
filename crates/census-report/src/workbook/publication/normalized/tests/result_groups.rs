@@ -1,7 +1,7 @@
 use super::{field, fixture::Population, read, TestResult};
 
 #[test]
-fn normalized_current_inventory_uses_thirty_eight_truthfully_named_columns() -> TestResult {
+fn normalized_result_group_inventory_uses_thirty_eight_truthfully_named_columns() -> TestResult {
     let given = Population::new("Result Group Runner", &["50.00", "50.00"])?;
     let directory = tempfile::tempdir()?;
     super::super::write(

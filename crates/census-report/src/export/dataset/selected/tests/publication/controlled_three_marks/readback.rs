@@ -163,7 +163,7 @@ fn selection_matches(
     check!(eq; row.meet.date, expected.day);
     check!(eq; wanted.date, expected.day);
     check!(eq; row.athlete_id().as_str(), wanted.athlete.as_str());
-    check!(eq; row.inventory.policy().revision(), 21);
+    check!(eq; row.inventory.policy().revision(), 22);
     check!(eq; row.inventory.eligible_group_count(), if expected.seconds == "50.00" { 2 } else { 1 });
     check!(eq; row.inventory.tied_group_count(), 1);
     check!(eq; row.inventory.tied_representative_ids(), std::slice::from_ref(&wanted.id));

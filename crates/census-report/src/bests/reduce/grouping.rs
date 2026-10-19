@@ -14,7 +14,7 @@ pub(super) fn terminal(
     if super::combined::explicit_terminal(performance, admission) {
         return true;
     }
-    if admission.semantics() != EventSemantics::ResultGroups21
+    if !admission.semantics().uses_result_groups()
         || admission.included_kind(&performance.event).is_none()
     {
         return false;
@@ -32,7 +32,9 @@ impl<'a> ReportGroupKey<'a> {
             | EventSemantics::CombinedEvents20 => {
                 Self::HistoricalContext(CompetitionContext::of(performance))
             }
-            EventSemantics::ResultGroups21 => Self::CanonicalPerformance(&performance.id),
+            EventSemantics::ResultGroups21 | EventSemantics::ResultGroups22 => {
+                Self::CanonicalPerformance(&performance.id)
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ pub struct HistoricalInventory {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResultGroupInventory {
+    policy: EventSemantics,
     eligible: usize,
     representatives: Vec<PerformanceId>,
 }
@@ -39,17 +40,20 @@ impl SelectionInventory {
                     representatives,
                 })
             }
-            EventSemantics::ResultGroups21 => Self::ResultGroups(ResultGroupInventory {
-                eligible,
-                representatives,
-            }),
+            EventSemantics::ResultGroups21 | EventSemantics::ResultGroups22 => {
+                Self::ResultGroups(ResultGroupInventory {
+                    policy,
+                    eligible,
+                    representatives,
+                })
+            }
         }
     }
 
     pub fn policy(&self) -> EventSemantics {
         match self {
             Self::HistoricalContextGroups(inventory) => inventory.policy,
-            Self::ResultGroups(_) => EventSemantics::ResultGroups21,
+            Self::ResultGroups(inventory) => inventory.policy,
         }
     }
 
@@ -98,7 +102,7 @@ impl Serialize for SelectionInventory {
                 )?;
                 wire.serialize_field("result_group_basis", "canonical_performance_id")?;
                 wire.serialize_field("physical_performance_count_status", "unknown")?;
-                wire.serialize_field("selection_policy_version", &21_u32)?;
+                wire.serialize_field("selection_policy_version", &self.policy().revision())?;
             }
         }
         wire.end()

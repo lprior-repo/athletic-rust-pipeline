@@ -58,7 +58,8 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() -> Test
     store.append(Table::Performances, &slower)?;
     store.append(Table::Performances, &faster)?;
 
-    let dataset = crate::export::ExportDataset::load(&store)?;
+    let mut dataset = crate::export::ExportDataset::load(&store)?;
+    dataset.lineage.policy_revision = 21;
     let selected = crate::bests::build_from_dataset(
         &dataset,
         &crate::bests::Options {
@@ -363,7 +364,8 @@ fn f08_transfers_retain_performance_time_affiliation() -> TestResult {
     store.append(Table::Performances, &performance)?;
     store.append(Table::Teams, &team_old)?;
 
-    let dataset = crate::export::ExportDataset::load(&store)?;
+    let mut dataset = crate::export::ExportDataset::load(&store)?;
+    dataset.lineage.policy_revision = 21;
     let selected = crate::bests::build_from_dataset(
         &dataset,
         &crate::bests::Options {
@@ -463,7 +465,8 @@ fn f09_prelim_final_attempt_facts_are_retained() -> TestResult {
     store.append(Table::Performances, &prelim)?;
     store.append(Table::Performances, &final_perf)?;
 
-    let dataset = crate::export::ExportDataset::load(&store)?;
+    let mut dataset = crate::export::ExportDataset::load(&store)?;
+    dataset.lineage.policy_revision = 21;
     let selected = crate::bests::build_from_dataset(
         &dataset,
         &crate::bests::Options {
@@ -545,7 +548,8 @@ fn canary22_no_invented_individual_pr_from_relay_membership() -> TestResult {
     store.append(Table::Events, &relay_event)?;
     store.append(Table::Performances, &relay_perf)?;
 
-    let dataset = crate::export::ExportDataset::load(&store)?;
+    let mut dataset = crate::export::ExportDataset::load(&store)?;
+    dataset.lineage.policy_revision = 21;
     let selected = crate::bests::build_from_dataset(
         &dataset,
         &crate::bests::Options {
@@ -562,5 +566,78 @@ fn canary22_no_invented_individual_pr_from_relay_membership() -> TestResult {
         0,
         "Relay performance should not generate individual 400m PR"
     );
+    Ok(())
+}
+
+#[test]
+fn canary23_current_admission_rejects_stale_400m_from_relay_split_and_retains_evidence(
+) -> TestResult {
+    use census_domain::model::GradYear;
+    use census_store::{Store, Table};
+
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Synthetic school",
+        "synthetic school",
+        None,
+    );
+    let mut athlete = CanonicalAthlete::new(
+        &school_id,
+        "Synthetic relay runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "4002"),
+    )?;
+    athlete
+        .published_graduations
+        .push(census_domain::model::PublishedGraduation {
+            grad_year: GradYear::CO2027,
+            source: census_domain::model::SourceRef::new(
+                "synthetic_published_roster",
+                Some("https://example.invalid/roster/4002".to_owned()),
+            ),
+        });
+
+    let meet = test_meet(vec![Sport::OutdoorTrack]);
+    let label = "400m Split";
+    // Simulate an older stored canonical event whose original source label
+    // still exposes that it was a relay leg. Current admission reclassifies it.
+    let mut split_event = test_event(EventKind::Track400m, &meet.id)?;
+    split_event.source_labels[0].label = label.to_owned();
+    let mut split_performance = test_performance(
+        EventKind::Track400m,
+        Mark::TimeSeconds(ExactSeconds::parse_clock("51.20")?),
+        Some(TimingMethod::Fat),
+        None,
+        "2025-04-01",
+    );
+    split_performance.athlete = athlete.id.clone();
+    split_performance.meet = meet.id.clone();
+    split_performance.event = split_event.id.clone();
+    split_performance.source_athlete = athlete.source.clone();
+
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+    store.append(Table::Schools, &school)?;
+    store.append(Table::Athletes, &athlete)?;
+    store.append(Table::Meets, &meet)?;
+    store.append(Table::Events, &split_event)?;
+    store.append(Table::Performances, &split_performance)?;
+
+    let dataset = crate::export::ExportDataset::load(&store)?;
+    let retained = dataset
+        .events
+        .iter()
+        .find(|event| event.id == split_event.id)
+        .ok_or("retained split event")?;
+    check!(eq; retained.source_labels[0].label, label);
+    check!(
+        !retained.evidence.is_empty(),
+        "parsed source evidence is retained"
+    );
+
+    let admission = crate::report::EventAdmission::of(&dataset)?;
+    check!(eq; admission.semantics(), census_domain::model::EventSemantics::ResultGroups22);
+    check!(eq; admission.included_kind(&split_event.id), None);
     Ok(())
 }

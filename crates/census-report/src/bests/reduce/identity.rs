@@ -13,7 +13,7 @@ pub(super) fn admit(
     performances: &[CanonicalPerformance],
     policy: EventSemantics,
 ) -> ReportResult<()> {
-    if policy != EventSemantics::ResultGroups21 {
+    if !policy.uses_result_groups() {
         return Ok(());
     }
     let mut identities = Identities::new();

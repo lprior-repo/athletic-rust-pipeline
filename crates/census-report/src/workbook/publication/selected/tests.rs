@@ -38,8 +38,8 @@ fn current_selected_recipe_binds_profile_cutoff_and_participation_rule_without_c
     let dataset = &fixture.dataset;
     let profile = SelectedProfile::of(dataset)?;
     let selected = recipes::recipe_for_selected(&dataset.lineage, &fixture.options, &profile)?;
-    check!(eq; dataset.lineage.policy_revision, 21);
-    check!(eq; census_domain::model::EventSemantics::CURRENT.revision(), 21);
+    check!(eq; dataset.lineage.policy_revision, 22);
+    check!(eq; census_domain::model::EventSemantics::CURRENT.revision(), 22);
     check!(eq; revision(dataset)?, 8);
     check!(eq; recipes::recipe_for_dataset(dataset, &fixture.options)?, recipes::recipe_for_selected_revision(&dataset.lineage, &fixture.options, &profile, 8)?);
     check!(eq; super::super::ARTIFACT_REVISION, 6);

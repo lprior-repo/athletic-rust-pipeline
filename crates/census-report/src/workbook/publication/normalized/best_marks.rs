@@ -115,7 +115,7 @@ fn row(
         source_url_status(&best.source.result_url),
         encode(&best.supporting_tied_candidate_ids())?,
     ]);
-    if dataset.semantic_policy()? == census_domain::model::EventSemantics::ResultGroups21 {
+    if dataset.semantic_policy()?.uses_result_groups() {
         fields.extend(["canonical_performance_id".into(), "unknown".into()]);
     }
     fields.extend(identity.audit()?);
@@ -138,7 +138,7 @@ fn selected_performance<'a>(
 }
 
 fn header(policy: census_domain::model::EventSemantics) -> Vec<&'static str> {
-    if policy != census_domain::model::EventSemantics::ResultGroups21 {
+    if !policy.uses_result_groups() {
         return HEADER.to_vec();
     }
     HEADER

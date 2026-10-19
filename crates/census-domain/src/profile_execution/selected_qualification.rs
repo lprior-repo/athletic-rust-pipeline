@@ -26,6 +26,7 @@ enum Scope {
 enum Component {
     PublishedCohortAliasUnionConflictsWithheld { assessment_revision: u32 },
     Catalog21WithSelectedSportAndCompetitionCategory { catalog: ContractRefV1 },
+    Catalog22WithSelectedSportAndCompetitionCategory { catalog: ContractRefV1 },
     RetainedAuthorityLifecycle6ReversiblePublicIdentity { acceptance_revision: u32 },
     RetainedAuthorityLifecycle7GraphReversiblePublicIdentity { acceptance_revision: u32 },
     VerifiedScopedCurrentRosterObservationDayConflictsWithheld { interpretation_revision: u32 },
@@ -92,6 +93,22 @@ pub fn selected_qualification_contract_ref_v3(
             role,
             scope: Scope::ExistingRetainedAuthorityGraphV3QualificationOnly,
             component: Component::SelectedArtifact8AtomicFrozenGraphBundleV2IndependentParticipationReplayV2,
+        })?;
+        return Ok(ContractRefV1::new(1, 4, &digest)?);
+    }
+    if role == ContractRoleV1::Event {
+        let digest = serialized_digest(&Descriptor {
+            version: 1,
+            revision: 4,
+            role,
+            scope: Scope::ExistingRetainedAuthorityGraphV3QualificationOnly,
+            component: Component::Catalog22WithSelectedSportAndCompetitionCategory {
+                catalog: ContractRefV1::new(
+                    1,
+                    4,
+                    &RecruitingCatalogV1::with_policy(EventSemantics::ResultGroups22).digest()?,
+                )?,
+            },
         })?;
         return Ok(ContractRefV1::new(1, 4, &digest)?);
     }

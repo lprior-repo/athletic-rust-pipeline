@@ -110,7 +110,7 @@ fn selected(
     check!(eq; row.inventory.eligible_group_count(), eligible_groups, "PR eligible result-group count for {}", expected.source_key);
     check!(eq; row.inventory.tied_group_count(), 1);
     check!(eq; row.inventory.tied_representative_ids(), std::slice::from_ref(&expected.id));
-    check!(eq; row.inventory.policy().revision(), 21);
+    check!(eq; row.inventory.policy().revision(), 22);
     Ok(())
 }
 

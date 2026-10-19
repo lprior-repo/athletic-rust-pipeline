@@ -259,6 +259,7 @@ pub(super) fn included(semantics: EventSemantics) -> &'static [EventKind] {
         EventSemantics::Legacy18 => super::legacy_policy::INCLUDED,
         EventSemantics::FlatEvents19
         | EventSemantics::CombinedEvents20
-        | EventSemantics::ResultGroups21 => INCLUDED,
+        | EventSemantics::ResultGroups21
+        | EventSemantics::ResultGroups22 => INCLUDED,
     }
 }
