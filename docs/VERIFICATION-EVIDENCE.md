@@ -1674,3 +1674,40 @@ Required-proof removal/tamper controls passed. Explicit view/lineage/alias obser
 cover state intentionally skipped by `ExportDataset` serialization. Current public
 opaque-approval/stale-review atomic refusal cells remain under `d7hp`; no closure or
 genuine Class2027 population claim is made. National acquisition remains held.
+
+### Fresh national execution and worktree cleanup — 2026-10-19
+
+Source `d6f6c68ad281cd8e2db8504c4e5732454b76ea2d`, tree
+`949a6095327882682b32f4b7136507b02e2c0da4`. User authorization superseded
+the earlier launch hold. Portable build `5fb53bc6` passed; exact cached executables
+were preserved under `var/census-national-v3-20261019/releases/d6f6c68ad/bin`.
+`release.json` records source, cache and binary SHA256 identities.
+
+All 23 auxiliary worktree registrations are removed: 16 extant trees were archived
+and compared before removal; seven missing registrations were pruned. Unique HEADs,
+staged/conflicted indexes and the complete common Git repository were preserved.
+Private manifest: `/home/lewis/.cache/athletic-worktree-preservation-20261019T160910Z/manifest.json`.
+Only main remains; repository `target` is absent. Retained census data was not reset.
+Qualified source through `d6f6c68ad` was pushed to remote main.
+
+| Observation | Actual result / receipt | Scope |
+|---|---|---|
+| Current endpoint and deployment | HTTP/2 health succeeded; deployment `dp_15PgTbrllSe2xATLeTc2USZ` | Current graph-V3/capture-V2 owner; not proof of acquisition |
+| Fresh full49 national submission | `inv_13LIoGM6LB600EGmJ5iU9yGQmEPr4dHTGp`; season2026/revision1, Class2027, concurrency/source parallelism4 | RUNNING, not complete; original store/profile IDs retained |
+| First public open-work sample | 49 jurisdiction sweeps; teams14 complete/35 unknown, rosters49 partial; meets/results49 unknown | State observation, not population coverage; 37,332 source-object keys are owed work, not successful captures |
+| Capture growth readback | Unmeasured: `fence-busy`; growth `unmeasured-sample` | Neither zero growth nor a frozen archive is established |
+| Refusals | 141 engineering-gap, six access-blocked and three terms entries; actual MileSplit roster HTTP403s logged | Repeated jurisdiction entries, not 150 distinct defects; no rate-block diagnosis or access bypass |
+| Early aggregate resources | Peak2,827,296,768 bytes; hard limit51,539,607,552 bytes, swap0; run directory2.4GiB | Early observation only, not representative R14 qualification |
+
+Private operational receipts: `endpoint-deployment.json`, `national-submission.json`,
+`initial-invocations.json`, `initial-open-work.json` under the run root. The first
+partial workbook was requested through owner ingress with generation
+`partial-20261019-01`. Its client timed out after300s; durable invocation
+`inv_13RYicxM1RFe7rKeVws8Kyq556aPxM0Ds6` remained running with only the input
+journal entry. The exact persisted request passed public workbook preflight in0.005s.
+Publication admission is a candidate wait, not a proven lock diagnosis. Endpoint
+HTTP/2 health and a correctly encoded owner progress read succeeded. An unprivileged
+backtrace was denied; the user's single authorized privileged attempt required a
+sudo password and did not run. No permission change or bypass was attempted.
+No publication success or usable athlete rows are established. National completion
+and specification acceptance remain open.
