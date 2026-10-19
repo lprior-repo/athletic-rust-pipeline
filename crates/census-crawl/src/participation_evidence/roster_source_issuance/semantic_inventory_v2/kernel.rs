@@ -59,7 +59,7 @@ pub(super) fn require_historical(
 const SCHEMA: &str = "roster-semantic-kernel-dependencies/v11";
 const MAX_DOCUMENT: usize = 64 * 1024;
 const EXPECTED_SOURCE_DIGEST: &str =
-    "e9a182e8034e065b792d3e5ac64dd2c722702622b688662a40a69fe01deb83a5";
+    "54d82912f5d0782c1be11c5f592dcfdfe244215ed58af1b2245663fa9261a5c7";
 const COMPILED: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v11.json"));
 
