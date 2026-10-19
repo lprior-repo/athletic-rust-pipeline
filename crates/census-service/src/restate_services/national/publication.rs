@@ -20,7 +20,7 @@ pub(super) async fn publish(
     request: &NationalRequest,
 ) -> Result<(), HandlerError> {
     consolidate(ctx, identity).await?;
-    let workbook = workbook(ctx, identity, request).await?;
+    let workbook = workbook(ctx, request).await?;
     seal::measure(
         ctx,
         identity,
@@ -88,12 +88,14 @@ async fn consolidate(
 #[tracing::instrument(skip_all)]
 async fn workbook(
     ctx: &WorkflowContext<'_>,
-    identity: &WorkflowIdentity,
     request: &NationalRequest,
 ) -> Result<String, HandlerError> {
+    let child = workbook_request(request);
+    let key = crate::restate_services::workbook_request_key(&child, generation(request)?)
+        .map_err(|error| TerminalError::new_with_code(400, error.to_string()))?;
     let Json(workbook) = ctx
-        .workflow_client::<WorkbookClient>(format!("{}:workbook", identity.as_str()))
-        .run(Json(workbook_request(request)))
+        .workflow_client::<WorkbookClient>(key)
+        .run(Json(child))
         .call()
         .await?;
     Ok(workbook.path)
@@ -109,4 +111,16 @@ pub(super) fn workbook_request(request: &NationalRequest) -> WorkbookRequest {
         jurisdictions: request.jurisdictions.clone(),
         export_job: request.export_job.clone(),
     }
+}
+
+pub(super) fn generation(
+    request: &NationalRequest,
+) -> Result<&crate::restate_services::ExportGeneration, HandlerError> {
+    request.generation.as_ref().ok_or_else(|| {
+        TerminalError::new_with_code(
+            400,
+            "current national publication requires a checked generation",
+        )
+        .into()
+    })
 }

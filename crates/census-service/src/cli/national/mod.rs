@@ -126,6 +126,12 @@ pub(super) struct NationalArgs {
         help = "Versioned selected-publication profile ID; requires --selected-store-identity"
     )]
     selected_profile_id: Option<String>,
+    #[arg(
+        long,
+        value_name = "GENERATION",
+        help = "Frozen selected-publication generation; omitted uses the canonical default, resume preserves the bound value"
+    )]
+    generation: Option<String>,
     #[arg(help = "Rosters one jurisdiction fetches concurrently")]
     #[arg(long, default_value_t = 4)]
     concurrency: usize,

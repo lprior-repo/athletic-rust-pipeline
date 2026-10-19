@@ -47,6 +47,8 @@ fn fresh_request(
     jurisdictions: &[UsJurisdiction],
     history: HistoryWindow,
 ) -> Result<NationalRequest> {
+    let generation =
+        census_service::restate_services::ExportGeneration::resolve(args.generation.as_deref())?;
     let export_job = crate::cli::publication_preflight::selected_request(
         args.selected_store_identity.as_deref(),
         args.selected_profile_id.as_deref(),
@@ -67,6 +69,7 @@ fn fresh_request(
         school_address: school_address_request(args)?,
         pass_budget: args.pass_budget,
         pass_delay_seconds: args.pass_delay_seconds,
+        generation: Some(generation),
     })
 }
 

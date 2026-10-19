@@ -12,71 +12,12 @@ pub(crate) fn run_key(job: &str, parts: &[&str], generation: &ExportGeneration) 
     key.push_str(generation.as_str());
     key
 }
-pub const DEFAULT_GENERATION: &str = "1";
 
-pub const MAX_EXPORT_GENERATION_LEN: usize = 32;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExportGeneration(String);
-
-#[derive(Debug, thiserror::Error)]
-pub enum ExportGenerationError {
-    #[error("export generation must not be empty")]
-    Empty,
-    #[error("export generation is {value} bytes, longer than {MAX_EXPORT_GENERATION_LEN}")]
-    TooLong { value: usize },
-    #[error("export generation {value:?} carries a character outside [A-Za-z0-9._-]")]
-    InvalidChar { value: String },
-    #[error("export key part {value:?} must not contain ':'")]
-    InvalidKeyPart { value: String },
-    #[error("selected export request could not be serialized for workflow identity: {0}")]
-    SelectedRequestDigest(#[source] census_domain::model::CanonicalJsonError),
-    #[error("--generation {value:?} is live-Restate only")]
-    OfflineGeneration { value: String },
-}
-
-impl ExportGeneration {
-    pub fn parse(value: &str) -> Result<Self, ExportGenerationError> {
-        if value.is_empty() {
-            return Err(ExportGenerationError::Empty);
-        }
-        if value.len() > MAX_EXPORT_GENERATION_LEN {
-            return Err(ExportGenerationError::TooLong { value: value.len() });
-        }
-        if !value.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric() || byte == b'.' || byte == b'-' || byte == b'_'
-        }) {
-            return Err(ExportGenerationError::InvalidChar {
-                value: value.to_string(),
-            });
-        }
-        Ok(Self(value.to_string()))
-    }
-
-    pub fn default_generation() -> Self {
-        Self(DEFAULT_GENERATION.to_string())
-    }
-
-    pub fn resolve(flag: Option<&str>) -> Result<Self, ExportGenerationError> {
-        match flag {
-            Some(value) => Self::parse(value),
-            None => Ok(Self::default_generation()),
-        }
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-pub fn reject_offline_generation(flag: Option<&str>) -> Result<(), ExportGenerationError> {
-    match flag {
-        Some(value) => Err(ExportGenerationError::OfflineGeneration {
-            value: value.to_string(),
-        }),
-        None => Ok(()),
-    }
-}
+mod export_generation;
+pub use export_generation::{
+    reject_offline_generation, ExportGeneration, ExportGenerationError, DEFAULT_GENERATION,
+    MAX_EXPORT_GENERATION_LEN,
+};
 
 fn validate_key_part(part: &str) -> Result<(), ExportGenerationError> {
     if part.is_empty() || part.contains(':') {

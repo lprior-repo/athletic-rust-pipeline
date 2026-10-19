@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use super::NationalRequest;
 
+const NATIONAL_GENERATION_REVISION: u16 = 1;
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PublicationContract {
@@ -21,13 +23,20 @@ impl PublicationContract {
 #[serde(deny_unknown_fields)]
 pub struct PublicationCapabilities {
     pub publication_contracts: Vec<PublicationContract>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub national_generation_revision: Option<u16>,
 }
 
 impl PublicationCapabilities {
     pub fn current() -> Self {
         Self {
             publication_contracts: vec![PublicationContract::SelectedPublicationV1],
+            national_generation_revision: Some(NATIONAL_GENERATION_REVISION),
         }
+    }
+
+    pub fn supports_national_generation(&self) -> bool {
+        self.national_generation_revision == Some(NATIONAL_GENERATION_REVISION)
     }
 }
 

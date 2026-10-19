@@ -166,7 +166,8 @@ pub(super) fn bound_request(jurisdictions: &[&str]) -> Result<String, Box<dyn st
             "export_job": {"contract": "selected_publication_v1",
                 "selection": {"version": 1, "store_identity": store, "profile_id": profile}},
             "pass_budget": 17,
-            "pass_delay_seconds": 41, "concurrency": 7
+            "pass_delay_seconds": 41, "concurrency": 7,
+            "generation": "1"
         }),
     )?;
     Ok(serde_json::to_string(

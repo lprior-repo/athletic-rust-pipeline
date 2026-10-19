@@ -8,6 +8,7 @@ pub(super) enum Scenario {
     Managed,
     SelectedMissingExport,
     SelectedLegacyExport,
+    SelectedMissingGeneration,
     LegacySelectedExport,
     ManagedSelectedExport,
     OmittedPublicationSelectedExport,
@@ -43,6 +44,14 @@ async fn selected_national_contract_requires_an_explicit_selected_export() -> Te
         super::exercise(super::Scenario::Admission(scenario)).await?;
     }
     Ok(())
+}
+
+#[tokio::test]
+async fn historical_selected_request_without_generation_cannot_execute_or_bind() -> TestResult {
+    super::exercise(super::Scenario::Admission(
+        Scenario::SelectedMissingGeneration,
+    ))
+    .await
 }
 
 #[tokio::test]
@@ -142,9 +151,9 @@ fn input(scenario: Scenario) -> TestResult<Value> {
         Scenario::Omitted | Scenario::OmittedPublicationSelectedExport => None,
         Scenario::Legacy | Scenario::LegacySelectedExport => Some("legacy_separate_v1"),
         Scenario::Managed | Scenario::ManagedSelectedExport => Some("managed_bundle_v2"),
-        Scenario::SelectedMissingExport | Scenario::SelectedLegacyExport => {
-            Some("selected_publication_v1")
-        }
+        Scenario::SelectedMissingExport
+        | Scenario::SelectedLegacyExport
+        | Scenario::SelectedMissingGeneration => Some("selected_publication_v1"),
         Scenario::ForeignStore
         | Scenario::UnknownProfile
         | Scenario::WrongJurisdictions
@@ -158,6 +167,7 @@ fn input(scenario: Scenario) -> TestResult<Value> {
     match scenario {
         Scenario::LegacySelectedExport
         | Scenario::ManagedSelectedExport
+        | Scenario::SelectedMissingGeneration
         | Scenario::OmittedPublicationSelectedExport => {
             let controlled = crate::restate_services::jobs::selected_fixture::install()
                 .map_err(|error| error.to_string())?;

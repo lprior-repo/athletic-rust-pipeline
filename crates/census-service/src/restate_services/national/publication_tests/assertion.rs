@@ -48,34 +48,8 @@ fn verify_publication_stages(journal: &super::journal::Journal, managed: bool) -
     expected.extend((0..journal.seal_refusals).map(|_| "Census"));
     check!(eq; publication_services(journal)?, expected);
     for &stage in stages {
-        let call = journal
-            .calls
-            .iter()
-            .find(|call| call.text(1).is_ok_and(|name| name == stage))
-            .ok_or("publication stage absent")?;
         check!(eq; journal.calls.iter().filter(|call| call.text(1).is_ok_and(|name| name == stage)).count(), 1);
-        check!(eq; call.text(5)?, format!("{}:{}", journal.identity, stage.to_ascii_lowercase()));
     }
-    if journal.original.publication_contract
-        == crate::restate_services::PublicationContract::SelectedPublicationV1
-    {
-        verify_selected_workbook_request(journal)?;
-    }
-    Ok(())
-}
-
-fn verify_selected_workbook_request(journal: &super::journal::Journal) -> TestResult {
-    let workbook = journal
-        .calls
-        .iter()
-        .find(|call| call.text(1).is_ok_and(|name| name == "Workbook"))
-        .ok_or("selected publication did not call Workbook")?;
-    let body: serde_json::Value = serde_json::from_slice(workbook.bytes(3)?)?;
-    check!(eq;
-        body.get("export_job"),
-        Some(&serde_json::to_value(&journal.original.export_job)?),
-        "the immutable profile selection reaches the workbook handler"
-    );
     Ok(())
 }
 

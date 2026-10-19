@@ -34,6 +34,20 @@ pub(super) async fn require_publication_contract(
     ingestion: &Ingress,
     contract: PublicationContract,
 ) -> Result<()> {
+    let capabilities = capabilities(ingestion).await?;
+    require_contract(&capabilities, contract)
+}
+
+pub(super) async fn require_national_publication(ingestion: &Ingress) -> Result<()> {
+    let capabilities = capabilities(ingestion).await?;
+    require_contract(&capabilities, PublicationContract::SelectedPublicationV1)?;
+    if !capabilities.supports_national_generation() {
+        bail!("endpoint does not advertise stable national generation support; no invocation was submitted");
+    }
+    Ok(())
+}
+
+async fn capabilities(ingestion: &Ingress) -> Result<PublicationCapabilities> {
     let Json(capabilities) = CensusIngressClient::from_client(ingestion.clone())
         .publication_capabilities()
         .call()
@@ -43,7 +57,7 @@ pub(super) async fn require_publication_contract(
         .into_body()
         .map_err(census_service::ingress::error)
         .context("publication capability response is invalid; no invocation was submitted")?;
-    require_contract(&capabilities, contract)
+    Ok(capabilities)
 }
 
 fn require_contract(

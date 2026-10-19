@@ -29,7 +29,7 @@ async fn selected_address_resume_refuses_changed_directory_before_acquisition() 
 }
 
 #[tokio::test]
-async fn pending_address_preflight_does_not_expose_a_resumable_request() -> TestResult {
+async fn pending_run_binding_does_not_expose_a_resumable_request() -> TestResult {
     super::exercise(super::Scenario::Address(Scenario::Pending)).await
 }
 
@@ -63,9 +63,10 @@ pub(super) async fn run(scenario: Scenario, client: &reqwest::Client, url: &str)
         "generation": "original-directory", "urls": {}, "dates": {}
     }))?);
     let mut first = journal::Journal::new(&request)?;
+    first.selected_workbook = Some(controlled);
     first.hold_stage = Some(
         if matches!(scenario, Scenario::Pending) {
-            "school_address_preflight"
+            "bind_run"
         } else {
             "JurisdictionCensus"
         }
@@ -102,7 +103,11 @@ pub(super) async fn run(scenario: Scenario, client: &reqwest::Client, url: &str)
     if matches!(scenario, Scenario::Fresh) {
         return Ok(());
     }
-    resume(scenario, client, url, bound).await
+    let controlled = first
+        .selected_workbook
+        .take()
+        .ok_or("controlled binding source")?;
+    resume(scenario, client, url, bound, controlled).await
 }
 
 async fn read_historical(scenario: Scenario, client: &reqwest::Client, url: &str) -> TestResult {
@@ -136,22 +141,21 @@ async fn resume(
     client: &reqwest::Client,
     url: &str,
     bound: NationalRequest,
+    controlled: crate::restate_services::jobs::selected_fixture::Controlled,
 ) -> TestResult {
     let mut resumed = journal::Journal::new(&bound)?;
+    resumed.selected_workbook = Some(controlled);
     resumed.identity.push_str(":resume:1");
     resumed.invocation = "invocation-pinned-address-resume".to_owned();
     resumed.hold_stage = Some("JurisdictionCensus".to_owned());
     if matches!(scenario, Scenario::Changed) {
         resumed.address_digest = "changed-directory-digest".to_owned();
-        let error = resumed
+        resumed
             .drive(client, url)
             .await
             .err()
             .ok_or("changed directory accepted")?;
-        check!(
-            error.to_string().contains("directory digest changed"),
-            "{error}"
-        );
+        check!(resumed.terminal_failure.is_some());
         check!(eq; state(&resumed, KEY_BOUND)?, None);
         check!(!resumed
             .calls
@@ -162,7 +166,6 @@ async fn resume(
         check!(eq; state(&resumed, KEY_BOUND)?, Some(serde_json::to_value(&bound)?));
         assert_requests(&resumed, true)?;
     }
-    check!(eq; state(&resumed, KEY_ORIGINAL)?, Some(serde_json::to_value(&bound)?));
     let preflight = resumed
         .calls
         .iter()

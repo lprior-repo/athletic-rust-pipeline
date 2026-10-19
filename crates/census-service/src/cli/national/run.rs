@@ -33,8 +33,7 @@ pub(crate) async fn submit_national(
     request: NationalRequest,
 ) -> Result<InvocationHandle<CurrentRoute, Json<NationalReport>>> {
     resume::validate_selected(&request)?;
-    let contract = request.publication_contract;
-    crate::cli::publication_preflight::require_publication_contract(ingestion, contract).await?;
+    crate::cli::publication_preflight::require_national_publication(ingestion).await?;
     let national = NationalCensusIngressClient::from_client(ingestion.clone(), identity.as_str());
     let handle = match national.run(Json(request)).send().await {
         Ok(submitted) => {

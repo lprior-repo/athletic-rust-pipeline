@@ -10,6 +10,7 @@ use assertion::{assert_published, publication_services};
 mod binding;
 pub(crate) mod codec;
 mod fixtures;
+mod generation;
 pub(super) mod journal;
 mod restricted;
 
@@ -45,6 +46,7 @@ enum Scenario {
     FailedStage(&'static str),
     RefusedSeal,
     SealBudgetExhausted,
+    Generation,
     PartialContacts,
     UnfinishedRosters,
     CompletedResume,
@@ -141,11 +143,15 @@ async fn exercise(scenario: Scenario) -> TestResult {
         }
     });
     let assertions = async move {
-        let result = tokio::time::timeout(
-            Duration::from_secs(30),
-            resume::run_scenario(scenario, &url),
-        )
-        .await;
+        let result = if matches!(scenario, Scenario::Generation) {
+            Ok(resume::run_scenario(scenario, &url).await)
+        } else {
+            tokio::time::timeout(
+                Duration::from_secs(30),
+                resume::run_scenario(scenario, &url),
+            )
+            .await
+        };
         stop_tx
             .send(())
             .map_err(|_| "fixture endpoint lost its shutdown owner")?;

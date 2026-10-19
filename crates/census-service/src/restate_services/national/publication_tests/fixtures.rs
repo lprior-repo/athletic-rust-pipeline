@@ -32,6 +32,7 @@ pub(super) fn selected_request(
             profile.id()?,
         ),
     };
+    request.generation = Some(crate::restate_services::ExportGeneration::default_generation());
     Ok(request)
 }
 pub(super) fn workbook_preflight(

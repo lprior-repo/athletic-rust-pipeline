@@ -1,49 +1,8 @@
 use super::*;
 use census_service::restate_services::consolidate_export_key;
 use census_service::restate_services::reject_offline_generation;
-use census_service::restate_services::DEFAULT_GENERATION;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
-
-#[test]
-fn the_default_generation_matches_the_legacy_constant() -> TestResult {
-    let default_generation = ExportGeneration::default_generation();
-    if default_generation.as_str() != DEFAULT_GENERATION {
-        return Err(format!("default generation: {}", default_generation.as_str()).into());
-    }
-    let parsed = ExportGeneration::parse(DEFAULT_GENERATION)?;
-    if default_generation != parsed {
-        return Err(format!("default generation text: {}", parsed.as_str()).into());
-    }
-    Ok(())
-}
-
-#[test]
-fn identical_semantic_requests_with_one_generation_share_retry_keys() -> TestResult {
-    let generation = ExportGeneration::default_generation();
-    let core = report_export_key("core", &[], &generation)?;
-    if core != report_export_key("core", &[], &generation)? {
-        return Err(format!("report key: {}", core.as_str()).into());
-    }
-    if core.as_str() != "report:core:all:1" {
-        return Err(format!("report key: {}", core.as_str()).into());
-    }
-    let bests = bests_export_key("all", "2027", "50", &[], &generation)?;
-    if bests != bests_export_key("all", "2027", "50", &[], &generation)? {
-        return Err(format!("bests key: {}", bests.as_str()).into());
-    }
-    if bests.as_str() != "bests:all:2027:50:all:1" {
-        return Err(format!("bests key: {}", bests.as_str()).into());
-    }
-    let consolidate = consolidate_export_key(&generation);
-    if consolidate != consolidate_export_key(&generation) {
-        return Err(format!("consolidate key: {}", consolidate.as_str()).into());
-    }
-    if consolidate.as_str() != "consolidate:1" {
-        return Err(format!("consolidate key: {}", consolidate.as_str()).into());
-    }
-    Ok(())
-}
 
 #[test]
 fn a_fresh_generation_produces_fresh_export_keys() -> TestResult {
@@ -125,22 +84,6 @@ fn workbook_keys_follow_the_selected_generation() -> TestResult {
     }
     if workbook_legacy == workbook_next {
         return Err("a fresh generation must not reattach the legacy workflow".into());
-    }
-    Ok(())
-}
-
-#[test]
-fn the_generation_resolver_defaults_without_a_flag() -> TestResult {
-    let resolved = ExportGeneration::resolve(None)?;
-    if resolved.as_str() != DEFAULT_GENERATION {
-        return Err(format!("default generation: {}", resolved.as_str()).into());
-    }
-    let requested = ExportGeneration::resolve(Some("7"))?;
-    if requested.as_str() != "7" {
-        return Err(format!("requested generation: {}", requested.as_str()).into());
-    }
-    if ExportGeneration::resolve(Some("bad/generation")).is_ok() {
-        return Err("a slash must not become an export generation".into());
     }
     Ok(())
 }

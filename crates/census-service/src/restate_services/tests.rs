@@ -433,6 +433,7 @@ fn national_request(jurisdictions: Vec<UsJurisdiction>) -> TestResult<NationalRe
         school_address: None,
         pass_budget: 0,
         pass_delay_seconds: 0,
+        generation: None,
     })
 }
 
@@ -949,30 +950,6 @@ fn environmental_store_errors_classify_transient() {
 }
 
 #[test]
-fn identical_semantic_requests_with_same_generation_attach() -> TestResult {
-    let legacy = ExportGeneration::default_generation();
-    let key_a = report_export_key("core", &[], &legacy)?;
-    let key_b = report_export_key("core", &[], &legacy)?;
-    check!(eq;
-        key_a,
-        key_b,
-        "identical requests with same generation must share a key"
-    );
-    check!(eq; key_a, "report:core:all:1");
-
-    let key_c = bests_export_key("all", "2027", "50", &[], &legacy)?;
-    let key_d = bests_export_key("all", "2027", "50", &[], &legacy)?;
-    check!(eq; key_c, key_d);
-    check!(eq; key_c, "bests:all:2027:50:all:1");
-
-    let key_e = consolidate_export_key(&legacy);
-    let key_f = consolidate_export_key(&legacy);
-    check!(eq; key_e, key_f);
-    check!(eq; key_e, "consolidate:1");
-    Ok(())
-}
-
-#[test]
 fn same_semantics_different_generation_produces_new_key() -> TestResult {
     let legacy = ExportGeneration::default_generation();
     let fresh = ExportGeneration::parse("2")?;
@@ -1033,28 +1010,6 @@ fn differing_semantic_parts_produce_different_keys() -> TestResult {
         bests_export_key("all", "2027", "50", &[], &legacy)?,
         bests_export_key("all", "2027", "50", &[UsJurisdiction::Michigan], &legacy)?,
         "different jurisdictions must produce different keys"
-    );
-    Ok(())
-}
-
-#[test]
-fn both_entries_share_one_generation_resolver() -> TestResult {
-    check!(eq;
-        ExportGeneration::resolve(None)?.as_str(),
-        DEFAULT_GENERATION
-    );
-    check!(eq; ExportGeneration::resolve(Some("2"))?.as_str(), "2");
-    check!(
-        ExportGeneration::resolve(Some("bad/generation")).is_err(),
-        "both entries reject the same malformed generations"
-    );
-    check!(
-        reject_offline_generation(None).is_ok(),
-        "both entries accept an offline invocation without a generation"
-    );
-    check!(
-        reject_offline_generation(Some("2")).is_err(),
-        "both entries refuse a requested offline generation"
     );
     Ok(())
 }

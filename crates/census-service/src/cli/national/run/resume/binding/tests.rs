@@ -15,7 +15,8 @@ fn request() -> Result<NationalRequest> {
         "export_job": {"contract": "selected_publication_v1",
             "selection": {"version": 1, "store_identity": store, "profile_id": profile}},
         "pass_budget": 17,
-        "pass_delay_seconds": 41
+        "pass_delay_seconds": 41,
+        "generation": "1"
     }))?)
 }
 

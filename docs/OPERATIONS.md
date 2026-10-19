@@ -878,16 +878,18 @@ for directory fsync.
 A settled national run chains its artifacts itself. Once no national failure or owed jurisdiction
 remains, every admitted jurisdiction's roster summary is unblocked and complete (`remaining=0`,
 `skipped=0`, `committed=total`) with cardinalities matching the admitted scope, and every admitted
-jurisdiction's contacts are Complete, the selected run awaits `Consolidate`, then one
-`Workbook` workflow (`<national identity>:consolidate`, `:workbook`). Workbook and every
-normalized family derive from that job's frozen generation; there are no separate national
-`Report`/`Bests` publication jobs. Success releases `Census.publication` with the original
-cohort, season, revision, scope and returned workbook path.
+jurisdiction's contacts are Complete, the selected run awaits `Consolidate`
+(`<national identity>:consolidate`), then one `Workbook` workflow keyed by the canonical
+selected request and checked publication generation, independently of the parent resume ordinal.
+Workbook and every normalized family derive from that job's frozen input; there are no separate
+national `Report`/`Bests` publication jobs. Success releases `Census.publication` with the
+original cohort, season, revision, scope and returned workbook path.
 A pending child replays its original durable call and a resumed national invocation reuses every
 completed artifact instead of minting a new job. Only a terminal failure whose message contains
 `the census seal refused: ` starts one fresh measurement invocation under
-`<identity>:seal:<round>` — bounded rounds, the full message retained as `publication_refusal` — and
-any other terminal error propagates. Every handler that can return an already-durable outcome
+`<identity>:seal:<round>`: the initial measurement plus at most `pass_budget` retries.
+The full reason remains in `publication_refusal`; zero retries means one measurement and no
+terminal sleep. Other terminal errors propagate. Every handler that can return a durable outcome
 gatekeeps on live durable state only through a journaled step: the state read that decides the
 outcome is itself recorded (for example `TeamsSource` records its ledger-status read in a `ctx.run`
 before branching), and a side effect that needs live process state is performed inside the journaled
@@ -897,6 +899,14 @@ without executing new work and without minting a second attempt or reservation.
 The manual `workbook`/`seal` verbs below are not required for automatic national publication;
 an incomplete census or contact result keeps its
 existing report behavior and does not release publication.
+
+Fresh National submissions carry `--generation` through the existing checked export-generation
+parser. The endpoint must advertise both `selected_publication_v1` and
+`national_generation_revision: 1`; an older selected-only endpoint is refused before submission.
+Historical requests without a generation remain readable, not executable. Resume/drive preserve
+the originally bound generation and execution budgets rather than replacing them with new flags.
+Selected-parent binding, profile-derived cohort and typed National receipt acceptance remain
+open; this is not annual-reuse or national-readiness certification.
 
 An explicit offline `index --store <dir> --school-year <yyyy>` still re-derives mutable projections;
 those separately replaced tables are not the workbook's publication boundary and are not a
@@ -1013,7 +1023,7 @@ the serving store, sample, stride or impose the former 5,000-sample ceiling. It 
 beside the store owner. Historical loose workbooks without a complete manifest are not certified;
 preserve them and publish a new generation instead of editing old evidence.
 
-The implemented legacy store contract admits exactly one census run. National submission binds a run manifest — store identity,
+The current national run binding admits exactly one census run. Submission binds a manifest — store identity,
 season, revision, the Class-of-2027 cohort and the admitted jurisdiction scope — through the
 `Census.bind_run` handler before any jurisdiction fans out, and a store already bound to another
 run refuses terminally instead of adopting it. The binding lives in the store and survives restart.
@@ -1054,8 +1064,8 @@ Acceptance requirements live in [the active plan](NATIONAL-CENSUS-PLAN.md), not 
 [ADR-038](adr/ADR-038-selected-profile-reusable-production-state.md) permits the forward full
 spec-v2 product: selected profiles over one explicitly enrolled installation with qualified public
 evidence and stable IDs across refreshes and annual cohorts. It does not supply runnable production
-enrollment/sync commands. [PROFILE-EXECUTION-V1](PROFILE-EXECUTION-V1.md) documents the current
-configuration-only capability and typed unsupported choices; scalar workbook-year selection is
+enrollment/sync commands. [PROFILE-EXECUTION-V1](PROFILE-EXECUTION-V1.md) documents capability
+boundaries and typed unsupported choices; scalar workbook-year selection is
 not selected-profile execution. Store identity initialization, profile registration/selection and
 reopening an old store do not enroll it, migrate bytes or bypass the single-run binding above.
 

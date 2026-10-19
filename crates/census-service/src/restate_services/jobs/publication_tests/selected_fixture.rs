@@ -208,3 +208,15 @@ fn profile() -> TestResult<QueryProfileV1> {
         include_provisional: ProvisionalInclusionV1::Exclude,
     })?)
 }
+
+pub(in crate::restate_services) fn retain(controlled: Controlled) -> std::path::PathBuf {
+    let source::InstalledSource {
+        directory,
+        store,
+        identity_writer,
+        ..
+    } = controlled.installed;
+    drop(identity_writer);
+    drop(store);
+    directory.keep()
+}

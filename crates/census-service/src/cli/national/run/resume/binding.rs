@@ -115,6 +115,9 @@ pub(in crate::cli::national::run) fn validate_selected(request: &NationalRequest
     ) {
         bail!("national resume compatibility blocked: bound export request is not a selected publication request");
     }
+    if request.generation.is_none() {
+        bail!("national resume compatibility blocked: bound request has no publication generation");
+    }
     Ok(())
 }
 

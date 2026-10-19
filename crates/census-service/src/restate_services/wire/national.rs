@@ -1,3 +1,4 @@
+use crate::restate_services::ExportGeneration;
 use census_domain::model::{Revision, SchoolYear};
 use census_domain::UsJurisdiction;
 use census_report::export::ExportJobRequest;
@@ -55,6 +56,8 @@ pub struct NationalRequest {
     pub pass_budget: usize,
     #[serde(default = "default_pass_delay_seconds")]
     pub pass_delay_seconds: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generation: Option<ExportGeneration>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -9,6 +9,7 @@ pub(super) async fn run_scenario(scenario: Scenario, url: &str) -> TestResult {
         Scenario::Address(mode) => return binding::run(mode, &client, url).await,
         Scenario::Admission(mode) => return admission::run(mode, &client, url).await,
         Scenario::SealBudgetExhausted => return seal_budget::run(&client, url).await,
+        Scenario::Generation => return generation::run(&client, url).await,
         _ => {}
     }
     let controlled = crate::restate_services::jobs::selected_fixture::install()
@@ -39,7 +40,10 @@ pub(super) async fn run_scenario(scenario: Scenario, url: &str) -> TestResult {
             return Ok(());
         }
         Scenario::Complete => {}
-        Scenario::Address(_) | Scenario::Admission(_) | Scenario::SealBudgetExhausted => {
+        Scenario::Address(_)
+        | Scenario::Admission(_)
+        | Scenario::SealBudgetExhausted
+        | Scenario::Generation => {
             return Err("scenario dispatch failed".into());
         }
     }
@@ -63,7 +67,8 @@ pub(super) async fn run_scenario(scenario: Scenario, url: &str) -> TestResult {
         Scenario::InvalidResume(_)
         | Scenario::Address(_)
         | Scenario::Admission(_)
-        | Scenario::SealBudgetExhausted => {
+        | Scenario::SealBudgetExhausted
+        | Scenario::Generation => {
             return Err("nonpublication scenario reached completion".into());
         }
     }

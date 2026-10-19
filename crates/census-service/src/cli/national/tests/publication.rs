@@ -103,6 +103,25 @@ async fn new_national_submission_checks_capability_before_any_write() -> TestRes
 }
 
 #[tokio::test]
+async fn selected_only_endpoint_cannot_receive_generation_bound_national_submission() -> TestResult
+{
+    let old_capabilities = serde_json::json!({
+        "publication_contracts": ["selected_publication_v1"]
+    })
+    .to_string();
+    let (captured, _) = exercise(
+        &["--generation", "qualified-v1"],
+        vec![("200 OK", old_capabilities), absent(), absent()],
+    )
+    .await?;
+    check!(eq; captured.len(), 1);
+    check!(captured
+        .first()
+        .is_some_and(|(path, _)| { path == "POST /Census/publication_capabilities HTTP/1.1\r\n" }));
+    Ok(())
+}
+
+#[tokio::test]
 async fn fresh_submission_without_complete_selection_refuses_before_any_network() -> TestResult {
     use clap::Parser;
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;

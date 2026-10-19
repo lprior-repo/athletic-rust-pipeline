@@ -11,6 +11,7 @@ fn selected_publication_requires_the_exact_endpoint_contract() -> TestResult {
     require_contract(
         &PublicationCapabilities {
             publication_contracts: vec![PublicationContract::ManagedBundleV2],
+            national_generation_revision: None,
         },
         PublicationContract::SelectedPublicationV1,
     )

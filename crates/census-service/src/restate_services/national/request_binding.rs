@@ -44,6 +44,7 @@ fn validate_publication_request(request: &NationalRequest) -> Result<(), Handler
         .export_job
         .require_selected_publication()
         .map_err(|error| TerminalError::new_with_code(400, error.to_string()))?;
+    super::publication::generation(request)?;
     Ok(())
 }
 

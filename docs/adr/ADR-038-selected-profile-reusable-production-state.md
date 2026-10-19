@@ -212,6 +212,13 @@ bundle and its original freshness. Retrying a logical job may reuse only its own
 a changed profile/input/policy requires an explicit new publication identity. Corrections publish
 new artifacts; they never edit an artifact already given to a consumer.
 
+National publication uses the existing checked `ExportGeneration` and canonical selected
+workbook request identity, independently of parent resume ordinals. It does not mint new
+acquisition identities or reset attempts. Current CLI submission requires advertised National
+generation revision 1; a selected-only predecessor is not sufficient. Missing historical
+generation fields remain readable, not a current-execution default. Parent binding, cohort
+and receipt qualification remain separate acceptance cells; see the runbook and evidence ledger.
+
 Current documentary sealing compares the retained attachment and historical-school
 inventories with current checked authority and accepted identity on one store
 snapshot. Raw-table equality or an unrelated journal sequence is not that fence.
