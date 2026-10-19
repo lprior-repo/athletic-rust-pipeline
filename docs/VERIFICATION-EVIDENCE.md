@@ -1448,3 +1448,25 @@ through the complete roster regression queue passed. Connected service receipt
 source/frozen queue ran from `7495a7f3` through `79ee9e58` with nonzero selection
 in every command. Original-A/changed-build-B authentication still requires a
 clean identified source commit; these passes do not replace that acceptance.
+
+### Committed checkpoint — 2026-10-19
+
+Source `e4a207ef05fc0c9f37909132620caa2a58b9c44a`, tree
+`8ad9927b5aa1cecdf30a31e8fefae83662757592`, passed canonical format/check/lint
+again. Changed-build consumer `6693e62f` replayed every original roster-A case
+with the original producer commit/tree and retention SHA256
+`8897f37e3fabc92235a5ab2b3ea648553a4b07c76b1588e638d542acc2c35908`
+unchanged. Independent retained documentary V3 replay `f3d01938` passed without
+the live Store. `897e8daa` passed the calendar-dependent 50→51 workbook,
+bounded review-history replay and authoritative Requested-state recovery.
+
+| Committed-source calendar workbook | SHA256 |
+|---|---|
+| `/home/lewis/.cache/r14n-TpNM3q/.tmpx1Lfdb/publication/generations/468bdcb763b4b493b2962d46e33beeffd740a41bc6970502fa7326c2b9f20d69/workbook.xlsx` | `123e470e8fefec4da816a6f07784dc43295e8ec3cad9f3b788d8935c0ff69d06` |
+| `/home/lewis/.cache/r14n-TpNM3q/.tmpubYUqH/publication/generations/74d5a583503c93b588eb013942e3f030858a6655aaa487e3c6a5a331a125e03f/workbook.xlsx` | `7a22ef87e98ce20ae8c82ba9064c3e4e2d1ed62469c1ee221cf63ef530f0306a` |
+
+Independent OOXML checks again confirmed the exact PR/date and separate
+historical-MI/current-CO school cells. No original-A regeneration, artifact
+relabeling, genuine-evidence editing or production census was performed.
+National generation, roster withdrawal, genuine coverage and resource holds
+remain open; this checkpoint is not a national release.
