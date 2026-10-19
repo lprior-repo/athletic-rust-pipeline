@@ -6,7 +6,7 @@ use crate::recording::RowBatch;
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, SchoolId, SourceNamespace,
+    CanonicalTeam, RelayResult, SchoolId, SourceNamespace,
 };
 use census_domain::school_index::SchoolIndex;
 use census_store::Table;
@@ -50,13 +50,14 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     note_stats(&mut run.report, &run.stats);
     run.report.note(format!(
         "canonical rows appended: schools {} meets {} teams {} athletes {} events {} performances \
-         {}",
+         {} relay results {}",
         appended_total(&run.batches, |batch| batch.schools),
         appended_total(&run.batches, |batch| batch.meets),
         appended_total(&run.batches, |batch| batch.teams),
         appended_total(&run.batches, |batch| batch.athletes),
         appended_total(&run.batches, |batch| batch.events),
         appended_total(&run.batches, |batch| batch.performances),
+        appended_total(&run.batches, |batch| batch.relay_results),
     ));
     run.report.note(format!(
         "unsupported graduation inference: {} raw grade/year observations retained for review",
@@ -89,6 +90,7 @@ pub(in crate::athleticnet) struct EntityCounts {
     pub(in crate::athleticnet) athletes: usize,
     pub(in crate::athleticnet) events: usize,
     pub(in crate::athleticnet) performances: usize,
+    pub(in crate::athleticnet) relay_results: usize,
     pub(in crate::athleticnet) unsupported_cohorts: usize,
 }
 
@@ -154,6 +156,7 @@ pub(super) fn store_accumulated(
     let athletes: Vec<CanonicalAthlete> = accumulated.athletes.into_values().collect();
     let events: Vec<CanonicalEvent> = accumulated.events.into_values().collect();
     let performances: Vec<CanonicalPerformance> = accumulated.performances.into_values().collect();
+    let relay_results: Vec<RelayResult> = accumulated.relay_results.into_values().collect();
     page.append_many(Table::Schools, &schools)?;
     page.append_many(
         Table::SourceObservations,
@@ -168,6 +171,7 @@ pub(super) fn store_accumulated(
     )?;
     page.append_many(Table::Events, &events)?;
     page.append_many(Table::Performances, &performances)?;
+    page.append_many(Table::RelayResults, &relay_results)?;
     accumulated.unsupported.append_to(page)?;
     page.append_many(Table::SourceObservations, &accumulated.profile_observations)?;
     page.append_many(Table::ReviewCases, &accumulated.profile_reviews)?;
@@ -178,6 +182,7 @@ pub(super) fn store_accumulated(
         athletes: athletes.len(),
         events: events.len(),
         performances: performances.len(),
+        relay_results: relay_results.len(),
         unsupported_cohorts: accumulated.unsupported.len(),
     })
 }

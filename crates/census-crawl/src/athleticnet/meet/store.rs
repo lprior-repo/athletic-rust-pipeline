@@ -4,9 +4,9 @@ use super::read::meet_date;
 use super::wire::MeetData;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CompetitionLevel, EventId,
-    Evidence, Gender, Grade, Mark, ObservedGrade, PerformanceId, RetainedConflict, SchoolId,
-    SchoolYear, SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceRef, Sport,
-    TeamId,
+    Evidence, Gender, Grade, Mark, ObservedGrade, PerformanceId, RelayResult, RetainedConflict,
+    SchoolId, SchoolYear, SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceRef,
+    Sport, TeamId,
 };
 use census_domain::UsJurisdiction;
 
@@ -163,12 +163,12 @@ pub(super) fn store(
     source: &SourceRef,
     observed_on: &str,
     mut input: PerformanceInput<'_>,
-    note: Option<String>,
     published: &str,
     metadata: Option<MetadataConflict<'_>>,
 ) -> crate::CrawlResult<()> {
+    let event_input = input.event_projection();
     let (event, retained_conflicts) =
-        match project_event(accumulated, source, observed_on, &input, metadata)? {
+        match project_event(accumulated, source, observed_on, &event_input, metadata)? {
             ProjectionOutcome::Admitted(event) => (event, Vec::new()),
             ProjectionOutcome::Withheld(event, conflict) => {
                 if !matches!(input.mark, Mark::Raw(_)) {
@@ -180,7 +180,7 @@ pub(super) fn store(
     if matches!(input.mark, Mark::Raw(_)) {
         input.timing = None;
     }
-    if !super::super::map::admit_date(&input)? {
+    if !super::super::map::admit_date(input.performance_as_of, &input.date)? {
         return Ok(());
     }
     let team = ensure_team(accumulated, source, observed_on, &input);
@@ -195,8 +195,7 @@ pub(super) fn store(
         .performances
         .entry(performance_id.as_str().to_string())
         .or_insert_with(|| {
-            let mut evidence = Evidence::parsed(source.clone(), observed_on);
-            evidence.note = note;
+            let evidence = Evidence::parsed(source.clone(), observed_on);
             performance_row(
                 performance_id,
                 input,
@@ -207,6 +206,13 @@ pub(super) fn store(
             )
         });
     Ok(())
+}
+
+pub(super) fn store_relay(accumulated: &mut Accumulator, relay: RelayResult) {
+    accumulated
+        .relay_results
+        .entry(relay.source_key.clone())
+        .or_insert(relay);
 }
 
 fn performance_row(

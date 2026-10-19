@@ -9,7 +9,10 @@ use futures::{stream, StreamExt, TryStreamExt};
 use serde_json::json;
 
 pub(super) fn flush_batch(ctx: &AdapterContext<'_>, run: &mut RunState) -> CrawlResult<()> {
-    if run.pending.is_empty() && run.accumulated.profile_reviews.is_empty() {
+    if run.pending.is_empty()
+        && run.accumulated.profile_reviews.is_empty()
+        && run.accumulated.relay_results.is_empty()
+    {
         return Ok(());
     }
     let counts = super::effects::persist(ctx, std::mem::take(&mut run.accumulated))?;
@@ -54,6 +57,10 @@ fn total_counts(batches: &mut Vec<EntityCounts>, counts: EntityCounts) -> CrawlR
     total.performances = total
         .performances
         .checked_add(counts.performances)
+        .ok_or_else(counter_error)?;
+    total.relay_results = total
+        .relay_results
+        .checked_add(counts.relay_results)
         .ok_or_else(counter_error)?;
     total.unsupported_cohorts = total
         .unsupported_cohorts

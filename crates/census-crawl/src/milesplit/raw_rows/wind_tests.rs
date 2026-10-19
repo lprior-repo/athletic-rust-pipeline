@@ -65,6 +65,37 @@ fn declared_signed_decimal_wind_keeps_its_value() -> TestResult {
 }
 
 #[test]
+fn declared_nwi_wind_is_absent_without_rejecting_result_rows() -> TestResult {
+    let header = format!("{}{:>8}{:>6}", base_header(), "Wind", "H#");
+    let cases = [
+        ("NWI Runner", "NWI", "2", None),
+        ("Mixed Case Runner", "nWi", "3", None),
+        ("Measured Runner", "+0.2", "4", Some(0.2)),
+    ];
+    let lines = cases
+        .iter()
+        .map(|(name, wind, heat, _)| format!("{}{:>8}{:>6}", base_row(name, "13.26"), wind, heat))
+        .collect::<Vec<_>>();
+    let block = format!("Boys 110 Hurdles Finals\n{header}\n{}\n", lines.join("\n"));
+    let parsed = parse_raw(&document(&block), support::URL)?;
+    check!(eq; parsed.meet.rows_parsed, 3);
+    check!(eq; parsed.meet.rows_skipped, 0);
+    check!(eq; parsed.skipped.len(), 0);
+    let event = parsed.meet.events.first().ok_or("event")?;
+    check!(eq; event.rows.len(), 3);
+    let mark = census_domain::model::Mark::TimeSeconds(
+        crate::hytek::parse_time("13.26").ok_or("published time")?,
+    );
+    for (row, (name, _, heat, wind)) in event.rows.iter().zip(cases) {
+        check!(eq; row.name, name);
+        check!(eq; row.mark, mark);
+        check!(eq; row.heat.as_deref(), Some(heat));
+        check!(eq; row.wind_mps, wind);
+    }
+    Ok(())
+}
+
+#[test]
 fn declared_empty_cells_remain_independently_absent() -> TestResult {
     let header = format!("{}{:>8}{:>6}", base_header(), "Wind", "H#");
     for (wind, heat, expected_wind, expected_heat) in [

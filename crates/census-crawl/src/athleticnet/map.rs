@@ -3,7 +3,7 @@ use super::SCHOOL_KIND;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, Grade, Mark,
-    ObservedGrade, ReviewCase, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
+    ObservedGrade, RelayResult, ReviewCase, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
     SourceObservation, SourceRef, Sport, TeamId, TimingMethod,
 };
 use census_domain::school_index::SchoolIndex;
@@ -44,6 +44,7 @@ pub(super) struct Accumulator {
     pub(super) athletes: HashMap<String, CanonicalAthlete>,
     pub(super) events: HashMap<String, CanonicalEvent>,
     pub(super) performances: HashMap<String, CanonicalPerformance>,
+    pub(super) relay_results: HashMap<String, RelayResult>,
     pub(super) unsupported: crate::cohort::UnsupportedCohortRows,
     pub(super) profile_observations: Vec<SourceObservation>,
     pub(super) profile_reviews: Vec<ReviewCase>,
@@ -170,14 +171,36 @@ pub(super) struct PerformanceInput<'a> {
     pub(super) labels: &'a [&'a str],
 }
 
+pub(super) struct EventProjectionInput<'a> {
+    pub(super) meet: &'a CanonicalMeet,
+    pub(super) kind: &'a EventKind,
+    pub(super) gender: Gender,
+    pub(super) division: Option<&'a str>,
+    pub(super) round: Option<&'a str>,
+    pub(super) labels: &'a [&'a str],
+}
+
+impl<'a> PerformanceInput<'a> {
+    pub(super) fn event_projection(&'a self) -> EventProjectionInput<'a> {
+        EventProjectionInput {
+            meet: self.meet,
+            kind: self.kind,
+            gender: self.gender,
+            division: self.division.as_deref(),
+            round: self.round.as_deref(),
+            labels: self.labels,
+        }
+    }
+}
+
 pub(super) fn store_performance(
     accumulated: &mut Accumulator,
     source: &SourceRef,
     observed_on: &str,
     input: PerformanceInput<'_>,
 ) -> crate::CrawlResult<()> {
-    let event = events::ensure_event(accumulated, source, observed_on, &input)?;
-    if !admit_date(&input)? {
+    let event = events::ensure_event(accumulated, source, observed_on, &input.event_projection())?;
+    if !admit_date(input.performance_as_of, &input.date)? {
         return Ok(());
     }
     let team_id = ensure_team(accumulated, source, observed_on, &input);
@@ -227,20 +250,40 @@ pub(super) fn ensure_team(
     observed_on: &str,
     input: &PerformanceInput<'_>,
 ) -> TeamId {
-    let sport = match input.sport {
+    ensure_team_for(
+        accumulated,
+        source,
+        observed_on,
+        input.school,
+        input.sport,
+        input.gender,
+        input.school_year,
+    )
+}
+
+pub(super) fn ensure_team_for(
+    accumulated: &mut Accumulator,
+    source: &SourceRef,
+    observed_on: &str,
+    school: &SchoolId,
+    sport: Option<Sport>,
+    gender: Gender,
+    school_year: SchoolYear,
+) -> TeamId {
+    let sport = match sport {
         Some(sport) => sport,
         None => Sport::Unknown,
     };
-    let team_id = CanonicalTeam::mint(input.school, sport, input.gender, input.school_year);
+    let team_id = CanonicalTeam::mint(school, sport, gender, school_year);
     if !accumulated.teams.contains_key(team_id.as_str()) {
         accumulated.teams.insert(
             team_id.as_str().to_string(),
             CanonicalTeam {
                 id: team_id.clone(),
-                school: input.school.clone(),
+                school: school.clone(),
                 sport,
-                gender: input.gender,
-                school_year: input.school_year,
+                gender,
+                school_year,
                 level: Some("high_school".to_string()),
                 source_identities: Vec::new(),
                 evidence: vec![Evidence::parsed(source.clone(), observed_on)],
@@ -251,14 +294,17 @@ pub(super) fn ensure_team(
     team_id
 }
 
-pub(super) fn admit_date(input: &PerformanceInput<'_>) -> crate::CrawlResult<bool> {
+pub(super) fn admit_date(
+    performance_as_of: chrono::NaiveDate,
+    published: &str,
+) -> crate::CrawlResult<bool> {
     use crate::context::{assess_performance_date, PerformanceDateAssessment};
-    match assess_performance_date(input.performance_as_of, &input.date) {
+    match assess_performance_date(performance_as_of, published) {
         PerformanceDateAssessment::Admitted => Ok(true),
         PerformanceDateAssessment::Future => Ok(false),
         PerformanceDateAssessment::Unknown => Err(crate::CrawlError::PerformanceDateUnknown {
-            published: input.date.chars().take(64).collect(),
-            as_of: input.performance_as_of,
+            published: published.chars().take(64).collect(),
+            as_of: performance_as_of,
         }),
     }
 }

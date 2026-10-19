@@ -100,7 +100,8 @@ fn cen17_controlled_sole_dns_retains_individual_subject_and_nonnumeric_result() 
 }
 
 #[test]
-fn cen17_controlled_dq_relay_retains_each_published_leg_without_individual_split() -> TestResult {
+fn cen17_controlled_dq_relay_retains_team_mark_and_member_evidence_without_performances(
+) -> TestResult {
     let meet: MeetData = serde_json::from_str(MEET_DATA)?;
     let mut results: AllResults = serde_json::from_str(ALL_RESULTS)?;
     let (mut block, mut squad) = results
@@ -126,37 +127,93 @@ fn cen17_controlled_dq_relay_retains_each_published_leg_without_individual_split
     block.results = vec![squad.clone()];
     results.blocks = vec![block];
     let walk = absorb(&meet, &results, None)?;
-    results
-        .legs
-        .iter()
-        .enumerate()
-        .try_for_each(|(index, leg)| -> TestResult {
-            let owner = leg.athlete_id.ok_or("captured leg owner")?;
-            let position = index.saturating_add(1);
-            let source_key = format!("athleticnet:{owner}-{}:leg{position}", squad.result_id);
-            let performance = performance_for(&walk, &source_key)?;
-            assert_subject(&walk, performance, owner)?;
-            check!(eq; performance.mark, Mark::Raw("DQ".into()));
-            check!(eq; leg_position(performance), Some(u8::try_from(position)?));
-            let athlete = walk
-                .accumulated
-                .athletes
-                .values()
-                .find(|row| row.id == performance.athlete)
-                .ok_or("relay member")?;
-            check!(eq; athlete.canonical_name, leg.name.trim());
-            Ok(())
-        })?;
-    let squad_key = format!(
-        "athleticnet:{}-{}",
-        squad.athlete_id.ok_or("squad owner")?,
+    let source_key = format!(
+        "athleticnet:team{}-{}",
+        squad.team_id.ok_or("squad team id")?,
         squad.result_id
     );
-    check!(!walk
+    let relay = walk
         .accumulated
-        .performances
+        .relay_results
         .values()
-        .any(|row| row.source_key == squad_key));
+        .find(|row| row.source_key == source_key)
+        .ok_or("team relay result")?;
+    check!(eq; relay.mark, Mark::Raw("DQ".into()));
+    check!(eq; relay.members.len(), 4);
+    check!(eq; relay.members.len(), results.legs.len());
+    check!(
+        walk.accumulated.performances.is_empty(),
+        "no squad or leg mark is an individual performance"
+    );
+    for (index, (member, leg)) in relay.members.iter().zip(&results.legs).enumerate() {
+        let owner = leg.athlete_id.ok_or("captured leg owner")?;
+        check!(eq; member.order, u32::try_from(index.saturating_add(1))?);
+        check!(eq; member.name_as_published, leg.name);
+        let athlete_id = member
+            .athlete
+            .as_ref()
+            .ok_or("linked eligible relay member")?;
+        let athlete = walk
+            .accumulated
+            .athletes
+            .values()
+            .find(|row| &row.id == athlete_id)
+            .ok_or("relay member athlete")?;
+        check!(eq; athlete.canonical_name, leg.name.trim());
+        check!(athlete.identities().any(|identity| {
+            identity.namespace == SourceNamespace::athletic_net("athlete")
+                && identity.id == owner.to_string()
+        }));
+    }
+    let evidence = relay.evidence.first().ok_or("retained relay evidence")?;
+    check!(eq; evidence.source, SourceRef::new("athleticnet", None));
+    check!(eq; evidence.observed_on, OBSERVED_ON);
+    check!(eq;
+        relay.source_team.as_ref().map(|identity| identity.namespace.clone()),
+        Some(SourceNamespace::athletic_net("team"))
+    );
+    Ok(())
+}
+
+#[test]
+fn cen17_relay_result_without_published_legs_still_retains_team_evidence() -> TestResult {
+    let meet: MeetData = serde_json::from_str(MEET_DATA)?;
+    let mut results: AllResults = serde_json::from_str(ALL_RESULTS)?;
+    let (mut block, squad) = results
+        .blocks
+        .iter()
+        .find_map(|block| {
+            block
+                .results
+                .iter()
+                .find(|row| {
+                    results
+                        .legs
+                        .iter()
+                        .any(|leg| leg.result_id == row.result_id)
+                })
+                .map(|row| (block.clone(), row.clone()))
+        })
+        .ok_or("captured relay row")?;
+    results.legs.clear();
+    block.results = vec![squad.clone()];
+    results.blocks = vec![block];
+    let walk = absorb(&meet, &results, None)?;
+    let source_key = format!(
+        "athleticnet:team{}-{}",
+        squad.team_id.ok_or("squad team id")?,
+        squad.result_id
+    );
+    let relay = walk
+        .accumulated
+        .relay_results
+        .values()
+        .find(|row| row.source_key == source_key)
+        .ok_or("relay team result retained without leg detail")?;
+    check!(relay.members.is_empty());
+    check!(!relay.evidence.is_empty());
+    check!(walk.accumulated.performances.is_empty());
+    check!(eq; walk.counts.relay_rows_without_legs, 1);
     Ok(())
 }
 

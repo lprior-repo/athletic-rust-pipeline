@@ -80,6 +80,47 @@ fn published_metric_field_row_keeps_event_grade_and_numeric_distance() -> TestRe
 }
 
 #[test]
+fn integer_time_mark_is_admitted_from_the_mark_column() -> TestResult {
+    let result = row(20, 20, "Runner, Integer", "11", "Captured School", "11");
+    let block = format!("Boys 100M\n{}\n{result}\n", header(20, 20));
+    let parsed = page(&block)?;
+    let result = parsed
+        .meet
+        .events
+        .first()
+        .and_then(|event| event.rows.first())
+        .ok_or("published integer time")?;
+    check!(
+        eq;
+        result.mark,
+        Mark::TimeSeconds(crate::hytek::parse_time("11").ok_or("integer time")?)
+    );
+    Ok(())
+}
+
+#[test]
+fn whole_metre_mark_is_admitted_from_the_mark_column() -> TestResult {
+    let result = row(20, 20, "Captured, Jumper", "11", "Captured School", "3m");
+    let block = format!(
+        "Girls Varsity Triple Jump Finals\n{}\n{result}\n",
+        header(20, 20).replace("Time", "Mark")
+    );
+    let parsed = page(&block)?;
+    let result = parsed
+        .meet
+        .events
+        .first()
+        .and_then(|event| event.rows.first())
+        .ok_or("published whole-metre mark")?;
+    check!(
+        eq;
+        result.mark,
+        Mark::DistanceMetres(census_domain::model::CentiMetres::new(300))
+    );
+    Ok(())
+}
+
+#[test]
 fn a_wrapped_round_does_not_relabel_the_earlier_results() -> TestResult {
     let first = row(20, 20, "MÜLLER, Émile", "JR", "North Buncombe", "9:01.03");
     let second = row(20, 20, "Other, Kid", "SR", "Asheville", "9:02.04");
@@ -352,7 +393,7 @@ fn a_mark_wider_than_the_published_cell_keeps_its_school() -> TestResult {
 #[test]
 fn a_blank_declared_mark_cell_never_promotes_school_digits() -> TestResult {
     const SCHOOL: &str = "District 5-12 Academy";
-    const SPILLED: &str = "District 5-12 Academy 2024";
+    const SPILLED: &str = "District 5-12 Academy 567890123456789";
     let blank = format!(
         "   1 {:<20} {:<3} {:<24}{:>9} 8 (1)",
         "SURFACE, Luke", "JR", SCHOOL, ""

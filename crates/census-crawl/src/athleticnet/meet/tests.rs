@@ -85,13 +85,3 @@ fn performances(walk: &Walk) -> Vec<&census_domain::model::CanonicalPerformance>
     rows.sort_by(|left, right| left.source_key.cmp(&right.source_key));
     rows
 }
-
-fn leg_position(row: &census_domain::model::CanonicalPerformance) -> Option<u8> {
-    let note = row.evidence.first()?.note.as_deref()?;
-    note.strip_prefix("relay leg ")?
-        .split(';')
-        .next()?
-        .trim()
-        .parse()
-        .ok()
-}

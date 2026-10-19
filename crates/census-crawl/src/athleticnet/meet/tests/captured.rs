@@ -138,34 +138,36 @@ fn every_published_team_id_mints_a_school_and_a_team() -> TestResult {
     Ok(())
 }
 #[test]
-fn a_relay_squad_becomes_one_performance_per_leg_and_never_a_person() -> TestResult {
+fn a_relay_squad_is_retained_as_a_team_result_with_ordered_members() -> TestResult {
     let walk = walk(false)?;
-    let rows = performances(&walk);
-    let legs: Vec<_> = rows
-        .iter()
-        .filter(|row| leg_position(row).is_some())
-        .collect();
+    let relays: Vec<_> = walk.accumulated.relay_results.values().collect();
     check!(
-        legs.iter().all(|row| !row.source_key.contains("-0")),
-        "a squad's own row is not a performance"
+        walk.accumulated.performances.values().all(|row| {
+            !row.source_key.starts_with("athleticnet:team") && !row.source_key.contains(":leg")
+        }),
+        "relay squad marks never become athlete-scoped performances"
     );
-    let positions: BTreeSet<u8> = legs.iter().filter_map(|row| leg_position(row)).collect();
-    check!(eq;
-        positions,
-        BTreeSet::from([1, 2, 3, 4]),
-        "the leg's 1-based position in its squad is its published order"
-    );
-    for row in &legs {
-        let note = row
-            .evidence
-            .first()
-            .and_then(|evidence| evidence.note.as_deref());
-        check!(
-            note.is_some_and(|note| note.starts_with("relay leg ")),
-            "{}: a leg carries its own evidence note: {note:?}",
-            row.source_key
+    check!(eq; relays.len(), 72, "each published squad has one relay result");
+    let mut member_count = 0usize;
+    for relay in &relays {
+        check!(eq; relay.members.len(), 4, "{} has four published legs", relay.source_key);
+        check!(eq;
+            relay.members.iter().map(|member| member.order).collect::<Vec<_>>(),
+            vec![1, 2, 3, 4],
+            "member order follows the published relay leg order"
         );
+        check!(relay.members.iter().all(|member| member.athlete.is_some()));
+        let evidence = relay.evidence.first().ok_or("relay result evidence")?;
+        check!(eq; evidence.source, SourceRef::new("athleticnet", None));
+        check!(eq; evidence.observed_on, OBSERVED_ON);
+        let source_team = relay
+            .source_team
+            .as_ref()
+            .ok_or("published team identity")?;
+        check!(eq; source_team.namespace, SourceNamespace::athletic_net("team"));
+        member_count = member_count.saturating_add(relay.members.len());
     }
+    check!(eq; member_count, 288, "all published legs are retained as members");
     check!(eq;
         walk.counts.rows_no_grade, 0,
         "the 71 squad rows publishing `-` never reach the grade reader: their legs are routed to \
@@ -182,8 +184,8 @@ fn a_relay_squad_becomes_one_performance_per_leg_and_never_a_person() -> TestRes
         "a squad's `<BR>`-joined members are never minted as one athlete"
     );
     check!(
-        rows.iter().all(|row| !row.source_key.contains("<BR>")),
-        "no performance is keyed on the squad's padded name"
+        relays.iter().all(|row| !row.source_key.contains("<BR>")),
+        "no relay source key is based on the squad's padded name"
     );
     Ok(())
 }
@@ -205,17 +207,7 @@ fn every_performance_is_keyed_by_the_published_result_it_came_from() -> TestResu
                 let owner = row.athlete_id.ok_or("captured individual owner")?;
                 return Ok(vec![format!("athleticnet:{owner}-{}", row.result_id)]);
             }
-            legs.iter()
-                .enumerate()
-                .map(|(index, leg)| {
-                    let owner = leg.athlete_id.ok_or("captured relay owner")?;
-                    Ok(format!(
-                        "athleticnet:{owner}-{}:leg{}",
-                        row.result_id,
-                        index.saturating_add(1)
-                    ))
-                })
-                .collect()
+            Ok(Vec::new())
         })
         .collect::<TestResult<Vec<_>>>()?
         .into_iter()
