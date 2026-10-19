@@ -1586,3 +1586,50 @@ certificate. Genuine revoke/source-free V4 replay and public artifact readback r
 `d7hp`; exact member withdrawal remains `v80o`. The authorized live national run is
 not started: shipped V3 initialization/profile/endpoint acquisition integration is
 being repaired under `agv2`. Historical national state is preserved.
+
+### Explicit current acquisition startup — 2026-10-19
+
+Source `ee31ec873414c330fb9567f71fc2ee2beb4cf062`, tree
+`cc715fb2a63ff726a9f5b6dec93b4bc8e2856601`. New/empty-root initialization
+atomically binds graph V3 and existing capture V2 to one identity. Current serving
+requires explicit opt-in; profile and roster-capability operations use current owners.
+Enrollment-only execution now refuses before protocol admission/recovery, preserving
+the attributable installation outcome rather than masking it as identity opt-in.
+
+| Executed acceptance | Receipt | Result |
+|---|---|---|
+| Canonical format / all-target check / source lint | `9bfb78b4` / `6881ddaa` / `21738174` | PASS; configured arity advisories remain |
+| Current acquisition, roster capability/replay, historical initialization guards | `963cc13c` | PASS: 12 selected; same identity, cold capture readback, no implicit adoption |
+| Actual CLI/profile/publication and endpoint ownership/refusal/cleanup | `a2046f42` | PASS: 83 selected; current-v5 unreviewed roster remains Unknown with original reference and missing-authority reason |
+| Preserved scoped report/crawl queue, controlled 50→51 and genuine calendar eligibility | `9f88156a` | PASS: 193 selected; prior denied crash selectors remain excluded |
+| Original three-case A → exact changed-build B | `629aca3e` | PASS: original A `1ab843c4`, retention SHA256 `8897f37e3fabc92235a5ab2b3ea648553a4b07c76b1588e638d542acc2c35908`; not regenerated |
+| AST / zero-comments / panic extraction / architecture contract | `42d8981b` / `9ba4fc78` / `068f2e77` / `aeabed57` | PASS; no functions over 60 logical lines; known architecture deviations remain |
+
+Failure-before: `79cfcce0` found one formatting discrepancy; `c6ac4a2f`
+found two unmigrated bootstrap consumers (81/83). After migrating their explicit
+mode/root setup, `a92993b2` exposed the real enrollment-refusal precedence defect
+(82/83). Moving existing installation validation before execution capability checks
+fixed it; `57561bb7` then caught the obsolete finalization argument, which was removed,
+not suppressed. All rows above ran on the final source, with `CI` unset, owned
+`TMPDIR/TMP/TEMP` and two Rust build jobs; heavyweight campaigns were serialized.
+
+Operational preparation is not a national run. Public CLI initialization, graph/input
+admission, reviewed-roster capability enrollment, profile registration and an empty
+publication preflight executed in the separately authorized `census-national-v3-20261019`
+namespace. Its workbook SHA256 is
+`274db28b5d71e4b8f9b85b59b1d2c000e21ee441ddc2d93afb4cab6635d0ba7b`;
+independent OOXML inspection found header-only athlete/PR/performance sheets.
+Archived working-source CLI SHA256s: initialization
+`fcdb73dd8a8ac3dea1f345048d044ff090dae582339597c49414b9c6fcdac99f`;
+later capability/profile/preflight
+`5d3c53522b47be229990b7a50a4810ff9b7fadc6cd19a44d71cef6c526bdd3d0`.
+Neither is an exact-`ee31ec87` portable deployment or transferred certification.
+The isolated Restate node has a pre-established 48-GiB/zero-swap envelope, not a
+representative workload certificate. After the user's launch concern, admin readback
+returned `deployments: []` and `sys_invocation.rows: []`: no endpoint registration,
+national workflow or acquisition. Launch is held; historical 20261013 state is untouched.
+
+This closes neither genuine complete lifecycle `d7hp`, exact roster withdrawal `v80o`,
+profile-derived cohort/actual National receipts, source-obligation coverage nor national
+completion. Athletic.net historical discovery still reports a missing qualified producer/
+frontier; registration and the empty canary do not supply that evidence.
