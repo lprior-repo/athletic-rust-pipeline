@@ -1,19 +1,15 @@
 use super::{closure::Closure, invalid};
+use crate::export::qualification::physical_observations::OBSERVATION_BUDGET;
 use crate::export::qualification::physical_observations::{self, PhysicalObservationDescriptor};
 use crate::export::ExportDataset;
 use crate::report::ReportResult;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam,
 };
-use census_store::{Entity, ReadBudget, StoreSnapshot, Table};
+use census_store::{Entity, StoreSnapshot, Table};
 use std::collections::BTreeMap;
 use std::path::Path;
 
-pub(crate) const BUDGET: ReadBudget = ReadBudget {
-    rows: 200_000,
-    bytes: 256 * 1024 * 1024,
-    record_bytes: 1024 * 1024,
-};
 const TABLES: [Table; 5] = [
     Table::Athletes,
     Table::Performances,
@@ -39,28 +35,28 @@ pub(super) fn capture(
             snapshot,
             Table::Performances,
             directory,
-            BUDGET,
+            OBSERVATION_BUDGET,
         )?,
         physical_observations::capture::<CanonicalTeam>(
             dataset,
             snapshot,
             Table::Teams,
             directory,
-            BUDGET,
+            OBSERVATION_BUDGET,
         )?,
         physical_observations::capture::<CanonicalMeet>(
             dataset,
             snapshot,
             Table::Meets,
             directory,
-            BUDGET,
+            OBSERVATION_BUDGET,
         )?,
         physical_observations::capture::<CanonicalEvent>(
             dataset,
             snapshot,
             Table::Events,
             directory,
-            BUDGET,
+            OBSERVATION_BUDGET,
         )?,
     ];
     let mut expected = fingerprints(&descriptors);
@@ -139,11 +135,18 @@ fn rows<T: Entity>(
         .get(table.file())
         .ok_or_else(|| invalid("root-bound physical fingerprint missing"))?;
     let mut rows = Vec::new();
-    physical_observations::visit(dataset, directory, descriptor, fingerprint, BUDGET, |row| {
-        rows.try_reserve(1)
-            .map_err(|_| invalid("participation physical observation allocation refused"))?;
-        rows.push(row);
-        Ok(())
-    })?;
+    physical_observations::visit(
+        dataset,
+        directory,
+        descriptor,
+        fingerprint,
+        OBSERVATION_BUDGET,
+        |row| {
+            rows.try_reserve(1)
+                .map_err(|_| invalid("participation physical observation allocation refused"))?;
+            rows.push(row);
+            Ok(())
+        },
+    )?;
     Ok(rows)
 }

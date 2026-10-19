@@ -150,7 +150,7 @@ impl Fixture {
                 snapshot,
                 Table::Athletes,
                 &directory,
-                observations::BUDGET,
+                crate::export::qualification::physical_observations::OBSERVATION_BUDGET,
             )?;
         let affiliations =
             crate::export::qualification::current_affiliation::PinnedCurrentAffiliations::read(

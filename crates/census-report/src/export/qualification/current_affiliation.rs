@@ -1,9 +1,10 @@
 use super::{CurrentAffiliationResolution, VerifiedCurrentAffiliations};
+use crate::export::qualification::physical_observations::OBSERVATION_BUDGET;
 use crate::export::ExportDataset;
 use crate::report::ReportResult;
 use census_domain::model::{AthleteId, ProfileDate, ProfileId};
 #[cfg(test)]
-use census_store::{ReadBudget, Table};
+use census_store::Table;
 use census_store::{StoreError, StoreResult, StoreSnapshot};
 use std::collections::BTreeMap;
 #[cfg(test)]
@@ -25,9 +26,6 @@ mod source_binding;
 
 #[cfg(test)]
 mod tests;
-
-const MAX_OBSERVATIONS: u64 = 200_000;
-const MAX_OBSERVATION_BYTES: u64 = 256 * 1024 * 1024;
 const MAX_ARCHIVE_BYTES: u64 = 512 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -64,11 +62,7 @@ impl PinnedCurrentAffiliations {
         let mut reader = observation::Reader::new(dataset, &profile, snapshot.root())?;
         snapshot.for_each_observation_bounded(
             Table::Athletes,
-            ReadBudget {
-                rows: MAX_OBSERVATIONS,
-                bytes: MAX_OBSERVATION_BYTES,
-                record_bytes: 1024 * 1024,
-            },
+            OBSERVATION_BUDGET,
             |athlete, _| reader.accept(athlete),
         )?;
         let (rows, audit) = reader.finish();
@@ -119,7 +113,10 @@ fn charge(current: &mut u64, added: usize, maximum: u64, what: &'static str) -> 
 }
 
 pub(super) fn aliases(dataset: &ExportDataset) -> StoreResult<()> {
-    if dataset.athletes.len() > 200_000 || dataset.canonical_aliases.len() > dataset.athletes.len()
+    let athletes =
+        u64::try_from(dataset.athletes.len()).map_err(|_| StoreError::CounterOverflow)?;
+    if athletes > OBSERVATION_BUDGET.rows
+        || dataset.canonical_aliases.len() > dataset.athletes.len()
     {
         return Err(invalid(
             "current affiliation alias inventory exceeds its ceiling",

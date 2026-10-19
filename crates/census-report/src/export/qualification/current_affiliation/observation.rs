@@ -4,6 +4,7 @@ use super::{
     UnavailableAffiliation as Gap,
 };
 use crate::export::public_identity::population::{IdentityAdmission, IdentityPopulation};
+use crate::export::qualification::physical_observations::OBSERVATION_BUDGET;
 use crate::export::ExportDataset;
 use crate::report::ReportResult;
 use census_domain::model::{
@@ -52,7 +53,9 @@ impl<'a> Reader<'a> {
         profile: &'a QueryProfileV1,
         captures: Captures,
     ) -> ReportResult<Self> {
-        if dataset.athletes.len() > 200_000 || dataset.schools.len() > 100_000 {
+        let athletes = u64::try_from(dataset.athletes.len())
+            .map_err(|_| census_store::StoreError::CounterOverflow)?;
+        if athletes > OBSERVATION_BUDGET.rows || dataset.schools.len() > 100_000 {
             return Err(invalid("current affiliation entity inventory exceeds its ceiling").into());
         }
         let people = dataset

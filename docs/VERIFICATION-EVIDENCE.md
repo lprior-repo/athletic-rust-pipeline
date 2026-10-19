@@ -1782,3 +1782,40 @@ context, not population coverage. Its artifact is
 Earlier receipts retain the legacy-opener refusal and valid-header false positive.
 No live owner stop, replacement deployment or national publication occurred during
 this rehearsal. Bead `27xd` tracks the narrow repair; national delivery remains `e7lx`.
+
+### Cold national diagnostic and physical-proof admission — 2026-10-19
+
+Repair `0f43cb748` was pushed to main. Its authentic original-A/changed-build
+consumer passed (`7968b482`), without regenerating the three-case producer or pins.
+Portable build `398fe0f3` passed; the census was not upgraded to it.
+
+The user authorized a cold snapshot followed by same-release resume. SIGTERM
+finished4,774 owned effects with zero remaining, but endpoint connection grace timed
+out and five attempts remained unknown. Preserve that non-clean stop; it is not
+restart certification. The original `d6f6c68ad` endpoint and driver resumed the same
+Store, profile, durable request and generation, without reset or Restate replacement.
+
+| Acceptance / actual entrypoint | Receipt | Result |
+|---|---|---|
+| Cold `store-backup` | `bg_242` | PASS152,717 files,16,841,273,464 bytes; manifest SHA256 `d854ef64edeb1e4ebe72e86292017ba87d33c093db507f883621cb88fdd950c2` |
+| Separate `store-restore` | `bg_245` | PASS; all19 table counts match; engine recovery may change physical files |
+| Resumed owner's `Census/status` | `bg_250` | PASS; original counters preserved; post-resume acquisition growth not established by this sample |
+| Actual selected diagnostic workbook, generation `diagnostic-snapshot-01` | `bg_246`, producer `0f43cb748` | FAIL at268,435,493/268,435,456 encoded bytes;5.39s, peak1,246,496KiB RSS,0swaps; no workbook |
+| Physical row/byte/record, current-school unknown/refusal and participation replay cases | `821fd4fd` | PASS56/56 after replacing the fixture's fake contract hashes with existing supported V3 references; production guards unchanged |
+| Actual controlled50→withdraw51 workbook, proof controls and source-free reopen | `72022089` | PASS1/1, retained outputs; not genuine population coverage |
+| Format / all-target check / source lint | `610bdffe` / `65677d82` / `11f277ed` | PASS; configured arity advisories remain |
+
+The snapshot has1,065,460 raw athletes and24,301 source-meet rows, but zero canonical
+performances. Raw counts are not accepted people or coverage. Its HTTP evidence
+footprint is14,682,302,280 bytes; Restate's separate durable directory is not included.
+Private receipts remain under `var/census-national-v3-20261019/diagnostic-snapshot-01*`.
+
+This change gives physical capture/preflight/reopen and related athlete inventory
+checks one4,000,000-row grant within the existing4GiB hard envelope. Per-record1MiB,
+school100,000, documentary/archive and attachment limits remain distinct and bounded;
+no policy or replay version changes. The incidental default-number test was removed,
+not repinned. Earlier check `d2077542` exposed a displaced test-only import; focused
+`7d121fdc` exposed the fake-profile fixture; corrected undated replay passed `ed38a4b0`.
+The larger copied-census publication is still NOT RUN on this change. Bead `l0h1`
+blocks `e7lx` until actual next-generation qualification; no national workbook or
+full R14 qualification is claimed.

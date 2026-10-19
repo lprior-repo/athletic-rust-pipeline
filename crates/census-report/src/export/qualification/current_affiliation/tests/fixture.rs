@@ -1,6 +1,9 @@
 use super::*;
 use census_crawl::milesplit::{parse_captured_roster, roster_entities, Site, TeamRef};
 use census_crawl::net::FetchOutcome;
+use census_domain::profile_execution::{
+    selected_qualification_contract_ref_v3 as reference, ContractRoleV1 as Role,
+};
 use census_domain::UsJurisdiction;
 use serde_json::json;
 
@@ -188,7 +191,6 @@ pub(in super::super) fn append_roster_heading(
 }
 
 fn profile(as_of: &str) -> TestResult<QueryProfileV1> {
-    let contract = ContractRefV1::new(1, 1, &"a".repeat(64))?;
     Ok(QueryProfileV1::new(QueryProfileInputV1 {
         version: 1,
         graduation_years: vec![GradYear::CO2027],
@@ -200,20 +202,20 @@ fn profile(as_of: &str) -> TestResult<QueryProfileV1> {
         as_of: ProfileDate::parse(as_of)?,
         performance_window: PerformanceWindowV1::AllRetainedThroughAsOf,
         contact_school_year: SchoolYear::new(2026).ok_or("year")?,
-        source_plan: contract.clone(),
+        source_plan: reference(Role::SourcePlan)?,
         acquisition_window: ProfileDateRangeV1::new(
             ProfileDate::parse("2026-10-01")?,
             ProfileDate::parse("2026-10-31")?,
         )?,
-        completion_contract: contract.clone(),
+        completion_contract: reference(Role::Completion)?,
         policies: ProfilePoliciesV1 {
-            cohort: contract.clone(),
-            event: contract.clone(),
-            identity: contract.clone(),
-            affiliation: contract.clone(),
-            contact: contract.clone(),
-            participation: contract.clone(),
-            publication: contract,
+            cohort: reference(Role::Cohort)?,
+            event: reference(Role::Event)?,
+            identity: reference(Role::Identity)?,
+            affiliation: reference(Role::Affiliation)?,
+            contact: reference(Role::Contact)?,
+            participation: reference(Role::Participation)?,
+            publication: reference(Role::Publication)?,
         },
         include_provisional: ProvisionalInclusionV1::Exclude,
     })?)

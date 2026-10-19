@@ -22,6 +22,12 @@ const MAX_CHUNKS: usize = 1024;
 const INVENTORY_BYTES: u64 = 4 * 1024 * 1024;
 const MAX_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 
+pub(crate) const OBSERVATION_BUDGET: ReadBudget = ReadBudget {
+    rows: 4_000_000,
+    bytes: MAX_BYTES,
+    record_bytes: RECORD_BYTES,
+};
+
 pub(crate) fn capture<T: Entity>(
     dataset: &ExportDataset,
     snapshot: &StoreSnapshot<'_>,
