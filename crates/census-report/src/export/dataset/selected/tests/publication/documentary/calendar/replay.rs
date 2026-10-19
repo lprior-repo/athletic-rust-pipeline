@@ -140,13 +140,19 @@ fn retain(archives: tempfile::TempDir, frozen: &[Frozen; 3], workbook: &Path) {
     }
 }
 
+fn capture(fixture: &Fixture, objects: &Path, generation: &str) -> TestResult<ExportDataset> {
+    let directory = objects.join(generation);
+    std::fs::create_dir(&directory)?;
+    fixture.capture(&directory)
+}
+
 #[test]
 fn genuine_documentary_co2026_calendar_revoke_replay_freeze_parity() -> TestResult {
     let fixture = Fixture::open_for(GradYear::new(2026).ok_or("genuine Class-of-2026 cohort")?)?;
     let expected = publication::accepted_source(&fixture)?.clone();
     let objects = tempfile::tempdir()?;
     let archives = tempfile::tempdir()?;
-    let g0 = fixture.capture(objects.path())?;
+    let g0 = capture(&fixture, objects.path(), "g0")?;
     let f0 = freeze(
         &g0,
         &expected,
@@ -160,7 +166,7 @@ fn genuine_documentary_co2026_calendar_revoke_replay_freeze_parity() -> TestResu
     ]);
     drop(g0);
     let (command, receipt) = lifecycle::accept(&fixture)?;
-    let g1 = fixture.capture(objects.path())?;
+    let g1 = capture(&fixture, objects.path(), "g1")?;
     let f1 = freeze(
         &g1,
         &expected,
@@ -182,7 +188,7 @@ fn genuine_documentary_co2026_calendar_revoke_replay_freeze_parity() -> TestResu
         publication::require_publication(&fixture, &g1, &archives.path().join("publication"))?;
     drop(g1);
     revoke_and_replay(&fixture, command, &receipt)?;
-    let g2 = fixture.capture(objects.path())?;
+    let g2 = capture(&fixture, objects.path(), "g2")?;
     let f2 = freeze(
         &g2,
         &expected,

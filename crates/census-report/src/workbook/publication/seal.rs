@@ -11,16 +11,10 @@ pub(super) fn binding(
     scope: Scope,
     cohort: GradYear,
 ) -> ReportResult<()> {
-    if cohort != GradYear::CO2027 {
-        return Err(invariant(format!(
-            "the Class-of-2027 cohort is the only cohort that may be sealed; {} is not the census seal cohort",
-            cohort.get()
-        )));
-    }
     let selection = manifest.selection()?;
     complete_selection(&selection, scope, cohort)?;
     same_run(manifest, current)?;
-    run_school_year(&selection, current)?;
+    run_school_year(&selection, current, cohort)?;
     same_evidence(manifest, current)?;
     Ok(())
 }
@@ -88,7 +82,11 @@ fn same_run(manifest: &Manifest, current: &DatasetLineage) -> ReportResult<()> {
     Ok(())
 }
 
-fn run_school_year(selection: &Options, current: &DatasetLineage) -> ReportResult<()> {
+fn run_school_year(
+    selection: &Options,
+    current: &DatasetLineage,
+    cohort: GradYear,
+) -> ReportResult<()> {
     let Some(run) = current.run else {
         return Ok(());
     };
@@ -99,13 +97,13 @@ fn run_school_year(selection: &Options, current: &DatasetLineage) -> ReportResul
             run.season().get()
         )));
     }
-    if current.cohort != Some(GradYear::CO2027) {
+    if current.cohort != Some(cohort) {
         return Err(invariant(format!(
             "the store's run manifest certifies cohort {}, not {}",
             current
                 .cohort
                 .map_or_else(|| "nothing".to_string(), |bound| bound.to_string()),
-            GradYear::CO2027
+            cohort
         )));
     }
     Ok(())

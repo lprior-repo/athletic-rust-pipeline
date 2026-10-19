@@ -456,12 +456,10 @@ fn a_seal_is_bound_to_the_run_and_cohort_the_store_declares() -> TestResult {
 
     let later = GradYear::new(2028).ok_or("2028 is a cohort year")?;
     match open_publication(&workbook, &lineage, crate::report::Scope::AllSources, later) {
-        Err(error) => check!(
-            error
-                .to_string()
-                .contains("Class-of-2027 cohort is the only cohort"),
-            "the refusal names the only sealable cohort: {error}"
-        ),
+        Err(error) => check!(matches!(
+            error,
+            crate::report::ReportError::Invariant { .. }
+        )),
         Ok(_) => return Err("a 2028 seal of a store bound to the 2027 census is refused".into()),
     }
     Ok(())
@@ -520,12 +518,10 @@ fn a_publication_of_another_cohort_never_seals_this_census() -> TestResult {
     let later = GradYear::new(2028).ok_or("2028 is a cohort year")?;
 
     match open_publication(&workbook, &lineage, crate::report::Scope::AllSources, later) {
-        Err(error) => check!(
-            error
-                .to_string()
-                .contains("Class-of-2027 cohort is the only cohort"),
-            "a bound census refuses the other cohort's publication: {error}"
-        ),
+        Err(error) => check!(matches!(
+            error,
+            crate::report::ReportError::Invariant { .. }
+        )),
         Ok(_) => {
             return Err("a publication restricted to 2028 cannot certify the 2027 census".into())
         }
@@ -573,46 +569,6 @@ fn a_publication_assessed_in_another_school_year_cannot_seal_the_run() -> TestRe
         ),
         Ok(_) => {
             return Err("a publication assessed in another school year cannot seal the run".into())
-        }
-    }
-    Ok(())
-}
-
-#[test]
-fn a_store_bound_to_another_cohort_cannot_receive_the_census_seal() -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let store = Store::open(directory.path().join("store"))?;
-    seed(&store, "Foreign Cohort High School")?;
-    store.bind_run(&RunManifest {
-        store_identity: crate::export::store_identity(&store)?,
-        run: CensusRun::new(SchoolYear::new(2026).ok_or("2026 is a school year")?, 1)
-            .ok_or("a run revision starts at one")?,
-        cohort: GradYear::new(2028).ok_or("2028 is a cohort year")?,
-        jurisdictions: vec![UsJurisdiction::Wisconsin],
-    })?;
-    let workbook = crate::workbook::build(
-        &store,
-        &Options {
-            grad_year: Some(2028),
-            out: Some(directory.path().join("publication-2028")),
-            limit: None,
-            scope: crate::report::Scope::AllSources,
-            school_year: SchoolYear::new(2026).ok_or("2026 is a school year")?,
-            jurisdictions: Vec::new(),
-        },
-    )?;
-    let lineage = crate::export::store_lineage(&store)?;
-    check!(eq; lineage.cohort, Some(GradYear::new(2028).ok_or("2028 is a cohort year")?));
-    let later = GradYear::new(2028).ok_or("2028 is a cohort year")?;
-    match open_publication(&workbook, &lineage, crate::report::Scope::AllSources, later) {
-        Err(error) => check!(
-            error
-                .to_string()
-                .contains("Class-of-2027 cohort is the only cohort"),
-            "the seal boundary names the only cohort a seal may certify: {error}"
-        ),
-        Ok(_) => {
-            return Err("a store bound to the 2028 cohort cannot receive the census seal".into())
         }
     }
     Ok(())
