@@ -113,7 +113,7 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
         &format,
     )?;
     capture::validate_purpose(purpose, &capture)?;
-    finish_existing(root, purpose, keyspaces, format)
+    finish_existing(root, purpose, keyspaces)
 }
 
 pub(crate) fn require_keyspaces(db: &Database) -> StoreResult<()> {
@@ -154,7 +154,6 @@ fn finish_existing(
     root: &Path,
     purpose: OpenPurpose,
     keyspaces: ExistingKeyspaces,
-    format: crate::StoreFormat,
 ) -> StoreResult<Store> {
     let ExistingKeyspaces {
         db,
