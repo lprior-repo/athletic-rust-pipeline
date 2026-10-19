@@ -1,3 +1,4 @@
+use census_domain::model::GradYear;
 use restate_sdk::prelude::*;
 
 use crate::restate_services::wire::{
@@ -11,11 +12,17 @@ pub(super) const KEY_BOUND: &str = "national_request_managed_bundle_v2";
 pub(super) async fn prepare(
     ctx: &WorkflowContext<'_>,
     request: &mut NationalRequest,
-) -> Result<(), HandlerError> {
+) -> Result<GradYear, HandlerError> {
     validate_publication_request(request)?;
     let original = request.clone();
+    let preflight_cohort = (request.publication_contract
+        == PublicationContract::SelectedPublicationV1)
+        .then_some(GradYear::CO2027);
     ctx.service_client::<crate::restate_services::census::CensusClient>()
-        .workbook_preflight(Json(super::publication::workbook_request(request)))
+        .workbook_preflight(Json(super::publication::workbook_request(
+            request,
+            preflight_cohort,
+        )))
         .call()
         .await?;
     if let Some(address) = request.school_address.as_mut() {
@@ -27,13 +34,16 @@ pub(super) async fn prepare(
         pin_address(address, digest)?;
     }
     ctx.set(KEY_ORIGINAL, Json(original));
-    super::redrive::bind_run(ctx, request).await?;
+    let cohort = super::redrive::bind_run(ctx, request).await?;
     ctx.set(KEY_BOUND, Json(request.clone()));
-    Ok(())
+    Ok(cohort)
 }
 
 fn validate_publication_request(request: &NationalRequest) -> Result<(), HandlerError> {
-    if request.publication_contract != PublicationContract::SelectedPublicationV1 {
+    if !matches!(
+        request.publication_contract,
+        PublicationContract::SelectedPublicationV1 | PublicationContract::SelectedPublicationV2
+    ) {
         return Err(TerminalError::new_with_code(
             400,
             "current national publication requires the selected publication contract",

@@ -104,9 +104,8 @@ impl NationalCensus {
     ) -> Result<Json<NationalReport>, HandlerError> {
         let identity = require_identity(&ctx, &request)?;
 
-        request_binding::prepare(&ctx, &mut request).await?;
-
         let targets = targets(&request)?;
+        let cohort = request_binding::prepare(&ctx, &mut request).await?;
         let mut in_flight = DurableFuturesUnordered::new();
         for (jurisdiction, key) in &targets {
             let client = ctx.object_client::<JurisdictionCensusClient>(key.clone());
@@ -142,7 +141,7 @@ impl NationalCensus {
         ctx.set(contact_phase::KEY_CONTACTS, Json(contacts));
         ctx.set(KEY_STATE, Json(report.clone()));
         if ready {
-            publication::publish(&ctx, &identity, &request).await?;
+            publication::publish(&ctx, &identity, &request, cohort).await?;
         }
         Ok(Json(report))
     }

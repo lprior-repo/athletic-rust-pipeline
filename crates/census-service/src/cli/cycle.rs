@@ -35,10 +35,10 @@ pub(super) struct RunArgs {
     #[arg(long)]
     limit: Option<usize>,
     #[arg(
-        help = "Graduation year the best-mark reduction and the workbook are built for (2027 = class of 2027)"
+        help = "Graduation cohort; omitted uses the selected profile, or 2027 without a selection"
     )]
-    #[arg(long, default_value_t = 2027)]
-    grad_year: u16,
+    #[arg(long)]
+    grad_year: Option<u16>,
     #[arg(
         help = "School year the workbook contact tenure and coach cells are assessed against (2026 = the 2026-27 school year)"
     )]

@@ -3,8 +3,8 @@ use std::time::Duration;
 
 use restate_sdk::prelude::*;
 
-use crate::census::seal::{self, census_cohort};
-use census_domain::model::{CensusRun, GradYear, RunManifest, SchoolYear};
+use crate::census::seal;
+use census_domain::model::{CensusRun, GradYear, SchoolYear};
 use census_store::clock::Clock;
 use census_store::Store;
 
@@ -15,8 +15,9 @@ use super::wire::{
 };
 use super::{job_error, JobError};
 
+pub(super) mod binding;
 mod preflight;
-mod requests;
+pub(super) mod requests;
 mod status;
 
 #[derive(Clone)]
@@ -60,15 +61,15 @@ impl Census {
         request: &SealRequest,
         refusal: RefusalPolicy,
     ) -> Result<Json<SealReply>, HandlerError> {
-        if let Err(error) = census_cohort(request.grad_year) {
-            let message = match error {
-                seal::SealWorkflowError::ForeignCohort { requested } => format!(
-                    "the Class-of-2027 cohort is the only one that may be sealed; {requested} is not the census seal cohort"
-                ),
-                other => other.to_string(),
-            };
-            return Err(TerminalError::new(message).into());
-        }
+        GradYear::new(request.grad_year).ok_or_else(|| {
+            TerminalError::new_with_code(
+                400,
+                seal::SealWorkflowError::InvalidCohort {
+                    requested: request.grad_year,
+                }
+                .to_string(),
+            )
+        })?;
         let season = SchoolYear::new(request.season).ok_or_else(|| {
             TerminalError::new(format!(
                 "invalid season {0}: must be in [{1}, {2}]",
@@ -233,50 +234,12 @@ impl Census {
         _ctx: Context<'_>,
         Json(request): Json<BindRunRequest>,
     ) -> Result<Json<BindRunReply>, HandlerError> {
-        let season = SchoolYear::new(request.season).ok_or_else(|| {
-            TerminalError::new(format!(
-                "invalid season {0}: must be in [{1}, {2}]",
-                request.season,
-                SchoolYear::MIN_START_YEAR,
-                SchoolYear::MAX_START_YEAR
-            ))
-        })?;
-        let run = CensusRun::new(season, request.revision).ok_or_else(|| {
-            TerminalError::new(format!(
-                "invalid run revision {0}: must be at least 1",
-                request.revision
-            ))
-        })?;
-        let jurisdictions = requests::admitted_jurisdictions(&request.jurisdictions)?;
         let store = Arc::clone(&self.store);
         let region = Arc::clone(self.jobs.region());
         let permit = self.jobs.permit_control().await?;
         let result = super::blocking(region, move || {
             let _permit = permit;
-            let identity = store.store_identity().map_err(|error| JobError::Terminal {
-                message: format!("store identity check failed: {error}"),
-            })?;
-            let manifest = RunManifest {
-                store_identity: identity.into(),
-                run,
-                cohort: GradYear::CO2027,
-                jurisdictions,
-            };
-            store.bind_run(&manifest).map_err(|error| match error {
-                census_store::StoreError::Refused { detail } => {
-                    JobError::Terminal { message: detail }
-                }
-                other => JobError::Terminal {
-                    message: format!("binding the run manifest failed: {other}"),
-                },
-            })?;
-            Ok::<_, JobError>(BindRunReply {
-                store_identity: manifest.store_identity,
-                season: request.season,
-                revision: request.revision,
-                cohort: GradYear::CO2027.get(),
-                jurisdictions: manifest.jurisdictions,
-            })
+            binding::bind(&store, request)
         })
         .await
         .map_err(job_error)?;

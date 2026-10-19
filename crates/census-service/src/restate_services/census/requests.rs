@@ -9,7 +9,7 @@ use restate_sdk::prelude::{HandlerError, TerminalError};
 
 use super::super::wire::{OpenWorkReply, OpenWorkRequest, SealRequest};
 
-pub(super) fn admitted_jurisdictions(
+pub(in crate::restate_services) fn admitted_jurisdictions(
     requested: &[UsJurisdiction],
 ) -> Result<Vec<UsJurisdiction>, HandlerError> {
     let admitted = admitted_scope(requested);

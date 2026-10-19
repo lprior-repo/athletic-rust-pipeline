@@ -921,16 +921,18 @@ an incomplete census or contact result keeps its
 existing report behavior and does not release publication.
 
 Fresh National submissions carry `--generation` through the existing checked export-generation
-parser. The endpoint must advertise both `selected_publication_v1` and
-`national_generation_revision: 1`; an older selected-only endpoint is refused before submission.
+parser and require `selected_publication_v2` plus `national_generation_revision: 1`.
+V2 binds the exact registered profile's single cohort; an older endpoint refuses before submission.
+Recorded V1 requests retain their original RPC payloads. Their missing-selection bind may read
+only an existing matching Class-of-2027 manifest, never create a new binding.
 Historical requests without a generation remain readable, not executable. Resume/drive preserve
 the originally bound generation and execution budgets. Explicit caller store/profile/generation
 flags must match the retained authority; omitted flags do not assert fresh defaults. A mismatched
 resume refuses before capability lookup or submission. An already-accepted or ambiguously failed
 send requires a matching retained request before attachment/observation; parameter changes are
 not silently accepted. No source identity or retry budget is reset.
-Profile-derived cohort, typed National receipt and complete native selected-publication acceptance
-remain open; these guards are not annual-reuse or national-readiness certification.
+Direct selected-workbook requests keep `selected_publication_v1`; participation replay remains V4.
+Qualified cohort/replay cases are recorded in the evidence ledger, not national-readiness certification.
 
 An explicit offline `index --store <dir> --school-year <yyyy>` still re-derives mutable projections;
 those separately replaced tables are not the workbook's publication boundary and are not a
@@ -1047,22 +1049,22 @@ the serving store, sample, stride or impose the former 5,000-sample ceiling. It 
 beside the store owner. Historical loose workbooks without a complete manifest are not certified;
 preserve them and publish a new generation instead of editing old evidence.
 
-The current national run binding admits exactly one census run. Submission binds a manifest — store identity,
-season, revision, the Class-of-2027 cohort and the admitted jurisdiction scope — through the
-`Census.bind_run` handler before any jurisdiction fans out, and a store already bound to another
-run refuses terminally instead of adopting it. The binding lives in the store and survives restart.
+The current national run binding admits exactly one census run. V2 submission binds store identity,
+season, revision, the pinned profile's single cohort and admitted jurisdiction scope through
+`Census.bind_run` before jurisdiction fan-out. A different retained binding refuses terminally;
+registration and a new cohort do not reset it. The manifest survives restart.
 `JurisdictionCensus.run` and `.pass` refuse the same way against the bound manifest, so a stray
 revision cannot write stage state or observations into a store bound to a different run, and an
 unbound store still admits a qualification slice. The publication's lineage carries that manifest,
 so a seal measures the same run it certifies: a journal measured for one season/revision cannot
 certify a publication of another, and a route that measured no journal names the run binding as an
 unmet item instead of defaulting it. The contact
-school year must be the run's own. Only the Class-of-2027 cohort seals at all; any other
-`--grad-year` is refused at the boundary before a journal or a workbook is read, whether the request
-arrives through the CLI or the ingress.
+school year must be the run's own. Current selected publications must prove current authority
+and match the retained cohort; unselected historical publications remain Class-of-2027 only.
+Historical selected readback does not authorize current sealing.
 
-Seal uses the same complete bundle oracle, refuses limited/non-Class-of-2027 or stale-source
-publications, and fences the live source before atomically recording `out/seal.json`. Supply the
+Seal uses the complete bundle oracle, refuses limited or stale-source publications, and fences
+the live source before atomically recording `out/seal.json`. Supply the
 actual `--season`, `--revision` and all applicable repeated `--source-object <key>` values: defaults
 or an incomplete object list are not the run's denominator. The store cannot enumerate the object
 keys a caller chose, so omitting the flag leaves the count unmeasured rather than reporting zero,

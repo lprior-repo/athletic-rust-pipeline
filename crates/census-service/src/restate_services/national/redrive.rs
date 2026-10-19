@@ -1,9 +1,12 @@
+use census_domain::model::GradYear;
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::{admitted_scope, WorkflowIdentity};
 use restate_sdk::prelude::*;
 
 use crate::restate_services::census::CensusClient;
-use crate::restate_services::wire::{BindRunRequest, JurisdictionReport, NationalRequest};
+use crate::restate_services::wire::{
+    BindRunRequest, JurisdictionReport, NationalRequest, PublicationContract,
+};
 use crate::restate_services::KEY_STATE;
 use crate::restate_services::{jobs, JurisdictionCensusClient};
 use census_domain::national_census::{JurisdictionOwed, JurisdictionSummary, NationalFailure};
@@ -211,16 +214,58 @@ fn target_key(
 pub(super) async fn bind_run(
     ctx: &WorkflowContext<'_>,
     request: &NationalRequest,
-) -> Result<(), HandlerError> {
-    let jurisdictions = admitted_scope(&request.jurisdictions);
-    let Json(_reply) = ctx
+) -> Result<GradYear, HandlerError> {
+    let selection = request
+        .export_job
+        .require_selected_publication()
+        .map_err(|error| TerminalError::new_with_code(400, error.to_string()))?;
+    let request_jurisdictions = admitted_scope(&request.jurisdictions);
+    let expected_jurisdictions =
+        super::super::census::requests::admitted_jurisdictions(&request.jurisdictions)?;
+    let Json(reply) = ctx
         .service_client::<CensusClient>()
         .bind_run(Json(BindRunRequest {
             season: request.season.get(),
             revision: request.revision.get(),
-            jurisdictions,
+            jurisdictions: request_jurisdictions,
+            selection: (request.publication_contract == PublicationContract::SelectedPublicationV2)
+                .then(|| selection.clone()),
         }))
         .call()
         .await?;
-    Ok(())
+    if reply.store_identity != selection.store_identity().as_str() {
+        return Err(TerminalError::new(
+            "bind run reply store differs from the pinned profile selection",
+        )
+        .into());
+    }
+    if reply.season != request.season.get() {
+        return Err(TerminalError::new(format!(
+            "bind run reply season {} does not match request season {}",
+            reply.season,
+            request.season.get()
+        ))
+        .into());
+    }
+    if reply.revision != request.revision.get() {
+        return Err(TerminalError::new(format!(
+            "bind run reply revision {} does not match request revision {}",
+            reply.revision,
+            request.revision.get()
+        ))
+        .into());
+    }
+    if reply.jurisdictions != expected_jurisdictions {
+        return Err(TerminalError::new(
+            "bind run reply jurisdictions do not match request jurisdictions",
+        )
+        .into());
+    }
+    GradYear::new(reply.cohort).ok_or_else(|| {
+        TerminalError::new(format!(
+            "bind run reply cohort {} is not a valid graduation year",
+            reply.cohort
+        ))
+        .into()
+    })
 }

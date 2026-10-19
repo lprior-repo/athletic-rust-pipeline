@@ -94,7 +94,7 @@ async fn new_national_submission_checks_capability_before_any_write() -> TestRes
     let (path, body) = captured.get(1).ok_or("submission absent")?;
     check!(path.contains("/run/send HTTP/1.1"));
     let request: NationalRequest = serde_json::from_slice(body)?;
-    check!(eq; request.publication_contract, PublicationContract::SelectedPublicationV1);
+    check!(eq; request.publication_contract, PublicationContract::SelectedPublicationV2);
     check!(matches!(
         request.export_job,
         census_report::export::ExportJobRequest::SelectedPublicationV1 { .. }

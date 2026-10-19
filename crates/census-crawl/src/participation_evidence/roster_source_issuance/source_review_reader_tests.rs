@@ -14,6 +14,12 @@ mod canonical;
 #[path = "source_frozen_encoding_tests.rs"]
 mod compact_wire;
 
+#[path = "source_roster_scale_tests.rs"]
+mod scale;
+
+#[path = "source_roster_original_replay_tests.rs"]
+mod original_replay;
+
 fn issued() -> TestResult<(tempfile::TempDir, census_store::Store)> {
     let (directory, store) = enrolled_store()?;
     let prepared = super::review_integration::prepare(&store, "controlled-reader", None)?;

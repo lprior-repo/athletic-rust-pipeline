@@ -71,7 +71,7 @@ fn fresh_request(
         season,
         revision,
         history,
-        publication_contract: PublicationContract::SelectedPublicationV1,
+        publication_contract: PublicationContract::SelectedPublicationV2,
         export_job,
         jurisdictions: jurisdictions.to_vec(),
         refresh: args.refresh,

@@ -117,28 +117,6 @@ fn workbook_reply(grad_year: i16) -> (&'static str, String) {
 }
 
 #[tokio::test]
-async fn live_run_reads_capability_then_calls_only_selected_workbook() -> TestResult {
-    let (requests, outcome) =
-        exchange(&[], vec![("200 OK", capabilities()?), workbook_reply(2027)]).await?;
-    outcome?;
-    check!(eq; requests.len(), 2);
-    check!(requests
-        .first()
-        .is_some_and(|(line, _)| line == "POST /Census/publication_capabilities HTTP/1.1\r\n"));
-    let (line, payload) = requests.get(1).ok_or("selected workbook request missing")?;
-    let request: WorkbookRequest = serde_json::from_slice(payload)?;
-    check!(eq; request.grad_year, Some(2027));
-    check!(eq; request.school_year, Some(2026));
-    check!(eq; request.scope.as_deref(), Some("all_sources"));
-    check!(eq; request.limit, None);
-    check!(eq; request.out, None);
-    check!(request.jurisdictions.is_empty());
-    let key = workbook_request_key(&request, &ExportGeneration::default_generation())?;
-    check!(eq; line, &format!("POST /Workbook/{}/run HTTP/1.1\r\n", key.replace(':', "%3A")));
-    Ok(())
-}
-
-#[tokio::test]
 async fn selected_live_run_preserves_selection_destination_and_generation() -> TestResult {
     let (requests, outcome) = exchange(
         &[

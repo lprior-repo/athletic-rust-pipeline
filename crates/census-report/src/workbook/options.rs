@@ -52,7 +52,9 @@ pub fn options_for_selected_request(
             detail: "selected jurisdictions differ from the bound profile".into(),
         });
     }
-    selected.grad_year = requested.grad_year;
+    if let Some(cohort) = requested.grad_year {
+        selected.grad_year = Some(cohort);
+    }
     selected.school_year = requested.school_year;
     selected.scope = requested.scope;
     selected.limit = requested.limit;

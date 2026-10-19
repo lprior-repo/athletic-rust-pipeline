@@ -11,6 +11,7 @@ pub enum PublicationContract {
     LegacySeparateV1,
     ManagedBundleV2,
     SelectedPublicationV1,
+    SelectedPublicationV2,
 }
 
 impl PublicationContract {
@@ -30,7 +31,10 @@ pub struct PublicationCapabilities {
 impl PublicationCapabilities {
     pub fn current() -> Self {
         Self {
-            publication_contracts: vec![PublicationContract::SelectedPublicationV1],
+            publication_contracts: vec![
+                PublicationContract::SelectedPublicationV1,
+                PublicationContract::SelectedPublicationV2,
+            ],
             national_generation_revision: Some(NATIONAL_GENERATION_REVISION),
         }
     }

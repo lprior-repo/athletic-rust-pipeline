@@ -13,7 +13,7 @@ use std::path::PathBuf;
 
 use crate::cli::{
     contact_school_year, live, publication_preflight, resolve_restriction, restriction_display,
-    school_year, scope_of, Cli, Route,
+    scope_of, Cli, Route,
 };
 
 #[derive(Args, Debug)]
@@ -23,9 +23,11 @@ pub(crate) struct WorkbookArgs {
     )]
     #[arg(long)]
     out: Option<PathBuf>,
-    #[arg(help = "Graduation year used for the cohort sheets (2027 = the class of 2027)")]
-    #[arg(long, default_value_t = 2027)]
-    grad_year: u16,
+    #[arg(
+        help = "Graduation cohort; omitted uses the selected profile, or 2027 without a selection"
+    )]
+    #[arg(long)]
+    grad_year: Option<u16>,
     #[arg(
         help = "School year the contact tenure and coach cells are assessed against (2026 = the 2026-27 school year)"
     )]
@@ -72,7 +74,10 @@ pub(crate) struct WorkbookArgs {
 }
 
 pub(crate) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
-    let grad_year = school_year(args.grad_year)?;
+    let grad_year = publication_preflight::publication_cohort(
+        args.grad_year,
+        args.selected_store_identity.is_some() || args.selected_profile_id.is_some(),
+    )?;
     let contact_season = contact_school_year(args.school_year)?;
     let jurisdictions = if args.all_states || !args.states.is_empty() {
         resolve_restriction(args.all_states, &args.states)?
@@ -83,7 +88,7 @@ pub(crate) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
             let options = workbook::Options {
-                grad_year: Some(grad_year),
+                grad_year,
                 out: args.out.clone(),
                 limit: args.limit,
                 scope: scope_of(args.core),
@@ -166,14 +171,14 @@ fn build_offline_selected(
 async fn run_workbook_live(
     origin: &str,
     args: &WorkbookArgs,
-    grad_year: i16,
+    grad_year: Option<i16>,
     contact_season: SchoolYear,
     jurisdictions: &[UsJurisdiction],
     export_job: &ExportJobRequest,
 ) -> Result<()> {
     let generation = ExportGeneration::resolve(args.generation.as_deref())?;
     let request = WorkbookRequest {
-        grad_year: Some(grad_year),
+        grad_year,
         limit: args.limit,
         scope: Some(scope_of(args.core).as_str().to_string()),
         out: args

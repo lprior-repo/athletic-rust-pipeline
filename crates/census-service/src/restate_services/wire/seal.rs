@@ -1,3 +1,4 @@
+use census_domain::model::ProfileSelectionV1;
 use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 
@@ -27,6 +28,8 @@ pub struct BindRunRequest {
     pub season: i16,
     pub revision: u32,
     pub jurisdictions: Vec<UsJurisdiction>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selection: Option<ProfileSelectionV1>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

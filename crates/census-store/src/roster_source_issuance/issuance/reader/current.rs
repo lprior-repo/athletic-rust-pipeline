@@ -43,7 +43,6 @@ fn capture_archive(
         .charge_steps(8)
         .map_err(super::super::super::source_error)?;
     let store = view.store_identity()?;
-    let physical = physical_snapshot(view, grant)?;
     grant
         .charge_bytes(1024)
         .map_err(super::super::super::source_error)?;
@@ -66,7 +65,7 @@ fn capture_archive(
         metadata,
         records,
         receipts,
-        physical,
+        physical: Vec::new(),
         external: Vec::new(),
         inherited_enrollment_proof,
         inherited_calendar_enrollment_proof,
@@ -92,20 +91,6 @@ fn snapshot_protected(
         )?;
         Ok((lifecycle, metadata, records, receipts))
     })
-}
-
-fn physical_snapshot(
-    view: &StoreSnapshot<'_>,
-    grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<Vec<PhysicalRow>> {
-    let rows = super::super::super::inspection::inventory::collect(view, grant)?;
-    Ok(rows
-        .into_iter()
-        .map(|row| {
-            let (table, key, value) = row.into_parts();
-            PhysicalRow { table, key, value }
-        })
-        .collect())
 }
 
 fn lifecycle(

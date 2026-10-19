@@ -27,6 +27,8 @@ pub(super) fn assert_published(journal: &super::journal::Journal) -> TestResult 
     verify_report(journal)?;
     if journal.original.publication_contract
         == crate::restate_services::PublicationContract::SelectedPublicationV1
+        || journal.original.publication_contract
+            == crate::restate_services::PublicationContract::SelectedPublicationV2
     {
         verify_selected_output(journal)?;
     }
@@ -70,7 +72,8 @@ fn verify_seal(journal: &super::journal::Journal) -> TestResult {
 
 fn workbook_path(journal: &super::journal::Journal) -> TestResult<&str> {
     Ok(match journal.original.publication_contract {
-        crate::restate_services::PublicationContract::SelectedPublicationV1 => journal
+        crate::restate_services::PublicationContract::SelectedPublicationV1
+        | crate::restate_services::PublicationContract::SelectedPublicationV2 => journal
             .selected_workbook_path
             .as_deref()
             .ok_or("selected National dispatch did not run the controlled workbook job")?,

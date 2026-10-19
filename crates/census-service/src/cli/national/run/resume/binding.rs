@@ -106,7 +106,10 @@ fn validate_identity(
 }
 
 pub(in crate::cli::national::run) fn validate_selected(request: &NationalRequest) -> Result<()> {
-    if request.publication_contract != PublicationContract::SelectedPublicationV1 {
+    if !matches!(
+        request.publication_contract,
+        PublicationContract::SelectedPublicationV1 | PublicationContract::SelectedPublicationV2
+    ) {
         bail!("national resume compatibility blocked: bound request is not a selected publication contract");
     }
     if !matches!(

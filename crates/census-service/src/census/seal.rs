@@ -27,6 +27,10 @@ pub enum SealWorkflowError {
     SealRecording(String),
     #[error("seal write failed: {0}")]
     SealWrite(String),
+    #[error("graduation cohort {requested} is outside the supported range")]
+    InvalidCohort { requested: i16 },
+    #[error("requested cohort {requested} does not match retained run cohort {bound}")]
+    CohortMismatch { requested: i16, bound: i16 },
     #[error("the Class-of-2027 cohort is the only one that may be sealed; {requested} is not the census seal cohort")]
     ForeignCohort { requested: i16 },
     #[error("measured run {} does not match the store's bound run {bound}", run_display(.measured))]
@@ -93,8 +97,10 @@ fn bound_display(bound: Option<CensusRun>) -> String {
 }
 
 pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWorkflowError> {
-    let cohort = census_cohort(request.grad_year)?;
-    bound_run(store, request.run)?;
+    let cohort = GradYear::new(request.grad_year).ok_or(SealWorkflowError::InvalidCohort {
+        requested: request.grad_year,
+    })?;
+    bound_run(store, request.run, cohort)?;
     let (path, inspection) = publication(store, request, cohort)?;
     let (evidence, stats) = assemble_evidence(
         store,
@@ -144,7 +150,10 @@ fn publication(
         return Err(SealWorkflowError::WorkbookMissing);
     };
     let inspection = inspect_workbook(&path, store, cohort, request.scope, &request.jurisdictions)
-        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
+        .map_err(|error| match error.downcast::<SealWorkflowError>() {
+            Ok(error) => error,
+            Err(error) => SealWorkflowError::Workbook(error.to_string()),
+        })?;
     Ok((path, inspection))
 }
 
@@ -185,14 +194,30 @@ fn assemble_evidence(
     Ok((evidence, stats))
 }
 
-fn bound_run(store: &Store, measured: Option<CensusRun>) -> Result<(), SealWorkflowError> {
+fn bound_run(
+    store: &Store,
+    measured: Option<CensusRun>,
+    cohort: GradYear,
+) -> Result<(), SealWorkflowError> {
+    let bound = store
+        .run_manifest()
+        .map_err(|error| SealWorkflowError::Store(error.to_string()))?;
+    if let Some(manifest) = &bound {
+        if manifest.cohort != cohort {
+            return Err(SealWorkflowError::CohortMismatch {
+                requested: cohort.get(),
+                bound: manifest.cohort.get(),
+            });
+        }
+    } else if cohort != GradYear::CO2027 {
+        return Err(SealWorkflowError::ForeignCohort {
+            requested: cohort.get(),
+        });
+    }
     let Some(measured) = measured else {
         return Ok(());
     };
-    let bound = store
-        .run_manifest()
-        .map_err(|error| SealWorkflowError::Store(error.to_string()))?
-        .map(|manifest| manifest.run);
+    let bound = bound.map(|manifest| manifest.run);
     if bound == Some(measured) {
         return Ok(());
     }
@@ -264,3 +289,6 @@ mod tests;
 
 #[cfg(test)]
 mod probe;
+
+#[cfg(test)]
+mod legacy_cohort_tests;

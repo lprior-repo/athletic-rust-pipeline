@@ -17,9 +17,6 @@ impl RosterPhysicalProjectionRowV1 {
     ) -> Self {
         Self { table, key, bytes }
     }
-    pub(in crate::roster_source_issuance) fn into_parts(self) -> (Table, Vec<u8>, Vec<u8>) {
-        (self.table, self.key, self.bytes)
-    }
     pub fn table(&self) -> Table {
         self.table
     }

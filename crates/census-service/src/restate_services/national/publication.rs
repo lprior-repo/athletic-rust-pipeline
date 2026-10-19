@@ -18,14 +18,15 @@ pub(super) async fn publish(
     ctx: &WorkflowContext<'_>,
     identity: &WorkflowIdentity,
     request: &NationalRequest,
+    cohort: GradYear,
 ) -> Result<(), HandlerError> {
     consolidate(ctx, identity).await?;
-    let workbook = workbook(ctx, request).await?;
+    let workbook = workbook(ctx, request, cohort).await?;
     seal::measure(
         ctx,
         identity,
         SealRequest {
-            grad_year: GradYear::CO2027.get(),
+            grad_year: cohort.get(),
             all_sources: true,
             workbook: Some(workbook),
             write: true,
@@ -89,8 +90,9 @@ async fn consolidate(
 async fn workbook(
     ctx: &WorkflowContext<'_>,
     request: &NationalRequest,
+    cohort: GradYear,
 ) -> Result<String, HandlerError> {
-    let child = workbook_request(request);
+    let child = workbook_request(request, Some(cohort));
     let key = crate::restate_services::workbook_request_key(&child, generation(request)?)
         .map_err(|error| TerminalError::new_with_code(400, error.to_string()))?;
     let Json(workbook) = ctx
@@ -98,12 +100,23 @@ async fn workbook(
         .run(Json(child))
         .call()
         .await?;
+    if workbook.grad_year != Some(cohort.get()) {
+        return Err(TerminalError::new(format!(
+            "workbook cohort {:?} does not match bound cohort {}",
+            workbook.grad_year,
+            cohort.get()
+        ))
+        .into());
+    }
     Ok(workbook.path)
 }
 
-pub(super) fn workbook_request(request: &NationalRequest) -> WorkbookRequest {
+pub(super) fn workbook_request(
+    request: &NationalRequest,
+    grad_year: Option<GradYear>,
+) -> WorkbookRequest {
     WorkbookRequest {
-        grad_year: Some(GradYear::CO2027.get()),
+        grad_year: grad_year.map(|gy| gy.get()),
         limit: None,
         scope: Some("all_sources".to_owned()),
         out: None,

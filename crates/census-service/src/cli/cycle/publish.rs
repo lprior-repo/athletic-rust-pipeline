@@ -5,7 +5,7 @@ use census_service::restate_services::{ExportGeneration, WorkbookReply, Workbook
 use census_store::Store;
 
 use super::RunArgs;
-use crate::cli::{contact_school_year, live, resolve_restriction, school_year, scope_of};
+use crate::cli::{contact_school_year, live, publication_preflight, resolve_restriction, scope_of};
 
 pub(super) fn publication_options(args: &RunArgs) -> Result<workbook::Options> {
     let jurisdictions = if args.all_states || !args.states.is_empty() {
@@ -14,7 +14,10 @@ pub(super) fn publication_options(args: &RunArgs) -> Result<workbook::Options> {
         Vec::new()
     };
     Ok(workbook::Options {
-        grad_year: Some(school_year(args.grad_year)?),
+        grad_year: publication_preflight::publication_cohort(
+            args.grad_year,
+            args.selected_store_identity.is_some() || args.selected_profile_id.is_some(),
+        )?,
         out: args.out.clone(),
         limit: args.limit,
         scope: scope_of(args.core),

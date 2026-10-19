@@ -22,6 +22,14 @@ pub(super) fn selected_request(
     })
 }
 
+pub(super) fn publication_cohort(requested: Option<u16>, selected: bool) -> Result<Option<i16>> {
+    match requested {
+        Some(year) => super::school_year(year).map(Some),
+        None if selected => Ok(None),
+        None => Ok(Some(census_domain::model::GradYear::CO2027.get())),
+    }
+}
+
 pub(super) fn open_selected_store(root: &std::path::Path) -> Result<census_store::Store> {
     let (store, writer) = census_store::Store::open_public_identity_qualification_v3(root)
         .context("opening existing selected-publication authority without enrollment")?
@@ -40,7 +48,7 @@ pub(super) async fn require_publication_contract(
 
 pub(super) async fn require_national_publication(ingestion: &Ingress) -> Result<()> {
     let capabilities = capabilities(ingestion).await?;
-    require_contract(&capabilities, PublicationContract::SelectedPublicationV1)?;
+    require_contract(&capabilities, PublicationContract::SelectedPublicationV2)?;
     if !capabilities.supports_national_generation() {
         bail!("endpoint does not advertise stable national generation support; no invocation was submitted");
     }

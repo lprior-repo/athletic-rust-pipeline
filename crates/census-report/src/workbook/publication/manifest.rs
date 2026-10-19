@@ -200,6 +200,7 @@ pub struct OpenedPublication {
     pub dataset: ExportDataset,
     pub generation_digest: String,
     pub workbook: crate::workbook::verify::VerifiedWorkbook,
+    pub has_selected_profile: bool,
 }
 
 pub fn verify_published(path: &Path) -> ReportResult<VerifiedPublication> {
@@ -224,6 +225,7 @@ pub fn open_publication(
     let dataset = verify::decode(&directory, &manifest)?;
     let workbook = verify::verify_against(&directory, &manifest, &dataset)?;
     Ok(OpenedPublication {
+        has_selected_profile: manifest.selected_profile.is_some(),
         dataset,
         generation_digest: manifest.generation_digest,
         workbook,
@@ -244,9 +246,11 @@ pub fn open_publication_for_seal(
     super::seal::binding(&manifest, &current, scope, cohort)?;
     super::seal::require_selection(&manifest, jurisdictions)?;
     let dataset = verify::decode(&directory, &manifest)?;
+    dataset.ensure_current_selected_authority()?;
     dataset.ensure_current_documentary_authority(&snapshot)?;
     let workbook = verify::verify_against(&directory, &manifest, &dataset)?;
     Ok(OpenedPublication {
+        has_selected_profile: manifest.selected_profile.is_some(),
         dataset,
         generation_digest: manifest.generation_digest,
         workbook,

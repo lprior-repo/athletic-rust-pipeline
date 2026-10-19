@@ -1711,3 +1711,44 @@ backtrace was denied; the user's single authorized privileged attempt required a
 sudo password and did not run. No permission change or bypass was attempted.
 No publication success or usable athlete rows are established. National completion
 and specification acceptance remain open.
+
+### Measured publication refusal and current-roster repair — 2026-10-19
+
+Remote main was fetched and integrated at `de70026ba`; no reset or additional
+worktree was used. The original national invocation continues. Owner status now
+reports 629,005 raw athlete rows, 509 source-meet rows, 1,387,298 observations and
+zero canonical performances. These are not accepted-person or coverage counts.
+
+The first partial publication returned HTTP500: capture needed8,393,120 bytes,
+available8,388,608. Receipt: `var/census-national-v3-20261019/partial-20261019-01-failure.json`.
+The3,392.66s attachment wait is not measured workbook-build time. No workbook exists
+for that request; an input-only journal did not locate its wait or prove deadlock.
+
+| Requirement / entrypoint | Execution | Observed result |
+|---|---|---|
+| Reviewed source survives unrelated census growth; `reader/current.rs::capture_archive` | `d2642f3f` → `8be76bb3` | Actual nonempty public review: FAIL at8MiB → PASS after deleting only the unused current global physical mirror |
+| Existing review, wire, canonicality, original context and poisoned-grant cases | `0d001d66` | PASS14/14; original issuance inspection, original manifests/conflicts and bounds unchanged |
+| Bound-cohort, seal authority, mutation refusal and original native journal consumers | `fd39570a` | PASS86/86; native ignored selectors remain outside this execution |
+| CLI national/cycle/capability behavior | `70b45a9a` | PASS75/75; obsolete mock-default scenario removed, not repinned after `a96ce6e7` |
+| Actual controlled workbook50→withdrawal51, frozen reopen and profile-default output | `cdd027bd` | PASS2/2 with retained generation pair; not genuine population coverage |
+| Exact candidate format / all-target check / source lint | `4e432764` / `bfe00966` / `6f768b8e` | PASS; existing configured arity advisories remain, not a zero-warning claim |
+
+The original native closure was exported before removal (`7c84e10b`):142,088 bytes,
+SHA256 `47bc00b12e8886de939e95b5f5ff8e89071ef0b1f03933d92664b7d957b27e07`.
+Its three physical rows, sequence15, input token and referenced objects remain
+readable without a Store. This is wire/claim retention, not promotion of its opaque
+V1 interpretation: current parser provenance still refuses it. Initial consumers
+incorrectly requested current qualification (`a5437ab3`) and historical-V2 semantics
+unsupported by that payload (`4f81dff4`); neither refusal was weakened.
+
+Controlled G0/G1 workbook roots under `/home/lewis/.cache/r14n-TpNM3q`:
+
+| Generation | Retained directory | Workbook SHA256 |
+|---|---|---|
+| G0:50.00/2026-05-15 | `.tmpGTIyYn/publication/generations/755a84592624a6567257737f9e12695ebcecbcfcf8a644d8080782112b987e77` | `e7dc0a0271c565ba5fdf756fbcc5c4d9faa8b4463ff1663218e996955818c810` |
+| G1:51.00/2026-05-16 | `.tmpintZSF/publication/generations/9bd71da43aab591dd5223264516ddf63f0140ba833331cd24e56ddd5624a4117` | `8607112b52c776a8a4a5e969f1042ed64c53365db5956024934423f195a6ae16` |
+
+Aggregate acquisition peak readback:10,685,861,888 bytes; memory events max/oom/
+oom_kill all0. This is an ongoing roster workload, not completed R14 qualification.
+Replacement executable, follow-on workbook generation, genuine historical semantic
+queue and final national artifact acceptance remain pending.

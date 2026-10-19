@@ -153,13 +153,13 @@ fn input(scenario: Scenario) -> TestResult<Value> {
         Scenario::Managed | Scenario::ManagedSelectedExport => Some("managed_bundle_v2"),
         Scenario::SelectedMissingExport
         | Scenario::SelectedLegacyExport
-        | Scenario::SelectedMissingGeneration => Some("selected_publication_v1"),
-        Scenario::ForeignStore
+        | Scenario::ForeignStore
         | Scenario::UnknownProfile
         | Scenario::WrongJurisdictions
         | Scenario::WrongSchoolYear
         | Scenario::WrongAddressPin
-        | Scenario::SelectedExact => Some("selected_publication_v1"),
+        | Scenario::SelectedExact => Some("selected_publication_v2"),
+        Scenario::SelectedMissingGeneration => Some("selected_publication_v1"),
     };
     if let Some(contract) = publication {
         object.insert("publication_contract".to_owned(), json!(contract));

@@ -23,6 +23,9 @@ pub fn inspect_workbook(
 ) -> Result<Inspection> {
     let opened = open_publication_for_seal(path, store, scope, cohort, jurisdictions)
         .context("verifying the complete current census publication")?;
+    if !opened.has_selected_profile {
+        super::census_cohort(cohort.get())?;
+    }
     let dataset = opened.dataset;
     let sheets = opened.workbook.sheets;
     let rows = opened.workbook.rows;

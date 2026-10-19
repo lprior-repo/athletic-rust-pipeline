@@ -57,30 +57,7 @@ impl ExportDataset {
         }
         self.ensure_input_binding()?;
         self.ensure_job_commitment()?;
-        if matches!(
-            self.selected_input_origin,
-            SelectedInputOrigin::HistoricalReplay
-                | SelectedInputOrigin::HistoricalIdentityReplay
-                | SelectedInputOrigin::HistoricalParticipationReplay
-                | SelectedInputOrigin::HistoricalDocumentaryReplay
-        ) {
-            return Err(invalid(
-                "historical selected replay cannot authorize current publication",
-            ));
-        }
-        self.selected_proofs
-            .as_ref()
-            .ok_or_else(|| invalid("selected publication requires retained identity proofs"))?
-            .require_current()?;
-        census_domain::profile_execution::validate_current_selected_qualification_profile(
-            self.selected_authority()?.profile(),
-        )
-        .map_err(|source| {
-            invalid(&format!(
-                "unsupported selected publication profile: {source}"
-            ))
-        })?;
-        Ok(())
+        self.require_current_selected_policy()
     }
 
     pub(crate) fn selected_profile_id(&self) -> Option<&census_domain::model::ProfileId> {

@@ -25,7 +25,7 @@ pub(super) fn selected_request(
     let mut request = request()?;
     request.jurisdictions = jurisdictions.to_vec();
     request.publication_contract =
-        crate::restate_services::PublicationContract::SelectedPublicationV1;
+        crate::restate_services::PublicationContract::SelectedPublicationV2;
     request.export_job = census_report::export::ExportJobRequest::SelectedPublicationV1 {
         selection: census_domain::model::ProfileSelectionV1::new(
             controlled.store().store_identity()?,
@@ -70,10 +70,15 @@ pub fn answer(call: &Frame, journal: &mut Journal) -> TestResult<Value> {
             return Ok(serde_json::to_value(outcome)?);
         }
     }
+    if service == "Census" && handler == "bind_run" {
+        return bind_current_run(request, journal);
+    }
     if service == "Workbook"
         && handler == "run"
-        && journal.original.publication_contract
+        && (journal.original.publication_contract
             == crate::restate_services::PublicationContract::SelectedPublicationV1
+            || journal.original.publication_contract
+                == crate::restate_services::PublicationContract::SelectedPublicationV2)
     {
         return selected_workbook(call, request, journal);
     }
@@ -89,10 +94,6 @@ fn stage_answer(
 ) -> TestResult<Value> {
     Ok(match (service, handler) {
         ("Census", "school_address_preflight") => json!(journal.address_digest),
-        ("Census", "bind_run") => json!({
-            "store_identity": "fixture-store", "season": 2026, "revision": 1,
-            "cohort": 2027, "jurisdictions": required(&request, "jurisdictions")?
-        }),
         ("JurisdictionCensus", "run") => json!({
             "identity": call.text(5)?, "jurisdiction": required(&request, "jurisdiction")?, "plan": {},
             "stages_run": ["teams", "rosters", "meets", "results"], "teams": 1,
@@ -140,6 +141,16 @@ fn stage_answer(
         }),
         _ => return Err(format!("unexpected national child {service}/{handler}").into()),
     })
+}
+
+fn bind_current_run(request: Value, journal: &Journal) -> TestResult<Value> {
+    let controlled = journal
+        .selected_workbook
+        .as_ref()
+        .ok_or("selected run binding requires its controlled source fixture")?;
+    let request = serde_json::from_value(request)?;
+    let reply = crate::restate_services::census::binding::bind(controlled.store(), request)?;
+    Ok(serde_json::to_value(reply)?)
 }
 
 fn selected_workbook(call: &Frame, request: Value, journal: &mut Journal) -> TestResult<Value> {

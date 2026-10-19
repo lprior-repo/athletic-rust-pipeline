@@ -224,10 +224,12 @@ new artifacts; they never edit an artifact already given to a consumer.
 
 National publication uses the existing checked `ExportGeneration` and canonical selected
 workbook request identity, independently of parent resume ordinals. It does not mint new
-acquisition identities or reset attempts. Current CLI submission requires advertised National
-generation revision 1; a selected-only predecessor is not sufficient. Missing historical
-generation fields remain readable, not a current-execution default. Parent binding, cohort
-and receipt qualification remain separate acceptance cells; see the runbook and evidence ledger.
+acquisition identities or reset attempts. New National submission requires advertised
+`selected_publication_v2` and generation revision 1, binding the exact profile's single cohort.
+Recorded V1 requests retain their original RPC payloads; a missing-selection bind may only read
+its matching retained Class-of-2027 manifest. Direct workbook V1 and participation V4 are unchanged.
+Missing historical generations do not default into current execution. Qualification remains
+scoped to the cases in the evidence ledger; these contracts do not establish national completion.
 
 Current documentary sealing compares the retained attachment and historical-school
 inventories with current checked authority and accepted identity on one store
@@ -235,6 +237,8 @@ snapshot. Raw-table equality or an unrelated journal sequence is not that fence.
 Historical opening verifies the original frozen authority without requiring it to
 remain current. Cache only authenticated in-memory metadata during hydration;
 do not recapture source bodies or introduce another replay format for this check.
+Current sealing also requires the shared current-selected authority policy. Historical bundle
+verification remains read-only; metadata presence alone cannot grant current authority.
 
 Keep three decisions separate: exact-build implementation qualification, configured-run
 completion with declared terminal gaps, and approval of a publication under its coverage rules.
@@ -436,6 +440,12 @@ original bytes, timestamps, claims, contradictions, IDs, manifests and artifacts
 historical provenance cannot be fabricated. Shadow-compare and explain changed projections.
 Cutover is explicit; rollback uses a compatible verified predecessor/backup and a qualified
 post-cutover-write replay policy, not an old binary opening incompatible bytes.
+
+Current reviewed-roster publication captures the protected ledger and original issuance
+closures, not a duplicate global school/team/conflict/source-observation inventory.
+Original inspection bounds and conflict proofs remain authoritative. Historical wire
+physical arrays remain readable unchanged; this grants no support to an unsupported
+historical semantic policy.
 
 Retained historical data has its original read/refusal policy. Preservation does not require
 current code to semantically verify unsupported old formats. Reader/job/backup pins and declared
