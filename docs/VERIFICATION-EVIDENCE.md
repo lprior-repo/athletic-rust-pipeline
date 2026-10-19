@@ -1214,3 +1214,25 @@ Test-process VmHWM: 111,628,288 bytes; final owned archive/output logical disk:
 Calendar authority, accepted roster withdrawal, production enrollment and
 population/comparison/resource acceptance remain open.
 
+
+### Selected workbook through native Restate — 2026-10-19
+
+On the exact isolated candidate based on `1762f27b`, the focused
+`native_restate_restart_and_authority_revocation_preserve_selected_publication`
+case passed against the project-pinned Restate 1.7.10 binary. It starts a
+separate single-partition node with temporary data/configuration and loopback
+admin, ingress, and SDK endpoint addresses. The selected-workbook handler is
+called through Restate ingress; the resulting controlled workbook, manifest,
+and current pointer are checked with the existing publication/readback guards.
+After graceful shutdown and restart using the same node data, the invocation
+output endpoint returns byte-identical reply bytes. After revoking the
+controlled authority, a second fresh disposable node uses the same logical
+workflow/job identity; the handler refuses the retained job, and workbook,
+manifest, current pointer, and verified generation remain unchanged.
+
+`pipeline:fmt`, the focused case (1/1), full all-target/all-feature
+`pipeline:check`, and `pipeline:lint-src` passed. Check reported five test-fixture
+dead-code warnings; lint reported the repository's configured
+`too_many_arguments` warnings. This is a test-process SDK endpoint and controlled
+fixture only; no production census service, external acquisition, or live
+Store was used.

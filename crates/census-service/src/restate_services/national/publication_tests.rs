@@ -12,6 +12,8 @@ mod external;
 mod fixtures;
 pub(super) mod journal;
 mod restricted;
+
+mod native_restate;
 mod resume;
 mod transport;
 mod workbook_endpoint;
