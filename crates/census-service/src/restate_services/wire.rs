@@ -21,7 +21,8 @@ pub(super) mod open;
 pub use open::{
     ArchiveCaptureActivity, ArchiveCaptureEpoch, ArchiveCaptureSample, ArchiveCaptureUnmeasured,
     ArchiveUnmeasuredReason, JurisdictionOpen, OpenWorkReply, OpenWorkRequest,
-    SourceObjectInventory, SourceObjectOpen, ARCHIVE_ACTIVITY_METRIC_VERSION,
+    SourceObjectInventory, SourceObjectOpen, SourceObjectPageReply, SourceObjectPageRequest,
+    ARCHIVE_ACTIVITY_METRIC_VERSION,
 };
 
 pub(super) mod plan;

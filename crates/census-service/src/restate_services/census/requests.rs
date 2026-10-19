@@ -30,6 +30,7 @@ pub(super) fn run_request(request: &SealRequest) -> OpenWorkRequest {
         season: request.season,
         revision: request.revision,
         source_objects: request.source_objects.clone(),
+        endpoint_page: None,
     }
 }
 

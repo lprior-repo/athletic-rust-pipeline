@@ -64,12 +64,16 @@ fn sample(config: &WatchConfig) -> Result<OpenWorkReply> {
         season: config.season,
         revision: config.revision,
         source_objects: Vec::new(),
+        endpoint_page: None,
     };
-    let reply = ingress::block_on(census.open_work(Json(request)).call())?
+    let reply: OpenWorkReply = ingress::block_on(census.open_work(Json(request)).call())?
         .map_err(ingress::error)?
         .into_body()
         .map_err(ingress::error)?
         .0;
+    if reply.endpoint_page.is_none() {
+        anyhow::bail!("serving endpoint does not provide bounded diagnostic pages");
+    }
     Ok(reply)
 }
 
@@ -101,6 +105,7 @@ fn summarize(reply: &OpenWorkReply, invocations: Option<Value>) -> Value {
         "jurisdiction_total": reply.jurisdictions.len(),
         "source_objects_owed": reply.source_objects,
         "silent_sources": reply.silent_sources.len(),
+        "endpoint_page": reply.endpoint_page,
         "unreadable": unreadable,
         "invocations": invocations.map_or(Value::Null, core::convert::identity),
         "owed_sets": owed_sets

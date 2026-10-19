@@ -1838,3 +1838,66 @@ paused at19:29 UTC with RT0003:34,528,104 bytes exceeded33,816,576. It was not r
 unchanged. `hkxq` owns bounded diagnostic details; readiness was not acquisition
 progress. Private `normal-resume-*` and `paused-failure-details` receipts retain this
 distinction. No reset, deployment override, journal deletion or national acceptance.
+
+### Aggregate grant and bounded diagnostic wire — 2026-10-19
+
+Portable `7a3756d0` passed original-A replay (`9f5d41bd`) and built (`6c9a48e9`).
+Actual copied-census generation03 then failed its attachment grant: required
+1,719,214,944 encoded bytes against134,217,728 (`bg_259`),123.21s, peak7,182,612KiB
+RSS and0swaps under16GiB. There is no generation03 workbook. The aggregate source
+grant is now4GiB;131,072 traversal steps and distinct decoded-object limits remain.
+The next copied-census generation and native paginated API smoke remain NOT RUN.
+
+| Exercised behavior | Receipt | Result |
+|---|---|---|
+| Attachment checked ownership, exhaustion and poison | `a851612e` | PASS89/89 |
+| Actual Store attach/revoke/replay, corruption, exact byte exhaustion and no-write fences | `405d0b0a` | PASS218/218 |
+| Owed-work completion and bounded default/continuation, changed-cursor refusal and exact encoded boundary | `307b52ea` | PASS41/41; generated inventory exceeds native33,816,576-byte frame before bounding |
+| CLI archive observation and watch parser consumers | `1697fe7b` / `d934b421` | PASS8/8 and4/4 |
+| Actual controlled50→withdraw51 workbook, frozen generations and proof controls | `1cc3c210` | PASS1/1, retained; controlled integration, not genuine coverage |
+
+Earlier `c31a9922` failed6/226 Store tests: hand-copied implementation-step models
+differed by three steps and predicted private-phase refusals that did not occur.
+All eight tests in that isolated numerical forecast subtree, including two passing
+ones, were removed with their redundant simulation; no expected counts were
+repinned and no production work was added. This drops the exact private-step
+forecast claim, not a formal proof scope. Public quota/poison/origin, lifecycle and
+preservation cases remain exercised above. Failed selector `049ab945` selected
+zero tests because of duplicate concurrency flags and is not a pass.
+
+Actual resumed acquisition increased to1,066,584 raw athletes and24,416 source-meet
+rows (`bg_262`), while canonical performances remained zero. Original census code/
+deployment/request remain unchanged; the preexisting oversized read-only invocation
+was not resumed unchanged. No national workbook, full coverage or R14 completion.
+
+Incoming main `e555cdf46` was fast-forwarded without discarding this work.
+The first combined-source run (`d9e47c03`) failed19/20 profile tests: its
+historical-family fixture retained the new event reference. The corrected fixture
+uses all three historical role references and rejects each independently mixed
+event/participation/publication role; production admission remains strict.
+
+Combined-source qualification (`bg_269`):
+
+| Required changed surface | Receipt | Result |
+|---|---|---|
+| Format / all-target check / source lint | `f4308195` / `2f698bec` / `cb7afba4` | PASS; configured arity advisories remain |
+| Event split/modifier classification and exact profile-family admission | `8c9bbb9d` | PASS23/23 |
+| Eligible/tied result groups, deduplication, representative and artifact versions | `a76c37f5` | PASS66/66 |
+| National publication/request/receipt behavior | `841d6d2a` / `2788d93b` | PASS47/47 library and55/55 CLI |
+| Original-owner attachment domain / Store fences | `ce8e67a0` / `70b6ea64` | PASS89/89 and218/218 |
+| Owed-work/page / archive CLI / watch | `011d002a` / `0726c74e` / `bc1c4978` | PASS41/41,8/8,4/4 |
+| Actual controlled withdrawal workbook and independent frozen generations | `910bd212` | PASS1/1, retained |
+
+GPU5090 event/count and GPU3090 seal reviews reported no confirmed scoped source
+defect; these source reviews do not qualify all R4/R6 events or native fault cases.
+The old event test module selector matched no events; the corrected run explicitly
+selected three named event cases. No zero-selection branch is counted as coverage.
+
+Read-only original-node state RPCs returned200 for all49 retained jurisdictions:
+team stages26failed/21completed/2owed,39 roster reports present,36 with nonempty
+history. Those are stage observations, not completed populations. Michigan/Iowa
+retain403/cooldowns; Minnesota a listing-schema rejection; Colorado malformed-row
+dispositions; Illinois an IHSA cooldown. Initial49 requests returned400 because
+the client injected a form content-type; empty-body/content-type requests corrected
+the client without changing the endpoint. Both receipts are retained privately.
+This refutes an unsupported blanket claim that all history is gated by teams.

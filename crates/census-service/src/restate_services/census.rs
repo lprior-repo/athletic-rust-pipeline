@@ -200,9 +200,11 @@ impl Census {
         Json(request): Json<OpenWorkRequest>,
     ) -> Result<Json<OpenWorkReply>, HandlerError> {
         let evidence = self.store_evidence(&request).await?;
-        Ok(Json(
-            super::open_work::measure(&ctx, &request, &evidence).await?,
-        ))
+        let reply = super::open_work::measure(&ctx, &request, &evidence).await?;
+        Ok(Json(super::open_work::bounded_reply(
+            reply,
+            request.endpoint_page.as_ref(),
+        )?))
     }
 
     #[handler]

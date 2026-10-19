@@ -10,6 +10,24 @@ pub struct OpenWorkRequest {
     pub revision: u32,
     #[serde(default)]
     pub source_objects: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub endpoint_page: Option<SourceObjectPageRequest>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SourceObjectPageRequest {
+    #[serde(default)]
+    pub after: Option<String>,
+    #[serde(default)]
+    pub limit: Option<u16>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SourceObjectPageReply {
+    pub total: u64,
+    pub offset: u64,
+    pub returned: u64,
+    pub next: Option<String>,
 }
 
 fn first_revision() -> u32 {
@@ -132,4 +150,6 @@ pub struct OpenWorkReply {
     pub endpoints: Vec<SourceObjectOpen>,
     #[serde(default)]
     pub archive_capture_activity: ArchiveCaptureActivity,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub endpoint_page: Option<SourceObjectPageReply>,
 }

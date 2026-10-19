@@ -89,6 +89,17 @@ identity already exists is deduplicated, not restarted: reattaching returns the 
 Retain that binding and its exhausted budgets. A genuinely new qualification run needs an explicitly
 qualified identity/store transition; a revision bump is not a recovery or annual-refresh mechanism.
 
+`Census/open_work` always bounds endpoint details, including requests with no
+`endpoint_page`. The default page is 256 endpoints, the maximum request is 4096,
+and the complete encoded reply is limited to 4 MiB. JSON `endpoint_page` reports
+`total`, `offset`, `returned` and opaque `next`; these inventory counts are not
+accepted-source coverage. Global owed counts still cover the full inventory.
+Use `open-work --page-size 256`, then `--page-after '<next>'` for continuation.
+A changed inventory or run invalidates the cursor: restart observation rather
+than interpreting the partial page as completion. Oversized fixed metadata or
+pages refuse; use a smaller page where applicable. Sealing uses the complete
+internal measurement, never a diagnostic page.
+
 Roster progress is not roster acquisition. Every indexed team is in exactly one roster bucket and
 `committed + skipped + remaining == rosters_total`. `committed` counts teams whose captured roster
 page admitted every published row; `skipped` counts teams whose row was attempted and retained with

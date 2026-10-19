@@ -18,8 +18,10 @@ mod diagnostics;
 use diagnostics::diagnostic_row;
 mod history;
 mod inventory;
+mod page;
 mod source_objects;
 mod store_evidence;
+pub(super) use page::bounded_reply;
 #[cfg(test)]
 mod tests;
 
@@ -123,6 +125,7 @@ fn reply(
         endpoints,
         jurisdictions: rows,
         archive_capture_activity: evidence.archive_capture_activity.clone(),
+        endpoint_page: None,
     })
 }
 

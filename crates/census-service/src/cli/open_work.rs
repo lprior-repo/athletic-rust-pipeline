@@ -3,7 +3,7 @@ use clap::Args;
 use restate_sdk::prelude::Json;
 
 use census_service::restate_services::{
-    CensusIngressClient, JurisdictionOpen, OpenWorkReply, OpenWorkRequest,
+    CensusIngressClient, JurisdictionOpen, OpenWorkReply, OpenWorkRequest, SourceObjectPageRequest,
 };
 
 use super::Cli;
@@ -41,16 +41,37 @@ pub(super) struct OpenWorkArgs {
         help = "Measure net archive artifact growth with two serving reads 1..60 seconds apart"
     )]
     capture_sample_seconds: Option<u64>,
+    #[arg(
+        long,
+        value_name = "CURSOR",
+        help = "Endpoint continuation from the previous reply"
+    )]
+    page_after: Option<String>,
+    #[arg(
+        long,
+        value_name = "N",
+        help = "Endpoint details per page; service default when omitted"
+    )]
+    page_size: Option<u16>,
 }
 
 #[tracing::instrument(skip_all, fields(command = "open-work"))]
 pub(super) async fn run_open_work(cli: &Cli, args: &OpenWorkArgs) -> Result<()> {
     let origin = cli.service_origin("open-work", args.ingress.as_deref())?;
     let census = CensusIngressClient::from_client(ingress::client(origin)?);
+    let endpoint_page = if args.page_after.is_some() || args.page_size.is_some() {
+        Some(SourceObjectPageRequest {
+            after: args.page_after.clone(),
+            limit: args.page_size,
+        })
+    } else {
+        None
+    };
     let request = OpenWorkRequest {
         season: args.season,
         revision: args.revision,
         source_objects: args.source_objects.clone(),
+        endpoint_page,
     };
     let Some(seconds) = args.capture_sample_seconds else {
         let reply = fetch(&census, request).await?;
@@ -78,14 +99,18 @@ async fn fetch<Executor: restate_sdk::ingress::RequestExecutor>(
     census: &CensusIngressClient<Executor>,
     request: OpenWorkRequest,
 ) -> Result<OpenWorkReply> {
-    Ok(census
+    let reply: OpenWorkReply = census
         .open_work(Json(request))
         .call()
         .await
         .map_err(ingress::error)?
         .into_body()
         .map_err(ingress::error)?
-        .0)
+        .0;
+    if reply.endpoint_page.is_none() {
+        anyhow::bail!("serving endpoint does not provide bounded diagnostic pages");
+    }
+    Ok(reply)
 }
 
 fn print_open_work(reply: &OpenWorkReply) -> Result<()> {
@@ -96,6 +121,15 @@ fn print_open_work(reply: &OpenWorkReply) -> Result<()> {
         reply.jurisdictions.len()
     );
     println!("source objects owed: {}", count(reply.source_objects));
+    if let Some(page) = &reply.endpoint_page {
+        println!(
+            "endpoint details: {} returned, offset {}, observed inventory {}",
+            page.returned, page.offset, page.total
+        );
+        if let Some(cursor) = &page.next {
+            println!("next endpoint page: --page-after {cursor}");
+        }
+    }
     print_archive_activity(&reply.archive_capture_activity)?;
     for row in &reply.jurisdictions {
         if row.unreadable {

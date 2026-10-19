@@ -148,10 +148,11 @@ pub use wire::{
     JurisdictionRequest, JurisdictionState, NationalRequest, NationalRequestBinding, OpenWorkReply,
     OpenWorkRequest, PublicationCapabilities, PublicationContract, RefusedSource, ReportReply,
     ReportRequest, SchoolAddressJoinRequest, SealItem, SealRef, SealReply, SealRequest,
-    SourceObjectInventory, SourceObjectOpen, SourcePlan, StageOutcome, StatusReply, SweepReport,
-    SweepRequest, TableCount, TeamsAttemptProgress, TeamsFailure, TeamsSourceFailure,
-    TeamsSourceInspection, TeamsSourceOutcome, TeamsSourceRequest, TeamsStage, WindowRequest,
-    WorkbookReply, WorkbookRequest, ARCHIVE_ACTIVITY_METRIC_VERSION,
+    SourceObjectInventory, SourceObjectOpen, SourceObjectPageReply, SourceObjectPageRequest,
+    SourcePlan, StageOutcome, StatusReply, SweepReport, SweepRequest, TableCount,
+    TeamsAttemptProgress, TeamsFailure, TeamsSourceFailure, TeamsSourceInspection,
+    TeamsSourceOutcome, TeamsSourceRequest, TeamsStage, WindowRequest, WorkbookReply,
+    WorkbookRequest, ARCHIVE_ACTIVITY_METRIC_VERSION,
 };
 
 pub use plan::{

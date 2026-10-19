@@ -331,14 +331,20 @@ unknown identities, changed bytes or a mismatched provider contract refuse.
 
 ### Reviewed-school resource boundary — 2026-10-18
 
-The aggregate checked-read/workflow grant is 128 MiB (134,217,728 bytes) and
-131,072 traversal steps. Individual decoded objects and physical inventory remain
+The original aggregate checked-read/workflow grant was 128 MiB (134,217,728 bytes)
+and 131,072 traversal steps. Individual decoded objects and physical inventory remain
 bounded at 4 MiB. Reviewed-roster envelopes and each school/calendar source proof
 are bounded at 8 MiB; their writer, Store replay and Report loader share that limit.
 School journal entries retain their 4-MiB bound and school records their 64-KiB
 bound; calendar enrollment and record-bundle limits are unchanged.
 Count encoded bytes before fallible reservation; preserve original grant ownership,
 poisoning and every charge. Base64 expansion does not enlarge decoded-object limits.
+
+**2026-10-19 amendment:** the aggregate encoded grant is 4 GiB (4,294,967,296
+bytes); traversal remains 131,072 steps. A retained national diagnostic required
+1,719,214,944 encoded bytes. Original-owner, poison and pre-allocation admission
+rules remain mandatory. This is a bounded capacity change, not RSS or national
+acceptance; exact executions belong in the verification ledger.
 
 School-bound V4 installs its mandatory attachment descriptor from the authenticated
 school closure under the original school and attachment grant continuations.

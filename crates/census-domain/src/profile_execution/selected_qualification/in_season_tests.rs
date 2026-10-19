@@ -40,7 +40,11 @@ fn in_season_successor_changes_event_participation_and_publication_contracts() -
 
 #[test]
 fn independently_mixed_policy_and_archive_contracts_refuse() -> TestResult {
-    for role in [ContractRoleV1::Participation, ContractRoleV1::Publication] {
+    for role in [
+        ContractRoleV1::Event,
+        ContractRoleV1::Participation,
+        ContractRoleV1::Publication,
+    ] {
         let mut mixed = input()?;
         tests::replace(
             &mut mixed,
@@ -56,7 +60,11 @@ fn independently_mixed_policy_and_archive_contracts_refuse() -> TestResult {
         check!(eq; crate::model::serialized_bytes(&profile)?, bytes);
     }
     let mut old = input()?;
-    for role in [ContractRoleV1::Participation, ContractRoleV1::Publication] {
+    for role in [
+        ContractRoleV1::Event,
+        ContractRoleV1::Participation,
+        ContractRoleV1::Publication,
+    ] {
         tests::replace(
             &mut old,
             role,
