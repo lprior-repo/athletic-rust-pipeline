@@ -12,6 +12,8 @@ use census_domain::model::{Gender, GradYear, Sport};
 use census_store::AttachmentContextObjectV1;
 
 mod lifecycle;
+mod publication;
+mod replay;
 mod school_oracle;
 
 fn propose(fixture: &Fixture) -> TestResult<ResultCalendarSourceProposalV1> {
