@@ -89,7 +89,7 @@ fn best_row(
             ("tied_result_group_count", "1"),
             ("result_group_basis", "canonical_performance_id"),
             ("physical_performance_count_status", "unknown"),
-            ("selection_policy_version", "21"),
+            ("selection_policy_version", "22"),
         ],
     )?;
     check!(eq; row.get("raw_mark").map(String::as_str), Some("unavailable"));
@@ -139,7 +139,7 @@ fn best_sidecars(
             ("tied_result_group_count", "1"),
             ("result_group_basis", "canonical_performance_id"),
             ("physical_performance_count_status", "unknown"),
-            ("selection_policy_version", "21"),
+            ("selection_policy_version", "22"),
         ],
     )?;
     check!(eq; row.get("original_mark").map(String::as_str), Some(""));

@@ -146,7 +146,7 @@ fn selected_athlete_csv_retains_bound_current_school_status_and_evidence() -> Te
 #[test]
 fn historical_athlete_csv_keeps_exact_affiliation_literals_for_retained_policies() -> TestResult {
     let (directory, mut dataset, _) = fixture()?;
-    for policy in 18..=21 {
+    for policy in 18..=22 {
         dataset.bind_historical_policy_for_test(policy)?;
         let historical = Derivation::of(
             &dataset,

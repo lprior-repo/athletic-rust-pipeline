@@ -7,6 +7,7 @@ fn empty_best_results_use_the_explicit_policy_for_the_complete_csv_header() -> T
     for (policy, columns) in [
         (EventSemantics::CombinedEvents20, 36),
         (EventSemantics::ResultGroups21, 39),
+        (EventSemantics::ResultGroups22, 39),
     ] {
         let output = directory.path().join(policy.revision().to_string());
         let (jsonl, csv) = write(&output, &[], "empty", policy)?;
@@ -16,7 +17,7 @@ fn empty_best_results_use_the_explicit_policy_for_the_complete_csv_header() -> T
         check!(eq; headers.len(), columns);
         check!(eq; reader.records().count(), 0);
         check!(eq; headers.iter().any(|name| name == "tied_performance_count"), policy == EventSemantics::CombinedEvents20);
-        check!(eq; headers.iter().any(|name| name == "tied_result_group_count"), policy == EventSemantics::ResultGroups21);
+        check!(eq; headers.iter().any(|name| name == "tied_result_group_count"), policy.uses_result_groups());
     }
     Ok(())
 }
@@ -53,7 +54,7 @@ fn current_csv_and_json_use_result_group_keys_and_unknown_physical_cardinality()
         None,
     );
     row.inventory = crate::bests::SelectionInventory::from_groups(
-        EventSemantics::ResultGroups21,
+        EventSemantics::ResultGroups22,
         3,
         vec![row.source.performance_id.clone()],
     );
@@ -61,7 +62,7 @@ fn current_csv_and_json_use_result_group_keys_and_unknown_physical_cardinality()
         directory.path(),
         &[row],
         "co2027",
-        EventSemantics::ResultGroups21,
+        EventSemantics::ResultGroups22,
     )?;
     let encoded: serde_json::Value = serde_json::from_str(std::fs::read_to_string(jsonl)?.trim())?;
     check!(eq; encoded.get("eligible_result_group_count"), Some(&serde_json::json!(3)));
@@ -77,7 +78,7 @@ fn current_csv_and_json_use_result_group_keys_and_unknown_physical_cardinality()
         ("tied_result_group_count", "1"),
         ("result_group_basis", "canonical_performance_id"),
         ("physical_performance_count_status", "unknown"),
-        ("selection_policy_version", "21"),
+        ("selection_policy_version", "22"),
     ] {
         let index = headers
             .iter()

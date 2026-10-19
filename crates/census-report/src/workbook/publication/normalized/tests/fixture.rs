@@ -107,7 +107,8 @@ impl Population {
             )?;
         }
         coaches(&store, &school_id)?;
-        let dataset = ExportDataset::load(&store)?;
+        let mut dataset = ExportDataset::load(&store)?;
+        dataset.lineage.policy_revision = 21;
         let options = Options {
             grad_year: Some(2027),
             out: None,

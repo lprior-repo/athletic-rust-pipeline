@@ -85,7 +85,7 @@ impl ExportDataset {
 
     #[cfg(test)]
     pub(crate) fn bind_historical_policy_for_test(&mut self, revision: u32) -> ReportResult<()> {
-        if !matches!(revision, 18..=21) {
+        if !matches!(revision, 18..=22) {
             return Err(crate::report::ReportError::Invariant {
                 detail: "unsupported historical test policy".into(),
             });

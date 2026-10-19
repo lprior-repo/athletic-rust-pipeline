@@ -255,6 +255,17 @@ pub(crate) async fn run_national_report(cli: &Cli, args: &NationalReportArgs) ->
     let origin = cli.service_origin("national-report", args.ingress.as_deref())?;
     let ingestion = ingress::client(origin)?;
     let national = NationalCensusIngressClient::from_client(ingestion, identity.as_str());
+    if args.seal {
+        let Json(receipt) = national
+            .publication_seal()
+            .call()
+            .await
+            .map_err(ingress::error)?
+            .into_body()
+            .map_err(ingress::error)?;
+        println!("{}", serde_json::to_string_pretty(&receipt)?);
+        return Ok(());
+    }
     if args.contacts {
         let Json(report) = national
             .contact_report()

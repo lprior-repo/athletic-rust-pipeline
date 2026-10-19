@@ -4,10 +4,11 @@ pub enum EventSemantics {
     FlatEvents19,
     CombinedEvents20,
     ResultGroups21,
+    ResultGroups22,
 }
 
 impl EventSemantics {
-    pub const CURRENT: Self = Self::ResultGroups21;
+    pub const CURRENT: Self = Self::ResultGroups22;
 
     pub const fn revision(self) -> u32 {
         match self {
@@ -15,6 +16,7 @@ impl EventSemantics {
             Self::FlatEvents19 => 19,
             Self::CombinedEvents20 => 20,
             Self::ResultGroups21 => 21,
+            Self::ResultGroups22 => 22,
         }
     }
 
@@ -24,6 +26,7 @@ impl EventSemantics {
             19 => Some(Self::FlatEvents19),
             20 => Some(Self::CombinedEvents20),
             21 => Some(Self::ResultGroups21),
+            22 => Some(Self::ResultGroups22),
             _ => None,
         }
     }
@@ -31,15 +34,26 @@ impl EventSemantics {
     pub const fn requires_completed_combined(self) -> bool {
         match self {
             Self::Legacy18 | Self::FlatEvents19 => false,
-            Self::CombinedEvents20 | Self::ResultGroups21 => true,
+            Self::CombinedEvents20 | Self::ResultGroups21 | Self::ResultGroups22 => true,
         }
     }
 
     pub(super) const fn supports_flat_extensions(self) -> bool {
         match self {
             Self::Legacy18 => false,
-            Self::FlatEvents19 | Self::CombinedEvents20 | Self::ResultGroups21 => true,
+            Self::FlatEvents19
+            | Self::CombinedEvents20
+            | Self::ResultGroups21
+            | Self::ResultGroups22 => true,
         }
+    }
+
+    pub const fn uses_result_groups(self) -> bool {
+        matches!(self, Self::ResultGroups21 | Self::ResultGroups22)
+    }
+
+    pub(super) const fn rejects_relay_split_labels(self) -> bool {
+        matches!(self, Self::ResultGroups22)
     }
 
     pub(super) fn admits_flat_extension(self, kind: &super::EventKind) -> bool {

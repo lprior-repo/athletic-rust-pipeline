@@ -39,7 +39,7 @@ fn historical_selected_wire_decodes_eleven_counts_and_preserves_revision_six_inv
     let directory = tempfile::tempdir()?;
     let manifest = historical_wire(directory.path(), &fixture)?;
     check!(eq; manifest.schema_revision, 7);
-    check!(eq; manifest.lineage.policy_revision, 21);
+    check!(eq; manifest.lineage.policy_revision, 22);
     let counts = manifest.normalized_csv_rows.as_ref().ok_or("counts")?;
     check!(eq; counts.len(), 11);
     check!(eq; counts.get("participation_exclusions.csv"), Some(&1));

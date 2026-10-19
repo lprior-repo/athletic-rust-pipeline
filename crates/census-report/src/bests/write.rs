@@ -149,7 +149,7 @@ fn write_csv_body(
 }
 
 fn header(policy: census_domain::model::EventSemantics) -> Vec<&'static str> {
-    if policy != census_domain::model::EventSemantics::ResultGroups21 {
+    if !policy.uses_result_groups() {
         return HEADER.to_vec();
     }
     HEADER

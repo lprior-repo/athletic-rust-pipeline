@@ -16,13 +16,13 @@ fn input() -> TestResult<QueryProfileInputV1> {
 }
 
 #[test]
-fn in_season_successor_changes_only_participation_and_publication() -> TestResult {
+fn in_season_successor_changes_event_participation_and_publication_contracts() -> TestResult {
     for role in ContractRoleV1::ALL {
         let old = selected_qualification_contract_ref_v2(role)?;
         let new = selected_qualification_contract_ref_v3(role)?;
         if matches!(
             role,
-            ContractRoleV1::Participation | ContractRoleV1::Publication
+            ContractRoleV1::Event | ContractRoleV1::Participation | ContractRoleV1::Publication
         ) {
             check!(ne; old, new);
             check!(eq; new.revision().get(), 4);

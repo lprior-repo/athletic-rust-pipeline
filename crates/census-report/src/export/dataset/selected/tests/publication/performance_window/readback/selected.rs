@@ -33,7 +33,7 @@ pub(super) fn artifacts(directory: &Path, expected: &Expected) -> TestResult {
             ),
             ("result_group_basis", "canonical_performance_id"),
             ("physical_performance_count_status", "unknown"),
-            ("selection_policy_version", "21"),
+            ("selection_policy_version", "22"),
         ],
     )?;
     let normalized = csv_rows(&directory.join("best_marks.csv"))?;
@@ -66,7 +66,7 @@ pub(super) fn artifacts(directory: &Path, expected: &Expected) -> TestResult {
             ("tied_result_group_representative_ids", &normalized_ties),
             ("result_group_basis", "canonical_performance_id"),
             ("physical_performance_count_status", "unknown"),
-            ("selection_policy_version", "21"),
+            ("selection_policy_version", "22"),
         ],
     )?;
     let classes = csv_rows(&directory.join("comparison_classes.csv"))?;
@@ -112,7 +112,7 @@ fn jsonl(directory: &Path, expected: &Expected) -> TestResult {
         ("/selection/value", 4_191_000),
         ("/selection/eligible_result_group_count", 1),
         ("/selection/tied_result_group_count", 1),
-        ("/selection/selection_policy_version", 21),
+        ("/selection/selection_policy_version", 22),
     ] {
         check!(eq; row.pointer(pointer).and_then(Value::as_i64), Some(value));
     }
