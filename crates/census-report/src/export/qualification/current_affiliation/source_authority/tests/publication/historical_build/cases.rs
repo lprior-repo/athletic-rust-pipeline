@@ -10,6 +10,10 @@ pub(super) fn replay(artifact: &authentication::Retained, retained: &Value) -> T
     check!(eq; dataset.archive_digest()?, digest);
     check!(eq; serde_json::to_value(&dataset.lineage)?, *retained.get("lineage").ok_or("retained lineage")?);
     check!(eq; dataset.lineage.store_identity, string(retained, "store_identity")?);
+    check!(matches!(
+        dataset.ensure_current_selected_authority(),
+        Err(crate::report::ReportError::Invariant { .. })
+    ));
     let expected = expected(&dataset, retained)?;
     check!(eq; witness(&dataset, &expected)?, *retained.get("observations").ok_or("producer observations")?);
     inspect_wire(&archive)?;

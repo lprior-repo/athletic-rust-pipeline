@@ -2,7 +2,7 @@ use crate::export::ExportDataset;
 use crate::report::ReportResult;
 use census_domain::model::{ContractRefV1, ProfileDate, ProfileId};
 use census_domain::profile_execution::{
-    validate_current_selected_qualification_profile, validate_selected_qualification_profile_v1,
+    validate_retained_selected_qualification_profile, validate_selected_qualification_profile_v1,
     validate_selected_qualification_profile_v2,
 };
 use serde::{Deserialize, Serialize};
@@ -109,11 +109,12 @@ fn verified_profile(
             ))
         })?;
     } else {
-        validate_current_selected_qualification_profile(profile).map_err(|source| {
-            super::invariant(format!(
-                "unsupported selected publication profile: {source}"
-            ))
-        })?;
+        validate_retained_selected_qualification_profile(profile, dataset.semantic_policy()?)
+            .map_err(|source| {
+                super::invariant(format!(
+                    "unsupported selected publication profile: {source}"
+                ))
+            })?;
     }
     dataset.verified_public_identities()?;
     Ok(profile)

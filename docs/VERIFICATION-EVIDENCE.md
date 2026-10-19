@@ -1926,3 +1926,17 @@ wording/first-rejected role. That incidental assertion was deleted, not repinned
 typed refusal, absence of proof writes and exact retained-profile preservation
 remain asserted. Authentic-A replay on a clean committed repair and native CLI
 verification remain NOT RUN. `3nea` blocks the next national diagnostic build.
+
+Clean candidate `0a8e71fd` then failed authentic-A replay at the selected recipe
+reader's remaining current-only profile check (`89573e11`). Recipe verification
+now uses captured semantics; current recipe creation, output writers and sealing
+keep their original current-authority gates. Every original-A case also asserts
+that historical readback cannot grant current selected authority.
+
+Format/check/lint `eadc6d41`/`3a15dce5`/`9692a3fe`, current recipe/writer/cutover
+cases `5e2c0019`(7/7), and actual withdrawal workbook `5e49d8ae`(1/1) passed.
+The earlier `dc91b036` provenance failure is retained: a failed GPU draft task
+had written14 unqualified test lines despite its private-only boundary. Exact
+history attribution and the quarantined proposal preceded surgical removal;
+the clean-source assertion was not bypassed. Authentic-A and optimized build
+on this follow-on remain NOT RUN.
