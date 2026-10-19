@@ -15,7 +15,9 @@ const SCHOOL_PAGE: &str = include_str!("../../tests/fixtures/chsaa/school_cherry
 const RETAINED_SCHOOL_PAGE: &str = include_str!(
     "../../../../research/sources/state-assoc-mountain/samples/chsaa-school-cherry-creek.html"
 );
-// The committed sample's URL, status and capture time are recorded in its CAPTURES.md row.
+// The committed sample's URL and capture timestamp are recorded in CAPTURES.md.
+const RETAINED_SCHOOL_PAGE_URL: &str = "https://chsaanow.com/schools/cherry-creek";
+const RETAINED_SCHOOL_PAGE_CAPTURED_ON: &str = "2026-09-22";
 const RETAINED_SCHOOL_PAGE_SHA256: &str =
     "2b3485c25d2adcc5da068b86dd6f4140ba7041cef364fa204418cb51d1ad2960";
 const GOLDEN_DIRECTORY: &str =
@@ -229,7 +231,14 @@ fn retained_cherry_creek_capture_parses_without_network() -> TestResult {
     let (_, school_id) = map_directory_row(&member, DIRECTORY_URL, OBSERVED_ON).ok_or("school")?;
     let coaches = rows
         .iter()
-        .filter_map(|row| map_coach_row(row, &school_id, DIRECTORY_URL, OBSERVED_ON))
+        .filter_map(|row| {
+            map_coach_row(
+                row,
+                &school_id,
+                RETAINED_SCHOOL_PAGE_URL,
+                RETAINED_SCHOOL_PAGE_CAPTURED_ON,
+            )
+        })
         .collect::<Vec<_>>();
     let track = coaches
         .iter()
@@ -243,6 +252,13 @@ fn retained_cherry_creek_capture_parses_without_network() -> TestResult {
     check!(eq; track, 31);
     check!(eq; cross_country, 19);
     check!(eq; coaches.len(), 50);
+    check!(coaches
+        .iter()
+        .all(|coach| coach.evidence.iter().any(|evidence| {
+            evidence.source.url.as_deref() == Some(RETAINED_SCHOOL_PAGE_URL)
+                && evidence.observed_on == RETAINED_SCHOOL_PAGE_CAPTURED_ON
+                && evidence.method == census_domain::model::EvidenceMethod::Parsed
+        })));
     let outside_track_and_cross_country = rows
         .iter()
         .filter(|row| {
@@ -251,9 +267,15 @@ fn retained_cherry_creek_capture_parses_without_network() -> TestResult {
         })
         .collect::<Vec<_>>();
     check!(!outside_track_and_cross_country.is_empty());
-    check!(outside_track_and_cross_country
-        .iter()
-        .all(|row| { map_coach_row(row, &school_id, DIRECTORY_URL, OBSERVED_ON).is_none() }));
+    check!(outside_track_and_cross_country.iter().all(|row| {
+        map_coach_row(
+            row,
+            &school_id,
+            RETAINED_SCHOOL_PAGE_URL,
+            RETAINED_SCHOOL_PAGE_CAPTURED_ON,
+        )
+        .is_none()
+    }));
     check!(coaches
         .iter()
         .all(|coach| matches!(coach.sport, Some(Sport::OutdoorTrack | Sport::CrossCountry))));
