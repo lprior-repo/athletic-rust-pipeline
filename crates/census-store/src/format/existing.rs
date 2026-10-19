@@ -18,6 +18,7 @@ pub(crate) enum OpenPurpose {
     InstallationControl,
     CaptureControl,
     CaptureExecution(census_domain::model::CaptureProtocolVersion),
+    Inspection,
 }
 
 impl Store {
@@ -172,9 +173,8 @@ fn finish_existing(
         }
         OpenPurpose::InstallationControl
         | OpenPurpose::CaptureControl
-        | OpenPurpose::PublicIdentityHistory => {
-            control_store(root, db, entities, journal, meta, receipts)
-        }
+        | OpenPurpose::PublicIdentityHistory
+        | OpenPurpose::Inspection => control_store(root, db, entities, journal, meta, receipts),
     }
 }
 
@@ -226,7 +226,8 @@ impl ExistingKeyspaces {
             }
             OpenPurpose::InstallationControl
             | OpenPurpose::CaptureControl
-            | OpenPurpose::PublicIdentityHistory => Ok(()),
+            | OpenPurpose::PublicIdentityHistory
+            | OpenPurpose::Inspection => Ok(()),
         }
     }
 
@@ -244,6 +245,7 @@ impl ExistingKeyspaces {
             format,
         )?;
         match purpose {
+            OpenPurpose::Inspection => {}
             OpenPurpose::PublicIdentityExecution(expected) => identity
                 .as_ref()
                 .ok_or(crate::PublicIdentityError::OptInRequired)?

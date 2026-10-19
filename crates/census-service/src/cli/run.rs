@@ -80,6 +80,7 @@ async fn run_async(cli: Cli) -> Result<()> {
         Command::CensusDoc(args) => census_doc::run_census_doc(args),
         Command::SchoolAddress(args) => census_service::school_address::run(args),
         Command::StoreBackup(args) => store::run_backup(&cli.store_root(), args),
+        Command::StoreIntegrity => store::run_integrity(&cli.store_root()),
         Command::StoreMigrate => store::run_migrate(&cli.store_root()),
         Command::Verify(args) => verify::run_verify(&cli.store_root(), args),
         Command::Serve => serve::run_serve(&cli),

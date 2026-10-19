@@ -12,6 +12,9 @@ mod commit;
 mod context;
 mod correction;
 mod local_adjudication;
+pub(crate) use local_adjudication::admission::{
+    audit_integrity as audit_manual_admission, owns_integrity_phase as is_manual_admission_phase,
+};
 pub use local_adjudication::{
     LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1, PreparedLocalAdjudicationV1,
 };

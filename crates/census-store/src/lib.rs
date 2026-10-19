@@ -102,7 +102,8 @@ pub use engine::{EngineDigest, EngineOperation};
 pub use error::{StoreError, StoreResult};
 pub use fence::FencedSnapshot;
 pub use format::{
-    MigrationReport, StoreFormat, DEFAULT_CACHE_BYTES, KEY_FORMAT_VERSION, STORE_SCHEMA_VERSION,
+    MigrationReport, StoreFormat, StoreIntegrityInspection, DEFAULT_CACHE_BYTES,
+    KEY_FORMAT_VERSION, STORE_SCHEMA_VERSION,
 };
 pub use identity::MAX_IDENTITY_APPLICATION_BATCH;
 pub use inspect::StoreInspection;

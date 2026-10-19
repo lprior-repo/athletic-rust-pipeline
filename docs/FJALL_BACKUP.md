@@ -16,6 +16,12 @@ than a batch committed between the two reads. A reader waits only for the commit
 not for the reads that follow it.
 `flush()` makes writes durable but does not pause writers. Cold backup is the supported path.
 
+`store-integrity` uses an existing-only, read-only diagnostic capability for valid known
+historical and current stores; it grants no execution, enrollment or repair authority.
+Missing roots and held owners refuse. Owned admission records use their protocol
+validator, not the ordinary event-payload decoder. Decode-window limits remain explicit
+incomplete findings, never a clean result for data beyond the inspected window.
+
 Current `Store::backup` copies existing `fjall/`, `entities/`, `journal/`, `http/` and `out/` subtrees,
 opens the staged copy for count validation, writes `backup.json` with file lengths/SHA-256, link
 targets and table counts, and publishes the staged generation. A symbolic link is copied when its

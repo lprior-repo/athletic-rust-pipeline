@@ -6,9 +6,11 @@ use super::clock::{Clock, SystemClock};
 use super::{generation, meta, Store, StoreError, StoreResult};
 
 pub(crate) mod existing;
+mod inspection;
 mod migrate;
 mod version;
 
+pub use inspection::StoreIntegrityInspection;
 pub use migrate::MigrationReport;
 
 pub const STORE_SCHEMA_VERSION: u32 = 2;

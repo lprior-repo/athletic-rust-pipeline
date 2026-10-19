@@ -1752,3 +1752,33 @@ Aggregate acquisition peak readback:10,685,861,888 bytes; memory events max/oom/
 oom_kill all0. This is an ongoing roster workload, not completed R14 qualification.
 Replacement executable, follow-on workbook generation, genuine historical semantic
 queue and final national artifact acceptance remain pending.
+
+### Current stopped-store integrity — 2026-10-19
+
+After integrating remote `f4b463804`, the protected current-store rehearsal preserved
+its registered profile but `store-integrity` failed through the legacy opener.
+An existing-only integrity capability now validates the format and protected owners
+without execution, enrollment, recovery or repair authority. The older staging
+`StoreInspection` API is unchanged; it is not this diagnostic boundary.
+
+The stronger restored fixture then exposed a second defect: the valid manual-admission
+header was treated as an ordinary event missing `payload`. Its existing owner now audits
+the bounded header/reservation/context namespace once. Owner errors propagate; unknown
+headers and corrupt records are not ignored.
+
+| Acceptance | Receipt | Result |
+|---|---|---|
+| Native current/identity-only roles, enabled admission, cold restore, held-owner/missing-root and existing corruption/cache cases | `a12cf723` | PASS18/18; ordinary execution still refuses protected stores |
+| Incoming original roster-inventory admission cases | `96540353` | PASS6/6; incoming policy is32MiB,4096 rows,64KiB per record |
+| Format / all-target check / source lint | `0cffaaa9` / `51bd457d` / `87a093e9` | PASS; configured arity advisories remain |
+| Same previously failing restored fixture through actual CLI | `integrity-admission-repair-after-receipts.json` under `athletic-cohort-cli-smoke-drpwrf1m` | Exit0, `ok=true`, `http_cache_ok=true`; selected2026 workbook produced and manifest independently read |
+| Adjacent bound-cohort/seal/native-journal consumers | `f460c7dc` | PASS86/86; original ignored native selectors not executed |
+| Actual controlled50→withdrawal51 workbook/frozen replay and profile-default output | `3e661465` | PASS2/2; controlled integration, not genuine population coverage |
+| Reviewed source, retained original wire, canonicality and census-growth cases | `abce3dfb` | PASS14/14 |
+
+The qualifier has zero athlete records: it proves maintenance and preserved cohort
+context, not population coverage. Its artifact is
+`restored-integrity-repair-publication/generations/27cd63328d8782b384dbaae547075f826f97967618a0aae544d3f598481455d2/workbook.xlsx`.
+Earlier receipts retain the legacy-opener refusal and valid-header false positive.
+No live owner stop, replacement deployment or national publication occurred during
+this rehearsal. Bead `27xd` tracks the narrow repair; national delivery remains `e7lx`.

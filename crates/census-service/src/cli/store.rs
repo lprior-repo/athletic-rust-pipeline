@@ -89,7 +89,9 @@ pub(super) fn run_restore(args: &RestoreArgs) -> Result<()> {
     Ok(())
 }
 
-pub(super) fn run_integrity(store: &Store) -> Result<()> {
+pub(super) fn run_integrity(root: &Path) -> Result<()> {
+    let store = census_store::StoreIntegrityInspection::open_existing(root)
+        .context("opening the existing stopped store for integrity inspection")?;
     let report = store.integrity().context("checking store integrity")?;
     println!("ok\t{}", report.ok);
     report.tables.iter().for_each(|t| {

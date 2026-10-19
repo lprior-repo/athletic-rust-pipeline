@@ -8,6 +8,7 @@ pub(super) fn validate_purpose(
     capture: &Option<CaptureQualification>,
 ) -> StoreResult<()> {
     match purpose {
+        OpenPurpose::Inspection => Ok(()),
         OpenPurpose::CurrentQualificationV3 => {
             require_protocol(capture, CaptureProtocolVersion::V2)
         }

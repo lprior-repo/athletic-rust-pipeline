@@ -94,6 +94,14 @@ fn header(store: &Store, identity: &StoreIdentity) -> StoreResult<Header> {
     Ok(header)
 }
 
+pub(crate) fn owns_integrity_phase(phase: &str) -> bool {
+    PREFIX.strip_suffix('\0') == Some(phase)
+}
+
+pub(crate) fn audit_integrity(store: &Store) -> StoreResult<()> {
+    header(store, &store.store_identity()?).map(|_| ())
+}
+
 fn audit_row(
     store: &Store,
     snapshot: &fjall::Snapshot,

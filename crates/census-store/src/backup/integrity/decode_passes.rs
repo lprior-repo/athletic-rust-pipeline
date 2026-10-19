@@ -5,6 +5,7 @@ use crate::Table;
 pub(super) fn journal_pass(decode: &mut Decode) -> StoreResult<()> {
     decode.set_pass("journal decode");
     let store = decode.store;
+    let mut admission_checked = false;
     for guard in store.journal.iter() {
         let (key, raw) = guard
             .into_inner()
@@ -31,6 +32,13 @@ pub(super) fn journal_pass(decode: &mut Decode) -> StoreResult<()> {
         let Some(locator) = bytes.get(separator.saturating_add(1)..) else {
             continue;
         };
+        if crate::public_identity::is_manual_admission_phase(&phase) {
+            if !admission_checked {
+                crate::public_identity::audit_manual_admission(store)?;
+                admission_checked = true;
+            }
+            continue;
+        }
         if let Some((logical, index)) = parse_chunk_key(locator) {
             let logical_key = Store::journal_key(&phase, &String::from_utf8_lossy(logical));
             if !store
