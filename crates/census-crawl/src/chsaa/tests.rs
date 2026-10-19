@@ -12,6 +12,12 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const DIRECTORY: &str = include_str!("../../tests/fixtures/chsaa/directory.html");
 const SCHOOL_PAGE: &str = include_str!("../../tests/fixtures/chsaa/school_cherry_creek.html");
+const RETAINED_SCHOOL_PAGE: &str = include_str!(
+    "../../../../research/sources/state-assoc-mountain/samples/chsaa-school-cherry-creek.html"
+);
+// The committed sample's URL, status and capture time are recorded in its CAPTURES.md row.
+const RETAINED_SCHOOL_PAGE_SHA256: &str =
+    "2b3485c25d2adcc5da068b86dd6f4140ba7041cef364fa204418cb51d1ad2960";
 const GOLDEN_DIRECTORY: &str =
     include_str!("../../tests/fixtures/chsaa/golden_directory_rows.json");
 const GOLDEN_COACHES: &str =
@@ -183,6 +189,74 @@ fn school_page_rows_match_the_prototype_golden_after_mapping() -> TestResult {
         "the page lists every activity it publishes; the mapper is what narrows to track and cross country"
     );
     check!(eq; rust.values().sum::<usize>(), 50);
+    Ok(())
+}
+
+#[test]
+fn retained_cherry_creek_capture_parses_without_network() -> TestResult {
+    use sha2::{Digest, Sha256};
+
+    check!(eq;
+        format!("{:x}", Sha256::digest(RETAINED_SCHOOL_PAGE.as_bytes())),
+        RETAINED_SCHOOL_PAGE_SHA256
+    );
+    check!(eq; RETAINED_SCHOOL_PAGE.len(), 350_494);
+    let rows = parse_school_page(RETAINED_SCHOOL_PAGE)?;
+    check!(eq; rows.len(), 246);
+    check!(
+        !rows.is_empty(),
+        "retained CHSAA detail capture has coach rows"
+    );
+    check!(
+        rows.iter().all(|row| row.school_name == "Cherry Creek"),
+        "parsed rows retain the source page's school title"
+    );
+    check!(
+        rows.iter()
+            .all(|row| !row.activity_name.is_empty() && !row.title.is_empty()),
+        "parsed rows retain activity and coach-title fields"
+    );
+    let activities = rows
+        .iter()
+        .map(|row| row.activity_name.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+    check!(eq; activities.len(), 34);
+    check!(eq;
+        rows.iter().filter(|row| row.title == "Head Coach").count(),
+        35
+    );
+    let member = cherry_creek()?;
+    let (_, school_id) = map_directory_row(&member, DIRECTORY_URL, OBSERVED_ON).ok_or("school")?;
+    let coaches = rows
+        .iter()
+        .filter_map(|row| map_coach_row(row, &school_id, DIRECTORY_URL, OBSERVED_ON))
+        .collect::<Vec<_>>();
+    let track = coaches
+        .iter()
+        .filter(|coach| coach.sport == Some(Sport::OutdoorTrack))
+        .count();
+    let cross_country = coaches
+        .iter()
+        .filter(|coach| coach.sport == Some(Sport::CrossCountry))
+        .count();
+    // These are rows accepted by the existing consumer, not distinct people or contacts.
+    check!(eq; track, 31);
+    check!(eq; cross_country, 19);
+    check!(eq; coaches.len(), 50);
+    let outside_track_and_cross_country = rows
+        .iter()
+        .filter(|row| {
+            let activity = row.activity_name.to_lowercase();
+            !activity.contains("track") && !activity.contains("cross country")
+        })
+        .collect::<Vec<_>>();
+    check!(!outside_track_and_cross_country.is_empty());
+    check!(outside_track_and_cross_country
+        .iter()
+        .all(|row| { map_coach_row(row, &school_id, DIRECTORY_URL, OBSERVED_ON).is_none() }));
+    check!(coaches
+        .iter()
+        .all(|coach| matches!(coach.sport, Some(Sport::OutdoorTrack | Sport::CrossCountry))));
     Ok(())
 }
 
