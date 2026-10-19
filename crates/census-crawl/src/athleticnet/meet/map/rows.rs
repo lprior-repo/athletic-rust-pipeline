@@ -1,10 +1,15 @@
 use super::super::read::{grade_of, meet_mark};
-use super::super::store::{athlete, store, AthleteRow};
+use super::super::store::{athlete, store, store_relay, AthleteRow};
 use super::super::wire::{FlatRow, PublishedLeg};
 use super::{events::MetadataConflict, MeetCtx};
-use crate::athleticnet::map::{school_for, PerformanceInput, SchoolResolveContext};
+use crate::athleticnet::map::{
+    ensure_team_for, school_for, EventProjectionInput, PerformanceInput, SchoolResolveContext,
+};
 use crate::athleticnet::parse::timing_of;
-use census_domain::model::{AthleteId, EventKind, Gender, Grade, Mark, SchoolId, SourceIdentity};
+use census_domain::model::{
+    AthleteId, EventKind, Gender, Grade, Mark, RelayMember, RelayResult, SchoolId, SourceIdentity,
+    SourceNamespace,
+};
 use std::collections::BTreeMap;
 
 pub(super) struct Block<'a> {
@@ -26,7 +31,6 @@ pub(super) struct Entry<'a> {
     pub(super) place: Option<&'a str>,
     pub(super) grade: Grade,
     pub(super) source_key: String,
-    pub(super) leg: Option<usize>,
     pub(super) published: &'a str,
 }
 
@@ -75,7 +79,6 @@ impl MeetCtx<'_> {
             place: row.place.as_deref(),
             grade,
             source_key,
-            leg: None,
             published: &row.result,
         };
         self.store_row(block, entry)?;
@@ -92,77 +95,143 @@ impl MeetCtx<'_> {
         let Some(school) = self.school(row) else {
             return Ok(());
         };
-        let Some(squad) = legs.get(&row.result_id) else {
+        let squad = legs.get(&row.result_id);
+        if squad.is_none() {
             self.counts.relay_rows_without_legs =
                 self.counts.relay_rows_without_legs.saturating_add(1);
-            return Ok(());
-        };
+        }
+        let squad = squad.map_or(&[][..], Vec::as_slice);
         self.counts.relay_rows = self.counts.relay_rows.saturating_add(1);
         self.counts.legs_seen = self
             .counts
             .legs_seen
             .saturating_add(u64::try_from(squad.len()).map_or(u64::MAX, |value| value));
-        let (mark, auto) = self.mark_of(block, &row.result);
+        let (mut mark, auto) = self.mark_of(block, &row.result);
+        let event_input = EventProjectionInput {
+            meet: &self.meet,
+            kind: block.kind,
+            gender: block.gender,
+            division: block.division.as_deref(),
+            round: block.round.as_deref(),
+            labels: block.labels,
+        };
+        let (event, retained_conflicts) = match super::events::project_event(
+            self.accumulated,
+            self.source,
+            self.observed_on,
+            &event_input,
+            block.metadata_conflict,
+        )? {
+            super::events::ProjectionOutcome::Admitted(event) => (event, Vec::new()),
+            super::events::ProjectionOutcome::Withheld(event, conflict) => {
+                if !matches!(mark, Mark::Raw(_)) {
+                    mark = Mark::Raw(row.result.clone());
+                }
+                (event, vec![conflict])
+            }
+        };
+        if !crate::athleticnet::map::admit_date(self.performance_as_of, &self.date)? {
+            return Ok(());
+        }
+        let team = ensure_team_for(
+            self.accumulated,
+            self.source,
+            self.observed_on,
+            &school,
+            self.sport,
+            block.gender,
+            self.school_year,
+        );
+        if let Some(team) = self.accumulated.teams.get_mut(team.as_str()) {
+            if let Some(team_id) = row.team_id {
+                let identity =
+                    SourceIdentity::new(SourceNamespace::athletic_net("team"), team_id.to_string());
+                if !team.source_identities.contains(&identity) {
+                    team.source_identities.push(identity);
+                }
+            }
+        }
+        let published_team_id = row.team_id.ok_or_else(|| crate::CrawlError::Invariant {
+            detail: "resolved Athletic.net relay row lost its team id".to_string(),
+        })?;
+        let source_key = format!("athleticnet:team{published_team_id}-{}", row.result_id);
+        let mut relay = RelayResult::new(&team, &event, &self.meet.id, mark.clone(), source_key)
+            .with_place(
+                row.place
+                    .as_deref()
+                    .and_then(|place| place.trim().parse().ok()),
+            )
+            .with_round(block.round.clone())
+            .with_timing(if matches!(mark, Mark::Raw(_)) {
+                None
+            } else {
+                timing_of(0, auto)
+            })
+            .with_evidence(census_domain::model::Evidence::parsed(
+                self.source.clone(),
+                self.observed_on,
+            ));
+        if let Some(team_id) = row.team_id {
+            relay = relay.with_source_team(SourceIdentity::new(
+                SourceNamespace::athletic_net("team"),
+                team_id.to_string(),
+            ));
+        }
+        relay.retained_conflicts = retained_conflicts;
         let mut outcome = Ok(());
         for (index, leg) in squad.iter().enumerate() {
-            let projected = self.relay_leg(
-                block,
-                row,
-                leg,
-                index.saturating_add(1),
-                &school,
-                (&mark, auto),
-            );
-            outcome = outcome.and(projected);
+            let position = index.saturating_add(1);
+            let projected = self.relay_leg(block.gender, row.result_id, leg, position, &school);
+            match projected {
+                Ok(member) => relay = relay.with_member(member),
+                Err(error) => outcome = outcome.and(Err(error)),
+            }
         }
-        outcome
+        outcome?;
+        self.counts.legs_stored = self
+            .counts
+            .legs_stored
+            .saturating_add(u64::try_from(squad.len()).map_or(u64::MAX, |value| value));
+        store_relay(self.accumulated, relay);
+        self.counts.relay_rows_stored = self.counts.relay_rows_stored.saturating_add(1);
+        Ok(())
     }
 
     fn relay_leg(
         &mut self,
-        block: &Block<'_>,
-        row: &FlatRow,
+        gender: Gender,
+        result_id: i64,
         leg: &PublishedLeg,
         position: usize,
         school: &SchoolId,
-        result: (&Mark, bool),
-    ) -> crate::CrawlResult<()> {
+    ) -> crate::CrawlResult<RelayMember> {
+        let order = u32::try_from(position).map_err(|_| crate::CrawlError::Arithmetic {
+            detail: "Athletic.net relay leg order exceeds u32".to_string(),
+        })?;
+        let mut member = RelayMember::new(order, leg.name.clone());
         let Some(provider_id) = leg.athlete_id else {
             self.counts.legs_no_athlete = self.counts.legs_no_athlete.saturating_add(1);
-            return Ok(());
+            return Ok(member);
         };
         let name = leg.name.trim();
         if name.is_empty() {
             self.counts.legs_no_name = self.counts.legs_no_name.saturating_add(1);
-            return Ok(());
+            return Ok(member);
         }
         let Some(grade) = grade_of(leg.short_desc.as_deref()) else {
             self.counts.legs_no_grade = self.counts.legs_no_grade.saturating_add(1);
-            return Ok(());
+            return Ok(member);
         };
-        let source_key = format!("athleticnet:{provider_id}-{}:leg{position}", row.result_id);
-        let Some((athlete_id, source_athlete)) =
-            self.athlete_of(provider_id, school, name, grade, block.gender, &source_key)?
+        let source_key = format!("athleticnet:{provider_id}-{result_id}:leg{position}");
+        let Some((athlete_id, _source_athlete)) =
+            self.athlete_of(provider_id, school, name, grade, gender, &source_key)?
         else {
             self.counts.legs_unsupported_cohort =
                 self.counts.legs_unsupported_cohort.saturating_add(1);
-            return Ok(());
+            return Ok(member);
         };
-        let entry = Entry {
-            school,
-            athlete: &athlete_id,
-            source_athlete,
-            mark: result.0.clone(),
-            auto: result.1,
-            place: row.place.as_deref(),
-            grade,
-            source_key,
-            leg: Some(position),
-            published: &row.result,
-        };
-        self.store_row(block, entry)?;
-        self.counts.legs_stored = self.counts.legs_stored.saturating_add(1);
-        Ok(())
+        member = member.with_athlete(athlete_id);
+        Ok(member)
     }
 
     fn school(&mut self, row: &FlatRow) -> Option<SchoolId> {
@@ -231,18 +300,11 @@ impl MeetCtx<'_> {
             source_key: entry.source_key,
             labels: block.labels,
         };
-        let note = entry.leg.map(|position| {
-            format!(
-                "relay leg {position}; the mark and place published are the relay squad's, which \
-                 the payload does not split per leg"
-            )
-        });
         store(
             self.accumulated,
             self.source,
             self.observed_on,
             input,
-            note,
             entry.published,
             block.metadata_conflict,
         )

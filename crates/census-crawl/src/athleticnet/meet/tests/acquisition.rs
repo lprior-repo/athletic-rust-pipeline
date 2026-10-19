@@ -2,7 +2,7 @@ use super::*;
 use crate::athleticnet::{meet_requests, Options};
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::{Fetcher, RepresentationHeaders};
-use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalPerformance};
+use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalPerformance, RelayResult};
 use census_store::{Store, Table};
 use std::collections::HashSet;
 use std::path::Path;
@@ -55,9 +55,17 @@ fn retained_evidence(store: &Store) -> TestResult {
     let meet = meets.first().ok_or("captured meet")?;
     check!(eq; meet.evidence.first().ok_or("meet evidence")?.observed_on, MEET_CAPTURED_AT);
     let performances: Vec<CanonicalPerformance> = snapshot.scan(Table::Performances)?;
-    check!(eq; performances.len(), 974);
+    check!(eq; performances.len(), 686);
     for performance in &performances {
         let evidence = performance.evidence.first().ok_or("performance evidence")?;
+        check!(eq; evidence.source.id, "athleticnet");
+        check!(eq; evidence.observed_on, RESULTS_CAPTURED_AT);
+    }
+    let relays: Vec<RelayResult> = snapshot.scan(Table::RelayResults)?;
+    check!(eq; relays.len(), 72);
+    for relay in &relays {
+        check!(eq; relay.members.len(), 4);
+        let evidence = relay.evidence.first().ok_or("relay evidence")?;
         check!(eq; evidence.source.id, "athleticnet");
         check!(eq; evidence.observed_on, RESULTS_CAPTURED_AT);
     }
@@ -116,7 +124,7 @@ fn cached_meet_keeps_capture_instants_and_published_school_year_on_later_replay(
                 ..Options::default()
             };
             let first = crate::athleticnet::collect(&ctx, &options).await?;
-            check!(eq; first.rows, 974);
+            check!(eq; first.rows, 758);
             check!(eq; first.requests, 0);
             check!(eq; first.from_cache, 2);
             retained_evidence(&store)?;

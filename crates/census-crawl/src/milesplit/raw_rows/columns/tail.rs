@@ -178,7 +178,7 @@ fn heat_place(value: &str) -> Result<(), &'static str> {
 }
 
 fn parse_wind(value: &str) -> Result<Option<f64>, &'static str> {
-    if value.is_empty() {
+    if value.is_empty() || value.eq_ignore_ascii_case("NWI") {
         return Ok(None);
     }
     if value.len() > 16 {

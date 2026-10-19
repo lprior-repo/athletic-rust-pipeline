@@ -1,4 +1,4 @@
-use crate::athleticnet::map::{Accumulator, PerformanceInput};
+use crate::athleticnet::map::{Accumulator, EventProjectionInput};
 use crate::{CrawlError, CrawlResult};
 use census_domain::model::{EventId, RetainedConflict, SourceRef, SpecificationError};
 
@@ -21,7 +21,7 @@ pub(in crate::athleticnet::meet) fn project_event(
     accumulated: &mut Accumulator,
     source: &SourceRef,
     observed_on: &str,
-    input: &PerformanceInput<'_>,
+    input: &EventProjectionInput<'_>,
     metadata: Option<MetadataConflict<'_>>,
 ) -> CrawlResult<ProjectionOutcome> {
     let projected =
@@ -67,14 +67,14 @@ pub(in crate::athleticnet::meet) fn project_event(
 fn retained_metadata_event(
     accumulated: &Accumulator,
     source: &SourceRef,
-    input: &PerformanceInput<'_>,
+    input: &EventProjectionInput<'_>,
 ) -> Option<EventId> {
     let mut candidates = accumulated.events.values().filter(|event| {
         event.meet == input.meet.id
             && event.kind == *input.kind
             && event.gender == input.gender
-            && event.division == input.division
-            && event.round == input.round
+            && event.division.as_deref() == input.division
+            && event.round.as_deref() == input.round
             && !event.retained_conflicts.is_empty()
             && event
                 .retained_conflicts

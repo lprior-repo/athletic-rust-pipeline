@@ -36,13 +36,14 @@ pub(in crate::athleticnet) async fn collect(
     run.report.from_cache = cache_after.saturating_sub(cache_before);
     run.report.errors = run.stats.fetches_failed;
     run.report.note(format!(
-        "canonical entities: schools {} meets {} teams {} athletes {} events {} performances {}",
+        "canonical entities: schools {} meets {} teams {} athletes {} events {} performances {} relay results {}",
         appended_total(&run.batches, |batch| batch.schools),
         appended_total(&run.batches, |batch| batch.meets),
         appended_total(&run.batches, |batch| batch.teams),
         appended_total(&run.batches, |batch| batch.athletes),
         appended_total(&run.batches, |batch| batch.events),
         appended_total(&run.batches, |batch| batch.performances),
+        appended_total(&run.batches, |batch| batch.relay_results),
     ));
     run.report.note(format!(
         "unsupported graduation inference: {} raw grade/year observations retained for review",

@@ -21,6 +21,7 @@ pub(in crate::athleticnet) struct MeetStats {
     pub(super) rows_unknown_school: u64,
     pub(super) rows_unmapped_event: u64,
     pub(super) relay_rows: u64,
+    pub(super) relay_rows_stored: u64,
     pub(super) relay_rows_without_legs: u64,
     pub(super) legs_seen: u64,
     pub(super) legs_stored: u64,
@@ -32,7 +33,7 @@ pub(in crate::athleticnet) struct MeetStats {
 
 impl MeetStats {
     pub(in crate::athleticnet) fn stored(&self) -> u64 {
-        self.rows_stored.saturating_add(self.legs_stored)
+        self.rows_stored.saturating_add(self.relay_rows_stored)
     }
 
     pub(in crate::athleticnet) fn merge(&mut self, other: &MeetStats) {
@@ -73,6 +74,9 @@ impl MeetStats {
             .rows_unmapped_event
             .saturating_add(other.rows_unmapped_event);
         self.relay_rows = self.relay_rows.saturating_add(other.relay_rows);
+        self.relay_rows_stored = self
+            .relay_rows_stored
+            .saturating_add(other.relay_rows_stored);
         self.relay_rows_without_legs = self
             .relay_rows_without_legs
             .saturating_add(other.relay_rows_without_legs);
@@ -97,7 +101,7 @@ impl std::fmt::Display for MeetStats {
              with the declared event type; rows: {} seen, {} stored, {} without a mark token, {} \
              without a name, {} without an athlete id, {} without a grade, {} with unsupported graduation inference, {} whose team id has no \
              entry, {} whose event label maps to no platform kind; relays: {} squad rows, {} \
-             without leg membership, {} legs seen, {} stored, {} without a name, {} without an \
+             without leg membership, {} results stored, {} legs seen, {} members retained, {} without a name, {} without an \
              athlete id, {} without a grade, {} with unsupported graduation inference",
             self.meets_pulled,
             self.meets_unplaced,
@@ -119,6 +123,7 @@ impl std::fmt::Display for MeetStats {
             self.rows_unmapped_event,
             self.relay_rows,
             self.relay_rows_without_legs,
+            self.relay_rows_stored,
             self.legs_seen,
             self.legs_stored,
             self.legs_no_name,

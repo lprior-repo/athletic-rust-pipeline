@@ -121,7 +121,8 @@ pub(super) fn row_cells(line: &str, columns: Columns) -> Cells<'_> {
     let [name, grade, team, mark_start, mark_end] = boundary_bytes(line, ends);
     let token = mark_token(line, mark_end);
     let team_end = token.map_or(mark_start, |(start, _)| start.min(mark_start).max(team));
-    let mark = token.and_then(|(_, token)| mark_shaped(token).then_some(token));
+    let mark =
+        token.and_then(|(start, token)| mark_shaped(token, start >= mark_start).then_some(token));
     let school = line.get(team..team_end).map(str::trim);
     let school_span = school
         .filter(|value| !value.is_empty() && !columns.repeated_team)
@@ -214,7 +215,7 @@ fn layout_overflows(
     trailing || scattered || (touching && !covered)
 }
 
-fn mark_shaped(token: &str) -> bool {
+fn mark_shaped(token: &str, starts_in_mark_column: bool) -> bool {
     if token.eq_ignore_ascii_case("NT")
         || hytek::NO_MARK
             .iter()
@@ -223,7 +224,11 @@ fn mark_shaped(token: &str) -> bool {
         return true;
     }
     let numeric = token.trim_start_matches(['J', 'j']);
-    numeric.starts_with(|ch: char| ch.is_ascii_digit()) && numeric.contains([':', '.', '-', '\''])
+    let numeric_only = !numeric.is_empty() && numeric.bytes().all(|byte| byte.is_ascii_digit());
+    (starts_in_mark_column
+        && (numeric_only || crate::milesplit::parse_published_metric_distance(token).is_some()))
+        || (numeric.starts_with(|ch: char| ch.is_ascii_digit())
+            && numeric.contains([':', '.', '-', '\'']))
 }
 
 pub(super) fn build_row(cells: &Cells<'_>, kind: &EventKind) -> Result<ParsedRow, &'static str> {

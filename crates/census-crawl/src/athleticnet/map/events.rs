@@ -1,4 +1,4 @@
-use super::{Accumulator, PerformanceInput};
+use super::{Accumulator, EventProjectionInput};
 use crate::{CrawlError, CrawlResult};
 use census_domain::model::{
     CanonicalEvent, EventId, EventIdentity, EventKind, EventSpecification, Evidence,
@@ -11,7 +11,7 @@ pub(in crate::athleticnet) fn ensure_event(
     accumulated: &mut Accumulator,
     source: &SourceRef,
     observed_on: &str,
-    input: &PerformanceInput<'_>,
+    input: &EventProjectionInput<'_>,
 ) -> CrawlResult<EventId> {
     let event = CanonicalEvent::new(identity(input), specification(input)?)?;
     retain_event(
@@ -22,17 +22,17 @@ pub(in crate::athleticnet) fn ensure_event(
     )
 }
 
-fn identity<'a>(input: &'a PerformanceInput<'_>) -> EventIdentity<'a> {
+fn identity<'a>(input: &'a EventProjectionInput<'_>) -> EventIdentity<'a> {
     EventIdentity {
         meet: &input.meet.id,
         kind: input.kind.clone(),
         gender: input.gender,
-        division: input.division.as_deref(),
-        round: input.round.as_deref(),
+        division: input.division,
+        round: input.round,
     }
 }
 
-fn specification(input: &PerformanceInput<'_>) -> CrawlResult<EventSpecification> {
+fn specification(input: &EventProjectionInput<'_>) -> CrawlResult<EventSpecification> {
     let mut labels = input.labels.iter().copied();
     let initial =
         EventSpecification::from_published_label(labels.next().map_or("", |v| v), input.kind)?;

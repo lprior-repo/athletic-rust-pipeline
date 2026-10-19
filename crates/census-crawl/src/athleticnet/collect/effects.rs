@@ -26,6 +26,7 @@ pub(super) fn persist(ctx: &AdapterContext<'_>, rows: Accumulator) -> CrawlResul
     let athletes = write_rows(ctx, Table::Athletes, rows.athletes.values())?;
     let events = write_rows(ctx, Table::Events, rows.events.values())?;
     let performances = write_rows(ctx, Table::Performances, rows.performances.values())?;
+    let relay_results = write_rows(ctx, Table::RelayResults, rows.relay_results.values())?;
     let unsupported_cohorts = rows.unsupported.len();
     let (reviews, observations) = rows.unsupported.into_parts();
     write_rows(
@@ -45,6 +46,7 @@ pub(super) fn persist(ctx: &AdapterContext<'_>, rows: Accumulator) -> CrawlResul
         athletes,
         events,
         performances,
+        relay_results,
         unsupported_cohorts,
     })
 }
