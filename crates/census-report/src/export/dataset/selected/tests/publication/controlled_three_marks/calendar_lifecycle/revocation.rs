@@ -11,7 +11,10 @@ use census_domain::result_calendar_correspondence::{
     ResultCalendarPredecessorV1, ResultCalendarRecordReferenceV1, ResultCalendarReviewActorV1,
     ResultCalendarReviewCommandV1, ResultCalendarReviewedRecordV1, RESULT_CALENDAR_POLICY_V1,
 };
-use census_store::{Application, Receipt, ResultCalendarCorrespondencePreparationV1, Store};
+use census_store::{
+    Application, PreparedResultCalendarCorrespondenceV1, Receipt,
+    ResultCalendarCorrespondencePreparationV1, Store,
+};
 
 pub(in super::super::super) fn enroll_calendar(
     store: &Store,
@@ -32,6 +35,28 @@ pub(in super::super::super) fn apply_calendar_action(
     action: ResultCalendarActionV1,
     rationale: &str,
 ) -> TestResult<(ResultCalendarReviewCommandV1, Receipt)> {
+    let (command, prepared) = prepare_action(store, proposal, operation, action, rationale)?;
+    if prepared.is_replay() {
+        return Err("calendar preparation returned replay".into());
+    }
+    let approved = prepared.approval_bytes().to_vec();
+    let digest = prepared.approval_digest().clone();
+    match store.apply_result_calendar_correspondence_v1(prepared, &approved, &digest)? {
+        Application::Written(receipt) => Ok((command, receipt)),
+        Application::Repeated(_) => Err("calendar action unexpectedly replayed".into()),
+    }
+}
+
+pub(super) fn prepare_action<'s>(
+    store: &'s Store,
+    proposal: &ResultCalendarSourceProposalV1,
+    operation: &str,
+    action: ResultCalendarActionV1,
+    rationale: &str,
+) -> TestResult<(
+    ResultCalendarReviewCommandV1,
+    PreparedResultCalendarCorrespondenceV1<'s>,
+)> {
     let inspection =
         store.inspect_result_calendar_correspondence_v1(AttachmentReplayGrantV1::new())?;
     let command = ResultCalendarReviewCommandV1 {
@@ -58,18 +83,10 @@ pub(in super::super::super) fn apply_calendar_action(
             context: &context,
         },
     )?;
-    if prepared.is_replay() {
-        return Err("calendar preparation returned replay".into());
-    }
-    let approved = prepared.approval_bytes().to_vec();
-    let digest = prepared.approval_digest().clone();
-    match store.apply_result_calendar_correspondence_v1(prepared, &approved, &digest)? {
-        Application::Written(receipt) => Ok((command, receipt)),
-        Application::Repeated(_) => Err("calendar action unexpectedly replayed".into()),
-    }
+    Ok((command, prepared))
 }
 
-fn require_current(
+pub(super) fn require_current(
     store: &Store,
     records: usize,
     receipts: usize,

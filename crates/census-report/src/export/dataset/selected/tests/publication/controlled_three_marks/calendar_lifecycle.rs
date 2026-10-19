@@ -2,6 +2,7 @@ mod multi_subject;
 mod multi_subject_fixture;
 mod multi_subject_frozen;
 mod proposal;
+mod refusals;
 pub(in super::super) mod revocation;
 mod size_bound;
 
