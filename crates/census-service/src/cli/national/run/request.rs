@@ -3,14 +3,22 @@ use census_domain::{model::SchoolYear, UsJurisdiction};
 use census_service::restate_services::{
     HistoryWindow, PublicationContract, SchoolAddressJoinRequest,
 };
-#[tracing::instrument(skip_all)]
 pub(super) async fn show_retained_request(
     ingestion: &Ingress,
     identity: &census_reconcile::identity::WorkflowIdentity,
+    caller_store: Option<&str>,
+    caller_profile: Option<&str>,
+    caller_generation: Option<&str>,
 ) -> Result<()> {
     let request = super::resume::retained_request(ingestion, identity).await?;
     super::resume::validate_selected(&request)?;
-    println!("existing invocation {} retains its bound publication request; submitted parameter changes were ignored", identity.as_str());
+    super::resume::refuse_on_caller_authority(
+        &request,
+        caller_store,
+        caller_profile,
+        caller_generation,
+    )?;
+    println!("existing invocation {} retains its original selected publication request and execution budgets", identity.as_str());
     println!("retained request\t{}", serde_json::to_string(&request)?);
     Ok(())
 }
@@ -29,6 +37,12 @@ pub(super) async fn national_request(
         let request =
             super::resume::bound_request(ingestion, season, revision, jurisdictions, ordinal)
                 .await?;
+        super::resume::refuse_on_caller_authority(
+            &request,
+            args.selected_store_identity.as_deref(),
+            args.selected_profile_id.as_deref(),
+            args.generation.as_deref(),
+        )?;
         println!(
             "resume\tpreserving the original selected publication request and execution budgets"
         );

@@ -1,13 +1,13 @@
 use anyhow::{bail, Context, Result};
 use census_crawl::ingress::Ingress;
 use census_domain::{
-    model::{Revision, SchoolYear},
+    model::{ProfileId, Revision, SchoolYear, StoreIdentity},
     UsJurisdiction,
 };
 use census_reconcile::identity::WorkflowIdentity;
 use census_service::restate_services::{
-    HistoryWindow, NationalCensusIngressClient, NationalRequest, NationalRequestBinding,
-    PublicationContract,
+    ExportGeneration, HistoryWindow, NationalCensusIngressClient, NationalRequest,
+    NationalRequestBinding, PublicationContract,
 };
 use futures::{StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;
@@ -157,6 +157,47 @@ fn validate_managed(request: &NationalRequest) -> Result<()> {
 fn validate_history(request: &NationalRequest, history: HistoryWindow) -> Result<()> {
     if request.history != history {
         bail!("bound national request history disagrees with retained jurisdiction history");
+    }
+    Ok(())
+}
+
+pub(in crate::cli::national::run) fn refuse_on_caller_authority(
+    bound: &NationalRequest,
+    caller_store: Option<&str>,
+    caller_profile: Option<&str>,
+    caller_generation: Option<&str>,
+) -> Result<()> {
+    match (caller_store, caller_profile) {
+        (None, None) => {}
+        (Some(store), Some(profile)) => {
+            let store_id = StoreIdentity::parse(store)
+                .context("national resume compatibility blocked: invalid caller store identity")?;
+            let profile_id = ProfileId::parse(profile)
+                .context("national resume compatibility blocked: invalid caller profile id")?;
+            let selection = match &bound.export_job {
+                census_report::export::ExportJobRequest::SelectedPublicationV1 { selection } => selection,
+                _ => bail!("national resume compatibility blocked: bound export request is not a selected publication request"),
+            };
+            if store_id.as_str() != selection.store_identity().as_str()
+                || profile_id.as_str() != selection.profile_id().as_str()
+            {
+                bail!("national authority compatibility blocked: caller store/profile selection differs from bound request; refusing resume or attachment");
+            }
+        }
+        (Some(_), None) | (None, Some(_)) => {
+            bail!("national resume compatibility blocked: store identity and profile id must be supplied together");
+        }
+    }
+    if let Some(generation) = caller_generation {
+        let caller_gen = ExportGeneration::parse(generation)
+            .context("national resume compatibility blocked: invalid caller generation")?;
+        match bound.generation.as_ref() {
+            None => bail!("national resume compatibility blocked: bound request has no publication generation"),
+            Some(bound_gen) if bound_gen.as_str() != caller_gen.as_str() => {
+                bail!("national authority compatibility blocked: caller generation differs from bound request; refusing resume or attachment");
+            }
+            Some(_) => {}
+        }
     }
     Ok(())
 }

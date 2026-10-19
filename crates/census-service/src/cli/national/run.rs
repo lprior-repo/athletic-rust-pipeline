@@ -31,6 +31,9 @@ pub(crate) async fn submit_national(
     ingestion: &Ingress,
     identity: &WorkflowIdentity,
     request: NationalRequest,
+    caller_store: Option<&str>,
+    caller_profile: Option<&str>,
+    caller_generation: Option<&str>,
 ) -> Result<InvocationHandle<CurrentRoute, Json<NationalReport>>> {
     resume::validate_selected(&request)?;
     crate::cli::publication_preflight::require_national_publication(ingestion).await?;
@@ -38,12 +41,26 @@ pub(crate) async fn submit_national(
     let handle = match national.run(Json(request)).send().await {
         Ok(submitted) => {
             if matches!(submitted.send_status(), SendStatus::PreviouslyAccepted) {
-                request::show_retained_request(ingestion, identity).await?;
+                request::show_retained_request(
+                    ingestion,
+                    identity,
+                    caller_store,
+                    caller_profile,
+                    caller_generation,
+                )
+                .await?;
             }
             submitted.invocation_handle()
         }
         Err(error) => {
-            request::show_retained_request(ingestion, identity).await?;
+            request::show_retained_request(
+                ingestion,
+                identity,
+                caller_store,
+                caller_profile,
+                caller_generation,
+            )
+            .await?;
             let handle = attach_existing(origin, ingestion, identity).await?;
             println!(
                 "national run {} already exists — observing it instead",
@@ -124,7 +141,16 @@ async fn run_national_cycle(
         ordinal,
     )
     .await?;
-    let handle = submit_national(run.origin, run.ingestion, &identity, request).await?;
+    let handle = submit_national(
+        run.origin,
+        run.ingestion,
+        &identity,
+        request,
+        run.args.selected_store_identity.as_deref(),
+        run.args.selected_profile_id.as_deref(),
+        run.args.generation.as_deref(),
+    )
+    .await?;
     announce_national_invocation(&identity, &handle);
     if run.args.detach {
         return Ok(None);

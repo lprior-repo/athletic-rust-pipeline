@@ -170,7 +170,7 @@ async fn nonselected_submission_refuses_before_any_ingress_request() -> TestResu
                 guarded_resume_ingress(listener, vec![], completion),
                 async {
                     let outcome = crate::cli::national::run::submit_national(
-                        &origin, &ingestion, &identity, request,
+                        &origin, &ingestion, &identity, request, None, None, None,
                     )
                     .await;
                     drop(finished);

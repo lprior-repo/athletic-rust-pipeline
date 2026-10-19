@@ -1,6 +1,9 @@
 use super::*;
 use census_reconcile::identity::WorkflowIdentity;
 
+#[path = "resume/authority.rs"]
+mod authority;
+
 pub(super) async fn refused_resume_ingress(
     listener: tokio::net::TcpListener,
     responses: Vec<(&str, String)>,

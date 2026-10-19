@@ -904,9 +904,13 @@ Fresh National submissions carry `--generation` through the existing checked exp
 parser. The endpoint must advertise both `selected_publication_v1` and
 `national_generation_revision: 1`; an older selected-only endpoint is refused before submission.
 Historical requests without a generation remain readable, not executable. Resume/drive preserve
-the originally bound generation and execution budgets rather than replacing them with new flags.
-Selected-parent binding, profile-derived cohort and typed National receipt acceptance remain
-open; this is not annual-reuse or national-readiness certification.
+the originally bound generation and execution budgets. Explicit caller store/profile/generation
+flags must match the retained authority; omitted flags do not assert fresh defaults. A mismatched
+resume refuses before capability lookup or submission. An already-accepted or ambiguously failed
+send requires a matching retained request before attachment/observation; parameter changes are
+not silently accepted. No source identity or retry budget is reset.
+Profile-derived cohort, typed National receipt and complete native selected-publication acceptance
+remain open; these guards are not annual-reuse or national-readiness certification.
 
 An explicit offline `index --store <dir> --school-year <yyyy>` still re-derives mutable projections;
 those separately replaced tables are not the workbook's publication boundary and are not a
