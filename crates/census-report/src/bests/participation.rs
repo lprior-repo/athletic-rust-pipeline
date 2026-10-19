@@ -79,7 +79,7 @@ impl<'a> ParticipationSelection<'a> {
             return Ok(Self::Selected(dataset.verified_participation()?));
         }
         match dataset.lineage.policy_revision {
-            18..=21 => Ok(Self::Historical),
+            18..=22 => Ok(Self::Historical),
             _ => Err(ReportError::Invariant {
                 detail: "selected participation policy requires verified frozen evidence".into(),
             }),
@@ -89,7 +89,7 @@ impl<'a> ParticipationSelection<'a> {
     pub(crate) fn ensure_dataset(self, dataset: &ExportDataset) -> ReportResult<()> {
         match self {
             Self::Historical
-                if matches!(dataset.lineage.policy_revision, 18..=21)
+                if matches!(dataset.lineage.policy_revision, 18..=22)
                     && dataset.selected_profile_id().is_none() =>
             {
                 Ok(())
