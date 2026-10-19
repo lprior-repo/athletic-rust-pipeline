@@ -6,13 +6,15 @@ its narrower compiler envelope does not reduce that target or enroll/migrate a p
 
 ## Executed integration subset
 
-Source `4d0ba14e` qualifies controlled 49/50/51 publication, documentary withdrawal
-at current sealing, durable selected **library** jobs and original-artifact replay.
-[Exact receipts and limitations](VERIFICATION-EVIDENCE.md#pr9495-integrated-seal-and-durable-job-qualification--2026-10-18)
-and the [acceptance matrix](NATIONAL-CENSUS-PLAN.md#75-current-execution-checkpoint--2026-10-18)
-own those claims. Service/national workbook requests still use the unselected job
-path. Genuine positive population, accepted roster withdrawal, production enrollment
-and representative national resources are not qualified.
+Source `af9c58e7` qualifies controlled 49/50/51 publication, documentary withdrawal
+at current sealing, durable selected library/service jobs, the actual Workbook
+HTTP handler, selected National retry wiring and original-artifact replay.
+One genuine retained roster resolves current school under controlled public review;
+it does not establish genuine eligible-mark or population coverage.
+[Exact receipts and limitations](VERIFICATION-EVIDENCE.md#roster-owner-and-selected-service-qualification--2026-10-18)
+and the [acceptance matrix](NATIONAL-CENSUS-PLAN.md#75-latest-qualified-checkpoint--2026-10-18)
+own those claims. Calendar correspondence, accepted roster withdrawal, production
+enrollment and representative national resources remain unqualified.
 
 ## Profile compiler boundary
 

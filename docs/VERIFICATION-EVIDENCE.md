@@ -1182,3 +1182,35 @@ functions over 60 or unresolved AST sites. The measured 310-line facade and
 resolver and separating owner-contract selection. Prior failed scans are not
 reported as passes. One shared test-helper unused warning remains visible.
 
+### Roster owner and selected service qualification — 2026-10-18
+
+Exact source `af9c58e7b9ebdaf7dc13a5c1c613e2e5807dec21`, tree
+`28c41613572bd23ccd4ae8089d1b5f2d06c2a70a`: all 38 serialized Moon commands PASS.
+Fmt/check/lint: `ee6e597e`/`eed55f81`/`64190eab`. Original three-case A/B:
+`db05facc`; original Report V3: `743f2273`; connected publication: `ed9890e0`,
+183 cases. Service `3ceac06d`, real Workbook HTTP/National wiring `a572a466`,
+state `0657e8b4`, CLI `794540a2`, authentication `b8386062` all PASS.
+The complete 25-scope roster queue passed 237 cases. No zero-selection passes.
+All original producer pins and action-specific denied selectors were preserved.
+
+AST/comments/panic/contract: `2e5d1099`/`7af763ec`/`41c24048`/`e493f770`
+PASS, with existing arity/boundary advisories visible. Source-only Sol review found
+no confirmed defects in the changed integration surface; Main owns runtime evidence.
+The first campaign stopped on a forbidden comment; removing it changed the exact
+compiled source closure. `262b852a` correctly refused its stale current pin.
+Only current 10/11 pins were refreshed to generated closure `54d82912…61a5c7`;
+historical artifacts were not repinned or admitted under a wildcard.
+
+Command inventory and full log are outside Git under
+`/home/lewis/.cache/r14n-TpNM3q/qualification-af9c58e7.{commands.json,log}`.
+Log SHA256: `7b3f4843961aff33f1762183c65f1f908251e524aa750185aebdf21ab7eb6418`.
+Genuine controlled-review receipt: `.tmp7RTzkp/genuine-retention.json` under that
+cache; workbook `.tmprEdbiM/publication/generations/872def01052d02ed43cb052a54a9b001e561ae26db3ab435904b8286d04e7be4/workbook.xlsx`,
+SHA256 `17c249eba807e7eaf753f05c688de45e5242739f005db3204d141b37d8f4584c`.
+Independent OpenXML readback confirms William Abbott/2027/MI/Detroit Catholic
+Central/Novi; all 24 artifact lengths/hashes match. One athlete, zero best marks.
+Test-process VmHWM: 111,628,288 bytes; final owned archive/output logical disk:
+6,174,540/6,254,410 bytes. These are not aggregate national memory or peak disk.
+Calendar authority, accepted roster withdrawal, production enrollment and
+population/comparison/resource acceptance remain open.
+
