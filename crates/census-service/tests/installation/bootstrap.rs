@@ -22,6 +22,7 @@ fn public_serve_refuses_enrollment_before_occupied_listener_and_browser_setup() 
     let options = ServeOptions {
         data_dir: root.path().to_path_buf(),
         listen: listener.local_addr()?,
+        capture_protocol: Some(crate::bootstrap::ServeCaptureProtocol::FreshQualificationV3),
         ..ServeOptions::default()
     };
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
