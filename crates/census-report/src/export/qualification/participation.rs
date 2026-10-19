@@ -44,7 +44,6 @@ pub(crate) use archive::ParticipationReplayV3;
 pub(crate) use archive::{
     ParticipationReplay, ParticipationReplayV1, ParticipationReplayV2, ParticipationReplayV4,
 };
-pub(crate) use observations::BUDGET as PHYSICAL_OBSERVATION_BUDGET;
 pub(crate) use types::{ParticipationDiagnostic, PinnedParticipation, PinnedParticipationRow};
 const MAX_ARCHIVE_BYTES: u64 = 512 * 1024 * 1024;
 

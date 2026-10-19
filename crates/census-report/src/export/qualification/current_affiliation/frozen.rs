@@ -98,11 +98,7 @@ pub(in crate::export::qualification) fn visit_athletes(
 }
 
 fn observation_budget() -> census_store::ReadBudget {
-    census_store::ReadBudget {
-        rows: super::MAX_OBSERVATIONS,
-        bytes: super::MAX_OBSERVATION_BYTES,
-        record_bytes: 1024 * 1024,
-    }
+    physical_observations::OBSERVATION_BUDGET
 }
 
 fn encode(objects_dir: &Path, value: &impl Serialize, ceiling: u64) -> ReportResult<ObjectRef> {

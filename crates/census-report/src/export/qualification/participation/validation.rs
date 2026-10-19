@@ -1,4 +1,5 @@
 use super::*;
+use crate::export::qualification::physical_observations::OBSERVATION_BUDGET;
 
 pub(super) fn live(
     dataset: &ExportDataset,
@@ -80,8 +81,12 @@ fn selected(dataset: &ExportDataset, profile: &QueryProfileV1) -> ReportResult<(
     dataset.ensure_input_binding()?;
     replay_policy(&profile.input().policies.participation)?;
     let profile_id = profile.id().map_err(StoreError::from)?;
-    if dataset.performances.len() > 200_000
-        || dataset.athletes.len() > 200_000
+    let performances =
+        u64::try_from(dataset.performances.len()).map_err(|_| StoreError::CounterOverflow)?;
+    let athletes =
+        u64::try_from(dataset.athletes.len()).map_err(|_| StoreError::CounterOverflow)?;
+    if performances > OBSERVATION_BUDGET.rows
+        || athletes > OBSERVATION_BUDGET.rows
         || dataset.selected_profile_id() != Some(&profile_id)
         || dataset.selected_as_of() != Some(&profile.input().as_of)
         || dataset.selected_participation_rule() != Some(&profile.input().policies.participation)

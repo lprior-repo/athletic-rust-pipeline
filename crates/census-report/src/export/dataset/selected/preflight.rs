@@ -1,4 +1,4 @@
-use crate::export::qualification::participation::PHYSICAL_OBSERVATION_BUDGET as PROOF_BUDGET;
+use crate::export::qualification::physical_observations::OBSERVATION_BUDGET as PROOF_BUDGET;
 use crate::report::ReportResult;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam,

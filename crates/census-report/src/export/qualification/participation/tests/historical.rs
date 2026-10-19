@@ -43,7 +43,7 @@ async fn historical_roundtrip(
         &snapshot,
         Table::Athletes,
         &directory,
-        observations::BUDGET,
+        crate::export::qualification::physical_observations::OBSERVATION_BUDGET,
     )?;
     let (closure, observations) = observations::capture(
         &dataset,

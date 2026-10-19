@@ -1,5 +1,5 @@
+use super::invalid;
 use super::source_authority::SourceAuthorityFamilyInventoryV1;
-use super::{invalid, MAX_OBSERVATIONS, MAX_OBSERVATION_BYTES};
 use crate::export::qualification::physical_observations;
 use crate::export::{proof_objects, ExportDataset};
 use crate::report::ReportResult;
@@ -183,11 +183,7 @@ fn reference(value: &str) -> StoreResult<ObjectRef<'_>> {
 }
 
 fn budget() -> ReadBudget {
-    ReadBudget {
-        rows: MAX_OBSERVATIONS,
-        bytes: MAX_OBSERVATION_BYTES,
-        record_bytes: 1024 * 1024,
-    }
+    physical_observations::OBSERVATION_BUDGET
 }
 
 fn domain(

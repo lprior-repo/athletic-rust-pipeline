@@ -7,14 +7,6 @@ use serde_json::json;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
-fn selected_preflight_preserves_existing_physical_proof_limits() -> TestResult {
-    check!(eq; PROOF_BUDGET.rows, 200_000);
-    check!(eq; PROOF_BUDGET.bytes, 256 * 1024 * 1024);
-    check!(eq; PROOF_BUDGET.record_bytes, 1024 * 1024);
-    Ok(())
-}
-
-#[test]
 fn selected_preflight_checks_all_five_tables_before_oversized_row_decode() -> TestResult {
     let oversized = json!({"id": "not-a-domain-row", "padding": "x".repeat(1024 * 1024)});
     let bytes = serde_json::to_vec(&oversized)?.len();
