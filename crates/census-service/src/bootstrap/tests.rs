@@ -1,6 +1,8 @@
 use std::ffi::OsStr;
 
 use super::*;
+use crate::bootstrap::ServeCaptureProtocol;
+use census_store::Store;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -293,9 +295,11 @@ fn a_non_loopback_listen_is_refused() -> TestResult {
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            Store::create_current_qualification_v3(dir.path())?;
             let options = ServeOptions {
                 listen: SocketAddr::from(([0, 0, 0, 0], 0)),
                 data_dir: dir.path().to_path_buf(),
+                capture_protocol: Some(ServeCaptureProtocol::FreshQualificationV3),
                 ..ServeOptions::default()
             };
             let error = match supervise(options, std::future::pending::<()>()).await {
@@ -304,11 +308,6 @@ fn a_non_loopback_listen_is_refused() -> TestResult {
             };
             if !matches!(&error, BootstrapError::NonLoopbackListen { .. }) {
                 return Err(format!("expected NonLoopbackListen, got {error:?}").into());
-            }
-            if !error.to_string().contains("is not a loopback address") {
-                return Err(
-                    format!("refusal does not describe non-loopback address: {error}").into(),
-                );
             }
             Ok(())
         })

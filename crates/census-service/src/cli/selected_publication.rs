@@ -34,13 +34,17 @@ pub(super) fn run(cli: &super::Cli, args: &SelectedPublicationArgs) -> Result<()
     let selection = super::profile::input::read_selection(&args.selection)?;
     let output = paths::output(root, &args.out)?;
     let (store, _writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
+    let lifecycle = store
+        .store_format()?
+        .lifecycle_revision
+        .context("selected-publication requires a declared qualification lifecycle")?;
     let snapshot = store.snapshot();
     let profile = snapshot.selected_profile(&selection)?;
     let options = contract::options(&profile, &output)?;
     let authority = snapshot
         .accepted_public_identity_snapshot()?
         .context("selected-publication requires retained accepted authority")?;
-    anyhow::ensure!(authority.qualification_version() == census_domain::public_identity_qualification::PublicIdentityQualificationVersion::RetainedAuthorityGraphV3, "selected-publication requires retained authority lifecycle 7");
+    anyhow::ensure!(authority.qualification_version() == census_domain::public_identity_qualification::PublicIdentityQualificationVersion::RetainedAuthorityGraphV3, "selected-publication requires retained graph-V3 authority");
     drop(authority);
     let objects = paths::Scratch::create(&output)?;
     let dataset =
@@ -57,7 +61,7 @@ pub(super) fn run(cli: &super::Cli, args: &SelectedPublicationArgs) -> Result<()
             "schema": "selected_publication_qualification_v3",
             "participation_policy_revision": 4,
             "qualification_only": true,
-            "qualification_lifecycle": 7,
+            "qualification_lifecycle": lifecycle,
             "profile_id": selection.profile_id(),
             "store_identity": selection.store_identity(),
             "as_of": profile.input().as_of,

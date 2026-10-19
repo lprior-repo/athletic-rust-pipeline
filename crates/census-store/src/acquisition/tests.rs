@@ -6,6 +6,8 @@ use fjall::Readable;
 use sha2::{Digest, Sha256};
 
 mod corruption;
+mod current_qualification;
+mod current_roster;
 mod lifecycle;
 mod preservation;
 mod protocol;

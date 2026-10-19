@@ -110,26 +110,19 @@ pub(super) struct Witness {
     derived: u64,
     tables: String,
     run: Option<RunManifest>,
-    pub(super) lineage: Result<String, &'static str>,
+    lineage: census_domain::model::StoreIdentity,
 }
 
 impl Witness {
     pub(super) fn capture(store: &Store) -> TestResult<Self> {
         let snapshot = store.snapshot();
-        let lineage = match snapshot.store_identity() {
-            Ok(identity) => Ok(identity.as_str().to_string()),
-            Err(census_store::StoreError::StoreLineage(
-                census_store::StoreLineageError::Missing,
-            )) => Err("missing"),
-            Err(error) => return Err(error.into()),
-        };
         Ok(Self {
             sequence: snapshot.sequence(),
             evidence: snapshot.evidence_generation(),
             derived: snapshot.derived_generation(),
             tables: snapshot.tables_digest(&Table::ALL)?,
             run: snapshot.run_manifest()?,
-            lineage,
+            lineage: snapshot.store_identity()?,
         })
     }
 
@@ -142,8 +135,13 @@ impl Witness {
     }
 }
 
+pub(super) fn open_current(root: &Path) -> TestResult<Store> {
+    let (store, _writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
+    Ok(store)
+}
+
 pub(super) fn witness(root: &Path) -> TestResult<Witness> {
-    let store = Store::open_with(root, 8_388_608)?;
+    let store = open_current(root)?;
     Witness::capture(&store)
 }
 

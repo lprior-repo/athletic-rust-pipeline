@@ -10,11 +10,9 @@ Type=simple
 Slice=census.slice
 User=midwest
 Group=midwest
-# %i is the release identity: the short commit being served. Each release gets its own binary, its
-# own store directory and its own log directory, so `census-serve@abc1234` and the next release
-# cannot hold one another's Fjall writer lock. Rolling forward means starting a second instance and
-# retiring the first; rolling back means starting the previous instance again, and both are visible
-# as separate deployments in the node's admin API.
+# %i selects immutable binary/log artifacts, not a new logical census.
+# Initialize a separately authorized fresh root before starting this unit.
+# Same-run handoff requires a stopped-owner override preserving the original root.
 WorkingDirectory=/opt/athletic-rust-pipeline/releases/%i
 Environment=RUST_LOG=info
 # CENSUS_LISTEN is the only value that differs between releases besides %i itself; see
@@ -23,6 +21,7 @@ EnvironmentFile=/etc/census-service/endpoint-%i.env
 ExecStart=/opt/athletic-rust-pipeline/releases/%i/bin/census-serve \
   --listen ${CENSUS_LISTEN} \
   --data-dir /var/lib/census-service/%i \
+  --capture-protocol fresh-qualification-v3 \
   --max-concurrent 8 \
   --drain-timeout 30 \
   --memory-budget-gib 48 \

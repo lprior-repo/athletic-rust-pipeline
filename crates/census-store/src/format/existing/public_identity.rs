@@ -4,6 +4,24 @@ use census_domain::public_identity_qualification::PublicIdentityQualificationVer
 use std::path::Path;
 
 impl Store {
+    pub fn open_current_qualification_v3(
+        root: impl AsRef<Path>,
+    ) -> StoreResult<crate::CaptureQualificationStore> {
+        let store = existing(
+            root.as_ref(),
+            OpenPurpose::CurrentQualificationV3,
+            super::super::DEFAULT_CACHE_BYTES,
+        )?;
+        let record = crate::acquisition::qualification::declaration(
+            &store.db.snapshot(),
+            &store.meta,
+            &store.journal,
+            &store.store_format()?,
+        )?
+        .ok_or(crate::CaptureError::CaptureCapabilityMissing)?;
+        Ok(crate::CaptureQualificationStore::new(store, record))
+    }
+
     pub fn open_public_identity_qualification_v3(
         root: impl AsRef<Path>,
     ) -> StoreResult<crate::PublicIdentityQualificationStore> {

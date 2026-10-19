@@ -8,7 +8,7 @@ use super::USAGE;
 
 #[derive(Debug, thiserror::Error)]
 pub enum BootstrapError {
-    #[error("unsupported capture protocol {raw:?}; expected fresh-qualification-v1 or fresh-qualification-v2")]
+    #[error("unsupported capture protocol {raw:?}; expected explicit fresh-qualification-v3")]
     CaptureProtocolUnsupported { raw: String },
     #[error("installation {identity} with config {config_id} supports enrollment only; production serving remains unsupported", identity = .store_identity.as_str())]
     EnrollmentOnlyUnsupported {

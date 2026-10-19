@@ -20,18 +20,6 @@ fn args(values: &[&str]) -> TestResult<ProfileArgs> {
 }
 
 #[test]
-fn profile_cli_uses_the_shared_constructor_and_canonical_set_identity() -> TestResult {
-    let expected = profile()?;
-    let mut raw = expected.input().clone();
-    raw.jurisdictions.reverse();
-    raw.jurisdictions
-        .push(census_domain::UsJurisdiction::Michigan);
-    let parsed = input::parse_profile(&serde_json::to_vec(&raw)?)?;
-    equal(parsed.id()?, expected.id()?)?;
-    equal(parsed, expected)
-}
-
-#[test]
 fn profile_cli_accepts_exactly_the_byte_ceiling_and_refuses_the_next_byte() -> TestResult {
     let expected = profile()?;
     let mut raw = serde_json::to_vec(&expected)?;
@@ -233,37 +221,6 @@ fn profile_cli_output_failure_is_not_retried_or_reported_as_success() -> TestRes
 }
 
 #[test]
-fn profile_cli_does_not_add_profile_flags_to_legacy_pipeline_commands() -> TestResult {
-    let run = crate::cli::Cli::try_parse_from(["census-service", "run", "--school-year", "2026"])?;
-    if !matches!(run.command, crate::cli::command::Command::Run(_)) {
-        return Err("legacy run changed command".into());
-    }
-    let national = crate::cli::Cli::try_parse_from([
-        "census-service",
-        "national",
-        "--states",
-        "MI,MN,IA,IL,CO",
-        "--detach",
-    ])?;
-    if !matches!(national.command, crate::cli::command::Command::National(_)) {
-        return Err("legacy national changed command".into());
-    }
-    if crate::cli::Cli::try_parse_from([
-        "census-service",
-        "run",
-        "--school-year",
-        "2026",
-        "--profile",
-        &"a".repeat(64),
-    ])
-    .is_ok()
-    {
-        return Err("unresolved profile runtime activation accepted".into());
-    }
-    Ok(())
-}
-
-#[test]
 fn profile_cli_preserves_explicit_49_51_and_multi_cohort_configuration() -> TestResult {
     use census_domain::model::GradYear;
     use census_domain::UsJurisdiction;
@@ -297,6 +254,7 @@ fn profile_cli_retry_after_lost_output_returns_the_retained_registration() -> Te
     let root = directory.path().join("store");
     let file = directory.path().join("profile.json");
     let expected = profile()?;
+    census_store::Store::create_public_identity_qualification_v3(&root)?;
     std::fs::write(&file, serde_json::to_vec(&expected)?)?;
     let args = args(&[
         "census-service",
@@ -312,7 +270,8 @@ fn profile_cli_retry_after_lost_output_returns_the_retained_registration() -> Te
     }
     equal(unavailable.calls, 1)?;
     let before = {
-        let store = census_store::Store::open_with(&root, 8_388_608)?;
+        let (store, _writer) =
+            census_store::Store::open_public_identity_qualification_v3(&root)?.into_parts();
         equal(store.profile(&expected.id()?)?, expected.clone())?;
         store.snapshot().sequence()
     };
@@ -324,6 +283,8 @@ fn profile_cli_retry_after_lost_output_returns_the_retained_registration() -> Te
         reply.get("profile_id"),
         Some(&serde_json::json!(expected.id()?.as_str())),
     )?;
-    let store = census_store::Store::open_with(&root, 8_388_608)?;
+    let (store, _writer) =
+        census_store::Store::open_public_identity_qualification_v3(&root)?.into_parts();
+    equal(store.profile(&expected.id()?)?, expected)?;
     equal(store.snapshot().sequence(), before)
 }

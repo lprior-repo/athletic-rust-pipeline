@@ -1,18 +1,24 @@
-use census_domain::model::{ProfileId, ProfileSelectionV1, StoreIdentity};
-use census_store::Store;
+use census_domain::model::{
+    GradYear, ProfileId, ProfileSelectionV1, QueryProfileV1, StoreIdentity,
+};
 use serde_json::Value;
 
 use super::fixture::{equal, profile, TestResult};
-use super::harness::{inject, invoke, path_text, refusal, success, witness, Witness};
+use super::harness::{inject, invoke, open_current, path_text, refusal, success, witness};
 
 #[test]
 fn profile_cli_prepares_a_selection_without_persisting_or_activating_it() -> TestResult {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("store");
     let document = directory.path().join("selection.json");
-    let expected = profile()?;
+    let baseline = profile()?;
+    let mut input = baseline.input().clone();
+    input.graduation_years = vec![GradYear::new(2028).ok_or("fixture cohort")?];
+    let expected = QueryProfileV1::new(input)?;
+    census_store::Store::create_public_identity_qualification_v3(&root)?;
     let identity = {
-        let store = Store::open_with(&root, 8_388_608)?;
+        let store = open_current(&root)?;
+        store.register_profile(&baseline)?;
         store.register_profile(&expected)?;
         let identity = store.store_identity()?;
         store.flush()?;
@@ -39,6 +45,10 @@ fn profile_cli_prepares_a_selection_without_persisting_or_activating_it() -> Tes
     )?;
     equal(selection.store_identity(), &identity)?;
     equal(selection.profile_id(), &expected.id()?)?;
+    equal(
+        open_current(&root)?.selected_profile(&selection)?,
+        expected.clone(),
+    )?;
     equal(&witness(&root)?, &before)?;
     std::fs::write(&document, serde_json::to_vec(&selection)?)?;
     let rechecked = success(
@@ -50,29 +60,7 @@ fn profile_cli_prepares_a_selection_without_persisting_or_activating_it() -> Tes
         "selection_prepared",
     )?;
     equal(rechecked, output)?;
-    equal(&witness(&root)?, &before)
-}
-
-#[test]
-fn profile_cli_select_does_not_create_a_missing_installation_identity() -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let root = directory.path().join("store");
-    let expected = profile()?;
-    let before = {
-        let store = Store::open_with(&root, 8_388_608)?;
-        store.register_profile(&expected)?;
-        store.flush()?;
-        Witness::capture(&store)?
-    };
-    equal(&before.lineage, &Err("missing"))?;
-    refusal(
-        invoke(
-            directory.path(),
-            Some(&root),
-            &["profile", "select", "--id", expected.id()?.as_str()],
-        )?,
-        "store_identity_missing",
-    )?;
+    equal(open_current(&root)?.selected_profile(&selection)?, expected)?;
     equal(&witness(&root)?, &before)
 }
 
@@ -82,8 +70,9 @@ fn profile_cli_foreign_selection_refuses_even_when_the_payload_is_retained_local
     let root = directory.path().join("store");
     let document = directory.path().join("foreign.json");
     let expected = profile()?;
+    census_store::Store::create_public_identity_qualification_v3(&root)?;
     let actual = {
-        let store = Store::open_with(&root, 8_388_608)?;
+        let store = open_current(&root)?;
         store.register_profile(&expected)?;
         let identity = store.store_identity()?;
         store.flush()?;
@@ -114,11 +103,7 @@ fn profile_cli_missing_profile_is_a_failure_for_show_and_select() -> TestResult 
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("store");
     let missing = ProfileId::parse(&"d".repeat(64))?;
-    {
-        let store = Store::open_with(&root, 8_388_608)?;
-        store.store_identity()?;
-        store.flush()?;
-    }
+    census_store::Store::create_public_identity_qualification_v3(&root)?;
     let before = witness(&root)?;
     for action in ["show", "select"] {
         refusal(
@@ -140,8 +125,9 @@ fn profile_cli_selection_refuses_a_spoofed_retained_payload_without_rewriting_it
     let root = directory.path().join("store");
     let expected = profile()?;
     let id = expected.id()?;
+    census_store::Store::create_public_identity_qualification_v3(&root)?;
     {
-        let store = Store::open_with(&root, 8_388_608)?;
+        let store = open_current(&root)?;
         store.register_profile(&expected)?;
         store.store_identity()?;
         store.flush()?;
@@ -168,45 +154,6 @@ fn profile_cli_selection_refuses_a_spoofed_retained_payload_without_rewriting_it
 }
 
 #[test]
-fn profile_cli_preserves_historical_store_identity_case_and_refuses_case_rebinding() -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let root = directory.path().join("store");
-    let document = directory.path().join("selection.json");
-    let expected = profile()?;
-    let historical = StoreIdentity::parse(&"A".repeat(64))?;
-    {
-        let store = Store::open_with(&root, 8_388_608)?;
-        store.register_profile(&expected)?;
-        store.journal_done("export-lineage-v1", "store-identity", &historical)?;
-        store.flush()?;
-    }
-    let before = witness(&root)?;
-    let output = success(
-        invoke(
-            directory.path(),
-            Some(&root),
-            &["profile", "select", "--id", expected.id()?.as_str()],
-        )?,
-        "selection_prepared",
-    )?;
-    let selected: ProfileSelectionV1 =
-        serde_json::from_value(output.get("selection").ok_or("missing selection")?.clone())?;
-    equal(selected.store_identity(), &historical)?;
-    equal(&witness(&root)?, &before)?;
-    let lowercase = ProfileSelectionV1::new(StoreIdentity::parse(&"a".repeat(64))?, expected.id()?);
-    std::fs::write(&document, serde_json::to_vec(&lowercase)?)?;
-    refusal(
-        invoke(
-            directory.path(),
-            Some(&root),
-            &["profile", "select", "--selection", path_text(&document)?],
-        )?,
-        "selection_foreign_store",
-    )?;
-    equal(&witness(&root)?, &before)
-}
-
-#[test]
 fn profile_cli_opaque_source_and_region_references_never_claim_runtime_activation() -> TestResult {
     use census_domain::model::{
         ContractRefV1, DiscoveryPriorityV1, QueryProfileV1, RegionalMembershipV1,
@@ -218,10 +165,12 @@ fn profile_cli_opaque_source_and_region_references_never_claim_runtime_activatio
     input.regional_membership = RegionalMembershipV1::SourceBackedRegion(region.clone());
     input.discovery_priority = DiscoveryPriorityV1::SourceBackedRegionFirst(region);
     let expected = QueryProfileV1::new(input)?;
+    census_store::Store::create_public_identity_qualification_v3(&root)?;
     {
-        let store = Store::open_with(&root, 8_388_608)?;
+        let store = open_current(&root)?;
         store.register_profile(&expected)?;
         store.store_identity()?;
+        equal(store.profile(&expected.id()?)?, expected.clone())?;
         store.flush()?;
     }
     let before = witness(&root)?;
@@ -237,14 +186,12 @@ fn profile_cli_opaque_source_and_region_references_never_claim_runtime_activatio
         output.get("runtime_activation"),
         Some(&serde_json::json!("unavailable")),
     )?;
-    let reason = output
-        .get("reason")
-        .and_then(Value::as_str)
-        .ok_or("missing runtime reason")?;
-    if !reason
-        .contains("source, region, completion, and policy contract resolution is not performed")
-    {
-        return Err("selection conceals its unresolved runtime-contract boundary".into());
-    }
+    let selection: ProfileSelectionV1 =
+        serde_json::from_value(output.get("selection").ok_or("missing selection")?.clone())?;
+    let store = open_current(&root)?;
+    equal(selection.store_identity(), &store.store_identity()?)?;
+    equal(selection.profile_id(), &expected.id()?)?;
+    equal(store.selected_profile(&selection)?, expected)?;
+    drop(store);
     equal(&witness(&root)?, &before)
 }

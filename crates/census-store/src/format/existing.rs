@@ -3,6 +3,7 @@ use std::path::Path;
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 use fjall::Database;
 
+mod capture;
 mod marker;
 mod public_identity;
 
@@ -12,6 +13,7 @@ use crate::{Store, StoreError, StoreResult};
 pub(crate) enum OpenPurpose {
     LegacyExecution,
     PublicIdentityExecution(PublicIdentityQualificationVersion),
+    CurrentQualificationV3,
     PublicIdentityHistory,
     InstallationControl,
     CaptureControl,
@@ -109,23 +111,7 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
         &keyspaces.receipts,
         &format,
     )?;
-    match purpose {
-        OpenPurpose::LegacyExecution
-        | OpenPurpose::InstallationControl
-        | OpenPurpose::PublicIdentityExecution(_)
-        | OpenPurpose::PublicIdentityHistory => crate::acquisition::require_legacy(&capture)?,
-        OpenPurpose::CaptureControl | OpenPurpose::CaptureExecution(_) if capture.is_none() => {
-            return Err(crate::CaptureError::CaptureCapabilityMissing.into())
-        }
-        OpenPurpose::CaptureExecution(expected)
-            if capture
-                .as_ref()
-                .is_none_or(|record| record.protocol() != expected) =>
-        {
-            return Err(crate::CaptureError::CaptureProtocolUnsupported.into());
-        }
-        _ => {}
-    }
+    capture::validate_purpose(purpose, &capture)?;
     finish_existing(root, purpose, keyspaces, format)
 }
 
@@ -185,6 +171,7 @@ fn finish_existing(
     match purpose {
         OpenPurpose::LegacyExecution
         | OpenPurpose::CaptureExecution(_)
+        | OpenPurpose::CurrentQualificationV3
         | OpenPurpose::PublicIdentityExecution(_) => {
             crate::installation::require_legacy_execution(&state)?
         }
@@ -195,6 +182,7 @@ fn finish_existing(
     match purpose {
         OpenPurpose::LegacyExecution
         | OpenPurpose::CaptureExecution(_)
+        | OpenPurpose::CurrentQualificationV3
         | OpenPurpose::PublicIdentityExecution(_) => {
             crate::ensure_dirs(root)?;
             Store::recover_opened(root.to_path_buf(), db, entities, journal, meta, receipts)
@@ -253,6 +241,14 @@ impl ExistingKeyspaces {
                 .as_ref()
                 .ok_or(crate::PublicIdentityError::OptInRequired)?
                 .require_version(expected)?,
+            OpenPurpose::CurrentQualificationV3 => identity
+                .as_ref()
+                .ok_or(crate::PublicIdentityError::OptInRequired)?
+                .require_version(PublicIdentityQualificationVersion::RetainedAuthorityGraphV3)?,
+            OpenPurpose::CaptureControl if identity.is_some() => identity
+                .as_ref()
+                .ok_or(crate::PublicIdentityError::OptInRequired)?
+                .require_version(PublicIdentityQualificationVersion::RetainedAuthorityGraphV3)?,
             OpenPurpose::PublicIdentityHistory => {
                 let version = identity
                     .as_ref()

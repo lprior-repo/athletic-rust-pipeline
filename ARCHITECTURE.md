@@ -45,6 +45,13 @@ migrate every caller. Qualification and production use the same engine with expl
 Unsupported old state refuses before work or mutation. Preserve its bytes and identities without
 implicitly importing, migrating or executing it. This cutover is required, not yet qualified.
 
+Current fresh serving requires explicit `--capture-protocol fresh-qualification-v3`.
+Graph-V3 identity and existing capture-V2 ownership share one store identity;
+initialization never adopts an existing root. Graph/input admission and reviewed-roster
+capability enrollment are explicit operations, not accepted athlete or membership facts.
+This serving composition does not activate reusable production; see the
+[initialization procedure](docs/OPERATIONS.md#run-selection-and-inspection).
+
 The former root acquisition package was removed on 2026-09-23. The virtual workspace below is the
 only product implementation; do not recreate the root pipeline or a parallel acquisition engine.
 

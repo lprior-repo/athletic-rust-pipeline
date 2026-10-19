@@ -36,7 +36,7 @@ fn historical_families_replay_without_a_mutating_writer_or_reset() -> TestResult
     .try_for_each(|version| {
         let directory = tempfile::tempdir()?;
         let root = directory.path().join("historical");
-        let declaration = create(&root, version)?;
+        let declaration = create(&root, version, None)?;
         let before = physical_state(&root)?;
         let accepted = Store::replay_historical_public_identity(&root)?;
         check!(eq; accepted.qualification_version(), version);

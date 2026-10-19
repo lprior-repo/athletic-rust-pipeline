@@ -115,6 +115,11 @@ to manufacture a fresh or drained result.
 For a fresh isolated node, use unique node/cluster names and a new `base-dir`,
 start the verified binary with `--no-logo -c var/<run>/restate.toml`. Confirm
 `Ingress HTTP listening` and `Admin API starting` logs and a successful admin `GET /deployments`.
+
+Use explicit `--capture-protocol fresh-qualification-v3` against a preinitialized
+current root; follow the [owner-stopped setup](OPERATIONS.md#run-selection-and-inspection).
+Serving never creates/adopts the Store or supplies missing authority enrollment.
+
 Start the verified immutable endpoint
 against its intended store on an unused port, with an absolute browser-profile
 path and `/usr/bin/chromium` when that lane is configured. Athletic.net requires

@@ -16,16 +16,16 @@ pub(super) fn execute<W: Write>(
     match &args.command {
         ProfileCommand::Register(args) => {
             let profile = input::read_profile(&args.file)?;
-            let store = Store::open(root)?;
+            let (store, _writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
             register(&store, &profile, writer)
         }
         ProfileCommand::Show(args) => {
-            let store = Store::open(root)?;
+            let (store, _writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
             show(&store, &args.id, writer)
         }
         ProfileCommand::Select(args) => {
             let request = args.prepare()?;
-            let store = Store::open(root)?;
+            let (store, _writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
             select(&store, request, writer)
         }
     }

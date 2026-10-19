@@ -10,31 +10,18 @@ use std::sync::Arc;
 pub(super) async fn open(
     region: &Spawner,
     data_dir: PathBuf,
-    protocol: ServeCaptureProtocol,
+    protocol: Option<ServeCaptureProtocol>,
 ) -> Result<(Arc<Store>, CaptureExecution), BootstrapError> {
+    let Some(ServeCaptureProtocol::FreshQualificationV3) = protocol else {
+        return Err(BootstrapError::CaptureProtocolUnsupported {
+            raw: "(none)".to_string(),
+        });
+    };
     let outcome = region
-        .blocking(move || match protocol {
-            ServeCaptureProtocol::LegacyFresh => {
-                census_store::fs::create_dir_all_synced(&data_dir).map_err(|source| {
-                    BootstrapError::CreateDir {
-                        path: data_dir.clone(),
-                        source,
-                    }
-                })?;
-                let store =
-                    Store::open(&data_dir).map_err(|source| store_open_error(data_dir, source))?;
-                Ok((Arc::new(store), CaptureExecution::LegacyFresh))
-            }
-            ServeCaptureProtocol::FreshQualificationV1 => {
-                Store::open_capture_qualification_v1(&data_dir)
-                    .map(capture_parts)
-                    .map_err(|source| store_open_error(data_dir, source))
-            }
-            ServeCaptureProtocol::FreshQualificationV2 => {
-                Store::open_capture_qualification_v2(&data_dir)
-                    .map(capture_parts)
-                    .map_err(|source| store_open_error(data_dir, source))
-            }
+        .blocking(move || {
+            Store::open_current_qualification_v3(&data_dir)
+                .map(capture_parts)
+                .map_err(|source| store_open_error(data_dir, source))
         })
         .await;
     match outcome {

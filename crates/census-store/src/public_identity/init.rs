@@ -11,12 +11,26 @@ use fjall::PersistMode;
 use std::path::Path;
 
 impl Store {
+    pub fn create_current_qualification_v3(
+        root: impl AsRef<Path>,
+    ) -> StoreResult<PublicIdentityQualificationV3> {
+        match create(
+            root.as_ref(),
+            PublicIdentityQualificationVersion::RetainedAuthorityGraphV3,
+            Some(census_domain::model::CaptureProtocolVersion::V2),
+        )? {
+            PublicIdentityQualification::V3(declaration) => Ok(declaration),
+            _ => Err(PublicIdentityError::Corrupt("new graph declaration version").into()),
+        }
+    }
+
     pub fn create_public_identity_qualification_v3(
         root: impl AsRef<Path>,
     ) -> StoreResult<PublicIdentityQualificationV3> {
         match create(
             root.as_ref(),
             PublicIdentityQualificationVersion::RetainedAuthorityGraphV3,
+            None,
         )? {
             PublicIdentityQualification::V3(declaration) => Ok(declaration),
             _ => Err(PublicIdentityError::Corrupt("new graph declaration version").into()),
@@ -52,7 +66,9 @@ pub(crate) fn create_historical_test_fixture(
 ) -> StoreResult<PublicIdentityQualification> {
     match version {
         PublicIdentityQualificationVersion::SourceBoundV1
-        | PublicIdentityQualificationVersion::RetainedAuthorityContextV2 => create(root, version),
+        | PublicIdentityQualificationVersion::RetainedAuthorityContextV2 => {
+            create(root, version, None)
+        }
         PublicIdentityQualificationVersion::RetainedAuthorityGraphV3 => {
             Err(PublicIdentityError::Corrupt("historical test fixture version").into())
         }
@@ -62,6 +78,7 @@ pub(crate) fn create_historical_test_fixture(
 fn create(
     root: &Path,
     version: PublicIdentityQualificationVersion,
+    capture: Option<census_domain::model::CaptureProtocolVersion>,
 ) -> StoreResult<PublicIdentityQualification> {
     crate::acquisition::init::claim_empty_root(root).map_err(init_error)?;
     let (db, entities, journal, meta, receipts) =
@@ -81,19 +98,15 @@ fn create(
     });
     let identity = crate::lineage::stage_new(&mut batch, &journal, root)?;
     let head = genesis(&identity).map_err(PublicIdentityError::from)?;
-    let declaration = match version {
-        PublicIdentityQualificationVersion::SourceBoundV1 => PublicIdentityQualification::V1(
-            census_domain::public_identity_qualification::PublicIdentityQualificationV1::new(
-                identity,
-            ),
-        ),
-        PublicIdentityQualificationVersion::RetainedAuthorityContextV2 => {
-            PublicIdentityQualification::V2(PublicIdentityQualificationV2::new(identity))
-        }
-        PublicIdentityQualificationVersion::RetainedAuthorityGraphV3 => {
-            PublicIdentityQualification::V3(PublicIdentityQualificationV3::new(identity))
-        }
-    };
+    if let Some(protocol) = capture {
+        crate::acquisition::init::stage_qualification(
+            &mut batch,
+            &meta,
+            identity.clone(),
+            protocol,
+        )?;
+    }
+    let declaration = declaration(version, identity);
     batch.insert(&meta, DECLARATION, codec::encode(&declaration, 65_536)?);
     batch.insert(&meta, HEAD, codec::encode(&head, 1024)?);
     batch.insert(&meta, HISTORY, b"[]");
@@ -116,6 +129,25 @@ fn create(
         return Err(PublicIdentityError::Corrupt("new declaration mismatch").into());
     }
     Ok(declaration)
+}
+
+fn declaration(
+    version: PublicIdentityQualificationVersion,
+    identity: census_domain::model::StoreIdentity,
+) -> PublicIdentityQualification {
+    match version {
+        PublicIdentityQualificationVersion::SourceBoundV1 => PublicIdentityQualification::V1(
+            census_domain::public_identity_qualification::PublicIdentityQualificationV1::new(
+                identity,
+            ),
+        ),
+        PublicIdentityQualificationVersion::RetainedAuthorityContextV2 => {
+            PublicIdentityQualification::V2(PublicIdentityQualificationV2::new(identity))
+        }
+        PublicIdentityQualificationVersion::RetainedAuthorityGraphV3 => {
+            PublicIdentityQualification::V3(PublicIdentityQualificationV3::new(identity))
+        }
+    }
 }
 
 fn require_empty_keyspaces(keyspaces: [&fjall::Keyspace; 4]) -> StoreResult<()> {

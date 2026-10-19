@@ -8,7 +8,7 @@ use census_domain::model::{
 };
 use serde_json::json;
 
-pub(super) fn append(store: &Store, id: &AthleteId) -> TestResult<(AthleteId, SchoolId)> {
+pub(super) fn append(store: &Store, id: &AthleteId) -> TestResult<(AthleteId, SchoolId, String)> {
     let original = store
         .snapshot()
         .athletes()?
@@ -113,5 +113,5 @@ pub(super) fn append(store: &Store, id: &AthleteId) -> TestResult<(AthleteId, Sc
     athlete.evidence.push(evidence);
     store.append(Table::Athletes, &athlete)?;
     retain(store, &capture)?;
-    Ok((athlete.id, school.id))
+    Ok((athlete.id, school.id, key))
 }

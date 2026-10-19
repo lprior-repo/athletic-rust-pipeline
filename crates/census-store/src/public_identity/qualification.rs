@@ -226,7 +226,8 @@ fn read_declaration(
         || format.migration_target.is_some()
         || format.created_by.is_none()
         || format.created_at.is_none()
-        || has_prefix(snapshot, meta, "capture:")?
+        || (!super::is_graph_qualification_lifecycle(format.lifecycle_revision)
+            && has_prefix(snapshot, meta, "capture:")?)
         || has_prefix(snapshot, meta, "installation:")?
     {
         return Err(PublicIdentityError::Corrupt("qualification format").into());

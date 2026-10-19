@@ -22,9 +22,7 @@ const LANE_CHALLENGE_WAIT: Duration = Duration::from_secs(30);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServeCaptureProtocol {
-    LegacyFresh,
-    FreshQualificationV1,
-    FreshQualificationV2,
+    FreshQualificationV3,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,7 +35,7 @@ pub enum MemoryAccounting {
 pub struct ServeOptions {
     pub listen: SocketAddr,
     pub data_dir: PathBuf,
-    pub capture_protocol: ServeCaptureProtocol,
+    pub capture_protocol: Option<ServeCaptureProtocol>,
     pub max_concurrent: usize,
     pub drain_timeout: Duration,
     pub memory_budget_bytes: u64,
@@ -50,7 +48,7 @@ impl Default for ServeOptions {
         Self {
             listen: SocketAddr::from(([127, 0, 0, 1], 9080)),
             data_dir: PathBuf::from("var/census-service"),
-            capture_protocol: ServeCaptureProtocol::LegacyFresh,
+            capture_protocol: None,
             max_concurrent: DEFAULT_MAX_CONCURRENT,
             drain_timeout: DEFAULT_DRAIN_TIMEOUT,
             memory_budget_bytes: DEFAULT_MEMORY_BUDGET_BYTES,
@@ -124,7 +122,7 @@ fn apply_flag<I: Iterator<Item = String>>(
         "--listen" => parse_listen(value("--listen")?, options)?,
         "--data-dir" => options.data_dir = PathBuf::from(value("--data-dir")?),
         "--capture-protocol" => {
-            options.capture_protocol = parse_capture_protocol(value("--capture-protocol")?)?;
+            options.capture_protocol = Some(parse_capture_protocol(value("--capture-protocol")?)?);
         }
         "--max-concurrent" => parse_max_concurrent(value("--max-concurrent")?, options)?,
         "--drain-timeout" => parse_drain_timeout(value("--drain-timeout")?, options)?,
@@ -149,8 +147,7 @@ fn apply_flag<I: Iterator<Item = String>>(
 
 fn parse_capture_protocol(raw: String) -> Result<ServeCaptureProtocol, BootstrapError> {
     match raw.as_str() {
-        "fresh-qualification-v1" => Ok(ServeCaptureProtocol::FreshQualificationV1),
-        "fresh-qualification-v2" => Ok(ServeCaptureProtocol::FreshQualificationV2),
+        "fresh-qualification-v3" => Ok(ServeCaptureProtocol::FreshQualificationV3),
         _ => Err(BootstrapError::CaptureProtocolUnsupported { raw }),
     }
 }

@@ -6,15 +6,13 @@ its narrower compiler envelope does not reduce that target or enroll/migrate a p
 
 ## Executed integration subset
 
-Source `af9c58e7` qualifies controlled 49/50/51 publication, documentary withdrawal
-at current sealing, durable selected library/service jobs, the actual Workbook
-HTTP handler, selected National retry wiring and original-artifact replay.
-One genuine retained roster resolves current school under controlled public review;
-it does not establish genuine eligible-mark or population coverage.
-[Exact receipts and limitations](VERIFICATION-EVIDENCE.md#roster-owner-and-selected-service-qualification--2026-10-18)
-and the [acceptance matrix](NATIONAL-CENSUS-PLAN.md#75-latest-qualified-checkpoint--2026-10-18)
-own those claims. Calendar correspondence, accepted roster withdrawal, production
-enrollment and representative national resources remain unqualified.
+Source `8c7720c3` qualifies controlled 49/50/51 publication/withdrawal, positive
+genuine Class-of-2026 calendar eligibility and original three-case roster replay.
+The genuine case preserves unknown current affiliation; it is not target-Class-of-2027
+population coverage. [Exact receipts](VERIFICATION-EVIDENCE.md#genuine-calendar-capture-ownership--2026-10-19)
+and the [acceptance matrix](NATIONAL-CENSUS-PLAN.md#75-latest-qualified-checkpoints--2026-10-19)
+own build-specific claims. Genuine cold lifecycle, exact accepted-roster withdrawal,
+reusable production and representative national resources remain unqualified.
 
 ## Profile compiler boundary
 
@@ -94,8 +92,12 @@ workbook/eight-file normalized snapshot are not certified by this module.
 The explicit installation controls now bind a retained profile and bounded resources into an
 immutable lifecycle-3 enrollment. They reuse this configuration compiler and do not broaden
 its supported envelope. Generic execution of an enrolled installation is refused before
-recovery or serving. Fresh qualification keeps lifecycle 2; historical data is never
-implicitly enrolled. See [installation evidence and remaining qualification](verification/2026-10-14-pr29-summary.md#installation-and-result-status).
+recovery or serving. Current fresh selected qualification starts at graph-V3 lifecycle 7
+with capture V2; explicit reviewed-roster enrollment advances to 8. Input admission,
+school/calendar authority and accepted membership are distinct capabilities/decisions.
+Historical data is never implicitly enrolled. See the
+[current setup](OPERATIONS.md#run-selection-and-inspection) and retained
+[installation evidence](verification/2026-10-14-pr29-summary.md#installation-and-result-status).
 
 ## Registered acquisition status — R13
 

@@ -58,6 +58,16 @@ Qualify fresh runs against the new contracts, including same-invocation recovery
 replay. Historical passing runs do not qualify the replacement. Section 7 inventories the
 pre-cutover implementation; it is not a requirement to retain those paths.
 
+### Current fresh-serving composition — 2026-10-19
+
+Initialize graph-V3 identity and existing capture-V2 declarations in one batch with
+one store identity, only in a new/empty root. Serving requires explicit
+`fresh-qualification-v3`; the flag names graph qualification, not a new capture wire.
+Identity-only and historical capture stores are not silently adopted for acquisition.
+Graph/input admission and roster enrollment use their existing explicit owner
+operations. Capability enrollment accepts no athlete or membership facts and is not
+reusable-production activation. Historical decoding does not authorize old serving.
+
 ### First qualification kernel — 2026-10-17
 
 Owner decision: qualify a distinctly versioned reviewed-roster kernel V2. Preserve

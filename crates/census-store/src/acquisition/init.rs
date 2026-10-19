@@ -47,19 +47,7 @@ fn create(root: &Path, protocol: CaptureProtocolVersion) -> StoreResult<CaptureQ
         crate::meta::put_text(&mut batch, &meta, &format!("rows:{}", table.file()), "0");
     }
     let identity = crate::lineage::stage_new(&mut batch, &journal, root)?;
-    let record = match protocol {
-        CaptureProtocolVersion::V1 => {
-            CaptureQualification::V1(CaptureQualificationV1::new(identity))
-        }
-        CaptureProtocolVersion::V2 => {
-            CaptureQualification::V2(CaptureQualificationV2::new(identity))
-        }
-    };
-    batch.insert(
-        &meta,
-        protocol.qualification_key(),
-        crate::records::codec::encode_canonical(&record)?,
-    );
+    let record = stage_qualification(&mut batch, &meta, identity, protocol)?;
     batch
         .durability(Some(PersistMode::SyncData))
         .commit()
@@ -81,6 +69,29 @@ fn create(root: &Path, protocol: CaptureProtocolVersion) -> StoreResult<CaptureQ
     }
     Ok(verified)
 }
+
+pub(crate) fn stage_qualification(
+    batch: &mut fjall::OwnedWriteBatch,
+    meta: &fjall::Keyspace,
+    identity: StoreIdentity,
+    protocol: CaptureProtocolVersion,
+) -> StoreResult<CaptureQualification> {
+    let record = match protocol {
+        CaptureProtocolVersion::V1 => {
+            CaptureQualification::V1(CaptureQualificationV1::new(identity))
+        }
+        CaptureProtocolVersion::V2 => {
+            CaptureQualification::V2(CaptureQualificationV2::new(identity))
+        }
+    };
+    batch.insert(
+        meta,
+        protocol.qualification_key(),
+        crate::records::codec::encode_canonical(&record)?,
+    );
+    Ok(record)
+}
+
 pub(crate) fn claim_empty_root(root: &Path) -> StoreResult<()> {
     match std::fs::symlink_metadata(root) {
         Ok(metadata) => {

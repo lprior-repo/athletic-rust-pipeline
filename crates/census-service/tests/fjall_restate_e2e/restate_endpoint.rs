@@ -134,8 +134,9 @@ fn restate_endpoint_advertises_services_and_drains_on_request() -> TestResult {
             let dir = tempfile::tempdir()?;
             let listen = free_local_address()?;
             let data_dir = dir.path().join("data");
+            Store::create_current_qualification_v3(&data_dir)?;
             let options = ServeOptions {
-                capture_protocol: ServeCaptureProtocol::LegacyFresh,
+                capture_protocol: Some(ServeCaptureProtocol::FreshQualificationV3),
                 listen,
                 data_dir: data_dir.clone(),
                 max_concurrent: 4,
@@ -177,7 +178,7 @@ fn restate_endpoint_advertises_services_and_drains_on_request() -> TestResult {
             check!(eq; report.aborted, 0,
     "requested drain aborted work: {report:?}");
 
-            let reopened = Store::open(&data_dir)?;
+            let (reopened, _writer) = Store::open_current_qualification_v3(&data_dir)?.into_parts();
             reopened.flush()?;
             Ok(())
         })
@@ -192,8 +193,9 @@ fn restate_endpoint_advertises_the_lane_when_it_serves_one() -> TestResult {
         .block_on(async {
             let dir = tempfile::tempdir()?;
             let listen = free_local_address()?;
+            Store::create_current_qualification_v3(dir.path().join("data"))?;
             let options = ServeOptions {
-                capture_protocol: ServeCaptureProtocol::LegacyFresh,
+                capture_protocol: Some(ServeCaptureProtocol::FreshQualificationV3),
                 listen,
                 data_dir: dir.path().join("data"),
                 max_concurrent: 4,
@@ -252,8 +254,9 @@ fn an_unrequested_stop_does_not_end_the_endpoint_at_the_drain_deadline() -> Test
         .block_on(async {
             let dir = tempfile::tempdir()?;
             let listen = free_local_address()?;
+            Store::create_current_qualification_v3(dir.path().join("data"))?;
             let options = ServeOptions {
-                capture_protocol: ServeCaptureProtocol::LegacyFresh,
+                capture_protocol: Some(ServeCaptureProtocol::FreshQualificationV3),
                 listen,
                 data_dir: dir.path().join("data"),
                 max_concurrent: 4,

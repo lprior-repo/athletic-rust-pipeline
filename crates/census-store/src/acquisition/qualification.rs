@@ -112,10 +112,14 @@ pub(crate) fn declaration_admitted(
         .next()
         .map(|guard| guard.key().map_err(|source| StoreError::Read { source }))
         .transpose()?;
-    if format.lifecycle_revision != Some(CAPTURE_QUALIFICATION_LIFECYCLE) {
+    let graph = crate::public_identity::is_graph_qualification_lifecycle(format.lifecycle_revision);
+    if format.lifecycle_revision != Some(CAPTURE_QUALIFICATION_LIFECYCLE) && !graph {
         if row.is_some() || family.is_some() {
             return Err(CaptureError::CaptureMarkerMismatch.into());
         }
+        return Ok(None);
+    }
+    if graph && !graph_capture_present(row.as_deref(), family.is_some())? {
         return Ok(None);
     }
     if declaration_format_unsupported(format) {
@@ -139,6 +143,16 @@ pub(crate) fn declaration_admitted(
     }
     Ok(Some(record))
 }
+
+fn graph_capture_present(row: Option<&[u8]>, has_attempts: bool) -> StoreResult<bool> {
+    match row {
+        Some(b"capture:v2:qualification") => Ok(true),
+        None if !has_attempts => Ok(false),
+        None => Err(CaptureError::CaptureCapabilityMissing.into()),
+        Some(_) => Err(CaptureError::CaptureProtocolUnsupported.into()),
+    }
+}
+
 fn declaration_format_unsupported(format: &StoreFormat) -> bool {
     format.schema_version != Some(2)
         || format.key_format != Some(1)

@@ -22,6 +22,26 @@ The default store root is `var/census-service`; historical campaign evidence inc
 `var/midwest-census`. Do not assume either is the fresh run. Choose and record the actual root,
 namespace, scope, season and revision before acquisition. Never expose private admissions data.
 
+Initialize only a separately authorized fresh qualification root, with its owner stopped:
+
+```sh
+census-service --store ROOT capture-protocol init
+census-service --store ROOT capture-protocol enable-admission
+census-service --store ROOT capture-protocol roster-enrollment \
+  --operation OPERATION --reviewed-at RFC3339 --rationale RATIONALE
+```
+
+The first command atomically binds graph V3 and existing capture V2 to one identity.
+The second explicitly enables graph/input admission. The third emits exact opaque
+approval bytes without a trailing newline; save stdout and compute its SHA256.
+Repeat the identical third command with `--approve-sha256 DIGEST` to grant roster
+capability (lifecycle 8). Changed review/input state refuses; no membership is accepted.
+Register/select the immutable profile before serving. Current reviewed-roster policy
+refs use the current dispatcher, not a v3-only CLI shortcut; participation stays V4.
+Serve the existing root with explicit `--capture-protocol fresh-qualification-v3`;
+missing/retired modes refuse before root creation. Never open its CLI Store while serving.
+These controls neither migrate historical data nor enable reusable production.
+
 ```sh
 env -u CI tools/moon-local run pipeline:xtask -- census-status
 env -u CI tools/moon-local run pipeline:xtask -- coverage

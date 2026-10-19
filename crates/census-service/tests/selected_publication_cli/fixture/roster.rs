@@ -8,7 +8,10 @@ use sha2::{Digest, Sha256};
 #[path = "roster/composed.rs"]
 mod composed;
 
-pub(super) fn append_for(store: &Store, athlete: &AthleteId) -> TestResult<(AthleteId, SchoolId)> {
+pub(super) fn append_for(
+    store: &Store,
+    athlete: &AthleteId,
+) -> TestResult<(AthleteId, SchoolId, String)> {
     composed::append(store, athlete)
 }
 

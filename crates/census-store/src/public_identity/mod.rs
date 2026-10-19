@@ -68,6 +68,11 @@ pub(crate) fn is_qualification_lifecycle(revision: Option<u32>) -> bool {
     )
 }
 
+pub(crate) fn is_graph_qualification_lifecycle(revision: Option<u32>) -> bool {
+    is_qualification_lifecycle(revision)
+        && !matches!(revision, Some(LIFECYCLE | RETAINED_CONTEXT_LIFECYCLE))
+}
+
 pub(crate) fn refuse_reserved(value: &str) -> crate::StoreResult<()> {
     if value.starts_with("public_identity") {
         return Err(PublicIdentityError::ReservedWrite.into());

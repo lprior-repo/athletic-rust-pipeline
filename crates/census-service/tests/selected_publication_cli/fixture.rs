@@ -24,6 +24,7 @@ pub(super) struct Fixture {
     pub athlete: String,
     pub performance: String,
     pub public_id: String,
+    pub roster_reference: String,
 }
 
 impl Fixture {
@@ -34,7 +35,7 @@ impl Fixture {
         let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
         writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
         let performance = results::append(&store).await?;
-        roster::append_for(&store, &performance.athlete)?;
+        let (_, _, roster_reference) = roster::append_for(&store, &performance.athlete)?;
         for athlete in store.snapshot().athletes()? {
             writer.establish_source_bound(
                 &store,
@@ -69,6 +70,7 @@ impl Fixture {
             athlete,
             performance,
             public_id,
+            roster_reference,
         })
     }
 
@@ -98,6 +100,45 @@ impl Fixture {
         let (store, _writer) =
             Store::open_public_identity_qualification_v3(&self.root)?.into_parts();
         let path = self.directory.path().join(name);
+        save_selection(&store, &profile, &path)?;
+        Ok(path)
+    }
+
+    pub fn select_current_roster_policy(&self) -> TestResult<PathBuf> {
+        use census_domain::profile_execution::selected_qualification_contract_ref_v5 as current;
+        use census_domain::roster_affiliation_authority::RosterAuthorityTextV1;
+        let (store, _writer) =
+            Store::open_public_identity_qualification_v3(&self.root)?.into_parts();
+        let inputs = store.inspect_roster_source_enrollment_v1()?;
+        let prepared = store.prepare_roster_source_enrollment_v1(
+            inputs,
+            census_store::RosterEnrollmentReviewV1 {
+                operation: RosterAuthorityTextV1::parse("selected-cli-current-roster")?,
+                actor: census_store::RosterReviewActorV1::LocalOperator,
+                reviewed_at: chrono::DateTime::parse_from_rfc3339("2026-10-01T00:00:00Z")?.to_utc(),
+                rationale: RosterAuthorityTextV1::parse(
+                    "Enable reviewed roster capability without accepting any membership",
+                )?,
+            },
+        )?;
+        let approval = prepared.approval_bytes().to_vec();
+        let digest = prepared.approval_digest().to_owned();
+        let applied = store.apply_roster_source_enrollment_v1(prepared, &approval, &digest)?;
+        check!(applied.written());
+        let mut input = self.profile.input().clone();
+        input.source_plan = current(Role::SourcePlan)?;
+        input.completion_contract = current(Role::Completion)?;
+        input.policies = ProfilePoliciesV1 {
+            cohort: current(Role::Cohort)?,
+            event: current(Role::Event)?,
+            identity: current(Role::Identity)?,
+            affiliation: current(Role::Affiliation)?,
+            contact: current(Role::Contact)?,
+            participation: current(Role::Participation)?,
+            publication: current(Role::Publication)?,
+        };
+        let profile = QueryProfileV1::new(input)?;
+        let path = self.directory.path().join("current-roster-selection.json");
         save_selection(&store, &profile, &path)?;
         Ok(path)
     }
