@@ -63,8 +63,7 @@ async fn selected_publication_executable_withholds_unwindowed_marks_and_replays_
 }
 
 #[tokio::test]
-async fn current_roster_profile_withholds_unreviewed_source_and_reopens_its_audit(
-) -> TestResult {
+async fn current_roster_profile_withholds_unreviewed_source_and_reopens_its_audit() -> TestResult {
     let fixture = fixture::Fixture::create().await?;
     let selection = fixture.select_current_roster_policy()?;
     let before = fixture.evidence_state()?;
