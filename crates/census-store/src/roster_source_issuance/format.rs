@@ -28,20 +28,7 @@ pub(super) fn validated_lifecycle(
     let metadata = protected_rows(snapshot, meta, budget, None)?;
     let records = protected_rows(snapshot, journal, budget, None)?;
     let issued = scan(snapshot, receipts, OPERATION_PREFIX, budget, None)?;
-    let lifecycle =
-        if format.lifecycle_revision == Some(crate::RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE) {
-            let prior = crate::result_school_correspondence::preserved_prior_capability(
-                snapshot,
-                meta,
-                journal,
-                receipts,
-                format,
-                &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
-            )?;
-            Some(prior.lifecycle())
-        } else {
-            format.lifecycle_revision
-        };
+    let lifecycle = preserved_lifecycle(snapshot, meta, journal, receipts, format)?;
     if lifecycle != Some(LIFECYCLE) {
         if metadata.is_empty() && records.is_empty() && issued.is_empty() {
             return Ok(lifecycle);
@@ -70,6 +57,40 @@ pub(super) fn validated_lifecycle(
     };
     validate_enrollment(&metadata, &records, &issued, &identity)?;
     Ok(lifecycle)
+}
+
+fn preserved_lifecycle(
+    snapshot: &Snapshot,
+    meta: &Keyspace,
+    journal: &Keyspace,
+    receipts: &Keyspace,
+    format: &StoreFormat,
+) -> StoreResult<Option<u32>> {
+    Ok(match format.lifecycle_revision {
+        Some(crate::RESULT_CALENDAR_CORRESPONDENCE_LIFECYCLE) => {
+            let prior = crate::result_calendar_correspondence::preserved_prior_capability(
+                snapshot,
+                meta,
+                journal,
+                receipts,
+                format,
+                &mut crate::ResultCalendarStartupValidationBudgetV1::new(),
+            )?;
+            Some(prior.lifecycle())
+        }
+        Some(crate::RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE) => {
+            let prior = crate::result_school_correspondence::preserved_prior_capability(
+                snapshot,
+                meta,
+                journal,
+                receipts,
+                format,
+                &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
+            )?;
+            Some(prior.lifecycle())
+        }
+        revision => revision,
+    })
 }
 
 pub(super) fn scan(

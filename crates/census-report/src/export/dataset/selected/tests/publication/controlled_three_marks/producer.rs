@@ -1,5 +1,6 @@
+use super::reopen;
 use super::source::{
-    install, reopen, require_identity, require_originals, InstalledSource, RowLocator, TestResult,
+    install, require_identity, require_originals, InstalledSource, RowLocator, TestResult,
 };
 use census_crawl::participation_evidence::recorded::read_recorded_html_result_capture;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;

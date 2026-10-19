@@ -52,6 +52,7 @@ fn capture_archive(
         .map_err(super::super::super::source_error)?;
     let current_input_token = view.attachment_input_revision_bytes()?;
     let inherited_enrollment_proof = inherited_proof(view, lifecycle, grant)?;
+    let inherited_calendar_enrollment_proof = calendar_proof(view, lifecycle, grant)?;
     let archive = Archive {
         schema: if inherited_enrollment_proof.is_some() {
             super::INHERITED_ARCHIVE_SCHEMA.into()
@@ -68,6 +69,7 @@ fn capture_archive(
         physical,
         external: Vec::new(),
         inherited_enrollment_proof,
+        inherited_calendar_enrollment_proof,
     };
     Ok(archive)
 }
@@ -137,6 +139,7 @@ fn lifecycle(
             lifecycle = match value.as_ref().map(|raw| raw.as_ref()) {
                 Some(b"8") => Some(super::super::super::LIFECYCLE),
                 Some(b"9") => Some(crate::RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE),
+                Some(b"10") => Some(crate::RESULT_CALENDAR_CORRESPONDENCE_LIFECYCLE),
                 _ => return Err(Error::EnrollmentRequired.into()),
             };
         } else if value.as_ref().map(|raw| raw.as_ref()) != expected {
@@ -157,10 +160,32 @@ fn inherited_proof(
     let proof = view
         .result_school_enrollment_proof_v1(grant)?
         .ok_or(Error::EnrollmentRequired)?;
+    copy_proof(proof.bytes(), grant).map(Some)
+}
+
+fn calendar_proof(
+    view: &StoreSnapshot<'_>,
+    lifecycle: u32,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Option<Vec<u8>>> {
+    if lifecycle != crate::RESULT_CALENDAR_CORRESPONDENCE_LIFECYCLE {
+        return Ok(None);
+    }
+    let proof = view
+        .result_calendar_enrollment_proof_v1(grant)?
+        .ok_or(Error::EnrollmentRequired)?;
+    copy_proof(proof.bytes(), grant).map(Some)
+}
+
+fn copy_proof(bytes: &[u8], grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<u8>> {
     grant
-        .charge_bytes(proof.bytes().len())
+        .charge_bytes(bytes.len())
         .map_err(super::super::super::source_error)?;
-    Ok(Some(proof.bytes().to_vec()))
+    let mut copy = Vec::new();
+    copy.try_reserve_exact(bytes.len())
+        .map_err(|_| Error::BudgetExceeded)?;
+    copy.extend_from_slice(bytes);
+    Ok(copy)
 }
 
 fn roots(

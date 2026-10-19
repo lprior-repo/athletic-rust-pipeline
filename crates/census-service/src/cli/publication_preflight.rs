@@ -1,14 +1,33 @@
 use anyhow::{bail, Context, Result};
 use census_crawl::ingress::Ingress;
-use restate_sdk::prelude::*;
-
+use census_domain::model::{ProfileId, ProfileSelectionV1, StoreIdentity};
+use census_report::export::ExportJobRequest;
 use census_service::restate_services::{
     CensusIngressClient, PublicationCapabilities, PublicationContract,
 };
+use restate_sdk::prelude::*;
 
-#[tracing::instrument(skip_all)]
-pub(super) async fn require_managed_publication(ingestion: &Ingress) -> Result<()> {
-    require_publication_contract(ingestion, PublicationContract::ManagedBundleV2).await
+pub(super) fn selected_request(
+    store_identity: Option<&str>,
+    profile_id: Option<&str>,
+) -> Result<ExportJobRequest> {
+    let (Some(store_identity), Some(profile_id)) = (store_identity, profile_id) else {
+        bail!("--selected-store-identity and --selected-profile-id must be supplied together");
+    };
+    Ok(ExportJobRequest::SelectedPublicationV1 {
+        selection: ProfileSelectionV1::new(
+            StoreIdentity::parse(store_identity).map_err(anyhow::Error::msg)?,
+            ProfileId::parse(profile_id).map_err(anyhow::Error::msg)?,
+        ),
+    })
+}
+
+pub(super) fn open_selected_store(root: &std::path::Path) -> Result<census_store::Store> {
+    let (store, writer) = census_store::Store::open_public_identity_qualification_v3(root)
+        .context("opening existing selected-publication authority without enrollment")?
+        .into_parts();
+    drop(writer);
+    Ok(store)
 }
 
 pub(super) async fn require_publication_contract(

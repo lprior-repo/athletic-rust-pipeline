@@ -4,6 +4,9 @@ use census_crawl::participation_evidence::recorded::{
     AttachedParticipationV1, CheckedDocumentaryParticipationFactsV1,
     DiscoveredIdentityLinkedHtmlResultDocumentV1,
 };
+use census_crawl::participation_evidence::result_ownership::calendar_correspondence::read::{
+    checked_frozen, CheckedResultCalendarCorrespondenceV1,
+};
 use census_domain::affiliation_candidates::{KnownBounds, ObjectRef};
 use census_domain::evidence_subject_attachment::AttachmentRecordReferenceV1;
 use census_domain::model::{AthleteId, ProfileDate, ProfileDateRangeV1};
@@ -18,6 +21,7 @@ mod references;
 
 pub(super) fn assess(
     sources: &AttachedParticipationV1<'_, '_>,
+    calendar: Option<&census_store::ReplayedResultCalendarCorrespondencesV1<'_>>,
     linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
     index: usize,
     query: CandidateQuery<'_>,
@@ -25,7 +29,7 @@ pub(super) fn assess(
 ) -> ReportResult<(CandidateOutcome, ParticipationReasons, Vec<String>)> {
     sources
         .with_row_facts(linked, index, grant, |facts, grant| {
-            Ok(evaluate(linked, index, query, facts, grant))
+            Ok(evaluate(linked, index, query, facts, calendar, grant))
         })
         .map_err(source)?
 }
@@ -35,8 +39,10 @@ fn evaluate(
     index: usize,
     query: CandidateQuery<'_>,
     facts: CheckedDocumentaryParticipationFactsV1<'_>,
+    calendar: Option<&census_store::ReplayedResultCalendarCorrespondencesV1<'_>>,
     grant: &mut Grant,
 ) -> ReportResult<(CandidateOutcome, ParticipationReasons, Vec<String>)> {
+    let calendar = checked_calendar(calendar, linked, index, &facts, grant)?;
     let row = linked
         .row(index)
         .ok_or_else(|| invalid("documentary fact row missing"))?;
@@ -56,9 +62,9 @@ fn evaluate(
     )?;
     let intervals = evidence::intervals(&facts, grant)?;
     let statuses = evidence::statuses(&facts, &intervals, &athlete, query)?;
-    let windows = evidence::windows(&facts, &intervals, &athlete, query)?;
+    let windows = evidence::windows(&facts, &intervals, &athlete, query, calendar.as_ref())?;
     let full_windows = evidence::full_windows(&facts, &athlete, query, grant)?;
-    let contexts = evidence::contexts(&facts, &athlete, query)?;
+    let contexts = evidence::contexts(&facts, &athlete, query, calendar.as_ref())?;
     let observation = ParticipationObservation {
         binding: query.binding,
         performance: identity.performance_id(),
@@ -84,11 +90,22 @@ fn evaluate(
         InSeasonEvidence::Uncontested(&windows),
     )
     .map_err(source)?;
-    Ok((
-        assessed.outcome,
-        assessed.reasons,
-        references::collect(&facts, grant)?,
-    ))
+    let references = references::collect(&facts, calendar.as_ref(), grant)?;
+    Ok((assessed.outcome, assessed.reasons, references))
+}
+
+fn checked_calendar<'a>(
+    calendar: Option<&'a census_store::ReplayedResultCalendarCorrespondencesV1<'_>>,
+    linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
+    index: usize,
+    facts: &'a CheckedDocumentaryParticipationFactsV1<'a>,
+    grant: &mut Grant,
+) -> ReportResult<Option<CheckedResultCalendarCorrespondenceV1<'a>>> {
+    calendar
+        .map(|source| checked_frozen(source, linked, index, facts, grant))
+        .transpose()
+        .map_err(source)
+        .map(Option::flatten)
 }
 
 fn record(

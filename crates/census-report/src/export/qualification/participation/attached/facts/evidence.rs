@@ -1,4 +1,5 @@
 use super::*;
+use census_crawl::participation_evidence::result_ownership::calendar_correspondence::read::CheckedResultCalendarCorrespondenceV1;
 use census_crawl::participation_evidence::{
     recorded::{DocumentaryCohortAgreementV1, DocumentarySeasonApplicabilityV1},
     IndependentParticipationProofV1,
@@ -97,13 +98,14 @@ pub(super) fn contexts<'a>(
     facts: &'a CheckedDocumentaryParticipationFactsV1<'a>,
     athlete: &'a AthleteId,
     query: CandidateQuery<'a>,
+    calendar: Option<&CheckedResultCalendarCorrespondenceV1<'a>>,
 ) -> ReportResult<Vec<ContextFact<'a>>> {
     let mut output = reserved(facts.sources().len())?;
     for item in facts.sources() {
-        if item.season() == DocumentarySeasonApplicabilityV1::Exact {
+        if let Some(proof) = season(item, calendar, athlete, query)? {
             output.push(ContextFact {
                 context: ParticipationContext::Scholastic,
-                proof: proof(item.source().season_proof(), athlete, query)?,
+                proof,
             });
         }
     }
@@ -115,10 +117,11 @@ pub(super) fn windows<'a>(
     intervals: &'a [ProfileDateRangeV1],
     athlete: &'a AthleteId,
     query: CandidateQuery<'a>,
+    calendar: Option<&CheckedResultCalendarCorrespondenceV1<'a>>,
 ) -> ReportResult<Vec<InSeasonWindowFact<'a>>> {
     let mut output = reserved(facts.sources().len())?;
     for (item, interval) in facts.sources().iter().zip(intervals) {
-        if item.season() == DocumentarySeasonApplicabilityV1::Exact {
+        if let Some(boundary_proof) = season(item, calendar, athlete, query)? {
             output.push(InSeasonWindowFact {
                 identity: EligibilityWindowIdentity {
                     school_year: item.source().school_year(),
@@ -126,7 +129,7 @@ pub(super) fn windows<'a>(
                     participation_rule: query.binding.participation_rule,
                 },
                 interval,
-                boundary_proof: proof(item.source().season_proof(), athlete, query)?,
+                boundary_proof,
             });
         }
     }
@@ -181,6 +184,38 @@ fn proof<'a>(
         .map_err(source)?,
         acquired_at: value.acquired_at(),
     })
+}
+
+fn season<'a>(
+    item: &'a census_crawl::participation_evidence::recorded::CheckedDocumentarySourceFactsV1<'a>,
+    calendar: Option<&CheckedResultCalendarCorrespondenceV1<'a>>,
+    athlete: &'a AthleteId,
+    query: CandidateQuery<'a>,
+) -> ReportResult<Option<ProofReference<'a>>> {
+    if item.season() == DocumentarySeasonApplicabilityV1::Exact {
+        return proof(item.source().season_proof(), athlete, query).map(Some);
+    }
+    let Some(calendar) =
+        calendar.filter(|calendar| calendar.documentary_reference() == item.source().reference())
+    else {
+        return Ok(None);
+    };
+    let record = calendar.record();
+    let entry = &record.command.source.calendar;
+    Ok(Some(ProofReference {
+        fact: ObjectRef::parse(record.record_digest.as_str()).map_err(source)?,
+        capture: ObjectRef::parse(entry.capture.as_str()).map_err(source)?,
+        interpretation: ObjectRef::parse(entry.interpretation.as_str()).map_err(source)?,
+        locator: ObjectRef::parse(entry.locator.as_str()).map_err(source)?,
+        athlete,
+        known: KnownBounds::new(
+            query.binding.frozen.lineage,
+            query.binding.frozen.revision,
+            query.binding.frozen.revision,
+        )
+        .map_err(source)?,
+        acquired_at: item.source().season_proof().acquired_at(),
+    }))
 }
 
 fn reserved<T>(count: usize) -> ReportResult<Vec<T>> {

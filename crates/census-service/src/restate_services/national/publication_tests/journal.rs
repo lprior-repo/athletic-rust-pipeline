@@ -13,6 +13,7 @@ pub struct Journal {
     pub entries: Vec<Frame>,
     pub calls: Vec<Frame>,
     pub output: Option<serde_json::Value>,
+    pub terminal_failure: Option<Frame>,
     pub(super) ended: bool,
     pub held: Option<Frame>,
     pub hold_stage: Option<String>,
@@ -45,6 +46,7 @@ impl Journal {
             )],
             calls: Vec::new(),
             output: None,
+            terminal_failure: None,
             ended: false,
             held: None,
             hold_stage: None,
@@ -140,6 +142,7 @@ impl Journal {
             0x0401 => {
                 if let Some(failure) = codec::field(&entry.payload, 15)? {
                     let failure = Frame::new(0, failure.to_vec());
+                    self.terminal_failure = Some(failure.clone());
                     return Err(format!(
                         "national completed with terminal failure: {}",
                         failure.text(2)?
@@ -176,9 +179,29 @@ impl Journal {
                 && (call.text(1)? != "Census" || call.text(2)? == "publication"))
         {
             self.held = Some(call.clone());
+        } else if call.text(1)? == "Census" && call.text(2)? == "workbook_preflight" {
+            self.complete_preflight(call)?;
         } else {
             let response = serde_json::to_vec(&fixtures::answer(call, self)?)?;
             self.append(codec::notification(0x800D, call.number(11)?, &response)?)?;
+        }
+        Ok(())
+    }
+
+    fn complete_preflight(&mut self, call: &Frame) -> TestResult {
+        match fixtures::workbook_preflight(call, self)? {
+            Ok(value) => {
+                let response = serde_json::to_vec(&value)?;
+                self.append(codec::notification(0x800D, call.number(11)?, &response)?)?;
+            }
+            Err(error) => {
+                let message = AsRef::<dyn std::error::Error>::as_ref(&error).to_string();
+                let mut failure = codec::integer(1, 400);
+                failure.extend(codec::blob(2, message.as_bytes())?);
+                let mut completion = codec::integer(1, call.number(11)?);
+                completion.extend(codec::blob(6, &failure)?);
+                self.append(Frame::new(0x800D, completion))?;
+            }
         }
         Ok(())
     }

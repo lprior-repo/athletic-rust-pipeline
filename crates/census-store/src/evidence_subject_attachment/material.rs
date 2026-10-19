@@ -17,6 +17,14 @@ pub enum AttachmentContextObjectV1<'a> {
     Retained(&'a RetainedCaptureLeafV1),
 }
 
+pub enum ReadAttachmentContextObjectV1<'a> {
+    Inline {
+        reference: &'a AttachmentObjectReferenceV1,
+        bytes: Vec<u8>,
+    },
+    Retained(&'a RetainedCaptureLeafV1),
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "storage", deny_unknown_fields, rename_all = "snake_case")]
 pub(crate) enum Material {

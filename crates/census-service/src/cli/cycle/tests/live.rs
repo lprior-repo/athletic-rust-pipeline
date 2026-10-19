@@ -12,8 +12,16 @@ async fn exchange(
 ) -> TestResult<(Observations, anyhow::Result<()>)> {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let origin = format!("http://{}/", listener.local_addr()?);
+    let store_identity = "a".repeat(64);
+    let profile_id = "b".repeat(64);
     let input = ["census-service", "run", "--school-year", "2026"]
         .into_iter()
+        .chain([
+            "--selected-store-identity",
+            store_identity.as_str(),
+            "--selected-profile-id",
+            profile_id.as_str(),
+        ])
         .chain(arguments.iter().copied())
         .chain(["--ingress", &origin]);
     let cli = Cli::try_parse_from(input)?;
@@ -109,7 +117,7 @@ fn workbook_reply(grad_year: i16) -> (&'static str, String) {
 }
 
 #[tokio::test]
-async fn live_run_reads_capability_then_calls_only_managed_workbook() -> TestResult {
+async fn live_run_reads_capability_then_calls_only_selected_workbook() -> TestResult {
     let (requests, outcome) =
         exchange(&[], vec![("200 OK", capabilities()?), workbook_reply(2027)]).await?;
     outcome?;
@@ -117,7 +125,7 @@ async fn live_run_reads_capability_then_calls_only_managed_workbook() -> TestRes
     check!(requests
         .first()
         .is_some_and(|(line, _)| line == "POST /Census/publication_capabilities HTTP/1.1\r\n"));
-    let (line, payload) = requests.get(1).ok_or("managed workbook request missing")?;
+    let (line, payload) = requests.get(1).ok_or("selected workbook request missing")?;
     let request: WorkbookRequest = serde_json::from_slice(payload)?;
     check!(eq; request.grad_year, Some(2027));
     check!(eq; request.school_year, Some(2026));
@@ -131,7 +139,7 @@ async fn live_run_reads_capability_then_calls_only_managed_workbook() -> TestRes
 }
 
 #[tokio::test]
-async fn managed_live_run_preserves_selection_destination_and_generation() -> TestResult {
+async fn selected_live_run_preserves_selection_destination_and_generation() -> TestResult {
     let (requests, outcome) = exchange(
         &[
             "--grad-year",
@@ -149,7 +157,7 @@ async fn managed_live_run_preserves_selection_destination_and_generation() -> Te
     .await?;
     outcome?;
     check!(eq; requests.len(), 2);
-    let (line, payload) = requests.get(1).ok_or("managed workbook request missing")?;
+    let (line, payload) = requests.get(1).ok_or("selected workbook request missing")?;
     let request: WorkbookRequest = serde_json::from_slice(payload)?;
     check!(eq; request.grad_year, Some(2028));
     check!(eq; request.scope.as_deref(), Some("core"));
@@ -176,7 +184,7 @@ async fn unsupported_or_malformed_capability_blocks_all_publication_calls() -> T
                 "200 OK",
                 "{\"publication_contracts\":[\"legacy_separate_v1\"]}".into(),
             ),
-            "endpoint does not advertise managed_bundle_v2; no invocation was submitted",
+            "endpoint does not advertise SelectedPublicationV1; no invocation was submitted",
         ),
         (
             ("200 OK", "{\"publication_contracts\":[\"unknown\"]}".into()),
@@ -199,7 +207,7 @@ async fn unsupported_or_malformed_capability_blocks_all_publication_calls() -> T
 }
 
 #[tokio::test]
-async fn failed_managed_workbook_never_falls_back_to_separate_exports() -> TestResult {
+async fn failed_selected_workbook_never_falls_back_to_separate_exports() -> TestResult {
     let (requests, outcome) = exchange(
         &[],
         vec![
@@ -219,5 +227,35 @@ async fn failed_managed_workbook_never_falls_back_to_separate_exports() -> TestR
         .get(1)
         .is_some_and(|(line, _)| line.starts_with("POST /Workbook/")));
     check!(format!("{error:#}").contains("fixture publication refused"));
+    Ok(())
+}
+
+async fn reject_live_selection(arguments: &[&str]) -> TestResult {
+    let mut input = vec![
+        "census-service".to_string(),
+        "run".to_string(),
+        "--school-year".to_string(),
+        "2026".to_string(),
+        "--ingress".to_string(),
+        "http://127.0.0.1:1/".to_string(),
+    ];
+    input.extend(arguments.iter().map(|argument| (*argument).to_owned()));
+    let cli = Cli::try_parse_from(input)?;
+    let Command::Run(args) = &cli.command else {
+        return Err("fixture did not parse standalone run".into());
+    };
+    run_cycle(&cli, args)
+        .await
+        .err()
+        .ok_or("live cycle accepted incomplete selection")?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn live_cycle_refuses_selection_before_ingress_acquisition() -> TestResult {
+    reject_live_selection(&[]).await?;
+    let store = "a".repeat(64);
+    reject_live_selection(&["--selected-store-identity", store.as_str()]).await?;
+    reject_live_selection(&["--selected-store-identity", "not-a-store-id"]).await?;
     Ok(())
 }

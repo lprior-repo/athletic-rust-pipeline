@@ -49,6 +49,7 @@ pub(super) fn row<'a, 's>(
         reserve(&mut facts, grant)?;
         facts.push(CheckedDocumentarySourceFactsV1 {
             source,
+            root: candidate.recorded.root(),
             record_digest: candidate.binding.record_digest(),
             season,
             cohort,

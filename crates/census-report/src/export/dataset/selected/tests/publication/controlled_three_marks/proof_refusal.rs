@@ -17,7 +17,7 @@ fn proof_directory(path: &Path) -> TestResult<std::path::PathBuf> {
     Ok(parent.join(format!("{name}.proofs")))
 }
 
-fn required_objects(dataset: &ExportDataset, objects: &Path) -> TestResult<[String; 2]> {
+fn required_objects(dataset: &ExportDataset, objects: &Path) -> TestResult<[Option<String>; 3]> {
     let proof = serde_json::to_value(dataset.selected_proofs.as_ref().ok_or("selected proofs")?)?;
     let descriptor = proof
         .get("participation_digest")
@@ -38,7 +38,15 @@ fn required_objects(dataset: &ExportDataset, objects: &Path) -> TestResult<[Stri
             .ok_or_else(|| format!("required V4 closure missing: {pointer}"))?
             .to_owned())
     };
-    Ok([required("/attachment/object")?, required("/school/object")?])
+    let calendar = wire
+        .get("calendar")
+        .map(|_| required("/calendar/object"))
+        .transpose()?;
+    Ok([
+        Some(required("/attachment/object")?),
+        Some(required("/school/object")?),
+        calendar,
+    ])
 }
 
 pub(super) fn assert_required_proof_refuses(dataset: &ExportDataset) -> TestResult {
@@ -55,7 +63,7 @@ pub(super) fn assert_required_proof_refuses(dataset: &ExportDataset) -> TestResu
     drop(reopened);
 
     let proofs = proof_directory(&path)?;
-    for object in required_objects(dataset, &proofs)? {
+    for object in required_objects(dataset, &proofs)?.into_iter().flatten() {
         probe(&path, &sha, &proofs.join(object))?;
         let restored = ExportDataset::reopen_frozen_with_digest(&path, &sha)?;
         check!(eq; restored.lineage, expected_lineage);
@@ -67,14 +75,14 @@ pub(super) fn assert_required_proof_refuses(dataset: &ExportDataset) -> TestResu
 }
 
 fn probe(path: &Path, sha: &str, closure: &Path) -> TestResult {
-    let original = std::fs::read(closure)?;
+    let mut original = std::fs::read(closure)?;
     std::fs::remove_file(closure)?;
     check!(ExportDataset::reopen_frozen_with_digest(path, sha).is_err());
     std::fs::write(closure, &original)?;
-    let mut altered = original.clone();
-    *altered.first_mut().ok_or("required proof is empty")? ^= 1;
-    std::fs::write(closure, &altered)?;
+    *original.first_mut().ok_or("required proof is empty")? ^= 1;
+    std::fs::write(closure, &original)?;
     check!(ExportDataset::reopen_frozen_with_digest(path, sha).is_err());
+    *original.first_mut().ok_or("required proof is empty")? ^= 1;
     std::fs::write(closure, original)?;
     Ok(())
 }

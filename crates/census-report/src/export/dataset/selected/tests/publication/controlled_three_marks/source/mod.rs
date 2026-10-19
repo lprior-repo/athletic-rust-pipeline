@@ -211,6 +211,10 @@ fn enroll_target(store: &Store) -> TestResult<(AthleteCandidateId, SourceReferen
 }
 
 pub(super) fn install() -> TestResult<InstalledSource> {
+    install_with_result_venue("Controlled Track Venue")
+}
+
+pub(super) fn install_with_result_venue(venue: &str) -> TestResult<InstalledSource> {
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("store");
     Store::create_public_identity_qualification_v3(&path)?;
@@ -219,7 +223,7 @@ pub(super) fn install() -> TestResult<InstalledSource> {
 
     let (school, school_source) = enroll_school(&store)?;
     let (candidate, target_source) = enroll_target(&store)?;
-    let (result_sources, row_locators) = results::install(&store)?;
+    let (result_sources, row_locators) = results::install(&store, venue)?;
 
     let mut source_records = vec![school_source, target_source];
     source_records.extend(result_sources);
@@ -268,11 +272,4 @@ pub(super) fn require_identity(
         }
     }
     Ok(())
-}
-
-pub(super) fn reopen(directory: &tempfile::TempDir) -> TestResult<Store> {
-    let (store, writer) =
-        Store::open_public_identity_qualification_v3(directory.path().join("store"))?.into_parts();
-    drop(writer);
-    Ok(store)
 }

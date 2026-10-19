@@ -156,11 +156,16 @@ pub(super) fn bound_history(as_of: Option<&str>) -> Result<String, Box<dyn std::
 }
 
 pub(super) fn bound_request(jurisdictions: &[&str]) -> Result<String, Box<dyn std::error::Error>> {
+    let store = "a".repeat(64);
+    let profile = "b".repeat(64);
     let request: census_service::restate_services::NationalRequest = serde_json::from_value(
         serde_json::json!({
             "season": 2026, "revision": 1, "jurisdictions": jurisdictions,
             "history": {"first_calendar_year": 2023, "last_calendar_year": 2026, "as_of": "2026-10-01"},
-            "publication_contract": "managed_bundle_v2", "pass_budget": 17,
+            "publication_contract": "selected_publication_v1",
+            "export_job": {"contract": "selected_publication_v1",
+                "selection": {"version": 1, "store_identity": store, "profile_id": profile}},
+            "pass_budget": 17,
             "pass_delay_seconds": 41, "concurrency": 7
         }),
     )?;
@@ -270,7 +275,11 @@ async fn national_resume_submits_and_reattaches_the_selected_parent_not_a_new_re
         serde_json::from_slice(payload)?;
     check!(eq; request.revision, census_domain::model::Revision(1));
     check!(eq; request.history, census_service::restate_services::HistoryWindow::cohort("2026-10-01")?);
-    check!(eq; request.publication_contract, census_service::restate_services::PublicationContract::ManagedBundleV2);
+    check!(eq; request.publication_contract, census_service::restate_services::PublicationContract::SelectedPublicationV1);
+    check!(matches!(
+        request.export_job,
+        census_report::export::ExportJobRequest::SelectedPublicationV1 { .. }
+    ));
     check!(eq; request.pass_budget, 17);
     check!(eq; request.pass_delay_seconds, 41);
     check!(eq; request.concurrency, 7);

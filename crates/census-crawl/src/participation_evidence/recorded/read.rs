@@ -13,8 +13,9 @@ use crate::milesplit::SourceRowLocator;
 use crate::{CrawlError, CrawlResult};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::{
-    EvidenceSubjectAttachmentStoreError, RetainedCaptureRootReadV1, RetainedCaptureRootSchemaV1,
-    RetainedCaptureRootV1, StoreError, StoreSnapshot,
+    EvidenceSubjectAttachmentStoreError, RetainedCaptureLeafKindV1, RetainedCaptureLeafV1,
+    RetainedCaptureRootReadV1, RetainedCaptureRootSchemaV1, RetainedCaptureRootV1,
+    RetainedCaptureSlotV1, StoreError, StoreSnapshot,
 };
 use serde::de::DeserializeOwned;
 
@@ -35,6 +36,7 @@ impl RecordedProviderTargetV1 {
 pub struct RecordedIndependentParticipationV1 {
     checked: VerifiedIndependentParticipationV1,
     root: RetainedCaptureRootV1,
+    calendar_original_body: RetainedCaptureLeafV1,
 }
 
 impl RecordedIndependentParticipationV1 {
@@ -43,6 +45,9 @@ impl RecordedIndependentParticipationV1 {
     }
     pub fn root(&self) -> &RetainedCaptureRootV1 {
         &self.root
+    }
+    pub fn calendar_original_body(&self) -> &census_store::RetainedCaptureLeafV1 {
+        &self.calendar_original_body
     }
 }
 
@@ -190,7 +195,18 @@ pub(super) fn read_independent_from(
             return Err(invalid("recorded participation packet differs from its typed key").into());
         }
         let root = held.root().clone();
-        Ok(Some(RecordedIndependentParticipationV1 { checked, root }))
+        let calendar_original_body = RetainedCaptureLeafV1 {
+            version: 1,
+            root: root.clone(),
+            slot: RetainedCaptureSlotV1::ParticipationSchedule,
+            kind: RetainedCaptureLeafKindV1::OriginalBody,
+            object: packet.schedule().original_body_reference()?,
+        };
+        Ok(Some(RecordedIndependentParticipationV1 {
+            checked,
+            root,
+            calendar_original_body,
+        }))
     })
 }
 

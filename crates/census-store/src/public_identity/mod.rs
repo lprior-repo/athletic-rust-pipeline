@@ -63,6 +63,7 @@ pub(crate) fn is_qualification_lifecycle(revision: Option<u32>) -> bool {
                 | GRAPH_AUTHORITY_LIFECYCLE
                 | crate::ROSTER_SOURCE_ISSUANCE_LIFECYCLE
                 | crate::RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE
+                | crate::RESULT_CALENDAR_CORRESPONDENCE_LIFECYCLE
         )
     )
 }

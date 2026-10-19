@@ -77,12 +77,13 @@ source, kernel and artifact identities. This decision supplies no passing receip
 **Context:** structural repairs change the source identity of the immutable
 reviewed-roster kernels. Their original dependency documents cannot be repinned.
 
-**Decision:** use current dependency epochs 8 (full inventory) and 9 (row-local).
-These are implementation identities, not qualification-profile or inventory-wire
-versions. PR86 changed a pinned source input and dependency context; the preceding
-6/7 documents remain immutable. One current interpreter recomputes original inputs.
+**Decision:** current dependency epochs are 12 (full inventory) and 13 (row-local).
+These identify implementation inputs, not qualification-profile or inventory-wire
+versions. Registering the checked calendar-source producer changed the source
+closure. Qualified 10/11 documents remain immutable; one current interpreter
+recomputes original inputs under their authenticated provider contract.
 
-Read-only adapter V1 accepts only the original whole-document SHA-256 pins:
+The read-only adapter accepts only original whole-document SHA-256 pins:
 
 | Original epoch | Kernel document SHA-256 |
 |---|---|
@@ -96,6 +97,8 @@ Read-only adapter V1 accepts only the original whole-document SHA-256 pins:
 | 9, native context | `94ad0cb66c947e1fdc1efd31cbd99c7d1aac3bbc580bf1e81debfd16bf188505` |
 | 8, alternate context | `9a4b8f629bfa43a1e706b8acc19498cf201876c583fec611355fbe006c4e97c3` |
 | 9, alternate context | `93351cb0eeff6d532402e831d6f61143d1b1f9e31e0a77a0629094ea46b5d34b` |
+| 10, qualified af9 native context | `35695fab34f7e130fe3c3560e0568edf0897b837488ee7761864103176d6dd1b` |
+| 11, qualified af9 native context | `7c2fb5be2b9948e8df8c829fd9ac09ac7524d693ca980b3df1c81f5908ad858b` |
 
 The adapter also pins the supported current compiler/configuration/lock context;
 PR86's changed dependency context requires its own qualification. Historical
@@ -285,9 +288,9 @@ already own. The kind is refused on other roots/slots. Original bodies and disti
 subject-heading/window-paragraph proof locations remain retained and replayable.
 
 The full-window input introduced dependency epochs 6/7 with a 94-input closure.
-Exact kernels 2/3, 4/5, 6/7 and 8/9 remain historical, read-only identities; current
-captures emit 10/11 with a 96-input closure. Original artifacts are neither
-relabeled nor regenerated.
+The qualified `af9c58e7` checkpoint emitted 10/11 with a 96-input closure. Current
+captures emit 12/13; original 2–11 artifacts remain read-only and are neither
+relabeled nor regenerated. The qualification ledger distinguishes each tested build.
 
 ### Reviewed-roster owner spans — 2026-10-18
 
@@ -296,8 +299,8 @@ declaration. The former shared 4-KiB statement limit withheld that authority.
 
 **Decision:** only `OwnerSourceSpan` permits a borrowed range up to 2 MiB.
 Person, membership and temporal spans remain bounded at 4 KiB. Current provider
-contract V2 uses this owner policy; authenticated historical kernels select V1's
-original 4-KiB policy before collecting, comparing or returning checked evidence.
+contract V2 and authenticated af9 10/11 use this owner policy. Original 2–9
+identities retain V1's 4-KiB policy before collecting or comparing checked evidence.
 The 32-declaration limit, first-failure precedence and late contrary-owner
 validation remain. Participation wire V4 and roster V2/V3 envelopes do not change.
 
@@ -360,6 +363,30 @@ roots separately. Unqualified V1 refuses; qualified roster/report formats and
 original artifacts remain unchanged. Lifecycle-9 public review/revoke and cold/frozen
 readback passed on `78a3504d`. Those historical receipts do not certify a later
 eligible-PR/window publication; use the current delivery matrix and verification ledger.
+
+### Reviewed exact-day calendar authority — 2026-10-19
+
+Explicit calendar enrollment advances an already school-enrolled store from
+lifecycle 9 to 10. It binds the original school enrollment proof; it does not
+relabel that proof, change fresh-store lifecycle 2, or enroll during publication.
+School review and correction remain available under their original contract.
+All open/inspection paths validate protected authorities from one snapshot;
+generic journal and receipt writers cannot publish calendar authority.
+
+Reviewed calendar correspondence asserts only the retained result's exact
+original day, scholastic context and in-season relationship. It does not assert
+a full eligibility window, cohort, school identity or NCAA eligibility.
+Participation remains wire V4. Frozen calendar proof must preserve enrollment,
+decisions, revocations and original source context, including an enrolled-empty
+inventory. Missing or altered required proof refuses; old generations retain
+their recorded authority. This is the integration contract, not passing
+publication or national-run evidence.
+
+One review record may cover several documentary subjects. Bind correspondence
+to the exact checked packet root, not the shared record digest. Embedded capture
+metadata authenticates against the retained root's canonical JSON encoding;
+different object-key order is not different evidence. Hash that encoding with
+the existing bounded writer, without cloning the body or changing source bytes.
 
 ### Reviewed secondary-person authority — 2026-10-17
 

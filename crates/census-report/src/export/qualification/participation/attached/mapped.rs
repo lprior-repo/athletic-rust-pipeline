@@ -13,6 +13,7 @@ pub(super) fn insert(
     dataset: &ExportDataset,
     query: CandidateQuery<'_>,
     sources: &census_crawl::participation_evidence::recorded::AttachedParticipationV1<'_, '_>,
+    calendar: Option<&census_store::ReplayedResultCalendarCorrespondencesV1<'_>>,
     linked: &census_crawl::participation_evidence::recorded::DiscoveredIdentityLinkedHtmlResultDocumentV1<
         '_,
         '_,
@@ -24,7 +25,7 @@ pub(super) fn insert(
     rows: &BTreeMap<PerformanceId, crate::export::qualification::DocumentaryParticipationRow>,
     mapped: &mut BTreeMap<PerformanceId, super::super::PinnedParticipationRow>,
 ) -> ReportResult<()> {
-    let assessed = super::facts::assess(sources, linked, index, query, grant)?;
+    let assessed = super::facts::assess(sources, calendar, linked, index, query, grant)?;
     let row = linked
         .row(index)
         .ok_or_else(|| super::super::invalid("completed documentary row is missing"))?;

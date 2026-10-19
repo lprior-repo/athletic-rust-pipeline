@@ -183,6 +183,16 @@ impl Census {
     }
 
     #[handler]
+    async fn workbook_preflight(
+        &self,
+        _ctx: Context<'_>,
+        Json(request): Json<super::wire::WorkbookRequest>,
+    ) -> Result<Json<()>, HandlerError> {
+        super::publish::workbook_preflight::prepare(&self.jobs, request).await?;
+        Ok(Json(()))
+    }
+
+    #[handler]
     async fn open_work(
         &self,
         ctx: Context<'_>,

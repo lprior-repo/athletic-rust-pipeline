@@ -18,7 +18,7 @@ pub(super) fn bounded<'s>(
 ) -> StoreResult<InspectedMetadata<'s>> {
     view.with_roster_source_snapshot_v1(|snapshot, meta, journal, receipts| {
         let format = read::snapshot_format(snapshot, meta, grant)?;
-        if format.lifecycle_revision != Some(super::super::super::LIFECYCLE)
+        if !super::super::super::retains_school_enrollment(format.lifecycle_revision)
             || format.schema_version != Some(2)
             || format.key_format != Some(1)
             || format.migration_target.is_some()

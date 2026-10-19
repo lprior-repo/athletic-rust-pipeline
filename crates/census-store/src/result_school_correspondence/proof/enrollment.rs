@@ -28,7 +28,7 @@ impl StoreSnapshot<'_> {
         guarded(grant, |grant| {
             self.with_roster_source_snapshot_v1(|snapshot, meta, journal, receipts| {
                 let format = read::snapshot_format(snapshot, meta, grant)?;
-                if format.lifecycle_revision != Some(LIFECYCLE) {
+                if !super::super::retains_school_enrollment(format.lifecycle_revision) {
                     return Ok(None);
                 }
                 let proof = read::enrollment(snapshot, meta, journal, receipts, grant)?;

@@ -1,6 +1,6 @@
 use super::{invalid, SelectedAuthority};
 use crate::export::dataset::{frozen, read, ExportDataset, Loaded};
-use crate::export::qualification::participation::{archive, school_projection};
+use crate::export::qualification::participation::{archive, school_projection, CalendarContext};
 use crate::export::qualification::SelectionBinding;
 use crate::report::ReportResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
@@ -49,6 +49,17 @@ impl ExportDataset {
                 )
             })
             .transpose()?;
+        let calendar_closure = capture_calendar(snapshot, &identity, &mut grant)?;
+        let replayed_calendar = calendar_closure
+            .as_ref()
+            .map(|closure| {
+                closure.replay(
+                    &lineage.store_identity,
+                    lineage.snapshot_sequence,
+                    &mut grant,
+                )
+            })
+            .transpose()?;
         extend_school(&mut loaded, replayed_school.as_ref(), &mut grant)?;
         let mut dataset = selected_dataset(loaded, lineage, &profile, authority)?;
         attach_selected_proofs(
@@ -61,6 +72,10 @@ impl ExportDataset {
                 grant: &mut grant,
                 closure: school_closure.as_ref(),
                 source: replayed_school.as_ref(),
+                calendar: calendar_closure
+                    .as_ref()
+                    .zip(replayed_calendar.as_ref())
+                    .map(|(closure, source)| CalendarContext { source, closure }),
             },
         )?;
         Ok(dataset)
@@ -75,6 +90,7 @@ struct SelectedProofInputs<'a, 'store, 'source> {
     grant: &'a mut AttachmentReplayGrantV1,
     closure: Option<&'a archive::SchoolClosure>,
     source: Option<&'a ReplayedResultSchoolCorrespondencesV1<'source>>,
+    calendar: Option<CalendarContext<'a, 'source>>,
 }
 
 fn attach_selected_proofs(
@@ -86,6 +102,7 @@ fn attach_selected_proofs(
         crate::export::qualification::participation::SchoolContext {
             source,
             closure,
+            calendar: inputs.calendar,
             grant: inputs.grant,
         }
     });
@@ -143,6 +160,21 @@ fn capture_school(
 ) -> ReportResult<Option<archive::SchoolClosure>> {
     if snapshot.result_school_enrollment_proof_v1(grant)?.is_some() {
         Ok(Some(archive::capture_school(snapshot, identity, grant)?))
+    } else {
+        Ok(None)
+    }
+}
+
+fn capture_calendar(
+    snapshot: &StoreSnapshot<'_>,
+    identity: &FrozenPublicIdentityBundleV2,
+    grant: &mut AttachmentReplayGrantV1,
+) -> ReportResult<Option<archive::CalendarClosure>> {
+    if snapshot
+        .result_calendar_enrollment_proof_v1(grant)?
+        .is_some()
+    {
+        Ok(Some(archive::capture_calendar(snapshot, identity, grant)?))
     } else {
         Ok(None)
     }

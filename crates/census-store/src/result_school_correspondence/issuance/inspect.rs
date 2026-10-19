@@ -17,7 +17,7 @@ pub(super) fn inspect(
 ) -> StoreResult<(Inspected<'_>, AttachmentReplayGrantV1)> {
     let inspected = guarded(&mut grant, |grant| {
         let format = store.store_format()?;
-        if format.lifecycle_revision != Some(super::super::LIFECYCLE)
+        if !super::super::retains_school_enrollment(format.lifecycle_revision)
             || format.schema_version != Some(2)
             || format.key_format != Some(1)
             || format.migration_target.is_some()

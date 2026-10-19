@@ -1,4 +1,4 @@
-use super::super::{binding, invalid, objects::Objects, ownership, statement, target};
+use super::super::{invalid, objects::Objects, original, ownership, statement, target};
 use crate::participation_evidence::provider_school::ProviderSchoolPacketV1;
 use crate::participation_evidence::recorded::DiscoveredIdentityLinkedHtmlResultDocumentV1;
 use crate::participation_evidence::result_ownership::read_retained_html_result_rows;
@@ -84,7 +84,7 @@ pub(super) fn require(
     let row = document
         .row(0)
         .ok_or_else(|| invalid("reviewed school original selected row absent"))?;
-    binding::subject(original.root(), &row, linked_row.attachment(), grant)?;
+    original::subject(original.root(), &row, linked_row.attachment(), grant)?;
     let scope = super::scope(&record.command.source);
     target::scope(&document, &row, &scope)?;
     let mut objects = Objects::new(grant)?;

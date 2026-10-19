@@ -1253,3 +1253,198 @@ dead-code warning; lint reported the repository's configured
 `too_many_arguments` warnings. This is a test-process SDK endpoint and controlled
 fixture only; no production census service, external acquisition, or live
 Store was used.
+
+### Selected admission and historical replay repair — 2026-10-19
+
+Scope: working source integrated on `fcbd00837`; no final-commit or national
+qualification is claimed. Original `af9c58e7` evidence above remains build-specific.
+
+| Acceptance | Before | Observed repair |
+|---|---|---|
+| Invalid selected options must not reserve inputs | `231818c3` FAIL: Core rejection froze old authority | `3b3aace5` PASS: rejected cohort, jurisdiction subset, contact year, Core and zero-limit requests permit same-job 51.00 after public withdrawal and original receipt replay |
+| Omitted live Workbook contract must refuse before capture | `130edc0f` FAIL: legacy reservation blocked selected retry | `8da09ffc` PASS: actual SDK endpoint rejects omission before capture; same workflow key subsequently publishes 51.00 after withdrawal |
+| Qualified af9 workbook must reopen unchanged | Real CLI `1d595364` FAIL: unsupported historical kernel | Kernel regressions `bb96493c` PASS (14); real CLI `3753d834` verifies the original complete generation |
+| Calendar proposal must retain exact original authority | Retained material was treated as inline; redundant context copying exhausted the object cap | `f57bb2a9` PASS (5): actual review, active wrong-day refusal, revoke/replay and material-owner controls; 32-object cap unchanged |
+
+Those kernel replay receipts tested source closure
+`1778aa8effec89aa301962e527695b551870585b239b63a929f4174eb9e1d59a`,
+dependency epochs 12/13. Original 2–9 identities retain V1 behavior; exact native
+af9 10/11 retain V2/CurrentBody. Unknown contexts and altered bytes refuse.
+Participation V4 and original producer pins are unchanged.
+The later checked schedule-body retention change produces candidate source closure
+`68194f31048a15146067d7ddb0709a294a6e2b3735722819ff371412ca574490`.
+Kernel and original-artifact replay checks for that closure passed below;
+whole-tree qualification remains pending.
+
+After actual CLI verification, original af9 frozen input, proof and workbook
+SHA256s remain `e4378dc0…25e7e`, `9927ff2d…78b3`, `17c249eb…8f4584c`.
+This remains one athlete with zero eligible best marks, not population acceptance.
+Integrated fmt/check/lint passed `dfd550c1`/`35cac57f`/`bb8f15f9` before the
+subsequent live-admission edits. Those edits require new exact-source gates.
+The calendar source/domain seam and protected Store namespace are now registered.
+The connected V4 calendar path remains under native qualification. Accepted roster
+withdrawal, genuine eligible marks, population comparison and representative
+resource qualification remain open.
+
+### Calendar integration and offline publication — 2026-10-19
+
+Working checkpoints on `fcbd00837`; these are not final-tree passes.
+
+| Exercised behavior | Receipt | Result |
+|---|---|---|
+| Actual offline `workbook` and `run`: G0 selects 50.00; public withdrawal and receipt replay; same generation refuses without altering G0; explicit G1 selects 51.00 | `2449d31b`, one opt-in scenario | PASS; controlled owned Store, outputs not retained |
+| Original schedule body retained and verified through approved-material ownership | `722b0307`, five cases | PASS |
+| Kernel closure `68194f31…4490` and original af9 full generation replay | `a65e8874`, fourteen cases; real CLI `881e0fef` | PASS; original artifact hashes unchanged |
+| Explicit school-9 → calendar-10 enrollment, documentary withdrawal/replay, physical cold reopen and unchanged enrollment proof/original records | `3c82c006`; Nextest `853a20fa-e849-4d20-9049-2e3534bec790`, two cases | PASS before subsequent V4 hookup |
+
+The initial enrollment scenario incorrectly replayed an acceptance before its
+withdrawal (`809366dc`, FAIL). It now performs the actual public revoke first;
+the non-reactivation assertion remains. Connected V4 capture, semantic selection,
+calendar revocation/frozen replay and exact-final-source gates are not certified
+by these earlier receipts. No production census or live Store was started.
+
+### Post-PR101 calendar qualification — 2026-10-19
+
+Remote `76e6b3914` integrated with local work preserved. Receipts below identify
+working source, not a final committed release.
+
+| Acceptance | Before | Observed repair |
+|---|---|---|
+| Legitimate original capture context permits calendar review | `25d490a6` FAIL: struct-order JSON compared with canonical retained-root bytes | `18ae010d` PASS: actual accept/revoke/original receipt replay, old/new frozen proof and cold reopen |
+| One multi-subject review cannot cross-bind documentary packets | `eb2c3ff7` FAIL: frozen reader found no calendar correspondence | `6919a675` PASS: exact reviewed root descriptors and packet ownership; independent revocation case also passed |
+| Integrated all-target/all-feature check | Earlier checkpoints do not carry forward | `e19e707b` PASS |
+
+The original controlled workbook lifecycle passed individually in `eb2c3ff7`;
+that six-case campaign remained FAIL until the packet-ownership repair above.
+Independent address-preserving OOXML readback confirmed 50.00/2026-05-15 in G0
+and 51.00/2026-05-16 in G1, historical Detroit Catholic Central/MI and current
+Controlled Colorado High School/CO, as-of 2026-10-16.
+
+| Retained controlled artifact | Workbook SHA256 |
+|---|---|
+| `/home/lewis/.cache/r14n-TpNM3q/.tmpzGrIhZ/publication/generations/1ed5f8fd0fbcde56864d82acddd7bccfedca063cd0d07f9949984a4be1c38f51/workbook.xlsx` | `7ae00fc0280b7759c1f8945ffd71ecab4c3f63085bbc76db688957b0b5cc2352` |
+| `/home/lewis/.cache/r14n-TpNM3q/.tmpnh5Ao8/publication/generations/2ca595404f565d113212d3bd466a87fc101b788c4e0d6fa2539f581d0e52ba1c/workbook.xlsx` | `5b4b22f3c9f49ce69e0a941d6d1fc6d33b4c38e1b98df33a09f506efe9d2ec6b` |
+
+These are synthetic controlled artifacts, not genuine population coverage.
+The following receipts qualify the controlled calendar-dependent path and the
+incoming in-process service case. National resource and population acceptance
+remain open.
+
+### Calendar-dependent workbook and service split — 2026-10-19
+
+On working main `76e6b3914`, `264ee9c4` failed because the shared oracle expected
+status withdrawal after calendar-only withdrawal. Distinct generation expectations
+now assert the actual contract: calendar withdrawal retains high-school status
+but leaves `participation_context_unresolved`; status withdrawal additionally
+retains `high_school_status_missing`.
+
+`81d1e6e7` PASS exercised both public-review workbook lifecycles. The calendar
+case first withheld the venue-mismatched marks, accepted checked correspondence,
+selected the eligible best, revoked only its calendar authority, replayed the
+original receipt without reactivation, and independently reopened both generations
+after source deletion. Missing/tampered attachment, school and calendar proof
+controls passed. Separate publication roots do not prove same-root promotion.
+
+| Calendar-dependent workbook | SHA256 |
+|---|---|
+| `/home/lewis/.cache/r14n-TpNM3q/.tmpIebJS5/publication/generations/4195373b6c5c9e810f0d2183bd71d421c02c9e11ad8ab1211f4fd778412d7acc/workbook.xlsx` | `5365a5de050aac077501eeb367af95419785ee6bdc541385e5aa64f70c8a5e64` |
+| `/home/lewis/.cache/r14n-TpNM3q/.tmpSKtfso/publication/generations/f1a3563191fcb3fb04bd6152e450b32036411b2e0b8e4d24591e720320874a88/workbook.xlsx` | `d3650e9e36c548507133d42aaebfd4c5a498ac701bd4c832e46fe2856711aefa` |
+
+Independent address-preserving OOXML readback asserted 50.00/2026-05-15 then
+51.00/2026-05-16, historical Detroit Catholic Central/MI and current Controlled
+Colorado High School/CO as-of 2026-10-16. No graphical Excel rendering was exercised.
+
+`036012db` PASS executed the isolated service split-publication case through
+`workbook_job::build`: prior merged generation, split successors, retry stability,
+aliases and source-free old/new reopen. This is in-process service behavior, not
+Restate HTTP qualification; its merge precondition is synthetic controlled data.
+
+Static review found calendar freeze permits a larger closure than replay/load
+accepts. Proof-bound repair and exact-final-source qualification remain required;
+these receipts do not close national acceptance.
+
+### Recovery and bounded calendar history — 2026-10-19
+
+Working-source check `7b8a5a11` and lint `a889deb2` passed; lint retained configured
+`too_many_arguments` advisories. `164a9a1f` passed the calendar-dependent workbook
+lifecycle, larger original-document review-history replay and expired-Requested
+recovery. The latter failed before repair in `3f82c4f0`: recovery reported the
+request digest as a superseded bundle. It now dispatches the authoritative state
+with the same frozen dataset/configuration and preserves the actual workbook.
+
+Calendar closure serialization now shares replay's 4-MiB bound. An oversized
+public counterexample was **not** established: one experiment hit the 32-object
+bound, another hit 131,072 traversal steps, and a smaller closure measured
+3,017,656 bytes. The retained regression instead proves checked source decisions
+survive bounded A→B→A review history and frozen replay. No limit was raised to
+make these experiments pass; national resource qualification remains open.
+
+Structural scan `b12695c9` failed three functions exceeding 60 logical lines.
+Their private extraction and native-fixture cleanup were unqualified at that
+checkpoint. The later receipts below qualify those changes; `lxy2` tracks
+removal of the isolated Restate fixture's SIGKILL fallback.
+
+### Selected admission, bounded seal and actual clients — 2026-10-19
+
+These receipts qualify working source above `76e6b3914`, not national readiness.
+All native work used canonical Moon tasks, `CI` unset, the owned
+`/home/lewis/.cache/r14n-TpNM3q` temporary directory and at most two build jobs.
+
+| Acceptance | Before | After |
+|---|---|---|
+| Exact selected profile/options/address admission before parent state | `142bbdca` FAIL, three cases | `c81b1b31` PASS, four cases; `b1cb99bc` PASS, seven connected SDK cases |
+| Zero seal retries terminate after one attributable refusal without recapture | `a85783b0` FAIL | `b1cb99bc` PASS; one real workbook, one measurement, no sleep |
+| Actual offline `workbook` and `run` retain G0=50 and publish G1=51 | Earlier binary passes do not carry forward | `892a4313` PASS with rebuilt CLI |
+| Isolated native Restate restart and authority revocation | Current graceful-cleanup implementation was unqualified | `892a4313` PASS; owned local fixture only, no SIGKILL fallback |
+
+CLI build `05855bcb` passed. An initial build invocation repeated the task's
+existing `--all-features` flag and failed before compilation; the corrected
+canonical invocation succeeded.
+
+The prior CLI binary (`61f86648ed1d52821816cc5c407e19004779b656fc81559eb2222539134ca94e`)
+submitted Workbook without probing capability. Independent loopback smoke of
+the rebuilt binary (`cbafa30f0c5657264f5e4642d535e37b73f88df4fbdecff06d9fa2ffab9d0ec8`)
+observed only `/Census/publication_capabilities`, exit 1 and no Workbook invocation
+when selected publication was not advertised.
+
+Actual CLI artifacts are retained below
+`/home/lewis/.cache/r14n-TpNM3q/.tmpL7GmPJ/<command>/generations/<generation>/workbook.xlsx`.
+Independent, address-preserving OOXML readback checked PR/date, historical
+Detroit Catholic Central/MI and current Controlled Colorado High School/CO
+as-of 2026-10-16. No graphical rendering was exercised.
+
+| Command / PR | Generation | Workbook SHA256 |
+|---|---|---|
+| workbook / 50.00 | `fcf256d675146a7bdcb20af8efe1c1f61ebb172aebccdcd4027b222bcc66ef31` | `3650c69f8cfe185443b5c99124f26e4c2748d44acba80de0e79a9d5638981052` |
+| workbook / 51.00 | `8969798f3887977442750ff7fd343467fa194553230a9bd12f8e99c9c0536a0c` | `c400ddfb87daa99a49e9a0033319959437c492fe0696ad37628fc7e9d580a0f8` |
+| run / 50.00 | `51ba2ab169a61e1d5935d37daf0ad1d9b21b5210a0aac871c832a3117eb2cee3` | `301b10bc5f53c8f4a5b0f6a64e331abbac2787d20c4c0997541ed814ef49f602` |
+| run / 51.00 | `2673c96b429093e35c803e7c9a56e055d5177c20e27a87deb6cbead1b578cbac` | `46e28204a0f9cc270bb5a5504112139d986e6da0816a9710fadfc3bf718f5980` |
+
+These controlled cases do not establish genuine-source population coverage or
+national resource capacity. National generation/resume (`opz5`), selected parent
+binding (`l414`), profile-derived cohort (`6pb6`) and durable publication receipt
+(`e7lx`) remain live dependencies of `agv2`. They were split using the planner's
+CUE-validated task and Bead generation, not inferred closed from registration.
+
+Exact working-source static qualification subsequently passed: format
+`d1aa57c4`, all-target check `b6462eec`, lint `a1150feb`, trusted AST scan
+`48a38bff`, zero-comments `aa889145`, panic-extraction `bb505749` and architecture
+contract `d289c7d5`. Lint retains configured `too_many_arguments` advisories;
+contract reports its existing known boundary deviations. These are not
+warning-free or full-spec acceptance claims. The preserved scoped regression
+and complete roster queue remain separate execution requirements.
+
+Connected Report/Crawl campaign `8b80dc11` passed 191 cases, including parent
+conflict refusal, genuine unresolved-boundary preservation, controlled calendar
+withdrawal and original/missing-proof controls. Its following service stage
+`a84f4606` was interrupted by unauthorized candidate edits to shared
+`NationalRequest`; those edits were quarantined outside Root and the prior
+passing source restored without discarding the candidates.
+
+The resumed canonical format/check/lint and every preserved scoped command
+through the complete roster regression queue passed. Connected service receipt
+`2501cc57` passed six cases, SDK endpoint `5d47e29e` passed two, refusal-state
+`167c6e89` passed two and CLI notices `1f9579f7` passed five. The roster/kernel/
+source/frozen queue ran from `7495a7f3` through `79ee9e58` with nonzero selection
+in every command. Original-A/changed-build-B authentication still requires a
+clean identified source commit; these passes do not replace that acceptance.

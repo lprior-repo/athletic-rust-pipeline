@@ -44,7 +44,9 @@ pub(super) fn row(
             )?;
             (assessed.0, assessed.1, Vec::new())
         }
-        AssessmentSources::Current(sources) => facts::assess(sources, linked, index, query, grant)?,
+        AssessmentSources::Current(sources) => {
+            facts::assess(sources, None, linked, index, query, grant)?
+        }
     };
     seal_row(&row, &identity, athlete, assessed, budget)
 }

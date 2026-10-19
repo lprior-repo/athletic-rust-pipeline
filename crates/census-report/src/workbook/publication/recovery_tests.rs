@@ -1,6 +1,7 @@
 use super::*;
 use census_store::publish::{Digest, InputFence, Intent, Request, Root, State};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+mod requested_advanced;
 
 struct Fixture {
     _temp: tempfile::TempDir,

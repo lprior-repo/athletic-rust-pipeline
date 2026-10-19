@@ -1,12 +1,14 @@
 use super::*;
 use std::sync::LazyLock;
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+mod af9;
+
+type TestResult<E = Box<dyn std::error::Error>> = Result<(), E>;
 
 const CURRENT_FULL: &str =
-    include_str!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v10.json"));
+    include_str!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v12.json"));
 const CURRENT_ROWS: &str =
-    include_str!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v11.json"));
+    include_str!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v13.json"));
 static FULL_DIGEST: LazyLock<String> =
     LazyLock::new(|| format!("{:x}", Sha256::digest(CURRENT_FULL.as_bytes())));
 static ROW_DIGEST: LazyLock<String> =
@@ -14,8 +16,8 @@ static ROW_DIGEST: LazyLock<String> =
 
 fn executing(epoch: KernelEpoch) -> (&'static str, &'static str) {
     match epoch {
-        KernelEpoch::FullV10 => (CURRENT_FULL, FULL_DIGEST.as_str()),
-        KernelEpoch::RowLocalV11 => (CURRENT_ROWS, ROW_DIGEST.as_str()),
+        KernelEpoch::Full => (CURRENT_FULL, FULL_DIGEST.as_str()),
+        KernelEpoch::RowLocal => (CURRENT_ROWS, ROW_DIGEST.as_str()),
     }
 }
 
@@ -24,22 +26,22 @@ fn authentic_predecessors_bind_original_owner_policy_only_in_reviewed_execution_
 ) -> TestResult {
     let cases: &[(KernelEpoch, &[u8], &[u8; 32])] = &[
         (
-            KernelEpoch::FullV10,
+            KernelEpoch::Full,
             include_bytes!("fixtures/kernel-v8-native.json"),
             &EXECUTING_CONFIGURATION,
         ),
         (
-            KernelEpoch::FullV10,
+            KernelEpoch::Full,
             include_bytes!("fixtures/kernel-v8-alternate.json"),
             &ALTERNATE_CONFIGURATION,
         ),
         (
-            KernelEpoch::RowLocalV11,
+            KernelEpoch::RowLocal,
             include_bytes!("fixtures/kernel-v9-native.json"),
             &EXECUTING_CONFIGURATION,
         ),
         (
-            KernelEpoch::RowLocalV11,
+            KernelEpoch::RowLocal,
             include_bytes!("fixtures/kernel-v9-alternate.json"),
             &ALTERNATE_CONFIGURATION,
         ),
@@ -74,7 +76,7 @@ fn authentic_predecessors_bind_original_owner_policy_only_in_reviewed_execution_
 
 #[test]
 fn current_kernels_cannot_be_downgraded_to_the_historical_owner_policy() -> TestResult {
-    for epoch in [KernelEpoch::FullV10, KernelEpoch::RowLocalV11] {
+    for epoch in [KernelEpoch::Full, KernelEpoch::RowLocal] {
         let (current, digest) = executing(epoch);
         let configuration = context::digest(current.as_bytes())?;
         let mut grant = AttachmentReplayGrantV1::new();
@@ -100,11 +102,11 @@ fn current_kernels_cannot_be_downgraded_to_the_historical_owner_policy() -> Test
 fn changed_predecessor_bytes_poison_replay_and_cannot_fall_back_to_current() -> TestResult {
     for (epoch, retained) in [
         (
-            KernelEpoch::FullV10,
+            KernelEpoch::Full,
             include_bytes!("fixtures/kernel-v8-native.json").as_slice(),
         ),
         (
-            KernelEpoch::RowLocalV11,
+            KernelEpoch::RowLocal,
             include_bytes!("fixtures/kernel-v9-native.json").as_slice(),
         ),
     ] {
@@ -144,11 +146,11 @@ fn changed_predecessor_bytes_poison_replay_and_cannot_fall_back_to_current() -> 
 fn known_original_documents_refuse_an_unqualified_executing_context() -> TestResult {
     for (epoch, retained) in [
         (
-            KernelEpoch::FullV10,
+            KernelEpoch::Full,
             include_bytes!("fixtures/kernel-v8-native.json").as_slice(),
         ),
         (
-            KernelEpoch::RowLocalV11,
+            KernelEpoch::RowLocal,
             include_bytes!("fixtures/kernel-v9-native.json").as_slice(),
         ),
     ] {

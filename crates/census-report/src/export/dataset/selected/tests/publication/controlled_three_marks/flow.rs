@@ -5,6 +5,7 @@ mod seal_authority;
 
 use super::documentary_material::Kind;
 use super::documentary_review::{self, AcceptedSource};
+pub(super) use super::readback::Generation;
 use super::readback::{self, Expected};
 use super::source::{self, InstalledSource, TestResult};
 use crate::export::ExportDataset;
@@ -15,7 +16,9 @@ use census_domain::model::{GradYear, QueryProfileV1, SchoolId};
 use census_domain::public_identity_history::PublicAthleteId;
 use std::path::Path;
 
-fn reviewed_inputs(installed: &InstalledSource) -> TestResult<(SchoolId, AcceptedSource)> {
+pub(super) fn reviewed_inputs(
+    installed: &InstalledSource,
+) -> TestResult<(SchoolId, AcceptedSource)> {
     let current = super::current_school_source::install(installed)?;
     super::current_school_identity::accept(installed, &current)?;
     super::current_school_review::accept(installed, &current)?;
@@ -49,18 +52,18 @@ fn reviewed_inputs(installed: &InstalledSource) -> TestResult<(SchoolId, Accepte
     ))
 }
 
-fn assert_output(
+pub(super) fn assert_output(
     dataset: &ExportDataset,
     path: &Path,
     public: &PublicAthleteId,
     current: &SchoolId,
     historical: &SchoolId,
-    second: bool,
+    generation: Generation,
 ) -> TestResult {
-    let (seconds, day) = if second {
-        ("51.00", "2026-05-16")
-    } else {
+    let (seconds, day) = if generation == Generation::Initial {
         ("50.00", "2026-05-15")
+    } else {
+        ("51.00", "2026-05-16")
     };
     readback::assert_generation(
         dataset,
@@ -71,11 +74,12 @@ fn assert_output(
             public,
             current_school: current,
             historical_school: historical,
+            generation,
         },
     )
 }
 
-fn publish(
+pub(super) fn publish(
     store: &census_store::Store,
     profile: &QueryProfileV1,
     objects: &Path,
@@ -86,7 +90,7 @@ fn publish(
     Ok((dataset, path))
 }
 
-fn retain_outputs(g0: tempfile::TempDir, g1: tempfile::TempDir) -> TestResult {
+pub(super) fn retain_outputs(g0: tempfile::TempDir, g1: tempfile::TempDir) -> TestResult {
     match std::env::var("CENSUS_CONTROLLED_THREE_MARKS_RETAIN") {
         Err(std::env::VarError::NotPresent) => Ok(()),
         Err(error) => Err(error.into()),
@@ -113,7 +117,7 @@ fn require_replay_selection(
         &installed.public,
         current,
         &installed.school,
-        true,
+        Generation::StatusWithdrawn,
     )
 }
 
@@ -135,7 +139,14 @@ fn controlled_three_marks_selects_eligible_best_then_withdraws_to_next_and_reope
         objects0.path(),
         &output0.path().join("publication"),
     )?;
-    assert_output(&g0, &workbook0, &public, &current, &historical, false)?;
+    assert_output(
+        &g0,
+        &workbook0,
+        &public,
+        &current,
+        &historical,
+        Generation::Initial,
+    )?;
     super::proof_refusal::assert_required_proof_refuses(&g0)?;
     let lineage0 = g0.lineage.clone();
     let original_digest = publication::verify_published(&workbook0)?.generation_digest;
@@ -147,7 +158,14 @@ fn controlled_three_marks_selects_eligible_best_then_withdraws_to_next_and_reope
         &output1.path().join("publication"),
     )?;
     let withdrawn_digest = publication::verify_published(&workbook1)?.generation_digest;
-    assert_output(&g1, &workbook1, &public, &current, &historical, true)?;
+    assert_output(
+        &g1,
+        &workbook1,
+        &public,
+        &current,
+        &historical,
+        Generation::StatusWithdrawn,
+    )?;
     let lineage1 = g1.lineage.clone();
     check!(lineage1.snapshot_sequence > lineage0.snapshot_sequence);
     check!(publication::verify_published(&workbook1)?.generation_digest != original_digest);
@@ -175,7 +193,7 @@ fn controlled_three_marks_selects_eligible_best_then_withdraws_to_next_and_reope
         &public,
         &current,
         &historical,
-        false,
+        Generation::Initial,
     )?;
     assert_output(
         &new.dataset,
@@ -183,7 +201,7 @@ fn controlled_three_marks_selects_eligible_best_then_withdraws_to_next_and_reope
         &public,
         &current,
         &historical,
-        true,
+        Generation::StatusWithdrawn,
     )?;
     check!(eq; publication::verify_published(&workbook0)?.generation_digest, original_digest);
     retain_outputs(output0, output1)

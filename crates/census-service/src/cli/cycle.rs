@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+use census_report::export::ExportJobRequest;
 use census_report::workbook;
 use census_service::restate_services::{reject_offline_generation, ExportGeneration};
 use census_store::Store;
@@ -11,7 +12,7 @@ use census_service::ingress;
 
 mod gather;
 mod publish;
-use super::{Cli, Route};
+use super::{publication_preflight, Cli, Route};
 use gather::gather_athleticnet;
 use publish::{publication_options, publish_workbook_live, publish_workbook_offline};
 
@@ -23,10 +24,13 @@ pub(super) struct RunArgs {
     #[arg(long)]
     input: Option<String>,
     #[arg(
-        help = "Jurisdictions for the registry, used only for lines that name no state (so exactly one)"
+        help = "Restrict the publication and registry to these jurisdictions; omitted uses the full census scope"
     )]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
+    #[arg(help = "Publish and process every census jurisdiction explicitly")]
+    #[arg(long)]
+    all_states: bool,
     #[arg(help = "Cap the athletes read from the registry, and the rows each later stage writes")]
     #[arg(long)]
     limit: Option<usize>,
@@ -73,15 +77,53 @@ pub(super) struct RunArgs {
     #[arg(long)]
     out: Option<PathBuf>,
     #[arg(
-        help = "Logical export generation selecting a managed workbook publication; omitted reuses the legacy generation 1 key"
+        help = "Logical publication generation; reuse retains frozen inputs, use a new generation only for a new accepted-input publication"
     )]
     #[arg(long, value_name = "GENERATION")]
     generation: Option<String>,
+    #[arg(
+        long,
+        value_name = "STORE_IDENTITY",
+        help = "Store identity for the selected publication; requires --selected-profile-id"
+    )]
+    selected_store_identity: Option<String>,
+    #[arg(
+        long,
+        value_name = "PROFILE_ID",
+        help = "Selected publication profile ID; requires --selected-store-identity"
+    )]
+    selected_profile_id: Option<String>,
     #[arg(
         help = "Ingress origin of the local Restate server. The local census deployment when omitted"
     )]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
+}
+
+fn selected_request(args: &RunArgs) -> Result<Option<ExportJobRequest>> {
+    match (
+        args.selected_store_identity.as_deref(),
+        args.selected_profile_id.as_deref(),
+    ) {
+        (None, None) => Ok(None),
+        (store_identity, profile_id) => Ok(Some(publication_preflight::selected_request(
+            store_identity,
+            profile_id,
+        )?)),
+    }
+}
+
+fn selected_offline_request(
+    args: &RunArgs,
+) -> Result<Option<(ExportJobRequest, ExportGeneration)>> {
+    let Some(request) = selected_request(args)? else {
+        reject_offline_generation(args.generation.as_deref())?;
+        return Ok(None);
+    };
+    Ok(Some((
+        request,
+        ExportGeneration::resolve(args.generation.as_deref())?,
+    )))
 }
 
 pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
@@ -92,12 +134,19 @@ pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
     }
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
-            reject_offline_generation(args.generation.as_deref())?;
+            let publication = selected_offline_request(args)?;
             let root = root.to_path_buf();
-            let store = tokio::task::spawn_blocking(move || Store::open(&root))
-                .await
-                .map_err(|error| anyhow::anyhow!("opening the store did not finish: {error}"))??;
-            run_offline(cli, std::sync::Arc::new(store), args).await
+            let selected = publication.is_some();
+            let store = tokio::task::spawn_blocking(move || {
+                if selected {
+                    publication_preflight::open_selected_store(&root)
+                } else {
+                    Store::open(&root).map_err(anyhow::Error::from)
+                }
+            })
+            .await
+            .map_err(|error| anyhow::anyhow!("opening the store did not finish: {error}"))??;
+            run_offline(cli, std::sync::Arc::new(store), args, publication).await
         }
         Route::Ingress(origin) => run_live(origin, args).await,
     }
@@ -108,8 +157,21 @@ enum PublicationPreparation {
     Gathered { observed_on: String },
 }
 
-async fn run_offline(cli: &Cli, store: std::sync::Arc<Store>, args: &RunArgs) -> Result<()> {
-    let options = publication_options(args)?;
+async fn run_offline(
+    cli: &Cli,
+    store: std::sync::Arc<Store>,
+    args: &RunArgs,
+    publication: Option<(ExportJobRequest, ExportGeneration)>,
+) -> Result<()> {
+    let requested = publication_options(args)?;
+    let options = match publication.as_ref() {
+        Some((request, _)) => workbook::options_for_selected_request(
+            &store,
+            request.require_selected_publication()?,
+            &requested,
+        )?,
+        None => requested,
+    };
     let preparation = match (&args.input, args.meets.is_empty()) {
         (Some(_), _) | (None, false) => {
             let observed_on = match args.observed_on.clone() {
@@ -121,9 +183,11 @@ async fn run_offline(cli: &Cli, store: std::sync::Arc<Store>, args: &RunArgs) ->
         }
         (None, true) => PublicationPreparation::Retained,
     };
-    tokio::task::spawn_blocking(move || offline_stages(&store, &options, preparation))
-        .await
-        .map_err(|error| anyhow::anyhow!("the offline stages did not finish: {error}"))?
+    tokio::task::spawn_blocking(move || {
+        offline_stages(&store, &options, preparation, publication.as_ref())
+    })
+    .await
+    .map_err(|error| anyhow::anyhow!("the offline stages did not finish: {error}"))?
 }
 
 fn stage_line(name: &str, detail: &str, started: std::time::Instant) {
@@ -134,12 +198,13 @@ fn offline_stages(
     store: &Store,
     options: &workbook::Options,
     preparation: PublicationPreparation,
+    publication: Option<&(ExportJobRequest, ExportGeneration)>,
 ) -> Result<()> {
     if let PublicationPreparation::Gathered { observed_on } = preparation {
         derive_index(store, &observed_on, options.school_year)?;
     }
     let started = std::time::Instant::now();
-    publish_workbook_offline(store, options)?;
+    publish_workbook_offline(store, options, publication)?;
     stage_line("publish", "managed_bundle", started);
     Ok(())
 }
@@ -157,6 +222,8 @@ fn derive_index(store: &Store, observed_on: &str, school_year: SchoolYear) -> Re
 }
 
 async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
+    let export_job = selected_request(args)?
+        .ok_or_else(|| anyhow::anyhow!("live cycle requires an explicit selected publication"))?;
     if args.input.is_some() || !args.meets.is_empty() {
         anyhow::bail!(
             "the gather stage writes the store the running service holds: --input and --meets need --store"
@@ -165,8 +232,12 @@ async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
     let options = publication_options(args)?;
     let generation = ExportGeneration::resolve(args.generation.as_deref())?;
     let client = ingress::client(origin)?;
-    super::publication_preflight::require_managed_publication(&client).await?;
-    publish_workbook_live(origin, &options, &generation).await
+    super::publication_preflight::require_publication_contract(
+        &client,
+        census_service::restate_services::PublicationContract::SelectedPublicationV1,
+    )
+    .await?;
+    publish_workbook_live(origin, &options, &generation, &export_job).await
 }
 
 #[cfg(test)]

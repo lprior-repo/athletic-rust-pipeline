@@ -44,7 +44,7 @@ pub(super) fn load(
     format: &StoreFormat,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Option<wire::Proof>> {
-    if format.lifecycle_revision != Some(LIFECYCLE) {
+    if !super::retains_school_enrollment(format.lifecycle_revision) {
         [meta, journal, receipts]
             .into_iter()
             .try_for_each(|table| namespace(snapshot, table, NAME, &[], grant))?;
@@ -280,6 +280,7 @@ pub(super) fn snapshot_format(
                 Some(b"7") => Some(7),
                 Some(b"8") => Some(8),
                 Some(b"9") => Some(9),
+                Some(b"10") => Some(10),
                 _ => return Err(Error::EnrollmentRequired.into()),
             };
         } else if bytes != expected {

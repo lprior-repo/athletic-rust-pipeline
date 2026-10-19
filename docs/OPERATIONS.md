@@ -866,7 +866,8 @@ Workbook publication captures one bounded, immutable input generation for its lo
 Workbook, censuses, best-results, recruiting and audit products derive from that input, not
 independent live-store reads. Review decisions must be applied before capture. Retrying the same
 job reuses its archived input; source advancement refuses that input rather than silently
-recapturing it. A changed input requires a new logical export, for example a new publication root.
+recapturing it. Changed accepted inputs require an explicitly new publication generation;
+changing a path alone does not authorize recapture or reset exhausted work budgets.
 Returning an existing capture also synchronizes its archive directory, so retry success cannot
 skip a previously failed directory-durability step. A fresh publication root, a fresh
 `<store>/out/export-inputs` archive and any fresh output directory create every missing ancestor and
@@ -877,10 +878,11 @@ for directory fsync.
 A settled national run chains its artifacts itself. Once no national failure or owed jurisdiction
 remains, every admitted jurisdiction's roster summary is unblocked and complete (`remaining=0`,
 `skipped=0`, `committed=total`) with cardinalities matching the admitted scope, and every admitted
-jurisdiction's contacts are Complete, the run releases `Consolidate` and awaits its durable
-completion before releasing `Report`, `Bests` and `Workbook` in order, each on its original artifact
-workflow identity (`<national identity>:consolidate`, `:report`, `:bests`, `:workbook`). Workbook
-success releases `Census.publication` with the run's own cohort, season, revision and workbook path.
+jurisdiction's contacts are Complete, the selected run awaits `Consolidate`, then one
+`Workbook` workflow (`<national identity>:consolidate`, `:workbook`). Workbook and every
+normalized family derive from that job's frozen generation; there are no separate national
+`Report`/`Bests` publication jobs. Success releases `Census.publication` with the original
+cohort, season, revision, scope and returned workbook path.
 A pending child replays its original durable call and a resumed national invocation reuses every
 completed artifact instead of minting a new job. Only a terminal failure whose message contains
 `the census seal refused: ` starts one fresh measurement invocation under
@@ -891,9 +893,9 @@ outcome is itself recorded (for example `TeamsSource` records its ledger-status 
 before branching), and a side effect that needs live process state is performed inside the journaled
 `ctx.run` (for example `BrowserSession.fetch` acquires its manager inside the Run), so a replayed
 invocation consumes its recorded steps and returns the recorded outcome without a live manager,
-without executing new work and without minting a second attempt or reservation. The manual
-`workbook`/`seal` verbs below are unchanged and are
-not required for a national run's publication; an incomplete census or contact result keeps its
+without executing new work and without minting a second attempt or reservation.
+The manual `workbook`/`seal` verbs below are not required for automatic national publication;
+an incomplete census or contact result keeps its
 existing report behavior and does not release publication.
 
 An explicit offline `index --store <dir> --school-year <yyyy>` still re-derives mutable projections;
@@ -938,6 +940,10 @@ side of a merge. Corrections append in batches of at most 100; event identity, m
 division, round, original labels and observations survive. The final dry-run reports no eligible
 corrections. Unsupported labels remain unresolved rather than becoming guessed PR categories.
 
+The following normalization revisions describe retained standalone-export history, not the
+current selected-publication contract. Selected workbook artifacts use revision 8 and
+selection policy 21; participation remains V4. Historical bytes are never relabeled.
+
 Export schema revision remains 1. Policy revision 4 requires event-compatible PR marks, combined-event
 scores and same-context conflict detection. It retains revision 3's accepted-alias projection,
 source-owned postal fields and complete summary-cell admission, and revision 2's declared timing
@@ -958,10 +964,31 @@ walk, so the old bound would have refused the product's own delivery — `athlet
 The bound guards disk; the memory each readback route needs is recorded under the seal limit below.
 
 ```sh
-census-service workbook --ingress http://127.0.0.1:18095/ --out <publication-root> --grad-year 2027
-census-service verify --workbook <publication-root>/current/workbook.xlsx
-census-service seal --ingress http://127.0.0.1:18095/ --workbook <publication-root>/current/workbook.xlsx --write
+census-service workbook --ingress <origin> \
+  --selected-store-identity "$STORE_IDENTITY" --selected-profile-id "$PROFILE_ID" \
+  --grad-year 2027 --school-year 2026 --states MI,MN,IA,IL,CO \
+  --generation "$PUBLICATION_GENERATION" --out <publication-root>
+census-service verify --workbook <returned-generation-path>/workbook.xlsx
+census-service seal --ingress <origin> \
+  --workbook <returned-generation-path>/workbook.xlsx --write \
+  --states MI,MN,IA,IL,CO --season 2026 --revision "$RUN_REVISION"
 ```
+
+Both selection flags are mandatory for fresh live `national`, `workbook` and `run`.
+They select an existing installation-bound profile; they do not enroll or migrate a
+store. The endpoint must advertise `selected_publication_v1`. Missing or nonselected
+contracts refuse before work. Options must agree with the profile, and rejected options
+must not reserve frozen inputs. Use the returned generation path, not a guessed
+`current/workbook.xlsx` path. Manual seal scope and run identity must match the original
+run; omitted source-object measurements remain unknown, not zero.
+
+With the owner stopped, selected `workbook` and `run` support explicit logical
+generations against an existing qualified store. An unenrolled store refuses without
+enrollment. Unselected stopped-store maintenance remains separate and is not spec-v2
+selected-population acceptance. See [exact qualification scope](VERIFICATION-EVIDENCE.md).
+
+The resource observations below are historical measurements, not current national
+resource qualification.
 
 One measured limit: a full-size publication could not seal through the ingress route at the
 endpoint's default budget. The `Census.seal` handler loads the whole store projection

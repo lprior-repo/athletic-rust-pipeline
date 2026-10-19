@@ -68,6 +68,7 @@ pub(super) fn require_format(store: &Store) -> StoreResult<()> {
             PUBLIC_IDENTITY_QUALIFICATION_V3_LIFECYCLE
                 | crate::ROSTER_SOURCE_ISSUANCE_LIFECYCLE
                 | crate::RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE
+                | crate::RESULT_CALENDAR_CORRESPONDENCE_LIFECYCLE
         )
     ) || format.migration_target.is_some()
     {

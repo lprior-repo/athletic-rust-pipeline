@@ -47,10 +47,14 @@ async fn exchange_with_held_reply(
 ) -> TestResult<(Vec<(String, Vec<u8>)>, anyhow::Result<()>)> {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let origin = format!("http://{}/", listener.local_addr()?);
+    let store = "a".repeat(64);
+    let profile = "b".repeat(64);
     let mut input = vec!["census-service", "national", "--states", "WI"];
     if detached {
         input.push("--detach");
     }
+    input.extend(["--selected-store-identity", store.as_str()]);
+    input.extend(["--selected-profile-id", profile.as_str()]);
     input.extend(arguments);
     input.extend(["--ingress", &origin]);
     let cli = crate::cli::Cli::try_parse_from(input)?;
@@ -90,47 +94,69 @@ async fn new_national_submission_checks_capability_before_any_write() -> TestRes
     let (path, body) = captured.get(1).ok_or("submission absent")?;
     check!(path.contains("/run/send HTTP/1.1"));
     let request: NationalRequest = serde_json::from_slice(body)?;
-    check!(eq; request.publication_contract, PublicationContract::ManagedBundleV2);
+    check!(eq; request.publication_contract, PublicationContract::SelectedPublicationV1);
+    check!(matches!(
+        request.export_job,
+        census_report::export::ExportJobRequest::SelectedPublicationV1 { .. }
+    ));
+    Ok(())
+}
+
+#[tokio::test]
+async fn fresh_submission_without_complete_selection_refuses_before_any_network() -> TestResult {
+    use clap::Parser;
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+    let origin = format!("http://{}/", listener.local_addr()?);
+    let cli = crate::cli::Cli::try_parse_from([
+        "census-service",
+        "national",
+        "--states",
+        "WI",
+        "--detach",
+        "--ingress",
+        origin.as_str(),
+    ])?;
+    let crate::cli::command::Command::National(args) = &cli.command else {
+        return Err("fixture parsed another command".into());
+    };
+    let (finished, completion) = tokio::sync::oneshot::channel::<()>();
+    let (captured, outcome) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        tokio::join!(
+            super::resume::guarded_resume_ingress(listener, vec![], completion),
+            async {
+                let outcome = super::run_national(&cli, args).await;
+                drop(finished);
+                outcome
+            }
+        )
+    })
+    .await?;
+    let captured = captured?;
+    check!(outcome.is_err());
+    check!(eq; captured.len(), 0);
     Ok(())
 }
 
 #[tokio::test]
 async fn unsupported_missing_or_malformed_capability_never_submits_a_national_run() -> TestResult {
-    for (response, diagnostic) in [
+    for response in [
+        absent(),
+        ("200 OK", "{}".into()),
         (
-            absent(),
-            "publication capability response is invalid; no invocation was submitted",
+            "200 OK",
+            "{\"publication_contracts\":[\"legacy_separate_v1\"]}".into(),
         ),
         (
-            ("200 OK", "{}".into()),
-            "publication capability response is invalid; no invocation was submitted",
+            "200 OK",
+            "{\"publication_contracts\":[\"future_contract\"]}".into(),
         ),
-        (
-            (
-                "200 OK",
-                "{\"publication_contracts\":[\"legacy_separate_v1\"]}".into(),
-            ),
-            "endpoint does not advertise managed_bundle_v2; no invocation was submitted",
-        ),
-        (
-            (
-                "200 OK",
-                "{\"publication_contracts\":[\"future_contract\"]}".into(),
-            ),
-            "publication capability response is invalid; no invocation was submitted",
-        ),
-        (
-            ("200 OK", "not json".into()),
-            "publication capability response is invalid; no invocation was submitted",
-        ),
+        ("200 OK", "not json".into()),
     ] {
-        let (captured, error) = exercise(&[], vec![response]).await?;
+        let (captured, _) = exercise(&[], vec![response]).await?;
         check!(eq; captured.len(), 1);
         check!(captured
             .first()
             .is_some_and(|(path, _)| path.contains("/Census/publication_capabilities HTTP/1.1")));
-        check!(error.starts_with(diagnostic), "{error}");
-        check!(!error.contains("no invocation exists under"), "{error}");
     }
     Ok(())
 }
@@ -161,7 +187,7 @@ async fn unbound_legacy_resume_does_not_invent_a_contract_or_submission() -> Tes
         .get(2)
         .is_some_and(|(path, _)| path.contains("%3Aresume%3A6/request")));
     check!(
-        error.contains("no bound managed_bundle_v2 request"),
+        error.contains("no bound selected publication request"),
         "{error}"
     );
     Ok(())

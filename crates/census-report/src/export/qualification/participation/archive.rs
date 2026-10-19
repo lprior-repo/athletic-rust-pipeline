@@ -3,10 +3,14 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 pub(super) mod attachment;
+mod calendar;
 mod canonical;
 mod objects;
 pub(crate) mod school;
 pub(super) use attachment::{capture_attachment, replay_attachment};
+pub(crate) use calendar::{
+    capture_calendar, load_calendar, CalendarClosure, CalendarClosureDescriptor,
+};
 pub(super) use objects::hash;
 pub(crate) use school::{capture_school, load_school, SchoolClosure, SchoolClosureDescriptor};
 
@@ -57,6 +61,8 @@ pub(crate) struct ParticipationReplayV4 {
     pub(super) attachment: attachment::AttachmentClosureDescriptor,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) school: Option<SchoolClosureDescriptor>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) calendar: Option<CalendarClosureDescriptor>,
 }
 
 #[derive(Debug, Serialize)]

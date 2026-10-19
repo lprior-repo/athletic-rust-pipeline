@@ -9,12 +9,19 @@ mod exclusions;
 mod identity;
 mod normalized;
 mod workbook;
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum Generation {
+    Initial,
+    StatusWithdrawn,
+    CalendarWithdrawn,
+}
 pub(super) struct Expected<'a> {
     pub(super) seconds: &'a str,
     pub(super) day: &'a str,
     pub(super) public: &'a PublicAthleteId,
     pub(super) current_school: &'a SchoolId,
     pub(super) historical_school: &'a SchoolId,
+    pub(super) generation: Generation,
 }
 pub(super) fn assert_generation(
     dataset: &ExportDataset,
@@ -36,7 +43,7 @@ pub(super) fn assert_generation(
     check!(expected.day == "2026-05-15" || expected.day == "2026-05-16");
     check!(expected.current_school != expected.historical_school);
     identity::matches(dataset, &wanted, &expected)?;
-    participation_matches(dataset, &feb, &may50, &may51, &wanted)?;
+    participation_matches(dataset, &feb, &may50, &may51, &wanted, expected.generation)?;
     let outcome = artifacts::outcome_of(dataset)?;
     selection_matches(dataset, &outcome, &wanted, &expected)?;
     normalized::matches(dataset, &directory, &outcome, &wanted, &expected)?;
@@ -57,6 +64,7 @@ fn participation_matches(
     may50: &census_domain::model::CanonicalPerformance,
     may51: &census_domain::model::CanonicalPerformance,
     wanted: &census_domain::model::CanonicalPerformance,
+    generation: Generation,
 ) -> TestResult<()> {
     let view = dataset.verified_participation()?;
     let feb_assessment = view
@@ -85,7 +93,7 @@ fn participation_matches(
         assert_may51_eligible(&view, may51)?;
         assert_may50_eligible(&view, may50)?;
     } else {
-        assert_may50_revoked(&view, may50)?;
+        assert_may50_revoked(&view, may50, generation)?;
         assert_may51_eligible(&view, may51)?;
     }
     Ok(())
@@ -115,6 +123,7 @@ fn assert_may51_eligible(
 fn assert_may50_revoked(
     view: &crate::export::VerifiedParticipationView,
     may50: &census_domain::model::CanonicalPerformance,
+    generation: Generation,
 ) -> TestResult<()> {
     let assessment = view
         .assessment(&may50.id)
@@ -122,7 +131,19 @@ fn assert_may50_revoked(
     check!(eq; assessment.outcome(), crate::export::ParticipationOutcome::Unresolved);
     check!(assessment
         .reasons()
-        .contains(ParticipationReason::HighSchoolStatusMissing));
+        .contains(ParticipationReason::ParticipationContextUnresolved));
+    match generation {
+        Generation::StatusWithdrawn => {
+            check!(assessment
+                .reasons()
+                .contains(ParticipationReason::HighSchoolStatusMissing));
+            check!(eq; assessment.reasons().iter().count(), 2);
+        }
+        Generation::CalendarWithdrawn => {
+            check!(eq; assessment.reasons().iter().count(), 1);
+        }
+        Generation::Initial => return Err("initial generation cannot revoke May15".into()),
+    }
     check!(assessment.diagnostics().is_empty());
     check!(!assessment.evidence_refs().is_empty());
     Ok(())

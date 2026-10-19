@@ -1,10 +1,8 @@
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 
-use census_domain::model::SchoolYear;
-use census_report::{bests, workbook};
+use census_report::bests;
 
 #[cfg(not(feature = "native-fault-injection"))]
 use super::jobs::consolidate_tables;
@@ -21,6 +19,7 @@ use super::{
 };
 
 mod runtime;
+pub(super) mod workbook_preflight;
 pub use runtime::Jobs;
 
 #[derive(Clone)]
@@ -213,31 +212,7 @@ impl Workbook {
         ctx: WorkflowContext<'_>,
         Json(request): Json<WorkbookRequest>,
     ) -> Result<Json<WorkbookReply>, HandlerError> {
-        let requested_year = match request.school_year {
-            Some(year) => year,
-            None => {
-                return Err(job_error(JobError::Terminal {
-                    message: "workbook publication requires an explicit school year".to_string(),
-                }))
-            }
-        };
-        let school_year = match SchoolYear::new(requested_year) {
-            Some(season) => season,
-            None => {
-                return Err(job_error(JobError::Terminal {
-                    message: format!("school year {requested_year} is outside the supported range"),
-                }))
-            }
-        };
-        let options = workbook::Options {
-            grad_year: request.grad_year,
-            out: request.out.map(PathBuf::from),
-            limit: request.limit,
-            scope: resolve_scope(request.scope.as_deref())?,
-            jurisdictions: normalize_jurisdictions(&request.jurisdictions)?,
-            school_year,
-        };
-        let export_job = request.export_job;
+        let (options, export_job) = workbook_preflight::prepare(&self.jobs, request).await?;
         let job = format!("workbook:{}", ctx.key());
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);

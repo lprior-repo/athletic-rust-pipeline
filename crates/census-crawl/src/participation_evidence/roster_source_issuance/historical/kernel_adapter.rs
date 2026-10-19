@@ -10,8 +10,8 @@ pub(in super::super) mod context;
 
 #[derive(Clone, Copy)]
 pub(in super::super) enum KernelEpoch {
-    FullV10,
-    RowLocalV11,
+    Full,
+    RowLocal,
 }
 
 #[must_use]
@@ -45,6 +45,7 @@ struct OriginalKernel {
     digest: &'static str,
     hash: [u8; 32],
     configuration: &'static [u8; 32],
+    semantic_contract: &'static str,
 }
 
 const FULL: OriginalKernel = OriginalKernel {
@@ -55,6 +56,7 @@ const FULL: OriginalKernel = OriginalKernel {
         0xaa, 0x46,
     ],
     configuration: &EXECUTING_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
 };
 const ROW_LOCAL: OriginalKernel = OriginalKernel {
     digest: "7352af3bf097e5c91a890809b1fa52e700469b3bbccb308eb445fe49fcf48f38",
@@ -64,6 +66,7 @@ const ROW_LOCAL: OriginalKernel = OriginalKernel {
         0x8f, 0x38,
     ],
     configuration: &EXECUTING_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
 };
 const FULL_V4: OriginalKernel = OriginalKernel {
     digest: "435df869dd5994102f1aee7bebafb8f1cfc3afe5d99e8c2c60ae892be14b80d2",
@@ -73,6 +76,7 @@ const FULL_V4: OriginalKernel = OriginalKernel {
         0x80, 0xd2,
     ],
     configuration: &EXECUTING_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
 };
 const ROW_LOCAL_V5: OriginalKernel = OriginalKernel {
     digest: "60fd1056573363a7985af568568db1f9b82f4b39d38f9e3efa3034beb3c63fe0",
@@ -82,6 +86,7 @@ const ROW_LOCAL_V5: OriginalKernel = OriginalKernel {
         0x3f, 0xe0,
     ],
     configuration: &EXECUTING_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
 };
 const FULL_V6: OriginalKernel = OriginalKernel {
     digest: "ba3d52bbc2673fc3f386815a39ed09702b5e2c68b528ca8eecf630d5f45ea8fd",
@@ -91,6 +96,7 @@ const FULL_V6: OriginalKernel = OriginalKernel {
         0xa8, 0xfd,
     ],
     configuration: &EXECUTING_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
 };
 const ROW_LOCAL_V7: OriginalKernel = OriginalKernel {
     digest: "b49bfad4374e7a664c08977bc62428e40e8c8e0063d33235796e5eb3b03c2f65",
@@ -100,6 +106,7 @@ const ROW_LOCAL_V7: OriginalKernel = OriginalKernel {
         0x2f, 0x65,
     ],
     configuration: &EXECUTING_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
 };
 const EXECUTING_CONFIGURATION: [u8; 32] = [
     0x9e, 0x7f, 0x86, 0xbb, 0x6f, 0x37, 0x45, 0x09, 0xc1, 0x44, 0xcc, 0xf9, 0x9f, 0xd3, 0xb2, 0x74,
@@ -117,6 +124,7 @@ const FULL_V8: OriginalKernel = OriginalKernel {
         0x1b, 0x6f,
     ],
     configuration: &EXECUTING_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
 };
 const ROW_LOCAL_V9: OriginalKernel = OriginalKernel {
     digest: "94ad0cb66c947e1fdc1efd31cbd99c7d1aac3bbc580bf1e81debfd16bf188505",
@@ -126,6 +134,7 @@ const ROW_LOCAL_V9: OriginalKernel = OriginalKernel {
         0x85, 0x05,
     ],
     configuration: &EXECUTING_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
 };
 const FULL_V8_ALTERNATE: OriginalKernel = OriginalKernel {
     digest: "9a4b8f629bfa43a1e706b8acc19498cf201876c583fec611355fbe006c4e97c3",
@@ -135,6 +144,7 @@ const FULL_V8_ALTERNATE: OriginalKernel = OriginalKernel {
         0x97, 0xc3,
     ],
     configuration: &ALTERNATE_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
 };
 const ROW_LOCAL_V9_ALTERNATE: OriginalKernel = OriginalKernel {
     digest: "93351cb0eeff6d532402e831d6f61143d1b1f9e31e0a77a0629094ea46b5d34b",
@@ -144,7 +154,49 @@ const ROW_LOCAL_V9_ALTERNATE: OriginalKernel = OriginalKernel {
         0xd3, 0x4b,
     ],
     configuration: &ALTERNATE_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
 };
+const QUALIFIED_FULL_V10: OriginalKernel = OriginalKernel {
+    digest: "35695fab34f7e130fe3c3560e0568edf0897b837488ee7761864103176d6dd1b",
+    hash: [
+        0x35, 0x69, 0x5f, 0xab, 0x34, 0xf7, 0xe1, 0x30, 0xfe, 0x3c, 0x35, 0x60, 0xe0, 0x56, 0x8e,
+        0xdf, 0x08, 0x97, 0xb8, 0x37, 0x48, 0x8e, 0xe7, 0x76, 0x18, 0x64, 0x10, 0x31, 0x76, 0xd6,
+        0xdd, 0x1b,
+    ],
+    configuration: &EXECUTING_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
+};
+const QUALIFIED_ROW_LOCAL_V11: OriginalKernel = OriginalKernel {
+    digest: "7c2fb5be2b9948e8df8c829fd9ac09ac7524d693ca980b3df1c81f5908ad858b",
+    hash: [
+        0x7c, 0x2f, 0xb5, 0xbe, 0x2b, 0x99, 0x48, 0xe8, 0xdf, 0x8c, 0x82, 0x9f, 0xd9, 0xac, 0x09,
+        0xac, 0x75, 0x24, 0xd6, 0x93, 0xca, 0x98, 0x0b, 0x3d, 0xf1, 0xc8, 0x1f, 0x59, 0x08, 0xad,
+        0x85, 0x8b,
+    ],
+    configuration: &EXECUTING_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
+};
+
+fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 6] {
+    match epoch {
+        KernelEpoch::Full => [
+            &FULL,
+            &FULL_V4,
+            &FULL_V6,
+            &FULL_V8,
+            &FULL_V8_ALTERNATE,
+            &QUALIFIED_FULL_V10,
+        ],
+        KernelEpoch::RowLocal => [
+            &ROW_LOCAL,
+            &ROW_LOCAL_V5,
+            &ROW_LOCAL_V7,
+            &ROW_LOCAL_V9,
+            &ROW_LOCAL_V9_ALTERNATE,
+            &QUALIFIED_ROW_LOCAL_V11,
+        ],
+    }
+}
 
 pub(in super::super) fn bind_historical_v1(
     epoch: KernelEpoch,
@@ -174,18 +226,8 @@ pub(in super::super) fn bind_historical_v1(
                 semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
             });
         }
-        let candidates = match epoch {
-            KernelEpoch::FullV10 => [&FULL, &FULL_V4, &FULL_V6, &FULL_V8, &FULL_V8_ALTERNATE],
-            KernelEpoch::RowLocalV11 => [
-                &ROW_LOCAL,
-                &ROW_LOCAL_V5,
-                &ROW_LOCAL_V7,
-                &ROW_LOCAL_V9,
-                &ROW_LOCAL_V9_ALTERNATE,
-            ],
-        };
         let actual: [u8; 32] = Sha256::digest(retained).into();
-        let original = candidates
+        let original = predecessors(epoch)
             .into_iter()
             .find(|candidate| candidate.hash == actual)
             .ok_or_else(|| invalid("unsupported historical semantic kernel identity"))?;
@@ -197,7 +239,7 @@ pub(in super::super) fn bind_historical_v1(
         Ok(CheckedKernelReplayV1 {
             digest: original.digest,
             bytes,
-            semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
+            semantic_contract: original.semantic_contract,
         })
     })();
     if result.is_err() {

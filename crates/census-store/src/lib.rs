@@ -35,9 +35,10 @@ pub use evidence_subject_attachment::{
     EvidenceSubjectAttachmentInspectionV1, EvidenceSubjectAttachmentPreparationV1,
     EvidenceSubjectAttachmentStoreError, FrozenCurrentEvidenceSubjectAttachmentReferencesV1,
     FrozenCurrentEvidenceSubjectAttachmentV1, FrozenEvidenceSubjectAttachmentBundleV1,
-    FrozenRetainedCaptureSourceV1, PreparedEvidenceSubjectAttachmentV1, RetainedCaptureLeafKindV1,
-    RetainedCaptureLeafV1, RetainedCaptureRootReadV1, RetainedCaptureRootSchemaV1,
-    RetainedCaptureRootV1, RetainedCaptureSlotV1, RetainedEvidenceSubjectAttachmentReferencesV1,
+    FrozenRetainedCaptureSourceV1, PreparedEvidenceSubjectAttachmentV1,
+    ReadAttachmentContextObjectV1, RetainedCaptureLeafKindV1, RetainedCaptureLeafV1,
+    RetainedCaptureRootReadV1, RetainedCaptureRootSchemaV1, RetainedCaptureRootV1,
+    RetainedCaptureSlotV1, RetainedEvidenceSubjectAttachmentReferencesV1,
 };
 mod fence;
 mod format;
@@ -78,6 +79,8 @@ mod native_worker_boundary;
 mod paths;
 mod profiles;
 pub mod read;
+mod result_calendar_correspondence;
+pub use result_calendar_correspondence::*;
 mod result_school_correspondence;
 pub use result_school_correspondence::*;
 mod roster_source_issuance;

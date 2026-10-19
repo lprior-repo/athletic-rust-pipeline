@@ -42,7 +42,7 @@ pub(super) fn require_historical(
 ) -> StoreResult<CheckedKernelReplayV1> {
     match COMPILED_IDENTITY.as_ref() {
         Some(identity) => kernel_adapter::bind_historical_v1(
-            KernelEpoch::FullV10,
+            KernelEpoch::Full,
             retained,
             identity.text,
             identity.digest.as_str(),
@@ -56,12 +56,12 @@ pub(super) fn require_historical(
     }
 }
 
-const SCHEMA: &str = "roster-semantic-kernel-dependencies/v10";
+const SCHEMA: &str = "roster-semantic-kernel-dependencies/v12";
 const MAX_DOCUMENT: usize = 64 * 1024;
 const EXPECTED_SOURCE_DIGEST: &str =
-    "54d82912f5d0782c1be11c5f592dcfdfe244215ed58af1b2245663fa9261a5c7";
+    "68194f31048a15146067d7ddb0709a294a6e2b3735722819ff371412ca574490";
 const COMPILED: &[u8] =
-    include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v10.json"));
+    include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v12.json"));
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -155,7 +155,7 @@ fn input_valid(input: &Input) -> StoreResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    type TestResult = Result<(), Box<dyn std::error::Error>>;
+    type TestResult<E = Box<dyn std::error::Error>> = Result<(), E>;
 
     #[test]
     fn compiled_kernel_binds_digest_and_length() -> TestResult {

@@ -96,3 +96,68 @@ immutable lifecycle-3 enrollment. They reuse this configuration compiler and do 
 its supported envelope. Generic execution of an enrolled installation is refused before
 recovery or serving. Fresh qualification keeps lifecycle 2; historical data is never
 implicitly enrolled. See [installation evidence and remaining qualification](verification/2026-10-14-pr29-summary.md#installation-and-result-status).
+
+## Registered acquisition status — R13
+
+Code audit on `fcbd00837` plus working source; **not a live acquisition or
+population certificate**. MN/IA/IL/CO collectors already exist. Missing coverage
+must not be described as missing all their code.
+
+Statuses: **C** coded collector/dispatch, current coverage unverified; **U** artifact
+or run-binding dependency unresolved; **I** discovery inactive; **B** access/policy
+blocked. Active acquisition requires executed scoped capture evidence, not retained
+parser fixtures.
+
+Evidence: [registry tables](../crates/census-crawl/src/registry/table/),
+[teams dispatch](../crates/census-service/src/restate_services/teams_arms.rs),
+[meet prerequisites](../crates/census-service/src/restate_services/meets_arms/prerequisites.rs),
+[results dispatch](../crates/census-service/src/restate_services/results_arms.rs) and
+[acquisition holds](verification/2026-10-14-source-acquisition-holds.md).
+
+| Registered source | Status | Missing acceptance / decisive boundary |
+|---|---|---|
+| `aia` | C | Sampled AZ searches do not establish the complete school inventory. |
+| `athleticlive` | U | Run-bound meet CSV and producer metadata; no inferred frontier. |
+| `athleticlive_athletes` | I | Qualified bounded athlete manifest and capture-derived meet targets. |
+| `athleticnet` | I | Meet discovery refuses without a qualified run-bound historical frontier/capture. |
+| `ciac` | C | Scoped CT directory yields; missing email remains unknown. |
+| `chsaa` | C | Retained directory/coach tests are not CO results or membership coverage. |
+| `coach_contacts` | U | Bound artifact, jurisdiction yields and current-role/freshness evidence. |
+| `ihsa` | C | IL directory/API and result-feed qualification; membership/co-op joins. |
+| `ks` | C | Executed directory yields preserving distinct provider ID spaces. |
+| `milesplit` | C | Per-state discovery, pagination, ownership, dates/grades and access evidence. |
+| `pa_piaa` | C | Complete PA directory/detail traversal and professional-contact yields. |
+| `coach_directories` | C | Per-association yields; district rows are not a school denominator. |
+| `mpa` | C | ME directory yields; no fabricated email fields. |
+| `mshsl` | C | MN school/team/coach yields; directory enumeration is not regular-season results. |
+| `ohsaa` | C | Complete OH school/sport/AD traversal with attributable yields. |
+| `plain_names` | C | ND/NE names only; email/address absence remains explicit. |
+| `riil` | C | RI yields; public names do not imply email availability. |
+| `tfrrs` | B | DirectAthletics permission required; pre-dispatch refusal remains enforced. |
+| `wiaa` | C | Complete WI traversal; retained letter samples are not whole coverage. |
+| `wiaa_results` | C | Seasonal fragments, quarantine counts and wrong-date refusal; bulk capability is not results-stage dispatch. |
+| `wayzata` | C | IA/MN/WI sport/season meet yields; not an athlete/result population alone. |
+| `arbiter_orgs` | C | Scoped org yields; token/refusal is not an empty directory. |
+| `nces` | U | Run-bound CCD/PSS input inventory with explicit skips. |
+| `state_ed` | U | Qualified operator-supplied NY input; no extrapolation to other states. |
+| `tssaa` | C | TN index/profile traversal and school/coach yields. |
+| `uhsaa` | C | UT directory/profile yields; missing roles/phones remain unknown. |
+| `home_campus` | C | Policy-compliant qualification; no challenge, cookie or proxy workaround. |
+| `sidearm_staff` | C | Per-school qualification; one retained school does not establish platform-wide coverage. |
+| `bound` | B | IA/SD compliant live route must be requalified; retained replay does not remove the hold. |
+
+`school_sites` runs inside discovered-school contact collection, but is not a
+separate registry entry or a national host inventory. `ihsa_tournament` has nested
+dispatch code; source identity and admissible result corroboration need evidence.
+`mhsaa_enrollment` parses retained text, not Michigan/UP athlete discovery;
+`private_assoc` lacks a qualified capture/frontier. These are distinct from the 29
+registered entries above.
+
+Five-state completion still needs independently discovered eligible populations,
+addresses, comparable PRs and source dates. UP membership, sport/season coverage,
+co-op constituents and denominator require source-backed evidence; neither meet
+location nor enrollment text supplies it. See the
+[denominator ledger](NATIONAL-CENSUS-PLAN.md) for state research and restrictions.
+The genuine Abbott artifact remains one athlete with zero eligible marks. Registered
+capabilities, retained CHSAA parity and historical counts do not replace genuine
+population/comparison acceptance.

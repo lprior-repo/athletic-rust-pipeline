@@ -120,14 +120,22 @@ against its intended store on an unused port, with an absolute browser-profile
 path and `/usr/bin/chromium` when that lane is configured. Athletic.net requires
 the [headed profile](OPERATIONS.md#browser-lane); a headless CLI flag does not
 waive that policy. Register the endpoint and inspect the discovered service
-catalog before submitting `census-service national --ingress <origin> --detach`.
+catalog before submitting the profile's exact scope, for example:
+
+```sh
+census-service national --ingress <origin> --detach --states MI,MN,IA,IL,CO \
+  --selected-store-identity "$STORE_IDENTITY" --selected-profile-id "$PROFILE_ID"
+```
+
+The profile must already belong to that installation; flags never enroll or migrate it.
 Endpoint discovery uses HTTP/2; an HTTP/1 GET is not a valid endpoint readiness probe.
 Observe through ingress/admin APIs, never a second opener of the live store.
 
-A legacy store accepts exactly one census run. A different `--revision` is
-refused; a duplicate submission of a journaled invocation does not apply changed
-parameters. Resubmitting `--source-parallelism`, `--delay-ms`, `--states`,
-`--refresh`, `--limit` or `--concurrency` is not evidence those values took effect.
+Historical run receipts retain their original scope/revision and remain inspectable;
+they are not a fallback execution path. Current submission requires an explicitly
+selected contract. Duplicate journaled submissions ignore changed parameters:
+`--source-parallelism`, `--delay-ms`, `--states`, `--refresh`, `--limit` and
+`--concurrency` do not take effect merely because they were resubmitted.
 The CLI's `--resume <n>` requests one bounded continuation; `--drive` reattaches
 under new resume ordinals while work remains. Neither permits changing immutable
 scope or resetting exhausted logical source budgets.

@@ -25,10 +25,6 @@ impl Transcript {
         }
     }
 
-    pub(super) fn candidate(&mut self) {
-        self.phase = "current";
-    }
-
     fn record(&mut self, request: &[u8], status: u16, response: &[u8]) -> TestResult {
         let stem = self.begin(request)?;
         self.finish(&stem, Some(status), response, None)

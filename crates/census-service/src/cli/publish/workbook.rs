@@ -1,17 +1,19 @@
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+use census_report::export::{ExportDataset, ExportJobRequest};
 use census_report::workbook;
 use census_service::restate_services::{
-    reject_offline_generation, ExportGeneration, WorkbookReply, WorkbookRequest,
+    reject_offline_generation, ExportGeneration, PublicationContract, WorkbookReply,
+    WorkbookRequest,
 };
 use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
 
 use crate::cli::{
-    contact_school_year, live, resolve_restriction, restriction_display, school_year, scope_of,
-    Cli, Route,
+    contact_school_year, live, publication_preflight, resolve_restriction, restriction_display,
+    school_year, scope_of, Cli, Route,
 };
 
 #[derive(Args, Debug)]
@@ -46,10 +48,22 @@ pub(crate) struct WorkbookArgs {
     #[arg(long)]
     all_states: bool,
     #[arg(
-        help = "Logical export generation selecting a fresh export run; omitted reuses the legacy generation 1 keys"
+        help = "Logical publication generation; reuse retains frozen inputs, use a new generation only for a new accepted-input publication"
     )]
     #[arg(long, value_name = "GENERATION")]
     generation: Option<String>,
+    #[arg(
+        long,
+        value_name = "STORE_IDENTITY",
+        help = "Store identity for the selected publication; requires --selected-profile-id"
+    )]
+    selected_store_identity: Option<String>,
+    #[arg(
+        long,
+        value_name = "PROFILE_ID",
+        help = "Selected publication profile ID; requires --selected-store-identity"
+    )]
+    selected_profile_id: Option<String>,
     #[arg(
         help = "Ingress origin of the local Restate server. The local census deployment when omitted"
     )]
@@ -68,7 +82,6 @@ pub(crate) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
     println!("jurisdictions={}", restriction_display(&jurisdictions));
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
-            reject_offline_generation(args.generation.as_deref())?;
             let options = workbook::Options {
                 grad_year: Some(grad_year),
                 out: args.out.clone(),
@@ -77,15 +90,77 @@ pub(crate) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
                 jurisdictions,
                 school_year: contact_season,
             };
-            let store = Store::open(root)?;
-            let path = workbook::build(&store, &options).context("building the census workbook")?;
+            let path = run_workbook_offline(root, args, &options)?;
             println!("wrote {}", path.display());
             Ok(())
         }
         Route::Ingress(origin) => {
-            run_workbook_live(origin, args, grad_year, contact_season, &jurisdictions).await
+            let export_job = publication_preflight::selected_request(
+                args.selected_store_identity.as_deref(),
+                args.selected_profile_id.as_deref(),
+            )?;
+            let client = census_service::ingress::client(origin)?;
+            publication_preflight::require_publication_contract(
+                &client,
+                PublicationContract::SelectedPublicationV1,
+            )
+            .await?;
+            run_workbook_live(
+                origin,
+                args,
+                grad_year,
+                contact_season,
+                &jurisdictions,
+                &export_job,
+            )
+            .await
         }
     }
+}
+
+fn run_workbook_offline(
+    root: &std::path::Path,
+    args: &WorkbookArgs,
+    options: &workbook::Options,
+) -> Result<PathBuf> {
+    match (
+        args.selected_store_identity.as_deref(),
+        args.selected_profile_id.as_deref(),
+    ) {
+        (None, None) => {
+            reject_offline_generation(args.generation.as_deref())?;
+            let store = Store::open(root)?;
+            workbook::build(&store, options).context("building the census workbook")
+        }
+        (store_identity, profile_id) => {
+            let request = publication_preflight::selected_request(store_identity, profile_id)?;
+            let generation = ExportGeneration::resolve(args.generation.as_deref())?;
+            let store = publication_preflight::open_selected_store(root)?;
+            build_offline_selected(&store, options, &request, &generation)
+        }
+    }
+}
+
+fn build_offline_selected(
+    store: &Store,
+    requested: &workbook::Options,
+    request: &ExportJobRequest,
+    generation: &ExportGeneration,
+) -> Result<PathBuf> {
+    let selection = request.require_selected_publication()?;
+    let options = workbook::options_for_selected_request(store, selection, requested)
+        .context("binding workbook options to the selected profile")?;
+    let job = format!(
+        "cli-workbook-selected-v1-{}-{}-{}",
+        generation.as_str(),
+        selection.store_identity().as_str(),
+        selection.profile_id().as_str()
+    );
+    let dataset = ExportDataset::for_job_request(store, &job, request)
+        .context("capturing the selected workbook input")?;
+    let censuses = workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions)?;
+    workbook::build_from(&dataset, store, &options, &censuses)
+        .context("building the selected census workbook")
 }
 
 async fn run_workbook_live(
@@ -94,6 +169,7 @@ async fn run_workbook_live(
     grad_year: i16,
     contact_season: SchoolYear,
     jurisdictions: &[UsJurisdiction],
+    export_job: &ExportJobRequest,
 ) -> Result<()> {
     let generation = ExportGeneration::resolve(args.generation.as_deref())?;
     let request = WorkbookRequest {
@@ -106,7 +182,7 @@ async fn run_workbook_live(
             .map(|path| path.to_string_lossy().into_owned()),
         school_year: Some(contact_season.get()),
         jurisdictions: jurisdictions.to_vec(),
-        export_job: census_report::export::ExportJobRequest::LegacyV2,
+        export_job: export_job.clone(),
     };
     let WorkbookReply { path, .. } = live::workbook(Some(origin), request, &generation).await?;
     println!("wrote {path}");

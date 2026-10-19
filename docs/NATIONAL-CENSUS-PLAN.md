@@ -423,7 +423,7 @@ Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
 Qualified source: `af9c58e7b9ebdaf7dc13a5c1c613e2e5807dec21`, tree
 `28c41613572bd23ccd4ae8089d1b5f2d06c2a70a`, including incoming `1762f27b`.
-Current roster kernels are 10/11; authentic original 2–9 identities remain retained.
+That checkpoint emitted roster kernels 10/11; original 2–9 identities remain retained.
 [Evidence](VERIFICATION-EVIDENCE.md#roster-owner-and-selected-service-qualification--2026-10-18).
 
 | Requirement | Code entrypoint | Test / command receipt | Tested revision | Result | Artifact | Next dependency |

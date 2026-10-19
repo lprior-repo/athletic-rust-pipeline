@@ -13,6 +13,7 @@ use census_store::{Store, Table};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 
+#[path = "reviewed/issuance.rs"]
 mod issuance;
 pub(super) use issuance::review;
 

@@ -157,7 +157,7 @@ pub(super) fn ensure_options_for_revision(
     Ok(())
 }
 
-fn ensure_profile_options(
+pub(in crate::workbook) fn ensure_profile_options(
     profile: &census_domain::model::QueryProfileV1,
     options: &crate::workbook::Options,
 ) -> ReportResult<()> {

@@ -1,8 +1,4 @@
-use super::{domain, invalid, objects::Objects, ownership};
-use crate::participation_evidence::recorded::{
-    read_recorded_html_result_capture, DiscoveredIdentityLinkedHtmlResultDocumentV1,
-    RecordedHtmlResultCaptureV1,
-};
+use super::{domain, invalid, objects::Objects, ownership, reference};
 use crate::participation_evidence::result_ownership::{
     CheckedRetainedResultDocumentV1, CheckedRetainedResultRowV1, ResultSchoolStatementV1,
 };
@@ -15,27 +11,7 @@ use census_domain::result_school_correspondence::{
 };
 use census_store::{
     RetainedCaptureLeafKindV1, RetainedCaptureLeafV1, RetainedCaptureRootV1, RetainedCaptureSlotV1,
-    StoreSnapshot,
 };
-
-pub(super) fn reopen(
-    snapshot: &StoreSnapshot<'_>,
-    linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
-    row: &CheckedRetainedResultRowV1<'_>,
-    grant: &mut AttachmentReplayGrantV1,
-) -> CrawlResult<RecordedHtmlResultCaptureV1> {
-    let recorded = read_recorded_html_result_capture(
-        snapshot,
-        row.context_reference(),
-        &[row.locator()],
-        grant,
-    )?
-    .ok_or_else(|| invalid("school original capture absent"))?;
-    if recorded.root() != linked.recorded_root() {
-        return Err(invalid("school original capture root differs"));
-    }
-    Ok(recorded)
-}
 
 pub(super) fn build(
     root: &RetainedCaptureRootV1,
@@ -50,7 +26,7 @@ pub(super) fn build(
             return Err(invalid("original unique school cell unavailable"))
         }
     };
-    let body = super::objects::reference(document.original_document().as_bytes(), grant)?;
+    let body = reference(document.original_document().as_bytes(), grant)?;
     if body.digest.as_str() != document.capture().body_sha256() {
         return Err(invalid("school original body digest differs"));
     }
@@ -74,7 +50,7 @@ pub(super) fn build(
         return Err(invalid("school original row interpretation differs"));
     }
     let subject = row.subject().map_err(ownership)?;
-    let locator = super::objects::reference(subject.locator().as_bytes(), grant)?;
+    let locator = reference(subject.locator().as_bytes(), grant)?;
     let span = quote.span();
     let length = span
         .end

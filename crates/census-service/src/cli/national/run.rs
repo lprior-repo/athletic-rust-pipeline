@@ -5,7 +5,7 @@ use census_domain::national_census::NationalReport;
 use census_reconcile::identity::{admitted_scope, WorkflowIdentity};
 use census_service::restate_services::{
     JurisdictionCensusIngressClient, JurisdictionRequest, NationalCensusIngressClient,
-    NationalRequest, PublicationContract,
+    NationalRequest,
 };
 use restate_sdk::ingress::{InvocationHandle, SendStatus};
 use restate_sdk::prelude::*;
@@ -32,36 +32,19 @@ pub(crate) async fn submit_national(
     identity: &WorkflowIdentity,
     request: NationalRequest,
 ) -> Result<InvocationHandle<CurrentRoute, Json<NationalReport>>> {
+    resume::validate_selected(&request)?;
     let contract = request.publication_contract;
-    if contract != PublicationContract::LegacySeparateV1 {
-        crate::cli::publication_preflight::require_publication_contract(ingestion, contract)
-            .await?;
-    }
+    crate::cli::publication_preflight::require_publication_contract(ingestion, contract).await?;
     let national = NationalCensusIngressClient::from_client(ingestion.clone(), identity.as_str());
     let handle = match national.run(Json(request)).send().await {
         Ok(submitted) => {
             if matches!(submitted.send_status(), SendStatus::PreviouslyAccepted) {
-                if contract != PublicationContract::LegacySeparateV1 {
-                    request::show_retained_request(ingestion, identity).await?;
-                } else {
-                    println!(
-                    "WARNING: {} already has a run, so Restate deduplicated this submission and\n\
-                     WARNING: EVERY CHANGED PARAMETER ON THIS COMMAND WAS IGNORED (rate, delay, states, limit).\n\
-                     WARNING: The existing run is being observed as-is. To re-drive owed work after an\n\
-                     WARNING: interrupted or paused parent, either use --drive, or run the same command with a\n\
-                     WARNING: NEW --resume ordinal while keeping --revision: e.g. --resume {}, then {}, and so on.",
-                    identity.as_str(),
-                    2,
-                    3
-                    );
-                }
+                request::show_retained_request(ingestion, identity).await?;
             }
             submitted.invocation_handle()
         }
         Err(error) => {
-            if contract != PublicationContract::LegacySeparateV1 {
-                request::show_retained_request(ingestion, identity).await?;
-            }
+            request::show_retained_request(ingestion, identity).await?;
             let handle = attach_existing(origin, ingestion, identity).await?;
             println!(
                 "national run {} already exists — observing it instead",

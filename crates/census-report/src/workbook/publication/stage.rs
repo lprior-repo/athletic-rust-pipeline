@@ -1,5 +1,5 @@
 use super::*;
-use census_store::publish::{Root, State};
+use census_store::publish::State;
 
 #[cfg(test)]
 mod testing;
@@ -271,12 +271,12 @@ fn prepare_request(
         }
     };
     if matches!(request.state, State::Requested) {
-        recovery::reconcile_requested(
+        recovery::requested::reconcile(
             store,
             &root,
             &request,
-            &Root::Absent,
             &prepared.run_manifest,
+            Some(dataset),
         )?;
     }
     let request = store

@@ -26,11 +26,7 @@ pub struct PublicationCapabilities {
 impl PublicationCapabilities {
     pub fn current() -> Self {
         Self {
-            publication_contracts: vec![
-                PublicationContract::LegacySeparateV1,
-                PublicationContract::ManagedBundleV2,
-                PublicationContract::SelectedPublicationV1,
-            ],
+            publication_contracts: vec![PublicationContract::SelectedPublicationV1],
         }
     }
 }

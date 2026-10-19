@@ -25,7 +25,7 @@ fn selected_durable_job_preserves_best_school_public_id_retry_and_revocation() -
         &installed.public,
         &current,
         &installed.school,
-        false,
+        Generation::Initial,
     )?;
     let input_generation = dataset.lineage.input_generation.clone();
     let frozen_digest = dataset.archive_digest()?;
@@ -70,7 +70,7 @@ fn selected_durable_job_preserves_best_school_public_id_retry_and_revocation() -
         &installed.public,
         &current,
         &installed.school,
-        true,
+        Generation::StatusWithdrawn,
     )?;
     let archive = workbook
         .parent()
@@ -83,7 +83,7 @@ fn selected_durable_job_preserves_best_school_public_id_retry_and_revocation() -
         &installed.public,
         &current,
         &installed.school,
-        false,
+        Generation::Initial,
     )?;
     check!(super::super::publish::publish(&reopened, &installed.store, &profile, &root).is_err());
     Ok(())

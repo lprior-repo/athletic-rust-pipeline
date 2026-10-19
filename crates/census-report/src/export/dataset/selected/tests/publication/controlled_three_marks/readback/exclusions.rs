@@ -9,9 +9,10 @@ pub(super) fn rows(
     dataset: &ExportDataset,
     outcome: &SelectionOutcome,
     wanted: &CanonicalPerformance,
+    generation: super::Generation,
 ) -> TestResult<()> {
     let rows = artifacts::csv_rows(&directory.join("participation_exclusions.csv"))?;
-    fixture_membership(&rows, dataset, wanted)?;
+    fixture_membership(&rows, dataset, wanted, generation)?;
     check!(eq; rows.len(), outcome.participation_exclusions.len());
     let view = dataset.verified_participation()?;
     for value in &outcome.participation_exclusions {
@@ -85,6 +86,7 @@ fn fixture_membership(
     rows: &[artifacts::Row],
     dataset: &ExportDataset,
     wanted: &CanonicalPerformance,
+    generation: super::Generation,
 ) -> TestResult<()> {
     let feb = artifacts::by_mark(dataset, "49.00", "2026-02-28")?;
     let may50 = artifacts::by_mark(dataset, "50.00", "2026-05-15")?;
@@ -104,14 +106,20 @@ fn fixture_membership(
         check!(eq; wanted.id, may51.id);
         check!(eq; rows.len(), 2);
         let revoked = artifacts::unique(rows, "performance_id", may50.id.as_str())?;
+        let reasons = match generation {
+            super::Generation::StatusWithdrawn => {
+                "[\"participation_context_unresolved\",\"high_school_status_missing\"]"
+            }
+            super::Generation::CalendarWithdrawn => "[\"participation_context_unresolved\"]",
+            super::Generation::Initial => {
+                return Err("initial generation cannot exclude May15".into())
+            }
+        };
         artifacts::fields(
             revoked,
             &[
                 ("disposition", "unresolved"),
-                (
-                    "reasons",
-                    "[\"participation_context_unresolved\",\"high_school_status_missing\"]",
-                ),
+                ("reasons", reasons),
                 ("diagnostics", "[]"),
             ],
         )?;

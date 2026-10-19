@@ -1,6 +1,8 @@
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
     #[error(transparent)]
+    ResultCalendarCorrespondence(#[from] crate::ResultCalendarCorrespondenceStoreError),
+    #[error(transparent)]
     ResultSchoolCorrespondence(#[from] crate::ResultSchoolCorrespondenceStoreError),
     #[error(transparent)]
     RosterSourceIssuance(#[from] crate::RosterSourceIssuanceStoreError),

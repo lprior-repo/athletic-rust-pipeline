@@ -14,6 +14,7 @@ impl Store {
         crate::evidence_subject_attachment::refuse_generic_operation(operation)?;
         crate::roster_source_issuance::refuse_generic_operation(operation)?;
         crate::result_school_correspondence::refuse_generic_operation(operation)?;
+        crate::result_calendar_correspondence::refuse_generic_operation(operation)?;
         if operation.starts_with("source_acquisition_attempt_") {
             return Err(crate::CaptureError::CaptureQualificationOptInRequired.into());
         }

@@ -104,6 +104,7 @@ impl<'a> CheckedDocumentaryParticipationFactsV1<'a> {
 
 pub struct CheckedDocumentarySourceFactsV1<'a> {
     pub(super) source: &'a VerifiedIndependentParticipationV1,
+    pub(super) root: &'a census_store::RetainedCaptureRootV1,
     pub(super) record_digest: &'a str,
     pub(super) season: DocumentarySeasonApplicabilityV1,
     pub(super) cohort: DocumentaryCohortAgreementV1,
@@ -113,6 +114,9 @@ impl CheckedDocumentarySourceFactsV1<'_> {
     pub fn source(&self) -> &VerifiedIndependentParticipationV1 {
         self.source
     }
+    pub fn root(&self) -> &census_store::RetainedCaptureRootV1 {
+        self.root
+    }
     pub fn attachment_record_digest(&self) -> &str {
         self.record_digest
     }
@@ -121,6 +125,16 @@ impl CheckedDocumentarySourceFactsV1<'_> {
     }
     pub fn season(&self) -> DocumentarySeasonApplicabilityV1 {
         self.season
+    }
+    pub(crate) fn require_attached_subject_v1(
+        &self,
+        item: &census_store::ActiveAttachmentSubjectV1<'_>,
+        grant: &mut Grant,
+    ) -> CrawlResult<()> {
+        if item.record().record_digest.as_str() != self.record_digest {
+            return Err(invalid("checked documentary attachment record differs").into());
+        }
+        super::subject::require(item, self.source, grant)
     }
 }
 

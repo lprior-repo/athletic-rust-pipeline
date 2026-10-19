@@ -4,21 +4,22 @@ use restate_sdk::prelude::*;
 use std::sync::Arc;
 use std::time::Duration;
 
+mod admission;
 mod assertion;
 use assertion::{assert_published, publication_services};
 mod binding;
 pub(crate) mod codec;
-mod external;
 mod fixtures;
 pub(super) mod journal;
 mod restricted;
 
 mod native_restate;
 mod resume;
+mod seal_budget;
 mod transport;
 mod workbook_endpoint;
 
-type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+type TestResult<T = (), E = Box<dyn std::error::Error>> = Result<T, E>;
 
 pub(super) struct FixtureClock;
 
@@ -38,17 +39,12 @@ impl Clock for FixtureClock {
 
 #[derive(Clone, Copy)]
 enum Scenario {
-    ExternalControl,
+    Admission(admission::Scenario),
     Address(binding::Scenario),
     Complete,
-    ManagedComplete,
-    ManagedFailedStage,
-    SelectedFailedStage,
-    ManagedRefusedSeal,
-    ManagedCompletedResume,
-    ManagedExhaustedResume,
     FailedStage(&'static str),
     RefusedSeal,
+    SealBudgetExhausted,
     PartialContacts,
     UnfinishedRosters,
     CompletedResume,
@@ -58,52 +54,22 @@ enum Scenario {
 #[tokio::test]
 async fn selected_workbook_endpoint_runs_the_reserved_handler_with_its_bound_profile() -> TestResult
 {
-    workbook_endpoint::exercise().await
+    workbook_endpoint::exercise(workbook_endpoint::Scenario::Selected).await
 }
 
 #[tokio::test]
-async fn current_fixture_exercises_external_replay_driver_without_historical_claim() -> TestResult {
-    exercise(Scenario::ExternalControl).await
-}
-
-#[tokio::test]
-async fn managed_national_publication_binds_one_original_request_and_one_bundle() -> TestResult {
-    exercise(Scenario::ManagedComplete).await
-}
-
-#[tokio::test]
-async fn managed_national_workbook_retry_preserves_the_same_call_and_request() -> TestResult {
-    exercise(Scenario::ManagedFailedStage).await
+async fn omitted_workbook_export_job_is_refused_before_frozen_capture() -> TestResult {
+    workbook_endpoint::exercise(workbook_endpoint::Scenario::MissingContractThenSelected).await
 }
 
 #[tokio::test]
 async fn selected_national_workbook_retry_preserves_the_same_profile_request() -> TestResult {
-    exercise(Scenario::SelectedFailedStage).await
-}
-
-#[tokio::test]
-async fn managed_national_seal_refusal_never_rebuilds_its_bundle() -> TestResult {
-    exercise(Scenario::ManagedRefusedSeal).await
-}
-
-#[tokio::test]
-async fn managed_national_resume_preserves_source_keys_and_original_request() -> TestResult {
-    exercise(Scenario::ManagedCompletedResume).await
-}
-
-#[tokio::test]
-async fn managed_national_resume_cannot_reset_exhausted_source_attempts() -> TestResult {
-    exercise(Scenario::ManagedExhaustedResume).await
-}
-
-#[tokio::test]
-async fn completed_national_run_reaches_publication_without_manual_verb() -> TestResult {
-    exercise(Scenario::Complete).await
-}
-
-#[tokio::test]
-async fn failed_workbook_stage_resumes_the_existing_national_invocation() -> TestResult {
     exercise(Scenario::FailedStage("Workbook")).await
+}
+
+#[tokio::test]
+async fn selected_national_publication_binds_one_original_request_and_one_bundle() -> TestResult {
+    exercise(Scenario::Complete).await
 }
 
 #[tokio::test]
@@ -114,6 +80,11 @@ async fn unready_seal_resumes_the_original_publication_call() -> TestResult {
 #[tokio::test]
 async fn refused_seal_refreshes_measurement_without_new_publication_jobs() -> TestResult {
     exercise(Scenario::RefusedSeal).await
+}
+
+#[tokio::test]
+async fn zero_seal_retry_budget_refuses_without_remeasurement_or_recapture() -> TestResult {
+    exercise(Scenario::SealBudgetExhausted).await
 }
 
 #[tokio::test]
@@ -147,12 +118,7 @@ async fn national_resume_rejects_noncanonical_or_unbounded_execution_keys() -> T
 }
 #[tokio::test]
 async fn restricted_national_run_publishes_only_its_five_states() -> TestResult {
-    restricted::exercise(crate::restate_services::PublicationContract::LegacySeparateV1).await
-}
-
-#[tokio::test]
-async fn managed_national_bundle_preserves_the_selected_five_states() -> TestResult {
-    restricted::exercise(crate::restate_services::PublicationContract::ManagedBundleV2).await
+    restricted::exercise().await
 }
 
 async fn exercise(scenario: Scenario) -> TestResult {

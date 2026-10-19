@@ -121,6 +121,13 @@ pub(in crate::restate_services) fn revoke(controlled: &Controlled) -> TestResult
     documentary_lifecycle::replay_without_reactivation(&controlled.installed, &controlled.accepted)
 }
 pub(in crate::restate_services) fn reopen(controlled: Controlled) -> TestResult<Controlled> {
+    with_stopped(controlled, |_| Ok(())).map(|(controlled, ())| controlled)
+}
+
+pub(in crate::restate_services) fn with_stopped<T>(
+    controlled: Controlled,
+    action: impl FnOnce(&std::path::Path) -> TestResult<T>,
+) -> TestResult<(Controlled, T)> {
     let source::InstalledSource {
         directory,
         store,
@@ -135,6 +142,7 @@ pub(in crate::restate_services) fn reopen(controlled: Controlled) -> TestResult<
     let store_identity = store.store_identity()?;
     drop(identity_writer);
     drop(store);
+    let value = action(&directory.path().join("store"))?;
 
     let (store, identity_writer) =
         census_store::Store::open_public_identity_qualification_v3(directory.path().join("store"))?
@@ -146,21 +154,24 @@ pub(in crate::restate_services) fn reopen(controlled: Controlled) -> TestResult<
         return Err("reopened store identity changed".into());
     }
 
-    Ok(Controlled {
-        current: controlled.current,
-        profile: controlled.profile,
-        installed: source::InstalledSource {
-            directory,
-            store,
-            identity_writer,
-            school,
-            public,
-            candidate,
-            source_records,
-            row_locators,
+    Ok((
+        Controlled {
+            current: controlled.current,
+            profile: controlled.profile,
+            installed: source::InstalledSource {
+                directory,
+                store,
+                identity_writer,
+                school,
+                public,
+                candidate,
+                source_records,
+                row_locators,
+            },
+            accepted: controlled.accepted,
         },
-        accepted: controlled.accepted,
-    })
+        value,
+    ))
 }
 
 fn profile() -> TestResult<QueryProfileV1> {

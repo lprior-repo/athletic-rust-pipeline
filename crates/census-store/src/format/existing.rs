@@ -152,24 +152,7 @@ fn validate_store_format(
     receipts: &fjall::Keyspace,
     format: &crate::StoreFormat,
 ) -> StoreResult<()> {
-    crate::input_revisions::validate_format(&db.snapshot(), meta, format)?;
-    crate::result_school_correspondence::validate_format(
-        &db.snapshot(),
-        meta,
-        journal,
-        receipts,
-        format,
-        &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
-    )?;
-    crate::roster_source_issuance::validate_format(
-        &db.snapshot(),
-        meta,
-        journal,
-        receipts,
-        format,
-        &mut crate::RosterStartupValidationBudgetV1::new(),
-    )?;
-    Ok(())
+    super::validate_protected_authorities(&db.snapshot(), meta, journal, receipts, format)
 }
 
 struct ExistingKeyspaces {

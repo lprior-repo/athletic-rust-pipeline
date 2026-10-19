@@ -10,7 +10,7 @@ use restate_sdk::prelude::*;
 use std::num::NonZeroU32;
 
 mod binding;
-pub(super) use binding::{bound_request, retained_request};
+pub(super) use binding::{bound_request, retained_request, validate_selected};
 
 #[derive(Debug, thiserror::Error)]
 enum ResumeHistoryError {

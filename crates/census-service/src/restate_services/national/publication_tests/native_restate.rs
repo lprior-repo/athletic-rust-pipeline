@@ -1,6 +1,6 @@
 mod endpoint;
 mod node;
-
+mod reaper;
 use super::TestResult;
 use endpoint::{call_workbook, read_output, register_endpoint};
 use node::NativeNode;
@@ -17,8 +17,7 @@ async fn native_restate_restart_and_authority_revocation_preserve_selected_publi
 ) -> TestResult {
     let controlled = crate::restate_services::jobs::selected_fixture::install()
         .map_err(|error| error.to_string())?;
-    let root = tempfile::tempdir()?;
-    let mut node = NativeNode::new(root.path())?;
+    let mut node = NativeNode::new()?;
     node.start()?;
     let client = reqwest::Client::builder()
         .no_proxy()
@@ -97,8 +96,7 @@ async fn native_restate_restart_and_authority_revocation_preserve_selected_publi
         crate::restate_services::jobs::selected_fixture::revoke(&controlled)
             .map_err(|error| error.to_string())?;
         node.stop().await?;
-        let revoked_root = tempfile::tempdir()?;
-        let mut revoked_node = NativeNode::new(revoked_root.path())?;
+        let mut revoked_node = NativeNode::new()?;
         revoked_node.start()?;
         let refusal = tokio::time::timeout(TEST_BUDGET, async {
             revoked_node.wait_ready(&client).await?;

@@ -7,12 +7,13 @@ use std::path::Path;
 
 use super::selected_fixture;
 mod readback;
+mod selected_offline_cli;
 mod selected_options;
+mod selected_request_admission;
 pub(in crate::restate_services) use readback::check_selected_output;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-#[allow(dead_code, unused_imports)]
 mod report_split_fixture;
 
 fn options() -> TestResult<workbook::Options> {

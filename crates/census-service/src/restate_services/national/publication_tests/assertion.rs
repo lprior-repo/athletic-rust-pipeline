@@ -130,7 +130,7 @@ fn verify_selected_output(journal: &super::journal::Journal) -> TestResult {
         .ok_or("selected National workbook output missing")?;
     let verified =
         census_report::workbook::publication::verify_published(std::path::Path::new(path))?;
-    check!(verified.workbook.mapped_athletes > 0);
+    check!(eq; verified.workbook.mapped_athletes, 1);
     crate::restate_services::jobs::publication_tests::check_selected_output(
         std::path::Path::new(path),
         controlled.public_id(),

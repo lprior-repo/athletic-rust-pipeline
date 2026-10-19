@@ -304,11 +304,11 @@ identity, cohort, contact, coverage or PR rules in writers. Keep
 candidate statuses and accepted aliases distinct; athletes without performances remain in the
 population, and unresolved joins remain explicit coverage outcomes. Core evidence scope is not
 interchangeable with geographic scope or cohort eligibility.
-Publication policy revision 6 requires typed direct graduation-year or compatible dated-grade
+Requested-cohort publication requires typed direct graduation-year or compatible dated-grade
 support for requested cohort membership after accepted-alias evidence union; unsupported or
 contradictory members and unresolved result subjects are excluded from requested-cohort projections.
 Same-context numeric conflicts, including a numeric mark contradicted by an explicit terminal
-result status under policy 18, disqualify that context from PR selection; a clean compatible
+result status, disqualify that context from PR selection; a clean compatible
 context may still supply the best. All-contested slots have no published best. Unfiltered archives
 retain original observations. Older policy-1/2/3/4/5 frozen inputs are retained but refused, never
 reinterpreted or overwritten; accepted-alias, postal-field and full-cell summary rules remain in force.

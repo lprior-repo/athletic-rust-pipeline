@@ -15,7 +15,6 @@ const SCHOOL_PAGE: &str = include_str!("../../tests/fixtures/chsaa/school_cherry
 const RETAINED_SCHOOL_PAGE: &str = include_str!(
     "../../../../research/sources/state-assoc-mountain/samples/chsaa-school-cherry-creek.html"
 );
-// The committed sample's URL and capture timestamp are recorded in CAPTURES.md.
 const RETAINED_SCHOOL_PAGE_URL: &str = "https://chsaanow.com/schools/cherry-creek";
 const RETAINED_SCHOOL_PAGE_CAPTURED_ON: &str = "2026-09-22";
 const RETAINED_SCHOOL_PAGE_SHA256: &str =
@@ -248,7 +247,6 @@ fn retained_cherry_creek_capture_parses_without_network() -> TestResult {
         .iter()
         .filter(|coach| coach.sport == Some(Sport::CrossCountry))
         .count();
-    // These are rows accepted by the existing consumer, not distinct people or contacts.
     check!(eq; track, 31);
     check!(eq; cross_country, 19);
     check!(eq; coaches.len(), 50);

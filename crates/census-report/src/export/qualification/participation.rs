@@ -33,7 +33,7 @@ mod observations;
 mod resolve;
 mod school_context;
 pub(in crate::export) mod school_projection;
-pub(crate) use school_context::SchoolContext;
+pub(crate) use school_context::{CalendarContext, SchoolContext};
 mod support;
 mod types;
 mod unresolved;
@@ -183,7 +183,7 @@ fn seal_live(
         observations,
         journal: recorder.finish()?,
     };
-    let (documentary, attachment, school) =
+    let (documentary, attachment, school, calendar) =
         school_context::collect_live(dataset, snapshot, profile, captured_at, directory, school)?;
     rows.extend(documentary.mapped);
     let replay = ParticipationReplay::V4(ParticipationReplayV4 {
@@ -195,6 +195,7 @@ fn seal_live(
         },
         attachment,
         school,
+        calendar,
     });
     Ok(PinnedParticipation {
         input_generation: dataset.lineage.input_generation.clone(),

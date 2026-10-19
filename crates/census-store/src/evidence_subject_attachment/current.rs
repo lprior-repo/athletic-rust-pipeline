@@ -10,6 +10,7 @@ pub(super) mod accepted;
 mod binding;
 mod capability;
 pub(super) mod discovery;
+mod objects;
 pub(super) mod query;
 use accepted::AcceptedOwner;
 pub use capability::CurrentEvidenceSubjectAttachmentV1;

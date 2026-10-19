@@ -13,6 +13,19 @@ pub enum ExportJobRequest {
     },
 }
 
+impl ExportJobRequest {
+    pub fn require_selected_publication(
+        &self,
+    ) -> ReportResult<&census_domain::model::ProfileSelectionV1> {
+        match self {
+            Self::SelectedPublicationV1 { selection } => Ok(selection),
+            Self::LegacyV2 => Err(crate::report::ReportError::Invariant {
+                detail: "current publication requires an explicit selected profile contract".into(),
+            }),
+        }
+    }
+}
+
 impl ExportDataset {
     pub fn for_job_request(
         store: &Store,

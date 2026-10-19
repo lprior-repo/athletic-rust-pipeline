@@ -13,7 +13,7 @@ pub use migrate::MigrationReport;
 
 pub const STORE_SCHEMA_VERSION: u32 = 2;
 pub const KEY_FORMAT_VERSION: u32 = 1;
-pub const LIFECYCLE_REVISION: u32 = crate::RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE;
+pub const LIFECYCLE_REVISION: u32 = crate::RESULT_CALENDAR_CORRESPONDENCE_LIFECYCLE;
 const FRESH_LIFECYCLE_REVISION: u32 = 2;
 
 pub const DEFAULT_CACHE_BYTES: u64 = 1024 * 1024 * 1024;
@@ -64,23 +64,7 @@ pub(super) fn open_format(
         return read_format(meta_keyspace);
     }
     let format = require_current(root, format)?;
-    crate::input_revisions::validate_format(&db.snapshot(), meta_keyspace, &format)?;
-    crate::result_school_correspondence::validate_format(
-        &db.snapshot(),
-        meta_keyspace,
-        data[1],
-        data[2],
-        &format,
-        &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
-    )?;
-    crate::roster_source_issuance::validate_format(
-        &db.snapshot(),
-        meta_keyspace,
-        data[1],
-        data[2],
-        &format,
-        &mut crate::RosterStartupValidationBudgetV1::new(),
-    )?;
+    validate_protected_authorities(&db.snapshot(), meta_keyspace, data[1], data[2], &format)?;
     let [_, journal, receipts] = data;
     crate::public_identity::require_legacy(
         &db.snapshot(),
@@ -115,23 +99,7 @@ pub(crate) fn require_semantic_format(
     receipts: &Keyspace,
 ) -> StoreResult<StoreFormat> {
     let format = require_current(root, read_format(meta)?)?;
-    crate::input_revisions::validate_format(&db.snapshot(), meta, &format)?;
-    crate::result_school_correspondence::validate_format(
-        &db.snapshot(),
-        meta,
-        journal,
-        receipts,
-        &format,
-        &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
-    )?;
-    crate::roster_source_issuance::validate_format(
-        &db.snapshot(),
-        meta,
-        journal,
-        receipts,
-        &format,
-        &mut crate::RosterStartupValidationBudgetV1::new(),
-    )?;
+    validate_protected_authorities(&db.snapshot(), meta, journal, receipts, &format)?;
     crate::public_identity::require_legacy(&db.snapshot(), meta, journal, receipts, &format)?;
     let capture =
         crate::acquisition::qualification::declaration(&db.snapshot(), meta, journal, &format)?;
@@ -291,3 +259,37 @@ pub(crate) fn stage_initialization(
 mod capture;
 mod open;
 pub(crate) use capture::read_capture_format;
+
+pub(crate) fn validate_protected_authorities(
+    snapshot: &fjall::Snapshot,
+    meta: &Keyspace,
+    journal: &Keyspace,
+    receipts: &Keyspace,
+    format: &StoreFormat,
+) -> StoreResult<()> {
+    crate::input_revisions::validate_format(snapshot, meta, format)?;
+    crate::result_calendar_correspondence::validate_format(
+        snapshot,
+        meta,
+        journal,
+        receipts,
+        format,
+        &mut crate::ResultCalendarStartupValidationBudgetV1::new(),
+    )?;
+    crate::result_school_correspondence::validate_format(
+        snapshot,
+        meta,
+        journal,
+        receipts,
+        format,
+        &mut crate::ResultSchoolStartupValidationBudgetV1::new(),
+    )?;
+    crate::roster_source_issuance::validate_format(
+        snapshot,
+        meta,
+        journal,
+        receipts,
+        format,
+        &mut crate::RosterStartupValidationBudgetV1::new(),
+    )
+}

@@ -91,6 +91,7 @@ impl Store {
                 || crate::evidence_subject_attachment::is_reserved_operation(&key)
                 || crate::roster_source_issuance::is_reserved_operation(&key)
                 || crate::result_school_correspondence::is_reserved_operation(&key)
+                || crate::result_calendar_correspondence::is_reserved_operation(&key)
             {
                 continue;
             }

@@ -9,7 +9,7 @@ use census_store::{RetainedCaptureRootSchemaV1, Store};
 
 const HEADERS: &[u8] = b"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nX-Controlled-Fixture: three-marks-results\r\n\r\n";
 
-fn document(meet: u32, mark: ControlledMark, url: &str) -> String {
+fn document(meet: u32, mark: ControlledMark, url: &str, venue: &str) -> String {
     let day = mark.date;
     let whole = mark.time / 100;
     let fraction = mark.time % 100;
@@ -17,7 +17,7 @@ fn document(meet: u32, mark: ControlledMark, url: &str) -> String {
         r#"<!doctype html>
 <html><head>
 <link rel="canonical" href="{url}">
-<script type="application/ld+json">{{"@type":"SportsEvent","name":"Controlled Track Meet {meet}","startDate":"{day}","endDate":"{day}","sport":"Outdoor Track & Field","location":{{"name":"Controlled Track Venue","address":{{"addressRegion":"MI","addressLocality":"Detroit"}}}},"url":"{url}"}}</script>
+<script type="application/ld+json">{{"@type":"SportsEvent","name":"Controlled Track Meet {meet}","startDate":"{day}","endDate":"{day}","sport":"Outdoor Track & Field","location":{{"name":"{venue}","address":{{"addressRegion":"MI","addressLocality":"Detroit"}}}},"url":"{url}"}}</script>
 </head><body>
 <p>SYNTHETIC CONTROLLED FIXTURE. Not a genuine athlete result.</p>
 <pre>Boys Varsity 400 Meter Dash
@@ -65,14 +65,17 @@ fn locator(html: &str) -> TestResult<SourceRowLocator> {
     })
 }
 
-pub(super) fn install(store: &Store) -> TestResult<(Vec<SourceReference>, Vec<RowLocator>)> {
+pub(super) fn install(
+    store: &Store,
+    venue: &str,
+) -> TestResult<(Vec<SourceReference>, Vec<RowLocator>)> {
     let mut sources = Vec::new();
     let mut locators = Vec::new();
     for (index, (meet, mark)) in [495051, 502100, 502101].into_iter().zip(MARKS).enumerate() {
         let url = format!(
             "https://mi.milesplit.com/meets/{meet}-controlled-meet-2026/results/{meet}0/raw"
         );
-        let html = document(meet, mark, &url);
+        let html = document(meet, mark, &url, venue);
         let capture = capture(
             &url,
             html.as_bytes(),

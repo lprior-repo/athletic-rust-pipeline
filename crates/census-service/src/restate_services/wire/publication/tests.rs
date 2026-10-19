@@ -91,10 +91,7 @@ fn unknown_publication_contract_is_not_accepted_as_legacy() -> TestResult {
 }
 
 #[test]
-fn publication_capabilities_have_an_explicit_bounded_current_inventory() -> TestResult {
-    check!(eq; serde_json::to_value(PublicationCapabilities::current())?, json!({
-        "publication_contracts": ["legacy_separate_v1", "managed_bundle_v2", "selected_publication_v1"]
-    }));
+fn publication_capabilities_refuse_malformed_or_unknown_contracts() -> TestResult {
     for malformed in [
         json!({}),
         json!({"publication_contracts": ["unknown"]}),

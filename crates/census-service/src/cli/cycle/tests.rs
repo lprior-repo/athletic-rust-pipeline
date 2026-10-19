@@ -99,6 +99,7 @@ fn gathered_inputs_are_identity_prepared_before_managed_publication() -> TestRes
         PublicationPreparation::Gathered {
             observed_on: "2026-10-12".into(),
         },
+        None,
     )?;
     check!(eq; store.athlete_identity_projection()?.status(athlete.id.as_str())?, IdentityStatus::Verified);
     check!(eq; store.scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?.len(), 1);
@@ -129,7 +130,7 @@ fn retained_publication_preserves_prepared_identity_and_derived_state() -> TestR
     let snapshots = store.walk_table(Table::Snapshots)?;
     let coverage = store.walk_table(Table::Coverage)?;
     let digest = store.snapshot().tables_digest(&Table::ALL)?;
-    offline_stages(&store, &options, PublicationPreparation::Retained)?;
+    offline_stages(&store, &options, PublicationPreparation::Retained, None)?;
     check!(eq; store.derived_generation(), generation);
     check!(eq; store.walk_table(Table::AthleteIdentityDecisions)?, identities);
     check!(eq; store.walk_table(Table::Snapshots)?, snapshots);

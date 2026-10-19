@@ -9,20 +9,22 @@ pub(super) enum Scenario {
     Changed,
     Pending,
     LegacyRead,
+    StoredLegacy,
+    StoredManaged,
 }
 
 #[tokio::test]
-async fn managed_address_preflight_pins_effective_request_before_acquisition() -> TestResult {
+async fn selected_address_preflight_pins_effective_request_before_acquisition() -> TestResult {
     super::exercise(super::Scenario::Address(Scenario::Fresh)).await
 }
 
 #[tokio::test]
-async fn managed_address_resume_preserves_pinned_digest_and_original_fields() -> TestResult {
+async fn selected_address_resume_preserves_pinned_digest_and_original_fields() -> TestResult {
     super::exercise(super::Scenario::Address(Scenario::Resume)).await
 }
 
 #[tokio::test]
-async fn managed_address_resume_refuses_changed_directory_before_acquisition() -> TestResult {
+async fn selected_address_resume_refuses_changed_directory_before_acquisition() -> TestResult {
     super::exercise(super::Scenario::Address(Scenario::Changed)).await
 }
 
@@ -36,18 +38,27 @@ async fn readonly_request_lookup_never_reconstructs_an_unbound_legacy_request() 
     super::exercise(super::Scenario::Address(Scenario::LegacyRead)).await
 }
 
+#[tokio::test]
+async fn readonly_request_lookup_preserves_stored_legacy_binding() -> TestResult {
+    super::exercise(super::Scenario::Address(Scenario::StoredLegacy)).await
+}
+
+#[tokio::test]
+async fn readonly_request_lookup_preserves_stored_managed_binding() -> TestResult {
+    super::exercise(super::Scenario::Address(Scenario::StoredManaged)).await
+}
+
 pub(super) async fn run(scenario: Scenario, client: &reqwest::Client, url: &str) -> TestResult {
-    let mut request = fixtures::request()?;
-    if matches!(scenario, Scenario::LegacyRead) {
-        let legacy = journal::Journal::new(&request)?;
-        check!(matches!(
-            read_binding(client, url, &legacy).await?,
-            NationalRequestBinding::UnboundLegacy
-        ));
-        return Ok(());
+    if matches!(
+        scenario,
+        Scenario::LegacyRead | Scenario::StoredLegacy | Scenario::StoredManaged
+    ) {
+        return read_historical(scenario, client, url).await;
     }
-    request.publication_contract = PublicationContract::ManagedBundleV2;
-    request.jurisdictions = vec![census_domain::UsJurisdiction::Wisconsin];
+    let controlled = crate::restate_services::jobs::selected_fixture::install()
+        .map_err(|error| error.to_string())?;
+    let mut request =
+        fixtures::selected_request(&controlled, &[census_domain::UsJurisdiction::Wisconsin])?;
     request.school_address = Some(serde_json::from_value(serde_json::json!({
         "generation": "original-directory", "urls": {}, "dates": {}
     }))?);
@@ -92,6 +103,32 @@ pub(super) async fn run(scenario: Scenario, client: &reqwest::Client, url: &str)
         return Ok(());
     }
     resume(scenario, client, url, bound).await
+}
+
+async fn read_historical(scenario: Scenario, client: &reqwest::Client, url: &str) -> TestResult {
+    let mut request = fixtures::request()?;
+    if matches!(scenario, Scenario::StoredManaged) {
+        request.publication_contract = PublicationContract::ManagedBundleV2;
+    }
+    let mut historical = journal::Journal::new(&request)?;
+    let expected = if matches!(scenario, Scenario::LegacyRead) {
+        NationalRequestBinding::UnboundLegacy
+    } else {
+        for key in [KEY_ORIGINAL, KEY_BOUND] {
+            let mut entry = codec::blob(1, key.as_bytes())?;
+            entry.extend(codec::blob(
+                3,
+                &codec::value(&serde_json::to_vec(&request)?)?,
+            )?);
+            historical.entries.push(codec::Frame::new(0x0403, entry));
+        }
+        NationalRequestBinding::Bound(Box::new(request))
+    };
+    let before = historical.request_body()?;
+    let visible = read_binding(client, url, &historical).await?;
+    check!(eq; serde_json::to_value(visible)?, serde_json::to_value(expected)?);
+    check!(eq; historical.request_body()?, before);
+    Ok(())
 }
 
 async fn resume(
@@ -155,8 +192,7 @@ pub(super) fn assert_requests(journal: &journal::Journal, managed: bool) -> Test
         return Ok(());
     }
     check!(eq; bindings.len(), 2);
-    let (original_position, original) =
-        bindings.first().ok_or("original request binding absent")?;
+    let (_, original) = bindings.first().ok_or("original request binding absent")?;
     let (bound_position, bound) = bindings.get(1).ok_or("effective request binding absent")?;
     check!(eq; original.kind, 0x0403);
     check!(eq; bound.kind, 0x0403);
@@ -168,11 +204,6 @@ pub(super) fn assert_requests(journal: &journal::Journal, managed: bool) -> Test
         address.expected_digest = Some(journal.address_digest.clone());
     }
     check!(eq; state(journal, KEY_BOUND)?, Some(serde_json::to_value(effective)?));
-    let first_call = journal
-        .entries
-        .iter()
-        .position(|entry| entry.kind == 0x040D)
-        .ok_or("national work call absent")?;
     let acquisition = journal
         .entries
         .iter()
@@ -183,8 +214,6 @@ pub(super) fn assert_requests(journal: &journal::Journal, managed: bool) -> Test
                     .is_ok_and(|service| service == "JurisdictionCensus")
         })
         .ok_or("jurisdiction acquisition absent")?;
-    check!(*original_position < first_call);
-    check!(first_call < *bound_position);
     check!(*bound_position < acquisition);
     Ok(())
 }

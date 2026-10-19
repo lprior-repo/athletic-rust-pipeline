@@ -9,7 +9,8 @@ use census_domain::model::{Gender, ProfileDate, SchoolYear, Sport};
 use census_domain::result_school_correspondence::ResultSchoolSourceClaimV1;
 use census_store::{AttachmentContextObjectV1, CurrentEvidenceSubjectAttachmentReferencesV1};
 
-mod binding;
+use super::original;
+use super::original::{domain, guarded, invalid, ownership, reference};
 mod objects;
 pub mod read;
 mod statement;
@@ -54,13 +55,13 @@ pub fn build_claim(
             .row(index)
             .ok_or_else(|| invalid("school result row absent"))?;
         let attached = row.attachment();
-        binding::current(current, attached, grant)?;
-        let recorded = statement::reopen(current.snapshot(), linked, row.checked_row(), grant)?;
+        original::current(current, attached, grant)?;
+        let recorded = original::reopen(current.snapshot(), linked, row.checked_row(), grant)?;
         let document = recorded.read(&[row.checked_row().locator()])?;
         let checked = document
             .row(0)
             .ok_or_else(|| invalid("reopened result row absent"))?;
-        binding::subject(recorded.root(), &checked, attached, grant)?;
+        original::subject(recorded.root(), &checked, attached, grant)?;
         target::scope(&document, &checked, &scope)?;
         let mut objects = objects::Objects::new(grant)?;
         let statement =
@@ -79,56 +80,6 @@ pub fn build_claim(
         };
         Ok(ResultSchoolSourceProposalV1 { source, objects })
     })
-}
-
-fn invalid(detail: &'static str) -> crate::CrawlError {
-    crate::participation_evidence::invalid(detail).into()
-}
-
-fn domain(
-    error: census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError,
-) -> crate::CrawlError {
-    census_store::StoreError::from(census_store::EvidenceSubjectAttachmentStoreError::Domain(
-        error,
-    ))
-    .into()
-}
-
-fn ownership(error: super::RetainedResultOwnershipError) -> crate::CrawlError {
-    match error {
-        super::RetainedResultOwnershipError::Parser(error) => error,
-        super::RetainedResultOwnershipError::Capture(error) => error.into(),
-        super::RetainedResultOwnershipError::Digest(source) => crate::CrawlError::Canonical {
-            table: "result school original row".into(),
-            source,
-        },
-        super::RetainedResultOwnershipError::Invalid(detail) => invalid(detail),
-        super::RetainedResultOwnershipError::Overflow => {
-            census_store::StoreError::CounterOverflow.into()
-        }
-        super::RetainedResultOwnershipError::Allocation => domain(
-            census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError::Allocation,
-        ),
-        super::RetainedResultOwnershipError::Capacity { needed, available } => {
-            crate::CrawlError::Resource {
-                resource: "result school original rows",
-                requested: needed,
-                limit: available,
-            }
-        }
-    }
-}
-
-fn guarded<T>(
-    grant: &mut AttachmentReplayGrantV1,
-    action: impl FnOnce(&mut AttachmentReplayGrantV1) -> CrawlResult<T>,
-) -> CrawlResult<T> {
-    grant.ensure_available().map_err(domain)?;
-    let result = action(grant);
-    if result.is_err() {
-        grant.poison();
-    }
-    result
 }
 
 #[cfg(test)]

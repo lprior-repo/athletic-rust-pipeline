@@ -54,7 +54,7 @@ fn seal_authority_withdrawal_blocks_current_seal_but_preserves_historical_public
         &public,
         &current_school,
         &historical_school,
-        false,
+        super::Generation::Initial,
     )?;
 
     let verified = publication::verify_published(&workbook0)?;
@@ -103,7 +103,7 @@ fn seal_authority_withdrawal_blocks_current_seal_but_preserves_historical_public
         &public,
         &current_school,
         &historical_school,
-        true,
+        super::Generation::StatusWithdrawn,
     )?;
 
     let g1_opened = open_for_seal(&workbook1, &installed.store, &profile)?;
@@ -149,7 +149,7 @@ fn seal_authority_withdrawal_blocks_current_seal_but_preserves_historical_public
         &public,
         &current_school,
         &historical_school,
-        false,
+        super::Generation::Initial,
     )?;
     check!(eq; reopened.generation_digest, original_digest);
     check!(eq; std::fs::read(&workbook0)?, original_bytes);

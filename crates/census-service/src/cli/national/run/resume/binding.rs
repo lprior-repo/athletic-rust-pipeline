@@ -26,7 +26,7 @@ pub(in crate::cli::national::run) async fn bound_request(
         .try_filter_map(|binding| futures::future::ready(resumable(binding)));
     futures::pin_mut!(bindings);
     let request = bindings.try_next().await?.ok_or_else(|| anyhow::anyhow!(
-        "national resume compatibility blocked: selected, base and prior workflows have no bound managed publication request; legacy or unbound work requires its compatible client; no invocation was submitted"
+        "national resume compatibility blocked: selected, base and prior workflows have no bound selected publication request; legacy or unbound work requires its compatible client; no invocation was submitted"
     ))?;
     validate_identity(&request, season, revision, jurisdictions)?;
     let history = super::history(ingestion, season, revision, jurisdictions).await?;
@@ -98,10 +98,24 @@ fn validate_identity(
     revision: Revision,
     jurisdictions: &[UsJurisdiction],
 ) -> Result<()> {
+    validate_selected(request)?;
     validate_execution_identity(
         request,
         &WorkflowIdentity::national(season, revision, jurisdictions),
     )
+}
+
+pub(in crate::cli::national::run) fn validate_selected(request: &NationalRequest) -> Result<()> {
+    if request.publication_contract != PublicationContract::SelectedPublicationV1 {
+        bail!("national resume compatibility blocked: bound request is not a selected publication contract");
+    }
+    if !matches!(
+        request.export_job,
+        census_report::export::ExportJobRequest::SelectedPublicationV1 { .. }
+    ) {
+        bail!("national resume compatibility blocked: bound export request is not a selected publication request");
+    }
+    Ok(())
 }
 
 fn validate_execution_identity(

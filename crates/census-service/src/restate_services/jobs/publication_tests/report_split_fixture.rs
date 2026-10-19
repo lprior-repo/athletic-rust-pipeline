@@ -6,7 +6,6 @@ fn temporary() -> TestResult<tempfile::TempDir> {
     )?)?)
 }
 
-mod fixture;
 mod publication;
 
 pub(super) async fn service_split_acceptance() -> TestResult {

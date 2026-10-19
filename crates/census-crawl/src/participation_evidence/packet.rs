@@ -29,6 +29,10 @@ impl IndependentParticipationPacketV1 {
         packet.bytes()?;
         Ok(packet)
     }
+    pub fn schedule(&self) -> &RetainedHtmlCaptureV1 {
+        &self.schedule
+    }
+
     pub fn reference(&self) -> StoreResult<ParticipationEvidenceRefV1> {
         ParticipationEvidenceRefV1::parse(&hash(&self.bytes()?))
     }

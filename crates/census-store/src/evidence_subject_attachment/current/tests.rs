@@ -11,6 +11,7 @@ use crate::{Receipt, StoreError};
 use census_domain::evidence_subject_attachment::*;
 
 mod active;
+mod active_inline;
 mod authority;
 mod borrowed;
 mod budget;

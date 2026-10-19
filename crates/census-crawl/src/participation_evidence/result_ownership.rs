@@ -4,7 +4,9 @@ use census_domain::model::serialized_digest;
 use census_domain::participation_candidates::MAX_PARTICIPATION_FACTS;
 
 mod active;
+pub mod calendar_correspondence;
 pub(super) mod discovery;
+mod original;
 mod school;
 mod selection;
 pub use school::{CheckedResultSchoolStatementV1, ResultSchoolStatementV1};
@@ -14,7 +16,7 @@ pub use types::{CheckedRetainedResultDocumentV1, CheckedRetainedResultRowV1};
 
 const INTERPRETATION: &str = "retained-milesplit-html-result-row/v1";
 
-type Result<T> = std::result::Result<T, RetainedResultOwnershipError>;
+type Result<T, E = RetainedResultOwnershipError> = std::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RetainedResultOwnershipError {

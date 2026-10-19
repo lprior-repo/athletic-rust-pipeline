@@ -13,56 +13,45 @@ pub(super) async fn prepare(
     request: &mut NationalRequest,
 ) -> Result<(), HandlerError> {
     validate_publication_request(request)?;
-    if request.publication_contract != PublicationContract::LegacySeparateV1 {
-        ctx.set(KEY_ORIGINAL, Json(request.clone()));
-    }
-    super::redrive::bind_run(ctx, request).await?;
+    let original = request.clone();
+    ctx.service_client::<crate::restate_services::census::CensusClient>()
+        .workbook_preflight(Json(super::publication::workbook_request(request)))
+        .call()
+        .await?;
     if let Some(address) = request.school_address.as_mut() {
         let Json(digest) = ctx
             .service_client::<crate::restate_services::census::CensusClient>()
             .school_address_preflight(Json(address.clone()))
             .call()
             .await?;
-        pin_address(address, digest, request.publication_contract)?;
+        pin_address(address, digest)?;
     }
-    if request.publication_contract != PublicationContract::LegacySeparateV1 {
-        ctx.set(KEY_BOUND, Json(request.clone()));
-    }
+    ctx.set(KEY_ORIGINAL, Json(original));
+    super::redrive::bind_run(ctx, request).await?;
+    ctx.set(KEY_BOUND, Json(request.clone()));
     Ok(())
 }
 
 fn validate_publication_request(request: &NationalRequest) -> Result<(), HandlerError> {
-    let valid = match request.publication_contract {
-        PublicationContract::LegacySeparateV1 | PublicationContract::ManagedBundleV2 => {
-            matches!(
-                &request.export_job,
-                census_report::export::ExportJobRequest::LegacyV2
-            )
-        }
-        PublicationContract::SelectedPublicationV1 => matches!(
-            &request.export_job,
-            census_report::export::ExportJobRequest::SelectedPublicationV1 { .. }
-        ),
-    };
-    if valid {
-        return Ok(());
+    if request.publication_contract != PublicationContract::SelectedPublicationV1 {
+        return Err(TerminalError::new_with_code(
+            400,
+            "current national publication requires the selected publication contract",
+        )
+        .into());
     }
-    Err(TerminalError::new(
-        "national publication request contract and immutable profile selection disagree",
-    )
-    .into())
+    request
+        .export_job
+        .require_selected_publication()
+        .map_err(|error| TerminalError::new_with_code(400, error.to_string()))?;
+    Ok(())
 }
 
-fn pin_address(
-    address: &mut SchoolAddressJoinRequest,
-    digest: String,
-    contract: PublicationContract,
-) -> Result<(), HandlerError> {
-    if contract != PublicationContract::LegacySeparateV1
-        && address
-            .expected_digest
-            .as_ref()
-            .is_some_and(|expected| expected != &digest)
+fn pin_address(address: &mut SchoolAddressJoinRequest, digest: String) -> Result<(), HandlerError> {
+    if address
+        .expected_digest
+        .as_ref()
+        .is_some_and(|expected| expected != &digest)
     {
         return Err(TerminalError::new(
             "bound national school-address directory digest changed; original request was preserved",

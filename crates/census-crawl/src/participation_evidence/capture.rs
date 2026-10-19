@@ -59,6 +59,29 @@ impl RetainedHtmlCaptureV1 {
     pub fn provenance(&self) -> &RetainedHttpProvenanceV1 {
         &self.provenance
     }
+    pub fn original_body_reference(
+        &self,
+    ) -> census_store::StoreResult<
+        census_domain::evidence_subject_attachment::AttachmentObjectReferenceV1,
+    > {
+        bound(self.body_bytes, MAX_BODY, "participation HTML body bytes")?;
+        if self.body_bytes == 0 {
+            return Err(invalid("participation HTML capture ownership differs"));
+        }
+        let digest = census_domain::evidence_subject_attachment::AttachmentDigestV1::parse(
+            &self.body_sha256,
+        )
+        .map_err(census_store::EvidenceSubjectAttachmentStoreError::Domain)
+        .map_err(census_store::StoreError::from)?;
+        let bytes = u64::try_from(self.body_bytes)
+            .map_err(|_| census_store::StoreError::CounterOverflow)?;
+        Ok(
+            census_domain::evidence_subject_attachment::AttachmentObjectReferenceV1 {
+                digest,
+                bytes,
+            },
+        )
+    }
 
     pub(super) fn body(&self) -> StoreResult<String> {
         self.provenance.validate(self.acquired_at)?;

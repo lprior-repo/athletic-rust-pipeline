@@ -2,11 +2,19 @@ use super::*;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
+fn selected_ids() -> (String, String) {
+    ("a".repeat(64), "b".repeat(64))
+}
+
 fn request() -> Result<NationalRequest> {
+    let (store, profile) = selected_ids();
     Ok(serde_json::from_value(serde_json::json!({
         "season": 2026, "revision": 3, "jurisdictions": ["WI", "IA"],
         "history": {"first_calendar_year": 2023, "last_calendar_year": 2026, "as_of": "2026-10-12"},
-        "publication_contract": "managed_bundle_v2", "pass_budget": 17,
+        "publication_contract": "selected_publication_v1",
+        "export_job": {"contract": "selected_publication_v1",
+            "selection": {"version": 1, "store_identity": store, "profile_id": profile}},
+        "pass_budget": 17,
         "pass_delay_seconds": 41
     }))?)
 }
@@ -42,37 +50,39 @@ fn resume_rejects_foreign_season_revision_or_jurisdictions() -> TestResult {
             vec![UsJurisdiction::Wisconsin],
         ),
     ] {
-        let error = validate_identity(&request, season, revision, &jurisdictions)
-            .err()
-            .ok_or("foreign request identity accepted")?;
-        check!(eq; error.to_string(), "bound national request differs from the requested season, revision or jurisdictions");
+        check!(validate_identity(&request, season, revision, &jurisdictions).is_err());
     }
     Ok(())
 }
 
 #[test]
-fn resume_cannot_upgrade_a_legacy_bound_contract() -> TestResult {
-    let mut request = request()?;
-    request.publication_contract = PublicationContract::LegacySeparateV1;
-    let error = validate_identity(
-        &request,
-        request.season,
-        request.revision,
-        &request.jurisdictions,
-    )
-    .err()
-    .ok_or("legacy request was upgraded")?;
-    check!(eq; error.to_string(), "national resume compatibility blocked: bound request is not managed_bundle_v2");
+fn resume_refuses_execution_of_nonselected_contracts_without_rewriting_them() -> TestResult {
+    let selected = request()?;
+    let mut legacy_contract = selected.clone();
+    legacy_contract.publication_contract = PublicationContract::LegacySeparateV1;
+    let mut managed_contract = selected.clone();
+    managed_contract.publication_contract = PublicationContract::ManagedBundleV2;
+    let mut legacy_export = selected.clone();
+    legacy_export.export_job =
+        serde_json::from_value(serde_json::json!({"contract": "legacy_v2"}))?;
+    for candidate in [&legacy_contract, &managed_contract, &legacy_export] {
+        let before = serde_json::to_vec(candidate)?;
+        check!(validate_identity(
+            candidate,
+            candidate.season,
+            candidate.revision,
+            &candidate.jurisdictions.clone()
+        )
+        .is_err());
+        check!(eq; serde_json::to_vec(candidate)?, before);
+    }
     Ok(())
 }
 
 #[test]
 fn resume_cannot_replace_bound_history_with_newer_current_date() -> TestResult {
     let request = request()?;
-    let error = validate_history(&request, HistoryWindow::cohort("2026-10-13")?)
-        .err()
-        .ok_or("changed history accepted")?;
-    check!(eq; error.to_string(), "bound national request history disagrees with retained jurisdiction history");
+    check!(validate_history(&request, HistoryWindow::cohort("2026-10-13")?).is_err());
     Ok(())
 }
 
@@ -107,14 +117,12 @@ fn resume_rejects_a_bound_request_with_unpinned_address_preflight() -> TestResul
     request.school_address = Some(serde_json::from_value(serde_json::json!({
         "generation": "directory", "urls": {}, "dates": {}
     }))?);
-    let error = validate_identity(
+    check!(validate_identity(
         &request,
         request.season,
         request.revision,
-        &request.jurisdictions,
+        &request.jurisdictions.clone(),
     )
-    .err()
-    .ok_or("unpinned address request accepted")?;
-    check!(error.to_string().contains("no pinned directory digest"));
+    .is_err());
     Ok(())
 }

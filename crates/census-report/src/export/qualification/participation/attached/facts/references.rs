@@ -2,6 +2,18 @@ use super::*;
 
 pub(super) fn collect(
     facts: &CheckedDocumentaryParticipationFactsV1<'_>,
+    calendar: Option<&CheckedResultCalendarCorrespondenceV1<'_>>,
+    grant: &mut Grant,
+) -> ReportResult<Vec<String>> {
+    let mut output = source_references(facts, grant)?;
+    if let Some(calendar) = calendar {
+        append_calendar(&mut output, calendar, grant)?;
+    }
+    Ok(output)
+}
+
+fn source_references(
+    facts: &CheckedDocumentaryParticipationFactsV1<'_>,
     grant: &mut Grant,
 ) -> ReportResult<Vec<String>> {
     let count = facts
@@ -57,6 +69,31 @@ pub(super) fn collect(
         append(&mut output, &values, grant)?;
     }
     Ok(output)
+}
+
+fn append_calendar(
+    output: &mut Vec<String>,
+    calendar: &census_crawl::participation_evidence::result_ownership::calendar_correspondence::read::CheckedResultCalendarCorrespondenceV1<'_>,
+    grant: &mut Grant,
+) -> ReportResult<()> {
+    let record = calendar.record();
+    let source = &record.command.source;
+    let values = [
+        record.record_digest.as_str(),
+        source.parser_contract.digest.as_str(),
+        source.calendar.capture.as_str(),
+        source.calendar.interpretation.as_str(),
+        source.calendar.locator.as_str(),
+    ];
+    grant
+        .charge_bytes(values.len() * std::mem::size_of::<String>())
+        .map_err(domain)?;
+    output.try_reserve_exact(values.len()).map_err(|_| {
+        crate::grouping::GroupingError::Allocation {
+            stage: "reviewed calendar references",
+        }
+    })?;
+    append(output, &values, grant)
 }
 
 fn append(output: &mut Vec<String>, values: &[&str], grant: &mut Grant) -> ReportResult<()> {

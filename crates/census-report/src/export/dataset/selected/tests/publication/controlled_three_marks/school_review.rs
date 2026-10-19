@@ -70,7 +70,7 @@ fn controlled_original_school_review_preserves_each_performance_day_after_cold_r
         ..
     } = installed;
     drop(store);
-    let reopened = source::reopen(&directory)?;
+    let reopened = super::reopen(&directory)?;
     source::require_identity(&reopened, &candidate, &public)?;
     source::require_originals(&reopened, &source_records)?;
     check!(eq; observe(&reopened)?, before);

@@ -52,9 +52,10 @@ pub(super) fn school_bound(
     profile: &QueryProfileV1,
     captured_at: DateTime<Utc>,
     school: &census_store::ReplayedResultSchoolCorrespondencesV1<'_>,
+    calendar: Option<&census_store::ReplayedResultCalendarCorrespondencesV1<'_>>,
     grant: &mut Grant,
 ) -> ReportResult<Collected> {
-    bound::collect(dataset, profile, captured_at, school, grant)
+    bound::collect(dataset, profile, captured_at, school, calendar, grant)
 }
 
 pub(super) fn capture(

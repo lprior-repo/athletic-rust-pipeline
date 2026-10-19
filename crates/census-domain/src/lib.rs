@@ -16,6 +16,7 @@ pub mod participation_candidates;
 pub mod profile_execution;
 pub mod public_identity_history;
 pub mod public_identity_qualification;
+pub mod result_calendar_correspondence;
 pub mod result_school_correspondence;
 pub mod review_decision;
 pub mod review_model;

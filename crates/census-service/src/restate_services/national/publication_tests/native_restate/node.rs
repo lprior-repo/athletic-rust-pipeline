@@ -1,29 +1,36 @@
 use super::super::TestResult;
+use super::reaper;
 use std::net::TcpListener;
-use std::path::{Path, PathBuf};
-use std::process::{Child, Command, Stdio};
-use std::time::{Duration, Instant};
+use std::path::PathBuf;
+use std::process::{Child, Command, ExitStatus, Stdio};
+use std::time::Duration;
 
 const READY_ATTEMPTS: usize = 240;
 const READY_DELAY: Duration = Duration::from_millis(250);
-const DROP_SHUTDOWN_GRACE: Duration = Duration::from_secs(5);
+const SHUTDOWN_ATTEMPTS: usize = 300;
+const SHUTDOWN_DELAY: Duration = Duration::from_millis(100);
 
 pub(super) struct NativeNode {
     binary: PathBuf,
     config: PathBuf,
-    root: PathBuf,
+    root: Option<tempfile::TempDir>,
+    root_path: PathBuf,
     pub(super) admin: String,
     pub(super) ingress: String,
     child: Option<Child>,
 }
 
 impl NativeNode {
-    pub(super) fn new(root: &Path) -> TestResult<Self> {
+    pub(super) fn new() -> TestResult<Self> {
         let binary = pinned_server()?;
         let (node_port, ingress_port, admin_port) = free_ports()?;
-        let data = root.join("restate-data");
+        let root = tempfile::Builder::new()
+            .prefix("native-restate-")
+            .tempdir()?;
+        let root_path = root.path().to_path_buf();
+        let data = root_path.join("restate-data");
         std::fs::create_dir_all(&data)?;
-        let config = root.join("restate.toml");
+        let config = root_path.join("restate.toml");
         std::fs::write(
             &config,
             format!(
@@ -62,7 +69,8 @@ impl NativeNode {
         Ok(Self {
             binary,
             config,
-            root: root.to_path_buf(),
+            root: Some(root),
+            root_path,
             admin: format!("http://127.0.0.1:{admin_port}"),
             ingress: format!("http://127.0.0.1:{ingress_port}"),
             child: None,
@@ -74,21 +82,34 @@ impl NativeNode {
             self.child.is_none(),
             "native Restate node is already running"
         );
-        let log_path = self.root.join("restate-server.log");
+        check!(
+            self.root.is_some(),
+            "native Restate node root ownership was handed off after cleanup failure"
+        );
+        match self.spawn() {
+            Ok(child) => self.child = Some(child),
+            Err(error) => {
+                let failure =
+                    self.preserve_failure(&format!("native Restate spawn failed: {error}"));
+                return Err(failure.into());
+            }
+        }
+        Ok(())
+    }
+
+    fn spawn(&self) -> std::io::Result<Child> {
+        let log_path = self.root_path.join("restate-server.log");
         let log = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
             .open(log_path)?;
-        self.child = Some(
-            Command::new(&self.binary)
-                .arg("--no-logo")
-                .arg("--config-file")
-                .arg(&self.config)
-                .stdout(Stdio::from(log.try_clone()?))
-                .stderr(Stdio::from(log))
-                .spawn()?,
-        );
-        Ok(())
+        Command::new(&self.binary)
+            .arg("--no-logo")
+            .arg("--config-file")
+            .arg(&self.config)
+            .stdout(Stdio::from(log.try_clone()?))
+            .stderr(Stdio::from(log))
+            .spawn()
     }
 
     pub(super) async fn restart(&mut self, client: &reqwest::Client) -> TestResult {
@@ -118,7 +139,7 @@ impl NativeNode {
             tokio::time::sleep(READY_DELAY).await;
         }
         Err(self
-            .failure(&format!("node did not become ready: {last}"))
+            .stop_failure(&format!("node did not become ready: {last}"))
             .into())
     }
 
@@ -126,107 +147,135 @@ impl NativeNode {
         let Some(child) = self.child.as_mut() else {
             return Ok(());
         };
-        request_sigterm(child)?;
-        for _ in 0..300 {
+        match child.try_wait() {
+            Ok(Some(status)) => return self.stopped(status),
+            Ok(None) => {}
+            Err(error) => {
+                return Err(self
+                    .stop_failure(&format!("graceful stop inspection failed: {error}"))
+                    .into());
+            }
+        }
+        if let Err(error) = reaper::request_sigterm(child) {
+            return Err(self
+                .stop_failure(&format!("graceful stop request failed: {error}"))
+                .into());
+        }
+        for _ in 0..SHUTDOWN_ATTEMPTS {
             let status = self
                 .child
                 .as_mut()
-                .ok_or("native Restate child disappeared during shutdown")?
-                .try_wait()?;
-            if let Some(status) = status {
-                self.child = None;
-                check!(
-                    status.success(),
-                    "native Restate server exited unsuccessfully: {status}"
-                );
-                return Ok(());
+                .ok_or("native Restate child ownership lost during stop")?
+                .try_wait();
+            match status {
+                Ok(Some(status)) => return self.stopped(status),
+                Ok(None) => tokio::time::sleep(SHUTDOWN_DELAY).await,
+                Err(error) => {
+                    return Err(self
+                        .stop_failure(&format!("graceful stop inspection failed: {error}"))
+                        .into());
+                }
             }
-            tokio::time::sleep(Duration::from_millis(100)).await;
         }
         Err(self
-            .failure("native Restate server did not stop after SIGTERM")
+            .stop_failure("native Restate server exceeded the 30s shutdown timeout")
             .into())
     }
 
-    fn require_running(&mut self) -> TestResult {
-        let status = self
-            .child
-            .as_mut()
-            .ok_or("native Restate child is not running")?
-            .try_wait()?;
-        check!(
-            status.is_none(),
-            "{}",
-            self.failure("node exited before readiness")
-        );
+    fn stopped(&mut self, status: ExitStatus) -> TestResult {
+        if !status.success() {
+            return Err(self
+                .stop_failure(&format!(
+                    "native Restate server exited unsuccessfully: {status}"
+                ))
+                .into());
+        }
+        drop(self.child.take());
         Ok(())
     }
 
+    fn stop_failure(&mut self, reason: &str) -> String {
+        let handoff = match self.child.take() {
+            Some(child) => self.handoff(child, reason, false),
+            None => reason.to_owned(),
+        };
+        self.failure(&handoff)
+    }
+
+    fn require_running(&mut self) -> TestResult {
+        let status = match self
+            .child
+            .as_mut()
+            .ok_or("native Restate child is not running")?
+            .try_wait()
+        {
+            Ok(status) => status,
+            Err(error) => {
+                return Err(self
+                    .stop_failure(&format!("readiness inspection failed: {error}"))
+                    .into());
+            }
+        };
+        if let Some(status) = status {
+            return Err(self
+                .stop_failure(&format!("node exited before readiness: {status}"))
+                .into());
+        }
+        Ok(())
+    }
+
+    fn preserve_failure(&mut self, reason: &str) -> String {
+        if let Some(mut root) = self.root.take() {
+            root.disable_cleanup(true);
+        }
+        self.failure(reason)
+    }
+
     fn failure(&self, reason: &str) -> String {
-        let log_path = self.root.join("restate-server.log");
+        let log_path = self.root_path.join("restate-server.log");
         let log = match std::fs::read_to_string(&log_path) {
             Ok(log) => log,
             Err(error) => format!("server log unavailable: {error}"),
         };
-        format!("{reason}; log={}:\n{log}", log_path.display())
+        format!(
+            "{reason}; pid={:?} path={} log={}:\n{log}",
+            self.child.as_ref().map(Child::id),
+            self.root_path.display(),
+            log_path.display()
+        )
     }
 }
 
 impl Drop for NativeNode {
     fn drop(&mut self) {
-        let Some(mut child) = self.child.take() else {
-            return;
-        };
-        match child.try_wait() {
-            Ok(Some(_)) => {}
-            Ok(None) => {
-                reap_owned_child(&mut child);
+        match self.child.take() {
+            Some(child) => {
+                let handoff = self.handoff(
+                    child,
+                    "native Restate node dropped before explicit stop",
+                    true,
+                );
+                eprintln!("{handoff}");
             }
-            Err(error) => {
-                eprintln!("could not inspect Restate child during cleanup: {error}");
-                reap_owned_child(&mut child);
+            None => {
+                if let Some(root) = self.root.take() {
+                    reaper::cleanup_stopped(root);
+                }
             }
         }
     }
 }
 
-fn request_sigterm(child: &Child) -> std::io::Result<()> {
-    let status = Command::new("kill")
-        .arg("-TERM")
-        .arg(child.id().to_string())
-        .status()?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(std::io::Error::other(format!(
-            "kill -TERM exited with {status}"
-        )))
-    }
-}
-
-fn reap_owned_child(child: &mut Child) {
-    if let Err(error) = request_sigterm(child) {
-        eprintln!("could not request graceful Restate cleanup: {error}");
-    }
-    let deadline = Instant::now() + DROP_SHUTDOWN_GRACE;
-    loop {
-        match child.try_wait() {
-            Ok(Some(_)) => return,
-            Ok(None) if Instant::now() < deadline => {
-                std::thread::sleep(Duration::from_millis(100));
-            }
-            Ok(None) => break,
-            Err(error) => {
-                eprintln!("could not inspect Restate child during cleanup: {error}");
-                break;
-            }
+impl NativeNode {
+    fn handoff(&mut self, child: Child, reason: &str, cleanup_on_exit: bool) -> String {
+        match self.root.take() {
+            Some(root) => reaper::handoff(child, root, reason, cleanup_on_exit),
+            None => format!(
+                "{reason}; cleanup handoff unavailable pid={} path={} root ownership already transferred",
+                child.id(),
+                self.root_path.display()
+            ),
         }
-    }
-    if let Err(error) = child.kill() {
-        eprintln!("could not terminate owned Restate child after grace period: {error}");
-    }
-    if let Err(error) = child.wait() {
-        eprintln!("could not reap owned Restate child: {error}");
     }
 }
 

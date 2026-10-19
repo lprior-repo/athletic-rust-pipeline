@@ -121,7 +121,8 @@ impl Store {
         crate::public_identity::refuse_reserved(phase)?;
         crate::evidence_subject_attachment::refuse_generic_phase(phase)?;
         crate::roster_source_issuance::refuse_generic_phase(phase)?;
-        crate::result_school_correspondence::refuse_generic_phase(phase)
+        crate::result_school_correspondence::refuse_generic_phase(phase)?;
+        crate::result_calendar_correspondence::refuse_generic_phase(phase)
     }
 
     pub(super) fn journal_done_locked<T: Serialize>(

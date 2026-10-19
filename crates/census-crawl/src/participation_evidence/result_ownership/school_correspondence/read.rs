@@ -52,7 +52,7 @@ pub fn checked_current<'a>(
         let Some(record) = record else {
             return Ok(None);
         };
-        super::binding::current(attachments, row.attachment(), grant)?;
+        super::original::current(attachments, row.attachment(), grant)?;
         source::require(
             source::Source::Current(current),
             linked,

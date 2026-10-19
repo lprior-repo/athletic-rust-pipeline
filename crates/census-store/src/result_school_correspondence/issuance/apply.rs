@@ -89,7 +89,7 @@ fn verify_snapshot_format(
 }
 
 fn verify_format_version(format: &crate::StoreFormat) -> StoreResult<()> {
-    if format.lifecycle_revision != Some(super::super::LIFECYCLE)
+    if !super::super::retains_school_enrollment(format.lifecycle_revision)
         || format.schema_version != Some(2)
         || format.key_format != Some(1)
         || format.migration_target.is_some()

@@ -33,6 +33,13 @@ const ENROLLMENT: &str = "result_school_correspondence/v1/enrollment";
 const OPERATIONS: &str = "result_school_correspondence_v1:";
 const LIFECYCLE: u32 = RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE;
 
+pub(crate) fn retains_school_enrollment(lifecycle: Option<u32>) -> bool {
+    matches!(
+        lifecycle,
+        Some(LIFECYCLE | crate::RESULT_CALENDAR_CORRESPONDENCE_LIFECYCLE)
+    )
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum ResultSchoolCorrespondenceStoreError {
     #[error("result school correspondence requires its protected writer")]
@@ -111,3 +118,16 @@ mod enrollment_tests;
 mod issuance_tests;
 #[cfg(test)]
 mod result_school_guard_tests;
+
+pub(crate) fn retained_enrollment_bytes_v1(
+    snapshot: &fjall::Snapshot,
+    meta: &fjall::Keyspace,
+    journal: &fjall::Keyspace,
+    receipts: &fjall::Keyspace,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Vec<u8>> {
+    guarded(grant, |grant| {
+        let proof = read::enrollment(snapshot, meta, journal, receipts, grant)?;
+        codec::encode(&proof, grant)
+    })
+}

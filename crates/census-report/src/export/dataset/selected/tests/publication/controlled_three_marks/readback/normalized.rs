@@ -18,7 +18,7 @@ pub(super) fn matches(
     best_row(directory, dataset, wanted, expected)?;
     best_sidecars(directory, dataset, wanted, expected)?;
     affiliations_row(directory, dataset, wanted, expected)?;
-    super::exclusions::rows(directory, dataset, outcome, wanted)
+    super::exclusions::rows(directory, dataset, outcome, wanted, expected.generation)
 }
 fn manifest_matches(directory: &Path) -> TestResult<()> {
     let manifest = artifacts::manifest(directory)?;

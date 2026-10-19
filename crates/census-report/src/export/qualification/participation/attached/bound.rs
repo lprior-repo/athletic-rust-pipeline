@@ -19,6 +19,7 @@ pub(super) fn collect(
     profile: &QueryProfileV1,
     captured_at: DateTime<Utc>,
     school: &census_store::ReplayedResultSchoolCorrespondencesV1<'_>,
+    calendar: Option<&census_store::ReplayedResultCalendarCorrespondencesV1<'_>>,
     grant: &mut Grant,
 ) -> ReportResult<Collected> {
     let profile_id = profile.id().map_err(census_store::StoreError::from)?;
@@ -46,6 +47,7 @@ pub(super) fn collect(
             dataset,
             query,
             school,
+            calendar,
             sources,
             &plan,
             grant,
@@ -60,7 +62,9 @@ pub(super) fn collect(
         unsupported,
         mapped,
         documentary_authority: Some(
-            super::super::current_authority::DocumentaryAuthority::from_school(school, grant)?,
+            super::super::current_authority::DocumentaryAuthority::from_school(
+                school, calendar, grant,
+            )?,
         ),
     })
 }
@@ -69,6 +73,7 @@ fn collect_groups(
     dataset: &ExportDataset,
     query: CandidateQuery<'_>,
     school: &census_store::ReplayedResultSchoolCorrespondencesV1<'_>,
+    calendar: Option<&census_store::ReplayedResultCalendarCorrespondencesV1<'_>>,
     sources: &census_crawl::participation_evidence::recorded::AttachedParticipationV1<'_, '_>,
     plan: &census_crawl::participation_evidence::recorded::AttachmentHtmlResultDiscoveryV1<
         '_,
@@ -90,7 +95,7 @@ fn collect_groups(
         let result = plan
             .with_group(index, grant, |linked, grant| {
                 Ok(collect_group(
-                    dataset, query, school, sources, &linked, grant, budget, rows, mapped,
+                    dataset, query, school, calendar, sources, &linked, grant, budget, rows, mapped,
                 ))
             })
             .map_err(source)?;
@@ -103,6 +108,7 @@ fn collect_group(
     dataset: &ExportDataset,
     query: CandidateQuery<'_>,
     school: &census_store::ReplayedResultSchoolCorrespondencesV1<'_>,
+    calendar: Option<&census_store::ReplayedResultCalendarCorrespondencesV1<'_>>,
     sources: &census_crawl::participation_evidence::recorded::AttachedParticipationV1<'_, '_>,
     linked: &census_crawl::participation_evidence::recorded::DiscoveredIdentityLinkedHtmlResultDocumentV1<
         '_,
@@ -126,7 +132,8 @@ fn collect_group(
         .map_err(source)?;
         match checked {
             Some(checked) => super::mapped::insert(
-                dataset, query, sources, linked, row_index, &checked, grant, budget, rows, mapped,
+                dataset, query, sources, calendar, linked, row_index, &checked, grant, budget,
+                rows, mapped,
             )?,
             None => {
                 let row = super::assessment::row(

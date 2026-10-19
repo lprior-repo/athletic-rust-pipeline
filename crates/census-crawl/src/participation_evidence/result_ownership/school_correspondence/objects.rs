@@ -1,13 +1,12 @@
-use super::{domain, invalid};
+use super::{domain, invalid, reference};
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::{
-    AttachmentDigestV1, AttachmentListV1, AttachmentObjectReferenceV1, AttachmentReplayGrantV1,
+    AttachmentListV1, AttachmentObjectReferenceV1, AttachmentReplayGrantV1,
     EvidenceSubjectAttachmentError,
 };
 use census_domain::result_school_correspondence::MAX_RESULT_SCHOOL_OBJECTS;
 use census_store::{AttachmentContextObjectV1, RetainedCaptureLeafV1};
 use serde::Serialize;
-use sha2::{Digest, Sha256};
 
 pub(super) struct Objects {
     inline: Vec<(AttachmentObjectReferenceV1, Vec<u8>)>,
@@ -135,19 +134,6 @@ impl Objects {
         }
         Ok(count)
     }
-}
-
-pub(super) fn reference(
-    bytes: &[u8],
-    grant: &mut AttachmentReplayGrantV1,
-) -> CrawlResult<AttachmentObjectReferenceV1> {
-    grant.charge_bytes(bytes.len()).map_err(domain)?;
-    grant.charge_steps(1).map_err(domain)?;
-    Ok(AttachmentObjectReferenceV1 {
-        digest: AttachmentDigestV1::parse(&format!("{:x}", Sha256::digest(bytes)))
-            .map_err(domain)?,
-        bytes: u64::try_from(bytes.len()).map_err(|_| census_store::StoreError::CounterOverflow)?,
-    })
 }
 
 fn reserve<T>(

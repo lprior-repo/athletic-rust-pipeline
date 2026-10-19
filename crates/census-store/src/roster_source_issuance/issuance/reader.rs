@@ -41,6 +41,8 @@ struct Archive {
     external: Vec<frozen_source::CapturedExternalPrefix>,
     #[serde(skip)]
     inherited_enrollment_proof: Option<Vec<u8>>,
+    #[serde(skip)]
+    inherited_calendar_enrollment_proof: Option<Vec<u8>>,
 }
 
 impl Archive {

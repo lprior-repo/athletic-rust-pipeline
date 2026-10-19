@@ -55,7 +55,7 @@ fn controlled_full_window_preserves_explicit_dates_and_source_proof_after_reopen
         ..
     } = installed;
     drop(store);
-    let reopened = source::reopen(&directory)?;
+    let reopened = super::reopen(&directory)?;
     source::require_originals(&reopened, &source_records)?;
     source::require_identity(&reopened, &candidate, &public)?;
     check!(eq; observe(&reopened, &reference)?, before);

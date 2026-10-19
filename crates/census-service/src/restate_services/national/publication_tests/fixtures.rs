@@ -14,6 +14,45 @@ pub fn request() -> TestResult<NationalRequest> {
     }))?)
 }
 
+pub(super) fn selected_request(
+    controlled: &crate::restate_services::jobs::selected_fixture::Controlled,
+    jurisdictions: &[census_domain::UsJurisdiction],
+) -> TestResult<NationalRequest> {
+    let mut input = controlled.profile().input().clone();
+    input.jurisdictions = jurisdictions.to_vec();
+    let profile = census_domain::model::QueryProfileV1::new(input)?;
+    controlled.store().register_profile(&profile)?;
+    let mut request = request()?;
+    request.jurisdictions = jurisdictions.to_vec();
+    request.publication_contract =
+        crate::restate_services::PublicationContract::SelectedPublicationV1;
+    request.export_job = census_report::export::ExportJobRequest::SelectedPublicationV1 {
+        selection: census_domain::model::ProfileSelectionV1::new(
+            controlled.store().store_identity()?,
+            profile.id()?,
+        ),
+    };
+    Ok(request)
+}
+pub(super) fn workbook_preflight(
+    call: &Frame,
+    journal: &Journal,
+) -> TestResult<Result<Value, restate_sdk::prelude::HandlerError>> {
+    let controlled = journal
+        .selected_workbook
+        .as_ref()
+        .ok_or("selected National dispatch requires its controlled workbook fixture")?;
+    let request: crate::restate_services::wire::WorkbookRequest =
+        serde_json::from_slice(call.bytes(3)?)?;
+    match crate::restate_services::publish::workbook_preflight::checked_options(
+        controlled.store(),
+        &request,
+    ) {
+        Ok(_) => Ok(Ok(Value::Null)),
+        Err(error) => Ok(Err(error)),
+    }
+}
+
 pub fn answer(call: &Frame, journal: &mut Journal) -> TestResult<Value> {
     let request: Value = serde_json::from_slice(call.bytes(3)?)?;
     let service = call.text(1)?;
@@ -30,50 +69,24 @@ pub fn answer(call: &Frame, journal: &mut Journal) -> TestResult<Value> {
             return Ok(serde_json::to_value(outcome)?);
         }
     }
-    if service == "Workbook" && handler == "run" {
-        if let Some(controlled) = journal.selected_workbook.as_ref() {
-            let workbook_request: crate::restate_services::wire::WorkbookRequest =
-                serde_json::from_value(request)?;
-            let expected_job = census_report::export::ExportJobRequest::SelectedPublicationV1 {
-                selection: controlled.selection().map_err(|error| error.to_string())?,
-            };
-            check!(eq;
-                serde_json::to_value(&workbook_request.export_job)?,
-                serde_json::to_value(expected_job)?,
-                "National dispatch must retain the controlled store and profile selection"
-            );
-            let grad_year = workbook_request
-                .grad_year
-                .and_then(census_domain::model::GradYear::new)
-                .ok_or("National selected workbook omitted its graduation cohort")?;
-            let school_year = workbook_request
-                .school_year
-                .and_then(census_domain::model::SchoolYear::new)
-                .ok_or("National selected workbook omitted its school year")?;
-            let options = census_report::workbook::Options {
-                grad_year: Some(grad_year.get()),
-                out: workbook_request.out.map(std::path::PathBuf::from),
-                limit: workbook_request.limit,
-                scope: crate::restate_services::resolve_scope(workbook_request.scope.as_deref())
-                    .map_err(|error| error.to_string())?,
-                jurisdictions: crate::restate_services::normalize_jurisdictions(
-                    &workbook_request.jurisdictions,
-                )
-                .map_err(|error| error.to_string())?,
-                school_year,
-            };
-            let job = format!("workbook:{}", call.text(5)?);
-            let reply = crate::restate_services::jobs::workbook_job::build(
-                controlled.store(),
-                &options,
-                &job,
-                &workbook_request.export_job,
-            )?;
-            journal.selected_workbook_path = Some(reply.path.clone());
-            return Ok(serde_json::to_value(reply)?);
-        }
+    if service == "Workbook"
+        && handler == "run"
+        && journal.original.publication_contract
+            == crate::restate_services::PublicationContract::SelectedPublicationV1
+    {
+        return selected_workbook(call, request, journal);
     }
-    Ok(match (service.as_str(), handler.as_str()) {
+    stage_answer(call, journal, &request, &service, &handler)
+}
+
+fn stage_answer(
+    call: &Frame,
+    journal: &Journal,
+    request: &Value,
+    service: &str,
+    handler: &str,
+) -> TestResult<Value> {
+    Ok(match (service, handler) {
         ("Census", "school_address_preflight") => json!(journal.address_digest),
         ("Census", "bind_run") => json!({
             "store_identity": "fixture-store", "season": 2026, "revision": 1,
@@ -126,6 +139,49 @@ pub fn answer(call: &Frame, journal: &mut Journal) -> TestResult<Value> {
         }),
         _ => return Err(format!("unexpected national child {service}/{handler}").into()),
     })
+}
+
+fn selected_workbook(call: &Frame, request: Value, journal: &mut Journal) -> TestResult<Value> {
+    let controlled = journal
+        .selected_workbook
+        .as_ref()
+        .ok_or("selected National dispatch requires its controlled workbook fixture")?;
+    let workbook_request: crate::restate_services::wire::WorkbookRequest =
+        serde_json::from_value(request)?;
+    check!(eq;
+        serde_json::to_value(&workbook_request.export_job)?,
+        serde_json::to_value(&journal.original.export_job)?,
+        "National dispatch must retain the controlled store and profile selection"
+    );
+    let grad_year = workbook_request
+        .grad_year
+        .and_then(census_domain::model::GradYear::new)
+        .ok_or("National selected workbook omitted its graduation cohort")?;
+    let school_year = workbook_request
+        .school_year
+        .and_then(census_domain::model::SchoolYear::new)
+        .ok_or("National selected workbook omitted its school year")?;
+    let options = census_report::workbook::Options {
+        grad_year: Some(grad_year.get()),
+        out: workbook_request.out.map(std::path::PathBuf::from),
+        limit: workbook_request.limit,
+        scope: crate::restate_services::resolve_scope(workbook_request.scope.as_deref())
+            .map_err(|error| error.to_string())?,
+        jurisdictions: crate::restate_services::normalize_jurisdictions(
+            &workbook_request.jurisdictions,
+        )
+        .map_err(|error| error.to_string())?,
+        school_year,
+    };
+    let job = format!("workbook:{}", call.text(5)?);
+    let reply = crate::restate_services::jobs::workbook_job::build(
+        controlled.store(),
+        &options,
+        &job,
+        &workbook_request.export_job,
+    )?;
+    journal.selected_workbook_path = Some(reply.path.clone());
+    Ok(serde_json::to_value(reply)?)
 }
 
 fn required<'a>(request: &'a Value, name: &str) -> TestResult<&'a Value> {
