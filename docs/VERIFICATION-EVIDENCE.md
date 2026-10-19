@@ -1217,7 +1217,7 @@ population/comparison/resource acceptance remain open.
 
 ### Selected workbook through native Restate — 2026-10-19
 
-On the exact isolated candidate based on `1762f27b`, the focused
+On the exact isolated candidate rebased onto current main `8b7f4fc4`, the focused
 `native_restate_restart_and_authority_revocation_preserve_selected_publication`
 case passed against the project-pinned Restate 1.7.10 binary. It starts a
 separate single-partition node with temporary data/configuration and loopback
@@ -1248,8 +1248,8 @@ missing or mismatched. Dropping an owned node sends SIGTERM, waits at most five
 seconds, then kills and reaps only that test child.
 
 `pipeline:fmt`, the focused case (1/1), full all-target/all-feature
-`pipeline:check`, and `pipeline:lint-src` passed. Check reported five test-fixture
-dead-code warnings; lint reported the repository's configured
+`pipeline:check`, and `pipeline:lint-src` passed. Check reported one test-fixture
+dead-code warning; lint reported the repository's configured
 `too_many_arguments` warnings. This is a test-process SDK endpoint and controlled
 fixture only; no production census service, external acquisition, or live
 Store was used.
