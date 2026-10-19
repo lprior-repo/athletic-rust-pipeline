@@ -11,6 +11,7 @@ use std::time::Duration;
 const WORKFLOW_KEY: &str = "selected-workbook-native-e2e-v1";
 const TEST_BUDGET: Duration = Duration::from_secs(240);
 
+#[ignore = "explicit native Restate integration test; see docs/VERIFICATION-EVIDENCE.md"]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn native_restate_restart_and_authority_revocation_preserve_selected_publication(
 ) -> TestResult {

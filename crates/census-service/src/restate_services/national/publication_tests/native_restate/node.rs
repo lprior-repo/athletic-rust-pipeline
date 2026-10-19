@@ -2,10 +2,11 @@ use super::super::TestResult;
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const READY_ATTEMPTS: usize = 240;
 const READY_DELAY: Duration = Duration::from_millis(250);
+const DROP_SHUTDOWN_GRACE: Duration = Duration::from_secs(5);
 
 pub(super) struct NativeNode {
     binary: PathBuf,
@@ -125,15 +126,7 @@ impl NativeNode {
         let Some(child) = self.child.as_mut() else {
             return Ok(());
         };
-        let pid = child.id();
-        let sent = Command::new("kill")
-            .arg("-TERM")
-            .arg(pid.to_string())
-            .status()?;
-        check!(
-            sent.success(),
-            "could not request graceful Restate shutdown: {sent}"
-        );
+        request_sigterm(child)?;
         for _ in 0..300 {
             let status = self
                 .child
@@ -187,26 +180,85 @@ impl Drop for NativeNode {
         match child.try_wait() {
             Ok(Some(_)) => {}
             Ok(None) => {
-                let signal = Command::new("kill")
-                    .arg("-TERM")
-                    .arg(child.id().to_string())
-                    .status();
-                if let Err(error) = signal {
-                    eprintln!("could not request graceful Restate cleanup: {error}");
-                }
-                if let Err(error) = child.wait() {
-                    eprintln!("could not reap Restate child after graceful cleanup: {error}");
-                }
+                reap_owned_child(&mut child);
             }
-            Err(error) => eprintln!("could not inspect Restate child during cleanup: {error}"),
+            Err(error) => {
+                eprintln!("could not inspect Restate child during cleanup: {error}");
+                reap_owned_child(&mut child);
+            }
         }
     }
 }
 
+fn request_sigterm(child: &Child) -> std::io::Result<()> {
+    let status = Command::new("kill")
+        .arg("-TERM")
+        .arg(child.id().to_string())
+        .status()?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(std::io::Error::other(format!(
+            "kill -TERM exited with {status}"
+        )))
+    }
+}
+
+fn reap_owned_child(child: &mut Child) {
+    if let Err(error) = request_sigterm(child) {
+        eprintln!("could not request graceful Restate cleanup: {error}");
+    }
+    let deadline = Instant::now() + DROP_SHUTDOWN_GRACE;
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => return,
+            Ok(None) if Instant::now() < deadline => {
+                std::thread::sleep(Duration::from_millis(100));
+            }
+            Ok(None) => break,
+            Err(error) => {
+                eprintln!("could not inspect Restate child during cleanup: {error}");
+                break;
+            }
+        }
+    }
+    if let Err(error) = child.kill() {
+        eprintln!("could not terminate owned Restate child after grace period: {error}");
+    }
+    if let Err(error) = child.wait() {
+        eprintln!("could not reap owned Restate child: {error}");
+    }
+}
+
 fn pinned_server() -> TestResult<PathBuf> {
-    let home = std::env::var_os("HOME").ok_or("HOME is required for the pinned Restate binary")?;
-    let binary = PathBuf::from(home)
-        .join(".local/share/athletic-rust-pipeline/restate/1.7.10/restate-server");
+    const SERVER_ENV: &str = "RESTATE_SERVER_BIN";
+    let configured = std::env::var_os(SERVER_ENV).map(PathBuf::from);
+    let binary = match configured {
+        Some(path) => path,
+        None => {
+            let home_candidate = std::env::var_os("HOME").map(|home| {
+                PathBuf::from(home)
+                    .join(".local/share/athletic-rust-pipeline/restate/1.7.10/restate-server")
+            });
+            let path_candidate = std::env::var_os("PATH").and_then(|path| {
+                std::env::split_paths(&path)
+                    .map(|directory| directory.join("restate-server"))
+                    .find(|candidate| candidate.is_file())
+            });
+            home_candidate
+                .filter(|candidate| candidate.is_file())
+                .or(path_candidate)
+                .ok_or_else(|| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        format!(
+                            "native Restate 1.7.10 binary not found; set {SERVER_ENV} to its path"
+                        ),
+                    )
+                })?
+        }
+    };
+    let binary = std::fs::canonicalize(binary)?;
     let metadata = std::fs::metadata(&binary)?;
     check!(
         metadata.is_file() && metadata.len() <= 512 * 1024 * 1024,

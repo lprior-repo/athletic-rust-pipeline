@@ -1230,6 +1230,23 @@ controlled authority, a second fresh disposable node uses the same logical
 workflow/job identity; the handler refuses the retained job, and workbook,
 manifest, current pointer, and verified generation remain unchanged.
 
+This is an explicitly ignored integration test so ordinary developer and CI
+test runs do not require a local Restate installation. Run it with:
+
+```sh
+env -u CI MOON_RUST_BUILD_JOBS=1 \
+  RESTATE_SERVER_BIN="${RESTATE_SERVER_BIN:-$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server}" \
+  tools/moon-local run pipeline:tests-scoped -- \
+  --build-jobs 1 -p census-service --lib \
+  -E 'test(native_restate_restart_and_authority_revocation_preserve_selected_publication)' \
+  --run-ignored ignored-only --no-capture --no-tests fail
+```
+
+`RESTATE_SERVER_BIN` may point to another Restate server executable, but the
+test requires version 1.7.10 and fails with a diagnostic when the binary is
+missing or mismatched. Dropping an owned node sends SIGTERM, waits at most five
+seconds, then kills and reaps only that test child.
+
 `pipeline:fmt`, the focused case (1/1), full all-target/all-feature
 `pipeline:check`, and `pipeline:lint-src` passed. Check reported five test-fixture
 dead-code warnings; lint reported the repository's configured
