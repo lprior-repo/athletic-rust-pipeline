@@ -102,6 +102,7 @@ pub(crate) fn existing(root: &Path, purpose: OpenPurpose, cache_bytes: u64) -> S
         meta,
         receipts,
     };
+    keyspaces.validate_installation(purpose, &format)?;
     keyspaces.validate_identity(purpose, &format)?;
     let capture = crate::acquisition::validate_format(
         root,
@@ -162,23 +163,6 @@ fn finish_existing(
         meta,
         receipts,
     } = keyspaces;
-    let state = crate::installation::validate_format(
-        &db.snapshot(),
-        &meta,
-        &journal,
-        format.lifecycle_revision,
-    )?;
-    match purpose {
-        OpenPurpose::LegacyExecution
-        | OpenPurpose::CaptureExecution(_)
-        | OpenPurpose::CurrentQualificationV3
-        | OpenPurpose::PublicIdentityExecution(_) => {
-            crate::installation::require_legacy_execution(&state)?
-        }
-        OpenPurpose::InstallationControl
-        | OpenPurpose::CaptureControl
-        | OpenPurpose::PublicIdentityHistory => {}
-    }
     match purpose {
         OpenPurpose::LegacyExecution
         | OpenPurpose::CaptureExecution(_)
@@ -223,6 +207,30 @@ fn control_store(
 mod tests;
 
 impl ExistingKeyspaces {
+    fn validate_installation(
+        &self,
+        purpose: OpenPurpose,
+        format: &crate::StoreFormat,
+    ) -> StoreResult<()> {
+        let state = crate::installation::validate_format(
+            &self.db.snapshot(),
+            &self.meta,
+            &self.journal,
+            format.lifecycle_revision,
+        )?;
+        match purpose {
+            OpenPurpose::LegacyExecution
+            | OpenPurpose::CaptureExecution(_)
+            | OpenPurpose::CurrentQualificationV3
+            | OpenPurpose::PublicIdentityExecution(_) => {
+                crate::installation::require_legacy_execution(&state)
+            }
+            OpenPurpose::InstallationControl
+            | OpenPurpose::CaptureControl
+            | OpenPurpose::PublicIdentityHistory => Ok(()),
+        }
+    }
+
     fn validate_identity(
         &self,
         purpose: OpenPurpose,
