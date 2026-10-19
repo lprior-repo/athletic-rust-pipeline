@@ -75,7 +75,7 @@ fn finish_descriptor(
     };
     let closure = bound.closure_reference();
     let descriptor = FrozenAffiliationDescriptor {
-        version: descriptor_version(profile)?,
+        version: descriptor_version(profile, dataset.semantic_policy()?)?,
         store_identity: dataset.lineage.store_identity.clone(),
         snapshot_sequence,
         input_generation: dataset.lineage.input_generation.clone(),
@@ -101,7 +101,7 @@ pub(super) fn replay(
     descriptor: &FrozenAffiliationDescriptor,
     profile: &QueryProfileV1,
 ) -> ReportResult<PinnedCurrentAffiliations> {
-    if descriptor.version != descriptor_version(profile)? {
+    if descriptor.version != descriptor_version(profile, dataset.semantic_policy()?)? {
         return Err(invalid("reviewed roster descriptor and profile versions differ").into());
     }
     let mut grant = AttachmentReplayGrantV1::new();
@@ -136,22 +136,17 @@ pub(super) fn replay(
     result
 }
 
-pub(super) fn descriptor_version(profile: &QueryProfileV1) -> ReportResult<u32> {
-    use census_domain::profile_execution::{
-        validate_selected_qualification_profile_v4, validate_selected_qualification_profile_v5,
-    };
-    let version = match profile.input().policies.affiliation.revision().get() {
-        5 => {
-            let _checked = validate_selected_qualification_profile_v4(profile)
-                .map_err(|_| invalid("reviewed roster profile differs"))?;
-            2
-        }
-        6 => {
-            let _checked = validate_selected_qualification_profile_v5(profile)
-                .map_err(|_| invalid("reviewed secondary-person profile differs"))?;
-            3
-        }
-        _ => return Err(invalid("unsupported reviewed roster profile").into()),
-    };
-    Ok(version)
+pub(super) fn descriptor_version(
+    profile: &QueryProfileV1,
+    semantics: census_domain::model::EventSemantics,
+) -> ReportResult<u32> {
+    census_domain::profile_execution::validate_retained_selected_qualification_profile(
+        profile, semantics,
+    )
+    .map_err(|_| invalid("reviewed roster profile differs"))?;
+    match profile.input().policies.affiliation.revision().get() {
+        5 => Ok(2),
+        6 => Ok(3),
+        _ => Err(invalid("unsupported reviewed roster profile").into()),
+    }
 }

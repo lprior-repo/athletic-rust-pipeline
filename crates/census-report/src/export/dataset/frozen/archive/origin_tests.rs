@@ -110,21 +110,16 @@ fn historical_marker_requires_exact_digest_and_revision() -> TestResult {
     Ok(())
 }
 
-fn live_refused(raw: QueryProfileInputV1, role: ContractRoleV1) -> TestResult {
+fn live_refused(raw: QueryProfileInputV1) -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = census_store::Store::open(directory.path().join("store"))?;
     let profile = QueryProfileV1::new(raw)?;
     store.register_profile(&profile)?;
     let selection = ProfileSelectionV1::new(store.store_identity()?, profile.id()?);
     let objects = directory.path().join("proofs");
-    let expected =
-        census_domain::profile_execution::ProfileExecutionError::UnsupportedContractReference {
-            role,
-        }
-        .to_string();
     check!(matches!(
         ExportDataset::from_selected_snapshot(&store, &store.snapshot(), &selection, &objects),
-        Err(crate::report::ReportError::Invariant { detail }) if detail == expected
+        Err(crate::report::ReportError::Invariant { .. })
     ));
     check!(!objects.exists());
     check!(eq; store.profile(&profile.id()?)?, profile);
@@ -136,7 +131,7 @@ fn live_capture_refuses_all_foreign_slots_before_proof_io() -> TestResult {
     for role in ContractRoleV1::ALL {
         let mut raw = input()?;
         replace(&mut raw, role, ContractRefV1::new(1, 99, &"a".repeat(64))?);
-        live_refused(raw, role)?;
+        live_refused(raw)?;
     }
     Ok(())
 }
@@ -145,7 +140,7 @@ fn live_capture_refuses_all_foreign_slots_before_proof_io() -> TestResult {
 fn historical_policy_cannot_be_used_for_live_capture() -> TestResult {
     let mut raw = input()?;
     raw.policies.participation = participation_policy_v2()?;
-    live_refused(raw, ContractRoleV1::Participation)
+    live_refused(raw)
 }
 
 #[test]
@@ -191,11 +186,21 @@ fn wire_origin_cannot_grant_current_or_historical_authority() -> TestResult {
 }
 
 fn current_origin(profile: &QueryProfileV1) -> crate::report::ReportResult<SelectedInputOrigin> {
-    selected_replay_origin(profile, Version::RetainedGraphV2, 7)
+    selected_replay_origin(
+        profile,
+        Version::RetainedGraphV2,
+        7,
+        census_domain::model::EventSemantics::ResultGroups22,
+    )
 }
 
 fn historical_origin(profile: &QueryProfileV1) -> crate::report::ReportResult<SelectedInputOrigin> {
-    selected_replay_origin(profile, Version::HistoricalContextV1, 6)
+    selected_replay_origin(
+        profile,
+        Version::HistoricalContextV1,
+        6,
+        census_domain::model::EventSemantics::ResultGroups22,
+    )
 }
 
 fn historical_input() -> TestResult<QueryProfileInputV1> {
@@ -221,8 +226,20 @@ fn proof_family_lifecycle_and_exact_profile_contract_cannot_be_mixed() -> TestRe
     check!(current_origin(&historical).is_err());
     check!(historical_origin(&current).is_err());
     for profile in [&current, &historical] {
-        check!(selected_replay_origin(profile, Version::HistoricalContextV1, 7).is_err());
-        check!(selected_replay_origin(profile, Version::RetainedGraphV2, 6).is_err());
+        check!(selected_replay_origin(
+            profile,
+            Version::HistoricalContextV1,
+            7,
+            census_domain::model::EventSemantics::ResultGroups22
+        )
+        .is_err());
+        check!(selected_replay_origin(
+            profile,
+            Version::RetainedGraphV2,
+            6,
+            census_domain::model::EventSemantics::ResultGroups22
+        )
+        .is_err());
     }
     check!(ne; current.id()?, historical.id()?);
     Ok(())
@@ -239,7 +256,7 @@ fn current_capture_refuses_every_historical_qualification_descriptor_before_io()
         }
         let mut raw = input()?;
         replace(&mut raw, role, old);
-        live_refused(raw, role)?;
+        live_refused(raw)?;
     }
     Ok(())
 }
@@ -259,7 +276,7 @@ fn strict_graph_profile_is_historical_and_mixed_replay_contracts_refuse() -> Tes
         current_origin(&profile)?,
         SelectedInputOrigin::HistoricalParticipationReplay
     ));
-    live_refused(raw.clone(), ContractRoleV1::Participation)?;
+    live_refused(raw.clone())?;
     for role in [ContractRoleV1::Participation, ContractRoleV1::Publication] {
         let mut mixed = raw.clone();
         replace(

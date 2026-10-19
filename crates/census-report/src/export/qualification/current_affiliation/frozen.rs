@@ -24,7 +24,7 @@ pub(crate) fn capture(
     objects_dir: &Path,
 ) -> ReportResult<(FrozenAffiliationDescriptor, PinnedCurrentAffiliations)> {
     let profile = super::pinned_profile(dataset, snapshot)?;
-    if reviewed::descriptor_version(&profile).is_ok() {
+    if reviewed::descriptor_version(&profile, dataset.semantic_policy()?).is_ok() {
         return reviewed::capture(dataset, snapshot, objects_dir, &profile);
     }
     let _checked =

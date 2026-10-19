@@ -77,3 +77,56 @@ fn independently_mixed_policy_and_archive_contracts_refuse() -> TestResult {
     check!(validate_selected_qualification_profile_v3(&old).is_err());
     Ok(())
 }
+
+#[test]
+fn retained_event_policy_requires_its_exact_context_without_current_activation() -> TestResult {
+    use crate::profile_execution::{
+        selected_qualification_contract_ref_v4, selected_qualification_contract_ref_v5,
+        validate_current_selected_qualification_profile,
+        validate_retained_selected_qualification_profile,
+    };
+    let families: [fn(ContractRoleV1) -> Result<ContractRefV1, ProfileExecutionError>; 3] = [
+        selected_qualification_contract_ref_v3,
+        selected_qualification_contract_ref_v4,
+        selected_qualification_contract_ref_v5,
+    ];
+    for reference in families {
+        let mut raw = input()?;
+        for role in ContractRoleV1::ALL {
+            tests::replace(&mut raw, role, reference(role)?);
+        }
+        let current = QueryProfileV1::new(raw.clone())?;
+        validate_current_selected_qualification_profile(&current)?;
+        validate_retained_selected_qualification_profile(&current, EventSemantics::ResultGroups22)?;
+        raw.policies.event = selected_qualification_contract_ref_v2(ContractRoleV1::Event)?;
+        let retained = QueryProfileV1::new(raw)?;
+        let original = crate::model::serialized_bytes(&retained)?;
+        validate_retained_selected_qualification_profile(
+            &retained,
+            EventSemantics::ResultGroups21,
+        )?;
+        check!(matches!(
+            validate_current_selected_qualification_profile(&retained),
+            Err(ProfileExecutionError::UnsupportedContractReference {
+                role: ContractRoleV1::Event
+            })
+        ));
+        check!(validate_retained_selected_qualification_profile(
+            &retained,
+            EventSemantics::ResultGroups22,
+        )
+        .is_err());
+        check!(validate_retained_selected_qualification_profile(
+            &current,
+            EventSemantics::ResultGroups21,
+        )
+        .is_err());
+        check!(validate_retained_selected_qualification_profile(
+            &retained,
+            EventSemantics::CombinedEvents20,
+        )
+        .is_err());
+        check!(eq; crate::model::serialized_bytes(&retained)?, original);
+    }
+    Ok(())
+}

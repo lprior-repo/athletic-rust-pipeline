@@ -240,6 +240,12 @@ do not recapture source bodies or introduce another replay format for this check
 Current sealing also requires the shared current-selected authority policy. Historical bundle
 verification remains read-only; metadata presence alone cannot grant current authority.
 
+Event policy22 governs new selected capture/publication. Frozen policy21 verifies
+its original exact event reference and complete profile family against its retained
+semantic context. The same selector uses that captured policy; mismatches refuse.
+Historical readback grants no current write authority and introduces no replay
+format, artifact relabeling or acquisition/issuance alternative.
+
 Keep three decisions separate: exact-build implementation qualification, configured-run
 completion with declared terminal gaps, and approval of a publication under its coverage rules.
 A profile registry, command success, old seal, large row count or passing focused suite proves

@@ -63,6 +63,7 @@ pub(super) fn reopen(
             &profile,
             proofs.version(),
             dataset.selected_authority()?.qualification_lifecycle(),
+            dataset.semantic_policy()?,
         )?;
         let fingerprints = dataset.selected_authority()?.fingerprints().clone();
         let directory = super::proof_directory(path)?;
@@ -162,14 +163,15 @@ fn selected_replay_origin(
     profile: &census_domain::model::QueryProfileV1,
     version: super::super::selected_proofs::Version,
     lifecycle: u32,
+    semantics: census_domain::model::EventSemantics,
 ) -> ReportResult<super::super::SelectedInputOrigin> {
     use super::super::{selected_proofs::Version, SelectedInputOrigin};
     use census_domain::participation_candidates::{
         participation_policy_v2, participation_policy_v3, participation_policy_v4,
     };
     use census_domain::profile_execution::{
+        validate_retained_selected_qualification_profile,
         validate_selected_qualification_profile_v1, validate_selected_qualification_profile_v2,
-        validate_selected_qualification_profile_v3,
     };
     match (version, lifecycle) {
         (Version::HistoricalContextV1, 6) => {
@@ -183,16 +185,12 @@ fn selected_replay_origin(
             Ok(SelectedInputOrigin::HistoricalIdentityReplay)
         }
         (Version::ReviewedRosterGraphV3, 7) => {
-            use census_domain::profile_execution::{
-                validate_selected_qualification_profile_v4,
-                validate_selected_qualification_profile_v5,
-            };
-            if profile.input().policies.affiliation.revision().get() == 6 {
-                let _checked = validate_selected_qualification_profile_v5(profile)
-                    .map_err(|error| invalid(&error.to_string()))?;
-            } else {
-                let _checked = validate_selected_qualification_profile_v4(profile)
-                    .map_err(|error| invalid(&error.to_string()))?;
+            validate_retained_selected_qualification_profile(profile, semantics)
+                .map_err(|error| invalid(&error.to_string()))?;
+            if !matches!(profile.input().policies.affiliation.revision().get(), 5 | 6) {
+                return Err(invalid(
+                    "reviewed roster proof requires its exact profile family",
+                ));
             }
             Ok(SelectedInputOrigin::Current)
         }
@@ -206,8 +204,13 @@ fn selected_replay_origin(
             if rule != &participation_policy_v4().map_err(|error| invalid(&error.to_string()))? {
                 return Err(invalid("unsupported retained participation policy"));
             }
-            let _checked = validate_selected_qualification_profile_v3(profile)
+            validate_retained_selected_qualification_profile(profile, semantics)
                 .map_err(|error| invalid(&error.to_string()))?;
+            if profile.input().policies.affiliation.revision().get() != 3 {
+                return Err(invalid(
+                    "retained graph proof requires its exact profile family",
+                ));
+            }
             Ok(SelectedInputOrigin::Current)
         }
         _ => Err(invalid(

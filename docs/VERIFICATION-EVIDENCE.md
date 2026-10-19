@@ -1901,3 +1901,28 @@ dispositions; Illinois an IHSA cooldown. Initial49 requests returned400 because
 the client injected a form content-type; empty-body/content-type requests corrected
 the client without changing the endpoint. Both receipts are retained privately.
 This refutes an unsupported blanket claim that all history is gated by teams.
+
+### Policy21 retained read after policy22 cutover — 2026-10-19
+
+On pushed `95cfd27af`, authentic original-A replay failed (`163bfbbc`):
+`unsupported exact profile contract reference for Event`. Original producer
+`1ab843c4` and retention SHA`8897f37e3fabc92235a5ab2b3ea648553a4b07c76b1588e638d542acc2c35908`
+were unchanged. The dependent optimized build did not run.
+
+The read-path repair checks the exact captured event policy and complete profile
+family before hydration, catalog selection and roster ownership. New capture,
+publication and sealing still require current policy22. No old artifact, profile,
+receipt, kernel, parser identity or input inventory is relabeled or regenerated.
+
+| Current repair surface | Receipt | Result |
+|---|---|---|
+| Format / all-target check / source lint | `f001b5aa` / `e8de49d9` / `06696efb` | PASS; configured arity advisories remain |
+| Exact retained/current profile context and unchanged bytes | `4c5beeaf` | PASS21/21 |
+| Frozen origin/lifecycle, mixed-family refusal, no proof writes and historical school binding | `a0a02418` | PASS13/13 |
+| Actual controlled50→withdraw51 workbook and frozen generations | `8d66e156` | PASS1/1 |
+
+Intermediate `4a0f7e8b` passed12/13: a live-refusal helper pinned private error
+wording/first-rejected role. That incidental assertion was deleted, not repinned;
+typed refusal, absence of proof writes and exact retained-profile preservation
+remain asserted. Authentic-A replay on a clean committed repair and native CLI
+verification remain NOT RUN. `3nea` blocks the next national diagnostic build.

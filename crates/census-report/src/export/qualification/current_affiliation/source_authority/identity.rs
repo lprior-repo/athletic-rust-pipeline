@@ -58,8 +58,12 @@ pub(super) fn index(
         .selected_authority()
         .map_err(report_store)?
         .profile();
-    if census_domain::profile_execution::validate_selected_qualification_profile_v5(profile).is_ok()
-    {
+    census_domain::profile_execution::validate_retained_selected_qualification_profile(
+        profile,
+        dataset.semantic_policy().map_err(report_store)?,
+    )
+    .map_err(|error| invalid(&error.to_string()))?;
+    if profile.input().policies.affiliation.revision().get() == 6 {
         bridge::extend(dataset, &mut index, grant)?;
     }
     Ok(index)

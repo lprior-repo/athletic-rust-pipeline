@@ -2,7 +2,7 @@ use super::{CanonicalEvent, EventDisposition, ExportDataset, RecruitingCatalogV1
 use crate::report::{ReportError, ReportResult};
 use census_domain::model::QueryProfileV1;
 use census_domain::profile_execution::{
-    validate_current_selected_qualification_profile, validate_selected_qualification_profile_v1,
+    validate_retained_selected_qualification_profile, validate_selected_qualification_profile_v1,
     validate_selected_qualification_profile_v2,
 };
 
@@ -32,7 +32,7 @@ impl<'a> Selection<'a> {
         } else if dataset.uses_historical_participation_contract() {
             validate_selected_qualification_profile_v2(profile).map(|_| ())
         } else {
-            validate_current_selected_qualification_profile(profile).map(|_| ())
+            validate_retained_selected_qualification_profile(profile, dataset.semantic_policy()?)
         };
         checked.map_err(|source| ReportError::Invariant {
             detail: format!("selected event publication contract: {source}"),
