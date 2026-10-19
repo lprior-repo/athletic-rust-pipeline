@@ -26,11 +26,7 @@ pub(super) fn encode_source_closure(
     value: &(impl Serialize + ?Sized),
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<u8>> {
-    encode_bounded(
-        value,
-        census_domain::public_identity_history::ReplayLimits::SMALL.total_text_bytes,
-        grant,
-    )
+    encode_bounded(value, MAX_RESULT_CALENDAR_SOURCE_PROOF_BYTES, grant)
 }
 
 fn encode_bounded(

@@ -123,7 +123,7 @@ pub(in super::super) fn from_view(
     {
         return Err(Error::InputMoved.into());
     }
-    let records = attachments.retained_records(grant)?;
+    let originals = attachments.reviewed_source_v1(grant)?;
     let accepted = attachments.accepted_snapshot(grant)?;
     if view.attachment_public_head()? != *attachments.accepted_public_head() {
         return Err(Error::InputMoved.into());
@@ -157,7 +157,7 @@ pub(in super::super) fn from_view(
                 &super::super::source::checked::Source::new(view, &ledger.checked_roots),
                 &record.command.source,
                 context,
-                records,
+                &originals,
                 grant,
             )
         })?;

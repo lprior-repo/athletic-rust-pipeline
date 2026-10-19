@@ -3,7 +3,6 @@ use census_domain::evidence_subject_attachment::{
     AttachmentObjectReferenceV1, AttachmentReplayGrantV1, EvidenceSubjectAttachmentError,
 };
 use census_domain::model::StoreIdentity;
-use census_domain::public_identity_history::ReplayLimits;
 use census_store::{
     FrozenPublicIdentityBundleV2, ReplayedResultSchoolCorrespondencesV1, StoreError, StoreSnapshot,
 };
@@ -40,7 +39,7 @@ pub(crate) fn load_school(
     grant: &mut AttachmentReplayGrantV1,
 ) -> ReportResult<SchoolClosure> {
     grant.charge_steps(1).map_err(domain)?;
-    let limit = ReplayLimits::SMALL.total_text_bytes;
+    let limit = census_store::MAX_RESULT_SCHOOL_SOURCE_PROOF_BYTES;
     let reference_limit =
         u64::try_from(limit).map_err(|_| invalid("school closure reference limit overflow"))?;
     if descriptor.reference.bytes == 0 || descriptor.reference.bytes > reference_limit {

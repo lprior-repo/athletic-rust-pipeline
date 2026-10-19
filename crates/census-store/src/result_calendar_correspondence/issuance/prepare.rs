@@ -84,13 +84,13 @@ fn require_source(
             if original.command.source != command.source {
                 return Err(Error::SourceMismatch("revoke original source differs").into());
             }
-            let records = attachments.retained_records(grant)?;
+            let originals = attachments.reviewed_source_v1(grant)?;
             let source = super::super::source::checked::Source::new(view, &ledger.checked_roots);
             super::super::source::require_historical(
                 &source,
                 &command.source,
                 materials,
-                records,
+                &originals,
                 grant,
             )
         }

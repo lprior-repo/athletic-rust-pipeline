@@ -8,7 +8,7 @@ fn sha256_bytes(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
-fn proof_directory(path: &Path) -> TestResult<std::path::PathBuf> {
+pub(in super::super) fn proof_directory(path: &Path) -> TestResult<std::path::PathBuf> {
     let name = path
         .file_name()
         .and_then(|n| n.to_str())
@@ -17,7 +17,10 @@ fn proof_directory(path: &Path) -> TestResult<std::path::PathBuf> {
     Ok(parent.join(format!("{name}.proofs")))
 }
 
-fn required_objects(dataset: &ExportDataset, objects: &Path) -> TestResult<[Option<String>; 3]> {
+pub(in super::super) fn required_objects(
+    dataset: &ExportDataset,
+    objects: &Path,
+) -> TestResult<[Option<String>; 3]> {
     let proof = serde_json::to_value(dataset.selected_proofs.as_ref().ok_or("selected proofs")?)?;
     let descriptor = proof
         .get("participation_digest")
@@ -49,7 +52,7 @@ fn required_objects(dataset: &ExportDataset, objects: &Path) -> TestResult<[Opti
     ])
 }
 
-pub(super) fn assert_required_proof_refuses(dataset: &ExportDataset) -> TestResult {
+pub(in super::super) fn assert_required_proof_refuses(dataset: &ExportDataset) -> TestResult {
     let frozen = tempfile::tempdir()?;
     let path = frozen.path().join("controlled-proof-refusal.json");
     dataset.save_frozen(&path)?;

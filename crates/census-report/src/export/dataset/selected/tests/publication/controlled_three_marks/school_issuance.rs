@@ -21,7 +21,7 @@ use census_store::ResultSchoolEnrollmentReviewV1;
 use census_store::RetainedCaptureRootSchemaV1;
 use chrono::{DateTime, Utc};
 
-pub(in crate::export::dataset::selected::tests::publication) fn enroll(
+pub(in super::super) fn enroll(
     store: &census_store::Store,
     operation: &str,
     rationale: &str,
@@ -29,14 +29,16 @@ pub(in crate::export::dataset::selected::tests::publication) fn enroll(
     if !matches!(store.store_format()?.lifecycle_revision, Some(7 | 8)) {
         return Err("controlled school enrollment requires checked predecessor7or8".into());
     }
-    let inputs = store
-        .inspect_result_school_enrollment_v1(AttachmentReplayGrantV1::new())?;
-    let prepared = store.prepare_result_school_enrollment_v1(inputs, ResultSchoolEnrollmentReviewV1 {
-        operation: text(operation)?,
-        actor: ResultSchoolReviewActorV1::LocalOperator,
-        reviewed_at: at()?,
-        rationale: text(rationale)?,
-    })?;
+    let inputs = store.inspect_result_school_enrollment_v1(AttachmentReplayGrantV1::new())?;
+    let prepared = store.prepare_result_school_enrollment_v1(
+        inputs,
+        ResultSchoolEnrollmentReviewV1 {
+            operation: text(operation)?,
+            actor: ResultSchoolReviewActorV1::LocalOperator,
+            reviewed_at: at()?,
+            rationale: text(rationale)?,
+        },
+    )?;
     let approved = prepared.approval_bytes().to_vec();
     let digest = prepared.approval_digest().clone();
     match store.apply_result_school_enrollment_v1(prepared, &approved, &digest)? {
@@ -136,7 +138,7 @@ fn propose_for(
     Err("controlled group key unmatched".into())
 }
 
-pub(in crate::export::dataset::selected::tests::publication) fn scope_for(
+pub(in super::super) fn scope_for(
     document: &census_crawl::participation_evidence::result_ownership::CheckedRetainedResultDocumentV1<'_>,
     row: &census_crawl::participation_evidence::result_ownership::CheckedRetainedResultRowV1<'_>,
 ) -> census_crawl::CrawlResult<ResultSchoolScopeV1> {
@@ -185,14 +187,14 @@ pub(in crate::export::dataset::selected::tests::publication) fn scope_for(
     })
 }
 
-pub(in crate::export::dataset::selected::tests::publication) fn accept_one(
+pub(in super::super) fn accept_one(
     store: &census_store::Store,
     proposal: &ResultSchoolSourceProposalV1,
     operation: &str,
     rationale: &str,
 ) -> TestResult<Receipt> {
-    let inspection = store
-        .inspect_result_school_correspondence_v1(AttachmentReplayGrantV1::new())?;
+    let inspection =
+        store.inspect_result_school_correspondence_v1(AttachmentReplayGrantV1::new())?;
     let command = ResultSchoolReviewCommandV1 {
         version: 1,
         policy: text(RESULT_SCHOOL_POLICY_V1)?,

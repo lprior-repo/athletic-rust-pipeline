@@ -13,20 +13,19 @@ use census_domain::result_calendar_correspondence::{
 };
 use census_store::{Application, Receipt, ResultCalendarCorrespondencePreparationV1, Store};
 
-pub(in crate::export::dataset::selected::tests::publication) fn enroll_calendar(
+pub(in super::super::super) fn enroll_calendar(
     store: &Store,
     operation: &str,
     rationale: &str,
 ) -> TestResult {
-    let (prepared, digest, approved) =
-        super::prepare_enrollment(store, operation, rationale)?;
+    let (prepared, digest, approved) = super::prepare_enrollment(store, operation, rationale)?;
     match store.apply_result_calendar_enrollment_v1(prepared, &approved, &digest)? {
         Application::Written(_) => Ok(()),
         Application::Repeated(_) => Err("calendar enrollment unexpectedly replayed".into()),
     }
 }
 
-pub(in crate::export::dataset::selected::tests::publication) fn apply_calendar_action(
+pub(in super::super::super) fn apply_calendar_action(
     store: &Store,
     proposal: &ResultCalendarSourceProposalV1,
     operation: &str,
@@ -127,7 +126,7 @@ fn require_frozen(
     Ok(replayed.records().to_vec())
 }
 
-pub(in crate::export::dataset::selected::tests::publication) fn replay_original_without_reactivation(
+pub(in super::super::super) fn replay_original_without_reactivation(
     store: &Store,
     command: ResultCalendarReviewCommandV1,
     expected: &Receipt,

@@ -1,3 +1,4 @@
+use super::super::controlled_three_marks::school_issuance::scope_for;
 use super::fixture::Fixture;
 use super::TestResult;
 use census_crawl::participation_evidence::recorded::{
@@ -7,7 +8,6 @@ use census_crawl::participation_evidence::result_ownership::school_correspondenc
     build_claim, ResultSchoolSourceProposalV1,
 };
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
-use super::super::controlled_three_marks::school_issuance::scope_for;
 
 pub(super) fn propose(fixture: &Fixture) -> TestResult<ResultSchoolSourceProposalV1> {
     let reference = fixture.provider_school_reference()?;

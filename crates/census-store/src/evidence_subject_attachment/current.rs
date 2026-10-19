@@ -50,6 +50,16 @@ impl<'v, 's> CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's> {
         self.continuation.require(grant).map_err(Error::Domain)?;
         Ok(&self.ledger.records)
     }
+    pub(crate) fn reviewed_source_v1(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<super::ReviewedAttachmentSourceV1<'_>> {
+        self.continuation.require(grant).map_err(Error::Domain)?;
+        Ok(super::ReviewedAttachmentSourceV1::new(
+            &self.ledger,
+            &self.continuation,
+        ))
+    }
     pub(crate) fn accepted_snapshot(
         &self,
         grant: &mut AttachmentReplayGrantV1,

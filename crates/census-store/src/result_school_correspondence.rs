@@ -28,6 +28,7 @@ pub use proof::{
 pub(crate) use read::{preserved_prior_capability, validate_format};
 
 pub const RESULT_SCHOOL_CORRESPONDENCE_LIFECYCLE: u32 = 9;
+pub const MAX_RESULT_SCHOOL_SOURCE_PROOF_BYTES: usize = 8 * 1024 * 1024;
 const NAME: &str = "result_school_correspondence";
 const ENROLLMENT: &str = "result_school_correspondence/v1/enrollment";
 const OPERATIONS: &str = "result_school_correspondence_v1:";

@@ -103,7 +103,7 @@ fn accept_padded_sources(
     Vec<
         census_crawl::participation_evidence::result_ownership::calendar_correspondence::ResultCalendarSourceProposalV1,
     >,
-> {
+>{
     let mut proposals = Vec::new();
     proposals.try_reserve_exact(references.len())?;
     for (index, reference) in references.iter().enumerate() {
@@ -150,7 +150,7 @@ fn freeze_calendar(
 #[test]
 fn calendar_large_review_history_replays_exact_source_decisions() -> TestResult {
     let (installed, _points, _initial) = install_reviewed()?;
-    revocation::enroll_calendar(
+    super::revocation::enroll_calendar(
         &installed.store,
         "controlled-calendar-enroll",
         "Explicit controlled calendar enrollment after school9 and reviewed status",
@@ -184,7 +184,7 @@ fn calendar_large_review_history_replays_exact_source_decisions() -> TestResult 
             }
         };
         previous = Some(
-            revocation::apply_calendar_action(
+            super::revocation::apply_calendar_action(
                 &installed.store,
                 proposal,
                 &format!("controlled-size-bound-calendar-{index}"),

@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) fn find<'a>(
+pub(in crate::evidence_subject_attachment) fn find<'a>(
     sets: &'a [Vec<Material>],
     digest: &AttachmentDigestV1,
     grant: &mut AttachmentReplayGrantV1,

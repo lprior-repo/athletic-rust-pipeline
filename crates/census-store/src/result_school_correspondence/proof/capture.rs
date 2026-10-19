@@ -62,7 +62,7 @@ pub(super) fn freeze(
         attachment_reference: attachment_bundle.reference().clone(),
         external,
     };
-    let bytes = encoding::encode(&archive, grant)?;
+    let bytes = encoding::encode(&archive, MAX_RESULT_SCHOOL_SOURCE_PROOF_BYTES, grant)?;
     let reference = census_domain::evidence_subject_attachment::AttachmentObjectReferenceV1 {
         digest: codec::digest(&bytes, grant)?,
         bytes: u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)?,

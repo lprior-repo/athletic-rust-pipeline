@@ -1,5 +1,6 @@
 use super::*;
 pub(super) use crate::evidence_subject_attachment::material::Material;
+use crate::evidence_subject_attachment::ReviewedAttachmentSourceV1;
 use crate::read::RetainedJournalReadSource;
 use crate::{AttachmentContextObjectV1, StoreSnapshot};
 use census_domain::evidence_subject_attachment::{
@@ -52,23 +53,19 @@ pub(super) fn require_current(
     {
         return Err(Error::InputMoved.into());
     }
-    require_historical(
-        view,
-        source,
-        materials,
-        current.retained_records(grant)?,
-        grant,
-    )
+    let originals = current.reviewed_source_v1(grant)?;
+    require_historical(view, source, materials, &originals, grant)
 }
 
 pub(super) fn require_historical(
     view: &impl RetainedJournalReadSource,
     source: &ResultCalendarSourceClaimV1,
     materials: &[Material],
-    records: &[ReviewedReferenceRecordV1],
+    originals: &ReviewedAttachmentSourceV1<'_>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
     validate_inventory(source, materials, grant)?;
+    let records = originals.records(grant)?;
     let (result_record, documentary_record) = person::originals(source, records, grant)?;
     let subject = result_record
         .command
@@ -112,7 +109,13 @@ pub(super) fn require_historical(
             statement::require(source, materials, subject, &result, &capture, grant)
         },
     )?;
-    documentary::require(view, source, materials, documentary_record, grant)
+    documentary::require(
+        view,
+        source,
+        materials,
+        (originals, documentary_record),
+        grant,
+    )
 }
 
 pub(super) fn validate_inventory(

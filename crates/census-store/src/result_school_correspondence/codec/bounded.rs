@@ -3,10 +3,12 @@ use serde::Serialize;
 
 pub(in super::super) fn encode(
     value: &impl Serialize,
+    maximum: usize,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<u8>> {
     let mut measure = Measure {
         size: 0,
+        maximum,
         grant,
         error: None,
     };
@@ -31,6 +33,7 @@ pub(in super::super) fn encode(
 
 struct Measure<'a> {
     size: usize,
+    maximum: usize,
     grant: &'a mut AttachmentReplayGrantV1,
     error: Option<census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError>,
 }
@@ -40,8 +43,7 @@ impl std::io::Write for Measure<'_> {
             .size
             .checked_add(bytes.len())
             .ok_or_else(|| std::io::Error::other("closure size overflow"))?;
-        if self.size > census_domain::public_identity_history::ReplayLimits::SMALL.total_text_bytes
-        {
+        if self.size > self.maximum {
             return Err(std::io::Error::other("closure size limit"));
         }
         if let Err(error) = self.grant.charge_steps(1) {

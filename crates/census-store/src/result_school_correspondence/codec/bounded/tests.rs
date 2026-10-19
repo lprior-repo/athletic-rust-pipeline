@@ -11,7 +11,7 @@ fn exhausted_encoding_preserves_primary_capacity_and_poisoning() -> TestResult {
     let needed = limit.checked_add(1).ok_or("expected traversal overflow")?;
     grant.charge_steps(limit)?;
     let before = grant.usage();
-    let result = encode(&true, &mut grant);
+    let result = encode(&true, b"true".len(), &mut grant);
     check!(matches!(result,
         Err(StoreError::EvidenceSubjectAttachment(
             crate::EvidenceSubjectAttachmentStoreError::Domain(
@@ -44,6 +44,24 @@ fn exhausted_canonical_verification_preserves_primary_capacity_and_poisoning() -
     check!(matches!(
         grant.ensure_available(),
         Err(GrantError::Poisoned)
+    ));
+    Ok(())
+}
+
+#[test]
+fn configured_byte_limit_counts_utf8_and_json_escapes() -> TestResult {
+    let source = "é\n";
+    let expected = "\"é\\n\"".as_bytes();
+    let mut admitted = AttachmentReplayGrantV1::new();
+    let bytes = encode(&source, expected.len(), &mut admitted)?;
+    check!(eq; bytes.as_slice(), expected);
+    let smaller = expected.len().checked_sub(1).ok_or("encoded boundary")?;
+    let mut refused = AttachmentReplayGrantV1::new();
+    check!(matches!(
+        encode(&source, smaller, &mut refused),
+        Err(StoreError::ResultSchoolCorrespondence(
+            Error::BudgetExceeded
+        ))
     ));
     Ok(())
 }

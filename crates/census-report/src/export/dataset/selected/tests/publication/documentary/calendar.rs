@@ -11,6 +11,9 @@ use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{Gender, GradYear, Sport};
 use census_store::AttachmentContextObjectV1;
 
+mod lifecycle;
+mod school_oracle;
+
 fn propose(fixture: &Fixture) -> TestResult<ResultCalendarSourceProposalV1> {
     let reference = fixture
         .expected
@@ -54,8 +57,9 @@ fn require_scope(proposal: &ResultCalendarSourceProposalV1) -> TestResult {
 }
 
 #[test]
-fn native_genuine_documentary_v4_co2026_calendar_claim_binds_may15_original_schedule() -> TestResult {
-    let fixture = Fixture::open_for(GradYear::CO2026)?;
+fn native_genuine_documentary_v4_co2026_calendar_claim_binds_may15_original_schedule() -> TestResult
+{
+    let fixture = Fixture::open_for(GradYear::new(2026).ok_or("genuine Class-of-2026 cohort")?)?;
     let proposal = propose(&fixture)?;
     require_scope(&proposal)?;
     fixture.require_original_unchanged()?;

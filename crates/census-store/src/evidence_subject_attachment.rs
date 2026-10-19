@@ -2,6 +2,8 @@ use crate::{StoreResult, MAX_OPERATION_BYTES};
 use census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError;
 
 mod apply;
+mod approved;
+pub(crate) use approved::ReviewedAttachmentSourceV1;
 mod current;
 mod encoding;
 mod frozen;

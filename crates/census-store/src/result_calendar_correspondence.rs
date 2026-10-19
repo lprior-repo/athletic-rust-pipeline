@@ -28,6 +28,7 @@ pub use proof::{
 pub(crate) use read::{preserved_prior_capability, validate_format};
 
 pub const RESULT_CALENDAR_CORRESPONDENCE_LIFECYCLE: u32 = 10;
+pub const MAX_RESULT_CALENDAR_SOURCE_PROOF_BYTES: usize = 8 * 1024 * 1024;
 const LIFECYCLE: u32 = RESULT_CALENDAR_CORRESPONDENCE_LIFECYCLE;
 const NAME: &str = "result_calendar_correspondence";
 const ENROLLMENT: &str = "result_calendar_correspondence/v1/enrollment";

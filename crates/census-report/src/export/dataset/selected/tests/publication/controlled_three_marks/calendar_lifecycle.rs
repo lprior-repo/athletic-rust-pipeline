@@ -2,7 +2,7 @@ mod multi_subject;
 mod multi_subject_fixture;
 mod multi_subject_frozen;
 mod proposal;
-pub(in crate::export::dataset::selected::tests::publication) mod revocation;
+pub(in super::super) mod revocation;
 mod size_bound;
 
 use super::documentary_lifecycle;

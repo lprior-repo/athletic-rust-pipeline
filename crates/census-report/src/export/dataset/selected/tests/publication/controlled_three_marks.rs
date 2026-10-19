@@ -11,7 +11,7 @@ mod flow;
 mod objects;
 mod point_source;
 mod producer;
-mod proof_refusal;
+pub(super) mod proof_refusal;
 mod publish;
 mod readback;
 mod school_authority;

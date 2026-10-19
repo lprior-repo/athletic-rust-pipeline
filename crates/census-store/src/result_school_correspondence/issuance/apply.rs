@@ -180,7 +180,11 @@ fn commit(
         record,
         context,
     };
-    let record_bytes = super::super::codec::bounded::encode(&envelope, grant)?;
+    let record_bytes = super::super::codec::bounded::encode(
+        &envelope,
+        census_domain::public_identity_history::ReplayLimits::SMALL.total_text_bytes,
+        grant,
+    )?;
     let receipt_bytes = super::super::codec::encode(&receipt, grant)?;
     ledger
         .records

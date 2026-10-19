@@ -15,6 +15,7 @@ use census_domain::public_identity_history::ReplayLimits;
 
 mod context;
 pub(super) use context::declared;
+pub(super) use context::find;
 pub(super) mod fences;
 mod inventory;
 mod read;

@@ -88,7 +88,10 @@ impl Fixture {
         )?)
     }
 
-    pub(super) fn provider_school_reference(&self) -> TestResult<census_crawl::participation_evidence::provider_school::ProviderSchoolPacketRefV1> {
+    pub(super) fn provider_school_reference(
+        &self,
+    ) -> TestResult<census_crawl::participation_evidence::provider_school::ProviderSchoolPacketRefV1>
+    {
         let roots = self
             .handoff
             .inventory

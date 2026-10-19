@@ -50,8 +50,7 @@ fn validate_input_bytes(
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
     if bytes.is_empty()
-        || bytes.len()
-            > census_domain::public_identity_history::ReplayLimits::SMALL.total_text_bytes
+        || bytes.len() > MAX_RESULT_SCHOOL_SOURCE_PROOF_BYTES
         || expected.bytes != u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)?
     {
         return Err(Error::Corrupt("source closure length").into());

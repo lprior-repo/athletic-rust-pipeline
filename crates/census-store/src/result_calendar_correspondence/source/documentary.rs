@@ -1,7 +1,8 @@
 use super::*;
 use crate::evidence_subject_attachment::external::CheckedRoot;
 use crate::{
-    RetainedCaptureLeafKindV1 as Kind, RetainedCaptureRootV1, RetainedCaptureSlotV1 as Slot,
+    RetainedCaptureLeafKindV1 as Kind, RetainedCaptureLeafV1, RetainedCaptureRootV1,
+    RetainedCaptureSlotV1 as Slot,
 };
 use census_domain::evidence_subject_attachment::{
     AttachmentDigestV1, RetainedDocumentSubjectReferenceV1,
@@ -12,7 +13,7 @@ pub(super) fn require(
     view: &impl RetainedJournalReadSource,
     source: &ResultCalendarSourceClaimV1,
     materials: &[Material],
-    record: &ReviewedReferenceRecordV1,
+    authority: (&ReviewedAttachmentSourceV1<'_>, &ReviewedReferenceRecordV1),
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
     if source.sport != Sport::OutdoorTrack || source.category != Gender::Boys {
@@ -24,17 +25,14 @@ pub(super) fn require(
         crate::RetainedCaptureRootSchemaV1::ParticipationPacketV1,
         grant,
     )?;
-    let subject = record
-        .command
-        .subjects
-        .as_slice()
-        .iter()
-        .find(|subject| {
-            subject.role == AttachmentSubjectRoleV1::AthleteStatus
-                && subject.context == source.calendar.documentary_root.digest
-        })
-        .ok_or(Error::SourceMismatch("original documentary subject"))?;
-    original_leaves(source, materials, subject, &root)?;
+    let subject = original_subject(materials, &root, authority, grant)?;
+    leaf(
+        materials,
+        &source.calendar.capture,
+        &root,
+        Slot::ParticipationSchedule,
+        Kind::OriginalBody,
+    )?;
     crate::evidence_subject_attachment::external::with_checked(
         view,
         &root,
@@ -48,39 +46,73 @@ pub(super) fn require(
             {
                 return Err(Error::SourceMismatch("documentary original capture binding").into());
             }
-            interpretation(source, materials, grant)
+            interpretation(
+                materials,
+                &subject.body,
+                &subject.locator,
+                &subject.interpretation,
+                grant,
+            )?;
+            interpretation(
+                materials,
+                &source.calendar.capture,
+                &source.calendar.locator,
+                &source.calendar.interpretation,
+                grant,
+            )
         },
     )
 }
 
-fn original_leaves(
-    source: &ResultCalendarSourceClaimV1,
+fn original_subject<'a>(
     materials: &[Material],
-    subject: &RetainedDocumentSubjectReferenceV1,
     root: &RetainedCaptureRootV1,
-) -> StoreResult<()> {
-    leaf(
-        materials,
-        &subject.capture,
-        root,
-        Slot::ParticipationStatus,
-        Kind::CaptureJson,
-    )?;
-    leaf(
-        materials,
-        &subject.body,
-        root,
-        Slot::ParticipationStatus,
-        Kind::OriginalBody,
-    )?;
-    leaf(
-        materials,
-        &source.calendar.capture,
-        root,
-        Slot::ParticipationSchedule,
-        Kind::OriginalBody,
-    )?;
-    Ok(())
+    authority: (
+        &ReviewedAttachmentSourceV1<'_>,
+        &'a ReviewedReferenceRecordV1,
+    ),
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<&'a RetainedDocumentSubjectReferenceV1> {
+    let (originals, record) = authority;
+    let subjects = record.command.subjects.as_slice();
+    grant.charge_steps(subjects.len()).map_err(grant_error)?;
+    let mut selected = None;
+    for subject in subjects {
+        if subject.role != AttachmentSubjectRoleV1::AthleteStatus {
+            continue;
+        }
+        let original = originals
+            .bind(record, subject, grant)?
+            .ok_or(Error::SourceMismatch("original documentary owner"))?;
+        let capture = original.capture(grant)?;
+        if capture.root != *root {
+            continue;
+        }
+        let body = original.body(grant)?;
+        if leaf(
+            materials,
+            &subject.capture,
+            root,
+            Slot::ParticipationStatus,
+            Kind::CaptureJson,
+        )? != capture
+            || &leaf(
+                materials,
+                &subject.body,
+                root,
+                Slot::ParticipationStatus,
+                Kind::OriginalBody,
+            )?
+            .object
+                != body
+        {
+            return Err(Error::SourceMismatch("original documentary material binding").into());
+        }
+        if selected.replace(subject).is_some() {
+            return Err(Error::SourceMismatch("ambiguous original documentary subject").into());
+        }
+    }
+    selected.ok_or_else(|| Error::SourceMismatch("original documentary subject").into())
 }
 
 fn leaf<'a>(
@@ -89,7 +121,7 @@ fn leaf<'a>(
     root: &RetainedCaptureRootV1,
     slot: Slot,
     kind: Kind,
-) -> StoreResult<&'a AttachmentObjectReferenceV1> {
+) -> StoreResult<&'a RetainedCaptureLeafV1> {
     let material = materials
         .iter()
         .find(|material| &material.reference().digest == digest)
@@ -100,15 +132,17 @@ fn leaf<'a>(
     if leaf.version != 1 || &leaf.root != root || leaf.slot != slot || leaf.kind != kind {
         return Err(Error::SourceMismatch("documentary body root or slot").into());
     }
-    Ok(&leaf.object)
+    Ok(leaf)
 }
 
 fn interpretation(
-    source: &ResultCalendarSourceClaimV1,
     materials: &[Material],
+    body_digest: &AttachmentDigestV1,
+    locator_digest: &AttachmentDigestV1,
+    interpretation_digest: &AttachmentDigestV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
-    let locator = inline(materials, &source.calendar.locator, 96, grant)?;
+    let locator = inline(materials, locator_digest, 96, grant)?;
     let text = std::str::from_utf8(&locator)
         .map_err(|_| Error::SourceMismatch("calendar locator UTF-8"))?;
     let (start, end) = text
@@ -123,16 +157,16 @@ fn interpretation(
         .map_err(|_| Error::SourceMismatch("calendar locator end"))?;
     let body = materials
         .iter()
-        .find(|material| material.reference().digest == source.calendar.capture)
+        .find(|material| &material.reference().digest == body_digest)
         .ok_or(Error::SourceMismatch("calendar original body reference"))?;
     if start >= end || end > body.reference().bytes {
         return Err(Error::SourceMismatch("calendar locator byte range").into());
     }
-    let interpretation = inline(materials, &source.calendar.interpretation, 256, grant)?;
+    let interpretation = inline(materials, interpretation_digest, 256, grant)?;
     let expected = [
         b"mhsaa_subject_dcc_event_day_v1".as_slice(),
         b"\n",
-        source.calendar.capture.as_str().as_bytes(),
+        body_digest.as_str().as_bytes(),
         b"\n",
         locator.as_slice(),
     ];

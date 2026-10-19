@@ -3,7 +3,6 @@ use census_domain::evidence_subject_attachment::{
     AttachmentObjectReferenceV1, AttachmentReplayGrantV1, EvidenceSubjectAttachmentError,
 };
 use census_domain::model::StoreIdentity;
-use census_domain::public_identity_history::ReplayLimits;
 use census_store::{
     FrozenPublicIdentityBundleV2, ReplayedResultCalendarCorrespondencesV1, StoreError,
     StoreSnapshot,
@@ -42,7 +41,7 @@ pub(crate) fn load_calendar(
     grant: &mut AttachmentReplayGrantV1,
 ) -> ReportResult<CalendarClosure> {
     grant.charge_steps(1).map_err(domain)?;
-    let limit = ReplayLimits::SMALL.total_text_bytes;
+    let limit = census_store::MAX_RESULT_CALENDAR_SOURCE_PROOF_BYTES;
     let reference_limit =
         u64::try_from(limit).map_err(|_| invalid("calendar closure reference limit overflow"))?;
     if descriptor.reference.bytes == 0 || descriptor.reference.bytes > reference_limit {

@@ -127,6 +127,16 @@ impl<'b> FrozenCurrentEvidenceSubjectAttachmentReferencesV1<'b> {
         self.continuation.require(grant).map_err(Error::Domain)?;
         Ok(&self.ledger.records)
     }
+    pub(crate) fn reviewed_source_v1(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<super::super::ReviewedAttachmentSourceV1<'_>> {
+        self.require_original_grant(grant)?;
+        Ok(super::super::ReviewedAttachmentSourceV1::new(
+            &self.ledger,
+            &self.continuation,
+        ))
+    }
     pub fn discover_active_subjects_v1<'a>(
         &'a self,
         role: AttachmentSubjectRoleV1,
