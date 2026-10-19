@@ -1,3 +1,4 @@
+use super::qualification::physical_observations::OBSERVATION_BUDGET;
 use super::DatasetLineage;
 use crate::report::{ReportError, ReportResult};
 use census_domain::model::{
@@ -11,8 +12,6 @@ use std::collections::{BTreeMap, HashMap};
 pub(crate) mod output;
 mod partition;
 pub(crate) mod population;
-
-const MAX_CANDIDATES: usize = 200_000;
 
 pub(crate) struct VerifiedPublicIdentityView {
     accepted: AcceptedPublicIdentitySnapshot,
@@ -72,10 +71,14 @@ impl VerifiedPublicIdentityView {
                 "public identity view differs from the exact dataset lineage or registry head",
             ));
         }
-        if athletes.len() > MAX_CANDIDATES {
-            return Err(invalid(
-                "public identity candidate inventory exceeds 200000 rows",
-            ));
+        let candidates = u64::try_from(athletes.len()).map_err(|_| StoreError::CounterOverflow)?;
+        if candidates > OBSERVATION_BUDGET.rows {
+            return Err(StoreError::BudgetExceeded {
+                what: "public identity candidate inventory rows",
+                needed: candidates,
+                available: OBSERVATION_BUDGET.rows,
+            }
+            .into());
         }
         athletes.iter().try_for_each(|athlete| {
             projection

@@ -1819,3 +1819,22 @@ not repinned. Earlier check `d2077542` exposed a displaced test-only import; foc
 The larger copied-census publication is still NOT RUN on this change. Bead `l0h1`
 blocks `e7lx` until actual next-generation qualification; no national workbook or
 full R14 qualification is claimed.
+
+Generation02 on committed `37e414b1` cleared the physical preflight but failed at
+the identity view's separate200,000-candidate ceiling (`bg_255`):669.65s and
+6,240,216KiB peak RSS,0swaps under16GiB. This was a native debug build, not optimized
+production performance qualification. No workbook was produced. Candidate admission
+now uses the same checked physical row grant; identity qualification, exact lineage/
+registry head, projection status, partition and unknown-resolution rules are unchanged.
+Current-source format/check/lint `147a42bd`/`5a54b2c9`/`8142216a`, identity/physical
+cases `8b4f3176`(17/17) and controlled withdrawal workbook `0f9dbfcc`(1/1) passed.
+Generation03 on this change remains NOT RUN.
+
+Native readback found five paused invocations after listener restart. Four had
+RT0010 connection refusals during the cold pause: ordinary same-ID, same-deployment
+resume returned200; all three Ingest handlers then completed and the original
+NationalCensus invocation was running. The fifth, `Census/open_work`, was already
+paused at19:29 UTC with RT0003:34,528,104 bytes exceeded33,816,576. It was not retried
+unchanged. `hkxq` owns bounded diagnostic details; readiness was not acquisition
+progress. Private `normal-resume-*` and `paused-failure-details` receipts retain this
+distinction. No reset, deployment override, journal deletion or national acceptance.

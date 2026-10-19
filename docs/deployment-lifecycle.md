@@ -160,6 +160,13 @@ see [the invocation API](restate/invocation.md). Do not mass-kill, erase journal
 or describe killing an invocation as graceful drain. A paused parent can block
 later jurisdiction submissions; a new resume ordinal alone does not release it.
 
+Listener readiness does not resume paused work. After a same-release restart,
+inspect each saved failure: fixed endpoint-unreachable failures may use ordinary
+`PATCH /invocations/<id>/resume` on the original pinned deployment. Verify resulting
+invocation states, not just the HTTP acknowledgement. Do not resume an unrelated
+oversized-message or replay failure unchanged, override its deployment, or reset
+logical source budgets as part of this procedure.
+
 Store-backed handlers advertise long inactivity/abort timeouts; the browser uses SDK defaults.
 Queueing without journal progress consumes that budget. Increasing a timeout is not a substitute
 for bounded work, explicit checkpoints or supervised blocking effects.
