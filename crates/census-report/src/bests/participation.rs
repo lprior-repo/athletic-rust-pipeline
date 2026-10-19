@@ -69,7 +69,9 @@ pub(crate) enum ParticipationSelection<'a> {
 impl<'a> ParticipationSelection<'a> {
     pub(crate) fn of(dataset: &'a ExportDataset) -> ReportResult<Self> {
         if dataset.selected_profile_id().is_some() {
-            if dataset.lineage.policy_revision != 21 {
+            if !census_domain::model::EventSemantics::from_revision(dataset.lineage.policy_revision)
+                .is_some_and(census_domain::model::EventSemantics::uses_result_groups)
+            {
                 return Err(ReportError::Invariant {
                     detail: "selected participation requires current comparison semantics".into(),
                 });

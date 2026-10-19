@@ -67,6 +67,7 @@ impl RecruitingCatalogV1 {
                 EventSemantics::Legacy18 => None,
                 EventSemantics::FlatEvents19 => Some(2),
                 EventSemantics::CombinedEvents20 | EventSemantics::ResultGroups21 => Some(3),
+                EventSemantics::ResultGroups22 => Some(4),
             },
             grammar: match self.semantics {
                 EventSemantics::Legacy18 => "ascii_delimited_tokens_typed_context_xc_anchors_v3",
@@ -74,6 +75,9 @@ impl RecruitingCatalogV1 {
                 | EventSemantics::CombinedEvents20
                 | EventSemantics::ResultGroups21 => {
                     "ascii_delimited_tokens_typed_context_xc_anchors_v4"
+                }
+                EventSemantics::ResultGroups22 => {
+                    "ascii_delimited_tokens_typed_context_xc_anchors_v5"
                 }
             },
             coherence: "all_owned_assertions_canonical_kind_sport_category_v1",
@@ -94,6 +98,7 @@ impl RecruitingCatalogV1 {
                 EventSemantics::FlatEvents19
                 | EventSemantics::CombinedEvents20
                 | EventSemantics::ResultGroups21 => policy::MISSING,
+                EventSemantics::ResultGroups22 => policy::MISSING,
             },
             qualifiers: policy::QUALIFIERS,
             units: policy::UNITS,

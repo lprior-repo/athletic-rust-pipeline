@@ -57,7 +57,7 @@ struct Token<'a> {
 pub(super) fn candidates(label: &str, semantics: EventSemantics) -> Vec<String> {
     let tokens = tokenize(label);
     let kept = kept_tokens(&tokens);
-    let modifier_ranges = modifier_runs(&modifier_flags(&kept));
+    let modifier_ranges = modifier_runs(&modifier_flags(&kept, semantics));
     let mut candidates = Vec::new();
     if !kept.is_empty() {
         candidates.push(render(&kept));
@@ -98,15 +98,22 @@ fn contextual(tokens: &[Token<'_>], index: usize, token: &Token<'_>) -> bool {
     !phrase && !LABEL_QUALIFIERS.contains(&token.cleaned.as_str()) && !division_code(token.text)
 }
 
-fn modifier_flags(kept: &[&Token<'_>]) -> Vec<bool> {
+fn modifier_flags(kept: &[&Token<'_>], semantics: EventSemantics) -> Vec<bool> {
     kept.iter()
         .enumerate()
-        .map(|(index, token)| modifier_at(kept, index, token))
+        .map(|(index, token)| modifier_at(kept, index, token, semantics))
         .collect()
 }
 
-fn modifier_at(kept: &[&Token<'_>], index: usize, token: &Token<'_>) -> bool {
+fn modifier_at(
+    kept: &[&Token<'_>],
+    index: usize,
+    token: &Token<'_>,
+    semantics: EventSemantics,
+) -> bool {
     MODIFIERS.contains(&token.cleaned.as_str())
+        || semantics.rejects_relay_split_labels()
+            && matches!(token.cleaned.as_str(), "split" | "splits" | "leg" | "legs")
         || kept
             .get(index.saturating_add(1))
             .is_some_and(|next| phrase_pair(token, next))

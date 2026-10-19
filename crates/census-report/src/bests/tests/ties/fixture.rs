@@ -291,12 +291,14 @@ impl TieFixture {
         let after = store.stats()?;
         check!(eq; (after.tables, after.appended, after.observations), (before.tables, before.appended, before.observations));
         retained_observations(&store, observations)?;
-        let before = ExportDataset::load(&store)?;
+        let mut before = ExportDataset::load(&store)?;
+        before.lineage.policy_revision = 21;
         let winners = selected(&before)?;
         store.flush()?;
         drop(store);
         let reopened = Store::open(root)?;
-        let after = ExportDataset::load(&reopened)?;
+        let mut after = ExportDataset::load(&reopened)?;
+        after.lineage.policy_revision = 21;
         check!(eq; after.performances, before.performances);
         check!(eq; selected(&after)?, winners);
         retained_observations(&reopened, observations)?;

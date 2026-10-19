@@ -35,5 +35,9 @@ fn result_group_inventory_has_no_numeric_physical_count_or_legacy_alias() -> Tes
         "physical_performance_count_status":"unknown",
         "selection_policy_version":21,
     }));
+    let current_inventory =
+        SelectionInventory::from_groups(EventSemantics::ResultGroups22, 3, vec![id]);
+    let current = serde_json::to_value(current_inventory)?;
+    check!(eq; current["selection_policy_version"], 22);
     Ok(())
 }

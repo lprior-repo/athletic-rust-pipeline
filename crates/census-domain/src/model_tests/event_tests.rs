@@ -177,6 +177,51 @@ fn medley_relay_and_modifier_labels_never_fall_back_to_a_distance(
 }
 
 #[test]
+fn relay_leg_split_is_not_an_individual_event_in_current_semantics(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let split = "400m Split";
+    check!(
+        eq;
+        EventKind::from_source_label_with_policy(split, EventSemantics::ResultGroups21),
+        EventKind::Track400m,
+        "historical semantics must replay the original classification"
+    );
+    check!(
+        eq;
+        EventKind::from_source_label_with_policy(split, EventSemantics::ResultGroups22),
+        EventKind::Unmapped { label: split.to_string() },
+        "a relay leg split must not be qualified as an individual 400m event"
+    );
+    check!(
+        eq;
+        EventKind::from_source_label("Boys 400 Meter Split Finals"),
+        EventKind::Unmapped {
+            label: "Boys 400 Meter Split Finals".to_string(),
+        }
+    );
+    check!(
+        eq;
+        EventKind::from_source_label("4x400 Meter Relay Finals"),
+        EventKind::Relay4x400,
+        "the relay event itself remains eligible for relay membership"
+    );
+    for label in [
+        "400m Splits",
+        "400m Leg",
+        "400m Legs",
+        "Boys 400 Meter Leg Finals",
+    ] {
+        check!(
+            eq;
+            EventKind::from_source_label_with_policy(label, EventSemantics::ResultGroups22),
+            EventKind::Unmapped { label: label.to_owned() },
+            "relay leg label {label:?} must not fall back to an individual event"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn structural_labels_stay_unmapped() -> Result<(), Box<dyn std::error::Error>> {
     for label in ["Flight 1 of 1", "Section 2 of 4", "Compiled", "Overall"] {
         let got = EventKind::from_source_label(label);

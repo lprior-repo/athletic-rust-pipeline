@@ -49,7 +49,7 @@ fn preflight(
     policy: EventSemantics,
     schools: &SelectedSchools<'_>,
 ) -> StoreResult<()> {
-    if policy != EventSemantics::ResultGroups21 {
+    if !policy.uses_result_groups() {
         return Err(StoreError::Invariant {
             detail: "selected public identity output requires result-group policy 21".into(),
         });
