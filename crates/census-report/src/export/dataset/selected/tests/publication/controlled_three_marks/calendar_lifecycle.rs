@@ -2,7 +2,7 @@ mod multi_subject;
 mod multi_subject_fixture;
 mod multi_subject_frozen;
 mod proposal;
-mod revocation;
+pub(in crate::export::dataset::selected::tests::publication) mod revocation;
 mod size_bound;
 
 use super::documentary_lifecycle;
@@ -66,25 +66,23 @@ fn require_lifecycle(store: &Store, expected: Option<u32>) -> TestResult {
     Ok(())
 }
 
-fn prepare_enrollment(
-    installed: &InstalledSource,
+fn prepare_enrollment<'s>(
+    store: &'s Store,
+    operation: &str,
+    rationale: &str,
 ) -> TestResult<(
-    census_store::PreparedResultCalendarEnrollmentV1<'_>,
+    census_store::PreparedResultCalendarEnrollmentV1<'s>,
     census_domain::result_calendar_correspondence::ResultCalendarDigestV1,
     Vec<u8>,
 )> {
-    let inputs = installed
-        .store
-        .inspect_result_calendar_enrollment_v1(AttachmentReplayGrantV1::new())?;
-    let prepared = installed.store.prepare_result_calendar_enrollment_v1(
+    let inputs = store.inspect_result_calendar_enrollment_v1(AttachmentReplayGrantV1::new())?;
+    let prepared = store.prepare_result_calendar_enrollment_v1(
         inputs,
         ResultCalendarEnrollmentReviewV1 {
-            operation: calendar_text("controlled-calendar-enroll")?,
+            operation: calendar_text(operation)?,
             actor: ResultCalendarReviewActorV1::LocalOperator,
             reviewed_at: review_time()?,
-            rationale: calendar_text(
-                "Explicit controlled calendar enrollment after school9 and reviewed status",
-            )?,
+            rationale: calendar_text(rationale)?,
         },
     )?;
     let approved = prepared.approval_bytes().to_vec();
@@ -132,7 +130,11 @@ fn calendar_enrollment_advances_nine_to_ten_with_exact_school_predecessor() -> T
         .snapshot()
         .result_calendar_enrollment_proof_v1(&mut AttachmentReplayGrantV1::new())?
         .is_none());
-    let (prepared, digest, approved) = prepare_enrollment(&installed)?;
+    let (prepared, digest, approved) = prepare_enrollment(
+        &installed.store,
+        "controlled-calendar-enroll",
+        "Explicit controlled calendar enrollment after school9 and reviewed status",
+    )?;
     check!(eq; protected_state(&installed.store)?, before);
     require_lifecycle(&installed.store, Some(9))?;
     match installed

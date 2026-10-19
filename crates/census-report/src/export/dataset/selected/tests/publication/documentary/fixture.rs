@@ -88,6 +88,31 @@ impl Fixture {
         )?)
     }
 
+    pub(super) fn provider_school_reference(&self) -> TestResult<census_crawl::participation_evidence::provider_school::ProviderSchoolPacketRefV1> {
+        let roots = self
+            .handoff
+            .inventory
+            .get("original_roots")
+            .and_then(serde_json::Value::as_array)
+            .ok_or("handoff original root inventory absent")?;
+        let mut matches = roots
+            .iter()
+            .filter_map(|entry| entry.get("root"))
+            .filter(|root| {
+                root.get("schema").and_then(serde_json::Value::as_str)
+                    == Some("provider_school_packet_v1")
+            });
+        let root = matches.next().ok_or("provider school packet root absent")?;
+        if matches.next().is_some() {
+            return Err("ambiguous provider school packet root inventory".into());
+        }
+        let key = root
+            .get("key")
+            .and_then(serde_json::Value::as_str)
+            .ok_or("provider school root key absent")?;
+        Ok(census_crawl::participation_evidence::provider_school::ProviderSchoolPacketRefV1::parse(key)?)
+    }
+
     pub(super) fn require_original_unchanged(&self) -> TestResult {
         files::verify(&self.handoff.store_path, &self.handoff.files)
     }

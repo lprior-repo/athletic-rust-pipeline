@@ -99,7 +99,11 @@ fn calendar_multi_subject_frozen_binds_exact_packet() -> TestResult {
     super::super::school_authority::establish(&installed, &base)?;
     let sibling = sibling_may15(&installed, &base)?;
     accept_pair(&installed, &base, &sibling)?;
-    let (prepared, digest, approved) = super::prepare_enrollment(&installed)?;
+    let (prepared, digest, approved) = super::prepare_enrollment(
+        &installed.store,
+        "controlled-calendar-enroll",
+        "Explicit controlled calendar enrollment after school9 and reviewed status",
+    )?;
     match installed
         .store
         .apply_result_calendar_enrollment_v1(prepared, &approved, &digest)?

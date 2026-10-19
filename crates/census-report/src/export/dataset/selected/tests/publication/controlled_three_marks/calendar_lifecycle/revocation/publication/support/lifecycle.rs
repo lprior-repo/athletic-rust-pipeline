@@ -19,30 +19,37 @@ pub(in super::super) fn bridge_all(
     proposal50: &ResultCalendarSourceProposalV1,
     proposal51: &ResultCalendarSourceProposalV1,
 ) -> TestResult<(ResultCalendarReviewCommandV1, Receipt)> {
-    super::super::super::enroll_calendar(installed)?;
+    super::super::super::enroll_calendar(
+        &installed.store,
+        "controlled-calendar-enroll",
+        "Explicit controlled calendar enrollment after school9 and reviewed status",
+    )?;
     super::super::super::apply_calendar_action(
-        installed,
+        &installed.store,
         proposal49,
         "controlled-calendar-venue-accept-49",
         ResultCalendarActionV1::Accept {
             prior: ResultCalendarPredecessorV1::First,
         },
+        "Explicit controlled calendar review",
     )?;
     let accepted = super::super::super::apply_calendar_action(
-        installed,
+        &installed.store,
         proposal50,
         "controlled-calendar-venue-accept-50",
         ResultCalendarActionV1::Accept {
             prior: ResultCalendarPredecessorV1::First,
         },
+        "Explicit controlled calendar review",
     )?;
     super::super::super::apply_calendar_action(
-        installed,
+        &installed.store,
         proposal51,
         "controlled-calendar-venue-accept-51",
         ResultCalendarActionV1::Accept {
             prior: ResultCalendarPredecessorV1::First,
         },
+        "Explicit controlled calendar review",
     )?;
     Ok(accepted)
 }
@@ -85,7 +92,7 @@ pub(in super::super) fn revoke_only_50(
 ) -> TestResult {
     let digest = ResultCalendarDigestV1::parse(receipt50.digest.as_str())?;
     super::super::super::apply_calendar_action(
-        installed,
+        &installed.store,
         proposal50,
         "controlled-calendar-venue-revoke-50",
         ResultCalendarActionV1::Revoke {
@@ -94,6 +101,7 @@ pub(in super::super) fn revoke_only_50(
                 digest,
             },
         },
+        "Explicit controlled calendar review",
     )?;
     super::super::super::replay_original_without_reactivation(
         &installed.store,

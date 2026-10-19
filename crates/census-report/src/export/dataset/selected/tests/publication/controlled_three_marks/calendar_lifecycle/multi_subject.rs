@@ -125,7 +125,11 @@ fn calendar_multi_subject_binds_exact_packet_without_bridging() -> TestResult {
     check!(eq; proposal_a.claim().calendar.capture.as_str(), recorded_a.checked().season_proof().capture());
     check!(eq; proposal_b.claim().calendar.capture.as_str(), recorded_b.checked().season_proof().capture());
     check!(calendar_source::propose(&installed, &other).is_err());
-    let (prepared, digest, approved) = super::prepare_enrollment(&installed)?;
+    let (prepared, digest, approved) = super::prepare_enrollment(
+        &installed.store,
+        "controlled-calendar-enroll",
+        "Explicit controlled calendar enrollment after school9 and reviewed status",
+    )?;
     match installed
         .store
         .apply_result_calendar_enrollment_v1(prepared, &approved, &digest)?

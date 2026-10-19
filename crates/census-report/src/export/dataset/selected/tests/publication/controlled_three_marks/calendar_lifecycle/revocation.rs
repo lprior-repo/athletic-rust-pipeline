@@ -13,26 +13,28 @@ use census_domain::result_calendar_correspondence::{
 };
 use census_store::{Application, Receipt, ResultCalendarCorrespondencePreparationV1, Store};
 
-pub(super) fn enroll_calendar(installed: &InstalledSource) -> TestResult {
-    let (prepared, digest, approved) = super::prepare_enrollment(installed)?;
-    match installed
-        .store
-        .apply_result_calendar_enrollment_v1(prepared, &approved, &digest)?
-    {
+pub(in crate::export::dataset::selected::tests::publication) fn enroll_calendar(
+    store: &Store,
+    operation: &str,
+    rationale: &str,
+) -> TestResult {
+    let (prepared, digest, approved) =
+        super::prepare_enrollment(store, operation, rationale)?;
+    match store.apply_result_calendar_enrollment_v1(prepared, &approved, &digest)? {
         Application::Written(_) => Ok(()),
         Application::Repeated(_) => Err("calendar enrollment unexpectedly replayed".into()),
     }
 }
 
-pub(super) fn apply_calendar_action(
-    installed: &InstalledSource,
+pub(in crate::export::dataset::selected::tests::publication) fn apply_calendar_action(
+    store: &Store,
     proposal: &ResultCalendarSourceProposalV1,
     operation: &str,
     action: ResultCalendarActionV1,
+    rationale: &str,
 ) -> TestResult<(ResultCalendarReviewCommandV1, Receipt)> {
-    let inspection = installed
-        .store
-        .inspect_result_calendar_correspondence_v1(AttachmentReplayGrantV1::new())?;
+    let inspection =
+        store.inspect_result_calendar_correspondence_v1(AttachmentReplayGrantV1::new())?;
     let command = ResultCalendarReviewCommandV1 {
         version: 1,
         policy: super::calendar_text(RESULT_CALENDAR_POLICY_V1)?,
@@ -47,10 +49,10 @@ pub(super) fn apply_calendar_action(
         action,
         actor: ResultCalendarReviewActorV1::LocalOperator,
         reviewed_at: super::review_time()?,
-        rationale: super::calendar_text("Explicit controlled calendar review")?,
+        rationale: super::calendar_text(rationale)?,
     };
     let context = proposal.borrowed_context(&mut AttachmentReplayGrantV1::new())?;
-    let prepared = installed.store.prepare_result_calendar_correspondence_v1(
+    let prepared = store.prepare_result_calendar_correspondence_v1(
         command.clone(),
         ResultCalendarCorrespondencePreparationV1::New {
             inspection,
@@ -62,10 +64,7 @@ pub(super) fn apply_calendar_action(
     }
     let approved = prepared.approval_bytes().to_vec();
     let digest = prepared.approval_digest().clone();
-    match installed
-        .store
-        .apply_result_calendar_correspondence_v1(prepared, &approved, &digest)?
-    {
+    match store.apply_result_calendar_correspondence_v1(prepared, &approved, &digest)? {
         Application::Written(receipt) => Ok((command, receipt)),
         Application::Repeated(_) => Err("calendar action unexpectedly replayed".into()),
     }
@@ -128,7 +127,7 @@ fn require_frozen(
     Ok(replayed.records().to_vec())
 }
 
-fn replay_original_without_reactivation(
+pub(in crate::export::dataset::selected::tests::publication) fn replay_original_without_reactivation(
     store: &Store,
     command: ResultCalendarReviewCommandV1,
     expected: &Receipt,
@@ -183,16 +182,21 @@ fn require_cold_revoked(
 #[test]
 fn calendar_revoke_keeps_revoked_across_replay_and_reopen() -> TestResult {
     let (installed, points, _documentary) = super::install_reviewed()?;
-    enroll_calendar(&installed)?;
+    enroll_calendar(
+        &installed.store,
+        "controlled-calendar-enroll",
+        "Explicit controlled calendar enrollment after school9 and reviewed status",
+    )?;
     let proposal = super::proposal::may15_proposal(&installed, &points)?;
     let claim = proposal.claim().clone();
     let (accept_command, accept_receipt) = apply_calendar_action(
-        &installed,
+        &installed.store,
         &proposal,
         "controlled-calendar-accept",
         ResultCalendarActionV1::Accept {
             prior: ResultCalendarPredecessorV1::First,
         },
+        "Explicit controlled calendar review",
     )?;
     let (accept_inventory, accept_records) = require_current(&installed.store, 1, 1, 1)?;
     let accept_record = accept_records.first().ok_or("accepted record absent")?;
@@ -212,7 +216,7 @@ fn calendar_revoke_keeps_revoked_across_replay_and_reopen() -> TestResult {
         old_records.first().ok_or("old frozen record absent")?.record_digest,
         accept_record.record_digest);
     let (_, revoke_receipt) = apply_calendar_action(
-        &installed,
+        &installed.store,
         &proposal,
         "controlled-calendar-revoke",
         ResultCalendarActionV1::Revoke {
@@ -221,6 +225,7 @@ fn calendar_revoke_keeps_revoked_across_replay_and_reopen() -> TestResult {
                 digest: accept_record.record_digest.clone(),
             },
         },
+        "Explicit controlled calendar review",
     )?;
     drop(revoke_receipt);
     let (revoked_inventory, revoked_records) = require_current(&installed.store, 2, 2, 0)?;

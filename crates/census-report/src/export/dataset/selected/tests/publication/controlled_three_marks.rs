@@ -1,5 +1,5 @@
 mod attachment;
-mod calendar_lifecycle;
+pub(super) mod calendar_lifecycle;
 mod calendar_source;
 mod current_school_identity;
 mod current_school_review;
@@ -15,7 +15,7 @@ mod proof_refusal;
 mod publish;
 mod readback;
 mod school_authority;
-mod school_issuance;
+pub(super) mod school_issuance;
 mod school_review;
 mod selection;
 mod source;

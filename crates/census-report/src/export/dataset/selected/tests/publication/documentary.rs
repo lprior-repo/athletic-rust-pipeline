@@ -9,6 +9,7 @@ use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
 mod acquisition_cutoff;
+mod calendar;
 mod fixture;
 mod historical;
 mod historical_retained;
@@ -16,6 +17,7 @@ mod identity_lifecycle;
 mod lifecycle;
 mod refusals;
 mod roundtrip;
+mod school;
 
 use fixture::{Expected, Fixture};
 

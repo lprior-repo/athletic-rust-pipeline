@@ -1,5 +1,4 @@
-use super::source::InstalledSource;
-use super::source::TestResult;
+use super::source::{InstalledSource, RowLocator, TestResult};
 use census_crawl::participation_evidence::provider_school::ProviderSchoolPacketRefV1;
 use census_crawl::participation_evidence::recorded::discover_current_html_results;
 use census_crawl::participation_evidence::recorded::read_recorded_provider_school;
@@ -20,27 +19,29 @@ use census_store::Receipt;
 use census_store::ResultSchoolCorrespondencePreparationV1;
 use census_store::ResultSchoolEnrollmentReviewV1;
 use census_store::RetainedCaptureRootSchemaV1;
-use chrono::DateTime;
-use chrono::Utc;
-pub(super) fn enroll(installed: &InstalledSource) -> TestResult {
-    if !matches!(
-        installed.store.store_format()?.lifecycle_revision,
-        Some(7 | 8)
-    ) {
+use chrono::{DateTime, Utc};
+
+pub(in crate::export::dataset::selected::tests::publication) fn enroll(
+    store: &census_store::Store,
+    operation: &str,
+    rationale: &str,
+) -> TestResult {
+    if !matches!(store.store_format()?.lifecycle_revision, Some(7 | 8)) {
         return Err("controlled school enrollment requires checked predecessor7or8".into());
     }
-    let inputs = installed
-        .store
+    let inputs = store
         .inspect_result_school_enrollment_v1(AttachmentReplayGrantV1::new())?;
-    let prepared = installed.store.prepare_result_school_enrollment_v1(inputs, ResultSchoolEnrollmentReviewV1 { operation: text("controlled-school-enroll")?, actor: ResultSchoolReviewActorV1::LocalOperator, reviewed_at: at()?, rationale: text("Explicit enrollment after source-bound public birth and controlled original row attachment")? })?;
+    let prepared = store.prepare_result_school_enrollment_v1(inputs, ResultSchoolEnrollmentReviewV1 {
+        operation: text(operation)?,
+        actor: ResultSchoolReviewActorV1::LocalOperator,
+        reviewed_at: at()?,
+        rationale: text(rationale)?,
+    })?;
     let approved = prepared.approval_bytes().to_vec();
     let digest = prepared.approval_digest().clone();
-    match installed
-        .store
-        .apply_result_school_enrollment_v1(prepared, &approved, &digest)?
-    {
+    match store.apply_result_school_enrollment_v1(prepared, &approved, &digest)? {
         Application::Written(_) => {
-            if installed.store.store_format()?.lifecycle_revision != Some(9) {
+            if store.store_format()?.lifecycle_revision != Some(9) {
                 return Err("controlled school enrollment did not advance to9".into());
             }
             Ok(())
@@ -48,6 +49,7 @@ pub(super) fn enroll(installed: &InstalledSource) -> TestResult {
         Application::Repeated(_) => Err("controlled enrollment unexpectedly replayed".into()),
     }
 }
+
 pub(super) fn issue(installed: &InstalledSource) -> TestResult<Vec<Receipt>> {
     let mut receipts = Vec::new();
     let mut position = 0usize;
@@ -61,7 +63,12 @@ pub(super) fn issue(installed: &InstalledSource) -> TestResult<Vec<Receipt>> {
             1 => "controlled-school-accept-1",
             _ => "controlled-school-accept-2",
         };
-        receipts.push(accept_one(installed, &proposal, operation)?);
+        receipts.push(accept_one(
+            &installed.store,
+            &proposal,
+            operation,
+            "Explicit protected original unique school-cell correspondence review exact performance day only",
+        )?);
         position += 1;
     }
     if receipts.len() != 3 {
@@ -69,9 +76,10 @@ pub(super) fn issue(installed: &InstalledSource) -> TestResult<Vec<Receipt>> {
     }
     Ok(receipts)
 }
+
 fn propose_for(
     installed: &InstalledSource,
-    locator: &super::source::RowLocator,
+    locator: &RowLocator,
 ) -> TestResult<ResultSchoolSourceProposalV1> {
     let school_key = installed
         .source_records
@@ -127,7 +135,8 @@ fn propose_for(
     }
     Err("controlled group key unmatched".into())
 }
-fn scope_for(
+
+pub(in crate::export::dataset::selected::tests::publication) fn scope_for(
     document: &census_crawl::participation_evidence::result_ownership::CheckedRetainedResultDocumentV1<'_>,
     row: &census_crawl::participation_evidence::result_ownership::CheckedRetainedResultRowV1<'_>,
 ) -> census_crawl::CrawlResult<ResultSchoolScopeV1> {
@@ -175,18 +184,35 @@ fn scope_for(
         year,
     })
 }
-fn accept_one(
-    installed: &InstalledSource,
+
+pub(in crate::export::dataset::selected::tests::publication) fn accept_one(
+    store: &census_store::Store,
     proposal: &ResultSchoolSourceProposalV1,
     operation: &str,
+    rationale: &str,
 ) -> TestResult<Receipt> {
-    let inspection = installed
-        .store
+    let inspection = store
         .inspect_result_school_correspondence_v1(AttachmentReplayGrantV1::new())?;
-    let command = ResultSchoolReviewCommandV1 { version: 1, policy: text(RESULT_SCHOOL_POLICY_V1)?, store: inspection.store_identity().clone(), operation: text(operation)?, input_token: inspection.input_token().clone(), evidence_generation: inspection.evidence_generation(), derived_generation: inspection.derived_generation(), accepted_head: inspection.public_head().clone(), expected_inventory: inspection.inventory().clone(), source: proposal.claim().clone(), action: ResultSchoolActionV1::Accept { prior: ResultSchoolPredecessorV1::First }, actor: ResultSchoolReviewActorV1::LocalOperator, reviewed_at: at()?, rationale: text("Explicit protected original unique school-cell correspondence review exact performance day only")? };
+    let command = ResultSchoolReviewCommandV1 {
+        version: 1,
+        policy: text(RESULT_SCHOOL_POLICY_V1)?,
+        store: inspection.store_identity().clone(),
+        operation: text(operation)?,
+        input_token: inspection.input_token().clone(),
+        evidence_generation: inspection.evidence_generation(),
+        derived_generation: inspection.derived_generation(),
+        accepted_head: inspection.public_head().clone(),
+        expected_inventory: inspection.inventory().clone(),
+        source: proposal.claim().clone(),
+        action: ResultSchoolActionV1::Accept {
+            prior: ResultSchoolPredecessorV1::First,
+        },
+        actor: ResultSchoolReviewActorV1::LocalOperator,
+        reviewed_at: at()?,
+        rationale: text(rationale)?,
+    };
     let context = proposal.borrowed_context(&mut AttachmentReplayGrantV1::new())?;
-    let prepared = installed
-        .store
+    let prepared = store
         .prepare_result_school_correspondence_v1(
             command,
             ResultSchoolCorrespondencePreparationV1::New {
@@ -197,8 +223,7 @@ fn accept_one(
         .map_err(|e| format!("prepare controlled school review: {e}"))?;
     let approved = prepared.approval_bytes().to_vec();
     let digest = prepared.approval_digest().clone();
-    match installed
-        .store
+    match store
         .apply_result_school_correspondence_v1(prepared, &approved, &digest)
         .map_err(|e| format!("commit controlled school review: {e}"))?
     {
@@ -206,11 +231,13 @@ fn accept_one(
         Application::Repeated(_) => Err("controlled school review unexpectedly replayed".into()),
     }
 }
+
 fn text(
     value: &str,
 ) -> TestResult<census_domain::result_school_correspondence::ResultSchoolTextV1> {
     Ok(census_domain::result_school_correspondence::ResultSchoolTextV1::parse(value)?)
 }
+
 fn at() -> TestResult<DateTime<Utc>> {
     Ok(DateTime::parse_from_rfc3339("2026-10-17T00:00:00Z")?.with_timezone(&Utc))
 }
