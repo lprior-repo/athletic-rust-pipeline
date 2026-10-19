@@ -134,3 +134,54 @@ fn arbitrary_school_observation_ids_are_in_the_complete_physical_inventory() -> 
                 .any(|bytes| bytes == b"arbitrary-hidden-school-subject")));
     Ok(())
 }
+
+#[test]
+fn reviewed_roster_inventory_accepts_school_rows_above_the_former_8_mib_limit() -> TestResult {
+    use census_domain::{model::CanonicalSchool, UsJurisdiction};
+
+    let (_directory, store) = enrolled()?;
+    let padding = "x".repeat(50 * 1024);
+    let schools: Vec<_> = (0..176)
+        .map(|index| {
+            CanonicalSchool::new(
+                UsJurisdiction::Michigan,
+                format!("Controlled school {index} {padding}"),
+                format!("controlled-school-{index}"),
+                None,
+            )
+            .0
+        })
+        .collect();
+    for batch in schools.chunks(32) {
+        store.append_many(crate::Table::Schools, batch)?;
+    }
+
+    let mut inspection = store
+        .inspect_roster_source_issuance_v1(request(&store)?, AttachmentReplayGrantV1::new())?;
+    let (evidence, grant) = inspection.source_parts()?;
+    let bytes = evidence
+        .physical_projection(grant)?
+        .iter()
+        .try_fold(0_u64, |sum, row| {
+            let row_bytes = row
+                .key()
+                .len()
+                .checked_add(row.bytes().len())
+                .ok_or("physical inventory size overflow")?;
+            sum.checked_add(
+                u64::try_from(row_bytes).map_err(|_| "physical inventory size overflow")?,
+            )
+            .ok_or("physical inventory size overflow")
+        })?;
+    check!(bytes > 8 * 1024 * 1024);
+    check!(bytes <= super::inventory::MAX_PHYSICAL_INVENTORY_BYTES);
+
+    drop(inspection);
+    let mut grant = AttachmentReplayGrantV1::new();
+    let current = store
+        .snapshot()
+        .read_current_roster_reviewed_claims_v1(&mut grant)
+        .map_err(|error| format!("capture current reviewed roster: {error}"))?;
+    check!(eq; current.claims(&mut grant)?.len(), 0);
+    Ok(())
+}
