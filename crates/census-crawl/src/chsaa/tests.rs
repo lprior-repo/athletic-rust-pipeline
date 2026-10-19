@@ -225,6 +225,38 @@ fn retained_cherry_creek_capture_parses_without_network() -> TestResult {
         rows.iter().filter(|row| row.title == "Head Coach").count(),
         35
     );
+    let member = cherry_creek()?;
+    let (_, school_id) = map_directory_row(&member, DIRECTORY_URL, OBSERVED_ON).ok_or("school")?;
+    let coaches = rows
+        .iter()
+        .filter_map(|row| map_coach_row(row, &school_id, DIRECTORY_URL, OBSERVED_ON))
+        .collect::<Vec<_>>();
+    let track = coaches
+        .iter()
+        .filter(|coach| coach.sport == Some(Sport::OutdoorTrack))
+        .count();
+    let cross_country = coaches
+        .iter()
+        .filter(|coach| coach.sport == Some(Sport::CrossCountry))
+        .count();
+    // These are rows accepted by the existing consumer, not distinct people or contacts.
+    check!(eq; track, 31);
+    check!(eq; cross_country, 19);
+    check!(eq; coaches.len(), 50);
+    let outside_track_and_cross_country = rows
+        .iter()
+        .filter(|row| {
+            let activity = row.activity_name.to_lowercase();
+            !activity.contains("track") && !activity.contains("cross country")
+        })
+        .collect::<Vec<_>>();
+    check!(!outside_track_and_cross_country.is_empty());
+    check!(outside_track_and_cross_country
+        .iter()
+        .all(|row| { map_coach_row(row, &school_id, DIRECTORY_URL, OBSERVED_ON).is_none() }));
+    check!(coaches
+        .iter()
+        .all(|coach| matches!(coach.sport, Some(Sport::OutdoorTrack | Sport::CrossCountry))));
     Ok(())
 }
 
