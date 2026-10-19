@@ -317,22 +317,29 @@ unknown identities, changed bytes or a mismatched provider contract refuse.
 
 ### Reviewed-school resource boundary — 2026-10-18
 
-The aggregate checked-read/workflow grant is 64 MiB (67,108,864 bytes) and 131,072
-traversal steps. Individual source/school objects and physical inventory remain
-bounded at 4 MiB. The reviewed-roster frozen envelope is bounded at 8 MiB.
+The aggregate checked-read/workflow grant is 128 MiB (134,217,728 bytes) and
+131,072 traversal steps. Individual decoded objects and physical inventory remain
+bounded at 4 MiB. Reviewed-roster envelopes and each school/calendar source proof
+are bounded at 8 MiB; their writer, Store replay and Report loader share that limit.
+School journal entries retain their 4-MiB bound and school records their 64-KiB
+bound; calendar enrollment and record-bundle limits are unchanged.
 Count encoded bytes before fallible reservation; preserve original grant ownership,
-poisoning and every charge. Base64 wire limits account for encoding expansion
-without increasing the 4-MiB decoded-object limit.
+poisoning and every charge. Base64 expansion does not enlarge decoded-object limits.
 
 School-bound V4 installs its mandatory attachment descriptor from the authenticated
 school closure under the original school and attachment grant continuations.
 It neither rereads the live snapshot nor starts another allowance. The optional
 school descriptor does not make absent historical school authority eligible.
 
-School-proof loading checks the 4-MiB reference ceiling and exact encoded payload
-length before payload reservation or chunk reads. Hash, canonical encoding and
-native proof validation still apply; owned proof and roster-body buffers transfer
-without a second full-body copy. These bounds are not process-memory measurements.
+School/calendar proof loading checks the 8-MiB reference ceiling and exact encoded
+payload length before payload reservation or chunk reads. Hash, canonical encoding
+and native proof validation still apply. These are admission limits, not measured RSS.
+
+Calendar review authenticates the original approved `CaptureJson` leaf through the
+live or frozen attachment owner, not by equating an application-context digest with
+a packet-root digest. Body identity remains its approved digest and byte count:
+content-addressed body reuse may retain an older container root. Original grant
+continuations remain mandatory; no ledger reload, payload clone or new wire version.
 
 The authorized 8-MiB grant admitted genuine A after removing a duplicate
 preparation-time retained-body decode. Genuine B still required a derived

@@ -1546,3 +1546,43 @@ owned temporary directory and two build jobs.
 This closes caller mismatch refusal, not profile-derived cohort, durable typed
 National receipt, native completed-child/seal acceptance, genuine population
 coverage, reusable enrollment or representative resource qualification.
+
+### Genuine calendar capture ownership — 2026-10-19
+
+Source `8c7720c310b30e93bd1d431297c78910da12e0fd`, tree
+`dac777d326a374c34e423b6e6c5374a7824113e2`, repairs the original-documentary
+subject binding through the already verified live/frozen attachment owner.
+The approved capture leaf is compared completely; body comparison uses its approved
+object reference, preserving legitimate cross-capture body deduplication.
+
+| Executed case | Receipt | Result |
+|---|---|---|
+| Genuine Class-of-2026 public school/calendar review → selected capture | `995b939d` | PASS: original 13.57 FAT, +0.2, grade 12, 2026-05-15; Milesplit school 12439/MI; current affiliation remains unknown |
+| Controlled 49/50/51 workbook, withdrawal, cold readback; calendar history/current/frozen; encoded-byte and poisoning boundaries | `995b939d` | PASS: 12 selected/passed, including the genuine case |
+| Original three-case roster A consumed by changed build B=`8c7720c3` | `ca89ec57` | PASS: original A `1ab843c4`, retention SHA256 `8897f37e3fabc92235a5ab2b3ea648553a4b07c76b1588e638d542acc2c35908`; not regenerated |
+| Canonical format / all-target check / source lint | `9630b1e4` / `84255d1a` / `817c5bf7` | PASS with configured arity advisories; not warning-free |
+| Trusted AST / zero-comments / panic extraction / architecture contract | `6bb06f20` / `552ce033` / `925c4ee0` / `6a1be2d7` | PASS; known architecture deviations remain explicit |
+
+Failure-before `4c6fd4c4` rejected the genuine context as a packet digest.
+After ownership repair, `88d62a0e` measured a legal school proof at least
+5,275,832 bytes against 4,194,304; the calendar proof exposed the same outer
+bound (`332b06d4`). Both proof families now admit at most 8 MiB consistently
+across encoding and both readers; journal/record limits are unchanged.
+`6a43f04a` then measured 69,069,859 cumulative encoded-work bytes against
+67,108,864; the authorized bounded allowance is now 128 MiB. Neither allowance
+certifies resident memory or national scale.
+
+`c79c7911` was interrupted before tests by filesystem exhaustion. Removing only
+generated fast-iteration incremental compiler caches restored 165 GiB available;
+no source, executables, historical stores, receipts or retained evidence were removed.
+Earlier all-target attempts exposed and repaired a wrong jurisdiction enum use and
+crate-absolute fixture visibility that failed the service's shared fixture include.
+An unregistered worker test draft failed panic extraction (`c6249e12`); it was
+preserved outside the repository, not registered or shipped. The clean-source
+structural campaign above then passed; its earlier contract task had not run.
+
+Scope: genuine eligibility is positive, not a Class-of-2027 population or workbook
+certificate. Genuine revoke/source-free V4 replay and public artifact readback remain
+`d7hp`; exact member withdrawal remains `v80o`. The authorized live national run is
+not started: shipped V3 initialization/profile/endpoint acquisition integration is
+being repaired under `agv2`. Historical national state is preserved.
