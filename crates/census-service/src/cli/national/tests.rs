@@ -4,6 +4,8 @@ use census_domain::national_census::{JurisdictionOwed, JurisdictionSummary, Nati
 mod publication;
 #[path = "tests/resume.rs"]
 mod resume;
+#[path = "tests/seal_receipt.rs"]
+mod seal_receipt;
 
 fn summary(jurisdiction: UsJurisdiction, teams: usize) -> JurisdictionSummary {
     JurisdictionSummary {

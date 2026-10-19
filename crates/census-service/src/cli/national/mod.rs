@@ -219,6 +219,12 @@ pub(super) struct NationalReportArgs {
         help = "Print the durable post-address school-contact phase instead of the roster report"
     )]
     contacts: bool,
+    #[arg(
+        long,
+        conflicts_with = "contacts",
+        help = "Print the durable publication seal receipt instead of the roster report"
+    )]
+    seal: bool,
     #[arg(help = "Print the report as JSON")]
     #[arg(long)]
     json: bool,

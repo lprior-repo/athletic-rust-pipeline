@@ -67,6 +67,22 @@ fn verify_seal(journal: &super::journal::Journal) -> TestResult {
         "grad_year": 2027, "all_sources": true, "workbook": workbook,
         "write": true, "season": 2026, "revision": 1, "source_objects": [], "jurisdictions": journal.original.jurisdictions
     }));
+    let stored = journal
+        .entries
+        .iter()
+        .find(|entry| {
+            entry.kind == 0x0403
+                && entry
+                    .text(1)
+                    .is_ok_and(|key| key == super::super::publication::KEY_SEAL)
+        })
+        .ok_or("national did not retain the publication seal receipt")?;
+    let bytes = super::codec::field(stored.bytes(3)?, 1)?
+        .ok_or("stored publication seal receipt value missing")?;
+    let receipt: crate::restate_services::wire::SealReply = serde_json::from_slice(bytes)?;
+    check!(eq; receipt.phase, "sealed");
+    check!(eq; receipt.workbook, workbook);
+    check!(eq; receipt.sealed.as_ref().map(|value| value.digest.as_str()), Some("fixture-publication-digest"));
     Ok(())
 }
 

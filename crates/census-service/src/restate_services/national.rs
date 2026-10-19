@@ -178,4 +178,16 @@ impl NationalCensus {
                 .map(|report| report.0),
         ))
     }
+
+    #[handler]
+    async fn publication_seal(
+        &self,
+        ctx: SharedWorkflowContext<'_>,
+    ) -> Result<Json<Option<super::wire::SealReply>>, HandlerError> {
+        Ok(Json(
+            ctx.get::<Json<super::wire::SealReply>>(publication::KEY_SEAL)
+                .await?
+                .map(|receipt| receipt.0),
+        ))
+    }
 }
