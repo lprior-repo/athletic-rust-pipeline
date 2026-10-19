@@ -1633,3 +1633,44 @@ This closes neither genuine complete lifecycle `d7hp`, exact roster withdrawal `
 profile-derived cohort/actual National receipts, source-obligation coverage nor national
 completion. Athletic.net historical discovery still reports a missing qualified producer/
 frontier; registration and the empty canary do not supply that evidence.
+
+### Genuine calendar revocation and cohort-bound reopen — 2026-10-19
+
+Source `d11dcfa498259c0744c75515b51a55039ce090ac`, tree
+`231521bedd55abac22778064f0b4e059266bc5e4`. The genuine Class-of-2026
+case now executes public acceptance, revocation and original-command replay,
+then independently reopens G0/G1/G2 after deleting its source Store and proof root.
+Original 13.57/2026-05-15 performance and historical school remain unchanged after
+withdrawal; current affiliation remains Unknown, so the recruiting/PR exports have
+zero rows rather than inventing geographic eligibility.
+
+The case first failed on reused nonempty proof directories (`4e9de0d0`).
+Separate owned roots preserved that policy. It next reached artifact reopen and exposed
+the global CO2027 restriction (`ee6df455`). Publication binding now compares the
+requested cohort to its exact selection and any retained run cohort/school year.
+Foreign cohort/run/revision/year still refuse. This is not the remaining National
+cohort derivation/service-seal migration (`6pb6`).
+
+| Exact-source verification | Receipt | Result |
+|---|---|---|
+| Format / all-target check / source lint | `381f88ad` / `2519a875` / `6e52424b` | PASS; configured arity advisories |
+| Current/historical Store; actual service CLI/bootstrap consumers | `d804dd74` / `09162a53` | PASS: 12 / 83 selected |
+| Preserved report/crawl queue, genuine cold lifecycle and cohort/run fences | `534626e7` | PASS: 199 selected; prior denied crash selectors remain excluded |
+| Original three-case A → exact B=`d11dcfa4` | `f4d71e40` | PASS: original A `1ab843c4` and retention digest unchanged |
+| Calendar/school domain and physical-envelope boundaries | `c7403723` | PASS: 27 selected |
+| AST / comments / panic extraction / architectural contract | `3684572c` / `3dcfa7d1` / `33357c78` / `46b7e906` | PASS; known deviations remain |
+
+Retained artifact root: `/home/lewis/.cache/r14n-TpNM3q/.tmpL4YNzw`.
+Independent byte inspection confirmed each digest and absent original source Store:
+
+| Artifact relative to root | SHA256 | Meaning |
+|---|---|---|
+| `genuine-co2026-g0.json` | `c0e129652ad31c4d92b5e2f9bdcfdfbb93e227500238bf0d9e2558cdb97446aa` | Pre-accept unresolved |
+| `genuine-co2026-g1.json` | `74958907d11fe673c19da20cf28456efb4d80fa54c134612c300a7cc38738033` | Accepted original mark eligible |
+| `genuine-co2026-g2.json` | `d013dd1ee2c00ee22214f516012cddc222a5f375355ae67fab7d6ec29d314bcf` | Revoked; original receipt replay does not reactivate |
+| `publication/generations/a19492e5142f43277acb2c6f87e6896dfb9463181dd10d7323c9851efef0d27f/workbook.xlsx` | `13472bc507613e9079cb393760d8d35a1d5ff3e52ed871a2266dfa92ef57cd6a` | Independently reopened MI/Class2026 generation; one unknown-affiliation audit, two documentary exclusions |
+
+Required-proof removal/tamper controls passed. Explicit view/lineage/alias observations
+cover state intentionally skipped by `ExportDataset` serialization. Current public
+opaque-approval/stale-review atomic refusal cells remain under `d7hp`; no closure or
+genuine Class2027 population claim is made. National acquisition remains held.

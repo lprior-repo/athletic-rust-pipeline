@@ -421,9 +421,9 @@ Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
 ### 7.5. Latest qualified checkpoints — 2026-10-19
 
-Current startup source: `ee31ec873414c330fb9567f71fc2ee2beb4cf062`, tree
-`cc715fb2a63ff726a9f5b6dec93b4bc8e2856601`. The scoped queue requalifies
-the positive genuine and controlled cases; neither is national publication or complete `d7hp`.
+Current qualified source: `d11dcfa498259c0744c75515b51a55039ce090ac`, tree
+`231521bedd55abac22778064f0b4e059266bc5e4`. Genuine Class2026 cold lifecycle
+is exercised; current geographic eligibility and national coverage are separate obligations.
 
 Caller-authority source: `cc3cb4cf04b113a04c14e1457fbcaa0e2b0530e9`, tree
 `6760c4d41e037a10e681be44f79e4f32e3dde6b7`.
@@ -433,19 +433,19 @@ Selected-generation source: `dde1949bab82bdde01feb9778fa9960400e8c41b`, tree
 `e4a207ef05fc0c9f37909132620caa2a58b9c44a`, tree `8ad9927b5aa1cecdf30a31e8fefae83662757592`.
 Each row owns its tested build; predecessor passes do not transfer automatically.
 Current roster kernels are 12/13; original 2–11 identities and A artifacts remain retained.
-[Exact receipts and artifacts](VERIFICATION-EVIDENCE.md#genuine-calendar-capture-ownership--2026-10-19).
+[Exact receipts and artifacts](VERIFICATION-EVIDENCE.md#genuine-calendar-revocation-and-cohort-bound-reopen--2026-10-19).
 
 | Requirement | Production entrypoint | Exercised evidence | Tested source | Result / artifact | Next dependency |
 |---|---|---|---|---|---|
-| A: current static and structural checkpoint | Canonical Moon format/check/lint; AST, comments, panic and contract guards | `9bfb78b4`, `6881ddaa`, `21738174`; `42d8981b`, `9ba4fc78`, `068f2e77`, `aeabed57` | `ee31ec87` | PASS; configured arity advisories and known architecture deviations remain explicit | Remaining production acceptance |
-| R1: controlled eligibility/calendar withdrawal | Public reviewed source → selector → workbook/normalized → cold replay | `9f88156a` | `ee31ec87` | PASS within preserved 193-case queue: 49/50/51, history, proof-loss and encoded-byte boundaries | Genuine complete lifecycle, `d7hp` |
-| R1: genuine source boundary | Public school/calendar review → original selected performance and participation | `9f88156a` | `ee31ec87` | PASS: 13.57 FAT/+0.2/grade 12/2026-05-15, DCC provider school 12439/MI; current affiliation unknown | Genuine revoke, source-free generations and artifact readback, `d7hp`; Class 2026 is not target Class 2027 |
+| A: current static and structural checkpoint | Canonical Moon format/check/lint; AST, comments, panic and contract guards | `381f88ad`, `2519a875`, `6e52424b`; `3684572c`, `3dcfa7d1`, `33357c78`, `46b7e906` | `d11dcfa4` | PASS; configured advisories and known deviations remain | Remaining production acceptance |
+| R1: controlled eligibility/calendar withdrawal | Public reviewed source → selector → workbook/normalized → cold replay | `534626e7` | `d11dcfa4` | PASS within preserved 199-case queue: 49/50/51, history, proof-loss and byte boundaries | Remaining source/coverage acceptance |
+| R1: genuine calendar lifecycle | Public acceptance/revoke/original replay → G0/G1/G2 and artifact reopen after source deletion | `534626e7`; owner boundaries `c7403723` | `d11dcfa4` | PASS: original 13.57/2026-05-15 retained, current affiliation Unknown; artifact digests in ledger | Public opaque-approval/stale-review refusal cells `d7hp`; genuine Class2027 population |
 | R2: historical kernels and current roster consumers | Original three-case A → independently authenticated changed-build B; complete preserved roster queue | `6693e62f`; `7495a7f3` through `79ee9e58` | A `1ab843c4`; B `e4a207ef` | PASS for exercised cases; original A SHA256 `8897f37e…c35908` unchanged | Exact accepted-claim withdrawal `v80o`; broader population |
-| R2: original-A changed-build replay | Original retained three-case A → current B | `629aca3e` | A `1ab843c4`; B `ee31ec87` | PASS; original retention digest unchanged, no relabel/regeneration | Exact member withdrawal and genuine population |
+| R2: original-A changed-build replay | Original retained three-case A → current B | `f4d71e40` | A `1ab843c4`; B `d11dcfa4` | PASS; original retention digest unchanged, no relabel/regeneration | Exact member withdrawal and genuine population |
 | R3/R7: selected service consumers | Reserved workbook handler, actual CLI, isolated native Restate | `2501cc57`, `892a4313` | Same production source as `e4a207ef`, precommit client run | PASS for controlled 50→51, split successors, retry/reopen and native restart/revocation; retained workbook hashes in evidence | Remaining `agv2` cohort `6pb6`, receipt `e7lx` and native completed-child/seal acceptance |
 | R3/R7: selected National generation | National workbook dispatch → real builder; CLI capability preflight | `4b292d9a`, `10c69620`; actual rebuilt CLI smoke | `dde1949b` | PASS: unchanged G0 path/bytes, withdrawn-G0 refusal, explicit G1=51 and cold G0=50; workbook hashes in ledger | Native completed-child/seal acceptance and remaining `agv2` dependencies; SDK adapter is not a national run |
 | R3/R11: explicit caller authority | CLI resume and existing-invocation attachment | `367b4bec`, `9de2ee20`; actual CLI before/after | `cc3cb4cf` | PASS: generation mismatch before resume submission; store/profile mismatch before attachment, including failed-send fallback; omitted flags/budgets preserved | Remaining `agv2` native, cohort and receipt acceptance; no new acquisition identity |
-| R3/R8: explicit current startup | Atomic graph-V3/capture-V2 owner; actual CLI/profile/publication and endpoint refusal/cleanup | `963cc13c`, `a2046f42` | `ee31ec87` | PASS: current/historical guards, opaque roster approval/replay; unreviewed current affiliation stays Unknown; enrollment-only refusal precedes recovery | National launch held after user concern; admin has no deployments/invocations; remaining `agv2` acceptance |
+| R3/R8: explicit current startup | Atomic graph-V3/capture-V2 owner; actual CLI/profile/publication and endpoint refusal/cleanup | `d804dd74`, `09162a53` | `d11dcfa4` | PASS: current/historical guards, opaque roster approval/replay; unreviewed affiliation stays Unknown; enrollment-only refusal precedes recovery | National launch held after user concern; remaining `agv2` acceptance |
 | Recovery and owned-process cleanup | Authoritative Requested-state dispatch; graceful native fixture shutdown | `897e8daa`, `892a4313` | `e4a207ef` | PASS; `8v2q` and `lxy2` closed, no SIGKILL fallback | Remaining R12/fault/resource acceptance |
 | R2: exact member withdrawal | Existing pure `WithdrawsClaim` reducer and sole roster authority head | Admission-contract review only | — | NOT IMPLEMENTED; parser admission/capture issuance is not accepted membership | Domain-owned authenticated target; no Store→Crawl cycle, `v80o` |
 | C/D: complete reusable product | R1–R15, independent discovery and comparison | Spec-linked live Beads | — | NOT QUALIFIED; no national acceptance workbook | UP/five-state/49-state coverage, remaining consumers, reuse/recovery and representative resource evidence |
