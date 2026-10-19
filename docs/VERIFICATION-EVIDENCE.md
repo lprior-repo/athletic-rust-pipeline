@@ -1514,3 +1514,35 @@ the requested generation to an owned rejecting loopback; it did not execute a ce
 An initial smoke fixture omitted required Restate framing and was corrected before
 these capability claims. Duplicate serial-test flags caused one pre-execution failure;
 the corrected focused case `e5f13e7a` passed before the full committed-source campaign.
+
+### National caller-authority refusal — 2026-10-19
+
+Source `cc3cb4cf04b113a04c14e1457fbcaa0e2b0530e9`, tree
+`6760c4d41e037a10e681be44f79e4f32e3dde6b7`, rejects explicit caller
+store/profile/generation mismatches against the retained National request.
+Omitted flags preserve the binding; execution budgets and source identities do
+not change. Resume checks precede submission; collision/error attachment checks
+precede attach/observe. The latter does not falsely claim no send was attempted.
+
+The same owned loopback returned `PreviouslyAccepted` with bound profile B
+after an explicit request for profile C. Both runs observed capability lookup,
+send and retained-request lookup; no live census or Store was used.
+
+| Actual CLI SHA256 | Observed result |
+|---|---|
+| `d19358dee4361d51fb064fa2e3e60c9568c460429a5cca7e26939e6b8e13806e` | FAIL-before: exit 0, silently retained the different profile |
+| `116588e38427161e6df21b36e024a0f4ae0e59baf2b4a6af336812ca3497717b` | PASS-after: exit 1, explicit authority refusal without attachment/observation |
+
+Committed-source format `25c6a658`, all-target check `3c0d3a37`, lint
+`4e5d249a`, CLI consumers `9de2ee20` (75 selected/passed), build `1a0a1a89`,
+trusted AST `ad6b75a3`, zero-comments `1406853d`, panic-extraction `8e446ac3`
+and architecture contract `9aad315c` passed. Configured arity advisories and
+known boundary deviations remain; this is not warning-free or full-spec acceptance.
+The focused resume/PreviouslyAccepted/send-error guards passed `367b4bec`.
+Their ingress stays open to record forbidden RPCs; it does not force a transport
+failure or pin error wording. Commands used canonical Moon, `CI` unset, the same
+owned temporary directory and two build jobs.
+
+This closes caller mismatch refusal, not profile-derived cohort, durable typed
+National receipt, native completed-child/seal acceptance, genuine population
+coverage, reusable enrollment or representative resource qualification.
