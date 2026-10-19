@@ -3,6 +3,8 @@ use crate::{Entity, PhysicalReadAdmissionV1, ReadBudget, StoreResult, StoreSnaps
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{CanonicalSchool, CanonicalTeam, RetainedConflict, SourceObservation};
 
+pub(super) const MAX_PHYSICAL_INVENTORY_BYTES: u64 = 32 * 1024 * 1024;
+
 pub struct RosterPhysicalProjectionRowV1 {
     table: Table,
     key: Vec<u8>,
@@ -58,7 +60,7 @@ impl Inventory {
         let count = u64::try_from(self.rows.len()).map_err(|_| Error::BudgetExceeded)?;
         let budget = ReadBudget {
             rows: 4096_u64.checked_sub(count).ok_or(Error::BudgetExceeded)?,
-            bytes: (8_u64 * 1024 * 1024)
+            bytes: MAX_PHYSICAL_INVENTORY_BYTES
                 .checked_sub(self.bytes)
                 .ok_or(Error::BudgetExceeded)?,
             record_bytes: 64 * 1024,
@@ -99,20 +101,65 @@ fn admit(
             key_bytes,
             value_bytes,
         } => {
-            let bytes = key_bytes
+            let record_bytes = key_bytes
                 .checked_add(value_bytes)
                 .ok_or(Error::BudgetExceeded)?;
-            inventory.bytes = inventory
+            let total_bytes = inventory
                 .bytes
-                .checked_add(u64::try_from(bytes).map_err(|_| Error::BudgetExceeded)?)
+                .checked_add(u64::try_from(record_bytes).map_err(|_| Error::BudgetExceeded)?)
                 .ok_or(Error::BudgetExceeded)?;
-            if inventory.bytes > 8 * 1024 * 1024 {
+            if total_bytes > MAX_PHYSICAL_INVENTORY_BYTES {
                 return Err(Error::BudgetExceeded.into());
             }
+            inventory.bytes = total_bytes;
             grant
-                .charge_bytes(bytes)
+                .charge_bytes(record_bytes)
                 .map_err(super::super::source_error)?;
             grant.charge_steps(2).map_err(super::super::source_error)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn physical_inventory_budget_accepts_exact_32_mib_and_refuses_one_more() {
+        let limit = usize::try_from(MAX_PHYSICAL_INVENTORY_BYTES).expect("32 MiB fits usize");
+        let mut inventory = Inventory {
+            rows: Vec::new(),
+            bytes: 0,
+        };
+        let mut grant = AttachmentReplayGrantV1::new();
+        admit(
+            &mut inventory,
+            &mut grant,
+            PhysicalReadAdmissionV1::Value {
+                key_bytes: 0,
+                value_bytes: limit - 1,
+            },
+        )
+        .expect("one byte under the cap is admitted");
+        admit(
+            &mut inventory,
+            &mut grant,
+            PhysicalReadAdmissionV1::Value {
+                key_bytes: 0,
+                value_bytes: 1,
+            },
+        )
+        .expect("the exact cap is admitted");
+        assert_eq!(inventory.bytes, MAX_PHYSICAL_INVENTORY_BYTES);
+        assert!(admit(
+            &mut inventory,
+            &mut grant,
+            PhysicalReadAdmissionV1::Value {
+                key_bytes: 0,
+                value_bytes: 1,
+            },
+        )
+        .is_err());
+        assert_eq!(inventory.bytes, MAX_PHYSICAL_INVENTORY_BYTES);
     }
 }
