@@ -1,10 +1,6 @@
-use restate_sdk::prelude::*;
-
 mod capture_execution;
 mod work_admission;
 pub use capture_execution::CaptureExecution;
-
-use crate::census::CollectOptions;
 
 pub(crate) fn run_key(job: &str, parts: &[&str], generation: &ExportGeneration) -> String {
     let mut key = job.to_string();
@@ -227,7 +223,8 @@ pub(super) use jobs::collect_error;
 #[cfg(test)]
 pub(super) use resolve::MAX_REQUEST_JURISDICTIONS;
 pub(super) use resolve::{
-    cohort_label, normalize_jurisdictions, resolve_scope, resolve_table, resolve_tables,
+    cohort_label, normalize_jurisdictions, options_for_request, resolve_scope, resolve_table,
+    resolve_tables,
 };
 pub use support::JobError;
 pub use support::{blocking, job_error};
@@ -263,39 +260,6 @@ const KEY_STATE: &str = "state";
 pub use limits::{
     MAX_LIMIT_PER_STATE, MAX_ROWS_PER_REQUEST, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS,
 };
-
-pub(super) fn options_for_request(
-    request: &JurisdictionRequest,
-    today: &str,
-) -> Result<CollectOptions, HandlerError> {
-    if request.concurrency == 0 {
-        return Err(TerminalError::new("concurrency must be at least 1").into());
-    }
-    limits::validate_source_parallelism(request.source_parallelism)?;
-    if let Some(limit) = request.limit_per_state {
-        if limit > MAX_LIMIT_PER_STATE {
-            return Err(TerminalError::new(format!(
-                "limit_per_state {limit} exceeds the ceiling of {MAX_LIMIT_PER_STATE}"
-            ))
-            .into());
-        }
-    }
-    let revision = std::num::NonZeroU32::new(request.revision.get())
-        .ok_or_else(|| TerminalError::new("revision must be at least 1"))?;
-    Ok(CollectOptions {
-        jurisdictions: vec![request.jurisdiction],
-        limit_per_state: request.limit_per_state,
-        concurrency: request.concurrency,
-        state_concurrency: 1,
-        refresh: request.refresh,
-        school_year: request.season,
-        observed_on: match request.observed_on.clone() {
-            Some(value) => value,
-            None => today.to_string(),
-        },
-        revision,
-    })
-}
 
 pub(super) use journaled::{journaled_today, journaled_today_workflow};
 

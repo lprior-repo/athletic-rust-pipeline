@@ -10,6 +10,7 @@ use census_report::{bests, workbook};
 use super::jobs::consolidate_tables;
 use super::jobs::workbook_job::build;
 use super::jobs::{build_bests, build_report};
+#[cfg(feature = "native-fault-injection")]
 use super::jobs::{consolidate_armed, consolidate_boundary};
 use super::wire::{
     BestsReply, BestsRequest, ConsolidateReply, ConsolidateRequest, ReportReply, ReportRequest,

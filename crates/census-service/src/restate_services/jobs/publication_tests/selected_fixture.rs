@@ -1,14 +1,14 @@
-#[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/attachment/attachment.rs"]
+#[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/attachment/mod.rs"]
 mod attachment;
 #[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/current_school_identity.rs"]
 mod current_school_identity;
-#[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/current_school_review/current_school_review.rs"]
+#[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/current_school_review/mod.rs"]
 mod current_school_review;
 #[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/current_school_source.rs"]
 mod current_school_source;
 #[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/documentary_lifecycle.rs"]
 mod documentary_lifecycle;
-#[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/documentary_material/documentary_material.rs"]
+#[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/documentary_material/mod.rs"]
 mod documentary_material;
 #[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/documentary_review.rs"]
 mod documentary_review;
@@ -20,7 +20,7 @@ mod point_source;
 mod school_authority;
 #[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/school_issuance.rs"]
 mod school_issuance;
-#[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/source/source.rs"]
+#[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/source/mod.rs"]
 mod source;
 #[path = "../../../../../census-report/src/export/dataset/selected/tests/publication/controlled_three_marks/window_source.rs"]
 mod window_source;
@@ -119,6 +119,48 @@ pub(in crate::restate_services) fn install() -> TestResult<Controlled> {
 pub(in crate::restate_services) fn revoke(controlled: &Controlled) -> TestResult {
     documentary_lifecycle::revoke(&controlled.installed, &controlled.accepted)?;
     documentary_lifecycle::replay_without_reactivation(&controlled.installed, &controlled.accepted)
+}
+pub(in crate::restate_services) fn reopen(controlled: Controlled) -> TestResult<Controlled> {
+    let source::InstalledSource {
+        directory,
+        store,
+        identity_writer,
+        school,
+        public,
+        candidate,
+        source_records,
+        row_locators,
+    } = controlled.installed;
+
+    let store_identity = store.store_identity()?;
+    drop(identity_writer);
+    drop(store);
+
+    let (store, identity_writer) =
+        census_store::Store::open_public_identity_qualification_v3(directory.path().join("store"))?
+            .into_parts();
+
+    source::require_identity(&store, &candidate, &public)?;
+    let reopened_identity = store.store_identity()?;
+    if reopened_identity != store_identity {
+        return Err("reopened store identity changed".into());
+    }
+
+    Ok(Controlled {
+        current: controlled.current,
+        profile: controlled.profile,
+        installed: source::InstalledSource {
+            directory,
+            store,
+            identity_writer,
+            school,
+            public,
+            candidate,
+            source_records,
+            row_locators,
+        },
+        accepted: controlled.accepted,
+    })
 }
 
 fn profile() -> TestResult<QueryProfileV1> {

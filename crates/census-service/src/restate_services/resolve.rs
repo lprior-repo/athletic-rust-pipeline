@@ -1,6 +1,8 @@
+use super::{limits, JurisdictionRequest, MAX_LIMIT_PER_STATE};
+use crate::census::CollectOptions;
 use census_report::report::Scope;
 use census_store::Table;
-use restate_sdk::prelude::TerminalError;
+use restate_sdk::prelude::{HandlerError, TerminalError};
 
 pub(crate) fn resolve_table(name: &str) -> Result<Table, TerminalError> {
     Table::from_wire(name).ok_or_else(|| {
@@ -62,4 +64,36 @@ pub(crate) fn cohort_label(grad_year: Option<i16>) -> String {
         Some(value) => value,
         None => "all".to_string(),
     }
+}
+pub(crate) fn options_for_request(
+    request: &JurisdictionRequest,
+    today: &str,
+) -> Result<CollectOptions, HandlerError> {
+    if request.concurrency == 0 {
+        return Err(TerminalError::new("concurrency must be at least 1").into());
+    }
+    limits::validate_source_parallelism(request.source_parallelism)?;
+    if let Some(limit) = request.limit_per_state {
+        if limit > MAX_LIMIT_PER_STATE {
+            return Err(TerminalError::new(format!(
+                "limit_per_state {limit} exceeds the ceiling of {MAX_LIMIT_PER_STATE}"
+            ))
+            .into());
+        }
+    }
+    let revision = std::num::NonZeroU32::new(request.revision.get())
+        .ok_or_else(|| TerminalError::new("revision must be at least 1"))?;
+    Ok(CollectOptions {
+        jurisdictions: vec![request.jurisdiction],
+        limit_per_state: request.limit_per_state,
+        concurrency: request.concurrency,
+        state_concurrency: 1,
+        refresh: request.refresh,
+        school_year: request.season,
+        observed_on: match request.observed_on.clone() {
+            Some(value) => value,
+            None => today.to_string(),
+        },
+        revision,
+    })
 }

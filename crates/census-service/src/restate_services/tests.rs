@@ -2,6 +2,7 @@ use census_crawl::{net::FetchError, CrawlError};
 mod owned_resource_errors;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+use restate_sdk::prelude::{HandlerError, Json, TerminalError};
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 

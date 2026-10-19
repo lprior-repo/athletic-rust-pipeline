@@ -1153,3 +1153,32 @@ Canonical `workbook_job::build` has no old-name forwarding alias. Incoming
 readback helpers were grouped and key-to-itself assertions removed; source
 records, dates and review authority were not changed.
 
+
+### Physical service reopen and source hardening — 2026-10-18
+
+Working-source integration after `b19fc345`; current roster closure
+`e9a182e8034e065b792d3e5ac64dd2c722702622b688662a40a69fe01deb83a5`.
+The unchanged original-A three-case consumer passed on clean `b19fc345`
+(`dae3c30c`); the final changed closure still requires its own rerun.
+
+The selected service fixture now drops its identity writer before closing Store,
+reopens the same database, checks persisted Store/public identity and retries the
+same bound job. `64bd6e1a` passed all four service cases, including physical reopen,
+unchanged generation/bytes, revoke plus original-command replay and historical
+fresh-process verification. `8a304bd1` passed the actual Workbook HTTP handler and
+selected National retry cases with a nonempty controlled 50.00 publication.
+This qualifies controlled service integration, not source-population completion.
+
+Default-feature scan first exposed an ungated fault-only import, then refused
+four incoming source symlinks. Direct file imports exposed Rust child-module
+resolution failures. The cutover preserves each shared fixture body once in its
+canonical `mod.rs`; all four aliases are removed, not exempted from scanning.
+Compiler diagnostics also caught invented extraction types and timeout returns;
+Main restored borrowed ownership and cancellation before server joins.
+
+Check `0a29e435` and trusted scan `6184e3e5` passed: no files over 300 lines,
+functions over 60 or unresolved AST sites. The measured 310-line facade and
+61-line projection were repaired by moving request construction into its existing
+resolver and separating owner-contract selection. Prior failed scans are not
+reported as passes. One shared test-helper unused warning remains visible.
+

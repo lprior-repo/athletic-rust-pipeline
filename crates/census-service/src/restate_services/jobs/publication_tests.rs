@@ -155,6 +155,7 @@ fn selected_workbook_service_job_publishes_and_fresh_process_verifies_retry_and_
         .ok_or("selected workbook generation missing")?
         .join("manifest.json");
     let manifest = std::fs::read(&manifest_path)?;
+    let controlled = selected_fixture::reopen(controlled)?;
     let repeated = build(controlled.store(), &options, job, &export_job)?;
     check!(eq; repeated.path, first.path);
     check!(eq;

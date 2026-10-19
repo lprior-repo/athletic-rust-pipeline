@@ -64,16 +64,20 @@ pub(super) fn read(
     );
     Ok(CheckedProviderSchoolPacketV1 {
         reference,
-        semantic_contract: match policy {
-            RosterOwnerWitnessPolicy::Historical4096 => super::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
-            RosterOwnerWitnessPolicy::CurrentBody => super::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
-        },
+        semantic_contract: semantic_contract(policy),
         school,
         observation,
         roster_verdict,
         directory_proof: selected.proof,
         published_roster_owners,
     })
+}
+
+const fn semantic_contract(policy: RosterOwnerWitnessPolicy) -> &'static str {
+    match policy {
+        RosterOwnerWitnessPolicy::Historical4096 => super::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1,
+        RosterOwnerWitnessPolicy::CurrentBody => super::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
+    }
 }
 
 fn fetch(capture: &RetainedHtmlCaptureV1, body: &str) -> StoreResult<FetchOutcome> {
