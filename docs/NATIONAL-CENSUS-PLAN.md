@@ -419,34 +419,29 @@ quiescence. No worker runs builds mid-flight, weakens an oracle, changes source
 identity to fit a fixture, resets a live store or substitutes a historical binary.
 Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
-### 7.5. Latest qualified checkpoint — 2026-10-18
+### 7.5. Latest qualified checkpoints — 2026-10-19
 
-Qualified source: `af9c58e7b9ebdaf7dc13a5c1c613e2e5807dec21`, tree
-`28c41613572bd23ccd4ae8089d1b5f2d06c2a70a`, including incoming `1762f27b`.
-That checkpoint emitted roster kernels 10/11; original 2–9 identities remain retained.
-[Evidence](VERIFICATION-EVIDENCE.md#roster-owner-and-selected-service-qualification--2026-10-18).
+Selected-generation source: `dde1949bab82bdde01feb9778fa9960400e8c41b`, tree
+`22b56642570a0cb7aa6b1d0b29aa1bb527162c03`. The broader cross-crate checkpoint remains
+`e4a207ef05fc0c9f37909132620caa2a58b9c44a`, tree `8ad9927b5aa1cecdf30a31e8fefae83662757592`.
+Each row owns its tested build; predecessor passes do not transfer automatically.
+Current roster kernels are 12/13; original 2–11 identities and A artifacts remain retained.
+[Exact receipts and artifacts](VERIFICATION-EVIDENCE.md#selected-national-generation--2026-10-19).
 
-| Requirement | Code entrypoint | Test / command receipt | Tested revision | Result | Artifact | Next dependency |
-|---|---|---|---|---|---|---|
-| A: static checkpoint | `tools/moon-local` | fmt `ee6e597e`, check `eed55f81`, lint `64190eab` | `af9c58e7` | PASS; existing advisories visible | Exact command/log inventory outside Git | Remaining production acceptance |
-| A: structural/safety gate | Trusted AST; owned-source lexer; architecture contract | `2e5d1099`; `7af763ec`; `41c24048`; `e493f770` | `af9c58e7` | PASS: no file over 300, function over 60 or unresolved AST; known boundary deviations visible | 4,928 lexical files; canonical fixture modules, no source symlinks | Remaining production acceptance |
-| A: historical authority fence | Independently retained Report V3 consumer | `743f2273` | `af9c58e7` | PASS | Original retained V3, pins/checksum unchanged | Preserve historical artifact |
-| A: genuine original-source replay | Documentary selected-publication roundtrip and full intake driver | `ed9890e0` | `af9c58e7` | PASS; missing facts remain withheld; denied selectors preserved | Original handoff/pins unchanged | Genuine positive population |
-| A/R2: transfer and correction replay | Selected publication and inherited lifecycle-9 roster | `ed9890e0` | `af9c58e7` | PASS; actual workbook/normalized and Store-free readback | Scoped publication lane | Accepted roster withdrawal and genuine population |
-| R2: semantic equivalence across builds | Retained three-case producer/consumer | B `db05facc` | A `1ab843c4`; B `af9c58e7` | PASS; original A inventory and pins unchanged | Manifest SHA256 `8897f37e…c35908`, unchanged | Remaining R2 acceptance; not universal kernel equivalence |
-| B/R1: original school-cell ownership | `CheckedRetainedResultRowV1::school_statement` | `fb5e3111`; smoke `90001154` | `3688a680` | PASS; source quote, no SchoolId authority | Original fixture SHA256 `95350f13…cc19e5`; identical replay references | Preserve source ownership in genuine population qualification |
-| B/R1: reviewed historical school | Public checked review → revoke → cold/frozen consumer | `cd041ce4`; inherited `0bd0d0b5` | `c99fca79` | PASS; source/scope, approval, foreign-origin and inherited lifecycle controls | Original historical proofs/pins unchanged; integrated PRIMARY qualified below | Genuine positive population |
-| B/R3: eligible PR identity correction | Reviewed V5 roster → merge/split → publication → Store-free replay | `60074802`; old row-local replay executable `1dce2283` | `8524c803` plus independent consumer | PASS; original pre/post selected rows reproduced exactly | Original private workbook generations and external pins unchanged | Remaining R3 consumers/service; not PRIMARY or population coverage |
-| B/R1: original controlled marks and date-scoped evidence | Original-shaped source intake; actual documentary review/revoke | `cd041ce4` | `c99fca79` | PASS; 49/50/51 rows retained; wrong-day evidence cannot authorize a result | Controlled intake and owned genuine backup/restore; integrated PRIMARY qualified below | Preserve original data and explicit exclusions |
-| B/R1: explicit full-window source input | Public window record/read; exact-root leaf; cold reopen | `cd041ce4`; actual CLI `12ba7242` | `c99fca79`; same-production precommit CLI | PASS for unaccepted source metadata | Private controlled source/proof; reviewed window-to-workbook lifecycle qualified below | Genuine source-backed window qualification |
-| B/R1: eligible PR then withdrawal | Public source/review → selector → workbook/normalized → Store-free replay | `ed9890e0`; 183 connected cases | `af9c58e7` | PASS: 50→51; replay cannot reactivate 50; required-proof controls refuse | Original controlled pair retains producer `0ba48d21`; lifecycle rerun on qualified source | Genuine eligible-mark population; not national acceptance |
-| B/R1: current-seal documentary freshness | `open_publication_for_seal` with one Store snapshot | Before `0f04dea2` FAIL; after `ed9890e0` PASS; state controls `0657e8b4` PASS | `af9c58e7` | PASS: revoked G0 refuses current seal; G1 seals; cold G0 and journal-only progress preserved | Public-review lifecycle and authenticated inventories | R2 roster withdrawal/freshness remains separate |
-| B/R3: durable selected library job | `ExportDataset::for_job_request(SelectedPublicationV1)` | `ed9890e0`: retry, withdrawal at final fence, interrupted intent | `af9c58e7` | PASS in library path | Bound request/frozen input and retained publication | Complete remaining R3 consumer acceptance |
-| B/R3/R7: selected service integration | Reserved workbook job, real HTTP handler and National retry | `3ceac06d`; `a572a466` | `af9c58e7` | PASS: nonempty 50 publication, physical Store reopen, same-generation retry, revocation refusal and fresh-process historical readback | Actual workbook/normalized bytes; Core/row-limit refusal preserves prior bundle | Remaining `agv2` request/default compatibility cells; not acquisition coverage |
-| B/R2: bounded genuine owner | Public roster review → capture/publication → cold replay | Complete 25-scope roster queue; 237 cases plus 4 authentication controls `b8386062` | `af9c58e7` | PASS: original 23,082-byte owner; 146 admitted/18 rejected; ordinary spans stay 4 KiB | Genuine William Abbott/2027/MI workbook SHA256 `17c249eb…8f4584c`; zero invented marks | Accepted exact-claim withdrawal `v80o`; broader population |
-| B/R1–R2: remaining authority seams | Documentary calendar correspondence; accepted roster change reader/writer | Source review only | `af9c58e7` | NOT QUALIFIED: genuine calendar labels differ; roster authority is issuance-only | Genuine grade-12/CO2026 evidence unchanged; no target-cohort relabel | Checked calendar correspondence `d7hp`; reviewed exact-claim withdrawal `v80o` |
-| C/D: reusable operation and population | R1–R15 production paths and comparison | Spec-linked owners | — | NOT QUALIFIED | No national acceptance artifact | UP/five-state coverage, reuse/recovery/resource evidence |
+| Requirement | Production entrypoint | Exercised evidence | Tested source | Result / artifact | Next dependency |
+|---|---|---|---|---|---|
+| A: static and structural checkpoint | Canonical Moon; trusted AST; safety and architecture gates | `55760805`, `4d54ba59`, `4f1efa98`, `9455727d`, `b881d145`, `f5c61175` | `dde1949b`; structural gates on byte-identical precommit source | PASS; configured arity advisories and known boundary deviations remain visible | Remaining production acceptance |
+| R1: controlled eligibility/calendar withdrawal | Public reviewed source → selector → workbook/normalized → cold replay | `897e8daa`; connected `8b80dc11` | `e4a207ef` | PASS: retained 49/50/51, selected 50→51, exact exclusions/schools/dates, proof-loss refusal; private artifact hashes in evidence | Genuine matching calendar/window population, `d7hp` |
+| R1: genuine source boundary | Original documentary/intake and retained V3 consumers | `8b80dc11`, `f3d01938` | `e4a207ef` | PASS for original-byte replay and honest withholding; not positive target-cohort population | Original schedule exists; public calendar/school accept→revoke→frozen qualification remains `d7hp`. Class-of-2026 evidence cannot become Class of 2027. |
+| R2: historical kernels and current roster consumers | Original three-case A → independently authenticated changed-build B; complete preserved roster queue | `6693e62f`; `7495a7f3` through `79ee9e58` | A `1ab843c4`; B `e4a207ef` | PASS for exercised cases; original A SHA256 `8897f37e…c35908` unchanged | Exact accepted-claim withdrawal `v80o`; broader population |
+| R3/R7: selected service consumers | Reserved workbook handler, actual CLI, isolated native Restate | `2501cc57`, `892a4313` | Same production source as `e4a207ef`, precommit client run | PASS for controlled 50→51, split successors, retry/reopen and native restart/revocation; retained workbook hashes in evidence | Generation slice below; remaining `agv2` binding `l414`, cohort `6pb6`, receipt `e7lx` |
+| R3/R7: selected National generation | National workbook dispatch → real builder; CLI capability preflight | `4b292d9a`, `10c69620`; actual rebuilt CLI smoke | `dde1949b` | PASS: unchanged G0 path/bytes, withdrawn-G0 refusal, explicit G1=51 and cold G0=50; workbook hashes in ledger | Native completed-child/seal acceptance and remaining `agv2` dependencies; SDK adapter is not a national run |
+| Recovery and owned-process cleanup | Authoritative Requested-state dispatch; graceful native fixture shutdown | `897e8daa`, `892a4313` | `e4a207ef` | PASS; `8v2q` and `lxy2` closed, no SIGKILL fallback | Remaining R12/fault/resource acceptance |
+| R2: exact member withdrawal | Existing pure `WithdrawsClaim` reducer and sole roster authority head | Admission-contract review only | — | NOT IMPLEMENTED; parser admission/capture issuance is not accepted membership | Domain-owned authenticated target; no Store→Crawl cycle, `v80o` |
+| C/D: complete reusable product | R1–R15, independent discovery and comparison | Spec-linked live Beads | — | NOT QUALIFIED; no national acceptance workbook | UP/five-state/49-state coverage, remaining consumers, reuse/recovery and representative resource evidence |
 
+Prior identity, catalog, tie and managed-route closures remain scoped evidence.
+Neither checkpoint is blanket national acceptance.
 
 ## 8. F01–F15 acceptance ledger
 

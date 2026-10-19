@@ -1470,3 +1470,47 @@ historical-MI/current-CO school cells. No original-A regeneration, artifact
 relabeling, genuine-evidence editing or production census was performed.
 National generation, roster withdrawal, genuine coverage and resource holds
 remain open; this checkpoint is not a national release.
+
+### Selected National generation — 2026-10-19
+
+Source `dde1949bab82bdde01feb9778fa9960400e8c41b`, tree
+`22b56642570a0cb7aa6b1d0b29aa1bb527162c03`, repairs the observed
+`60649db2` failure: changing only a parent resume ordinal recaptured withdrawn
+inputs and replaced the expected 50.00 result with 51.00 under the same logical
+generation. National now carries the existing checked generation and uses the
+canonical selected workbook identity, independently of that ordinal.
+
+On the committed source, canonical format `3ae886fb`, all-target check
+`55760805`, lint `4d54ba59`, connected service `4b292d9a` and CLI/generation
+`10c69620` passed; selection was respectively 25 and 72 cases, not zero.
+Build `dc06a35f` passed. Byte-identical precommit source also passed trusted AST
+`4f1efa98`, zero-comments `9455727d`, panic-extraction `b881d145` and architecture
+contract `f5c61175`. Configured arity advisories and known boundary deviations
+remain visible. Commands used canonical Moon, `CI` unset, the owned
+`/home/lewis/.cache/r14n-TpNM3q` temporary directory and two build jobs.
+
+`resumed_selected_generation_refuses_recapture_and_new_generation_selects_fallback`
+exercises the real workbook builder through the SDK handler: unchanged resume
+preserves G0 path/bytes and 50.00; reviewed withdrawal and original-receipt replay
+make G0 refuse without publishing; explicit G1 selects 51.00; cold verification
+preserves both generations. The SDK adapter does not qualify native completed-child
+caching or the real Census seal. Parent binding, cohort and receipt remain `agv2`
+dependencies, not inferred complete from this regression.
+
+| Committed-source controlled workbook | SHA256 |
+|---|---|
+| `/home/lewis/.cache/r14n-TpNM3q/.tmpFkXWOn/store/out/publication/generations/3ea222f9886991c23400f4e958e45b42429df8e6988b53261858e24e8f467bcb/workbook.xlsx` | `bb6b139a8626a6f02117e8446f2d05aabdcf7992df804052462a45244d1097a3` |
+| `/home/lewis/.cache/r14n-TpNM3q/.tmpFkXWOn/store/out/publication/generations/ff71f22b4d132b58a734c13d24042000359d5f165e74033b5dce43cec705cf8d/workbook.xlsx` | `4f7d997d85f9a4d318134c94d27d03e1b3ff00318dda5da2688ef21fd4094400` |
+
+Independent address-preserving OOXML readback confirmed 50.00/2026-05-15 and
+51.00/2026-05-16, historical Detroit Catholic Central/MI, current Controlled
+Colorado High School/CO as-of 2026-10-16 and a common managed generations root.
+No graphical rendering or genuine-source population coverage is claimed.
+
+Actual CLI SHA256 `d19358dee4361d51fb064fa2e3e60c9568c460429a5cca7e26939e6b8e13806e`
+refused selected-only and unknown-revision-2 endpoints with exit 1 and only
+`/Census/publication_capabilities` observed. A revision-1 positive control submitted
+the requested generation to an owned rejecting loopback; it did not execute a census.
+An initial smoke fixture omitted required Restate framing and was corrected before
+these capability claims. Duplicate serial-test flags caused one pre-execution failure;
+the corrected focused case `e5f13e7a` passed before the full committed-source campaign.
