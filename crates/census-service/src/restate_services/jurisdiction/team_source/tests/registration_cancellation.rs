@@ -124,10 +124,16 @@ fn assert_original_reservation(
     check!(eq; serde_json::to_value(registered)?, *expected);
     check!(eq; store.journal_payload(ledger::PHASE, &format!("{operation}/identity"))?,
     Some(expected.clone()));
-    let ledger::Admission::Reserved {
+    let ledger::AdmissionReplay::Reserved {
         attempt,
         observed_on,
-    } = ledger::begin(store, operation, request, registered)?
+    } = ledger::begin_at(
+        store,
+        operation,
+        request,
+        registered,
+        ledger::baseline(store, operation)?,
+    )?
     else {
         return Err("registered source unexpectedly settled".into());
     };

@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 mod fixture;
 mod late_condition;
+mod postcommit_preack_replay;
 use fixture::{Driver, FixedSequenceClock as Clock, TestResult};
 
 fn ihsa_request() -> TestResult<TeamsSourceRequest> {
@@ -36,8 +37,13 @@ fn seed_attempt(
 ) -> TestResult {
     let operation = key(request);
     let registered = ledger::register(store, &operation, request)?;
-    let ledger::Admission::Reserved { attempt, .. } =
-        ledger::begin(store, &operation, request, &registered)?
+    let ledger::AdmissionReplay::Reserved { attempt, .. } = ledger::begin_at(
+        store,
+        &operation,
+        request,
+        &registered,
+        ledger::baseline(store, &operation)?,
+    )?
     else {
         return Err("fixture settled before attempt one".into());
     };
@@ -141,8 +147,13 @@ async fn finalized_history_beats_cached_none_without_admission_or_mutation() -> 
     check!(eq; driver.run_values, vec![serde_json::Value::Null]);
     seed_attempt(&store, &request, &row)?;
     let registered = ledger::register(&store, &key(&request), &request)?;
-    let ledger::Admission::Reserved { attempt, .. } =
-        ledger::begin(&store, &key(&request), &request, &registered)?
+    let ledger::AdmissionReplay::Reserved { attempt, .. } = ledger::begin_at(
+        &store,
+        &key(&request),
+        &request,
+        &registered,
+        ledger::baseline(&store, &key(&request))?,
+    )?
     else {
         return Err("fixture unexpectedly settled".into());
     };

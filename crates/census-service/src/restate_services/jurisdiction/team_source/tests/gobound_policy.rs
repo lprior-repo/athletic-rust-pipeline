@@ -121,8 +121,13 @@ async fn retain_refusal(jurisdiction: UsJurisdiction) -> TestResult {
     let store = Store::open(&store_path)?;
     let before = store.journal_keys(ledger::PHASE)?;
     let registered = ledger::register(&store, &operation, &request)?;
-    let ledger::Admission::Settled(outcome) =
-        ledger::begin(&store, &operation, &request, &registered)?
+    let ledger::AdmissionReplay::Settled(outcome) = ledger::begin_at(
+        &store,
+        &operation,
+        &request,
+        &registered,
+        ledger::baseline(&store, &operation)?,
+    )?
     else {
         return Err("reopened policy refusal became runnable".into());
     };

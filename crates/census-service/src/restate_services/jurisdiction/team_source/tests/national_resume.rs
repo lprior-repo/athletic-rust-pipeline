@@ -9,8 +9,13 @@ pub(crate) fn exhaust(
 ) -> ResultOf<()> {
     for expected in 1..=3 {
         let registered = ledger::register(store, operation, request)?;
-        let ledger::Admission::Reserved { attempt, .. } =
-            ledger::begin(store, operation, request, &registered)?
+        let ledger::AdmissionReplay::Reserved { attempt, .. } = ledger::begin_at(
+            store,
+            operation,
+            request,
+            &registered,
+            ledger::baseline(store, operation)?,
+        )?
         else {
             return Err("source exhausted before three recorded attempts".into());
         };
@@ -36,8 +41,13 @@ pub(crate) fn replay(
 ) -> ResultOf<TeamsSourceOutcome> {
     let before = store.journal_keys(ledger::PHASE)?;
     let registered = ledger::register(store, operation, request)?;
-    let ledger::Admission::Settled(outcome) =
-        ledger::begin(store, operation, request, &registered)?
+    let ledger::AdmissionReplay::Settled(outcome) = ledger::begin_at(
+        store,
+        operation,
+        request,
+        &registered,
+        ledger::baseline(store, operation)?,
+    )?
     else {
         return Err("resumed national invocation granted a new source attempt".into());
     };

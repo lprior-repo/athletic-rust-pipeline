@@ -14,7 +14,13 @@ fn admission_refuses_cached_digest_mismatch_before_first_attempt() -> TestResult
     json!({"status": "unsettled", "progress": []}));
 
     registered.request_digest = "0".repeat(64);
-    let result = ledger::begin(&store, &operation, &request, &registered);
+    let result = ledger::begin_at(
+        &store,
+        &operation,
+        &request,
+        &registered,
+        ledger::baseline(&store, &operation)?,
+    );
 
     check!(matches!(result, Err(JobError::Terminal { .. })));
     check!(eq; journal(&store)?, before);
@@ -37,7 +43,13 @@ fn admission_refuses_cached_date_mismatch_before_first_attempt() -> TestResult {
     json!({"status": "unsettled", "progress": []}));
 
     registered.observed_on = "2026-10-03".to_string();
-    let result = ledger::begin(&store, &operation, &request, &registered);
+    let result = ledger::begin_at(
+        &store,
+        &operation,
+        &request,
+        &registered,
+        ledger::baseline(&store, &operation)?,
+    );
 
     check!(matches!(result, Err(JobError::Terminal { .. })));
     check!(eq; journal(&store)?, before);
@@ -84,7 +96,13 @@ fn admission_refuses_cached_digest_mismatch_with_acquisition_history() -> TestRe
     }));
 
     registered.request_digest = "0".repeat(64);
-    let result = ledger::begin(&store, &operation, &request, &registered);
+    let result = ledger::begin_at(
+        &store,
+        &operation,
+        &request,
+        &registered,
+        ledger::baseline(&store, &operation)?,
+    );
 
     check!(matches!(result, Err(JobError::Terminal { .. })));
     check!(eq; journal(&store)?, before);
@@ -131,7 +149,13 @@ fn admission_refuses_cached_date_mismatch_with_acquisition_history() -> TestResu
     }));
 
     registered.observed_on = "2026-10-03".to_string();
-    let result = ledger::begin(&store, &operation, &request, &registered);
+    let result = ledger::begin_at(
+        &store,
+        &operation,
+        &request,
+        &registered,
+        ledger::baseline(&store, &operation)?,
+    );
 
     check!(matches!(result, Err(JobError::Terminal { .. })));
     check!(eq; journal(&store)?, before);

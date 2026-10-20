@@ -24,7 +24,13 @@ fn unsupported_settled_completion_is_rejected_by_admission_and_inspection() -> T
     )?;
     batch.commit()?;
     check!(matches!(
-        ledger::begin(&store, &key(&request), &request, &registered),
+        ledger::begin_at(
+            &store,
+            &key(&request),
+            &request,
+            &registered,
+            ledger::baseline(&store, &key(&request))?
+        ),
         Err(JobError::Terminal { .. })
     ));
     check!(matches!(

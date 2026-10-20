@@ -2237,3 +2237,21 @@ Stable planned-slot repair and a real pending-Run regression remain **NOT QUALIF
 `q0ja` stays open. A separate access-snapshot failure can discard known physical
 progress; its repair must retain an explicit non-complete outcome, not fake an
 empty successful evidence snapshot. Neither finding justifies a live upgrade.
+
+Generation09 retry02 **FAILED** at normalized readback, after all1,065,450 Review
+records and workbook save succeeded. `identity_aliases.csv` declares359,056,948B
+against268,435,456B. Runtime1032.422s, CPU1026.704s, reported cgroup peak15.4G,
+swap0; wrapper RSS5372KiB is not workbook RSS. Atomic staging was removed; no
+workbook was published or delivered. Archive/commitment digests remain unchanged.
+The CSV stream envelope becomes512MiB;1MiB decoded rows, expected record counts,
+key/generation checks and consumed-byte/growth guards remain unchanged.
+
+The actual pending-Run crash regression `96428f30` **FAIL** before repair:
+replay reserves attempt two. After typed baseline admission, `3ebfeea9` **PASS**.
+Combined source/normalized `cca53643` **PASS152/152**; format/check/lint
+`7d4df883`/`7529f5a5`/`33e88beb` **PASS**. A separately journaled read-only
+baseline binds each physical Run; replay consumes its retained outcome or explicit
+uncertainty, while a new gated iteration may advance. Invalid baselines refuse.
+Obsolete reservation API/callers were migrated; Fjall encoding and registration
+receipts remain unchanged. Access-snapshot progress retention is still a separate
+unqualified candidate. Retry03 and original live-journal migration are **NOT RUN**.

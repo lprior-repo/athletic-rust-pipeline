@@ -425,8 +425,10 @@ Latest exact-source checkpoint: `eb3dc73712a3947d2673b3eba72951a88b82663d`,
 tree `8a1d54f433c9e64a27d270eadafdf46c9d34b9c2`. Canonical gates, incoming
 relay publication and original-A replay pass; the optimized CLI verifies all three
 unchanged original workbooks. Lossless worksheet paging and strict all-page readback
-pass adjacent regressions. Generation09 retry02 is running against the same committed
-older input after retry01 exceeded Excel's row limit. No national workbook delivered.
+pass adjacent regressions. Generation09 retry02 writes all Review records and saves
+the workbook, then refuses a359,056,948-byte aliases CSV at its256MiB readback cap.
+The same-input retry03 remains pending a qualified512MiB streaming readback build.
+No national workbook delivered.
 
 Prior integrated static checkpoint: `ddd07ff76f9750a460967471649813da3f1d98b7`,
 tree `005e50d310e668b5f7722c1c74741b5602edd381`. Its exact format/check/lint,
@@ -465,8 +467,8 @@ Current roster kernels are 12/13; original 2–11 identities and A artifacts rem
 | D: actual national feedback | Original Restate/serving owner; read-only `Census/status` | Private `diagnostic-live-status-during-a598-build.json` | Live `d6f6c68ad` | 1,630,891 raw athletes, 86,914 source meets, 3,568 canonical marks; NOT accepted-identity or coverage counts | Verified workbook, documentary acceptance, access/engineering gaps; no reset or bypass |
 | R5: frozen normalized readback | Eight-family independent readback, grouping and durable input jobs | `88e7a1c8`; initial16 failures repaired by captured-policy catalog binding | `a598a5b32` | PASS80/80; production historical/current validation unchanged | Actual national artifact contents and manifest verification |
 | R13: Utah capture URI | Offline native `provider uhsaa` with controlled original-shaped input | `c26c1291`; private `diagnostic-uhsaa-cli-01/{before-27731275,after-a598a5b3}.json` | `a598a5b32` | PASS: rows0/errors1 → rows1/errors0, both requests0; strict ownership/address rules retained | Genuine population/deployment; adapter repair is not statewide coverage |
-| R14/D: national diagnostic publication | Same generation09/job/profile and committed archive; optimized CLI under16GiB/zeroSwap | Private retry01/02 receipts; archive `cabb54d8…c781e6` | Retry01 `a598a5b32`; retry02 `eb3dc7371` | Retry01 FAIL at Excel envelope after normalization; retry02 RUNNING with paging; no published workbook | Actual all-page artifact/readback and final resource receipt; full fault/resource qualification remains open |
-| R12: source cooldown replay | Real SDK handler, pending journal, Store reopen and fresh-clock expiry | `872cc610` adjacent199/199; initial late-condition FAIL `f44902f3` | `f5bd98eb1` | Normal/late-condition cases PASS; post-commit/pre-SDK-ACK crash replay still unqualified | `q0ja`: stable slot/outcome reuse; explicit access-evidence withholding; no live upgrade |
+| R14/D: national diagnostic publication | Same generation09/job/profile and committed archive; optimized CLI under16GiB/zeroSwap | Private retry01/02 receipts; archive `cabb54d8…c781e6` | Retry01 `a598a5b32`; retry02 `eb3dc7371` | Retry01 FAIL at Excel envelope; retry02 saves all Review rows, then FAIL at359,056,948-byte aliases CSV versus256MiB cap; no published workbook | Qualified512MiB bounded readback and retry03; full fault/resource qualification remains open |
+| R12: source cooldown replay | Real SDK handler, pending journal, Store reopen and fresh-clock expiry | Postcommit/preACK FAIL `96428f30` → PASS `3ebfeea9`; combined152/152 `cca53643` | Integrated source pending checkpoint | Journaled baseline consumes the retained physical slot; fresh iteration advances only after a new gate; unknowns remain honest | `q0ja`: explicit access-evidence withholding remains; no original live-journal upgrade |
 
 Prior identity, catalog, tie and managed-route closures remain scoped evidence.
 Neither checkpoint is blanket national acceptance.
