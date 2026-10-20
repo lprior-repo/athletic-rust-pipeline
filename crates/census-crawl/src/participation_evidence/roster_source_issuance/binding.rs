@@ -60,7 +60,7 @@ impl RosterExistingBindingAssessmentV1<'_, '_> {
         program: &TeamId,
         grant: &mut AttachmentReplayGrantV1,
     ) -> CrawlResult<(CanonicalSchool, CanonicalTeam)> {
-        super::source::original(evidence, grant, |grant| {
+        let result = super::source::original(evidence, grant, |grant| {
             let mut selected_school = None;
             scan::<CanonicalSchool>(
                 evidence,
@@ -93,7 +93,11 @@ impl RosterExistingBindingAssessmentV1<'_, '_> {
                 selected_school.ok_or_else(|| invalid("inspected roster school is missing"))?,
                 selected_program.ok_or_else(|| invalid("inspected roster program is missing"))?,
             ))
-        })
+        });
+        if result.is_err() {
+            grant.poison();
+        }
+        result
     }
 }
 
