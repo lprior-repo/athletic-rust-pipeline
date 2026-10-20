@@ -11,6 +11,7 @@ mod label;
 mod ledger;
 pub mod link;
 mod name;
+pub mod nces_address;
 mod schedule;
 mod school;
 mod text;

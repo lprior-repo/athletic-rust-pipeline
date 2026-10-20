@@ -27,7 +27,7 @@ pub use report::{
 };
 
 use anyhow::{bail, Context, Result};
-use census_domain::model::NcesAddressRunReceiptV1;
+use census_domain::school_directory::nces_address::NcesAddressRunReceiptV1;
 use census_domain::school_directory::{ChangeSet, YearMonth};
 use census_store::Store;
 use clap::Args;

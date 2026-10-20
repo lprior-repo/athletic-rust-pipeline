@@ -1,4 +1,5 @@
-use census_domain::model::{serialized_digest, NcesAddressRunReceiptV1, RunManifest};
+use census_domain::model::{serialized_digest, RunManifest};
+use census_domain::school_directory::nces_address::NcesAddressRunReceiptV1;
 use fjall::{PersistMode, Readable};
 
 use crate::{Store, StoreError, StoreResult};
@@ -101,6 +102,9 @@ impl Store {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use census_domain::school_directory::nces_address::{
+        NcesArtifactProviderV1, NcesArtifactReferenceV1,
+    };
     use census_domain::{model::*, UsJurisdiction};
 
     fn manifest() -> TestResult<RunManifest> {

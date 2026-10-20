@@ -2265,3 +2265,13 @@ Post-extraction format/check/lint `ff5f92f2`/`d18de97f`/`83834059` **PASS**;
 NCES plus pending-Run regression `3aa1c313` **PASS72/72**.
 Retained NCES reopen still reads files before bounding their lengths: a source
 finding tracked under `l0h1`, not a reproduced OOM or closed R14 requirement.
+
+Original-A replay on `42e1dc46` **FAIL** (`d07db3d1`): the new NCES declaration
+changed pinned `census-domain/src/model.rs`, making the immutable kernel unsupported.
+NCES receipt types now belong to `school_directory::nces_address`; all callers migrate,
+with no old-path alias or wire change. `model.rs` is byte-identical to the prior
+passing `eb3dc737` version: SHA `93e0d7fba5ed765ef36cad6bf66b151774375845457e3144fb6f08db3e812343`.
+No source-inventory allowlist, expected digest, retained artifact or guard was changed.
+All-target check `5b0f318d`, format/lint `4da5f34e`/`46f770cb` and NCES cases
+`ab1f11e9` **PASS8/8**. Precommit original-A `0efc0fc9` correctly refuses
+`GitReportedDirty`; a clean committed replay is still required before release.

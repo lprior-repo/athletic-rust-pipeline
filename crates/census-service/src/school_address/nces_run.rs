@@ -4,9 +4,9 @@ mod tests;
 mod verified_input;
 
 use anyhow::{bail, Context, Result};
-use census_domain::model::{
-    serialized_digest, NcesAddressRunReceiptV1, NcesArtifactProviderV1, NcesArtifactReferenceV1,
-    RunManifest,
+use census_domain::model::{serialized_digest, RunManifest};
+use census_domain::school_directory::nces_address::{
+    NcesAddressRunReceiptV1, NcesArtifactProviderV1, NcesArtifactReferenceV1,
 };
 use census_domain::UsJurisdiction;
 use census_store::Store;

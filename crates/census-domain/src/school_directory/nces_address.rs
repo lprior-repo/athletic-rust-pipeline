@@ -1,4 +1,4 @@
-use super::{RunManifest, SchoolYear};
+use crate::model::{RunManifest, SchoolYear};
 use crate::UsJurisdiction;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};

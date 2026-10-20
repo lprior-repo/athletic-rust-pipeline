@@ -1,5 +1,7 @@
 use anyhow::{bail, Context, Result};
-use census_domain::model::{NcesAddressRunReceiptV1, NcesArtifactProviderV1};
+use census_domain::school_directory::nces_address::{
+    NcesAddressRunReceiptV1, NcesArtifactProviderV1, NcesArtifactReferenceV1,
+};
 use census_domain::school_directory::SchoolDirectoryEntry;
 use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
@@ -44,8 +46,8 @@ impl ReplayFormat {
 pub(super) fn verify_generation(
     generation: &super::super::VerifiedGeneration,
     scope: &[UsJurisdiction],
-    ccd: &census_domain::model::NcesArtifactReferenceV1,
-    pss: &census_domain::model::NcesArtifactReferenceV1,
+    ccd: &NcesArtifactReferenceV1,
+    pss: &NcesArtifactReferenceV1,
     expected_generation_digest: Option<&str>,
 ) -> Result<()> {
     let report: super::super::Report =
