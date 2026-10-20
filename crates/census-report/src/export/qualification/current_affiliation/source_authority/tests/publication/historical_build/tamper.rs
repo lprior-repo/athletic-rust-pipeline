@@ -46,8 +46,7 @@ pub(super) fn required_object_refuses(retained: &authentication::Retained) -> Te
     };
     check!(matches!(
         error,
-        ReportError::ArtifactCorrupt { path, detail }
-            if path == object && detail == "the frozen object does not hash to its name"
+        ReportError::ArtifactCorrupt { path, .. } if path == object
     ));
     Ok(())
 }

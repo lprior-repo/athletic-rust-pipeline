@@ -2096,3 +2096,10 @@ passed. The large-proof lifecycle verifies exact copied bytes after source remov
 low reader-ceiling refusal, same-size tamper and missing-object refusal. Old private
 8-MiB/384-object numerical forecasts were replaced by aggregate-boundary checks,
 not re-pinned. Clean-commit authentic-A, optimized CLI and generation09 remain pending.
+
+Clean generic-storage source`ff7d49cf` failed authentic-A`178240fa` at an incidental
+tamper-helper assertion containing an implementation error-text pin. Streaming
+verification uses a different message. The message pin was deleted, not re-pinned;
+typed`ArtifactCorrupt`and exact-object-path checks remain for the rerun. The
+dependent optimized build did not run, and no original-A artifact or producer pin
+was changed. Format`d64fe803`, check`c44b00f6`and lint`d455ba26`passed.
