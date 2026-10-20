@@ -126,6 +126,9 @@ pub(super) fn claims(
             .charge_steps(1)
             .map_err(super::super::super::source_error)?;
         let record: ReviewRecord = codec::decode(raw)?;
+        if record.basis.inspected_sequence > archive.selected_snapshot_sequence {
+            return Err(Error::Corrupt("review inspection follows publication").into());
+        }
         if record.basis.schema == super::super::withdrawal::BASIS_SCHEMA {
             withdrawals
                 .try_reserve(1)
@@ -154,9 +157,6 @@ fn claim_for_record(
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<(ReviewedRosterSourceClaimV1, (&'static str, String))> {
     let proposal = super::super::proposal(&record.basis.proposal)?;
-    if proposal.binding().snapshot_revision().get() > archive.selected_snapshot_sequence {
-        return Err(Error::Corrupt("review inspection follows publication").into());
-    }
     let admitted = admission(&proposal, objects, grant)?;
     let root = (admitted.root.schema.phase(), admitted.root.key.clone());
     let held = source
