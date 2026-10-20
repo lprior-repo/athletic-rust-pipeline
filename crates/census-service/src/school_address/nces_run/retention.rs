@@ -82,7 +82,7 @@ pub(super) fn verify_generation(
 pub(super) fn verify_retained_inputs(out: &Path, receipt: &NcesAddressRunReceiptV1) -> Result<()> {
     let archive = out.join("captures").join(receipt.input_manifest_digest());
     let manifest_path = archive.join("manifest.json");
-    let manifest_bytes = std::fs::read(&manifest_path)
+    let manifest_bytes = super::retained_io::manifest(&manifest_path)
         .with_context(|| format!("reading retained NCES manifest {}", manifest_path.display()))?;
     if sha256_hex(&manifest_bytes) != receipt.input_manifest_digest()
         || !archive.join(".complete").is_file()
@@ -113,12 +113,12 @@ pub(super) fn verify_retained_inputs(out: &Path, receipt: &NcesAddressRunReceipt
         {
             bail!("retained NCES capture metadata differs from its Store receipt");
         }
-        let body = std::fs::read(archive.join(artifact.sha256()))?;
-        if u64::try_from(body.len())? != artifact.byte_length()
-            || sha256_hex(&body) != artifact.sha256()
-        {
-            bail!("retained NCES capture bytes differ from their Store receipt");
-        }
+        super::retained_io::capture(
+            &archive.join(artifact.sha256()),
+            artifact.byte_length(),
+            artifact.sha256(),
+        )
+        .with_context(|| format!("verifying retained NCES capture {}", artifact.sha256()))?;
     }
     Ok(())
 }

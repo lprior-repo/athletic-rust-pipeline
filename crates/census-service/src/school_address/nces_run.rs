@@ -1,3 +1,4 @@
+mod retained_io;
 mod retention;
 #[cfg(test)]
 mod tests;

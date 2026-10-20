@@ -3,6 +3,8 @@ use census_domain::model::{CensusRun, GradYear, RunManifest, SchoolYear};
 use census_domain::school_directory::SchoolDirectoryEntry;
 use std::collections::BTreeSet;
 
+mod retention_bounds;
+
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const CCD: &[u8] = include_bytes!("../../../tests/fixtures/nces_run/ccd_synthetic.csv");

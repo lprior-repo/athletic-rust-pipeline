@@ -2275,3 +2275,22 @@ No source-inventory allowlist, expected digest, retained artifact or guard was c
 All-target check `5b0f318d`, format/lint `4da5f34e`/`46f770cb` and NCES cases
 `ab1f11e9` **PASS8/8**. Precommit original-A `0efc0fc9` correctly refuses
 `GitReportedDirty`; a clean committed replay is still required before release.
+
+Clean committed `b1a63afc12401f5ab20201afaefc3c1f254f31fb`, tree
+`358799949642f37d8551d396660278e66ad54fb2`, **PASS** unchanged original-A replay
+(`0efc0fc9`, Nextest `c6a32768-7df1-48c2-8ac0-395ea113385f`), retained controlled
+workbooks (`c68e65f3`) and optimized build (`530e04de`). Task IDs may repeat across
+environments: the earlier precommit `0efc0fc9` was a distinct failing invocation.
+Its immutable CLI verifies all three original workbooks. Service SHA
+`40d81326d933fafe546c01d525dc401a808bd1da7511b3de5061dd20324b9a4f`;
+serve SHA `8ed7020556881145d2311943fa4c70c1db4e56f49e5c2e2be2ba24966e424dd4`.
+Generation09 retry03 is **RUNNING**, unchanged request/archive/commitment,16GiB/zeroSwap.
+One-job incremental Rust checks overlap this retry; timing is not an isolated benchmark.
+
+Incoming PR108 was normally merged at `107a0985da2aa5bbda10af62ea232953da37dae9`.
+The retained NCES proof-boundary case `7ce2d5cb` **FAIL** before repair: no typed
+capacity refusal. Bounded manifest reads and streamed capture hashing produce the
+required refusal while preserving receipts and original source bytes; `55a745a6`
+**PASS13/13**, including valid cold replay and canonical school joins. Format,
+all-target check and lint `c64ef248`/`bdce40e5`/`038644eb` **PASS**.
+This does not certify every new PR108 workflow or the full R14 resource requirement.
