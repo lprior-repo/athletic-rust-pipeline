@@ -115,21 +115,12 @@ pub(super) fn recipe_for_artifact(
         4..=6 => digest(&(
             "athletic-publication-artifact-recipe-v1",
             artifact_revision,
-            result_group_recipe(lineage, options)?,
+            historical_recipe(lineage, options)?,
         )),
         _ => Err(super::invariant(format!(
             "unsupported publication recipe artifact revision {artifact_revision}"
         ))),
     }
-}
-
-fn result_group_recipe(
-    lineage: &crate::export::DatasetLineage,
-    options: &Options,
-) -> ReportResult<Digest> {
-    let mut era = lineage.clone();
-    era.policy_revision = era.policy_revision.min(21);
-    historical_recipe(&era, options)
 }
 
 fn historical_recipe(
@@ -175,3 +166,6 @@ pub(super) fn input_refused(error: crate::report::ReportError) -> crate::report:
         other => other,
     }
 }
+
+#[cfg(test)]
+mod tests;
