@@ -425,7 +425,8 @@ Latest exact-source checkpoint: `a598a5b327bca15dfeec973733cc6eadfdfedf27`,
 tree `968989c31cb63d6b2fe33b487eb9fd5891c76de0`. Static gates, focused
 source/normalized checks, controlled workbook withdrawal and original-A replay pass;
 the optimized CLI verifies all three unchanged original workbooks. The committed
-older national input is retrying publication; no national workbook is delivered.
+older national input passed normalization but failed the Review Excel row limit;
+no national workbook is delivered. `jsyw` owns lossless paging and all-page readback.
 
 Prior integrated static checkpoint: `ddd07ff76f9750a460967471649813da3f1d98b7`,
 tree `005e50d310e668b5f7722c1c74741b5602edd381`. Its exact format/check/lint,
@@ -464,7 +465,7 @@ Current roster kernels are 12/13; original 2–11 identities and A artifacts rem
 | D: actual national feedback | Original Restate/serving owner; read-only `Census/status` | Private `diagnostic-live-status-during-a598-build.json` | Live `d6f6c68ad` | 1,630,891 raw athletes, 86,914 source meets, 3,568 canonical marks; NOT accepted-identity or coverage counts | Verified workbook, documentary acceptance, access/engineering gaps; no reset or bypass |
 | R5: frozen normalized readback | Eight-family independent readback, grouping and durable input jobs | `88e7a1c8`; initial16 failures repaired by captured-policy catalog binding | `a598a5b32` | PASS80/80; production historical/current validation unchanged | Actual national artifact contents and manifest verification |
 | R13: Utah capture URI | Offline native `provider uhsaa` with controlled original-shaped input | `c26c1291`; private `diagnostic-uhsaa-cli-01/{before-27731275,after-a598a5b3}.json` | `a598a5b32` | PASS: rows0/errors1 → rows1/errors0, both requests0; strict ownership/address rules retained | Genuine population/deployment; adapter repair is not statewide coverage |
-| R14/D: national diagnostic publication | Same generation09/job/profile and committed archive; optimized CLI under16GiB/zeroSwap | Private `diagnostic-snapshot-09-retry-01-request.json`; archive `cabb54d8…c781e6` | `a598a5b32` | RETRY STARTED; capture committed but prior256MiB normalization refusal prevented workbook | Artifact readback and representative resource/fault qualification; older snapshot is not current live data |
+| R14/D: national diagnostic publication | Same generation09/job/profile and committed archive; optimized CLI under16GiB/zeroSwap | Private retry01 receipts; archive `cabb54d8…c781e6` | `a598a5b32` | FAIL after normalization: Review exceeds Excel envelope;774.608s runtime,16GiB cgroup peak,swap0; no published workbook | `jsyw` lossless paging/readback, same-input retry; full resource/fault qualification remains open |
 
 Prior identity, catalog, tie and managed-route closures remain scoped evidence.
 Neither checkpoint is blanket national acceptance.

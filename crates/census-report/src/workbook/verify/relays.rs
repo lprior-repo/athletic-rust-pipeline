@@ -1,6 +1,6 @@
 use super::canonical::Value;
 use super::expectations::Expectations;
-use super::read::{compare, verify_header, verify_width, Book, Budget, EXCEL_ROWS_PER_SHEET};
+use super::read::{compare, verify_header, verify_width, Book, Budget};
 use super::report::Findings;
 use crate::report::{RelayProjection, RelaySelection, ReportError, ReportResult};
 
@@ -28,41 +28,36 @@ pub(super) fn verify(
     let projection = RelayProjection::of(&expectations.derivation, &expectations.admission)?;
     let mut encoding_error = None;
     let mut seen = 0usize;
-    let shape = book.read(
-        TITLE,
-        Budget {
-            rows: EXCEL_ROWS_PER_SHEET,
-            columns: HEADERS.len(),
-        },
-        |row| {
-            verify_width(row, TITLE, HEADERS.len(), findings);
-            if row.index() == 0 {
-                verify_header(row, TITLE, &HEADERS, findings);
-                return;
-            }
-            let position = row.index().saturating_sub(1);
-            let Some(expected) = projection.selections.get(position) else {
-                findings.note(format!(
-                    "Relays has an unexpected accepted row at {}",
-                    row.index()
-                ));
-                return;
-            };
-            match values(expected) {
-                Ok(values) => {
-                    for (column, value) in values.into_iter().enumerate() {
-                        compare(row, TITLE, column, &value, findings);
-                    }
-                    seen = seen.saturating_add(1);
+    let mut budget = Budget::family(projection.selections.len())?;
+    budget.columns = HEADERS.len();
+    let shape = book.read_family(TITLE, budget, |row| {
+        verify_width(row, TITLE, HEADERS.len(), findings);
+        if row.index() == 0 {
+            verify_header(row, TITLE, &HEADERS, findings);
+            return;
+        }
+        let position = row.index().saturating_sub(1);
+        let Some(expected) = projection.selections.get(position) else {
+            findings.note(format!(
+                "Relays has an unexpected accepted row at {}",
+                row.index()
+            ));
+            return;
+        };
+        match values(expected) {
+            Ok(values) => {
+                for (column, value) in values.into_iter().enumerate() {
+                    compare(row, TITLE, column, &value, findings);
                 }
-                Err(error) => {
-                    if encoding_error.is_none() {
-                        encoding_error = Some(error);
-                    }
+                seen = seen.saturating_add(1);
+            }
+            Err(error) => {
+                if encoding_error.is_none() {
+                    encoding_error = Some(error);
                 }
             }
-        },
-    )?;
+        }
+    })?;
     if let Some(error) = encoding_error {
         return Err(error);
     }

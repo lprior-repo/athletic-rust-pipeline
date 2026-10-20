@@ -6,10 +6,7 @@ use super::current_school::AffiliationExpectations;
 use super::expectations::Expectations;
 use super::labels;
 use super::public_identity::{self, Expected};
-use super::read::{
-    compare, verify_header, verify_width, Book, Budget, Shape, SparseRow, EXCEL_COLUMNS_PER_SHEET,
-    EXCEL_ROWS_PER_SHEET,
-};
+use super::read::{compare, verify_header, verify_width, Book, Budget, Shape, SparseRow};
 use super::report::Findings;
 
 pub(super) fn verify(
@@ -27,11 +24,8 @@ pub(super) fn verify(
     let mut visit = |row: &SparseRow| {
         visit_row(row, expectations, schools.as_ref(), &mut seen, findings);
     };
-    let budget = Budget {
-        rows: EXCEL_ROWS_PER_SHEET,
-        columns: EXCEL_COLUMNS_PER_SHEET,
-    };
-    let shape = book.read(labels::PRS, budget, &mut visit)?;
+    let budget = Budget::family(prs.len())?;
+    let shape = book.read_family(labels::PRS, budget, &mut visit)?;
     report_prs_read_result(shape, prs, seen, findings);
     if seen != prs.len() {
         findings.note(format!(

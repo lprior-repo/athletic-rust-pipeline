@@ -12,12 +12,19 @@ Making Excel the evidence store or building a second interactive database would 
 Publish `Athletes`, `PRs`, partitioned `Performances_*`, `Coaches`, `Schools`, `Meets`, `Sources`,
 `Coverage`, `Conflicts`, `Review` and `Run Metrics` from the durable census. Athlete rows must
 separate accepted identities from retained review cases. PR rows are per athlete and **compatible
-comparison key**, not merely display event name. Partition performance sheets at Excel's row limit.
+comparison key**, not merely display event name. Every physical worksheet must stay within Excel's
+1,048,576-row limit.
 
 All output formats share one input generation and semantic derivation. Preserve exact record IDs,
 source references, coverage limits and historical affiliation. Independently read back and reconcile
 the artifacts before publication and sealing. Verify semantic records and PR winners; byte-identical
 XLSX files alone do not establish correctness.
+
+Stream at most 1,000,000 data rows plus the repeated header per page. Preserve the existing
+`Performances_001` naming. Other logical families keep their base name on page one and use
+`_002`, `_003`, etc. thereafter. Retain every ordered record; do not truncate to fit Excel.
+Readback must reconcile all pages against one logical row budget and reject missing pages,
+changed headers and extra records. Pagination does not change the frozen input or row semantics.
 
 Coach observation claims are grouped by school, then role, program and owner, and budgeted per owner
 and per school before any claim or contact is adapted for a working sheet. A group over its budget is

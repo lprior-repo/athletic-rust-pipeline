@@ -14,14 +14,24 @@ pub(super) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 pub(super) struct FixedSequenceClock {
     before: &'static str,
     after: &'static str,
+    before_calls: usize,
     calls: AtomicUsize,
 }
 
 impl FixedSequenceClock {
     pub(super) fn new(before: &'static str, after: &'static str) -> Self {
+        Self::new_repeating(before, 1, after)
+    }
+
+    pub(super) fn new_repeating(
+        before: &'static str,
+        before_calls: usize,
+        after: &'static str,
+    ) -> Self {
         Self {
             before,
             after,
+            before_calls,
             calls: AtomicUsize::new(0),
         }
     }
@@ -37,7 +47,7 @@ impl census_store::clock::Clock for FixedSequenceClock {
     }
 
     fn today_iso8601(&self) -> String {
-        if self.calls.fetch_add(1, Ordering::SeqCst) == 0 {
+        if self.calls.fetch_add(1, Ordering::SeqCst) < self.before_calls {
             self.before.to_owned()
         } else {
             self.after.to_owned()

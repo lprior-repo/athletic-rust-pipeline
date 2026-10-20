@@ -3,6 +3,9 @@ use rust_xlsxwriter::Workbook;
 use std::path::Path;
 
 use super::cells::{Cell, SheetChrome, SheetWriter};
+use super::sheet_family::DATA_ROWS_PER_SHEET;
+
+const HEADER_ROWS: usize = 1;
 
 mod join;
 mod rows;
@@ -11,14 +14,6 @@ mod spill;
 pub use join::PerformanceProjection;
 pub use rows::{PerformanceRow, ProjectedValue};
 use spill::PerformanceRows;
-
-const EXCEL_ROWS_PER_SHEET: usize = 1_048_576;
-
-const HEADER_ROWS: usize = 1;
-
-const PARTITION_MARGIN: usize = 48_575;
-
-const DATA_ROWS_PER_SHEET: usize = EXCEL_ROWS_PER_SHEET - HEADER_ROWS - PARTITION_MARGIN;
 
 const COLUMNS: [(&str, u16); 20] = [
     ("Canonical Result ID", 22),

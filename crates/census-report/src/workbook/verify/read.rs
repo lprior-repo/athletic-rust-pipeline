@@ -1,18 +1,20 @@
 use crate::report::{artifact_corrupt, io_error, verifier_input, ReportError, ReportResult};
 use calamine::{Reader, Xlsx};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
 use super::canonical::{cell_at, Value};
-use super::expectations::Expectations;
 use super::report::Findings;
 use super::xlsx::{self, Profile};
 
+mod family;
+mod inventory;
 mod rows;
 mod stream;
 
+pub(super) use inventory::verify_inventory;
 use rows::Rows;
 
 pub(super) const EXCEL_ROWS_PER_SHEET: usize = 1_048_576;
@@ -125,6 +127,15 @@ impl Book {
         budget: Budget,
         mut visit: impl FnMut(&SparseRow),
     ) -> ReportResult<Option<Shape>> {
+        self.read_rows(name, budget, |row| visit(row))
+    }
+
+    fn read_rows(
+        &mut self,
+        name: &str,
+        budget: Budget,
+        mut visit: impl FnMut(&mut SparseRow),
+    ) -> ReportResult<Option<Shape>> {
         budget.usable()?;
         if !self.names.iter().any(|sheet| sheet == name) {
             return Ok(None);
@@ -145,12 +156,8 @@ impl Book {
     }
 }
 
-fn visit_row(row: &SparseRow, next: usize, visit: &mut impl FnMut(&SparseRow)) -> usize {
-    let mut index = next;
-    while index < row.index {
-        visit(&SparseRow::new(index));
-        index = index.saturating_add(1);
-    }
+fn visit_row(row: &mut SparseRow, next: usize, visit: &mut impl FnMut(&mut SparseRow)) -> usize {
+    (next..row.index).for_each(|index| visit(&mut SparseRow::new(index)));
     visit(row);
     row.index.saturating_add(1)
 }
@@ -232,28 +239,6 @@ pub(super) fn verify_width(row: &SparseRow, sheet: &str, columns: usize, finding
     }
 }
 
-pub(super) fn verify_inventory(
-    book: &Book,
-    expectations: &Expectations<'_>,
-    findings: &mut Findings,
-) {
-    let names: BTreeSet<String> = book.names().into_iter().collect();
-    let expected = expectations.sheet_names();
-    for name in &expected {
-        if !names.contains(name) {
-            findings.note(format!("sheet {name} is missing from the workbook"));
-        }
-    }
-    let known: BTreeSet<&str> = expected.iter().map(String::as_str).collect();
-    for name in &names {
-        if !known.contains(name.as_str()) {
-            findings.note(format!(
-                "sheet {name} is not part of the frozen publication objective"
-            ));
-        }
-    }
-}
-
 fn unreadable(path: &Path, source: calamine::XlsxError) -> ReportError {
     artifact_corrupt(
         path,
@@ -266,3 +251,6 @@ fn unreadable(path: &Path, source: calamine::XlsxError) -> ReportError {
 
 #[cfg(test)]
 pub(super) mod tests;
+
+#[cfg(test)]
+pub(super) mod family_tests;

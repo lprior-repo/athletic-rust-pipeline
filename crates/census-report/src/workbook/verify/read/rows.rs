@@ -9,7 +9,7 @@ pub(super) struct Rows<'a, F> {
     held: Option<SparseRow>,
 }
 
-impl<'a, F: FnMut(&SparseRow)> Rows<'a, F> {
+impl<'a, F: FnMut(&mut SparseRow)> Rows<'a, F> {
     pub(super) fn new(visit: &'a mut F) -> Self {
         Self {
             visit,
@@ -19,15 +19,15 @@ impl<'a, F: FnMut(&SparseRow)> Rows<'a, F> {
     }
 }
 
-impl<F: FnMut(&SparseRow)> xlsx::Cells for Rows<'_, F> {
+impl<F: FnMut(&mut SparseRow)> xlsx::Cells for Rows<'_, F> {
     fn cell(&mut self, row: usize, column: usize, value: Value) -> ReportResult<()> {
         if self
             .held
             .as_ref()
             .is_none_or(|current| current.index != row)
         {
-            if let Some(finished) = self.held.take() {
-                self.next = visit_row(&finished, self.next, self.visit);
+            if let Some(mut finished) = self.held.take() {
+                self.next = visit_row(&mut finished, self.next, self.visit);
             }
             self.held = Some(SparseRow::new(row));
         }
@@ -38,11 +38,9 @@ impl<F: FnMut(&SparseRow)> xlsx::Cells for Rows<'_, F> {
     }
 
     fn finish(&mut self, rows: usize) {
-        if let Some(finished) = self.held.take() {
-            self.next = visit_row(&finished, self.next, self.visit);
+        if let Some(mut finished) = self.held.take() {
+            self.next = visit_row(&mut finished, self.next, self.visit);
         }
-        for index in self.next..rows {
-            (self.visit)(&SparseRow::new(index));
-        }
+        (self.next..rows).for_each(|index| (self.visit)(&mut SparseRow::new(index)));
     }
 }

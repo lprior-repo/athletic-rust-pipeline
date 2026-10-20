@@ -6,10 +6,7 @@ use super::canonical::cell_at;
 use super::expectations::Expectations;
 use super::labels;
 use super::labels::athlete_headers::Schema;
-use super::read::{
-    compare, verify_header, verify_width, Book, Budget, SparseRow, EXCEL_COLUMNS_PER_SHEET,
-    EXCEL_ROWS_PER_SHEET,
-};
+use super::read::{compare, verify_header, verify_width, Book, Budget, SparseRow};
 use super::report::Findings;
 
 mod cells;
@@ -79,11 +76,8 @@ impl<'a, 'd> Verifier<'a, 'd> {
     }
 
     fn run(mut self, book: &mut Book) -> ReportResult<()> {
-        let budget = Budget {
-            rows: EXCEL_ROWS_PER_SHEET,
-            columns: EXCEL_COLUMNS_PER_SHEET,
-        };
-        let read = book.read(labels::ATHLETES, budget, |row| self.visit(row))?;
+        let budget = Budget::family(self.ordered.len())?;
+        let read = book.read_family(labels::ATHLETES, budget, |row| self.visit(row))?;
         if read.is_some() {
             self.findings.rows(self.seen);
         } else {

@@ -2,6 +2,10 @@ use crate::report::{xlsx_error, ReportError, ReportResult};
 use rust_xlsxwriter::{Format, Workbook, Worksheet};
 use std::path::Path;
 
+use super::sheet_family::DATA_ROWS_PER_SHEET;
+
+mod pagination;
+
 #[derive(Debug, Clone, PartialEq)]
 pub(super) enum Cell {
     Text(String),
@@ -83,20 +87,21 @@ pub(super) fn write_sheet_rows<I>(
 where
     I: IntoIterator<Item = ReportResult<Vec<Cell>>>,
 {
-    let mut writer = SheetWriter::start(book, path, layout.name, layout.widths)?;
-    let mut written: usize = 0;
-    let mut last_column: usize = 0;
-    for row in rows {
-        let cells = row?;
-        last_column = last_column.max(cells.len().saturating_sub(1));
-        writer.write_row(written, &cells)?;
-        written = written
-            .checked_add(1)
-            .ok_or_else(|| ReportError::Invariant {
-                detail: "the worksheet wrote more rows than it can count".to_string(),
-            })?;
-    }
-    writer.finish(written, last_column, layout.chrome)
+    pagination::write_paged(book, path, layout, rows, DATA_ROWS_PER_SHEET)
+}
+
+#[cfg(test)]
+pub(super) fn write_paged_with_limit<I>(
+    book: &mut Workbook,
+    path: &Path,
+    layout: SheetLayout<'_>,
+    rows: I,
+    max_data_rows: usize,
+) -> ReportResult<()>
+where
+    I: IntoIterator<Item = ReportResult<Vec<Cell>>>,
+{
+    pagination::write_paged(book, path, layout, rows, max_data_rows)
 }
 
 pub(super) struct SheetWriter<'a> {
@@ -250,3 +255,6 @@ impl<'a> SheetWriter<'a> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -20,7 +20,7 @@ pub(super) use registration::register;
 use settlement::{settle, validated_settled};
 
 pub(super) const PHASE: &str = "teams_source_attempts_v1";
-const MAX_ATTEMPTS: u8 = 3;
+pub(super) const MAX_ATTEMPTS: u8 = 3;
 
 pub(super) enum Admission {
     Settled(TeamsSourceOutcome),

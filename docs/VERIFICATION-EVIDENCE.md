@@ -2195,3 +2195,24 @@ blocking/admission resources before at most two durable sleeps. No retry slot is
 consumed during the gate. Indefinite blocks remain refused without settlement.
 The403 setup is explicitly ledger-seeded; this does not claim physical IHSA
 acquisition or native Restate/live-deployment qualification.
+
+The late-condition case exposes a second cooldown defect: a cached initial `Proceed`
+can reserve attempt two after a new condition arrives. Baseline `f44902f3` **FAIL**;
+whole-attempt SDK journaling `5bebbf3a` and `ed8ec19e` **PASS**. Registration retains
+its separate receipt; each physical attempt records one result before the next
+access-decision position. No admission permit spans a durable sleep.
+
+Combined source and worksheet regressions `3d39693f` **FAIL**:85/92; four reader
+fixtures panic constructing empty Calamine ranges, one invalid sheet name exceeds
+Excel's name limit before reaching the verifier, and two settlement-replay fixtures
+do not acknowledge the new actual SDK Run. Repaired without loosening assertions:
+`17b396f0` **PASS92/92**, including real XLSX multi-page readback, late-page tampering,
+global row budgets, unchanged ledgers and fresh-clock cooldown expiry.
+Static check `26ded0e8` **PASS**; lint `d94a3d79` **FAIL** on four writer idioms.
+After the four writer-idiom repairs, exact-source format `b5b57d9e`, all-target
+check `249d9739` and lint `d4fb2fc5` **PASS** (existing force-warn argument diagnostics
+remain). Adjacent workbook/readback/source queue `872cc610` **PASS199/199**.
+The retained controlled50→withdraw51 workbook/reopen case `adbccc2c` **PASS1/1**.
+Both GPU changed-surface reviews report no confirmed writer/reader defect;
+service error/replay review remains open. Generation09 retry02, committed-build
+original-A replay and live endpoint upgrade are **NOT RUN**; no national completion.

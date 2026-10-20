@@ -17,7 +17,7 @@ pub(super) fn read(
     path: &Path,
     name: &str,
     budget: Budget,
-    visit: &mut impl FnMut(&SparseRow),
+    visit: &mut impl FnMut(&mut SparseRow),
 ) -> ReportResult<Shape> {
     let scope = ReadScope { path, name, budget };
     let rows = declared_shape(reader, &scope)?;
@@ -62,7 +62,7 @@ impl PendingRows {
         &mut self,
         cell: Cell<DataRef<'_>>,
         scope: &ReadScope<'_>,
-        visit: &mut impl FnMut(&SparseRow),
+        visit: &mut impl FnMut(&mut SparseRow),
     ) -> ReportResult<()> {
         let (row, column) = position(&cell, scope)?;
         if self
@@ -70,8 +70,8 @@ impl PendingRows {
             .as_ref()
             .is_none_or(|current| current.index != row)
         {
-            if let Some(finished) = self.held.take() {
-                self.next = visit_row(&finished, self.next, visit);
+            if let Some(mut finished) = self.held.take() {
+                self.next = visit_row(&mut finished, self.next, visit);
             }
             self.held = Some(SparseRow::new(row));
         }
@@ -83,11 +83,11 @@ impl PendingRows {
         Ok(())
     }
 
-    fn finish(&mut self, rows: usize, visit: &mut impl FnMut(&SparseRow)) {
-        if let Some(finished) = self.held.take() {
-            self.next = visit_row(&finished, self.next, visit);
+    fn finish(&mut self, rows: usize, visit: &mut impl FnMut(&mut SparseRow)) {
+        if let Some(mut finished) = self.held.take() {
+            self.next = visit_row(&mut finished, self.next, visit);
         }
-        (self.next..rows).for_each(|index| visit(&SparseRow::new(index)));
+        (self.next..rows).for_each(|index| visit(&mut SparseRow::new(index)));
     }
 }
 

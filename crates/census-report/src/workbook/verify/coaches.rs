@@ -7,10 +7,7 @@ use std::collections::BTreeMap;
 use super::canonical::cell_at;
 use super::expectations::Expectations;
 use super::labels;
-use super::read::{
-    compare, verify_header, verify_width, Book, Budget, SparseRow, EXCEL_COLUMNS_PER_SHEET,
-    EXCEL_ROWS_PER_SHEET,
-};
+use super::read::{compare, verify_header, verify_width, Book, Budget, SparseRow};
 use super::report::Findings;
 use cells::{sport_label, values};
 
@@ -44,11 +41,8 @@ impl<'a, 'd> Verifier<'a, 'd> {
     }
 
     fn run(mut self, book: &mut Book) -> ReportResult<()> {
-        let budget = Budget {
-            rows: EXCEL_ROWS_PER_SHEET,
-            columns: EXCEL_COLUMNS_PER_SHEET,
-        };
-        match book.read(labels::COACHES, budget, |row: &SparseRow| self.visit(row))? {
+        let budget = Budget::family(self.ordered.len())?;
+        match book.read_family(labels::COACHES, budget, |row: &SparseRow| self.visit(row))? {
             Some(_) => self.findings.rows(self.seen),
             None => self.findings.note(format!(
                 "sheet {} is missing, so {} coach observations were never read",

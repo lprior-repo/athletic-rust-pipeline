@@ -6,6 +6,7 @@ use census_store::{Store, Table};
 use std::sync::Arc;
 
 mod fixture;
+mod late_condition;
 use fixture::{Driver, FixedSequenceClock as Clock, TestResult};
 
 fn ihsa_request() -> TestResult<TeamsSourceRequest> {
@@ -108,7 +109,15 @@ async fn cooldown_replay_uses_fresh_clock_after_sdk_sleep_before_attempt_two() -
     let store = Arc::new(Store::open(root.path())?);
     driver.restore(&root.path().join("sdk-journal"))?;
     driver.complete_sleep(&sleep)?;
-    driver.until_failure(&store, &clock, &request).await?;
+    let second = format!("{}/attempt/2/outcome", key(&request));
+    for _ in 0..8 {
+        let events = driver.step(&store, &clock, &request).await?;
+        check!(events.sleep.is_none() && events.failure.is_none() && events.output.is_none());
+        if store.journal_contains(ledger::PHASE, &second)? {
+            break;
+        }
+    }
+    check!(store.journal_contains(ledger::PHASE, &second)?);
     check!(eq; driver.decisions.last(), Some(&serde_json::json!("Proceed")));
     check!(eq; clock.calls(), 2);
     unchanged(&store, &request, &row, 2)?;

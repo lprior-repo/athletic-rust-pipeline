@@ -103,7 +103,25 @@ async fn replay(store: &Store, url: &str, handler: &str) -> TestResult {
         return Err("fixture failure did not settle".into());
     };
     let before = store.journal_keys(ledger::PHASE)?;
-    let frames = invoke(&client, url, &operation, &journal).await?;
+    let mut frames = invoke(&client, url, &operation, &journal).await?;
+    for _ in 0..2 {
+        if frames.iter().any(|frame| frame.kind == 0x0401) {
+            break;
+        }
+        for frame in frames {
+            match frame.kind {
+                0x0411 => journal.push(frame),
+                0x0005 => journal.push(codec::notification(
+                    0x8011,
+                    frame.number(1)?,
+                    frame.bytes(14)?,
+                )?),
+                0x0001 | 0x0003 => {}
+                _ => return Err(format!("unexpected settlement replay frame {frame:?}").into()),
+            }
+        }
+        frames = invoke(&client, url, &operation, &journal).await?;
+    }
     check!(eq; output(&frames)?, serde_json::to_value(&expected)?);
     check!(!frames
         .iter()

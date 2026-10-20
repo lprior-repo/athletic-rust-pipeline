@@ -8,10 +8,7 @@ use std::path::{Path, PathBuf};
 
 use super::canonical::{cell_at, Value};
 use super::expectations::Expectations;
-use super::read::{
-    compare, verify_width, Book, Budget, Shape, SparseRow, EXCEL_COLUMNS_PER_SHEET,
-    EXCEL_ROWS_PER_SHEET,
-};
+use super::read::{compare, verify_width, Book, Budget, Shape, SparseRow, EXCEL_COLUMNS_PER_SHEET};
 use super::report::Findings;
 
 pub(in crate::workbook) mod contacts;
@@ -159,7 +156,7 @@ fn readback(
         seen = seen.saturating_add(1);
         compare_row(row, sheet, cells, findings);
     };
-    match book.read(sheet, sheet_budget(), &mut visit)? {
+    match book.read_family(sheet, sheet_budget(expected.len()), &mut visit)? {
         Some(shape) => shape_note(shape, sheet, expected.len(), findings),
         None => findings.note(unwritten(sheet, expected.len())),
     }
@@ -172,9 +169,9 @@ fn readback(
     Ok(seen)
 }
 
-fn sheet_budget() -> Budget {
+fn sheet_budget(rows: usize) -> Budget {
     Budget {
-        rows: EXCEL_ROWS_PER_SHEET,
+        rows,
         columns: EXCEL_COLUMNS_PER_SHEET,
     }
 }

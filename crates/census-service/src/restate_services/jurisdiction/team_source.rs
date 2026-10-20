@@ -41,15 +41,14 @@ impl TeamsSource {
         &self,
         ctx: &ObjectContext<'_>,
         request: &Arc<TeamsSourceRequest>,
-        admission: &Arc<admission::WorkAdmission>,
     ) -> Result<ledger::Identity, HandlerError> {
         let store = Arc::clone(&self.owner.store);
         let region = Arc::clone(self.jobs.region());
         let request = Arc::clone(request);
         let operation = ctx.key().to_string();
-        let admission = Arc::clone(admission);
         let Json(identity) = ctx
             .run(move || async move {
+                let admission = Arc::new(self.admit(&operation).await?);
                 blocking(
                     region,
                     admission::registration_worker(admission, store, operation, request),
