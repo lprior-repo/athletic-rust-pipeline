@@ -2491,5 +2491,33 @@ Candidate format`00bae9d7`, all-target check`7428d522`, source lint`df699a72`
 and historical replay/refusal matrix`7fad4383` **PASS21/21**.
 The first check`eabcc182` failed missing imports in the new module; imports were
 repaired before these passes and the source fingerprint recomputed.
-Forced arity advisories remain. Clean original-A, final-source publication and
-structural gates are still pending; this is not national/spec closure.
+Forced arity advisories remain.
+
+Native clean consumer`7f847665a68a91c8a608143b8d9376fcb7370ea9`,
+tree`ff669899d9097d10578082d7ede78c89f1612c6a`, now **PASS**:
+complete source-authority queue60/60 (`50d1a762`, Nextest`67efeb08…`),
+including unchanged original-A retentionSHA`8897f37e…c35908`;
+actual controlled49/50/51 workbook lifecycle1/1 (`d9f4caaa`).
+Comments`668f9083` checked5,108 Rust files; strict AST`533541d3` has zero
+functions over60 logical lines and no unresolved sites; seams`9daac8b1` passed.
+No predecessor pass is substituted for these executions.
+
+Rebuilt native CLI`9bf02d60`, binarySHA
+`e72a5b1461e2065f2fd5e2d569220ff80182b3fddd7813882af3199c4c033cbc`,
+independently verifies both unchanged source-free v80o G0/G1 generations.
+Private`native-verification-7f847665.json` under the retained v80o root records
+the actual argv, workbook hashes and exit0 for each. No source Store was opened.
+Optimized-build historical qualification and landing remain pending;
+native success is not an optimized or national/spec pass.
+
+The optimized owned-feature candidate is`8befb4a6…72ed43`, derived by changing
+only the actual Domain manifest descriptor in the original portable context.
+It is not a synthesized historical artifact. The exact forward allowance and
+two preserved, actually qualified native`6a0c6ee7…5444f` documents produce current
+source closure`d4117ca8902ad61a4174d2fe764847cad07e7e75caa5ddd3140b4d6d8255128e`.
+Candidate format`2674978c`, all-target check`fe2c7a3b`, source lint`91a4226f`
+and kernel/refusal matrix`1e7df74a` **PASS29/29**.
+Main corrected a worker's incorrect optimized requirement on the authentic native
+predecessors; the new positive native-context regression catches that defect.
+Two duplicate worker tests were removed. Actual optimized build/context/readback
+and clean final-source acceptance are still required before landing.

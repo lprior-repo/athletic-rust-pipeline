@@ -6,6 +6,7 @@ mod grant4g;
 mod member;
 mod portable;
 mod raw_value;
+mod raw_value_portable;
 
 type TestResult<E = Box<dyn std::error::Error>> = Result<(), E>;
 
@@ -60,6 +61,7 @@ fn authentic_predecessors_bind_original_owner_policy_only_in_reviewed_execution_
             EXECUTING_CONFIGURATION,
             PORTABLE_EXECUTING_CONFIGURATION,
             execution::RAW_VALUE_NATIVE_CONFIGURATION,
+            execution::RAW_VALUE_PORTABLE_CONFIGURATION,
         ];
         let accepted = if allowed_context == &EXECUTING_CONFIGURATION {
             reviewed_native.contains(&configuration)

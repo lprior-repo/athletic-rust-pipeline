@@ -151,10 +151,19 @@ They are historical fixtures, not regenerated current documents.
 
 The executing99-file closure includes the context rule and predecessor registry.
 Both semantic owners pin its actual source digest:
-`6a0c6ee7bdc01afebcf07c2d67a335d588a2b589e1461aa72a835bd49b75444f`.
+`d4117ca8902ad61a4174d2fe764847cad07e7e75caa5ddd3140b4d6d8255128e`.
 Epoch schemas12/13 and participationV4 do not change. Qualification still requires
 the unchanged original-A consumer and frozen-generation readback; no earlier pass
 qualifies this amended source automatically.
+
+The optimized owned-feature context candidate is
+`8befb4a63644c885bd231fa2aed429963959fc88cd602176ec6667e55b72ed43`.
+Only this exact optimized lane may additionally read known originals requiring
+`9e7f86bb…db41210`, `f4fe30b9…93de387` or `a01453e2…d3787d`.
+No reverse or alternate allowance follows. Two authentic native documents from
+qualified source`6a0c6ee7…5444f` remain exact predecessors with their native
+requirement, not relabeled optimized documents. Actual optimized configuration
+and original-A/G0/G1 CLI readback must qualify the candidate before release.
 
 **Consequences:** preserve original artifacts and producer pins; do not relabel
 them, reactivate old issuance claims or execute an old runtime. Qualification is

@@ -184,7 +184,7 @@ const QUALIFIED_ROW_LOCAL_V11: OriginalKernel = OriginalKernel {
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 
-fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 11] {
+fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 12] {
     match epoch {
         KernelEpoch::Full => [
             &FULL,
@@ -198,6 +198,7 @@ fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 11] {
             &member::FULL_NATIVE,
             &member::FULL_RAW_VALUE_NATIVE,
             &member::FULL_PORTABLE,
+            &member::FULL_CONTEXT_NATIVE,
         ],
         KernelEpoch::RowLocal => [
             &ROW_LOCAL,
@@ -211,6 +212,7 @@ fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 11] {
             &member::ROW_LOCAL_NATIVE,
             &member::ROW_LOCAL_RAW_VALUE_NATIVE,
             &member::ROW_LOCAL_PORTABLE,
+            &member::ROW_LOCAL_CONTEXT_NATIVE,
         ],
     }
 }

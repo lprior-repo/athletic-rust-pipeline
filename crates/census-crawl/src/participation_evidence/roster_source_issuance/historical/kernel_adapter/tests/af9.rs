@@ -59,6 +59,7 @@ fn authentic_af9_documents_obey_the_real_compiled_context_fence() -> TestResult 
         if configuration == EXECUTING_CONFIGURATION
             || configuration == PORTABLE_EXECUTING_CONFIGURATION
             || configuration == execution::RAW_VALUE_NATIVE_CONFIGURATION
+            || configuration == execution::RAW_VALUE_PORTABLE_CONFIGURATION
         {
             let checked = result?;
             checked.require_reference(expected_digest, 21_507)?;
