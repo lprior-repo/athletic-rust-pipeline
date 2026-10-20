@@ -26,20 +26,20 @@ const FIVE_STATE_SCOPE: [UsJurisdiction; 5] = [
 ];
 
 #[derive(Debug, Clone)]
-pub(crate) struct NcesSelectedInputV1 {
-    pub(crate) source_root: PathBuf,
-    pub(crate) run_manifest_digest: String,
-    pub(crate) scope: Vec<UsJurisdiction>,
-    pub(crate) ccd: NcesSelectedArtifactV1,
-    pub(crate) pss: NcesSelectedArtifactV1,
+pub struct NcesSelectedInputV1 {
+    pub source_root: PathBuf,
+    pub run_manifest_digest: String,
+    pub scope: Vec<UsJurisdiction>,
+    pub ccd: NcesSelectedArtifactV1,
+    pub pss: NcesSelectedArtifactV1,
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct NcesSelectedArtifactV1 {
-    pub(crate) path: PathBuf,
-    pub(crate) sha256: String,
-    pub(crate) source_url: String,
-    pub(crate) captured_on: String,
+pub struct NcesSelectedArtifactV1 {
+    pub path: PathBuf,
+    pub sha256: String,
+    pub source_url: String,
+    pub captured_on: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

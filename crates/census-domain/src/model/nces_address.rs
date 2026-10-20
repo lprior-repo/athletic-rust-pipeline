@@ -79,13 +79,20 @@ impl NcesArtifactReferenceV1 {
         if self.byte_length == 0 || self.byte_length > 128 * 1024 * 1024 {
             return Err(NcesArtifactReceiptError::ByteLength);
         }
-        let url = url::Url::parse(&self.source_url)
-            .map_err(|_| NcesArtifactReceiptError::SourceUrl)?;
-        if url.scheme() != "https" || url.host_str().is_none() || !url.username().is_empty() {
+        let url =
+            url::Url::parse(&self.source_url).map_err(|_| NcesArtifactReceiptError::SourceUrl)?;
+        if url.scheme() != "https"
+            || url.host_str().is_none()
+            || !url.username().is_empty()
+            || url.password().is_some()
+        {
             return Err(NcesArtifactReceiptError::SourceUrl);
         }
-        NaiveDate::parse_from_str(&self.captured_on, "%Y-%m-%d")
+        let captured_on = NaiveDate::parse_from_str(&self.captured_on, "%Y-%m-%d")
             .map_err(|_| NcesArtifactReceiptError::CaptureDate)?;
+        if captured_on.format("%Y-%m-%d").to_string() != self.captured_on {
+            return Err(NcesArtifactReceiptError::CaptureDate);
+        }
         Ok(())
     }
 }
@@ -157,10 +164,7 @@ impl NcesAddressRunReceiptV1 {
         &self.address_generation_digest
     }
 
-    pub fn validate_for_run(
-        &self,
-        run: &RunManifest,
-    ) -> Result<(), NcesArtifactReceiptError> {
+    pub fn validate_for_run(&self, run: &RunManifest) -> Result<(), NcesArtifactReceiptError> {
         self.validate()?;
         if self.scope != run.jurisdictions
             || run.jurisdictions.as_slice() != FIVE_STATE_SCOPE.as_slice()
@@ -215,4 +219,3 @@ pub enum NcesArtifactReceiptError {
     #[error("NCES receipt does not match a 2026-27, class-of-2027 selected run")]
     Run,
 }
-

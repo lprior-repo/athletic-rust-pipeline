@@ -21,14 +21,37 @@ pub use join::{
 };
 pub(crate) use join::{join_generation_pinned, EvidenceField, EvidenceFields};
 pub use manifest::{verify_current, VerifiedGeneration};
+pub use nces_run::{NcesSelectedArtifactV1, NcesSelectedInputV1};
 pub use report::{
     ChangeReport, CorpusReport, LaneReport, LedgerRow, PhaseReport, Report, SourceDecision,
 };
 
 use anyhow::{bail, Context, Result};
+use census_domain::model::NcesAddressRunReceiptV1;
 use census_domain::school_directory::{ChangeSet, YearMonth};
+use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
+
+/// Compose operator-selected, hash-pinned CCD/PSS inputs into a run-bound address generation.
+///
+/// This is an offline intake boundary: it reads only the paths in `selection`, refuses any file
+/// that does not match its declared SHA-256, runs the existing NCES parsers, retains the raw
+/// captures, and binds their lineage to the Store's existing selected-run manifest.
+pub fn accept_nces_address_run(
+    store: &Store,
+    selection: &NcesSelectedInputV1,
+) -> Result<NcesAddressRunReceiptV1> {
+    nces_run::accept(store, selection)
+}
+
+/// Reopen and verify the selected run's address generation and retained CCD/PSS capture bytes.
+pub fn reopen_nces_address_run(
+    store: &Store,
+    expected_run_manifest_digest: &str,
+) -> Result<(NcesAddressRunReceiptV1, VerifiedGeneration)> {
+    nces_run::reopen(store, expected_run_manifest_digest)
+}
 
 #[derive(Debug, Args)]
 #[command(

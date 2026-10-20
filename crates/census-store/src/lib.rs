@@ -72,11 +72,11 @@ mod journal;
 mod keys;
 mod lineage;
 mod meta;
-mod nces_address;
 #[cfg(feature = "native-fault-injection")]
 mod native_effect_checkpoint;
 #[cfg(feature = "native-fault-injection")]
 mod native_worker_boundary;
+mod nces_address;
 mod paths;
 mod profiles;
 pub mod read;
@@ -111,6 +111,7 @@ pub use inspect::StoreInspection;
 pub use lineage::StoreLineageError;
 #[cfg(feature = "native-fault-injection")]
 pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
+pub use nces_address::*;
 pub use profiles::{ProfileRegistration, ProfileRegistryError, MAX_PROFILE_RECORD_BYTES};
 pub use read::{
     build_athlete_identity_projection, decode_physical_observation, AcceptedPublicIdentitySnapshot,
@@ -122,7 +123,6 @@ pub use receipt::{
     MAX_FRONTIER_WITNESSES, MAX_OPERATION_BYTES,
 };
 pub use records::publish;
-pub use nces_address::*;
 pub use records::{
     BuildRecord, BuildState, FailureKind, InputRecord, InputState, LeaseMode, LeaseRecord,
     PublishRecord, PublishState, Transitioned, UnitRecord, UnitState,

@@ -151,11 +151,11 @@ pub use identity_projection::{
 pub use identity_review_partition::separate_generic_identity_cases;
 pub use identity_validation::{IdentityDecisionIssue, VerdictKind};
 pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
-pub use nces_address::{
-    NcesAddressRunReceiptV1, NcesArtifactProviderV1, NcesArtifactReferenceV1,
-    NcesArtifactReceiptError,
-};
 pub use natural_key::NaturalKey;
+pub use nces_address::{
+    NcesAddressRunReceiptV1, NcesArtifactProviderV1, NcesArtifactReceiptError,
+    NcesArtifactReferenceV1,
+};
 pub use normalization::{flip_last_first, normalize_name};
 pub use performance_identity::{PerformanceError, PerformanceIdentity, PerformanceResult};
 pub use provenance::{

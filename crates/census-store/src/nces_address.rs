@@ -1,6 +1,4 @@
-use census_domain::model::{
-    serialized_digest, NcesAddressRunReceiptV1, RunManifest,
-};
+use census_domain::model::{serialized_digest, NcesAddressRunReceiptV1, RunManifest};
 use fjall::{PersistMode, Readable};
 
 use crate::{Store, StoreError, StoreResult};
@@ -13,17 +11,13 @@ impl Store {
     /// The school-address replay and its raw input archive live below `out/nces-address`; this
     /// compact record binds those retained artifacts to the current RunManifest without changing
     /// the historical RunManifest wire format.
-    pub fn bind_nces_address_run_v1(
-        &self,
-        receipt: &NcesAddressRunReceiptV1,
-    ) -> StoreResult<()> {
+    pub fn bind_nces_address_run_v1(&self, receipt: &NcesAddressRunReceiptV1) -> StoreResult<()> {
         let _guard = self.lock_appends();
         let snapshot = self.db.snapshot();
-        let run: RunManifest = crate::run::read(&snapshot, &self.meta)?.ok_or_else(|| {
-            StoreError::Refused {
+        let run: RunManifest =
+            crate::run::read(&snapshot, &self.meta)?.ok_or_else(|| StoreError::Refused {
                 detail: "NCES address receipt requires a bound census run".to_string(),
-            }
-        })?;
+            })?;
         receipt
             .validate_for_run(&run)
             .map_err(|error| StoreError::Refused {
@@ -81,17 +75,15 @@ impl Store {
                 max: crate::MAX_JOURNAL_VALUE_BYTES,
             });
         }
-        let receipt: NcesAddressRunReceiptV1 = serde_json::from_slice(&raw).map_err(|source| {
-            StoreError::Json {
+        let receipt: NcesAddressRunReceiptV1 =
+            serde_json::from_slice(&raw).map_err(|source| StoreError::Json {
                 detail: "stored NCES address receipt is invalid".to_string(),
                 source,
-            }
-        })?;
-        let run: RunManifest = crate::run::read(&snapshot, &self.meta)?.ok_or_else(|| {
-            StoreError::Refused {
+            })?;
+        let run: RunManifest =
+            crate::run::read(&snapshot, &self.meta)?.ok_or_else(|| StoreError::Refused {
                 detail: "stored NCES address receipt has no run manifest".to_string(),
-            }
-        })?;
+            })?;
         receipt
             .validate_for_run(&run)
             .map_err(|error| StoreError::Refused {
