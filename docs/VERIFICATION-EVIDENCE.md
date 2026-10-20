@@ -2393,3 +2393,29 @@ Athletes/PRs remain empty and all1,065,450 aliases Unknown. The original-A chang
 consumer `b9d0e5d3` also **PASS1/1** on5c200e72 with original pins unchanged.
 The interrupted retry03 render+verification and this standalone verification are
 different workloads; their durations do not establish a speedup ratio.
+
+Actual `compare-reference` on the same5c200e72 immutable binary **completed with
+semantic mismatch** (`bg_358`, service exit1, not infrastructure failure).
+Traversal is complete: reference142,705, matched0, reference-only142,705,
+output athletes0; no duplicate reference IDs. Workbook preflight independently
+verified all1,430,116 rows. Runtime718.408s, CPU716.175s, cgroup peak8.6G/swap0.
+Private `reference-comparison-result.json` retains the complete production JSON.
+This is selected-output comparison, not raw-discovery overlap or a reconciled
+49-jurisdiction denominator. Supplemental fields remain explicitly unassessed.
+The same original generation09 request is retrying atomic publication with the
+5c200e72 binary (`bg_359`); every argument after the executable is unchanged.
+No recapture, reset, fabricated identity acceptance or live endpoint upgrade.
+
+Same-request atomic retry04 **PASS** on5c200e72 (`bg_359`, actual service exit0):
+runtime1338.650s, CPU1330.167s, cgroup peak14.9G/swap0 under16GiB.
+All1,430,116 rows verified before the successful fsync/publication fence.
+`diagnostic-snapshot-09-publication/current` resolves to generation
+`1afec5f48b6447f4a77d264a0595eeab7b2951242804a3cdd81f6a9049b2ffba`.
+Its actual workbook SHA is
+`04c84cf595c04b0dccd09173e19298f2321d2974d5381595540eecd32fcb2b6a`,
+matching the manifest. Private `publication-retry-04-result.json` retains argv,
+timings, pointer and population equivalence. Frozen lineage, normalized counts
+and every non-workbook artifact descriptor equal retry03; only the XLSX descriptor
+differs. The compared athletes CSV is byte-identical. This closes the measured
+paging/readback defects (`jsyw`, `tzu2`), not R1–R15 or full R14 acceptance:
+the published diagnostic still has0 accepted athletes/PRs. Live state is untouched.

@@ -421,18 +421,20 @@ Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
 ### 7.5. Latest qualified checkpoints — 2026-10-20
 
-Latest immutable release checkpoint: `b1a63afc12401f5ab20201afaefc3c1f254f31fb`,
-tree `358799949642f37d8551d396660278e66ad54fb2`. Controlled50→withdraw51,
-unchanged original-A replay and optimized native readback pass. The unrelated NCES
-receipt now lives outside the byte-identical frozen roster-kernel module.
-Generation09 retry03 saved the real workbook, then was interrupted with SIGTERM
-after identifying repeated full-dataset hashing inside row verification (`tzu2`).
-The retained diagnostic XLSX and bundle are explicitly unverified; structural
-readback confirms all Review records,55,344 coaches and zero selected athletes/PRs.
+Latest qualified immutable diagnostic release: `5c200e727b82cd8533530e7647726306c182fdf1`,
+tree `aecc93935dd5719a8a1cd7c833396378285d2306`. Same generation09 inputs now
+pass complete readback and atomic publication at14.9G peak/swap0. Current bundle:
+`var/census-national-v3-20261019/diagnostic-snapshot-09-publication/current/`.
+The original comparison completes with0 matched and142,705 reference-only rows;
+accepted athletes/PRs remain0. This is an honest diagnostic, not national acceptance.
+Earlier b1 retry03 was interrupted after identifying per-row whole-dataset hashing;
+its preserved bundle and immutable original-A/kernel evidence remain unchanged.
 
-Integrated source `052b0b0d` passes canonical static gates, all 386 adjacent cases
-including unchanged original-A replay, controlled 50→51 publication, zero-comments,
-trusted AST and module seams. National per-row rehash repair (`tzu2`) is next.
+Integrated source `052b0b0d` passed canonical static gates, all386 adjacent cases,
+original-A replay, controlled50→51, zero-comments, trusted AST and module seams.
+Later `5c200e72` passes canonical static gates,165 focused cases, original-A replay
+and actual same-input atomic national diagnostic publication. Accepted population
+is still0; exact member withdrawal `v80o` remains unimplemented.
 
 Prior integrated static checkpoint: `ddd07ff76f9750a460967471649813da3f1d98b7`,
 tree `005e50d310e668b5f7722c1c74741b5602edd381`. Its exact format/check/lint,
@@ -471,7 +473,7 @@ Current roster kernels are 12/13; original 2–11 identities and A artifacts rem
 | D: actual national feedback | Original Restate/serving owner; read-only `Census/status` | Private `diagnostic-live-status-during-a598-build.json` | Live `d6f6c68ad` | 1,630,891 raw athletes, 86,914 source meets, 3,568 canonical marks; NOT accepted-identity or coverage counts | Verified workbook, documentary acceptance, access/engineering gaps; no reset or bypass |
 | R5: frozen normalized readback | Eight-family independent readback, grouping and durable input jobs | `88e7a1c8`; initial16 failures repaired by captured-policy catalog binding | `a598a5b32` | PASS80/80; production historical/current validation unchanged | Actual national artifact contents and manifest verification |
 | R13: Utah capture URI | Offline native `provider uhsaa` with controlled original-shaped input | `c26c1291`; private `diagnostic-uhsaa-cli-01/{before-27731275,after-a598a5b3}.json` | `a598a5b32` | PASS: rows0/errors1 → rows1/errors0, both requests0; strict ownership/address rules retained | Genuine population/deployment; adapter repair is not statewide coverage |
-| R7/R14/D: national diagnostic readback | Original generation09/profile/archive; immutable CLI under16GiB/zeroSwap | Private `native-verification-5c200e72.json`; XLSX SHA `ba1692b7…11320e` | `5c200e727` | PASS standalone full frozen readback:1,430,116 rows,720.591s,peak12.9G/swap0; no Store opened | Same-input atomic publication retry; actual reference comparison; no population/full R14 qualification |
+| R7/R14/D: national diagnostic publication | Original generation09/profile/archive; immutable CLI under16GiB/zeroSwap | Private `publication-retry-04-result.json`; current generation `1afec5f4…b2ffba`, XLSX SHA `04c84cf5…b2b6a` | `5c200e727` | PASS atomic publication after1,430,116-row readback:1338.650s,peak14.9G/swap0; lineage and all non-workbook artifact descriptors unchanged | Real comparison completed:0 matched/142,705 reference-only; accepted population, national seal and full R14 remain unqualified |
 | R12: source cooldown/progress replay | SDK journal, Store reopen, fresh-clock gate and explicit access-evidence withholding | Slot FAIL `96428f30` → PASS `3ebfeea9`; setup FAIL `19f88db9` → PASS `fc274fdc`; full adjacent386/386 `7ecbbffd` | `c4045273`, integrated/tested `052b0b0d` | Known progress survives snapshot failure; failed setup cannot consume or settle an attempt; cached slots replay without acquisition | Broader R12 reuse/fault acceptance; no original live-journal upgrade |
 
 Prior identity, catalog, tie and managed-route closures remain scoped evidence.
