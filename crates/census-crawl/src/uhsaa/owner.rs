@@ -9,7 +9,7 @@ pub(super) fn artifact(detail: impl Into<String>) -> CrawlError {
     }
 }
 
-pub(super) fn school_id(raw: &str) -> CrawlResult<StateRecordId> {
+fn validated(raw: &str) -> CrawlResult<(Url, StateRecordId)> {
     let url = Url::parse(raw)
         .or_else(|_| Url::parse(HOST)?.join(raw))
         .map_err(|error| artifact(error.to_string()))?;
@@ -41,5 +41,20 @@ pub(super) fn school_id(raw: &str) -> CrawlResult<StateRecordId> {
             "UHSAA schoolID is not a canonical positive identity",
         ));
     }
-    StateRecordId::parse(id).map_err(|error| artifact(format!("{ASSOCIATION} owner: {error}")))
+    let id = StateRecordId::parse(id)
+        .map_err(|error| artifact(format!("{ASSOCIATION} owner: {error}")))?;
+    Ok((url, id))
+}
+
+pub(super) fn school_id(raw: &str) -> CrawlResult<StateRecordId> {
+    validated(raw).map(|(_, id)| id)
+}
+
+pub(super) fn request_url(raw: &str) -> CrawlResult<String> {
+    let (parsed, _) = validated(raw)?;
+    let encoded: String = parsed.into();
+    if encoded.chars().any(char::is_whitespace) {
+        return Err(artifact("UHSAA profile request URL retains whitespace"));
+    }
+    Ok(encoded)
 }

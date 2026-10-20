@@ -386,6 +386,11 @@ metadata/source/chunk readers keep their own smaller ceilings. Generic integrity
 verification hashes through the existing64-KiB buffer rather than loading each
 large object merely to verify it. This is not a peak-RSS qualification.
 
+Grouping/normalized input stages admit at most4GiB of accounted encoded data;
+the1-MiB per-row and16,777,216-work-unit limits remain. This counts borrowed
+input serialization, not a4-GiB allocation or additional heap permission.
+Overflow still refuses the complete stage with its name/resource/needed/available.
+
 School-bound V4 installs its mandatory attachment descriptor from the authenticated
 school closure under the original school and attachment grant continuations.
 It neither rereads the live snapshot nor starts another allowance. The optional

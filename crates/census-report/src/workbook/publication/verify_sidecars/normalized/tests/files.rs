@@ -224,7 +224,9 @@ fn classes(given: &Population, directory: &Path) -> TestResult {
     ))?;
     let specification = json(&given.specification)?;
     let policy = given.dataset.lineage.policy_revision.to_string();
-    let catalog = census_domain::model::RecruitingCatalogV1::new().digest()?;
+    let catalog =
+        census_domain::model::RecruitingCatalogV1::with_policy(given.dataset.semantic_policy()?)
+            .digest()?;
     put(
         directory,
         "comparison_classes.csv",

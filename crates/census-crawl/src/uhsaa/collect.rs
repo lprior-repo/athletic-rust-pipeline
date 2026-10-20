@@ -1,4 +1,4 @@
-use super::{map_capture, parse, Options, SchoolExtract, ASSOCIATION, HOST};
+use super::{map_capture, parse, Options, SchoolExtract, ASSOCIATION};
 use crate::net::{FetchOptions, FetchOutcome};
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
@@ -65,11 +65,17 @@ async fn walk(
     )
     .map(Ok::<_, CrawlError>)
     .try_fold(report, |mut report, (index, link)| async move {
-        let url = profile_url(link);
+        let url = match profile_url(link) {
+            Ok(url) => url,
+            Err(error) => {
+                fail(&mut report, &link.url, error.to_string())?;
+                return Ok(report);
+            }
+        };
         if options.limit.is_some_and(|limit| index >= limit) {
             owe(&mut report, &url)?;
         } else {
-            refresh_school(ctx, link, fetch, &mut report).await?;
+            refresh_school(ctx, link, &url, fetch, &mut report).await?;
         }
         Ok(report)
     })
@@ -118,25 +124,25 @@ fn directory_links(
     Ok(Some(links))
 }
 
-#[tracing::instrument(skip(ctx, link, fetch, report))]
+#[tracing::instrument(skip(ctx, link, url, fetch, report))]
 async fn refresh_school(
     ctx: &AdapterContext<'_>,
     link: &parse::SchoolLink,
+    url: &str,
     fetch: &FetchOptions,
     report: &mut AdapterReport,
 ) -> CrawlResult<()> {
-    let url = profile_url(link);
-    let Some(capture) = get(ctx, &url, fetch, report).await? else {
+    let Some(capture) = get(ctx, url, fetch, report).await? else {
         return Ok(());
     };
     let extract = match map_capture(link, &capture) {
         Ok(extract) => extract,
         Err(error) => {
-            fail(report, &url, error.to_string())?;
+            fail(report, url, error.to_string())?;
             return Ok(());
         }
     };
-    persist_profile(ctx, &url, &extract, &capture, report)
+    persist_profile(ctx, url, &extract, &capture, report)
 }
 
 fn persist_profile(
@@ -176,16 +182,8 @@ fn persist_profile(
     Ok(())
 }
 
-fn profile_url(link: &parse::SchoolLink) -> String {
-    if link.url.starts_with("http") {
-        return link.url.clone();
-    }
-    format!(
-        "{HOST}/{}",
-        link.url
-            .strip_prefix("../")
-            .map_or(link.url.as_str(), |value| value)
-    )
+fn profile_url(link: &parse::SchoolLink) -> CrawlResult<String> {
+    super::owner::request_url(&link.url)
 }
 
 #[tracing::instrument(skip(ctx, fetch, report))]

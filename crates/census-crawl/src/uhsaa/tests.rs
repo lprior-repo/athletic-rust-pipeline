@@ -197,3 +197,81 @@ fn parse_gender_correctly() -> Fallible {
     check!(eq; parse_gender("Girls Cross Country"), Gender::Girls);
     Ok(())
 }
+
+#[test]
+fn american_fork_space_href_encodes_without_whitespace_and_preserves_owner() -> Fallible {
+    let raw_absolute = "https://uhsaa.org/school-directory/?id=American Fork&Reg=3&schoolID=3";
+    let raw_relative = "../school-directory/?id=American Fork&Reg=3&schoolID=3";
+    for raw in [raw_absolute, raw_relative] {
+        let encoded = super::owner::request_url(raw)
+            .map_err(|error| format!("request_url failed for {raw:?}: {error}"))?;
+        check!(
+            !encoded.chars().any(char::is_whitespace),
+            "encoded request retains whitespace: {encoded:?}"
+        );
+        check!(
+            url::Url::parse(&encoded).is_ok(),
+            "encoded request is not a URL: {encoded:?}"
+        );
+        let raw_id =
+            super::owner::school_id(raw).map_err(|error| format!("raw owner failed: {error}"))?;
+        let encoded_id = super::owner::school_id(&encoded)
+            .map_err(|error| format!("encoded owner failed: {error}"))?;
+        check!(eq; encoded_id, raw_id);
+        check!(eq; encoded_id.as_str(), "3");
+    }
+    let from_absolute =
+        super::owner::request_url(raw_absolute).map_err(|error| error.to_string())?;
+    let from_relative =
+        super::owner::request_url(raw_relative).map_err(|error| error.to_string())?;
+    check!(eq; from_absolute, from_relative);
+    let parsed = url::Url::parse(&from_absolute).map_err(|error| error.to_string())?;
+    let id_param = parsed
+        .query_pairs()
+        .find(|(key, _)| key == "id")
+        .map(|(_, value)| value.into_owned())
+        .ok_or("id query missing")?;
+    check!(eq; id_param, "American Fork");
+    Ok(())
+}
+
+#[test]
+fn american_fork_html_ampersand_decodes_to_same_owner() -> Fallible {
+    let html = r#"<a href="../school-directory/?id=American Fork&amp;Reg=3&amp;schoolID=3" title="American Fork Cavemen">x</a>"#;
+    let published = super::published::read(html).map_err(|error| error.to_string())?;
+    check!(eq; published.links.len(), 1);
+    let href = published.links[0].url.clone();
+    check!(
+        !href.contains("&amp;"),
+        "href retains HTML entity: {href:?}"
+    );
+    let id = super::owner::school_id(&href).map_err(|error| error.to_string())?;
+    check!(eq; id.as_str(), "3");
+    let encoded = super::owner::request_url(&href).map_err(|error| error.to_string())?;
+    check!(
+        !encoded.chars().any(char::is_whitespace),
+        "encoded request retains whitespace: {encoded:?}"
+    );
+    check!(eq; super::owner::school_id(&encoded).map_err(|error| error.to_string())?, id);
+    Ok(())
+}
+
+#[test]
+fn foreign_and_downgrade_profile_hrefs_stay_denied() -> Fallible {
+    for raw in [
+        "http://uhsaa.org/school-directory/?id=Alta&Reg=6&schoolID=1",
+        "https://foreign.invalid/school-directory/?id=Alta&Reg=6&schoolID=1",
+        "https://uhsaa.org/school-directory/?id=Alta&Reg=6",
+        "https://uhsaa.org/school-directory/?id=Alta&Reg=6&schoolID=",
+    ] {
+        check!(
+            super::owner::request_url(raw).is_err(),
+            "request_url accepted {raw:?}"
+        );
+        check!(
+            super::owner::school_id(raw).is_err(),
+            "school_id accepted {raw:?}"
+        );
+    }
+    Ok(())
+}

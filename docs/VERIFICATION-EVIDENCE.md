@@ -2114,3 +2114,49 @@ endpoint SHA`e1708ac5a325e523917364816867751084c6abf018029fe31688889b06192c15`.
 Private receipt`diagnostic-original-A-cli-27731275.json`retains actual commands.
 Generation09 is running on the unchanged older cold copy/profile6905…;
 national artifact,3-GiB directory headroom and full resource acceptance remain pending.
+
+Generation09 completed durable capture, then **FAILED** workbook normalization:
+`normalized input records`, 268,435,794 accounted bytes against268,435,456.
+Observed bests rows0 belong to this older cold snapshot, not newer live marks.
+Wall1169.87s, peak12,596,780KiB RSS, zero swap; no workbook.
+
+Retained selected root `639b0852…608d01.selected-v1` contains a committed
+1,864,297,745-byte `input.json`, archive SHA
+`cabb54d8479170bddc35c5073aa89e063f491a23eea065b7391f063865c781e6`.
+Commitment SHA `b99c14010987efe96167d82339a970a892cc95175bcc12c13490fa77bf585b31`;
+433 regular proof objects total2,201,148,631 bytes, largest448,832,211, under3GiB.
+The authorized next change raises grouping stage accounting to4GiB while keeping
+row1MiB/work16,777,216. Retry the same generation09/job/request/commitment:
+no recapture or mixing in newer live data. Final-source verification is pending.
+
+Fresh national state observation returned37HTTP200 and12timeouts, not12absent
+states. Static identity review initially inferred zero accepted IDs from zero
+entity-table counters. That inference was rejected and corrected: the V3
+META/JOURNAL accepted ledger is **NOT OBSERVED** by `Census/status`.
+Static withholding guards are not live accepted-count evidence.
+
+### National repair checkpoint — 2026-10-20
+
+Utah requests now encode published spaces before fetching, retain raw-href school
+ownership and preserve strict postal/host/scheme checks. The controlled offline
+CLI baseline on `27731275` returned rows0/errors1/requests0: its raw-space URI
+missed the independently seeded encoded cache. Post-fix native CLI is pending.
+
+The broader normalized lane initially failed16/80 because its independent fixture
+stamped today's catalog digest into a historical-policy row. It now derives that
+digest from the captured semantic policy; production validation was not weakened.
+Final permanent source: format/check/lint **PASS** (`8b8e2b4b`,
+`27843ad6`, `d0544019`); lint retains existing force-warn argument-count warnings.
+Focused Utah/listing16/16 (`c26c1291`), normalized/grouping/jobs80/80
+(`88e7a1c8`), actual controlled50→withdraw51 workbook/reopen1/1
+(`57459025`) **PASS**. No full release or national completion claim.
+
+The stopped older copy contains858 meet-diagnostic records. An actual public Store
+reader found64 acquisition frontiers explicitly blocked by recorded MileSplit
+cooldowns across16 states, including MI/IA. The17 current diagnostic references
+were absent from that copy; old payloads are not substituted for live evidence.
+The three inspected MI roster bodies publish only “No Athletes Found” placeholders;
+no selector fix or promotion of those quarantines is justified. A temporary cache
+setup failed compilation on private helpers (`86d7ea8c`); removed without widening
+APIs. Both throwaway Rust tools and the accidental empty draft file were removed.
+Private receipts remain under the run directory, outside Git.
