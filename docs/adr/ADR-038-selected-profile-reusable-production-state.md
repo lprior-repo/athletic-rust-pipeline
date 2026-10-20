@@ -379,6 +379,13 @@ that aggregate byte bound in capture and descriptor validation; individual roste
 records/source proofs retain8-MiB admission. No rejection is truncated or promoted.
 Aggregate family encoding measures first and reserves exactly before writing.
 
+Generic content-addressed proof storage admits an object up to4GiB so that the
+aggregate family is representable. Selected proof directories still require at
+most3GiB total and16,384 objects; that combined bound can be stricter. Ordinary
+metadata/source/chunk readers keep their own smaller ceilings. Generic integrity
+verification hashes through the existing64-KiB buffer rather than loading each
+large object merely to verify it. This is not a peak-RSS qualification.
+
 School-bound V4 installs its mandatory attachment descriptor from the authenticated
 school closure under the original school and attachment grant continuations.
 It neither rereads the live snapshot nor starts another allowance. The optional

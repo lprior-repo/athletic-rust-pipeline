@@ -2080,3 +2080,19 @@ endpoint SHA`532426def7a18b505d2883e19cc6652e423aef1b5d57a923620d9a85fe46f33d`.
 Receipt`diagnostic-original-A-cli-f8839356.json`retains actual commands/results.
 Generation08 is running against the same cold copy/profile6905…; no national
 workbook, accepted population, full resource qualification or live upgrade is claimed.
+
+Generation08 reached the computed aggregate family but FAILED generic proof-object
+storage admission:448,832,211 bytes against8,388,608;194.53s, peak9,649,816KiB RSS,
+zero swap, no workbook. A bounded read-only writer audit confirmed independent
+metadata/source/chunk/parser limits. Generic selected-proof opaque storage now
+uses the4-GiB observation bound; its3-GiB whole-directory/16,384-object limits remain.
+This intentionally enlarges opaque object admission, not individual source parsing.
+Verification streams the existing64-KiB digest reader; copying can still hold one
+bounded whole object and is not a constant-memory or full-R14 claim.
+
+Format`f9f52be3`, check`a90452f7`, lint`b877d7b1`, selected-proof/large-family/
+unknown-gap contracts`041ccf32`(17/17), and actual50→withdraw51 workbook`3b6c20a2`(1/1)
+passed. The large-proof lifecycle verifies exact copied bytes after source removal,
+low reader-ceiling refusal, same-size tamper and missing-object refusal. Old private
+8-MiB/384-object numerical forecasts were replaced by aggregate-boundary checks,
+not re-pinned. Clean-commit authentic-A, optimized CLI and generation09 remain pending.

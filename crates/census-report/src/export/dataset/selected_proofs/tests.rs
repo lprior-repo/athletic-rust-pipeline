@@ -51,15 +51,13 @@ fn unlisted_destination_is_preserved_and_refused() -> TestResult {
 
 #[test]
 fn inventory_bounds_are_exact_and_canonical() -> TestResult {
-    let mut references: Vec<_> = (0..384)
-        .map(|index| objects::Reference {
-            digest: format!("{index:064x}"),
-            bytes: proof_objects::MAX_OBJECT_BYTES,
-        })
-        .collect();
+    let mut references = vec![objects::Reference {
+        digest: format!("{:064x}", 0),
+        bytes: objects::MAX_BYTES,
+    }];
     objects::validate(&references)?;
     references.push(objects::Reference {
-        digest: format!("{:064x}", 384),
+        digest: format!("{:064x}", 1),
         bytes: 1,
     });
     check!(objects::validate(&references).is_err());
@@ -80,7 +78,9 @@ fn inventory_bounds_are_exact_and_canonical() -> TestResult {
         },
         objects::Reference {
             digest: "a".repeat(64),
-            bytes: 8_388_609,
+            bytes: proof_objects::MAX_OBJECT_BYTES
+                .checked_add(1)
+                .ok_or("object ceiling overflow")?,
         },
     ] {
         check!(objects::validate(&[reference]).is_err());
@@ -93,7 +93,11 @@ fn object_metadata_limits_are_admitted_before_read() -> TestResult {
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("a".repeat(64));
     let file = std::fs::File::create(&path)?;
-    file.set_len(8_388_609)?;
+    file.set_len(
+        proof_objects::MAX_OBJECT_BYTES
+            .checked_add(1)
+            .ok_or("object ceiling overflow")?,
+    )?;
     check!(objects::inventory(directory.path()).is_err());
     Ok(())
 }
@@ -277,3 +281,4 @@ fn v1_bundle_reserialization_does_not_acquire_graph_authority() -> TestResult {
     ));
     Ok(())
 }
+mod large;

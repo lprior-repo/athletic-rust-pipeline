@@ -5,9 +5,10 @@ use census_store::StoreError;
 use serde::{Deserialize, Serialize};
 use std::path::{Component, Path};
 
+mod checksum;
 mod retained;
 const MAX_OBJECTS: usize = 16_384;
-const MAX_BYTES: u64 = 3 * 1024 * 1024 * 1024;
+pub(super) const MAX_BYTES: u64 = 3 * 1024 * 1024 * 1024;
 const MAX_ANCESTORS: usize = 256;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -103,7 +104,7 @@ pub(super) fn verify(directory: &Path, references: &[Reference]) -> ReportResult
         ));
     }
     for reference in references {
-        read(directory, reference)?;
+        checksum::verify(directory, reference)?;
     }
     Ok(())
 }
