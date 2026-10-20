@@ -72,6 +72,7 @@ mod journal;
 mod keys;
 mod lineage;
 mod meta;
+mod nces_address;
 #[cfg(feature = "native-fault-injection")]
 mod native_effect_checkpoint;
 #[cfg(feature = "native-fault-injection")]
@@ -121,6 +122,7 @@ pub use receipt::{
     MAX_FRONTIER_WITNESSES, MAX_OPERATION_BYTES,
 };
 pub use records::publish;
+pub use nces_address::*;
 pub use records::{
     BuildRecord, BuildState, FailureKind, InputRecord, InputState, LeaseMode, LeaseRecord,
     PublishRecord, PublishState, Transitioned, UnitRecord, UnitState,
