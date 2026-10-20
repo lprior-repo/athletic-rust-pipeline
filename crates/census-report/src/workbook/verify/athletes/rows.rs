@@ -8,7 +8,7 @@ use census_domain::model::{CanonicalAthlete, IdentityStatus, Sport};
 
 impl Verifier<'_, '_> {
     pub(super) fn values(&mut self, athlete: &CanonicalAthlete) -> ReportResult<Vec<Value>> {
-        let identity = Expected::of(self.expectations.dataset, athlete.id.as_str())?;
+        let identity = Expected::of(&self.expectations.identities, athlete.id.as_str())?;
         let prs: Vec<&SharedSelection> = self.expectations.prs_of(athlete.id.as_str()).collect();
         let mut values = Vec::with_capacity(self.schema.headers().len());
         values.extend(self.identity(athlete, &identity.athlete_id));

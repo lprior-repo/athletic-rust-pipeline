@@ -26,10 +26,15 @@ Stream at most 1,000,000 data rows plus the repeated header per page. Preserve t
 Readback must reconcile all pages against one logical row budget and reject missing pages,
 changed headers and extra records. Pagination does not change the frozen input or row semantics.
 
-Normalized CSV readback streams up to512MiB per family. Decoded rows remain bounded
-to1MiB, with exact expected record counts and generation/key checks. File growth
+Normalized CSV readback streams up to 512 MiB per family. Decoded rows remain bounded
+to 1 MiB, with exact expected record counts and generation/key checks. File growth
 and oversized records still refuse; a larger file budget does not materialize it
 in memory or authorize truncated verification.
+
+Bind identity verification once when constructing each immutable readback context.
+All row comparisons borrow that same validated population; they must not reserialize
+or hash the full frozen dataset per row. Keep input/proof validation at context
+admission and the existing publication fences; no global cache or unchecked view.
 
 Coach observation claims are grouped by school, then role, program and owner, and budgeted per owner
 and per school before any claim or contact is adapted for a working sheet. A group over its budget is

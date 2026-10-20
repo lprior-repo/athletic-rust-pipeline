@@ -28,6 +28,13 @@ impl<'a> IdentityPopulation<'a> {
         Ok(Self(PopulationAuthority::Historical(dataset.identities())))
     }
 
+    pub(crate) fn selected_view(&self) -> Option<&VerifiedPublicIdentityView> {
+        match &self.0 {
+            PopulationAuthority::Historical(_) => None,
+            PopulationAuthority::Selected(view) => Some(*view),
+        }
+    }
+
     pub(crate) fn admission(&self, candidate: &str) -> IdentityAdmission {
         match &self.0 {
             PopulationAuthority::Historical(projection) => match projection.status(candidate) {

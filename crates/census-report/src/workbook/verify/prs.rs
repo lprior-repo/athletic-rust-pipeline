@@ -116,7 +116,7 @@ fn values(
     expectations: &Expectations<'_>,
     schools: Option<&AffiliationExpectations<'_>>,
 ) -> ReportResult<impl Iterator<Item = Value> + use<>> {
-    let identity = Expected::of(expectations.dataset, pr.athlete_id().as_str())?;
+    let identity = Expected::of(&expectations.identities, pr.athlete_id().as_str())?;
     let current = schools
         .map(|schools| schools.values(pr.athlete_id().as_str()))
         .transpose()?;

@@ -49,7 +49,7 @@ impl<'a, 'd> Verifier<'a, 'd> {
         let expected_ids: Vec<_> = ordered
             .iter()
             .map(|athlete| {
-                Expected::of(expectations.dataset, athlete.id.as_str())
+                Expected::of(&expectations.identities, athlete.id.as_str())
                     .map(|identity| identity.athlete_id)
             })
             .collect::<ReportResult<_>>()?;

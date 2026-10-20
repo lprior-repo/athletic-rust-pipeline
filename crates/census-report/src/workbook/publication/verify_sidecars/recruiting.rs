@@ -71,7 +71,7 @@ impl<'a, 'd> Projection<'a, 'd> {
             .athletes()
             .iter()
             .map(|athlete| {
-                Expected::of(inputs.dataset, athlete.id.as_str())
+                Expected::of(&inputs.identities, athlete.id.as_str())
                     .map(|identity| identity.athlete_id)
             })
             .collect::<ReportResult<BTreeSet<_>>>()?;
@@ -177,7 +177,7 @@ fn cells(
 ) -> ReportResult<Vec<Cell>> {
     let school = schools.get(athlete.school.as_str()).copied();
     let scoped = contact::scoped(contacts.get(athlete.school.as_str()), athlete);
-    let identity = Expected::of(inputs.dataset, athlete.id.as_str())?;
+    let identity = Expected::of(&inputs.identities, athlete.id.as_str())?;
     let status = identity_status(inputs, athlete)?;
     let mut cells = athletic_cells(athlete, school, &scoped, status, &identity.athlete_id)?;
     let address = school_address.get(athlete.id.as_str()).ok_or_else(|| {
@@ -195,7 +195,7 @@ fn cells(
 
 fn identity_status(inputs: &Inputs<'_>, athlete: &CanonicalAthlete) -> ReportResult<String> {
     if inputs.dataset.selected_profile_id().is_some() {
-        Expected::of(inputs.dataset, athlete.id.as_str())?;
+        Expected::of(&inputs.identities, athlete.id.as_str())?;
         return Ok("accepted_public_identity".into());
     }
     let status = inputs

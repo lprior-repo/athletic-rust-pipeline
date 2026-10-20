@@ -5,7 +5,6 @@ use super::{
     rows::{self, Row},
 };
 use crate::bests::SharedSelection;
-use crate::export::public_identity::population::IdentityPopulation;
 use crate::report::ReportResult;
 use crate::workbook::verify::public_identity::{self, Expected};
 use census_domain::model::{CanonicalPerformance, Mark};
@@ -51,7 +50,7 @@ pub(super) fn verify(
                 .ok_or_else(|| rows::missing("performance", performance_id))?;
             super::athletes::public::public_identity_row(
                 row,
-                inputs.dataset,
+                &inputs.identities,
                 best.athlete_id().as_str(),
             )?;
             selected(row, inputs, best, performance)?;
@@ -75,7 +74,7 @@ fn expected_bests<'a>(
         .map(|best| {
             Ok((
                 (
-                    Expected::of(inputs.dataset, best.athlete_id().as_str())?.athlete_id,
+                    Expected::of(&inputs.identities, best.athlete_id().as_str())?.athlete_id,
                     classes::id(best)?,
                 ),
                 best,
@@ -91,7 +90,7 @@ fn selected(
     performance: &CanonicalPerformance,
 ) -> ReportResult<()> {
     row.text("performance_id", best.source.performance_id.as_str())?;
-    let identities = IdentityPopulation::of(inputs.dataset)?;
+    let identities = &inputs.identities;
     if identities.canonical_candidate(performance.athlete.as_str())
         != Some(best.athlete_id().as_str())
         || inputs.admission.included_kind(&performance.event).is_none()
@@ -186,7 +185,7 @@ fn inventory(
             &best.supporting_tied_candidate_ids(),
         )?;
     }
-    let identities = IdentityPopulation::of(inputs.dataset)?;
+    let identities = &inputs.identities;
     revision.ids(best).iter().try_for_each(|id| {
         let performance = performances
             .get(id.as_str())

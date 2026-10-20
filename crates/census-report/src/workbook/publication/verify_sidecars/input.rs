@@ -1,3 +1,4 @@
+use crate::export::public_identity::population::IdentityPopulation;
 use crate::export::ExportDataset;
 use crate::report::{Derivation, ReportResult};
 use crate::workbook::Options;
@@ -6,6 +7,7 @@ use std::path::{Path, PathBuf};
 
 pub(super) struct Inputs<'a> {
     pub(super) dataset: &'a ExportDataset,
+    pub(super) identities: IdentityPopulation<'a>,
     pub(super) options: &'a Options,
     pub(super) derivation: Derivation<'a>,
     pub(super) admission: crate::report::EventAdmission<'a>,
@@ -38,6 +40,7 @@ impl<'a> Inputs<'a> {
             options,
             derivation,
             admission: crate::report::EventAdmission::of(dataset)?,
+            identities: IdentityPopulation::of(dataset)?,
             school_year: options.school_year,
             out_root: Path::new(&dataset.lineage.store_root).join("out"),
         })

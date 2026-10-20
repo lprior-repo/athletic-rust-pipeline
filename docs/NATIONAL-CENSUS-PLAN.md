@@ -430,8 +430,8 @@ after identifying repeated full-dataset hashing inside row verification (`tzu2`)
 The retained diagnostic XLSX and bundle are explicitly unverified; structural
 readback confirms all Review records,55,344 coaches and zero selected athletes/PRs.
 
-Integrated source `052b0b0d` passes canonical static gates, all386 adjacent cases
-including unchanged original-A replay, controlled50→51 publication, zero-comments,
+Integrated source `052b0b0d` passes canonical static gates, all 386 adjacent cases
+including unchanged original-A replay, controlled 50→51 publication, zero-comments,
 trusted AST and module seams. National per-row rehash repair (`tzu2`) is next.
 
 Prior integrated static checkpoint: `ddd07ff76f9750a460967471649813da3f1d98b7`,

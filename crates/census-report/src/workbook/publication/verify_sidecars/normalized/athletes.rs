@@ -5,7 +5,6 @@ use super::{
     schema,
 };
 use crate::bests::SharedSelection;
-use crate::export::public_identity::population::IdentityPopulation;
 use crate::report::ReportResult;
 use crate::workbook::verify::public_identity::{self, Expected};
 use census_domain::model::{CanonicalAthlete, Confidence, Gender};
@@ -27,7 +26,7 @@ pub(super) fn verify(
         .iter()
         .map(|row| {
             Ok((
-                Expected::of(inputs.dataset, row.id.as_str())?.athlete_id,
+                Expected::of(&inputs.identities, row.id.as_str())?.athlete_id,
                 row,
             ))
         })
@@ -51,7 +50,7 @@ pub(super) fn verify(
             let athlete = athletes
                 .get(id)
                 .ok_or_else(|| rows::missing("athlete", id))?;
-            public_identity_row(row, inputs.dataset, athlete.id.as_str())?;
+            public_identity_row(row, &inputs.identities, athlete.id.as_str())?;
             identity(row, athlete, inputs)?;
             evidence(row, athlete)?;
             row.text(
@@ -91,7 +90,7 @@ fn identity(row: &Row<'_>, athlete: &CanonicalAthlete, inputs: &Inputs<'_>) -> R
     )?;
     row.text("current_school_id", athlete.school.as_str())?;
     let status = if inputs.dataset.selected_profile_id().is_some() {
-        Expected::of(inputs.dataset, athlete.id.as_str())?;
+        Expected::of(&inputs.identities, athlete.id.as_str())?;
         "accepted_public_identity"
     } else {
         inputs
@@ -164,7 +163,7 @@ pub(super) fn aliases(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<u64
         &["original_id"],
         |row| {
             row.text("input_generation", &inputs.dataset.lineage.input_generation)?;
-            alias_public_identity(row, inputs.dataset)?;
+            alias_public_identity(row, &inputs.identities)?;
             alias_row(row, &athletes, &members, inputs)
         },
     )
@@ -180,7 +179,7 @@ fn alias_row(
     if !athletes.contains_key(id) {
         return Err(rows::missing("alias", id));
     }
-    let identities = IdentityPopulation::of(inputs.dataset)?;
+    let identities = &inputs.identities;
     let canonical = identities
         .canonical_candidate(id)
         .ok_or_else(|| rows::missing("publication identity candidate", id))?;

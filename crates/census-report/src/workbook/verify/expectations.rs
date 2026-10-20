@@ -1,4 +1,5 @@
 use crate::bests::{self, SharedSelection};
+use crate::export::public_identity::population::IdentityPopulation;
 use crate::export::ExportDataset;
 use crate::report::{Derivation, ReportResult};
 use crate::workbook::Options;
@@ -30,6 +31,7 @@ pub(super) struct School {
 
 pub(super) struct Expectations<'a> {
     pub(super) dataset: &'a ExportDataset,
+    pub(super) identities: IdentityPopulation<'a>,
     pub(super) school_year: SchoolYear,
     pub(super) derivation: Derivation<'a>,
     pub(super) coach_claims: Vec<census_domain::model::CanonicalCoach>,
@@ -75,6 +77,7 @@ impl<'a> Expectations<'a> {
             coach_claims,
             bests,
             admission,
+            identities: IdentityPopulation::of(dataset)?,
             contacts,
             school_address,
             schools,

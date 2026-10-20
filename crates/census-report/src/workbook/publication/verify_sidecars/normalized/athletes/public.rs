@@ -1,5 +1,6 @@
 use super::super::rows::Row;
 use crate::export::public_identity::output::ResolutionAudit;
+use crate::export::public_identity::population::IdentityPopulation;
 use crate::export::ExportDataset;
 use crate::report::ReportResult;
 use crate::workbook::verify::public_identity::Expected;
@@ -7,10 +8,10 @@ use census_domain::public_identity_history::PublicResolution;
 
 pub(in crate::workbook::publication::verify_sidecars::normalized) fn public_identity_row(
     row: &Row<'_>,
-    dataset: &ExportDataset,
+    identities: &IdentityPopulation<'_>,
     candidate: &str,
 ) -> ReportResult<()> {
-    let expected = Expected::of(dataset, candidate)?;
+    let expected = Expected::of(identities, candidate)?;
     row.text("athlete_id", expected.athlete_id)?;
     if let Some([candidate, resolution]) = expected.audit {
         row.text("canonical_candidate_id", candidate)?;
@@ -34,12 +35,14 @@ pub(super) fn alias_headers(dataset: &ExportDataset) -> Vec<&'static str> {
         .collect()
 }
 
-pub(super) fn alias_public_identity(row: &Row<'_>, dataset: &ExportDataset) -> ReportResult<()> {
-    if dataset.selected_profile_id().is_none() {
+pub(super) fn alias_public_identity(
+    row: &Row<'_>,
+    identities: &IdentityPopulation<'_>,
+) -> ReportResult<()> {
+    let Some(view) = identities.selected_view() else {
         return Ok(());
-    }
+    };
     let candidate = row.get("original_id")?;
-    let view = dataset.verified_public_identities()?;
     let group = view
         .group(candidate)
         .ok_or_else(|| super::rows::missing("public identity candidate", candidate))?;

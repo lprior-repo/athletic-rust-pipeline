@@ -1,4 +1,5 @@
 use crate::export::public_identity::output::ResolutionAudit;
+use crate::export::public_identity::population::IdentityPopulation;
 use crate::export::ExportDataset;
 use crate::report::{ReportError, ReportResult};
 
@@ -8,14 +9,16 @@ pub(in crate::workbook) struct Expected {
 }
 
 impl Expected {
-    pub(in crate::workbook) fn of(dataset: &ExportDataset, candidate: &str) -> ReportResult<Self> {
-        if dataset.selected_profile_id().is_none() {
+    pub(in crate::workbook) fn of(
+        identities: &IdentityPopulation<'_>,
+        candidate: &str,
+    ) -> ReportResult<Self> {
+        let Some(view) = identities.selected_view() else {
             return Ok(Self {
                 athlete_id: candidate.into(),
                 audit: None,
             });
-        }
-        let view = dataset.verified_public_identities()?;
+        };
         let group = view.group(candidate).ok_or_else(|| absent(candidate))?;
         let public_id = group.public_id().ok_or_else(|| absent(candidate))?;
         let resolution = view

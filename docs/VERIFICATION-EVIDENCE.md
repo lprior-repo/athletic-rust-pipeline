@@ -2363,3 +2363,16 @@ Independent diagnostic CSV readback also matches every retained manifest hash,
 byte length and row count across all eleven normalized/audit families; all
 1,065,450 publication identity statuses are explicitly Unknown. No semantic
 publication verification or live accepted-population inference follows from that.
+
+`tzu2` now binds the existing immutable identity population at readback-context
+construction; row lookups borrow it without rehashing the dataset. Boundary and
+publication-fence checks remain. Initial focused `bdd1fd49` **FAIL136/142**:
+six identity fixtures advertised policy21 while constructing CURRENT22 inventories.
+Explicit fixture policies fix that mismatch without changing production admission.
+Format/check/lint `db74c627`/`8b85eb24`/`7e48f9e8` **PASS**;
+expanded identity, normalized, workbook and 50→51 lifecycle `52caf05e` **PASS165/165**,
+Nextest `084bf1e5-8b20-4e68-8b61-0bfa0ce18bf3`. Native national readback is still owed.
+The original comparison workbook is pinned at `/home/lewis/Documents/Athletic-2026-US-Boys-Grade11-All-Athletes.xlsx`,
+SHA `8f613143f7e8e3fe8d8833314a85536297674b9bc6fb2bf7d253d1cc40bcda21`.
+It contains 142,705 distinct GradeID11 rows before geographic/source reconciliation.
+It remains comparison-only; raw-discovery overlap and qualified matching are unmeasured.
