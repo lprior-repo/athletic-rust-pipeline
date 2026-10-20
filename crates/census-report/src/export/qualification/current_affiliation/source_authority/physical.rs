@@ -1,7 +1,7 @@
 use super::super::note::RowNote;
 use super::*;
+use crate::export::qualification::physical_observations::OBSERVATION_BUDGET;
 use census_domain::model::CanonicalAthlete;
-
 #[derive(Clone, Copy)]
 enum PersonOwnership {
     PrimaryOnly,
@@ -111,14 +111,28 @@ fn observe(
             }
         }
         if !witnessed {
-            if result.gaps.len() >= 200_000 {
-                return Err(invalid("physical roster gap ceiling exceeded"));
+            let needed = u64::try_from(result.gaps.len())
+                .map_err(|_| StoreError::CounterOverflow)?
+                .checked_add(1)
+                .ok_or(StoreError::CounterOverflow)?;
+            if needed > OBSERVATION_BUDGET.rows {
+                return Err(StoreError::BudgetExceeded {
+                    what: "physical roster gap inventory rows",
+                    needed,
+                    available: OBSERVATION_BUDGET.rows,
+                });
             }
-            result.gaps.push(PhysicalGap {
+            let gap = PhysicalGap {
                 athlete: canonical.clone(),
                 reference: note.source_row_key,
                 reason: "missing_reviewed_source_authority",
-            });
+            };
+            encoding::admit(&gap, grant)?;
+            result
+                .gaps
+                .try_reserve(1)
+                .map_err(|_| invalid("physical roster gap allocation failed"))?;
+            result.gaps.push(gap);
             audit.gap(canonical.clone(), Gap::ArchiveUnavailable)?;
         }
     }

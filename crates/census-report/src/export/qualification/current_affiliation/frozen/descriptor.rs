@@ -103,7 +103,7 @@ impl FrozenAffiliationDescriptor {
                 digest: family.digest.clone(),
                 bytes: family.bytes,
             }
-            .validate(8 * 1024 * 1024)?;
+            .validate(physical_observations::OBSERVATION_BUDGET.bytes)?;
         }
         Ok(())
     }

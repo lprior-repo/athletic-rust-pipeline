@@ -8,6 +8,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 mod closure_visibility;
 mod fixture;
+mod gaps;
 mod history;
 mod issuance;
 mod replay;

@@ -2050,3 +2050,23 @@ endpoint SHA`c87e50a404e7cf81b95878d9215972016ea9f558c8d95236d48a07dbcd7f9e6f`.
 Private receipt`diagnostic-original-A-cli-30475e2b.json`retains commands/results.
 Generation07 is running on the same older restored snapshot/profile6905…;
 national artifact/coverage qualification remains pending, and live deployment is unchanged.
+
+Generation07 FAILED at the independent200,000-entry physical roster-gap reporting
+ceiling (`bg_295`):162.81s, peak8,102,608KiB RSS, zero swap, no workbook. These
+are missing reviewed-source authority, not athletes eligible for promotion.
+
+The connected Report repair preserves all exact gap references/reasons within the
+existing4-million-row/4-GiB observation budget. Related audit counts/bytes and the
+computed aggregate family proof use that same bound; individual8-MiB records and
+256references per subject remain bounded. Capture and descriptor validation agree.
+The family encoder measures before exact reservation; it does not repeatedly grow
+a large Vec. Failed audit admission no longer inserts empty partial map entries.
+No semantic/profile/replay version, eligibility rule or source evidence changed.
+
+Final format`f428eec3`, check`a4be37a2`, lint`2f06a719`, focused audit/unknown/
+bound-source replay/large-family-vs-individual admission`e967a7f6`(23/23), and actual
+withdrawal workbook`f4fb0ea4`(1/1) passed. The new gap oracle checks exact original
+rows, withheld school, detached bound-source replay and exhausted original grant.
+Unqualified GPU draft panic/marker/repeated-call assertions were replaced before
+execution; incidental audit-label/cost forecasts were removed, not re-pinned.
+Clean-commit authentic-A, optimized CLI and generation08 remain pending.

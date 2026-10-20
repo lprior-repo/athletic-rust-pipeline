@@ -1,13 +1,12 @@
 use super::super::AffiliationEvidenceAudit;
 use super::{charge, invalid, UnavailableAffiliation as Gap};
+use crate::export::qualification::physical_observations::OBSERVATION_BUDGET;
 use census_domain::model::AthleteId;
 use census_store::{StoreError, StoreResult};
 use std::collections::{BTreeMap, BTreeSet};
 
 const MAX_REFERENCES_PER_SUBJECT: u64 = 256;
-const MAX_REFERENCES: u64 = 1_000_000;
-const MAX_REASONS: u64 = 1_200_000;
-const MAX_BYTES: u64 = 64 * 1024 * 1024;
+const MAX_REFERENCE_BYTES: usize = 8192;
 
 #[derive(Default)]
 pub(super) struct RetainedAudit {
@@ -21,16 +20,17 @@ pub(super) struct RetainedAudit {
 
 impl RetainedAudit {
     pub(super) fn reference(&mut self, id: &AthleteId, reference: &str) -> StoreResult<()> {
-        if reference.is_empty() || reference.len() > 8192 {
+        if reference.is_empty() || reference.len() > MAX_REFERENCE_BYTES {
             return Err(invalid(
                 "current affiliation audit reference has invalid length",
             ));
         }
-        let references = self.references.entry(id.clone()).or_default();
-        if references.contains(reference) {
+        let references = self.references.get(id);
+        if references.is_some_and(|references| references.contains(reference)) {
             return Ok(());
         }
-        let mut count = u64::try_from(references.len()).map_err(|_| StoreError::CounterOverflow)?;
+        let mut count = u64::try_from(references.map_or(0, BTreeSet::len))
+            .map_err(|_| StoreError::CounterOverflow)?;
         charge(
             &mut count,
             1,
@@ -42,24 +42,30 @@ impl RetainedAudit {
         charge(
             &mut reference_count,
             1,
-            MAX_REFERENCES,
+            OBSERVATION_BUDGET.rows,
             "current affiliation audit reference count",
         )?;
         charge(
             &mut bytes,
             reference.len(),
-            MAX_BYTES,
+            OBSERVATION_BUDGET.bytes,
             "current affiliation audit bytes",
         )?;
-        references.insert(reference.to_string());
+        self.references
+            .entry(id.clone())
+            .or_default()
+            .insert(reference.to_string());
         self.reference_count = reference_count;
         self.bytes = bytes;
         Ok(())
     }
 
     pub(super) fn gap(&mut self, id: AthleteId, reason: Gap) -> StoreResult<()> {
-        let reasons = self.unavailable.entry(id).or_default();
-        if reasons.contains(&reason) {
+        if self
+            .unavailable
+            .get(&id)
+            .is_some_and(|reasons| reasons.contains(&reason))
+        {
             return Ok(());
         }
         let mut reason_count = self.reason_count;
@@ -67,16 +73,16 @@ impl RetainedAudit {
         charge(
             &mut reason_count,
             1,
-            MAX_REASONS,
+            OBSERVATION_BUDGET.rows,
             "current affiliation audit reason count",
         )?;
         charge(
             &mut bytes,
             reason.label().len(),
-            MAX_BYTES,
+            OBSERVATION_BUDGET.bytes,
             "current affiliation audit bytes",
         )?;
-        reasons.insert(reason);
+        self.unavailable.entry(id).or_default().insert(reason);
         self.reason_count = reason_count;
         self.bytes = bytes;
         Ok(())

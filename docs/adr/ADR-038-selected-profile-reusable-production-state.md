@@ -372,6 +372,13 @@ rules remain mandatory; per-object limits are unchanged. These are authorized,
 bounded capacity changes, not RSS or national acceptance. The verification ledger
 records each actual refusal and subsequent execution.
 
+Missing reviewed-roster authority remains an explicit withheld disposition. Its
+aggregate gap/reference/reason inventory uses the physical observation budget:
+4,000,000 entries and4-GiB encoded data. The computed roster-family proof shares
+that aggregate byte bound in capture and descriptor validation; individual roster
+records/source proofs retain8-MiB admission. No rejection is truncated or promoted.
+Aggregate family encoding measures first and reserves exactly before writing.
+
 School-bound V4 installs its mandatory attachment descriptor from the authenticated
 school closure under the original school and attachment grant continuations.
 It neither rereads the live snapshot nor starts another allowance. The optional

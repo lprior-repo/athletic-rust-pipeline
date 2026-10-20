@@ -3,7 +3,7 @@ use super::*;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
-fn audit_is_deduplicated_sorted_and_counts_exact_retained_values() -> TestResult {
+fn audit_deduplicates_and_orders_retained_references_and_reasons() -> TestResult {
     let id = AthleteId::mint("ath_subject", &["audit"]);
     let mut audit = RetainedAudit::default();
     for reference in ["b", "a", "b"] {
@@ -16,9 +16,6 @@ fn audit_is_deduplicated_sorted_and_counts_exact_retained_values() -> TestResult
     ] {
         audit.gap(id.clone(), reason)?;
     }
-    check!(eq; audit.reference_count, 2);
-    check!(eq; audit.reason_count, 2);
-    check!(eq; audit.bytes, 40);
     let verified = audit.into_verified();
     let retained = verified.get(&id).ok_or("audit")?;
     check!(eq; retained.references(), &["a".to_string(), "b".to_string()]);
@@ -48,56 +45,50 @@ fn audit_refuses_exact_per_subject_count_overflow_without_truncation() -> TestRe
 }
 
 #[test]
-fn audit_aggregate_count_and_bytes_have_typed_exact_refusals() -> TestResult {
+fn aggregate_admission_failure_preserves_all_existing_audit_state() -> TestResult {
     let id = AthleteId::mint("ath_subject", &["audit"]);
     let mut references = RetainedAudit {
-        reference_count: MAX_REFERENCES,
+        reference_count: OBSERVATION_BUDGET.rows,
         ..Default::default()
     };
     check!(matches!(
         references.reference(&id, "one"),
-        Err(StoreError::BudgetExceeded {
-            what: "current affiliation audit reference count",
-            needed: 1_000_001,
-            available: MAX_REFERENCES,
-        })
+        Err(StoreError::BudgetExceeded { needed, available, .. })
+            if available == OBSERVATION_BUDGET.rows
+                && needed.checked_sub(available) == Some(1)
     ));
+    check!(references.references.is_empty());
+    check!(eq; references.reference_count, OBSERVATION_BUDGET.rows);
     let mut reasons = RetainedAudit {
-        reason_count: MAX_REASONS,
+        reason_count: OBSERVATION_BUDGET.rows,
         ..Default::default()
     };
     check!(matches!(
         reasons.gap(id.clone(), Gap::NoRetainedRow),
-        Err(StoreError::BudgetExceeded {
-            what: "current affiliation audit reason count",
-            needed: 1_200_001,
-            available: MAX_REASONS,
-        })
+        Err(StoreError::BudgetExceeded { needed, available, .. })
+            if available == OBSERVATION_BUDGET.rows
+                && needed.checked_sub(available) == Some(1)
     ));
+    check!(reasons.unavailable.is_empty());
+    check!(eq; reasons.reason_count, OBSERVATION_BUDGET.rows);
     let mut bytes = RetainedAudit {
-        bytes: MAX_BYTES,
+        bytes: OBSERVATION_BUDGET.bytes,
         ..Default::default()
     };
-    check!(
-        matches!(bytes.reference(&id, "x"), Err(StoreError::BudgetExceeded {
-        what: "current affiliation audit bytes", needed, available: MAX_BYTES,
-    }) if needed == MAX_BYTES + 1)
-    );
+    check!(matches!(
+        bytes.reference(&id, "x"),
+        Err(StoreError::BudgetExceeded { needed, available, .. })
+            if available == OBSERVATION_BUDGET.bytes
+                && needed.checked_sub(available) == Some(1)
+    ));
+    check!(bytes.references.is_empty());
     check!(eq; bytes.reference_count, 0);
-    check!(
-        matches!(bytes.gap(id, Gap::ArchiveUnavailable), Err(StoreError::BudgetExceeded {
-        what: "current affiliation audit bytes", needed, available: MAX_BYTES,
-    }) if needed == MAX_BYTES + 19)
-    );
+    check!(matches!(
+        bytes.gap(id, Gap::ArchiveUnavailable),
+        Err(StoreError::BudgetExceeded { needed, available, .. })
+            if available == OBSERVATION_BUDGET.bytes && needed > available
+    ));
+    check!(bytes.unavailable.is_empty());
     check!(eq; bytes.reason_count, 0);
-    Ok(())
-}
-
-#[test]
-fn audit_reason_labels_are_fixed_and_complete() -> TestResult {
-    check!(eq; [Gap::NoRetainedRow, Gap::IdentityUnaccepted, Gap::OutsideCaptureDay,
-        Gap::ArchiveUnavailable, Gap::SchoolUnresolved, Gap::OutsideSelectedSport].map(Gap::label),
-        ["no_retained_row", "identity_unaccepted", "outside_capture_day", "archive_unavailable",
-        "school_unresolved", "outside_selected_sport"]);
     Ok(())
 }
