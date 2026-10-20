@@ -2216,3 +2216,24 @@ The retained controlled50→withdraw51 workbook/reopen case `adbccc2c` **PASS1/1
 Both GPU changed-surface reviews report no confirmed writer/reader defect;
 service error/replay review remains open. Generation09 retry02, committed-build
 original-A replay and live endpoint upgrade are **NOT RUN**; no national completion.
+
+Pushed merge `eb3dc73712a3947d2673b3eba72951a88b82663d`, tree
+`8a1d54f433c9e64a27d270eadafdf46c9d34b9c2`, includes incoming PR106.
+Exact format/check/lint `bc03593e`/`23c2f44a`/`11d7c36b` **PASS**;
+catalog/publication `19424bbe` **PASS14/14**, original-A changed-build consumer
+`b8cb0a7c` **PASS1/1**, optimized build `b25b43bc` **PASS**. Its immutable CLI
+independently verifies all three original A workbooks without regeneration.
+Service SHA `dd68c8b8055210b19d796bd757013fab4ce1ebabf278c54410c98075c44b9350`;
+serve SHA `d619a7e7518f6e76767b70faeadffa8a1a9969ad32c46617856aa307b7040670`.
+Generation09 retry02 is **RUNNING**, same archive/commitment and request,16GiB/zeroSwap.
+At03:38:51Z, cgroup memory/peak10,322,169,856B and swap0; this is an in-flight
+sample, not final RSS or national resource qualification.
+
+DeepSeek found an additional source-path replay defect: after an attempt outcome
+and access condition commit but before the SDK Run completion is journaled,
+re-execution can reserve the next slot inside the same Run, bypassing the next
+gate. The passing late-condition case does not cover that crash window.
+Stable planned-slot repair and a real pending-Run regression remain **NOT QUALIFIED**;
+`q0ja` stays open. A separate access-snapshot failure can discard known physical
+progress; its repair must retain an explicit non-complete outcome, not fake an
+empty successful evidence snapshot. Neither finding justifies a live upgrade.
