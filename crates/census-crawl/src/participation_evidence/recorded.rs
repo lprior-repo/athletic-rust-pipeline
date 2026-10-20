@@ -41,7 +41,8 @@ pub use attached_result::{
 };
 pub use provider::{ProviderTargetIntakeDispositionV1, ProviderTargetWithheldV1};
 pub use provider_school::{
-    read_recorded_provider_school, record_provider_school_intake, RecordedProviderSchoolV1,
+    read_recorded_provider_school, read_retained_provider_roster_body_v1,
+    record_provider_school_intake, RecordedProviderSchoolV1,
 };
 pub use read::{
     read_recorded_html_result_capture, read_recorded_independent_participation,

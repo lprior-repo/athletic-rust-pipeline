@@ -97,9 +97,12 @@ pub(super) fn review_revision(
         projection_merge_contract: contracts.projection_merge.to_vec(),
     };
     let fields = RosterSourceReviewFieldsV1 { operation: RosterAuthorityTextV1::parse(operation)?, actor: RosterReviewActorV1::LocalOperator, decision: census_store::RosterSourceReviewDecisionV1::QualifyAndActivateExactCaptureRepresentation, reviewed_at: fixture::instant()?, rationale: RosterAuthorityTextV1::parse("Controlled Report regression fixture; not production approval or genuine source qualification")? };
-    let prepared = fixture
-        .store
-        .prepare_roster_source_review_v1(inspection, proposal, fields, supplied)?;
+    let prepared = fixture.store.prepare_roster_source_review_v1(
+        inspection,
+        proposal.into_proposal(),
+        fields,
+        supplied,
+    )?;
     let bytes = prepared.approval_bytes().to_vec();
     let digest = prepared.approval_digest().to_string();
     check!(eq; super::super::hash(&bytes), digest);

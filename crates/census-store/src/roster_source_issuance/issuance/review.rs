@@ -3,7 +3,9 @@ use super::super::{
 };
 use super::{ObjectRef, RosterSourceReviewFieldsV1, SemanticReview};
 use crate::StoreResult;
-use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
+use census_domain::roster_affiliation_authority::{
+    LocallyCheckedRosterIssuanceV1, LocallyCheckedRosterProposalV1,
+};
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -15,7 +17,7 @@ struct ProposalBasis<'a> {
     binding: &'a census_domain::roster_affiliation_authority::RosterExistingBindingClaimV1,
 }
 
-pub(super) fn proposal_basis(proposal: &LocallyCheckedRosterIssuanceV1) -> StoreResult<Vec<u8>> {
+pub(super) fn proposal_basis(proposal: &LocallyCheckedRosterProposalV1) -> StoreResult<Vec<u8>> {
     codec::encode(&ProposalBasis {
         schema: "roster-source-review-proposal-basis-v1",
         scope: proposal.scope(),
@@ -25,9 +27,21 @@ pub(super) fn proposal_basis(proposal: &LocallyCheckedRosterIssuanceV1) -> Store
     })
 }
 
+pub(super) fn proposal_basis_for_issuance(
+    issuance: &LocallyCheckedRosterIssuanceV1,
+) -> StoreResult<Vec<u8>> {
+    codec::encode(&ProposalBasis {
+        schema: "roster-source-review-proposal-basis-v1",
+        scope: issuance.scope(),
+        parser: issuance.parser(),
+        capture: issuance.capture(),
+        binding: issuance.binding(),
+    })
+}
+
 pub(super) fn semantic(
     inspection: &RosterIssuanceInspectionV1<'_>,
-    proposal: &LocallyCheckedRosterIssuanceV1,
+    proposal: &LocallyCheckedRosterProposalV1,
     fields: RosterSourceReviewFieldsV1,
     proposal_basis: ObjectRef,
     input_token: ObjectRef,

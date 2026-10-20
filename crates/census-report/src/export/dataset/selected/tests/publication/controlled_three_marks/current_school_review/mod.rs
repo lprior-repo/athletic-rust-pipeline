@@ -28,9 +28,12 @@ pub(super) fn accept(
     let fields = review_fields()?;
     let (evidence, grant) = inspection.source_parts()?;
     let (issuance, supplied) = proposal::prepare(&school, &program, evidence, &fields, grant)?;
-    let prepared = installed
-        .store
-        .prepare_roster_source_review_v1(inspection, issuance, fields, supplied)?;
+    let prepared = installed.store.prepare_roster_source_review_v1(
+        inspection,
+        issuance.into_proposal(),
+        fields,
+        supplied,
+    )?;
     let approved = prepared.approval_bytes().to_vec();
     let digest = prepared.approval_digest().to_owned();
     match installed

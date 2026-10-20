@@ -39,11 +39,11 @@ under their original identities. No profile selection, store open or new season 
 production, migrates bytes or changes an old run's meaning. Intended architecture is not runtime
 qualification; [the capability boundary](docs/PROFILE-EXECUTION-V1.md) states current support.
 
-Owner decision, 2026-10-15: deliver one current versioned runtime, not a compatibility stack.
-Remove superseded execution paths, historical-result alternatives, fallback decoders and shims;
-migrate every caller. Qualification and production use the same engine with explicit scope.
-Unsupported old state refuses before work or mutation. Preserve its bytes and identities without
-implicitly importing, migrating or executing it. This cutover is required, not yet qualified.
+Owner decision, 2026-10-20: deliver one current runtime and workbook format, not a compatibility
+stack. Remove superseded execution paths, old-format decoders, historical-result alternatives and
+shims; migrate every caller. Unsupported old state refuses before work or mutation. Preserve source
+captures, database bytes, identities and existing artifacts without implicitly importing, migrating
+or executing them. Qualification and production use the same engine with explicit scope.
 
 Current fresh serving requires explicit `--capture-protocol fresh-qualification-v3`.
 Graph-V3 identity and existing capture-V2 ownership share one store identity;

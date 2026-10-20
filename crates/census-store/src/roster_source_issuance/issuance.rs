@@ -70,9 +70,6 @@ impl PreparedRosterSourceReviewV1<'_> {
     pub fn approval_digest(&self) -> &str {
         &self.core.approval_digest
     }
-    pub fn reviewed_proposal_bytes(&self) -> &[u8] {
-        &self.core.record.proposal
-    }
     pub fn source_parts(
         &mut self,
     ) -> crate::StoreResult<(
@@ -80,6 +77,13 @@ impl PreparedRosterSourceReviewV1<'_> {
         &mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1,
     )> {
         self.inspection.source_parts()
+    }
+    pub fn proposal_claim(&mut self) -> crate::StoreResult<LocallyCheckedRosterIssuanceV1> {
+        let (_, grant) = self.inspection.source_parts()?;
+        let bytes = self.core.record.proposal.len();
+        grant.charge_bytes(bytes).map_err(super::source_error)?;
+        grant.charge_steps(1).map_err(super::source_error)?;
+        proposal(&self.core.record.proposal)
     }
 }
 

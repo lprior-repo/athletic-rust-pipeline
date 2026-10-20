@@ -5,7 +5,7 @@ use super::{ObjectRef, RosterSourceReviewObjectsV1};
 use crate::StoreResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::roster_affiliation_authority::{
-    LocallyCheckedRosterIssuanceV1, RosterAuthorityObjectRefV1,
+    LocallyCheckedRosterIssuanceV1, LocallyCheckedRosterProposalV1, RosterAuthorityObjectRefV1,
 };
 use std::collections::BTreeMap;
 
@@ -79,7 +79,7 @@ fn admit(
 pub(super) fn collect(
     inspection: &mut RosterIssuanceInspectionV1<'_>,
     supplied: RosterSourceReviewObjectsV1,
-    proposal: &LocallyCheckedRosterIssuanceV1,
+    proposal: &LocallyCheckedRosterProposalV1,
 ) -> StoreResult<Objects> {
     let mut objects = Objects::new();
     let (evidence, grant) = inspection.source_parts()?;
@@ -94,7 +94,7 @@ fn retain_contracts(
     objects: &mut Objects,
     grant: &mut AttachmentReplayGrantV1,
     supplied: RosterSourceReviewObjectsV1,
-    proposal: &LocallyCheckedRosterIssuanceV1,
+    proposal: &LocallyCheckedRosterProposalV1,
 ) -> StoreResult<()> {
     for (bytes, reference) in [
         (supplied.scope_policy, proposal.scope().policy()),
@@ -125,7 +125,7 @@ fn retain_root_payload(
     objects: &mut Objects,
     evidence: &super::super::inspection::RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
-    proposal: &LocallyCheckedRosterIssuanceV1,
+    proposal: &LocallyCheckedRosterProposalV1,
 ) -> StoreResult<()> {
     let root = evidence.retained_root(grant)?;
     if proposal.binding().provider_packet().digest().as_str() != root.root().key {
@@ -142,7 +142,7 @@ fn retain_descriptors(
     objects: &mut Objects,
     evidence: &super::super::inspection::RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
-    proposal: &LocallyCheckedRosterIssuanceV1,
+    proposal: &LocallyCheckedRosterProposalV1,
 ) -> StoreResult<()> {
     for (bytes, expected) in [
         (

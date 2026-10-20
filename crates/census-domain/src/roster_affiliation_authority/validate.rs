@@ -1,7 +1,7 @@
-use super::types::{FinalUrl, IssuanceWire, RecordWire, RosterAuthorityObjectRefV1};
+use super::types::{FinalUrl, IssuanceWire, ProposalWire, RecordWire, RosterAuthorityObjectRefV1};
 use super::{
-    charge, size, Result, RosterAuthorityError, RosterAuthorityLimitsV1, MAX_BODY_BYTES,
-    MAX_OBJECT_BYTES,
+    charge, size, Result, RosterAuthorityError, RosterAuthorityLimitsV1, RosterAuthorityScopeV1,
+    RosterCaptureClaimV1, RosterExistingBindingClaimV1, MAX_BODY_BYTES, MAX_OBJECT_BYTES,
 };
 use crate::model::{Gender, SourceNamespace, Sport};
 use chrono::{DateTime, Utc};
@@ -10,17 +10,41 @@ pub(super) fn issuance(raw: &IssuanceWire, limits: RosterAuthorityLimitsV1) -> R
     if raw.version != 1 {
         return Err(RosterAuthorityError::UnsupportedVersion);
     }
-    scope(raw)?;
-    capture(raw)?;
+    scope(&raw.scope, &raw.binding)?;
+    capture(&raw.capture, &raw.binding)?;
     if raw.parser.interpretation.as_str() != "milesplit-scoped-current-roster/v1" {
         return Err(RosterAuthorityError::Invalid("parser interpretation"));
     }
     check_references(&references(raw), &[], limits)
 }
+pub(super) fn proposal(raw: &ProposalWire, limits: RosterAuthorityLimitsV1) -> Result<()> {
+    if raw.version != 1 {
+        return Err(RosterAuthorityError::UnsupportedVersion);
+    }
+    scope(&raw.scope, &raw.binding)?;
+    capture(&raw.capture, &raw.binding)?;
+    if raw.parser.interpretation.as_str() != "milesplit-scoped-current-roster/v1" {
+        return Err(RosterAuthorityError::Invalid("parser interpretation"));
+    }
+    let refs = [
+        &raw.capture.body,
+        &raw.binding.provider_packet,
+        &raw.parser.artifact,
+        &raw.parser.schema,
+        &raw.parser.configuration,
+        &raw.parser.dependencies,
+        &raw.capture.manifest,
+        &raw.capture.interpretation,
+        &raw.capture.retained_source_admission,
+        &raw.capture.verification_grant,
+        &raw.binding.school_projection,
+        &raw.binding.program_projection,
+        &raw.binding.physical_projection_inventory,
+    ];
+    check_references(&refs, &[], limits)
+}
 
-fn scope(raw: &IssuanceWire) -> Result<()> {
-    let scope = &raw.scope;
-    let binding = &raw.binding;
+fn scope(scope: &RosterAuthorityScopeV1, binding: &RosterExistingBindingClaimV1) -> Result<()> {
     if scope.sport == Sport::Unknown || scope.category == Gender::Unknown {
         return Err(RosterAuthorityError::Invalid("unknown sport or category"));
     }
@@ -61,8 +85,7 @@ fn identifier(value: &str) -> Result<()> {
     Ok(())
 }
 
-fn capture(raw: &IssuanceWire) -> Result<()> {
-    let capture = &raw.capture;
+fn capture(capture: &RosterCaptureClaimV1, binding: &RosterExistingBindingClaimV1) -> Result<()> {
     charge(
         "acquisition timestamp bytes",
         size(capture.acquired_at.as_str().len())?,
@@ -84,7 +107,7 @@ fn capture(raw: &IssuanceWire) -> Result<()> {
     )?;
     charge(
         "provider packet bytes",
-        raw.binding.provider_packet.bytes.get(),
+        binding.provider_packet.bytes.get(),
         MAX_BODY_BYTES,
     )?;
     Ok(())
@@ -151,7 +174,7 @@ fn references(raw: &IssuanceWire) -> [&RosterAuthorityObjectRefV1; 14] {
 }
 
 fn check_references(
-    primary: &[&RosterAuthorityObjectRefV1; 14],
+    primary: &[&RosterAuthorityObjectRefV1],
     extra: &[&RosterAuthorityObjectRefV1],
     limits: RosterAuthorityLimitsV1,
 ) -> Result<()> {
