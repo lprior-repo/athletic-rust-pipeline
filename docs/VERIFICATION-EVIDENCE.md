@@ -2669,3 +2669,30 @@ V1 still sends2027, while V2 derives the profile cohort. The actual2026 workbook
 and seal-assessment case passes, but intentionally refuses missing retry
 evidence; it is not successful national sealing. Declared-store cohort
 activation and completed native publication remain unqualified; `6pb6` stays open.
+
+### Genuine roster intake and reviewed-reference repair — 2026-10-20
+
+Source `0fa8ffaacfc1b019165509fef3bee842c0d97b9c`, tree
+`939562d72f823bb217cdf10f179d0e108d30139d`.
+The operator intake preserves the genuine partial roster:146 admitted and18
+rejected dispositions,297 physical rows including school/program observations.
+Actual CLI repeat returns the original receipt with zero additional appends;
+an oversized packet refuses before Store creation. Isolated receipts and original
+packet are under `/home/lewis/.cache/athletic-roster-intake-actual-_7w0hu1f/`.
+This is intake, not accepted identity, current-school affiliation or national coverage.
+
+Source review now derives its final semantic reference from13 actual proposal
+objects instead of requiring a fabricated14th input. Original-grant exhaustion
+refuses before decode/apply; a foreign body-reader grant cannot poison the prepared
+owner. Canonical format `51a4677e`, all-target check `e6a71e62` and lint
+`abb5628a` pass; forced arity warnings remain. Public review6/6 passes
+`0fb01c69`, Nextest `445f64c6-11eb-4b0f-8438-52d0ff635e8f`.
+The initial filename-based filter selected zero tests (`e7eddd45`, FAIL);
+the corrected module filter above selected six.
+
+The actual controlled49/50/51 workbook lifecycle passes1/1 (`4851feb9`,
+Nextest `fef1dfa0-29ba-4656-86ba-9f24cd202e91`) with retention enabled:
+selected50, reviewed withdrawal to51, workbook/normalized readback and independent
+reopen. This remains controlled integration evidence, not genuine national population.
+The next deliverable is genuine accepted athlete/PR workbook rows through the
+existing production path. No duplicate replay API or new migration was landed.
