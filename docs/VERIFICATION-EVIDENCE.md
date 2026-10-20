@@ -2649,3 +2649,23 @@ nonempty evidence refs. `physical.rs` also uses that code for
 `missing_reviewed_source_authority`; the output alone does not prove HTTP-body
 loss or an empty identity registry. Counts are retained in
 `var/census-national-v3-20261019/diagnostic-affiliation-reason-counts.json`.
+
+### Retained cohort replay — 2026-10-20
+
+Source `2e6426da813bd05245a3685a9e162f80fabc0ccb`, tree
+`374ab8bb402021a46e35b4cc442e4b7f131c12c0`.
+The existing2026 retained-binding regression failed `6b672876`; removing the
+unrelated2027 restriction preserves the immutable bound cohort on no-selection
+replay. Original Store identity, run, jurisdictions and conflicting-profile
+checks remain. Five native cases pass `43d81d94`, Nextest
+`8bf1bbc2-b020-431a-97ba-22451201acdf`, selected by
+`test(restate_services::census::binding) | test(original_d6_bind_prefix_replays_through_first_jurisdiction_dispatch)`.
+Format `b7251433`, all-target check `468bcae9` and lint `f04d82cc` pass;
+forced arity warnings remain.
+
+An attempted V1 preflight change to null failed the preserved original journal
+with nondeterminism error570 (`c3ca5f91`). That change was removed: historical
+V1 still sends2027, while V2 derives the profile cohort. The actual2026 workbook
+and seal-assessment case passes, but intentionally refuses missing retry
+evidence; it is not successful national sealing. Declared-store cohort
+activation and completed native publication remain unqualified; `6pb6` stays open.
