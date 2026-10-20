@@ -109,6 +109,75 @@ fn withdrawal_removes_trust_without_asserting_departure() -> TestResult {
 }
 
 #[test]
+fn withdrawal_cannot_reuse_an_assertion_id_even_before_it_is_visible() -> TestResult {
+    let fixture = Fixture::new()?;
+    let evidence = fixture.evidence()?;
+    let owners = [&fixture.owner];
+    let claim =
+        LocallyCheckedAssertion::check(fixture.assertion(&evidence, &owners, key("claim-A")?)?)?;
+    let claims = [claim];
+    let change = fixture.change(
+        &evidence,
+        claim.raw().id,
+        ChangeKind::WithdrawsClaim {
+            scope: &fixture.interval,
+        },
+    )?;
+    for first in [1, 2] {
+        let mut raw = *change.raw();
+        raw.id = claim.raw().id;
+        raw.known = known(first, 3)?;
+        let changes = [LocallyCheckedChange::check(raw)?];
+        check!(matches!(
+            select_candidates(fixture.query()?, &claims, &changes),
+            Err(AffiliationCandidateError::DuplicateIdDifferentPayload)
+        ));
+    }
+    Ok(())
+}
+
+#[test]
+fn distinct_withdrawal_id_removes_only_its_exact_claim_and_replays_once() -> TestResult {
+    let fixture = Fixture::new()?;
+    let evidence = fixture.evidence()?;
+    let owners = [&fixture.owner];
+    let first =
+        LocallyCheckedAssertion::check(fixture.assertion(&evidence, &owners, key("claim-A")?)?)?;
+    let retained =
+        LocallyCheckedAssertion::check(fixture.assertion(&evidence, &owners, key("claim-B")?)?)?;
+    let change = fixture.change(
+        &evidence,
+        first.raw().id,
+        ChangeKind::WithdrawsClaim {
+            scope: &fixture.interval,
+        },
+    )?;
+    let claims = [first, retained, first];
+    let changes = [change, change];
+    let selected = select_candidates(fixture.query()?, &claims, &changes)?;
+    check!(eq; selected.outcome, CandidateOutcome::SingleCandidate(&retained));
+    check!(eq; selected.facts.len(), 3);
+    check!(eq;
+        selected.facts,
+        vec![
+            FactDisposition::Assertion {
+                fact: &first,
+                disposition: Disposition::WithdrawnClaim,
+            },
+            FactDisposition::Assertion {
+                fact: &retained,
+                disposition: Disposition::Candidate,
+            },
+            FactDisposition::Change {
+                fact: &change,
+                disposition: Disposition::ChangeApplied,
+            },
+        ]
+    );
+    Ok(())
+}
+
+#[test]
 fn departure_keeps_last_day_inclusive_and_next_day_ended() -> TestResult {
     let fixture = Fixture::new()?;
     let evidence = fixture.evidence()?;
