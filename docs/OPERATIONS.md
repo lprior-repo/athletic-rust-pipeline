@@ -42,6 +42,21 @@ Serve the existing root with explicit `--capture-protocol fresh-qualification-v3
 missing/retired modes refuse before root creation. Never open its CLI Store while serving.
 These controls neither migrate historical data nor enable reusable production.
 
+On a stopped current-qualification root, retain an original provider-school packet:
+
+```sh
+census-service --store ROOT capture-protocol roster-intake \
+  --packet ORIGINAL_PACKET.json --operation STABLE_OPERATION
+```
+
+The canonical packet is bounded to2MiB before opening the Store. One atomic
+recording retains the original packet, school, parser-admitted roster members and
+their provenance. Partial remains partial; rejected rows remain in the packet.
+The response separates admitted/rejected roster counts from physical appended
+rows. Exact replay returns the original receipt and appends nothing.
+This is unreviewed intake, not identity, eligibility or current-school acceptance;
+source acceptance requires its separate reviewed operation.
+
 ```sh
 env -u CI tools/moon-local run pipeline:xtask -- census-status
 env -u CI tools/moon-local run pipeline:xtask -- coverage

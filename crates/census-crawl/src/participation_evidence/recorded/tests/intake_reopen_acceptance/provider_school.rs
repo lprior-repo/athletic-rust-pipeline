@@ -7,6 +7,7 @@ use census_domain::model::{CanonicalAthlete, CanonicalSchool, SourceNamespace, S
 mod fixtures;
 mod observations;
 mod refusals;
+mod roster_rows;
 
 use fixtures::{packet, verify_checked_school, DIRECTORY, ROSTER};
 
