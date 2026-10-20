@@ -2557,3 +2557,32 @@ context`a01453e2…d3787d`. This is not merely comparison with a copied test fix
 The canonical serializer is reused; runtime admission compares static exact bytes,
 not parsed/normalized documents. Fresh native→optimized CLI qualification remains
 pending; the preceding6ee failure is preserved and not counted repaired yet.
+
+### Qualified exact-member withdrawal and fresh counterpart — 2026-10-20
+
+Tested source`9a6fff5a95127b4f5c8484c716ebe66ffaae55ed`,
+tree`7694356d96486b66ace53fa2955908e434024451`.
+Canonical format`0393ce6b`, all-target check`d9c60106`, source lint`e70ab8da`,
+kernel/refusal37/37`4a34ba2d`, public source-authority60/60`686aaf5f`
+and controlled49/50/51 lifecycle1/1`332c0082` **PASS**.
+Comments`b492b537` checked5,113 Rust files; strict`e7a0815e` reports zero
+functions over60 logical lines and no unresolved sites; seams`696f3aa7` passed.
+Arity354 remains advisory, not a claim of zero warnings.
+
+Optimized build`83c08bc2` confirms the103-file source`d9eff86d…c5c34a`,
+context`8befb4a6…72ed43`, and byte-exact native counterparts equal to real
+native compiler outputs. Actual optimized CLI **PASS11/11**:
+original-A3, old memberG0/G1, previously failing6eeG0/G1, fresh9a50/51G0/G1,
+and fresh9a member-withdrawalG0/G1. Workbook bytes/hashes remain unchanged.
+Thus the actual fresh-producer→optimized-consumer case passes, not merely
+the historical allowlist or a copied unit fixture.
+
+Immutable binaries:`var/census-national-v3-20261019/releases/9a6fff5a/`;
+serviceSHA`5e9ad0d1c14800efabbf7c8fbc39da91fc9c38914c4cbcb8876245b9d5b4f3bd`.
+Exact argv/input hashes/results and compiler descriptors:
+`/home/lewis/.cache/athletic-r2-v80o-final-c9f_ybfa/optimized-verification-9a6fff5a.json`.
+That root retains complete fresh G0/G1 archives, manifested publications and proofs.
+Luna runtime/context and Muse generator/withdrawal reviews found no reachable
+changed-surface defect; reviews did not substitute for native execution.
+This qualifies the scoped`v80o` behavior, not full R2/R11/R12 or national delivery.
+No live Store, deployment, original producer pins or historical artifacts changed.

@@ -156,14 +156,14 @@ Epoch schemas12/13 and participationV4 do not change. Qualification still requir
 the unchanged original-A consumer and frozen-generation readback; no earlier pass
 qualifies this amended source automatically.
 
-The optimized owned-feature context candidate is
+The optimized owned-feature context qualified on source`9a6fff5a` is
 `8befb4a63644c885bd231fa2aed429963959fc88cd602176ec6667e55b72ed43`.
 Only this exact optimized lane may additionally read known originals requiring
 `9e7f86bb…db41210`, `f4fe30b9…93de387` or `a01453e2…d3787d`.
 No reverse or alternate allowance follows. Two authentic native documents from
 qualified source`6a0c6ee7…5444f` remain exact predecessors with their native
-requirement, not relabeled optimized documents. Actual optimized configuration
-and original-A/G0/G1 CLI readback must qualify the candidate before release.
+requirement, not relabeled optimized documents. The ledger records actual optimized
+configuration and original-A/G0/G1 CLI qualification; each later release must requalify.
 
 **Current-source native counterpart:** a native producer and optimized consumer
 of the same source revision have different compiler-profile documents. They
