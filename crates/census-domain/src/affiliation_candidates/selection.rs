@@ -55,6 +55,13 @@ pub(super) fn select_with_envelope<'a>(
     negative.sort_unstable_by_key(|fact| fact.raw().id);
     check_duplicates(&positive, |fact| fact.raw().id)?;
     check_duplicates(&negative, |fact| fact.raw().id)?;
+    if negative.iter().any(|change| {
+        positive
+            .binary_search_by_key(&change.raw().id, |fact| fact.raw().id)
+            .is_ok()
+    }) {
+        return Err(AffiliationCandidateError::DuplicateIdDifferentPayload);
+    }
     positive.dedup_by(|left, right| left.raw().id == right.raw().id);
     negative.dedup_by(|left, right| left.raw().id == right.raw().id);
     check_inputs(&positive, &negative, &query)?;
