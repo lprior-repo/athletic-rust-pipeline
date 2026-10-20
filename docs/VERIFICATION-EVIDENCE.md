@@ -2608,3 +2608,44 @@ GPU test edit. Its exact delta is quarantined outside Git and removed; the same
 original-A boundary passes in`ad255bc3`. The guard was not weakened.
 Cold A/B workbook generations and original ingestion-command replay remain
 NOT RUN at this checkpoint;`pl1u`, broader R12 and national acceptance stay open.
+
+### R12 three-review frozen publication — 2026-10-20
+
+Source: `da74300a535e8e92ab7e0896798aecbb071f5cb6`.
+Tree: `9fb357f6f29a020cc85d64dd2729e5bc83e6f4ac`.
+Controlled A→B→A uses a distinct B directory body with unchanged source
+timestamps/provenance. The third public review binds retained A to post-B
+merged parents. Original recording/review replays do not mutate sequence,
+authority head or original physical rows. This is not a fresh acquisition.
+
+PASS: full public queue63/63 `20b02d6f`, including unchanged original A;
+binding14/14 `66a6dd74`; controlled50→51 `60d25bc0`.
+Three actual workbooks and frozen archives reopen after original Store/object
+deletion; missing/tampered affiliation closure/family proofs refuse cold reopen.
+Canonical input labels may remain equal for unchanged facts; full archive and
+publication commitments differ. The incidental label assertion failed
+`665055d7` and was deleted; no production generation/refusal policy was relaxed.
+
+Exact-source format `3e4a850b`, all-target check `df8e96bc`, lint `3823180e`,
+comments `11130655` (5119 Rust files), strict AST `8cc03dfe` (0over60/unresolved)
+and seams `7d7a776f` pass. Forced arity warnings remain.
+Optimized build `64828e66` passes. Actual CLI verifies10 unchanged generations:
+original-A3, prior withdrawal2, fresh A/B/A3 and controlled50/51.
+A nonexistent workbook refuses with exit1. Independent stdlib XLSX/CSV readback
+checks all three literal schools, MI,2027, normalized cutoff and stable public ID.
+
+Private evidence: `/home/lewis/.cache/athletic-r12-da74300a-6u6qcyk9/`:
+`native-retention.json`, `optimized-cli-verification.json`,
+`independent-workbook-readback.json`, copied complete archives/publications.
+Immutable release: `var/census-national-v3-20261019/releases/da74300a/`;
+service SHA256 `e51f918808d0e1a58535ba4677549be12512c9e287831343cc33408a03459afb`.
+Luna reviewed the exact occurrence, commitment and expanded G2/cold-proof
+boundaries; no confirmed changed-surface defect. This closes only `pl1u`.
+No live owner, original-A pins, genuine evidence or historical artifact changed.
+
+Actual national feedback, independently streamed without opening the Store:
+all1,065,450 affiliation rows are Unknown with `archive_unavailable` and
+nonempty evidence refs. `physical.rs` also uses that code for
+`missing_reviewed_source_authority`; the output alone does not prove HTTP-body
+loss or an empty identity registry. Counts are retained in
+`var/census-national-v3-20261019/diagnostic-affiliation-reason-counts.json`.
