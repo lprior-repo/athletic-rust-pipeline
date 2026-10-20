@@ -77,7 +77,6 @@ fn retained_manifest(
         })?;
     if retained.store_identity != identity
         || &retained.run != run
-        || retained.cohort != GradYear::CO2027
         || retained.jurisdictions.as_slice() != jurisdictions
     {
         return Err(JobError::Terminal {

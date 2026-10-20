@@ -40,17 +40,17 @@ fn selected_2026_binding_preserves_profile_and_refuses_reinterpretation() -> Tes
         bind(store, request(Some(original.clone()))),
         Err(JobError::Terminal { .. })
     ));
-    check!(matches!(
-        bind(store, request(None)),
-        Err(JobError::Terminal { .. })
-    ));
+    let before_replay = store.snapshot().sequence();
+    let replay = bind(store, request(None))?;
+    check!(eq; replay.cohort, 2026);
+    check!(eq; store.snapshot().sequence(), before_replay);
     check!(eq; store.run_manifest()?, Some(retained));
     check!(eq; store.snapshot().selected_profile(&original)?, original_profile);
     Ok(())
 }
 
 #[test]
-fn missing_selection_reads_only_an_exact_retained_2027_binding() -> TestResult {
+fn missing_selection_requires_and_preserves_an_exact_retained_binding() -> TestResult {
     let controlled = selected_fixture::install().map_err(|error| error.to_string())?;
     let store = controlled.store();
     check!(matches!(
