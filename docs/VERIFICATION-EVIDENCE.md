@@ -2176,3 +2176,22 @@ archive; commitment SHA is unchanged. It runs under16GiB/zeroSwap in a transient
 systemd service. `/usr/bin/time` wraps the service client: its RSS is **not** the
 workbook process peak. The original live endpoint and all historical inputs remain
 unchanged. The retry is not a fresh acquisition or national completion.
+
+Retry01 **FAILED after normalization** at the Review worksheet's Excel envelope
+(1,048,576 rows ×16,384 columns). No partial generation was published.
+Service runtime774.608s, CPU769.603s, cgroup peak16GiB, swap0; wrapper RSS5656KiB
+is not process RSS. The committed input/request remain unchanged. `jsyw` owns
+lossless worksheet pagination and strict all-page readback; Excel's hard limit
+cannot be raised. Original live data is not reset or recaptured.
+
+The source-cooldown handler case **FAILED before** (`77a58c75`): it reached failure
+instead of a durable sleep before the second reservation. With the gate installed,
+the same actual SDK HTTP case **PASS** (`01675f1b`), including pending-journal
+replay, Store reopen, fresh-clock expiry and exact access evidence. The full
+TeamsSource queue75/75 (`bf848300`) and current-union format/check/lint
+(`fe61ad21`, `ccb0b10d`, `05526d9e`) **PASS** after remote PR105 integration.
+The gate checks validated finalized history, scopes by registered host, and releases
+blocking/admission resources before at most two durable sleeps. No retry slot is
+consumed during the gate. Indefinite blocks remain refused without settlement.
+The403 setup is explicitly ledger-seeded; this does not claim physical IHSA
+acquisition or native Restate/live-deployment qualification.

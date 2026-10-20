@@ -17,6 +17,9 @@ impl TeamsSource {
         if let Some(outcome) = self.journaled_status(&ctx, &request).await? {
             return Ok(Json(outcome));
         }
+        if let Some(outcome) = self.wait_recorded_access(&ctx, &request).await? {
+            return Ok(Json(outcome));
+        }
         let admission = Arc::new(self.admit(ctx.key()).await?);
         let registered = Arc::new(self.register(&ctx, &request, &admission).await?);
         let reserved = self

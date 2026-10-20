@@ -178,7 +178,7 @@ async fn reattach(
     Ok(())
 }
 
-async fn invoke(
+pub(super) async fn invoke(
     client: &reqwest::Client,
     url: &str,
     operation: &str,

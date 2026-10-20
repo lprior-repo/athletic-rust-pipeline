@@ -12,6 +12,7 @@ use crate::restate_services::{blocking, job_error, teams_arms, JobError, Jobs};
 
 mod acquisition;
 mod admission;
+mod cooldown;
 mod execution;
 mod operation;
 pub(crate) use operation::contacts_key;
