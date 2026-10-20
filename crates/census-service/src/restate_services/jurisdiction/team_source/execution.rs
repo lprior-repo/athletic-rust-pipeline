@@ -66,6 +66,13 @@ impl TeamsSource {
         baseline: u8,
     ) -> Result<AttemptResult, HandlerError> {
         let admission = Arc::new(self.admit(&operation).await?);
+        let fetcher = self
+            .owner
+            .fetcher(
+                &request.jurisdiction.authorized_hosts,
+                request.jurisdiction.source_parallelism,
+            )
+            .await?;
         let reserved = self
             .begin_at_attempt(
                 operation.clone(),
@@ -97,8 +104,15 @@ impl TeamsSource {
             &registered,
         )
         .await?;
-        self.acquire_and_finish(operation, attempt, observed_on, admission, request)
-            .await
+        self.acquire_and_finish(
+            operation,
+            attempt,
+            observed_on,
+            admission,
+            request,
+            &fetcher,
+        )
+        .await
     }
 
     async fn acquire_and_finish(
@@ -108,11 +122,9 @@ impl TeamsSource {
         observed_on: String,
         admission: Arc<super::admission::WorkAdmission>,
         request: Arc<TeamsSourceRequest>,
+        fetcher: &Arc<census_crawl::net::Fetcher>,
     ) -> Result<AttemptResult, HandlerError> {
-        let (result, conditions) = self
-            .acquire(&request, observed_on)
-            .await
-            .map_err(job_error)?;
+        let (result, conditions) = self.acquire(&request, observed_on, fetcher).await;
         match self
             .finish_attempt(operation, attempt, result, admission, conditions)
             .await
@@ -158,3 +170,6 @@ impl TeamsSource {
         Ok(outcome)
     }
 }
+
+#[cfg(test)]
+mod setup_tests;

@@ -15,6 +15,7 @@ mod cooldown;
 mod durable_attempts;
 mod gobound_policy;
 pub(crate) mod national_resume;
+mod recorded_snapshot;
 mod registration;
 mod registration_cancellation;
 mod replay;

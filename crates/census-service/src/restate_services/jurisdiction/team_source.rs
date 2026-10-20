@@ -10,6 +10,7 @@ use crate::restate_services::wire::{
 };
 use crate::restate_services::{blocking, job_error, teams_arms, JobError, Jobs};
 
+mod access_snapshot;
 mod acquisition;
 mod admission;
 mod cooldown;
@@ -242,25 +243,5 @@ impl TeamsSource {
             .await
             .map_err(job_error)?;
         Ok(Json(inspection))
-    }
-}
-
-fn access_snapshot_failure(
-    result: ledger::Attempt,
-    secondary: census_crawl::CrawlError,
-) -> JobError {
-    let primary = match result {
-        ledger::Attempt::Failed(primary) | ledger::Attempt::Incomplete { error: primary, .. } => {
-            primary
-        }
-        ledger::Attempt::Completed(_) => {
-            return crate::restate_services::jobs::collect_error(secondary)
-        }
-    };
-    let message = crate::census::access::combined_failure(&primary, &secondary).to_string();
-    match primary {
-        JobError::Transient { .. } => JobError::Transient { message },
-        JobError::Terminal { .. } => JobError::Terminal { message },
-        JobError::Resource { source, .. } => JobError::Resource { source, message },
     }
 }

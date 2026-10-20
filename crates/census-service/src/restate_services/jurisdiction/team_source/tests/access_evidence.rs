@@ -163,23 +163,23 @@ fn access_snapshot_failure_preserves_primary_retry_classification() -> TestResul
         requested: 4097,
         limit: 4096,
     };
-    let transient = super::super::access_snapshot_failure(
+    let transient = super::super::access_snapshot::failure(
         ledger::Attempt::Failed(JobError::Transient {
             message: "HTTP 429 original".into(),
         }),
         secondary(),
     );
     check!(
-        matches!(transient, JobError::Transient { message } if message.contains("HTTP 429 original") && message.contains("source access snapshot"))
+        matches!(transient, ledger::Attempt::Failed(JobError::Transient { message }) if message.contains("HTTP 429 original") && message.contains("source access snapshot"))
     );
-    let terminal = super::super::access_snapshot_failure(
+    let terminal = super::super::access_snapshot::failure(
         ledger::Attempt::Failed(JobError::Terminal {
             message: "HTTP 403 original".into(),
         }),
         secondary(),
     );
     check!(
-        matches!(terminal, JobError::Terminal { message } if message.contains("HTTP 403 original") && message.contains("source access snapshot"))
+        matches!(terminal, ledger::Attempt::Failed(JobError::Terminal { message }) if message.contains("HTTP 403 original") && message.contains("source access snapshot"))
     );
     Ok(())
 }
