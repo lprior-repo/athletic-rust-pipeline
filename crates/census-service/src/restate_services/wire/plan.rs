@@ -9,6 +9,10 @@ pub struct SourcePlan {
     pub sweepable: Vec<String>,
     #[serde(default)]
     pub refused: Vec<RefusedSource>,
+    /// Source families whose already-retained inputs satisfy the plan without acquisition.
+    /// Added with a default so earlier Restate journals remain readable.
+    #[serde(default)]
+    pub satisfied: Vec<SatisfiedSource>,
     #[serde(default)]
     pub fingerprint: String,
 }
@@ -28,6 +32,7 @@ impl SourcePlan {
                     kind: refusal.kind,
                 })
                 .collect(),
+            satisfied: Vec::new(),
             fingerprint,
         }
     }
@@ -57,6 +62,14 @@ impl SourcePlan {
             })
             .collect()
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SatisfiedSource {
+    pub slug: String,
+    /// Digest of the run-bound receipt that makes this retained source complete.
+    pub evidence_digest: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

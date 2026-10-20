@@ -19,6 +19,7 @@ fn refused_history_sources_are_disposed_without_changing_result_selection(
                     kind: crate::restate_services::plan::RefusalKind::EngineeringGap,
                 },
             ],
+            satisfied: Vec::new(),
             fingerprint: String::new(),
         }),
         ..JurisdictionState::default()

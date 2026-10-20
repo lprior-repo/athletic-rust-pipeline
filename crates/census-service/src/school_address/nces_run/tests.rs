@@ -156,3 +156,200 @@ fn nces_address_run_changed_provenance_refuses_without_rewriting_existing_genera
     check!(eq; std::fs::read_link(out.join("current"))?, current);
     Ok(())
 }
+#[test]
+fn accepted_nces_run_joins_into_canonical_schools_and_survives_frozen_dataset_reopen() -> TestResult
+{
+    use census_domain::model::{normalize_name, CanonicalSchool, SourceIdentity, SourceNamespace};
+    use census_store::Table;
+
+    let fixture = fixture()?;
+    let schools = [
+        (
+            UsJurisdiction::Michigan,
+            "Synthetic Michigan Public School",
+            "nces-ccd",
+            "260000000001",
+            "1 Synthetic Way",
+            "48001",
+        ),
+        (
+            UsJurisdiction::Minnesota,
+            "Synthetic Minnesota Public School",
+            "nces-ccd",
+            "270000000001",
+            "2 Synthetic Way",
+            "55001",
+        ),
+        (
+            UsJurisdiction::Iowa,
+            "Synthetic Iowa Public School",
+            "nces-ccd",
+            "190000000001",
+            "3 Synthetic Way",
+            "50001",
+        ),
+        (
+            UsJurisdiction::Illinois,
+            "Synthetic Illinois Public School",
+            "nces-ccd",
+            "170000000001",
+            "4 Synthetic Way",
+            "60001",
+        ),
+        (
+            UsJurisdiction::Colorado,
+            "Synthetic Colorado Public School",
+            "nces-ccd",
+            "080000000001",
+            "5 Synthetic Way",
+            "80001",
+        ),
+        (
+            UsJurisdiction::Michigan,
+            "Synthetic Michigan Private School",
+            "nces-pss",
+            "SYNMI001",
+            "11 Synthetic Way",
+            "48002",
+        ),
+        (
+            UsJurisdiction::Minnesota,
+            "Synthetic Minnesota Private School",
+            "nces-pss",
+            "SYNMN001",
+            "12 Synthetic Way",
+            "55002",
+        ),
+        (
+            UsJurisdiction::Iowa,
+            "Synthetic Iowa Private School",
+            "nces-pss",
+            "SYNIA001",
+            "13 Synthetic Way",
+            "50002",
+        ),
+        (
+            UsJurisdiction::Illinois,
+            "Synthetic Illinois Private School",
+            "nces-pss",
+            "SYNIL001",
+            "14 Synthetic Way",
+            "60002",
+        ),
+        (
+            UsJurisdiction::Colorado,
+            "Synthetic Colorado Private School",
+            "nces-pss",
+            "SYNCO001",
+            "15 Synthetic Way",
+            "80002",
+        ),
+    ];
+    for &(jurisdiction, name, provider, source_id, _, _) in &schools {
+        let (school, _) =
+            CanonicalSchool::new(jurisdiction, name, normalize_name(name), Some("Testville"));
+        let mut school = school;
+        school.source_identities.push(SourceIdentity::new(
+            SourceNamespace::school_directory(provider, jurisdiction),
+            source_id,
+        ));
+        fixture.store.append(Table::Schools, &school)?;
+    }
+    let receipt = accept(&fixture.store, &fixture.selection)?;
+    let generation = fixture.store.out_dir().join("nces-address");
+    let overrides = super::super::Overrides::from_acquisitions(vec![
+        super::super::Acquisition {
+            entry: 0,
+            provider: "nces-ccd".to_string(),
+            path: String::new(),
+            url: receipt.ccd().source_url().to_string(),
+            retrieved_at: Some(receipt.ccd().captured_on().to_string()),
+        },
+        super::super::Acquisition {
+            entry: 1,
+            provider: "nces-pss".to_string(),
+            path: String::new(),
+            url: receipt.pss().source_url().to_string(),
+            retrieved_at: Some(receipt.pss().captured_on().to_string()),
+        },
+    ])?;
+    let joined = super::super::join_generation_pinned(
+        &fixture.store,
+        &generation,
+        overrides,
+        receipt.address_generation_digest(),
+    )?;
+    check!(eq; (joined.counters.already_linked, joined.counters.backfilled,
+        joined.counters.postal_filled, joined.counters.postal_remaining), (10, 10, 10, 0));
+
+    let dataset = census_report::export::ExportDataset::load(&fixture.store)?;
+    let claims: usize = dataset
+        .schools
+        .values()
+        .map(|school| school.postal_addresses.len())
+        .sum();
+    check!(eq; claims, 10);
+    let claim_facts = |dataset: &census_report::export::ExportDataset| -> TestResult<_> {
+        dataset
+            .schools
+            .values()
+            .flat_map(|school| school.postal_addresses.iter())
+            .map(|claim| {
+                Ok((
+                    claim.owner().namespace.to_string(),
+                    claim.owner().id.clone(),
+                    claim
+                        .address()
+                        .line1()
+                        .ok_or("address street")?
+                        .as_str()
+                        .to_string(),
+                    claim
+                        .address()
+                        .city()
+                        .ok_or("address city")?
+                        .as_str()
+                        .to_string(),
+                    claim.address().state().ok_or("address state")?,
+                    claim
+                        .address()
+                        .zip()
+                        .ok_or("address ZIP")?
+                        .code()
+                        .to_string(),
+                    claim.capture_sha256().to_string(),
+                ))
+            })
+            .collect::<TestResult<BTreeSet<_>>>()
+    };
+    let expected: BTreeSet<_> = schools
+        .iter()
+        .map(|(jurisdiction, _, provider, source_id, street, zip)| {
+            (
+                SourceNamespace::school_directory(provider, *jurisdiction).to_string(),
+                (*source_id).to_string(),
+                (*street).to_string(),
+                "Testville".to_string(),
+                *jurisdiction,
+                (*zip).to_string(),
+                if *provider == "nces-ccd" {
+                    CCD_SHA256.to_string()
+                } else {
+                    PSS_SHA256.to_string()
+                },
+            )
+        })
+        .collect();
+    check!(eq; claim_facts(&dataset)?, expected);
+    let frozen = fixture._root.path().join("joined-dataset.json");
+    dataset.save_frozen(&frozen)?;
+    let reopened = census_report::export::ExportDataset::reopen_frozen(&frozen)?;
+    let reopened_claims: usize = reopened
+        .schools
+        .values()
+        .map(|school| school.postal_addresses.len())
+        .sum();
+    check!(eq; reopened_claims, 10);
+    check!(eq; claim_facts(&reopened)?, expected);
+    Ok(())
+}

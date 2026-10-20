@@ -29,6 +29,7 @@ fn historical_state() -> Result<JurisdictionState, Box<dyn std::error::Error>> {
         plan: Some(SourcePlan {
             sweepable: vec!["milesplit".to_string()],
             refused: Vec::new(),
+            satisfied: Vec::new(),
             fingerprint: "fixture".to_string(),
         }),
         ..JurisdictionState::default()
@@ -142,6 +143,7 @@ fn missing_lane_jurisdiction_refusal_settles() -> TestResult {
                 reason: "missing coach sources".into(),
                 kind: crate::restate_services::plan::RefusalKind::EngineeringGap,
             }],
+            satisfied: Vec::new(),
             fingerprint: "fixture".into(),
         }),
         coach_lane: Some(settled),
@@ -195,6 +197,7 @@ fn omitted_source_or_refusal_cannot_certify_the_registry_inventory() -> TestResu
             plan: Some(SourcePlan {
                 sweepable,
                 refused: Vec::new(),
+                satisfied: Vec::new(),
                 fingerprint: "fixture".to_string(),
             }),
             ..JurisdictionState::default()
