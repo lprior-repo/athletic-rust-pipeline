@@ -1,7 +1,8 @@
 use super::super::context::{DatedRosterMembership, ObservationDayConvention, RosterEvidence};
-use super::{invalid, Gap, RowNote};
+use super::{invalid, Gap};
 use census_crawl::milesplit::LocatedRosterAthlete;
 use census_domain::model::{AthleteId, Evidence, QueryProfileV1};
+use census_domain::roster_affiliation_authority::RosterMemberObservationV1;
 use census_store::StoreResult;
 
 pub(super) enum Outcome {
@@ -13,7 +14,7 @@ pub(super) fn retain(
     context: &mut RosterEvidence,
     athlete: &AthleteId,
     evidence: &Evidence,
-    note: &RowNote,
+    note: &RosterMemberObservationV1,
     member: &LocatedRosterAthlete,
     profile: &QueryProfileV1,
 ) -> StoreResult<Outcome> {
@@ -23,10 +24,10 @@ pub(super) fn retain(
             evidence,
             DatedRosterMembership {
                 observed_on: profile.input().as_of.clone(),
-                observed_at: note.fetched_at.clone(),
+                observed_at: note.fetched_at().to_string(),
                 day_convention: ObservationDayConvention::UtcCaptureDay,
                 assertion: assertion.clone(),
-                capture_sha256: note.capture_sha256.clone(),
+                capture_sha256: note.capture_sha256().to_string(),
             },
         )?;
     }
@@ -36,13 +37,16 @@ pub(super) fn retain(
         ));
     };
     let assertion = &dated.assertion;
+    let row = assertion.row();
     if dated.observed_on != profile.input().as_of
-        || dated.observed_at != note.fetched_at
+        || dated.observed_at != note.fetched_at()
         || dated.day_convention != ObservationDayConvention::UtcCaptureDay
-        || dated.capture_sha256 != note.capture_sha256
-        || assertion.owner() != note.provider_team_id
-        || assertion.member() != note.provider_athlete_id
-        || assertion.row() != note.row
+        || dated.capture_sha256 != note.capture_sha256()
+        || assertion.owner() != note.provider_team_id()
+        || assertion.member() != note.provider_athlete_id()
+        || row.ordinal != note.row().ordinal()
+        || row.byte_offset != note.row().byte_offset()
+        || row.byte_length != note.row().byte_length()
         || !profile
             .input()
             .sports

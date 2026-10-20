@@ -1,22 +1,29 @@
-use super::super::{capture::CapturedRoster, invalid, note::RowNote};
+use super::super::{capture::CapturedRoster, invalid};
 use census_domain::model::{
     CanonicalAthlete, CanonicalSchool, Evidence, QueryProfileV1, SourceNamespace, Sport,
 };
+use census_domain::roster_affiliation_authority::RosterMemberObservationV1;
 use census_store::StoreResult;
 
 pub(super) fn validate_member<'a>(
     athlete: &CanonicalAthlete,
-    note: &RowNote,
+    note: &RosterMemberObservationV1,
     capture: &'a CapturedRoster,
 ) -> StoreResult<&'a census_crawl::milesplit::LocatedRosterAthlete> {
+    let row = note.row();
     let member = capture
         .members
-        .get(&note.row.ordinal)
-        .filter(|member| member.locator() == note.row)
+        .get(&row.ordinal())
+        .filter(|member| {
+            let located = member.locator();
+            located.ordinal == row.ordinal()
+                && located.byte_offset == row.byte_offset()
+                && located.byte_length == row.byte_length()
+        })
         .ok_or_else(|| invalid("retained roster locator does not identify an admitted row"))?;
     let source = member.athlete();
-    if capture.hashes.get(&note.row.ordinal) != Some(&note.row_sha256)
-        || source.athlete_id != note.provider_athlete_id
+    if capture.hashes.get(&row.ordinal()).map(String::as_str) != Some(note.row_sha256())
+        || source.athlete_id != note.provider_athlete_id()
         || source.name != athlete.canonical_name
         || source.grad_year != athlete.grad_year
         || source.gender != athlete.gender
@@ -70,10 +77,13 @@ pub(super) fn validate_source(
     Ok(())
 }
 
-pub(super) fn validate_owner(athlete: &CanonicalAthlete, note: &RowNote) -> StoreResult<()> {
+pub(super) fn validate_owner(
+    athlete: &CanonicalAthlete,
+    note: &RosterMemberObservationV1,
+) -> StoreResult<()> {
     if !athlete.source.as_ref().is_some_and(|source| {
         source.namespace == SourceNamespace::MilesplitAthlete
-            && source.id == note.provider_athlete_id
+            && source.id == note.provider_athlete_id()
     }) {
         return Err(invalid(
             "retained roster row changes athlete provider ownership",

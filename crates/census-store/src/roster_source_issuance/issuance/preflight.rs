@@ -1,5 +1,4 @@
 use super::super::{RosterSourceIssuanceStoreError as Error, RosterStartupValidationBudgetV1};
-use super::PreparedRosterSourceReviewV1;
 use crate::{Store, StoreError, StoreResult};
 use fjall::Readable;
 use std::collections::BTreeMap;
@@ -8,7 +7,7 @@ type Inventory = BTreeMap<(u8, Vec<u8>), usize>;
 
 pub(super) fn postcommit(
     store: &Store,
-    prepared: &PreparedRosterSourceReviewV1<'_>,
+    objects: &super::objects::Objects,
     record_key: &[u8],
     record: &[u8],
     head: &[u8],
@@ -47,7 +46,7 @@ pub(super) fn postcommit(
         &lineage,
         usize::try_from(length).map_err(|_| Error::BudgetExceeded)?,
     )?;
-    for (digest, raw) in &prepared.objects {
+    for (digest, raw) in objects {
         insert(
             &mut inventory,
             1,

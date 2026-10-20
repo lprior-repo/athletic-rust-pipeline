@@ -16,6 +16,35 @@ pub(super) fn insert(
     bytes: &[u8],
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<ObjectRef> {
+    let (reference, required) = admit(objects, bytes, grant)?;
+    if required {
+        let mut owned = Vec::new();
+        owned
+            .try_reserve_exact(bytes.len())
+            .map_err(|_| Error::BudgetExceeded)?;
+        owned.extend_from_slice(bytes);
+        objects.insert(reference.digest.clone(), owned);
+    }
+    Ok(reference)
+}
+
+pub(super) fn insert_owned(
+    objects: &mut Objects,
+    bytes: Vec<u8>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<ObjectRef> {
+    let (reference, required) = admit(objects, &bytes, grant)?;
+    if required {
+        objects.insert(reference.digest.clone(), bytes);
+    }
+    Ok(reference)
+}
+
+fn admit(
+    objects: &Objects,
+    bytes: &[u8],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<(ObjectRef, bool)> {
     if bytes.is_empty() || bytes.len() > 4 * 1024 * 1024 || objects.len() >= 4096 {
         return Err(Error::BudgetExceeded.into());
     }
@@ -24,10 +53,11 @@ pub(super) fn insert(
         .map_err(super::super::source_error)?;
     grant.charge_steps(1).map_err(super::super::source_error)?;
     let digest = codec::digest(bytes);
-    if let Some(existing) = objects.get(&digest) {
+    let required = if let Some(existing) = objects.get(&digest) {
         if existing != bytes {
             return Err(Error::Corrupt("object digest collision").into());
         }
+        false
     } else {
         let total = objects.values().try_fold(bytes.len(), |sum, raw| {
             sum.checked_add(raw.len()).ok_or(Error::BudgetExceeded)
@@ -35,12 +65,15 @@ pub(super) fn insert(
         if total > 8 * 1024 * 1024 {
             return Err(Error::BudgetExceeded.into());
         }
-        objects.insert(digest.clone(), bytes.to_vec());
-    }
-    Ok(ObjectRef {
-        digest,
-        bytes: bytes.len(),
-    })
+        true
+    };
+    Ok((
+        ObjectRef {
+            digest,
+            bytes: bytes.len(),
+        },
+        required,
+    ))
 }
 
 pub(super) fn collect(

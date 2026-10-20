@@ -1,6 +1,6 @@
 use super::audit::RetainedAudit;
 use super::{
-    capture::Captures, invalid, note::RowNote, CurrentAffiliationResolution as Resolution,
+    capture::Captures, invalid, note, CurrentAffiliationResolution as Resolution,
     UnavailableAffiliation as Gap,
 };
 use crate::export::public_identity::population::{IdentityAdmission, IdentityPopulation};
@@ -10,6 +10,7 @@ use crate::report::ReportResult;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalSchool, Evidence, QueryProfileV1, SourceNamespace,
 };
+use census_domain::roster_affiliation_authority::RosterMemberObservationV1;
 use census_store::StoreResult;
 use std::collections::BTreeMap;
 #[cfg(test)]
@@ -119,7 +120,7 @@ impl<'a> Reader<'a> {
         let id = (*id).clone();
         let mut recognized = false;
         for evidence in &athlete.evidence {
-            let Some(note) = RowNote::read(evidence)? else {
+            let Some(note) = note::read(evidence)? else {
                 continue;
             };
             recognized = true;
@@ -136,16 +137,15 @@ impl<'a> Reader<'a> {
         id: &AthleteId,
         athlete: &CanonicalAthlete,
         evidence: &Evidence,
-        note: &RowNote,
+        note: &RosterMemberObservationV1,
     ) -> StoreResult<()> {
         validate_owner(athlete, note)?;
-        let day = note.acquired_at()?.date_naive().to_string();
-        let Some(school) = self
-            .schools
-            .get(note.provider_team_id.as_str())
-            .copied()
-            .flatten()
-        else {
+        let day = note
+            .acquired_at()
+            .map_err(|_| invalid("retained roster acquisition instant is invalid"))?
+            .date_naive()
+            .to_string();
+        let Some(school) = self.schools.get(note.provider_team_id()).copied().flatten() else {
             self.unavailable(id, &day, Gap::SchoolUnresolved)?;
             return Ok(());
         };
@@ -222,7 +222,7 @@ fn observe_pinned(
     id: &AthleteId,
     athlete: &CanonicalAthlete,
     evidence: &Evidence,
-    note: &RowNote,
+    note: &RosterMemberObservationV1,
     member: &census_crawl::milesplit::LocatedRosterAthlete,
     capture: &super::capture::CapturedRoster,
     school: &CanonicalSchool,
@@ -233,7 +233,10 @@ fn observe_pinned(
         audit.gap(id.clone(), Gap::OutsideCaptureDay)?;
         return Ok(());
     }
-    let mut evidence_refs = vec![note.source_row_key.clone(), capture.metadata_ref.clone()];
+    let mut evidence_refs = vec![
+        note.source_row_key().to_string(),
+        capture.metadata_ref.clone(),
+    ];
     evidence_refs.sort();
     evidence_refs.dedup();
     for reference in &evidence_refs {

@@ -1,20 +1,33 @@
 use super::super::{codec, enrollment::AuthorityHead, RosterSourceIssuanceStoreError as Error};
-use super::{PreparedRosterSourceReviewV1, ReviewRecord};
+use super::{PreparedRosterReviewCore, PreparedRosterSourceReviewV1, ReviewRecord};
 use crate::{Application, Receipt, Store, StoreError, StoreResult};
-use chrono::Utc;
+use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
+use chrono::{DateTime, Utc};
 use fjall::{PersistMode, Readable};
+
+pub(super) struct SealedRosterReview {
+    bytes: Vec<u8>,
+    head: Vec<u8>,
+    pub(super) receipt: Receipt,
+    objects: super::objects::Objects,
+    record_key: String,
+}
 
 impl Store {
     pub fn apply_roster_source_review_v1(
         &self,
-        mut prepared: PreparedRosterSourceReviewV1<'_>,
+        prepared: PreparedRosterSourceReviewV1<'_>,
         approved: &[u8],
         approval_digest: &str,
     ) -> StoreResult<Application> {
         let _guard = self.lock_appends();
-        let result = apply(self, &mut prepared, approved, approval_digest);
+        let PreparedRosterSourceReviewV1 {
+            mut inspection,
+            core,
+        } = prepared;
+        let result = apply(self, &mut inspection, core, approved, approval_digest);
         if result.is_err() {
-            prepared.inspection.grant.poison();
+            inspection.grant.poison();
         }
         result
     }
@@ -22,45 +35,38 @@ impl Store {
 
 fn apply(
     store: &Store,
-    prepared: &mut PreparedRosterSourceReviewV1<'_>,
+    inspection: &mut super::RosterIssuanceInspectionV1<'_>,
+    core: PreparedRosterReviewCore,
     approved: &[u8],
     digest: &str,
 ) -> StoreResult<Application> {
-    prepared
-        .inspection
+    inspection
         .revision
-        .ensure_origin(store, prepared.record.operation.as_str())?;
-    prepared
-        .inspection
+        .ensure_origin(store, core.record.operation.as_str())?;
+    inspection
         .evidence
-        .require_original_grant(&mut prepared.inspection.grant)?;
-    if approved != prepared.approval || digest != prepared.approval_digest {
+        .require_original_grant(&mut inspection.grant)?;
+    if approved != core.approval || digest != core.approval_digest {
         return Err(Error::ApprovalMismatch.into());
     }
     let operation = format!(
         "{}{}",
         super::super::OPERATION_PREFIX,
-        prepared.record.operation.as_str()
+        core.record.operation.as_str()
     );
     if replay_if_settled(store, &operation)? {
-        return super::replay::replay(store, prepared.record.operation.as_str(), digest);
+        return super::replay::replay(store, core.record.operation.as_str(), digest);
     }
-    super::prepare::require_current(
-        store,
-        &mut prepared.inspection,
-        prepared.record.operation.as_str(),
-    )?;
-    let committed_at = Utc::now();
-    let (bytes, head, receipt) = seal_record(prepared, approved, digest, operation, committed_at)?;
-    prepared
-        .inspection
+    super::prepare::require_current(store, inspection, core.record.operation.as_str())?;
+    let sealed = seal_core(core, Utc::now(), &mut inspection.grant)?;
+    inspection
         .evidence
-        .require_original_grant(&mut prepared.inspection.grant)?;
-    commit(store, prepared, &bytes, &head, &receipt)?;
-    Ok(Application::Written(receipt))
+        .require_original_grant(&mut inspection.grant)?;
+    commit_review(store, &sealed)?;
+    Ok(Application::Written(sealed.receipt))
 }
 
-fn replay_if_settled(store: &Store, operation: &str) -> StoreResult<bool> {
+pub(super) fn replay_if_settled(store: &Store, operation: &str) -> StoreResult<bool> {
     store
         .db
         .snapshot()
@@ -68,94 +74,84 @@ fn replay_if_settled(store: &Store, operation: &str) -> StoreResult<bool> {
         .map_err(|source| StoreError::Read { source })
 }
 
-fn seal_record(
-    prepared: &mut PreparedRosterSourceReviewV1<'_>,
-    approved: &[u8],
-    digest: &str,
-    operation: String,
-    committed_at: chrono::DateTime<chrono::Utc>,
-) -> StoreResult<(Vec<u8>, Vec<u8>, Receipt)> {
+pub(super) fn seal_core(
+    core: PreparedRosterReviewCore,
+    committed_at: DateTime<Utc>,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<SealedRosterReview> {
     let review: super::SemanticReview = codec::decode(
-        prepared
-            .objects
-            .get(&prepared.record.review.digest)
+        core.objects
+            .get(&core.record.review.digest)
             .ok_or(Error::Corrupt("prepared review absent"))?,
     )?;
     if committed_at < review.fields.reviewed_at {
         return Err(Error::Corrupt("commit precedes review").into());
     }
-    let encoded_basis =
-        codec::encode_with_source_grant(&prepared.record, &mut prepared.inspection.grant)?;
-    prepared
-        .inspection
-        .grant
-        .charge_bytes(encoded_basis.len())
-        .map_err(super::super::source_error)?;
-    prepared
-        .inspection
-        .grant
-        .charge_steps(1)
-        .map_err(super::super::source_error)?;
-    let basis = codec::decode(&encoded_basis)?;
+    let record_key = format!(
+        "{}{}",
+        super::RECORD_PREFIX,
+        codec::digest(core.record.operation.as_str().as_bytes())
+    );
+    let operation = format!(
+        "{}{}",
+        super::super::OPERATION_PREFIX,
+        core.record.operation.as_str()
+    );
+    let ordinal = core.record.next_ordinal;
     let record = ReviewRecord {
-        basis,
-        approval_digest: digest.into(),
-        approval: approved.to_vec(),
+        basis: core.record,
+        approval_digest: core.approval_digest,
+        approval: core.approval,
         committed_at,
     };
-    let bytes = codec::encode_with_source_grant(&record, &mut prepared.inspection.grant)?;
-    let record_digest = codec::digest(&bytes);
+    let bytes = codec::encode_with_source_grant(&record, grant)?;
+    let digest = codec::digest(&bytes);
     let head = codec::encode(&AuthorityHead {
         version: 1,
-        ordinal: prepared.record.next_ordinal,
-        digest: record_digest.clone(),
+        ordinal,
+        digest: digest.clone(),
     })?;
-    Ok((
+    Ok(SealedRosterReview {
         bytes,
         head,
-        Receipt {
+        receipt: Receipt {
             operation,
-            digest: record_digest,
+            digest,
             at: committed_at.to_rfc3339(),
             appended: 0,
             credited: false,
         },
-    ))
+        objects: core.objects,
+        record_key,
+    })
 }
 
-fn commit(
-    store: &Store,
-    prepared: &PreparedRosterSourceReviewV1<'_>,
-    bytes: &[u8],
-    head: &[u8],
-    receipt: &Receipt,
-) -> StoreResult<()> {
-    let record_key = format!(
-        "{}{}",
-        super::RECORD_PREFIX,
-        codec::digest(prepared.record.operation.as_str().as_bytes())
-    );
-    let receipt_bytes = codec::encode(receipt)?;
+pub(super) fn commit_review(store: &Store, sealed: &SealedRosterReview) -> StoreResult<()> {
+    let receipt_bytes = codec::encode(&sealed.receipt)?;
     super::preflight::postcommit(
         store,
-        prepared,
-        record_key.as_bytes(),
-        bytes,
-        head,
-        receipt.operation.as_bytes(),
+        &sealed.objects,
+        sealed.record_key.as_bytes(),
+        &sealed.bytes,
+        &sealed.head,
+        sealed.receipt.operation.as_bytes(),
         &receipt_bytes,
     )?;
     let mut batch = store.db.batch();
-    for (digest, object) in &prepared.objects {
+    for (digest, object) in &sealed.objects {
         batch.insert(
             &store.journal,
             format!("{}{digest}", super::OBJECT_PREFIX),
             object,
         );
     }
-    batch.insert(&store.journal, record_key, bytes);
-    batch.insert(&store.meta, super::super::HEAD, head);
-    batch.insert(&store.receipts, receipt.operation.as_bytes(), receipt_bytes);
+    batch.insert(&store.journal, &sealed.record_key, &sealed.bytes);
+    batch.insert(&store.meta, super::super::HEAD, &sealed.head);
+    batch.insert(
+        &store.receipts,
+        sealed.receipt.operation.as_bytes(),
+        &receipt_bytes,
+    );
     batch
         .durability(Some(PersistMode::SyncData))
         .commit()

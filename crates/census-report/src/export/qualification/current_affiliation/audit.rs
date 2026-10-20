@@ -123,6 +123,7 @@ impl Gap {
         match self {
             Self::NoRetainedRow => "no_retained_row",
             Self::IdentityUnaccepted => "identity_unaccepted",
+            Self::ReviewedClaimWithdrawn => "reviewed_roster_member_withdrawn",
             Self::OutsideCaptureDay => "outside_capture_day",
             Self::ArchiveUnavailable => "archive_unavailable",
             Self::SchoolUnresolved => "school_unresolved",

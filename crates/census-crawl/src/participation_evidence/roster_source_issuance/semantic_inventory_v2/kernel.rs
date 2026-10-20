@@ -4,6 +4,7 @@ use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::StoreResult;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
+mod member_evidence;
 
 struct CompiledKernelIdentity {
     text: &'static str,

@@ -98,7 +98,10 @@ fn review_references(
 pub(super) fn claims(
     archive: &Archive,
     grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<Vec<ReviewedRosterSourceClaimV1>> {
+) -> StoreResult<(
+    Vec<ReviewedRosterSourceClaimV1>,
+    Vec<super::super::ReviewedRosterMemberWithdrawalV1>,
+)> {
     super::inherited::validate(archive, grant)?;
     validate_inventory(archive, grant)?;
     super::super::super::format::validate_enrollment(
@@ -110,6 +113,7 @@ pub(super) fn claims(
     let objects = Arc::new(objects(archive, grant)?);
     let source = frozen_source::FrozenRosterJournalSource::new(&archive.external, grant)?;
     let mut claims = Vec::new();
+    let mut withdrawals = Vec::new();
     let mut roots = BTreeSet::new();
     for (key, raw) in &archive.records {
         if !key.starts_with(super::super::RECORD_PREFIX.as_bytes()) {
@@ -121,25 +125,34 @@ pub(super) fn claims(
         grant
             .charge_steps(1)
             .map_err(super::super::super::source_error)?;
-        let (claim, root) = claim_for_record(archive, raw, &objects, &source, grant)?;
-        roots.insert(root);
-        claims.push(claim);
+        let record: ReviewRecord = codec::decode(raw)?;
+        if record.basis.schema == super::super::withdrawal::BASIS_SCHEMA {
+            withdrawals
+                .try_reserve(1)
+                .map_err(|_| Error::BudgetExceeded)?;
+            withdrawals.push(withdrawal(record, &objects, grant)?);
+        } else {
+            let (claim, root) = claim_for_record(archive, record, &objects, &source, grant)?;
+            roots.insert(root);
+            claims.try_reserve(1).map_err(|_| Error::BudgetExceeded)?;
+            claims.push(claim);
+        }
     }
     if roots.len() != archive.external.len() {
         return Err(Error::Corrupt("review external closure differs").into());
     }
     claims.sort_by_key(|claim| claim.record.basis.next_ordinal);
-    Ok(claims)
+    withdrawals.sort_by_key(|withdrawal| withdrawal.ordinal());
+    Ok((claims, withdrawals))
 }
 
 fn claim_for_record(
     archive: &Archive,
-    raw: &[u8],
+    record: ReviewRecord,
     objects: &Arc<super::super::objects::Objects>,
     source: &frozen_source::FrozenRosterJournalSource,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<(ReviewedRosterSourceClaimV1, (&'static str, String))> {
-    let record: ReviewRecord = codec::decode(raw)?;
     let proposal = super::super::proposal(&record.basis.proposal)?;
     if proposal.binding().snapshot_revision().get() > archive.selected_snapshot_sequence {
         return Err(Error::Corrupt("review inspection follows publication").into());
@@ -238,4 +251,31 @@ fn validate_inventory(archive: &Archive, grant: &mut AttachmentReplayGrantV1) ->
         }
     }
     Ok(())
+}
+
+fn withdrawal(
+    record: ReviewRecord,
+    objects: &super::super::objects::Objects,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<super::super::ReviewedRosterMemberWithdrawalV1> {
+    let raw = super::super::ledger::object(objects, &record.basis.review)?;
+    grant
+        .charge_bytes(raw.len())
+        .map_err(super::super::super::source_error)?;
+    grant
+        .charge_steps(1)
+        .map_err(super::super::super::source_error)?;
+    let review: super::super::SemanticReview = codec::decode(raw)?;
+    let super::super::RosterSourceReviewDecisionV1::WithdrawExactSourceMember(decision) =
+        review.fields.decision
+    else {
+        return Err(Error::Corrupt("withdrawal source decision absent").into());
+    };
+    Ok(super::super::ReviewedRosterMemberWithdrawalV1 {
+        decision: *decision,
+        operation: record.basis.operation,
+        review: record.basis.review,
+        committed_at: record.committed_at,
+        ordinal: record.basis.next_ordinal,
+    })
 }

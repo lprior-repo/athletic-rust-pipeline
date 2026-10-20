@@ -20,13 +20,14 @@ pub(super) fn read(
             .map_err(super::super::super::source_error)?;
         archive.external.push(capture(view, root, grant)?);
     }
-    let claims = reconstruct::claims(&archive, grant)?;
+    let (claims, withdrawals) = reconstruct::claims(&archive, grant)?;
     continuation
         .require(grant)
         .map_err(super::super::super::source_error)?;
     Ok(CurrentRosterReviewedClaimsV1 {
         archive,
         claims,
+        withdrawals,
         continuation,
     })
 }
@@ -85,7 +86,7 @@ fn snapshot_protected(
         let receipts = format::scan(
             snapshot,
             receipts,
-            super::super::super::OPERATION_PREFIX,
+            [super::super::super::OPERATION_PREFIX],
             &mut budget,
             Some(&mut *grant),
         )?;

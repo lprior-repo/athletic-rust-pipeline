@@ -165,3 +165,5 @@ fn proposal_revision(
         RosterAuthorityLimitsV1::new(64 * 1024, 8 * 1024 * 1024)?,
     )?)
 }
+
+mod member_evidence;

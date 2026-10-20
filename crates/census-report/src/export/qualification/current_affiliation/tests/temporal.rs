@@ -116,7 +116,7 @@ fn observed_day_uses_utc_while_exact_source_offset_is_retained() -> TestResult {
     let evidence = athlete
         .evidence
         .iter()
-        .find(|evidence| note::RowNote::read(evidence).ok().flatten().is_some())
+        .find(|evidence| note::read(evidence).ok().flatten().is_some())
         .ok_or("roster evidence")?;
     let context = pinned.roster_context();
     let dated = context

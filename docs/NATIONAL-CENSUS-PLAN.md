@@ -434,7 +434,8 @@ Integrated source `052b0b0d` passed canonical static gates, all386 adjacent case
 original-A replay, controlled50→51, zero-comments, trusted AST and module seams.
 Later `5c200e72` passes canonical static gates,165 focused cases, original-A replay
 and actual same-input atomic national diagnostic publication. Accepted population
-is still0; exact member withdrawal `v80o` remains unimplemented.
+is still0. Exact member withdrawal `v80o` now passes the controlled sole-claim
+workbook/CLI and clean-claim fallback; final compatibility gates remain open.
 
 Prior integrated static checkpoint: `ddd07ff76f9750a460967471649813da3f1d98b7`,
 tree `005e50d310e668b5f7722c1c74741b5602edd381`. Its exact format/check/lint,
@@ -468,7 +469,8 @@ Current roster kernels are 12/13; original 2–11 identities and A artifacts rem
 | R3/R11: explicit caller authority | CLI resume and existing-invocation attachment | `367b4bec`, `9de2ee20`; actual CLI before/after | `cc3cb4cf` | PASS: generation mismatch before resume submission; store/profile mismatch before attachment, including failed-send fallback; omitted flags/budgets preserved | Remaining `agv2` native, cohort and receipt acceptance; no new acquisition identity |
 | R3/R8: explicit current startup | Atomic graph-V3/capture-V2 owner; actual CLI/profile/publication and endpoint refusal/cleanup | `d804dd74`, `09162a53` | `d11dcfa4` | PASS: current/historical guards, opaque roster approval/replay; unreviewed affiliation stays Unknown; enrollment-only refusal precedes recovery | Fresh national submitted on `d6f6c68ad`; coverage unqualified, remaining `agv2` acceptance |
 | Recovery and owned-process cleanup | Authoritative Requested-state dispatch; graceful native fixture shutdown | `897e8daa`, `892a4313` | `e4a207ef` | PASS; `8v2q` and `lxy2` closed, no SIGKILL fallback | Remaining R12/fault/resource acceptance |
-| R2: exact member withdrawal | Existing pure `WithdrawsClaim` reducer and sole roster authority head | Admission-contract review only | — | NOT IMPLEMENTED; parser admission/capture issuance is not accepted membership | Domain-owned authenticated target; no Store→Crawl cycle, `v80o` |
+| R2: exact member withdrawal | Public reviewed negative action → unchanged reducer → G0/G1 workbook/frozen replay | `fb421f88`; `7b36f71c`; actual CLI `8c7146a8` | Working tree on `628a5a28` | PASS controlled withdrawal, clean-claim fallback, refusal/replay and portable CLI | `v80o`: original-A/current-source regressions and final-commit qualification; distinct capture-revision gap `pl1u` |
+| R12: retained roster capture revisions | Two same-school packets differing in packet-bound provenance → public source reviews | `f99ccc79` | Working tree on `628a5a28` | FAIL at second review; complete A→B→A is NOT RUN | Planner/CUE-validated `pl1u`: exact occurrence versus same-occurrence conflict contract; no reset or guard bypass |
 | C/D: complete reusable product | R1–R15, independent discovery and comparison | Spec-linked live Beads | — | NOT QUALIFIED; no national acceptance workbook | UP/five-state/49-state coverage, remaining consumers, reuse/recovery and representative resource evidence |
 | D: actual national feedback | Original Restate/serving owner; read-only `Census/status` | Private `diagnostic-live-status-during-a598-build.json` | Live `d6f6c68ad` | 1,630,891 raw athletes, 86,914 source meets, 3,568 canonical marks; NOT accepted-identity or coverage counts | Verified workbook, documentary acceptance, access/engineering gaps; no reset or bypass |
 | R5: frozen normalized readback | Eight-family independent readback, grouping and durable input jobs | `88e7a1c8`; initial16 failures repaired by captured-policy catalog binding | `a598a5b32` | PASS80/80; production historical/current validation unchanged | Actual national artifact contents and manifest verification |

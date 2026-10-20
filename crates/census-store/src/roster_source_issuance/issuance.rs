@@ -16,16 +16,22 @@ mod qualification;
 mod reader;
 mod replay;
 mod review;
+mod withdrawal;
 pub use reader::{
     replay_frozen_roster_reviewed_claims_v1, CurrentRosterReviewedClaimsV1,
     FrozenRosterReviewedClaimsBundleV1, ReplayedRosterReviewedClaimsV1,
     ReviewedRosterSourceClaimV1, RosterFrozenReviewedClaimsReferenceV1,
 };
+pub use withdrawal::{
+    PreparedRosterMemberWithdrawalV1, ReviewedRosterMemberWithdrawalV1,
+    RosterMemberWithdrawalDecisionV1, RosterMemberWithdrawalReviewV1,
+};
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RosterSourceReviewDecisionV1 {
     QualifyAndActivateExactCaptureRepresentation,
+    WithdrawExactSourceMember(Box<RosterMemberWithdrawalDecisionV1>),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -47,6 +53,10 @@ pub struct RosterSourceReviewObjectsV1 {
 
 pub struct PreparedRosterSourceReviewV1<'s> {
     inspection: RosterIssuanceInspectionV1<'s>,
+    core: PreparedRosterReviewCore,
+}
+
+pub(super) struct PreparedRosterReviewCore {
     record: ReviewBasis,
     objects: BTreeMap<String, Vec<u8>>,
     approval: Vec<u8>,
@@ -55,13 +65,13 @@ pub struct PreparedRosterSourceReviewV1<'s> {
 
 impl PreparedRosterSourceReviewV1<'_> {
     pub fn approval_bytes(&self) -> &[u8] {
-        &self.approval
+        &self.core.approval
     }
     pub fn approval_digest(&self) -> &str {
-        &self.approval_digest
+        &self.core.approval_digest
     }
     pub fn reviewed_proposal_bytes(&self) -> &[u8] {
-        &self.record.proposal
+        &self.core.record.proposal
     }
     pub fn source_parts(
         &mut self,
@@ -126,9 +136,6 @@ pub(super) struct SemanticReview {
     projection_merge_contract: ContractRefV1,
 }
 
-pub(super) const RECORD_PREFIX: &str = "roster_source_issuance/v1/reviews/";
-pub(super) const OBJECT_PREFIX: &str = "roster_source_issuance/v1/objects/";
-
 fn proposal(bytes: &[u8]) -> crate::StoreResult<LocallyCheckedRosterIssuanceV1> {
     census_domain::roster_affiliation_authority::decode_roster_issuance_claim(bytes, limits()?)
         .map_err(|_| super::RosterSourceIssuanceStoreError::Corrupt("reviewed proposal").into())
@@ -142,3 +149,6 @@ fn limits(
     )
     .map_err(|_| super::RosterSourceIssuanceStoreError::BudgetExceeded.into())
 }
+
+pub(super) const RECORD_PREFIX: &str = "roster_source_issuance/v1/reviews/";
+pub(super) const OBJECT_PREFIX: &str = "roster_source_issuance/v1/objects/";

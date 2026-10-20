@@ -3,8 +3,8 @@ use super::super::{
     RosterSourceIssuanceStoreError as Error,
 };
 use super::{
-    objects, review, PreparedRosterSourceReviewV1, ReviewBasis, RosterSourceReviewFieldsV1,
-    RosterSourceReviewObjectsV1,
+    objects, review, PreparedRosterReviewCore, PreparedRosterSourceReviewV1, ReviewBasis,
+    RosterSourceReviewFieldsV1, RosterSourceReviewObjectsV1,
 };
 use crate::{Store, StoreError, StoreResult};
 use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
@@ -21,16 +21,7 @@ impl Store {
         let _guard = self.lock_appends();
         let result = prepare(self, &mut inspection, proposal, fields, supplied);
         match result {
-            Ok((record, objects, approval)) => {
-                let approval_digest = codec::digest(&approval);
-                Ok(PreparedRosterSourceReviewV1 {
-                    inspection,
-                    record,
-                    objects,
-                    approval,
-                    approval_digest,
-                })
-            }
+            Ok(core) => Ok(PreparedRosterSourceReviewV1 { inspection, core }),
             Err(error) => {
                 inspection.grant.poison();
                 Err(error)
@@ -39,15 +30,13 @@ impl Store {
     }
 }
 
-type Prepared = (ReviewBasis, objects::Objects, Vec<u8>);
-
 fn prepare(
     store: &Store,
     inspection: &mut RosterIssuanceInspectionV1<'_>,
     proposal: LocallyCheckedRosterIssuanceV1,
     fields: RosterSourceReviewFieldsV1,
     supplied: RosterSourceReviewObjectsV1,
-) -> StoreResult<Prepared> {
+) -> StoreResult<PreparedRosterReviewCore> {
     require_current(store, inspection, fields.operation.as_str())?;
     require_target(inspection, &proposal)?;
     let (mut objects, prior, input_token, prior_head) =
@@ -71,7 +60,13 @@ fn prepare(
         prior,
         &objects,
     )?;
-    Ok((record, objects, approval))
+    let approval_digest = codec::digest(&approval);
+    Ok(PreparedRosterReviewCore {
+        record,
+        objects,
+        approval,
+        approval_digest,
+    })
 }
 
 fn anchored_closure(
@@ -117,7 +112,7 @@ fn derived_review(
     let (qualification, activation) = super::qualification::derive(
         proposal,
         &proposal_review_basis,
-        fields.decision,
+        &fields.decision,
         objects,
         &mut inspection.grant,
     )?;

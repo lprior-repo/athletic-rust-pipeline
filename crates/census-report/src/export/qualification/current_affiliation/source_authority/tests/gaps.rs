@@ -155,8 +155,8 @@ fn assert_missing(
 
 fn row_key(capture: &Capture) -> TestResult<String> {
     for evidence in &capture.athlete.evidence {
-        if let Some(note) = super::super::super::note::RowNote::read(evidence)? {
-            return Ok(note.source_row_key);
+        if let Some(note) = super::super::super::note::read(evidence)? {
+            return Ok(note.source_row_key().to_string());
         }
     }
     Err("controlled source has no original row reference".into())

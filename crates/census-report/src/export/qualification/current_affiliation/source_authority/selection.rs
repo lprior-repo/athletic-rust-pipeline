@@ -8,21 +8,41 @@ use chrono::{DateTime, Utc};
 use std::num::NonZeroUsize;
 
 mod assertions;
+mod changes;
 mod fact;
 mod projection;
 use assertions::{assertions, Inputs};
 use projection::{merge, retain};
 
+pub(super) struct Sources<'a> {
+    captures: &'a [material::Capture],
+    withdrawals: changes::Index<'a>,
+}
+
+impl<'a> Sources<'a> {
+    pub(super) fn new(
+        captures: &'a [material::Capture],
+        withdrawals: &'a [census_store::ReviewedRosterMemberWithdrawalV1],
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<Self> {
+        Ok(Self {
+            captures,
+            withdrawals: changes::index(withdrawals, grant)?,
+        })
+    }
+}
+
 pub(super) fn assess(
     dataset: &ExportDataset,
     profile: &QueryProfileV1,
-    captures: &[material::Capture],
+    sources: Sources<'_>,
     physical: &physical::PhysicalEvidence,
     known: DeclaredFrozenView<'_>,
     cutoff: DateTime<Utc>,
     audit: &mut RetainedAudit,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<BTreeMap<AthleteId, Resolution>> {
+    let captures = sources.captures;
     let subjects = subjects(dataset)?;
     let evidence = captures
         .iter()
@@ -49,7 +69,7 @@ pub(super) fn assess(
             &missing,
             profile,
             &families,
-            captures,
+            &sources,
             &evidence,
             &published,
             &physical.supported,
@@ -69,7 +89,7 @@ fn resolve_athlete<'a>(
     missing: &BTreeSet<&AthleteId>,
     profile: &'a QueryProfileV1,
     families: &BTreeMap<AthleteId, Vec<(usize, usize)>>,
-    captures: &'a [material::Capture],
+    sources: &Sources<'a>,
     evidence: &'a [LocallyCheckedEvidence<'a>],
     published: &'a [Vec<&'a SourceSubject>],
     supported: &BTreeSet<String>,
@@ -82,10 +102,19 @@ fn resolve_athlete<'a>(
     charge(grant, 0, 1)?;
     let mut resolution = Resolution::Unknown;
     let mut unsupported = missing.contains(&athlete);
+    let captures = sources.captures;
     for sport in &profile.input().sports {
         let members = families.get(&athlete).map_or(&[][..], Vec::as_slice);
         let inputs = assertions(
             &athlete, *sport, members, supported, captures, evidence, published, bounds, audit,
+            grant,
+        )?;
+        let changes = changes::for_assertions(
+            &inputs.facts,
+            &sources.withdrawals,
+            bounds,
+            &athlete,
+            audit,
             grant,
         )?;
         unsupported |= inputs.gapped;
@@ -97,7 +126,7 @@ fn resolve_athlete<'a>(
             acquisition_cutoff: cutoff,
             grant: selection_grant()?,
         };
-        unsupported |= select(request, &inputs, &mut resolution, audit, grant)?;
+        unsupported |= select(request, &inputs, &changes, &mut resolution, audit, grant)?;
     }
     if unsupported {
         resolution.withhold();
@@ -147,11 +176,16 @@ fn families(
 fn select<'a>(
     request: CurrentAffiliationRequest<'a>,
     inputs: &'a Inputs<'a>,
+    changes: &'a [LocallyCheckedChange<'a>],
     resolution: &mut Resolution,
     audit: &mut RetainedAudit,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<bool> {
-    let count = inputs.facts.len();
+    let count = inputs
+        .facts
+        .len()
+        .checked_add(changes.len())
+        .ok_or(StoreError::CounterOverflow)?;
     let work = count
         .checked_mul(count)
         .and_then(|pairs| pairs.checked_mul(5))
@@ -162,9 +196,13 @@ fn select<'a>(
         CurrentAffiliationInventory {
             declared_view: request.known,
             assertions: &inputs.facts,
-            changes: &[],
+            changes,
         },
     ))?;
+    let withdrawn = projection::was_withdrawn(selected.outcome, &selected.facts);
+    if withdrawn {
+        audit.gap(request.athlete.clone(), Gap::ReviewedClaimWithdrawn)?;
+    }
     let unsupported = matches!(
         selected.outcome,
         CurrentAffiliationOutcome::SubjectUnresolved
@@ -179,7 +217,9 @@ fn select<'a>(
                 request.sport, selected.outcome
             ),
         )?;
-        audit.gap(request.athlete.clone(), Gap::IdentityUnaccepted)?;
+        if !withdrawn {
+            audit.gap(request.athlete.clone(), Gap::IdentityUnaccepted)?;
+        }
     }
     retain(request.athlete, request.sport, &selected.facts, audit)?;
     merge(resolution, selected.outcome, &selected.facts);

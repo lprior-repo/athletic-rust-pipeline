@@ -2419,3 +2419,46 @@ and every non-workbook artifact descriptor equal retry03; only the XLSX descript
 differs. The compared athletes CSV is byte-identical. This closes the measured
 paging/readback defects (`jsyw`, `tzu2`), not R1–R15 or full R14 acceptance:
 the published diagnostic still has0 accepted athletes/PRs. Live state is untouched.
+
+### Exact roster-member withdrawal: working-tree checkpoint
+
+Base `628a5a28`; source is uncommitted, not final-build acceptance. Public
+prepare/approve/apply preserves original claims and physical rows, requires the
+original exact capture day, and retains `reviewed_roster_member_withdrawn`.
+Positive and negative receipt replay have no reactivation effects.
+
+| Check | Observed result | Evidence |
+|---|---|---|
+| Public refusal, scope, receipt and cold replay; actual G0/G1 workbook and normalized outputs | PASS9/9; original Store removed before independent frozen reopen | `fb421f88`, Nextest `3725408d…` |
+| Raw-note admission before JSON parsing | PASS3/3; bounded unrelated notes skip, oversized unclassified notes explicitly refuse | `9b2f2dcf` |
+| Combined protected inventory and ungranted bare-key startup refusal | PASS5/5; combined4095+bare admits,4096+bare refuses before overflow value reads | `0c86ec0d` |
+| Portable G0/G1 artifacts, actual CLI after test exit | PASS; complete generations verified,151/147 readback rows | `7f748e54` publication case; CLI build `8c7146a8` |
+| Alternative clean claim | PASS: exact Outdoor claim withdrawn; clean XC claim remains selected, original audit retained | `7b36f71c`, one multi-sport packet and two program-bound proposals |
+
+Complete private artifacts and `native-verification.json`:
+`/home/lewis/.cache/athletic-r2-v80o-portable-q7dxyxq5/`.
+CLI SHA256 `104edf1c93ba5903889a787b927bd94ac370f5bbcfd6e564f416927c97bcec37`.
+The earlier file-only retained capture was incomplete and is not acceptance evidence.
+
+All-target check `0387c801` and source lint `ae02806c` passed before the final
+manifest correction; forced arity advisories remained. Standalone Domain
+`06abd550` exposed missing owned `serde_json/raw_value`, masked by workspace
+feature unification; the corrected standalone run is `9b2f2dcf`.
+Initial large-enum lint `324a6f22` was repaired with wire-transparent negative
+payload boxing. No proof/kernel pin, participation format or original A changed.
+`d4f3d2ae` passed59/60 source-authority cases, including genuine partial-roster
+publication, identity corrections and metadata-stable prepared withdrawal.
+The original-A case refused with `NotPresent` because its required environment
+was absent; it is not excluded or counted passed. A clean identified consumer
+build is required. Prior `f99ccc79` exposed the separate same-school capture-
+revision limitation, now planner/CUE-validated `pl1u`; no binding guard was weakened.
+`v80o` remains open pending original-A/current-source regressions and exact
+final-commit qualification. No national/spec closure.
+
+Candidate gates after the structural repairs: all-target check `6c37241f`,
+source lint `510a5e58`, zero-comments `ee23f09d`, strict AST `20e33bd6`
+and seams `7e239310` **PASS**. Strict AST reports zero handwritten functions
+over60 logical lines and no unresolved sites; parameter arity remains advisory,
+not a claim of zero warnings. The prior `47ad7187` size failure was corrected
+by moving family encoding to its existing owner and extracting the pure
+withdrawal-gap predicate, without a wire or policy change.

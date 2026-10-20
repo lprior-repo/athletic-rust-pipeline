@@ -32,6 +32,7 @@ const MAX_ARCHIVE_BYTES: u64 = 512 * 1024 * 1024;
 pub(super) enum UnavailableAffiliation {
     NoRetainedRow,
     IdentityUnaccepted,
+    ReviewedClaimWithdrawn,
     OutsideCaptureDay,
     ArchiveUnavailable,
     SchoolUnresolved,

@@ -1,6 +1,7 @@
-use super::{archive::Archive, invalid, note::RowNote};
+use super::{archive::Archive, invalid};
 use census_crawl::milesplit::{self, LocatedRosterAthlete, TeamRef};
 use census_domain::model::CanonicalSchool;
+use census_domain::roster_affiliation_authority::RosterMemberObservationV1;
 use census_store::{StoreError, StoreResult};
 use std::collections::BTreeMap;
 
@@ -37,15 +38,15 @@ impl Captures {
     pub(super) fn get(
         &mut self,
         school: &CanonicalSchool,
-        note: &RowNote,
+        note: &RosterMemberObservationV1,
     ) -> StoreResult<Option<&CapturedRoster>> {
         let key = census_domain::model::serialized_digest(&(
             &school.id,
-            &note.capture_sha256,
-            &note.capture_url,
-            &note.response_url,
-            note.capture_bytes,
-            &note.fetched_at,
+            note.capture_sha256(),
+            note.capture_url(),
+            note.response_url(),
+            note.capture_bytes(),
+            note.fetched_at(),
         ))?;
         if !self.retained.contains_key(&key) {
             if self.retained.len() >= 4096 {
@@ -62,7 +63,7 @@ impl Captures {
     fn load(
         &mut self,
         school: &CanonicalSchool,
-        note: &RowNote,
+        note: &RosterMemberObservationV1,
     ) -> StoreResult<Option<CapturedRoster>> {
         let Some((capture, metadata_ref)) = self.archive.capture(note)? else {
             return Ok(None);
@@ -117,13 +118,16 @@ impl Captures {
     }
 }
 
-fn retained_team(school: &CanonicalSchool, note: &RowNote) -> StoreResult<TeamRef> {
+fn retained_team(
+    school: &CanonicalSchool,
+    note: &RosterMemberObservationV1,
+) -> StoreResult<TeamRef> {
     let url = note
-        .capture_url
+        .capture_url()
         .strip_suffix("/roster")
         .ok_or_else(|| invalid("retained roster request has no roster path"))?;
     let team = TeamRef {
-        id: note.provider_team_id.clone(),
+        id: note.provider_team_id().to_string(),
         slug: String::new(),
         url: url.to_string(),
         name: school.name.clone(),

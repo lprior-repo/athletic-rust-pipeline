@@ -80,26 +80,24 @@ fn assess_bound(
         .collect::<StoreResult<Vec<_>>>()?;
     let mut audit = RetainedAudit::default();
     let physical = physical::read(dataset, bound, &materials, &mut audit, grant)?;
-    let bytes = encoding::encode(
-        &(
-            family_label(profile)?,
-            materials
-                .iter()
-                .map(material::Capture::inventory)
-                .collect::<Vec<_>>(),
-            &physical,
-            &people,
-            &identities,
-        ),
-        grant,
-    )?;
-    let digest = hash(&bytes);
-    let family = SourceAuthorityFamilyInventoryV1 { bytes, digest };
+    let withdrawals = bound.member_withdrawals(grant)?;
+    let material_inventory = materials
+        .iter()
+        .map(material::Capture::inventory)
+        .collect::<Vec<_>>();
+    let common = (
+        family_label(profile)?,
+        &material_inventory,
+        &physical,
+        &people,
+        &identities,
+    );
+    let family = encoding::family(&common, withdrawals, grant)?;
     let known = bound.declared_view(&family)?;
     let rows = selection::assess(
         dataset,
         profile,
-        &materials,
+        selection::Sources::new(&materials, withdrawals, grant)?,
         &physical,
         known,
         bound.acquisition_cutoff(),

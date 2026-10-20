@@ -20,6 +20,23 @@ pub(super) fn encode(
     Ok(bytes)
 }
 
+pub(super) fn family(
+    common: &impl serde::Serialize,
+    withdrawals: &[census_store::ReviewedRosterMemberWithdrawalV1],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<SourceAuthorityFamilyInventoryV1> {
+    let bytes = if withdrawals.is_empty() {
+        encode(common, grant)?
+    } else {
+        encode(
+            &("roster-source-family-inventory-v3", common, withdrawals),
+            grant,
+        )?
+    };
+    let digest = hash(&bytes);
+    Ok(SourceAuthorityFamilyInventoryV1 { bytes, digest })
+}
+
 struct Counter {
     bytes: usize,
     ceiling: usize,

@@ -27,7 +27,7 @@ pub(super) fn validated_lifecycle(
 ) -> StoreResult<Option<u32>> {
     let metadata = protected_rows(snapshot, meta, budget, None)?;
     let records = protected_rows(snapshot, journal, budget, None)?;
-    let issued = scan(snapshot, receipts, OPERATION_PREFIX, budget, None)?;
+    let issued = scan(snapshot, receipts, [OPERATION_PREFIX], budget, None)?;
     let lifecycle = preserved_lifecycle(snapshot, meta, journal, receipts, format)?;
     if lifecycle != Some(LIFECYCLE) {
         if metadata.is_empty() && records.is_empty() && issued.is_empty() {
@@ -93,31 +93,35 @@ fn preserved_lifecycle(
     })
 }
 
-pub(super) fn scan(
+pub(super) fn scan<const N: usize>(
     snapshot: &Snapshot,
     table: &Keyspace,
-    prefix: &str,
+    prefixes: [&str; N],
     budget: &mut RosterStartupValidationBudgetV1,
     mut grant: Option<&mut AttachmentReplayGrantV1>,
 ) -> StoreResult<Rows> {
     if let Some(grant) = grant.as_deref_mut() {
         grant.charge_steps(1).map_err(super::source_error)?;
     }
-    let mut iterator = snapshot.prefix(table, prefix);
-    let mut rows = Vec::new();
-    for _ in 0..4097 {
-        if let Some(grant) = grant.as_deref_mut() {
-            grant.charge_steps(2).map_err(super::source_error)?;
-        }
-        let Some(guard) = iterator.next() else {
-            return Ok(rows);
-        };
-        let key = guard.key().map_err(|source| StoreError::Read { source })?;
-        let value = read_value(snapshot, table, &key, budget, grant.as_deref_mut())?;
-        rows.try_reserve(1).map_err(|_| Error::BudgetExceeded)?;
-        rows.push((key.to_vec(), value));
-    }
-    Err(Error::BudgetExceeded.into())
+    let combined = prefixes
+        .iter()
+        .flat_map(|prefix| snapshot.prefix(table, *prefix));
+    combined
+        .take(4097)
+        .enumerate()
+        .try_fold(Vec::new(), |mut rows, (index, guard)| {
+            if index >= 4096 {
+                return Err(Error::BudgetExceeded.into());
+            }
+            if let Some(grant) = grant.as_deref_mut() {
+                grant.charge_steps(2).map_err(super::source_error)?;
+            }
+            let key = guard.key().map_err(|source| StoreError::Read { source })?;
+            let value = read_value(snapshot, table, &key, budget, grant.as_deref_mut())?;
+            rows.try_reserve(1).map_err(|_| Error::BudgetExceeded)?;
+            rows.push((key.to_vec(), value));
+            Ok(rows)
+        })
 }
 
 pub(super) fn validate_enrollment(
@@ -161,17 +165,13 @@ pub(super) fn protected_rows(
     budget: &mut RosterStartupValidationBudgetV1,
     mut grant: Option<&mut AttachmentReplayGrantV1>,
 ) -> StoreResult<Rows> {
-    let mut rows = scan(snapshot, table, ROOT, budget, grant.as_deref_mut())?;
-    let phase = scan(
+    let mut rows = scan(
         snapshot,
         table,
-        "roster_source_issuance\0",
+        [ROOT, "roster_source_issuance\0"],
         budget,
         grant.as_deref_mut(),
     )?;
-    rows.try_reserve(phase.len().checked_add(1).ok_or(Error::BudgetExceeded)?)
-        .map_err(|_| Error::BudgetExceeded)?;
-    rows.extend(phase);
     let bare = b"roster_source_issuance";
     if let Some(grant) = grant.as_deref_mut() {
         grant.charge_steps(1).map_err(super::source_error)?;
@@ -180,10 +180,12 @@ pub(super) fn protected_rows(
         .contains_key(table, bare)
         .map_err(|source| StoreError::Read { source })?
     {
-        rows.push((
-            bare.to_vec(),
-            read_value(snapshot, table, bare, budget, grant)?,
-        ));
+        if rows.len() >= 4096 {
+            return Err(Error::BudgetExceeded.into());
+        }
+        rows.try_reserve(1).map_err(|_| Error::BudgetExceeded)?;
+        let value = read_value(snapshot, table, bare, budget, grant)?;
+        rows.push((bare.to_vec(), value));
     }
     Ok(rows)
 }
@@ -231,3 +233,6 @@ fn read_value(
     }
     Ok(value.to_vec())
 }
+
+#[cfg(test)]
+mod tests;

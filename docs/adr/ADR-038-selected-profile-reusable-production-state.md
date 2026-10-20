@@ -479,6 +479,21 @@ restore it. Unproven links withhold. V4 descriptor 2/family V1 remains
 strict-primary under live and frozen interpretation. No Store migration,
 historical relabeling or passing acceptance receipt is implied.
 
+### Exact roster-member withdrawal
+
+The reviewed negative action binds the original sealed proposal, source person
+and row locator; its scope is the original exact capture day. A checked parser
+row authenticates source evidence, not accepted membership or issuance authority.
+Use the existing roster head, atomic review/object/receipt batch and unchanged
+`WithdrawsClaim` reducer. Preserve original claims and receipts; replay cannot
+reactivate them. Current and frozen validation enforce the same target and scope.
+
+Withdrawals use distinct V1 basis/review/input schemas. Nonempty withdrawal
+families use inventory V3; positive-only family bytes and historical kernels
+remain unchanged. This grants neither secondary-person authority nor a new
+participation format. Missing proof refuses; old frozen generations retain their
+original school. Acceptance is recorded separately in the verification ledger.
+
 ## 6. Enrollment, migration and historical protection
 
 No automatic migration or corpus import is authorized by this decision. Unknown/newer formats,

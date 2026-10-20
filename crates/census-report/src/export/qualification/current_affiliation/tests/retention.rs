@@ -73,7 +73,7 @@ fn unrelated_large_historical_notes_do_not_change_current_affiliation() -> TestR
     evidence.note = Some(serde_json::to_string(&serde_json::json!({
         "role": "historical_source_diagnostic", "retained": "x".repeat(17 * 1024),
     }))?);
-    check!(note::RowNote::read(&evidence)?.is_none());
+    check!(note::read(&evidence)?.is_none());
     athlete.evidence.push(evidence.clone());
     fixture.store.append(Table::Athletes, &athlete)?;
     fixture::accept(&fixture.store, &fixture.writer, &fixture.athlete)?;
@@ -86,6 +86,6 @@ fn unrelated_large_historical_notes_do_not_change_current_affiliation() -> TestR
     evidence.note = Some(serde_json::to_string(&serde_json::json!({
         "role": "roster_positive_row_metadata_v1", "retained": "x".repeat(17 * 1024),
     }))?);
-    check!(note::RowNote::read(&evidence).is_err());
+    check!(note::read(&evidence).is_err());
     Ok(())
 }

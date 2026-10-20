@@ -1,8 +1,14 @@
 mod atoms;
+mod member_evidence;
+mod member_observation;
 mod types;
 mod validate;
-
 pub use atoms::{RosterAuthorityDigestV1, RosterAuthorityTextV1};
+pub use member_evidence::{
+    check_roster_member_witness_v1, encode_roster_member_witness_v1, CheckedRosterMemberEvidenceV1,
+    SourceRowLocator,
+};
+pub use member_observation::RosterMemberObservationV1;
 use serde::Serialize;
 pub use types::{
     LocallyCheckedRosterIssuanceV1, LocallyCheckedRosterRecordV1, RosterAuthorityObjectRefV1,

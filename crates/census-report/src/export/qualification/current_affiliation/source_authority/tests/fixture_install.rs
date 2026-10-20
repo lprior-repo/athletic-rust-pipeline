@@ -56,6 +56,7 @@ pub(in super::super) fn install_row(
         physical,
         UsJurisdiction::Michigan,
         AT,
+        None,
     )
 }
 
@@ -79,7 +80,45 @@ pub(in super::super) fn install_dated(
         PhysicalProjection::Retain,
         jurisdiction,
         at,
+        None,
     )
+}
+
+pub(in super::super) fn install_dual_programs(
+    fixture: &Fixture,
+    team: &str,
+    person: &str,
+) -> TestResult<(Capture, Capture)> {
+    let outdoor = install_context(
+        fixture,
+        team,
+        person,
+        Sport::OutdoorTrack,
+        true,
+        0,
+        "Runner, Controlled",
+        PhysicalProjection::Retain,
+        UsJurisdiction::Michigan,
+        AT,
+        Some(Sport::CrossCountry),
+    )?;
+    let mut program = outdoor.program.clone();
+    program.sport = Sport::CrossCountry;
+    program.id = CanonicalTeam::mint(
+        &program.school,
+        program.sport,
+        program.gender,
+        program.school_year,
+    );
+    fixture.store.append(Table::Teams, &program)?;
+    let xc = Capture {
+        packet: outdoor.packet.clone(),
+        roster_body: outdoor.roster_body.clone(),
+        school: outdoor.school.clone(),
+        athlete: outdoor.athlete.clone(),
+        program,
+    };
+    Ok((outdoor, xc))
 }
 
 fn install_context(
@@ -93,6 +132,7 @@ fn install_context(
     physical: PhysicalProjection,
     jurisdiction: UsJurisdiction,
     at: &str,
+    secondary_sport: Option<Sport>,
 ) -> TestResult<Capture> {
     let site = Site::for_jurisdiction(jurisdiction);
     let host = site.host();
@@ -111,12 +151,19 @@ fn install_context(
     } else {
         String::new()
     };
-    let [indoor, outdoor, xc] = match sport {
+    let [mut indoor, mut outdoor, mut xc] = match sport {
         Sport::IndoorTrack => ["yes", "no", "no"],
         Sport::OutdoorTrack => ["no", "yes", "no"],
         Sport::CrossCountry => ["no", "no", "yes"],
         Sport::Unknown => return Err("controlled sport must be explicit".into()),
     };
+    match secondary_sport {
+        Some(Sport::IndoorTrack) => indoor = "yes",
+        Some(Sport::OutdoorTrack) => outdoor = "yes",
+        Some(Sport::CrossCountry) => xc = "yes",
+        Some(Sport::Unknown) => return Err("controlled secondary sport must be explicit".into()),
+        None => {}
+    }
     let padding = " ".repeat(padding);
     let body = format!(
         r#"<html><head>{owner}</head><body><section><h4>Current Roster</h4><ul id="rosterDataset"><li class="athlete-row data-row">{padding}<a href="https://{host}/athletes/{person}-controlled">{name}</a><div class="column-gender">m</div><div class="column-grad-year">2027</div><div class="data-point" data-season-id="1"><svg class="icon icon-{indoor}"></svg></div><div class="data-point" data-season-id="2"><svg class="icon icon-{outdoor}"></svg></div><div class="data-point" data-season-id="3"><svg class="icon icon-{xc}"></svg></div></li></ul></section></body></html>"#

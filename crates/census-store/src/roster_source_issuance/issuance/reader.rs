@@ -66,6 +66,7 @@ struct PhysicalRow {
 pub struct CurrentRosterReviewedClaimsV1 {
     archive: Archive,
     claims: Vec<ReviewedRosterSourceClaimV1>,
+    withdrawals: Vec<super::ReviewedRosterMemberWithdrawalV1>,
     continuation: AttachmentReplayContinuationV1,
 }
 
@@ -92,6 +93,12 @@ impl ReplayedRosterReviewedClaimsV1 {
         grant: &mut AttachmentReplayGrantV1,
     ) -> StoreResult<&[ReviewedRosterSourceClaimV1]> {
         self.0.claims(grant)
+    }
+    pub fn member_withdrawals(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&[super::ReviewedRosterMemberWithdrawalV1]> {
+        self.0.member_withdrawals(grant)
     }
     pub fn authority_head_bytes(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&[u8]> {
         self.0.authority_head_bytes(grant)
@@ -131,6 +138,13 @@ impl CurrentRosterReviewedClaimsV1 {
     ) -> StoreResult<&[ReviewedRosterSourceClaimV1]> {
         self.require_original_grant(grant)?;
         Ok(&self.claims)
+    }
+    pub fn member_withdrawals(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&[super::ReviewedRosterMemberWithdrawalV1]> {
+        self.require_original_grant(grant)?;
+        Ok(&self.withdrawals)
     }
     pub fn authority_head_bytes(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<&[u8]> {
         self.require_original_grant(grant)?;

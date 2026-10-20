@@ -12,7 +12,7 @@ use serde::Serialize;
 struct Qualification<'a> {
     schema: &'static str,
     authority: &'static str,
-    decision: RosterSourceReviewDecisionV1,
+    decision: &'a RosterSourceReviewDecisionV1,
     proposal_basis: &'a ObjectRef,
     scope: &'a RosterAuthorityScopeV1,
     parser: &'a RosterParserClaimV1,
@@ -23,7 +23,7 @@ struct Qualification<'a> {
 struct Activation<'a> {
     schema: &'static str,
     authority: &'static str,
-    decision: RosterSourceReviewDecisionV1,
+    decision: &'a RosterSourceReviewDecisionV1,
     qualification: &'a ObjectRef,
     proposal_basis: &'a ObjectRef,
     binding: &'a RosterExistingBindingClaimV1,
@@ -34,10 +34,19 @@ struct Activation<'a> {
 pub(super) fn derive(
     proposal: &LocallyCheckedRosterIssuanceV1,
     basis: &ObjectRef,
-    decision: RosterSourceReviewDecisionV1,
+    decision: &RosterSourceReviewDecisionV1,
     objects: &mut objects::Objects,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<(ObjectRef, ObjectRef)> {
+    if !matches!(
+        decision,
+        RosterSourceReviewDecisionV1::QualifyAndActivateExactCaptureRepresentation
+    ) {
+        return Err(super::super::RosterSourceIssuanceStoreError::Corrupt(
+            "negative withdrawal decision at positive preparation boundary",
+        )
+        .into());
+    }
     let qualification = codec::encode_with_source_grant(
         &Qualification {
             schema: "roster-source-qualification-reviewed-claim-v1",
@@ -67,33 +76,35 @@ pub(super) fn derive(
     let activation = objects::insert(objects, &activation, grant)?;
     Ok((qualification, activation))
 }
-
 pub(super) fn require(
     proposal: &LocallyCheckedRosterIssuanceV1,
-    review: &super::SemanticReview,
+    decision: &RosterSourceReviewDecisionV1,
+    proposal_basis: &ObjectRef,
+    qualification: &ObjectRef,
+    activation: &ObjectRef,
     objects: &objects::Objects,
 ) -> StoreResult<()> {
-    let qualification = codec::encode(&Qualification {
+    let qualification_bytes = codec::encode(&Qualification {
         schema: "roster-source-qualification-reviewed-claim-v1",
         authority: "explicit-local-review-claim",
-        decision: review.fields.decision,
-        proposal_basis: &review.proposal_basis,
+        decision,
+        proposal_basis,
         scope: proposal.scope(),
         parser: proposal.parser(),
         capture: proposal.capture(),
     })?;
-    let activation = codec::encode(&Activation {
+    let activation_bytes = codec::encode(&Activation {
         schema: "roster-source-single-capture-activation-reviewed-claim-v1",
         authority: "explicit-local-review-claim",
-        decision: review.fields.decision,
-        qualification: &review.qualification,
-        proposal_basis: &review.proposal_basis,
+        decision,
+        qualification,
+        proposal_basis,
         binding: proposal.binding(),
         temporal_scope: "exact-utc-capture-day-only",
         membership_authority: "requires-independent-source-and-person-verification",
     })?;
-    if super::ledger::object(objects, &review.qualification)? != qualification
-        || super::ledger::object(objects, &review.activation)? != activation
+    if super::ledger::object(objects, qualification)? != qualification_bytes
+        || super::ledger::object(objects, activation)? != activation_bytes
     {
         return Err(super::super::RosterSourceIssuanceStoreError::Corrupt(
             "qualification or activation reviewed object",

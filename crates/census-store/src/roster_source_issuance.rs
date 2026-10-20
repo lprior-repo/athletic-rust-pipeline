@@ -12,9 +12,10 @@ pub use inspection::{
 };
 pub use issuance::{
     replay_frozen_roster_reviewed_claims_v1, CurrentRosterReviewedClaimsV1,
-    FrozenRosterReviewedClaimsBundleV1, PreparedRosterSourceReviewV1,
-    ReplayedRosterReviewedClaimsV1, ReviewedRosterSourceClaimV1,
-    RosterFrozenReviewedClaimsReferenceV1, RosterSourceReviewDecisionV1,
+    FrozenRosterReviewedClaimsBundleV1, PreparedRosterMemberWithdrawalV1,
+    PreparedRosterSourceReviewV1, ReplayedRosterReviewedClaimsV1, ReviewedRosterMemberWithdrawalV1,
+    ReviewedRosterSourceClaimV1, RosterFrozenReviewedClaimsReferenceV1,
+    RosterMemberWithdrawalDecisionV1, RosterMemberWithdrawalReviewV1, RosterSourceReviewDecisionV1,
     RosterSourceReviewFieldsV1, RosterSourceReviewObjectsV1,
 };
 

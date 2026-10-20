@@ -15,3 +15,5 @@ mod replay;
 mod selectors;
 
 mod publication;
+
+mod member_withdrawal;

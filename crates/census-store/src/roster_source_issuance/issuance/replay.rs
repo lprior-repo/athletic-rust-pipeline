@@ -36,7 +36,8 @@ pub(super) fn replay(
     )?;
     let identity = load_identity(store, &snapshot, &mut budget)?;
     let objects = load_closure(&snapshot, &store.journal, &record, &mut budget)?;
-    check_chain(&record, &objects, &identity)?;
+    let source_records = source_records(&snapshot, &store.journal, &record, &objects, &mut budget)?;
+    check_chain(&record, &objects, &identity, &source_records)?;
     let receipt = load_receipt(&snapshot, &store.receipts, &raw, &record, &mut budget)?;
     Ok(Application::Repeated(receipt))
 }
@@ -109,13 +110,14 @@ fn check_chain(
     record: &ReviewRecord,
     objects: &super::objects::Objects,
     identity: &census_domain::model::StoreIdentity,
+    source_records: &[(Vec<u8>, Vec<u8>)],
 ) -> StoreResult<()> {
     let prior: AuthorityHead =
         codec::decode(super::ledger::object(objects, &record.basis.prior_head)?)?;
     if prior.version != 1 || prior.ordinal.checked_add(1) != Some(record.basis.next_ordinal) {
         return Err(Error::Corrupt("historical review ordinal").into());
     }
-    super::ledger::validate_record(record, objects, identity, &prior)
+    super::ledger::validate_record(record, objects, identity, &prior, source_records)
 }
 
 fn load_receipt(
@@ -172,4 +174,35 @@ fn read(
         return Err(Error::Corrupt("historical review object size").into());
     }
     Ok(bytes.to_vec())
+}
+
+fn source_records(
+    snapshot: &Snapshot,
+    journal: &Keyspace,
+    record: &ReviewRecord,
+    objects: &super::objects::Objects,
+    budget: &mut RosterStartupValidationBudgetV1,
+) -> StoreResult<Vec<(Vec<u8>, Vec<u8>)>> {
+    if record.basis.schema != super::withdrawal::BASIS_SCHEMA {
+        return Ok(Vec::new());
+    }
+    let review: super::SemanticReview =
+        codec::decode(super::ledger::object(objects, &record.basis.review)?)?;
+    let super::RosterSourceReviewDecisionV1::WithdrawExactSourceMember(target) =
+        &review.fields.decision
+    else {
+        return Err(Error::Corrupt("withdrawal replay decision").into());
+    };
+    let key = format!(
+        "{}{}",
+        super::RECORD_PREFIX,
+        codec::digest(target.source_operation().as_bytes())
+    );
+    let raw = read(snapshot, journal, &key, codec::MAX_BYTES, budget)?;
+    let mut records = Vec::new();
+    records
+        .try_reserve_exact(1)
+        .map_err(|_| Error::BudgetExceeded)?;
+    records.push((key.into_bytes(), raw));
+    Ok(records)
 }

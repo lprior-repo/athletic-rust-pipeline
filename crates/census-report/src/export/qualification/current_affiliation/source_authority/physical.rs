@@ -1,7 +1,8 @@
-use super::super::note::RowNote;
+use super::super::note;
 use super::*;
 use crate::export::qualification::physical_observations::OBSERVATION_BUDGET;
 use census_domain::model::CanonicalAthlete;
+use census_domain::roster_affiliation_authority::RosterMemberObservationV1;
 #[derive(Clone, Copy)]
 enum PersonOwnership {
     PrimaryOnly,
@@ -76,12 +77,12 @@ fn observe(
     let observation_digest = census_domain::model::serialized_digest(athlete)?;
     for evidence in &athlete.evidence {
         charge(grant, 0, 1)?;
-        let Some(note) = RowNote::read(evidence)? else {
+        let Some(note) = note::read(evidence)? else {
             continue;
         };
-        audit.reference(canonical, &note.source_row_key)?;
+        audit.reference(canonical, note.source_row_key())?;
         let members = indexed
-            .get(&note.source_row_key)
+            .get(note.source_row_key())
             .map_or(&[][..], Vec::as_slice);
         let mut witnessed = false;
         for (capture, member) in members {
@@ -111,7 +112,13 @@ fn observe(
             }
         }
         if !witnessed {
-            record_gap(result, canonical, note.source_row_key, grant, audit)?;
+            record_gap(
+                result,
+                canonical,
+                note.source_row_key().to_string(),
+                grant,
+                audit,
+            )?;
         }
     }
     Ok(())
@@ -155,7 +162,7 @@ fn retain(
     member: &material::Member,
     athlete: &CanonicalAthlete,
     evidence: &census_domain::model::Evidence,
-    note: &RowNote,
+    note: &RosterMemberObservationV1,
     audit: &mut RetainedAudit,
 ) -> StoreResult<()> {
     audit.context.retain(&athlete.id, evidence)?;
@@ -165,10 +172,10 @@ fn retain(
             evidence,
             super::super::context::DatedRosterMembership {
                 observed_on: capture.proposal.capture().observed_day().clone(),
-                observed_at: note.fetched_at.clone(),
+                observed_at: note.fetched_at().to_string(),
                 day_convention: super::super::context::ObservationDayConvention::UtcCaptureDay,
                 assertion: assertion.clone(),
-                capture_sha256: note.capture_sha256.clone(),
+                capture_sha256: note.capture_sha256().to_string(),
             },
         )?;
     }
@@ -215,36 +222,38 @@ fn matching(
     capture: &material::Capture,
     member: &material::Member,
     athlete: &CanonicalAthlete,
-    note: &RowNote,
+    note: &RosterMemberObservationV1,
     ownership: PersonOwnership,
 ) -> StoreResult<()> {
     let source = member.located.athlete();
-    let end = note
-        .row
-        .byte_offset
-        .checked_add(note.row.byte_length)
+    let row = note.row();
+    let end = row
+        .byte_offset()
+        .checked_add(row.byte_length())
         .ok_or(StoreError::CounterOverflow)?;
     let bytes = capture
         .body
         .as_bytes()
-        .get(note.row.byte_offset..end)
+        .get(row.byte_offset()..end)
         .ok_or_else(|| invalid("physical roster row is outside capture"))?;
     person(capture, member, athlete, ownership)?;
-    if hash(bytes) != note.row_sha256
+    if hash(bytes) != note.row_sha256()
         || source.name != athlete.canonical_name
         || source.gender != athlete.gender
         || source.grad_year != athlete.grad_year
-        || member.person.provider_id() != note.provider_athlete_id
-        || capture.proposal.scope().owner().provider_id() != note.provider_team_id
-        || capture.proposal.capture().requested_url() != note.capture_url
-        || capture.proposal.capture().observed_final_url() != note.response_url.as_deref()
+        || member.person.provider_id() != note.provider_athlete_id()
+        || capture.proposal.scope().owner().provider_id() != note.provider_team_id()
+        || capture.proposal.capture().requested_url() != note.capture_url()
+        || capture.proposal.capture().observed_final_url() != note.response_url()
         || capture.proposal.capture().body().bytes().get()
-            != u64::try_from(note.capture_bytes).map_err(|_| StoreError::CounterOverflow)?
+            != u64::try_from(note.capture_bytes()).map_err(|_| StoreError::CounterOverflow)?
         || checked(chrono::DateTime::parse_from_rfc3339(
             capture.proposal.capture().acquired_at(),
         ))?
         .to_utc()
-            != note.acquired_at()?
+            != note
+                .acquired_at()
+                .map_err(|_| invalid("retained roster acquisition instant is invalid"))?
     {
         return Err(invalid("physical roster row differs from reviewed source"));
     }

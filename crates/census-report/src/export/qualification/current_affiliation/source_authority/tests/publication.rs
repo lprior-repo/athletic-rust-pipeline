@@ -15,6 +15,7 @@ mod retention;
 mod roundtrip;
 mod setup;
 mod transfer;
+mod withdrawal;
 
 use setup::{Case, Expected};
 

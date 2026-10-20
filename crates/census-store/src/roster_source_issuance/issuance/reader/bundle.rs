@@ -120,7 +120,7 @@ fn replay(
     {
         return Err(Error::Corrupt("frozen reviewed publication binding differs").into());
     }
-    let claims = reconstruct::claims(&archive, grant)?;
+    let (claims, withdrawals) = reconstruct::claims(&archive, grant)?;
     continuation
         .require(grant)
         .map_err(super::super::super::source_error)?;
@@ -128,6 +128,7 @@ fn replay(
         CurrentRosterReviewedClaimsV1 {
             archive,
             claims,
+            withdrawals,
             continuation,
         },
     ))

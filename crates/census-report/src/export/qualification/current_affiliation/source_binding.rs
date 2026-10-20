@@ -8,7 +8,7 @@ use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{CanonicalAthlete, QueryProfileV1};
 use census_store::{
     CurrentRosterReviewedClaimsV1, ReadBudget, ReplayedRosterReviewedClaimsV1,
-    ReviewedRosterSourceClaimV1, StoreError, StoreResult,
+    ReviewedRosterMemberWithdrawalV1, ReviewedRosterSourceClaimV1, StoreError, StoreResult,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -100,6 +100,16 @@ impl BoundRosterSourceViewV1<'_> {
         match &self.claims {
             Claims::Current(value) => value.claims(grant),
             Claims::Frozen(value) => value.claims(grant),
+        }
+    }
+
+    pub(super) fn member_withdrawals(
+        &self,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&[ReviewedRosterMemberWithdrawalV1]> {
+        match &self.claims {
+            Claims::Current(value) => value.member_withdrawals(grant),
+            Claims::Frozen(value) => value.member_withdrawals(grant),
         }
     }
 

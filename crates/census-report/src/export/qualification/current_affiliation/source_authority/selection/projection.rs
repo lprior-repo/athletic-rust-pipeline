@@ -67,3 +67,21 @@ pub(super) fn merge(
         _ => *resolution = Resolution::Conflicted,
     }
 }
+
+pub(super) fn was_withdrawn(
+    outcome: CurrentAffiliationOutcome<'_>,
+    facts: &[FactDisposition<'_>],
+) -> bool {
+    matches!(
+        outcome,
+        CurrentAffiliationOutcome::Unknown | CurrentAffiliationOutcome::EndedWithoutReplacement
+    ) && facts.iter().any(|fact| {
+        matches!(
+            fact,
+            FactDisposition::Assertion {
+                disposition: Disposition::WithdrawnClaim,
+                ..
+            }
+        )
+    })
+}

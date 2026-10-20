@@ -1,10 +1,19 @@
 use super::super::{codec, enrollment::AuthorityHead, RosterSourceIssuanceStoreError as Error};
-use super::{ObjectRef, ReviewRecord};
+use super::{ObjectRef, ReviewRecord, RosterSourceReviewDecisionV1};
 use crate::{Receipt, StoreResult};
 use census_domain::model::StoreIdentity;
 use std::collections::{BTreeMap, BTreeSet};
 
 type Rows = [(Vec<u8>, Vec<u8>)];
+
+struct LedgerState<'a> {
+    objects: &'a super::objects::Objects,
+    identity: &'a StoreIdentity,
+    rows: &'a Rows,
+    receipts: &'a Rows,
+    used_objects: BTreeSet<String>,
+    used_operations: BTreeSet<String>,
+}
 
 pub(in super::super) fn validate(
     rows: &Rows,
@@ -38,25 +47,22 @@ pub(in super::super) fn validate(
         ordinal: 0,
         digest: enrollment_digest.into(),
     };
-    let mut used_objects = BTreeSet::new();
-    let mut used_operations = BTreeSet::new();
+    let mut state = LedgerState {
+        objects: &objects,
+        identity,
+        rows,
+        receipts,
+        used_objects: BTreeSet::new(),
+        used_operations: BTreeSet::new(),
+    };
     for (ordinal, raw) in records {
-        check_chained(
-            &mut head,
-            ordinal,
-            raw,
-            &objects,
-            identity,
-            &mut used_objects,
-            &mut used_operations,
-            receipts,
-        )?;
+        check_chained(&mut head, ordinal, raw, &mut state)?;
     }
     if expected.version != 1
         || expected.ordinal != head.ordinal
         || expected.digest != head.digest
-        || used_objects.len() != objects.len()
-        || receipts.len() != used_operations.len() + 1
+        || state.used_objects.len() != objects.len()
+        || receipts.len() != state.used_operations.len() + 1
     {
         return Err(Error::Corrupt("review complete inventory mismatch").into());
     }
@@ -67,11 +73,7 @@ fn check_chained(
     head: &mut AuthorityHead,
     ordinal: u64,
     raw: &[u8],
-    objects: &super::objects::Objects,
-    identity: &StoreIdentity,
-    used_objects: &mut BTreeSet<String>,
-    used_operations: &mut BTreeSet<String>,
-    receipts: &Rows,
+    state: &mut LedgerState<'_>,
 ) -> StoreResult<()> {
     let record: ReviewRecord = codec::decode(raw)?;
     head.ordinal = head.ordinal.checked_add(1).ok_or(Error::BudgetExceeded)?;
@@ -83,20 +85,21 @@ fn check_chained(
         ordinal: head.ordinal - 1,
         digest: head.digest.clone(),
     };
-    validate_record(&record, objects, identity, &prior)?;
+    validate_record(&record, state.objects, state.identity, &prior, state.rows)?;
     for reference in &record.basis.closure {
-        used_objects.insert(reference.digest.clone());
+        state.used_objects.insert(reference.digest.clone());
     }
     let operation = format!(
         "{}{}",
         super::super::OPERATION_PREFIX,
         record.basis.operation.as_str()
     );
-    if !used_operations.insert(operation.clone()) {
+    if !state.used_operations.insert(operation.clone()) {
         return Err(Error::OperationConflict.into());
     }
     let receipt: Receipt = codec::decode(
-        receipts
+        state
+            .receipts
             .iter()
             .find(|(key, _)| key == operation.as_bytes())
             .map(|(_, raw)| raw.as_slice())
@@ -119,32 +122,32 @@ pub(super) fn validate_record(
     objects: &super::objects::Objects,
     identity: &StoreIdentity,
     prior: &AuthorityHead,
+    source_records: &Rows,
+) -> StoreResult<()> {
+    match record.basis.schema.as_str() {
+        "roster-source-reviewed-claims-basis-v1" => {
+            validate_issued_record(record, objects, identity, prior)
+        }
+        super::withdrawal::BASIS_SCHEMA => {
+            validate_header(record, objects, identity, prior)?;
+            super::withdrawal::validate::record(record, objects, identity, prior, source_records)
+        }
+        _ => Err(Error::Corrupt("unsupported roster review basis").into()),
+    }
+}
+
+pub(super) fn validate_issued_record(
+    record: &ReviewRecord,
+    objects: &super::objects::Objects,
+    identity: &StoreIdentity,
+    prior: &AuthorityHead,
 ) -> StoreResult<()> {
     let basis = &record.basis;
-    if basis.schema != "roster-source-reviewed-claims-basis-v1"
-        || &basis.store != identity
-        || record.approval != super::review::approval(basis)?
-        || record.approval_digest != codec::digest(&record.approval)
-        || object(objects, &basis.prior_head)? != codec::encode(prior)?
-    {
-        return Err(Error::Corrupt("review basis or approval mismatch").into());
+    if basis.schema != "roster-source-reviewed-claims-basis-v1" {
+        return Err(Error::Corrupt("unsupported issuance basis").into());
     }
-    let mut previous: Option<&str> = None;
-    let mut bytes = 0_usize;
-    for reference in &basis.closure {
-        if previous.is_some_and(|value| value >= reference.digest.as_str()) {
-            return Err(Error::Corrupt("review closure order").into());
-        }
-        previous = Some(&reference.digest);
-        bytes = bytes
-            .checked_add(object(objects, reference)?.len())
-            .ok_or(Error::BudgetExceeded)?;
-        if bytes > 8 * 1024 * 1024 {
-            return Err(Error::BudgetExceeded.into());
-        }
-    }
+    validate_header(record, objects, identity, prior)?;
     require_own_closure(record)?;
-    object(objects, &basis.prior_head)?;
     let proposal = super::proposal(&basis.proposal)?;
     super::objects::require_proposal(objects, &proposal)?;
     if proposal.binding().store() != identity
@@ -170,6 +173,37 @@ pub(super) fn validate_record(
     validate_semantic(record, &proposal, &review, objects)
 }
 
+fn validate_header(
+    record: &ReviewRecord,
+    objects: &super::objects::Objects,
+    identity: &StoreIdentity,
+    prior: &AuthorityHead,
+) -> StoreResult<()> {
+    let basis = &record.basis;
+    if &basis.store != identity
+        || record.approval != super::review::approval(basis)?
+        || record.approval_digest != codec::digest(&record.approval)
+        || object(objects, &basis.prior_head)? != codec::encode(prior)?
+    {
+        return Err(Error::Corrupt("review basis or approval mismatch").into());
+    }
+    let mut previous: Option<&str> = None;
+    let mut bytes = 0_usize;
+    for reference in &basis.closure {
+        if previous.is_some_and(|value| value >= reference.digest.as_str()) {
+            return Err(Error::Corrupt("review closure order").into());
+        }
+        previous = Some(&reference.digest);
+        bytes = bytes
+            .checked_add(object(objects, reference)?.len())
+            .ok_or(Error::BudgetExceeded)?;
+        if bytes > 8 * 1024 * 1024 {
+            return Err(Error::BudgetExceeded.into());
+        }
+    }
+    Ok(())
+}
+
 fn validate_semantic(
     record: &ReviewRecord,
     proposal: &census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1,
@@ -180,25 +214,36 @@ fn validate_semantic(
     if review.schema != "roster-source-semantic-review-v1"
         || review.provenance != "explicit-unauthenticated-local-operator"
         || review.decision != "qualify-and-activate-exact-capture-representation-claims"
-        || review.store != basis.store
-        || review.fields.operation != basis.operation
+        || !matches!(
+            &review.fields.decision,
+            RosterSourceReviewDecisionV1::QualifyAndActivateExactCaptureRepresentation
+        )
+        || review.store != record.basis.store
+        || review.fields.operation != record.basis.operation
         || review.fields.reviewed_at > record.committed_at
-        || review.input_token != basis.input_token
-        || review.prior_head != basis.prior_head
-        || review.proposal_basis != basis.proposal_review_basis
+        || review.input_token != record.basis.input_token
+        || review.prior_head != record.basis.prior_head
+        || review.proposal_basis != record.basis.proposal_review_basis
         || &review.scope_policy != proposal.scope().policy()
         || &review.year_convention != proposal.binding().year_convention()
         || &review.projection_merge_contract != proposal.binding().projection_merge_contract()
-        || basis.review.digest != proposal.semantic_review_evidence().digest().as_str()
+        || record.basis.review.digest != proposal.semantic_review_evidence().digest().as_str()
     {
         return Err(Error::Corrupt("retained semantic review mismatch").into());
     }
     for reference in [&review.qualification, &review.activation] {
-        if !basis.closure.iter().any(|held| held == reference) {
+        if !record.basis.closure.iter().any(|held| held == reference) {
             return Err(Error::Corrupt("review activation outside closure").into());
         }
     }
-    super::qualification::require(proposal, review, objects)?;
+    super::qualification::require(
+        proposal,
+        &review.fields.decision,
+        &review.proposal_basis,
+        &review.qualification,
+        &review.activation,
+        objects,
+    )?;
     for reference in [
         &review.scope_policy,
         &review.year_convention,
