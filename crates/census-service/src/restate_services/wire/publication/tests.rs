@@ -121,3 +121,26 @@ fn pending_preflight_exposes_no_resumable_request() -> TestResult {
     .is_err());
     Ok(())
 }
+
+#[test]
+fn explicit_legacy_contract_survives_request_and_binding_round_trips() -> TestResult {
+    let mut original = legacy();
+    original
+        .as_object_mut()
+        .ok_or("request object")?
+        .insert("publication_contract".into(), json!("legacy_separate_v1"));
+    let request: NationalRequest = serde_json::from_value(original.clone())?;
+    check!(eq; request.publication_contract, PublicationContract::LegacySeparateV1);
+    let encoded = serde_json::to_value(&request)?;
+    check!(eq; encoded, original);
+    let decoded: NationalRequest = serde_json::from_value(encoded)?;
+    check!(eq; decoded.publication_contract, PublicationContract::LegacySeparateV1);
+    let binding = NationalRequestBinding::Bound(Box::new(request));
+    let encoded = serde_json::to_value(binding)?;
+    check!(eq; encoded, json!({"status": "bound", "request": original}));
+    let NationalRequestBinding::Bound(decoded) = serde_json::from_value(encoded)? else {
+        return Err("bound request lost its original contract".into());
+    };
+    check!(eq; decoded.publication_contract, PublicationContract::LegacySeparateV1);
+    Ok(())
+}
