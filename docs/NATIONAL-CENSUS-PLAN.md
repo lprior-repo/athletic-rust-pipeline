@@ -430,6 +430,10 @@ after identifying repeated full-dataset hashing inside row verification (`tzu2`)
 The retained diagnostic XLSX and bundle are explicitly unverified; structural
 readback confirms all Review records,55,344 coaches and zero selected athletes/PRs.
 
+Integrated source `052b0b0d` passes canonical static gates, all386 adjacent cases
+including unchanged original-A replay, controlled50→51 publication, zero-comments,
+trusted AST and module seams. National per-row rehash repair (`tzu2`) is next.
+
 Prior integrated static checkpoint: `ddd07ff76f9750a460967471649813da3f1d98b7`,
 tree `005e50d310e668b5f7722c1c74741b5602edd381`. Its exact format/check/lint,
 201-case report/crawl queue, 27 owner boundaries and original-A replay passed.
@@ -468,7 +472,7 @@ Current roster kernels are 12/13; original 2–11 identities and A artifacts rem
 | R5: frozen normalized readback | Eight-family independent readback, grouping and durable input jobs | `88e7a1c8`; initial16 failures repaired by captured-policy catalog binding | `a598a5b32` | PASS80/80; production historical/current validation unchanged | Actual national artifact contents and manifest verification |
 | R13: Utah capture URI | Offline native `provider uhsaa` with controlled original-shaped input | `c26c1291`; private `diagnostic-uhsaa-cli-01/{before-27731275,after-a598a5b3}.json` | `a598a5b32` | PASS: rows0/errors1 → rows1/errors0, both requests0; strict ownership/address rules retained | Genuine population/deployment; adapter repair is not statewide coverage |
 | R14/D: national diagnostic publication | Same generation09/profile/archive; immutable CLI under16GiB/zeroSwap | Private retry03-unverified receipt and structural readback; XLSX SHA `ba1692b7…11320e` | `b1a63afc1` | INTERRUPTED after3256.642s; peak15,339,282,432B/swap0; real diagnostic saved, no verified publication | `tzu2`: eliminate per-row full-dataset hashing, rerun complete readback; full R14 remains open |
-| R12: source cooldown/progress replay | SDK journal, Store reopen, fresh-clock gate and explicit access-evidence withholding | Slot FAIL `96428f30` → PASS `3ebfeea9`; progress11/11 `73eba707`, adjacent157/157 `e49decd0` | Stable slot `31666096b`; progress working source on `3e87e446` | Retained physical slot is replayed; known progress survives snapshot failure without false completion; unknowns stay honest | `q0ja`: reviewed integration and broader R12 acceptance; no original live-journal upgrade |
+| R12: source cooldown/progress replay | SDK journal, Store reopen, fresh-clock gate and explicit access-evidence withholding | Slot FAIL `96428f30` → PASS `3ebfeea9`; setup FAIL `19f88db9` → PASS `fc274fdc`; full adjacent386/386 `7ecbbffd` | `c4045273`, integrated/tested `052b0b0d` | Known progress survives snapshot failure; failed setup cannot consume or settle an attempt; cached slots replay without acquisition | Broader R12 reuse/fault acceptance; no original live-journal upgrade |
 
 Prior identity, catalog, tie and managed-route closures remain scoped evidence.
 Neither checkpoint is blanket national acceptance.

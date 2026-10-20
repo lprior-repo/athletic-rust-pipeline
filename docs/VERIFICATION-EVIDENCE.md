@@ -2350,3 +2350,16 @@ table is weakened. Controlled ownership/cancellation `a03b99f5` **PASS13/13**;
 format/check/lint `4191a72a`/`dbff5050`/`7b47f3f1` and seams `19c79c8f` **PASS**.
 Clean-commit original-A replay and the complete adjacent queue remain required;
 the prior missing-environment failure is not a code closure or an excluded test.
+
+Clean source `052b0b0dff2f0049eafa962aa74f036ed9d676c4`, tree
+`6e41509a5a3c7679e9bce0b95ecb8604113a27d2`: complete adjacent queue `7ecbbffd`
+**PASS386/386**, Nextest `07a8d40d-ab11-4638-b26a-d9ccd0f5949f`, including
+unchanged original-A pins and the formerly missing-environment case. Controlled
+50→51 workbook `3ecec245` **PASS1/1**, Nextest `c82a2184-6bb2-456c-81cc-fc1b27267b13`.
+Exact-source zero-comments `5926aeb6`, strict AST `35f354c8` and seams
+`19c79c8f` **PASS**: no >60-line handwritten callables or unresolved sites.
+This closes the five measured size violations, not national/spec acceptance.
+Independent diagnostic CSV readback also matches every retained manifest hash,
+byte length and row count across all eleven normalized/audit families; all
+1,065,450 publication identity statuses are explicitly Unknown. No semantic
+publication verification or live accepted-population inference follows from that.
