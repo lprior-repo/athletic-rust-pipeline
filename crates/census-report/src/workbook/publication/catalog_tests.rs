@@ -12,6 +12,7 @@ mod fixture;
 mod flat_readback;
 mod mutate;
 mod readback;
+mod relay_adapter;
 mod scope;
 pub(in crate::workbook::publication) mod transition;
 use fixture::{fixture, Fixture, TestResult};
