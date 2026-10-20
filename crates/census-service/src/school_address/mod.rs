@@ -4,6 +4,7 @@ mod generation_error;
 mod geocode;
 mod join;
 mod manifest;
+pub(crate) mod nces_run;
 mod pipeline;
 mod preflight;
 mod print;
