@@ -124,17 +124,47 @@ defaults unchanged. `tools/moon-cargo` exports the exact value as `CARGO_BUILD_J
 executing the selected Cargo, overriding Moon's task-level `16`. Gate/xtask Cargo children inherit
 that value. Gate's nested `tools/moon-local` calls retain `MOON_RUST_BUILD_JOBS`; build and durability
 scenario calls through `tools/moon-cargo` reapply it after Moon restores task defaults. Explicit Cargo
-`--jobs` or Nextest `--build-jobs` arguments still take precedence; the wrapper never rewrites arguments.
+`--jobs` or Nextest `--build-jobs` arguments still take precedence over the build-job override.
 
-This controls Cargo compilation jobs, not whole-lane concurrency. Nextest tasks retain their explicit
-16 test threads, the iteration profile retains rustc `-Z threads=4`, and compiler/linker, build-script
-and runtime pools can still run concurrently. It does not certify a fully serial or memory-bounded lane.
+This controls Cargo compilation jobs, not whole-lane concurrency. Nextest tasks default to 16 test
+threads; the separate override below can lower that count. The iteration profile retains rustc
+`-Z threads=4`, and compiler/linker, build-script and runtime pools can still run concurrently.
+It does not certify a fully serial or memory-bounded lane.
 
 The launcher preserves the override before Moon hashing. All Rust task inputs already include
 `$MOON_RUST_*` and `tools/moon-*`, so the override and wrapper changes participate in task cache
 identity. `tools/build-toolchain.json` records launcher-time Cargo configuration, before task-level
 environment and this override; it is not the effective build-job record. Retain the invocation's
 `MOON_RUST_BUILD_JOBS` value alongside verification evidence.
+
+### Nextest test-thread override
+
+For memory-constrained test execution, set `MOON_RUST_TEST_THREADS` on a canonical
+`pipeline:tests`, `pipeline:report-test` or `pipeline:tests-scoped` invocation:
+
+```sh
+env -u CI MOON_RUST_BUILD_JOBS=1 MOON_RUST_TEST_THREADS=1 \
+  tools/moon-local run pipeline:tests
+env -u CI MOON_RUST_BUILD_JOBS=1 MOON_RUST_TEST_THREADS=1 \
+  tools/moon-local run pipeline:tests-scoped -- -p census-store --lib --no-tests fail
+```
+
+The optional value must be a decimal integer from 1 through 16 without leading zeros.
+Empty, zero, signed, fractional, whitespace-containing and out-of-range values fail
+before Cargo starts. Unset preserves the canonical 16-thread default. The wrapper
+validates the task's complete canonical prefix, then replaces only its owned
+`--test-threads=16` argument. Other tasks, changed prefixes and additional thread
+flags (`--test-threads`, its `--jobs` alias or `-j`) refuse rather than append a
+conflicting option. Do not export this variable for unrelated tasks or the release gate.
+
+Package selections, feature selections, filters, locked/offline execution,
+`--no-fail-fast` and empty-selection failure options remain unchanged. The override
+composes with `MOON_RUST_SCOPED_TEST_FEATURES=default` on `pipeline:tests-scoped`;
+that separate option alone changes the feature set. It skips no tests and changes no
+gate requirements. It bounds simultaneous Nextest tests, not threads spawned inside
+each test, compiler jobs or aggregate memory. Existing `$MOON_RUST_*` and `tools/moon-*`
+task inputs include the override and wrapper in cache identity. Record the selected
+value with test evidence; a report-test cache hit remains cached evidence.
 
 ### Parent launcher and task boundaries
 
@@ -169,7 +199,7 @@ tools/moon-local run pipeline:tests -- -E 'binary(restate_kill_restart)'
 | Task | Execution and cache boundary |
 |---|---|
 | `pipeline:report-test` | Cacheable scoped `census-report` library results, all features; a hit may replay prior logs instead of executing tests |
-| `pipeline:tests` | Full workspace/all-features Nextest, 16 test threads, `cache: false`; executes tests rather than replaying a native-fault result |
+| `pipeline:tests` | Full workspace/all-features Nextest, 16 test threads by default, `cache: false`; executes tests rather than replaying a native-fault result |
 | `pipeline:tests-scoped` | Manual uncached Nextest, all features by default; pass package/target/filter arguments explicitly; uses `target/fast-iteration` |
 | `pipeline:build-scoped` / `pipeline:run-scoped` | Manual uncached scoped build/run through the fast-iteration configuration; explicit package and binary/example selection |
 | `pipeline:check` | Uncached workspace/all-targets/all-features compilation |

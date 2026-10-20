@@ -33,7 +33,50 @@ if [[ ${MOON_RUST_SCOPED_TEST_FEATURES+x} ]]; then
           ;;
       esac
     done
-    set -- "${@:1:4}" "${@:6}"
   fi
+fi
+if [[ ${MOON_RUST_TEST_THREADS+x} ]]; then
+  case "$MOON_RUST_TEST_THREADS" in
+    [123456789]|1[0123456]) ;;
+    *)
+      printf 'tools/moon-cargo: MOON_RUST_TEST_THREADS must be a decimal integer from 1 through 16 without leading zeros\n' >&2
+      exit 2
+      ;;
+  esac
+  canonical_prefix=(nextest run --config .cargo/fast-iteration.toml)
+  case "${MOON_TARGET:-}" in
+    pipeline:tests-scoped) ;;
+    pipeline:tests) canonical_prefix+=(--workspace) ;;
+    pipeline:report-test) canonical_prefix+=(-p census-report --lib) ;;
+    *)
+      printf 'tools/moon-cargo: test thread override requires pipeline:tests, pipeline:report-test or pipeline:tests-scoped\n' >&2
+      exit 2
+      ;;
+  esac
+  canonical_prefix+=(--all-features --locked --offline --no-fail-fast --test-threads=16)
+  arguments=("$@")
+  for index in "${!canonical_prefix[@]}"; do
+    if [[ ${arguments[index]-} != "${canonical_prefix[index]}" ]]; then
+      printf 'tools/moon-cargo: test thread override requires the canonical %s prefix\n' "$MOON_TARGET" >&2
+      exit 2
+    fi
+  done
+  thread_position=${#canonical_prefix[@]}
+  for argument in "${@:$((thread_position + 1))}"; do
+    case "$argument" in
+      --test-threads|--test-threads=*|--jobs|--jobs=*|-j*)
+        printf 'tools/moon-cargo: test thread override refuses conflicting thread flag: %s\n' "$argument" >&2
+        exit 2
+        ;;
+    esac
+    if [[ "$argument" =~ ^-[vhr]*j ]]; then
+      printf 'tools/moon-cargo: test thread override refuses conflicting thread flag: %s\n' "$argument" >&2
+      exit 2
+    fi
+  done
+  set -- "${@:1:$((thread_position - 1))}" "--test-threads=$MOON_RUST_TEST_THREADS" "${@:$((thread_position + 1))}"
+fi
+if [[ ${MOON_RUST_SCOPED_TEST_FEATURES:-} == default ]]; then
+  set -- "${@:1:4}" "${@:6}"
 fi
 exec "$MOON_RUST_CARGO" "$@"
