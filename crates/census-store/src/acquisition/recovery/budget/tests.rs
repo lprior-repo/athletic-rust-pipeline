@@ -18,8 +18,14 @@ fn usage(count: u64) -> StoreResult<AcquisitionSelectionUsage> {
     AcquisitionSelectionUsage::new(roots, roots, 0, 0, count, 0)
 }
 fn exceeded<T>(result: StoreResult<T>, expected: &'static str) {
-    assert!(matches!(result,
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded { resource })) if resource == expected));
+    let matches_expected = match result {
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded { resource, .. }))
+        | Err(StoreError::Capture(CaptureError::ReadBudgetExceeded { resource })) => {
+            resource == expected
+        }
+        _ => false,
+    };
+    assert!(matches_expected);
 }
 fn refused<T>(result: StoreResult<T>) {
     assert!(matches!(

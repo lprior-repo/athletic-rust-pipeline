@@ -101,8 +101,9 @@ fn prepared_restoration_fresh_checks_fit_six_eof_probes_and_refuse_five_before_c
         } else {
             check!(matches!(
                 result,
-                Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-                    resource: "recovery EOF probes"
+                Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+                    resource: "recovery EOF probes",
+                    ..
                 }))
             ));
             check!(eq; rows(&store)?, before);

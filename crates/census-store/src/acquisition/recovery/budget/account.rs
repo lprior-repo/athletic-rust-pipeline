@@ -168,8 +168,10 @@ impl<'budget> TargetAccount<'budget> {
             return Err(CaptureError::TransitionRefused.into());
         }
         if bytes > limits::BODY {
-            return Err(CaptureError::ReadBudgetExceeded {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "body allocation",
+                required: bytes,
+                limit: limits::BODY,
             }
             .into());
         }

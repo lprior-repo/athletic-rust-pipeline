@@ -27,7 +27,7 @@ async fn archive_directory_cap_refuses_shared_walk_before_touching_the_old_eligi
         ExactBodySource::NoneSupplied,
     )?;
     check!(
-        matches!(outcome, PreparedRecoveryOutcome::Retained { eligible: EligiblePublicationOutcome::RefusedBeforeReplace(crate::net::FetchError::CaptureStore(error)), .. } if matches!(*error, StoreError::Capture(CaptureError::ReadBudgetExceeded { resource: "directory events" })))
+        matches!(outcome, PreparedRecoveryOutcome::Retained { eligible: EligiblePublicationOutcome::RefusedBeforeReplace(crate::net::FetchError::CaptureStore(error)), .. } if matches!(*error, StoreError::Capture(CaptureError::ReadBudgetLimitExceeded { resource: "directory events", .. })))
     );
     check!(eq; std::fs::read(body)?, b"old body");
     check!(eq; std::fs::read(metadata)?, b"old metadata");

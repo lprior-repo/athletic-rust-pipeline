@@ -93,12 +93,11 @@ impl Allocations {
         Ok(self)
     }
     pub(in crate::acquisition) fn released(mut self, bytes: u64) -> StoreResult<Self> {
-        self.live_owned =
-            self.live_owned
-                .checked_sub(bytes)
-                .ok_or(CaptureError::ReadBudgetExceeded {
-                    resource: "live allocation",
-                })?;
+        self.live_owned = self.live_owned.checked_sub(bytes).ok_or(
+            CaptureError::AllocationAccountingInvariant {
+                resource: "live allocation",
+            },
+        )?;
         Ok(self)
     }
     pub(in crate::acquisition) fn live(self) -> StoreResult<u64> {
@@ -118,10 +117,86 @@ impl Allocations {
                 self.live_scratch = scratch;
                 Ok(())
             }
-            _ => Err(CaptureError::ReadBudgetExceeded {
+            _ => Err(CaptureError::AllocationAccountingInvariant {
                 resource: "live allocation",
             }
             .into()),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AllocationKind, Allocations};
+    use crate::{acquisition::CaptureError, StoreError};
+
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+    fn failure(message: &'static str) -> Box<dyn std::error::Error> {
+        std::io::Error::other(message).into()
+    }
+
+    #[test]
+    fn reservation_limits_and_real_reservation_failures_are_distinct() -> TestResult {
+        let over_limit = match Allocations::selection().reserved(AllocationKind::Owned, u64::MAX) {
+            Err(error) => error,
+            Ok(_) => {
+                return Err(failure(
+                    "logical allocation cap admitted an over-limit request",
+                ))
+            }
+        };
+        if !matches!(
+            over_limit,
+            StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+                resource: "allocation",
+                required: u64::MAX,
+                limit,
+            }) if limit < u64::MAX
+        ) {
+            return Err(failure("logical cap did not report its refusal separately"));
+        }
+
+        let mut requested = Vec::<u8>::new();
+        let source = match requested.try_reserve_exact(usize::MAX) {
+            Err(source) => source,
+            Ok(()) => return Err(failure("maximal reservation unexpectedly succeeded")),
+        };
+        let error =
+            CaptureError::allocation_reservation_failed("test buffer", Some(usize::MAX), source);
+        if matches!(
+            error,
+            CaptureError::AllocationReservationFailed {
+                resource: "test buffer",
+                requested_bytes: Some(usize::MAX),
+                ..
+            }
+        ) {
+            Ok(())
+        } else {
+            Err(failure(
+                "allocator failure lost its resource or requested byte count",
+            ))
+        }
+    }
+
+    #[test]
+    fn accounting_underflow_is_not_a_budget_refusal() -> TestResult {
+        let error = match Allocations::empty().released(1) {
+            Err(error) => error,
+            Ok(_) => return Err(failure("releasing unowned bytes unexpectedly succeeded")),
+        };
+        if matches!(
+            error,
+            StoreError::Capture(CaptureError::AllocationAccountingInvariant {
+                resource: "live allocation",
+            })
+        ) {
+            Ok(())
+        } else {
+            Err(failure(
+                "allocation underflow was not classified as an accounting invariant",
+            ))
         }
     }
 }

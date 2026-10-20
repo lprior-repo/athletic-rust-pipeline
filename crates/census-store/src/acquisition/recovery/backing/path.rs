@@ -150,8 +150,10 @@ pub(super) fn safe_ancestry(
             PathBuf::new(),
             |mut parent, (position, component)| -> StoreResult<PathBuf> {
                 if position == 64 {
-                    return Err(CaptureError::ReadBudgetExceeded {
+                    return Err(CaptureError::ReadBudgetLimitExceeded {
                         resource: "path depth",
+                        required: 65,
+                        limit: 64,
                     }
                     .into());
                 }
@@ -198,10 +200,12 @@ pub(super) fn io(
         return error;
     }
     let mut owned = PathBuf::new();
-    if owned.try_reserve_exact(path.as_os_str().len()).is_err() {
-        return CaptureError::ReadBudgetExceeded {
-            resource: "allocation",
-        }
+    if let Err(source) = owned.try_reserve_exact(path.as_os_str().len()) {
+        return CaptureError::allocation_reservation_failed(
+            "retained path buffer",
+            Some(path.as_os_str().len()),
+            source,
+        )
         .into();
     }
     owned.push(path);

@@ -1,6 +1,6 @@
 use super::super::{facts::*, AcquisitionReadBudget, CaptureError};
 use super::{attempt_prefix, dispatch_prefix, take_fact};
-use crate::StoreResult;
+use crate::{StoreError, StoreResult};
 use census_domain::model::*;
 use std::collections::BTreeMap;
 
@@ -69,15 +69,15 @@ fn dispatches(
     let mut dispatches: Vec<(Armed, Option<Observed>)> = Vec::new();
     let bytes = std::mem::size_of::<[(Armed, Option<Observed>); 5]>()
         .checked_add(640)
-        .ok_or(CaptureError::ReadBudgetExceeded {
-            resource: "allocation",
-        })?;
+        .ok_or(StoreError::CounterOverflow)?;
     budget.reserve_recovery_owned(bytes)?;
-    dispatches
-        .try_reserve_exact(5)
-        .map_err(|_| CaptureError::ReadBudgetExceeded {
-            resource: "allocation",
-        })?;
+    dispatches.try_reserve_exact(5).map_err(|source| {
+        CaptureError::allocation_reservation_failed(
+            "dispatch closure buffer",
+            Some(5 * std::mem::size_of::<(Armed, Option<Observed>)>()),
+            source,
+        )
+    })?;
     for hop in 0..=4 {
         match load_one_dispatch(rows, id, hop, protocol, budget)? {
             Some((armed, response)) => {
@@ -99,12 +99,9 @@ fn load_one_dispatch(
 ) -> StoreResult<Option<(Armed, Option<Observed>)>> {
     let copied = match protocol {
         CaptureProtocolVersion::V1 => id.clone(),
-        CaptureProtocolVersion::V2 => {
-            id.try_clone()
-                .map_err(|_| CaptureError::ReadBudgetExceeded {
-                    resource: "allocation",
-                })?
-        }
+        CaptureProtocolVersion::V2 => id.try_clone().map_err(|source| {
+            CaptureError::allocation_reservation_failed("dispatch identity clone", None, source)
+        })?,
     };
     let dispatch =
         AcquisitionDispatchId::new(copied, HopOrdinal::new(hop).map_err(CaptureError::Domain)?);

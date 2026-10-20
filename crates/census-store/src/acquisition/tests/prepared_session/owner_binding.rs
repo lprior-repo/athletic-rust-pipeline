@@ -82,8 +82,9 @@ fn prepared_recovery_parent_keeps_original_worker_store_and_scope_after_first_co
         check!(eq; rows(&store)?, before);
         check!(matches!(
             store.begin_prepared_recovery(&owner, second, &mut parent),
-            Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-                resource: "recovery targets"
+            Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+                resource: "recovery targets",
+                ..
             })) | Err(StoreError::Capture(CaptureError::TransitionRefused))
         ));
     }

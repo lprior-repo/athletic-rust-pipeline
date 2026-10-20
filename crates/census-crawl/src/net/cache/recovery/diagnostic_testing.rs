@@ -62,7 +62,7 @@ pub(in crate::net) fn retains_primary_and_diagnostic_refusal(error: &FetchError)
     else {
         return false;
     };
-    matches!(causes.cleanup.first(), Some(Some(RecoveryCleanupLeaf::Store(error))) if matches!(**error, census_store::StoreError::Capture(census_store::CaptureError::ReadBudgetExceeded { resource: "diagnostic bytes" })))
+    matches!(causes.cleanup.first(), Some(Some(RecoveryCleanupLeaf::Store(error))) if matches!(**error, census_store::StoreError::Capture(census_store::CaptureError::ReadBudgetLimitExceeded { resource: "diagnostic bytes", .. })))
 }
 
 pub(in crate::net) fn third_cleanup(
@@ -91,8 +91,9 @@ pub(in crate::net) fn fallback_store_boxes(
         match io.diagnostic_bytes(bytes) {
             Ok(()) => {}
             Err(census_store::StoreError::Capture(
-                census_store::CaptureError::ReadBudgetExceeded {
+                census_store::CaptureError::ReadBudgetLimitExceeded {
                     resource: "diagnostic bytes",
+                    ..
                 },
             )) => {}
             Err(error) => return Err(error.into()),
@@ -121,8 +122,9 @@ pub(in crate::net) fn deplete_requested_owned(
         match io.reserve_owned(bytes) {
             Ok(()) => io.release_owned(bytes)?,
             Err(census_store::StoreError::Capture(
-                census_store::CaptureError::ReadBudgetExceeded {
+                census_store::CaptureError::ReadBudgetLimitExceeded {
                     resource: "allocation",
+                    ..
                 },
             )) => {}
             Err(error) => return Err(error.into()),
