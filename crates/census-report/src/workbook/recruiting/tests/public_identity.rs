@@ -56,7 +56,13 @@ async fn selected_recruiting_csv_and_sheets_publish_public_ids_with_explicit_can
 fn selected_pr_sheet_keeps_public_key_and_raw_canonical_candidate_separate() -> TestResult {
     let fixture = SelectedFixture::new()?;
     let athlete = fixture.dataset.athletes.first().ok_or("candidate")?;
-    let selection = crate::bests::public_identity_selection_for_test(athlete);
+    let selection = crate::bests::public_identity_selection_for_test(
+        athlete,
+        census_domain::model::EventSemantics::from_revision(
+            fixture.dataset.lineage.policy_revision,
+        )
+        .ok_or("captured event policy missing")?,
+    );
     let view = fixture.dataset.verified_public_identities()?;
     let public_id = view
         .public_id(athlete.id.as_str())

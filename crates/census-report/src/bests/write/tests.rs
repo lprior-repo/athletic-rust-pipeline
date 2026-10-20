@@ -22,12 +22,13 @@ const FORMULA_SCHOOL: &str = "@SUM(1)";
 const FORMULA_MEET: &str = "+Invitational";
 const ORDINARY_NAME: &str = "Ordinary Runner";
 
-fn selection(
+fn selection_with_policy(
     athlete: &str,
     school: &str,
     meet: &str,
     mark: Mark,
     wind_mps: Option<f64>,
+    policy: census_domain::model::EventSemantics,
 ) -> SharedSelection {
     SharedSelection {
         key: key(),
@@ -41,12 +42,29 @@ fn selection(
         },
         conflicts: Vec::new(),
         inventory: crate::bests::SelectionInventory::from_groups(
-            census_domain::model::EventSemantics::CURRENT,
+            policy,
             3,
             vec![Id::mint("perf", &["csv_safety"])],
         ),
         supporting_tied_candidate_ids: vec![Id::mint("perf", &["csv_safety"])],
     }
+}
+
+fn selection(
+    athlete: &str,
+    school: &str,
+    meet: &str,
+    mark: Mark,
+    wind_mps: Option<f64>,
+) -> SharedSelection {
+    selection_with_policy(
+        athlete,
+        school,
+        meet,
+        mark,
+        wind_mps,
+        census_domain::model::EventSemantics::CURRENT,
+    )
 }
 
 fn key() -> PrKey {

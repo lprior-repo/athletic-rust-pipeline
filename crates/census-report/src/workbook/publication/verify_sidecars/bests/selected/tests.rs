@@ -14,7 +14,7 @@ fn independent_selected_readback_accepts_real_merge_outputs_and_reopened_authori
     merge(&fixture)?;
     let (view, proofs) = capture(&fixture.store)?;
     let [_, second, _] = &fixture.athletes;
-    let rows = [selection(second)];
+    let rows = [selection(second, EventSemantics::ResultGroups21)];
     let output = fixture.directory.path().join("publication");
     write(
         &output,
@@ -58,7 +58,7 @@ fn independent_selected_readback_refuses_candidate_fallback_in_csv_primary_join_
     let fixture = source_births()?;
     let (view, _proofs) = capture(&fixture.store)?;
     let [first, _, _] = &fixture.athletes;
-    let rows = [selection(first)];
+    let rows = [selection(first, EventSemantics::ResultGroups21)];
     let output = fixture.directory.path().join("publication");
     let (_, csv) = write(
         &output,
@@ -90,7 +90,7 @@ fn independent_selected_readback_rejects_changed_public_candidate_resolution_sch
     merge(&fixture)?;
     let (view, _proofs) = capture(&fixture.store)?;
     let [first, second, _] = &fixture.athletes;
-    let rows = [selection(second)];
+    let rows = [selection(second, EventSemantics::ResultGroups21)];
     let output = fixture.directory.path().join("publication");
     let (jsonl, _) = write(
         &output,
@@ -108,7 +108,10 @@ fn independent_selected_readback_rejects_changed_public_candidate_resolution_sch
         ),
         ("identity_resolution", serde_json::Value::Null),
         ("schema", serde_json::json!("selected_identity_v0")),
-        ("selection", serde_json::to_value(selection(first))?),
+        (
+            "selection",
+            serde_json::to_value(selection(first, EventSemantics::ResultGroups21))?,
+        ),
     ] {
         let mut changed = original.clone();
         let cell = changed.get_mut(field).ok_or("expected selected field")?;
@@ -141,7 +144,7 @@ fn independent_selected_readback_uses_read_only_premerge_identity_expectations()
     let (held, _objects) = crate::export::current_school::fixture::capture(&fixture.store)?;
     let held_head = held.verified_public_identities()?.head().clone();
     let [_, second, _] = &fixture.athletes;
-    let rows = [selection(second)];
+    let rows = [selection(second, EventSemantics::ResultGroups21)];
     merge(&fixture)?;
     let (current, _current_proofs) = capture(&fixture.store)?;
     let output = fixture.directory.path().join("publication");
@@ -223,7 +226,7 @@ fn independent_selected_bests_readback_rejects_each_current_affiliation_field() 
     let fixture = source_births()?;
     let (dataset, _proofs) = capture(&fixture.store)?;
     let [first, _, _] = &fixture.athletes;
-    let rows = [selection(first)];
+    let rows = [selection(first, EventSemantics::ResultGroups21)];
     let output = fixture.directory.path().join("affiliation-publication");
     for (field, wrong) in [
         ("current_school_id", "foreign-school-id"),

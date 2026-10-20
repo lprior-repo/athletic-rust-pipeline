@@ -4,7 +4,10 @@ use crate::export::selected_test_fixture::consumer::{capture, merge, source_birt
 use census_domain::model::{CanonicalAthlete, EventSemantics};
 use census_store::{Store, StoreError};
 
-pub(crate) fn row(athlete: &CanonicalAthlete) -> SharedSelection {
+pub(crate) fn row(
+    athlete: &CanonicalAthlete,
+    policy: census_domain::model::EventSemantics,
+) -> SharedSelection {
     SharedSelection {
         key: PrKey {
             athlete_id: athlete.id.clone(),
@@ -18,12 +21,13 @@ pub(crate) fn row(athlete: &CanonicalAthlete) -> SharedSelection {
             source_key: "synthetic-public-consumer-original-source-key".into(),
             ..source(&athlete.canonical_name)
         },
-        ..selection(
+        ..selection_with_policy(
             &athlete.canonical_name,
             "Synthetic School",
             "Synthetic Meet",
             Mark::Raw("11.00".into()),
             None,
+            policy,
         )
     }
 }
@@ -35,7 +39,7 @@ fn selected_bests_publish_public_join_keys_and_keep_original_selection_and_sourc
     let (view, _proofs) = capture(&fixture.store)?;
     let [first, _, _] = &fixture.athletes;
     let [birth, _] = &fixture.births;
-    let rows = [row(first)];
+    let rows = [row(first, EventSemantics::ResultGroups21)];
     let original = serde_json::to_value(&rows)?;
     let (jsonl, csv) = super::super::selected::write(
         &fixture.directory.path().join("publication"),
@@ -73,7 +77,7 @@ fn selected_bests_preserve_premerge_identity_snapshot_and_replay_real_merge_afte
     let fixture = source_births()?;
     let (old_view, _old_proofs) = capture(&fixture.store)?;
     let [_, second, _] = &fixture.athletes;
-    let rows = [row(second)];
+    let rows = [row(second, EventSemantics::ResultGroups21)];
     let old_head = old_view.verified_public_identities()?.head().clone();
     let old = serde_json::to_value(
         crate::export::public_identity::output::AcceptedIdentityFields::for_candidate(
@@ -135,7 +139,10 @@ fn selected_bests_refuse_unknown_before_creating_or_replacing_any_artifact() -> 
     let fixture = source_births()?;
     let (view, _proofs) = capture(&fixture.store)?;
     let [first, _, unknown] = &fixture.athletes;
-    let rows = [row(first), row(unknown)];
+    let rows = [
+        row(first, EventSemantics::ResultGroups21),
+        row(unknown, EventSemantics::ResultGroups21),
+    ];
     let missing = fixture.directory.path().join("uncreated");
     let existing = fixture.directory.path().join("existing");
     std::fs::create_dir(&existing)?;
@@ -166,7 +173,7 @@ fn selected_bests_refuse_unknown_before_creating_or_replacing_any_artifact() -> 
 fn historical_bests_keep_original_schema_and_candidate_id_bytes() -> TestResult {
     let fixture = crate::export::public_identity::tests::fixture::source_births()?;
     let [first, _, _] = &fixture.athletes;
-    let rows = [row(first)];
+    let rows = [row(first, EventSemantics::ResultGroups21)];
     let expected_json = format!("{}\n", serde_json::to_string(rows.first().ok_or("row")?)?);
     let (jsonl, csv) = write(
         &fixture.directory.path().join("historical"),

@@ -63,7 +63,10 @@ fn selected_bests_label_historical_school_separately_from_pinned_current_school(
     let fixture = source_births()?;
     let (dataset, _proofs) = capture(&fixture.store)?;
     let [first, _, _] = &fixture.athletes;
-    let rows = [super::public_identity::row(first)];
+    let rows = [super::public_identity::row(
+        first,
+        EventSemantics::ResultGroups21,
+    )];
     let original = serde_json::to_value(&rows)?;
     let (jsonl, csv) = super::super::selected::write(
         &fixture.directory.path().join("separate-affiliations"),
@@ -155,7 +158,10 @@ fn refuses_preserving_artifacts(
     let csv = output.join("best-results-co2027.csv");
     std::fs::write(&jsonl, b"previous jsonl\n")?;
     std::fs::write(&csv, b"previous csv\n")?;
-    let rows = [super::public_identity::row(athlete)];
+    let rows = [super::public_identity::row(
+        athlete,
+        EventSemantics::ResultGroups21,
+    )];
     for destination in [&missing, &output] {
         let result = super::super::selected::write(
             destination,

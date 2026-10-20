@@ -11,7 +11,7 @@ fn selected_alias_bests_publish_canonical_affiliation_from_retained_roster_proof
     let fixture = source_births()?;
     merge(&fixture)?;
     let [canonical, alias, _] = &fixture.athletes;
-    let rows = [selection(alias)];
+    let rows = [selection(alias, EventSemantics::ResultGroups21)];
     let output = fixture.directory.path().join("canonical-affiliation");
     let (dataset, _proofs) = capture(&fixture.store)?;
     let view = dataset.verified_current_affiliations()?;
