@@ -46,24 +46,40 @@ mod tests {
     use super::Counter;
     use crate::{acquisition::CaptureError, StoreError};
 
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+    fn failure(message: &'static str) -> Box<dyn std::error::Error> {
+        std::io::Error::other(message).into()
+    }
+
     #[test]
-    fn over_limit_reports_resource_required_and_limit() {
-        let error = Counter::new(8)
-            .charged(9, "encoded bytes")
-            .expect_err("one byte beyond the configured cap must refuse");
-        assert!(matches!(
+    fn over_limit_reports_resource_required_and_limit() -> TestResult {
+        let error = match Counter::new(8).charged(9, "encoded bytes") {
+            Err(error) => error,
+            Ok(_) => return Err(failure("one byte beyond the configured cap was admitted")),
+        };
+        if matches!(
             error,
             StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
                 resource: "encoded bytes",
                 required: 9,
                 limit: 8,
             })
-        ));
+        ) {
+            Ok(())
+        } else {
+            Err(failure(
+                "over-limit refusal omitted its resource, required amount, or limit",
+            ))
+        }
     }
 
     #[test]
-    fn exact_limit_is_admitted() {
-        assert_eq!(Counter::new(8).charged(8, "encoded bytes").unwrap().used, 8);
+    fn exact_limit_is_admitted() -> TestResult {
+        match Counter::new(8).charged(8, "encoded bytes") {
+            Ok(counter) if counter.used == 8 => Ok(()),
+            _ => Err(failure("an exact-limit charge was not admitted")),
+        }
     }
 }
 
