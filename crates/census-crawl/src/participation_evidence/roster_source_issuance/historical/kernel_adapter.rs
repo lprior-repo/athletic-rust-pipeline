@@ -7,6 +7,7 @@ use crate::participation_evidence::provider_school::{
     PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1, PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 pub(in super::super) mod context;
+mod current;
 mod execution;
 mod grant4g;
 mod member;
@@ -184,7 +185,7 @@ const QUALIFIED_ROW_LOCAL_V11: OriginalKernel = OriginalKernel {
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 
-fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 12] {
+fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 14] {
     match epoch {
         KernelEpoch::Full => [
             &FULL,
@@ -199,6 +200,8 @@ fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 12] {
             &member::FULL_RAW_VALUE_NATIVE,
             &member::FULL_PORTABLE,
             &member::FULL_CONTEXT_NATIVE,
+            &member::FULL_DECODER_NATIVE,
+            &member::FULL_DECODER_PORTABLE,
         ],
         KernelEpoch::RowLocal => [
             &ROW_LOCAL,
@@ -213,6 +216,8 @@ fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 12] {
             &member::ROW_LOCAL_RAW_VALUE_NATIVE,
             &member::ROW_LOCAL_PORTABLE,
             &member::ROW_LOCAL_CONTEXT_NATIVE,
+            &member::ROW_LOCAL_DECODER_NATIVE,
+            &member::ROW_LOCAL_DECODER_PORTABLE,
         ],
     }
 }
@@ -244,6 +249,9 @@ pub(in super::super) fn bind_historical_v1(
                 bytes,
                 semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
             });
+        }
+        if let Some(replay) = current::native(epoch, retained, configuration, bytes) {
+            return Ok(replay);
         }
         let actual: [u8; 32] = Sha256::digest(retained).into();
         let original = predecessors(epoch)

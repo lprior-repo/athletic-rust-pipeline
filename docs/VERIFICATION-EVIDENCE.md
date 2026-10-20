@@ -2521,3 +2521,39 @@ Main corrected a worker's incorrect optimized requirement on the authentic nativ
 predecessors; the new positive native-context regression catches that defect.
 Two duplicate worker tests were removed. Actual optimized build/context/readback
 and clean final-source acceptance are still required before landing.
+
+Clean`6ee122034a2d11206b91a799996c4487e49db970`,
+tree`d0cca4f29dc9a1749e164839217b26fca4b076f0`, passes exact static gates,
+public source-authority60/60 (`172eb4f8`) and controlled50→51 lifecycle1/1
+(`46492611`, Nextest`bd0b06d3…`). Retained roots are
+`/home/lewis/.cache/r14n-TpNM3q/.tmpL6plWI` (G0) and`.tmpSRAz0I` (G1).
+Comments`7284c212`, strict AST`a356c269` and seams`b1c50c92` pass.
+
+Actual optimized build`fa0176b5` confirms context`8befb4a6…72ed43` and source`d4117ca8…5128e`.
+CLI SHA`e922d2406f0a7845366ae28f746e7ec0159c2544ec7ba462bbcc99f053c2d670`
+verifies unchanged original-A resolved/conflicted/missing-owner and old member
+G0/G1:151/160/160/151/147 rows, all exit0.
+Private`optimized-verification-6ee12203.json` retains those results.
+
+**Fresh-generation refusal:** that same optimized CLI exits1 on both fresh
+native-produced controlled50/51 workbooks: `unsupported historical semantic kernel identity`.
+The shared source revision has different native/optimized dependency documents;
+older historical pins do not qualify the contemporaneous native document.
+This is a real consumer defect despite the preceding five older-generation passes.
+Exact refusals are in`fresh-native-refusal-6ee12203.json`; the unchanged failing
+binary and receipt are preserved at
+`/home/lewis/.cache/athletic-compat-6ee12203-qf_0_ez3/`.
+The current-source native counterpart repair is unqualified until the actual
+native-producer→optimized-consumer case passes. No push or v80o closure yet.
+
+Current-source counterpart candidate:
+source`d9eff86d965dbcb4449a06f7e9ca319ac2142a875382241e81a910694ac5c34a`,
+103 ordered inputs including generator/runtime code, metadata types and authentic
+native template. Format`0393ce6b`, all-target check`d9c60106`, source lint`e70ab8da`
+and replay/refusal scope`4a34ba2d` **PASS37/37**.
+Actual native compiler outputs independently equal the generated counterparts
+byte-for-byte: fullSHA`40bd0f84…c90052`, rowSHA`1333c027…6f224a`,22,958bytes each,
+context`a01453e2…d3787d`. This is not merely comparison with a copied test fixture.
+The canonical serializer is reused; runtime admission compares static exact bytes,
+not parsed/normalized documents. Fresh native→optimized CLI qualification remains
+pending; the preceding6ee failure is preserved and not counted repaired yet.

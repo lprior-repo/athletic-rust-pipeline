@@ -8,6 +8,8 @@ const MAX_DOCUMENT: usize = 64 * 1024;
 
 #[path = "kernel_sources.rs"]
 mod kernel_sources;
+#[path = "build_native.rs"]
+mod native;
 
 #[derive(Serialize)]
 struct Kernel<'a> {
@@ -53,6 +55,7 @@ pub(super) fn generate(
     bytes.clear();
     serde_json::to_writer(&mut bytes, &kernel)?;
     write_document(destination, "roster-semantic-kernel-v13.json", &bytes)?;
+    native::generate(root, destination, &source_digest, &sources)?;
 
     Ok(())
 }

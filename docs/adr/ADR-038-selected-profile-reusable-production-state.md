@@ -93,7 +93,7 @@ versions. Registering the checked calendar-source producer changed the source
 closure. Qualified 10/11 documents remain immutable; one current interpreter
 recomputes original inputs under their authenticated provider contract.
 
-The read-only adapter accepts only original whole-document SHA-256 pins:
+Historical predecessors bind original whole-document SHA-256 pins:
 
 | Original epoch | Kernel document SHA-256 |
 |---|---|
@@ -149,9 +149,9 @@ transitions. Six authentic source`5343f508…b80e9` V12/V13 documents—native,
 raw-value-native and portable—retain their whole-document identities and V2 owner.
 They are historical fixtures, not regenerated current documents.
 
-The executing99-file closure includes the context rule and predecessor registry.
-Both semantic owners pin its actual source digest:
-`d4117ca8902ad61a4174d2fe764847cad07e7e75caa5ddd3140b4d6d8255128e`.
+The executing103-file closure includes context rules, historical registries,
+the canonical counterpart generator and its authenticated configuration template.
+Both semantic owners pin`d9eff86d965dbcb4449a06f7e9ca319ac2142a875382241e81a910694ac5c34a`.
 Epoch schemas12/13 and participationV4 do not change. Qualification still requires
 the unchanged original-A consumer and frozen-generation readback; no earlier pass
 qualifies this amended source automatically.
@@ -164,6 +164,20 @@ No reverse or alternate allowance follows. Two authentic native documents from
 qualified source`6a0c6ee7…5444f` remain exact predecessors with their native
 requirement, not relabeled optimized documents. Actual optimized configuration
 and original-A/G0/G1 CLI readback must qualify the candidate before release.
+
+**Current-source native counterpart:** a native producer and optimized consumer
+of the same source revision have different compiler-profile documents. They
+cannot self-pin one another through a source-containing historical registry.
+The build therefore derives one canonical native counterpart from its **current**
+schema/source digest/source inventory and the authentic native configuration/dependency
+template`91b84bc2…4f47c`, whose context must remain exactly`a01453e2…d3787d`.
+The existing canonical serializer emits bounded JSON and SHA-256 at build time.
+Only optimized`8befb4a6…72ed43` may read that byte-exact current-source counterpart,
+with V2 owner policy. Runtime parsing, normalization and arbitrary context equivalence
+are not introduced. Changed bytes, epoch, source or unqualified context still refuse.
+Four authentic pre-repair`d4117ca8…5128e` documents remain historical pins.
+Qualification requires a fresh native-produced workbook to pass the actual optimized
+CLI; successful replay of older pinned generations alone is insufficient.
 
 **Consequences:** preserve original artifacts and producer pins; do not relabel
 them, reactivate old issuance claims or execute an old runtime. Qualification is

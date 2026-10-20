@@ -1,4 +1,4 @@
-use super::execution::RAW_VALUE_NATIVE_CONFIGURATION;
+use super::execution::{RAW_VALUE_NATIVE_CONFIGURATION, RAW_VALUE_PORTABLE_CONFIGURATION};
 use super::{
     OriginalKernel, EXECUTING_CONFIGURATION, PORTABLE_EXECUTING_CONFIGURATION,
     PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
@@ -88,5 +88,45 @@ pub(super) const ROW_LOCAL_CONTEXT_NATIVE: OriginalKernel = OriginalKernel {
         0xf4, 0x7c,
     ],
     configuration: &RAW_VALUE_NATIVE_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
+};
+pub(super) const FULL_DECODER_NATIVE: OriginalKernel = OriginalKernel {
+    digest: "8803e4d3305eb27e40e54dd99eb102e432f30f3c2023e675e372d0aebf73ef67",
+    hash: [
+        0x88, 0x03, 0xe4, 0xd3, 0x30, 0x5e, 0xb2, 0x7e, 0x40, 0xe5, 0x4d, 0xd9, 0x9e, 0xb1, 0x02,
+        0xe4, 0x32, 0xf3, 0x0f, 0x3c, 0x20, 0x23, 0xe6, 0x75, 0xe3, 0x72, 0xd0, 0xae, 0xbf, 0x73,
+        0xef, 0x67,
+    ],
+    configuration: &RAW_VALUE_NATIVE_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
+};
+pub(super) const ROW_LOCAL_DECODER_NATIVE: OriginalKernel = OriginalKernel {
+    digest: "0f0c1667c44e2de1ebf23fb8d27d0b844a625c9e99a6d14ece6a3ca2f5a99169",
+    hash: [
+        0x0f, 0x0c, 0x16, 0x67, 0xc4, 0x4e, 0x2d, 0xe1, 0xeb, 0xf2, 0x3f, 0xb8, 0xd2, 0x7d, 0x0b,
+        0x84, 0x4a, 0x62, 0x5c, 0x9e, 0x99, 0xa6, 0xd1, 0x4e, 0xce, 0x6a, 0x3c, 0xa2, 0xf5, 0xa9,
+        0x91, 0x69,
+    ],
+    configuration: &RAW_VALUE_NATIVE_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
+};
+pub(super) const FULL_DECODER_PORTABLE: OriginalKernel = OriginalKernel {
+    digest: "1c710d344d9fa6f5bd13628c90ffcec4b46ffcf487a467d338888aec8b90f508",
+    hash: [
+        0x1c, 0x71, 0x0d, 0x34, 0x4d, 0x9f, 0xa6, 0xf5, 0xbd, 0x13, 0x62, 0x8c, 0x90, 0xff, 0xce,
+        0xc4, 0xb4, 0x6f, 0xfc, 0xf4, 0x87, 0xa4, 0x67, 0xd3, 0x38, 0x88, 0x8a, 0xec, 0x8b, 0x90,
+        0xf5, 0x08,
+    ],
+    configuration: &RAW_VALUE_PORTABLE_CONFIGURATION,
+    semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
+};
+pub(super) const ROW_LOCAL_DECODER_PORTABLE: OriginalKernel = OriginalKernel {
+    digest: "9859b26ee2a23ba35347fe38c893c62949f480763305cec852c943f399cb7ebe",
+    hash: [
+        0x98, 0x59, 0xb2, 0x6e, 0xe2, 0xa2, 0x3b, 0xa3, 0x53, 0x47, 0xfe, 0x38, 0xc8, 0x93, 0xc6,
+        0x29, 0x49, 0xf4, 0x80, 0x76, 0x33, 0x05, 0xce, 0xc8, 0x52, 0xc9, 0x43, 0xf3, 0x99, 0xcb,
+        0x7e, 0xbe,
+    ],
+    configuration: &RAW_VALUE_PORTABLE_CONFIGURATION,
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };

@@ -2,6 +2,8 @@ use super::*;
 use std::sync::LazyLock;
 
 mod af9;
+mod current;
+mod decoder;
 mod grant4g;
 mod member;
 mod portable;
