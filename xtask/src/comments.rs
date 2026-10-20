@@ -102,6 +102,7 @@ fn source_files(root: &Path) -> Result<Vec<std::path::PathBuf>> {
         &[
             ".git",
             ".jj",
+            ".muse",
             "target",
             "var",
             "vendor",
