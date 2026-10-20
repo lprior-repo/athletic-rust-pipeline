@@ -2376,3 +2376,20 @@ The original comparison workbook is pinned at `/home/lewis/Documents/Athletic-20
 SHA `8f613143f7e8e3fe8d8833314a85536297674b9bc6fb2bf7d253d1cc40bcda21`.
 It contains 142,705 distinct GradeID11 rows before geographic/source reconciliation.
 It remains comparison-only; raw-discovery overlap and qualified matching are unmeasured.
+
+Standalone native verification on clean source
+`5c200e727b82cd8533530e7647726306c182fdf1`, tree
+`aecc93935dd5719a8a1cd7c833396378285d2306`, **PASS** (`bg_356`):
+`census-service --store <nonexistent-verifier-store> verify --workbook
+<retry03-unverified>/bundle/workbook.xlsx` reports
+`frozen workbook readback verified rows=1430116`, then `verify: OK`.
+Actual service exit0; runtime720.591s, CPU718.005s, cgroup peak12.9G,
+swap0B, MemoryMax16GiB. The nonexistent Store path remains absent.
+Immutable binary SHA `b85a818e7deaa0bada76614e8b1731f76067a5c9156a06ed6c6801f98ff13d3c`;
+private `native-verification-5c200e72.json` retains the exact argv and receipt.
+The original XLSX digest and all manifested inputs are unchanged. This qualifies
+standalone full semantic readback, **not atomic publication or national acceptance**.
+Athletes/PRs remain empty and all1,065,450 aliases Unknown. The original-A changed-build
+consumer `b9d0e5d3` also **PASS1/1** on5c200e72 with original pins unchanged.
+The interrupted retry03 render+verification and this standalone verification are
+different workloads; their durations do not establish a speedup ratio.
