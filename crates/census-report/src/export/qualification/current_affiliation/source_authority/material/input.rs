@@ -15,7 +15,7 @@ struct Input<'a> {
     activation: &'a str,
 }
 
-pub(in super::super) fn read(
+fn read_current_build(
     people: &identity::PersonIndex,
     claim: &ReviewedRosterSourceClaimV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -36,7 +36,7 @@ pub(in super::super) fn read(
     assemble(people, input, grant)
 }
 
-pub(in super::super) fn read_historical(
+pub(in super::super) fn read(
     people: &identity::PersonIndex,
     claim: &ReviewedRosterSourceClaimV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -51,7 +51,9 @@ pub(in super::super) fn read_historical(
     let version: Version<'_> = serde_json::from_slice(bytes)
         .map_err(|_| invalid("reviewed roster interpretation version is invalid"))?;
     match version.schema {
-        "roster-retained-capture-interpretation-v1" => return read(people, claim, grant),
+        "roster-retained-capture-interpretation-v1" => {
+            return read_current_build(people, claim, grant)
+        }
         "roster-retained-capture-interpretation-v2"
         | "roster-retained-capture-interpretation-v3" => {}
         _ => return Err(invalid("unsupported reviewed roster interpretation")),

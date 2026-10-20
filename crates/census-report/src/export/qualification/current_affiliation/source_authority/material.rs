@@ -28,7 +28,7 @@ pub(super) struct Member {
 }
 
 mod input;
-pub(super) use input::{read, read_historical};
+pub(super) use input::read;
 
 fn member_record(
     people: &identity::PersonIndex,

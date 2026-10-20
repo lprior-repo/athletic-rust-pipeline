@@ -2696,3 +2696,40 @@ selected50, reviewed withdrawal to51, workbook/normalized readback and independe
 reopen. This remains controlled integration evidence, not genuine national population.
 The next deliverable is genuine accepted athlete/PR workbook rows through the
 existing production path. No duplicate replay API or new migration was landed.
+
+### Reviewed-source operator and retained-result intake — 2026-10-20
+
+Integrated base: `68e9b5b6` (PR111 included). This entry qualifies the operator
+and retained-input repairs, not the genuine populated-workbook milestone.
+
+- Roster preview/apply uses thirteen actual source objects and the original
+  bounded grant. The local roster record ceiling is1MiB, matching its journal
+  value ceiling; generic64KiB records and aggregate startup limits are unchanged.
+- `capture-protocol roster-replay` calls the settled original-operation API,
+  without preparing a replacement approval against the latest authority head.
+- `capture-protocol result-intake` checks retained HTTP provenance and exact
+  original-row locators before opening a Store. Intake records source evidence;
+  it does not establish identity, affiliation or result eligibility.
+- Source-bound identity output explicitly discloses unauthenticated local-operator
+  provenance. The native binding remains authority for source UID/owner; the CLI
+  identity result does not repeat those fields or certify membership.
+- Current affiliation capture and frozen replay share one authenticated assessment
+  path. Existing immutable source interpretations retain raw evidence, dispositions,
+  kernel checks and original policy references; no old executable is invoked.
+
+| Check | Native task | Result |
+|---|---|---|
+| Format | `cb191897` | PASS after canonical `fmt-write` |
+| All-target check | `577dec56` | PASS |
+| Source lint | `56c69a0e` | PASS; configured forced arity advisories remain |
+| Store codec and affiliation regressions | `1613988f` | PASS11/11 |
+| CLI binary owner/provenance/intake/replay cases | `4ebc6bce` | PASS7/7 |
+| Exact original intake CLI replay | `9915c77d` | PASS; original receipt/context, repeated true, appended0 |
+
+Earlier actual source-review replay returned receipt
+`90f3e812f6351e76714e29c24ab87e3c5cf74a685954563d493aa02e8fae0d41`
+after a later valid review moved the source head; a changed digest refused without
+accepted effects. Native artifacts remain under
+`/home/lewis/.cache/athletic-roster-intake-actual-_7w0hu1f/`.
+The genuine athlete/PR publication driver remains separate, unqualified work.
+No populated workbook, full M2 replay, five-state or national completion is claimed.

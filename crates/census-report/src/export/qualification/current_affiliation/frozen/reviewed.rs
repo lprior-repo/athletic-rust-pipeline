@@ -123,9 +123,8 @@ pub(super) fn replay(
             family,
             &mut grant,
             |bound, grant| {
-                let (pinned, _) = super::super::source_authority::assess_historical(
-                    dataset, profile, bound, grant,
-                )?;
+                let (pinned, _) =
+                    super::super::source_authority::assess(dataset, profile, bound, grant)?;
                 Ok(pinned)
             },
         )

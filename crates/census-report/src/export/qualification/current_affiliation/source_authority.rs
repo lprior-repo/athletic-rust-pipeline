@@ -37,20 +37,7 @@ pub(super) fn assess(
     bound: &BoundRosterSourceViewV1<'_>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> ReportResult<(PinnedCurrentAffiliations, SourceAuthorityFamilyInventoryV1)> {
-    let result = assess_bound(dataset, profile, bound, grant, false);
-    if result.is_err() {
-        grant.poison();
-    }
-    result
-}
-
-pub(super) fn assess_historical(
-    dataset: &ExportDataset,
-    profile: &QueryProfileV1,
-    bound: &BoundRosterSourceViewV1<'_>,
-    grant: &mut AttachmentReplayGrantV1,
-) -> ReportResult<(PinnedCurrentAffiliations, SourceAuthorityFamilyInventoryV1)> {
-    let result = assess_bound(dataset, profile, bound, grant, true);
+    let result = assess_bound(dataset, profile, bound, grant);
     if result.is_err() {
         grant.poison();
     }
@@ -62,7 +49,6 @@ fn assess_bound(
     profile: &QueryProfileV1,
     bound: &BoundRosterSourceViewV1<'_>,
     grant: &mut AttachmentReplayGrantV1,
-    historical: bool,
 ) -> ReportResult<(PinnedCurrentAffiliations, SourceAuthorityFamilyInventoryV1)> {
     bound.require_binding(dataset, profile, grant)?;
     let people = identity::physical_people(dataset, bound, grant)?;
@@ -70,13 +56,7 @@ fn assess_bound(
     let materials = bound
         .claims(grant)?
         .iter()
-        .map(|claim| {
-            if historical {
-                material::read_historical(&identities, claim, grant)
-            } else {
-                material::read(&identities, claim, grant)
-            }
-        })
+        .map(|claim| material::read(&identities, claim, grant))
         .collect::<StoreResult<Vec<_>>>()?;
     let mut audit = RetainedAudit::default();
     let physical = physical::read(dataset, bound, &materials, &mut audit, grant)?;

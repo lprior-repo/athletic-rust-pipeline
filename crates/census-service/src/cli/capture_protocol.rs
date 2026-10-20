@@ -6,8 +6,11 @@ use std::path::Path;
 
 use super::Cli;
 
+mod result_intake;
 mod roster_enrollment;
 mod roster_intake;
+mod roster_replay;
+mod roster_review;
 
 #[derive(Debug, Args)]
 pub(super) struct CaptureProtocolArgs {
@@ -35,6 +38,18 @@ enum CaptureProtocolCommand {
         about = "Retain original roster rows as unreviewed facts without accepting identity or affiliation"
     )]
     RosterIntake(roster_intake::RosterIntakeArgs),
+    #[command(
+        about = "Preview source-backed roster approval; supply its SHA256 to accept the exact retained representation"
+    )]
+    RosterReview(roster_review::RosterReviewArgs),
+    #[command(
+        about = "Retain an original result document with exact checked source-row ownership"
+    )]
+    ResultIntake(result_intake::ResultIntakeArgs),
+    #[command(
+        about = "Read the original reviewed roster receipt without re-inspection or new acceptance"
+    )]
+    RosterReplay(roster_replay::RosterReplayArgs),
 }
 
 pub(super) fn run(cli: &Cli, args: &CaptureProtocolArgs) -> Result<()> {
@@ -63,6 +78,15 @@ fn run_to<W: Write>(root: Option<&Path>, args: &CaptureProtocolArgs, output: &mu
         }
         CaptureProtocolCommand::RosterIntake(args) => {
             return roster_intake::run_to(root, args, output);
+        }
+        CaptureProtocolCommand::RosterReview(args) => {
+            return roster_review::run_to(root, args, output);
+        }
+        CaptureProtocolCommand::ResultIntake(args) => {
+            return result_intake::run_to(root, args, output);
+        }
+        CaptureProtocolCommand::RosterReplay(args) => {
+            return roster_replay::run_to(root, args, output);
         }
     };
     writeln!(output)?;

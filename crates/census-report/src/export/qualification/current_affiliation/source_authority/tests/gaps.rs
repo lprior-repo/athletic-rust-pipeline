@@ -66,7 +66,7 @@ fn missing_reviewed_rows_remain_unknown_with_exact_gaps_after_frozen_replay() ->
         &athletes,
         &family_ref,
         &mut replay_grant,
-        |bound, grant| super::super::assess_historical(&dataset, &profile, bound, grant),
+        |bound, grant| super::super::assess(&dataset, &profile, bound, grant),
     )?;
     assert_missing(
         &replayed.into_verified(),
@@ -87,7 +87,7 @@ fn missing_reviewed_rows_remain_unknown_with_exact_gaps_after_frozen_replay() ->
                 .checked_sub(grant.usage().traversal_steps())
                 .ok_or(StoreError::CounterOverflow)?;
             super::super::charge(grant, 0, remaining)?;
-            super::super::assess_historical(&dataset, &profile, bound, grant)
+            super::super::assess(&dataset, &profile, bound, grant)
         },
     )
     .err()

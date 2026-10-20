@@ -57,6 +57,48 @@ rows. Exact replay returns the original receipt and appends nothing.
 This is unreviewed intake, not identity, eligibility or current-school acceptance;
 source acceptance requires its separate reviewed operation.
 
+Retain original result evidence separately from acceptance:
+
+```sh
+census-service --store ROOT capture-protocol result-intake \
+  --capture ORIGINAL_CAPTURE.json --rows ORIGINAL_LOCATORS.json --operation PREFIX
+```
+
+The bounded inputs validate original provenance/row locators and retain the capture.
+Use the returned content-bound operation and receipt for replay/audit. Zero
+canonical appended rows does not mean an empty source journal. This command
+accepts no identity, school membership or result eligibility.
+
+Review the retained source on that same stopped root:
+
+```sh
+census-service --store ROOT capture-protocol roster-review \
+  --packet-ref PACKET_SHA256 --school SCHOOL_ID --program PROGRAM_ID \
+  --operation REVIEW_OPERATION --reviewed-at RFC3339 --rationale RATIONALE
+```
+
+Save the exact approval stdout bytes. Repeat the identical command with
+`--approve-sha256 APPROVAL_SHA256` to apply that preview. Stale or foreign
+approval refuses; distinct school/program owners cannot be combined.
+This accepts scoped source representations, not a verified athlete affiliation
+or eligible mark. Local-operator provenance is explicitly unauthenticated.
+
+Replay a committed review without preparing a new approval, including after
+later valid reviews advance the authority head:
+
+```sh
+census-service --store ROOT capture-protocol roster-replay \
+  --operation REVIEW_OPERATION --approval-sha256 ORIGINAL_APPROVAL_SHA256
+census-service --store ROOT local-identity-adjudication establish-source \
+  --operation IDENTITY_OPERATION --subject RETAINED_SOURCE_SUBJECT_ID
+```
+
+Review replay returns the original receipt without appending acceptance.
+The identity command uses the retained source subject, not a name/cohort lookup;
+it neither merges people nor establishes affiliation, eligibility or publication.
+Reuse its original operation/subject for receipt replay. Neither command certifies
+current eligibility or authenticates a human reviewer.
+
 ```sh
 env -u CI tools/moon-local run pipeline:xtask -- census-status
 env -u CI tools/moon-local run pipeline:xtask -- coverage

@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use census_domain::model::{tag, AthleteCandidateId, IdTag};
 use census_domain::public_identity_history::local_adjudication::RetainedClaimV1;
 use census_domain::public_identity_history::{PublicAthleteId, RegistryHead};
 use census_store::{LocalAdjudicationCommitOutcomeV1, PublicIdentityWriterV1, Store};
@@ -81,6 +82,17 @@ enum LocalCommand {
         #[arg(long, value_name = "SHA256")]
         approval_digest: String,
     },
+    #[command(about = "Establish source-bound identity from candidate with exact source binding")]
+    EstablishSource {
+        #[arg(long, value_name = "OPERATION_ID")]
+        operation: String,
+        #[arg(
+            long = "subject",
+            value_name = "SUBJECT",
+            help = "Retained source athlete subject identifier"
+        )]
+        candidate: String,
+    },
 }
 
 pub(in crate::cli) fn run(cli: &crate::cli::Cli, args: &LocalAdjudicationArgs) -> Result<()> {
@@ -122,6 +134,10 @@ pub(in crate::cli) fn run(cli: &crate::cli::Cli, args: &LocalAdjudicationArgs) -
             operation,
             approval_digest,
         } => receipt(root, operation, approval_digest),
+        LocalCommand::EstablishSource {
+            operation,
+            candidate,
+        } => establish_source(root, operation, candidate),
     }
 }
 
@@ -222,6 +238,17 @@ fn emit_outcome(
         replayed: outcome.replayed(),
     })
 }
+#[derive(Serialize)]
+struct SourceOutcome<'a> {
+    schema: &'static str,
+    operation: &'a str,
+    subject: &'a str,
+    public_id: &'a PublicAthleteId,
+    head: &'a RegistryHead,
+    replayed: bool,
+    actor: &'static str,
+    qualification_scope: &'static str,
+}
 
 pub(super) fn emit(value: &impl Serialize) -> Result<()> {
     let mut output = std::io::stdout().lock();
@@ -233,6 +260,36 @@ pub(super) fn emit(value: &impl Serialize) -> Result<()> {
     output
         .flush()
         .context("flushing local identity adjudication output")
+}
+fn validate_candidate(value: &str) -> Result<AthleteCandidateId> {
+    let candidate: AthleteCandidateId = serde::Deserialize::deserialize(
+        serde::de::value::StrDeserializer::<serde::de::value::Error>::new(value),
+    )
+    .context("parsing the athlete candidate identifier")?;
+    anyhow::ensure!(
+        candidate.validate(tag::Athlete::PREFIX),
+        "source athlete subject identifier differs"
+    );
+    Ok(candidate)
+}
+fn establish_source(root: &Path, operation: &str, candidate: &str) -> Result<()> {
+    let candidate = validate_candidate(candidate)?;
+    let (store, writer) = open(root)?;
+    let head = writer.head(&store)?;
+    let revision = store.snapshot().revision();
+    let outcome = writer
+        .establish_source_bound(&store, operation, &candidate, revision, &head)
+        .context("source-bound identity establishment failed; inspect the store for revision or head movement")?;
+    emit(&SourceOutcome {
+        schema: "local-identity-source",
+        operation,
+        subject: candidate.as_str(),
+        public_id: outcome.public_id(),
+        head: outcome.head(),
+        replayed: outcome.replayed(),
+        actor: "local_operator",
+        qualification_scope: "Unauthenticated local-operator request for deterministic source-bound identity only; no cross-source merge, current-school affiliation, participation eligibility, workbook publication or national acceptance is conferred",
+    })
 }
 
 #[cfg(test)]

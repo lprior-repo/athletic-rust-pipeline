@@ -117,7 +117,7 @@ fn refuse_bound_historical(fixture: &fixture::Fixture, objects: &Path) -> TestRe
         fixture::instant()?,
         &mut grant,
     )?;
-    match crate::export::qualification::current_affiliation::source_authority::assess_historical(
+    match crate::export::qualification::current_affiliation::source_authority::assess(
         &dataset,
         &fixture.profile,
         &bound,
