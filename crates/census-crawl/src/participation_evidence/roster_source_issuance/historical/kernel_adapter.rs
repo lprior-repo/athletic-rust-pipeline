@@ -7,7 +7,9 @@ use crate::participation_evidence::provider_school::{
     PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1, PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 pub(in super::super) mod context;
+mod execution;
 mod grant4g;
+mod member;
 
 #[derive(Clone, Copy)]
 pub(in super::super) enum KernelEpoch {
@@ -182,7 +184,7 @@ const QUALIFIED_ROW_LOCAL_V11: OriginalKernel = OriginalKernel {
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 
-fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 8] {
+fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 11] {
     match epoch {
         KernelEpoch::Full => [
             &FULL,
@@ -193,6 +195,9 @@ fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 8] {
             &QUALIFIED_FULL_V10,
             &grant4g::FULL_NATIVE,
             &grant4g::FULL_PORTABLE,
+            &member::FULL_NATIVE,
+            &member::FULL_RAW_VALUE_NATIVE,
+            &member::FULL_PORTABLE,
         ],
         KernelEpoch::RowLocal => [
             &ROW_LOCAL,
@@ -203,6 +208,9 @@ fn predecessors(epoch: KernelEpoch) -> [&'static OriginalKernel; 8] {
             &QUALIFIED_ROW_LOCAL_V11,
             &grant4g::ROW_LOCAL_NATIVE,
             &grant4g::ROW_LOCAL_PORTABLE,
+            &member::ROW_LOCAL_NATIVE,
+            &member::ROW_LOCAL_RAW_VALUE_NATIVE,
+            &member::ROW_LOCAL_PORTABLE,
         ],
     }
 }
@@ -240,10 +248,7 @@ pub(in super::super) fn bind_historical_v1(
             .into_iter()
             .find(|candidate| candidate.hash == actual)
             .ok_or_else(|| invalid("unsupported historical semantic kernel identity"))?;
-        if configuration != original.configuration
-            && !(configuration == &PORTABLE_EXECUTING_CONFIGURATION
-                && original.configuration == &EXECUTING_CONFIGURATION)
-        {
+        if !execution::compatible(configuration, original.configuration) {
             return Err(invalid(
                 "historical semantic kernel compiler/configuration/dependencies differ",
             ));

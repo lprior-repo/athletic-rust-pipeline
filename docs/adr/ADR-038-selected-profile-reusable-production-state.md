@@ -132,12 +132,29 @@ the alternate lane and unknown contexts remain refused. Qualification requires
 the optimized CLI to verify the unchanged original-A corpus, not merely a debug
 consumer or constant comparison. The ledger records whether that execution passed.
 
-The adapter amendment changes the executing source closure to
-`5343f50812694f9a616e701f8492ce822af4ea7337c6ff04e90bd063110b80e9`;
-both semantic inventory owners pin it exactly. Its new registry module is included
-in that97-file closure. Four original V12/V13 native/portable documents from source
-closure`68194f31…74490` remain exact historical identities with their original V2
-owner policy. Unknown documents and reverse portable→native execution still refuse.
+The 2026-10-19 adapter amendment bound source closure
+`5343f50812694f9a616e701f8492ce822af4ea7337c6ff04e90bd063110b80e9`.
+Its registry belongs to that97-file closure. Four original V12/V13 native/portable
+documents from source closure`68194f31…74490` remain exact historical identities
+with their original V2 owner policy.
+
+**2026-10-20 member-witness context:** Domain explicitly owns the
+`serde_json/raw_value` feature required by its decoder. Crawl already enabled it;
+the locked dependency versions do not change. The Domain manifest's authenticated
+bytes do change. Only native executing context
+`a01453e2391425f2cb50260028d1f5d75ad23e5adef7fba807ec95db38d3787d`
+may additionally replay originals requiring native`9e7f86bb…db41210`.
+This does not permit reverse, alternate, unknown or raw-value-native→portable
+transitions. Six authentic source`5343f508…b80e9` V12/V13 documents—native,
+raw-value-native and portable—retain their whole-document identities and V2 owner.
+They are historical fixtures, not regenerated current documents.
+
+The executing99-file closure includes the context rule and predecessor registry.
+Both semantic owners pin its actual source digest:
+`6a0c6ee7bdc01afebcf07c2d67a335d588a2b589e1461aa72a835bd49b75444f`.
+Epoch schemas12/13 and participationV4 do not change. Qualification still requires
+the unchanged original-A consumer and frozen-generation readback; no earlier pass
+qualifies this amended source automatically.
 
 **Consequences:** preserve original artifacts and producer pins; do not relabel
 them, reactivate old issuance claims or execute an old runtime. Qualification is

@@ -3,7 +3,9 @@ use std::sync::LazyLock;
 
 mod af9;
 mod grant4g;
+mod member;
 mod portable;
+mod raw_value;
 
 type TestResult<E = Box<dyn std::error::Error>> = Result<(), E>;
 
@@ -54,7 +56,17 @@ fn authentic_predecessors_bind_original_owner_policy_only_in_reviewed_execution_
         let mut grant = AttachmentReplayGrantV1::new();
         let bound =
             bind_historical_v1(epoch, retained, current, digest, &configuration, &mut grant);
-        if &configuration == allowed_context {
+        let reviewed_native = [
+            EXECUTING_CONFIGURATION,
+            PORTABLE_EXECUTING_CONFIGURATION,
+            execution::RAW_VALUE_NATIVE_CONFIGURATION,
+        ];
+        let accepted = if allowed_context == &EXECUTING_CONFIGURATION {
+            reviewed_native.contains(&configuration)
+        } else {
+            &configuration == allowed_context
+        };
+        if accepted {
             let bound = bound?;
             bound.require_reference(
                 &format!("{:x}", Sha256::digest(retained)),

@@ -2420,9 +2420,10 @@ differs. The compared athletes CSV is byte-identical. This closes the measured
 paging/readback defects (`jsyw`, `tzu2`), not R1–R15 or full R14 acceptance:
 the published diagnostic still has0 accepted athletes/PRs. Live state is untouched.
 
-### Exact roster-member withdrawal: working-tree checkpoint
+### Exact roster-member withdrawal: predecessor checkpoint8793c104
 
-Base `628a5a28`; source is uncommitted, not final-build acceptance. Public
+The following working-tree observations preceded commit`8793c104` on base`628a5a28`;
+they are not final-build acceptance. Public
 prepare/approve/apply preserves original claims and physical rows, requires the
 original exact capture day, and retains `reviewed_roster_member_withdrawn`.
 Positive and negative receipt replay have no reactivation effects.
@@ -2462,3 +2463,33 @@ over60 logical lines and no unresolved sites; parameter arity remains advisory,
 not a claim of zero warnings. The prior `47ad7187` size failure was corrected
 by moving family encoding to its existing owner and extracting the pure
 withdrawal-gap predicate, without a wire or policy change.
+
+### Owned decoder feature: historical-context amendment
+
+Clean`8793c1046aa7effeefbe8ffe3e6f958ef969882c`,
+tree`92c51ad5d52cd36244d595de47370685564a30e2`, failed the unchanged original-A
+consumer (`eba5214a`): compiler/configuration/dependencies differ; other59
+source-authority cases passed. This supersedes the earlier missing-environment
+diagnostic, not the historical artifacts.
+
+The isolated difference is Domain's required owned`serde_json/raw_value`
+declaration: manifest538→578bytes, SHA`8af8728a…754fe7`→`963b13a8…da883`.
+The native context becomes`a01453e2…d3787d`; Crawl already enabled the feature.
+Actual generated documents retain lockSHA`5e5018c6…8ac54`/97,557bytes.
+Only the exact forward native transition to required`9e7f86bb…db41210` is added.
+Reverse, alternate, unknown, wrong-epoch and tampered originals still refuse.
+
+Six authentic pre-amendment V12/V13 descriptors were copied without modification:
+native and raw-value-native from retained build outputs; portable from verified
+5c200e72 binarySHA`b85a818e…13d3c`. Their source`5343f508…b80e9` is historical;
+the new executing99-file closure, including context and registry modules, is
+`6a0c6ee7bdc01afebcf07c2d67a335d588a2b589e1461aa72a835bd49b75444f`.
+Actual new native full/row document hashes are`095c28bd…d71e4`/`91b84bc2…4f47c`,
+22,129bytes each; canonical source entries independently match all99 file bytes.
+
+Candidate format`00bae9d7`, all-target check`7428d522`, source lint`df699a72`
+and historical replay/refusal matrix`7fad4383` **PASS21/21**.
+The first check`eabcc182` failed missing imports in the new module; imports were
+repaired before these passes and the source fingerprint recomputed.
+Forced arity advisories remain. Clean original-A, final-source publication and
+structural gates are still pending; this is not national/spec closure.
