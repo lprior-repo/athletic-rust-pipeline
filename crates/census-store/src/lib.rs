@@ -76,6 +76,7 @@ mod meta;
 mod native_effect_checkpoint;
 #[cfg(feature = "native-fault-injection")]
 mod native_worker_boundary;
+mod nces_address;
 mod paths;
 mod profiles;
 pub mod read;
