@@ -9,23 +9,22 @@ use crate::restate_services::wire::{
     TeamsSourceRequest,
 };
 
+mod admission;
 mod attempt;
 mod completion;
 mod history;
 mod registration;
 mod settlement;
+#[cfg(test)]
+mod stable_slot_tests;
+pub(super) use admission::{baseline, begin_at, AdmissionReplay};
 pub(super) use attempt::Attempt;
 pub(super) use completion::finish;
 pub(super) use registration::register;
-use settlement::{settle, validated_settled};
+use settlement::validated_settled;
 
 pub(super) const PHASE: &str = "teams_source_attempts_v1";
 pub(super) const MAX_ATTEMPTS: u8 = 3;
-
-pub(super) enum Admission {
-    Settled(TeamsSourceOutcome),
-    Reserved { attempt: u8, observed_on: String },
-}
 
 pub(super) enum Completion {
     Settled(TeamsSourceOutcome),
@@ -68,44 +67,6 @@ struct History {
     transient: Option<String>,
     settled: Option<TeamsSourceOutcome>,
     progress: Vec<TeamsAttemptProgress>,
-}
-
-pub(super) fn begin(
-    store: &Store,
-    key: &str,
-    request: &TeamsSourceRequest,
-    registered: &Identity,
-) -> Result<Admission, JobError> {
-    let snapshot = store.snapshot();
-    let (identity, initial) = identity(&snapshot, key, request)?;
-    if initial {
-        return Err(terminal(
-            "teams source admission has no registered identity",
-        ));
-    }
-    if identity.request_digest != registered.request_digest
-        || identity.observed_on != registered.observed_on
-    {
-        return Err(terminal(
-            "teams source registration contradicts persisted identity",
-        ));
-    }
-    let history = history::read(&snapshot, key, &identity)?;
-    if let Some(outcome) = validated_settled(&snapshot, key, &history, true)? {
-        return settle(store, key, outcome).map(Admission::Settled);
-    }
-    let attempt = next_attempt(history.attempt)?;
-    let reservation = Reservation {
-        attempt,
-        observed_on: identity.observed_on.clone(),
-    };
-    let mut batch = store.write_batch();
-    batch.journal_done(PHASE, &slot_key(key, attempt, "reserved"), &reservation)?;
-    batch.commit()?;
-    Ok(Admission::Reserved {
-        attempt,
-        observed_on: identity.observed_on,
-    })
 }
 
 pub(super) fn status(

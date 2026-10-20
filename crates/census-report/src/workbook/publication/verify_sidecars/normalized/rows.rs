@@ -95,7 +95,7 @@ pub(super) fn read_table(
     mut visit: impl FnMut(&Row<'_>) -> ReportResult<()>,
 ) -> ReportResult<u64> {
     let limits = read::Limits {
-        bytes: 268_435_456,
+        bytes: 512 * 1024 * 1024,
         records: decoder::add(expected, 2)?,
     };
     let total = stream::csv(

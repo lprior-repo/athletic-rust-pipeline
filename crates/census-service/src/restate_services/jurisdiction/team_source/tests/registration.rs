@@ -116,8 +116,13 @@ fn registration_replay_preserves_three_transient_reservations_across_reopen() ->
     let registered = ledger::register(&store, &operation, &request)?;
     let before = journal(&store)?;
 
-    let ledger::Admission::Settled(outcome) =
-        ledger::begin(&store, &operation, &request, &registered)?
+    let ledger::AdmissionReplay::Settled(outcome) = ledger::begin_at(
+        &store,
+        &operation,
+        &request,
+        &registered,
+        ledger::baseline(&store, &operation)?,
+    )?
     else {
         return Err("exhausted source was physically runnable".into());
     };
@@ -151,8 +156,13 @@ fn registration_replay_preserves_unknown_reservations_without_claiming_exhaustio
 
     let store = Store::open(root.path())?;
     let registered = ledger::register(&store, &operation, &request)?;
-    let ledger::Admission::Settled(outcome) =
-        ledger::begin(&store, &operation, &request, &registered)?
+    let ledger::AdmissionReplay::Settled(outcome) = ledger::begin_at(
+        &store,
+        &operation,
+        &request,
+        &registered,
+        ledger::baseline(&store, &operation)?,
+    )?
     else {
         return Err("unknown acquisition became runnable".into());
     };

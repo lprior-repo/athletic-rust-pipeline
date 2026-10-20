@@ -34,12 +34,13 @@ impl TeamsSource {
                     return Ok(Json(outcome));
                 }
             }
+            let baseline = self.journaled_baseline(&ctx).await?;
             let operation = ctx.key().to_owned();
             let request = Arc::clone(&request);
             let registered = Arc::clone(&registered);
             let Json(result) = ctx
                 .run(move || async move {
-                    self.execute_attempt(operation, request, registered)
+                    self.execute_attempt(operation, request, registered, baseline)
                         .await
                         .map(Json)
                 })
@@ -62,20 +63,27 @@ impl TeamsSource {
         operation: String,
         request: Arc<TeamsSourceRequest>,
         registered: Arc<ledger::Identity>,
+        baseline: u8,
     ) -> Result<AttemptResult, HandlerError> {
         let admission = Arc::new(self.admit(&operation).await?);
         let reserved = self
-            .begin_attempt(
+            .begin_at_attempt(
                 operation.clone(),
                 Arc::clone(&request),
                 Arc::clone(&registered),
                 Arc::clone(&admission),
+                baseline,
             )
             .await
             .map_err(job_error)?;
         let (attempt, observed_on) = match reserved {
-            ledger::Admission::Settled(outcome) => return Ok(AttemptResult::Settled(outcome)),
-            ledger::Admission::Reserved {
+            ledger::AdmissionReplay::Settled(outcome) => {
+                return Ok(AttemptResult::Settled(outcome));
+            }
+            ledger::AdmissionReplay::ReplayRetry { message } => {
+                return Ok(AttemptResult::Retry { message });
+            }
+            ledger::AdmissionReplay::Reserved {
                 attempt,
                 observed_on,
             } => (attempt, observed_on),
@@ -89,6 +97,18 @@ impl TeamsSource {
             &registered,
         )
         .await?;
+        self.acquire_and_finish(operation, attempt, observed_on, admission, request)
+            .await
+    }
+
+    async fn acquire_and_finish(
+        &self,
+        operation: String,
+        attempt: u8,
+        observed_on: String,
+        admission: Arc<super::admission::WorkAdmission>,
+        request: Arc<TeamsSourceRequest>,
+    ) -> Result<AttemptResult, HandlerError> {
         let (result, conditions) = self
             .acquire(&request, observed_on)
             .await
@@ -104,6 +124,19 @@ impl TeamsSource {
             }
             ledger::Completion::Retry(error) => Err(job_error(error)),
         }
+    }
+
+    async fn journaled_baseline(&self, ctx: &ObjectContext<'_>) -> Result<u8, HandlerError> {
+        let operation = ctx.key().to_owned();
+        let Json(baseline) = ctx
+            .run(move || async move {
+                self.ledger_baseline(operation)
+                    .await
+                    .map(Json)
+                    .map_err(job_error)
+            })
+            .await?;
+        Ok(baseline)
     }
 
     async fn journaled_status(

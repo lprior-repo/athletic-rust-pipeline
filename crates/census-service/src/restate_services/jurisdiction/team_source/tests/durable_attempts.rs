@@ -84,8 +84,14 @@ fn attempt_ledger_bridge_counts_settled_sources_without_reopening_their_attempts
     check!(eq; state.unknown, 0);
     let registered = ledger::register(&store, &key(&request), &request)?;
     check!(matches!(
-        ledger::begin(&store, &key(&request), &request, &registered)?,
-        ledger::Admission::Settled(_)
+        ledger::begin_at(
+            &store,
+            &key(&request),
+            &request,
+            &registered,
+            ledger::baseline(&store, &key(&request))?
+        )?,
+        ledger::AdmissionReplay::Settled(_)
     ));
     Ok(())
 }

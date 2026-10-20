@@ -85,17 +85,35 @@ impl TeamsSource {
     }
 
     #[tracing::instrument(skip_all)]
-    pub(super) async fn begin_attempt(
+    pub(super) async fn ledger_baseline(&self, operation: String) -> Result<u8, JobError> {
+        let permit = self
+            .jobs
+            .permit_control()
+            .await
+            .map_err(|error| JobError::Terminal {
+                message: error.to_string(),
+            })?;
+        let store = Arc::clone(&self.owner.store);
+        blocking(Arc::clone(self.jobs.region()), move || {
+            let _permit = permit;
+            ledger::baseline(&store, &operation)
+        })
+        .await
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub(super) async fn begin_at_attempt(
         &self,
         operation: String,
         request: Arc<TeamsSourceRequest>,
         registered: Arc<ledger::Identity>,
         admission: Arc<WorkAdmission>,
-    ) -> Result<ledger::Admission, JobError> {
+        baseline: u8,
+    ) -> Result<ledger::AdmissionReplay, JobError> {
         let store = Arc::clone(&self.owner.store);
         blocking(Arc::clone(self.jobs.region()), move || {
             let _admission = admission;
-            ledger::begin(&store, &operation, &request, &registered)
+            ledger::begin_at(&store, &operation, &request, &registered, baseline)
         })
         .await
     }

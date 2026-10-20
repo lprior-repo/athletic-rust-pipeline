@@ -258,7 +258,7 @@ fn given_oversized_family_when_readback_starts_then_declared_byte_budget_refuses
     std::fs::OpenOptions::new()
         .write(true)
         .open(directory.path().join("athletes.csv"))?
-        .set_len(268_435_457)?;
+        .set_len(512 * 1024 * 1024 + 1)?;
     rejected(
         super::verify(directory.path(), &given.inputs()?, 3),
         "athletes.csv",

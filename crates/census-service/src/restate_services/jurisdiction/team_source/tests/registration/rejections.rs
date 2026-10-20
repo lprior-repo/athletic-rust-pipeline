@@ -96,7 +96,7 @@ fn admission_refuses_cached_registration_when_fjall_identity_is_missing() -> Tes
     let missing_store = Store::open(missing_root.path())?;
     let before = journal(&missing_store)?;
 
-    let result = ledger::begin(&missing_store, &operation, &request, &registered);
+    let result = ledger::begin_at(&missing_store, &operation, &request, &registered, 0);
     check!(matches!(result, Err(JobError::Terminal { .. })));
     check!(eq; journal(&missing_store)?, before);
 

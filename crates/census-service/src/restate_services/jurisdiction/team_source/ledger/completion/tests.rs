@@ -20,9 +20,13 @@ fn refused(result: Attempt) -> TestResult<JobError> {
     let request = crate::restate_services::jurisdiction::team_source::tests::request()?;
     let key = crate::restate_services::jurisdiction::team_source::key(&request);
     let identity = super::super::register(&store, &key, &request)?;
-    let attempt = match super::super::begin(&store, &key, &request, &identity)? {
-        super::super::Admission::Reserved { attempt, .. } => attempt,
-        super::super::Admission::Settled(_) => return Err("unexpected settlement".into()),
+    let baseline = super::super::baseline(&store, &key)?;
+    let attempt = match super::super::begin_at(&store, &key, &request, &identity, baseline)? {
+        super::super::AdmissionReplay::Reserved { attempt, .. } => attempt,
+        super::super::AdmissionReplay::Settled(_) => return Err("unexpected settlement".into()),
+        super::super::AdmissionReplay::ReplayRetry { message } => {
+            return Err(format!("unexpected acquisition uncertainty: {message}").into());
+        }
     };
     REFUSE.with(|refuse| refuse.set(true));
     let error = finish(&store, &key, attempt, result, &[])

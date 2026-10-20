@@ -40,13 +40,20 @@ pub(super) fn request() -> Result<TeamsSourceRequest, Box<dyn Error>> {
 }
 
 fn reserve(store: &Store, request: &TeamsSourceRequest) -> Result<(u8, String), Box<dyn Error>> {
-    let registered = ledger::register(store, &key(request), request)?;
-    match ledger::begin(store, &key(request), request, &registered)? {
-        ledger::Admission::Reserved {
+    let operation = key(request);
+    let registered = ledger::register(store, &operation, request)?;
+    let baseline = ledger::baseline(store, &operation)?;
+    match ledger::begin_at(store, &operation, request, &registered, baseline)? {
+        ledger::AdmissionReplay::Reserved {
             attempt,
             observed_on,
         } => Ok((attempt, observed_on)),
-        ledger::Admission::Settled(_) => Err("source unexpectedly settled before admission".into()),
+        ledger::AdmissionReplay::Settled(_) => {
+            Err("source unexpectedly settled before admission".into())
+        }
+        ledger::AdmissionReplay::ReplayRetry { message } => {
+            Err(format!("source unexpectedly refused acquisition: {message}").into())
+        }
     }
 }
 
@@ -82,13 +89,14 @@ fn transient_admissions_survive_reopen_and_exhaust_without_attempt_four() -> Tes
     }
     let store = Store::open(root.path())?;
     check!(matches!(
-        ledger::begin(
+        ledger::begin_at(
             &store,
             &key(&request),
             &request,
-            &ledger::register(&store, &key(&request), &request)?
+            &ledger::register(&store, &key(&request), &request)?,
+            ledger::baseline(&store, &key(&request))?,
         )?,
-        ledger::Admission::Settled(TeamsSourceOutcome::Exhausted { attempts: 3, .. })
+        ledger::AdmissionReplay::Settled(TeamsSourceOutcome::Exhausted { attempts: 3, .. })
     ));
     check!(!store.journal_contains(
         ledger::PHASE,
@@ -118,12 +126,14 @@ fn acknowledged_completion_replays_original_progress_and_date_after_midnight() -
     request.observed_on = "2026-10-03".to_string();
     request.jurisdiction.source_parallelism = 8;
     let store = Store::open(root.path())?;
-    let ledger::Admission::Settled(TeamsSourceOutcome::Completed { outcome, .. }) = ledger::begin(
-        &store,
-        &key(&request),
-        &request,
-        &ledger::register(&store, &key(&request), &request)?,
-    )?
+    let ledger::AdmissionReplay::Settled(TeamsSourceOutcome::Completed { outcome, .. }) =
+        ledger::begin_at(
+            &store,
+            &key(&request),
+            &request,
+            &ledger::register(&store, &key(&request), &request)?,
+            ledger::baseline(&store, &key(&request))?,
+        )?
     else {
         return Err("completed source became physically runnable".into());
     };
@@ -145,13 +155,14 @@ fn reserved_but_unacknowledged_attempts_are_consumed_and_never_claim_exhaustion(
     }
     let store = Store::open(root.path())?;
     check!(matches!(
-        ledger::begin(
+        ledger::begin_at(
             &store,
             &key(&request),
             &request,
-            &ledger::register(&store, &key(&request), &request)?
+            &ledger::register(&store, &key(&request), &request)?,
+            ledger::baseline(&store, &key(&request))?,
         )?,
-        ledger::Admission::Settled(TeamsSourceOutcome::Interrupted {
+        ledger::AdmissionReplay::Settled(TeamsSourceOutcome::Interrupted {
             attempts: Some(3),
             ..
         })
@@ -181,12 +192,14 @@ fn permanent_failure_stops_first_attempt_and_retains_its_reason() -> TestResult 
     )?;
     drop(store);
     let store = Store::open(root.path())?;
-    let ledger::Admission::Settled(TeamsSourceOutcome::Terminal { message, .. }) = ledger::begin(
-        &store,
-        &key(&request),
-        &request,
-        &ledger::register(&store, &key(&request), &request)?,
-    )?
+    let ledger::AdmissionReplay::Settled(TeamsSourceOutcome::Terminal { message, .. }) =
+        ledger::begin_at(
+            &store,
+            &key(&request),
+            &request,
+            &ledger::register(&store, &key(&request), &request)?,
+            ledger::baseline(&store, &key(&request))?,
+        )?
     else {
         return Err("permanent failure became physically runnable".into());
     };
@@ -206,9 +219,10 @@ fn changed_source_identity_cannot_reuse_existing_attempt_authority() -> TestResu
     let store = Store::open(root.path())?;
     reserve(&store, &request)?;
     let registered = ledger::register(&store, &operation, &request)?;
+    let baseline = ledger::baseline(&store, &operation)?;
     request.source = "coach_directories".to_string();
     check!(matches!(
-        ledger::begin(&store, &operation, &request, &registered),
+        ledger::begin_at(&store, &operation, &request, &registered, baseline),
         Err(JobError::Terminal { .. })
     ));
     Ok(())
@@ -234,13 +248,16 @@ fn mixed_unknown_and_transient_attempts_never_claim_three_acknowledged_failures(
             &[],
         )?;
     }
-    let ledger::Admission::Settled(TeamsSourceOutcome::Interrupted {
-        attempts, progress, ..
-    }) = ledger::begin(
+    let ledger::AdmissionReplay::Settled(TeamsSourceOutcome::Interrupted {
+        attempts,
+        progress,
+        ..
+    }) = ledger::begin_at(
         &store,
         &key(&request),
         &request,
         &ledger::register(&store, &key(&request), &request)?,
+        ledger::baseline(&store, &key(&request))?,
     )?
     else {
         return Err("unknown physical outcome was misrepresented as exhausted failures".into());

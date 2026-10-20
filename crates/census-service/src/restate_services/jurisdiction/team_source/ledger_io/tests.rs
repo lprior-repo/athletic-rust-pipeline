@@ -38,15 +38,17 @@ async fn teams_source_ledger_work_runs_on_the_blocking_region() -> TestResult {
             .map_err(crate::restate_services::tests::sdk_error)?,
     );
     let registered = Arc::new(ledger::register(&store, &operation, &request)?);
-    let ledger::Admission::Reserved {
+    let baseline = ledger::baseline(&store, &operation)?;
+    let ledger::AdmissionReplay::Reserved {
         attempt,
         observed_on,
     } = source
-        .begin_attempt(
+        .begin_at_attempt(
             operation.clone(),
             request,
             registered,
             Arc::clone(&admitted),
+            baseline,
         )
         .await?
     else {
@@ -102,6 +104,7 @@ async fn offloaded_ledger_errors_retain_the_synchronous_error_and_release_admiss
     let request = Arc::new(request()?);
     let operation = key(&request);
     let registered = Arc::new(ledger::register(&store, &operation, &request)?);
+    let baseline = ledger::baseline(&store, &operation)?;
     store.journal_done(
         ledger::PHASE,
         &format!("{operation}/identity"),
@@ -125,11 +128,12 @@ async fn offloaded_ledger_errors_retain_the_synchronous_error_and_release_admiss
             .map_err(crate::restate_services::tests::sdk_error)?,
     );
     let result = source
-        .begin_attempt(
+        .begin_at_attempt(
             operation.clone(),
             request,
             registered,
             Arc::clone(&admitted),
+            baseline,
         )
         .await;
     check!(matches!(result, Err(JobError::Terminal { message }) if message == expected));
@@ -173,8 +177,9 @@ async fn inspection_reads_run_on_the_control_class_while_the_work_plane_is_satur
     let request = Arc::new(request()?);
     let operation = key(&request);
     let registered = Arc::new(ledger::register(&store, &operation, &request)?);
-    let ledger::Admission::Reserved { attempt, .. } = source
-        .begin_attempt(
+    let baseline = ledger::baseline(&store, &operation)?;
+    let ledger::AdmissionReplay::Reserved { attempt, .. } = source
+        .begin_at_attempt(
             operation.clone(),
             Arc::clone(&request),
             registered,
@@ -184,6 +189,7 @@ async fn inspection_reads_run_on_the_control_class_while_the_work_plane_is_satur
                     .await
                     .map_err(crate::restate_services::tests::sdk_error)?,
             ),
+            baseline,
         )
         .await?
     else {

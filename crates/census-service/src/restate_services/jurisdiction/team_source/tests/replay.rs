@@ -85,8 +85,13 @@ async fn replay(store: &Store, url: &str, handler: &str) -> TestResult {
     record_registration(&client, url, &operation, &mut journal).await?;
     check!(eq; ledger::status(store, &operation, Some(&request))?.map(|_| "settled"), None);
     let registered = ledger::register(store, &operation, &request)?;
-    let ledger::Admission::Reserved { attempt, .. } =
-        ledger::begin(store, &operation, &request, &registered)?
+    let ledger::AdmissionReplay::Reserved { attempt, .. } = ledger::begin_at(
+        store,
+        &operation,
+        &request,
+        &registered,
+        ledger::baseline(store, &operation)?,
+    )?
     else {
         return Err("fixture settled before its physical attempt".into());
     };
