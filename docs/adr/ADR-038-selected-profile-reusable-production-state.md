@@ -362,10 +362,12 @@ bound; calendar enrollment and record-bundle limits are unchanged.
 Count encoded bytes before fallible reservation; preserve original grant ownership,
 poisoning and every charge. Base64 expansion does not enlarge decoded-object limits.
 
-**2026-10-19 amendments:** the aggregate encoded grant is 4 GiB (4,294,967,296
-bytes), and aggregate traversal is bounded at 16,777,216 steps. Retained national
-diagnostics required 1,719,214,944 encoded bytes and then at least 1,065,627 steps,
-exceeding the original limits. Original-owner, poison and pre-allocation admission
+**2026-10-19/20 amendments:** the aggregate encoded grant is 16 GiB
+(17,179,869,184 cumulative charged bytes); traversal is bounded at16,777,216 steps.
+Retained national diagnostics first required1,719,214,944 encoded bytes, then
+5,232,582,526 cumulative charged bytes and at least1,065,627 steps. This byte
+counter is not a heap allowance; the diagnostic process still has a separate
+16-GiB/zero-swap scope. Original-owner, poison and pre-allocation admission
 rules remain mandatory; per-object limits are unchanged. These are authorized,
 bounded capacity changes, not RSS or national acceptance. The verification ledger
 records each actual refusal and subsequent execution.

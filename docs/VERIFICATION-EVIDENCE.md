@@ -2026,3 +2026,17 @@ outputs. Generation06 is now exercising the same restored census with this CLI,
 profile6905…,4-GiB/16,777,216-step admission and16-GiB/zero-swap process scope.
 Its workbook/result is not yet verified. Original live deployment remains unchanged;
 this is not full release-gate or national-completion evidence.
+
+Generation06 then FAILED after clearing the earlier traversal admission:
+5,232,582,526 cumulative encoded bytes required against4,294,967,296 available;
+158.64s, peak8,034,404KiB RSS, zero swap. No workbook was produced. The authorized
+next amendment raises only that cumulative counter to16GiB; per-object limits and
+the separate16-GiB/zero-swap process scope are unchanged. It is not a RAM allowance.
+Format`5a0a3bee`, check`75cd8094`, lint`2382eac5`, Domain110/110`68e1d88e`,
+Store218/218`e81d1d9d`, and actual withdrawal workbook1/1`15d8d6a5`passed.
+No assertion or proof-owner fence was relaxed; final native national retry is pending.
+
+A newer original-ingress status read observes90 canonical meets,2,434events and
+3,568performances, superseding the earlier live zero observation. The cold diagnostic
+snapshot still predates those rows. Neither counter set establishes eligible
+population or completed coverage; the two generations must not be conflated.
