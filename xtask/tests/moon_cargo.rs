@@ -32,6 +32,7 @@ fn cargo_case() -> Result<(tempfile::TempDir, Command), Box<dyn std::error::Erro
         .env("MOON_RUST_CARGO", &cargo)
         .env_remove("CARGO_BUILD_JOBS")
         .env_remove("MOON_RUST_BUILD_JOBS")
+        .env_remove("MOON_RUST_TEST_THREADS")
         .env_remove("MOON_RUST_SCOPED_TEST_FEATURES")
         .env_remove("MOON_TARGET")
         .env_remove("BASH_ENV")
@@ -150,18 +151,50 @@ const SCOPED_PREFIX: [&str; 9] = [
     "--test-threads=16",
 ];
 
+const WORKSPACE_PREFIX: [&str; 10] = [
+    "nextest",
+    "run",
+    "--config",
+    ".cargo/fast-iteration.toml",
+    "--workspace",
+    "--all-features",
+    "--locked",
+    "--offline",
+    "--no-fail-fast",
+    "--test-threads=16",
+];
+
+const REPORT_PREFIX: [&str; 12] = [
+    "nextest",
+    "run",
+    "--config",
+    ".cargo/fast-iteration.toml",
+    "-p",
+    "census-report",
+    "--lib",
+    "--all-features",
+    "--locked",
+    "--offline",
+    "--no-fail-fast",
+    "--test-threads=16",
+];
+
+const TEST_TASKS: [(&str, &[&str]); 3] = [
+    ("pipeline:tests-scoped", &SCOPED_PREFIX),
+    ("pipeline:tests", &WORKSPACE_PREFIX),
+    ("pipeline:report-test", &REPORT_PREFIX),
+];
+
 #[test]
-fn scoped_feature_prefix_matches_the_single_canonical_task() -> TestResult {
+fn test_override_prefixes_match_the_canonical_tasks() -> TestResult {
     let source = include_str!("../../moon.yml");
-    let task = source
-        .split_once("  tests-scoped:\n")
-        .ok_or("task absent")?
-        .1;
-    let expected = format!(
-        "    command: 'tools/moon-cargo {}'",
-        SCOPED_PREFIX.join(" ")
-    );
-    check!(eq; task.lines().next(), Some(expected.as_str()));
+    for (target, prefix) in TEST_TASKS {
+        let name = target.strip_prefix("pipeline:").ok_or("project absent")?;
+        let marker = format!("  {name}:\n");
+        let task = source.split_once(marker.as_str()).ok_or("task absent")?.1;
+        let expected = format!("    command: 'tools/moon-cargo {}'", prefix.join(" "));
+        check!(eq; task.lines().next(), Some(expected.as_str()));
+    }
     Ok(())
 }
 
@@ -316,6 +349,235 @@ fn default_mode_keeps_selected_cargo_and_build_job_guards() -> TestResult {
         command
             .env("MOON_TARGET", "pipeline:tests-scoped")
             .env("MOON_RUST_SCOPED_TEST_FEATURES", "default");
+        if missing_cargo {
+            command.env_remove("MOON_RUST_CARGO");
+        } else {
+            command.env("MOON_RUST_BUILD_JOBS", "0");
+        }
+        let output = command.args(SCOPED_PREFIX).output()?;
+        check!(!output.status.success());
+        check!(output.stdout.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
+fn unset_test_threads_preserves_each_canonical_task() -> TestResult {
+    for (target, prefix) in TEST_TASKS {
+        let (_root, mut command) = cargo_case()?;
+        let output = command.env("MOON_TARGET", target).args(prefix).output()?;
+        check!(eq; output.status.code(), Some(37));
+        check!(eq; String::from_utf8(output.stdout)?, format!("<unset>\0<unset>\0{}\0", prefix.join("\0")));
+        check!(output.stderr.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
+fn test_thread_override_replaces_only_the_canonical_thread_argument() -> TestResult {
+    for (target, prefix) in TEST_TASKS {
+        for threads in 1..=16 {
+            let (_root, mut command) = cargo_case()?;
+            let arguments = prefix
+                .iter()
+                .copied()
+                .chain([
+                    "--build-jobs=7",
+                    "--features=loom",
+                    "-E",
+                    "test(a) | test(b)",
+                    "-Etest(project)",
+                    "--no-tests",
+                    "fail",
+                    "",
+                ])
+                .collect::<Vec<_>>();
+            let output = command
+                .env("MOON_TARGET", target)
+                .env("MOON_RUST_TEST_THREADS", threads.to_string())
+                .env("CARGO_BUILD_JOBS", "16")
+                .env("MOON_RUST_BUILD_JOBS", "1")
+                .args(&arguments)
+                .output()?;
+            let replacement = format!("--test-threads={threads}");
+            let expected = arguments
+                .iter()
+                .map(|argument| match *argument {
+                    "--test-threads=16" => replacement.as_str(),
+                    value => value,
+                })
+                .collect::<Vec<_>>();
+            check!(eq; output.status.code(), Some(37), "{target} {threads}");
+            check!(eq; String::from_utf8(output.stdout)?, format!("{}\0{}\0{}\0", 1, 1, expected.join("\0")));
+            check!(output.stderr.is_empty());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn test_thread_override_composes_with_scoped_feature_modes() -> TestResult {
+    for mode in ["all", "default"] {
+        for threads in ["1", "16"] {
+            let (_root, mut command) = cargo_case()?;
+            let arguments = SCOPED_PREFIX
+                .into_iter()
+                .chain(["-p", "census-store", "--lib", "--no-tests", "fail"])
+                .collect::<Vec<_>>();
+            let output = command
+                .env("MOON_TARGET", "pipeline:tests-scoped")
+                .env("MOON_RUST_TEST_THREADS", threads)
+                .env("MOON_RUST_SCOPED_TEST_FEATURES", mode)
+                .args(&arguments)
+                .output()?;
+            let replacement = format!("--test-threads={threads}");
+            let expected = arguments
+                .iter()
+                .filter_map(|argument| match *argument {
+                    "--all-features" if mode == "default" => None,
+                    "--test-threads=16" => Some(replacement.as_str()),
+                    value => Some(value),
+                })
+                .collect::<Vec<_>>();
+            check!(eq; output.status.code(), Some(37));
+            check!(eq; String::from_utf8(output.stdout)?, format!("<unset>\0<unset>\0{}\0", expected.join("\0")));
+            check!(output.stderr.is_empty());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn invalid_test_thread_override_refuses_before_cargo() -> TestResult {
+    for threads in [
+        "",
+        "0",
+        "00",
+        "01",
+        "17",
+        "100000000000000000000000000000000000000",
+        "-1",
+        "+1",
+        "1.5",
+        "1e1",
+        " 1",
+        "1 ",
+        "1\n",
+        "1x",
+        "２",
+        "$(echo 1)",
+    ] {
+        let (_root, mut command) = cargo_case()?;
+        let output = command
+            .env("MOON_TARGET", "pipeline:tests-scoped")
+            .env("MOON_RUST_TEST_THREADS", threads)
+            .args(SCOPED_PREFIX)
+            .output()?;
+        check!(eq; output.status.code(), Some(2), "{threads:?}");
+        check!(output.stdout.is_empty(), "Cargo started for {threads:?}");
+    }
+    Ok(())
+}
+
+#[test]
+fn test_thread_override_refuses_unsupported_tasks() -> TestResult {
+    for target in [
+        "",
+        "pipeline:check",
+        "pipeline:gate",
+        "pipeline:build-scoped",
+        "other:tests-scoped",
+    ] {
+        let (_root, mut command) = cargo_case()?;
+        let output = command
+            .env("MOON_TARGET", target)
+            .env("MOON_RUST_TEST_THREADS", "1")
+            .args(SCOPED_PREFIX)
+            .output()?;
+        check!(eq; output.status.code(), Some(2), "{target:?}");
+        check!(output.stdout.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
+fn test_thread_override_refuses_changed_or_truncated_prefixes() -> TestResult {
+    for (target, prefix) in TEST_TASKS {
+        for (index, _) in prefix.iter().enumerate() {
+            let mut changed = prefix.to_vec();
+            *changed.get_mut(index).ok_or("prefix index absent")? = "changed";
+            let truncated = prefix.get(..index).ok_or("prefix range absent")?;
+            for arguments in [changed.as_slice(), truncated] {
+                let (_root, mut command) = cargo_case()?;
+                let output = command
+                    .env("MOON_TARGET", target)
+                    .env("MOON_RUST_TEST_THREADS", "1")
+                    .args(arguments)
+                    .output()?;
+                check!(eq; output.status.code(), Some(2), "{target} {index}");
+                check!(output.stdout.is_empty());
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn test_thread_override_refuses_mismatched_canonical_targets() -> TestResult {
+    for (target, _) in TEST_TASKS {
+        for (other, prefix) in TEST_TASKS {
+            if target == other {
+                continue;
+            }
+            let (_root, mut command) = cargo_case()?;
+            let output = command
+                .env("MOON_TARGET", target)
+                .env("MOON_RUST_TEST_THREADS", "1")
+                .args(prefix)
+                .output()?;
+            check!(eq; output.status.code(), Some(2), "{target} {other}");
+            check!(output.stdout.is_empty());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn test_thread_override_refuses_duplicate_thread_controls() -> TestResult {
+    for (target, prefix) in TEST_TASKS {
+        for flag in [
+            "--test-threads",
+            "--test-threads=1",
+            "--test-threads=16",
+            "--jobs",
+            "--jobs=1",
+            "-j",
+            "-j1",
+            "-j=1",
+            "-vj1",
+            "-rvj1",
+        ] {
+            let (_root, mut command) = cargo_case()?;
+            let output = command
+                .env("MOON_TARGET", target)
+                .env("MOON_RUST_TEST_THREADS", "1")
+                .args(prefix)
+                .args([flag, "1"])
+                .output()?;
+            check!(eq; output.status.code(), Some(2), "{target} {flag}");
+            check!(output.stdout.is_empty());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn test_thread_override_keeps_selected_cargo_and_build_job_guards() -> TestResult {
+    for missing_cargo in [false, true] {
+        let (_root, mut command) = cargo_case()?;
+        command
+            .env("MOON_TARGET", "pipeline:tests-scoped")
+            .env("MOON_RUST_TEST_THREADS", "1");
         if missing_cargo {
             command.env_remove("MOON_RUST_CARGO");
         } else {
