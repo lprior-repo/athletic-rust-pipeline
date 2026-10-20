@@ -2255,3 +2255,13 @@ uncertainty, while a new gated iteration may advance. Invalid baselines refuse.
 Obsolete reservation API/callers were migrated; Fjall encoding and registration
 receipts remain unchanged. Access-snapshot progress retention is still a separate
 unqualified candidate. Retry03 and original live-journal migration are **NOT RUN**.
+
+Remote PR107 was normally merged at `eead3ecde2ba884a772629e99f7ee7281f74142b`.
+Its NCES intake adds run-bound offline receipt composition, not genuine source coverage.
+Pre-extraction static gates `629a8413`/`50113108`/`3c31894e` and NCES-focused
+`e1ffb505` **PASS71/71**. GPU module extraction preserves public entrypoints and
+receipts; Main corrects moved fixture paths/imports and narrows private visibility.
+Post-extraction format/check/lint `ff5f92f2`/`d18de97f`/`83834059` **PASS**;
+NCES plus pending-Run regression `3aa1c313` **PASS72/72**.
+Retained NCES reopen still reads files before bounding their lengths: a source
+finding tracked under `l0h1`, not a reproduced OOM or closed R14 requirement.
