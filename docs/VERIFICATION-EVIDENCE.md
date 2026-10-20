@@ -2160,3 +2160,19 @@ no selector fix or promotion of those quarantines is justified. A temporary cach
 setup failed compilation on private helpers (`86d7ea8c`); removed without widening
 APIs. Both throwaway Rust tools and the accidental empty draft file were removed.
 Private receipts remain under the run directory, outside Git.
+
+On committed `a598a5b327bca15dfeec973733cc6eadfdfedf27`, tree
+`968989c31cb63d6b2fe33b487eb9fd5891c76de0`, original-A consumer
+`12abfdaf` and optimized build `6de95967` **PASS**. The immutable CLI
+independently verifies all three original A workbooks without regeneration.
+Service SHA `45c9d290201d5d3c19f5cbfa2c3594216e1ae9c72b927bf1e351e3ba5388ce6e`;
+serve SHA `a03f7be504473d14cb0ce36cbe86f57e9ca505d7654fcfbcaecff910fd708209`.
+Actual offline Utah CLI changes rows0/errors1 to rows1/errors0/complete with the
+same independently seeded cache; both runs perform zero requests. `uvsy` closes
+only this controlled adapter defect, not live deployment or population coverage.
+
+Generation09 retry01 uses the same request, profile, output root and committed
+archive; commitment SHA is unchanged. It runs under16GiB/zeroSwap in a transient
+systemd service. `/usr/bin/time` wraps the service client: its RSS is **not** the
+workbook process peak. The original live endpoint and all historical inputs remain
+unchanged. The retry is not a fresh acquisition or national completion.

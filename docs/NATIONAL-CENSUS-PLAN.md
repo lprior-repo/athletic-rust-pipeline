@@ -419,9 +419,15 @@ quiescence. No worker runs builds mid-flight, weakens an oracle, changes source
 identity to fit a fixture, resets a live store or substitutes a historical binary.
 Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
-### 7.5. Latest qualified checkpoints — 2026-10-19
+### 7.5. Latest qualified checkpoints — 2026-10-20
 
-Latest integrated static checkpoint: `ddd07ff76f9750a460967471649813da3f1d98b7`,
+Latest exact-source checkpoint: `a598a5b327bca15dfeec973733cc6eadfdfedf27`,
+tree `968989c31cb63d6b2fe33b487eb9fd5891c76de0`. Static gates, focused
+source/normalized checks, controlled workbook withdrawal and original-A replay pass;
+the optimized CLI verifies all three unchanged original workbooks. The committed
+older national input is retrying publication; no national workbook is delivered.
+
+Prior integrated static checkpoint: `ddd07ff76f9750a460967471649813da3f1d98b7`,
 tree `005e50d310e668b5f7722c1c74741b5602edd381`. Its exact format/check/lint,
 201-case report/crawl queue, 27 owner boundaries and original-A replay passed.
 Deployed source `d6f6c68ad281cd8e2db8504c4e5732454b76ea2d`, tree
@@ -443,11 +449,11 @@ Current roster kernels are 12/13; original 2–11 identities and A artifacts rem
 | Requirement | Production entrypoint | Exercised evidence | Tested source | Result / artifact | Next dependency |
 |---|---|---|---|---|---|
 | A: prior static and structural checkpoint | Canonical Moon format/check/lint; AST, comments, panic and contract guards | `381f88ad`, `2519a875`, `6e52424b`; `3684572c`, `3dcfa7d1`, `33357c78`, `46b7e906` | `d11dcfa4` | PASS; configured advisories and known deviations remain | Later checkpoint identified above; remaining production acceptance |
-| R1: controlled eligibility/calendar withdrawal | Public reviewed source → selector → workbook/normalized → cold replay | `534626e7` | `d11dcfa4` | PASS within preserved 199-case queue: 49/50/51, history, proof-loss and byte boundaries | Remaining source/coverage acceptance |
+| R1: controlled eligibility/calendar withdrawal | Public reviewed source → selector → workbook/normalized → cold replay | `57459025` | `a598a5b32` | PASS: 49 excluded, G0=50, withdrawal G1=51, retained proofs and reopen | Genuine Class2027 population; controlled data is not coverage |
 | R1: genuine calendar lifecycle | Public acceptance/revoke/original replay → G0/G1/G2 and artifact reopen after source deletion | `534626e7`; owner boundaries `c7403723` | `d11dcfa4` | PASS: original 13.57/2026-05-15 retained, current affiliation Unknown; artifact digests in ledger | Genuine Class2027 population; remaining `d7hp` acceptance |
 | R1: review admission atomicity | Actual public prepare/apply with rejected approvals and unchanged owner state | `ac420b35` | `d6f6c68ad` | PASS: four cases cover opaque approval, stale head, foreign Store and six physical-source scope faults | Remaining genuine-source acceptance; no blanket R1 closure |
 | R2: historical kernels and current roster consumers | Original three-case A → independently authenticated changed-build B; complete preserved roster queue | `6693e62f`; `7495a7f3` through `79ee9e58` | A `1ab843c4`; B `e4a207ef` | PASS for exercised cases; original A SHA256 `8897f37e…c35908` unchanged | Exact accepted-claim withdrawal `v80o`; broader population |
-| R2: original-A changed-build replay | Original retained three-case A → current B | `f4d71e40` | A `1ab843c4`; B `d11dcfa4` | PASS; original retention digest unchanged, no relabel/regeneration | Exact member withdrawal and genuine population |
+| R2: original-A changed-build replay | Original retained three-case A → current B and optimized CLI | `12abfdaf`; private `diagnostic-original-A-cli-a598a5b3.json` | A `1ab843c4`; B `a598a5b32` | PASS; original retention digest and all workbook bytes unchanged | Exact member withdrawal and genuine population |
 | R3/R7: selected service consumers | Reserved workbook handler, actual CLI, isolated native Restate | `2501cc57`, `892a4313` | Same production source as `e4a207ef`, precommit client run | PASS for controlled 50→51, split successors, retry/reopen and native restart/revocation; retained workbook hashes in evidence | Remaining `agv2` cohort `6pb6`, receipt `e7lx` and native completed-child/seal acceptance |
 | R3/R7: selected National generation | National workbook dispatch → real builder; CLI capability preflight | `4b292d9a`, `10c69620`; actual rebuilt CLI smoke | `dde1949b` | PASS: unchanged G0 path/bytes, withdrawn-G0 refusal, explicit G1=51 and cold G0=50; workbook hashes in ledger | Native completed-child/seal acceptance and remaining `agv2` dependencies; SDK adapter is not a national run |
 | R3/R11: explicit caller authority | CLI resume and existing-invocation attachment | `367b4bec`, `9de2ee20`; actual CLI before/after | `cc3cb4cf` | PASS: generation mismatch before resume submission; store/profile mismatch before attachment, including failed-send fallback; omitted flags/budgets preserved | Remaining `agv2` native, cohort and receipt acceptance; no new acquisition identity |
@@ -455,7 +461,10 @@ Current roster kernels are 12/13; original 2–11 identities and A artifacts rem
 | Recovery and owned-process cleanup | Authoritative Requested-state dispatch; graceful native fixture shutdown | `897e8daa`, `892a4313` | `e4a207ef` | PASS; `8v2q` and `lxy2` closed, no SIGKILL fallback | Remaining R12/fault/resource acceptance |
 | R2: exact member withdrawal | Existing pure `WithdrawsClaim` reducer and sole roster authority head | Admission-contract review only | — | NOT IMPLEMENTED; parser admission/capture issuance is not accepted membership | Domain-owned authenticated target; no Store→Crawl cycle, `v80o` |
 | C/D: complete reusable product | R1–R15, independent discovery and comparison | Spec-linked live Beads | — | NOT QUALIFIED; no national acceptance workbook | UP/five-state/49-state coverage, remaining consumers, reuse/recovery and representative resource evidence |
-| D: actual national feedback | Owned Restate → current serving owner → full49 acquisition | Invocation `inv_13LIoGM6LB600EGmJ5iU9yGQmEPr4dHTGp`; private `var/census-national-v3-20261019/national-submission.json` and `initial-open-work.json` | `d6f6c68ad` | RUNNING, NOT COMPLETE; first archive growth sample unmeasured (`fence-busy`), roster HTTP403s observed | Verified partial workbook, accepted athlete population, access/engineering gaps; no reset or bypass |
+| D: actual national feedback | Original Restate/serving owner; read-only `Census/status` | Private `diagnostic-live-status-during-a598-build.json` | Live `d6f6c68ad` | 1,630,891 raw athletes, 86,914 source meets, 3,568 canonical marks; NOT accepted-identity or coverage counts | Verified workbook, documentary acceptance, access/engineering gaps; no reset or bypass |
+| R5: frozen normalized readback | Eight-family independent readback, grouping and durable input jobs | `88e7a1c8`; initial16 failures repaired by captured-policy catalog binding | `a598a5b32` | PASS80/80; production historical/current validation unchanged | Actual national artifact contents and manifest verification |
+| R13: Utah capture URI | Offline native `provider uhsaa` with controlled original-shaped input | `c26c1291`; private `diagnostic-uhsaa-cli-01/{before-27731275,after-a598a5b3}.json` | `a598a5b32` | PASS: rows0/errors1 → rows1/errors0, both requests0; strict ownership/address rules retained | Genuine population/deployment; adapter repair is not statewide coverage |
+| R14/D: national diagnostic publication | Same generation09/job/profile and committed archive; optimized CLI under16GiB/zeroSwap | Private `diagnostic-snapshot-09-retry-01-request.json`; archive `cabb54d8…c781e6` | `a598a5b32` | RETRY STARTED; capture committed but prior256MiB normalization refusal prevented workbook | Artifact readback and representative resource/fault qualification; older snapshot is not current live data |
 
 Prior identity, catalog, tie and managed-route closures remain scoped evidence.
 Neither checkpoint is blanket national acceptance.

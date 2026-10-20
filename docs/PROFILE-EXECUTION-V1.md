@@ -11,7 +11,7 @@ Class-of-2026 calendar accept/revoke/original replay and source-free G0/G1/G2 ar
 reopen, plus unchanged original three-case roster replay. Unknown genuine current
 affiliation remains withheld; this is not target-Class-of-2027 population coverage.
 [Exact receipts](VERIFICATION-EVIDENCE.md#genuine-calendar-revocation-and-cohort-bound-reopen--2026-10-19)
-and the [acceptance matrix](NATIONAL-CENSUS-PLAN.md#75-latest-qualified-checkpoints--2026-10-19)
+and the [acceptance matrix](NATIONAL-CENSUS-PLAN.md#75-latest-qualified-checkpoints--2026-10-20)
 own build-specific claims. Exact roster withdrawal, remaining National cohort/receipt
 integration, reusable production and representative resources remain unqualified.
 
