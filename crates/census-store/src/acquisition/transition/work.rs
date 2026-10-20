@@ -207,9 +207,6 @@ fn copy_attempt(
         CaptureProtocolVersion::V2 => attempt.try_clone().map_err(allocation),
     }
 }
-fn allocation(_: std::collections::TryReserveError) -> crate::StoreError {
-    CaptureError::ReadBudgetExceeded {
-        resource: "allocation",
-    }
-    .into()
+fn allocation(source: std::collections::TryReserveError) -> crate::StoreError {
+    CaptureError::allocation_reservation_failed("acquisition attempt identity", None, source).into()
 }

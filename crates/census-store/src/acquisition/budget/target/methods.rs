@@ -24,16 +24,24 @@ impl AcquisitionReadBudget {
         value: usize,
     ) -> StoreResult<()> {
         let bytes = key.checked_add(value).ok_or(StoreError::CounterOverflow)?;
-        let roots = self
-            .roots
-            .checked_sub(1)
-            .ok_or(CaptureError::ReadBudgetExceeded { resource: "roots" })?;
-        let encoded = self
-            .encoded
-            .checked_sub(bytes)
-            .ok_or(CaptureError::ReadBudgetExceeded {
+        let Some(roots) = self.roots.checked_sub(1) else {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
+                resource: "roots",
+                required: 1,
+                limit: u64::try_from(self.roots).map_err(|_| StoreError::CounterOverflow)?,
+            }
+            .into());
+        };
+        let required = u64::try_from(bytes).map_err(|_| StoreError::CounterOverflow)?;
+        let available = u64::try_from(self.encoded).map_err(|_| StoreError::CounterOverflow)?;
+        let Some(encoded) = self.encoded.checked_sub(bytes) else {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "encoded bytes",
-            })?;
+                required,
+                limit: available,
+            }
+            .into());
+        };
         let recovery = self.recovery.charged(ReadDebit::Row(amount(bytes)?))?;
         let mut usage = self.usage;
         usage.row(bytes)?;
@@ -44,12 +52,16 @@ impl AcquisitionReadBudget {
         Ok(())
     }
     pub(in crate::acquisition) fn recovery_encoded(&mut self, bytes: usize) -> StoreResult<()> {
-        let encoded = self
-            .encoded
-            .checked_sub(bytes)
-            .ok_or(CaptureError::ReadBudgetExceeded {
+        let required = u64::try_from(bytes).map_err(|_| StoreError::CounterOverflow)?;
+        let available = u64::try_from(self.encoded).map_err(|_| StoreError::CounterOverflow)?;
+        let Some(encoded) = self.encoded.checked_sub(bytes) else {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "encoded bytes",
-            })?;
+                required,
+                limit: available,
+            }
+            .into());
+        };
         let recovery = self.recovery.charged(ReadDebit::Encoded(amount(bytes)?))?;
         let mut usage = self.usage;
         usage.encoded(bytes)?;

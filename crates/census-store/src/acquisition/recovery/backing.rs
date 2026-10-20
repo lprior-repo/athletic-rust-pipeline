@@ -43,10 +43,9 @@ pub(super) fn materialize(
         usize::try_from(capture.content_bytes()).map_err(|_| StoreError::CounterOverflow)?;
     account.reserve_body(capture.content_bytes())?;
     let mut body = Vec::new();
-    body.try_reserve_exact(length)
-        .map_err(|_| CaptureError::ReadBudgetExceeded {
-            resource: "body allocation",
-        })?;
+    body.try_reserve_exact(length).map_err(|source| {
+        CaptureError::allocation_reservation_failed("prepared body buffer", Some(length), source)
+    })?;
     body.resize(length, 0);
     account.payload(Role::Body, capture.content_bytes())?;
     file.read_exact(&mut body)
@@ -187,10 +186,9 @@ pub(super) fn candidate(
         usize::try_from(capture.content_bytes()).map_err(|_| StoreError::CounterOverflow)?;
     account.reserve_body(capture.content_bytes())?;
     let mut body = Vec::new();
-    body.try_reserve_exact(length)
-        .map_err(|_| CaptureError::ReadBudgetExceeded {
-            resource: "body allocation",
-        })?;
+    body.try_reserve_exact(length).map_err(|source| {
+        CaptureError::allocation_reservation_failed("restored body buffer", Some(length), source)
+    })?;
     body.resize(length, 0);
     account.payload(Role::Body, capture.content_bytes())?;
     file.read_exact(&mut body)

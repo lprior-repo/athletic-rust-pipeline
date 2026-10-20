@@ -56,8 +56,9 @@ fn lineage_two_value_passes_each_debit_before_parse_and_never_reset() -> TestRes
     ));
     check!(matches!(
         read_held(&store, &raw, &mut reads),
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-            resource: "allocation"
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+            resource: "allocation",
+            ..
         }))
     ));
     check!(eq; reads.recovery_totals().allocations.owned.used, twice);
@@ -65,8 +66,9 @@ fn lineage_two_value_passes_each_debit_before_parse_and_never_reset() -> TestRes
     refused.recovery_limit_owned(twice.checked_sub(1).ok_or("N-1")?);
     check!(matches!(
         read_held(&store, &raw, &mut refused),
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-            resource: "allocation"
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+            resource: "allocation",
+            ..
         }))
     ));
     check!(eq; refused.recovery_totals().allocations.owned.used, one);

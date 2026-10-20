@@ -191,9 +191,6 @@ impl<'budget> PreparedRecoverySession<'_, 'budget> {
         Ok(())
     }
 }
-fn allocation(_: std::collections::TryReserveError) -> crate::StoreError {
-    CaptureError::ReadBudgetExceeded {
-        resource: "allocation",
-    }
-    .into()
+fn allocation(source: std::collections::TryReserveError) -> crate::StoreError {
+    CaptureError::allocation_reservation_failed("prepared recovery commit", None, source).into()
 }

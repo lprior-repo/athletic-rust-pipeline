@@ -233,8 +233,9 @@ async fn retained_consumer_allocation_refusal_preserves_committed_parts() -> Tes
     let mut retained = session.finish()?;
     check!(matches!(
         retained.reserve_consumer_owned(usize::MAX),
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded { .. }))
-            | Err(StoreError::CounterOverflow)
+        Err(StoreError::Capture(
+            CaptureError::ReadBudgetLimitExceeded { .. }
+        )) | Err(StoreError::CounterOverflow)
     ));
     retained.reserve_consumer_owned(std::mem::size_of::<crate::net::CapturedFetch>())?;
     let parts = retained.into_parts();

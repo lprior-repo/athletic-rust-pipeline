@@ -24,8 +24,10 @@ pub(super) fn inventory(
         .enumerate()
     {
         if position == 1_048_576 {
-            return Err(CaptureError::ReadBudgetExceeded {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "inventory roots",
+                required: 1_048_577,
+                limit: 1_048_576,
             }
             .into());
         }
@@ -172,8 +174,10 @@ fn inventory_receipts(
         .enumerate()
     {
         if position == 1_048_576 {
-            return Err(CaptureError::ReadBudgetExceeded {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "receipt inventory",
+                required: 1_048_577,
+                limit: 1_048_576,
             }
             .into());
         }

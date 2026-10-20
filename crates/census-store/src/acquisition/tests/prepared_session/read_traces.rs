@@ -259,8 +259,9 @@ fn prepared_recovery_real_j0_j1_maximal_roots_80_79_and_82_81() -> TestResult {
             if short {
                 check!(matches!(
                     result,
-                    Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-                        resource: "roots"
+                    Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+                        resource: "roots",
+                        ..
                     }))
                 ));
                 check!(eq; rows(&fixture.store)?, before);
@@ -309,8 +310,9 @@ fn prepared_recovery_real_j0_j1_encoded_n_and_n_minus_one() -> TestResult {
             if short {
                 check!(matches!(
                     result,
-                    Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-                        resource: "encoded bytes"
+                    Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+                        resource: "encoded bytes",
+                        ..
                     }))
                 ));
                 check!(eq; rows(&fixture.store)?, before);
@@ -357,8 +359,9 @@ fn prepared_recovery_real_j0_j1_receipt_probes_6_and_5() -> TestResult {
             if short {
                 check!(matches!(
                     result,
-                    Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-                        resource: "receipt probes"
+                    Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+                        resource: "receipt probes",
+                        ..
                     }))
                 ));
                 check!(eq; rows(&fixture.store)?, before);

@@ -37,8 +37,9 @@ fn maximal_original_and_revalidation_join_uses_eighty_three_roots_with_default_e
     let mut short = AcquisitionReadBudget::new(82, 8 * 1024 * 1024, 64 * 1024 * 1024)?;
     check!(matches!(
         store.read_retained_acquisition_v1(&revalidation, &mut short),
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-            resource: "roots"
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+            resource: "roots",
+            ..
         }))
     ));
     Ok(())
@@ -186,8 +187,9 @@ fn maximum_canonical_envelope_and_physical_key_are_both_debited_before_materiali
             &mut value_only,
             CaptureProtocolVersion::V1
         ),
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-            resource: "encoded bytes"
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+            resource: "encoded bytes",
+            ..
         }))
     ));
     let mut exact = AcquisitionReadBudget::new(

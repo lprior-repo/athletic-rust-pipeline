@@ -65,11 +65,9 @@ fn decode_receipt_witness(
     }
     let mut owned = Vec::new();
     budget.reserve_recovery_owned(raw.len())?;
-    owned
-        .try_reserve_exact(raw.len())
-        .map_err(|_| CaptureError::ReadBudgetExceeded {
-            resource: "receipt allocation",
-        })?;
+    owned.try_reserve_exact(raw.len()).map_err(|source| {
+        CaptureError::allocation_reservation_failed("receipt buffer", Some(raw.len()), source)
+    })?;
     owned.extend_from_slice(raw);
     Ok(ReceiptWitness::Present {
         receipt,

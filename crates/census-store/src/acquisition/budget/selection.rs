@@ -37,10 +37,31 @@ impl AcquisitionSelectionUsage {
                     .and_then(|receipts| bytes.checked_add(receipts))
             })
             .ok_or(StoreError::CounterOverflow)?;
-        if roots > 1_048_576
-            || encoded_bytes > 536_870_912
-            || targets_examined > 65_536
-            || roots < minimum_roots
+        if roots > 1_048_576 {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
+                resource: "roots",
+                required: roots,
+                limit: 1_048_576,
+            }
+            .into());
+        }
+        if encoded_bytes > 536_870_912 {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
+                resource: "encoded bytes",
+                required: encoded_bytes,
+                limit: 536_870_912,
+            }
+            .into());
+        }
+        if targets_examined > 65_536 {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
+                resource: "selection targets",
+                required: targets_examined,
+                limit: 65_536,
+            }
+            .into());
+        }
+        if roots < minimum_roots
             || roots > maximum_roots
             || receipt_probes > maximum_probes
             || present_receipts > receipt_probes
@@ -105,8 +126,10 @@ impl AcquisitionSelectionUsage {
     }
     pub(super) fn target_examined(&mut self) -> StoreResult<()> {
         if self.targets_examined == 65_536 {
-            return Err(CaptureError::ReadBudgetExceeded {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "selection targets",
+                required: 65_537,
+                limit: 65_536,
             }
             .into());
         }

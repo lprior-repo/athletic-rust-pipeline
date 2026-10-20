@@ -1,6 +1,6 @@
 use super::closure;
 use crate::acquisition::{facts::AttemptFacts, AcquisitionReadBudget, CaptureError};
-use crate::StoreResult;
+use crate::{StoreError, StoreResult};
 use census_domain::model::{
     AcquisitionAttemptId, AcquisitionWorkId, AcquisitionWorkV1, AttemptOrdinal,
     CaptureProtocolVersion,
@@ -19,16 +19,16 @@ pub(super) fn reconstruct(
 ) -> StoreResult<Vec<AttemptFacts>> {
     let bytes = std::mem::size_of::<[AttemptFacts; 3]>()
         .checked_add(384)
-        .ok_or(CaptureError::ReadBudgetExceeded {
-            resource: "allocation",
-        })?;
+        .ok_or(StoreError::CounterOverflow)?;
     budget.reserve_recovery_owned(bytes)?;
     let mut attempts = Vec::new();
-    attempts
-        .try_reserve_exact(3)
-        .map_err(|_| CaptureError::ReadBudgetExceeded {
-            resource: "allocation",
-        })?;
+    attempts.try_reserve_exact(3).map_err(|source| {
+        CaptureError::allocation_reservation_failed(
+            "attempt facts buffer",
+            Some(3 * std::mem::size_of::<AttemptFacts>()),
+            source,
+        )
+    })?;
     for ordinal in 1..=3 {
         let ordinal = AttemptOrdinal::new(ordinal).map_err(CaptureError::Domain)?;
         let attempt = read_attempt_id(work, id, ordinal, protocol)?;
@@ -50,15 +50,12 @@ fn read_attempt_id(
     let (identity, work_id) = match protocol {
         CaptureProtocolVersion::V1 => (work.slot().store_identity().clone(), id.clone()),
         CaptureProtocolVersion::V2 => (
-            work.slot().store_identity().try_clone().map_err(|_| {
-                CaptureError::ReadBudgetExceeded {
-                    resource: "allocation",
-                }
+            work.slot().store_identity().try_clone().map_err(|source| {
+                CaptureError::allocation_reservation_failed("attempt store identity", None, source)
             })?,
-            id.try_clone()
-                .map_err(|_| CaptureError::ReadBudgetExceeded {
-                    resource: "allocation",
-                })?,
+            id.try_clone().map_err(|source| {
+                CaptureError::allocation_reservation_failed("attempt work id", None, source)
+            })?,
         ),
     };
     Ok(AcquisitionAttemptId::new(identity, work_id, ordinal))

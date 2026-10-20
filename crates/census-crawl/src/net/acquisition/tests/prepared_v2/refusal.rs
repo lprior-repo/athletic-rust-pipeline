@@ -268,8 +268,9 @@ async fn thirteen_target_preflight_refuses_before_archive_effects() -> TestResul
     }
     check!(matches!(
         PreparedRecoveryBudget::admit(selection.selection_usage(), 13),
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-            resource: "backing bytes"
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+            resource: "backing bytes",
+            ..
         }))
     ));
     check!(!fixture

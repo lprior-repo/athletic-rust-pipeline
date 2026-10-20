@@ -199,8 +199,9 @@ fn full_three_attempt_five_dispatch_closure_fits_exactly_forty_two_roots() -> Te
     let mut short = AcquisitionReadBudget::new(41, 8 * 1024 * 1024, 64 * 1024 * 1024)?;
     check!(matches!(
         store.read_retained_acquisition_v1(&reference, &mut short),
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-            resource: "roots"
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+            resource: "roots",
+            ..
         }))
     ));
     Ok(())

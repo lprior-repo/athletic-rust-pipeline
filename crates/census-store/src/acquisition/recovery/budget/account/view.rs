@@ -62,8 +62,10 @@ impl AccountView<'_> {
     ) -> StoreResult<()> {
         let bytes = amount(bytes)?;
         if bytes > limits::PATH {
-            return Err(CaptureError::ReadBudgetExceeded {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "path bytes",
+                required: bytes,
+                limit: limits::PATH,
             }
             .into());
         }
@@ -108,8 +110,10 @@ impl AccountView<'_> {
     ) -> StoreResult<()> {
         let bytes = amount(bytes)?;
         if bytes > limits::ASSESSMENT {
-            return Err(CaptureError::ReadBudgetExceeded {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "assessment bytes",
+                required: bytes,
+                limit: limits::ASSESSMENT,
             }
             .into());
         }

@@ -173,12 +173,13 @@ impl<'store, 'budget> PreparedRecoverySession<'store, 'budget> {
         };
         self.account.assessment_bytes(4096)?;
         self.account.reserve_owned(320)?;
-        let target = self
-            .target
-            .try_clone()
-            .map_err(|_| CaptureError::ReadBudgetExceeded {
-                resource: "allocation",
-            })?;
+        let target = self.target.try_clone().map_err(|source| {
+            CaptureError::allocation_reservation_failed(
+                "missing prepared decision target",
+                None,
+                source,
+            )
+        })?;
         Ok(MissingPreparedDecisionV1::new(target, assessment.clone()))
     }
 }

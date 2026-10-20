@@ -48,8 +48,9 @@ fn leave_admission(budget: &mut AcquisitionReadBudget, remaining: u64) -> TestRe
 
 fn admission_refused<T>(result: StoreResult<T>) -> TestResult {
     match result {
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
             resource: "admission encoded bytes",
+            ..
         })) => Ok(()),
         _ => Err("snapshot reader did not refuse exhausted admission bytes".into()),
     }

@@ -61,8 +61,9 @@ fn selection_shared_root_budget_never_resets_between_targets() -> TestResult {
     check!(eq; store.read_existing_recovery_target(&owner, &work(&owner)?, &mut budget)?, ExistingRecoveryRoute::ExistingNoPrepared);
     check!(matches!(
         store.read_existing_recovery_target(&owner, &work(&owner)?, &mut budget),
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-            resource: "roots"
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+            resource: "roots",
+            ..
         }))
     ));
     check!(eq; budget.selection_usage().targets_examined(), 2);
