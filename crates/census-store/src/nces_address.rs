@@ -189,6 +189,34 @@ mod tests {
         check!(eq; store.nces_address_run_v1()?, None);
         Ok(())
     }
+
+    #[test]
+    fn conflicting_nces_receipt_is_refused_without_replacing_the_original() -> TestResult {
+        let dir = tempfile::tempdir()?;
+        let store = Store::open(dir.path())?;
+        let run = manifest()?;
+        store.bind_run(&run)?;
+        let original = receipt(&run)?;
+        store.bind_nces_address_run_v1(&original)?;
+        let conflict = NcesAddressRunReceiptV1::new(
+            serialized_digest(&run)?,
+            run.jurisdictions.clone(),
+            NcesArtifactReferenceV1::new(
+                NcesArtifactProviderV1::Ccd,
+                "f".repeat(64),
+                128,
+                "https://nces.ed.gov/example/other-ccd.csv",
+                "2026-10-20",
+            )?,
+            original.pss().clone(),
+            original.input_manifest_digest(),
+            original.address_generation_digest(),
+        )?;
+
+        check!(store.bind_nces_address_run_v1(&conflict).is_err());
+        check!(eq; store.nces_address_run_v1()?, Some(original));
+        Ok(())
+    }
 }
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
