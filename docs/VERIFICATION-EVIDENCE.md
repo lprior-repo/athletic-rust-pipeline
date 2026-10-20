@@ -2586,3 +2586,25 @@ Luna runtime/context and Muse generator/withdrawal reviews found no reachable
 changed-surface defect; reviews did not substitute for native execution.
 This qualifies the scoped`v80o` behavior, not full R2/R11/R12 or national delivery.
 No live Store, deployment, original producer pins or historical artifacts changed.
+
+### R12 exact capture occurrence: public repair — 2026-10-20
+
+Source`cbbb7e3766abe4f556f74b9702969ccc2397dbc0`,
+tree`4884dcf9bd339c08b1154e01f8289c0d2eb4c7d2`.
+The actual second-packet review failed`9ffa7a59` with
+`roster binding packet observation differs`. Physical exact matches now supply
+authority; unchanged-school alternate packets remain retained but do not count.
+Published merges cannot manufacture the missing physical target.
+
+PASS: public positive/missing/contradictory cases3/3`0c5288fe`;
+binding boundaries14/14`18f18b92`; complete public queue63/63`ad255bc3`,
+including unchanged original-A artifacts. Format`0a0ae257`, all-target
+check`962e2324`, lint`af7aacd6` pass; forced arity warnings remain.
+Comments`4c11a63e` checks5116Rust files; strict scan`29010a15` has0over60
+and0unresolved sites; seams`4f367d97` has0violations.
+
+First adjacent run`1f5ff6a6` failed the clean-source guard after an unassigned
+GPU test edit. Its exact delta is quarantined outside Git and removed; the same
+original-A boundary passes in`ad255bc3`. The guard was not weakened.
+Cold A/B workbook generations and original ingestion-command replay remain
+NOT RUN at this checkpoint;`pl1u`, broader R12 and national acceptance stay open.
