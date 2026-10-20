@@ -30,6 +30,7 @@ struct Retention {
 
 #[test]
 fn native_independently_retained_v3_replays_unchanged_without_live_store() -> TestResult {
+    super::fixture::embedded_v3::provision_retained_bundle()?;
     let path = PathBuf::from(
         std::env::var_os("CENSUS_DOCUMENTARY_V3_RETENTION_JSON").ok_or(
             "CENSUS_DOCUMENTARY_V3_RETENTION_JSON must name the independent V3 retention manifest",

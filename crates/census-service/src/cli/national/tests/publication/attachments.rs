@@ -35,12 +35,14 @@ fn invalid_bindings() -> TestResult<Vec<String>> {
         .ok_or("fixture season")?;
     *season = serde_json::json!(2025);
     let mut legacy = selected.clone();
-    let removed = legacy
+    legacy
         .get_mut("request")
         .and_then(serde_json::Value::as_object_mut)
         .ok_or("fixture bound request")?
-        .remove("publication_contract");
-    check!(removed.is_some());
+        .insert(
+            "publication_contract".into(),
+            serde_json::json!("legacy_separate_v1"),
+        );
     let mut managed = selected.clone();
     managed
         .get_mut("request")

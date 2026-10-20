@@ -42,6 +42,7 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
     let cache = dir.path().join("http");
     let store = Store::open(dir.path().join("store"))?;
     let fetcher = local_fetcher(&cache)?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let recording = Recording::new();
     let ctx = context(
         &fetcher,
@@ -51,6 +52,7 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
         } else {
             None
         },
+        &capture,
     )?;
     let options = options();
     let row = school();
@@ -68,7 +70,7 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
         if recording_route {
             apply_recorded(&store, &recording.drain())?;
             if let Some(live) = &live_store {
-                assert_live_parity(&ctx, live, &options, &row, &host).await?;
+                assert_live_parity(&ctx, live, &options, &row, &host, &capture).await?;
             }
         }
         let retained = match first {
@@ -113,7 +115,7 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
         if recording_route {
             apply_recorded(&store, &recording.drain())?;
             if let Some(live) = &live_store {
-                assert_live_parity(&ctx, live, &options, &row, &host).await?;
+                assert_live_parity(&ctx, live, &options, &row, &host, &capture).await?;
             }
         }
         let coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
@@ -139,7 +141,7 @@ async fn http_same_school_recovery(first: FirstPage, recording_route: bool) -> T
             apply_recorded(&store, &recording.drain())?;
             check!(eq; store.walk_table(Table::Coaches)?, before);
             if let Some(live) = &live_store {
-                assert_live_parity(&ctx, live, &options, &row, &host).await?;
+                assert_live_parity(&ctx, live, &options, &row, &host, &capture).await?;
             }
         }
         assert_archived_capture(&cache, &bad, &original_meta)?;
@@ -230,7 +232,8 @@ fn zero_coach_total_completes_only_with_an_admitted_response_schema() -> TestRes
         seed(&cache, 1, body)?;
         let store = Store::open(dir.path().join("store"))?;
         let fetcher = fetcher(&cache)?;
-        let ctx = context(&fetcher, &store, None)?;
+        let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
+        let ctx = context(&fetcher, &store, None, &capture)?;
         let options = options();
         let row = school();
         let mut acquired = run(&ctx, &options)?;

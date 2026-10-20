@@ -11,8 +11,8 @@ fn endpoint_cancellation_signals_completion_and_drains_the_original_single_owned
         .enable_all()
         .build()?
         .block_on(async {
-            let root = tempfile::tempdir()?;
-            let store = Arc::new(Store::open(root.path())?);
+            let (_root, store) = census_store::test_fixture::temp_store()?;
+            let store = Arc::new(store);
             let region = Arc::new(Spawner::new());
             let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
             let bound = listener.local_addr()?;
@@ -49,8 +49,8 @@ fn endpoint_concurrency_refusal_drops_listener_without_admitting_a_task() -> Tes
         .enable_all()
         .build()?
         .block_on(async {
-            let root = tempfile::tempdir()?;
-            let store = Arc::new(Store::open(root.path())?);
+            let (_root, store) = census_store::test_fixture::temp_store()?;
+            let store = Arc::new(store);
             let region = Arc::new(Spawner::new());
             let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
             let bound = listener.local_addr()?;

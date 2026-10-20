@@ -8,13 +8,15 @@ use census_crawl::athleticnet::{self, meet_requests, metadata_request, Options};
 use census_crawl::net::Fetcher;
 use census_crawl::AdapterContext;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, SchoolYear, Sport,
+    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, RelayResult, SchoolYear, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 
 #[path = "common/capture_cache.rs"]
 mod capture_cache;
+#[path = "common/durable_capture.rs"]
+mod durable_capture;
 
 fn fixture(source: &str, file: &str) -> Result<String> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -41,6 +43,7 @@ struct Harness {
     _dir: tempfile::TempDir,
     fetcher: Fetcher,
     store: Store,
+    durable: durable_capture::DurableCapture,
 }
 
 impl Harness {
@@ -80,6 +83,8 @@ impl Harness {
             _dir: dir,
             fetcher,
             store,
+            durable: durable_capture::DurableCapture::mint()
+                .map_err(|error| anyhow::anyhow!("minting the durable capture: {error}"))?,
         })
     }
 
@@ -93,8 +98,12 @@ impl Harness {
     }
 
     async fn run(&self, options: &Options) -> Result<census_crawl::AdapterReport> {
+        let owned = self
+            .durable
+            .capture()
+            .map_err(|error| anyhow::anyhow!("minting the durable capture: {error}"))?;
         let ctx = AdapterContext {
-            capture: census_crawl::CaptureContext::LegacyMetadata,
+            capture: census_crawl::CaptureContext::DurableV1(&owned),
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,
@@ -143,6 +152,71 @@ fn captured_subject_keys() -> Result<BTreeSet<String>> {
     Ok(subjects)
 }
 
+fn captured_individual_keys() -> Result<BTreeSet<String>> {
+    let capture: athleticnet::AllResults =
+        serde_json::from_str(&fixture(SOURCE, "meet_634313_allresults.json")?)?;
+    let relay_parents: BTreeSet<_> = capture.legs.iter().map(|leg| leg.result_id).collect();
+    let mut subjects = BTreeSet::new();
+    for row in capture.blocks.iter().flat_map(|block| &block.results) {
+        if relay_parents.contains(&row.result_id) {
+            continue;
+        }
+        let owner = row
+            .athlete_id
+            .context("captured individual has no native owner")?;
+        ensure!(
+            subjects.insert(format!("athleticnet:{owner}-{}", row.result_id)),
+            "duplicate published individual"
+        );
+    }
+    Ok(subjects)
+}
+
+fn captured_relay_parents() -> Result<BTreeMap<i64, i64>> {
+    let capture: athleticnet::AllResults =
+        serde_json::from_str(&fixture(SOURCE, "meet_634313_allresults.json")?)?;
+    let relay_parents: BTreeSet<_> = capture.legs.iter().map(|leg| leg.result_id).collect();
+    let mut parents = BTreeMap::new();
+    for row in capture.blocks.iter().flat_map(|block| &block.results) {
+        if !relay_parents.contains(&row.result_id) {
+            continue;
+        }
+        let team = row.team_id.context("captured relay row has no team")?;
+        match parents.entry(row.result_id) {
+            std::collections::btree_map::Entry::Vacant(slot) => {
+                slot.insert(team);
+            }
+            std::collections::btree_map::Entry::Occupied(slot) => {
+                ensure!(
+                    *slot.into_mut() == team,
+                    "relay squad changes teams: {}",
+                    row.result_id
+                );
+            }
+        }
+    }
+    ensure!(
+        parents.len() == relay_parents.len(),
+        "every relay parent publishes a squad row"
+    );
+    Ok(parents)
+}
+
+fn captured_leg_members() -> Result<Vec<(i64, usize, String)>> {
+    let capture: athleticnet::AllResults =
+        serde_json::from_str(&fixture(SOURCE, "meet_634313_allresults.json")?)?;
+    let mut positions = BTreeMap::<i64, usize>::new();
+    let mut members = Vec::new();
+    for leg in &capture.legs {
+        let position = positions.entry(leg.result_id).or_insert(0);
+        *position = position.checked_add(1).context("relay position overflow")?;
+        leg.athlete_id
+            .context("captured relay member has no native owner")?;
+        members.push((leg.result_id, *position, leg.name.clone()));
+    }
+    Ok(members)
+}
+
 fn exact_capture_subjects(rows: &[CanonicalPerformance]) -> Result<()> {
     let actual: BTreeSet<_> = rows.iter().map(|row| row.source_key.clone()).collect();
     ensure!(
@@ -150,8 +224,79 @@ fn exact_capture_subjects(rows: &[CanonicalPerformance]) -> Result<()> {
         "physical duplicate native result subjects"
     );
     ensure!(
-        actual == captured_subject_keys()?,
+        actual == captured_individual_keys()?,
         "captured native participant lost or invented"
+    );
+    Ok(())
+}
+
+fn exact_capture_relays(relays: &[RelayResult], athletes: &[CanonicalAthlete]) -> Result<()> {
+    let parents = captured_relay_parents()?;
+    let expected_keys: BTreeSet<_> = parents
+        .iter()
+        .map(|(result_id, team_id)| format!("athleticnet:team{team_id}-{result_id}"))
+        .collect();
+    let actual_keys: BTreeSet<_> = relays
+        .iter()
+        .map(|relay| relay.source_key.clone())
+        .collect();
+    ensure!(
+        actual_keys.len() == relays.len(),
+        "physical duplicate relay squad"
+    );
+    ensure!(actual_keys == expected_keys, "relay squad lost or invented");
+    let members = captured_leg_members()?;
+    ensure!(
+        relays
+            .iter()
+            .map(|relay| relay.members.len())
+            .sum::<usize>()
+            == members.len(),
+        "every published relay leg is retained as a squad member"
+    );
+    let mut expected: BTreeMap<(i64, usize), String> = BTreeMap::new();
+    for (result_id, position, name) in members {
+        ensure!(
+            expected.insert((result_id, position), name).is_none(),
+            "duplicate published relay member"
+        );
+    }
+    let key_of = |result_id: i64| {
+        let team_id = parents.get(&result_id).copied().unwrap_or_default();
+        format!("athleticnet:team{team_id}-{result_id}")
+    };
+    for relay in relays {
+        let result_id = parents
+            .iter()
+            .find(|(result_id, _)| relay.source_key == key_of(**result_id))
+            .map(|(result_id, _)| *result_id)
+            .context("relay squad without a captured parent")?;
+        for (index, member) in relay.members.iter().enumerate() {
+            let position = index.checked_add(1).context("relay position overflow")?;
+            let name = expected
+                .remove(&(result_id, position))
+                .context("squad member without a published leg")?;
+            ensure!(
+                member.order == u32::try_from(position)?,
+                "relay member order follows the published leg order"
+            );
+            ensure!(
+                member.name_as_published == name,
+                "relay member keeps its published name"
+            );
+            let athlete = member
+                .athlete
+                .as_ref()
+                .context("eligible relay member without a linked athlete")?;
+            ensure!(
+                athletes.iter().any(|row| &row.id == athlete),
+                "linked relay member athlete is retained"
+            );
+        }
+    }
+    ensure!(
+        expected.is_empty(),
+        "published relay legs without a retained squad member"
     );
     Ok(())
 }
@@ -176,8 +321,11 @@ fn athleticnet_whole_meet_route_pulls_two_requests_and_stores_every_storable_row
             );
             ensure!(report.errors == 0, "no request failed: {}", report.errors);
             ensure!(
-                report.rows == u64::try_from(captured_subject_keys()?.len())?,
-                "every independently inventoried native result subject is retained: {}",
+                report.rows
+                    == u64::try_from(
+                        captured_individual_keys()?.len() + captured_relay_parents()?.len()
+                    )?,
+                "individual results plus relay squads are retained: {}",
                 report.rows
             );
 
@@ -219,20 +367,8 @@ fn athleticnet_whole_meet_route_pulls_two_requests_and_stores_every_storable_row
             let performances: Vec<CanonicalPerformance> =
                 harness.store.scan(Table::Performances)?;
             exact_capture_subjects(&performances)?;
-            let legs: Vec<&CanonicalPerformance> = performances
-                .iter()
-                .filter(|row| row.source_key.contains(":leg"))
-                .collect();
-            ensure!(
-                legs.iter()
-                    .map(|row| &row.source_key)
-                    .collect::<BTreeSet<_>>()
-                    == captured_subject_keys()?
-                        .iter()
-                        .filter(|key| key.contains(":leg"))
-                        .collect::<BTreeSet<_>>(),
-                "every published native relay member has exactly one result subject"
-            );
+            let relays: Vec<RelayResult> = harness.store.scan(Table::RelayResults)?;
+            exact_capture_relays(&relays, &athletes)?;
             ensure!(
                 performances.iter().all(|row| row
                     .observed_grade
@@ -276,13 +412,19 @@ fn athleticnet_third_request_is_spent_only_when_asked_and_changes_no_row() -> Re
                 report.requests
             );
             ensure!(
-                report.rows == u64::try_from(captured_subject_keys()?.len())?,
-                "optional event metadata loses or invents no captured result subject: {}",
+                report.rows
+                    == u64::try_from(
+                        captured_individual_keys()?.len() + captured_relay_parents()?.len()
+                    )?,
+                "optional event metadata loses or invents no captured subject: {}",
                 report.rows
             );
             let performances: Vec<CanonicalPerformance> =
                 harness.store.scan(Table::Performances)?;
             exact_capture_subjects(&performances)?;
+            let athletes: Vec<CanonicalAthlete> = harness.store.scan(Table::Athletes)?;
+            let relays: Vec<RelayResult> = harness.store.scan(Table::RelayResults)?;
+            exact_capture_relays(&relays, &athletes)?;
             Ok(())
         })
 }
@@ -296,7 +438,10 @@ fn athleticnet_second_run_resumes_from_the_journal_and_spends_nothing() -> Resul
             let harness = Harness::new(false)?;
             let first = harness.run(&harness.options(false)).await?;
             ensure!(
-                first.rows == u64::try_from(captured_subject_keys()?.len())?,
+                first.rows
+                    == u64::try_from(
+                        captured_individual_keys()?.len() + captured_relay_parents()?.len()
+                    )?,
                 "first capture subject conservation"
             );
             let second = harness.run(&harness.options(false)).await?;

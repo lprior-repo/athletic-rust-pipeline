@@ -51,7 +51,17 @@ pub(super) async fn ks_pass(
     limit: Option<usize>,
 ) -> super::TestResult<AdapterReport> {
     let fetcher = fetcher_for(store)?;
-    let ctx = context(&fetcher, store, OBSERVED_ON)?;
+    let durable = super::durable_capture::DurableCapture::mint()
+        .map_err(|error| anyhow::anyhow!("minting the durable capture: {error}"))?;
+    let owned = durable
+        .capture()
+        .map_err(|error| anyhow::anyhow!("minting the durable capture: {error}"))?;
+    let ctx = context(
+        census_crawl::CaptureContext::DurableV1(&owned),
+        &fetcher,
+        store,
+        OBSERVED_ON,
+    )?;
     let options = ks::Options {
         limit,
         refresh: false,

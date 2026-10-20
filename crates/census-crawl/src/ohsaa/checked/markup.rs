@@ -11,20 +11,34 @@ pub(super) fn table<'a>(html: &'a str, marker: &str) -> Result<&'a str, &'static
 
 pub(super) fn balanced(table: &str) -> Result<(), &'static str> {
     [
-        ("<tr", "</tr>"),
-        ("<td", "</td>"),
-        ("<th", "</th>"),
-        ("<span", "</span>"),
-        ("<a ", "</a>"),
+        ("tr", "</tr>"),
+        ("td", "</td>"),
+        ("th", "</th>"),
+        ("span", "</span>"),
+        ("a", "</a>"),
     ]
     .into_iter()
-    .try_for_each(|(open, close)| {
-        if table.matches(open).count() == table.matches(close).count() {
+    .try_for_each(|(tag, close)| {
+        if open_tags(table, tag) == table.matches(close).count() {
             Ok(())
         } else {
             Err("page table contains unfinished rows, cells or published fields")
         }
     })
+}
+
+fn open_tags(table: &str, tag: &str) -> usize {
+    let pattern = format!("<{tag}");
+    let mut count = 0;
+    let mut rest = table;
+    while let Some(index) = rest.find(pattern.as_str()) {
+        let after = rest[index + pattern.len()..].chars().next();
+        if matches!(after, Some('>' | '/' | ' ' | '\t' | '\n' | '\r' | '\u{C}')) {
+            count += 1;
+        }
+        rest = &rest[index + pattern.len()..];
+    }
+    count
 }
 
 pub(super) fn rows(table: &str) -> impl Iterator<Item = Result<&str, &'static str>> {

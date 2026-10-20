@@ -2,7 +2,7 @@ use super::super::Census;
 use crate::admission::WORK_CLASS_CONTROL;
 use crate::restate_services::Jobs;
 use crate::spawn::{Spawner, TaskReport};
-use census_store::{clock::SystemClock, Store};
+use census_store::clock::SystemClock;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -12,8 +12,8 @@ const CONTROL_HOLDERS: usize = 64;
 
 #[tokio::test(flavor = "current_thread")]
 async fn status_filesystem_walk_runs_on_the_blocking_region() -> TestResult {
-    let root = tempfile::tempdir()?;
-    let store = Arc::new(Store::open(root.path())?);
+    let (root, store) = census_store::test_fixture::temp_store()?;
+    let store = Arc::new(store);
     let directory = root.path().join("status-probe/nested");
     std::fs::create_dir_all(&directory)?;
     std::fs::write(directory.join("retained"), [1_u8; 4096])?;

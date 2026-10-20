@@ -7,10 +7,10 @@ const NATIONAL_GENERATION_REVISION: u16 = 1;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PublicationContract {
-    #[default]
     LegacySeparateV1,
     ManagedBundleV2,
     SelectedPublicationV1,
+    #[default]
     SelectedPublicationV2,
 }
 

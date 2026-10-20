@@ -56,9 +56,10 @@ fn context<'a>(
     store: &'a Store,
     fetcher: &'a Fetcher,
     recording: Option<&'a Recording>,
+    capture: &'a crate::ResultsCaptureContext,
 ) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         store,
         fetcher,
         recording,
@@ -72,7 +73,8 @@ fn context<'a>(
 #[test]
 fn abandoned_page_leaves_no_school_athlete_observation_or_journal() -> TestResult {
     let (_directory, store, fetcher) = scratch()?;
-    let ctx = context(&store, &fetcher, None)?;
+    let capture = crate::net::durable_capture_context(&_directory.path().join("capture"))?;
+    let ctx = context(&store, &fetcher, None, &capture)?;
     drop(buffered_page(&ctx)?);
     for table in [Table::Schools, Table::Athletes, Table::SourceObservations] {
         check!(eq; store.walk_table(table)?.rows, 0, "{table:?}");
@@ -96,7 +98,8 @@ fn abandoned_page_leaves_no_school_athlete_observation_or_journal() -> TestResul
 fn recording_retains_observations_with_the_page_and_never_writes_the_store() -> TestResult {
     let (_directory, store, fetcher) = scratch()?;
     let recording = Recording::new();
-    let ctx = context(&store, &fetcher, Some(&recording))?;
+    let durable = crate::net::durable_capture_context(&_directory.path().join("capture"))?;
+    let ctx = context(&store, &fetcher, Some(&recording), &durable)?;
     drop(buffered_page(&ctx)?);
     check!(recording.drain().is_empty());
     buffered_page(&ctx)?.commit()?;

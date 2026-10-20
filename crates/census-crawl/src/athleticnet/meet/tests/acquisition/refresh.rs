@@ -1,4 +1,5 @@
 use super::*;
+use crate::ResultsCaptureContext;
 use census_domain::model::{
     CanonicalEvent, CanonicalSchool, CanonicalTeam, ReviewCase, SourceObservation,
 };
@@ -30,6 +31,8 @@ fn check_refresh(context_refresh: bool, options_refresh: bool) -> TestResult {
         .block_on(async {
             for event_metadata in [false, true] {
                 let directory = tempfile::tempdir()?;
+                let capture =
+                    crate::net::durable_capture_context(&directory.path().join("capture"))?;
                 let store_path = directory.path().join("store");
                 let cache = directory.path().join("http");
                 seed_documents(&cache)?;
@@ -49,7 +52,8 @@ fn check_refresh(context_refresh: bool, options_refresh: bool) -> TestResult {
                     ..Options::default()
                 };
                 let first =
-                    crate::athleticnet::collect(&context(&store, &fetcher)?, &options).await?;
+                    crate::athleticnet::collect(&context(&store, &fetcher, &capture)?, &options)
+                        .await?;
                 check!(eq; (first.rows, first.errors, first.requests, first.from_cache),
                     (1, 0, 0, 2 + u64::from(event_metadata)));
                 let before = retained(&store)?;
@@ -61,6 +65,7 @@ fn check_refresh(context_refresh: bool, options_refresh: bool) -> TestResult {
                     &options,
                     context_refresh,
                     options_refresh,
+                    &capture,
                 )
                 .await?;
                 check!(eq; retained(&store)?, before);
@@ -74,6 +79,7 @@ fn check_refresh(context_refresh: bool, options_refresh: bool) -> TestResult {
                     &options,
                     context_refresh,
                     options_refresh,
+                    &capture,
                 )
                 .await?;
                 check!(eq; retained(&reopened)?, before);
@@ -89,8 +95,9 @@ async fn assert_replay_and_refresh(
     options: &Options,
     context_refresh: bool,
     options_refresh: bool,
+    capture: &ResultsCaptureContext,
 ) -> TestResult {
-    let mut ctx = context(store, fetcher)?;
+    let mut ctx = context(store, fetcher, capture)?;
     let replay = crate::athleticnet::collect(&ctx, options).await?;
     check!(eq; (replay.rows, replay.errors, replay.requests, replay.from_cache), (0, 0, 0, 0));
     ctx.refresh = context_refresh;
@@ -108,9 +115,13 @@ async fn assert_replay_and_refresh(
     Ok(())
 }
 
-fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<crate::AdapterContext<'a>> {
+fn context<'a>(
+    store: &'a Store,
+    fetcher: &'a Fetcher,
+    capture: &'a crate::ResultsCaptureContext,
+) -> TestResult<crate::AdapterContext<'a>> {
     Ok(crate::AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher,
         store,
         refresh: false,

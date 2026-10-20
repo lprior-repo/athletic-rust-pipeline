@@ -1,6 +1,6 @@
 use super::collect;
 use crate::ihsa::Options;
-use crate::{AdapterContext, AdapterReport};
+use crate::{AdapterContext, AdapterReport, ResultsCaptureContext};
 use census_domain::model::{
     CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, ExactSeconds, Mark,
     RelayResult, SchoolYear, SourceNamespace,
@@ -59,6 +59,7 @@ fn trimmed_events() -> TestResult<String> {
 struct Harness {
     dir: tempfile::TempDir,
     store: Store,
+    capture: ResultsCaptureContext,
 }
 
 impl Harness {
@@ -92,7 +93,12 @@ impl Harness {
             ],
         )?;
         let store = Store::open(dir.path().join("store"))?;
-        Ok(Self { dir, store })
+        let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
+        Ok(Self {
+            dir,
+            store,
+            capture,
+        })
     }
 
     async fn run(&self, options: &Options) -> TestResult<AdapterReport> {
@@ -105,7 +111,7 @@ impl Harness {
             Vec::new(),
         )?;
         let ctx = AdapterContext {
-            capture: crate::CaptureContext::LegacyMetadata,
+            capture: crate::CaptureContext::DurableV1(&self.capture),
             fetcher: &fetcher,
             store: &self.store,
             refresh: false,

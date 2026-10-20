@@ -13,9 +13,13 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 const STAMP: &str = "2026-09-20T14:39:00Z";
 const URL: &str = "https://api.ihsa.org/v1/track-field/meets/2026/events?gender=Boys";
 
-fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
+fn context<'a>(
+    store: &'a Store,
+    fetcher: &'a Fetcher,
+    capture: &'a crate::ResultsCaptureContext,
+) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher,
         store,
         refresh: false,
@@ -41,6 +45,7 @@ fn meet_row() -> MeetRow {
 fn historical_tournament_completions_are_preserved_when_parser_three_claims_new_credit(
 ) -> TestResult {
     let dir = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let store = Store::open(dir.path().join("store"))?;
     let fetcher = Fetcher::new(
         dir.path().join("http"),
@@ -50,7 +55,7 @@ fn historical_tournament_completions_are_preserved_when_parser_three_claims_new_
         Vec::new(),
     )?
     .with_offline(true);
-    let ctx = context(&store, &fetcher)?;
+    let ctx = context(&store, &fetcher, &capture)?;
     let old_meet = json!({"key":"meet:74003","url":URL,"parser":2,"parsed":true,
         "refreshed_at":meet_row().last_refreshed_at,"performance_as_of":ctx.performance_as_of});
     let old_list = json!({"key":"qualifiers:2025-26:688","url":URL,"parser":2,"parsed":true});
@@ -123,6 +128,7 @@ fn legacy_witness<T: serde::Serialize>(
 fn old_fact_witnesses_cannot_hide_the_new_xc_interpretation_or_duplicate_its_replay() -> TestResult
 {
     let dir = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let store = Store::open(dir.path().join("store"))?;
     let fetcher = Fetcher::new(
         dir.path().join("http"),
@@ -132,7 +138,7 @@ fn old_fact_witnesses_cannot_hide_the_new_xc_interpretation_or_duplicate_its_rep
         Vec::new(),
     )?
     .with_offline(true);
-    let ctx = context(&store, &fetcher)?;
+    let ctx = context(&store, &fetcher, &capture)?;
     let mapper = mapped(&ctx)?;
     let meet = mapper
         .accumulated

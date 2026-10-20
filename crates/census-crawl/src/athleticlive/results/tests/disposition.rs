@@ -37,6 +37,7 @@ fn stale_numeric_no_results_keep_the_cohort_athlete_and_refused_locator() -> Tes
                 let body = document.to_string();
                 let doc = parse_event_document(&event_doc_url(2_150_205), &body)?;
                 let (dir, store, fetcher) = scratch()?;
+                let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
                 write_schools(
                     &store,
                     &labels_of(&labelled_schools(&doc, UsJurisdiction::Iowa)),
@@ -46,7 +47,7 @@ fn stale_numeric_no_results_keep_the_cohort_athlete_and_refused_locator() -> Tes
                     documents: vec![path.clone()],
                     ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
                 };
-                collect(&context(&store, &fetcher)?, &options).await?;
+                collect(&context(&store, &fetcher, &capture)?, &options).await?;
                 let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
                 check!(eq; performances.len(), 1, "{status}");
                 let performance = performances.first().ok_or("retained raw row")?;

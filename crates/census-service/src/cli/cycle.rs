@@ -222,8 +222,6 @@ fn derive_index(store: &Store, observed_on: &str, school_year: SchoolYear) -> Re
 }
 
 async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
-    let export_job = selected_request(args)?
-        .ok_or_else(|| anyhow::anyhow!("live cycle requires an explicit selected publication"))?;
     if args.input.is_some() || !args.meets.is_empty() {
         anyhow::bail!(
             "the gather stage writes the store the running service holds: --input and --meets need --store"
@@ -232,6 +230,8 @@ async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
     let options = publication_options(args)?;
     let generation = ExportGeneration::resolve(args.generation.as_deref())?;
     let client = ingress::client(origin)?;
+    let export_job = selected_request(args)?
+        .ok_or_else(|| anyhow::anyhow!("live cycle requires an explicit selected publication"))?;
     super::publication_preflight::require_publication_contract(
         &client,
         census_service::restate_services::PublicationContract::SelectedPublicationV1,

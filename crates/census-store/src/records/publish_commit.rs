@@ -267,6 +267,7 @@ fn mark(store: &Store, intent: &Intent, state: State) -> StoreResult<Intent> {
     }
     match (&intent.state, &state) {
         (State::Requested, State::Intent { .. }) => {}
+        (State::Published { receipt }, State::Intent { desired }) if receipt != desired => {}
         (State::Intent { desired }, State::Published { receipt }) if desired == receipt => {
             let actual = store
                 .lease_read(intent.request.identity.as_str())?

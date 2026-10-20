@@ -6,7 +6,7 @@ use census_store::Store;
 
 #[test]
 fn naked_bests_writer_refuses_empty_selected_output_before_creating_files() -> TestResult {
-    for policy in [18, 19, 20, 21] {
+    for policy in [19, 20, 21] {
         let directory = tempfile::tempdir()?;
         let store = Store::open(directory.path().join("store"))?;
         let mut dataset = ExportDataset::load(&store)?;
@@ -56,7 +56,7 @@ fn naked_bests_writer_does_not_replace_existing_files_from_selected_rows() -> Te
 
 #[test]
 fn historical_bests_writer_uses_its_dataset_policy_for_empty_output() -> TestResult {
-    for (policy, columns) in [(18, 36), (19, 36), (20, 36), (21, 39)] {
+    for (policy, columns) in [(19, 36), (20, 36), (21, 39)] {
         let directory = tempfile::tempdir()?;
         let store = Store::open(directory.path().join("store"))?;
         let mut dataset = ExportDataset::load(&store)?;

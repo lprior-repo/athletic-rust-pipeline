@@ -27,9 +27,7 @@ pub(super) fn terminal(
 impl<'a> ReportGroupKey<'a> {
     pub(super) fn of(performance: &'a CanonicalPerformance, policy: EventSemantics) -> Self {
         match policy {
-            EventSemantics::Legacy18
-            | EventSemantics::FlatEvents19
-            | EventSemantics::CombinedEvents20 => {
+            EventSemantics::FlatEvents19 | EventSemantics::CombinedEvents20 => {
                 Self::HistoricalContext(CompetitionContext::of(performance))
             }
             EventSemantics::ResultGroups21 | EventSemantics::ResultGroups22 => {

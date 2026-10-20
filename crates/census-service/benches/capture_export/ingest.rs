@@ -11,6 +11,9 @@ use census_domain::model::{
 };
 use census_service::census::consolidate;
 use census_store::{Store, Table};
+
+#[path = "../../tests/common/durable_capture.rs"]
+mod durable_capture;
 use std::collections::{BTreeSet, HashMap};
 use std::time::Duration;
 use tokio::runtime::Runtime;
@@ -31,9 +34,11 @@ pub fn run(store: &Store, runtime: &Runtime) -> Result<()> {
         Vec::new(),
     )?
     .with_offline(true);
+    let durable = durable_capture::DurableCapture::mint()
+        .map_err(|error| anyhow::anyhow!("minting the durable capture: {error}"))?;
     EVENTS
         .iter()
-        .try_for_each(|event| collect_one(store, runtime, &fetcher, event))?;
+        .try_for_each(|event| collect_one(store, runtime, &fetcher, &durable, event))?;
     consolidate(store)?;
     Ok(())
 }
@@ -98,9 +103,18 @@ fn target(event: &Event) -> MeetTarget {
     }
 }
 
-fn collect_one(store: &Store, runtime: &Runtime, fetcher: &Fetcher, event: &Event) -> Result<()> {
+fn collect_one(
+    store: &Store,
+    runtime: &Runtime,
+    fetcher: &Fetcher,
+    durable: &durable_capture::DurableCapture,
+    event: &Event,
+) -> Result<()> {
+    let owned = durable
+        .capture()
+        .map_err(|error| anyhow::anyhow!("minting the durable capture: {error}"))?;
     let context = AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture: census_crawl::CaptureContext::DurableV1(&owned),
         fetcher,
         store,
         refresh: false,

@@ -1,6 +1,8 @@
 #[path = "common/capture_cache.rs"]
 mod capture_cache;
 mod common;
+#[path = "common/durable_capture.rs"]
+mod durable_capture;
 
 use anyhow::{ensure, Context, Result};
 use census_crawl::mshsl::{self, COACH_API_PREFIX, TEAMS_VIEW_URL};
@@ -23,9 +25,13 @@ fn fetcher(cache: &Path) -> Result<Fetcher> {
     Ok(Fetcher::new(cache, None, Duration::ZERO, HashMap::new(), Vec::new())?.with_offline(true))
 }
 
-fn context<'a>(fetcher: &'a Fetcher, store: &'a Store) -> Result<AdapterContext<'a>> {
+fn context<'a>(
+    capture: census_crawl::CaptureContext<'a>,
+    fetcher: &'a Fetcher,
+    store: &'a Store,
+) -> Result<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture,
         fetcher,
         store,
         refresh: false,
@@ -63,9 +69,11 @@ fn mshsl_collection_retains_published_coaches_and_physical_capture_evidence() ->
         let root = dir.path().join("store");
         let store = Store::open(&root)?;
         let fetcher = fetcher(&cache)?;
+        let durable = durable_capture::DurableCapture::mint()?;
+        let owned = durable.capture()?;
         let options = mshsl::Options { limit: Some(1), school_names: vec!["Aitkin High School".into()],
             ..mshsl::Options::default() };
-        let report = mshsl::collect(&context(&fetcher, &store)?, &options).await?;
+        let report = mshsl::collect(&context(census_crawl::CaptureContext::DurableV1(&owned), &fetcher, &store)?, &options).await?;
         ensure!(report.requests == 0 && report.errors == 0, "{report:?}");
         let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
         ensure!(schools.len() == 1 && schools.first().is_some_and(|school| school.name == "Aitkin High School"));
@@ -88,12 +96,12 @@ fn mshsl_collection_retains_published_coaches_and_physical_capture_evidence() ->
         let physical = store.stats()?.tables;
         drop(store);
         let reopened = Store::open(&root)?;
-        mshsl::collect(&context(&fetcher, &reopened)?, &options).await?;
+        mshsl::collect(&context(census_crawl::CaptureContext::DurableV1(&owned), &fetcher, &reopened)?, &options).await?;
         ensure!(reopened.scan::<CanonicalSchool>(Table::Schools)? == schools);
         ensure!(reopened.scan::<CanonicalCoach>(Table::Coaches)? == coaches);
         ensure!(reopened.stats()?.tables == physical);
         seed_cache(&cache, &mshsl::listing_page_url(0), &format!("{listing}{listing}"))?;
-        let duplicate_report = mshsl::collect(&context(&fetcher, &reopened)?, &options).await?;
+        let duplicate_report = mshsl::collect(&context(census_crawl::CaptureContext::DurableV1(&owned), &fetcher, &reopened)?, &options).await?;
         ensure!(duplicate_report.errors == 0 && duplicate_report.rows == 0, "{duplicate_report:?}");
         ensure!(duplicate_report.disposition == census_crawl::CollectionDisposition::Complete, "{duplicate_report:?}");
         ensure!(duplicate_report.unfinished.is_empty(), "{duplicate_report:?}");
@@ -124,7 +132,9 @@ fn mshsl_listing_refusals_retain_the_capture_and_stop_the_failed_frontier() -> R
             seed_cache(&cache, &mshsl::listing_page_url(1), "<html>must not be visited</html>")?;
             let store = Store::open(dir.path().join("store"))?;
             let fetcher = fetcher(&cache)?;
-            let report = mshsl::collect(&context(&fetcher, &store)?, &mshsl::Options::default()).await?;
+            let durable = durable_capture::DurableCapture::mint()?;
+            let owned = durable.capture()?;
+            let report = mshsl::collect(&context(census_crawl::CaptureContext::DurableV1(&owned), &fetcher, &store)?, &mshsl::Options::default()).await?;
             ensure!(report.errors == 1 && report.rows == 0, "{report:?}");
             ensure!(report.requests == 0 && report.from_cache == 1, "{report:?}");
             ensure!(report.disposition == census_crawl::CollectionDisposition::Partial, "{report:?}");
@@ -159,9 +169,11 @@ fn controlled_plain_names_inventory_is_offline_and_retains_published_school_owne
         let root = dir.path().join("store");
         let store = Store::open(&root)?;
         let fetcher = fetcher(&cache)?;
+        let durable = durable_capture::DurableCapture::mint()?;
+        let owned = durable.capture()?;
         let options = plain_names::Options { states: vec![UsJurisdiction::NorthDakota, UsJurisdiction::Nebraska],
             ..plain_names::Options::default() };
-        let report = plain_names::collect(&context(&fetcher, &store)?, &options).await?;
+        let report = plain_names::collect(&context(census_crawl::CaptureContext::DurableV1(&owned), &fetcher, &store)?, &options).await?;
         ensure!(report.requests == 0 && report.errors == 0, "{report:?}");
         let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
         let observed: BTreeSet<_> = schools.iter().map(|school| (school.name.as_str(), school.state)).collect();
@@ -178,7 +190,7 @@ fn controlled_plain_names_inventory_is_offline_and_retains_published_school_owne
         let physical = store.stats()?.tables;
         drop(store);
         let reopened = Store::open(&root)?;
-        plain_names::collect(&context(&fetcher, &reopened)?, &options).await?;
+        plain_names::collect(&context(census_crawl::CaptureContext::DurableV1(&owned), &fetcher, &reopened)?, &options).await?;
         ensure!(reopened.scan::<CanonicalSchool>(Table::Schools)? == schools);
         ensure!(reopened.scan::<CanonicalCoach>(Table::Coaches)? == coaches);
         ensure!(reopened.stats()?.tables == physical);

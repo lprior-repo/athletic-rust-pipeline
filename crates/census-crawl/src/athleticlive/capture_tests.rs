@@ -1,4 +1,5 @@
 use super::*;
+use crate::ResultsCaptureContext;
 use census_domain::model::SchoolYear;
 use census_store::Store;
 
@@ -20,9 +21,10 @@ fn scratch() -> TestResult<(tempfile::TempDir, Store, crate::net::Fetcher)> {
 fn context<'a>(
     store: &'a Store,
     fetcher: &'a crate::net::Fetcher,
+    capture: &'a ResultsCaptureContext,
 ) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(capture),
         fetcher,
         store,
         refresh: false,
@@ -49,7 +51,8 @@ fn producer_metadata(url: String, bytes: usize) -> CacheMeta {
 #[test]
 fn capture_refuses_input_path_over_4096_bytes() -> TestResult {
     let (_root, store, fetcher) = scratch()?;
-    let ctx = context(&store, &fetcher)?;
+    let capture = crate::net::durable_capture_context(&_root.path().join("capture"))?;
+    let ctx = context(&store, &fetcher, &capture)?;
     let input = "x".repeat(4097);
     let metadata = producer_metadata("https://live.athletic.net/meets/1".to_string(), 0);
     let error = match freeze(&ctx, &input, Some(&metadata), 32) {
@@ -74,7 +77,8 @@ fn capture_refuses_input_path_over_4096_bytes() -> TestResult {
 #[test]
 fn capture_refuses_producer_metadata_field_over_4096_bytes() -> TestResult {
     let (_root, store, fetcher) = scratch()?;
-    let ctx = context(&store, &fetcher)?;
+    let capture = crate::net::durable_capture_context(&_root.path().join("capture"))?;
+    let ctx = context(&store, &fetcher, &capture)?;
     let metadata = producer_metadata(format!("https://live.athletic.net/{}", "a".repeat(4096)), 0);
     let error = match freeze(&ctx, "absent-capture.json", Some(&metadata), 32) {
         Err(error) => error,
@@ -98,7 +102,8 @@ fn capture_refuses_producer_metadata_field_over_4096_bytes() -> TestResult {
 #[test]
 fn capture_refuses_declared_body_over_32_bytes() -> TestResult {
     let (_root, store, fetcher) = scratch()?;
-    let ctx = context(&store, &fetcher)?;
+    let capture = crate::net::durable_capture_context(&_root.path().join("capture"))?;
+    let ctx = context(&store, &fetcher, &capture)?;
     let metadata = producer_metadata("https://live.athletic.net/meets/1".to_string(), 33);
     let error = match freeze(&ctx, "absent-capture.json", Some(&metadata), 32) {
         Err(error) => error,
@@ -122,7 +127,8 @@ fn capture_refuses_declared_body_over_32_bytes() -> TestResult {
 #[test]
 fn capture_refuses_physical_body_over_32_bytes_through_the_chunk_loop() -> TestResult {
     let (root, store, fetcher) = scratch()?;
-    let ctx = context(&store, &fetcher)?;
+    let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
+    let ctx = context(&store, &fetcher, &capture)?;
     let input = root.path().join("over-limit.json");
     std::fs::File::create(&input)?.set_len(33)?;
     let path = input.to_string_lossy().into_owned();

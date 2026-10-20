@@ -1,6 +1,7 @@
 use self::error::BrowserStartupError;
 use super::{actor::Command, gate::ProfileGate, BrowserStatus};
 use crate::clock::Clock;
+use crate::drain::DrainReport;
 use std::sync::{Arc, Mutex, RwLock};
 use tokio::{
     sync::{mpsc, Mutex as AsyncMutex},
@@ -16,14 +17,17 @@ pub(super) enum ActorJoinState {
 pub(crate) mod child;
 mod commands;
 pub(crate) mod error;
-mod exit;
 mod owner;
 mod shutdown;
 mod startup;
 pub use owner::{BrowserCleanupAttempt, BrowserExit, BrowserOwner, BrowserStartup};
 mod status;
 
-pub(super) use exit::ActorExit;
+#[derive(Debug)]
+pub(crate) struct ActorExit {
+    pub(crate) report: DrainReport,
+    pub(crate) failure: Option<BrowserStartupError>,
+}
 pub(super) use status::{read_status, remaining_ms, write_state};
 
 pub struct BrowserManager {

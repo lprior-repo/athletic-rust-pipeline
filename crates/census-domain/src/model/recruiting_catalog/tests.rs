@@ -104,15 +104,6 @@ fn every_existing_positive_family_is_admitted_without_distance_remapping() -> Te
 }
 
 #[test]
-fn historical_long_flat_distances_remain_visible_unresolved() -> TestResult {
-    for label in ["2000m", "10000m", "2000 metre", "10,000m", "10k"] {
-        let event = owned(unmapped(label), &[label])?;
-        check!(eq; RecruitingCatalogV1::with_policy(EventSemantics::Legacy18).classify(&event, Sport::OutdoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::UnsupportedScholasticVariant), "{label}");
-    }
-    Ok(())
-}
-
-#[test]
 fn explicit_excluded_disciplines_never_inherit_ordinary_running_substrings() -> TestResult {
     for (label, reason) in [
         ("1500m Racewalk", EventExclusionReason::CompetitiveWalking),

@@ -47,6 +47,7 @@ fn parsed_invalid_rows_with_stale_positive_integer_marks_retain_athlete_status_a
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let body = status_document()?;
             let doc = parse_event_document("status.json", &body)?;
             write_schools(
@@ -58,7 +59,7 @@ fn parsed_invalid_rows_with_stale_positive_integer_marks_retain_athlete_status_a
                 documents: vec![path],
                 ..ResultOptions::for_meet(mits_meet(), OBSERVED_ON)
             };
-            let report = collect(&context(&store, &fetcher)?, &options).await?;
+            let report = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; report.errors, 0, "{}", joined(&report));
             let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
             let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
@@ -111,6 +112,7 @@ fn parsed_standings_invalid_status_overrides_stale_numeric_raw_time_and_retains_
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             write_schools(&store, &[(UsJurisdiction::Iowa, "Waukon")])?;
             let doc_path = stage_capture(&dir, "event-doc-2150205.json", XC_STATE)?;
             let mut payload: Value =
@@ -134,7 +136,7 @@ fn parsed_standings_invalid_status_overrides_stale_numeric_raw_time_and_retains_
                 }],
                 ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
             };
-            let report = collect(&context(&store, &fetcher)?, &options).await?;
+            let report = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; report.errors, 0, "{}", joined(&report));
             let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
             let rejected_winner = performances

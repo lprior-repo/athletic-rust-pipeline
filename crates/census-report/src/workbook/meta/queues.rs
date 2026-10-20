@@ -4,6 +4,7 @@ use census_domain::model::{
     IDENTITY_UNVERIFIED_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
     UNRESOLVED_VENUE_FAMILY, UNSUPPORTED_GRADUATION_FAMILY,
 };
+use census_domain::public_identity_history::PublicResolution;
 use census_review::ReviewFamily;
 use std::collections::HashMap;
 
@@ -218,6 +219,20 @@ pub(in crate::workbook) fn cohort_of(
         selection.grad_year(),
         selection.jurisdictions(),
     )
+}
+
+pub(in crate::workbook) fn resolution_state(resolution: Option<&PublicResolution>) -> &'static str {
+    match resolution {
+        Some(PublicResolution::Unknown) => "unknown",
+        Some(PublicResolution::Unresolved) => "unresolved",
+        Some(PublicResolution::Ambiguous { .. }) => "ambiguous",
+        Some(
+            PublicResolution::Canonical(_)
+            | PublicResolution::Redirect { .. }
+            | PublicResolution::RevokedRedirect { .. },
+        ) => "group_withheld",
+        None => "absent",
+    }
 }
 
 fn queue_row(id: &str, subject: String, detail: String) -> QueueRow {

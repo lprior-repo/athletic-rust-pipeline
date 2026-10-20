@@ -145,18 +145,6 @@ pub(super) struct NationalArgs {
     )]
     school_directory: Option<String>,
     #[arg(
-        long = "evidence-url",
-        value_name = "SOURCE=URL",
-        help = "Capture URL recorded on every postal claim from that source (`nces-ccd`/`nces-pss`), repeatable"
-    )]
-    evidence_urls: Vec<String>,
-    #[arg(
-        long = "evidence-date",
-        value_name = "SOURCE=YYYY-MM-DD",
-        help = "Observation date recorded on every postal claim from that source, repeatable"
-    )]
-    evidence_dates: Vec<String>,
-    #[arg(
         help = "Re-drive rounds for jurisdictions that still owe source work; each round re-runs owed stages and stops early when a round makes no progress. 0 disables re-driving"
     )]
     #[arg(long, default_value_t = 96)]

@@ -1,8 +1,8 @@
 use super::TestResult;
 use census_domain::model::{
-    CanonicalPerformance, DiscoveryPriorityV1, Gender, GradYear, PerformanceWindowV1, ProfileDate,
-    ProfileDateRangeV1, ProfilePoliciesV1, ProfileSelectionV1, ProvisionalInclusionV1,
-    QueryProfileInputV1, QueryProfileV1, RegionalMembershipV1, SchoolYear, Sport,
+    DiscoveryPriorityV1, Gender, GradYear, PerformanceWindowV1, ProfileDate, ProfileDateRangeV1,
+    ProfilePoliciesV1, ProfileSelectionV1, ProvisionalInclusionV1, QueryProfileInputV1,
+    QueryProfileV1, RegionalMembershipV1, SchoolYear, Sport,
 };
 use census_domain::profile_execution::{
     selected_qualification_contract_ref_v3 as reference, ContractRoleV1 as Role,
@@ -11,6 +11,10 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use std::path::{Path, PathBuf};
 
+#[path = "fixture/golden.rs"]
+mod golden;
+#[path = "fixture/golden_journal.rs"]
+mod golden_journal;
 #[path = "fixture/results.rs"]
 mod results;
 #[path = "fixture/roster.rs"]
@@ -34,7 +38,7 @@ impl Fixture {
         Store::create_public_identity_qualification_v3(&root)?;
         let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
         writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
-        let performance = results::append(&store).await?;
+        let performance = results::append(&store)?;
         let (_, _, roster_reference) = roster::append_for(&store, &performance.athlete)?;
         for athlete in store.snapshot().athletes()? {
             writer.establish_source_bound(

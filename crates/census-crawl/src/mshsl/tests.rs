@@ -606,6 +606,7 @@ fn honorifics_are_stripped_before_minting() {
 fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     let dir = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let cache = dir.path().join("http");
     let teams_url = format!(
         "{TEAMS_VIEW_URL}?views-argument%5B%5D=7&fields%5Bnode--participant%5D=title,path,drupal_internal__nid"
@@ -630,7 +631,7 @@ fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache() -> Te
     )
     ?.with_offline(true);
     let ctx = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher: &fetcher,
         store: &store,
         refresh: false,

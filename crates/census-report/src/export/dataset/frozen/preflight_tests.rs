@@ -1,4 +1,5 @@
 use super::super::{decoded_generations, ExportDataset};
+use crate::export::ExportJobRequest;
 use crate::report::ReportError;
 use census_domain::model::CanonicalSchool;
 use census_domain::UsJurisdiction;
@@ -20,7 +21,7 @@ fn historical_publication_policy_is_refused(revision: u32) -> TestResult {
     historical["lineage"] = serde_json::to_value(old_lineage)?;
     let retained = serde_json::to_vec(&historical)?;
     std::fs::write(&archive, &retained)?;
-    if matches!(revision, 18 | 19) {
+    if matches!(revision, 19) {
         let retained = ExportDataset::reopen_frozen(&archive)?;
         check!(eq; retained.lineage.policy_revision, revision);
         check!(eq; retained.semantic_policy()?.revision(), revision);
@@ -50,7 +51,7 @@ fn stale_job_is_refused_before_a_complete_generation_is_decoded() -> TestResult 
     let temporary = tempfile::tempdir()?;
     let store = Store::open(temporary.path().join("store"))?;
     let job = "preflight-stale-job";
-    let captured = ExportDataset::for_job(&store, job)?;
+    let captured = ExportDataset::for_job_request(&store, job, &ExportJobRequest::LegacyV2)?;
     let lineage = captured.lineage.clone();
     drop(captured);
     let archive = store.out_dir().join("export-inputs").join(format!(
@@ -62,7 +63,7 @@ fn stale_job_is_refused_before_a_complete_generation_is_decoded() -> TestResult 
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Later School", "later", None);
     store.append(Table::Schools, &school)?;
     let decoded = decoded_generations();
-    let error = match ExportDataset::for_job(&store, job) {
+    let error = match ExportDataset::for_job_request(&store, job, &ExportJobRequest::LegacyV2) {
         Err(error) => error,
         Ok(_) => return Err("stale job decoded and reopened".into()),
     };
@@ -128,7 +129,7 @@ fn policy_sixteen_archive_is_refused_without_rewriting_retained_bytes() -> TestR
     historical_publication_policy_is_refused(16)
 }
 #[test]
-fn policy_eighteen_archive_is_read_only_without_rewriting_retained_bytes() -> TestResult {
+fn policy_eighteen_archive_is_refused_without_rewriting_retained_bytes() -> TestResult {
     historical_publication_policy_is_refused(18)
 }
 

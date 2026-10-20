@@ -12,7 +12,7 @@ use serde_json::{json, Value};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-const TROY: &[u8] = include_bytes!("../../owned/fixtures/troy_725218.json");
+use crate::milesplit::troy_fixture::BODY as TROY;
 
 mod binding;
 mod cohorts;
@@ -39,9 +39,7 @@ fn school(name: &str, team: &str) -> CanonicalSchool {
 
 fn metadata() -> TestResult<RawPage> {
     Ok(crate::milesplit::raw::parse_raw(
-        include_str!(
-            "../../../../tests/fixtures/milesplit/troy_725218_rs1266814_raw_projection.html"
-        ),
+        std::str::from_utf8(crate::milesplit::troy_fixture::FEMALE_RAW)?,
         "https://al.milesplit.com/meets/725218/results/1266814/raw",
     )?)
 }

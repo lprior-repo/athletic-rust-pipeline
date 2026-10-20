@@ -256,6 +256,8 @@ impl Endpoint {
             .arg(listen.to_string())
             .arg("--data-dir")
             .arg(data_dir)
+            .arg("--capture-protocol")
+            .arg("fresh-qualification-v3")
             .stdout(Stdio::from(log.as_file().try_clone()?))
             .stderr(Stdio::from(log.as_file().try_clone()?))
             .spawn()?;
@@ -642,6 +644,12 @@ async fn wait_for_consolidate_marker(path: &Path, deadline: Instant) -> Option<s
 }
 
 #[cfg(feature = "native-fault-injection")]
+fn open_qualified(data_dir: &Path) -> TestResult<Store> {
+    Ok(Store::open_current_qualification_v3(data_dir)?
+        .into_parts()
+        .0)
+}
+
 fn require_bound_snapshots(marker: &serde_json::Value, out: &Path) -> TestResult<usize> {
     let entries = marker
         .get("tables")
@@ -696,7 +704,8 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
 
             let corpus = synthetic_corpus(SCHOOLS, ATHLETES_PER_SCHOOL)?;
             {
-                let store = Store::open(&data_dir)?;
+                Store::create_current_qualification_v3(&data_dir)?;
+                let store = open_qualified(&data_dir)?;
                 corpus.append(&store)?;
             }
 
@@ -838,7 +847,7 @@ fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() -> TestResul
 
             endpoint.guard.stop_gracefully();
             let out = data_dir.join("out");
-            let store = Store::open(&data_dir)?;
+            let store = open_qualified(&data_dir)?;
             readback::verify_physical_observations(&store, &corpus)?;
             readback::verify_reply_tables(&output, &out)?;
             readback::verify_snapshots(&out, &corpus)?;
@@ -863,7 +872,8 @@ fn b_restate_server_sigkill_resumes_workflow() -> TestResult {
 
     let corpus = synthetic_corpus(SCHOOLS, ATHLETES_PER_SCHOOL)?;
     {
-        let store = Store::open(&data_dir)?;
+        Store::create_current_qualification_v3(&data_dir)?;
+        let store = open_qualified(&data_dir)?;
         corpus.append(&store)?;
     }
 
@@ -971,7 +981,7 @@ fn b_restate_server_sigkill_resumes_workflow() -> TestResult {
     drop(node);
     endpoint.guard.stop_gracefully();
     let out = data_dir.join("out");
-    let store = Store::open(&data_dir)?;
+    let store = open_qualified(&data_dir)?;
     readback::verify_physical_observations(&store, &corpus)?;
     readback::verify_reply_tables(&output, &out)?;
     readback::verify_snapshots(&out, &corpus)?;
@@ -996,7 +1006,8 @@ fn c_consolidate_boundary_crash_replays_the_committed_snapshots() -> TestResult 
 
             let corpus = synthetic_corpus(BOUNDARY_SCHOOLS, BOUNDARY_ATHLETES_PER_SCHOOL)?;
             {
-                let store = Store::open(&data_dir)?;
+                Store::create_current_qualification_v3(&data_dir)?;
+                let store = open_qualified(&data_dir)?;
                 corpus.append(&store)?;
             }
 
@@ -1142,7 +1153,7 @@ fn c_consolidate_boundary_crash_replays_the_committed_snapshots() -> TestResult 
                 })?;
 
             endpoint.guard.stop_gracefully();
-            let store = Store::open(&data_dir)?;
+            let store = open_qualified(&data_dir)?;
             readback::verify_physical_observations(&store, &corpus)?;
             readback::verify_reply_tables(&output, &out)?;
             readback::verify_snapshots(&out, &corpus)?;

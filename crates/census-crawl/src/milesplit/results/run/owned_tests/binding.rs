@@ -1,10 +1,8 @@
 use super::*;
 use crate::net::FetchOutcome;
-use census_domain::model::Sport;
+use census_domain::model::{SchoolYear, Sport};
 
 mod active_declarations;
-mod captured_metadata;
-use captured_metadata::assert_archived_metadata;
 
 fn capture(url: &str, body: &[u8]) -> FetchOutcome {
     FetchOutcome {
@@ -42,80 +40,6 @@ fn both_authentic_troy_raw_documents_publish_march_outdoor_metadata_for_school_y
         );
     }
     Ok(())
-}
-
-#[test]
-fn foreign_meet_result_set_or_canonical_document_metadata_never_projects_owned_troy_rows(
-) -> TestResult {
-    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-    let female = std::str::from_utf8(FEMALE_RAW)?;
-    let foreign_meet = female.replace(
-        "725218-troy-invitational-2-2026",
-        "770621-beaver-eastern-invite",
-    );
-    let foreign_canonical = female.replace(
-        "href=\"https://al.milesplit.com/meets/725218-troy-invitational-2-2026/results/1266814/raw\"",
-        "href=\"https://al.milesplit.com/meets/725218-troy-invitational-2-2026/results/1266815/raw\"",
-    );
-    let missing_owner = female.replace("\"url\":", "\"unowned_url\":");
-    for body in [
-        foreign_meet.as_bytes(),
-        MALE_RAW,
-        foreign_canonical.as_bytes(),
-        missing_owner.as_bytes(),
-    ] {
-        let (_dir, store, fetcher, reference) = setup()?;
-        seed_owned(&fetcher, &reference, TROY)?;
-        seed(&fetcher, &reference.url, body)?;
-        let report =
-            crate::milesplit::collect_result_sets(&context(&store, &fetcher)?, &options(&reference))
-                .await
-                ?;
-        check!(eq; (report.rows, report.errors), (0, 1));
-        check!(eq;
-            store
-                .scan::<CanonicalPerformance>(Table::Performances)
-                ?,
-            vec![]
-        );
-        check!(eq;
-            store
-                .scan::<CanonicalAthlete>(Table::Athletes)
-                ?,
-            vec![]
-        );
-        check!(eq;
-            store
-                .walk_table(Table::SourceObservations)
-                ?
-                .rows,
-            0
-        );
-        let payloads = store
-            .journal_payloads(super::super::super::RESULT_SET_PHASE)
-            ?;
-        check!(eq; payloads.len(), 1);
-        check!(eq; payloads[0]["disposition"], "metadata_unavailable");
-        check!(eq; payloads[0]["meet"], reference.meet_id);
-        check!(eq; payloads[0]["rsid"], reference.rsid);
-        check!(eq;
-            payloads[0]["raw_metadata_capture"]["content_digest"],
-            crate::net::cache::content_digest(body)
-        );
-        check!(eq; payloads[0]["raw_metadata_capture"]["url"], reference.url);
-        check!(eq;
-            payloads[0]["raw_metadata_capture"]["response_url"],
-            serde_json::Value::Null
-        );
-        assert_archived_metadata(&store, body)?;
-        check!(store
-            .journal_payloads(crate::milesplit::OWNED_MEET_PHASE)
-            ?
-            .iter()
-            .any(|row| row["result_id"] == 201782263));
-    }
-    Ok(())
-    })
 }
 
 #[test]

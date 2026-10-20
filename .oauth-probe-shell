@@ -1,1 +1,0 @@
-{"i":"probe","command":"printf PROBE_OK; echo; date -u +%FT%TZ","timeout":30}

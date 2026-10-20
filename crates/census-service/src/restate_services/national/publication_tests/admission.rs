@@ -144,7 +144,7 @@ fn input(scenario: Scenario) -> TestResult<Value> {
     object.insert(
         "school_address".to_owned(),
         json!({
-            "generation": "admission-must-not-preflight", "urls": {}, "dates": {}
+            "generation": "admission-must-not-preflight", "acquisitions": []
         }),
     );
     let publication = match scenario {
@@ -274,8 +274,7 @@ fn exact_request(
         Scenario::WrongAddressPin => {
             request.school_address = Some(serde_json::from_value(json!({
                 "generation": "original-directory",
-                "urls": {},
-                "dates": {},
+                "acquisitions": [],
                 "expected_digest": "wrong-address-pin"
             }))?);
         }

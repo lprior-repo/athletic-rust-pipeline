@@ -34,8 +34,4 @@ impl ExportDataset {
     ) -> ReportResult<Self> {
         frozen::job::capture(store, job, request)
     }
-
-    pub fn for_job(store: &Store, job: &str) -> ReportResult<Self> {
-        Self::for_job_request(store, job, &ExportJobRequest::LegacyV2)
-    }
 }

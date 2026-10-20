@@ -24,6 +24,7 @@ fn a_capture_whose_bytes_changed_is_read_again_instead_of_resumed() -> TestResul
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
             write_schools(
                 &store,
@@ -32,7 +33,7 @@ fn a_capture_whose_bytes_changed_is_read_again_instead_of_resumed() -> TestResul
             let path = stage_capture(&dir, "event-doc-2150205.json", XC_STATE)?;
             let options = resume_options(vec![path.clone()]);
 
-            let first = collect(&context(&store, &fetcher)?, &options).await?;
+            let first = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; first.rows, 136);
             let before = content_digest(XC_STATE.as_bytes());
 
@@ -47,7 +48,7 @@ fn a_capture_whose_bytes_changed_is_read_again_instead_of_resumed() -> TestResul
             let after = content_digest(changed.as_bytes());
             check!(ne; after, before, "the bytes under the path changed");
 
-            let second = collect(&context(&store, &fetcher)?, &options).await?;
+            let second = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; second.rows, 1, "the changed bytes are read, not skipped");
             check!(eq; second.errors, 0, "{}", joined(&second));
             check!(
@@ -85,6 +86,7 @@ fn bytes_journaled_for_one_meet_are_refused_for_another() -> TestResult {
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
             write_schools(
                 &store,
@@ -93,14 +95,14 @@ fn bytes_journaled_for_one_meet_are_refused_for_another() -> TestResult {
             let path = stage_capture(&dir, "state-final.json", XC_STATE)?;
 
             let iowa = resume_options(vec![path.clone()]);
-            let first = collect(&context(&store, &fetcher)?, &iowa).await?;
+            let first = collect(&context(&store, &fetcher, &capture)?, &iowa).await?;
             check!(eq; first.errors, 0, "{}", joined(&first));
 
             let michigan = ResultOptions {
                 documents: vec![path.clone()],
                 ..ResultOptions::for_meet(mits_meet(), OBSERVED_ON)
             };
-            let second = collect(&context(&store, &fetcher)?, &michigan).await?;
+            let second = collect(&context(&store, &fetcher, &capture)?, &michigan).await?;
             check!(eq; second.rows, 0, "the bytes are not projected under a second meet");
             check!(eq; second.errors, 1, "{}", joined(&second));
             check!(
@@ -124,6 +126,7 @@ fn a_missing_capture_file_resumes_from_the_archived_body() -> TestResult {
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
             write_schools(
                 &store,
@@ -133,11 +136,12 @@ fn a_missing_capture_file_resumes_from_the_archived_body() -> TestResult {
             let mut options = resume_options(vec![path.clone()]);
             options.capture_metadata = super::captures::documents(&options.documents)?;
 
-            let first = collect(&context(&store, &fetcher)?, &options).await?;
+            let first = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; first.rows, 136);
             std::fs::remove_file(&path)?;
 
-            let second = super::super::collect(&context(&store, &fetcher)?, &options).await?;
+            let second =
+                super::super::collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; second.rows, 0, "the archived bytes prove the capture was read");
             check!(eq; second.errors, 0, "{}", joined(&second));
             check!(
@@ -161,6 +165,7 @@ fn identical_bytes_at_a_second_path_are_one_archived_body() -> TestResult {
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
             write_schools(
                 &store,
@@ -169,7 +174,7 @@ fn identical_bytes_at_a_second_path_are_one_archived_body() -> TestResult {
             let first_path = stage_capture(&dir, "state-final.json", XC_STATE)?;
             let options = resume_options(vec![first_path.clone()]);
 
-            let first = collect(&context(&store, &fetcher)?, &options).await?;
+            let first = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; first.errors, 0, "{}", joined(&first));
             check!(eq;
                 captures(&store)?.len(),
@@ -184,7 +189,7 @@ fn identical_bytes_at_a_second_path_are_one_archived_body() -> TestResult {
             let copy_path = stage_capture(&dir, "state-final-renamed.json", XC_STATE)?;
             let rename_options = resume_options(vec![copy_path.clone()]);
 
-            let second = collect(&context(&store, &fetcher)?, &rename_options).await?;
+            let second = collect(&context(&store, &fetcher, &capture)?, &rename_options).await?;
             check!(eq; second.errors, 0, "{}", joined(&second));
             check!(eq;
                 captures(&store)?.len(),
@@ -220,6 +225,7 @@ fn a_store_holding_retired_path_receipts_refuses_to_resume() -> TestResult {
         .block_on(async {
             for retired in ["athleticlive_results_v2", "athleticlive_results_effect_v1"] {
                 let (dir, store, fetcher) = scratch()?;
+                let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
                 let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
                 write_schools(
                     &store,
@@ -228,7 +234,7 @@ fn a_store_holding_retired_path_receipts_refuses_to_resume() -> TestResult {
                 let path = stage_capture(&dir, "event-doc-2150205.json", XC_STATE)?;
                 let options = resume_options(vec![path.clone()]);
 
-                let ctx = context(&store, &fetcher)?;
+                let ctx = context(&store, &fetcher, &capture)?;
                 let mut page = ctx.write_batch();
                 page.journal_done(
                     retired,
@@ -237,7 +243,7 @@ fn a_store_holding_retired_path_receipts_refuses_to_resume() -> TestResult {
                 )?;
                 page.commit()?;
 
-                let error = match collect(&context(&store, &fetcher)?, &options).await {
+                let error = match collect(&context(&store, &fetcher, &capture)?, &options).await {
                     Err(error) => error,
                     Ok(report) => {
                         return Err(format!(

@@ -191,8 +191,7 @@ enum Tail {
 }
 
 fn walk_fixture(tail: Tail) -> TestResult<(tempfile::TempDir, Store, MeetCensus)> {
-    let root = tempfile::tempdir()?;
-    let store = Store::open(root.path().join("store"))?;
+    let (root, store) = census_store::test_fixture::temp_store()?;
     let fetcher = Fetcher::new(
         store.http_cache_dir(),
         None,

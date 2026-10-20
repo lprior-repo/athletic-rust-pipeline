@@ -55,6 +55,7 @@ async fn exchange_with_held_reply(
     }
     input.extend(["--selected-store-identity", store.as_str()]);
     input.extend(["--selected-profile-id", profile.as_str()]);
+    input.extend(["--generation", "qualified-v1"]);
     input.extend(arguments);
     input.extend(["--ingress", &origin]);
     let cli = crate::cli::Cli::try_parse_from(input)?;
@@ -109,11 +110,8 @@ async fn selected_only_endpoint_cannot_receive_generation_bound_national_submiss
         "publication_contracts": ["selected_publication_v1"]
     })
     .to_string();
-    let (captured, _) = exercise(
-        &["--generation", "qualified-v1"],
-        vec![("200 OK", old_capabilities), absent(), absent()],
-    )
-    .await?;
+    let (captured, _) =
+        exercise(&[], vec![("200 OK", old_capabilities), absent(), absent()]).await?;
     check!(eq; captured.len(), 1);
     check!(captured
         .first()
@@ -277,7 +275,7 @@ async fn resume_submission_preserves_the_bound_school_address_digest() -> TestRe
         .insert(
             "school_address".into(),
             serde_json::json!({
-                "generation": "original-directory", "urls": {}, "dates": {},
+                "generation": "original-directory", "acquisitions": [],
                 "expected_digest": "pinned-original-directory-digest"
             }),
         );

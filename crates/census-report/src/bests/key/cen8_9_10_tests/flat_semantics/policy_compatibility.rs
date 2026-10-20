@@ -41,12 +41,7 @@ fn explicit_policy_selects_four_distinct_flat_prs_without_conversions() -> TestR
         && row.meet.date == "2025-02-01"
         && row.result.value == 60_100_000_000));
     data.lineage.policy_revision = 18;
-    let historical = selections(&data)?;
-    check!(eq; historical.len(), 3);
-    check!(historical.iter().all(|row| matches!(
-        row.key.event_kind,
-        EventKind::Track3200m | EventKind::Track3000m | EventKind::Track300mHurdles
-    )));
+    check!(selections(&data).is_err());
     Ok(())
 }
 
@@ -132,14 +127,6 @@ fn direct_pr_construction_requires_the_callers_semantic_policy() -> TestResult {
             .iter()
             .find(|row| row.id == event.meet)
             .ok_or("meet")?;
-        let old = census_domain::model::performance_comparison::PrKey::from_performance(
-            performance,
-            event,
-            Some(meet),
-            census_domain::model::performance_comparison::Measure::Time,
-            EventSemantics::Legacy18,
-        )?;
-        check!(eq; old, None);
         let new = census_domain::model::performance_comparison::PrKey::from_performance(
             performance,
             event,

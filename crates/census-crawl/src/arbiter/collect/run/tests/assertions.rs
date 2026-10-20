@@ -36,7 +36,8 @@ pub(super) async fn recovers_same_school_once(first: FirstPage) -> TestResult {
     let expected = seed_failure(&cache, &first)?;
     let store = Store::open(dir.path().join("store"))?;
     let fetcher = fetcher(&cache)?;
-    let ctx = context(&fetcher, &store, None)?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
+    let ctx = context(&fetcher, &store, None, &capture)?;
     let options = options();
     let row = school();
     let mut failed = run(&ctx, &options)?;
@@ -97,8 +98,9 @@ pub(super) async fn assert_live_parity(
     options: &Options,
     row: &OrgSchool,
     host: &str,
+    capture: &ResultsCaptureContext,
 ) -> TestResult {
-    let ctx = context(recorded_ctx.fetcher, live, None)?;
+    let ctx = context(recorded_ctx.fetcher, live, None, capture)?;
     run(&ctx, options)?
         .process_school_at(UsJurisdiction::NewHampshire, "2132", row, (BASE, host))
         .await?;

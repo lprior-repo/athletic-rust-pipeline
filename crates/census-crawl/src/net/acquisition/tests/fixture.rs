@@ -16,9 +16,9 @@ use tokio_rustls::{rustls, TlsAcceptor};
 
 pub(crate) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 pub(crate) const CAPTURED: &str = "2026-10-01T23:44:16Z";
-pub(crate) const BODY: &[u8] = include_bytes!("../../../milesplit/owned/fixtures/troy_725218.json");
-const CERT: &[u8] = include_bytes!("fixtures/mi-milesplit-public-test-cert.der");
-const KEY: &[u8] = include_bytes!("fixtures/mi-milesplit-public-test-key.der");
+pub(crate) use crate::milesplit::troy_fixture::BODY;
+pub(crate) const CERT: &[u8] = include_bytes!("fixtures/mi-milesplit-public-test-cert.der");
+pub(crate) const KEY: &[u8] = include_bytes!("fixtures/mi-milesplit-public-test-key.der");
 pub(crate) const HOST: &str = "mi.milesplit.com";
 
 mod protocol;

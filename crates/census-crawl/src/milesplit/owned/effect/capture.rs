@@ -102,33 +102,3 @@ fn commit_capture(
     }
     Ok(())
 }
-
-#[cfg(test)]
-pub(super) fn record_capture(
-    batch: &mut crate::recording::RowBatch<'_>,
-    key: &str,
-    capture: &FetchOutcome,
-) -> CrawlResult<()> {
-    capture
-        .body
-        .chunks(CAPTURE_CHUNK_BYTES)
-        .enumerate()
-        .try_for_each(|(index, bytes)| {
-            batch.journal_done(
-                OWNED_CAPTURE_PHASE,
-                &format!("{key}/{index}"),
-                &serde_json::json!({
-                    "capture": capture, "chunk_index": index, "raw_base64": STANDARD.encode(bytes),
-                }),
-            )
-        })?;
-    batch.journal_done(
-        OWNED_CAPTURE_PHASE,
-        &format!("{key}/manifest"),
-        &serde_json::json!({
-            "capture": capture, "chunk_bytes": CAPTURE_CHUNK_BYTES,
-            "encoding": "base64",
-            "chunks": capture.body.chunks(CAPTURE_CHUNK_BYTES).len(),
-        }),
-    )
-}

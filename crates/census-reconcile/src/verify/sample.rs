@@ -15,11 +15,6 @@ pub fn sample_indices(total_rows: usize, k: usize) -> Vec<usize> {
         total_rows
     };
     (0..count)
-        .map(|i| checked_mul(i, stride).map_or(usize::MAX, |value| value))
+        .map(|i| i.checked_mul(stride).map_or(usize::MAX, |value| value))
         .collect()
-}
-
-#[inline]
-fn checked_mul(a: usize, b: usize) -> Option<usize> {
-    a.checked_mul(b)
 }

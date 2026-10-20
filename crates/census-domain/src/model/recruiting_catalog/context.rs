@@ -37,7 +37,7 @@ impl<'a> ContextualLabel<'a> {
             dimensions: [None, None],
             dimension_free_kind: None,
         };
-        if !super::policy::included(semantics).contains(kind) {
+        if !super::policy::INCLUDED.contains(kind) {
             return Ok(parsed);
         }
         let specification = match EventSpecification::from_published_label(label, kind) {
@@ -72,7 +72,7 @@ impl<'a> ContextualLabel<'a> {
             bytes = after;
             words = end;
         }
-        if semantics.supports_flat_extensions() && parsed.dimensions.iter().any(Option::is_some) {
+        if parsed.dimensions.iter().any(Option::is_some) {
             parsed.dimension_free_kind = Some(parsed.resolve_dimension_free_kind()?);
         }
         Ok(parsed)
@@ -87,9 +87,6 @@ impl<'a> ContextualLabel<'a> {
     }
 
     pub(super) fn dimensions_match(&self, kind: &EventKind) -> bool {
-        if self.semantics == EventSemantics::Legacy18 {
-            return true;
-        }
         self.dimension_free_kind
             .as_ref()
             .is_none_or(|race| race == kind)

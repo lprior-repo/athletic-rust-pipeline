@@ -20,7 +20,7 @@ use super::{Run, Tally, JOURNAL};
 use crate::arbiter::collect::Options;
 use crate::arbiter::parse::{OrgSchool, PrimaryContact};
 use crate::net::{FetchOptions, Fetcher};
-use crate::{AdapterContext, Recording};
+use crate::{AdapterContext, Recording, ResultsCaptureContext};
 use census_domain::model::{CanonicalCoach, CanonicalSchool, SchoolYear, SourceObservation};
 use census_domain::UsJurisdiction;
 use census_store::recorded::Recorded;
@@ -146,9 +146,10 @@ fn context<'a>(
     fetcher: &'a Fetcher,
     store: &'a Store,
     recording: Option<&'a Recording>,
+    capture: &'a ResultsCaptureContext,
 ) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(capture),
         fetcher,
         store,
         refresh: false,

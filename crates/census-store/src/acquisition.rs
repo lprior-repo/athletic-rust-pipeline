@@ -23,7 +23,9 @@ pub use facts::{
     AcquireDecision, AcquisitionCheckpointV1, AcquisitionTerminal, AcquisitionTerminalV1,
     ImmutableAttemptResult,
 };
-pub(crate) use qualification::{require_legacy, validate_format, validate_preservation};
+pub(crate) use qualification::{
+    declaration, require_legacy, validate_format, validate_preservation,
+};
 pub use qualification::{CaptureQualificationControl, CaptureQualificationStore};
 pub(crate) use read::verify_reference;
 pub use read::{ExistingRecoveryRoute, VerifiedRetainedOccurrence};

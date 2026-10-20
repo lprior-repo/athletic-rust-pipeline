@@ -65,7 +65,7 @@ pub enum CensusCommand {
         #[command(flatten)]
         target: Target,
         #[arg(
-            help = "Logical export generation selecting a fresh export run; omitted reuses the legacy generation 1 keys"
+            help = "Logical export generation selecting a fresh export run; required, omitted generations are refused instead of reusing legacy generation 1"
         )]
         #[arg(long, value_name = "GENERATION")]
         generation: Option<String>,
@@ -112,7 +112,7 @@ pub struct ExportRequest {
     #[arg(long, value_name = "N")]
     limit: Option<usize>,
     #[arg(
-        help = "Logical export generation selecting a fresh export run; omitted reuses the legacy generation 1 keys"
+        help = "Logical export generation selecting a fresh export run; required, omitted generations are refused instead of reusing legacy generation 1"
     )]
     #[arg(long, value_name = "GENERATION")]
     generation: Option<String>,

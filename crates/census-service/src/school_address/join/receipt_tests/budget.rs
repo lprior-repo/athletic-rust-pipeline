@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::school_directory::SchoolDirectoryEntry;
 use census_store::{
     ObservationBudget, StoreError, MAX_OBSERVATION_BATCH_BYTES, MAX_OBSERVATION_RECORD_BYTES,
 };
@@ -28,17 +29,16 @@ fn an_oversized_complete_co_op_target_refuses_without_any_effect_witness_or_rece
     let entries = names
         .iter()
         .enumerate()
-        .map(|(index, name)| {
-            entry(
-                &format!(
-                    "4700000000{:02}",
-                    index.checked_add(10).ok_or("member id overflow")?
-                ),
+        .map(|(index, name)| -> TestResult<SchoolDirectoryEntry> {
+            let member = index.checked_add(10).ok_or("member id overflow")?;
+            Ok(nces_entry(
+                &format!("4700000000{member:02}"),
                 name,
                 "Riverside",
                 UsJurisdiction::Tennessee,
                 &format!("{index} Member Rd"),
-            )
+                (9, 12),
+            )?)
         })
         .collect::<TestResult<Vec<_>>>()?;
     let index = DirectoryIndex::build(&entries);

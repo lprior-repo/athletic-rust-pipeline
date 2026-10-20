@@ -88,19 +88,12 @@ fn fresh_request(
 }
 
 fn school_address_request(args: &NationalArgs) -> Result<Option<SchoolAddressJoinRequest>> {
-    if args.school_directory.is_none()
-        && args.evidence_urls.is_empty()
-        && args.evidence_dates.is_empty()
-    {
+    let Some(generation) = args.school_directory.clone() else {
         return Ok(None);
-    }
-    let overrides = census_service::school_address::Overrides::from_cli_pairs(
-        &args.evidence_urls,
-        &args.evidence_dates,
-    )?;
+    };
     Ok(Some(SchoolAddressJoinRequest {
-        generation: args.school_directory.clone(),
-        overrides,
+        generation: Some(generation),
+        overrides: census_service::school_address::Overrides::default(),
         expected_digest: None,
     }))
 }

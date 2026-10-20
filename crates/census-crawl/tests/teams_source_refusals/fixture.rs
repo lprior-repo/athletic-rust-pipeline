@@ -10,6 +10,7 @@ pub(super) struct Fixture {
     _root: tempfile::TempDir,
     pub(super) store: Store,
     pub(super) fetcher: Fetcher,
+    capture: census_crawl::ResultsCaptureContext,
 }
 
 impl Fixture {
@@ -24,16 +25,18 @@ impl Fixture {
             Vec::new(),
         )?
         .with_offline(true);
+        let capture = census_crawl::net::durable_capture_context(&root.path().join("capture"))?;
         Ok(Self {
             _root: root,
             store,
             fetcher,
+            capture,
         })
     }
 
     pub(super) fn context(&self) -> TestResult<AdapterContext<'_>> {
         Ok(AdapterContext {
-            capture: census_crawl::CaptureContext::LegacyMetadata,
+            capture: census_crawl::CaptureContext::DurableV1(&self.capture),
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

@@ -4,7 +4,7 @@ use census_crawl::CollectionDisposition;
 use census_domain::model::{CanonicalMeet, CanonicalPerformance};
 use census_store::Table;
 
-use super::{common, context, seeded, OBSERVED_ON, SEASON};
+use super::{common, context, durable_capture, seeded, OBSERVED_ON, SEASON};
 
 #[test]
 fn wayzata_schedule_retains_unknown_venue_rows_without_inventing_canonical_geography() -> Result<()>
@@ -19,6 +19,8 @@ fn wayzata_schedule_retains_unknown_venue_rows_without_inventing_canonical_geogr
             let track = common::fixture("wayzata", "track_2026_schedule.html")?;
             let xc = common::fixture("wayzata", "xc_2026_schedule.html")?;
             let (store, fetcher) = seeded(dir.path(), &[(&track_url, &track), (&xc_url, &xc)])?;
+            let durable = durable_capture::DurableCapture::mint()?;
+            let owned = durable.capture()?;
             let options = wayzata::Options {
                 years: vec![SEASON],
                 jurisdictions: Vec::new(),
@@ -26,7 +28,15 @@ fn wayzata_schedule_retains_unknown_venue_rows_without_inventing_canonical_geogr
                 refresh: false,
                 observed_on: Some(OBSERVED_ON.to_string()),
             };
-            let report = wayzata::collect(&context(&fetcher, &store)?, &options).await?;
+            let report = wayzata::collect(
+                &context(
+                    census_crawl::CaptureContext::DurableV1(&owned),
+                    &fetcher,
+                    &store,
+                )?,
+                &options,
+            )
+            .await?;
             anyhow::ensure!(
                 report.disposition == CollectionDisposition::Partial,
                 "unknown geography must remain owed: {report:?}"

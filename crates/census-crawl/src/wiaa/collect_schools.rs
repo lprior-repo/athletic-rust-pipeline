@@ -140,6 +140,7 @@ mod tests {
             .build()?
             .block_on(async {
                 let root = tempfile::tempdir()?;
+                let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
                 let store = census_store::Store::open(root.path().join("store"))?;
                 let fetcher = crate::net::Fetcher::new(
                     root.path().join("http"),
@@ -177,7 +178,7 @@ mod tests {
                 write_cache(&body_path, &meta_path, body, &meta)?;
                 let year = SchoolYear::new(2031).ok_or("run season")?;
                 let mut ctx = AdapterContext {
-                    capture: crate::CaptureContext::LegacyMetadata,
+                    capture: crate::CaptureContext::DurableV1(&capture),
                     fetcher: &fetcher,
                     store: &store,
                     refresh: false,

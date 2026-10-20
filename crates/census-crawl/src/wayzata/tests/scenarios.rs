@@ -2,7 +2,7 @@ use super::{seed_cache, seed_capture, seed_post_json, TestResult, OBSERVED_ON};
 use crate::net::Fetcher;
 use crate::wayzata::results::{LANE_PHASE, RESULTS_HOST};
 use crate::wayzata::{collect, schedule_url, Options, ScheduleSport};
-use crate::{AdapterContext, AdapterReport};
+use crate::{AdapterContext, AdapterReport, ResultsCaptureContext};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     SchoolYear,
@@ -23,6 +23,7 @@ struct Harness {
     _root: tempfile::TempDir,
     store: Store,
     fetcher: Fetcher,
+    capture: ResultsCaptureContext,
 }
 
 impl Harness {
@@ -45,10 +46,12 @@ impl Harness {
             hosts,
         )?
         .with_offline(true);
+        let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
         let harness = Self {
             _root: root,
             store,
             fetcher,
+            capture,
         };
         harness.seed(ScheduleSport::Track, 2026, track)?;
         if let Some(body) = xc {
@@ -97,7 +100,7 @@ impl Harness {
         as_of: &str,
     ) -> TestResult<AdapterReport> {
         let ctx = AdapterContext {
-            capture: crate::CaptureContext::LegacyMetadata,
+            capture: crate::CaptureContext::DurableV1(&self.capture),
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

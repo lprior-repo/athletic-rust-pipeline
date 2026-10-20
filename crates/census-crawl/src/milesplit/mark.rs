@@ -154,8 +154,7 @@ mod tests {
 
     #[test]
     fn captured_class_of_2027_result_keeps_its_numeric_mark_and_timing() -> TestResult {
-        let html =
-            include_str!("../../tests/fixtures/milesplit/dc_meet_735841_results_legacy.html");
+        let html = include_str!("../../tests/fixtures/milesplit/dc_meet_735841_results.html");
         let page =
             crate::milesplit::parse_raw(html, "https://dc.milesplit.com/meets/735841/results")?;
         let row = page

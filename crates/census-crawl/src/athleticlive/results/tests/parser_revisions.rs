@@ -45,11 +45,16 @@ fn historical_key(payload: &Value) -> TestResult<String> {
     Ok(format!("{meet}:{role}:{digest}"))
 }
 
-async fn seed_history(store: &Store, fetcher: &Fetcher, options: &ResultOptions) -> TestResult {
+async fn seed_history(
+    store: &Store,
+    fetcher: &Fetcher,
+    options: &ResultOptions,
+    capture: &crate::ResultsCaptureContext,
+) -> TestResult {
     let recording = crate::recording::Recording::new();
     let staged = AdapterContext {
         recording: Some(&recording),
-        ..context(store, fetcher)?
+        ..context(store, fetcher, capture)?
     };
     let report = collect(&staged, options).await?;
     check!(eq; report.errors, 0, "{}", joined(&report));
@@ -93,8 +98,9 @@ fn historical_v2_effect_and_v4_rows_cannot_complete_v3_effect_and_v5_projection(
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let options = prepare(&dir, &store)?;
-            seed_history(&store, &fetcher, &options).await?;
+            seed_history(&store, &fetcher, &options, &capture).await?;
             let history = snapshot(&store, HISTORICAL_EFFECT_PHASE)?;
             let old_rows = snapshot(&store, HISTORICAL_ROW_PHASE)?;
             let raw = snapshot(&store, super::super::CAPTURE_PHASE)?;
@@ -104,7 +110,7 @@ fn historical_v2_effect_and_v4_rows_cannot_complete_v3_effect_and_v5_projection(
             check!(eq; super::super::ROW_PHASE, "athleticlive_projection_v5");
             check!(eq; super::super::PARSER, "athleticlive_results_v5");
             check!(eq; receipts(&store)?, BTreeMap::new());
-            let applied = collect(&context(&store, &fetcher)?, &options).await?;
+            let applied = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; applied.errors, 0, "{}", joined(&applied));
             check!(eq; applied.rows, 1);
             check!(!joined(&applied).contains("captures already journaled"));
@@ -120,7 +126,7 @@ fn historical_v2_effect_and_v4_rows_cannot_complete_v3_effect_and_v5_projection(
             check!(eq; snapshot(&store, super::super::CAPTURE_PHASE)?, raw);
             drop(store);
             let store = Store::open(dir.path().join("store"))?;
-            let repeated = collect(&context(&store, &fetcher)?, &options).await?;
+            let repeated = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; repeated.errors, 0);
             check!(eq; repeated.rows, 0);
             check!(joined(&repeated).contains("captures already journaled by an earlier run: 1"));
@@ -140,12 +146,13 @@ fn historical_v2_claim_remains_binding_for_the_original_meet_and_provider() -> T
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let options = prepare(&dir, &store)?;
-            seed_history(&store, &fetcher, &options).await?;
+            seed_history(&store, &fetcher, &options, &capture).await?;
             let history = snapshot(&store, HISTORICAL_EFFECT_PHASE)?;
             let mut foreign = options.clone();
             foreign.meet.as_mut().ok_or("meet owner")?.tenant = "another_timer".into();
-            let refused = collect(&context(&store, &fetcher)?, &foreign).await?;
+            let refused = collect(&context(&store, &fetcher, &capture)?, &foreign).await?;
             check!(eq; refused.errors, 1);
             check!(eq; refused.rows, 0);
             check!(joined(&refused)
@@ -159,8 +166,9 @@ fn historical_v2_claim_remains_binding_for_the_original_meet_and_provider() -> T
 
 async fn corrupt_history(parser: &str, replace_key: bool) -> TestResult {
     let (dir, store, fetcher) = scratch()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let options = prepare(&dir, &store)?;
-    seed_history(&store, &fetcher, &options).await?;
+    seed_history(&store, &fetcher, &options, &capture).await?;
     let history = snapshot(&store, HISTORICAL_EFFECT_PHASE)?;
     let mut payload = history.values().next().ok_or("historical receipt")?.clone();
     payload["parser"] = json!(parser);
@@ -171,7 +179,7 @@ async fn corrupt_history(parser: &str, replace_key: bool) -> TestResult {
     };
     store.journal_done(HISTORICAL_EFFECT_PHASE, &key, &payload)?;
     let corrupt = snapshot(&store, HISTORICAL_EFFECT_PHASE)?;
-    let refused = collect(&context(&store, &fetcher)?, &options).await?;
+    let refused = collect(&context(&store, &fetcher, &capture)?, &options).await?;
     check!(eq; refused.errors, 1);
     check!(eq; refused.rows, 0);
     let detail = if replace_key {
@@ -209,6 +217,7 @@ fn current_v5_parser_recognizes_xc_labels_without_an_explicit_provider_sport_fla
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let mut document: Value = serde_json::from_str(&one_row_body()?)?;
             let source = document["_source"]
                 .as_object_mut()
@@ -225,7 +234,7 @@ fn current_v5_parser_recognizes_xc_labels_without_an_explicit_provider_sport_fla
                 &labels_of(&labelled_schools(&doc, UsJurisdiction::Iowa)),
             )?;
             let path = stage_capture(&dir, "label-only-xc.json", &body)?;
-            let report = collect(&context(&store, &fetcher)?, &options(&path)).await?;
+            let report = collect(&context(&store, &fetcher, &capture)?, &options(&path)).await?;
             check!(eq; report.errors, 0, "{}", joined(&report));
             check!(eq; report.rows, 1);
             let events: Vec<CanonicalEvent> = store.scan(Table::Events)?;
@@ -245,12 +254,13 @@ fn historical_v2_claim_refuses_rebinding_the_capture_to_a_different_meet() -> Te
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let options = prepare(&dir, &store)?;
-            seed_history(&store, &fetcher, &options).await?;
+            seed_history(&store, &fetcher, &options, &capture).await?;
             let history = snapshot(&store, HISTORICAL_EFFECT_PHASE)?;
             let mut foreign = options.clone();
             foreign.meet = Some(mits_meet());
-            let refused = collect(&context(&store, &fetcher)?, &foreign).await?;
+            let refused = collect(&context(&store, &fetcher, &capture)?, &foreign).await?;
             check!(eq; refused.errors, 1);
             check!(eq; refused.rows, 0);
             check!(joined(&refused)

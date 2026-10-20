@@ -1,8 +1,8 @@
 use super::*;
-use crate::bests::tests::ties::fixture::{completion_with_total, TieFixture};
+use crate::bests::tests::fixture::{completion_with_total, TieFixture};
 
 pub(super) fn numeric_dataset(kind: EventKind) -> TestResult<ExportDataset> {
-    let case = crate::bests::tests::ties::fixture::numeric_cases()?
+    let case = crate::bests::tests::fixture::numeric_cases()?
         .into_iter()
         .find(|case| case.kind == kind)
         .ok_or("missing numeric conflict fixture")?;

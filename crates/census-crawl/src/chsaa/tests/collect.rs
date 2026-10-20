@@ -37,12 +37,13 @@ fn seed_cache_at(cache: &std::path::Path, url: &str, body: &str, stamp: &str) ->
 fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let dir = tempfile::tempdir()?;
+        let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
         let cache = dir.path().join("http");
         let fetcher = Fetcher::new(&cache, None, std::time::Duration::ZERO, std::collections::HashMap::new(), Vec::new())?.with_offline(true);
         seed_cache(&cache, DIRECTORY_URL, DIRECTORY)?;
         seed_cache(&cache, &school_page_url(&cherry_creek_slug()?), SCHOOL_PAGE)?;
         let store = Store::open(dir.path().join("store"))?;
-        let ctx = context(&fetcher, &store)?;
+        let ctx = context(&fetcher, &store, &capture)?;
         let report = require_send(collect(&ctx, &options())).await?;
         check!(eq; report.rows, 1);
         check!(eq; report.errors, 0);
@@ -75,12 +76,13 @@ fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache() -> Te
 fn a_journalled_school_is_skipped_on_the_next_run() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let dir = tempfile::tempdir()?;
+        let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
         let cache = dir.path().join("http");
         let fetcher = Fetcher::new(&cache, None, std::time::Duration::ZERO, std::collections::HashMap::new(), Vec::new())?.with_offline(true);
         seed_cache(&cache, DIRECTORY_URL, DIRECTORY)?;
         seed_cache(&cache, &school_page_url(&cherry_creek_slug()?), SCHOOL_PAGE)?;
         let store = Store::open(dir.path().join("store"))?;
-        let ctx = context(&fetcher, &store)?;
+        let ctx = context(&fetcher, &store, &capture)?;
         collect(&ctx, &options()).await?;
         let before = [store.walk_table(Table::Schools)?, store.walk_table(Table::Coaches)?, store.walk_table(Table::SourceObservations)?];
         let coaches = store.scan::<CanonicalCoach>(Table::Coaches)?;
@@ -94,9 +96,13 @@ fn a_journalled_school_is_skipped_on_the_next_run() -> TestResult {
     })
 }
 
-fn context<'a>(fetcher: &'a Fetcher, store: &'a Store) -> TestResult<crate::AdapterContext<'a>> {
+fn context<'a>(
+    fetcher: &'a Fetcher,
+    store: &'a Store,
+    capture: &'a crate::ResultsCaptureContext,
+) -> TestResult<crate::AdapterContext<'a>> {
     Ok(crate::AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher,
         store,
         refresh: false,
@@ -119,13 +125,14 @@ fn options() -> Options {
 fn directory_school_dates_do_not_follow_detail_capture_refresh() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let dir = tempfile::tempdir()?;
+        let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
         let cache = dir.path().join("http");
         let fetcher = Fetcher::new(&cache, None, std::time::Duration::ZERO, std::collections::HashMap::new(), Vec::new())?.with_offline(true);
         let directory_stamp = "2026-09-20T12:00:00Z";
         let url = school_page_url(&cherry_creek_slug()?);
         seed_cache_at(&cache, DIRECTORY_URL, DIRECTORY, directory_stamp)?;
         let store = Store::open(dir.path().join("store"))?;
-        let mut ctx = context(&fetcher, &store)?;
+        let mut ctx = context(&fetcher, &store, &capture)?;
         ctx.observed_on = "2031-10-12".to_string();
         let mut school_rows = None;
         let mut retained_stamps = Vec::new();

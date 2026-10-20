@@ -5,13 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::school_address::{EvidenceField, EvidenceFields, JoinError, JoinReport, Overrides};
 
-const FIELD_NAMES: [&str; 5] = [
-    "generation",
-    "urls",
-    "dates",
-    "acquisitions",
-    "expected_digest",
-];
+const FIELD_NAMES: [&str; 3] = ["generation", "acquisitions", "expected_digest"];
 
 #[derive(Debug, Clone, Default)]
 pub struct SchoolAddressJoinRequest {
@@ -97,7 +91,7 @@ impl<'de> Visitor<'de> for RequestVisitor {
         }
         if EvidenceFields::next_key(&mut map)?.is_some() {
             return Err(A::Error::custom(
-                "school address join request accepts at most five fields",
+                "school address join request accepts at most three fields",
             ));
         }
         fields.finish().map_err(A::Error::custom)

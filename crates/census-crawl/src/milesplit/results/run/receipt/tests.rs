@@ -4,10 +4,7 @@ use census_domain::model::{CanonicalSchool, SourceIdentity, SourceNamespace};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-const OWNED: &[u8] = include_bytes!("../../../owned/fixtures/troy_725218.json");
-const RAW: &[u8] = include_bytes!(
-    "../../../../../tests/fixtures/milesplit/troy_725218_rs1266814_raw_projection.html"
-);
+use crate::milesplit::troy_fixture::{BODY as OWNED, FEMALE_RAW as RAW};
 
 fn captured(url: String, body: &[u8]) -> FetchOutcome {
     FetchOutcome {

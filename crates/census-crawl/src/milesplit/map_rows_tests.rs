@@ -7,7 +7,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
 fn same_identity_milesplit_rows_preserve_distinct_marks_and_source_observations() -> TestResult {
-    let body = include_bytes!("owned/fixtures/troy_725218.json");
+    let body = crate::milesplit::troy_fixture::BODY;
     let page = parse_owned_meet(body, 725218)?;
     let first = page.rows.first().ok_or("individual fixture row")?;
     let mut second = first.clone();
@@ -15,7 +15,7 @@ fn same_identity_milesplit_rows_preserve_distinct_marks_and_source_observations(
     second.provider["teamName"] = serde_json::json!("Alternate published school spelling");
     second.provider["mark"] = serde_json::json!("5.00m");
     let raw = crate::milesplit::raw::parse_raw(
-        include_str!("../../tests/fixtures/milesplit/troy_725218_rs1266814_raw_projection.html"),
+        std::str::from_utf8(crate::milesplit::troy_fixture::FEMALE_RAW)?,
         "https://al.milesplit.com/meets/725218/results/1266814/raw",
     )?;
     let reference = crate::milesplit::wire::ResultSetRef::parse(

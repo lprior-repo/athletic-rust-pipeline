@@ -48,7 +48,7 @@ fn historical_provenance_ties_keep_the_retained_first_report() -> TestResult {
     lexical.evidence = vec![evidence("https://example.test/a", "2026-10-09")];
     let mut other = first.performance;
     other.evidence = vec![evidence("https://example.test/z", "2026-10-01")];
-    for policy in [18, 19, 20] {
+    for policy in [19, 20] {
         dataset.performances = vec![other.clone(), lexical.clone()];
         check!(eq; single(&mut dataset, policy)?.source.result_url, "https://example.test/z");
         dataset.performances.reverse();

@@ -4,7 +4,7 @@ use census_domain::model::{CanonicalCoach, CanonicalSchool};
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 
-use super::{common, context, seeded, OBSERVED_ON, SEEDED_AT};
+use super::{common, context, durable_capture, seeded, OBSERVED_ON, SEEDED_AT};
 
 #[test]
 fn ks_collection_preserves_published_owners_and_reports_unmeasured_indexes() -> Result<()> {
@@ -18,6 +18,8 @@ fn ks_collection_preserves_published_owners_and_reports_unmeasured_indexes() -> 
                 dir.path(),
                 &[(url, &common::fixture("ks", "kshsaa_directory_a.json")?)],
             )?;
+            let durable = durable_capture::DurableCapture::mint()?;
+            let owned = durable.capture()?;
             let options = ks::Options {
                 limit: None,
                 refresh: false,
@@ -25,7 +27,15 @@ fn ks_collection_preserves_published_owners_and_reports_unmeasured_indexes() -> 
                 states: Vec::new(),
                 school_names: Vec::new(),
             };
-            let report = ks::collect(&context(&fetcher, &store)?, &options).await?;
+            let report = ks::collect(
+                &context(
+                    census_crawl::CaptureContext::DurableV1(&owned),
+                    &fetcher,
+                    &store,
+                )?,
+                &options,
+            )
+            .await?;
             let schools = store.scan::<CanonicalSchool>(Table::Schools)?;
             let coaches = store.scan::<CanonicalCoach>(Table::Coaches)?;
             ensure!(
@@ -59,7 +69,15 @@ fn ks_collection_preserves_published_owners_and_reports_unmeasured_indexes() -> 
             let receipts = store.receipt_count()?;
             drop(store);
             let reopened = Store::open(dir.path().join("store"))?;
-            let replay = ks::collect(&context(&fetcher, &reopened)?, &options).await?;
+            let replay = ks::collect(
+                &context(
+                    census_crawl::CaptureContext::DurableV1(&owned),
+                    &fetcher,
+                    &reopened,
+                )?,
+                &options,
+            )
+            .await?;
             ensure!(replay.rows == 0 && replay.requests == 0);
             ensure!(
                 replay.disposition == report.disposition && replay.unfinished == report.unfinished

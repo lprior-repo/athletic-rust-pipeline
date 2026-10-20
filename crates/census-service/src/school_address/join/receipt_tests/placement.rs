@@ -56,26 +56,29 @@ fn missing_review_in_a_new_partition_reinserts_only_review_after_mixed_applicati
 
 fn mixed_index() -> TestResult<DirectoryIndex> {
     Ok(DirectoryIndex::build(&[
-        entry(
+        nces_entry(
             "390000000001",
             "Springfield High School",
             "Springfield",
             UsJurisdiction::Ohio,
             "1 Main St",
+            (9, 12),
         )?,
-        entry(
+        nces_entry(
             "390000000002",
             "Riverside High School",
             "Springfield",
             UsJurisdiction::Ohio,
             "2 Main St",
+            (9, 12),
         )?,
-        entry(
+        nces_entry(
             "390000000003",
             "Riverside High School",
             "Springfield",
             UsJurisdiction::Ohio,
             "3 Main St",
+            (9, 12),
         )?,
     ]))
 }

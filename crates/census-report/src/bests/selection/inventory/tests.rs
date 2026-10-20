@@ -10,7 +10,6 @@ fn historical_count_serialization_keeps_the_literal_three_field_wire_contract() 
         "{{\"eligible_candidate_count\":3,\"tied_performance_count\":1,\"tied_performance_ids\":[\"{id}\"]}}"
     );
     for policy in [
-        EventSemantics::Legacy18,
         EventSemantics::FlatEvents19,
         EventSemantics::CombinedEvents20,
     ] {

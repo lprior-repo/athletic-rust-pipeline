@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::school_directory::{SchoolDirectoryEntry, StreetLine};
 use census_store::{
     ObservationBudget, StoreError, MAX_OBSERVATION_BATCH_BYTES, MAX_OBSERVATION_RECORD_BYTES,
 };
@@ -77,29 +78,32 @@ fn ordered_targets() -> TestResult<(CanonicalSchool, CanonicalSchool, Vec<School
     later.classification = Some("x".repeat(950_000));
     check!(earlier.id < later.id);
     let mut entries = vec![
-        entry(
+        nces_entry(
             "470000000001",
             &earlier.name,
             "Riverside",
             UsJurisdiction::Tennessee,
             "1 Durable Rd",
+            (9, 12),
         )?,
-        entry(
+        nces_entry(
             "470000000010",
             &later.name,
             "Riverside",
             UsJurisdiction::Tennessee,
             "10 Pending Rd",
+            (9, 12),
         )?,
     ];
     for (offset, name) in later.aliases.iter().enumerate() {
         let number = offset.checked_add(11).ok_or("member number overflow")?;
-        entries.push(entry(
+        entries.push(nces_entry(
             &format!("4700000000{number:02}"),
             name,
             "Riverside",
             UsJurisdiction::Tennessee,
             &format!("{number} Member Rd"),
+            (9, 12),
         )?);
     }
     Ok((earlier, later, entries))

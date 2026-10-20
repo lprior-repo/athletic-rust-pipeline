@@ -2,6 +2,8 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
+#[path = "common/durable_capture.rs"]
+mod durable_capture;
 #[path = "selected_publication_cli/fixture.rs"]
 mod fixture;
 #[path = "selected_publication_cli/paths.rs"]

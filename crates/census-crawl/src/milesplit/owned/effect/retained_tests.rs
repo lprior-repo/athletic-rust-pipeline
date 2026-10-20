@@ -40,6 +40,7 @@ fn sample(body: &[u8], status: u16) -> TestResult<FetchOutcome> {
 
 fn archive(store: &Store, capture: &FetchOutcome) -> TestResult<OwnedAcquisitionRef> {
     let dir = tempfile::tempdir()?;
+    let durable = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let fetcher = Fetcher::new(
         dir.path().join("offline"),
         None,
@@ -49,7 +50,7 @@ fn archive(store: &Store, capture: &FetchOutcome) -> TestResult<OwnedAcquisition
     )?
     .with_offline(true);
     let ctx = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&durable),
         fetcher: &fetcher,
         store,
         refresh: false,

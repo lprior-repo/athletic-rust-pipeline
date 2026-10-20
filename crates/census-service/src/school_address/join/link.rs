@@ -59,12 +59,8 @@ impl<'a> Job<'a> {
         };
         let (Some(url), Some(observed_on)) = (lane.url.clone(), lane.observed_on.clone()) else {
             let detail = format!(
-                "provider {} needs a capture URL and an observation date; pass --evidence-url {}=URL --evidence-date {}=YYYY-MM-DD, or name one capture as {provider}@{path}=… when the generation holds several",
+                "provider {} needs a capture URL and an observation date recorded on its acquisition entry",
                 authority.token,
-                authority.token,
-                authority.token,
-                provider = authority.token,
-                path = lane.path
             );
             return self.missing_evidence(school, state, &matched.rule, detail);
         };

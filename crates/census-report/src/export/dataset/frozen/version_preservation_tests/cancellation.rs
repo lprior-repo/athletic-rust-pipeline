@@ -4,7 +4,7 @@ use super::{
 };
 use crate::export::dataset::frozen::cancel_freeze_v2;
 
-const HISTORICAL: [VersionCase; 18] = [
+const HISTORICAL: [VersionCase; 17] = [
     VersionCase::HistoricalSchema,
     VersionCase::HistoricalPolicy,
     VersionCase::PolicyThirteen,
@@ -12,7 +12,6 @@ const HISTORICAL: [VersionCase; 18] = [
     VersionCase::PolicyFifteen,
     VersionCase::PolicySixteen,
     VersionCase::PolicySeventeen,
-    VersionCase::HistoricalPolicyEighteen,
     VersionCase::HistoricalPolicyNineteen,
     VersionCase::CodecTwo,
     VersionCase::PreviousPolicy,

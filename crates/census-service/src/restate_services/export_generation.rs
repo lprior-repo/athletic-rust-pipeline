@@ -22,6 +22,8 @@ pub enum ExportGenerationError {
     SelectedRequestDigest(#[source] census_domain::model::CanonicalJsonError),
     #[error("--generation {value:?} is live-Restate only")]
     OfflineGeneration { value: String },
+    #[error("export generation requires an explicit --generation value; omitted generations no longer default to legacy 1")]
+    Missing,
 }
 
 impl ExportGeneration {
@@ -54,7 +56,7 @@ impl ExportGeneration {
     pub fn resolve(flag: Option<&str>) -> Result<Self, ExportGenerationError> {
         match flag {
             Some(value) => Self::parse(value),
-            None => Ok(Self::default_generation()),
+            None => Err(ExportGenerationError::Missing),
         }
     }
 
@@ -101,5 +103,28 @@ pub fn reject_offline_generation(flag: Option<&str>) -> Result<(), ExportGenerat
             value: value.to_owned(),
         }),
         None => Ok(()),
+    }
+}
+
+#[cfg(test)]
+mod resolve_tests {
+    use super::*;
+
+    #[test]
+    fn omitted_generation_refuses_instead_of_defaulting_to_legacy() {
+        assert!(matches!(
+            ExportGeneration::resolve(None),
+            Err(ExportGenerationError::Missing)
+        ));
+    }
+
+    #[test]
+    fn explicit_generation_parses() {
+        assert_eq!(
+            ExportGeneration::resolve(Some("qualified-v1"))
+                .expect("explicit generation parses")
+                .as_str(),
+            "qualified-v1"
+        );
     }
 }

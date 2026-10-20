@@ -1,6 +1,6 @@
 pub(super) mod legacy_inventory;
 mod merge;
-mod supported_eighteen;
+mod supported_nineteen;
 
 use super::codec::FrozenCodecError;
 use super::fixtures::{seeded_store, TestResult};

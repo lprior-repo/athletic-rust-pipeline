@@ -2,7 +2,7 @@ use super::parse::parse_staff;
 use super::{collect, Options, IHSA_API};
 use crate::net::cache::{write_cache, CacheMeta};
 use crate::net::Fetcher;
-use crate::AdapterContext;
+use crate::{AdapterContext, ResultsCaptureContext};
 use census_domain::model::{AccessBlockKind, SchoolYear};
 use census_store::Store;
 use sha2::{Digest, Sha256};
@@ -23,6 +23,7 @@ struct FixtureRun {
     _root: tempfile::TempDir,
     store: Store,
     fetcher: Fetcher,
+    capture: ResultsCaptureContext,
 }
 
 impl FixtureRun {
@@ -37,10 +38,12 @@ impl FixtureRun {
             Vec::new(),
         )?
         .with_offline(true);
+        let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
         let run = Self {
             _root: root,
             store,
             fetcher,
+            capture,
         };
         run.seed(SCHOOLS_URL, FIXTURE_SCHOOLS)?;
         Ok(run)
@@ -97,7 +100,7 @@ impl FixtureRun {
 
     async fn run(&self) -> TestResult<crate::AdapterReport> {
         let context = AdapterContext {
-            capture: crate::CaptureContext::LegacyMetadata,
+            capture: crate::CaptureContext::DurableV1(&self.capture),
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

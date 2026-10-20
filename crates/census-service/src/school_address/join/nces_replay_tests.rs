@@ -1,5 +1,5 @@
 use super::*;
-use census_domain::school_directory::DirectoryKey;
+use census_domain::school_directory::{CityName, DirectoryKey, SchoolDirectoryEntry};
 use std::collections::BTreeSet;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};

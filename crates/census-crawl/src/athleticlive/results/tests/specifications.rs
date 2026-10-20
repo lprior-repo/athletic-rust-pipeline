@@ -36,6 +36,7 @@ async fn project_documents(
     fetcher: &Fetcher,
     contexts: &[(u64, &str, &str)],
 ) -> TestResult<AdapterReport> {
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let documents = contexts
         .iter()
         .map(|(id, label, abbreviation)| {
@@ -52,7 +53,7 @@ async fn project_documents(
         documents,
         ..ResultOptions::for_meet(mits_meet(), OBSERVED_ON)
     };
-    let report = collect(&context(store, fetcher)?, &options).await?;
+    let report = collect(&context(store, fetcher, &capture)?, &options).await?;
     Ok(report)
 }
 

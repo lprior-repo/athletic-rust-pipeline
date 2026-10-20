@@ -18,7 +18,6 @@ pub(in crate::tfrrs) struct Stats {
     pub(in crate::tfrrs) rows_without_team: u64,
     pub(in crate::tfrrs) rows_without_season: u64,
     pub(in crate::tfrrs) rows_without_athlete: u64,
-    pub(in crate::tfrrs) rows_without_grade: u64,
     pub(in crate::tfrrs) rows_below_high_school: u64,
     pub(in crate::tfrrs) rows_without_meet: u64,
     pub(in crate::tfrrs) rows_without_date: u64,
@@ -32,10 +31,8 @@ pub(in crate::tfrrs) struct Stats {
     pub(in crate::tfrrs) rosters_seen: u64,
     pub(in crate::tfrrs) roster_rows_seen: u64,
     pub(in crate::tfrrs) roster_rows_absorbed: u64,
-    pub(in crate::tfrrs) roster_rows_without_year: u64,
     pub(in crate::tfrrs) roster_rows_without_name: u64,
     pub(in crate::tfrrs) rosters_without_season: u64,
-    pub(in crate::tfrrs) fetches_failed: u64,
     pub(in crate::tfrrs) schools_resolved: u64,
     pub(in crate::tfrrs) schools_minted: u64,
 }

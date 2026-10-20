@@ -64,7 +64,7 @@ fn captured_response_keeps_token_identity_and_content_type() -> Result<()> {
             ..Metadata::default()
         },
     )?;
-    let prefix = directory.path().join("039a9fa3b131f0e76da67acba0ecdfdea8");
+    let prefix = directory.path().join("039a9fa3b131f0e76da67acba0ecdfde");
     let actual: serde_json::Value =
         serde_json::from_slice(&std::fs::read(prefix.with_extension("meta.json"))?)?;
     anyhow::ensure!(

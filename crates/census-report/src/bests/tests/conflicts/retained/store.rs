@@ -4,8 +4,7 @@ pub(super) fn reloaded_dataset(
     seed: &ExportDataset,
     observations: &[CanonicalPerformance],
 ) -> TestResult<ExportDataset> {
-    let directory = tempfile::tempdir()?;
-    let store = Store::open(directory.path())?;
+    let (directory, store) = census_store::test_fixture::temp_store()?;
     seed.schools
         .values()
         .try_for_each(|school| store.append(Table::Schools, school))?;

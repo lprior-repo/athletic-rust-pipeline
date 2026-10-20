@@ -1,5 +1,8 @@
 use super::fixtures::{cases, documents, target, FIELD, OBSERVED_ON};
 use super::TestResult;
+
+#[path = "../common/durable_capture.rs"]
+mod durable_capture;
 use calamine::Reader;
 use census_crawl::athleticlive::event_doc_url;
 use census_crawl::athleticlive::{collect_results as collect, ResultOptions};
@@ -56,8 +59,10 @@ async fn run_artifact_fixture(labels: FixtureLabels) -> TestResult {
         HashMap::new(),
         Vec::new(),
     )?;
+    let durable = durable_capture::DurableCapture::mint()?;
+    let owned = durable.capture()?;
     let context = AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture: census_crawl::CaptureContext::DurableV1(&owned),
         store: &store,
         fetcher: &fetcher,
         refresh: false,

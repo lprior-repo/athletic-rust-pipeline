@@ -39,6 +39,7 @@ fn a_fresh_store_binds_schools_without_a_consolidated_jsonl() -> TestResult {
     use std::collections::HashMap;
     use std::time::Duration;
     let dir = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let store = Store::open(dir.path())?;
     let fetcher = crate::net::Fetcher::new(
         store.http_cache_dir(),
@@ -52,7 +53,7 @@ fn a_fresh_store_binds_schools_without_a_consolidated_jsonl() -> TestResult {
     let (school, _) = CanonicalSchool::new(UsJurisdiction::Indiana, "Pembroke", "pembroke", None);
     store.append(census_store::Table::Schools, &school)?;
     let context = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher: &fetcher,
         store: &store,
         refresh: false,

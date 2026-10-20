@@ -228,7 +228,6 @@ impl ExportDataset {
         snapshot: &census_store::StoreSnapshot<'_>,
     ) -> ReportResult<Self> {
         snapshot.ensure_origin(store)?;
-        snapshot.require_legacy_identity_publication()?;
         let loaded = read::all(snapshot)?;
         Self::from_loaded(loaded, frozen::lineage(store, snapshot)?)
     }

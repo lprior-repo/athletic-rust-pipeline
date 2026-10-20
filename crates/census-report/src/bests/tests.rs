@@ -20,6 +20,7 @@ mod classification;
 mod combined_events;
 mod conflicts;
 mod exact_time;
+mod fixture;
 mod historical_affiliation;
 mod historical_parent_scope;
 mod keys;
@@ -159,8 +160,7 @@ fn test_parent_performance(
 }
 
 fn selection_dataset(kind: EventKind) -> TestResult<ExportDataset> {
-    let directory = tempfile::tempdir()?;
-    let store = Store::open(directory.path())?;
+    let (_directory, store) = census_store::test_fixture::temp_store()?;
     let (school, school_id) = CanonicalSchool::new(
         UsJurisdiction::Wisconsin,
         "Synthetic school",

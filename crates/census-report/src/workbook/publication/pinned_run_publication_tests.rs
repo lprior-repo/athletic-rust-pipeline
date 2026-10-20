@@ -1,4 +1,5 @@
 use super::*;
+use crate::export::ExportJobRequest;
 use census_domain::model::{CensusRun, GradYear, RunManifest};
 use census_domain::UsJurisdiction;
 use census_store::publish::{Digest, InputFence, Intent, Request, State};
@@ -121,7 +122,11 @@ fn first_binding_after_stage_begin_preserves_every_previous_bundle_byte() -> Tes
     let root = store.out_dir().join("publication");
     let bytes = bundle_bytes(&old)?;
     let previous_pointer = std::fs::read_link(root.join("current"))?;
-    let dataset = ExportDataset::for_job(&store, "pinned-run:stage-before-binding")?;
+    let dataset = ExportDataset::for_job_request(
+        &store,
+        "pinned-run:stage-before-binding",
+        &ExportJobRequest::LegacyV2,
+    )?;
     let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let stage = Stage::begin(&dataset, &store, &options)?;
     store.bind_run(&manifest(&store, &options)?)?;
@@ -161,7 +166,11 @@ fn normal_bound_input_publishes_and_reads_back_under_the_unchanged_fence() -> Te
     let options = super::fence_tests::options(None)?;
     let bound = manifest(&store, &options)?;
     store.bind_run(&bound)?;
-    let dataset = ExportDataset::for_job(&store, "pinned-run:bound-publication")?;
+    let dataset = ExportDataset::for_job_request(
+        &store,
+        "pinned-run:bound-publication",
+        &ExportJobRequest::LegacyV2,
+    )?;
     let snapshot = store.snapshot();
     let input = binding::input(&dataset, &store, &options)?;
     check!(eq; input.run_manifest, Some(binding::digest(&bound)?));

@@ -6,6 +6,8 @@ mod common;
 
 #[path = "common/capture_cache.rs"]
 mod capture_cache;
+#[path = "common/durable_capture.rs"]
+mod durable_capture;
 
 #[path = "parity_mideast_mod/compiled.rs"]
 mod compiled;
@@ -59,9 +61,13 @@ fn seeded(dir: &Path, bodies: &[(&str, &str)]) -> Result<(Store, Fetcher)> {
     Ok((store, fetcher))
 }
 
-fn context<'a>(fetcher: &'a Fetcher, store: &'a Store) -> Result<AdapterContext<'a>> {
+fn context<'a>(
+    capture: census_crawl::CaptureContext<'a>,
+    fetcher: &'a Fetcher,
+    store: &'a Store,
+) -> Result<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture,
         fetcher,
         store,
         refresh: false,

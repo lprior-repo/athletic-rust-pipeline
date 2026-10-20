@@ -41,6 +41,7 @@ fn seed(fetcher: &Fetcher, url: &str, body: &[u8]) -> TestResult {
 fn uhsaa_retained_capture_readback_keeps_owned_address_and_unknown_tenure() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let root = tempfile::tempdir()?;
+        let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
         let store = Store::open(root.path().join("store"))?;
         let fetcher = Fetcher::new(root.path().join("http"), None, Duration::ZERO,
             HashMap::new(), Vec::new())?.with_offline(true);
@@ -48,7 +49,7 @@ fn uhsaa_retained_capture_readback_keeps_owned_address_and_unknown_tenure() -> T
         seed(&fetcher, PROFILE, BODY)?;
         let school_year = SchoolYear::new(2026).ok_or("school year")?;
         let context = AdapterContext {
-            capture: crate::CaptureContext::LegacyMetadata,
+            capture: crate::CaptureContext::DurableV1(&capture),
             fetcher: &fetcher, store: &store, refresh: false, school_year,
             observed_on: "2026-10-12".to_string(),
             performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 10, 12).ok_or("date")?,
@@ -96,6 +97,7 @@ fn uhsaa_american_fork_space_href_uses_encoded_capture_url() -> TestResult {
     const FORK_BODY: &[u8] = br#"<html><body><div class="school-info"><h1 class="school-name">American Fork Cavemen</h1><ul class="school-details"><li><i class="fas fa-map-marker-alt"></i> 123 E Main St, American Fork, UT 84003</li><li>District: Alpine</li><li>Classification: 6A</li><li>Region: 3</li></ul></div><table class="staff-table"><tbody><tr><td>Boys Cross Country</td><td><a href="mailto:coach@example.org">Test Coach</a></td><td></td></tr></tbody></table></body></html>"#;
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let root = tempfile::tempdir()?;
+        let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
         let store = Store::open(root.path().join("store"))?;
         let fetcher = Fetcher::new(root.path().join("http"), None, Duration::ZERO,
             HashMap::new(), Vec::new())?.with_offline(true);
@@ -103,7 +105,7 @@ fn uhsaa_american_fork_space_href_uses_encoded_capture_url() -> TestResult {
         seed(&fetcher, FORK_ENCODED, FORK_BODY)?;
         let school_year = SchoolYear::new(2026).ok_or("school year")?;
         let context = AdapterContext {
-            capture: crate::CaptureContext::LegacyMetadata,
+            capture: crate::CaptureContext::DurableV1(&capture),
             fetcher: &fetcher, store: &store, refresh: false, school_year,
             observed_on: "2026-10-12".to_string(),
             performance_as_of: chrono::NaiveDate::from_ymd_opt(2026, 10, 12).ok_or("date")?,

@@ -23,6 +23,7 @@ async fn assess(
 ) -> TestResult<(Store, crate::AdapterReport)> {
     let store = Store::open(root.join("store"))?;
     let fetcher = make_offline_fetcher(root)?;
+    let capture = crate::net::durable_capture_context(&root.join("capture"))?;
     let mut directory: serde_json::Value =
         serde_json::from_str(&fixture("coach_directories/nchsaa_directory_p1.json")?)?;
     directory["results"]
@@ -41,7 +42,7 @@ async fn assess(
         seed(&fetcher, &summary_url("ZCUM49"), summary, acquired_at)?;
     }
     let ctx = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher: &fetcher,
         store: &store,
         refresh: false,

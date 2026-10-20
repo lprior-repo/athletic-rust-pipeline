@@ -25,9 +25,13 @@ fn setup() -> TestResult<(tempfile::TempDir, Store, Fetcher, ResultSetRef)> {
     Ok((dir, store, fetcher, reference))
 }
 
-fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
+fn context<'a>(
+    store: &'a Store,
+    fetcher: &'a Fetcher,
+    capture: &'a crate::ResultsCaptureContext,
+) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher,
         store,
         refresh: false,
@@ -40,7 +44,7 @@ fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterCont
 
 fn partial_capture(reference: &ResultSetRef) -> TestResult<FetchOutcome> {
     let mut document: serde_json::Value =
-        serde_json::from_slice(include_bytes!("../fixtures/troy_725218.json"))?;
+        serde_json::from_slice(crate::milesplit::troy_fixture::BODY)?;
     document["data"][0]["athleteId"] = serde_json::Value::Null;
     let body = serde_json::to_vec(&document)?;
     Ok(FetchOutcome {
@@ -78,8 +82,9 @@ fn snapshot(store: &Store, phase: &str) -> TestResult<BTreeMap<String, serde_jso
 #[test]
 fn partial_persistence_network_metadata_to_cache_replay_is_an_exact_noop() -> TestResult {
     let (_dir, store, fetcher, reference) = setup()?;
+    let capture = crate::net::durable_capture_context(&_dir.path().join("capture"))?;
     let outcome = partial_outcome(partial_capture(&reference)?)?;
-    record_outcome(&context(&store, &fetcher)?, &reference, &outcome)?;
+    record_outcome(&context(&store, &fetcher, &capture)?, &reference, &outcome)?;
     let originals = snapshot(&store, OWNED_MEET_PHASE)?;
     let captures = snapshot(&store, OWNED_CAPTURE_PHASE)?;
     let summary = originals
@@ -95,11 +100,11 @@ fn partial_persistence_network_metadata_to_cache_replay_is_an_exact_noop() -> Te
     let recording = crate::recording::Recording::new();
     let ctx = AdapterContext {
         recording: Some(&recording),
-        ..context(&store, &fetcher)?
+        ..context(&store, &fetcher, &capture)?
     };
     record_outcome(&ctx, &reference, &outcome)?;
     check!(eq; recording.drain(), Recorded::default());
-    record_outcome(&context(&store, &fetcher)?, &reference, &outcome)?;
+    record_outcome(&context(&store, &fetcher, &capture)?, &reference, &outcome)?;
     check!(eq; snapshot(&store, OWNED_MEET_PHASE)?, originals);
     check!(eq; snapshot(&store, OWNED_CAPTURE_PHASE)?, captures);
     Ok(())
@@ -109,8 +114,9 @@ fn partial_persistence_network_metadata_to_cache_replay_is_an_exact_noop() -> Te
 fn partial_persistence_retains_new_acquisition_without_restaging_identical_source_rows(
 ) -> TestResult {
     let (_dir, store, fetcher, reference) = setup()?;
+    let capture = crate::net::durable_capture_context(&_dir.path().join("capture"))?;
     let outcome = partial_outcome(partial_capture(&reference)?)?;
-    record_outcome(&context(&store, &fetcher)?, &reference, &outcome)?;
+    record_outcome(&context(&store, &fetcher, &capture)?, &reference, &outcome)?;
     let originals = snapshot(&store, OWNED_MEET_PHASE)?;
     let captures = snapshot(&store, OWNED_CAPTURE_PHASE)?;
     let mut next = partial_capture(&reference)?;
@@ -120,7 +126,7 @@ fn partial_persistence_retains_new_acquisition_without_restaging_identical_sourc
     let recording = crate::recording::Recording::new();
     let ctx = AdapterContext {
         recording: Some(&recording),
-        ..context(&store, &fetcher)?
+        ..context(&store, &fetcher, &capture)?
     };
     record_outcome(&ctx, &reference, &outcome)?;
     let recorded = recording.drain();

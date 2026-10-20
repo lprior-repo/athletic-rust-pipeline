@@ -47,7 +47,8 @@ fn same_name_association_owners_collect_distinct_coaches_and_ignore_legacy_name_
             )?;
             let store = Store::open(dir.path().join("store"))?;
             let fetcher = fetcher(&cache)?;
-            let ctx = context(&fetcher, &store, None)?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
+            let ctx = context(&fetcher, &store, None, &capture)?;
             let options = options();
             let first = school();
             let mut second = school();
@@ -111,7 +112,8 @@ fn invalid_utf8_coach_capture_cannot_manufacture_a_replacement_character_person(
     seed_capture(&cache, &coach_url(1), body)?;
     let store = Store::open(dir.path().join("store"))?;
     let fetcher = fetcher(&cache)?;
-    let ctx = context(&fetcher, &store, None)?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
+    let ctx = context(&fetcher, &store, None, &capture)?;
     let options = options();
     let mut acquisition = run(&ctx, &options)?;
     acquisition.process_school(UsJurisdiction::NewHampshire, "2132", &school(), BASE).await?;
@@ -137,7 +139,8 @@ fn oversized_coach_page_is_a_bounded_failure_without_owned_completion() -> TestR
             )?;
             let store = Store::open(dir.path().join("store"))?;
             let fetcher = fetcher(&cache)?;
-            let ctx = context(&fetcher, &store, None)?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
+            let ctx = context(&fetcher, &store, None, &capture)?;
             let options = options();
             let mut acquisition = run(&ctx, &options)?;
             acquisition

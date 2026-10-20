@@ -270,7 +270,3 @@ pub fn report_json(records: &[ProbeRecord]) -> CrawlResult<String> {
         detail: format!("probe report is not utf-8: {error}"),
     })
 }
-
-pub fn sort_records(records: &mut [ProbeRecord]) {
-    records.sort_by(|a, b| a.state.cmp(&b.state));
-}

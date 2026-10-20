@@ -54,10 +54,7 @@ fn refused(store: &Store, job: &str, case: VersionCase) -> TestResult {
 }
 
 fn check_refusal<T>(result: Result<T, ReportError>, case: VersionCase) -> TestResult {
-    if matches!(
-        case,
-        VersionCase::HistoricalPolicyEighteen | VersionCase::HistoricalPolicyNineteen
-    ) {
+    if matches!(case, VersionCase::HistoricalPolicyNineteen) {
         check!(matches!(
             result,
             Err(ReportError::Invariant { ref detail })

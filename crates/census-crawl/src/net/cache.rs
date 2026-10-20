@@ -191,6 +191,81 @@ pub(crate) fn write_archive(
     archive::write_preserved_capture(body_path, meta_path, body, meta)
 }
 
+pub struct EligibleSeed<'a> {
+    pub store: &'a census_store::Store,
+    pub owner: &'a census_store::ResultsCaptureOwnerV1,
+    pub grant: census_store::RetryOwnerGrant,
+    pub work: census_domain::model::AcquisitionWorkV1,
+    pub fetcher: &'a super::Fetcher,
+    pub body: &'a [u8],
+    pub fetched_at: &'a str,
+}
+
+pub fn seed_eligible_occurrence(seed: EligibleSeed<'_>) -> Result<(), FetchError> {
+    let url = seed.work.request().original_url().to_owned();
+    let representation = super::execute::representation::canonical_request(
+        &url,
+        seed.work.request().representation_headers(),
+    )?;
+    let extra = super::execute::representation::cache_extra(None, &representation);
+    let key = super::Fetcher::key_for("GET", &url, &extra);
+    let (body_path, meta_path) = seed.fetcher.cache_paths(&key);
+    let digest = content_digest(seed.body);
+    let metadata = CacheMeta {
+        url: url.clone(),
+        response_url: Some(url.clone()),
+        method: "GET".to_owned(),
+        representation,
+        status: 200,
+        content_digest: digest.clone(),
+        bytes: seed.body.len(),
+        fetched_at: seed.fetched_at.to_owned(),
+        etag: None,
+        last_modified: None,
+        content_type: None,
+        redirects: Vec::new(),
+    };
+    let capture = Capture::from_meta(&metadata, &meta_path)?;
+    capture.verify_body(seed.body, &body_path)?;
+    let registered = seed
+        .store
+        .register_acquisition_work(seed.owner, seed.work, seed.grant)?;
+    let reserved = seed.store.reserve_acquisition_attempt(registered)?;
+    let armed = seed.store.arm_acquisition_dispatch(
+        reserved,
+        census_domain::model::DispatchRequestV1::new(
+            url.as_str(),
+            census_domain::model::ConditionalRequestV1::Unconditional,
+        )?,
+    )?;
+    let observed = seed.store.record_acquisition_response(
+        armed.into_observation(),
+        census_domain::model::ResponseObservationV1::new(
+            200,
+            url.as_str(),
+            seed.fetched_at,
+            Vec::new(),
+        )?,
+    )?;
+    let input = census_domain::model::PreparedCaptureInputV1::new(
+        &digest,
+        u64::try_from(seed.body.len()).map_err(|_| FetchError::Invariant {
+            detail: "seeded eligible body length exceeds the acquisition range".to_owned(),
+        })?,
+        capture.encoded,
+    )?;
+    let prepared = seed.store.prepare_acquisition_capture(
+        observed,
+        input,
+        census_domain::model::CaptureDispositionV1::ReusableResponse,
+    )?;
+    let archived_body = write_archive(&body_path, &meta_path, seed.body, &metadata)?;
+    let occurrence = seed.store.finish_acquisition_capture(prepared)?;
+    let envelope = EligibleCacheV2::new(metadata, occurrence);
+    publish_eligible(&body_path, &meta_path, &envelope, &archived_body)?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests;
 

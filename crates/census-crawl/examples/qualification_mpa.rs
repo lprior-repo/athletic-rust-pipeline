@@ -31,12 +31,14 @@ fn main() -> Result<()> {
     )?
     .with_offline(true)
     .with_source("mpa");
-    let first = evaluate(&fetcher, &store, "2026-10-02T12:00:00Z", "").await?;
+    let capture = census_crawl::net::durable_capture_context(&root.join("capture"))?;
+    let first = evaluate(&fetcher, &store, "2026-10-02T12:00:00Z", "", &capture).await?;
     let second = evaluate(
         &fetcher,
         &store,
         "2026-10-03T12:00:00Z",
         "2026-10-04T12:00:00Z",
+        &capture,
     )
     .await?;
     let stats = fetcher.stats().await;
@@ -71,9 +73,10 @@ async fn evaluate(
     store: &Store,
     evaluation: &str,
     option_date: &str,
+    capture: &census_crawl::ResultsCaptureContext,
 ) -> Result<census_crawl::AdapterReport> {
     let ctx = AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture: census_crawl::CaptureContext::DurableV1(capture),
         fetcher,
         store,
         refresh: false,

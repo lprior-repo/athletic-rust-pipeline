@@ -1,6 +1,6 @@
 use super::*;
 use crate::bests::{self, SharedSelection};
-use crate::export::{freeze_v2, to_export_dataset, DatasetLineage, FrozenRoot};
+use crate::export::{freeze_v2, to_export_dataset, DatasetLineage, ExportJobRequest, FrozenRoot};
 use crate::report::{coverage_report, Scope};
 use calamine::Data;
 use census_domain::model::{GradYear, SchoolYear};
@@ -173,7 +173,7 @@ fn stale_input_refused(mutation: Mutation) -> TestResult {
         Err(ReportError::Invariant { ref detail }) if detail.contains("stale or foreign")
     ));
     check!(matches!(
-        ExportDataset::for_job(&captured.store, JOB),
+        ExportDataset::for_job_request(&captured.store, JOB, &ExportJobRequest::LegacyV2),
         Err(ReportError::Invariant { ref detail }) if detail.contains("stale or foreign")
     ));
     let censuses =

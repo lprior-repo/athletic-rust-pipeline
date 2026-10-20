@@ -116,7 +116,7 @@ fn resume_lookup_uses_only_selected_base_and_immediate_prior_keys() -> TestResul
 fn resume_rejects_a_bound_request_with_unpinned_address_preflight() -> TestResult {
     let mut request = request()?;
     request.school_address = Some(serde_json::from_value(serde_json::json!({
-        "generation": "directory", "urls": {}, "dates": {}
+        "generation": "directory", "acquisitions": []
     }))?);
     check!(validate_identity(
         &request,

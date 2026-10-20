@@ -26,12 +26,15 @@ pub(super) enum Outcome {
     TimedOut { error: String },
 }
 
-#[tracing::instrument(skip(store))]
-pub(super) async fn collect(store: &Store) -> Result<Attempt> {
+#[tracing::instrument(skip(store, capture))]
+pub(super) async fn collect(
+    store: &Store,
+    capture: &census_crawl::ResultsCaptureContext,
+) -> Result<Attempt> {
     let fetcher = preserve::fetcher(store)?;
     let started = census_crawl::net::now_iso8601();
     let ctx = AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture: census_crawl::CaptureContext::DurableV1(capture),
         fetcher: &fetcher,
         store,
         refresh: false,

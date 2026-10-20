@@ -168,7 +168,7 @@ fn capture_facts(file: &str) -> Result<CaptureFacts> {
             Sport::OutdoorTrack,
             2025,
         ),
-        "dc_meet_735841_results_legacy.html" => (
+        "dc_meet_735841_results.html" => (
             "https://www.milesplit.com/meets/735841-stancs-home-meet-1-2026/results/1257095/raw",
             "STA/NCS Home Meet #1",
             "2026-03-11",

@@ -9,6 +9,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 #[test]
 fn changed_event_grammar_has_fresh_context_and_preserves_prior_completion() -> TestResult {
     let directory = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&directory.path().join("capture"))?;
     let store = Store::open(directory.path())?;
     let fetcher = crate::net::Fetcher::new(
         store.http_cache_dir(),
@@ -20,7 +21,7 @@ fn changed_event_grammar_has_fresh_context_and_preserves_prior_completion() -> T
     .with_source("wiaa_results")
     .with_offline(true);
     let ctx = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher: &fetcher,
         store: &store,
         refresh: false,

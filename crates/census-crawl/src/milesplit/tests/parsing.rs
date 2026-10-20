@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn dc_legacy_fixture_parses_result_file_entries() -> TestResult {
     const DC_LEGACY: &str =
-        include_str!("../../../tests/fixtures/milesplit/dc_meet_735841_results_legacy.html");
+        include_str!("../../../tests/fixtures/milesplit/dc_meet_735841_results.html");
     let files = parse_meet_result_files(
         "https://www.milesplit.com/meets/735841-stancs-home-meet-1-2026/results",
         DC_LEGACY,

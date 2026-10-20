@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -61,13 +59,6 @@ pub struct Overrides {
 #[derive(Clone, Debug)]
 pub(super) enum EvidenceInput {
     Acquisitions(Vec<Acquisition>),
-    LegacySourcePairs(LegacySourcePairs),
-}
-
-#[derive(Clone, Debug)]
-pub(super) struct LegacySourcePairs {
-    pub(super) urls: BTreeMap<String, String>,
-    pub(super) dates: BTreeMap<String, String>,
 }
 
 impl Default for Overrides {
@@ -86,24 +77,9 @@ impl Overrides {
         .validated()
     }
 
-    pub fn from_source_pairs(
-        urls: BTreeMap<String, String>,
-        dates: BTreeMap<String, String>,
-    ) -> Result<Self, JoinError> {
-        Self {
-            input: EvidenceInput::LegacySourcePairs(LegacySourcePairs { urls, dates }),
-        }
-        .validated()
-    }
-
-    pub fn from_cli_pairs(urls: &[String], dates: &[String]) -> Result<Self, JoinError> {
-        Self::from_source_pairs(parse_source_pairs(urls)?, parse_source_pairs(dates)?)
-    }
-
     pub fn acquisitions(&self) -> Option<&[Acquisition]> {
         match &self.input {
             EvidenceInput::Acquisitions(values) => Some(values),
-            EvidenceInput::LegacySourcePairs(_) => None,
         }
     }
 
@@ -118,10 +94,6 @@ impl Overrides {
     {
         match &self.input {
             EvidenceInput::Acquisitions(values) => map.serialize_entry("acquisitions", values),
-            EvidenceInput::LegacySourcePairs(values) => {
-                map.serialize_entry("urls", &values.urls)?;
-                map.serialize_entry("dates", &values.dates)
-            }
         }
     }
 }
@@ -144,32 +116,6 @@ impl<'de> Deserialize<'de> for Overrides {
     {
         deserializer.deserialize_map(fields::OverridesVisitor)
     }
-}
-
-pub fn parse_source_pairs(values: &[String]) -> Result<BTreeMap<String, String>, JoinError> {
-    validation::require_count("source-pairs", values.len())?;
-    let mut pairs = BTreeMap::new();
-    let mut budget = validation::TextBudget::default();
-    for value in values {
-        let Some((source, target)) = value.split_once('=') else {
-            return Err(JoinError::EvidencePair {
-                pair: value.clone(),
-            });
-        };
-        if source.is_empty() || target.is_empty() {
-            return Err(JoinError::EvidencePair {
-                pair: value.clone(),
-            });
-        }
-        budget.charge(source)?;
-        budget.charge(target)?;
-        validation::require_selector(source)?;
-        if pairs.contains_key(source) {
-            return Err(value_error("source-pairs", source, "duplicate selector"));
-        }
-        pairs.insert(bounded::copy_text(source)?, bounded::copy_text(target)?);
-    }
-    Ok(pairs)
 }
 
 pub(super) fn value_error(kind: &'static str, pair: &str, detail: &str) -> JoinError {

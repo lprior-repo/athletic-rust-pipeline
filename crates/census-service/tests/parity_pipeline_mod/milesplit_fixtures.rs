@@ -25,7 +25,7 @@ pub fn validate_result_fixture(file: &str, body: &str) -> Result<bool> {
         "troy_725218_rs1266814_raw_projection.html" => raw::validate_projection(body, false)?,
         "troy_725218_rs1266815_raw_projection.html" => raw::validate_projection(body, true)?,
         "oh_meet_770621_results.html" => validate_listing(body, false)?,
-        "dc_meet_735841_results_legacy.html" => {
+        "dc_meet_735841_results.html" => {
             validate_listing(body, true)?;
             raw::validate_capture(file, body)?;
         }
@@ -41,8 +41,8 @@ pub fn validate_result_fixture(file: &str, body: &str) -> Result<bool> {
     Ok(true)
 }
 
-fn validate_listing(body: &str, legacy: bool) -> Result<()> {
-    let (url, expected) = if legacy {
+fn validate_listing(body: &str, stancs_home_meet: bool) -> Result<()> {
+    let (url, expected) = if stancs_home_meet {
         (
             "https://www.milesplit.com/meets/735841-stancs-home-meet-1-2026/results",
             vec![

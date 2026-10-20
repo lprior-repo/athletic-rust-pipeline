@@ -5,6 +5,7 @@ mod contact;
 mod coordinates;
 mod entry;
 mod error;
+pub mod fixture;
 mod ids;
 mod key;
 mod label;

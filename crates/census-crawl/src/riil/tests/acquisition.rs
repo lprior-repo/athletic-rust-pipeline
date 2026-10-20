@@ -8,10 +8,11 @@ fn historical_capture_replay_preserves_freshness_and_physical_rows(
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     let (root, store, fetcher) = setup()?;
     seed(&fetcher, DIRECTORY.as_bytes(), ACQUIRED_AT)?;
-    let first = evaluate(&fetcher, &store, None, "2026-10-02", "2026-10-03").await?;
+    let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
+    let first = evaluate(&fetcher, &store, None, "2026-10-02", "2026-10-03", &capture).await?;
     check!(eq; (first.rows, first.errors, first.from_cache), (1, 0, 1));
     check!(eq; physical_counts(&store)?, vec![1, 2, 1]);
-    let second = evaluate(&fetcher, &store, None, "2026-10-04", "2026-10-05").await?;
+    let second = evaluate(&fetcher, &store, None, "2026-10-04", "2026-10-05", &capture).await?;
     check!(eq; (second.rows, second.errors, second.from_cache), (0, 0, 1));
     check!(eq; physical_counts(&store)?, vec![1, 2, 1]);
     store.flush()?;
@@ -60,8 +61,9 @@ fn changed_content_is_not_suppressed_by_earlier_success_or_historical_journal(
                 &serde_json::json!({"name": school.name, "coaches": 2}),
             )?;
             seed(&fetcher, DIRECTORY.as_bytes(), ACQUIRED_AT)?;
+            let capture = crate::net::durable_capture_context(&_root.path().join("capture"))?;
             check!(eq;
-                evaluate(&fetcher, &store, None, "2026-10-02", "")
+                evaluate(&fetcher, &store, None, "2026-10-02", "", &capture)
                     .await?
                     .rows,
                 1
@@ -69,7 +71,8 @@ fn changed_content_is_not_suppressed_by_earlier_success_or_historical_journal(
             let changed = DIRECTORY.replace("Alex Coach", "Jordan Coach");
             let changed_at = "2026-09-30T10:00:00Z";
             seed(&fetcher, changed.as_bytes(), changed_at)?;
-            let report = evaluate(&fetcher, &store, None, "2026-10-03", "2026-10-04").await?;
+            let report =
+                evaluate(&fetcher, &store, None, "2026-10-03", "2026-10-04", &capture).await?;
             check!(eq; (report.rows, report.errors), (1, 0));
             check!(eq; physical_counts(&store)?, vec![2, 4, 2]);
             let coaches = observations::<CanonicalCoach>(&store, Table::Coaches)?;
@@ -86,11 +89,11 @@ fn changed_content_is_not_suppressed_by_earlier_success_or_historical_journal(
                 changed_at,
             )?;
             check!(coaches.iter().any(|coach| coach.name == "Alex Coach"));
-            let replay = evaluate(&fetcher, &store, None, "2026-10-05", "").await?;
+            let replay = evaluate(&fetcher, &store, None, "2026-10-05", "", &capture).await?;
             check!(eq; (replay.rows, replay.errors), (0, 0));
             seed(&fetcher, DIRECTORY.as_bytes(), ACQUIRED_AT)?;
             check!(eq;
-                evaluate(&fetcher, &store, None, "2026-10-06", "")
+                evaluate(&fetcher, &store, None, "2026-10-06", "", &capture)
                     .await?
                     .rows,
                 0
@@ -110,15 +113,32 @@ fn recording_defers_rows_and_completion_until_application() -> Result<(), Box<dy
         .block_on(async {
             let (_root, store, fetcher) = setup()?;
             seed(&fetcher, DIRECTORY.as_bytes(), ACQUIRED_AT)?;
+            let capture = crate::net::durable_capture_context(&_root.path().join("capture"))?;
             let recording = crate::Recording::new();
-            let report = evaluate(&fetcher, &store, Some(&recording), "2026-10-02", "").await?;
+            let report = evaluate(
+                &fetcher,
+                &store,
+                Some(&recording),
+                "2026-10-02",
+                "",
+                &capture,
+            )
+            .await?;
             check!(eq; (report.rows, report.errors), (1, 0));
             check!(eq; physical_counts(&store)?, vec![0, 0, 0]);
             check!(eq; store.journal_keys("riil_schools")?.len(), 0);
             let recorded = recording.drain();
             crate::recording::apply_recorded(&recorded, &store, "riil-recording-test")?;
             check!(eq; physical_counts(&store)?, vec![1, 2, 1]);
-            let replay = evaluate(&fetcher, &store, Some(&recording), "2026-10-03", "").await?;
+            let replay = evaluate(
+                &fetcher,
+                &store,
+                Some(&recording),
+                "2026-10-03",
+                "",
+                &capture,
+            )
+            .await?;
             check!(eq; replay.rows, 0);
             check!(recording.drain().is_empty());
             check!(eq; physical_counts(&store)?, vec![1, 2, 1]);

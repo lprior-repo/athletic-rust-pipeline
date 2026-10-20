@@ -83,7 +83,16 @@ async fn exercise(boundary: Boundary) -> TestResult<Journal> {
                 .http2_prior_knowledge()
                 .timeout(Duration::from_secs(5))
                 .build()?;
-            let mut journal = Journal::new(&fixtures::request()?)?;
+            let controlled = crate::restate_services::jobs::selected_fixture::install()
+                .map_err(|error| error.to_string())?;
+            let mut request = super::super::publication_tests::fixtures::selected_request(
+                &controlled,
+                &census_domain::UsJurisdiction::CENSUS_SCOPE,
+            )?;
+            request.pass_budget = 0;
+            request.pass_delay_seconds = 0;
+            let mut journal = Journal::new(&request)?;
+            journal.selected_workbook = Some(controlled);
             journal.hold_stage = Some("Workbook".to_owned());
             match boundary {
                 Boundary::RefusedPublication => {
@@ -298,9 +307,11 @@ async fn historical(
         .scan::<AppliedAthleteIdentity>(Table::AthleteIdentityDecisions)?
         .is_empty());
     let output = journal.step(client, url).await?;
-    check!(!output.iter().any(|entry| entry.kind == 0x0411
-        && codec::field(&entry.payload, 12)
-            .is_ok_and(|name| name == Some(b"identity:rules".as_slice()))));
+    check!(!output.iter().any(|entry| {
+        entry.kind == 0x0411
+            && codec::field(&entry.payload, 12)
+                .is_ok_and(|name| name == Some(b"identity:rules".as_slice()))
+    }));
     check!(eq; journal.entries.get(..recorded.len()), Some(recorded.as_slice()));
     check!(eq; store.derived_generation(), 0);
     check!(store

@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::school_directory::StreetLine;
 
 #[test]
 fn retained_nces_application_pins_real_capture_and_survives_replay_reopen() -> TestResult {

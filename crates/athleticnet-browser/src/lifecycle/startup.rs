@@ -1,5 +1,5 @@
 use super::super::{
-    actor::{Actor, ActorHandles, BrowserOwnership, Command, HandlerEvent},
+    actor::{Actor, ActorHandles, BrowserOwnership, Command, HandlerEvent, QUEUE_MULTIPLIER},
     gate::ProfileGate,
     BrowserSettings, BrowserState, BrowserStatus,
 };
@@ -17,7 +17,6 @@ use tokio::sync::{mpsc, oneshot, Mutex as AsyncMutex};
 use tokio_util::sync::CancellationToken;
 use tracing::Instrument;
 
-const QUEUE_MULTIPLIER: usize = 4;
 const HANDLER_QUEUE: usize = 256;
 
 impl BrowserManager {

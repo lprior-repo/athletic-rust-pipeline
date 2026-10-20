@@ -1,4 +1,5 @@
 use super::*;
+use crate::export::ExportJobRequest;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 pub(super) fn options(out: Option<PathBuf>) -> Result<Options, Box<dyn std::error::Error>> {
@@ -26,7 +27,8 @@ fn publication_fence_rejects_a_changed_expected_root() -> TestResult {
     let other_dir = other.parent().ok_or("bundle")?;
     let name = other_dir.file_name().ok_or("digest")?;
     std::fs::rename(other_dir, root.join("generations").join(name))?;
-    let dataset = ExportDataset::for_job(&store, "publication-cas")?;
+    let dataset =
+        ExportDataset::for_job_request(&store, "publication-cas", &ExportJobRequest::LegacyV2)?;
     let stage = Stage::begin(&dataset, &store, &options)?;
     let link = root.join("injected.tmp");
     std::os::unix::fs::symlink(Path::new("generations").join(name), &link)?;
@@ -78,7 +80,8 @@ fn publication_fence_run_binding_during_render_refuses_intent() -> TestResult {
     let options = options(None)?;
     let old = crate::workbook::build(&store, &options)?;
     let bytes = std::fs::read(&old)?;
-    let dataset = ExportDataset::for_job(&store, "late-run-binding")?;
+    let dataset =
+        ExportDataset::for_job_request(&store, "late-run-binding", &ExportJobRequest::LegacyV2)?;
     let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let stage = Stage::begin(&dataset, &store, &options)?;
     let result = stage.publish(&dataset, &options, |directory| {

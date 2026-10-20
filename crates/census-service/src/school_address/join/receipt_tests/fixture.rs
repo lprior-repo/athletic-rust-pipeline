@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::school_directory::SchoolDirectoryEntry;
 use sha2::{Digest, Sha256};
 
 pub(super) const CCD_SHA: &str = "e01af083baa57b60f37571f9607aa8ebe9b225712563ec9f10fd8809fab661c8";
@@ -64,8 +65,8 @@ pub(super) fn ambiguous_index(
     state: UsJurisdiction,
 ) -> TestResult<DirectoryIndex> {
     Ok(DirectoryIndex::build(&[
-        entry("390000000002", name, city, state, "1 Main St")?,
-        entry("390000000003", name, city, state, "2 Main St")?,
+        nces_entry("390000000002", name, city, state, "1 Main St", (9, 12))?,
+        nces_entry("390000000003", name, city, state, "2 Main St", (9, 12))?,
     ]))
 }
 

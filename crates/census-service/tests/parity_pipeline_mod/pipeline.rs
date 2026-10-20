@@ -33,8 +33,11 @@ pub struct Run {
 }
 
 pub async fn run_pipeline(root: &Path) -> Result<Run> {
-    let store =
-        Store::open(root).with_context(|| format!("opening a store at {}", root.display()))?;
+    Store::create_capture_qualification_v2(root)
+        .with_context(|| format!("creating a capture store at {}", root.display()))?;
+    let (store, writer) = Store::open_capture_qualification_v2(root)
+        .with_context(|| format!("opening a capture store at {}", root.display()))?
+        .into_parts();
     let fetcher = Fetcher::new(
         store.http_cache_dir(),
         None,
@@ -44,8 +47,10 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
     )
     .context("building a fetcher over the store's own cache")?
     .with_offline(true);
+    let durable = crate::durable_capture::DurableCapture::adopt(store.clone(), writer)?;
+    let owned = durable.capture()?;
     let context = AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture: census_crawl::CaptureContext::DurableV1(&owned),
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -73,7 +78,8 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
         counts
     };
 
-    crate::milesplit_publication::project_into_publication_store(&store, &fetcher).await?;
+    crate::milesplit_publication::project_into_publication_store(&store, &fetcher, &durable)
+        .await?;
     let (publication, artifacts) = super::workbook::build_publication(&store, root)?;
 
     Ok(Run {

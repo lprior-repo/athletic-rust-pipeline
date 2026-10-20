@@ -254,10 +254,6 @@ impl ExistingKeyspaces {
                 .as_ref()
                 .ok_or(crate::PublicIdentityError::OptInRequired)?
                 .require_version(PublicIdentityQualificationVersion::RetainedAuthorityGraphV3)?,
-            OpenPurpose::CaptureControl if identity.is_some() => identity
-                .as_ref()
-                .ok_or(crate::PublicIdentityError::OptInRequired)?
-                .require_version(PublicIdentityQualificationVersion::RetainedAuthorityGraphV3)?,
             OpenPurpose::PublicIdentityHistory => {
                 let version = identity
                     .as_ref()
@@ -270,6 +266,23 @@ impl ExistingKeyspaces {
                     )
                     .into());
                 }
+            }
+            OpenPurpose::CaptureControl if identity.is_some() => {
+                let capture = crate::acquisition::declaration(
+                    &self.db.snapshot(),
+                    &self.meta,
+                    &self.journal,
+                    format,
+                )?;
+                if capture.is_none() {
+                    return Err(crate::PublicIdentityError::OptInRequired.into());
+                }
+                identity
+                    .as_ref()
+                    .ok_or(crate::PublicIdentityError::OptInRequired)?
+                    .require_version(
+                        PublicIdentityQualificationVersion::RetainedAuthorityGraphV3,
+                    )?;
             }
             _ if identity.is_some() => return Err(crate::PublicIdentityError::OptInRequired.into()),
             _ => {}

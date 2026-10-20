@@ -7,6 +7,7 @@ fn collect_maps_a_captured_state_final_into_the_canonical_tables() -> TestResult
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
             write_schools(
                 &store,
@@ -18,7 +19,7 @@ fn collect_maps_a_captured_state_final_into_the_canonical_tables() -> TestResult
                 ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
             };
 
-            let report = collect(&context(&store, &fetcher)?, &options).await?;
+            let report = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; report.adapter, SOURCE_ID);
             check!(eq; report.rows, 136);
             check!(eq;
@@ -141,6 +142,7 @@ fn collect_maps_a_captured_state_final_into_the_canonical_tables() -> TestResult
 fn a_result_pass_files_one_observation_per_athlete_id_the_capture_published() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     let (dir, store, fetcher) = scratch()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
     let labels = labelled_schools(&doc, UsJurisdiction::Iowa);
     write_schools(&store, &labels_of(&labels))?;
@@ -150,7 +152,7 @@ fn a_result_pass_files_one_observation_per_athlete_id_the_capture_published() ->
         ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
     };
 
-    let report = collect(&context(&store, &fetcher)?, &options).await?;
+    let report = collect(&context(&store, &fetcher, &capture)?, &options).await?;
     check!(eq; report.errors, 0, "{}", joined(&report));
 
     let grade_number = |token: &str| match token {
@@ -269,6 +271,7 @@ fn club_labels_and_an_empty_grade_cell_are_refused_not_invented() -> TestResult 
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             write_schools(
                 &store,
                 &[(UsJurisdiction::Michigan, "East Kentwood High School")],
@@ -279,7 +282,7 @@ fn club_labels_and_an_empty_grade_cell_are_refused_not_invented() -> TestResult 
                 ..ResultOptions::for_meet(mits_meet(), OBSERVED_ON)
             };
 
-            let report = collect(&context(&store, &fetcher)?, &options).await?;
+            let report = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; report.rows, 0, "no row names a consolidated school");
 
             let meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;

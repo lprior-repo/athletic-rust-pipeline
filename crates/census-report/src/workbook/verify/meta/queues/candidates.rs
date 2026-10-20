@@ -1,7 +1,7 @@
 use super::super::Expect;
 use crate::export::ExportDataset;
 use crate::report::ReportResult;
-use census_domain::public_identity_history::PublicResolution;
+use crate::workbook::meta::queues::resolution_state;
 
 pub(super) fn expected(dataset: &ExportDataset) -> ReportResult<Vec<Vec<Expect>>> {
     let view = dataset.verified_public_identities()?;
@@ -13,17 +13,7 @@ pub(super) fn expected(dataset: &ExportDataset) -> ReportResult<Vec<Vec<Expect>>
         {
             continue;
         }
-        let state = match view.candidate_resolution(athlete.id.as_str()) {
-            Some(PublicResolution::Unknown) => "unknown",
-            Some(PublicResolution::Unresolved) => "unresolved",
-            Some(PublicResolution::Ambiguous { .. }) => "ambiguous",
-            Some(
-                PublicResolution::Canonical(_)
-                | PublicResolution::Redirect { .. }
-                | PublicResolution::RevokedRedirect { .. },
-            ) => "group_withheld",
-            None => "absent",
-        };
+        let state = resolution_state(view.candidate_resolution(athlete.id.as_str()));
         rows.push(vec![
             Expect::text("Public identity candidate withheld"),
             Expect::Empty,

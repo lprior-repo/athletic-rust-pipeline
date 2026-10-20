@@ -7,9 +7,12 @@ pub(super) async fn synthetic_v4_date_projection(
     historical_body: &[u8],
 ) -> TestResult<(String, census_store::Receipt)> {
     let recording = crate::recording::Recording::new();
+    let crate::CaptureContext::DurableV1(capture) = ctx.capture else {
+        return Err("run receipts date projection requires a durable capture context".into());
+    };
     let staged = AdapterContext {
         recording: Some(&recording),
-        ..context(ctx.store, ctx.fetcher)?
+        ..context(ctx.store, ctx.fetcher, capture)?
     };
     let drafted = collect(&staged).await?;
     check!(eq; (drafted.errors, drafted.rows, drafted.requests), (0, 20, 0), "{:?}", drafted.notes);

@@ -3,10 +3,11 @@ use crate::milesplit::{read_retained_owned_result, RetainedResultError};
 
 mod attacks;
 
-const BODY: &[u8] = include_bytes!("../../fixtures/troy_725218.json");
+use crate::milesplit::troy_fixture::BODY;
 
 fn interpret(store: &Store, capture: FetchOutcome) -> TestResult {
     let dir = tempfile::tempdir()?;
+    let durable = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let fetcher = Fetcher::new(
         dir.path().join("offline"),
         None,
@@ -16,7 +17,7 @@ fn interpret(store: &Store, capture: FetchOutcome) -> TestResult {
     )?
     .with_offline(true);
     let ctx = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&durable),
         fetcher: &fetcher,
         store,
         refresh: false,

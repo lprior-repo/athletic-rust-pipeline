@@ -47,8 +47,9 @@ fn execute(
     let store = Store::open(&store_root)?;
     preserve::seed(&store, inputs)?;
     store.flush()?;
+    let capture = census_crawl::net::durable_capture_context(&args.root.join("capture"))?;
     let before = measure::save(&store, &args.root.join("00_before_unbound"), inputs)?;
-    let first = runtime.block_on(collect::collect(&store))?;
+    let first = runtime.block_on(collect::collect(&store, &capture))?;
     collect::save(&args.root, "unbound", &first)?;
     store.flush()?;
     let unbound = measure::save(&store, &args.root.join("01_after_unbound"), inputs)?;
@@ -66,7 +67,7 @@ fn execute(
     binding::retain(&store, &args.root, &binding)?;
     store.flush()?;
     let bound_input = measure::save(&store, &args.root.join("03_before_bound_collect"), inputs)?;
-    let second = runtime.block_on(collect::collect(&store))?;
+    let second = runtime.block_on(collect::collect(&store, &capture))?;
     collect::save(&args.root, "bound", &second)?;
     store.flush()?;
     let bound = measure::save(&store, &args.root.join("04_after_bound"), inputs)?;
@@ -75,7 +76,7 @@ fn execute(
     drop(store);
     let store = Store::open(&store_root)?;
     let reopened_bound = measure::save(&store, &args.root.join("05_reopened_bound"), inputs)?;
-    let third = runtime.block_on(collect::collect(&store))?;
+    let third = runtime.block_on(collect::collect(&store, &capture))?;
     collect::save(&args.root, "replay", &third)?;
     store.flush()?;
     let replayed = measure::save(&store, &args.root.join("06_after_replay"), inputs)?;

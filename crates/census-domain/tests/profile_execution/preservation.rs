@@ -105,7 +105,7 @@ fn reordered_sets_keep_one_original_profile_identity_after_compilation() -> Test
 }
 
 #[test]
-fn retained_policy_eighteen_references_compile_without_rewriting_profile() -> TestResult {
+fn retired_policy_eighteen_references_are_refused_without_rewriting_profile() -> TestResult {
     let mut raw = input()?;
     raw.policies.event = ContractRefV1::new(
         1,
@@ -120,7 +120,14 @@ fn retained_policy_eighteen_references_compile_without_rewriting_profile() -> Te
     let profile = QueryProfileV1::new(raw)?;
     let retained = serialized_bytes(&profile)?;
     let id = profile.id()?;
-    let compiled = compile_profile(&profile)?;
-    equal(serialized_bytes(compiled.profile())?, retained)?;
-    equal(compiled.profile().id()?, id)
+    if !matches!(
+        compile_profile(&profile),
+        Err(ProfileExecutionError::UnsupportedContractReference {
+            role: ContractRoleV1::Event,
+        })
+    ) {
+        return Err("retired policy18 event reference was not refused".into());
+    }
+    equal(serialized_bytes(&profile)?, retained)?;
+    equal(profile.id()?, id)
 }

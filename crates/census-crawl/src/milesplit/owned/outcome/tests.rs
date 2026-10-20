@@ -135,46 +135,6 @@ async fn sealed_interpretation_refuses_historical_authority_before_resource_pars
 }
 
 #[tokio::test]
-async fn sealed_interpretation_refuses_retained_authority_in_historical_context() -> TestResult {
-    let body = resource_body()?;
-    let (fixture, _owner, capture) = captured(&body).await?;
-    let before = fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?;
-    let result = OwnedMeetOutcome::interpret(capture, 725218, CaptureContext::LegacyMetadata);
-    check!(matches!(
-        result,
-        Err(CrawlError::Capture(
-            CaptureTransportError::CacheOccurrenceMismatch
-        ))
-    ));
-    check!(eq; fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?, before);
-    check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, std::collections::HashSet::<String>::new());
-    check!(eq; fixture.store.journal_keys(super::super::OWNED_CAPTURE_PHASE)?, std::collections::HashSet::<String>::new());
-    check!(eq; fixture.count(), 1);
-    Ok(())
-}
-
-#[tokio::test]
-async fn erased_capture_can_only_reenter_as_historical_unknown() -> TestResult {
-    let (fixture, _owner, capture) = captured(BODY).await?;
-    let raw = capture.into_capture();
-    let metadata = serde_json::to_vec(&raw)?;
-    let result = OwnedMeetOutcome::interpret(
-        CapturedFetch::historical(raw),
-        725218,
-        CaptureContext::LegacyMetadata,
-    )?;
-    let OwnedInterpretationOutcome::Interpreted(outcome) = result else {
-        return Err(format!("expected historical interpretation: {result:?}").into());
-    };
-    check!(eq; outcome.provenance(), CaptureProvenanceView::HistoricalAttemptUnknown);
-    check!(eq; outcome.capture().body, BODY);
-    check!(eq; serde_json::to_vec(outcome.capture())?, metadata);
-    check!(eq; outcome.verdict(), &OwnedMeetVerdict::Parsed(parse_owned_meet(BODY, 725218)?));
-    check!(eq; fixture.count(), 1);
-    Ok(())
-}
-
-#[tokio::test]
 async fn synthetic_historical_verdict_never_grants_durable_capture_authority() -> TestResult {
     let (fixture, owner, capture) = captured(BODY).await?;
     let metadata = serde_json::to_vec(capture.capture())?;

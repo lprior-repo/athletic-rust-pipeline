@@ -55,6 +55,13 @@ pub(crate) fn validate_preservation(
     receipts: &Keyspace,
 ) -> StoreResult<()> {
     let snapshot = db.snapshot();
+    if !is_qualification_lifecycle(raw_lifecycle(&snapshot, meta)?)
+        && !has_prefix(&snapshot, meta, "public_identity")?
+        && !has_prefix(&snapshot, journal, "public_identity")?
+        && !has_prefix(&snapshot, receipts, "public_identity")?
+    {
+        return Ok(());
+    }
     let retained_format = crate::format::read_format(meta)?;
     crate::result_school_correspondence::validate_format(
         &snapshot,
@@ -72,14 +79,7 @@ pub(crate) fn validate_preservation(
         &retained_format,
         &mut crate::RosterStartupValidationBudgetV1::new(),
     )?;
-    if !is_qualification_lifecycle(raw_lifecycle(&snapshot, meta)?)
-        && !has_prefix(&snapshot, meta, "public_identity")?
-        && !has_prefix(&snapshot, journal, "public_identity")?
-        && !has_prefix(&snapshot, receipts, "public_identity")?
-    {
-        return Ok(());
-    }
-    let format = crate::format::require_current(root, crate::format::read_format(meta)?)?;
+    let format = crate::format::require_current(root, retained_format)?;
     validate(&snapshot, entities, meta, journal, receipts, &format)?;
     Ok(())
 }

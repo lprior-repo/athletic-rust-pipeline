@@ -1,12 +1,13 @@
+use super::super::fixture::{day, proof, range, revision};
 use super::*;
 
 mod selection;
 use crate::export::{VerifiedCurrentAffiliations, VerifiedParticipationView};
-use census_domain::affiliation_candidates::{DeclaredFrozenView, KnownBounds, ObjectRef};
+use census_domain::affiliation_candidates::{DeclaredFrozenView, ObjectRef};
 use census_domain::model::{
-    ContractRefV1, DiscoveryPriorityV1, Gender, GradYear, PerformanceWindowV1, ProfileDate,
-    ProfileDateRangeV1, ProfileId, ProfilePoliciesV1, ProfileSelectionV1, ProvisionalInclusionV1,
-    QueryProfileInputV1, QueryProfileV1, RegionalMembershipV1, SchoolYear, Sport,
+    ContractRefV1, DiscoveryPriorityV1, Gender, GradYear, PerformanceWindowV1, ProfileDateRangeV1,
+    ProfileId, ProfilePoliciesV1, ProfileSelectionV1, ProvisionalInclusionV1, QueryProfileInputV1,
+    QueryProfileV1, RegionalMembershipV1, SchoolYear, Sport,
 };
 use census_domain::participation_candidates::*;
 use census_domain::profile_execution::{
@@ -15,7 +16,6 @@ use census_domain::profile_execution::{
 use census_store::{PublicIdentityWriterV1, Store};
 pub(super) use selection::{observations, reasons, selected};
 use std::collections::BTreeMap;
-use std::num::NonZeroU64;
 
 pub(super) struct Facts {
     profile: QueryProfileV1,
@@ -246,35 +246,4 @@ impl Facts {
             },
         })
     }
-}
-
-fn proof<'a>(
-    performance: &'a CanonicalPerformance,
-    name: &'a str,
-) -> TestResult<ProofReference<'a>> {
-    Ok(ProofReference {
-        fact: ObjectRef::parse(name)?,
-        capture: ObjectRef::parse("archived-source-bytes")?,
-        interpretation: ObjectRef::parse("published-source-interpretation")?,
-        locator: ObjectRef::parse(name)?,
-        athlete: &performance.athlete,
-        known: KnownBounds::new(
-            ObjectRef::parse("retained-test-lineage")?,
-            revision(3)?,
-            revision(7)?,
-        )?,
-        acquired_at: "2026-10-07T00:00:00Z".parse()?,
-    })
-}
-
-fn revision(value: u64) -> TestResult<NonZeroU64> {
-    NonZeroU64::new(value).ok_or_else(|| "nonzero revision".into())
-}
-
-fn day(value: &str) -> TestResult<ProfileDate> {
-    Ok(ProfileDate::parse(value)?)
-}
-
-fn range(from: &str, through: &str) -> TestResult<ProfileDateRangeV1> {
-    Ok(ProfileDateRangeV1::new(day(from)?, day(through)?)?)
 }

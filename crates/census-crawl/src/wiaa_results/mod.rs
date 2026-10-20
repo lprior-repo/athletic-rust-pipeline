@@ -80,7 +80,6 @@ struct Stats {
     rows_with_grade: usize,
     rows_without_school: usize,
     relay_legs: usize,
-    events: usize,
     school_resolved: HashMap<&'static str, usize>,
     ambiguous: HashMap<String, usize>,
     unresolved: HashMap<String, usize>,

@@ -8,9 +8,7 @@ mod event_scores;
 mod result_status;
 mod status_precedence;
 
-pub(super) const TROY: &[u8] = include_bytes!("fixtures/troy_725218.json");
-pub(super) const TEAM_RELAYS: &[u8] =
-    include_bytes!("../../../tests/fixtures/milesplit/troy_725218_team_relays.json");
+pub(super) use crate::milesplit::troy_fixture::{BODY as TROY, TEAM_RELAYS};
 
 #[path = "row/relay_tests.rs"]
 mod relay_tests;

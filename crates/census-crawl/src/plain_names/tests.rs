@@ -7,14 +7,12 @@ use std::collections::HashSet;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-const ND_INDEX: &str = include_str!("../../tests/fixtures/plain_names/nd_schools_index.html");
-const ND_PAGE: &str = include_str!("../../tests/fixtures/plain_names/nd_school_page.html");
-const ND_PAGE_NO_AD: &str =
-    include_str!("../../tests/fixtures/plain_names/nd_school_page_no_ad.html");
-const NSAA_PAGE: &str = include_str!("../../tests/fixtures/plain_names/nsaa_directory_export.html");
-const NSAA_FORM: &str = include_str!("../../tests/fixtures/plain_names/nsaa_directory_form.html");
-const NSAA_SCHOOL_GET: &str =
-    include_str!("../../tests/fixtures/plain_names/nsaa_school_get_adams_central.html");
+const ND_INDEX: &str = include_str!("fixtures/nd_schools_index.html");
+const ND_PAGE: &str = include_str!("fixtures/nd_school_page.html");
+const ND_PAGE_NO_AD: &str = include_str!("fixtures/nd_school_page_no_ad.html");
+const NSAA_PAGE: &str = include_str!("fixtures/nsaa_directory_export.html");
+const NSAA_FORM: &str = include_str!("fixtures/nsaa_directory_form.html");
+const NSAA_SCHOOL_GET: &str = include_str!("fixtures/nsaa_school_get_adams_central.html");
 
 const OBSERVED_ON: &str = "2026-09-20";
 
@@ -1070,6 +1068,7 @@ fn collect_skips_providers_it_was_not_asked_for() -> TestResult {
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = census_store::Store::open(dir.path().join("store"))?;
             let fetcher = crate::net::Fetcher::new(
                 dir.path().join("http"),
@@ -1079,7 +1078,7 @@ fn collect_skips_providers_it_was_not_asked_for() -> TestResult {
                 Vec::new(),
             )?;
             let ctx = AdapterContext {
-                capture: crate::CaptureContext::LegacyMetadata,
+                capture: crate::CaptureContext::DurableV1(&capture),
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,

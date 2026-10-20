@@ -198,35 +198,39 @@ fn ordered_targets() -> TestResult<(CanonicalSchool, CanonicalSchool, DirectoryI
     later.aliases.push(AMBIGUOUS_MEMBER.to_string());
     check!(earlier.id < later.id);
     let index = DirectoryIndex::build(&[
-        entry_with_website(
+        nces_entry_with_website(
             "390000000001",
             &earlier.name,
             "Springfield",
             UsJurisdiction::Ohio,
             "1 Durable Rd",
             "https://earlier.example/high",
+            (9, 12),
         )?,
-        entry_with_website(
+        nces_entry_with_website(
             "390000000010",
             &later.name,
             "Springfield",
             UsJurisdiction::Ohio,
             "10 Recomputed Rd",
             "https://later.example/high",
+            (9, 12),
         )?,
-        entry(
+        nces_entry(
             "390000000002",
             AMBIGUOUS_MEMBER,
             "Springfield",
             UsJurisdiction::Ohio,
             "2 Member Rd",
+            (9, 12),
         )?,
-        entry(
+        nces_entry(
             "390000000003",
             AMBIGUOUS_MEMBER,
             "Springfield",
             UsJurisdiction::Ohio,
             "3 Member Rd",
+            (9, 12),
         )?,
     ]);
     Ok((earlier, later, index))

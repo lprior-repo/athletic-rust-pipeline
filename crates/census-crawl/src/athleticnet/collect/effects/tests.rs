@@ -56,6 +56,7 @@ fn profile_rows() -> TestResult<Accumulator> {
 fn prior_profile_effect_retains_its_receipt_while_current_xc_projection_remains_idempotent(
 ) -> TestResult {
     let dir = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let store = Store::open(dir.path().join("store"))?;
     let fetcher = Fetcher::new(
         dir.path().join("http"),
@@ -66,7 +67,7 @@ fn prior_profile_effect_retains_its_receipt_while_current_xc_projection_remains_
     )?
     .with_offline(true);
     let ctx = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher: &fetcher,
         store: &store,
         refresh: false,

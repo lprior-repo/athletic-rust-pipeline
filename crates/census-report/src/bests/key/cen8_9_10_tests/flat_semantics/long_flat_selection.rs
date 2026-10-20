@@ -1,10 +1,9 @@
 use super::*;
 
 #[test]
-fn long_flat_prs_select_exact_distances_without_steeple_or_legacy_remapping() -> TestResult {
+fn long_flat_prs_select_exact_distances_without_steeple_remapping() -> TestResult {
     let mut data = dataset()?;
     let mut expected = LongFlatWinners::new();
-    let mut historical = LongFlatWinners::new();
     for (kind, first, second) in [
         (EventKind::Track2000m, "2000m", "2k"),
         (EventKind::Track10000m, "10000m", "10k"),
@@ -51,18 +50,12 @@ fn long_flat_prs_select_exact_distances_without_steeple_or_legacy_remapping() ->
             None,
         );
         let witness = (winner.id.clone(), winner.meet.clone(), 600_100_000_000, 2);
-        check!(eq; expected.insert(key.clone(), witness.clone()), None);
-        if matches!(
-            kind,
-            EventKind::Track3000m | EventKind::Track2000mSteeplechase
-        ) {
-            check!(eq; historical.insert(key, witness), None);
-        }
+        check!(eq; expected.insert(key, witness), None);
     }
     let retained = serialized_bytes(&(&data.events, &data.performances))?;
     check_long_flat_winners(&selections(&data)?, &expected)?;
     data.lineage.policy_revision = 18;
-    check_long_flat_winners(&selections(&data)?, &historical)?;
+    check!(selections(&data).is_err());
     check!(eq; serialized_bytes(&(&data.events, &data.performances))?, retained);
     Ok(())
 }
@@ -172,7 +165,7 @@ fn long_flat_aliases_have_exact_winners_for_independently_varied_comparison_dime
     let retained = serialized_bytes(&(&data.events, &data.performances))?;
     check_long_flat_winners(&selections(&data)?, &expected)?;
     data.lineage.policy_revision = 18;
-    check_long_flat_winners(&selections(&data)?, &LongFlatWinners::new())?;
+    check!(selections(&data).is_err());
     check!(eq; serialized_bytes(&(&data.events, &data.performances))?, retained);
     Ok(())
 }
@@ -227,7 +220,7 @@ fn short_flat_indoor_aliases_pool_only_with_identical_facility_dimensions() -> T
     let rows = selections(&data)?;
     check_long_flat_winners(&rows, &expected)?;
     data.lineage.policy_revision = 18;
-    check_long_flat_winners(&selections(&data)?, &LongFlatWinners::new())?;
+    check!(selections(&data).is_err());
     check!(eq; serialized_bytes(&(&data.events, &data.performances))?, retained);
     Ok(())
 }

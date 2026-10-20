@@ -1,6 +1,6 @@
 use super::super::{assert_same_root, fixture, readback, selected_bests, TestResult, Witness};
 use super::{coverage_row, pending_lane, seed_population, Captured, Mutation};
-use crate::export::{freeze_v2, to_export_dataset, ExportDataset};
+use crate::export::{freeze_v2, to_export_dataset, ExportDataset, ExportJobRequest};
 use crate::report::{ReportError, Scope};
 use crate::workbook::publication::{open_publication, verify_sidecars};
 use census_domain::model::{
@@ -50,7 +50,7 @@ fn adjusted_capture() -> TestResult<Captured> {
     store.replace(Table::Coverage, &coverage_row(0))?;
     store.replace(Table::CoachLanes, &pending_lane()?)?;
     let frozen = freeze_v2(&store, JOB)?;
-    let dataset = ExportDataset::for_job(&store, JOB)?;
+    let dataset = ExportDataset::for_job_request(&store, JOB, &ExportJobRequest::LegacyV2)?;
     let archive = store
         .out_dir()
         .join("export-inputs")

@@ -4,9 +4,15 @@ use super::discovery::{
 };
 use super::material::process_units;
 use super::{
-    digest_of, journal_keys, note, open_store, table_counts, CanonicalSchool, Duration,
-    ExitStatusExt, Table, OBSERVED_ON, UNIT_PHASE,
+    digest_of, journal_keys, note, table_counts, CanonicalSchool, Duration, ExitStatusExt, Table,
+    OBSERVED_ON, UNIT_PHASE,
 };
+
+fn open_qualified_store(root: &std::path::Path) -> super::TestResult<super::Store> {
+    Ok(super::Store::open_current_qualification_v3(root)?
+        .into_parts()
+        .0)
+}
 
 #[test]
 fn sigkill_of_the_service_keeps_durable_work_and_the_restart_drains_cleanly() -> super::TestResult {
@@ -21,7 +27,8 @@ fn sigkill_of_the_service_keeps_durable_work_and_the_restart_drains_cleanly() ->
             let units = ["unit-1", "unit-2", "unit-3"];
 
             let (journal_before, counts_before, merged_digest_before) = {
-                let store = open_store(&root)?;
+                super::Store::create_current_qualification_v3(&root)?;
+                let store = open_qualified_store(&root)?;
                 process_units(&store, &units, OBSERVED_ON)?;
                 store.flush()?;
                 let journal = journal_keys(&store, UNIT_PHASE)?;
@@ -55,7 +62,7 @@ fn sigkill_of_the_service_keeps_durable_work_and_the_restart_drains_cleanly() ->
     Some(9),
     "the service was killed hard, with no drain");
 
-            let store = open_store(&root)?;
+            let store = open_qualified_store(&root)?;
             let journal_after_kill = journal_keys(&store, UNIT_PHASE)?;
             let counts_after_kill = table_counts(&store)?;
             let merged_after_kill = digest_of(&store.scan::<CanonicalSchool>(Table::Schools)?)?;
@@ -109,7 +116,7 @@ fn sigkill_of_the_service_keeps_durable_work_and_the_restart_drains_cleanly() ->
         "the terminal counters account for every accepted task: {}",
         drain_line(&stdout));
 
-                let store = open_store(&root)?;
+                let store = open_qualified_store(&root)?;
                 let counts_after_drain = table_counts(&store)?;
                 let merged_after_drain =
                     digest_of(&store.scan::<CanonicalSchool>(Table::Schools)?)?;
@@ -141,7 +148,8 @@ fn service_with_no_stop_request_survives_its_drain_deadline() -> super::TestResu
     let units = ["unit-1", "unit-2"];
 
     let (journal_before, counts_before) = {
-        let store = open_store(&root)?;
+        super::Store::create_current_qualification_v3(&root)?;
+        let store = open_qualified_store(&root)?;
         process_units(&store, &units, OBSERVED_ON)?;
         store.flush()?;
         (journal_keys(&store, UNIT_PHASE)?, table_counts(&store)?)
@@ -217,7 +225,7 @@ fn service_with_no_stop_request_survives_its_drain_deadline() -> super::TestResu
         }
     }
 
-    let store = open_store(&root)?;
+    let store = open_qualified_store(&root)?;
     let journal_after = journal_keys(&store, UNIT_PHASE)?;
     let counts_after = table_counts(&store)?;
     note(

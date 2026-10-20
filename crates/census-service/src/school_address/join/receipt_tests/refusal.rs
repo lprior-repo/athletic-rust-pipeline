@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::school_directory::{NcesSchoolId, SchoolDirectoryEntry, SchoolName};
 
 #[test]
 fn missing_capture_url_or_date_produces_no_effect_receipt_or_witness() -> TestResult {
@@ -7,12 +8,13 @@ fn missing_capture_url_or_date_produces_no_effect_receipt_or_witness() -> TestRe
         (Some("https://nces.ed.gov/ccd.csv"), None),
     ] {
         let (_dir, store) = store_with_school()?;
-        let index = DirectoryIndex::build(&[entry(
+        let index = DirectoryIndex::build(&[nces_entry(
             "390000000001",
             "Springfield High School",
             "Springfield",
             UsJurisdiction::Ohio,
             "1 Main St",
+            (9, 12),
         )?]);
         let (store, before) = physical::checkpoint(store)?;
         let (counts, outcomes) = process(&store, &index, &lanes(url, date), Mode::Apply)?;
@@ -30,12 +32,13 @@ fn missing_capture_url_or_date_produces_no_effect_receipt_or_witness() -> TestRe
 #[test]
 fn foreign_capture_membership_cannot_create_an_application_witness() -> TestResult {
     let (_dir, store) = store_with_school()?;
-    let index = DirectoryIndex::build(&[entry(
+    let index = DirectoryIndex::build(&[nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?]);
     let foreign = IdentifiedKey::Nces(NcesSchoolId::parse("390000000099")?);
     let lanes = lanes_of(vec![
@@ -72,12 +75,13 @@ fn foreign_capture_membership_cannot_create_an_application_witness() -> TestResu
 #[test]
 fn a_foreign_provider_key_pair_is_refused_without_receipted_mutations() -> TestResult {
     let (_dir, store) = store_with_school()?;
-    let base = entry(
+    let base = nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?;
     let foreign = SchoolDirectoryEntry::identified(
         IdentifiedKey::Nces(NcesSchoolId::parse("390000000001")?),

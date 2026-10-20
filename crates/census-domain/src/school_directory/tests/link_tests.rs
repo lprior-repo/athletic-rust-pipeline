@@ -1,58 +1,16 @@
+use crate::school_directory::fixture::{
+    grade_span as span, nces_entry, postal_address as address, state_record_entry,
+};
 use crate::school_directory::link::{
     AttestedRecord, DirectoryIndex, LinkDecision, LinkMatch, LinkRule, ReviewReason,
 };
 use crate::school_directory::{
-    AssociationLabel, CityName, Grade, GradeSpan, IdentifiedKey, NcesSchoolId, NumberedGrade,
-    PostalAddress, PssId, SchoolDirectoryEntry, SchoolName, SourceLabel, StateRecordId, StreetLine,
-    Website, ZipCode,
+    AssociationLabel, IdentifiedKey, NcesSchoolId, PostalAddress, PssId, SchoolDirectoryEntry,
+    SchoolName, SourceLabel, StateRecordId, StreetLine, Website,
 };
 use crate::UsJurisdiction;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-
-fn span(low: u8, high: u8) -> Result<GradeSpan, Box<dyn std::error::Error>> {
-    Ok(GradeSpan::new(
-        Grade::Numbered(NumberedGrade::new(low)?),
-        Grade::Numbered(NumberedGrade::new(high)?),
-    )?)
-}
-
-fn address(
-    line1: Option<&str>,
-    city: &str,
-    state: UsJurisdiction,
-) -> Result<PostalAddress, Box<dyn std::error::Error>> {
-    let line1 = match line1 {
-        Some(line1) => Some(StreetLine::parse(line1)?),
-        None => None,
-    };
-    PostalAddress::of(
-        line1,
-        None,
-        Some(CityName::parse(city)?),
-        Some(state),
-        Some(ZipCode::parse("43000")?),
-    )
-    .ok_or("address is empty")
-    .map_err(Into::into)
-}
-
-fn nces_entry(
-    id: &str,
-    name: &str,
-    city: &str,
-    state: UsJurisdiction,
-    line1: &str,
-    grades: (u8, u8),
-) -> Result<SchoolDirectoryEntry, Box<dyn std::error::Error>> {
-    Ok(SchoolDirectoryEntry::identified(
-        IdentifiedKey::Nces(NcesSchoolId::parse(id)?),
-        SourceLabel::Ccd,
-        Some(SchoolName::parse(name)?),
-    )
-    .with_address(Some(address(Some(line1), city, state)?))
-    .with_grades(Some(span(grades.0, grades.1)?)))
-}
 
 #[test]
 fn exact_name_city_state_links() -> TestResult {
@@ -541,26 +499,6 @@ fn entries_without_street_retain_the_published_partial_address() -> TestResult {
     check!(eq; hit.key, IdentifiedKey::Nces(NcesSchoolId::parse("390000000014")?));
     check!(eq; hit.address, Some(partial));
     Ok(())
-}
-
-fn state_record_entry(
-    id: &str,
-    name: &str,
-    city: &str,
-    state: UsJurisdiction,
-    line1: Option<&str>,
-    label: SourceLabel,
-) -> Result<SchoolDirectoryEntry, Box<dyn std::error::Error>> {
-    Ok(SchoolDirectoryEntry::identified(
-        IdentifiedKey::StateRecord {
-            state,
-            id: StateRecordId::parse(id)?,
-        },
-        label,
-        Some(SchoolName::parse(name)?),
-    )
-    .with_address(Some(address(line1, city, state)?))
-    .with_grades(Some(span(9, 12)?)))
 }
 
 fn association(state: UsJurisdiction) -> SourceLabel {
