@@ -2040,3 +2040,13 @@ A newer original-ingress status read observes90 canonical meets,2,434events and
 3,568performances, superseding the earlier live zero observation. The cold diagnostic
 snapshot still predates those rows. Neither counter set establishes eligible
 population or completed coverage; the two generations must not be conflated.
+
+Clean cumulative-headroom source`30475e2bfb359d2436bd7d53a11ceb61631068a5`,
+tree`942ab14ca9b12a8c180912d3d597e10273bfac8b`, passed unchanged authentic-A
+`abc6dbc1`(1/1), optimized build`55481a76`, and actual optimized public CLI
+verification of all3 original workbooks (exit0 each). Service
+SHA`25612cd1977aa23f74b5ba1d66ee122f18f128241310a06700fbebb8c9c29ab0`;
+endpoint SHA`c87e50a404e7cf81b95878d9215972016ea9f558c8d95236d48a07dbcd7f9e6f`.
+Private receipt`diagnostic-original-A-cli-30475e2b.json`retains commands/results.
+Generation07 is running on the same older restored snapshot/profile6905…;
+national artifact/coverage qualification remains pending, and live deployment is unchanged.
