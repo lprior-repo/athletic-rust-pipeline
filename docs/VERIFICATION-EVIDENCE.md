@@ -2009,3 +2009,20 @@ cases`4bd9e3db`(6/6). The previously failing workbook reached publication and
 source-free reopen without relaxing an assertion. The origin-filter arm selected
 no tests; the6-case result is not an origin-suite claim. Clean-commit authentic-A,
 optimized three-workbook CLI verification and national generation06 remain NOT RUN.
+
+Clean source`305c40cf8f1845b3b882edfc673948044b7d9e10`,
+tree`4d004b4b55e93ee855c671ba2db18ef62bc3b6ed`, passed unchanged authentic-A
+replay`52cb1da0`(1/1), optimized portable build`bae858d0`, and actual optimized
+public CLI verification of all3 original resolved/conflicted/missing-owner
+workbooks (exit0 each). Original-A pins and inputs were not regenerated. The
+corrected origin suite`76c11d15`passed10/10. `3nea` is closed for this exact defect;
+broader R2 population/partial-roster acceptance remains separate.
+
+Immutable service SHA`0fac3dcb08fd774fc79d38231a61321a97918e7899a0394729daebd1871a85e1`
+and endpoint SHA`3e3db9ba93c18d2271b7d8fd2f6f3d2563bb05df904c362faf00d1bea5ef2823`
+are retained under`var/census-national-v3-20261019/releases/305c40cf`.
+Private receipt`diagnostic-original-A-cli-305c40cf.json`records actual commands and
+outputs. Generation06 is now exercising the same restored census with this CLI,
+profile6905…,4-GiB/16,777,216-step admission and16-GiB/zero-swap process scope.
+Its workbook/result is not yet verified. Original live deployment remains unchanged;
+this is not full release-gate or national-completion evidence.
