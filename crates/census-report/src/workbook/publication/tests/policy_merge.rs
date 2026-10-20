@@ -43,7 +43,7 @@ fn result_group_recipe_preserves_old_tuples_and_uses_a_distinct_current_identity
         options.school_year,
         Vec::<&str>::new(),
         dataset.lineage.schema_revision,
-        21_u32,
+        dataset.lineage.policy_revision,
     ))?;
     let expected = binding::digest(&(
         "athletic-publication-artifact-recipe-v1",

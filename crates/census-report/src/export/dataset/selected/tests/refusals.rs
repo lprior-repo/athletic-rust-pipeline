@@ -151,3 +151,46 @@ async fn selected_capture_refuses_foreign_selection_snapshot_and_nonempty_object
     check!(eq; std::fs::read(&marker)?, b"retain me");
     Ok(())
 }
+
+#[tokio::test]
+async fn graph_identity_refuses_generic_dataset_without_disabling_selected_capture() -> TestResult {
+    let fixture = Fixture::composed(true).await?;
+    let snapshot = fixture.store.snapshot();
+    let sequence = snapshot.sequence();
+    let physical = snapshot.tables_digest(&Table::ALL)?;
+    for _attempt in 0..2 {
+        check!(matches!(
+            ExportDataset::from_snapshot(&fixture.store, &snapshot),
+            Err(crate::report::ReportError::Store(
+                census_store::StoreError::PublicIdentity(
+                    census_store::PublicIdentityError::OptInRequired
+                )
+            ))
+        ));
+        check!(eq; fixture.store.snapshot().sequence(), sequence);
+        check!(eq; fixture.store.snapshot().tables_digest(&Table::ALL)?, physical);
+        check!(matches!(
+            ExportDataset::load(&fixture.store),
+            Err(crate::report::ReportError::Store(
+                census_store::StoreError::PublicIdentity(
+                    census_store::PublicIdentityError::OptInRequired
+                )
+            ))
+        ));
+        check!(eq; fixture.store.snapshot().sequence(), sequence);
+        check!(eq; fixture.store.snapshot().tables_digest(&Table::ALL)?, physical);
+    }
+    let objects = super::temporary()?;
+    let selected = fixture.capture(objects.path())?;
+    selected.ensure_current_selected_write()?;
+    check!(selected.selected_profile_id().is_some());
+    selected.verified_participation()?;
+    selected.verified_current_affiliations()?;
+    check!(selected
+        .verified_public_identities()?
+        .public_id(fixture.roster_athlete.as_str())
+        .is_some());
+    check!(eq; fixture.store.snapshot().sequence(), sequence);
+    check!(eq; fixture.store.snapshot().tables_digest(&Table::ALL)?, physical);
+    Ok(())
+}

@@ -32,6 +32,7 @@ pub(super) fn capture_at(
     job: &str,
     objects_dir: &Path,
 ) -> ReportResult<FrozenManifest> {
+    snapshot.require_legacy_identity_publication()?;
     let mut lineage = super::lineage(store, snapshot)?;
     check_text("manifest export job", job, MAX_ROOT_TEXT_BYTES).map_err(codec_error)?;
     lineage.export_job = Some(job.to_string());

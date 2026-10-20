@@ -207,3 +207,38 @@ fn snapshot_capture_checks_job_bytes_before_cloning_or_writing_objects() -> Test
     check!(eq; store.snapshot().sequence(), snapshot.sequence());
     Ok(())
 }
+
+#[test]
+fn snapshot_capture_refuses_graph_identity_before_objects_or_store_effects() -> TestResult {
+    let store_directory = tempfile::tempdir()?;
+    let root = store_directory.path().join("store");
+    Store::create_public_identity_qualification_v3(&root)?;
+    let (store, _writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+    let snapshot = store.snapshot();
+    let sequence = snapshot.sequence();
+    let physical = snapshot.tables_digest(&Table::ALL)?;
+    let objects = tempfile::tempdir()?;
+    let marker = objects.path().join("caller-owned-marker");
+    for (has_marker, expected_files) in [(false, 0_usize), (true, 1_usize)] {
+        if has_marker {
+            std::fs::write(&marker, b"retain me")?;
+        }
+        for _attempt in 0..2 {
+            let result = capture_at(&store, &snapshot, "graph-refusal", objects.path());
+            check!(matches!(
+                result,
+                Err(ReportError::Store(StoreError::PublicIdentity(
+                    census_store::PublicIdentityError::OptInRequired
+                )))
+            ));
+            let entries = std::fs::read_dir(objects.path())?.collect::<Result<Vec<_>, _>>()?;
+            check!(eq; entries.len(), expected_files);
+            if has_marker {
+                check!(eq; std::fs::read(&marker)?, b"retain me");
+            }
+            check!(eq; store.snapshot().sequence(), sequence);
+            check!(eq; store.snapshot().tables_digest(&Table::ALL)?, physical);
+        }
+    }
+    Ok(())
+}
