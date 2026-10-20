@@ -13,6 +13,12 @@ use census_store::{
     decode_physical_observation, Entity, RosterSourceEvidenceV1, StoreError, StoreResult, Table,
 };
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ScanPhase {
+    Physical,
+    Published,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RosterBindingUnverifiedReferenceV1 {}
 
@@ -89,7 +95,7 @@ pub(super) fn assess_projection(
         evidence,
         Table::Schools,
         grant,
-        |row| school_row(row, binding, checked.school()),
+        |row, _| school_row(row, binding, checked.school()),
         |row| select(&mut school, row, binding.school().as_str()),
     )?;
     let mut program = None;
@@ -97,14 +103,14 @@ pub(super) fn assess_projection(
         evidence,
         Table::Teams,
         grant,
-        |row| team_row(row, binding),
+        |row, _| team_row(row, binding),
         |row| select(&mut program, row, binding.program().as_str()),
     )?;
     scan::<RetainedConflict>(
         evidence,
         Table::Conflicts,
         grant,
-        no_global_conflict,
+        |row, _| no_global_conflict(row),
         |_| Ok(()),
     )?;
     let mut observations = 0_usize;
@@ -112,15 +118,15 @@ pub(super) fn assess_projection(
         evidence,
         Table::SourceObservations,
         grant,
-        |row| {
-            if observation(row, checked.observation())? {
+        |row, phase| {
+            if observation(row, checked.observation(), phase)? && phase == ScanPhase::Physical {
                 observations = observations
                     .checked_add(1)
                     .ok_or(StoreError::CounterOverflow)?;
             }
             Ok(())
         },
-        |row| observation(&row, checked.observation()).map(|_| ()),
+        |_| Ok(()),
     )?;
     if observations == 0 {
         return Err(invalid("roster binding exact packet observation missing").into());

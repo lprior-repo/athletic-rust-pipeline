@@ -47,7 +47,7 @@ pub(super) fn scan<T: Entity>(
     evidence: &RosterSourceEvidenceV1,
     table: Table,
     grant: &mut AttachmentReplayGrantV1,
-    mut inspect: impl FnMut(&T) -> StoreResult<()>,
+    mut inspect: impl FnMut(&T, ScanPhase) -> StoreResult<()>,
     mut visit: impl FnMut(T) -> StoreResult<()>,
 ) -> StoreResult<()> {
     let rows = evidence.physical_projection(grant)?;
@@ -62,7 +62,7 @@ pub(super) fn scan<T: Entity>(
         grant.charge_bytes(physical.bytes().len()).map_err(domain)?;
         grant.charge_steps(1).map_err(domain)?;
         let row: T = decode_physical_observation(table, physical.key(), physical.bytes())?;
-        inspect(&row)?;
+        inspect(&row, ScanPhase::Physical)?;
         evidence.require_original_grant(grant)?;
         if let Some(existing) = current
             .as_mut()
@@ -86,13 +86,13 @@ pub(super) fn publish<T: Entity>(
     evidence: &RosterSourceEvidenceV1,
     mut row: T,
     grant: &mut AttachmentReplayGrantV1,
-    inspect: &mut impl FnMut(&T) -> StoreResult<()>,
+    inspect: &mut impl FnMut(&T, ScanPhase) -> StoreResult<()>,
     visit: &mut impl FnMut(T) -> StoreResult<()>,
 ) -> StoreResult<()> {
     evidence.require_original_grant(grant)?;
     budget::charge(&row, grant)?;
     row.publish();
-    inspect(&row)?;
+    inspect(&row, ScanPhase::Published)?;
     visit(row)?;
     evidence.require_original_grant(grant)
 }

@@ -5,6 +5,7 @@ use census_store::{RosterMemberWithdrawalReviewV1, RosterReviewActorV1};
 
 mod files;
 mod readback;
+mod revisions;
 
 const ORIGINAL_OPERATION: &str = "controlled-withdrawal-original-source";
 const WITHDRAW_OPERATION: &str = "controlled-withdrawal-member-withdrawal";

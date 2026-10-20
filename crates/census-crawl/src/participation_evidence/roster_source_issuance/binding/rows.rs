@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod tests;
+
 pub(super) fn school_row(
     row: &CanonicalSchool,
     binding: &RosterExistingBindingClaimV1,
@@ -61,18 +64,32 @@ pub(super) fn owns(identities: &[SourceIdentity], namespace: SourceNamespace, id
 pub(super) fn observation(
     row: &SourceObservation,
     expected: &SourceSchoolObservation,
+    phase: ScanPhase,
 ) -> StoreResult<bool> {
     match row {
         SourceObservation::School(actual) => {
-            let subject = actual.namespace == expected.namespace
+            let same_subject = actual.namespace == expected.namespace
                 && actual.source_school_id == expected.source_school_id;
-            if subject || actual.id == expected.id {
-                if actual != expected {
-                    return Err(invalid("roster binding packet observation differs"));
-                }
+            if !same_subject && actual.id != expected.id {
+                return Ok(false);
+            }
+            if !same_subject || actual.id != expected.id {
+                return Err(invalid(
+                    "roster binding packet observation identity differs",
+                ));
+            }
+            if actual == expected {
                 return Ok(true);
             }
-            Ok(false)
+            if !actual.source_row_key.is_empty()
+                && !expected.source_row_key.is_empty()
+                && (phase == ScanPhase::Published
+                    || actual.source_row_key != expected.source_row_key)
+                && same_school_facts(actual, expected)
+            {
+                return Ok(false);
+            }
+            Err(invalid("roster binding packet observation differs"))
         }
         SourceObservation::Athlete(_) => {
             if row.id() == expected.id {
@@ -83,6 +100,16 @@ pub(super) fn observation(
             Ok(false)
         }
     }
+}
+
+fn same_school_facts(actual: &SourceSchoolObservation, expected: &SourceSchoolObservation) -> bool {
+    actual.observed_name == expected.observed_name
+        && actual.city == expected.city
+        && actual.state == expected.state
+        && actual.association_id == expected.association_id
+        && actual.district == expected.district
+        && actual.official_url == expected.official_url
+        && actual.athletics_net_team_id == expected.athletics_net_team_id
 }
 
 pub(super) fn select<T: Entity>(selected: &mut Option<T>, row: T, id: &str) -> StoreResult<()> {

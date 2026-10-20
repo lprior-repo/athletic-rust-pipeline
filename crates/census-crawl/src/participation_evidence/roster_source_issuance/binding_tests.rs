@@ -82,14 +82,24 @@ fn observation_subject_cannot_hide_behind_unrestricted_id() -> TestResult {
     );
     check!(observation(
         &SourceObservation::School(expected.clone()),
-        &expected
+        &expected,
+        ScanPhase::Physical
     )?);
     let mut hidden = expected.clone();
     hidden.id = "arbitrary-other-observation".into();
-    check!(observation(&SourceObservation::School(hidden), &expected).is_err());
+    check!(observation(
+        &SourceObservation::School(hidden),
+        &expected,
+        ScanPhase::Physical
+    )
+    .is_err());
     let mut changed = expected.clone();
     changed.source_row_key = "different-packet".into();
-    check!(observation(&SourceObservation::School(changed), &expected).is_err());
+    check!(!observation(
+        &SourceObservation::School(changed),
+        &expected,
+        ScanPhase::Physical
+    )?);
     Ok(())
 }
 
