@@ -156,8 +156,8 @@ pub use wire::{
 };
 
 pub use plan::{
-    owed, plan, plan_sources, sweepable, BrowserLaneState, Dispatch, PlannedUnit, Refusal,
-    RefusalKind, UnitDisposition,
+    compute_plan_fingerprint_with_nces_receipt, owed, plan, plan_sources, sweepable,
+    BrowserLaneState, Dispatch, PlannedUnit, Refusal, RefusalKind, UnitDisposition,
 };
 
 #[allow(unused_imports)]

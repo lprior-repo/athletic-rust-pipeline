@@ -91,6 +91,7 @@ fn gobound_historical_sweepable_plan_journal_is_not_reclassified_on_reopen() -> 
             let historical = SourcePlan {
                 sweepable: vec!["bound".to_string()],
                 refused: Vec::new(),
+                satisfied: Vec::new(),
                 fingerprint,
             };
             store.journal_done("gobound-historical-plan", jurisdiction.code(), &historical)?;

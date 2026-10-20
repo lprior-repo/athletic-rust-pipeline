@@ -37,6 +37,18 @@ pub(super) fn append_plan(
                 Disposition::Blocked,
             ),
         )
+    })?;
+    plan.satisfied.iter().try_for_each(|source| {
+        push(
+            rows,
+            obligation(
+                format!(
+                    "{}/retained/{}/{}",
+                    entry.row.identity, source.slug, source.evidence_digest
+                ),
+                Disposition::Complete,
+            ),
+        )
     })
 }
 

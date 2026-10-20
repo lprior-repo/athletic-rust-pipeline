@@ -155,6 +155,9 @@ mod pinned_run_publication_tests;
 mod catalog_tests;
 
 #[cfg(test)]
+mod five_state_acceptance_tests;
+
+#[cfg(test)]
 mod scoped_coverage_tests;
 
 #[cfg(test)]

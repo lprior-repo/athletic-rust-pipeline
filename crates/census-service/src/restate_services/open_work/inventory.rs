@@ -27,6 +27,7 @@ pub(super) fn validate(state: &JurisdictionState) -> Result<(), HandlerError> {
         && state.plan.as_ref().is_none_or(|plan| {
             plan.sweepable.len() <= limit
                 && plan.refused.len() <= limit
+                && plan.satisfied.len() <= limit
                 && plan
                     .sweepable
                     .iter()
@@ -35,6 +36,14 @@ pub(super) fn validate(state: &JurisdictionState) -> Result<(), HandlerError> {
                     .refused
                     .iter()
                     .all(|row| row.slug.len() <= super::MAX_ENDPOINTS)
+                && plan.satisfied.iter().all(|row| {
+                    row.slug.len() <= super::MAX_ENDPOINTS
+                        && row.evidence_digest.len() == 64
+                        && row
+                            .evidence_digest
+                            .bytes()
+                            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+                })
         });
     if bounded {
         Ok(())
@@ -61,8 +70,16 @@ pub(super) fn plan_covers(
         .iter()
         .filter(|row| registry::descriptor(&row.slug).is_some())
         .count();
+    let registry_satisfied = plan
+        .satisfied
+        .iter()
+        .filter(|row| registry::descriptor(&row.slug).is_some())
+        .count();
     !plan.fingerprint.is_empty()
-        && registry_sweepable.checked_add(registry_refused) == Some(required.len())
+        && registry_sweepable
+            .checked_add(registry_refused)
+            .and_then(|count| count.checked_add(registry_satisfied))
+            == Some(required.len())
         && required.iter().all(|source| {
             plan.sweepable
                 .iter()
@@ -74,6 +91,14 @@ pub(super) fn plan_covers(
                         .filter(|row| row.slug == source.slug)
                         .count(),
                 )
+                .and_then(|count| {
+                    count.checked_add(
+                        plan.satisfied
+                            .iter()
+                            .filter(|row| row.slug == source.slug)
+                            .count(),
+                    )
+                })
                 == Some(1)
         })
 }

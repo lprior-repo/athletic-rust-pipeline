@@ -39,6 +39,7 @@ fn fixture() -> TestResult<Fixture> {
         plan: Some(SourcePlan {
             sweepable: vec!["milesplit".into()],
             refused: Vec::new(),
+            satisfied: Vec::new(),
             fingerprint: compute_plan_fingerprint(
                 request.jurisdiction,
                 request.season,

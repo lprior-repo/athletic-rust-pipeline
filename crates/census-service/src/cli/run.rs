@@ -1,9 +1,9 @@
 use super::{
     browser_session, capture_protocol, census_doc, cycle, dispatch, gather, init_tracing,
-    installation, local_adjudication, merge_coaches, national, open_work, profile, publish,
-    retained_capture, retained_events, retained_marks, review, school_address_join,
-    school_address_preflight, school_sites, seal, serve, store, verify, verify_coaches, Cli,
-    Command,
+    installation, local_adjudication, merge_coaches, national, nces_address_accept, open_work,
+    profile, publish, retained_capture, retained_events, retained_marks, review,
+    school_address_join, school_address_preflight, school_sites, seal, serve, store, verify,
+    verify_coaches, Cli, Command,
 };
 use anyhow::Result;
 use census_store::Store;
@@ -33,6 +33,9 @@ pub(crate) fn run() -> Result<()> {
     if let Command::SelectedPublication(args) = &cli.command {
         return super::selected_publication::run(&cli, args);
     }
+    if let Command::NcesAddressAccept(args) = &cli.command {
+        return nces_address_accept::run(&cli, args);
+    }
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()?
@@ -53,7 +56,8 @@ async fn run_async(cli: Cli) -> Result<()> {
         | Command::Installation(_)
         | Command::Profile(_)
         | Command::LocalIdentityAdjudication(_)
-        | Command::VerifyRetainedCapture(_) => {
+        | Command::VerifyRetainedCapture(_)
+        | Command::NcesAddressAccept(_) => {
             anyhow::bail!("offline diagnostic commands are routed before the runtime starts")
         }
         Command::Review(args) => {
