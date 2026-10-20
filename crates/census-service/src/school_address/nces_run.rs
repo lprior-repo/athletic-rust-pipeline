@@ -358,7 +358,7 @@ mod tests {
     use census_domain::model::{CensusRun, GradYear, RunManifest, SchoolYear};
     use std::collections::BTreeSet;
 
-    type TestResult = Result<(), Box<dyn std::error::Error>>;
+    type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
     const CCD: &[u8] = include_bytes!("../../tests/fixtures/nces_run/ccd_synthetic.csv");
     const PSS: &[u8] = include_bytes!("../../tests/fixtures/nces_run/pss_synthetic.csv");
@@ -449,6 +449,7 @@ mod tests {
 
         std::fs::remove_file(fixture.source_root.join("ccd.csv"))?;
         std::fs::remove_file(fixture.source_root.join("pss.csv"))?;
+        drop(fixture.store);
         let reopened_store = Store::open(&fixture.store_path)?;
         let (reopened_receipt, generation) = reopen(&reopened_store, &fixture.run_digest)?;
         check!(eq; reopened_receipt, receipt);

@@ -111,7 +111,6 @@ pub use inspect::StoreInspection;
 pub use lineage::StoreLineageError;
 #[cfg(feature = "native-fault-injection")]
 pub use native_effect_checkpoint::{NativeEffectCheckpoint, NativeEffectRow};
-pub use nces_address::*;
 pub use profiles::{ProfileRegistration, ProfileRegistryError, MAX_PROFILE_RECORD_BYTES};
 pub use read::{
     build_athlete_identity_projection, decode_physical_observation, AcceptedPublicIdentitySnapshot,

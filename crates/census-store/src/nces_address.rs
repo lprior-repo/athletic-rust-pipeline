@@ -211,4 +211,5 @@ mod tests {
     }
 }
 
+#[cfg(test)]
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
