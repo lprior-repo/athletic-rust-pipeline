@@ -50,8 +50,12 @@ pub(in super::super) fn review(store: &Store, capture: &Capture) -> TestResult {
         grant,
     )?;
     let supplied = supplied(capture, &source, &parser, grant)?;
-    let prepared =
-        store.prepare_roster_source_review_v1(inspection, proposal, fields()?, supplied)?;
+    let prepared = store.prepare_roster_source_review_v1(
+        inspection,
+        proposal.into_proposal(),
+        fields()?,
+        supplied,
+    )?;
     let bytes = prepared.approval_bytes().to_vec();
     let digest = prepared.approval_digest().to_string();
     check!(eq; hash(&bytes), digest);

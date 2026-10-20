@@ -31,24 +31,6 @@ impl LocallyCheckedRosterIssuanceV1 {
     pub fn semantic_review_evidence(&self) -> &RosterAuthorityObjectRefV1 {
         &self.0.semantic_review_evidence
     }
-    pub fn with_semantic_review_reference(
-        mut self,
-        digest: &str,
-        bytes: u64,
-        limits: RosterAuthorityLimitsV1,
-    ) -> Result<Self> {
-        self.0.semantic_review_evidence = RosterAuthorityObjectRefV1 {
-            digest: RosterAuthorityDigestV1::parse(digest)?,
-            bytes: NonZeroU64::new(bytes).ok_or(
-                crate::roster_affiliation_authority::RosterAuthorityError::Invalid(
-                    "empty review object",
-                ),
-            )?,
-        };
-        crate::roster_affiliation_authority::validate::issuance(&self.0, limits)?;
-        crate::roster_affiliation_authority::encode(&self, limits)?;
-        Ok(self)
-    }
     pub fn encode(&self, limits: RosterAuthorityLimitsV1) -> Result<Vec<u8>> {
         crate::roster_affiliation_authority::validate::issuance(&self.0, limits)?;
         crate::roster_affiliation_authority::encode(self, limits)

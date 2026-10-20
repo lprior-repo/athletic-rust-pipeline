@@ -227,6 +227,10 @@ env -u CI tools/moon-local run pipeline:run-scoped -- -p census-service --bin ce
 These tasks do not replace workspace or release gates. Running a store-opening example against
 a serving store still violates the single-owner boundary; use isolated scratch or documented ingress.
 
+Source-policy gates exclude tool-owned `.muse` workspace storage, alongside the
+existing cache/vendor exclusions. Owned source under crates, tests, examples and
+tools remains checked; concurrent worker copies must not be deleted to pass a gate.
+
 Historical-school proof readback opens no Store and performs no acquisition:
 
 ```sh

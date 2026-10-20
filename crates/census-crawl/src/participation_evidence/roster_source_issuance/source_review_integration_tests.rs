@@ -14,6 +14,10 @@ use setup::*;
 
 #[path = "source_admission_tests.rs"]
 mod admission;
+#[path = "source_review_integration_tests/body_reader.rs"]
+mod body_reader;
+#[path = "source_review_integration_tests/prepared_grant.rs"]
+mod prepared_grant;
 #[path = "source_wire_boundary_tests.rs"]
 mod wire_boundary;
 
@@ -100,21 +104,19 @@ pub(super) fn prepare<'a>(
         year_convention: contracts.year.to_vec(),
         projection_merge_contract: contracts.projection_merge.to_vec(),
     };
-    Ok(
-        store.prepare_roster_source_review_v1(
-            inspection,
-            proposal,
-            fields(operation)?,
-            supplied,
-        )?,
-    )
+    Ok(store.prepare_roster_source_review_v1(
+        inspection,
+        proposal.into_proposal(),
+        fields(operation)?,
+        supplied,
+    )?)
 }
 
 #[test]
 fn controlled_review_applies_replays_and_reopens_without_authority_claim() -> TestResult {
     let (directory, store) = enrolled_store()?;
     let mut prepared = prepare(&store, "controlled-review", None)?;
-    let reviewed = decode(&serde_json::from_slice(prepared.reviewed_proposal_bytes())?)?;
+    let reviewed = prepared.proposal_claim()?;
     check!(reviewed.semantic_review_evidence().bytes().get() > 64);
     let parser = compiled_roster_parser_manifest()?;
     let contracts = compiled_roster_interpretation_contracts_v1();

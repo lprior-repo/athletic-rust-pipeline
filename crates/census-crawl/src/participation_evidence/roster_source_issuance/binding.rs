@@ -3,8 +3,8 @@ use crate::participation_evidence::{hash, invalid, json};
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{
-    CanonicalSchool, CanonicalTeam, NaturalKey, RetainedConflict, SourceIdentity, SourceNamespace,
-    SourceObservation, SourceSchoolObservation,
+    CanonicalSchool, CanonicalTeam, NaturalKey, RetainedConflict, SchoolId, SourceIdentity,
+    SourceNamespace, SourceObservation, SourceSchoolObservation, TeamId,
 };
 use census_domain::roster_affiliation_authority::{
     RosterAuthorityObjectRefV1, RosterExistingBindingClaimV1,
@@ -52,6 +52,48 @@ impl RosterExistingBindingAssessmentV1<'_, '_> {
 
     pub fn unverified_references(&self) -> &'static [RosterBindingUnverifiedReferenceV1] {
         &[]
+    }
+
+    pub fn read_inspected_parents(
+        evidence: &RosterSourceEvidenceV1,
+        school: &SchoolId,
+        program: &TeamId,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> CrawlResult<(CanonicalSchool, CanonicalTeam)> {
+        super::source::original(evidence, grant, |grant| {
+            let mut selected_school = None;
+            scan::<CanonicalSchool>(
+                evidence,
+                Table::Schools,
+                grant,
+                |row, _| {
+                    if &row.id == school && !row.retained_conflicts.is_empty() {
+                        return Err(invalid("inspected roster school retains a conflict"));
+                    }
+                    Ok(())
+                },
+                |row| select(&mut selected_school, row, school.as_str()),
+            )?;
+            let mut selected_program = None;
+            scan::<CanonicalTeam>(
+                evidence,
+                Table::Teams,
+                grant,
+                |row, _| {
+                    if &row.id == program
+                        && (&row.school != school || !row.retained_conflicts.is_empty())
+                    {
+                        return Err(invalid("inspected roster program is foreign or conflicted"));
+                    }
+                    Ok(())
+                },
+                |row| select(&mut selected_program, row, program.as_str()),
+            )?;
+            Ok((
+                selected_school.ok_or_else(|| invalid("inspected roster school is missing"))?,
+                selected_program.ok_or_else(|| invalid("inspected roster program is missing"))?,
+            ))
+        })
     }
 }
 

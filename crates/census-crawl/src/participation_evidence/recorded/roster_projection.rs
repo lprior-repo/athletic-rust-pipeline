@@ -12,6 +12,7 @@ use census_store::Table;
 
 const MAX_BODY: usize = 8 * 1024 * 1024;
 const MAX_FIELD: usize = 4096;
+const ROWS_PER_INTAKE_WINDOW: usize = 64;
 
 struct RosterMetadata {
     fetch: FetchOutcome,
@@ -29,7 +30,15 @@ pub fn record_provider_roster_intake(
     let roster_verdict = checked.roster_verdict();
     match roster_verdict {
         RosterVerdict::Complete { roster } => {
-            write_complete_roster(store, recording, packet, &checked, roster, roster_verdict)?;
+            write_roster_projection(
+                store,
+                recording,
+                packet,
+                &checked,
+                roster,
+                roster_verdict,
+                roster.athletes.len().max(1),
+            )?;
         }
         RosterVerdict::Partial { .. } => {
             return Err(CrawlError::Invariant {
@@ -43,6 +52,34 @@ pub fn record_provider_roster_intake(
         }
     }
     Ok(())
+}
+
+pub fn record_provider_roster_rows_v3(
+    store: &census_store::Store,
+    recording: &Recording,
+    packet: &ProviderSchoolPacketV1,
+) -> CrawlResult<CheckedProviderSchoolPacketV1> {
+    let checked = packet.read()?;
+    let verdict = checked.roster_verdict();
+    match verdict {
+        RosterVerdict::Complete { roster } | RosterVerdict::Partial { roster, .. } => {
+            write_roster_projection(
+                store,
+                recording,
+                packet,
+                &checked,
+                roster,
+                verdict,
+                ROWS_PER_INTAKE_WINDOW,
+            )?;
+        }
+        RosterVerdict::Quarantined { reason, .. } => {
+            return Err(CrawlError::Invariant {
+                detail: format!("provider roster is quarantined: {reason:?}"),
+            });
+        }
+    }
+    Ok(checked)
 }
 
 fn fetch_outcome(capture: &RetainedHtmlCaptureV1, body: String) -> CrawlResult<FetchOutcome> {
@@ -102,13 +139,14 @@ fn athlete_observations(
     result
 }
 
-fn write_complete_roster(
+fn write_roster_projection(
     store: &census_store::Store,
     recording: &Recording,
     packet: &ProviderSchoolPacketV1,
     checked: &CheckedProviderSchoolPacketV1,
     roster: &Roster,
     roster_verdict: &RosterVerdict,
+    window_rows: usize,
 ) -> CrawlResult<()> {
     let RosterMetadata {
         fetch,
@@ -118,7 +156,27 @@ fn write_complete_roster(
     } = roster_metadata(packet, checked)?;
     let team = &roster.team;
     let members = &roster.athletes;
-    let (school, mut athletes, teams) = roster_entities(team, members, year, &observed_on, &site)?;
+    let (first, rest) = members.split_at(members.len().min(window_rows));
+    let (school, mut athletes, mut teams) =
+        roster_entities(team, first, year, &observed_on, &site)?;
+    athletes
+        .try_reserve_exact(rest.len())
+        .map_err(|_| CrawlError::Invariant {
+            detail: "roster projection athlete allocation refused".into(),
+        })?;
+    for window in rest.chunks(window_rows) {
+        let (_, window_athletes, window_teams) =
+            roster_entities(team, window, year, &observed_on, &site)?;
+        athletes.extend(window_athletes);
+        for team in window_teams {
+            if !teams.iter().any(|existing| existing.id == team.id) {
+                teams.try_reserve(1).map_err(|_| CrawlError::Invariant {
+                    detail: "roster projection team allocation refused".into(),
+                })?;
+                teams.push(team);
+            }
+        }
+    }
     let mut observations = athlete_observations(&athletes, &school, &observed_on)?;
     if members.len() != athletes.len() || members.len() != observations.len() {
         return Err(CrawlError::Invariant {

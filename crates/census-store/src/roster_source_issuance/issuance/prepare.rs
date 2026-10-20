@@ -7,14 +7,16 @@ use super::{
     RosterSourceReviewFieldsV1, RosterSourceReviewObjectsV1,
 };
 use crate::{Store, StoreError, StoreResult};
-use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
+use census_domain::roster_affiliation_authority::{
+    LocallyCheckedRosterIssuanceV1, LocallyCheckedRosterProposalV1,
+};
 use fjall::Readable;
 
 impl Store {
     pub fn prepare_roster_source_review_v1<'s>(
         &'s self,
         mut inspection: RosterIssuanceInspectionV1<'s>,
-        proposal: LocallyCheckedRosterIssuanceV1,
+        proposal: LocallyCheckedRosterProposalV1,
         fields: RosterSourceReviewFieldsV1,
         supplied: RosterSourceReviewObjectsV1,
     ) -> StoreResult<PreparedRosterSourceReviewV1<'s>> {
@@ -33,7 +35,7 @@ impl Store {
 fn prepare(
     store: &Store,
     inspection: &mut RosterIssuanceInspectionV1<'_>,
-    proposal: LocallyCheckedRosterIssuanceV1,
+    proposal: LocallyCheckedRosterProposalV1,
     fields: RosterSourceReviewFieldsV1,
     supplied: RosterSourceReviewObjectsV1,
 ) -> StoreResult<PreparedRosterReviewCore> {
@@ -72,7 +74,7 @@ fn prepare(
 fn anchored_closure(
     inspection: &mut RosterIssuanceInspectionV1<'_>,
     supplied: RosterSourceReviewObjectsV1,
-    proposal: &LocallyCheckedRosterIssuanceV1,
+    proposal: &LocallyCheckedRosterProposalV1,
 ) -> StoreResult<(
     objects::Objects,
     AuthorityHead,
@@ -101,7 +103,7 @@ fn anchored_closure(
 
 fn derived_review(
     inspection: &mut RosterIssuanceInspectionV1<'_>,
-    proposal: &LocallyCheckedRosterIssuanceV1,
+    proposal: &LocallyCheckedRosterProposalV1,
     fields: RosterSourceReviewFieldsV1,
     objects: &mut objects::Objects,
     input_token: &super::ObjectRef,
@@ -162,7 +164,7 @@ fn physical_inventory_ref(
 
 fn complete_record(
     inspection: &mut RosterIssuanceInspectionV1<'_>,
-    proposal: LocallyCheckedRosterIssuanceV1,
+    proposal: LocallyCheckedRosterProposalV1,
     semantic: super::SemanticReview,
     review: super::ObjectRef,
     proposal_review_basis: super::ObjectRef,
@@ -171,15 +173,15 @@ fn complete_record(
     prior: AuthorityHead,
     objects: &objects::Objects,
 ) -> StoreResult<(ReviewBasis, Vec<u8>)> {
-    let proposal = proposal
-        .with_semantic_review_reference(
+    let issuance = proposal
+        .into_issuance(
             &review.digest,
             u64::try_from(review.bytes).map_err(|_| Error::BudgetExceeded)?,
             super::limits()?,
         )
         .map_err(|_| Error::Corrupt("derived review claim reference"))?;
-    objects::require_proposal(objects, &proposal)?;
-    let physical_inventory = physical_inventory_ref(&proposal)?;
+    objects::require_proposal(objects, &issuance)?;
+    let physical_inventory = physical_inventory_ref(&issuance)?;
     let record = ReviewBasis {
         schema: "roster-source-reviewed-claims-basis-v1".into(),
         store: inspection.store.clone(),
@@ -190,7 +192,7 @@ fn complete_record(
         input_token,
         prior_head,
         next_ordinal: prior.ordinal.checked_add(1).ok_or(Error::BudgetExceeded)?,
-        proposal: codec::encode_with_source_grant(&proposal, &mut inspection.grant)?,
+        proposal: codec::encode_with_source_grant(&issuance, &mut inspection.grant)?,
         review,
         proposal_review_basis,
         physical_inventory,
@@ -262,7 +264,7 @@ pub(super) fn require_current(
 
 fn require_target(
     inspection: &RosterIssuanceInspectionV1<'_>,
-    proposal: &LocallyCheckedRosterIssuanceV1,
+    proposal: &LocallyCheckedRosterProposalV1,
 ) -> StoreResult<()> {
     let binding = proposal.binding();
     if binding.store() != &inspection.store

@@ -102,3 +102,18 @@ fn generated_adapter_code_obeys_the_comment_policy() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn tool_worktrees_are_not_project_sources_but_owned_comments_still_refuse() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let owned = root.path().join("tools/check.rs");
+    let worker = root.path().join(".muse/worktrees/worker/src/lib.rs");
+    std::fs::create_dir_all(owned.parent().ok_or("owned source parent")?)?;
+    std::fs::create_dir_all(worker.parent().ok_or("worker source parent")?)?;
+    std::fs::write(&owned, "fn check() {}")?;
+    std::fs::write(&worker, "// concurrent worker evidence\nfn check() {}")?;
+    check!(eq; super::source_files(root.path())?, vec![owned.clone()]);
+    std::fs::write(&owned, "// forbidden project comment\nfn check() {}")?;
+    check!(super::run(root.path()).is_err());
+    Ok(())
+}

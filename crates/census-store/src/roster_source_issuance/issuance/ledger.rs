@@ -165,7 +165,7 @@ pub(super) fn validate_issued_record(
                 .bytes()
                 .get()
         || object(objects, &basis.proposal_review_basis)?
-            != super::review::proposal_basis(&proposal)?
+            != super::review::proposal_basis_for_issuance(&proposal)?
     {
         return Err(Error::Corrupt("review proposal lineage").into());
     }

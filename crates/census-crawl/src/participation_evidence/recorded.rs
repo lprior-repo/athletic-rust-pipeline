@@ -5,6 +5,8 @@ use crate::recording::RowSink;
 use crate::{CrawlResult, Recording};
 use census_store::{ReadBudget, RetainedCaptureRootSchemaV1, Store};
 
+pub const MAX_PROVIDER_SCHOOL_PACKET_BYTES: usize = MAX_PACKET;
+
 mod attached_participation;
 mod attached_result;
 #[cfg(test)]
@@ -20,7 +22,7 @@ mod provider_school;
 mod read;
 mod roster_projection;
 pub mod roster_provenance;
-pub use roster_projection::record_provider_roster_intake;
+pub use roster_projection::{record_provider_roster_intake, record_provider_roster_rows_v3};
 mod schools;
 mod window;
 
@@ -39,7 +41,8 @@ pub use attached_result::{
 };
 pub use provider::{ProviderTargetIntakeDispositionV1, ProviderTargetWithheldV1};
 pub use provider_school::{
-    read_recorded_provider_school, record_provider_school_intake, RecordedProviderSchoolV1,
+    read_recorded_provider_school, read_retained_provider_roster_body_v1,
+    record_provider_school_intake, RecordedProviderSchoolV1,
 };
 pub use read::{
     read_recorded_html_result_capture, read_recorded_independent_participation,

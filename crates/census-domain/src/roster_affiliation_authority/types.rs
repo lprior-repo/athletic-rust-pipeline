@@ -221,6 +221,9 @@ impl RosterExistingBindingClaimV1 {
     }
 }
 
+mod proposal;
 mod records;
+pub use proposal::LocallyCheckedRosterProposalV1;
+pub(in crate::roster_affiliation_authority) use proposal::ProposalWire;
 pub(in crate::roster_affiliation_authority) use records::{IssuanceWire, RecordWire};
 pub use records::{LocallyCheckedRosterIssuanceV1, LocallyCheckedRosterRecordV1};

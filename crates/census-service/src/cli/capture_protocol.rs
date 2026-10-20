@@ -7,6 +7,7 @@ use std::path::Path;
 use super::Cli;
 
 mod roster_enrollment;
+mod roster_intake;
 
 #[derive(Debug, Args)]
 pub(super) struct CaptureProtocolArgs {
@@ -30,6 +31,10 @@ enum CaptureProtocolCommand {
         about = "Preview exact roster-capability approval bytes; supply their SHA256 to apply, without accepting membership"
     )]
     RosterEnrollment(roster_enrollment::RosterEnrollmentArgs),
+    #[command(
+        about = "Retain original roster rows as unreviewed facts without accepting identity or affiliation"
+    )]
+    RosterIntake(roster_intake::RosterIntakeArgs),
 }
 
 pub(super) fn run(cli: &Cli, args: &CaptureProtocolArgs) -> Result<()> {
@@ -55,6 +60,9 @@ fn run_to<W: Write>(root: Option<&Path>, args: &CaptureProtocolArgs, output: &mu
         }
         CaptureProtocolCommand::RosterEnrollment(args) => {
             return roster_enrollment::run_to(root, args, output);
+        }
+        CaptureProtocolCommand::RosterIntake(args) => {
+            return roster_intake::run_to(root, args, output);
         }
     };
     writeln!(output)?;

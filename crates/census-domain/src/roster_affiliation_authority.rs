@@ -11,9 +11,9 @@ pub use member_evidence::{
 pub use member_observation::RosterMemberObservationV1;
 use serde::Serialize;
 pub use types::{
-    LocallyCheckedRosterIssuanceV1, LocallyCheckedRosterRecordV1, RosterAuthorityObjectRefV1,
-    RosterAuthorityScopeV1, RosterCaptureClaimV1, RosterExistingBindingClaimV1,
-    RosterParserClaimV1,
+    LocallyCheckedRosterIssuanceV1, LocallyCheckedRosterProposalV1, LocallyCheckedRosterRecordV1,
+    RosterAuthorityObjectRefV1, RosterAuthorityScopeV1, RosterCaptureClaimV1,
+    RosterExistingBindingClaimV1, RosterParserClaimV1,
 };
 
 pub const MAX_ROSTER_AUTHORITY_RECORD_BYTES: usize = 64 * 1024;
@@ -89,6 +89,15 @@ pub fn decode_roster_issuance_claim(
     let raw: types::IssuanceWire = serde_json::from_slice(bytes)?;
     validate::issuance(&raw, limits)?;
     Ok(LocallyCheckedRosterIssuanceV1(raw))
+}
+pub fn decode_roster_issuance_proposal_v1(
+    bytes: &[u8],
+    limits: RosterAuthorityLimitsV1,
+) -> Result<LocallyCheckedRosterProposalV1> {
+    admit(bytes, limits)?;
+    let raw: types::ProposalWire = serde_json::from_slice(bytes)?;
+    validate::proposal(&raw, limits)?;
+    Ok(LocallyCheckedRosterProposalV1(raw))
 }
 
 pub fn decode_roster_record_claim(

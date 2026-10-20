@@ -49,6 +49,26 @@ fn record() -> TestResult<Value> {
         "negative_actions":0, "approval_envelope":reference(17), "review_provenance":reference(18), "issuance_receipt":reference(19)}),
     )
 }
+fn proposal_fixture() -> TestResult<Value> {
+    let owner = SourceSubject::new(SourceNamespace::MilesplitSchool, "10002".into())?;
+    let program_owner = SourceSubject::new(SourceNamespace::MilesplitTeam, "10002".into())?;
+    Ok(json!({
+        "version": 1,
+        "scope": {"provider":"milesplit", "owner":owner, "sport":"cross_country", "category":"girls",
+            "policy":contract(), "relationship":"represents_school_program", "temporal":"exact_utc_capture_day"},
+        "parser": {"artifact":reference(1), "interpretation":"milesplit-scoped-current-roster/v1",
+            "schema":reference(2), "configuration":reference(3), "dependencies":reference(4)},
+        "capture": {"occurrence":"b".repeat(64), "body":reference(5), "manifest":reference(6),
+            "interpretation":reference(7), "acquired_at":"2026-10-07T23:30:00-05:00", "observed_day":"2026-10-08",
+            "requested_url":"https://oh.milesplit.com/teams/10002-mason/roster", "final_url":{"status":"unknown"},
+            "retained_source_admission":reference(8), "verification_grant":reference(9)},
+        "binding": {"school":SchoolId::mint("sch", &["controlled-school"]),
+            "program":TeamId::mint("team", &["controlled-program"]), "school_source":owner,
+            "program_source":program_owner, "sport":"cross_country", "category":"girls", "school_year":2026,
+            "year_convention":contract(), "projection_merge_contract":contract(), "school_projection":reference(10), "program_projection":reference(11),
+            "provider_packet":reference(12), "physical_projection_inventory":reference(13), "store":"c".repeat(64), "snapshot_revision":1}
+    }))
+}
 
 #[test]
 fn controlled_claim_round_trip_preserves_utc_day_and_unknown_final_url() -> TestResult {
@@ -172,6 +192,19 @@ fn original_component_budget_and_record_boundary_are_enforced() -> TestResult {
     check!(RosterAuthorityLimitsV1::new(1, 8 * 1024 * 1024 + 1).is_err());
     Ok(())
 }
+#[test]
+fn proposal_component_budget_is_enforced_for_13_references() -> TestResult {
+    let raw = proposal_fixture()?;
+    let bytes = bytes(&raw)?;
+    let exact = RosterAuthorityLimitsV1::new(bytes.len(), 13 * 64)?;
+    check!(decode_roster_issuance_proposal_v1(&bytes, exact).is_ok());
+    check!(decode_roster_issuance_proposal_v1(
+        &bytes,
+        RosterAuthorityLimitsV1::new(bytes.len(), 13 * 64 - 1)?
+    )
+    .is_err());
+    Ok(())
+}
 
 #[test]
 fn object_limits_and_same_digest_different_length_refuse() -> TestResult {
@@ -258,23 +291,60 @@ fn unpublished_projection_wire_requires_explicit_merge_contract_and_new_names() 
 }
 
 #[test]
-fn derived_review_reference_revalidates_the_entire_claim_budget() -> TestResult {
-    let raw = fixture()?;
-    let claim = decode_roster_issuance_claim(&bytes(&raw)?, limits()?)?;
-    check!(claim
-        .clone()
-        .with_semantic_review_reference(&"f".repeat(64), 0, limits()?)
+fn proposal_round_trip_preserves_utc_day_and_unknown_final_url() -> TestResult {
+    let proposal = proposal_fixture()?;
+    let decoded = decode_roster_issuance_proposal_v1(&bytes(&proposal)?, limits()?)?;
+    check!(eq; decoded.capture().observed_day().as_str(), "2026-10-08");
+    check!(eq; decoded.capture().acquired_at(), "2026-10-07T23:30:00-05:00");
+    check!(decoded.capture().observed_final_url().is_none());
+    let encoded = decoded.encode(limits()?)?;
+    check!(eq; decode_roster_issuance_proposal_v1(&encoded, limits()?)?, decoded);
+    Ok(())
+}
+
+#[test]
+fn proposal_into_issuance_derives_real_review_reference() -> TestResult {
+    let proposal = proposal_fixture()?;
+    let decoded = decode_roster_issuance_proposal_v1(&bytes(&proposal)?, limits()?)?;
+    let issuance = decoded.into_issuance(&"f".repeat(64), 100, limits()?)?;
+    check!(eq; issuance.semantic_review_evidence().bytes().get(), 100);
+    let encoded = issuance.encode(limits()?)?;
+    let redecoded = decode_roster_issuance_claim(&encoded, limits()?)?;
+    check!(eq; redecoded, issuance);
+    Ok(())
+}
+
+#[test]
+fn proposal_into_issuance_refuses_insufficient_review_bytes() -> TestResult {
+    let proposal = proposal_fixture()?;
+    let decoded_zero = decode_roster_issuance_proposal_v1(&bytes(&proposal)?, limits()?)?;
+    check!(decoded_zero
+        .into_issuance(&"f".repeat(64), 0, limits()?)
         .is_err());
-    check!(claim
-        .clone()
-        .with_semantic_review_reference(&"f".repeat(64), 64 * 1024 + 1, limits()?)
+    let decoded_oversize = decode_roster_issuance_proposal_v1(&bytes(&proposal)?, limits()?)?;
+    check!(decoded_oversize
+        .into_issuance(&"f".repeat(64), 64 * 1024 + 1, limits()?)
         .is_err());
-    let changed = claim
-        .clone()
-        .with_semantic_review_reference(&"f".repeat(64), 100, limits()?)?;
-    check!(eq; changed.semantic_review_evidence().bytes().get(), 100);
-    check!(claim
-        .with_semantic_review_reference(
+    Ok(())
+}
+
+#[test]
+fn proposal_refuses_unknown_fields() -> TestResult {
+    let mut proposal = proposal_fixture()?;
+    proposal
+        .as_object_mut()
+        .ok_or("proposal object")?
+        .insert("semantic_review_evidence".into(), reference(14));
+    check!(decode_roster_issuance_proposal_v1(&bytes(&proposal)?, limits()?).is_err());
+    Ok(())
+}
+
+#[test]
+fn proposal_revalidates_budget_on_into_issuance() -> TestResult {
+    let proposal = proposal_fixture()?;
+    let decoded = decode_roster_issuance_proposal_v1(&bytes(&proposal)?, limits()?)?;
+    check!(decoded
+        .into_issuance(
             &"f".repeat(64),
             100,
             RosterAuthorityLimitsV1::new(1, 8 * 1024 * 1024)?

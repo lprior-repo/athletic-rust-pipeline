@@ -3,8 +3,8 @@ use super::{objects, ObjectRef, RosterSourceReviewDecisionV1};
 use crate::StoreResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::roster_affiliation_authority::{
-    LocallyCheckedRosterIssuanceV1, RosterAuthorityScopeV1, RosterCaptureClaimV1,
-    RosterExistingBindingClaimV1, RosterParserClaimV1,
+    LocallyCheckedRosterIssuanceV1, LocallyCheckedRosterProposalV1, RosterAuthorityScopeV1,
+    RosterCaptureClaimV1, RosterExistingBindingClaimV1, RosterParserClaimV1,
 };
 use serde::Serialize;
 
@@ -32,7 +32,7 @@ struct Activation<'a> {
 }
 
 pub(super) fn derive(
-    proposal: &LocallyCheckedRosterIssuanceV1,
+    proposal: &LocallyCheckedRosterProposalV1,
     basis: &ObjectRef,
     decision: &RosterSourceReviewDecisionV1,
     objects: &mut objects::Objects,
