@@ -27,11 +27,9 @@ impl Store {
         admission::matches_work(owner, &facts.work)?;
         let index = exact_target(&facts, target)?;
         account.reserve_owned(320)?;
-        let target = target
-            .try_clone()
-            .map_err(|_| CaptureError::ReadBudgetExceeded {
-                resource: "allocation",
-            })?;
+        let target = target.try_clone().map_err(|source| {
+            CaptureError::allocation_reservation_failed("prepared recovery target", None, source)
+        })?;
         let prepared = facts
             .attempts
             .get_mut(index)

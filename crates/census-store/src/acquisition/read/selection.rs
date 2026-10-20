@@ -77,19 +77,21 @@ fn prepared_route(
         return Ok(ExistingRecoveryRoute::ExistingNoPrepared);
     };
     let target = PreparedRecoveryTarget::new(
-        owner
-            .store_identity()
-            .try_clone()
-            .map_err(|_| CaptureError::ReadBudgetExceeded {
-                resource: "allocation",
-            })?,
+        owner.store_identity().try_clone().map_err(|source| {
+            CaptureError::allocation_reservation_failed(
+                "prepared selection store identity",
+                None,
+                source,
+            )
+        })?,
         slot,
-        prepared
-            .attempt
-            .try_clone()
-            .map_err(|_| CaptureError::ReadBudgetExceeded {
-                resource: "allocation",
-            })?,
+        prepared.attempt.try_clone().map_err(|source| {
+            CaptureError::allocation_reservation_failed(
+                "prepared selection attempt id",
+                None,
+                source,
+            )
+        })?,
         digest(prepared)?,
     )
     .map_err(CaptureError::Domain)?;

@@ -94,31 +94,45 @@ impl AcquisitionReadBudget {
         if self.recovery.is_recovery() {
             return self.recovery_row(key, value);
         }
-        self.roots = self
-            .roots
-            .checked_sub(1)
-            .ok_or(CaptureError::ReadBudgetExceeded { resource: "roots" })?;
-        self.encoded = self
-            .encoded
-            .checked_sub(key)
-            .and_then(|left| left.checked_sub(value))
-            .ok_or(CaptureError::ReadBudgetExceeded {
+        let Some(roots) = self.roots.checked_sub(1) else {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
+                resource: "roots",
+                required: 1,
+                limit: u64::try_from(self.roots).map_err(|_| StoreError::CounterOverflow)?,
+            }
+            .into());
+        };
+        let bytes = key.checked_add(value).ok_or(StoreError::CounterOverflow)?;
+        let required = u64::try_from(bytes).map_err(|_| StoreError::CounterOverflow)?;
+        let available = u64::try_from(self.encoded).map_err(|_| StoreError::CounterOverflow)?;
+        let Some(encoded) = self.encoded.checked_sub(bytes) else {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "encoded bytes",
-            })?;
-        self.usage
-            .row(key.checked_add(value).ok_or(StoreError::CounterOverflow)?)?;
+                required,
+                limit: available,
+            }
+            .into());
+        };
+        self.roots = roots;
+        self.encoded = encoded;
+        self.usage.row(bytes)?;
         Ok(())
     }
     pub(super) fn encoded(&mut self, bytes: usize) -> StoreResult<()> {
         if self.recovery.is_recovery() {
             return self.recovery_encoded(bytes);
         }
-        self.encoded = self
-            .encoded
-            .checked_sub(bytes)
-            .ok_or(CaptureError::ReadBudgetExceeded {
+        let required = u64::try_from(bytes).map_err(|_| StoreError::CounterOverflow)?;
+        let available = u64::try_from(self.encoded).map_err(|_| StoreError::CounterOverflow)?;
+        let Some(encoded) = self.encoded.checked_sub(bytes) else {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "encoded bytes",
-            })?;
+                required,
+                limit: available,
+            }
+            .into());
+        };
+        self.encoded = encoded;
         self.usage.encoded(bytes)?;
         Ok(())
     }
@@ -126,12 +140,15 @@ impl AcquisitionReadBudget {
         if self.recovery.is_recovery() {
             return Err(CaptureError::TransitionRefused.into());
         }
-        self.backing = self
-            .backing
-            .checked_sub(bytes)
-            .ok_or(CaptureError::ReadBudgetExceeded {
+        let Some(backing) = self.backing.checked_sub(bytes) else {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "backing bytes",
-            })?;
+                required: bytes,
+                limit: self.backing,
+            }
+            .into());
+        };
+        self.backing = backing;
         Ok(())
     }
     pub(crate) fn begin_operation(&mut self) {

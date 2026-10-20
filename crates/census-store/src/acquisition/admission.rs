@@ -70,11 +70,8 @@ pub(super) fn validated(
     })
 }
 
-fn allocation(_: std::collections::TryReserveError) -> crate::StoreError {
-    CaptureError::ReadBudgetExceeded {
-        resource: "allocation",
-    }
-    .into()
+fn allocation(source: std::collections::TryReserveError) -> crate::StoreError {
+    CaptureError::allocation_reservation_failed("validated recovery owner", None, source).into()
 }
 
 pub(super) fn matches_work(

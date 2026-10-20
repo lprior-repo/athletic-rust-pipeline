@@ -52,11 +52,13 @@ pub(super) fn raw(
         .ok_or(CaptureError::CorruptClosure)?;
     let mut owned = Vec::new();
     budget.reserve_recovery_owned(length)?;
-    owned
-        .try_reserve_exact(length)
-        .map_err(|_| CaptureError::ReadBudgetExceeded {
-            resource: "allocation",
-        })?;
+    owned.try_reserve_exact(length).map_err(|source| {
+        CaptureError::allocation_reservation_failed(
+            "acquisition record buffer",
+            Some(length),
+            source,
+        )
+    })?;
     owned.extend_from_slice(&bytes);
     Ok(Some(owned))
 }

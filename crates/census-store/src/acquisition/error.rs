@@ -92,10 +92,57 @@ pub enum CaptureError {
     PreparedCandidateRejected { reason: PreparedCandidateRejection },
     #[error("acquisition read exceeds its shared {resource} budget")]
     ReadBudgetExceeded { resource: &'static str },
+    #[error("acquisition read for {resource} requires {required}, exceeding its limit of {limit}")]
+    ReadBudgetLimitExceeded {
+        resource: &'static str,
+        required: u64,
+        limit: u64,
+    },
+    #[error("allocation reservation failed for {resource} (requested {requested_bytes:?} bytes): {source}")]
+    AllocationReservationFailed {
+        resource: &'static str,
+        requested_bytes: Option<usize>,
+        #[source]
+        source: std::collections::TryReserveError,
+    },
+    #[error("allocation accounting invariant failed for {resource}")]
+    AllocationAccountingInvariant { resource: &'static str },
     #[error("unsupported or surplus acquisition root")]
     UnsupportedRoot,
     #[error("malformed acquisition closure")]
     CorruptClosure,
     #[error("capture record exceeds its inline byte bound")]
     RecordTooLarge,
+}
+
+impl CaptureError {
+    pub(crate) fn allocation_reservation_failed(
+        resource: &'static str,
+        requested_bytes: Option<usize>,
+        source: std::collections::TryReserveError,
+    ) -> Self {
+        Self::AllocationReservationFailed {
+            resource,
+            requested_bytes,
+            source,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CaptureError;
+
+    #[test]
+    fn legacy_read_budget_variant_retains_its_shape_and_display() {
+        let error = CaptureError::ReadBudgetExceeded { resource: "roots" };
+        assert_eq!(
+            error.to_string(),
+            "acquisition read exceeds its shared roots budget"
+        );
+        assert!(matches!(
+            error,
+            CaptureError::ReadBudgetExceeded { resource: "roots" }
+        ));
+    }
 }

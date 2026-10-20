@@ -65,8 +65,9 @@ fn prepared_recovery_owner_carry_n_targets_performs_n_effect_reads_without_reset
     }
     check!(matches!(
         store.begin_prepared_recovery(&owner, targets.first().ok_or("target")?, &mut parent),
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-            resource: "recovery targets"
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+            resource: "recovery targets",
+            ..
         }))
     ));
     Ok(())
@@ -123,8 +124,9 @@ fn prepared_recovery_actual_copy_refuses_allocation_before_owner_copy_or_fs_effe
     let before = rows(&store)?;
     check!(matches!(
         store.begin_prepared_recovery(&owner, &target, &mut parent),
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-            resource: "allocation"
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+            resource: "allocation",
+            ..
         }))
     ));
     check!(eq; rows(&store)?, before);
@@ -142,8 +144,9 @@ fn prepared_recovery_fixed_error_tail_refuses_exact_diagnostic_n_minus_one_befor
     let before = rows(&store)?;
     check!(matches!(
         store.begin_prepared_recovery(&owner, &target, &mut parent),
-        Err(StoreError::Capture(CaptureError::ReadBudgetExceeded {
-            resource: "diagnostic bytes"
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+            resource: "diagnostic bytes",
+            ..
         }))
     ));
     check!(eq; parent.reads().recovery_totals().admission.used, 0);

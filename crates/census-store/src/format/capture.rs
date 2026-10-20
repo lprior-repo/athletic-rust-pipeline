@@ -42,8 +42,10 @@ fn text(
     };
     let length = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
     if length > 65_536 {
-        return Err(CaptureError::ReadBudgetExceeded {
+        return Err(CaptureError::ReadBudgetLimitExceeded {
             resource: "admission encoded bytes",
+            required: u64::try_from(length).map_err(|_| StoreError::CounterOverflow)?,
+            limit: 65_536,
         }
         .into());
     }
@@ -57,11 +59,13 @@ fn text(
     })?;
     budget.reserve_recovery_owned(value.len())?;
     let mut owned = String::new();
-    owned
-        .try_reserve_exact(value.len())
-        .map_err(|_| CaptureError::ReadBudgetExceeded {
-            resource: "allocation",
-        })?;
+    owned.try_reserve_exact(value.len()).map_err(|source| {
+        CaptureError::allocation_reservation_failed(
+            "capture metadata string",
+            Some(value.len()),
+            source,
+        )
+    })?;
     owned.push_str(value);
     Ok(Some(owned))
 }

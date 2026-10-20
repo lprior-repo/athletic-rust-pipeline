@@ -127,7 +127,7 @@ async fn classify(kind: Primary) -> TestResult {
             check!(eq; super::super::super::observation::failure_of(&error), AcquisitionFailureV1::ArchiveIntegrity);
         } else {
             check!(
-                matches!(error.recovery_primary(), Some(crate::net::RecoveryFailurePrimary::Store(error)) if matches!(**error, StoreError::Capture(CaptureError::ReadBudgetExceeded { resource: "backing bytes" })))
+                matches!(error.recovery_primary(), Some(crate::net::RecoveryFailurePrimary::Store(error)) if matches!(**error, StoreError::Capture(CaptureError::ReadBudgetLimitExceeded { resource: "backing bytes", .. })))
             );
             check!(eq; super::super::super::observation::failure_of(&error), AcquisitionFailureV1::AdmissionRefused);
         }
@@ -186,7 +186,7 @@ async fn five_box_fallback_tail_uses_one_admission_and_returns_exact_diagnostic_
         let (_fence, _prepared, _occurrence, mut io) = retained.publication_io()?;
         let result = diagnostic_testing::fallback_store_boxes(&invalid, &mut io);
         check!(
-            matches!(result, Err(crate::net::FetchError::CaptureStore(error)) if matches!(*error, StoreError::Capture(CaptureError::ReadBudgetExceeded { resource: "diagnostic bytes" })))
+            matches!(result, Err(crate::net::FetchError::CaptureStore(error)) if matches!(*error, StoreError::Capture(CaptureError::ReadBudgetLimitExceeded { resource: "diagnostic bytes", .. })))
         );
     }
     check!(!invalid.exists());
@@ -228,7 +228,7 @@ async fn publication_error_box_admission_refuses_before_old_pair_or_stage_effect
             io,
         );
         check!(
-            matches!(outcome, EligiblePublicationOutcome::RefusedBeforeReplace(crate::net::FetchError::CaptureStore(error)) if matches!(*error, StoreError::Capture(CaptureError::ReadBudgetExceeded { resource: "allocation" })))
+            matches!(outcome, EligiblePublicationOutcome::RefusedBeforeReplace(crate::net::FetchError::CaptureStore(error)) if matches!(*error, StoreError::Capture(CaptureError::ReadBudgetLimitExceeded { resource: "allocation", .. })))
         );
     }
     check!(eq; std::fs::read(&body)?, b"old body");
@@ -258,7 +258,7 @@ async fn actual_error_box_preadmission_rejects_exhausted_requested_account() -> 
         let (_fence, _prepared, _occurrence, mut io) = retained.publication_io()?;
         let result = diagnostic_testing::entry_admission_after_depletion(&mut io);
         check!(
-            matches!(result, Err(crate::net::FetchError::CaptureStore(error)) if matches!(*error, StoreError::Capture(CaptureError::ReadBudgetExceeded { resource: "allocation" })))
+            matches!(result, Err(crate::net::FetchError::CaptureStore(error)) if matches!(*error, StoreError::Capture(CaptureError::ReadBudgetLimitExceeded { resource: "allocation", .. })))
         );
     }
     check!(eq; retained.into_parts().body, BODY);

@@ -78,7 +78,9 @@ pub(super) fn projection(
         .map(|(_, value)| text(value, account))
         .transpose()?;
     account.reserve_owned(192)?;
-    let original_occurrence = occurrence.try_clone().map_err(allocation)?;
+    let original_occurrence = occurrence
+        .try_clone()
+        .map_err(|source| allocation(source, None))?;
     Ok(Projection {
         url: text(facts.work.request().original_url(), account)?,
         response_url: Some(text(response.response_url(), account)?),
@@ -93,14 +95,20 @@ pub(super) fn projection(
 pub(super) fn text(value: &str, account: &mut budget::TargetAccount<'_>) -> StoreResult<String> {
     account.reserve_owned(value.len())?;
     let mut text = String::new();
-    text.try_reserve_exact(value.len()).map_err(allocation)?;
+    text.try_reserve_exact(value.len())
+        .map_err(|source| allocation(source, Some(value.len())))?;
     text.push_str(value);
     Ok(text)
 }
-fn allocation(_: std::collections::TryReserveError) -> crate::StoreError {
-    CaptureError::ReadBudgetExceeded {
-        resource: "allocation",
-    }
+fn allocation(
+    source: std::collections::TryReserveError,
+    requested_bytes: Option<usize>,
+) -> crate::StoreError {
+    CaptureError::allocation_reservation_failed(
+        "retained result projection",
+        requested_bytes,
+        source,
+    )
     .into()
 }
 pub(super) fn occurrence(
@@ -110,7 +118,10 @@ pub(super) fn occurrence(
     account.reserve_owned(4096)?;
     let digest = digest(terminal)?;
     account.reserve_owned(128)?;
-    let attempt = terminal.attempt().try_clone().map_err(allocation)?;
+    let attempt = terminal
+        .attempt()
+        .try_clone()
+        .map_err(|source| allocation(source, None))?;
     Ok(AcquisitionOccurrenceRefV1::new(attempt, digest))
 }
 pub(super) fn parts<'budget>(

@@ -48,8 +48,10 @@ pub(super) fn inventory(
     };
     for (position, entry) in entries.take(1_048_577).enumerate() {
         if position == 1_048_576 {
-            return Err(CaptureError::ReadBudgetExceeded {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "eligible cache inventory",
+                required: 1_048_577,
+                limit: 1_048_576,
             }
             .into());
         }
@@ -186,11 +188,13 @@ fn read_metadata(path: &Path, budget: &mut AcquisitionReadBudget) -> StoreResult
     let length = usize::try_from(metadata.len()).map_err(|_| StoreError::CounterOverflow)?;
     budget.encoded(length)?;
     let mut bytes = Vec::new();
-    bytes
-        .try_reserve_exact(length)
-        .map_err(|_| CaptureError::ReadBudgetExceeded {
-            resource: "eligible metadata allocation",
-        })?;
+    bytes.try_reserve_exact(length).map_err(|source| {
+        CaptureError::allocation_reservation_failed(
+            "eligible metadata buffer",
+            Some(length),
+            source,
+        )
+    })?;
     let mut file = std::fs::File::open(path).map_err(|source| io(path, source))?;
     (&mut file)
         .take(metadata.len())

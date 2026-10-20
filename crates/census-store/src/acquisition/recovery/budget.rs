@@ -80,8 +80,10 @@ impl PreparedRecoveryBudget {
     fn admit_capacities(roots: u64, encoded: u64, count: u64) -> StoreResult<Self> {
         let payload = product(count, limits::PAYLOAD)?;
         if payload > 2_147_483_648 {
-            return Err(CaptureError::ReadBudgetExceeded {
+            return Err(CaptureError::ReadBudgetLimitExceeded {
                 resource: "backing bytes",
+                required: payload,
+                limit: 2_147_483_648,
             }
             .into());
         }
