@@ -29,7 +29,7 @@ pub struct NationalRequest {
     pub season: SchoolYear,
     pub revision: Revision,
     pub history: HistoryWindow,
-    #[serde(default, skip_serializing_if = "PublicationContract::is_legacy")]
+    #[serde(default)]
     pub publication_contract: PublicationContract,
     #[serde(
         default = "default_export_job_request",
