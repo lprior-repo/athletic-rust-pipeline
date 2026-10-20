@@ -2070,3 +2070,13 @@ rows, withheld school, detached bound-source replay and exhausted original grant
 Unqualified GPU draft panic/marker/repeated-call assertions were replaced before
 execution; incidental audit-label/cost forecasts were removed, not re-pinned.
 Clean-commit authentic-A, optimized CLI and generation08 remain pending.
+
+Clean gap-admission source`f88393568d7b162e3695b37b0ca6aad5d232c129`,
+tree`5bd068a31171d0db60ddb9022ffd9f0c399280ab`, passed authentic-A`6cef20a5`(1/1),
+optimized build`010cdac7`, and actual optimized CLI verification of all3 unchanged
+original-A workbooks (exit0 each). Service
+SHA`e186bc73fd91537eba01210097ace7a282ad7a515274bbadf43e18d004d6d430`;
+endpoint SHA`532426def7a18b505d2883e19cc6652e423aef1b5d57a923620d9a85fe46f33d`.
+Receipt`diagnostic-original-A-cli-f8839356.json`retains actual commands/results.
+Generation08 is running against the same cold copy/profile6905…; no national
+workbook, accepted population, full resource qualification or live upgrade is claimed.
