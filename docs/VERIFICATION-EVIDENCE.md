@@ -2103,3 +2103,14 @@ verification uses a different message. The message pin was deleted, not re-pinne
 typed`ArtifactCorrupt`and exact-object-path checks remain for the rerun. The
 dependent optimized build did not run, and no original-A artifact or producer pin
 was changed. Format`d64fe803`, check`c44b00f6`and lint`d455ba26`passed.
+
+Clean source`27731275ba9682bed89d86c6845d1119a72d7f23`,
+tree`85ba9aa116142edf41e26ddf608111e34839d5b2`, passed the same authentic-A case
+`913ae9ab`(1/1), including retained typed exact-path tamper refusal, then optimized
+build`43224095`. Actual optimized CLI verified all3 original-A workbooks (exit0).
+Original inputs/artifacts/producer pins remain unchanged. Service
+SHA`421c38a0a60fa9a87ca3efc2abb9bc4ed2f8f5c33ec28f9265f4c51ce4f55bde`;
+endpoint SHA`e1708ac5a325e523917364816867751084c6abf018029fe31688889b06192c15`.
+Private receipt`diagnostic-original-A-cli-27731275.json`retains actual commands.
+Generation09 is running on the unchanged older cold copy/profile6905…;
+national artifact,3-GiB directory headroom and full resource acceptance remain pending.
