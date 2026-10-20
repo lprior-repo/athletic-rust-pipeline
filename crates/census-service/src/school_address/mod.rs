@@ -33,11 +33,6 @@ use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
 
-/// Compose operator-selected, hash-pinned CCD/PSS inputs into a run-bound address generation.
-///
-/// This is an offline intake boundary: it reads only the paths in `selection`, refuses any file
-/// that does not match its declared SHA-256, runs the existing NCES parsers, retains the raw
-/// captures, and binds their lineage to the Store's existing selected-run manifest.
 pub fn accept_nces_address_run(
     store: &Store,
     selection: &NcesSelectedInputV1,
@@ -45,7 +40,6 @@ pub fn accept_nces_address_run(
     nces_run::accept(store, selection)
 }
 
-/// Reopen and verify the selected run's address generation and retained CCD/PSS capture bytes.
 pub fn reopen_nces_address_run(
     store: &Store,
     expected_run_manifest_digest: &str,

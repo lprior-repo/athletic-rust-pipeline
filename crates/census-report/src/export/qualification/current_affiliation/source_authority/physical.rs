@@ -111,31 +111,42 @@ fn observe(
             }
         }
         if !witnessed {
-            let needed = u64::try_from(result.gaps.len())
-                .map_err(|_| StoreError::CounterOverflow)?
-                .checked_add(1)
-                .ok_or(StoreError::CounterOverflow)?;
-            if needed > OBSERVATION_BUDGET.rows {
-                return Err(StoreError::BudgetExceeded {
-                    what: "physical roster gap inventory rows",
-                    needed,
-                    available: OBSERVATION_BUDGET.rows,
-                });
-            }
-            let gap = PhysicalGap {
-                athlete: canonical.clone(),
-                reference: note.source_row_key,
-                reason: "missing_reviewed_source_authority",
-            };
-            encoding::admit(&gap, grant)?;
-            result
-                .gaps
-                .try_reserve(1)
-                .map_err(|_| invalid("physical roster gap allocation failed"))?;
-            result.gaps.push(gap);
-            audit.gap(canonical.clone(), Gap::ArchiveUnavailable)?;
+            record_gap(result, canonical, note.source_row_key, grant, audit)?;
         }
     }
+    Ok(())
+}
+
+fn record_gap(
+    result: &mut PhysicalEvidence,
+    canonical: &AthleteId,
+    reference: String,
+    grant: &mut AttachmentReplayGrantV1,
+    audit: &mut RetainedAudit,
+) -> StoreResult<()> {
+    let needed = u64::try_from(result.gaps.len())
+        .map_err(|_| StoreError::CounterOverflow)?
+        .checked_add(1)
+        .ok_or(StoreError::CounterOverflow)?;
+    if needed > OBSERVATION_BUDGET.rows {
+        return Err(StoreError::BudgetExceeded {
+            what: "physical roster gap inventory rows",
+            needed,
+            available: OBSERVATION_BUDGET.rows,
+        });
+    }
+    let gap = PhysicalGap {
+        athlete: canonical.clone(),
+        reference,
+        reason: "missing_reviewed_source_authority",
+    };
+    encoding::admit(&gap, grant)?;
+    result
+        .gaps
+        .try_reserve(1)
+        .map_err(|_| invalid("physical roster gap allocation failed"))?;
+    result.gaps.push(gap);
+    audit.gap(canonical.clone(), Gap::ArchiveUnavailable)?;
     Ok(())
 }
 

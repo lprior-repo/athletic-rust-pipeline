@@ -42,6 +42,8 @@ pub enum SpawnError {
     RegionClosed,
     #[error("admission refused: {0}")]
     Admission(DepartureReason),
+    #[error("admission deferred: {0}")]
+    AdmissionDeferred(DepartureReason),
 }
 
 impl From<DepartureReason> for SpawnError {

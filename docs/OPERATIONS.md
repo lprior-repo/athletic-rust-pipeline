@@ -741,6 +741,14 @@ The national CCD/PSS CSV readers admit at most 128 MiB of input, 200,000 source 
 These national-file limits do not enlarge the ordinary directory-page limits. Any decoder stop
 or unfinished frontier refuses generation publication; a parsed prefix is not a complete input.
 
+Selected-run intake binds hash-pinned CCD/PSS captures to the existing run through
+a separate immutable receipt; historical `RunManifest` bytes and digests do not change.
+Reopen verifies that receipt, generation and retained captures. Manifest reads stop
+at 64 KiB; capture verification streams at most the declared length plus one byte,
+within 128 MiB. Missing receipt fields in old plans remain absent, not satisfied.
+Plans without a receipt retain their prior fingerprint; receipt-qualified plans
+bind its exact digest. This offline intake is not proof of population coverage.
+
 CCD school jurisdiction prefers the source's physical `LSTATE` to its administrative `ST`;
 `ST` and then `MSTATE` remain fallbacks when the location state is absent. Agency code `BI`
 is not a geographic exclusion when the same row publishes an in-scope physical state.

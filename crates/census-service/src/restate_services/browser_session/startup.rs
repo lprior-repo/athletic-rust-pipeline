@@ -1,5 +1,4 @@
 use super::BrowserSession;
-use crate::admission::{Reservation, TryResult, WORK_CLASS_BROWSER};
 use crate::outcome::Outcome;
 use athleticnet_browser::{
     BrowserCleanupAttempt, BrowserExit, BrowserManager, BrowserOwner, BrowserStartup,
@@ -24,7 +23,10 @@ impl BrowserSession {
     pub(super) async fn start_owned(&self) -> Result<(), HandlerError> {
         let admission = self.launch_admission().await;
         let (startup, owner) = self.prepare_startup()?;
-        let reservation = self.reserve_browser()?;
+        let reservation = self
+            .region
+            .reserve_browser()
+            .map_err(|error| TerminalError::new(format!("browser {error}")))?;
         let (published, received) = oneshot::channel();
         let (cancel, cancelled) = watch::channel(false);
         let mut cancellation = CancelStartup(Some(cancel.clone()));
@@ -69,22 +71,6 @@ impl BrowserSession {
             None => BrowserManager::prepare_launch((*self.settings).clone(), self.clock.clone()),
         }
         .map_err(|error| TerminalError::new(error.to_string()).into())
-    }
-
-    fn reserve_browser(&self) -> Result<Reservation, HandlerError> {
-        match self
-            .region
-            .coordinator()
-            .try_reserve_profile(WORK_CLASS_BROWSER)
-        {
-            TryResult::Granted(reservation) => Ok(reservation),
-            TryResult::Deferred(reason) => {
-                Err(TerminalError::new(format!("browser admission deferred: {reason}")).into())
-            }
-            TryResult::Refused(reason) => {
-                Err(TerminalError::new(format!("browser admission refused: {reason}")).into())
-            }
-        }
     }
 
     async fn run_owned(

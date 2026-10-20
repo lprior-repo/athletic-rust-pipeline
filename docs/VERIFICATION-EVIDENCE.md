@@ -2284,7 +2284,7 @@ environments: the earlier precommit `0efc0fc9` was a distinct failing invocation
 Its immutable CLI verifies all three original workbooks. Service SHA
 `40d81326d933fafe546c01d525dc401a808bd1da7511b3de5061dd20324b9a4f`;
 serve SHA `8ed7020556881145d2311943fa4c70c1db4e56f49e5c2e2be2ba24966e424dd4`.
-Generation09 retry03 is **RUNNING**, unchanged request/archive/commitment,16GiB/zeroSwap.
+Generation09 retry03 started with unchanged request/archive/commitment,16GiB/zeroSwap.
 One-job incremental Rust checks overlap this retry; timing is not an isolated benchmark.
 
 Incoming PR108 was normally merged at `107a0985da2aa5bbda10af62ea232953da37dae9`.
@@ -2294,3 +2294,59 @@ required refusal while preserving receipts and original source bytes; `55a745a6`
 **PASS13/13**, including valid cold replay and canonical school joins. Format,
 all-target check and lint `c64ef248`/`bdce40e5`/`038644eb` **PASS**.
 This does not certify every new PR108 workflow or the full R14 resource requirement.
+
+Known physical progress now survives access-snapshot failure. A completed attempt is
+withheld, not published as complete; an incomplete attempt retains its original
+disposition and primary retry/resource classification. Both retain the secondary
+failure, counts, dates, notes and unfinished work. The actual ledger records that
+progress, and cold reopen retains it without inventing another physical attempt.
+This repairs a source-confirmed loss path; a backend snapshot fault was not injected.
+Focused conversion/access/replay `73eba707` **PASS11/11**, Nextest
+`e1a46ee4-132b-4f60-81b4-c4019943902b`; format/check/lint
+`7c726784`/`98cc609a`/`d8439ee2` **PASS**.
+Adjacent source SDK, plan, open-work and synthetic five-state publication
+`e49decd0` **PASS157/157**, Nextest `776e7902-60fb-4d88-9b82-a6bcc0bb135b`.
+The five-state case reads its frozen workbook; it is controlled integration,
+not independently discovered state coverage. These results apply to the working
+source based on `3e87e446`, not a newly deployed endpoint or completed R12/R13.
+
+Closing review found a separate setup-order defect: a failed owner fetcher restore
+became a permanent source outcome after reservation. Actual production
+`execute_attempt` regression `19f88db9` **FAIL**; setup now propagates its original
+`HandlerError` before reservation. `fc274fdc` **PASS1/1** includes repeated refusal,
+zero durable attempts/settlement and cold reopen. No provider HTTP or transient
+Store-I/O fault was injected. Format/check/lint `7875f58f`/`e777e619`/`09c1f275`
+**PASS**. Four-package adjacent `15c0f730` **FAIL384/386**: original-A execution
+lacked required environment (`NotPresent`); a recovery test misclassified live
+accounting underflow as capacity exhaustion. Its obsolete assertion is removed,
+not re-pinned; the independent typed accounting-invariant case already passed.
+
+Lexical gate `27c9df4b` **FAIL** on seven incoming files; rationale moves to
+Operations, not code comments. `6466278a` **PASS5069 files**. Trusted AST
+`857dda89` **FAIL** on five >60-line callables. Bounded leaf extractions are under
+final-source verification (`743s`); no limit, assertion or kernel-inventory bypass.
+GPU candidates required Main type/ownership corrections before compilation.
+
+Retry03 **INTERRUPTED**, not PASS: explicit offline SIGTERM after3256.642s,
+CPU3241.020s, cgroup peak15,339,282,432B, swap0. Wrapper exit0/systemd's
+“success” label does not mean completed verification. The workbook saved at04:49:14Z.
+Source inspection finds whole frozen-dataset hashing inside each alias verification
+(`verified_public_identities` → `ensure_binding` → `serialized_digest`); tracked
+as `tzu2`. No timeout, OOM, live-store reset or live endpoint upgrade is claimed.
+Retained private `diagnostic-snapshot-09-retry-03-unverified/` is5,172,905,897B.
+Its XLSX SHA is `ba1692b75c82a7c43253dc9c0191c66a5b3989f8b1271a9952f43cfe5011320e`.
+Independent streaming ZIP-CRC/XML readback passes23 members,691,051,727 decoded bytes,
+1,065,450 Review records across two pages and55,344 coaches. Athletes/PRs are header-only.
+The unchanged manifest, full staged bundle and structural receipt remain available;
+this is a delivered diagnostic, not an atomically published or spec-qualified generation.
+
+Recovery allocation boundary `01c175d1` **PASS1/1**. Format/check/lint
+`75daa24b`/`ad8c5e92`/`0844cb25` **PASS**; zero-comments `0d1e05d9`
+and trusted AST `53e101e7` **PASS** after the five extractions.
+Module seams `54fd6a36` **FAIL** on browser startup importing admission directly.
+Browser reservation policy now belongs to the existing Spawner owner; defer/refuse
+remain distinct typed failures with the original operational reasons. No allowed-edge
+table is weakened. Controlled ownership/cancellation `a03b99f5` **PASS13/13**;
+format/check/lint `4191a72a`/`dbff5050`/`7b47f3f1` and seams `19c79c8f` **PASS**.
+Clean-commit original-A replay and the complete adjacent queue remain required;
+the prior missing-environment failure is not a code closure or an excluded test.

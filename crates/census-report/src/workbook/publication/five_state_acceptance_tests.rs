@@ -20,8 +20,6 @@ const STATES: [UsJurisdiction; 5] = [
     UsJurisdiction::Minnesota,
 ];
 
-/// This is a synthetic projection fixture. Its five jurisdictions exercise row
-/// preservation and provenance only; it is not a census or coverage sample.
 #[test]
 fn synthetic_five_state_workbook_keeps_provenance_wind_and_relay_facts_after_frozen_reopen(
 ) -> TestResult {

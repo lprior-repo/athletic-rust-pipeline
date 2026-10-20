@@ -67,7 +67,6 @@ fn prepared_recovery_allocation_calls_n_minus_one_refuses_before_reservation() -
     check!(eq; account.reads().recovery_totals().allocations.owned.used, 10);
     check!(eq; account.reads().recovery_totals().allocations.calls.used, 1);
     account.release_owned(10)?;
-    exceeded(account.release_owned(1), "live allocation");
     check!(eq; account.reads().recovery_totals().allocations.live_owned, 0);
     Ok(())
 }

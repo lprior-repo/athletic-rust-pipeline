@@ -211,8 +211,6 @@ pub fn compute_plan_fingerprint(
     bytes.iter().map(|b| format!("{:02x}", b)).collect()
 }
 
-/// Preserve the existing plan identity when NCES is not retained, and bind the
-/// receipt-qualified plan to the exact immutable receipt when it is.
 pub fn compute_plan_fingerprint_with_nces_receipt(
     jurisdiction: UsJurisdiction,
     season: SchoolYear,

@@ -7,10 +7,12 @@ use crate::athleticnet::map::{
 };
 use crate::athleticnet::parse::timing_of;
 use census_domain::model::{
-    AthleteId, EventKind, Gender, Grade, Mark, RelayMember, RelayResult, SchoolId, SourceIdentity,
-    SourceNamespace,
+    AthleteId, EventId, EventKind, Gender, Grade, Mark, RelayMember, RelayResult, SchoolId,
+    SourceIdentity, SourceNamespace, TeamId,
 };
 use std::collections::BTreeMap;
+
+mod relay;
 
 pub(super) struct Block<'a> {
     pub(super) kind: &'a EventKind,
@@ -106,78 +108,27 @@ impl MeetCtx<'_> {
             .counts
             .legs_seen
             .saturating_add(u64::try_from(squad.len()).map_or(u64::MAX, |value| value));
-        let (mut mark, auto) = self.mark_of(block, &row.result);
-        let event_input = EventProjectionInput {
-            meet: &self.meet,
-            kind: block.kind,
-            gender: block.gender,
-            division: block.division.as_deref(),
-            round: block.round.as_deref(),
-            labels: block.labels,
-        };
-        let (event, retained_conflicts) = match super::events::project_event(
-            self.accumulated,
-            self.source,
-            self.observed_on,
-            &event_input,
-            block.metadata_conflict,
-        )? {
-            super::events::ProjectionOutcome::Admitted(event) => (event, Vec::new()),
-            super::events::ProjectionOutcome::Withheld(event, conflict) => {
-                if !matches!(mark, Mark::Raw(_)) {
-                    mark = Mark::Raw(row.result.clone());
-                }
-                (event, vec![conflict])
-            }
-        };
+        let (mark, auto) = self.mark_of(block, &row.result);
+        let (mark, auto, event, retained_conflicts) =
+            self.project_relay_event(block, row, mark, auto)?;
         if !crate::athleticnet::map::admit_date(self.performance_as_of, &self.date)? {
             return Ok(());
         }
-        let team = ensure_team_for(
-            self.accumulated,
-            self.source,
-            self.observed_on,
-            &school,
-            self.sport,
-            block.gender,
-            self.school_year,
-        );
-        if let Some(team) = self.accumulated.teams.get_mut(team.as_str()) {
-            if let Some(team_id) = row.team_id {
-                let identity =
-                    SourceIdentity::new(SourceNamespace::athletic_net("team"), team_id.to_string());
-                if !team.source_identities.contains(&identity) {
-                    team.source_identities.push(identity);
-                }
-            }
-        }
+        let team = self.resolve_relay_team(row, &school, block.gender);
         let published_team_id = row.team_id.ok_or_else(|| crate::CrawlError::Invariant {
             detail: "resolved Athletic.net relay row lost its team id".to_string(),
         })?;
         let source_key = format!("athleticnet:team{published_team_id}-{}", row.result_id);
-        let mut relay = RelayResult::new(&team, &event, &self.meet.id, mark.clone(), source_key)
-            .with_place(
-                row.place
-                    .as_deref()
-                    .and_then(|place| place.trim().parse().ok()),
-            )
-            .with_round(block.round.clone())
-            .with_timing(if matches!(mark, Mark::Raw(_)) {
-                None
-            } else {
-                timing_of(0, auto)
-            })
-            .with_evidence(census_domain::model::Evidence::parsed(
-                self.source.clone(),
-                self.observed_on,
-            ));
-        if let Some(team_id) = row.team_id {
-            relay = relay.with_source_team(SourceIdentity::new(
-                SourceNamespace::athletic_net("team"),
-                team_id.to_string(),
-            ));
-        }
-        relay.retained_conflicts = retained_conflicts;
+        let mut relay = self.build_relay_result(
+            &team,
+            &event,
+            mark,
+            source_key,
+            row,
+            block.round.clone(),
+            auto,
+            retained_conflicts,
+        );
         let mut outcome = Ok(());
         for (index, leg) in squad.iter().enumerate() {
             let position = index.saturating_add(1);

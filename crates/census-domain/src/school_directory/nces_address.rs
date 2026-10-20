@@ -97,11 +97,6 @@ impl NcesArtifactReferenceV1 {
     }
 }
 
-/// Immutable lineage for the selected run's CCD/PSS school-address inputs.
-///
-/// This is stored separately from `RunManifest` so old run JSON and its canonical digest remain
-/// byte-for-byte compatible. The receipt repeats the run manifest digest and the fixed selected
-/// scope so it cannot be rebound to another run or profile.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NcesAddressRunReceiptV1 {

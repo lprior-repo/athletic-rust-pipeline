@@ -7,11 +7,6 @@ use crate::{Store, StoreError, StoreResult};
 const RECEIPT_KEY: &str = "nces-address-run-receipt-v1";
 
 impl Store {
-    /// Persist immutable run-bound lineage for the selected run's CCD/PSS address generation.
-    ///
-    /// The school-address replay and its raw input archive live below `out/nces-address`; this
-    /// compact record binds those retained artifacts to the current RunManifest without changing
-    /// the historical RunManifest wire format.
     pub fn bind_nces_address_run_v1(&self, receipt: &NcesAddressRunReceiptV1) -> StoreResult<()> {
         let _guard = self.lock_appends();
         let snapshot = self.db.snapshot();
@@ -61,7 +56,6 @@ impl Store {
             .map_err(|source| StoreError::Write { source })
     }
 
-    /// Read and revalidate the immutable NCES receipt against the Store's current run binding.
     pub fn nces_address_run_v1(&self) -> StoreResult<Option<NcesAddressRunReceiptV1>> {
         let snapshot = self.db.snapshot();
         let Some(raw) = snapshot

@@ -421,14 +421,14 @@ Closure requires the owning exact-build behavior and dependent acceptance lanes.
 
 ### 7.5. Latest qualified checkpoints — 2026-10-20
 
-Latest exact-source checkpoint: `eb3dc73712a3947d2673b3eba72951a88b82663d`,
-tree `8a1d54f433c9e64a27d270eadafdf46c9d34b9c2`. Canonical gates, incoming
-relay publication and original-A replay pass; the optimized CLI verifies all three
-unchanged original workbooks. Lossless worksheet paging and strict all-page readback
-pass adjacent regressions. Generation09 retry02 writes all Review records and saves
-the workbook, then refuses a359,056,948-byte aliases CSV at its256MiB readback cap.
-The same-input retry03 remains pending a qualified512MiB streaming readback build.
-No national workbook delivered.
+Latest immutable release checkpoint: `b1a63afc12401f5ab20201afaefc3c1f254f31fb`,
+tree `358799949642f37d8551d396660278e66ad54fb2`. Controlled50→withdraw51,
+unchanged original-A replay and optimized native readback pass. The unrelated NCES
+receipt now lives outside the byte-identical frozen roster-kernel module.
+Generation09 retry03 saved the real workbook, then was interrupted with SIGTERM
+after identifying repeated full-dataset hashing inside row verification (`tzu2`).
+The retained diagnostic XLSX and bundle are explicitly unverified; structural
+readback confirms all Review records,55,344 coaches and zero selected athletes/PRs.
 
 Prior integrated static checkpoint: `ddd07ff76f9750a460967471649813da3f1d98b7`,
 tree `005e50d310e668b5f7722c1c74741b5602edd381`. Its exact format/check/lint,
@@ -456,7 +456,7 @@ Current roster kernels are 12/13; original 2–11 identities and A artifacts rem
 | R1: genuine calendar lifecycle | Public acceptance/revoke/original replay → G0/G1/G2 and artifact reopen after source deletion | `534626e7`; owner boundaries `c7403723` | `d11dcfa4` | PASS: original 13.57/2026-05-15 retained, current affiliation Unknown; artifact digests in ledger | Genuine Class2027 population; remaining `d7hp` acceptance |
 | R1: review admission atomicity | Actual public prepare/apply with rejected approvals and unchanged owner state | `ac420b35` | `d6f6c68ad` | PASS: four cases cover opaque approval, stale head, foreign Store and six physical-source scope faults | Remaining genuine-source acceptance; no blanket R1 closure |
 | R2: historical kernels and current roster consumers | Original three-case A → independently authenticated changed-build B; complete preserved roster queue | `6693e62f`; `7495a7f3` through `79ee9e58` | A `1ab843c4`; B `e4a207ef` | PASS for exercised cases; original A SHA256 `8897f37e…c35908` unchanged | Exact accepted-claim withdrawal `v80o`; broader population |
-| R2: original-A changed-build replay | Original retained three-case A → current B and optimized CLI | `b8cb0a7c`; private `releases/eb3dc737/release.json` | A `1ab843c4`; B `eb3dc7371` | PASS; original retention digest and all workbook bytes unchanged | Exact member withdrawal and genuine population |
+| R2: original-A changed-build replay | Original retained three-case A → current B and optimized CLI | `0efc0fc9`, Nextest `c6a32768…`; private `releases/b1a63afc/release.json` | A `1ab843c4`; B `b1a63afc1` | PASS; original retention digest and all workbook bytes unchanged; no guard/digest repin | Exact member withdrawal and genuine population |
 | R3/R7: selected service consumers | Reserved workbook handler, actual CLI, isolated native Restate | `2501cc57`, `892a4313` | Same production source as `e4a207ef`, precommit client run | PASS for controlled 50→51, split successors, retry/reopen and native restart/revocation; retained workbook hashes in evidence | Remaining `agv2` cohort `6pb6`, receipt `e7lx` and native completed-child/seal acceptance |
 | R3/R7: selected National generation | National workbook dispatch → real builder; CLI capability preflight | `4b292d9a`, `10c69620`; actual rebuilt CLI smoke | `dde1949b` | PASS: unchanged G0 path/bytes, withdrawn-G0 refusal, explicit G1=51 and cold G0=50; workbook hashes in ledger | Native completed-child/seal acceptance and remaining `agv2` dependencies; SDK adapter is not a national run |
 | R3/R11: explicit caller authority | CLI resume and existing-invocation attachment | `367b4bec`, `9de2ee20`; actual CLI before/after | `cc3cb4cf` | PASS: generation mismatch before resume submission; store/profile mismatch before attachment, including failed-send fallback; omitted flags/budgets preserved | Remaining `agv2` native, cohort and receipt acceptance; no new acquisition identity |
@@ -467,8 +467,8 @@ Current roster kernels are 12/13; original 2–11 identities and A artifacts rem
 | D: actual national feedback | Original Restate/serving owner; read-only `Census/status` | Private `diagnostic-live-status-during-a598-build.json` | Live `d6f6c68ad` | 1,630,891 raw athletes, 86,914 source meets, 3,568 canonical marks; NOT accepted-identity or coverage counts | Verified workbook, documentary acceptance, access/engineering gaps; no reset or bypass |
 | R5: frozen normalized readback | Eight-family independent readback, grouping and durable input jobs | `88e7a1c8`; initial16 failures repaired by captured-policy catalog binding | `a598a5b32` | PASS80/80; production historical/current validation unchanged | Actual national artifact contents and manifest verification |
 | R13: Utah capture URI | Offline native `provider uhsaa` with controlled original-shaped input | `c26c1291`; private `diagnostic-uhsaa-cli-01/{before-27731275,after-a598a5b3}.json` | `a598a5b32` | PASS: rows0/errors1 → rows1/errors0, both requests0; strict ownership/address rules retained | Genuine population/deployment; adapter repair is not statewide coverage |
-| R14/D: national diagnostic publication | Same generation09/job/profile and committed archive; optimized CLI under16GiB/zeroSwap | Private retry01/02 receipts; archive `cabb54d8…c781e6` | Retry01 `a598a5b32`; retry02 `eb3dc7371` | Retry01 FAIL at Excel envelope; retry02 saves all Review rows, then FAIL at359,056,948-byte aliases CSV versus256MiB cap; no published workbook | Qualified512MiB bounded readback and retry03; full fault/resource qualification remains open |
-| R12: source cooldown replay | Real SDK handler, pending journal, Store reopen and fresh-clock expiry | Postcommit/preACK FAIL `96428f30` → PASS `3ebfeea9`; combined152/152 `cca53643` | Integrated source pending checkpoint | Journaled baseline consumes the retained physical slot; fresh iteration advances only after a new gate; unknowns remain honest | `q0ja`: explicit access-evidence withholding remains; no original live-journal upgrade |
+| R14/D: national diagnostic publication | Same generation09/profile/archive; immutable CLI under16GiB/zeroSwap | Private retry03-unverified receipt and structural readback; XLSX SHA `ba1692b7…11320e` | `b1a63afc1` | INTERRUPTED after3256.642s; peak15,339,282,432B/swap0; real diagnostic saved, no verified publication | `tzu2`: eliminate per-row full-dataset hashing, rerun complete readback; full R14 remains open |
+| R12: source cooldown/progress replay | SDK journal, Store reopen, fresh-clock gate and explicit access-evidence withholding | Slot FAIL `96428f30` → PASS `3ebfeea9`; progress11/11 `73eba707`, adjacent157/157 `e49decd0` | Stable slot `31666096b`; progress working source on `3e87e446` | Retained physical slot is replayed; known progress survives snapshot failure without false completion; unknowns stay honest | `q0ja`: reviewed integration and broader R12 acceptance; no original live-journal upgrade |
 
 Prior identity, catalog, tie and managed-route closures remain scoped evidence.
 Neither checkpoint is blanket national acceptance.

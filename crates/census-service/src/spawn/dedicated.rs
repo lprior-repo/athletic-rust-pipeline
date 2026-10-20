@@ -37,6 +37,17 @@ impl DedicatedThreads {
 }
 
 impl Spawner {
+    pub(crate) fn reserve_browser(&self) -> Result<super::Reservation, SpawnError> {
+        match self
+            .coordinator
+            .try_reserve_profile(crate::admission::WORK_CLASS_BROWSER)
+        {
+            super::TryResult::Granted(reservation) => Ok(reservation),
+            super::TryResult::Deferred(reason) => Err(SpawnError::AdmissionDeferred(reason)),
+            super::TryResult::Refused(reason) => Err(SpawnError::Admission(reason)),
+        }
+    }
+
     #[tracing::instrument(skip_all)]
     pub async fn dedicated<T, E, F, G>(&self, owner: G, job: F) -> Result<Outcome<T, E>, SpawnError>
     where

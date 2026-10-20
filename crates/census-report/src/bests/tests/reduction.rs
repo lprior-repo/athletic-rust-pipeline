@@ -600,8 +600,6 @@ fn canary23_current_admission_rejects_stale_400m_from_relay_split_and_retains_ev
 
     let meet = test_meet(vec![Sport::OutdoorTrack]);
     let label = "400m Split";
-    // Simulate an older stored canonical event whose original source label
-    // still exposes that it was a relay leg. Current admission reclassifies it.
     let mut split_event = test_event(EventKind::Track400m, &meet.id)?;
     split_event.source_labels[0].label = label.to_owned();
     let mut split_performance = test_performance(

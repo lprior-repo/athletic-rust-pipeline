@@ -1,6 +1,7 @@
 use super::super::wire::{BindRunReply, BindRunRequest};
 use super::super::JobError;
 use census_domain::model::{CensusRun, GradYear, RunManifest, SchoolYear};
+use census_domain::UsJurisdiction;
 use census_report::{report::Scope, workbook};
 use census_store::Store;
 
@@ -15,12 +16,7 @@ pub(in crate::restate_services) fn bind(
                 message: format!("{error:?}"),
             }
         })?;
-    let identity: String = store
-        .store_identity()
-        .map_err(|error| JobError::Terminal {
-            message: format!("store identity check failed: {error}"),
-        })?
-        .into();
+    let identity = store_identity(store)?;
     let manifest = if let Some(selection) = request.selection {
         let options = workbook::options_for_selected_request(
             store,
@@ -56,22 +52,7 @@ pub(in crate::restate_services) fn bind(
         })?;
         manifest
     } else {
-        let retained = store
-            .run_manifest()
-            .map_err(JobError::from)?
-            .ok_or_else(|| JobError::Terminal {
-                message: "current run binding requires an explicit selected profile".into(),
-            })?;
-        if retained.store_identity != identity
-            || retained.run != run
-            || retained.cohort != GradYear::CO2027
-            || retained.jurisdictions != jurisdictions
-        {
-            return Err(JobError::Terminal {
-                message: "historical run request differs from its retained binding".into(),
-            });
-        }
-        retained
+        retained_manifest(store, &identity, &run, &jurisdictions)?
     };
     Ok(BindRunReply {
         store_identity: manifest.store_identity,
@@ -80,6 +61,30 @@ pub(in crate::restate_services) fn bind(
         cohort: manifest.cohort.get(),
         jurisdictions: manifest.jurisdictions,
     })
+}
+
+fn retained_manifest(
+    store: &Store,
+    identity: &str,
+    run: &CensusRun,
+    jurisdictions: &[UsJurisdiction],
+) -> Result<RunManifest, JobError> {
+    let retained = store
+        .run_manifest()
+        .map_err(JobError::from)?
+        .ok_or_else(|| JobError::Terminal {
+            message: "current run binding requires an explicit selected profile".into(),
+        })?;
+    if retained.store_identity != identity
+        || &retained.run != run
+        || retained.cohort != GradYear::CO2027
+        || retained.jurisdictions.as_slice() != jurisdictions
+    {
+        return Err(JobError::Terminal {
+            message: "historical run request differs from its retained binding".into(),
+        });
+    }
+    Ok(retained)
 }
 
 fn requested_run(request: &BindRunRequest) -> Result<CensusRun, JobError> {
@@ -97,3 +102,12 @@ mod refusal_tests;
 mod seal_tests;
 #[cfg(test)]
 mod tests;
+
+fn store_identity(store: &Store) -> Result<String, JobError> {
+    Ok(store
+        .store_identity()
+        .map_err(|error| JobError::Terminal {
+            message: format!("store identity check failed: {error}"),
+        })?
+        .into())
+}
