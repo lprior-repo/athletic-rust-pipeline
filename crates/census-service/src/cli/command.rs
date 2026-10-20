@@ -181,6 +181,10 @@ pub(super) enum Command {
     )]
     SchoolAddressJoin(super::school_address_join::SchoolAddressJoinArgs),
     #[command(
+        about = "Accept hash-pinned NCES CCD/PSS files into the selected five-state Store run; explicit --store, stopped owner, and --apply required"
+    )]
+    NcesAddressAccept(super::nces_address_accept::NcesAddressAcceptArgs),
+    #[command(
         about = "Crawl school athletics sites from a school-website queue into per-site JSON evidence and fragment CSVs for verify-coaches; opens the store for its fetch cache"
     )]
     SchoolSites(census_service::school_sites::SchoolSitesArgs),

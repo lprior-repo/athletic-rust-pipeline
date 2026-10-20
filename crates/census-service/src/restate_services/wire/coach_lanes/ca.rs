@@ -175,6 +175,7 @@ mod tests {
         let mut plan = SourcePlan {
             sweepable: Vec::new(),
             refused: Vec::new(),
+            satisfied: Vec::new(),
             fingerprint: "fixture".to_string(),
         };
         let recorded = bind(

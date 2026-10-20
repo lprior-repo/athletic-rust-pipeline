@@ -26,6 +26,7 @@ pub(super) fn enumerated_jurisdictions() -> Result<Vec<ReadJurisdiction>, Box<dy
                     .map(|source| source.slug.to_string())
                     .collect(),
                 refused: Vec::new(),
+                satisfied: Vec::new(),
                 fingerprint: "fixture".to_string(),
             });
             Ok(ReadJurisdiction {

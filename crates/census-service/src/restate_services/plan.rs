@@ -211,6 +211,32 @@ pub fn compute_plan_fingerprint(
     bytes.iter().map(|b| format!("{:02x}", b)).collect()
 }
 
+/// Preserve the existing plan identity when NCES is not retained, and bind the
+/// receipt-qualified plan to the exact immutable receipt when it is.
+pub fn compute_plan_fingerprint_with_nces_receipt(
+    jurisdiction: UsJurisdiction,
+    season: SchoolYear,
+    revision: Revision,
+    lane: BrowserLaneState,
+    receipt_digest: Option<&str>,
+) -> String {
+    let base = compute_plan_fingerprint(jurisdiction, season, revision, lane);
+    let Some(receipt_digest) = receipt_digest else {
+        return base;
+    };
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(b"retained-nces-address-plan-v1\0");
+    hasher.update(base.as_bytes());
+    hasher.update([0]);
+    hasher.update(receipt_digest.as_bytes());
+    hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect()
+}
+
 #[cfg(test)]
 mod policy_tests;
 #[cfg(test)]

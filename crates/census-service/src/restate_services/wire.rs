@@ -27,7 +27,7 @@ pub use open::{
 
 pub(super) mod plan;
 
-pub use plan::{RefusedSource, SourcePlan};
+pub use plan::{RefusedSource, SatisfiedSource, SourcePlan};
 
 pub(super) mod seal;
 

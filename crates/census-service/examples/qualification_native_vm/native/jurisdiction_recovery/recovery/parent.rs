@@ -10,7 +10,7 @@ use serde_json::Value;
 #[serde(tag = "disposition", rename_all = "snake_case", deny_unknown_fields)]
 pub(super) enum ParentRecovery {
     Completed {
-        report: JurisdictionReport,
+        report: Box<JurisdictionReport>,
     },
     PausedResumable {
         pause: super::quiescence::TreePause,
@@ -94,7 +94,7 @@ pub(super) async fn outcome(
             )
             .await?;
             ParentRecovery::Completed {
-                report: serde_json::from_value(output)?,
+                report: Box::new(serde_json::from_value(output)?),
             }
         }
         super::quiescence::Control::Paused(pause) => ParentRecovery::PausedResumable {

@@ -257,6 +257,7 @@ fn state(request: &JurisdictionRequest) -> JurisdictionState {
         plan: Some(SourcePlan {
             sweepable: vec!["milesplit".to_owned()],
             refused: Vec::new(),
+            satisfied: Vec::new(),
             fingerprint: compute_plan_fingerprint(
                 request.jurisdiction,
                 request.season,

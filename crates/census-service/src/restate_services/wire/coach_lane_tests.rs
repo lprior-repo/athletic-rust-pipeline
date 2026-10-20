@@ -159,6 +159,7 @@ fn coach_lane_source_plan_refusal_is_recorded_and_never_accepted() -> TestResult
             reason: "the directory refuses automated reads".to_string(),
             kind: RefusalKind::AccessBlocked,
         }],
+        satisfied: Vec::new(),
         fingerprint: "fixture".to_string(),
     };
     let refusals = plan.coach_lane_refusals(OBSERVED_ON)?;
