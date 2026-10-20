@@ -70,8 +70,7 @@ fn the_ladder_stops_at_the_first_artifact_the_store_lacks() -> TestResult {
 
 #[test]
 fn a_workbook_is_what_lifts_the_ladder_into_exporting() -> TestResult {
-    let dir = tempfile::tempdir()?;
-    let store = Store::open(dir.path().join("store"))?;
+    let (_dir, store) = census_store::test_fixture::temp_store()?;
     let path = census_report::workbook::build(&store, &full_options()?)?;
     let state = reached_phase(
         &stats_with(1, 2, 3, 9),

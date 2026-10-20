@@ -7,8 +7,8 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[tokio::test]
 async fn prepared_recording_retains_shared_stage_budget() -> TestResult {
-    let root = tempfile::tempdir()?;
-    let store = Arc::new(census_store::Store::open(root.path())?);
+    let (_root, store) = census_store::test_fixture::temp_store()?;
+    let store = Arc::new(store);
     let region = Arc::new(Spawner::with_capacity(1));
     let recorded = census_store::recorded::Recorded::default();
     let encoded = serde_json::to_vec(&recorded)?;

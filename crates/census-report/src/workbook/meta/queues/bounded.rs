@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use census_domain::model::{CanonicalAthlete, CanonicalSchool};
 use census_review::athlete_flags::{key, IdentityKey};
 
-use crate::grouping::{add, Admission, GroupingError};
+use crate::grouping::{add, limit, Admission, GroupingError, GROUP_BYTES};
 use crate::report::ReportResult;
 
 use super::super::StoreRows;
@@ -90,6 +90,13 @@ fn expansion((rows, bytes): (usize, usize), admission: &mut Admission) -> Report
         stage: "conflicts",
         resource: "group work",
     })?;
+    limit(
+        "conflicts",
+        "duplicate expansion",
+        "encoded bytes",
+        projected,
+        GROUP_BYTES,
+    )?;
     admission.charge(projected, work)?;
     Ok(())
 }

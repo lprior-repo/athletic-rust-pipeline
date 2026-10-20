@@ -5,6 +5,8 @@
 mod fallible_checks;
 
 mod common;
+#[path = "common/durable_capture.rs"]
+mod durable_capture;
 #[path = "parity_pipeline_mod/milesplit_fixtures.rs"]
 mod milesplit_fixtures;
 

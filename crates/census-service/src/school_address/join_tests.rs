@@ -4,11 +4,7 @@ use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalSchool, Gender, GradYear, ReviewCase, ReviewState,
     SchoolId, SourceIdentity, SourceNamespace,
 };
-use census_domain::school_directory::{
-    CityName, DirectoryIndex, Grade, GradeSpan, IdentifiedKey, NcesSchoolId, NumberedGrade,
-    PostalAddress, SchoolDirectoryEntry, SchoolName, SourceLabel, StateRecordId, StreetLine,
-    Website, ZipCode,
-};
+use census_domain::school_directory::{DirectoryIndex, IdentifiedKey, SourceLabel, StateRecordId};
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 
@@ -28,52 +24,12 @@ mod nces_tests;
 #[path = "join/receipt_tests.rs"]
 mod receipt_tests;
 
-fn span(low: u8, high: u8) -> Result<GradeSpan, Box<dyn std::error::Error>> {
-    Ok(GradeSpan::new(
-        Grade::Numbered(NumberedGrade::new(low)?),
-        Grade::Numbered(NumberedGrade::new(high)?),
-    )?)
-}
-
-fn entry(
-    id: &str,
-    name: &str,
-    city: &str,
-    state: UsJurisdiction,
-    line1: &str,
-) -> Result<SchoolDirectoryEntry, Box<dyn std::error::Error>> {
-    entry_with_website(id, name, city, state, line1, "")
-}
-
-fn entry_with_website(
-    id: &str,
-    name: &str,
-    city: &str,
-    state: UsJurisdiction,
-    line1: &str,
-    website: &str,
-) -> Result<SchoolDirectoryEntry, Box<dyn std::error::Error>> {
-    let address = PostalAddress::of(
-        Some(StreetLine::parse(line1)?),
-        None,
-        Some(CityName::parse(city)?),
-        Some(state),
-        Some(ZipCode::parse("43000")?),
-    )
-    .ok_or("address is empty")?;
-    Ok(SchoolDirectoryEntry::identified(
-        IdentifiedKey::Nces(NcesSchoolId::parse(id)?),
-        SourceLabel::Ccd,
-        Some(SchoolName::parse(name)?),
-    )
-    .with_address(Some(address))
-    .with_website(Website::parse(website)?)
-    .with_grades(Some(span(9, 12)?)))
-}
+use census_domain::school_directory::fixture::{
+    nces_entry, nces_entry_with_website, state_record_entry,
+};
 
 fn store_with_school() -> Result<(tempfile::TempDir, Store), Box<dyn std::error::Error>> {
-    let dir = tempfile::tempdir()?;
-    let store = Store::open(dir.path().join("store"))?;
+    let (dir, store) = census_store::test_fixture::temp_store()?;
     let (school, _) = CanonicalSchool::new(
         UsJurisdiction::Ohio,
         "Springfield High School",
@@ -98,13 +54,14 @@ fn merged_school(store: &Store) -> Result<CanonicalSchool, Box<dyn std::error::E
 #[test]
 fn apply_links_a_matching_school_and_stamps_capture_evidence() -> TestResult {
     let (_dir, store) = store_with_school()?;
-    let index = DirectoryIndex::build(&[entry_with_website(
+    let index = DirectoryIndex::build(&[nces_entry_with_website(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
         "https://springfield.example/high",
+        (9, 12),
     )?]);
     let (counters, outcomes) = process(
         &store,
@@ -147,12 +104,13 @@ fn apply_links_a_matching_school_and_stamps_capture_evidence() -> TestResult {
 #[test]
 fn a_second_apply_reports_already_linked_without_duplicating() -> TestResult {
     let (_dir, store) = store_with_school()?;
-    let index = DirectoryIndex::build(&[entry(
+    let index = DirectoryIndex::build(&[nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?]);
     let lanes = lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-08-01"));
     let (first, _) = process(&store, &index, &lanes, Mode::Apply)?;
@@ -175,13 +133,14 @@ fn an_existing_website_is_not_overwritten() -> TestResult {
     let mut school = merged_school(&store)?;
     school.school_website = Some("https://mpa.example/school".to_string());
     store.append(Table::Schools, &school)?;
-    let index = DirectoryIndex::build(&[entry_with_website(
+    let index = DirectoryIndex::build(&[nces_entry_with_website(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
         "https://springfield.example/high",
+        (9, 12),
     )?]);
     let (counters, _) = process(
         &store,
@@ -200,23 +159,25 @@ fn an_existing_website_is_not_overwritten() -> TestResult {
 fn a_replay_backfills_the_website_for_an_already_linked_school() -> TestResult {
     let (_dir, store) = store_with_school()?;
     let lanes = lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-08-01"));
-    let first_index = DirectoryIndex::build(&[entry(
+    let first_index = DirectoryIndex::build(&[nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?]);
     let (first, _) = process(&store, &first_index, &lanes, Mode::Apply)?;
     check!(eq; first.linked, 1);
     check!(eq; first.websites, 0);
-    let second_index = DirectoryIndex::build(&[entry_with_website(
+    let second_index = DirectoryIndex::build(&[nces_entry_with_website(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
         "https://springfield.example/high",
+        (9, 12),
     )?]);
     let (second, outcomes) = process(&store, &second_index, &lanes, Mode::Apply)?;
     check!(eq; second.linked, 0);
@@ -247,12 +208,13 @@ fn refresh_backfills_a_postal_claim_for_an_owned_identity_without_one() -> TestR
         "390000000001",
     ));
     store.append(Table::Schools, &school)?;
-    let index = DirectoryIndex::build(&[entry(
+    let index = DirectoryIndex::build(&[nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?]);
     let (counters, outcomes) = process(
         &store,
@@ -275,21 +237,23 @@ fn refresh_backfills_a_postal_claim_for_an_owned_identity_without_one() -> TestR
 fn refresh_retains_a_new_capture_address_beside_the_owned_claim() -> TestResult {
     let (_dir, store) = store_with_school()?;
     let lanes = lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-08-01"));
-    let first_index = DirectoryIndex::build(&[entry(
+    let first_index = DirectoryIndex::build(&[nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?]);
     let (first, _) = process(&store, &first_index, &lanes, Mode::Apply)?;
     check!(eq; first.linked, 1);
-    let second_index = DirectoryIndex::build(&[entry(
+    let second_index = DirectoryIndex::build(&[nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "2 Second St",
+        (9, 12),
     )?]);
     let (second, outcomes) = process(&store, &second_index, &lanes, Mode::Apply)?;
     check!(eq; second.linked, 0);
@@ -314,12 +278,13 @@ fn refresh_retains_a_new_capture_address_beside_the_owned_claim() -> TestResult 
 #[test]
 fn refresh_retains_a_new_observation_date_on_the_owned_claim() -> TestResult {
     let (_dir, store) = store_with_school()?;
-    let index = DirectoryIndex::build(&[entry(
+    let index = DirectoryIndex::build(&[nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?]);
     let (first, _) = process(
         &store,
@@ -349,12 +314,13 @@ fn refresh_retains_a_new_observation_date_on_the_owned_claim() -> TestResult {
 #[test]
 fn missing_capture_evidence_refuses_the_link() -> TestResult {
     let (_dir, store) = store_with_school()?;
-    let index = DirectoryIndex::build(&[entry(
+    let index = DirectoryIndex::build(&[nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?]);
     for (url, observed_on) in [
         (None, None),
@@ -375,12 +341,13 @@ fn missing_capture_evidence_refuses_the_link() -> TestResult {
 #[test]
 fn dry_run_links_nothing_into_the_store() -> TestResult {
     let (_dir, store) = store_with_school()?;
-    let index = DirectoryIndex::build(&[entry(
+    let index = DirectoryIndex::build(&[nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?]);
     let (counters, _) = process(
         &store,
@@ -428,11 +395,6 @@ fn overrides_reject_foreign_sources_and_bad_values() -> TestResult {
         retrieved_at: Some("2026-08-01".to_string()),
     }]);
     check!(accepted.is_ok());
-
-    let pairs = parse_source_pairs(&["nces-ccd=https://nces.ed.gov/ccd.zip".to_string()])?;
-    check!(eq; pairs.get("nces-ccd").map(String::as_str), Some("https://nces.ed.gov/ccd.zip"));
-    check!(parse_source_pairs(&["nces-ccd".to_string()]).is_err());
-    check!(parse_source_pairs(&["=https://nces.ed.gov/ccd.zip".to_string()]).is_err());
     Ok(())
 }
 
@@ -543,12 +505,13 @@ fn a_missing_state_is_reported_instead_of_linked() -> TestResult {
     let mut school = school;
     school.state = None;
     store.append(Table::Schools, &school)?;
-    let index = DirectoryIndex::build(&[entry(
+    let index = DirectoryIndex::build(&[nces_entry(
         "390000000001",
         "Nowhere School",
         "Nowhere",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?]);
     let (counters, outcomes) = process(
         &store,
@@ -567,19 +530,21 @@ fn a_missing_state_is_reported_instead_of_linked() -> TestResult {
 fn ambiguous_names_stay_in_review_with_candidate_labels() -> TestResult {
     let (_dir, store) = store_with_school()?;
     let index = DirectoryIndex::build(&[
-        entry(
+        nces_entry(
             "390000000002",
             "Springfield High School",
             "Springfield",
             UsJurisdiction::Ohio,
             "1 Main St",
+            (9, 12),
         )?,
-        entry(
+        nces_entry(
             "390000000003",
             "Springfield High School",
             "Springfield",
             UsJurisdiction::Ohio,
             "2 Main St",
+            (9, 12),
         )?,
     ]);
     let lanes = lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-08-01"));
@@ -617,12 +582,13 @@ fn ambiguous_names_stay_in_review_with_candidate_labels() -> TestResult {
 #[test]
 fn another_states_school_never_links() -> TestResult {
     let (_dir, store) = store_with_school()?;
-    let index = DirectoryIndex::build(&[entry(
+    let index = DirectoryIndex::build(&[nces_entry(
         "390000000004",
         "Springfield High School",
         "Rochester Hills",
         UsJurisdiction::Michigan,
         "3 Main St",
+        (9, 12),
     )?]);
     let (counters, _) = process(
         &store,
@@ -641,43 +607,10 @@ fn store_with(
     name: &str,
     city: &str,
 ) -> Result<(tempfile::TempDir, Store), Box<dyn std::error::Error>> {
-    let dir = tempfile::tempdir()?;
-    let store = Store::open(dir.path().join("store"))?;
+    let (dir, store) = census_store::test_fixture::temp_store()?;
     let (school, _) = CanonicalSchool::new(state, name, normalize_name(name), Some(city));
     store.append(Table::Schools, &school)?;
     Ok((dir, store))
-}
-
-fn state_record_entry(
-    id: &str,
-    name: &str,
-    city: &str,
-    state: UsJurisdiction,
-    line1: Option<&str>,
-    label: SourceLabel,
-) -> Result<SchoolDirectoryEntry, Box<dyn std::error::Error>> {
-    let line1 = match line1 {
-        Some(line1) => Some(StreetLine::parse(line1)?),
-        None => None,
-    };
-    let address = PostalAddress::of(
-        line1,
-        None,
-        Some(CityName::parse(city)?),
-        Some(state),
-        Some(ZipCode::parse("43000")?),
-    )
-    .ok_or("address is empty")?;
-    Ok(SchoolDirectoryEntry::identified(
-        IdentifiedKey::StateRecord {
-            state,
-            id: StateRecordId::parse(id)?,
-        },
-        label,
-        Some(SchoolName::parse(name)?),
-    )
-    .with_address(Some(address))
-    .with_grades(Some(span(9, 12)?)))
 }
 
 fn lane_of(
@@ -1087,26 +1020,29 @@ fn a_co_op_school_links_each_independently_qualifying_member() -> TestResult {
         )?,
     )?;
     let index = DirectoryIndex::build(&[
-        entry(
+        nces_entry(
             "470000000001",
             "Centennial High School",
             "Franklin",
             UsJurisdiction::Tennessee,
             "1 Centennial Ln",
+            (9, 12),
         )?,
-        entry(
+        nces_entry(
             "470000000002",
             "Page High School",
             "Franklin",
             UsJurisdiction::Tennessee,
             "2 Page Ln",
+            (9, 12),
         )?,
-        entry(
+        nces_entry(
             "010000000003",
             "Arab High School",
             "Arab",
             UsJurisdiction::Alabama,
             "3 Arab Ln",
+            (9, 12),
         )?,
     ]);
     let (counters, outcomes) = process(
@@ -1160,19 +1096,21 @@ fn a_co_op_member_tie_files_one_review_and_attaches_nothing() -> TestResult {
         )?,
     )?;
     let index = DirectoryIndex::build(&[
-        entry(
+        nces_entry(
             "470000000010",
             "Riverside High School",
             "Riverside",
             UsJurisdiction::Tennessee,
             "1 River Rd",
+            (9, 12),
         )?,
-        entry(
+        nces_entry(
             "470000000011",
             "Riverside High School",
             "Riverside",
             UsJurisdiction::Tennessee,
             "2 River Rd",
+            (9, 12),
         )?,
     ]);
     let (counters, outcomes) = process(
@@ -1200,19 +1138,21 @@ fn a_transfer_observation_never_links_schools() -> TestResult {
     let (_plain_dir, plain, _, _) = transfer_store(false)?;
     let (_transfer_dir, transfer, springfield, shelbyville) = transfer_store(true)?;
     let index = DirectoryIndex::build(&[
-        entry(
+        nces_entry(
             "470000000020",
             "Springfield High School",
             "Springfield",
             UsJurisdiction::Tennessee,
             "1 Main St",
+            (9, 12),
         )?,
-        entry(
+        nces_entry(
             "470000000021",
             "Shelbyville Central High School",
             "Shelbyville",
             UsJurisdiction::Tennessee,
             "2 Depot St",
+            (9, 12),
         )?,
     ]);
     let lanes = lanes(Some("https://nces.ed.gov/ccd.csv"), Some("2026-08-01"));

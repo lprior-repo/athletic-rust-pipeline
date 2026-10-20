@@ -1,5 +1,5 @@
 use super::*;
-use crate::net::cache::{content_digest, write_cache, CacheMeta};
+use crate::net::cache::content_digest;
 use crate::net::Fetcher;
 use census_domain::model::SchoolYear;
 use census_store::Store;
@@ -7,7 +7,6 @@ use std::collections::HashMap;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-mod replay;
 mod uncaptured;
 
 fn setup() -> TestResult<(tempfile::TempDir, Store, Fetcher, ResultSetRef)> {
@@ -27,9 +26,13 @@ fn setup() -> TestResult<(tempfile::TempDir, Store, Fetcher, ResultSetRef)> {
     Ok((dir, store, fetcher, reference))
 }
 
-fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
+fn context<'a>(
+    store: &'a Store,
+    fetcher: &'a Fetcher,
+    capture: &'a crate::ResultsCaptureContext,
+) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(capture),
         fetcher,
         store,
         refresh: false,
@@ -40,108 +43,6 @@ fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterCont
     })
 }
 
-fn seed(fetcher: &Fetcher, reference: &ResultSetRef, body: &[u8]) -> TestResult {
-    let url = owned_meet_url(reference)?;
-    let (body_path, meta_path) = fetcher.cache_paths(&Fetcher::key_for("GET", &url, ""));
-    std::fs::create_dir_all(fetcher.cache_dir())?;
-    write_cache(
-        &body_path,
-        &meta_path,
-        body,
-        &CacheMeta {
-            redirects: Vec::new(),
-            representation: crate::net::RepresentationHeaders::default(),
-            url,
-            method: "GET".into(),
-            status: 200,
-            content_digest: content_digest(body),
-            bytes: body.len(),
-            fetched_at: "2026-10-01T23:44:16Z".into(),
-            ..CacheMeta::default()
-        },
-    )?;
-    Ok(())
-}
-
-fn parsed(outcome: &OwnedMeetOutcome) -> TestResult<&super::super::OwnedMeetPage> {
-    match outcome.verdict() {
-        OwnedMeetVerdict::Parsed(page) => Ok(page),
-        other => Err(format!("expected parsed capture, got {other:?}").into()),
-    }
-}
-
-#[test]
-fn successful_receipt_returns_current_owner_and_marks_for_downstream_replay() -> TestResult {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            let (_dir, store, fetcher, reference) = setup()?;
-            let body = crate::milesplit::owned::tests::TROY;
-            seed(&fetcher, &reference, body)?;
-            let ctx = context(&store, &fetcher)?;
-            let first = read_owned_meet(&ctx, &reference).await?;
-            let payloads = store.journal_payloads(OWNED_MEET_PHASE)?;
-            let captures = store.journal_payloads(OWNED_CAPTURE_PHASE)?;
-            let replay = read_owned_meet(&ctx, &reference).await?;
-            check!(eq; replay.verdict(), first.verdict());
-            let spann = parsed(&replay)?
-                .rows
-                .iter()
-                .find(|row| row.result_id == 201782263)
-                .ok_or("original long jump")?;
-            check!(eq; spann.source_athlete.id, "14222592");
-            check!(eq;
-                spann.source_athlete.url.as_deref(),
-                Some("https://www.milesplit.com/athletes/14222592-adelyn-spann")
-            );
-            check!(eq;
-                spann.mark,
-                census_domain::model::Mark::FieldImperial {
-                    feet_mark: "13-9".into(),
-                    metres: census_domain::model::CentiMetres::new(419),
-                }
-            );
-            check!(eq; replay.capture().body, body);
-            check!(eq; replay.capture().content_digest, content_digest(body));
-            let receipt = payloads
-                .iter()
-                .find(|value| value["disposition"] == "parsed")
-                .ok_or("parse receipt")?;
-            check!(eq; receipt["ownership_complete"], false);
-            check!(eq; receipt["completeness"], "unknown");
-            check!(eq; receipt["owned_rows"], 3);
-            let keys = store.journal_keys(OWNED_MEET_PHASE)?;
-            check!(!keys.iter().any(|key| key.starts_with("complete/")));
-            check!(eq;
-                store
-                    .journal_payloads(OWNED_MEET_PHASE)
-                    ?,
-                payloads
-            );
-            check!(eq;
-                store
-                    .journal_payloads(OWNED_CAPTURE_PHASE)
-                    ?,
-                captures
-            );
-            let chunk = captures
-                .iter()
-                .find(|value| value.get("raw_base64").is_some())
-                .ok_or("capture chunk")?;
-            check!(eq;
-                STANDARD
-                    .decode(chunk["raw_base64"].as_str().ok_or("base64")?)?,
-                body
-            );
-            check!(eq; chunk["capture"]["content_digest"], content_digest(body));
-            let traffic = fetcher.stats().await;
-            check!(eq; traffic.physical_requests(), 0);
-            check!(eq; traffic.cache_hits, 2);
-            Ok(())
-        })
-}
-
 #[test]
 fn malformed_partial_and_refused_captures_never_receive_parse_success_receipts() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
@@ -149,7 +50,8 @@ fn malformed_partial_and_refused_captures_never_receive_parse_success_receipts()
         .build()?
         .block_on(async {
             let (_dir, store, fetcher, reference) = setup()?;
-            let ctx = context(&store, &fetcher)?;
+            let durable = crate::net::durable_capture_context(&_dir.path().join("capture"))?;
+            let ctx = context(&store, &fetcher, &durable)?;
             let mut partial: serde_json::Value =
                 serde_json::from_slice(crate::milesplit::owned::tests::TROY)?;
             partial["data"][0]["athleteId"] = serde_json::json!("0");
@@ -208,33 +110,3 @@ fn malformed_partial_and_refused_captures_never_receive_parse_success_receipts()
             Ok(())
         })
 }
-
-#[test]
-fn empty_success_is_capture_parse_success_with_unknown_population() -> TestResult {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            let (_dir, store, fetcher, reference) = setup()?;
-            seed(&fetcher, &reference, b"{\"data\":[]}")?;
-            let ctx = context(&store, &fetcher)?;
-            let outcome = read_owned_meet(&ctx, &reference).await?;
-            check!(eq; parsed(&outcome)?.rows, Vec::new());
-            check!(eq;
-                parsed(&outcome)?.completeness,
-                super::super::OwnedCompleteness::Unknown
-            );
-            check!(!parsed(&outcome)?.ownership_complete());
-            let payload = store.journal_payloads(OWNED_MEET_PHASE)?;
-            check!(eq; payload[0]["published_rows"], 0);
-            check!(eq; payload[0]["ownership_complete"], false);
-            check!(eq; payload[0]["completeness"], "unknown");
-            Ok(())
-        })
-}
-
-mod capture_outcomes;
-
-mod parser_revisions;
-
-mod resource_errors;

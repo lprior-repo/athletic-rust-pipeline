@@ -2733,3 +2733,26 @@ accepted effects. Native artifacts remain under
 `/home/lewis/.cache/athletic-roster-intake-actual-_7w0hu1f/`.
 The genuine athlete/PR publication driver remains separate, unqualified work.
 No populated workbook, full M2 replay, five-state or national completion is claimed.
+
+## cleanup/integrate-tiers (on `c1a71817`)
+
+Branch delta vs `origin/main`: 404 files, +6686/-8383. Zero added `//` comment
+lines. Republish reuses the receipt generation when the staged manifest matches
+the receipt manifest on schema revision, input generation, selection, row
+counts and selected profile; genuine drift mints via Published to Intent.
+Digest formulas unchanged, so historical reconstruction manifests verify.
+
+| Check | Result |
+|---|---|
+| `pipeline:fmt` | green via `pipeline:fmt-write` |
+| `pipeline:check` | green |
+| `pipeline:lint-src` | green, warnings only, zero errors |
+| `pipeline:tests` full workspace | 8525 run: 8522 passed, 3 failed, 11 skipped |
+| census-store package | 1598 passed, 4 skipped |
+| zero_winners / durable_job / revocation-lifecycle / policy_cutover | all pass |
+
+The 3 remaining failures are pre-existing and reproduce identically with and
+without this branch's changes (verified via stash): identity split/revoke need
+a domain-owner ruling, and `historical_build` needs an external reviewed-roster
+producer bundle that no in-repo producer emits. `PR #110` reports OPEN,
+MERGEABLE, CLEAN.

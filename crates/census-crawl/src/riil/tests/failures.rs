@@ -15,9 +15,10 @@ fn http_errors_and_disconnected_transport_remain_unfinished(
             for status in [Some(404), Some(403), Some(500), None] {
                 let (_root, store, _) = setup()?;
                 let fetcher = fetcher(&store)?;
+                let capture = crate::net::durable_capture_context(&_root.path().join("capture"))?;
                 let listener = TcpListener::bind("127.0.0.1:0").await?;
                 let url = format!("http://{}/Directory.aspx", listener.local_addr()?);
-                let ctx = context(&fetcher, &store, None, "2026-10-02")?;
+                let ctx = context(&fetcher, &store, None, "2026-10-02", &capture)?;
                 let client = async {
                     let report = collect_directory(&ctx, &Default::default(), &url).await?;
                     check!(eq; (report.rows, report.errors, report.from_cache), (0, 1, 0));
@@ -63,7 +64,8 @@ fn malformed_or_refused_captures_cannot_create_completion_markers(
     ] {
         let (_root, store, fetcher) = setup()?;
         seed(&fetcher, body, ACQUIRED_AT)?;
-        let report = evaluate(&fetcher, &store, None, "2026-10-02", "2026-10-03").await?;
+        let capture = crate::net::durable_capture_context(&_root.path().join("capture"))?;
+        let report = evaluate(&fetcher, &store, None, "2026-10-02", "2026-10-03", &capture).await?;
         check!(report.unfinished.iter().any(|locator| locator.starts_with(URL)));
         let schools = store.scan::<census_domain::model::CanonicalSchool>(Table::Schools)?;
         let owned = std::str::from_utf8(body).is_ok_and(|text| text.contains("<summary>Example HS</summary>"));
@@ -87,8 +89,9 @@ fn refused_new_content_is_visible_after_an_earlier_committed_capture(
         .block_on(async {
             let (_root, store, fetcher) = setup()?;
             seed(&fetcher, DIRECTORY.as_bytes(), ACQUIRED_AT)?;
+            let capture = crate::net::durable_capture_context(&_root.path().join("capture"))?;
             check!(eq;
-                evaluate(&fetcher, &store, None, "2026-10-02", "")
+                evaluate(&fetcher, &store, None, "2026-10-02", "", &capture)
                     .await?
                     .rows,
                 1
@@ -98,7 +101,7 @@ fn refused_new_content_is_visible_after_an_earlier_committed_capture(
                 b"<html><title>Access Denied</title></html>",
                 "2026-10-01T11:00:00Z",
             )?;
-            let report = evaluate(&fetcher, &store, None, "2026-10-03", "").await?;
+            let report = evaluate(&fetcher, &store, None, "2026-10-03", "", &capture).await?;
             check!(eq; (report.rows, report.errors), (0, 1));
             check!(eq; physical_counts(&store)?, vec![1, 2, 1]);
             check!(eq; store.journal_keys("riil_schools")?.len(), 1);
@@ -122,7 +125,8 @@ fn published_empty_directory_and_vacant_appointments_are_not_fetch_failures(
             ] {
                 let (_root, store, fetcher) = setup()?;
                 seed(&fetcher, body.as_bytes(), ACQUIRED_AT)?;
-                let report = evaluate(&fetcher, &store, None, "2026-10-02", "").await?;
+                let capture = crate::net::durable_capture_context(&_root.path().join("capture"))?;
+                let report = evaluate(&fetcher, &store, None, "2026-10-02", "", &capture).await?;
                 check!(eq; report.errors, 0);
                 check!(eq; physical_counts(&store)?, expected);
                 check!(eq; report.rows, *expected.first().ok_or("expected school count")?);
@@ -140,7 +144,8 @@ fn authentic_directory_capture_retains_school_selection() -> Result<(), Box<dyn 
         .block_on(async {
             let (_root, store, fetcher) = setup()?;
             seed(&fetcher, super::FIXTURE.as_bytes(), ACQUIRED_AT)?;
-            let report = evaluate(&fetcher, &store, None, "2026-10-02", "").await?;
+            let capture = crate::net::durable_capture_context(&_root.path().join("capture"))?;
+            let report = evaluate(&fetcher, &store, None, "2026-10-02", "", &capture).await?;
             check!(eq; report.errors, 0);
             let schools =
                 observations::<census_domain::model::CanonicalSchool>(&store, Table::Schools)?;
@@ -160,9 +165,10 @@ fn http_200_refusal_is_not_a_complete_empty_directory() -> Result<(), Box<dyn st
         .block_on(async {
             let (_root, store, _) = setup()?;
             let fetcher = fetcher(&store)?;
+            let capture = crate::net::durable_capture_context(&_root.path().join("capture"))?;
             let listener = TcpListener::bind("127.0.0.1:0").await?;
             let url = format!("http://{}/Directory.aspx", listener.local_addr()?);
-            let ctx = context(&fetcher, &store, None, "2026-10-02")?;
+            let ctx = context(&fetcher, &store, None, "2026-10-02", &capture)?;
             let client = async {
                 let report = collect_directory(&ctx, &Default::default(), &url).await?;
                 check!(eq; (report.rows, report.errors, report.from_cache), (0, 1, 0));

@@ -1,14 +1,17 @@
 use super::*;
-use census_domain::school_directory::PssId;
+use census_domain::school_directory::{
+    CityName, NcesSchoolId, PostalAddress, PssId, SchoolDirectoryEntry, SchoolName,
+};
 
 #[test]
 fn nces_name_only_or_conflicting_city_never_fills_a_postal_gap() -> TestResult {
-    let entries = [entry(
+    let entries = [nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?];
     let index = DirectoryIndex::build(&entries);
     for city in [None, Some("Columbus")] {
@@ -47,12 +50,13 @@ fn nces_name_only_or_conflicting_city_never_fills_a_postal_gap() -> TestResult {
 
 #[test]
 fn pss_name_only_or_conflicting_city_never_links() -> TestResult {
-    let public = entry(
+    let public = nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "1 Main St",
+        (9, 12),
     )?;
     let private = SchoolDirectoryEntry::identified(
         IdentifiedKey::Pss(PssId::parse("A2380006")?),
@@ -98,12 +102,13 @@ fn ccd_and_pss_owned_keys_backfill_missing_city_with_their_own_provenance() -> T
             id,
         ));
         store.append(Table::Schools, &school)?;
-        let public = entry(
+        let public = nces_entry(
             "390000000001",
             "Springfield High School",
             "Springfield",
             UsJurisdiction::Ohio,
             "1 Main St",
+            (9, 12),
         )?;
         let directory =
             SchoolDirectoryEntry::identified(key, label.clone(), public.name().cloned())
@@ -178,12 +183,13 @@ fn co_op_members_without_city_corroboration_remain_explicit_gaps() -> TestResult
             &["Centennial High School"],
         )?,
     )?;
-    let index = DirectoryIndex::build(&[entry(
+    let index = DirectoryIndex::build(&[nces_entry(
         "470000000001",
         "Centennial High School",
         "Franklin",
         UsJurisdiction::Tennessee,
         "1 Centennial Ln",
+        (9, 12),
     )?]);
     let (counts, outcomes) = process(
         &store,

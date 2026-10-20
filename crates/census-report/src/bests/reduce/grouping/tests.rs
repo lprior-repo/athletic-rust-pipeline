@@ -33,7 +33,6 @@ fn historical_policies_keep_equal_missing_context_for_distinct_results() -> Test
     let second = performance("result-two")?;
     check!(first.id != second.id);
     for policy in [
-        EventSemantics::Legacy18,
         EventSemantics::FlatEvents19,
         EventSemantics::CombinedEvents20,
     ] {
@@ -130,7 +129,6 @@ fn historical_conflict_membership_still_covers_the_whole_context() -> TestResult
     let conflict = performance("conflicted-result")?;
     let clean = performance("independent-result")?;
     for policy in [
-        EventSemantics::Legacy18,
         EventSemantics::FlatEvents19,
         EventSemantics::CombinedEvents20,
     ] {

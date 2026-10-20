@@ -1,8 +1,7 @@
-use super::{EventKind, EventSemantics};
+use super::EventKind;
 
-pub(super) fn resolve(label: &str, semantics: EventSemantics) -> Option<EventKind> {
+pub(super) fn resolve(label: &str) -> Option<EventKind> {
     track(label)
-        .filter(|kind| semantics.admits_flat_extension(kind))
         .or_else(|| hurdles(label))
         .or_else(|| steeplechase(label))
         .or_else(|| relay(label))

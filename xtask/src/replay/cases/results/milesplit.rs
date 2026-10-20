@@ -135,7 +135,6 @@ fn roster_fixture(file: &str) -> Option<(String, String)> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ResultsTemplate {
     Literal,
-    Legacy,
     Inline,
 }
 
@@ -143,7 +142,6 @@ impl ResultsTemplate {
     fn name(self) -> &'static str {
         match self {
             Self::Literal => "literal",
-            Self::Legacy => "legacy",
             Self::Inline => "inline",
         }
     }
@@ -153,8 +151,6 @@ fn results_fixture(file: &str) -> Option<(String, String, ResultsTemplate)> {
     let stem = file.strip_suffix(".html")?;
     let (stem, template) = if let Some(stem) = stem.strip_suffix("_results") {
         (stem, ResultsTemplate::Literal)
-    } else if let Some(stem) = stem.strip_suffix("_results_legacy") {
-        (stem, ResultsTemplate::Legacy)
     } else {
         (
             stem.strip_suffix("_results_inline")?,

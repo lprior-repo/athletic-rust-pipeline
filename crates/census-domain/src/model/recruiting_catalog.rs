@@ -10,7 +10,6 @@ mod coherence;
 mod context;
 use coherence::{coherent_components, coherent_pairs, distance_quantity, excluded_coherence};
 mod disposition;
-mod legacy_policy;
 mod policy;
 mod selected;
 
@@ -64,13 +63,11 @@ impl RecruitingCatalogV1 {
         CatalogIdentity {
             version: self.version,
             policy_revision: match self.semantics {
-                EventSemantics::Legacy18 => None,
                 EventSemantics::FlatEvents19 => Some(2),
                 EventSemantics::CombinedEvents20 | EventSemantics::ResultGroups21 => Some(3),
                 EventSemantics::ResultGroups22 => Some(4),
             },
             grammar: match self.semantics {
-                EventSemantics::Legacy18 => "ascii_delimited_tokens_typed_context_xc_anchors_v3",
                 EventSemantics::FlatEvents19
                 | EventSemantics::CombinedEvents20
                 | EventSemantics::ResultGroups21 => {
@@ -88,18 +85,12 @@ impl RecruitingCatalogV1 {
             max_source_labels: CATALOG_V1_MAX_SOURCE_LABELS,
             max_label_bytes: CATALOG_V1_MAX_LABEL_BYTES,
             max_aggregate_label_bytes: CATALOG_V1_MAX_AGGREGATE_LABEL_BYTES,
-            included: policy::included(self.semantics),
+            included: policy::INCLUDED,
             exclusions: policy::EXCLUSIONS,
             pairs: policy::PAIRS,
             terrain: policy::TERRAIN,
             ambiguous: policy::AMBIGUOUS,
-            missing: match self.semantics {
-                EventSemantics::Legacy18 => legacy_policy::MISSING,
-                EventSemantics::FlatEvents19
-                | EventSemantics::CombinedEvents20
-                | EventSemantics::ResultGroups21 => policy::MISSING,
-                EventSemantics::ResultGroups22 => policy::MISSING,
-            },
+            missing: policy::MISSING,
             qualifiers: policy::QUALIFIERS,
             units: policy::UNITS,
             separators: policy::SEPARATORS,

@@ -14,7 +14,7 @@ pub fn request() -> TestResult<NationalRequest> {
     }))?)
 }
 
-pub(super) fn selected_request(
+pub(in crate::restate_services::national) fn selected_request(
     controlled: &crate::restate_services::jobs::selected_fixture::Controlled,
     jurisdictions: &[census_domain::UsJurisdiction],
 ) -> TestResult<NationalRequest> {

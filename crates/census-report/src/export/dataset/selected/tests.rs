@@ -81,7 +81,7 @@ fn legacy_frozen_archives_keep_the_original_envelope_and_unbound_reopen_behavior
     let store = Store::open(directory.path().join("store"))?;
     store.store_identity()?;
     let mut dataset = ExportDataset::load(&store)?;
-    for revision in 18..=22 {
+    for revision in 19..=22 {
         dataset.bind_historical_policy_for_test(revision)?;
         let path = directory.path().join(format!("legacy-{revision}.json"));
         dataset.save_frozen(&path)?;

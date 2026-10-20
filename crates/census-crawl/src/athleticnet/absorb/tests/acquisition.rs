@@ -54,9 +54,10 @@ fn seed_cache(cache: &std::path::Path, url: &str, body: &str) -> TestResult {
 fn context<'a>(
     store: &'a Store,
     fetcher: &'a crate::net::Fetcher,
+    capture: &'a crate::ResultsCaptureContext,
 ) -> TestResult<crate::AdapterContext<'a>> {
     Ok(crate::AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher,
         store,
         refresh: false,
@@ -84,6 +85,7 @@ fn mismatched_cached_profile_is_durable_rejection_not_a_success_receipt() -> Tes
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let cache = dir.path().join("http");
             let urls = source_urls(28127170);
@@ -98,7 +100,7 @@ fn mismatched_cached_profile_is_durable_rejection_not_a_success_receipt() -> Tes
                 Vec::new(),
             )?
             .with_offline(true);
-            let ctx = context(&store, &fetcher)?;
+            let ctx = context(&store, &fetcher, &capture)?;
             let report =
                 crate::athleticnet::collect::collect(&ctx, &options(dir.path(), 28127170)?).await?;
             check!(eq; report.errors, 2);
@@ -139,6 +141,7 @@ fn malformed_bio_does_not_certify_a_completed_parse() -> TestResult {
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let cache = dir.path().join("http");
             for url in source_urls(28872883) {
@@ -152,7 +155,7 @@ fn malformed_bio_does_not_certify_a_completed_parse() -> TestResult {
                 Vec::new(),
             )?
             .with_offline(true);
-            let ctx = context(&store, &fetcher)?;
+            let ctx = context(&store, &fetcher, &capture)?;
             let report =
                 crate::athleticnet::collect::collect(&ctx, &options(dir.path(), 28872883)?).await?;
             check!(eq; report.errors, 2);
@@ -176,6 +179,7 @@ fn admitted_empty_history_uses_each_exact_profile_fetch_locator() -> TestResult 
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let cache = dir.path().join("http");
             let mut profile: serde_json::Value = serde_json::from_str(CAPTURE)?;
@@ -194,7 +198,7 @@ fn admitted_empty_history_uses_each_exact_profile_fetch_locator() -> TestResult 
                 Vec::new(),
             )?
             .with_offline(true);
-            let ctx = context(&store, &fetcher)?;
+            let ctx = context(&store, &fetcher, &capture)?;
             let report =
                 crate::athleticnet::collect::collect(&ctx, &options(dir.path(), 28872883)?).await?;
             check!(eq; report.errors, 0);

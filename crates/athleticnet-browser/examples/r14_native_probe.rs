@@ -30,7 +30,6 @@ type ProbeResult<T> = Result<T, ProbeError>;
 const CHROMIUM: &str = "/usr/lib/chromium/chromium";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
 const CHALLENGE_WAIT: Duration = Duration::from_secs(2);
-const NORMAL_BODY: &[u8] = b"wire-smoke-ok";
 const DATA_PATHS: [&str; 3] = ["/ok", "/decoded-over", "/wire-over"];
 
 fn main() -> ProbeResult<()> {

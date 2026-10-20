@@ -58,7 +58,7 @@ fn require_attachment_refusal(exchange: Exchange) -> Result<(), Box<dyn std::err
 async fn explicit_resume_generation_mismatch_refuses_before_submission(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (captured, outcome) = exchange(
-        &["--resume", "7", "--generation", "qualified-v1"],
+        &["--resume", "7", "--generation", "qualified-v2"],
         vec![
             ("200 OK", bound_request(&["WI"])?),
             ("200 OK", bound_history(Some("2026-10-01"))?),
@@ -84,6 +84,8 @@ async fn previously_accepted_profile_mismatch_refuses_before_attachment(
                 &store,
                 "--selected-profile-id",
                 &profile,
+                "--generation",
+                "qualified-v1",
             ],
             vec![
                 ("200 OK", capabilities()?),
@@ -114,6 +116,8 @@ async fn failed_submission_store_mismatch_refuses_before_attachment(
                 &store,
                 "--selected-profile-id",
                 &profile,
+                "--generation",
+                "qualified-v1",
             ],
             vec![
                 ("200 OK", capabilities()?),

@@ -34,12 +34,6 @@ fn assert_historical_selection(policy: u32) -> TestResult {
 }
 
 #[test]
-fn combined_context_policy_eighteen_keeps_numeric_completion_and_raw_status_meaning() -> TestResult
-{
-    assert_historical_selection(18)
-}
-
-#[test]
 fn combined_context_policy_nineteen_keeps_numeric_completion_and_raw_status_meaning() -> TestResult
 {
     assert_historical_selection(19)

@@ -5,10 +5,9 @@ use super::{JoinError, LaneEvidence, LaneSet};
 use crate::school_address::{LaneReport, Report};
 
 pub(super) mod input;
-mod legacy;
 
 use input::EvidenceInput;
-pub use input::{parse_source_pairs, Acquisition, Overrides};
+pub use input::{Acquisition, Overrides};
 
 const PROVIDERS: [&str; 3] = ["nces-ccd", "nces-pss", "state-ed"];
 pub(super) const ASSOCIATION_PREFIX: &str = "association:";
@@ -24,10 +23,8 @@ fn admitted_provider(source: &str) -> bool {
 }
 
 pub fn build_lane_evidence(report: &Report, overrides: &Overrides) -> Result<LaneSet, JoinError> {
-    let by_provider = match &overrides.input {
-        EvidenceInput::Acquisitions(values) => acquisition_evidence(report, values)?,
-        EvidenceInput::LegacySourcePairs(values) => legacy::build(report, values)?,
-    };
+    let EvidenceInput::Acquisitions(values) = &overrides.input;
+    let by_provider = acquisition_evidence(report, values)?;
     Ok(LaneSet::of(by_provider))
 }
 

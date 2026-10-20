@@ -3,7 +3,7 @@ use crate::net::{FetchError, FetchOutcome, Fetcher};
 use crate::ohsaa::collect::write::{emit_school, persist_failure, Projection};
 use crate::ohsaa::collect::Tally;
 use crate::ohsaa::{school_entities, SearchResult};
-use crate::{AdapterContext, AdapterReport};
+use crate::{AdapterContext, AdapterReport, ResultsCaptureContext};
 use census_domain::model::{CanonicalCoach, CoachRole, SchoolYear};
 use census_store::{Store, Table};
 use std::collections::HashMap;
@@ -13,6 +13,7 @@ struct Harness {
     _root: tempfile::TempDir,
     store: Store,
     fetcher: Fetcher,
+    capture: ResultsCaptureContext,
 }
 
 impl Harness {
@@ -27,16 +28,18 @@ impl Harness {
             vec![],
         )?
         .with_offline(true);
+        let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
         Ok(Self {
             _root: root,
             store,
             fetcher,
+            capture,
         })
     }
 
     fn fail(&self, page: &str, failure: PageFailure) -> anyhow::Result<(AdapterReport, Tally)> {
         let ctx = AdapterContext {
-            capture: crate::CaptureContext::LegacyMetadata,
+            capture: crate::CaptureContext::DurableV1(&self.capture),
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

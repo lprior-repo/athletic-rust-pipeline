@@ -120,6 +120,10 @@ impl ExportDataset {
 
     pub(crate) fn verified_participation(&self) -> ReportResult<&VerifiedParticipationView> {
         frozen::ensure_binding(self)?;
+        self.bound_participation_view()
+    }
+
+    pub(crate) fn bound_participation_view(&self) -> ReportResult<&VerifiedParticipationView> {
         let view = self.verified_participation.as_ref().ok_or_else(|| {
             invalid("selected publication requires retained participation verification")
         })?;

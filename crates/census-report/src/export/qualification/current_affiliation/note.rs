@@ -6,6 +6,13 @@ use census_domain::roster_affiliation_authority::{
 use census_store::{StoreError, StoreResult};
 
 pub(super) fn read(evidence: &Evidence) -> StoreResult<Option<RosterMemberObservationV1>> {
+    if evidence
+        .note
+        .as_deref()
+        .is_some_and(RosterMemberObservationV1::is_unrelated_note)
+    {
+        return Ok(None);
+    }
     match RosterMemberObservationV1::read(evidence) {
         Ok(note) => Ok(note),
         Err(RosterAuthorityError::Decode(source)) => Err(StoreError::Decode {

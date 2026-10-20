@@ -41,7 +41,7 @@ pub(super) fn classify(
             Why::UnsupportedScholasticVariant,
         ));
     }
-    if !super::policy::included(semantics).contains(&kind)
+    if !super::policy::INCLUDED.contains(&kind)
         || malformed_number(label)
         || !super::policy::permitted(&contextual, &kind)
     {
@@ -185,22 +185,12 @@ fn missing(label: &ContextualLabel<'_>, kind: &EventKind) -> bool {
             .iter()
             .any(|unit| label.pair(number, unit));
         present
-            && !(label.semantics().supports_flat_extensions()
-                && matches!(*number, "300" | "500" | "600" | "2000" | "10000"))
+            && !matches!(*number, "300" | "500" | "600" | "2000" | "10000")
             && !matches!(
                 (*number, kind),
                 ("300", EventKind::Track300mHurdles) | ("2000", EventKind::Track2000mSteeplechase)
             )
-    }) || label.tokens().any(|word| {
-        word.declaration().is_some_and(|word| {
-            label.semantics() == EventSemantics::Legacy18
-                && member(word, &["10k", "2mile", "2miles", "twomile", "twomiles"])
-        })
-    }) || label.semantics() == EventSemantics::Legacy18
-        && ["2", "two"]
-            .iter()
-            .any(|number| label.pair(number, "mile") || label.pair(number, "miles"))
-        || label.pair("10", "000m")
+    }) || label.pair("10", "000m")
 }
 
 fn malformed_number(label: &str) -> bool {

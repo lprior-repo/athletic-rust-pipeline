@@ -118,6 +118,3 @@ fn key(phase: &str, key: &str) -> StoreResult<(String, String)> {
 
 #[cfg(test)]
 mod tests;
-
-#[cfg(test)]
-pub(crate) mod counting;

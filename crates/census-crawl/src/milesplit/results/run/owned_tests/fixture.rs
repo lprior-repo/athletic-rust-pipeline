@@ -1,18 +1,9 @@
 use super::*;
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
-use census_domain::model::{CanonicalSchool, SourceIdentity, SourceNamespace};
+use census_domain::model::{CanonicalSchool, SchoolYear, SourceIdentity, SourceNamespace};
 use census_domain::UsJurisdiction;
-use census_store::recorded::Recorded;
 
-pub(super) const TROY: &[u8] = include_bytes!("../../../owned/fixtures/troy_725218.json");
-pub(super) const RELAYS: &[u8] =
-    include_bytes!("../../../../../tests/fixtures/milesplit/troy_725218_team_relays.json");
-pub(super) const FEMALE_RAW: &[u8] = include_bytes!(
-    "../../../../../tests/fixtures/milesplit/troy_725218_rs1266814_raw_projection.html"
-);
-pub(super) const MALE_RAW: &[u8] = include_bytes!(
-    "../../../../../tests/fixtures/milesplit/troy_725218_rs1266815_raw_projection.html"
-);
+pub(super) use crate::milesplit::troy_fixture::{FEMALE_RAW, MALE_RAW};
 
 pub(super) fn setup_bare() -> TestResult<(tempfile::TempDir, Store, Fetcher, ResultSetRef)> {
     let dir = tempfile::tempdir()?;
@@ -60,9 +51,10 @@ pub(super) fn school(name: &str, team_id: &str) -> CanonicalSchool {
 pub(super) fn context<'a>(
     store: &'a Store,
     fetcher: &'a Fetcher,
+    capture: &'a crate::ResultsCaptureContext,
 ) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(capture),
         fetcher,
         store,
         refresh: false,
@@ -101,34 +93,4 @@ pub(super) fn seed_owned(fetcher: &Fetcher, reference: &ResultSetRef, body: &[u8
         &crate::milesplit::fetch::owned_meet_url(reference)?,
         body,
     )
-}
-
-pub(super) fn seed_metadata(fetcher: &Fetcher, reference: &ResultSetRef) -> TestResult {
-    let raw = match reference.rsid.as_str() {
-        "1266814" => FEMALE_RAW,
-        "1266815" => MALE_RAW,
-        id => return Err(format!("no authentic Troy metadata fixture for result set {id}").into()),
-    };
-    seed(fetcher, &reference.url, raw)
-}
-
-pub(super) fn options(reference: &ResultSetRef) -> super::super::super::ResultSetOptions {
-    super::super::super::ResultSetOptions {
-        urls: vec![super::super::super::ResultSetRequest {
-            url: reference.url.clone(),
-            jurisdiction: UsJurisdiction::Alabama,
-        }],
-    }
-}
-
-pub(super) fn apply(store: &Store, recording: &Recorded) -> TestResult {
-    let mut batch = store.write_batch();
-    for rows in &recording.rows {
-        batch.record_many(rows.table, &rows.rows)?;
-    }
-    for entry in &recording.journal {
-        batch.journal_done(&entry.phase, &entry.key, &entry.payload)?;
-    }
-    batch.commit()?;
-    Ok(())
 }

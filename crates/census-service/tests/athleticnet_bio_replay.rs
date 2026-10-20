@@ -14,6 +14,8 @@ use serde_json::json;
 
 #[path = "common/capture_cache.rs"]
 mod capture_cache;
+#[path = "common/durable_capture.rs"]
+mod durable_capture;
 
 fn fixture(source: &str, file: &str) -> Result<String> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -57,6 +59,7 @@ struct Harness {
     fetcher: Fetcher,
     store: Store,
     registry: std::path::PathBuf,
+    durable: durable_capture::DurableCapture,
 }
 
 impl Harness {
@@ -92,6 +95,8 @@ impl Harness {
             fetcher,
             store,
             registry,
+            durable: durable_capture::DurableCapture::mint()
+                .map_err(|error| anyhow::anyhow!("minting the durable capture: {error}"))?,
         })
     }
 
@@ -105,8 +110,12 @@ impl Harness {
     }
 
     async fn run(&self, options: &Options) -> Result<census_crawl::AdapterReport> {
+        let owned = self
+            .durable
+            .capture()
+            .map_err(|error| anyhow::anyhow!("minting the durable capture: {error}"))?;
         let ctx = AdapterContext {
-            capture: census_crawl::CaptureContext::LegacyMetadata,
+            capture: census_crawl::CaptureContext::DurableV1(&owned),
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

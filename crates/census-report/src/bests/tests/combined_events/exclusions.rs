@@ -61,13 +61,13 @@ fn combined_exclusions_survive_zero_winners_without_mutating_source_evidence() -
 }
 
 #[test]
-fn combined_exclusions_keep_historical_eighteen_and_nineteen_semantics() -> TestResult {
+fn combined_exclusions_keep_historical_nineteen_semantics() -> TestResult {
     let fixture = TieFixture::new()?;
     let observation = missing_completion(&fixture, "historical-completion")?;
     let directory = tempfile::tempdir()?;
     let store = fixture.store_with_replay(directory.path(), std::slice::from_ref(&observation))?;
     let mut dataset = ExportDataset::load(&store)?;
-    for policy in [18, 19] {
+    for policy in [19] {
         dataset.lineage.policy_revision = policy;
         let outcome = selection_outcome(&dataset)?;
         check!(outcome.combined_exclusions.is_empty());

@@ -217,7 +217,7 @@ fn historical_bests_keep_old_policy_semantics_without_implied_participation_acce
     let directory = tempfile::tempdir()?;
     let store = fixture.store_with_replay(directory.path(), &[slower, faster.clone()])?;
     let mut dataset = ExportDataset::load(&store)?;
-    for policy in [18, 19, 20, 21] {
+    for policy in [19, 20, 21] {
         dataset.lineage.policy_revision = policy;
         let outcome = crate::bests::build_with_exclusions(
             &dataset,
@@ -229,7 +229,7 @@ fn historical_bests_keep_old_policy_semantics_without_implied_participation_acce
         check!(eq; outcome.selections.first().ok_or("historical best")?.source.performance_id, faster.performance.id);
         check!(outcome.participation_exclusions.is_empty());
     }
-    dataset.lineage.policy_revision = 22;
+    dataset.lineage.policy_revision = 23;
     match ParticipationSelection::of(&dataset) {
         Err(crate::report::ReportError::Invariant { detail }) => {
             check!(eq; detail, "selected participation policy requires verified frozen evidence")

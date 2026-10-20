@@ -2,7 +2,7 @@ use super::{capture, fixture_search_dublin, fixture_sports_dublin, AD_FETCHED, S
 use crate::net::cache::{write_cache, CacheMeta};
 use crate::net::Fetcher;
 use crate::ohsaa::{collect, Options, SearchResult, HOST};
-use crate::{AdapterContext, AdapterReport, Recording};
+use crate::{AdapterContext, AdapterReport, Recording, ResultsCaptureContext};
 use census_domain::model::{CanonicalCoach, CanonicalSchool, SchoolYear, SourceObservation};
 use census_store::{Store, Table};
 use std::collections::HashMap;
@@ -22,6 +22,7 @@ struct FixtureRun {
     _root: tempfile::TempDir,
     store: Store,
     fetcher: Fetcher,
+    capture: ResultsCaptureContext,
 }
 
 impl FixtureRun {
@@ -40,10 +41,12 @@ impl FixtureRun {
             vec![],
         )?
         .with_offline(true);
+        let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
         let run = Self {
             _root: root,
             store,
             fetcher,
+            capture,
         };
         run.seed(&search_url(), fixture_search_dublin(), SPORTS_FETCHED)?;
         if let Some(body) = sports {
@@ -87,7 +90,7 @@ impl FixtureRun {
         recording: Option<&'a Recording>,
     ) -> anyhow::Result<AdapterContext<'a>> {
         Ok(AdapterContext {
-            capture: crate::CaptureContext::LegacyMetadata,
+            capture: crate::CaptureContext::DurableV1(&self.capture),
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

@@ -15,11 +15,16 @@ fn legacy() -> Value {
 }
 
 #[test]
-fn missing_publication_contract_preserves_legacy_wire_shape() -> TestResult {
+fn missing_publication_contract_defaults_to_selected_v2_without_inventing_legacy() -> TestResult {
     let original = legacy();
     let request: NationalRequest = serde_json::from_value(original.clone())?;
-    check!(eq; request.publication_contract, PublicationContract::LegacySeparateV1);
-    check!(eq; serde_json::to_value(request)?, original);
+    check!(eq; request.publication_contract, PublicationContract::SelectedPublicationV2);
+    let mut expected = original.clone();
+    expected.as_object_mut().ok_or("request object")?.insert(
+        "publication_contract".into(),
+        json!("selected_publication_v2"),
+    );
+    check!(eq; serde_json::to_value(request)?, expected);
     Ok(())
 }
 

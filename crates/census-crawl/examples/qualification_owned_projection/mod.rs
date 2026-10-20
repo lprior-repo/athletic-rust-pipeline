@@ -44,8 +44,9 @@ pub fn run() -> Result<()> {
     let store_root = args.root.join("store");
     let store = Store::open(&store_root)?;
     preserve::seed(&store, &inputs)?;
+    let capture = census_crawl::net::durable_capture_context(&args.root.join("capture"))?;
     let before = measure::save(&store, &args.root.join("before_collect"))?;
-    let first = runtime.block_on(collect(&store))?;
+    let first = runtime.block_on(collect(&store, &capture))?;
     save_attempt(&args.root.join("first_collect.json"), &first)?;
     store.flush()?;
     let after_first = measure::save(&store, &args.root.join("after_first_collect"))?;
@@ -53,7 +54,7 @@ pub fn run() -> Result<()> {
     drop(store);
     let store = Store::open(&store_root)?;
     let reopened = measure::save(&store, &args.root.join("reopened_before_replay"))?;
-    let second = runtime.block_on(collect(&store))?;
+    let second = runtime.block_on(collect(&store, &capture))?;
     save_attempt(&args.root.join("second_collect.json"), &second)?;
     store.flush()?;
     let after_second = measure::save(&store, &args.root.join("after_second_collect"))?;
@@ -75,12 +76,12 @@ pub fn run() -> Result<()> {
     Ok(())
 }
 
-#[tracing::instrument(skip(store))]
-async fn collect(store: &Store) -> Result<Attempt> {
+#[tracing::instrument(skip(store, capture))]
+async fn collect(store: &Store, capture: &census_crawl::ResultsCaptureContext) -> Result<Attempt> {
     let fetcher = preserve::fetcher(store)?;
     let started = census_crawl::net::now_iso8601();
     let ctx = AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture: census_crawl::CaptureContext::DurableV1(capture),
         fetcher: &fetcher,
         store,
         refresh: false,

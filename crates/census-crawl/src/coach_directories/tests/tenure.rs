@@ -313,6 +313,7 @@ fn the_production_collector_preserves_unknown_season_and_actual_summary_capture_
     use std::time::Duration;
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let root = tempfile::tempdir()?;
+        let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
         let store = Store::open(root.path().join("store"))?;
         let fetcher = Fetcher::new(
             root.path().join("http"), None, Duration::from_millis(1),
@@ -336,7 +337,7 @@ fn the_production_collector_preserves_unknown_season_and_actual_summary_capture_
         }
         let year = SchoolYear::new(2032).ok_or("production run season")?;
         let context = AdapterContext {
-            capture: crate::CaptureContext::LegacyMetadata,
+            capture: crate::CaptureContext::DurableV1(&capture),
             fetcher: &fetcher, store: &store, refresh: false, school_year: year,
             observed_on: "2027-01-01".to_string(), recording: None,
             performance_as_of: chrono::NaiveDate::parse_from_str("2027-01-01", "%Y-%m-%d")?,

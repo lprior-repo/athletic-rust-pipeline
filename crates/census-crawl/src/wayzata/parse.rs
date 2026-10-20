@@ -17,10 +17,7 @@ pub enum ScheduleSport {
 
 impl ScheduleSport {
     fn path(self) -> &'static str {
-        match self {
-            ScheduleSport::Track => "track",
-            ScheduleSport::CrossCountry => "xc",
-        }
+        self.as_str()
     }
 
     pub(super) fn as_str(self) -> &'static str {

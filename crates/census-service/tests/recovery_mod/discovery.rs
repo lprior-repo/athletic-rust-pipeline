@@ -74,6 +74,8 @@ pub(super) async fn spawn_serve(
         .arg(root)
         .arg("--listen")
         .arg(format!("127.0.0.1:{port}"))
+        .arg("--capture-protocol")
+        .arg("fresh-qualification-v3")
         .arg("--drain-timeout")
         .arg(drain_secs.to_string())
         .env("RUST_LOG", "info")

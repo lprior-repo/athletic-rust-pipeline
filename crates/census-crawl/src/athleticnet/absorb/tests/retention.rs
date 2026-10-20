@@ -162,6 +162,7 @@ fn withheld_grade_history_and_rejections_survive_the_same_batch_and_reopen() -> 
             );
             let expected_reviews = accumulated.profile_reviews.clone();
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let root = dir.path().join("store");
             {
                 let store = Store::open(&root)?;
@@ -173,7 +174,7 @@ fn withheld_grade_history_and_rejections_survive_the_same_batch_and_reopen() -> 
                     Vec::new(),
                 )?;
                 let ctx = crate::AdapterContext {
-                    capture: crate::CaptureContext::LegacyMetadata,
+                    capture: crate::CaptureContext::DurableV1(&capture),
                     fetcher: &fetcher,
                     store: &store,
                     refresh: false,

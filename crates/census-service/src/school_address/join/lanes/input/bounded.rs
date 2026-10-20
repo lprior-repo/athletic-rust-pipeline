@@ -1,7 +1,6 @@
-use std::collections::BTreeMap;
 use std::fmt;
 
-use serde::de::{Error, IgnoredAny, MapAccess, SeqAccess, Visitor};
+use serde::de::{Error, IgnoredAny, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 
 use super::{value_error, Acquisition, JoinError, MAX_EVIDENCE_RECORDS, MAX_EVIDENCE_TEXT_BYTES};
@@ -103,54 +102,5 @@ impl<'de> Deserialize<'de> for AcquisitionsField {
         D: Deserializer<'de>,
     {
         deserializer.deserialize_seq(AcquisitionsVisitor)
-    }
-}
-
-pub(super) struct SourcePairsField(pub(super) BTreeMap<String, String>);
-
-struct SourcePairsVisitor;
-
-impl<'de> Visitor<'de> for SourcePairsVisitor {
-    type Value = SourcePairsField;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("an object containing at most 256 unique source selectors")
-    }
-
-    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-    where
-        A: MapAccess<'de>,
-    {
-        let mut values = BTreeMap::new();
-        let mut budget = super::validation::TextBudget::default();
-        for _ in 0..MAX_EVIDENCE_RECORDS {
-            let Some(key) = map.next_key::<BoundedText>()? else {
-                return Ok(SourcePairsField(values));
-            };
-            if values.contains_key(&key.0) {
-                return Err(A::Error::custom(format!(
-                    "duplicate source selector {:?}",
-                    key.0
-                )));
-            }
-            budget.charge(&key.0).map_err(A::Error::custom)?;
-            super::validation::require_selector(&key.0).map_err(A::Error::custom)?;
-            let value = map.next_value::<BoundedText>()?;
-            budget.charge(&value.0).map_err(A::Error::custom)?;
-            values.insert(key.0, value.0);
-        }
-        if map.next_key::<IgnoredAny>()?.is_some() {
-            return Err(A::Error::custom("expected at most 256 source selectors"));
-        }
-        Ok(SourcePairsField(values))
-    }
-}
-
-impl<'de> Deserialize<'de> for SourcePairsField {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_map(SourcePairsVisitor)
     }
 }

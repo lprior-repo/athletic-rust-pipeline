@@ -17,9 +17,6 @@ mod capture;
 mod interpretation;
 mod journal;
 
-#[cfg(test)]
-use capture::record_capture;
-
 pub(crate) fn acquisition_manifest_key(
     meet_id: u64,
     capture: &crate::net::FetchOutcome,

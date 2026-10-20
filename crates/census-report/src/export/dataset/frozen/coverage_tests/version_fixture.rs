@@ -306,7 +306,6 @@ fn check_manifest(manifest: &FrozenManifest, encoded: &[u8], case: VersionCase) 
     match case {
         VersionCase::InventoryHeader
         | VersionCase::ChunkDescriptor
-        | VersionCase::HistoricalPolicyEighteen
         | VersionCase::HistoricalPolicyNineteen
         | VersionCase::Supported => {
             check!(eq; FrozenManifest::decode(encoded)?, *manifest);

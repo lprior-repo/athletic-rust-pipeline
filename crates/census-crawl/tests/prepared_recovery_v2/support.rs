@@ -13,7 +13,7 @@ use std::time::Duration;
 
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 pub const CAPTURED: &str = "2026-10-01T23:44:16Z";
-pub const BODY: &[u8] = include_bytes!("../../src/milesplit/owned/fixtures/troy_725218.json");
+pub use census_crawl::milesplit::troy_fixture::BODY;
 
 pub struct Fixture {
     pub store: Store,

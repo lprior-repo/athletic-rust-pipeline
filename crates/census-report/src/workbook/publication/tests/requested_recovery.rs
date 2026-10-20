@@ -1,4 +1,5 @@
 use super::*;
+use crate::export::ExportJobRequest;
 use census_store::publish::{Digest, Intent, Request, Root, State};
 
 fn expiring_requested(
@@ -78,7 +79,11 @@ fn expired_requested_stage_cannot_replace_unconsumed_integrity_history() -> Test
     let selected = select_other_bundle(&store, &root, temp.path().join("other"), &options)?;
     let selected_bytes = std::fs::read(&selected)?;
     options.limit = Some(1);
-    let dataset = ExportDataset::for_job(&store, "requested-integrity-history")?;
+    let dataset = ExportDataset::for_job_request(
+        &store,
+        "requested-integrity-history",
+        &ExportJobRequest::LegacyV2,
+    )?;
     let request = expiring_requested(&store, &root, &dataset, &options)?;
     let lease = store.get_lease_record(request.request.identity.as_str())?;
     let corrupt = old
@@ -123,7 +128,11 @@ fn requested_stage_without_active_history_rebinds_exactly_once_before_publicatio
     let temp = tempfile::tempdir()?;
     let store = Store::open(temp.path().join("store"))?;
     let options = super::super::fence_tests::options(None)?;
-    let dataset = ExportDataset::for_job(&store, "requested-without-active")?;
+    let dataset = ExportDataset::for_job_request(
+        &store,
+        "requested-without-active",
+        &ExportJobRequest::LegacyV2,
+    )?;
     let root = store.out_dir().join("publication");
     let request = expiring_requested(&store, &root, &dataset, &options)?;
     check!(eq; store.publication_active(&request.request.namespace)?, None);

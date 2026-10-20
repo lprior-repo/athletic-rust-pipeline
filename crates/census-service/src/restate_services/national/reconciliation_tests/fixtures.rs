@@ -1,5 +1,4 @@
 use super::TestResult;
-use crate::restate_services::wire::NationalRequest;
 use census_domain::model::{
     AttestationQualification, CanonicalAthlete, CanonicalSchool, Evidence, Gender, GradYear,
     IdentityAttestation, PublishedGraduation, SourceIdentity, SourceNamespace, SourceRef,
@@ -21,14 +20,6 @@ impl Clock for FixtureClock {
     fn now(&self) -> tokio::time::Instant {
         tokio::time::Instant::now()
     }
-}
-
-pub fn request() -> TestResult<NationalRequest> {
-    Ok(serde_json::from_value(serde_json::json!({
-        "season": 2026, "revision": 1,
-        "history": {"first_calendar_year": 2023, "last_calendar_year": 2026, "as_of": "2026-10-12"},
-        "pass_budget": 0
-    }))?)
 }
 
 pub fn seed(store: &Store) -> TestResult<Vec<CanonicalAthlete>> {

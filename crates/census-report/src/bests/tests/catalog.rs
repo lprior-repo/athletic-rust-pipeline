@@ -304,8 +304,7 @@ fn catalog_readback(dataset: &ExportDataset) -> TestResult {
 #[test]
 fn whole_meet_reused_store_retains_evidence_and_rebuilds_the_same_checked_key_membership(
 ) -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let store = Store::open(directory.path())?;
+    let (directory, store) = census_store::test_fixture::temp_store()?;
     append_catalog_meet(&store)?;
     let dataset = ExportDataset::load(&store)?;
     catalog_readback(&dataset)?;

@@ -29,6 +29,10 @@ fjall = "=3.1.10"
 loom = { version = "0.7", optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
+# The shared `test_fixture::temp_store` helper hands tests an isolated store in a
+# scratch directory, so the helper (and therefore the library) owns a tempfile
+# dependency. `census-service` and `census-report` already carry tempfile the same way.
+tempfile = "3"
 sha2 = "0.10"
 base64 = "0.22"
 thiserror = "2"
@@ -41,7 +45,6 @@ rustix = { version = "=1.1.4", features = ["process"] }
 
 [dev-dependencies]
 loom = "0.7"
-tempfile = "3"
 
 [target.'cfg(unix)'.dev-dependencies]
 rustix = { version = "=1.1.4", features = ["process"] }

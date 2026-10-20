@@ -89,7 +89,7 @@ impl<'s> Stage<'s> {
             &prepared,
             Some(dataset),
         )
-        .and_then(|_| self.switch_pointer(dataset, &desired, &prepared.run_manifest));
+        .and_then(|_| self.switch_pointer(dataset, &manifest, &desired, &prepared.run_manifest));
         drop(namespace);
         tracing::info!(
             critical_section_us = started.elapsed().as_micros(),
@@ -103,6 +103,7 @@ impl<'s> Stage<'s> {
     fn switch_pointer(
         &self,
         dataset: &ExportDataset,
+        staged: &manifest::Manifest,
         desired: &census_store::publish::Digest,
         run_manifest: &Option<census_store::publish::Digest>,
     ) -> ReportResult<PathBuf> {
@@ -112,10 +113,19 @@ impl<'s> Stage<'s> {
             .publication_read(&self.request.request.identity)?
             .ok_or_else(|| invariant("publication request disappeared".into()))?;
         if let State::Published { receipt } = &retained.state {
+            if receipt == desired || self.receipt_matches(staged, receipt)? {
+                return Ok(self
+                    .root
+                    .join("generations")
+                    .join(receipt.as_str())
+                    .join("workbook.xlsx"));
+            }
+            let actual = pointer::read(&self.root)?;
+            self.execute_pointer_switch(dataset, &retained, desired, actual, run_manifest)?;
             return Ok(self
                 .root
                 .join("generations")
-                .join(receipt.as_str())
+                .join(desired.as_str())
                 .join("workbook.xlsx"));
         }
         let actual = pointer::read(&self.root)?;
@@ -137,6 +147,24 @@ impl<'s> Stage<'s> {
             .join("generations")
             .join(desired.as_str())
             .join("workbook.xlsx"))
+    }
+
+    fn receipt_matches(
+        &self,
+        staged: &manifest::Manifest,
+        receipt: &census_store::publish::Digest,
+    ) -> ReportResult<bool> {
+        let retained: manifest::Manifest = match sidecars::read_json(
+            &self
+                .root
+                .join("generations")
+                .join(receipt.as_str())
+                .join("manifest.json"),
+        ) {
+            Ok(manifest) => manifest,
+            Err(_) => return Ok(false),
+        };
+        Ok(retained.reusable_for(staged))
     }
 
     fn confirm_already_switched(

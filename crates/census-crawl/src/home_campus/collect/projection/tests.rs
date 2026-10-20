@@ -35,8 +35,9 @@ fn project_capture(body: &str, section_id: u32, school_id: u64) -> TestResult {
         Vec::new(),
     )?
     .with_offline(true);
+    let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
     let context = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher: &fetcher,
         store: &store,
         refresh: false,

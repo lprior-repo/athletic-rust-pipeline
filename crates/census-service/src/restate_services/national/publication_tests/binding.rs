@@ -60,7 +60,7 @@ pub(super) async fn run(scenario: Scenario, client: &reqwest::Client, url: &str)
     let mut request =
         fixtures::selected_request(&controlled, &[census_domain::UsJurisdiction::Wisconsin])?;
     request.school_address = Some(serde_json::from_value(serde_json::json!({
-        "generation": "original-directory", "urls": {}, "dates": {}
+        "generation": "original-directory", "acquisitions": []
     }))?);
     let mut first = journal::Journal::new(&request)?;
     first.selected_workbook = Some(controlled);

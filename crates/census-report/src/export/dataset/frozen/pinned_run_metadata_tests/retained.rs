@@ -1,4 +1,5 @@
 use super::*;
+use crate::export::ExportJobRequest;
 use census_store::InputRecord;
 
 use super::super::version_snapshot::RetainedEvidence;
@@ -17,11 +18,11 @@ fn job_reuse(
 ) -> TestResult {
     match history {
         BindingHistory::AlreadyBound => {
-            check!(eq; ExportDataset::for_job(store, job)?.lineage, *original);
+            check!(eq; ExportDataset::for_job_request(store, job, &ExportJobRequest::LegacyV2)?.lineage, *original);
         }
         BindingHistory::UnboundThenBound => {
             check!(matches!(
-                ExportDataset::for_job(store, job),
+                ExportDataset::for_job_request(store, job, &ExportJobRequest::LegacyV2),
                 Err(ReportError::Invariant { .. })
             ));
         }
@@ -37,7 +38,7 @@ fn archive_reuse(history: BindingHistory, job: &str) -> TestResult {
     if matches!(history, BindingHistory::AlreadyBound) {
         store.bind_run(&bound)?;
     }
-    let original = ExportDataset::for_job(&store, job)?;
+    let original = ExportDataset::for_job_request(&store, job, &ExportJobRequest::LegacyV2)?;
     let lineage = original.lineage.clone();
     let root = super::super::freeze_v2(&store, job)?;
     let archive = store

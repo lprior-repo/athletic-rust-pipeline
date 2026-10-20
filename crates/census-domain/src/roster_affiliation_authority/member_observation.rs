@@ -35,6 +35,10 @@ pub struct RosterMemberObservationV1 {
 }
 
 impl RosterMemberObservationV1 {
+    pub fn is_unrelated_note(raw: &str) -> bool {
+        serde_json::from_str::<Role<'_>>(raw).is_ok_and(|role| role.role != Some(ROLE))
+    }
+
     pub fn read(evidence: &Evidence) -> Result<Option<Self>> {
         let Some(raw) = &evidence.note else {
             return Ok(None);

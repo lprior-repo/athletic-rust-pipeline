@@ -14,7 +14,7 @@ fn retained_reader_roundtrips_actual_writer_empty_boundary_and_multichunk_bytes(
         let (_dir, store, capture, reference) = fixture(&body)?;
         let before = store.journal_keys(OWNED_CAPTURE_PHASE)?;
         let verified = read_retained_acquisition(&store.snapshot(), &reference, budget()?)?;
-        check!(eq; verified.body(), body.as_slice());
+        check!(eq; verified.body(), body);
         check!(eq; verified.capture().body.as_slice(), body.as_slice());
         check!(eq; verified.capture().bytes, size);
         check!(eq; verified.capture().content_digest, capture.content_digest);
@@ -27,13 +27,13 @@ fn retained_reader_roundtrips_actual_writer_empty_boundary_and_multichunk_bytes(
 
 #[test]
 fn retained_reader_reopens_actual_troy_capture_without_changing_writer_bytes() -> TestResult {
-    let body = include_bytes!("../../fixtures/troy_725218.json");
+    let body = crate::milesplit::troy_fixture::BODY;
     let (dir, store, capture, reference) = fixture(body)?;
     let original = payload(&store, reference.manifest_key())?;
     drop(store);
     let reopened = Store::open(dir.path().join("store"))?;
     let verified = read_retained_acquisition(&reopened.snapshot(), &reference, budget()?)?;
-    check!(eq; verified.body(), body.as_slice());
+    check!(eq; verified.body(), body);
     check!(eq; verified.capture().url, capture.url);
     check!(eq; verified.capture().response_url, None);
     check!(eq; verified.capture().content_type, Some("application/json".into()));
@@ -51,7 +51,7 @@ fn retained_reader_uses_one_pinned_view_when_current_content_changes() -> TestRe
     changed["raw_base64"] = json!(STANDARD.encode(b"corrupt! retained bytes"));
     replace(&store, &key, &changed)?;
     let verified = read_retained_acquisition(&view, &reference, budget()?)?;
-    check!(eq; verified.body(), body.as_slice());
+    check!(eq; verified.body(), body);
     require_corrupt(
         read_retained_acquisition(&store.snapshot(), &reference, budget()?),
         reference.manifest_key(),

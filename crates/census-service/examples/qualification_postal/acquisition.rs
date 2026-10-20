@@ -14,6 +14,9 @@ use std::time::Duration;
 use super::artifacts::{sha256, write_json, write_new, Result};
 use super::{CAPTURED, NAME, ORG};
 
+#[path = "../../tests/common/durable_capture.rs"]
+mod durable_capture;
+
 pub(super) const DIRECTORY: &[u8] = include_bytes!(
     "../../../census-crawl/tests/fixtures/coach_directories/nchsaa_directory_p1.json"
 );
@@ -47,7 +50,9 @@ pub(super) fn run(root: &Path, store: &Store, observed: &str) -> Result<[Value; 
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
-    let report = runtime.block_on(acquire(store, &fetcher, observed))?;
+    let durable = durable_capture::DurableCapture::mint()
+        .map_err(|error| anyhow::anyhow!("minting the durable capture: {error}"))?;
+    let report = runtime.block_on(acquire(store, &fetcher, &durable, observed))?;
     write_json(
         &root.join("acquisition.json"),
         &serde_json::to_value(&report)?,
@@ -110,10 +115,18 @@ fn seed_capture(fetcher: &Fetcher, url: &str, body: &[u8]) -> Result<Value> {
     Ok(metadata)
 }
 
-#[tracing::instrument(skip(store, fetcher))]
-async fn acquire(store: &Store, fetcher: &Fetcher, observed: &str) -> Result<AdapterReport> {
+#[tracing::instrument(skip(store, fetcher, durable))]
+async fn acquire(
+    store: &Store,
+    fetcher: &Fetcher,
+    durable: &durable_capture::DurableCapture,
+    observed: &str,
+) -> Result<AdapterReport> {
+    let owned = durable
+        .capture()
+        .map_err(|error| anyhow::anyhow!("minting the durable capture: {error}"))?;
     let context = AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture: census_crawl::CaptureContext::DurableV1(&owned),
         fetcher,
         store,
         refresh: false,

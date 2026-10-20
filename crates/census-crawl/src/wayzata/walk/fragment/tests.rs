@@ -38,6 +38,7 @@ fn wayzata_frozen_cursor_restores_original_body_without_rereading_mutable_schedu
         .build()?
         .block_on(async {
             let root = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
             let store = Store::open(root.path())?;
             let fetcher = crate::net::Fetcher::new(
                 store.http_cache_dir(),
@@ -59,7 +60,7 @@ fn wayzata_frozen_cursor_restores_original_body_without_rereading_mutable_schedu
             )?;
             let recording = Recording::spooled(store.clone(), "wayzata-frozen/0".into())?;
             let ctx = AdapterContext {
-                capture: crate::CaptureContext::LegacyMetadata,
+                capture: crate::CaptureContext::DurableV1(&capture),
                 fetcher: &fetcher,
                 store: &store,
                 recording: Some(&recording),

@@ -20,7 +20,7 @@ pub(super) fn verify(directory: &Path, reference: &Reference) -> ReportResult<()
     if actual.bytes != reference.bytes || actual.sha256 != reference.digest {
         return Err(corrupt(
             &path,
-            "selected proof differs from its exact length or digest",
+            "the frozen object does not hash to its name",
         ));
     }
     Ok(())

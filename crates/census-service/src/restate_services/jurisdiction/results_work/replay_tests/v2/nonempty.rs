@@ -11,22 +11,12 @@ use sha2::{Digest, Sha256};
 const RESULTS: &str = "https://al.milesplit.com/meets/725218/results";
 const RAW: &str = "https://al.milesplit.com/meets/725218/results/1266814/raw";
 const AT: &str = "2026-10-01T23:44:16Z";
-const BODY: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../census-crawl/src/milesplit/owned/fixtures/troy_725218.json"
-));
-const RAW_BODY: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../census-crawl/tests/fixtures/milesplit/troy_725218_rs1266814_raw_projection.html"
-));
+use census_crawl::milesplit::troy_fixture::{BODY, FEMALE_RAW as RAW_BODY, META};
 
 #[tokio::test(flavor = "current_thread")]
 async fn controlled_al_projection_nonempty_consumption_survives_lost_ack_same_key_replay_after_cold_reopen(
 ) -> TestResult {
-    let provenance: serde_json::Value = serde_json::from_slice(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../census-crawl/src/milesplit/owned/fixtures/troy_725218.meta.json"
-    )))?;
+    let provenance: serde_json::Value = serde_json::from_slice(META)?;
     check!(eq; provenance["fixture_kind"], "selected_source_evidence_projection_not_verbatim_capture");
     check!(eq; provenance["source_fetched_at"], AT);
     check!(provenance["source_digest"] != format!("{:x}", Sha256::digest(BODY)));

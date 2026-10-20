@@ -30,11 +30,6 @@ impl<'a, V: RetainedJournalView> RetainedResultSession<'a, V> {
         self.owned.clear();
     }
 
-    #[cfg(test)]
-    pub(crate) fn resident_captures(&self) -> (usize, usize) {
-        (self.owned.len(), self.metadata.len())
-    }
-
     pub fn read(
         &mut self,
         reference: &ResultSetRef,

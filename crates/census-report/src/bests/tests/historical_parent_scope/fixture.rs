@@ -1,7 +1,11 @@
+use super::super::fixture::{
+    athlete_row, event_row, meet_row, performance_row, school_row, team_row, AthleteParams,
+    EventParams, MeetParams, PerformanceParams, TeamParams,
+};
 use super::*;
 use census_domain::model::{
-    CanonicalCoach, CanonicalTeam, CoachRole, CompetitionLevel, Evidence, PublishedGraduation,
-    SchoolYear, SourceEventLabel, SourceRef,
+    CanonicalCoach, CanonicalTeam, CoachRole, CompetitionLevel, Evidence, SchoolYear,
+    SourceEventLabel, SourceRef,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -164,12 +168,58 @@ pub(super) struct Fixture {
 
 impl Fixture {
     pub(super) fn new(case: Case) -> TestResult<Self> {
-        let current = school(case.current_state(), case.current_name());
-        let historical = school(case.historical_state(), case.historical_name());
-        let athlete = athlete(&current, case)?;
-        let team = team(&historical)?;
+        let (current, _) = school_row(
+            case.current_state(),
+            case.current_name(),
+            census_domain::model::normalize_name(case.current_name()),
+            evidence("wiaa_results"),
+        );
+        let (historical, _) = school_row(
+            case.historical_state(),
+            case.historical_name(),
+            census_domain::model::normalize_name(case.historical_name()),
+            evidence("wiaa_results"),
+        );
+        let athlete = athlete_row(AthleteParams {
+            school: &current.id,
+            name: case.athlete_name(),
+            grad_year: GradYear::CO2027,
+            gender: Gender::Boys,
+            namespace: SourceNamespace::MilesplitAthlete,
+            owner: case.owner(),
+            roster_source: "wiaa_results",
+            roster_url: Some("https://example.test/roster/2027".to_owned()),
+            profile_url: Some(PROFILE_URL),
+            sport: Sport::OutdoorTrack,
+            evidence: evidence("wiaa_results"),
+        })?;
+        let year = SchoolYear::new(2024).ok_or("invalid synthetic historical team year")?;
+        let team = team_row(TeamParams {
+            school: &historical.id,
+            sport: Sport::OutdoorTrack,
+            gender: Gender::Boys,
+            year,
+            evidence: evidence("wiaa_results"),
+        });
         let (meet, event) = competition(case)?;
-        let performance = performance(&athlete, &team, &meet, &event, case)?;
+        let performance = performance_row(
+            &athlete,
+            &team,
+            &meet,
+            &event,
+            PerformanceParams {
+                id_seed: &["historical-parent-scope", case.owner()],
+                date: RESULT_DATE,
+                mark: Mark::TimeSeconds(ExactSeconds::parse("48.55")?),
+                wind_mps: None,
+                place: Some(1),
+                heat: Some("2"),
+                round: Some("Final"),
+                timing: Some(TimingMethod::Fat),
+                source_key: format!("wiaa_results:{}:400m:final", case.owner()),
+                evidence: evidence("wiaa_results"),
+            },
+        );
         let coach = CanonicalCoach::new(
             &historical.id,
             "Historical outside-scope coach",
@@ -210,122 +260,41 @@ impl Fixture {
 }
 
 fn evidence(source: &str) -> Evidence {
-    Evidence::parsed(
-        SourceRef::new(source, Some(RESULT_URL.into())),
-        "2026-10-13",
-    )
-}
-
-fn school(state: UsJurisdiction, name: &str) -> CanonicalSchool {
-    let (mut row, _) = CanonicalSchool::new(
-        state,
-        name,
-        census_domain::model::normalize_name(name),
-        None,
-    );
-    row.evidence = vec![evidence("wiaa_results")];
-    row
-}
-
-fn athlete(school: &CanonicalSchool, case: Case) -> TestResult<CanonicalAthlete> {
-    let mut row = CanonicalAthlete::new(
-        &school.id,
-        case.athlete_name(),
-        GradYear::CO2027,
-        Gender::Boys,
-        SourceIdentity::new(SourceNamespace::MilesplitAthlete, case.owner()),
-    )?;
-    row.published_graduations = vec![PublishedGraduation {
-        grad_year: GradYear::CO2027,
-        source: SourceRef::new(
-            "wiaa_results",
-            Some("https://example.test/roster/2027".into()),
-        ),
-    }];
-    row.public_profile_urls = vec![PROFILE_URL.into()];
-    row.evidence = vec![evidence("wiaa_results")];
-    row.sports = vec![Sport::OutdoorTrack];
-    Ok(row)
-}
-
-fn team(school: &CanonicalSchool) -> TestResult<CanonicalTeam> {
-    let year = SchoolYear::new(2024).ok_or("invalid synthetic historical team year")?;
-    Ok(CanonicalTeam {
-        id: CanonicalTeam::mint(&school.id, Sport::OutdoorTrack, Gender::Boys, year),
-        school: school.id.clone(),
-        sport: Sport::OutdoorTrack,
-        gender: Gender::Boys,
-        school_year: year,
-        level: None,
-        source_identities: Vec::new(),
-        evidence: vec![evidence("wiaa_results")],
-        retained_conflicts: Vec::new(),
-    })
+    super::super::fixture::evidence(source, Some(RESULT_URL.into()), "2026-10-13")
 }
 
 fn competition(case: Case) -> TestResult<(CanonicalMeet, CanonicalEvent)> {
-    let mut meet = CanonicalMeet::new_checked(
-        Some(case.venue_state()),
-        case.meet_name(),
-        RESULT_DATE,
-        CompetitionLevel::Invitational,
-    )?;
-    meet.id = Id::mint("meet", &["historical-parent-scope", case.owner()]);
-    meet.sports = vec![Sport::OutdoorTrack];
-    meet.evidence = vec![evidence(if case == Case::NonCoreMeet {
-        "athleticlive_results"
-    } else {
-        "wiaa_results"
-    })];
+    let meet = meet_row(MeetParams {
+        state: Some(case.venue_state()),
+        name: case.meet_name(),
+        date: RESULT_DATE,
+        level: CompetitionLevel::Invitational,
+        sport: Sport::OutdoorTrack,
+        evidence: evidence(if case == Case::NonCoreMeet {
+            "athleticlive_results"
+        } else {
+            "wiaa_results"
+        }),
+        id_seed: Some(&["historical-parent-scope", case.owner()]),
+    })?;
     let owner = if case == Case::NonCoreEvent {
         "athleticlive_results"
     } else {
         "wiaa_results"
     };
-    let mut event = CanonicalEvent::new(
-        EventIdentity {
-            meet: &meet.id,
+    let event = event_row(
+        &meet,
+        EventParams {
             kind: EventKind::Track400m,
             gender: Gender::Boys,
-            division: None,
-            round: None,
+            specification: EventSpecification::default(),
+            owned: false,
+            labels: vec![SourceEventLabel {
+                source: SourceRef::new(owner, Some(RESULT_URL.into())),
+                label: "400m".into(),
+            }],
+            evidence: vec![evidence(owner)],
         },
-        EventSpecification::default(),
     )?;
-    event.source_labels = vec![SourceEventLabel {
-        source: SourceRef::new(owner, Some(RESULT_URL.into())),
-        label: "400m".into(),
-    }];
-    event.evidence = vec![evidence(owner)];
     Ok((meet, event))
-}
-
-fn performance(
-    athlete: &CanonicalAthlete,
-    team: &CanonicalTeam,
-    meet: &CanonicalMeet,
-    event: &CanonicalEvent,
-    case: Case,
-) -> TestResult<CanonicalPerformance> {
-    Ok(CanonicalPerformance {
-        id: Id::mint("perf", &["historical-parent-scope", case.owner()]),
-        athlete: athlete.id.clone(),
-        team: team.id.clone(),
-        event: event.id.clone(),
-        meet: meet.id.clone(),
-        date: RESULT_DATE.into(),
-        mark: Mark::TimeSeconds(ExactSeconds::parse("48.55")?),
-        wind_mps: None,
-        adjustment: None,
-        place: Some(1),
-        heat: Some("2".into()),
-        round: Some("Final".into()),
-        timing: Some(TimingMethod::Fat),
-        observed_grade: None,
-        evidence: vec![evidence("wiaa_results")],
-        source_key: format!("wiaa_results:{}:400m:final", case.owner()),
-        source_athlete: athlete.source.clone(),
-        retained_conflicts: Vec::new(),
-        combined_completion: None,
-    })
 }

@@ -1,7 +1,8 @@
+use super::{
+    value_error, Acquisition, EvidenceInput, JoinError, MAX_EVIDENCE_RECORDS,
+    MAX_EVIDENCE_TEXT_BYTES,
+};
 use std::collections::BTreeSet;
-
-use super::MAX_EVIDENCE_TEXT_BYTES;
-use super::{value_error, Acquisition, EvidenceInput, JoinError, MAX_EVIDENCE_RECORDS};
 
 #[derive(Default)]
 pub(super) struct TextBudget {
@@ -35,18 +36,6 @@ pub(super) fn require_count(kind: &'static str, count: usize) -> Result<(), Join
     Ok(())
 }
 
-pub(super) fn require_selector(source: &str) -> Result<(), JoinError> {
-    match source.split_once('@') {
-        Some((provider, path)) if path.is_empty() || provider.is_empty() => Err(value_error(
-            "selector",
-            source,
-            "capture selector requires provider and path",
-        )),
-        Some((provider, _)) => require_provider(provider),
-        None => require_provider(source),
-    }
-}
-
 fn require_provider(provider: &str) -> Result<(), JoinError> {
     if !provider.contains('@') && super::super::admitted_provider(provider) {
         return Ok(());
@@ -71,10 +60,6 @@ pub(super) fn validate_input(input: &EvidenceInput) -> Result<(), JoinError> {
     let mut budget = TextBudget::default();
     match input {
         EvidenceInput::Acquisitions(values) => validate_acquisitions(values, &mut budget),
-        EvidenceInput::LegacySourcePairs(values) => {
-            validate_pairs("url", &values.urls, &mut budget)?;
-            validate_pairs("date", &values.dates, &mut budget)
-        }
     }
 }
 
@@ -101,25 +86,6 @@ fn charge_acquisition(budget: &mut TextBudget, value: &Acquisition) -> Result<()
     budget.charge(&value.url)?;
     if let Some(date) = &value.retrieved_at {
         budget.charge(date)?;
-    }
-    Ok(())
-}
-
-fn validate_pairs(
-    kind: &'static str,
-    values: &std::collections::BTreeMap<String, String>,
-    budget: &mut TextBudget,
-) -> Result<(), JoinError> {
-    require_count(kind, values.len())?;
-    for (source, value) in values {
-        budget.charge(source)?;
-        budget.charge(value)?;
-        require_selector(source)?;
-        match kind {
-            "url" => validate_url(source, value)?,
-            "date" => validate_date(source, value)?,
-            _ => return Err(value_error("kind", kind, "unsupported evidence value kind")),
-        }
     }
     Ok(())
 }

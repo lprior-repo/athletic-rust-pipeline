@@ -133,7 +133,12 @@ fn explicit_live_without_cutoff_retains_ingress_and_gather_validation() -> TestR
         let directory = tempfile::tempdir()?;
         let output = run(
             directory.path(),
-            &["--ingress", "not-an-ingress-origin"],
+            &[
+                "--generation",
+                "qualified-v1",
+                "--ingress",
+                "not-an-ingress-origin",
+            ],
             gather,
         )?;
         check!(eq; output.status.code(), Some(1));

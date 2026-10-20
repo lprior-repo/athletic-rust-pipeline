@@ -39,6 +39,7 @@ fn check_capture_boundaries(partial: bool, followup: bool) -> TestResult {
         .build()?
         .block_on(async {
             let directory = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&directory.path().join("capture"))?;
             let store = Store::open(directory.path().join("store"))?;
             let cache = directory.path().join("http");
             seed_meet(&cache, 701, MEET_CAPTURED_AT, RESULTS_CAPTURED_AT, partial)?;
@@ -52,7 +53,7 @@ fn check_capture_boundaries(partial: bool, followup: bool) -> TestResult {
             let fetcher = Fetcher::new(&cache, None, std::time::Duration::from_millis(1),
                 HashMap::new(), Vec::new())?.with_offline(true);
             let ctx = crate::AdapterContext {
-                capture: crate::CaptureContext::LegacyMetadata,
+                capture: crate::CaptureContext::DurableV1(&capture),
                 fetcher: &fetcher, store: &store, refresh: false,
                 school_year: SchoolYear::new(2030).ok_or("decision school year")?,
                 observed_on: "2030-09-30".into(),

@@ -15,6 +15,7 @@ pub use retained_view::{
     FrozenRetainedJournal, RecordingRetainedJournal, RetainedJournalBundle, RetainedJournalView,
 };
 mod roster;
+pub mod troy_fixture;
 mod wire;
 
 pub use fetch::{

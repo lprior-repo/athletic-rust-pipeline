@@ -15,7 +15,6 @@ fn long_flat_aliases_preserve_exact_kinds_and_retained_event_bytes() -> TestResu
     ] {
         for label in labels {
             check!(eq; EventKind::from_source_label(label), kind.clone());
-            check!(eq; EventKind::from_source_label_with_policy(label, EventSemantics::Legacy18), unmapped(label));
             for canonical in [kind.clone(), unmapped(label)] {
                 let event = owned(canonical, &[label])?;
                 let before = serialized_bytes(&event)?;
@@ -85,7 +84,7 @@ fn long_flat_recognition_preserves_xc_and_steeple_identities() -> TestResult {
         ),
     ] {
         let event = owned(kind.clone(), &[label])?;
-        for semantics in [EventSemantics::Legacy18, EventSemantics::FlatEvents19] {
+        for semantics in [EventSemantics::FlatEvents19] {
             check!(eq; RecruitingCatalogV1::with_policy(semantics).classify(&event, sport)?, EventDisposition::Included(kind.clone()));
         }
     }
@@ -167,51 +166,23 @@ fn long_flat_context_cannot_supply_missing_or_contradictory_race_identity() -> T
 }
 
 #[test]
-fn long_flat_aliases_keep_exact_indoor_dimensions_under_both_policies() -> TestResult {
-    for (suffix, length, banking, legacy_short_reason) in [
-        (
-            "(200m banked)",
-            200_000_000,
-            TrackBanking::Banked,
-            EventResolutionReason::UnknownOrMixedSourceLabels,
-        ),
-        (
-            "(300m banked)",
-            300_000_000,
-            TrackBanking::Banked,
-            EventResolutionReason::UnsupportedScholasticVariant,
-        ),
-        (
-            "(200m flat)",
-            200_000_000,
-            TrackBanking::Flat,
-            EventResolutionReason::UnknownOrMixedSourceLabels,
-        ),
+fn long_flat_aliases_keep_exact_indoor_dimensions() -> TestResult {
+    for (suffix, length, banking) in [
+        ("(200m banked)", 200_000_000, TrackBanking::Banked),
+        ("(300m banked)", 300_000_000, TrackBanking::Banked),
+        ("(200m flat)", 200_000_000, TrackBanking::Flat),
     ] {
         let expected = IndoorTrackSpecification::new(length, banking)?;
-        for (alias, kind, legacy_reason) in [
-            (
-                "2000m",
-                EventKind::Track2000m,
-                EventResolutionReason::UnsupportedScholasticVariant,
-            ),
-            ("2k", EventKind::Track2000m, legacy_short_reason),
-            ("2 K", EventKind::Track2000m, legacy_short_reason),
-            (
-                "10000m",
-                EventKind::Track10000m,
-                EventResolutionReason::UnsupportedScholasticVariant,
-            ),
-            (
-                "10k",
-                EventKind::Track10000m,
-                EventResolutionReason::UnsupportedScholasticVariant,
-            ),
-            ("10 K", EventKind::Track10000m, legacy_short_reason),
+        for (alias, kind) in [
+            ("2000m", EventKind::Track2000m),
+            ("2k", EventKind::Track2000m),
+            ("2 K", EventKind::Track2000m),
+            ("10000m", EventKind::Track10000m),
+            ("10k", EventKind::Track10000m),
+            ("10 K", EventKind::Track10000m),
         ] {
             let label = format!("Boys {alias} {suffix}");
             check!(eq; EventKind::from_source_label_with_policy(&label, EventSemantics::FlatEvents19), kind.clone());
-            check!(eq; EventKind::from_source_label_with_policy(&label, EventSemantics::Legacy18), unmapped(&label));
             for canonical in [kind.clone(), unmapped(&label)] {
                 let event = owned(canonical, &[&label])?;
                 let before = serialized_bytes(&event)?;
@@ -221,7 +192,6 @@ fn long_flat_aliases_keep_exact_indoor_dimensions_under_both_policies() -> TestR
                     category: Some(CompetitionCategory::Boys),
                     ..EventSpecification::default()
                 });
-                check!(eq; RecruitingCatalogV1::with_policy(EventSemantics::Legacy18).classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(legacy_reason));
                 check!(eq; serialized_bytes(&event)?, before);
             }
         }
@@ -231,11 +201,6 @@ fn long_flat_aliases_keep_exact_indoor_dimensions_under_both_policies() -> TestR
 
 #[test]
 fn short_flat_alias_gate_never_admits_arbitrary_tokens_or_discards_modifiers() -> TestResult {
-    for label in ["1k (200m banked)", "3k (200m banked)", "5k (200m banked)"] {
-        check!(eq; EventKind::from_source_label_with_policy(label, EventSemantics::Legacy18), unmapped(label));
-        let event = owned(unmapped(label), &[label])?;
-        check!(eq; RecruitingCatalogV1::with_policy(EventSemantics::Legacy18).classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::UnknownOrMixedSourceLabels));
-    }
     for label in [
         "zz (200m banked)",
         "2m (200m banked)",
@@ -243,7 +208,7 @@ fn short_flat_alias_gate_never_admits_arbitrary_tokens_or_discards_modifiers() -
         "2k mystery (200m banked)",
     ] {
         let event = owned(unmapped(label), &[label])?;
-        for semantics in [EventSemantics::Legacy18, EventSemantics::FlatEvents19] {
+        for semantics in [EventSemantics::FlatEvents19] {
             check!(eq; RecruitingCatalogV1::with_policy(semantics).classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::UnknownOrMixedSourceLabels));
         }
     }

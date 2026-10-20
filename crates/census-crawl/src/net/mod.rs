@@ -26,6 +26,8 @@ pub use acquisition::{
 };
 pub use capture_error::CaptureTransportError;
 mod destination_guard;
+mod durable_capture;
+pub use durable_capture::durable_capture_context;
 mod execute;
 mod latency;
 mod origin_locks;

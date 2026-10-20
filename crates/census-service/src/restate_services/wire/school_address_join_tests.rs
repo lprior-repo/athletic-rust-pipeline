@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::error::Error;
 
 use super::SchoolAddressJoinRequest;
@@ -41,19 +40,14 @@ fn rejects_with(raw: &str, detail: &str) -> TestResult {
 }
 
 #[test]
-fn source_maps_preserve_flat_shape_and_exact_serialization_order() -> TestResult {
-    roundtrips_as(
+fn legacy_source_maps_are_refused_as_unknown_evidence() -> TestResult {
+    for raw in [
         r#"{"expected_digest":"digest-7","dates":{"nces-ccd":"2026-10-12"},"urls":{"nces-ccd":"https://nces.ed.gov/ccd"},"generation":"generation-7"}"#,
-        r#"{"generation":"generation-7","urls":{"nces-ccd":"https://nces.ed.gov/ccd"},"dates":{"nces-ccd":"2026-10-12"},"expected_digest":"digest-7"}"#,
-    )
-}
-
-#[test]
-fn source_maps_serialize_selectors_in_deterministic_sorted_order() -> TestResult {
-    roundtrips_as(
         r#"{"dates":{"nces-pss":"2026-10-11","nces-ccd":"2026-10-12"},"urls":{"nces-pss":"https://nces.ed.gov/pss","nces-ccd":"https://nces.ed.gov/ccd"}}"#,
-        r#"{"generation":null,"urls":{"nces-ccd":"https://nces.ed.gov/ccd","nces-pss":"https://nces.ed.gov/pss"},"dates":{"nces-ccd":"2026-10-12","nces-pss":"2026-10-11"}}"#,
-    )
+    ] {
+        rejects_with(raw, "unknown field")?;
+    }
+    Ok(())
 }
 
 #[test]
@@ -61,25 +55,6 @@ fn acquisition_vectors_preserve_flat_shape_and_exact_serialization_order() -> Te
     roundtrips_as(
         r#"{"expected_digest":"digest-7","acquisitions":[{"url":"https://nces.ed.gov/ccd","path":"ccd.csv","provider":"nces-ccd","entry":7,"retrieved_at":"2026-10-12"}],"generation":"generation-7"}"#,
         r#"{"generation":"generation-7","acquisitions":[{"entry":7,"provider":"nces-ccd","path":"ccd.csv","url":"https://nces.ed.gov/ccd","retrieved_at":"2026-10-12"}],"expected_digest":"digest-7"}"#,
-    )
-}
-
-#[test]
-fn source_pair_constructor_serializes_old_wire_shape() -> TestResult {
-    let request = SchoolAddressJoinRequest {
-        generation: Some("generation-7".to_string()),
-        overrides: Overrides::from_source_pairs(
-            BTreeMap::from([(
-                "nces-ccd".to_string(),
-                "https://nces.ed.gov/ccd".to_string(),
-            )]),
-            BTreeMap::from([("nces-ccd".to_string(), "2026-10-12".to_string())]),
-        )?,
-        expected_digest: None,
-    };
-    encodes_as(
-        &request,
-        r#"{"generation":"generation-7","urls":{"nces-ccd":"https://nces.ed.gov/ccd"},"dates":{"nces-ccd":"2026-10-12"}}"#,
     )
 }
 
@@ -112,13 +87,13 @@ fn missing_evidence_defaults_to_empty_acquisition_shape() -> TestResult {
 }
 
 #[test]
-fn empty_source_map_presence_retains_source_pair_shape() -> TestResult {
+fn empty_legacy_source_maps_are_refused() -> TestResult {
     for raw in [
         r#"{"urls":{}}"#,
         r#"{"dates":{}}"#,
         r#"{"dates":{},"urls":{}}"#,
     ] {
-        roundtrips_as(raw, r#"{"generation":null,"urls":{},"dates":{}}"#)?;
+        rejects_with(raw, "unknown field")?;
     }
     Ok(())
 }
@@ -128,10 +103,6 @@ fn optional_null_fields_are_allowed_and_absent_digest_is_omitted() -> TestResult
     roundtrips_as(
         r#"{"expected_digest":null,"generation":null,"acquisitions":[]}"#,
         r#"{"generation":null,"acquisitions":[]}"#,
-    )?;
-    roundtrips_as(
-        r#"{"expected_digest":null,"generation":null,"urls":{},"dates":{}}"#,
-        r#"{"generation":null,"urls":{},"dates":{}}"#,
     )
 }
 
@@ -156,18 +127,14 @@ fn duplicate_optional_fields_are_rejected_even_when_first_value_is_null() -> Tes
 
 #[test]
 fn duplicate_evidence_fields_are_rejected_including_empty_values() -> TestResult {
-    for raw in [
-        r#"{"urls":{},"urls":{}}"#,
-        r#"{"dates":{},"dates":{}}"#,
-        r#"{"acquisitions":[],"acquisitions":[]}"#,
-    ] {
+    for raw in [r#"{"acquisitions":[],"acquisitions":[]}"#] {
         rejects_data(raw)?;
     }
     Ok(())
 }
 
 #[test]
-fn mixed_evidence_shapes_are_rejected_including_empty_values_and_either_order() -> TestResult {
+fn legacy_evidence_shapes_are_rejected_including_empty_values_and_either_order() -> TestResult {
     for raw in [
         r#"{"urls":{},"acquisitions":[]}"#,
         r#"{"acquisitions":[],"urls":{}}"#,
@@ -175,7 +142,7 @@ fn mixed_evidence_shapes_are_rejected_including_empty_values_and_either_order() 
         r#"{"acquisitions":[],"dates":{}}"#,
         r#"{"generation":null,"urls":{},"dates":{},"acquisitions":[],"expected_digest":null}"#,
     ] {
-        rejects_data(raw)?;
+        rejects_with(raw, "unknown field")?;
     }
     Ok(())
 }
@@ -185,13 +152,12 @@ fn explicit_null_evidence_is_rejected_instead_of_becoming_empty() -> TestResult 
     for raw in [
         r#"{"urls":null}"#,
         r#"{"dates":null}"#,
-        r#"{"acquisitions":null}"#,
         r#"{"urls":{},"dates":null}"#,
         r#"{"dates":{},"urls":null}"#,
     ] {
-        rejects_data(raw)?;
+        rejects_with(raw, "unknown field")?;
     }
-    Ok(())
+    rejects_data(r#"{"acquisitions":null}"#)
 }
 
 #[test]
@@ -199,8 +165,6 @@ fn wrong_evidence_and_optional_field_types_are_rejected() -> TestResult {
     for raw in [
         r#"{"generation":7}"#,
         r#"{"expected_digest":false}"#,
-        r#"{"urls":[]}"#,
-        r#"{"dates":[]}"#,
         r#"{"acquisitions":{}}"#,
         r#"{"urls":{"nces-ccd":null}}"#,
         r#"{"dates":{"nces-ccd":7}}"#,
@@ -223,12 +187,12 @@ fn unknown_top_level_fields_and_nested_overrides_are_rejected() -> TestResult {
 }
 
 #[test]
-fn sixth_key_is_refused_without_reading_its_value() -> TestResult {
+fn fourth_key_is_refused_without_reading_its_value() -> TestResult {
     for raw in [
-        r#"{"generation":null,"urls":{},"dates":{},"acquisitions":[],"expected_digest":null,"generation":null}"#,
-        r#"{"generation":null,"urls":{},"dates":{},"acquisitions":[],"expected_digest":null,"generation":["#,
+        r#"{"generation":null,"acquisitions":[],"expected_digest":null,"generation":null}"#,
+        r#"{"generation":null,"acquisitions":[],"expected_digest":null,"generation":["#,
     ] {
-        rejects_with(raw, "accepts at most five fields")?;
+        rejects_with(raw, "accepts at most three fields")?;
     }
     Ok(())
 }
@@ -242,25 +206,15 @@ fn non_object_requests_are_rejected() -> TestResult {
 }
 
 #[test]
-fn national_request_preserves_nested_old_address_shape() -> TestResult {
-    let request: NationalRequest = serde_json::from_str(
-        r#"{"season":2026,"revision":1,"history":{"first_calendar_year":2023,"last_calendar_year":2026,"as_of":"2026-10-12"},"school_address":{"generation":"generation-7","urls":{"nces-ccd":"https://nces.ed.gov/ccd"},"dates":{"nces-ccd":"2026-10-12"},"expected_digest":"digest-7"}}"#,
-    )?;
-    let Some(address) = request.school_address.as_ref() else {
-        return Err("national request lost its school address request".into());
+fn national_request_refuses_nested_old_address_shape() -> TestResult {
+    let raw = r#"{"season":2026,"revision":1,"history":{"first_calendar_year":2023,"last_calendar_year":2026,"as_of":"2026-10-12"},"school_address":{"generation":"generation-7","urls":{"nces-ccd":"https://nces.ed.gov/ccd"},"dates":{"nces-ccd":"2026-10-12"},"expected_digest":"digest-7"}}"#;
+    let error = match serde_json::from_str::<NationalRequest>(raw) {
+        Ok(_) => return Err("national request accepted legacy school address evidence".into()),
+        Err(error) => error,
     };
-    encodes_as(
-        address,
-        r#"{"generation":"generation-7","urls":{"nces-ccd":"https://nces.ed.gov/ccd"},"dates":{"nces-ccd":"2026-10-12"},"expected_digest":"digest-7"}"#,
-    )?;
-    let restored: NationalRequest = serde_json::from_slice(&serde_json::to_vec(&request)?)?;
-    let Some(address) = restored.school_address.as_ref() else {
-        return Err("national roundtrip lost its school address request".into());
-    };
-    encodes_as(
-        address,
-        r#"{"generation":"generation-7","urls":{"nces-ccd":"https://nces.ed.gov/ccd"},"dates":{"nces-ccd":"2026-10-12"},"expected_digest":"digest-7"}"#,
-    )
+    check!(eq; error.classify(), serde_json::error::Category::Data);
+    check!(error.to_string().contains("unknown field"));
+    Ok(())
 }
 
 #[test]
@@ -285,7 +239,6 @@ fn shared_evidence_validation_is_applied_before_wire_request_acceptance() -> Tes
     for raw in [
         r#"{"urls":{"nces-ccd":"file:///ccd.csv"}}"#,
         r#"{"dates":{"nces-ccd":"2026-02-30"}}"#,
-        r#"{"urls":{"nces-ccd":"https://nces.ed.gov/first","nces-ccd":"https://nces.ed.gov/second"}}"#,
         r#"{"acquisitions":[{"entry":7,"provider":"nces-ccd","path":"ccd.csv","url":"file:///ccd.csv"}]}"#,
         r#"{"acquisitions":[{"entry":7,"provider":"nces-ccd","path":"ccd.csv","url":"https://nces.ed.gov/ccd","retrieved_at":"2026-02-30"}]}"#,
         r#"{"acquisitions":[{"entry":7,"provider":"nces-ccd","path":"first.csv","url":"https://nces.ed.gov/first"},{"entry":7,"provider":"nces-ccd","path":"second.csv","url":"https://nces.ed.gov/second"}]}"#,

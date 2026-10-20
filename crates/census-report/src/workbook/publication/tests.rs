@@ -4,6 +4,7 @@ mod requested_recovery;
 mod stage_rebind;
 
 use super::*;
+use crate::export::ExportJobRequest;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalSchool, CensusRun, CoachContactClaim,
     CoachContactProgram, CoachRole, CoachTenure, CoachTenureEvidence, Evidence, Gender, GradYear,
@@ -250,17 +251,27 @@ fn an_export_job_keeps_its_input_and_changed_evidence_requires_a_new_export() ->
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path().join("store"))?;
     seed(&store, "First School")?;
-    let first = ExportDataset::for_job(&store, "export:first-input")?;
+    let first =
+        ExportDataset::for_job_request(&store, "export:first-input", &ExportJobRequest::LegacyV2)?;
     store.journal_done("unrelated-work", "attempt", &true)?;
-    let replay = ExportDataset::for_job(&store, "export:first-input")?;
+    let replay =
+        ExportDataset::for_job_request(&store, "export:first-input", &ExportJobRequest::LegacyV2)?;
     check!(eq; first.lineage, replay.lineage);
     seed(&store, "Later School")?;
-    let error = match ExportDataset::for_job(&store, "export:first-input") {
+    let error = match ExportDataset::for_job_request(
+        &store,
+        "export:first-input",
+        &ExportJobRequest::LegacyV2,
+    ) {
         Err(error) => error,
         Ok(_) => return Err("stale export job accepted".into()),
     };
     check!(error.to_string().contains("stale or foreign"));
-    let next = ExportDataset::for_job(&store, "export:changed-input")?;
+    let next = ExportDataset::for_job_request(
+        &store,
+        "export:changed-input",
+        &ExportJobRequest::LegacyV2,
+    )?;
     check!(ne; next.lineage.input_generation,
     first.lineage.input_generation);
     check!(eq; first.schools.len(), 1);

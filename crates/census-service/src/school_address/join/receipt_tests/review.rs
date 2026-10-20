@@ -137,21 +137,23 @@ fn website_fixture(
     for suffix in 0..64 {
         let expected_website = format!("https://east.example/high/{suffix}");
         let index = DirectoryIndex::build(&[
-            entry_with_website(
+            nces_entry_with_website(
                 "470000000010",
                 "East High School",
                 "Riverside",
                 UsJurisdiction::Tennessee,
                 "1 East Rd",
                 &expected_website,
+                (9, 12),
             )?,
-            entry_with_website(
+            nces_entry_with_website(
                 "470000000011",
                 "West High School",
                 "Riverside",
                 UsJurisdiction::Tennessee,
                 "2 West Rd",
                 "https://west.example/high",
+                (9, 12),
             )?,
         ]);
         let snapshot = store.snapshot();

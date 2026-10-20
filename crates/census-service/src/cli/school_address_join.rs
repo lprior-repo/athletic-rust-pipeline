@@ -27,18 +27,6 @@ pub(super) struct SchoolAddressJoinArgs {
         help = "Report directory; defaults to <store>/out/school-address-join"
     )]
     pub(super) out: Option<PathBuf>,
-    #[arg(
-        long = "evidence-url",
-        value_name = "SOURCE=URL",
-        help = "Capture URL override for a lane source (`nces-ccd`/`nces-pss`) or one capture of it (`state-ed@<capture path>`), repeatable; needs --evidence-date for the same source"
-    )]
-    pub(super) evidence_urls: Vec<String>,
-    #[arg(
-        long = "evidence-date",
-        value_name = "SOURCE=YYYY-MM-DD",
-        help = "Observation date override paired with --evidence-url"
-    )]
-    pub(super) evidence_dates: Vec<String>,
 }
 
 fn print_join_report(report: &census_service::school_address::JoinReport) {
@@ -79,7 +67,7 @@ pub(super) fn run(cli: &Cli, args: &SchoolAddressJoinArgs) -> Result<()> {
         .as_deref()
         .context("school-address-join requires an explicit --store and a stopped store owner")?;
     let store = Store::open(root).context("opening the school-address store")?;
-    let overrides = Overrides::from_cli_pairs(&args.evidence_urls, &args.evidence_dates)?;
+    let overrides = Overrides::default();
     let mode = if args.apply {
         Mode::Apply
     } else {

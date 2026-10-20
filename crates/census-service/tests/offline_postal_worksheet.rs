@@ -4,6 +4,8 @@ mod fallible_checks;
 
 #[path = "common/capture_cache.rs"]
 mod capture_cache;
+#[path = "common/durable_capture.rs"]
+mod durable_capture;
 
 #[path = "offline_postal_worksheet/fixtures.rs"]
 mod fixtures;

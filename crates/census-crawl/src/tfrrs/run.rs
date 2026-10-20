@@ -71,8 +71,6 @@ impl<'a> Run<'a> {
                 body_sha256: crate::net::cache::content_digest(&page.body),
             }),
             Err(error) => {
-                self.absorb.stats.fetches_failed =
-                    self.absorb.stats.fetches_failed.saturating_add(1);
                 self.failures.push(format!("{url}: {error}"));
                 None
             }

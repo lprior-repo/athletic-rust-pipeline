@@ -17,9 +17,10 @@ mod dates;
 fn context<'a>(
     store: &'a Store,
     fetcher: &'a crate::net::Fetcher,
+    capture: &'a crate::ResultsCaptureContext,
 ) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher,
         store,
         refresh: false,
@@ -99,13 +100,14 @@ fn v3_completion_does_not_suppress_current_xc_interpretation_and_unchanged_row_e
 ) -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let dir = tempfile::tempdir()?;
+        let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
         let store = Store::open(dir.path().join("store"))?;
         let fetcher = crate::net::Fetcher::new(dir.path().join("http"), None,
             std::time::Duration::ZERO, HashMap::new(), Vec::new())?.with_offline(true);
         let body = LIST.replace("60 Meters", "XC 5K");
         seed(&fetcher, body.as_bytes())?;
         let bindings = schools(&store, &body)?;
-        let ctx = context(&store, &fetcher)?;
+        let ctx = context(&store, &fetcher, &capture)?;
         let old_context = digest(&(HISTORICAL_PHASE, ctx.performance_as_of,
             ctx.school_year, &bindings))?;
         let old_key = key(&old_context, URL, &content_digest(body.as_bytes()))?;
@@ -137,7 +139,7 @@ fn v3_completion_does_not_suppress_current_xc_interpretation_and_unchanged_row_e
         let physical = store.walk_table(Table::Performances)?;
         drop(store);
         let store = Store::open(dir.path().join("store"))?;
-        let repeated = collect(&context(&store, &fetcher)?).await?;
+        let repeated = collect(&context(&store, &fetcher, &capture)?).await?;
         check!(eq; repeated.errors, 0);
         check!(eq; repeated.requests, 0);
         check!(eq; store.walk_table(Table::Performances)?, physical);

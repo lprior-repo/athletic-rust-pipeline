@@ -1,6 +1,5 @@
 use super::super::*;
 use super::common::{equal, TestResult};
-use census_domain::model::EventSemantics;
 use sha2::{Digest, Sha256};
 
 const ORACLES: [(ContractRoleV1, &[u8], &str); 9] = [
@@ -12,7 +11,7 @@ const ORACLES: [(ContractRoleV1, &[u8], &str); 9] = [
     (
         ContractRoleV1::Event,
         include_bytes!("fixtures/event.canonical.json"),
-        "95746745f36a7bc3354695d8ae8998ebe3710fe941c7ca39084c321af62d7b42",
+        "1b01926bf4c8458590e593ff88117496c4f68ae66c68fc84e9511e577c02a96f",
     ),
     (
         ContractRoleV1::Identity,
@@ -90,14 +89,14 @@ fn each_role_has_a_distinct_exact_reference() -> TestResult {
 
 #[test]
 fn event_descriptor_binds_the_exact_corrected_catalog_policy_bytes() -> TestResult {
-    let catalog = RecruitingCatalogV1::with_policy(EventSemantics::Legacy18);
+    let catalog = RecruitingCatalogV1::new();
     let expected = include_bytes!("fixtures/catalog-policy.canonical.json");
     let mut actual = Vec::new();
     catalog.write_policy(&mut actual)?;
     equal(actual.as_slice(), expected.as_slice())?;
     equal(
         catalog.digest()?.as_str(),
-        "6f301c435cfe971548c4ede977c780b66b5456591bf70fe08711398b5bc1c1d5",
+        "4c055b621de316c2be8c6c6adab59848e9716e58bc11f511bd47e4fd008f07ae",
     )?;
     let descriptor = serde_json::to_value(profile_contract_descriptor_v1(ContractRoleV1::Event)?)?;
     let nested = descriptor

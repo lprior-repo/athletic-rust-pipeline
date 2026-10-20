@@ -14,6 +14,7 @@ fn synthetic_v4_ambiguous_day_completion_cannot_certify_v5_and_retains_historica
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let fetcher = crate::net::Fetcher::new(
                 dir.path().join("http"),
@@ -25,7 +26,7 @@ fn synthetic_v4_ambiguous_day_completion_cannot_certify_v5_and_retains_historica
             .with_offline(true);
             seed(&fetcher, LIST.as_bytes())?;
             let bindings = schools(&store, LIST)?;
-            let ctx = context(&store, &fetcher)?;
+            let ctx = context(&store, &fetcher, &capture)?;
             let ambiguous = LIST.replace("Mar 28, 2026", "Mar 28-29, 2026");
             check!(ne; ambiguous, LIST);
             let (old_key, old_receipt) = synthetic_v4_date_projection(&ctx, &bindings, ambiguous.as_bytes()).await?;
@@ -58,7 +59,7 @@ fn synthetic_v4_ambiguous_day_completion_cannot_certify_v5_and_retains_historica
             check!(eq; std::fs::read(&archive)?, ambiguous.as_bytes());
             drop(store);
             let store = Store::open(dir.path().join("store"))?;
-            let repeated = collect(&context(&store, &fetcher)?).await?;
+            let repeated = collect(&context(&store, &fetcher, &capture)?).await?;
             check!(eq; repeated.disposition, crate::CollectionDisposition::Partial);
             check!(eq; (repeated.errors, repeated.rows, repeated.requests, repeated.from_cache), (1, 16, 0, 1));
             check!(eq; repeated.unfinished, vec![URL.to_string()]);
@@ -96,7 +97,8 @@ fn synthetic_v4_single_day_completion_is_reinterpreted_as_v5_without_duplicate_p
             .with_offline(true);
             seed(&fetcher, LIST.as_bytes())?;
             let bindings = schools(&store, LIST)?;
-            let ctx = context(&store, &fetcher)?;
+            let durable = crate::net::durable_capture_context(&dir.path().join("capture"))?;
+            let ctx = context(&store, &fetcher, &durable)?;
             let (old_key, old_receipt) =
                 synthetic_v4_date_projection(&ctx, &bindings, LIST.as_bytes()).await?;
             let capture = capture_bytes(&fetcher, LIST.as_bytes())?;
@@ -123,7 +125,7 @@ fn synthetic_v4_single_day_completion_is_reinterpreted_as_v5_without_duplicate_p
             check!(eq; store.receipt(&old_receipt.operation)?, Some(old_receipt.clone()));
             drop(store);
             let store = Store::open(dir.path().join("store"))?;
-            let repeated = collect(&context(&store, &fetcher)?).await?;
+            let repeated = collect(&context(&store, &fetcher, &durable)?).await?;
             check!(eq; (repeated.errors, repeated.requests), (0, 0));
             check!(eq; (repeated.rows, repeated.from_cache), (20, 1));
             check!(eq; repeated.disposition, crate::CollectionDisposition::Complete);
@@ -147,6 +149,7 @@ fn ambiguous_date_replay_retains_captures_history_and_unfinished_url() -> TestRe
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let fetcher = crate::net::Fetcher::new(
                 dir.path().join("http"),
@@ -158,7 +161,7 @@ fn ambiguous_date_replay_retains_captures_history_and_unfinished_url() -> TestRe
             .with_offline(true);
             seed(&fetcher, LIST.as_bytes())?;
             schools(&store, LIST)?;
-            let ctx = context(&store, &fetcher)?;
+            let ctx = context(&store, &fetcher, &capture)?;
             let initial = collect(&ctx).await?;
             check!(eq; (initial.errors, initial.rows, initial.requests), (0, 20, 0));
             let historical: Vec<census_domain::model::CanonicalPerformance> =
@@ -186,7 +189,7 @@ fn ambiguous_date_replay_retains_captures_history_and_unfinished_url() -> TestRe
             let captures = [capture_bytes(&fetcher, LIST.as_bytes())?, capture_bytes(&fetcher, ambiguous.as_bytes())?];
             drop(store);
             let store = Store::open(dir.path().join("store"))?;
-            let repeated = collect(&context(&store, &fetcher)?).await?;
+            let repeated = collect(&context(&store, &fetcher, &capture)?).await?;
             check!(eq; repeated.disposition, crate::CollectionDisposition::Partial);
             check!(eq; (repeated.errors, repeated.rows, repeated.requests, repeated.from_cache), (1, 16, 0, 1));
             check!(eq; repeated.unfinished, vec![URL.to_string()]);
@@ -225,7 +228,8 @@ fn date_cell_refusal_survives_reopen(label: &str) -> TestResult {
             let body = LIST.replace("Mar 28, 2026", label);
             seed(&fetcher, body.as_bytes())?;
             schools(&store, &body)?;
-            let report = collect(&context(&store, &fetcher)?).await?;
+            let durable = crate::net::durable_capture_context(&dir.path().join("capture"))?;
+            let report = collect(&context(&store, &fetcher, &durable)?).await?;
             check!(eq; report.disposition, crate::CollectionDisposition::Partial);
             check!(eq; (report.errors, report.rows, report.requests, report.from_cache), (1, 16, 0, 1));
             check!(eq; report.unfinished, vec![URL.to_string()]);
@@ -237,7 +241,7 @@ fn date_cell_refusal_survives_reopen(label: &str) -> TestResult {
             let capture = capture_bytes(&fetcher, body.as_bytes())?;
             drop(store);
             let store = Store::open(dir.path().join("store"))?;
-            let repeated = collect(&context(&store, &fetcher)?).await?;
+            let repeated = collect(&context(&store, &fetcher, &durable)?).await?;
             check!(eq; repeated.disposition, crate::CollectionDisposition::Partial);
             check!(eq; (repeated.errors, repeated.rows, repeated.requests, repeated.from_cache), (1, 16, 0, 1));
             check!(eq; repeated.unfinished, vec![URL.to_string()]);

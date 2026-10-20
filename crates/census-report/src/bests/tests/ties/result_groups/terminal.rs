@@ -44,7 +44,7 @@ fn ordinary_terminal_policy_change_does_not_reinterpret_historical_public_input(
     terminal.mark = Mark::Raw("DNF".into());
     dataset.performances.push(terminal);
     check!(rows(&mut dataset, 21)?.is_empty());
-    for policy in [18, 19, 20] {
+    for policy in [19, 20] {
         check!(eq; single(&mut dataset, policy)?.source.performance_id, first.performance.id);
     }
     Ok(())

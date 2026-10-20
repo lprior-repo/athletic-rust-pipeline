@@ -16,7 +16,6 @@ pub(super) fn record_event(
     )?;
     let id = event.id.clone();
     reserve_events(writer, &id)?;
-    writer.stats.events = writer.stats.events.saturating_add(1);
     let stored = writer
         .accumulator
         .events

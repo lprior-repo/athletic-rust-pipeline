@@ -28,9 +28,10 @@ fn physical_csv_capture_admits_published_past_and_retains_future_debt(
         fetched_at: "2026-09-18T13:42:19Z".to_string(),
         ..CacheMeta::default()
     };
+    let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
     let options = Options::for_input(input.to_string_lossy(), metadata.clone());
     let ctx = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -85,8 +86,9 @@ fn csv_capture_refuses_declared_body_over_32_mib() -> Result<(), Box<dyn std::er
         fetched_at: "2026-09-18T13:42:19Z".to_string(),
         ..CacheMeta::default()
     };
+    let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
     let ctx = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -138,8 +140,9 @@ fn csv_capture_refuses_physical_body_over_32_mib() -> Result<(), Box<dyn std::er
         fetched_at: "2026-09-18T13:42:19Z".to_string(),
         ..CacheMeta::default()
     };
+    let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
     let ctx = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher: &fetcher,
         store: &store,
         refresh: false,

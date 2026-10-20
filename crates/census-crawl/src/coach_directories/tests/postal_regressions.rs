@@ -8,7 +8,7 @@ mod pagination;
 use super::super::{collect, directory_page_url, summary_url, Options};
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::{FetchOptions, Fetcher};
-use crate::AdapterContext;
+use crate::{AdapterContext, ResultsCaptureContext};
 use census_domain::model::{CanonicalCoach, CanonicalSchool, SchoolYear, SourceNamespace};
 use census_domain::school_directory::SourceLabel;
 use census_domain::UsJurisdiction;
@@ -33,6 +33,7 @@ struct FixtureRun {
     _directory: tempfile::TempDir,
     store: Store,
     fetcher: Fetcher,
+    capture: ResultsCaptureContext,
 }
 
 impl FixtureRun {
@@ -49,16 +50,18 @@ impl FixtureRun {
         .with_offline(true);
         seed(&fetcher, &directory_page_url("NCHSAA", 1), directory)?;
         seed(&fetcher, &summary_url("ZCUM49"), summary)?;
+        let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
         Ok(Self {
             _directory: root,
             store,
             fetcher,
+            capture,
         })
     }
 
     async fn collect(&self) -> Result<crate::AdapterReport, Box<dyn std::error::Error>> {
         let context = AdapterContext {
-            capture: crate::CaptureContext::LegacyMetadata,
+            capture: crate::CaptureContext::DurableV1(&self.capture),
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

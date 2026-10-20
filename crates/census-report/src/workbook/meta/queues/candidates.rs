@@ -1,10 +1,9 @@
 use crate::export::public_identity::population::{IdentityAdmission, IdentityPopulation};
 use crate::export::ExportDataset;
 use crate::report::ReportResult;
-use census_domain::public_identity_history::PublicResolution;
 
 use super::super::Family;
-use super::queue_row;
+use super::{queue_row, resolution_state};
 
 pub(super) fn withheld(dataset: &ExportDataset) -> ReportResult<Family> {
     let population = IdentityPopulation::of(dataset)?;
@@ -24,18 +23,4 @@ pub(super) fn withheld(dataset: &ExportDataset) -> ReportResult<Family> {
         ));
     }
     Ok(family)
-}
-
-fn resolution_state(resolution: Option<&PublicResolution>) -> &'static str {
-    match resolution {
-        Some(PublicResolution::Unknown) => "unknown",
-        Some(PublicResolution::Unresolved) => "unresolved",
-        Some(PublicResolution::Ambiguous { .. }) => "ambiguous",
-        Some(
-            PublicResolution::Canonical(_)
-            | PublicResolution::Redirect { .. }
-            | PublicResolution::RevokedRedirect { .. },
-        ) => "group_withheld",
-        None => "absent",
-    }
 }

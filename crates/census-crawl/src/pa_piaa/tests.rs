@@ -174,6 +174,7 @@ fn options() -> Options {
 async fn collect_from_cache(
     cache: &std::path::Path,
     store_dir: &std::path::Path,
+    capture: &crate::ResultsCaptureContext,
 ) -> TestResult<(AdapterReport, census_store::Store)> {
     let store = census_store::Store::open(store_dir)?;
     let fetcher = crate::net::Fetcher::new(
@@ -184,7 +185,7 @@ async fn collect_from_cache(
         Vec::new(),
     )?;
     let ctx = crate::AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(capture),
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -207,12 +208,14 @@ fn collect_stores_the_letter_schools_and_the_requested_details_page_from_the_cac
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let cache = dir.path().join("http");
             seed_cache(&cache, &list_url('A'), DIRECTORY_A)?;
             seed_cache(&cache, &list_url('B'), DIRECTORY_B)?;
             seed_cache(&cache, &details_url("12048"), DETAILS_12048)?;
 
-            let (report, store) = collect_from_cache(&cache, &dir.path().join("store")).await?;
+            let (report, store) =
+                collect_from_cache(&cache, &dir.path().join("store"), &capture).await?;
 
             check!(eq; report.rows, 154, "53 schools on A plus 101 on B");
             check!(eq; report.errors, 0);
@@ -258,15 +261,16 @@ fn unchanged_capture_under_larger_horizon_retains_fact_counts_and_owed_targets()
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let cache = dir.path().join("http");
             seed_cache(&cache, &list_url('A'), DIRECTORY_A)?;
             seed_cache(&cache, &list_url('B'), DIRECTORY_B)?;
             seed_cache(&cache, &details_url("12048"), DETAILS_12048)?;
             let store_dir = dir.path().join("store");
-            let (first, store) = collect_from_cache(&cache, &store_dir).await?;
+            let (first, store) = collect_from_cache(&cache, &store_dir, &capture).await?;
             check!(eq; first.rows, 154);
             drop(store);
-            let (second, store) = collect_from_cache(&cache, &store_dir).await?;
+            let (second, store) = collect_from_cache(&cache, &store_dir, &capture).await?;
             check!(eq; second.rows, 0);
             check!(eq; second.requests, 0);
             check!(eq; store.scan::<CanonicalCoach>(census_store::Table::Coaches)?.len(), 1);
@@ -279,7 +283,7 @@ fn unchanged_capture_under_larger_horizon_retains_fact_counts_and_owed_targets()
             )?
             .with_offline(true);
             let context = crate::AdapterContext {
-                capture: crate::CaptureContext::LegacyMetadata,
+                capture: crate::CaptureContext::DurableV1(&capture),
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,

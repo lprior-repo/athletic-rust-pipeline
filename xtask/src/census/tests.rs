@@ -64,18 +64,17 @@ fn both_entries_key_one_workbook_generation() -> TestResult {
         "the xtask entry keys the selected generation exactly like the CLI-live entry"
     );
 
-    let legacy_options = export_options(None);
-    let legacy_request = service::workbook_request(&legacy_options)?;
-    let legacy_generation = ExportGeneration::resolve(legacy_options.generation.as_deref())?;
-    let legacy_key = workbook_request_key(&legacy_request, &legacy_generation)?;
+    let repeated = service::workbook_request(&export_options(Some("2")))?;
     check!(eq;
-        legacy_key,
-        "workbook:2027:core:50:all:.:2026:1",
-        "an omitted flag reuses the legacy generation 1 keys on every entry"
+        workbook_request_key(&repeated, &generation)?,
+        key,
+        "the same explicit generation reattaches the same workflow"
     );
-    check!(ne;
-        key, legacy_key,
-        "a selected generation must not reattach the legacy workflow"
+
+    let omitted = export_options(None);
+    check!(
+        ExportGeneration::resolve(omitted.generation.as_deref()).is_err(),
+        "an omitted generation is refused instead of reusing legacy generation 1 keys"
     );
     Ok(())
 }

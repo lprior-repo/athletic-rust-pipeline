@@ -87,6 +87,7 @@ fn cached_meet_keeps_capture_instants_and_published_school_year_on_later_replay(
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let cache = dir.path().join("http");
             let [meet_url, results_url] = meet_requests(634313);
@@ -108,7 +109,7 @@ fn cached_meet_keeps_capture_instants_and_published_school_year_on_later_replay(
             )?
             .with_offline(true);
             let mut ctx = crate::AdapterContext {
-                capture: crate::CaptureContext::LegacyMetadata,
+                capture: crate::CaptureContext::DurableV1(&capture),
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,
@@ -147,6 +148,7 @@ fn old_meet_completion_is_retained_while_the_current_parser_interprets_cached_xc
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let cache = dir.path().join("http");
             let [meet_url, results_url] = meet_requests(634313);
@@ -175,7 +177,7 @@ fn old_meet_completion_is_retained_while_the_current_parser_interprets_cached_xc
             let fetcher = Fetcher::new(&cache, None, std::time::Duration::from_millis(1),
                 HashMap::new(), Vec::new())?.with_offline(true);
             let ctx = crate::AdapterContext {
-                capture: crate::CaptureContext::LegacyMetadata,
+                capture: crate::CaptureContext::DurableV1(&capture),
                 fetcher:&fetcher, store:&store, refresh:false,
                 school_year:SchoolYear::new(2026).ok_or("controlled school year")?,
                 observed_on:"2026-09-30".into(),

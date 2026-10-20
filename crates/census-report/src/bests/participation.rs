@@ -76,7 +76,7 @@ impl<'a> ParticipationSelection<'a> {
                     detail: "selected participation requires current comparison semantics".into(),
                 });
             }
-            return Ok(Self::Selected(dataset.verified_participation()?));
+            return Ok(Self::Selected(dataset.bound_participation_view()?));
         }
         match dataset.lineage.policy_revision {
             18..=22 => Ok(Self::Historical),

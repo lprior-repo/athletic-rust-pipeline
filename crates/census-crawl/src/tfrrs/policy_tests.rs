@@ -28,9 +28,13 @@ fn fetcher(root: &std::path::Path) -> TestResult<Fetcher> {
     .with_origin_locks(locks))
 }
 
-fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
+fn context<'a>(
+    store: &'a Store,
+    fetcher: &'a Fetcher,
+    capture: &'a crate::ResultsCaptureContext,
+) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: CaptureContext::LegacyMetadata,
+        capture: CaptureContext::DurableV1(&capture),
         fetcher,
         store,
         refresh: false,
@@ -93,9 +97,13 @@ fn receipts(store: &Store) -> TestResult<BTreeMap<String, serde_json::Value>> {
         .collect()
 }
 
-async fn replay(store: &Store, fetcher: &Fetcher) -> TestResult<AdapterReport> {
+async fn replay(
+    store: &Store,
+    fetcher: &Fetcher,
+    capture: &crate::ResultsCaptureContext,
+) -> TestResult<AdapterReport> {
     Ok(collect(
-        &context(store, fetcher)?,
+        &context(store, fetcher, capture)?,
         &Options {
             urls: vec![URL.into()],
             ..Options::default()
@@ -107,10 +115,11 @@ async fn replay(store: &Store, fetcher: &Fetcher) -> TestResult<AdapterReport> {
 #[tokio::test]
 async fn online_collector_refuses_empty_and_cached_inputs_before_any_work() -> TestResult {
     let root = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
     let store = Store::open(root.path().join("store"))?;
     let fetcher = fetcher(root.path())?;
     seed(&fetcher)?;
-    let ctx = context(&store, &fetcher)?;
+    let ctx = context(&store, &fetcher, &capture)?;
     for urls in [Vec::new(), vec![URL.into()]] {
         let result = collect(
             &ctx,
@@ -152,9 +161,10 @@ async fn explicit_offline_replay_preserves_capture_dates_rows_and_completion_on_
     let root = tempfile::tempdir()?;
     let store = Store::open(root.path().join("store"))?;
     let fetcher = fetcher(root.path())?.with_offline(true);
+    let durable = crate::net::durable_capture_context(&root.path().join("capture"))?;
     let capture = seed(&fetcher)?;
     schools(&store)?;
-    let report = replay(&store, &fetcher).await?;
+    let report = replay(&store, &fetcher, &durable).await?;
     check!(eq; report.disposition, CollectionDisposition::Complete);
     check!(eq; (report.errors, report.rows, report.requests, report.from_cache), (0, 20, 0, 1));
     let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
@@ -179,7 +189,7 @@ async fn explicit_offline_replay_preserves_capture_dates_rows_and_completion_on_
     check!(eq; current.len(), 1);
     drop(store);
     let store = Store::open(root.path().join("store"))?;
-    let repeated = replay(&store, &fetcher).await?;
+    let repeated = replay(&store, &fetcher, &durable).await?;
     check!(eq; repeated.disposition, CollectionDisposition::Complete);
     check!(eq; (repeated.errors, repeated.requests, repeated.from_cache), (0, 0, 1));
     check!(eq; store.scan::<CanonicalPerformance>(Table::Performances)?, performances);

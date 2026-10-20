@@ -1,0 +1,155 @@
+{
+  "files": [
+    {
+      "bytes": 1358398,
+      "path": "fjall/0.jnl",
+      "sha256": "53c0966c78f5a7bfdfbb76e7e34f143fe85dbe232d69090d5b431d553007c279"
+    },
+    {
+      "bytes": 25,
+      "path": "fjall/keyspaces/0/current",
+      "sha256": "2883fea7c2c18243c158ae0113d1c709c8375631d0521fca6789f1f9ec0c3b88"
+    },
+    {
+      "bytes": 4302,
+      "path": "fjall/keyspaces/0/tables/3",
+      "sha256": "0f818f10869e218bfa8e2b65c140df2e4b99e315b8fa29a9755a289d037a3075"
+    },
+    {
+      "bytes": 2197,
+      "path": "fjall/keyspaces/0/tables/4",
+      "sha256": "76d19c594704cd138434a9689660b4164d6599f4512d08d0e1b6c67515b9b2c4"
+    },
+    {
+      "bytes": 382,
+      "path": "fjall/keyspaces/0/v6",
+      "sha256": "10a9b2a82f2740bc267e4e7553bd885f48380fa0ba5dbc13d9be007be7fa3713"
+    },
+    {
+      "bytes": 25,
+      "path": "fjall/keyspaces/1/current",
+      "sha256": "37e94e040006918c0d96db6d522d6fa674dd40174ea245d9a1784c5aa1eb942f"
+    },
+    {
+      "bytes": 308,
+      "path": "fjall/keyspaces/1/v0",
+      "sha256": "09aba18e1a21fd2c18d909755b5e803a2075c793cba10bcc4963ddcc0f51ca5c"
+    },
+    {
+      "bytes": 25,
+      "path": "fjall/keyspaces/2/current",
+      "sha256": "37e94e040006918c0d96db6d522d6fa674dd40174ea245d9a1784c5aa1eb942f"
+    },
+    {
+      "bytes": 308,
+      "path": "fjall/keyspaces/2/v0",
+      "sha256": "09aba18e1a21fd2c18d909755b5e803a2075c793cba10bcc4963ddcc0f51ca5c"
+    },
+    {
+      "bytes": 25,
+      "path": "fjall/keyspaces/3/current",
+      "sha256": "37e94e040006918c0d96db6d522d6fa674dd40174ea245d9a1784c5aa1eb942f"
+    },
+    {
+      "bytes": 308,
+      "path": "fjall/keyspaces/3/v0",
+      "sha256": "09aba18e1a21fd2c18d909755b5e803a2075c793cba10bcc4963ddcc0f51ca5c"
+    },
+    {
+      "bytes": 25,
+      "path": "fjall/keyspaces/4/current",
+      "sha256": "37e94e040006918c0d96db6d522d6fa674dd40174ea245d9a1784c5aa1eb942f"
+    },
+    {
+      "bytes": 308,
+      "path": "fjall/keyspaces/4/v0",
+      "sha256": "09aba18e1a21fd2c18d909755b5e803a2075c793cba10bcc4963ddcc0f51ca5c"
+    },
+    {
+      "bytes": 0,
+      "path": "fjall/lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 4,
+      "path": "fjall/version",
+      "sha256": "6e2a8f0836a0c290f398c66faa9ccbb310bbd22f99f922c5b6be907e35ac7927"
+    }
+  ],
+  "inventory": {
+    "attachment_physical_bytes": 2600093,
+    "attachment_physical_rows": 6,
+    "attachment_roots": 2,
+    "original_roots": [
+      {
+        "chunk_rows": 0,
+        "logical_roots": 1,
+        "physical_encoded_bytes": 892942,
+        "physical_rows": 1,
+        "root": {
+          "key": "4859e01fafbd9315a346da3bfd77955c9badfa60bbdfbca3900385f9491ad50d",
+          "payload": {
+            "bytes": 892739,
+            "digest": "d2799ed46734795ffe72c693b8e868b1841dd74834ae2cb1e1026d840a15572c"
+          },
+          "schema": "provider_school_packet_v1"
+        }
+      },
+      {
+        "chunk_rows": 0,
+        "logical_roots": 1,
+        "physical_encoded_bytes": 751764,
+        "physical_rows": 1,
+        "root": {
+          "key": "810c75d4516ca3b30b6d115048929373a5ff8ae05cec164a1f9af8362b98d164",
+          "payload": {
+            "bytes": 751561,
+            "digest": "ea458ed93dad27320ba35f9b05e17dd1d7e5da7fb3d1dc1139294f02db778137"
+          },
+          "schema": "provider_target_packet_v1"
+        }
+      },
+      {
+        "chunk_rows": 0,
+        "logical_roots": 1,
+        "physical_encoded_bytes": 775568,
+        "physical_rows": 1,
+        "root": {
+          "key": "4cc6becee445e75cedce8fdd2227040d872e728eb21d5ca1a655d7cfecda973e",
+          "payload": {
+            "bytes": 775354,
+            "digest": "27507684bccef9dc6bbf6ae9bf384a60142def8dfc67f6b611b858cc4e3ba6a8"
+          },
+          "schema": "participation_packet_v1"
+        }
+      },
+      {
+        "chunk_rows": 0,
+        "logical_roots": 1,
+        "physical_encoded_bytes": 183782,
+        "physical_rows": 1,
+        "root": {
+          "key": "7ef02b7384579b007b0d48ba38617007bd5abf9bfc0830ff39ea4027e6c6bdad",
+          "payload": {
+            "bytes": 183573,
+            "digest": "ae3d60ce1c650a2c216db77ac25ef2549474432cf4ac594178750f8a893466f1"
+          },
+          "schema": "html_result_capture_v1"
+        }
+      }
+    ],
+    "receipt_count": 6
+  },
+  "producer_commit": "046bcf4edde6307849ed4d1256827f85d3778a03",
+  "producer_tree": "cbaf02cf06a2770698d31b733a55b7d88f67c882",
+  "provenance": {
+    "note": "Verbatim bytes of the kept producer store; regenerate by running the producer test with CENSUS_DOCUMENTARY_HANDOFF_DIR set and copying the kept store plus handoff fields.",
+    "produced_at_commit": "046bcf4edde6307849ed4d1256827f85d3778a03",
+    "produced_at_tree": "cbaf02cf06a2770698d31b733a55b7d88f67c882",
+    "produced_by": "census-crawl genuine_attachment_complete_inventory_applies_a_then_b_and_reopens_or_reports_exact_blocker"
+  },
+  "schema": "genuine-documentary-report-handoff/v1",
+  "snapshot_sequence": 50,
+  "store_identity": "d26d98324406f220dfef39244bd0b7aa1589f5d9bf8d2f2e1f7dc9bb6201e36a",
+  "tables_digest": "f2007cbfe5d4577020c25b4c6c5c48d65faea79f1b46ab2e75ae5db91eee29e5"
+}

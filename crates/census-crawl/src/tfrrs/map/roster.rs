@@ -121,8 +121,6 @@ impl<'a> Absorb<'a> {
             return Ok(());
         };
         let Some(grade) = athlete.year.and_then(YearToken::grade) else {
-            self.stats.roster_rows_without_year =
-                self.stats.roster_rows_without_year.saturating_add(1);
             return Ok(());
         };
         let Some((grad_year, observation, source)) = self.admit_roster_athlete(

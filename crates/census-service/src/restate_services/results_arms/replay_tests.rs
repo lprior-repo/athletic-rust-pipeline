@@ -8,12 +8,8 @@ use census_domain::model::{
 use census_store::Table;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
-const OWNED: &[u8] =
-    include_bytes!("../../../../census-crawl/src/milesplit/owned/fixtures/troy_725218.json");
-const RAW: &[u8] = include_bytes!(
-    "../../../../census-crawl/tests/fixtures/milesplit/troy_725218_rs1266814_raw_projection.html"
-);
 use crate::capture_cache as cache;
+use census_crawl::milesplit::troy_fixture::{BODY as OWNED, FEMALE_RAW as RAW};
 
 fn school(name: &str, owner: &str) -> CanonicalSchool {
     let mut school = CanonicalSchool::new(

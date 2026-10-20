@@ -2,7 +2,7 @@ use super::super::{change, files, population::Population, read, value, TestResul
 use census_domain::model::{EventSemantics, RecruitingCatalogV1};
 use std::path::Path;
 
-const HISTORICAL: [EventSemantics; 2] = [EventSemantics::Legacy18, EventSemantics::FlatEvents19];
+const HISTORICAL: [EventSemantics; 1] = [EventSemantics::FlatEvents19];
 
 fn population(policy: EventSemantics) -> TestResult<Population> {
     let mut given = Population::new()?;
@@ -35,8 +35,7 @@ fn bytes(directory: &Path) -> TestResult<Vec<Vec<u8>>> {
 }
 
 #[test]
-fn historical_catalog_readback_accepts_exact_policy18_and19_digests_without_rewriting() -> TestResult
-{
+fn historical_catalog_readback_accepts_exact_policy19_digest_without_rewriting() -> TestResult {
     for policy in HISTORICAL {
         let given = population(policy)?;
         let directory = tempfile::tempdir()?;
@@ -79,7 +78,7 @@ fn historical_catalog_readback_rejects_current_digest_without_changing_retained_
 }
 
 #[test]
-fn historical_catalog_writer_preserves_policy18_and19_labels_and_digests() -> TestResult {
+fn historical_catalog_writer_preserves_policy19_labels_and_digests() -> TestResult {
     for policy in HISTORICAL {
         let given = population(policy)?;
         let directory = tempfile::tempdir()?;

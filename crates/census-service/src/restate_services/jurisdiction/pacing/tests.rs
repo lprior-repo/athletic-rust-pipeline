@@ -30,8 +30,7 @@ fn condition() -> SourceAccessCondition {
 
 #[tokio::test]
 async fn concurrent_cold_owner_fetchers_share_one_restored_pacing_state() -> TestResult {
-    let root = tempfile::tempdir()?;
-    let store = Store::open(root.path())?;
+    let (root, store) = census_store::test_fixture::temp_store()?;
     let row = condition();
     store.replace_many(Table::SourceAccess, std::slice::from_ref(&row))?;
     drop(store);
@@ -67,8 +66,8 @@ async fn concurrent_cold_owner_fetchers_share_one_restored_pacing_state() -> Tes
 
 #[tokio::test]
 async fn failed_cold_owner_restore_exposes_no_pacing_or_fetcher_and_can_retry() -> TestResult {
-    let root = tempfile::tempdir()?;
-    let store = Arc::new(Store::open(root.path())?);
+    let (_root, store) = census_store::test_fixture::temp_store()?;
+    let store = Arc::new(store);
     let mut invalid = condition();
     invalid.cooldown_until = Some("malformed".into());
     store.replace_many(Table::SourceAccess, &[invalid])?;
@@ -95,8 +94,8 @@ async fn failed_cold_owner_restore_exposes_no_pacing_or_fetcher_and_can_retry() 
 
 #[tokio::test]
 async fn cancelled_cold_owner_initialization_leaves_cell_retryable() -> TestResult {
-    let root = tempfile::tempdir()?;
-    let store = Arc::new(Store::open(root.path())?);
+    let (_root, store) = census_store::test_fixture::temp_store()?;
+    let store = Arc::new(store);
     store.replace(Table::SourceAccess, &condition())?;
     let region = Arc::new(Spawner::with_capacity(1));
     let owner = owner(&store, &region);

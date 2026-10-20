@@ -7,7 +7,7 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 
-use super::super::{common, context, seeded, OBSERVED_ON, SEEDED_AT};
+use super::super::{common, context, durable_capture, seeded, OBSERVED_ON, SEEDED_AT};
 
 type Result<T, E = Box<dyn std::error::Error>> = std::result::Result<T, E>;
 
@@ -203,6 +203,8 @@ fn ohsaa_seeded_collection_persists_published_people_and_school_ownership() -> R
                 ],
             )?;
             let fetcher = fetcher.with_offline(true);
+            let durable = durable_capture::DurableCapture::mint()?;
+            let owned = durable.capture()?;
             let options = ohsaa::Options {
                 limit: None,
                 refresh: false,
@@ -210,7 +212,15 @@ fn ohsaa_seeded_collection_persists_published_people_and_school_ownership() -> R
                 states: vec![UsJurisdiction::Ohio],
                 school_names: vec!["Dublin Coffman".to_string()],
             };
-            let report = ohsaa::collect(&context(&fetcher, &store)?, &options).await?;
+            let report = ohsaa::collect(
+                &context(
+                    census_crawl::CaptureContext::DurableV1(&owned),
+                    &fetcher,
+                    &store,
+                )?,
+                &options,
+            )
+            .await?;
 
             check!(eq; (report.requests, report.from_cache), (0, 3));
             check!(eq; (report.rows, report.errors, report.with_email), (1, 0, 5));

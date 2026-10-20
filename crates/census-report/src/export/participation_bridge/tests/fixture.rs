@@ -21,9 +21,8 @@ use std::pin::Pin;
 
 mod cache;
 
-const TROY: &[u8] =
-    include_bytes!("../../../../../census-crawl/src/milesplit/owned/fixtures/troy_725218.json");
-pub(super) const RAW: &[u8] = include_bytes!("../../../../../census-crawl/tests/fixtures/milesplit/troy_725218_rs1266814_raw_projection.html");
+use census_crawl::milesplit::troy_fixture::BODY as TROY;
+pub(super) use census_crawl::milesplit::troy_fixture::FEMALE_RAW as RAW;
 
 pub(super) struct Fixture {
     pub(super) source: VerifiedRetainedResultMetadata,
@@ -41,8 +40,7 @@ impl Fixture {
         synthetic_division: Option<&str>,
         raw: &[u8],
     ) -> TestResult<Self> {
-        let dir = tempfile::tempdir()?;
-        let store = Store::open(dir.path().join("store"))?;
+        let (dir, store) = census_store::test_fixture::temp_store()?;
         let _identity = store.store_identity()?;
         let fetcher = Fetcher::new(
             dir.path().join("http"),

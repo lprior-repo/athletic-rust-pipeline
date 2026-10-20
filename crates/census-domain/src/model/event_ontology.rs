@@ -120,12 +120,12 @@ impl EventKind {
     }
 
     pub fn from_source_label_with_policy(label: &str, semantics: EventSemantics) -> Self {
-        if let Some(kind) = direct::resolve(&Self::normalized_label(label), semantics) {
+        if let Some(kind) = direct::resolve(&Self::normalized_label(label)) {
             return kind;
         }
         match qualified::candidates(label, semantics)
             .into_iter()
-            .find_map(|candidate| direct::resolve(&Self::normalized_label(&candidate), semantics))
+            .find_map(|candidate| direct::resolve(&Self::normalized_label(&candidate)))
         {
             Some(kind) => kind,
             None => Self::Unmapped {

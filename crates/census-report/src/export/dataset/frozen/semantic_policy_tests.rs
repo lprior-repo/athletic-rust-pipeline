@@ -1,12 +1,8 @@
 use super::*;
+use crate::export::ExportJobRequest;
 use census_domain::model::EventSemantics;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-
-#[test]
-fn synthetic_legacy_header_is_readable_but_not_current_job_input() -> TestResult {
-    historical_header_is_read_only(EventSemantics::Legacy18)
-}
 
 #[test]
 fn synthetic_flat_events_header_is_readable_but_not_current_job_input() -> TestResult {
@@ -38,7 +34,11 @@ fn historical_header_is_read_only(semantics: EventSemantics) -> TestResult {
     read_only(reopened.ensure_current_policy())?;
     read_only(reopened.ensure_current(&store))?;
     let decoded = super::super::decoded_generations();
-    read_only(ExportDataset::for_job(&store, &job))?;
+    read_only(ExportDataset::for_job_request(
+        &store,
+        &job,
+        &ExportJobRequest::LegacyV2,
+    ))?;
     check!(eq; super::super::decoded_generations(), decoded);
     check!(eq; store.snapshot().sequence(), sequence);
     check!(eq; std::fs::read(&path)?, before);
@@ -53,7 +53,7 @@ fn unsupported_semantic_revisions_remain_rejected() -> TestResult {
     let future = POLICY_REVISION
         .checked_add(1)
         .ok_or("future policy overflow")?;
-    for revision in [0, 7, 17, future, u32::MAX] {
+    for revision in [0, 7, 17, 18, future, u32::MAX] {
         dataset.lineage.policy_revision = revision;
         check!(dataset.semantic_policy().is_err());
         check!(dataset.ensure_current_policy().is_err());

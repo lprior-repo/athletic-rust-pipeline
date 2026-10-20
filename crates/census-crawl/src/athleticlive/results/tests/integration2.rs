@@ -4,6 +4,7 @@ use super::*;
 fn a_standings_capture_folds_into_the_event_that_published_its_run_key() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     let (dir, store, fetcher) = scratch()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     write_schools(&store, &[(UsJurisdiction::Iowa, "Waukon")])?;
     let doc_path = stage_capture(&dir, "event-doc-2150205.json", XC_STATE)?;
     let standings_path = stage_capture(
@@ -20,7 +21,7 @@ fn a_standings_capture_folds_into_the_event_that_published_its_run_key() -> Test
         ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
     };
 
-    let report = collect(&context(&store, &fetcher)?, &options).await?;
+    let report = collect(&context(&store, &fetcher, &capture)?, &options).await?;
     check!(eq; report.errors, 0, "{}", joined(&report));
     check!(eq; report.rows, 8);
 
@@ -78,6 +79,7 @@ fn a_standings_capture_whose_run_key_no_document_published_is_refused() -> TestR
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             write_schools(
                 &store,
                 &[(UsJurisdiction::Michigan, "East Kentwood High School")],
@@ -97,7 +99,7 @@ fn a_standings_capture_whose_run_key_no_document_published_is_refused() -> TestR
                 ..ResultOptions::for_meet(mits_meet(), OBSERVED_ON)
             };
 
-            let report = collect(&context(&store, &fetcher)?, &options).await?;
+            let report = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; report.errors, 1, "{}", joined(&report));
             check!(report
                 .unfinished
@@ -122,6 +124,7 @@ fn unchanged_capture_replay_does_not_duplicate_performances() -> TestResult {
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
             write_schools(
                 &store,
@@ -133,9 +136,9 @@ fn unchanged_capture_replay_does_not_duplicate_performances() -> TestResult {
                 ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
             };
 
-            let first = collect(&context(&store, &fetcher)?, &options).await?;
+            let first = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; first.rows, 136);
-            let second = collect(&context(&store, &fetcher)?, &options).await?;
+            let second = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; second.rows, 0, "unchanged replay admits no additional rows");
             let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
             check!(eq; performances.len(), 136, "the tables are not appended twice");
@@ -150,19 +153,20 @@ fn partial_capture_replay_keeps_unfinished_and_commits_only_newly_resolved_rows(
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             write_schools(&store, &[(UsJurisdiction::Iowa, "Waukon")])?;
             let path = stage_capture(&dir, "partial.json", XC_STATE)?;
             let options = ResultOptions {
                 documents: vec![path.clone()],
                 ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
             };
-            let first = collect(&context(&store, &fetcher)?, &options).await?;
+            let first = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; first.rows, 7);
             check!(first.unfinished.contains(&path));
             check!(receipts(&store)?
                 .values()
                 .all(|receipt| receipt["complete"] == serde_json::json!(false)));
-            let replay = collect(&context(&store, &fetcher)?, &options).await?;
+            let replay = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; replay.rows, 0);
             check!(eq; replay.unfinished, first.unfinished);
             check!(eq; store.scan::<CanonicalPerformance>(Table::Performances)?.len(), 7);
@@ -171,7 +175,7 @@ fn partial_capture_replay_keeps_unfinished_and_commits_only_newly_resolved_rows(
                 &store,
                 &labels_of(&labelled_schools(&doc, UsJurisdiction::Iowa)),
             )?;
-            let completed = collect(&context(&store, &fetcher)?, &options).await?;
+            let completed = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; completed.rows, 129);
             check!(!completed.unfinished.contains(&path));
             check!(receipts(&store)?
@@ -190,6 +194,7 @@ fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() -> TestResu
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
             write_schools(
                 &store,
@@ -202,7 +207,7 @@ fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() -> TestResu
             };
 
             let recording = crate::recording::Recording::new();
-            let mut staged = context(&store, &fetcher)?;
+            let mut staged = context(&store, &fetcher, &capture)?;
             staged.recording = Some(&recording);
             collect(&staged, &options).await?;
             check!(
@@ -217,7 +222,7 @@ fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() -> TestResu
             );
             drop(recording);
 
-            let report = collect(&context(&store, &fetcher)?, &options).await?;
+            let report = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; report.rows, 136, "the capture is a document of 136 rows");
             let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
             check!(eq;
@@ -259,6 +264,7 @@ fn malformed_row_retains_later_neighbors_and_partial_replay_conserves_rows() -> 
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
             write_schools(
                 &store,
@@ -273,7 +279,7 @@ fn malformed_row_retains_later_neighbors_and_partial_replay_conserves_rows() -> 
                 documents: vec![path.clone()],
                 ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
             };
-            let first = collect(&context(&store, &fetcher)?, &options).await?;
+            let first = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; first.rows, 135);
             check!(eq; first.errors, 1);
             check!(first.unfinished.contains(&path));
@@ -284,7 +290,7 @@ fn malformed_row_retains_later_neighbors_and_partial_replay_conserves_rows() -> 
             check!(!performances
                 .iter()
                 .any(|performance| performance.source_key.contains(":row0:")));
-            let replay = collect(&context(&store, &fetcher)?, &options).await?;
+            let replay = collect(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; replay.rows, 0);
             check!(eq; replay.errors, 1);
             check!(replay.unfinished.contains(&path));

@@ -22,7 +22,8 @@ fn same_name_incomplete_public_owners_refresh_independently_and_preserve_v1_hist
     let cache = dir.path().join("http");
     let store = Store::open(dir.path().join("store"))?;
     let fetcher = local_fetcher(&cache)?;
-    let ctx = context(&fetcher, &store, None)?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
+    let ctx = context(&fetcher, &store, None, &capture)?;
     let options = options();
     let first = school();
     let mut second = school();

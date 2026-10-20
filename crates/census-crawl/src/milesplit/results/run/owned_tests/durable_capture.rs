@@ -1,5 +1,8 @@
 use super::*;
 use crate::net::capture_fixture::{serve, Fixture, Reply, BODY, CAPTURED};
+use census_domain::model::CanonicalPerformance;
+use census_store::Table;
+use serde_json::json;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 

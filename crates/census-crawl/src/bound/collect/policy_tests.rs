@@ -20,9 +20,13 @@ fn fetcher(store: &Store, offline: bool) -> TestResult<Fetcher> {
     .with_offline(offline))
 }
 
-fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterContext<'a>> {
+fn context<'a>(
+    store: &'a Store,
+    fetcher: &'a Fetcher,
+    capture: &'a crate::ResultsCaptureContext,
+) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: CaptureContext::LegacyMetadata,
+        capture: CaptureContext::DurableV1(&capture),
         fetcher,
         store,
         refresh: false,
@@ -36,9 +40,10 @@ fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> TestResult<AdapterCont
 #[tokio::test]
 async fn online_collector_refuses_before_an_empty_success_or_any_work() -> TestResult {
     let root = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
     let store = Store::open(root.path())?;
     let fetcher = fetcher(&store, false)?;
-    let ctx = context(&store, &fetcher)?;
+    let ctx = context(&store, &fetcher, &capture)?;
     let options = Options {
         states: vec![UsJurisdiction::Michigan],
         ..Options::default()
@@ -87,9 +92,10 @@ fn seed(ctx: &AdapterContext<'_>, url: &str, body: &[u8]) -> TestResult {
 async fn offline_collector_still_decodes_the_held_representation_without_acquisition() -> TestResult
 {
     let root = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
     let store = Store::open(root.path())?;
     let fetcher = fetcher(&store, true)?;
-    let ctx = context(&store, &fetcher)?;
+    let ctx = context(&store, &fetcher, &capture)?;
     seed(
         &ctx,
         "https://www.gobound.com/sd/schools",

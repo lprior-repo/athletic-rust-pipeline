@@ -2,7 +2,7 @@ use super::{CAPTURED, RETAINED};
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::Fetcher;
 use crate::tssaa::{collect, Options, DIRECTORY_URL};
-use crate::{AdapterContext, AdapterReport, Recording};
+use crate::{AdapterContext, AdapterReport, Recording, ResultsCaptureContext};
 use census_domain::model::{CanonicalCoach, CanonicalSchool, SchoolYear};
 use census_store::{Store, Table};
 use std::collections::HashMap;
@@ -15,6 +15,7 @@ struct FixtureRun {
     _root: tempfile::TempDir,
     store: Store,
     fetcher: Fetcher,
+    capture: ResultsCaptureContext,
 }
 
 impl FixtureRun {
@@ -33,10 +34,12 @@ impl FixtureRun {
         if let Some(detail) = detail {
             seed(&fetcher, &format!("{DIRECTORY_URL}?id=157"), detail)?;
         }
+        let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
         Ok(Self {
             _root: root,
             store,
             fetcher,
+            capture,
         })
     }
 
@@ -46,7 +49,7 @@ impl FixtureRun {
         recording: Option<&Recording>,
     ) -> anyhow::Result<AdapterReport> {
         let context = AdapterContext {
-            capture: crate::CaptureContext::LegacyMetadata,
+            capture: crate::CaptureContext::DurableV1(&self.capture),
             fetcher: &self.fetcher,
             store: &self.store,
             refresh: false,

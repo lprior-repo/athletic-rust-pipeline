@@ -15,12 +15,13 @@ fn oversized_scope() -> LaneSet {
 }
 
 fn matching_index() -> TestResult<DirectoryIndex> {
-    Ok(DirectoryIndex::build(&[entry(
+    Ok(DirectoryIndex::build(&[nces_entry(
         "390000000001",
         "Springfield High School",
         "Springfield",
         UsJurisdiction::Ohio,
         "123 Main St",
+        (9, 12),
     )?]))
 }
 

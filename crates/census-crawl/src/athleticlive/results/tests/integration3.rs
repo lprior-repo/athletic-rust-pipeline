@@ -20,6 +20,7 @@ fn the_event_summary_lists_individual_events_and_excludes_relays() -> TestResult
     check!(eq; events[0].event_id(), Some(2_254_280));
 
     let (dir, store, fetcher) = scratch()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     write_schools(
         &store,
         &[(UsJurisdiction::Michigan, "East Kentwood High School")],
@@ -31,7 +32,7 @@ fn the_event_summary_lists_individual_events_and_excludes_relays() -> TestResult
         documents: vec![doc_path],
         ..ResultOptions::for_meet(mits_meet(), OBSERVED_ON)
     };
-    let report = collect(&context(&store, &fetcher)?, &options).await?;
+    let report = collect(&context(&store, &fetcher, &capture)?, &options).await?;
     let notes = joined(&report);
     check!(
         notes.contains("events listed 3 (relay 1, unmapped 1, unfetched 1)"),
@@ -48,6 +49,7 @@ fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() -> Test
         .build()?
         .block_on(async {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE)?;
             write_schools(
                 &store,
@@ -94,7 +96,7 @@ fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() -> Test
                 states: Vec::new(),
             };
 
-            let report = collect_manifest(&context(&store, &fetcher)?, &options).await?;
+            let report = collect_manifest(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; report.adapter, SOURCE_ID);
             check!(eq;
                 report.rows, 136,
@@ -131,7 +133,7 @@ fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() -> Test
                 "only the state final contributes performances"
             );
 
-            let again = collect_manifest(&context(&store, &fetcher)?, &options).await?;
+            let again = collect_manifest(&context(&store, &fetcher, &capture)?, &options).await?;
             check!(eq; again.rows, 0, "unchanged replay admits no additional performances");
             check!(eq; again.errors, 0, "{}", joined(&again));
             let appended: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
@@ -163,8 +165,9 @@ fn the_results_route_requires_a_manifest() -> TestResult {
         .build()?
         .block_on(async {
             let (_dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&_dir.path().join("capture"))?;
             let error = match collect_manifest(
-                &context(&store, &fetcher)?,
+                &context(&store, &fetcher, &capture)?,
                 &ManifestOptions {
                     input: None,
                     limit: None,

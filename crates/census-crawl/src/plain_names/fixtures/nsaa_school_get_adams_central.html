@@ -1,0 +1,93 @@
+<!-- fixture: NSAA one-school view (the route the adapter walks). Provenance: -->
+<!-- GET https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central -->
+<!-- - adapter fetch HTTP 200 15,579 bytes 2026-09-20T14:39:37Z (sha256 f26559c4...); the -->
+<!-- 2026-09-20T14:39:13Z curl probe of the same URL returned status=200 bytes=15579 and was -->
+<!-- byte-identical to the %20-encoded request (status=200 bytes=15579 2026-09-20T14:36:12Z). -->
+<!-- Complete response body verbatim, no values altered; equals the Adams Central block of -->
+<!-- nsaa_directory_export.html (asserted by nsaa_single_school_page_matches_the_bulk_block). -->
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>NSAA Home</title><!-- // Bootstrap requirements -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+
+    <script>
+    window.onload = function(){
+        replaceurl();
+    }
+
+    function  replaceurl (){
+        var links = document.getElementsByTagName('a');
+        for(var i=0; i<links.length; i++) {
+            var n = links[i].href.includes('.php');
+            var n2 = links[i].href.includes('nsaa-static.s3.amazonaws.com');
+
+            if(n==true && n2==true)
+            {
+                var url=links[i].href;
+                if(url.includes('nsaa-static.s3.amazonaws.com')==true)
+                {
+                    links[i].setAttribute('href', url.replace('nsaa-static.s3.amazonaws.com', 'secure.nsaahome.org'));
+
+                }
+            }
+        }
+    }
+    </script>    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.11.9/validator.min.js"></script>
+</head><body><table width=100% cellspacing=0 cellpadding=0><tr><td bgcolor=#19204f>&nbsp;</td></tr><tr align=center><td valign=center bgcolor=#ffffff><img src="/images/NSAAheaderLogin.jpg" width="800px"></td></tr><tr><td bgcolor=#19204f><center><a class=header style='color:#FFFFFF' href='https://nsaahome.org/'>Home</a></td></tr><tr align=center><td align=center><style>
+    @media print {
+        h1 {page-break-before: always}
+    }
+</style>
+
+<div class="container d-print-none">
+    <br>
+    <h1 class="mx-2 px-2">School Directory</h1>
+    <!-- setup a drop down menu so that the user can choose the school they want to see  -->
+    <form method="post" class="mx-2">
+        <input type="hidden" name="session" value=" "
+        <div class="form-group">
+            <select class="form-control mx-3" name="school" size="7" multiple>
+                <option disabled>Select a school to view...</option>
+                <option>View all schools</option>
+                <option selected>Adams Central</option><option>Ainsworth</option><option>Allen</option><option>Alliance</option><option>Alma</option><option>Amherst</option><option>Anselmo-Merna</option><option>Ansley</option><option>Aquinas Catholic</option><option>Arapahoe</option><option>Arcadia</option><option>Archangels Catholic</option><option>Arlington</option><option>Arnold</option><option>Arthur County</option><option>Ashland-Greenwood</option><option>Auburn</option><option>Aurora</option><option>Axtell</option><option>Bancroft-Rosalie</option><option>Banner County</option><option>Battle Creek</option><option>Bayard</option><option>Beatrice</option><option>Bellevue East</option><option>Bellevue Public Schools</option><option>Bellevue West</option><option>Bennington</option><option>Bergan Catholic</option><option>Bertrand</option><option>Bishop Neumann</option><option>Blair</option><option>Bloomfield</option><option>Blue Hill</option><option>Boone Central</option><option>Boyd County</option><option>Boys Town</option><option>Brady</option><option>Bridgeport</option><option>Broken Bow</option><option>Bruning-Davenport</option><option>Burwell</option><option>Callaway</option><option>Cambridge</option><option>Cedar Bluffs</option><option>Cedar Catholic</option><option>Centennial</option><option>Central City</option><option>Central Valley</option><option>Centura</option><option>Chadron</option><option>Chambers</option><option>Chase County</option><option>Clarkson</option><option>Cody-Kilgore</option><option>College View Academy</option><option>Columbus</option><option>Columbus Lakeview</option><option>Concordia Omaha</option><option>Conestoga</option><option>Cornerstone Christian</option><option>Cozad</option><option>Crawford</option><option>Creek Valley</option><option>Creighton</option><option>Creighton Preparatory School</option><option>Crete</option><option>Crofton</option><option>Cross County</option><option>David City</option><option>Deshler</option><option>Diller-Odell</option><option>Doniphan-Trumbull</option><option>Dorchester</option><option>Douglas County West</option><option>Dundy County Stratton</option><option>East Butler</option><option>Elba</option><option>Elgin</option><option>Elkhorn</option><option>Elkhorn North</option><option>Elkhorn South</option><option>Elkhorn Valley</option><option>Elm Creek</option><option>Elmwood-Murdock</option><option>Elwood</option><option>Emerson-Hubbard</option><option>Eustis-Farnam</option><option>Exeter-Milligan-Friend</option><option>Fairbury</option><option>Falls City</option><option>Falls City Sacred Heart</option><option>Fillmore Central</option><option>Fort Calhoun</option><option>Franklin</option><option>Freeman</option><option>Fremont</option><option>Fullerton</option><option>Garden County</option><option>Gering</option><option>Gibbon</option><option>Giltner</option><option>Gordon-Rushville</option><option>Gothenburg</option><option>Grand Island</option><option>Grand Island Central Catholic</option><option>Grand Island Lutheran</option><option>Gretna</option><option>Gretna East</option><option>Guardian Angels Central Catholic</option><option>Hampton</option><option>Hartington-Newcastle</option><option>Harvard</option><option>Hastings</option><option>Hastings St. Cecilia</option><option>Hay Springs</option><option>Hayes Center</option><option>Heartland</option><option>Hemingford</option><option>Hershey</option><option>High Plains Community</option><option>Hitchcock County</option><option>Holdrege</option><option>Homer</option><option>Howells-Dodge</option><option>Humboldt-Table Rock-Steinauer</option><option>Humphrey</option><option>Hyannis</option><option>Johnson County Central</option><option>Johnson-Brock</option><option>Kearney</option><option>Kearney Catholic</option><option>Kenesaw</option><option>Keya Paha County</option><option>Kimball</option><option>Laurel-Concord-Coleridge</option><option>Lawrence-Nelson</option><option>Leigh</option><option>Lewiston</option><option>Lexington</option><option>Leyton</option><option>Lincoln Christian</option><option>Lincoln East</option><option>Lincoln High</option><option>Lincoln Lutheran</option><option>Lincoln North Star</option><option>Lincoln Northeast</option><option>Lincoln Northwest</option><option>Lincoln Pius X</option><option>Lincoln Public Schools</option><option>Lincoln Southeast</option><option>Lincoln Southwest</option><option>Lincoln Standing Bear</option><option>Lindsay Academy</option><option>Litchfield</option><option>Logan View</option><option>Loomis</option><option>Louisville</option><option>Loup City</option><option>Loup County</option><option>Lourdes Central Catholic</option><option>Lutheran High Northeast</option><option>Lyons-Decatur Northeast</option><option>Madison</option><option>Malcolm</option><option>Maxwell</option><option>Maywood</option><option>McCook</option><option>McCool Junction</option><option>McPherson County</option><option>Mead</option><option>Medicine Valley</option><option>Meridian</option><option>Milford</option><option>Millard North</option><option>Millard Public Schools</option><option>Millard South</option><option>Millard West</option><option>Minatare</option><option>Minden</option><option>Mitchell</option><option>Morrill</option><option>Mount Michael Benedictine</option><option>Mullen</option><option>Nebraska Christian</option><option>Nebraska City</option><option>Nebraska Lutheran</option><option>Neligh-Oakdale</option><option>Newman Grove</option><option>Niobrara</option><option>Norfolk</option><option>Norfolk Catholic</option><option>Norris</option><option>North Bend Central</option><option>North Platte</option><option>North Platte St. Patrick's</option><option>Northwest</option><option>Oakland-Craig</option><option>Ogallala</option><option>Omaha Benson</option><option>Omaha Brownell Talbot</option><option>Omaha Bryan</option><option>Omaha Buena Vista</option><option>Omaha Burke</option><option>Omaha Central</option><option>Omaha Christian</option><option>Omaha Duchesne Academy</option><option>Omaha Gross Catholic</option><option>Omaha Marian</option><option>Omaha Mercy</option><option>Omaha Nation</option><option>Omaha North</option><option>Omaha Northwest</option><option>Omaha Public Schools</option><option>Omaha Roncalli Catholic</option><option>Omaha Skutt Catholic</option><option>Omaha South</option><option>Omaha Street School</option><option>Omaha Westside</option><option>Omaha Westview</option><option>ONeill</option><option>Ord</option><option>Osceola</option><option>Osmond</option><option>Overton</option><option>Palmer</option><option>Palmyra</option><option>Papillion-La Vista</option><option>Papillion-La Vista South</option><option>Parkview Christian</option><option>Pawnee City</option><option>Paxton</option><option>Pender</option><option>Perkins County</option><option>Pierce</option><option>Plainview</option><option>Platteview</option><option>Plattsmouth</option><option>Pleasanton</option><option>Ponca</option><option>Pope John</option><option>Potter-Dix</option><option>Quest Forward</option><option>Ralston</option><option>Randolph</option><option>Ravenna</option><option>Raymond Central</option><option>Red Cloud</option><option>Riverside</option><option>Rock County</option><option>Sandhills</option><option>Sandy Creek</option><option>Santee</option><option>Sargent</option><option>Schuyler</option><option>Scottsbluff</option><option>Scotus Central Catholic</option><option>Scribner-Snyder</option><option>Seward</option><option>Shelby-Rising City</option><option>Shelton</option><option>Shickley</option><option>Sidney</option><option>Silver Lake</option><option>Sioux County</option><option>South Platte</option><option>South Sioux City</option><option>Southern</option><option>Southern Valley</option><option>Southwest</option><option>Spalding Academy</option><option>St. Edward</option><option>St. Mary's</option><option>St. Paul</option><option>Stanton</option><option>Stapleton</option><option>Sterling</option><option>Stuart</option><option>Summerland</option><option>Sumner-Eddyville-Miller</option><option>Superior</option><option>Sutherland</option><option>Sutton</option><option>Syracuse</option><option>Tekamah-Herman</option><option>Thayer Central</option><option>Thedford</option><option>Tri County</option><option>Twin River</option><option>Valentine</option><option>Verdigre</option><option>Wahoo</option><option>Wakefield</option><option>Wallace</option><option>Walthill</option><option>Wauneta-Palisade</option><option>Wausa</option><option>Waverly</option><option>Wayne</option><option>Weeping Water</option><option>West Holt</option><option>West Point-Beemer</option><option>Wheeler Central</option><option>Wilber-Clatonia</option><option>Wilcox-Hildreth</option><option>Winnebago</option><option>Winside</option><option>Wisner-Pilger</option><option>Wood River</option><option>Wynot</option><option>York</option><option>Yutan</option>            </select>
+            <br />
+            <input type="submit" class="btn btn-primary pt-2" value="See School Info" name="submit">
+        </div>
+    </form>
+</div>
+
+<div class="container">
+    <!-- all of our school info is in the $schoolinfo array, so that will be our first loop  -->
+            <h1 class="mt-3">Adams Central</h1>
+        <div class="row border-bottom">
+            <div class="col-sm border-right">
+                1090 South Adams Central Avenue                <br>
+                                Hastings, NE 68901-7458<br />
+                <span class="font-weight-bold text-info">402-463-3285</span><br />
+                Fax: 402-463-6344<br />
+            </div>
+            <div class="col-sm border-right">
+                Conference: Central Conference<br />
+                NSAA District: 4<br />
+                Enrollment: 215<br />
+            </div>
+            <div class="col-sm">
+                Mascot: Patriots<br>
+                Colors: Red/White/Blue<br>
+                                Homepage: <a href="http://www.adamscentral.us/" target="_blank">http://www.adamscentral.us/</a><br>
+            </div>
+        </div>
+
+        <!-- detail lines -->
+        <table class="table mt-2">
+            <thead class="thead-dark">
+            <tr>
+                <th scope="col">Title</th>
+                <th scope="col">Name</th>
+                            </tr>
+            </thead>
+            <tbody>
+                                    <tr><td scope='row'>Superintendent</td><td scope='row'>Shawn Scott</td></tr><tr><td scope='row'>Principal</td><td scope='row'>Scott Harrington</td></tr><tr><tr><td scope='row'>Activities Director</td><td scope='row'>Alan Frank</td></tr><tr><td scope='row'>AD Secretary</td><td scope='row'>Mattison Tinant</td></tr><tr><td scope='row'>Athletic Director</td><td scope='row'>Alan Frank</td></tr><tr><td scope='row'>Assistant Athletic Director</td><td scope='row'>Aub Boucher</td></tr><tr><tr><td scope='row'>Baseball</td><td scope='row'>Tim Stroman</td></tr><tr><td scope='row'>Basketball (Boys)</td><td scope='row'>Zac Foster</td></tr><tr><td scope='row'>Basketball (Girls)</td><td scope='row'>Evan Smith</td></tr><tr><td scope='row'>Board President</td><td scope='row'>Dave Johnson</td></tr><tr><tr><tr><tr><td scope='row'>Cross-Country (Boys)</td><td scope='row'>Toni Fowler</td></tr><tr><td scope='row'>Cross-Country (Girls)</td><td scope='row'>Toni Fowler</td></tr><tr><tr><td scope='row'>Football</td><td scope='row'>Josh Lewis</td></tr><tr><td scope='row'>Golf (Boys)</td><td scope='row'>Rod Hartman</td></tr><tr><td scope='row'>Golf (Girls)</td><td scope='row'>Rod Hartman</td></tr><tr><td scope='row'>Guidance Counselor</td><td scope='row'>Becky Fisher</td></tr><tr><td scope='row'>Journalism</td><td scope='row'>Crystal Hassenstab</td></tr><tr><td scope='row'>Music (Instrumental)</td><td scope='row'>Doyle Hanshaw</td></tr><tr><tr><td scope='row'>Music (Vocal)</td><td scope='row'>Hugo Madera</td></tr><tr><td scope='row'>Play Production</td><td scope='row'>Robert Collins</td></tr><tr><tr><tr class='table-info'><td scope='row'>Softball</td><td scope='row'>Danielle Wahl</td></tr><tr><td scope='row'>Speech</td><td scope='row'>Doyle Hanshaw</td></tr><tr><td scope='row'>Strength Coach</td><td scope='row'>Teran Boyer</td></tr><tr><td scope='row'>Student Council Sponsor</td><td scope='row'>Penny Birky</td></tr><tr class='table-info'><td scope='row'>Swimming (Boys)</td><td scope='row'>Co-op w/Hastings</td></tr><tr class='table-info'><td scope='row'>Swimming (Girls)</td><td scope='row'>Co-op w/Hastings</td></tr><tr><td scope='row'>Tennis (Boys)</td><td scope='row'>Ed Sughroue</td></tr><tr><td scope='row'>Tennis (Girls)</td><td scope='row'>Ed Sughroue</td></tr><tr><td scope='row'>Track & Field (Boys)</td><td scope='row'>Zeb Noyd</td></tr><tr><td scope='row'>Track & Field (Girls)</td><td scope='row'>Toni Fowler</td></tr><tr><td scope='row'>Trainer</td><td scope='row'>Sean Vonderfecht</td></tr><tr><tr><tr><td scope='row'>Volleyball</td><td scope='row'>Libby Lollman</td></tr><tr><td scope='row'>Wrestling</td><td scope='row'>Chris Trampe</td></tr><tr><td scope='row'>Girls Wrestling</td><td scope='row'>Teran Boyer</td></tr>            </tbody>
+        </table>
+                <p>Co-op sports show with a <span class="table-info">blue background.</span></p>
+</div>
+

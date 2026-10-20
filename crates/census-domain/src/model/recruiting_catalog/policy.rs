@@ -1,7 +1,6 @@
 use super::aliases;
 use super::context::{ContextualLabel, LabelToken};
 use super::{EventExclusionReason as Ex, EventKind};
-use crate::model::EventSemantics;
 use crate::model::EventSpecification;
 
 pub(super) fn permitted(label: &ContextualLabel<'_>, kind: &EventKind) -> bool {
@@ -253,13 +252,3 @@ pub(super) const UNITS: &[&str] = &[
     "inch", "inches", "ft", "feet", "foot", "lb", "lbs", "kg", "g",
 ];
 pub(super) const SEPARATORS: &str = "._-',()[]:/\"";
-
-pub(super) fn included(semantics: EventSemantics) -> &'static [EventKind] {
-    match semantics {
-        EventSemantics::Legacy18 => super::legacy_policy::INCLUDED,
-        EventSemantics::FlatEvents19
-        | EventSemantics::CombinedEvents20
-        | EventSemantics::ResultGroups21
-        | EventSemantics::ResultGroups22 => INCLUDED,
-    }
-}

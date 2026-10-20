@@ -1,0 +1,337 @@
+{
+  "archive": "archive/genuine-documentary.json",
+  "archive_digest": "09ad654a0bb6bf393309858f09760be0f009018b8d61a38b304c6c1e056e69b9",
+  "archive_files": [
+    {
+      "bytes": 14760,
+      "path": "genuine-documentary.json",
+      "sha256": "09ad654a0bb6bf393309858f09760be0f009018b8d61a38b304c6c1e056e69b9"
+    },
+    {
+      "bytes": 57370,
+      "path": "genuine-documentary.json.proofs/1dd80c34c5cc520a8c619e8f3387b215f0ff6d575eca764d31f650cf577dd105",
+      "sha256": "1dd80c34c5cc520a8c619e8f3387b215f0ff6d575eca764d31f650cf577dd105"
+    },
+    {
+      "bytes": 36,
+      "path": "genuine-documentary.json.proofs/24c98ec93ca14f8373e3280db51a15499281338597f201528ef120eb969a4045",
+      "sha256": "24c98ec93ca14f8373e3280db51a15499281338597f201528ef120eb969a4045"
+    },
+    {
+      "bytes": 136,
+      "path": "genuine-documentary.json.proofs/56f4ad31eaea7db01c6031fc01f5b032eb8406157d0b88867d4b4df92086e186",
+      "sha256": "56f4ad31eaea7db01c6031fc01f5b032eb8406157d0b88867d4b4df92086e186"
+    },
+    {
+      "bytes": 250,
+      "path": "genuine-documentary.json.proofs/5eee176a301a55455b1c54a359624d1002aa770483a3bd308810aa85d58864c0",
+      "sha256": "5eee176a301a55455b1c54a359624d1002aa770483a3bd308810aa85d58864c0"
+    },
+    {
+      "bytes": 1013181,
+      "path": "genuine-documentary.json.proofs/6d59b3e7cf9f3b9c685dabc3707a5e600c2555e518b39044869af766f6cd47ac",
+      "sha256": "6d59b3e7cf9f3b9c685dabc3707a5e600c2555e518b39044869af766f6cd47ac"
+    },
+    {
+      "bytes": 1459,
+      "path": "genuine-documentary.json.proofs/79c2d9fa7570857c03cdbacf7a2b37fd357633bb962ccf9b81677955493564c7",
+      "sha256": "79c2d9fa7570857c03cdbacf7a2b37fd357633bb962ccf9b81677955493564c7"
+    },
+    {
+      "bytes": 6491,
+      "path": "genuine-documentary.json.proofs/7b752e9ccd819080442896a43b79fc1f4326627b46689ff847305d3830e4c6fb",
+      "sha256": "7b752e9ccd819080442896a43b79fc1f4326627b46689ff847305d3830e4c6fb"
+    },
+    {
+      "bytes": 136,
+      "path": "genuine-documentary.json.proofs/88d4a01f0b91231a522dfc2cea75e03a50ae4e7ce14cc304c2e3802dfff832c6",
+      "sha256": "88d4a01f0b91231a522dfc2cea75e03a50ae4e7ce14cc304c2e3802dfff832c6"
+    },
+    {
+      "bytes": 180,
+      "path": "genuine-documentary.json.proofs/8c4337beb338f6c990cdce3d32576330211038b353224e4b5cce0dbb84aaa439",
+      "sha256": "8c4337beb338f6c990cdce3d32576330211038b353224e4b5cce0dbb84aaa439"
+    },
+    {
+      "bytes": 5983,
+      "path": "genuine-documentary.json.proofs/8e2740898236ed207b8195594ef35b338730ca3d574cd2c376eca10c34f98a60",
+      "sha256": "8e2740898236ed207b8195594ef35b338730ca3d574cd2c376eca10c34f98a60"
+    },
+    {
+      "bytes": 137,
+      "path": "genuine-documentary.json.proofs/ad2d657139df1dca362a42a257bf2238f34df5f5258b72c4b8f2bec7951dd754",
+      "sha256": "ad2d657139df1dca362a42a257bf2238f34df5f5258b72c4b8f2bec7951dd754"
+    },
+    {
+      "bytes": 4194304,
+      "path": "genuine-documentary.json.proofs/bf3ade0c628ce113507efcdb5f54011caf561c5de2ebb9ffc4f8f0fbf0db0942",
+      "sha256": "bf3ade0c628ce113507efcdb5f54011caf561c5de2ebb9ffc4f8f0fbf0db0942"
+    },
+    {
+      "bytes": 232,
+      "path": "genuine-documentary.json.proofs/dca394853e614db44e26cf47cf4f67d67e0968134abfdbf262eb9c288fc2de84",
+      "sha256": "dca394853e614db44e26cf47cf4f67d67e0968134abfdbf262eb9c288fc2de84"
+    },
+    {
+      "bytes": 143,
+      "path": "genuine-documentary.json.proofs/ea0baa8f18106b23d4a40f82b252be857005bac3f4fffc7ebb3bfe138d0465af",
+      "sha256": "ea0baa8f18106b23d4a40f82b252be857005bac3f4fffc7ebb3bfe138d0465af"
+    }
+  ],
+  "lineage": {
+    "cohort": null,
+    "export_job": null,
+    "generated_on": "2026-10-20",
+    "input_digest": "4ffc6acb421153c7a5b7f0c859ef1a52b026fe04309172f9645f834e9c086084",
+    "input_generation": "14e8d2fad340185ed3ee02160467b737f7ec4136017494f7a77279f4529534a3",
+    "policy_revision": 21,
+    "run": null,
+    "schema_revision": 3,
+    "snapshot_sequence": 51,
+    "source_digest": "486565b9ac4d1fa4a5d4f55155b4b14ac7014442bd38ffdea1a765c537c30180",
+    "store_identity": "d26d98324406f220dfef39244bd0b7aa1589f5d9bf8d2f2e1f7dc9bb6201e36a",
+    "store_root": "/tmp/.tmpWcdiyw/store"
+  },
+  "observations": {
+    "generation": "14e8d2fad340185ed3ee02160467b737f7ec4136017494f7a77279f4529534a3",
+    "profile": "79c2d9fa7570857c03cdbacf7a2b37fd357633bb962ccf9b81677955493564c7",
+    "rows": [
+      {
+        "actual": "Unresolved",
+        "athlete": "ath_subject_c0a764482c9f16ba",
+        "diagnostics": [
+          "documentary_assessment_unresolved",
+          "school_binding_unresolved"
+        ],
+        "disposition": "unresolved",
+        "event": "evt_8d4b1d6768fe248f",
+        "performance": "perf_4fb08ad50dca3861",
+        "reasons": [
+          "cohort_unresolved",
+          "participation_context_unresolved",
+          "high_school_status_missing",
+          "summer_boundary_unresolved"
+        ],
+        "references": [
+          "ae3d60ce1c650a2c216db77ac25ef2549474432cf4ac594178750f8a893466f1",
+          "95350f1389f9f81fc0354d73637a59cf508413f8bea530a91eb0de7c28cc19e5",
+          "57c6df4c8a7d82fb6dc450c559a51e070c1fa95c538fb356807c9b61bb22e59f",
+          "10ff768d35593ac8a13c1bf8f13b585fd4eb5f78e7c38967248112d08c730686",
+          "7ef02b7384579b007b0d48ba38617007bd5abf9bfc0830ff39ea4027e6c6bdad",
+          "6bf39ca146977ced76ba63e226c1d41786e1914947f492c148fe3ca8708cd582",
+          "a8d76a16d08505dc366bc5861095c4c0c0287b1b97fdd6c56918108228b6695b",
+          "3e9c777b4679199fdefcebe8530756c9bef58578a3e50821e40115bbd736e2be"
+        ]
+      },
+      {
+        "actual": "Unresolved",
+        "athlete": "ath_subject_c0a764482c9f16ba",
+        "diagnostics": [
+          "documentary_assessment_unresolved",
+          "school_binding_unresolved"
+        ],
+        "disposition": "unresolved",
+        "event": "evt_eddf3c6417bdb598",
+        "performance": "perf_8b349de343cad7cc",
+        "reasons": [
+          "cohort_unresolved",
+          "participation_context_unresolved",
+          "high_school_status_missing",
+          "summer_boundary_unresolved"
+        ],
+        "references": [
+          "ae3d60ce1c650a2c216db77ac25ef2549474432cf4ac594178750f8a893466f1",
+          "95350f1389f9f81fc0354d73637a59cf508413f8bea530a91eb0de7c28cc19e5",
+          "deacf97c65839e4a59356df766e00029b70432344a4b5a70701dbcf407a9085f",
+          "bf37173b8c403da3da6c5f6aead23d2a9be81e2d6c0f4e3af19934b0a9a9c522",
+          "7ef02b7384579b007b0d48ba38617007bd5abf9bfc0830ff39ea4027e6c6bdad",
+          "8595ae83c23900e31b747b8bc0b3c6adb7c842139e0344f15e361a71e718d736",
+          "a8d76a16d08505dc366bc5861095c4c0c0287b1b97fdd6c56918108228b6695b",
+          "3e9c777b4679199fdefcebe8530756c9bef58578a3e50821e40115bbd736e2be"
+        ]
+      },
+      {
+        "actual": "Unresolved",
+        "athlete": "ath_subject_c0a764482c9f16ba",
+        "diagnostics": [
+          "documentary_assessment_unresolved",
+          "school_binding_unresolved"
+        ],
+        "disposition": "unresolved",
+        "event": "evt_931b9d0bd05138bd",
+        "performance": "perf_d7bd10347037c0ed",
+        "reasons": [
+          "cohort_unresolved",
+          "participation_context_unresolved",
+          "high_school_status_missing",
+          "summer_boundary_unresolved"
+        ],
+        "references": [
+          "ae3d60ce1c650a2c216db77ac25ef2549474432cf4ac594178750f8a893466f1",
+          "95350f1389f9f81fc0354d73637a59cf508413f8bea530a91eb0de7c28cc19e5",
+          "faa663be419821efc33a74be3aa3b1b628495c359155f0f4c55b0712f518b5bb",
+          "37eacd574003bd020425e37c684dc0d3a66f6dfdf30eb1aa45ddf13873014704",
+          "7ef02b7384579b007b0d48ba38617007bd5abf9bfc0830ff39ea4027e6c6bdad",
+          "bc7c7f83bcfc715c9c3343e09cf45f82bee7651ac86838f3427e1097de010b3d",
+          "a8d76a16d08505dc366bc5861095c4c0c0287b1b97fdd6c56918108228b6695b",
+          "3e9c777b4679199fdefcebe8530756c9bef58578a3e50821e40115bbd736e2be"
+        ]
+      }
+    ],
+    "rule": {
+      "digest": "d5e0194f00a120acb28bbba567e4f491871207f92a626c8140366e98e57b418a",
+      "revision": 4,
+      "version": 1
+    }
+  },
+  "report_producer_commit": "24852bf95fb859e530d9759cb0e4912dc5a717fc",
+  "report_producer_tree": "2fa92ad188a66cabb5bd95ed65a02c3c69a93438",
+  "schema": "genuine-documentary-v3-retained-archive/v1",
+  "store_files": [
+    {
+      "bytes": 1358398,
+      "path": "fjall/0.jnl",
+      "sha256": "53c0966c78f5a7bfdfbb76e7e34f143fe85dbe232d69090d5b431d553007c279"
+    },
+    {
+      "bytes": 25,
+      "path": "fjall/keyspaces/0/current",
+      "sha256": "2883fea7c2c18243c158ae0113d1c709c8375631d0521fca6789f1f9ec0c3b88"
+    },
+    {
+      "bytes": 4302,
+      "path": "fjall/keyspaces/0/tables/3",
+      "sha256": "0f818f10869e218bfa8e2b65c140df2e4b99e315b8fa29a9755a289d037a3075"
+    },
+    {
+      "bytes": 2197,
+      "path": "fjall/keyspaces/0/tables/4",
+      "sha256": "76d19c594704cd138434a9689660b4164d6599f4512d08d0e1b6c67515b9b2c4"
+    },
+    {
+      "bytes": 382,
+      "path": "fjall/keyspaces/0/v6",
+      "sha256": "10a9b2a82f2740bc267e4e7553bd885f48380fa0ba5dbc13d9be007be7fa3713"
+    },
+    {
+      "bytes": 25,
+      "path": "fjall/keyspaces/1/current",
+      "sha256": "37e94e040006918c0d96db6d522d6fa674dd40174ea245d9a1784c5aa1eb942f"
+    },
+    {
+      "bytes": 308,
+      "path": "fjall/keyspaces/1/v0",
+      "sha256": "09aba18e1a21fd2c18d909755b5e803a2075c793cba10bcc4963ddcc0f51ca5c"
+    },
+    {
+      "bytes": 25,
+      "path": "fjall/keyspaces/2/current",
+      "sha256": "37e94e040006918c0d96db6d522d6fa674dd40174ea245d9a1784c5aa1eb942f"
+    },
+    {
+      "bytes": 308,
+      "path": "fjall/keyspaces/2/v0",
+      "sha256": "09aba18e1a21fd2c18d909755b5e803a2075c793cba10bcc4963ddcc0f51ca5c"
+    },
+    {
+      "bytes": 25,
+      "path": "fjall/keyspaces/3/current",
+      "sha256": "37e94e040006918c0d96db6d522d6fa674dd40174ea245d9a1784c5aa1eb942f"
+    },
+    {
+      "bytes": 308,
+      "path": "fjall/keyspaces/3/v0",
+      "sha256": "09aba18e1a21fd2c18d909755b5e803a2075c793cba10bcc4963ddcc0f51ca5c"
+    },
+    {
+      "bytes": 25,
+      "path": "fjall/keyspaces/4/current",
+      "sha256": "37e94e040006918c0d96db6d522d6fa674dd40174ea245d9a1784c5aa1eb942f"
+    },
+    {
+      "bytes": 308,
+      "path": "fjall/keyspaces/4/v0",
+      "sha256": "09aba18e1a21fd2c18d909755b5e803a2075c793cba10bcc4963ddcc0f51ca5c"
+    },
+    {
+      "bytes": 0,
+      "path": "fjall/lock",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 4,
+      "path": "fjall/version",
+      "sha256": "6e2a8f0836a0c290f398c66faa9ccbb310bbd22f99f922c5b6be907e35ac7927"
+    }
+  ],
+  "store_handoff_sha256": "8462b57006701083034b1e6209c3ba625800cf23ceb192bf1b2125b57b660671",
+  "store_identity": "d26d98324406f220dfef39244bd0b7aa1589f5d9bf8d2f2e1f7dc9bb6201e36a",
+  "store_inventory": {
+    "attachment_physical_bytes": 2600093,
+    "attachment_physical_rows": 6,
+    "attachment_roots": 2,
+    "original_roots": [
+      {
+        "chunk_rows": 0,
+        "logical_roots": 1,
+        "physical_encoded_bytes": 892942,
+        "physical_rows": 1,
+        "root": {
+          "key": "4859e01fafbd9315a346da3bfd77955c9badfa60bbdfbca3900385f9491ad50d",
+          "payload": {
+            "bytes": 892739,
+            "digest": "d2799ed46734795ffe72c693b8e868b1841dd74834ae2cb1e1026d840a15572c"
+          },
+          "schema": "provider_school_packet_v1"
+        }
+      },
+      {
+        "chunk_rows": 0,
+        "logical_roots": 1,
+        "physical_encoded_bytes": 751764,
+        "physical_rows": 1,
+        "root": {
+          "key": "810c75d4516ca3b30b6d115048929373a5ff8ae05cec164a1f9af8362b98d164",
+          "payload": {
+            "bytes": 751561,
+            "digest": "ea458ed93dad27320ba35f9b05e17dd1d7e5da7fb3d1dc1139294f02db778137"
+          },
+          "schema": "provider_target_packet_v1"
+        }
+      },
+      {
+        "chunk_rows": 0,
+        "logical_roots": 1,
+        "physical_encoded_bytes": 775568,
+        "physical_rows": 1,
+        "root": {
+          "key": "4cc6becee445e75cedce8fdd2227040d872e728eb21d5ca1a655d7cfecda973e",
+          "payload": {
+            "bytes": 775354,
+            "digest": "27507684bccef9dc6bbf6ae9bf384a60142def8dfc67f6b611b858cc4e3ba6a8"
+          },
+          "schema": "participation_packet_v1"
+        }
+      },
+      {
+        "chunk_rows": 0,
+        "logical_roots": 1,
+        "physical_encoded_bytes": 183782,
+        "physical_rows": 1,
+        "root": {
+          "key": "7ef02b7384579b007b0d48ba38617007bd5abf9bfc0830ff39ea4027e6c6bdad",
+          "payload": {
+            "bytes": 183573,
+            "digest": "ae3d60ce1c650a2c216db77ac25ef2549474432cf4ac594178750f8a893466f1"
+          },
+          "schema": "html_result_capture_v1"
+        }
+      }
+    ],
+    "receipt_count": 6
+  },
+  "store_producer_commit": "046bcf4edde6307849ed4d1256827f85d3778a03",
+  "store_producer_tree": "cbaf02cf06a2770698d31b733a55b7d88f67c882",
+  "store_snapshot_sequence": 50,
+  "store_tables_digest": "f2007cbfe5d4577020c25b4c6c5c48d65faea79f1b46ab2e75ae5db91eee29e5"
+}

@@ -5,6 +5,8 @@ use census_store::{Store, Table};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
+mod embedded;
+pub(super) mod embedded_v3;
 pub(super) mod files;
 mod profile;
 mod retention;
@@ -33,6 +35,7 @@ pub(super) struct Fixture {
     pub(super) profile: QueryProfileV1,
     pub(super) expected: Vec<Expected>,
     handoff: Handoff,
+    embedded_original: Option<tempfile::TempDir>,
 }
 
 impl Fixture {
@@ -41,17 +44,37 @@ impl Fixture {
     }
 
     pub(super) fn open_for(cohort: GradYear) -> TestResult<Self> {
-        let receipt = std::env::var_os("CENSUS_DOCUMENTARY_HANDOFF_JSON")
-            .ok_or("CENSUS_DOCUMENTARY_HANDOFF_JSON must name a completed genuine A/B handoff")?;
+        match std::env::var_os("CENSUS_DOCUMENTARY_HANDOFF_JSON") {
+            Some(receipt) => Self::open_from_receipt(PathBuf::from(receipt), cohort),
+            None => Self::open_embedded(cohort),
+        }
+    }
+
+    fn open_from_receipt(receipt: PathBuf, cohort: GradYear) -> TestResult<Self> {
         let metadata = std::fs::symlink_metadata(&receipt)?;
         check!(metadata.file_type().is_file());
         check!(metadata.len() <= 32 * 1024 * 1024);
-        let handoff: Handoff = serde_json::from_slice(&std::fs::read(receipt)?)?;
+        let handoff: Handoff = serde_json::from_slice(&std::fs::read(&receipt)?)?;
         check!(eq; handoff.schema, "genuine-documentary-report-handoff/v1");
         check!(files::hex(&handoff.producer_commit, 40));
         check!(files::hex(&handoff.producer_tree, 40));
         check!(eq; handoff.producer_commit, std::env::var("CENSUS_DOCUMENTARY_PRODUCER_COMMIT")?);
         check!(eq; handoff.producer_tree, std::env::var("CENSUS_DOCUMENTARY_PRODUCER_TREE")?);
+        Self::assemble(handoff, None, cohort)
+    }
+
+    fn open_embedded(cohort: GradYear) -> TestResult<Self> {
+        let original = tempfile::tempdir()?;
+        let root = original.path().join("original");
+        let handoff = embedded::materialize(&root)?;
+        Self::assemble(handoff, Some(original), cohort)
+    }
+
+    fn assemble(
+        handoff: Handoff,
+        embedded_original: Option<tempfile::TempDir>,
+        cohort: GradYear,
+    ) -> TestResult<Self> {
         check!(eq; handoff.inventory.get("attachment_roots").and_then(serde_json::Value::as_u64), Some(2));
         check!(eq; handoff.inventory.get("attachment_physical_rows").and_then(serde_json::Value::as_u64), Some(6));
         check!(eq; handoff.inventory.get("receipt_count").and_then(serde_json::Value::as_u64), Some(6));
@@ -75,6 +98,7 @@ impl Fixture {
             profile,
             expected,
             handoff,
+            embedded_original,
         })
     }
 
@@ -135,6 +159,7 @@ impl Fixture {
             profile,
             expected,
             handoff,
+            embedded_original,
         } = self;
         let reopened = (|| -> TestResult<(Store, census_store::PublicIdentityWriterV1)> {
             files::verify(&handoff.store_path, &handoff.files)?;
@@ -161,11 +186,15 @@ impl Fixture {
                     profile,
                     expected,
                     handoff,
+                    embedded_original,
                 },
                 writer,
             )),
             Err(error) => {
                 let _preserved = directory.keep();
+                if let Some(original) = embedded_original {
+                    let _preserved_original = original.keep();
+                }
                 Err(error)
             }
         }

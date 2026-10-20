@@ -173,7 +173,8 @@ async fn unsupported_or_malformed_capability_blocks_all_publication_calls() -> T
             "publication capability response is invalid; no invocation was submitted",
         ),
     ] {
-        let (requests, outcome) = exchange(&[], vec![response]).await?;
+        let (requests, outcome) =
+            exchange(&["--generation", "qualified-v1"], vec![response]).await?;
         let error = outcome.err().ok_or("unsupported endpoint accepted")?;
         check!(eq; requests.len(), 1);
         check!(requests
@@ -187,7 +188,7 @@ async fn unsupported_or_malformed_capability_blocks_all_publication_calls() -> T
 #[tokio::test]
 async fn failed_selected_workbook_never_falls_back_to_separate_exports() -> TestResult {
     let (requests, outcome) = exchange(
-        &[],
+        &["--generation", "qualified-v1"],
         vec![
             ("200 OK", capabilities()?),
             (

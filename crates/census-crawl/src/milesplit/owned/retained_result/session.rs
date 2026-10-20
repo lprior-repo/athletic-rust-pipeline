@@ -39,11 +39,6 @@ impl<'a, V: RetainedJournalView> OwnedResultSession<'a, V> {
         self.captures.clear();
     }
 
-    #[cfg(test)]
-    pub(in crate::milesplit) fn len(&self) -> usize {
-        self.captures.len()
-    }
-
     pub(in crate::milesplit) fn read(
         &mut self,
         reference: &OwnedAcquisitionRef,

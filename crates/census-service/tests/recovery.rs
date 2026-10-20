@@ -4,6 +4,8 @@ mod fallible_checks;
 
 #[path = "recovery_mod/discovery.rs"]
 mod discovery;
+#[path = "common/durable_capture.rs"]
+mod durable_capture;
 #[path = "recovery_mod/interrupted_worker.rs"]
 mod interrupted_worker;
 #[path = "recovery_mod/jurisdiction_replay.rs"]
@@ -132,12 +134,13 @@ fn fetcher_for(store: &Store) -> TestResult<Fetcher> {
 }
 
 fn context<'a>(
+    capture: census_crawl::CaptureContext<'a>,
     fetcher: &'a Fetcher,
     store: &'a Store,
     observed_on: &str,
 ) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture,
         fetcher,
         store,
         refresh: false,

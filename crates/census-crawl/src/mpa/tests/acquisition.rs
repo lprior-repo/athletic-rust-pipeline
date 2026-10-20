@@ -2,7 +2,7 @@ use super::{fixture_directory, fixture_staff_bonny_eagle};
 use crate::mpa::{collect, Options, HOST_WWW};
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::Fetcher;
-use crate::AdapterContext;
+use crate::{AdapterContext, ResultsCaptureContext};
 use census_domain::model::{
     CanonicalCoach, CanonicalSchool, Evidence, SchoolYear, SourceObservation,
 };
@@ -44,13 +44,15 @@ fn collect_retains_cached_acquisition_when_execution_and_options_are_later(
                 fixture_staff_bonny_eagle(),
                 ACQUIRED_AT,
             )?;
-            evaluate(&fetcher, &store, "2026-10-02T12:00:00Z", "").await?;
+            let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
+            evaluate(&fetcher, &store, "2026-10-02T12:00:00Z", "", &capture).await?;
             let before = [store.walk_table(Table::Schools)?.rows, store.walk_table(Table::Coaches)?.rows, store.walk_table(Table::SourceObservations)?.rows];
             evaluate(
                 &fetcher,
                 &store,
                 "2026-10-03T12:00:00Z",
                 "2026-10-04T12:00:00Z",
+                &capture,
             )
             .await?;
             check!(eq; [store.walk_table(Table::Schools)?.rows, store.walk_table(Table::Coaches)?.rows, store.walk_table(Table::SourceObservations)?.rows], before);
@@ -88,9 +90,10 @@ async fn evaluate(
     store: &Store,
     evaluation: &str,
     option_date: &str,
+    capture: &ResultsCaptureContext,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(capture),
         fetcher,
         store,
         refresh: false,

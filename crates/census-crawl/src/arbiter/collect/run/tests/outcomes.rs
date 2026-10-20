@@ -56,8 +56,9 @@ fn recording_incomplete_coach_page_cannot_emit_completion_receipt() -> TestResul
     seed_failure(&cache, &FirstPage::Short)?;
     let store = Store::open(dir.path().join("store"))?;
     let fetcher = fetcher(&cache)?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let recording = Recording::new();
-    let ctx = context(&fetcher, &store, Some(&recording))?;
+    let ctx = context(&fetcher, &store, Some(&recording), &capture)?;
     let options = options();
     let row = school();
     let mut failed = run(&ctx, &options)?;
@@ -104,7 +105,8 @@ fn school_without_coach_lookup_id_keeps_facts_and_owes_completion() -> TestResul
     let dir = tempfile::tempdir()?;
     let store = Store::open(dir.path().join("store"))?;
     let fetcher = fetcher(&dir.path().join("http"))?;
-    let ctx = context(&fetcher, &store, None)?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
+    let ctx = context(&fetcher, &store, None, &capture)?;
     let options = options();
     let mut row = school();
     row.public_id = None;

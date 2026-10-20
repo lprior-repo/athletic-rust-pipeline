@@ -9,7 +9,7 @@ pub(in crate::workbook::verify) enum Schema {
 impl Schema {
     pub(in crate::workbook::verify) fn of(semantics: EventSemantics) -> Self {
         match semantics {
-            EventSemantics::Legacy18 | EventSemantics::FlatEvents19 => Self::Historical64,
+            EventSemantics::FlatEvents19 => Self::Historical64,
             EventSemantics::CombinedEvents20
             | EventSemantics::ResultGroups21
             | EventSemantics::ResultGroups22 => Self::Current70,

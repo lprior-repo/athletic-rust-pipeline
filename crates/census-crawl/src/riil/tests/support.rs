@@ -1,6 +1,6 @@
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::{FetchOutcome, Fetcher};
-use crate::{AdapterContext, AdapterReport, Recording};
+use crate::{AdapterContext, AdapterReport, Recording, ResultsCaptureContext};
 use census_domain::model::SchoolYear;
 use census_store::{Entity, Store, Table};
 use std::{collections::HashMap, time::Duration};
@@ -71,8 +71,9 @@ pub(super) async fn evaluate(
     recording: Option<&Recording>,
     evaluation: &str,
     option_date: &str,
+    capture: &ResultsCaptureContext,
 ) -> anyhow::Result<AdapterReport> {
-    let ctx = context(fetcher, store, recording, evaluation)?;
+    let ctx = context(fetcher, store, recording, evaluation, capture)?;
     Ok(super::super::collect(
         &ctx,
         &super::super::Options {
@@ -88,9 +89,10 @@ pub(super) fn context<'a>(
     store: &'a Store,
     recording: Option<&'a Recording>,
     evaluation: &str,
+    capture: &'a ResultsCaptureContext,
 ) -> anyhow::Result<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(capture),
         fetcher,
         store,
         refresh: false,

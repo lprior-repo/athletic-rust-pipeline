@@ -133,7 +133,6 @@ fn historical_policies_do_not_acquire_current_identity_admission() -> TestResult
     let first = performance("one")?;
     let other = changed(&first, |row| row.athlete = Id::mint("ath", &["other"]));
     for policy in [
-        EventSemantics::Legacy18,
         EventSemantics::FlatEvents19,
         EventSemantics::CombinedEvents20,
     ] {
@@ -221,7 +220,6 @@ fn identity_admission_bounds_complete_provenance_at_the_exact_row_limit() -> Tes
         .ok_or("oversized provenance accepted")?;
     check!(error.to_string().contains("encoded row bytes"));
     for policy in [
-        EventSemantics::Legacy18,
         EventSemantics::FlatEvents19,
         EventSemantics::CombinedEvents20,
     ] {

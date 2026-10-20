@@ -55,6 +55,7 @@ fn collect_snapshot(url: &str) -> TestResult<CohortSnapshot> {
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let cache = dir.path().join("http");
             seed_cache(&cache, url, LIST)?;
             let store = Store::open(dir.path().join("store"))?;
@@ -67,7 +68,7 @@ fn collect_snapshot(url: &str) -> TestResult<CohortSnapshot> {
             )?
             .with_offline(true);
             let context = AdapterContext {
-                capture: crate::CaptureContext::LegacyMetadata,
+                capture: crate::CaptureContext::DurableV1(&capture),
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,

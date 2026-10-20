@@ -1,5 +1,6 @@
 use super::support;
 use super::*;
+use crate::fixture_schema::NORMAL_BODY;
 use std::future::Future;
 use std::task::{Context, Poll, Waker};
 

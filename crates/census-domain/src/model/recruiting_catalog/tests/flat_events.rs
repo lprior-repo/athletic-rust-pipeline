@@ -160,31 +160,3 @@ fn event_kinds_preserve_original_wire_bytes_and_keys() -> TestResult {
     check!(eq; serde_json::to_string(&kind)?, historical);
     Ok(())
 }
-
-#[test]
-fn explicit_legacy_semantics_retain_unsupported_flat_events() -> TestResult {
-    let old = RecruitingCatalogV1::with_policy(EventSemantics::Legacy18);
-    let new = RecruitingCatalogV1::with_policy(EventSemantics::FlatEvents19);
-    for label in ["300m", "500m", "600m", "2 miles", "two miles", "600m 800m"] {
-        let event = owned(unmapped(label), &[label])?;
-        let before = serialized_bytes(&event)?;
-        check!(eq; old.classify(&event, Sport::OutdoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::UnsupportedScholasticVariant));
-        check!(eq; serialized_bytes(&event)?, before);
-        if label != "600m 800m" {
-            check!(matches!(
-                new.classify(&event, Sport::OutdoorTrack)?,
-                EventDisposition::Included(_)
-            ));
-        }
-    }
-    let event = owned(EventKind::Track400m, &["Boys 400m banked track"])?;
-    check!(eq; old.classify(&event, Sport::IndoorTrack)?, EventDisposition::Included(EventKind::Track400m));
-    check!(eq; new.classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::ContradictoryDeclarations));
-    let mut bytes = Vec::new();
-    old.write_policy(&mut bytes)?;
-    let identity: serde_json::Value = serde_json::from_slice(&bytes)?;
-    check!(identity.get("policy_revision").is_none());
-    check!(eq; identity.get("grammar"), Some(&serde_json::json!("ascii_delimited_tokens_typed_context_xc_anchors_v3")));
-    check!(ne; old.digest()?, new.digest()?);
-    Ok(())
-}

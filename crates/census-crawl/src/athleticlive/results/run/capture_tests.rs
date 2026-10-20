@@ -20,9 +20,10 @@ fn scratch() -> TestResult<(tempfile::TempDir, Store, crate::net::Fetcher)> {
 fn context<'a>(
     store: &'a Store,
     fetcher: &'a crate::net::Fetcher,
+    capture: &'a crate::ResultsCaptureContext,
 ) -> TestResult<AdapterContext<'a>> {
     Ok(AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher,
         store,
         refresh: false,
@@ -49,7 +50,8 @@ fn producer_metadata(bytes: usize) -> CacheMeta {
 #[test]
 fn result_capture_refuses_declared_body_over_1_mib() -> TestResult {
     let (root, store, fetcher) = scratch()?;
-    let ctx = context(&store, &fetcher)?;
+    let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
+    let ctx = context(&store, &fetcher, &capture)?;
     let input = root.path().join("event-doc.json");
     std::fs::File::create(&input)?.set_len(u64::try_from(MAX_CAPTURE_BYTES + 1)?)?;
     let path = input.to_string_lossy().into_owned();
@@ -76,7 +78,8 @@ fn result_capture_refuses_declared_body_over_1_mib() -> TestResult {
 #[test]
 fn result_capture_refuses_physical_body_over_1_mib() -> TestResult {
     let (root, store, fetcher) = scratch()?;
-    let ctx = context(&store, &fetcher)?;
+    let capture = crate::net::durable_capture_context(&root.path().join("capture"))?;
+    let ctx = context(&store, &fetcher, &capture)?;
     let input = root.path().join("event-doc.json");
     std::fs::File::create(&input)?.set_len(u64::try_from(MAX_CAPTURE_BYTES + 1)?)?;
     let path = input.to_string_lossy().into_owned();

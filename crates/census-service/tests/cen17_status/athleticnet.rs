@@ -15,6 +15,8 @@ use std::path::Path;
 
 #[path = "../common/capture_cache.rs"]
 mod capture_cache;
+#[path = "../common/durable_capture.rs"]
+mod durable_capture;
 
 const MEET: &str =
     include_str!("../../../census-crawl/tests/fixtures/athleticnet/meet_634313_meetdata.json");
@@ -78,8 +80,10 @@ async fn execute(surface: Option<Value>, status: Option<&str>, numeric_best: boo
         &headers,
     )?;
     let year = SchoolYear::new(2025).ok_or("captured school year")?;
+    let durable = durable_capture::DurableCapture::mint()?;
+    let owned = durable.capture()?;
     let context = AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture: census_crawl::CaptureContext::DurableV1(&owned),
         store: &store,
         fetcher: &fetcher,
         refresh: false,

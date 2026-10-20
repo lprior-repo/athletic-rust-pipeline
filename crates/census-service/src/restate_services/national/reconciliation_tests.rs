@@ -390,7 +390,16 @@ async fn drive(store: Arc<Store>) -> TestResult<Journal> {
                 .http2_prior_knowledge()
                 .timeout(Duration::from_secs(5))
                 .build()?;
-            let mut journal = Journal::new(&fixtures::request()?)?;
+            let controlled = crate::restate_services::jobs::selected_fixture::install()
+                .map_err(|error| error.to_string())?;
+            let mut request = super::publication_tests::fixtures::selected_request(
+                &controlled,
+                &census_domain::UsJurisdiction::CENSUS_SCOPE,
+            )?;
+            request.pass_budget = 0;
+            request.pass_delay_seconds = 0;
+            let mut journal = Journal::new(&request)?;
+            journal.selected_workbook = Some(controlled);
             journal.hold_stage = Some("Workbook".to_owned());
             journal.drive(&client, &url).await?;
             check!(journal.held.is_some());

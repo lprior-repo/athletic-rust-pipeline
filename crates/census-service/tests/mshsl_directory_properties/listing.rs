@@ -130,7 +130,7 @@ fn schema(body: &str, expected: &str) -> Result<()> {
 #[test]
 fn empty_and_unrelated_markup_are_typed_listing_refusals() -> Result<()> {
     for body in ["", "<html><body>no rows</body></html>"] {
-        schema(body, "listing row must contain one school title")?;
+        schema(body, "listing contained no recognized school rows")?;
     }
     Ok(())
 }
@@ -205,8 +205,14 @@ fn malformed_school_rows_cannot_disappear_between_valid_rows() -> Result<()> {
     let first = row("first", "First", Some("Alpha"));
     let last = row("last", "Last", Some("Omega"));
     for (malformed, expected) in [
-        ("<div class=\"views-row\"><a href=\"/schools\" class=\"school-teaser__title\">No Slug</a></div>", "listing row has no school link"),
-        ("<div class=\"views-row\">No title</div>", "listing row must contain one school title"),
+        (
+            "<div class=\"views-row\"><a href=\"/schools\" class=\"school-teaser__title\">No Slug</a></div>",
+            "owned school row has malformed school link",
+        ),
+        (
+            "<div class=\"views-row\"><div class=\"school-teaser\"><span>No title and no link</span></div></div>",
+            "owned school row is missing its title",
+        ),
     ] {
         schema(&format!("{first}{malformed}{last}"), expected)?;
     }

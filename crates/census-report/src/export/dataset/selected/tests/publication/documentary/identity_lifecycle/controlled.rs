@@ -136,7 +136,7 @@ fn affected(store: &Store, candidates: &[AthleteCandidateId; 2]) -> TestResult<V
         .scan::<census_domain::model::RelayResult>(Table::RelayResults)?
         .is_empty());
     let observations = snapshot.scan::<SourceObservation>(Table::SourceObservations)?;
-    check!(eq; observations.len(), 4);
+    check!(eq; observations.len(), 2);
     let mut keys = candidates
         .iter()
         .map(|id| format!("athletes:{id}"))
@@ -152,8 +152,8 @@ fn affected(store: &Store, candidates: &[AthleteCandidateId; 2]) -> TestResult<V
                 .ok_or("observation count")?;
         }
     }
-    check!(eq; athlete_observations, 3);
+    check!(eq; athlete_observations, 1);
     keys.sort();
-    check!(eq; keys.len(), 5);
+    check!(eq; keys.len(), 3);
     Ok(keys)
 }

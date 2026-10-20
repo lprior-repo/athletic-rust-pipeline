@@ -12,6 +12,7 @@ fn failed_summary_does_not_hide_recovered_public_contact() -> TestResult {
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let mut historical = store.write_batch();
             historical.journal_done(
@@ -28,7 +29,7 @@ fn failed_summary_does_not_hide_recovered_public_contact() -> TestResult {
                 fixture("coach_directories/probe/WY/directory-1.json")?.as_bytes(),
             )?;
             let ctx = AdapterContext {
-                capture: crate::CaptureContext::LegacyMetadata,
+                capture: crate::CaptureContext::DurableV1(&capture),
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,
@@ -77,6 +78,7 @@ fn a_rejected_directory_row_is_retained_without_failing_the_source() -> TestResu
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let fetcher = make_offline_fetcher(dir.path())?;
             let page = serde_json::json!({
@@ -113,7 +115,7 @@ fn a_rejected_directory_row_is_retained_without_failing_the_source() -> TestResu
                 page.to_string().as_bytes(),
             )?;
             let ctx = AdapterContext {
-                capture: crate::CaptureContext::LegacyMetadata,
+                capture: crate::CaptureContext::DurableV1(&capture),
                 fetcher: &fetcher,
                 store: &store,
                 refresh: false,

@@ -1,4 +1,5 @@
 use super::*;
+use crate::export::ExportJobRequest;
 use census_store::publish::{Digest, Intent, Request, State};
 
 struct Retained {
@@ -20,7 +21,11 @@ impl Retained {
         let old = crate::workbook::build(&store, &options)?;
         let old_bytes = std::fs::read(&old)?;
         options.limit = Some(1);
-        let dataset = ExportDataset::for_job(&store, "requested-stage-rebind")?;
+        let dataset = ExportDataset::for_job_request(
+            &store,
+            "requested-stage-rebind",
+            &ExportJobRequest::LegacyV2,
+        )?;
         let root = store.out_dir().join("publication");
         let namespace = binding::namespace(&root)?;
         let input = binding::input(&dataset, &store, &options)?;

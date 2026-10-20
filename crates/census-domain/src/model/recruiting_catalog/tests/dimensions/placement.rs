@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn facility_placement_preserves_existing_flat_event_admission_under_both_policies() -> TestResult {
+fn facility_placement_preserves_existing_flat_event_admission_under_flat_policy() -> TestResult {
     for label in [
         "(200m banked) Boys 400m",
         "Boys (200m banked) 400m",
@@ -10,7 +10,7 @@ fn facility_placement_preserves_existing_flat_event_admission_under_both_policie
         for canonical in [EventKind::Track400m, unmapped(label)] {
             let event = owned(canonical, &[label])?;
             let before = serialized_bytes(&event)?;
-            for semantics in [EventSemantics::Legacy18, EventSemantics::FlatEvents19] {
+            for semantics in [EventSemantics::FlatEvents19] {
                 check!(eq; RecruitingCatalogV1::with_policy(semantics).classify(&event, Sport::IndoorTrack)?, EventDisposition::Included(EventKind::Track400m), "{label}");
                 check!(eq; event.resolved_specification_with_policy(semantics)?, EventSpecification {
                     indoor_track: Some(IndoorTrackSpecification::new(200_000_000, TrackBanking::Banked)?),
@@ -26,55 +26,48 @@ fn facility_placement_preserves_existing_flat_event_admission_under_both_policie
 
 #[test]
 fn facility_first_flat_extensions_keep_exact_races_and_dimensions() -> TestResult {
-    for (label, kind, length, banking, legacy_reason) in [
+    for (label, kind, length, banking) in [
         (
             "(200m banked) Boys 300m",
             EventKind::Track300m,
             200_000_000,
             TrackBanking::Banked,
-            EventResolutionReason::UnsupportedScholasticVariant,
         ),
         (
             "(300m flat) Boys 500m",
             EventKind::Track500m,
             300_000_000,
             TrackBanking::Flat,
-            EventResolutionReason::UnsupportedScholasticVariant,
         ),
         (
             "(200m flat) Boys 600m",
             EventKind::Track600m,
             200_000_000,
             TrackBanking::Flat,
-            EventResolutionReason::UnsupportedScholasticVariant,
         ),
         (
             "(200m banked) Boys 2 miles",
             EventKind::Track2Miles,
             200_000_000,
             TrackBanking::Banked,
-            EventResolutionReason::UnsupportedScholasticVariant,
         ),
         (
             "(300m banked) Boys 2000m",
             EventKind::Track2000m,
             300_000_000,
             TrackBanking::Banked,
-            EventResolutionReason::UnsupportedScholasticVariant,
         ),
         (
             "(200m track) Boys 2k",
             EventKind::Track2000m,
             200_000_000,
             TrackBanking::Unknown,
-            EventResolutionReason::UnknownOrMixedSourceLabels,
         ),
         (
             "(300m banked) Boys 10000m",
             EventKind::Track10000m,
             300_000_000,
             TrackBanking::Banked,
-            EventResolutionReason::UnsupportedScholasticVariant,
         ),
     ] {
         for canonical in [kind.clone(), unmapped(label)] {
@@ -86,7 +79,6 @@ fn facility_first_flat_extensions_keep_exact_races_and_dimensions() -> TestResul
                 category: Some(CompetitionCategory::Boys),
                 ..EventSpecification::default()
             }, "{label}");
-            check!(eq; RecruitingCatalogV1::with_policy(EventSemantics::Legacy18).classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(legacy_reason), "{label}");
             check!(eq; serialized_bytes(&event)?, before, "{label}");
         }
     }

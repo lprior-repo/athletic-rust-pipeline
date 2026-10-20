@@ -1,4 +1,5 @@
 use super::*;
+use crate::export::ExportJobRequest;
 use census_domain::model::CanonicalSchool;
 use census_domain::UsJurisdiction;
 use census_store::Table;
@@ -11,7 +12,11 @@ fn publication_fence_evidence_changed_during_render_refuses_intent() -> TestResu
     let options = super::fence_tests::options(None)?;
     let old = crate::workbook::build(&store, &options)?;
     let bytes = std::fs::read(&old)?;
-    let dataset = ExportDataset::for_job(&store, "evidence-during-render")?;
+    let dataset = ExportDataset::for_job_request(
+        &store,
+        "evidence-during-render",
+        &ExportJobRequest::LegacyV2,
+    )?;
     let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let stage = Stage::begin(&dataset, &store, &options)?;
     let result = stage.publish(&dataset, &options, |directory| {
@@ -45,7 +50,8 @@ fn publication_fence_changed_recipe_cannot_receipt_another_bundle() -> TestResul
     let options = super::fence_tests::options(None)?;
     let old = crate::workbook::build(&store, &options)?;
     let bytes = std::fs::read(&old)?;
-    let dataset = ExportDataset::for_job(&store, "changed-recipe")?;
+    let dataset =
+        ExportDataset::for_job_request(&store, "changed-recipe", &ExportJobRequest::LegacyV2)?;
     let stage = Stage::begin(&dataset, &store, &options)?;
     let mut changed = options;
     changed.limit = Some(1);
@@ -73,7 +79,8 @@ fn publication_fence_stale_snapshot_is_typed_input_refusal() -> TestResult {
     let options = super::fence_tests::options(None)?;
     let old = crate::workbook::build(&store, &options)?;
     let bytes = std::fs::read(&old)?;
-    let dataset = ExportDataset::for_job(&store, "stale-before-stage")?;
+    let dataset =
+        ExportDataset::for_job_request(&store, "stale-before-stage", &ExportJobRequest::LegacyV2)?;
     let (school, _) = CanonicalSchool::new(
         UsJurisdiction::Wisconsin,
         "New Evidence",
@@ -101,7 +108,8 @@ fn publication_fence_visible_requested_bundle_still_fences_new_intent() -> TestR
     let options = super::fence_tests::options(None)?;
     let old = crate::workbook::build(&store, &options)?;
     let bytes = std::fs::read(&old)?;
-    let dataset = ExportDataset::for_job(&store, "visible-requested")?;
+    let dataset =
+        ExportDataset::for_job_request(&store, "visible-requested", &ExportJobRequest::LegacyV2)?;
     let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     let mut other = options.clone();
     other.out = Some(temp.path().join("other"));

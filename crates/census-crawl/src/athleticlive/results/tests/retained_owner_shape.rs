@@ -155,11 +155,12 @@ async fn retain(
     original: &ResultOptions,
     revision: Revision,
     corruption: Option<Damage>,
+    capture: &crate::ResultsCaptureContext,
 ) -> TestResult {
     let recording = crate::recording::Recording::new();
     let ctx = AdapterContext {
         recording: Some(&recording),
-        ..context(store, fetcher)?
+        ..context(store, fetcher, capture)?
     };
     let drafted = collect(&ctx, original).await?;
     check!(eq; (drafted.errors, drafted.rows), (0, 1), "{}", joined(&drafted));
@@ -195,15 +196,24 @@ async fn retain(
 
 async fn refused_corruption(revision: Revision, corruption: Damage) -> TestResult {
     let (dir, store, fetcher) = scratch()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let (original, alias) = prepare(&dir, &store)?;
-    retain(&store, &fetcher, &original, revision, Some(corruption)).await?;
+    retain(
+        &store,
+        &fetcher,
+        &original,
+        revision,
+        Some(corruption),
+        &capture,
+    )
+    .await?;
     let (phase, _, _) = revision.phases();
     let before = snapshot(&store, phase)?;
     let current = receipts(&store)?;
     let raw = snapshot(&store, super::super::CAPTURE_PHASE)?;
     check!(eq; before.len(), 1);
     check!(eq; raw.len(), 1);
-    let refused = collect(&context(&store, &fetcher)?, &alias).await?;
+    let refused = collect(&context(&store, &fetcher, &capture)?, &alias).await?;
     check!(eq; (refused.errors, refused.rows), (1, 0), "{revision:?}/{corruption:?}: {}", joined(&refused));
     check!(
         joined(&refused).contains("ambiguous or incompatible LIVE projection receipt shape"),
@@ -218,7 +228,7 @@ async fn refused_corruption(revision: Revision, corruption: Damage) -> TestResul
     let store = Store::open(dir.path().join("store"))?;
     check!(eq; snapshot(&store, phase)?, before);
     check!(eq; snapshot(&store, super::super::CAPTURE_PHASE)?, raw);
-    let refused = collect(&context(&store, &fetcher)?, &alias).await?;
+    let refused = collect(&context(&store, &fetcher, &capture)?, &alias).await?;
     check!(eq; (refused.errors, refused.rows), (1, 0));
     check!(joined(&refused).contains("ambiguous or incompatible LIVE projection receipt shape"));
     check!(eq; snapshot(&store, phase)?, before);
@@ -269,12 +279,13 @@ fn valid_writer_capture_fields_keep_both_retained_revisions_owner_bound_on_path_
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         for revision in [Revision::Historical, Revision::Current] {
             let (dir, store, fetcher) = scratch()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let (original, alias) = prepare(&dir, &store)?;
-            retain(&store, &fetcher, &original, revision, None).await?;
+            retain(&store, &fetcher, &original, revision, None, &capture).await?;
             let (phase, _, _) = revision.phases();
             let before = snapshot(&store, phase)?;
             let raw = snapshot(&store, super::super::CAPTURE_PHASE)?;
-            let refused = collect(&context(&store, &fetcher)?, &alias).await?;
+            let refused = collect(&context(&store, &fetcher, &capture)?, &alias).await?;
             check!(eq; (refused.errors, refused.rows), (1, 0), "{revision:?}: {}", joined(&refused));
             check!(joined(&refused).contains("capture belongs to another meet/provider; refusing to project"),
                 "{revision:?}: {}", joined(&refused));

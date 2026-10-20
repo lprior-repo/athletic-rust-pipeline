@@ -8,6 +8,7 @@ fn explicit_refresh_reopens_journaled_profiles_and_keeps_failed_refresh_owed() -
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let fetcher = crate::net::Fetcher::new(
                 dir.path().join("http"),
@@ -17,7 +18,7 @@ fn explicit_refresh_reopens_journaled_profiles_and_keeps_failed_refresh_owed() -
                 Vec::new(),
             )?
             .with_offline(true);
-            let ctx = context(&store, &fetcher)?;
+            let ctx = context(&store, &fetcher, &capture)?;
             let urls = source_urls(28872883);
             for url in &urls {
                 store.journal_done(
@@ -74,6 +75,7 @@ fn pre_admission_profile_receipts_do_not_hide_owed_owner_validation() -> TestRes
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let fetcher = crate::net::Fetcher::new(
                 dir.path().join("http"),
@@ -83,7 +85,7 @@ fn pre_admission_profile_receipts_do_not_hide_owed_owner_validation() -> TestRes
                 Vec::new(),
             )?
             .with_offline(true);
-            let ctx = context(&store, &fetcher)?;
+            let ctx = context(&store, &fetcher, &capture)?;
             for url in source_urls(28127170) {
                 store.journal_done(
                     "athleticnet",
@@ -120,6 +122,7 @@ fn pre_admission_profile_receipts_do_not_hide_owed_owner_validation() -> TestRes
 fn previous_profile_parser_receipts_remain_retained_without_current_completion_credit() -> TestResult
 {
     let dir = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let store = Store::open(dir.path().join("store"))?;
     let fetcher = crate::net::Fetcher::new(
         dir.path().join("http"),
@@ -129,7 +132,7 @@ fn previous_profile_parser_receipts_remain_retained_without_current_completion_c
         Vec::new(),
     )?
     .with_offline(true);
-    let ctx = context(&store, &fetcher)?;
+    let ctx = context(&store, &fetcher, &capture)?;
     let url = source_urls(28872883)
         .into_iter()
         .next()
@@ -164,6 +167,7 @@ fn withheld_profile_commits_owner_grade_locators_without_successful_full_keys() 
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path().join("store"))?;
             let cache = dir.path().join("http");
             let mut profile: serde_json::Value = serde_json::from_str(CAPTURE)?;
@@ -181,7 +185,7 @@ fn withheld_profile_commits_owner_grade_locators_without_successful_full_keys() 
                 Vec::new(),
             )?
             .with_offline(true);
-            let ctx = context(&store, &fetcher)?;
+            let ctx = context(&store, &fetcher, &capture)?;
             let report =
                 crate::athleticnet::collect::collect(&ctx, &options(dir.path(), 28872883)?).await?;
             check!(eq; report.errors, 2);

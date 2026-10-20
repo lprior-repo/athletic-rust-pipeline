@@ -119,6 +119,8 @@ fn actual_cli_enrollment_reopens_and_native_serve_refuses_before_binding() -> Te
     let output = Command::new(env!("CARGO_BIN_EXE_census-serve"))
         .arg("--data-dir")
         .arg(root.path())
+        .arg("--capture-protocol")
+        .arg("fresh-qualification-v3")
         .arg("--listen")
         .arg(reserved.local_addr()?.to_string())
         .arg("--browser-profile")

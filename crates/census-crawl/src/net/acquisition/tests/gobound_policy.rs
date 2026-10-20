@@ -16,7 +16,6 @@ use std::time::Duration;
 use tokio::net::TcpListener;
 
 const HELD_HOST: &str = "www.gobound.com";
-const CERT: &[u8] = include_bytes!("fixtures/mi-milesplit-public-test-cert.der");
 
 struct LocalOnlyDns {
     address: SocketAddr,

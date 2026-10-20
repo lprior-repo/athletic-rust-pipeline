@@ -10,9 +10,10 @@ fn context<'a>(
     store: &'a Store,
     fetcher: &'a crate::net::Fetcher,
     recording: &'a Recording,
+    capture: &'a crate::ResultsCaptureContext,
 ) -> Result<AdapterContext<'a>, Box<dyn std::error::Error>> {
     Ok(AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(capture),
         store,
         fetcher,
         recording: Some(recording),
@@ -49,10 +50,11 @@ fn options() -> Options {
 #[test]
 fn one_large_artifact_flushes_rows_before_accumulating_the_artifact() -> TestResult {
     let dir = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let store = Store::open(dir.path())?;
     let fetcher = fetcher(&store)?;
     let recording = Recording::spooled(store.clone(), "large-artifact/0".into())?;
-    let ctx = context(&store, &fetcher, &recording)?;
+    let ctx = context(&store, &fetcher, &recording, &capture)?;
     let (school, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Middleton", "middleton", None);
     let schools = [school];
@@ -127,6 +129,7 @@ fn wiaa_cursor_keeps_the_frozen_catalogue_when_live_catalogues_change() -> TestR
         .build()?
         .block_on(async {
             let dir = tempfile::tempdir()?;
+            let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
             let store = Store::open(dir.path())?;
             let fetcher = fetcher(&store)?;
             let (school, _) =
@@ -148,7 +151,7 @@ fn wiaa_cursor_keeps_the_frozen_catalogue_when_live_catalogues_change() -> TestR
                 )?;
             }
             let first_recording = Recording::spooled(store.clone(), "frozen/0".into())?;
-            let first_ctx = context(&store, &fetcher, &first_recording)?;
+            let first_ctx = context(&store, &fetcher, &first_recording, &capture)?;
             let (report, more) = collect_fragment(&first_ctx, &options(), 0).await?;
             check!(eq; report.rows, 1);
             check!(more);
@@ -164,7 +167,7 @@ fn wiaa_cursor_keeps_the_frozen_catalogue_when_live_catalogues_change() -> TestR
                 super::tests::seed_result_cache(&fetcher, url, b"<html>catalogue replaced</html>")?;
             }
             let second_recording = Recording::spooled(store.clone(), "frozen/1".into())?;
-            let second_ctx = context(&store, &fetcher, &second_recording)?;
+            let second_ctx = context(&store, &fetcher, &second_recording, &capture)?;
             let (report, more) = collect_fragment(&second_ctx, &options(), 1).await?;
             check!(eq; report.rows, 1, "the original second artifact remains reachable");
             check!(more);

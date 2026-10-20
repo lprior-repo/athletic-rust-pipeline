@@ -91,10 +91,7 @@ fn historical_input_token_matches_the_complete_capture_without_sequence_currentn
     );
     let foreign = StoreIdentity::parse(&"2".repeat(64))?;
     check!(require_attachment_retained_inputs(raw, &binding, &foreign, 9, 7).is_err());
-    binding.0.format.lifecycle_revision = binding
-        .0
-        .format
-        .lifecycle_revision
+    binding.0.format.lifecycle_revision = crate::RESULT_CALENDAR_CORRESPONDENCE_LIFECYCLE
         .checked_add(1)
         .ok_or("lifecycle overflow")?;
     check!(

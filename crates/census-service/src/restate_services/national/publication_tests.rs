@@ -10,7 +10,7 @@ mod cohort_replay;
 use assertion::{assert_published, publication_services};
 mod binding;
 pub(crate) mod codec;
-mod fixtures;
+pub(super) mod fixtures;
 mod generation;
 pub(super) mod journal;
 mod restricted;

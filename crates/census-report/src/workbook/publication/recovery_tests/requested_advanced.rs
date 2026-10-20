@@ -1,12 +1,17 @@
 use super::super::*;
 use super::*;
+use crate::export::ExportJobRequest;
 
 #[test]
 fn publication_recovery_requested_advanced_state_dispatches_actual_bundle() -> TestResult {
     let temp = tempfile::tempdir()?;
     let store = Store::open(temp.path().join("store"))?;
     let options = super::super::fence_tests::options(None)?;
-    let dataset = ExportDataset::for_job(&store, "requested-advanced-state")?;
+    let dataset = ExportDataset::for_job_request(
+        &store,
+        "requested-advanced-state",
+        &ExportJobRequest::LegacyV2,
+    )?;
     let root = store.out_dir().join("publication");
     let _stage = Stage::begin(&dataset, &store, &options)?;
     let namespace = binding::namespace(&root)?;

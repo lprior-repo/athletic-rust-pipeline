@@ -1,4 +1,5 @@
 use super::*;
+use crate::export::ExportJobRequest;
 use census_store::publish::{Root, State};
 use std::io::Write;
 use std::os::unix::process::ExitStatusExt;
@@ -15,7 +16,8 @@ fn native_publication_worker() -> TestResult {
     let store = Store::open(PathBuf::from(store))?;
     let mut options = super::fence_tests::options(None)?;
     options.limit = Some(1);
-    let dataset = ExportDataset::for_job(&store, "crash-window")?;
+    let dataset =
+        ExportDataset::for_job_request(&store, "crash-window", &ExportJobRequest::LegacyV2)?;
     let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
     crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
     Err("crash worker returned without terminating at its checkpoint".into())

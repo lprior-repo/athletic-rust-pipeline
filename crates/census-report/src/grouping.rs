@@ -4,6 +4,7 @@ use std::io::{self, Write};
 pub(crate) const ROW_BYTES: usize = 1_048_576;
 pub(crate) const STAGE_BYTES: usize = 4 * 1024 * 1024 * 1024;
 pub(crate) const STAGE_WORK: usize = 16_777_216;
+pub(crate) const GROUP_BYTES: usize = 268_435_456;
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum GroupingError {

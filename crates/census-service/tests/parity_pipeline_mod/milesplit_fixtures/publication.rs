@@ -1,5 +1,5 @@
 use anyhow::{ensure, Context, Result};
-use census_crawl::{milesplit, net::Fetcher, AdapterContext};
+use census_crawl::{milesplit, net::Fetcher, AdapterContext, CaptureContext};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalPerformance, CanonicalSchool, SchoolYear,
     SourceIdentity, SourceNamespace,
@@ -11,14 +11,20 @@ use census_store::{Store, Table};
 mod readback;
 pub use readback::assert_publication;
 
-pub async fn project_into_publication_store(store: &Store, fetcher: &Fetcher) -> Result<()> {
+pub async fn project_into_publication_store(
+    store: &Store,
+    fetcher: &Fetcher,
+    durable: &crate::durable_capture::DurableCapture,
+) -> Result<()> {
     seed_directory_owners(store)?;
     let options = crate::milesplit_fixtures::replay::seed_captures(
+        durable,
         fetcher,
         crate::milesplit_fixtures::replay::OWNED,
     )?;
+    let owned = durable.capture()?;
     let context = AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture: CaptureContext::DurableV1(&owned),
         fetcher,
         store,
         refresh: false,
@@ -28,7 +34,7 @@ pub async fn project_into_publication_store(store: &Store, fetcher: &Fetcher) ->
         recording: None,
     };
     let report = milesplit::collect_result_sets(&context, &options).await?;
-    ensure!(report.requests == 0 && report.from_cache == 3 && report.rows == 3);
+    ensure!(report.requests == 0 && report.from_cache == 2 && report.rows == 3);
     ensure!(report.errors == 0, "owned projection failed: {report:?}");
     assert_projected(store)?;
     let before = store.snapshot().tables_digest(&Table::ALL)?;
@@ -45,6 +51,17 @@ pub async fn project_into_publication_store(store: &Store, fetcher: &Fetcher) ->
         ensure!(receipt["lifetime_pr_claimed"] == false);
         ensure!(receipt["census_sealed"] == false);
     }
+    let replayed = durable.capture()?;
+    let context = AdapterContext {
+        capture: CaptureContext::DurableV1(&replayed),
+        fetcher,
+        store,
+        refresh: false,
+        school_year: SchoolYear::new(2026).context("fixture season")?,
+        observed_on: "2026-09-20".into(),
+        performance_as_of: chrono::NaiveDate::parse_from_str("2026-09-20", "%Y-%m-%d")?,
+        recording: None,
+    };
     let repeated = milesplit::collect_result_sets(&context, &options).await?;
     ensure!(repeated.requests == 0);
     ensure!(store.snapshot().tables_digest(&Table::ALL)? == before);

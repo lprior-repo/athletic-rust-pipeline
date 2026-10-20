@@ -186,7 +186,7 @@ fn historical_inventory_serialization_retains_its_original_keys() -> TestResult 
     let directory = tempfile::tempdir()?;
     let store = fixture.store_with_replay(directory.path(), &observations)?;
     let mut dataset = ExportDataset::load(&store)?;
-    for policy in [18, 19, 20] {
+    for policy in [19, 20] {
         let encoded = serde_json::to_value(single(&mut dataset, policy)?)?;
         check!(eq; encoded.get("eligible_candidate_count"), Some(&serde_json::json!(1)));
         check!(eq; encoded.get("tied_performance_count"), Some(&serde_json::json!(1)));

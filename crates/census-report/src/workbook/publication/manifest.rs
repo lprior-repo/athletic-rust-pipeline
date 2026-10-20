@@ -84,6 +84,14 @@ impl Manifest {
         self.selection.options()
     }
 
+    pub(super) fn reusable_for(&self, fresh: &Self) -> bool {
+        self.schema_revision == fresh.schema_revision
+            && self.lineage.input_generation == fresh.lineage.input_generation
+            && self.selection == fresh.selection
+            && self.normalized_csv_rows == fresh.normalized_csv_rows
+            && self.selected_profile == fresh.selected_profile
+    }
+
     pub(super) fn capture(
         directory: &Path,
         dataset: &ExportDataset,

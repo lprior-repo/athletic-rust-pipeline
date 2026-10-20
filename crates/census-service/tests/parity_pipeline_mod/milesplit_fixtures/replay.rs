@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
-use census_crawl::{milesplit, net::Fetcher, AdapterContext};
+use census_crawl::{milesplit, net::Fetcher, AdapterContext, CaptureContext};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use census_store::{Store, Table};
+use census_store::Table;
 
 use super::{RAW_FILES, RELAYS, TROY_URL};
 use crate::common;
@@ -15,8 +15,7 @@ mod assertions;
 #[path = "../../common/capture_cache.rs"]
 mod cache;
 
-pub(crate) const OWNED: &[u8] =
-    include_bytes!("../../../../census-crawl/src/milesplit/owned/fixtures/troy_725218.json");
+pub(crate) use census_crawl::milesplit::troy_fixture::BODY as OWNED;
 pub(crate) const ACQUIRED_AT: &str = "2026-10-01T23:44:16Z";
 pub(crate) const RAW_CAPTURES: [(&str, &str, &str); 2] = [
     (RAW_FILES[0], "1266814", "2026-09-28T10:11:24Z"),
@@ -37,8 +36,8 @@ pub async fn replay_owned_captures() -> Result<()> {
 }
 
 async fn replay_capture(body: &[u8], relay: bool) -> Result<()> {
-    let root = tempfile::tempdir().context("isolated retained-capture replay")?;
-    let store = Store::open(root.path())?;
+    let durable = crate::durable_capture::DurableCapture::mint()?;
+    let store = durable.store().clone();
     let fetcher = Fetcher::new(
         store.http_cache_dir(),
         None,
@@ -47,9 +46,10 @@ async fn replay_capture(body: &[u8], relay: bool) -> Result<()> {
         Vec::new(),
     )?
     .with_offline(true);
-    let options = seed_captures(&fetcher, body)?;
+    let options = seed_captures(&durable, &fetcher, body)?;
+    let owned = durable.capture()?;
     let context = AdapterContext {
-        capture: census_crawl::CaptureContext::LegacyMetadata,
+        capture: CaptureContext::DurableV1(&owned),
         fetcher: &fetcher,
         store: &store,
         refresh: false,
@@ -60,7 +60,7 @@ async fn replay_capture(body: &[u8], relay: bool) -> Result<()> {
     };
     let report = milesplit::collect_result_sets(&context, &options).await?;
     check!(eq; report.requests, 0);
-    check!(eq; report.from_cache, 3);
+    check!(eq; report.from_cache, 2);
     check!(eq; report.rows, if relay { 0 } else { 3 });
     check!(eq; report.errors, if relay { 0 } else { 1 });
     assertions::assert_retention(&store, body, relay)?;
@@ -68,6 +68,17 @@ async fn replay_capture(body: &[u8], relay: bool) -> Result<()> {
     let observations = store.snapshot().tables_digest(&Table::ALL)?;
     let source_meets = store.journal_payloads(milesplit::OWNED_MEET_PHASE)?;
     let captures = store.journal_payloads(milesplit::OWNED_CAPTURE_PHASE)?;
+    let replayed = durable.capture()?;
+    let context = AdapterContext {
+        capture: CaptureContext::DurableV1(&replayed),
+        fetcher: &fetcher,
+        store: &store,
+        refresh: false,
+        school_year: SchoolYear::new(2026).context("2026 school year")?,
+        observed_on: "2026-09-20".to_string(),
+        performance_as_of: chrono::NaiveDate::parse_from_str("2026-09-20", "%Y-%m-%d")?,
+        recording: None,
+    };
     let repeated = milesplit::collect_result_sets(&context, &options).await?;
     check!(eq; repeated.requests, 0);
     check!(eq; store.journal_payloads(PHASE)?, before);
@@ -77,15 +88,18 @@ async fn replay_capture(body: &[u8], relay: bool) -> Result<()> {
     assertions::assert_retention(&store, body, relay)
 }
 
-pub(crate) fn seed_captures(fetcher: &Fetcher, body: &[u8]) -> Result<milesplit::ResultSetOptions> {
-    let owned_url = format!(
-        "https://al.milesplit.com/api/v1/meets/725218/performances?isMeetPro=0&fields={}",
-        milesplit::OWNED_FIELDS
-    );
-    cache::seed(fetcher.cache_dir(), &owned_url, body, ACQUIRED_AT, &[])?;
+pub(crate) fn seed_captures(
+    durable: &crate::durable_capture::DurableCapture,
+    fetcher: &Fetcher,
+    body: &[u8],
+) -> Result<milesplit::ResultSetOptions> {
     let mut urls = Vec::new();
+    let mut owned_reference = None;
     for (file, rsid, acquired_at) in RAW_CAPTURES {
         let url = format!("{TROY_URL}/{rsid}/raw");
+        if owned_reference.is_none() {
+            owned_reference = milesplit::ResultSetRef::parse(&url);
+        }
         cache::seed(
             fetcher.cache_dir(),
             &url,
@@ -98,5 +112,7 @@ pub(crate) fn seed_captures(fetcher: &Fetcher, body: &[u8]) -> Result<milesplit:
             jurisdiction: UsJurisdiction::Alabama,
         });
     }
+    let reference = owned_reference.context("owned Troy reference")?;
+    durable.record_owned_meet(fetcher, &reference, body, ACQUIRED_AT)?;
     Ok(milesplit::ResultSetOptions { urls })
 }

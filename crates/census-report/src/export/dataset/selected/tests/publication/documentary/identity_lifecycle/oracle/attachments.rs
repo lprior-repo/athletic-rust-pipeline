@@ -2,7 +2,7 @@ use super::*;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::{EvidenceSubjectAttachmentStoreError as AttachmentError, StoreError};
 
-pub(in super::super) fn moved(fixture: &Fixture, objects: &Path) -> TestResult {
+pub(in super::super) fn moved(fixture: &Fixture) -> TestResult {
     let snapshot = fixture.store.snapshot();
     let mut grant = AttachmentReplayGrantV1::new();
     let retained = snapshot.read_evidence_subject_attachment_references_v1(&mut grant)?;
@@ -20,14 +20,11 @@ pub(in super::super) fn moved(fixture: &Fixture, objects: &Path) -> TestResult {
             AttachmentError::TargetMoved
         ))
     ));
-    capture_refuses_moved_status(fixture, objects)?;
+    capture_refuses_moved_status(fixture)?;
     Ok(())
 }
 
-pub(in super::super) fn historical_status_target_moved(
-    fixture: &Fixture,
-    objects: &Path,
-) -> TestResult {
+pub(in super::super) fn historical_status_target_moved(fixture: &Fixture) -> TestResult {
     let snapshot = fixture.store.snapshot();
     let mut grant = AttachmentReplayGrantV1::new();
     let retained = snapshot.read_evidence_subject_attachment_references_v1(&mut grant)?;
@@ -51,12 +48,13 @@ pub(in super::super) fn historical_status_target_moved(
         check!(current.bind_exact_subject(subject, &mut grant)?.is_none());
     }
     check!(eq; census_crawl::participation_evidence::recorded::discover_current_html_results(&current, &mut grant)?.group_count(), 0);
-    capture_refuses_moved_status(fixture, objects)?;
+    capture_refuses_moved_status(fixture)?;
     Ok(())
 }
 
-fn capture_refuses_moved_status(fixture: &Fixture, objects: &Path) -> TestResult {
-    let error = match fixture.capture(objects) {
+fn capture_refuses_moved_status(fixture: &Fixture) -> TestResult {
+    let objects = tempfile::tempdir()?;
+    let error = match fixture.capture(objects.path()) {
         Err(error) => error,
         Ok(_) => {
             return Err("current V4 capture accepted stale active attachment authority".into())

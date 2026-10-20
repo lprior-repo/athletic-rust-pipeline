@@ -41,7 +41,6 @@ impl<'a> Absorb<'a> {
             return Ok(());
         };
         let Some(grade) = grade_for(row, context.filter, &mut self.stats) else {
-            self.stats.rows_without_grade = self.stats.rows_without_grade.saturating_add(1);
             return Ok(());
         };
         let Some(school_year) = facts.date.school_year() else {

@@ -1,4 +1,4 @@
-use census_crawl::{hytek, nces, net::Fetcher, wiaa_results, AdapterContext, CaptureContext};
+use census_crawl::{hytek, nces, net::Fetcher, wiaa_results, AdapterContext};
 use census_domain::model::{normalize_name, CanonicalSchool, SchoolYear, SourceRef};
 use census_domain::UsJurisdiction;
 use census_report::{report::Scope, workbook};
@@ -97,8 +97,13 @@ pub(super) async fn collect_results(store: &Store) -> TestResult {
         FIXTURE_CACHE_FETCHED_AT,
         &[],
     )?;
+    let durable = crate::durable_capture::DurableCapture::mint()
+        .map_err(|error| format!("durable capture: {error:#}"))?;
+    let owned = durable
+        .capture()
+        .map_err(|error| format!("durable capture: {error:#}"))?;
     let context = AdapterContext {
-        capture: CaptureContext::LegacyMetadata,
+        capture: census_crawl::CaptureContext::DurableV1(&owned),
         fetcher: &fetcher,
         store,
         refresh: false,

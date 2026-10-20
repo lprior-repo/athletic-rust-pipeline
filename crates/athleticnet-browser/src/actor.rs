@@ -31,7 +31,7 @@ mod shutdown;
 mod state;
 use sequence::CaptureSequence;
 
-const QUEUE_MULTIPLIER: usize = 4;
+pub(crate) const QUEUE_MULTIPLIER: usize = 4;
 
 pub(super) struct Actor {
     pub(super) browser: Option<Browser>,

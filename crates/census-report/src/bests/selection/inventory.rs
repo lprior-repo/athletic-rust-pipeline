@@ -31,9 +31,7 @@ impl SelectionInventory {
         representatives.sort();
         representatives.dedup();
         match policy {
-            EventSemantics::Legacy18
-            | EventSemantics::FlatEvents19
-            | EventSemantics::CombinedEvents20 => {
+            EventSemantics::FlatEvents19 | EventSemantics::CombinedEvents20 => {
                 Self::HistoricalContextGroups(HistoricalInventory {
                     policy,
                     eligible,

@@ -94,6 +94,7 @@ mod rows;
 mod run;
 mod sequences;
 mod table;
+pub mod test_fixture;
 mod write;
 mod write_batch;
 

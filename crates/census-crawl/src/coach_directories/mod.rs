@@ -36,7 +36,7 @@ pub use parse::{
     parse_directory, parse_summary, DirectoryPage, DirectorySchool, SchoolSummary, StaffMember,
     SummaryAddress, SummaryTel, TeamEntry,
 };
-pub use probe::{probe_one, report_json, sort_records, survey, table_line, ProbeRecord};
+pub use probe::{probe_one, report_json, survey, table_line, ProbeRecord};
 pub use survey::{parse_state_filter, selected_associations, ASSOCIATIONS, VERIFIED};
 
 use census_domain::UsJurisdiction;

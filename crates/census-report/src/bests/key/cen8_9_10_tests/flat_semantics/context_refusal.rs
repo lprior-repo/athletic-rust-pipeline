@@ -28,7 +28,6 @@ fn long_flat_public_pr_api_requires_explicit_current_policy_and_track_context() 
             key.clone(),
             (performance.id.clone(), meet.id.clone(), 600_100_000_000, 1),
         )]);
-        check!(eq; PrKey::from_performance(performance, &original, Some(meet), Measure::Time, EventSemantics::Legacy18)?, None);
         check!(eq; PrKey::from_performance(performance, &original, Some(meet), Measure::Time, EventSemantics::FlatEvents19)?, Some(key));
         check_long_flat_winners(&selections(&data)?, &expected)?;
         for (sport, reason) in [
@@ -50,7 +49,7 @@ fn long_flat_public_pr_api_requires_explicit_current_policy_and_track_context() 
         *data.events.first_mut().ok_or("event")? = original;
         check_long_flat_winners(&selections(&data)?, &expected)?;
         data.lineage.policy_revision = 18;
-        check_long_flat_winners(&selections(&data)?, &LongFlatWinners::new())?;
+        check!(selections(&data).is_err());
     }
     Ok(())
 }

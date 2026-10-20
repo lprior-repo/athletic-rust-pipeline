@@ -616,6 +616,7 @@ fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) -> TestResult 
 fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
     let dir = tempfile::tempdir()?;
+    let capture = crate::net::durable_capture_context(&dir.path().join("capture"))?;
     let cache = dir.path().join("http");
     seed_cache(&cache, &directory_page_url("NCHSAA", 1), NC_DIRECTORY)?;
     seed_cache(&cache, &summary_url("ZCUM49"), NC_SUMMARY)?;
@@ -629,7 +630,7 @@ fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache() -> Te
         Vec::new(),
     )?;
     let ctx = crate::AdapterContext {
-        capture: crate::CaptureContext::LegacyMetadata,
+        capture: crate::CaptureContext::DurableV1(&capture),
         fetcher: &fetcher,
         store: &store,
         refresh: false,
