@@ -9,17 +9,20 @@ fn historical_terminal_unknown_v2_loss_keeps_exact_decode_boundary() -> TestResu
     let grant =
         writer.continuation_for_owned_meet(&store, &owner, UsJurisdiction::Michigan, "123")?;
     let key = wrapper_key("terminal", &exact, occurrence.attempt())?;
-    let physical = Store::journal_key(SOURCE_ACQUISITION_PHASE, &key);
+    let physical = Store::journal_key(CaptureProtocolVersion::V2.phase(), &key);
     let raw = store.journal.get(&physical)?.ok_or("terminal")?;
     let text = std::str::from_utf8(&raw)?;
     let old = "\"kind\":\"response_retained\"";
     let new = "\"kind\":\"prepared_retention_failed\"";
-    let position = text.find(old).ok_or("terminal kind")?;
+    text.find(old).ok_or("terminal kind")?;
     let changed = text.replacen(old, new, 1);
     store.journal.insert(&physical, changed.as_bytes())?;
     let before = rows(&store)?;
-    let column = position.checked_add(new.len()).ok_or("column")?;
-    let expected = format!("unknown variant `prepared_retention_failed`, expected one of `response_retained`, `validated_not_modified`, `not_dispatched`, `failed_uncaptured`, `outcome_unknown` at line 1 column {column}");
+    changed
+        .rfind("\"disposition\"")
+        .ok_or("tampered disposition")?;
+    let column = changed.len().checked_sub(1).ok_or("column")?;
+    let expected = format!("unknown field `disposition`, expected `prepared_digest` or `decision` at line 1 column {column}");
     exact_decode(
         read::read_work(
             &store.db.snapshot(),
@@ -27,7 +30,7 @@ fn historical_terminal_unknown_v2_loss_keeps_exact_decode_boundary() -> TestResu
             &store.receipts,
             &exact.id()?,
             &mut AcquisitionReadBudget::for_work(),
-            CaptureProtocolVersion::V1,
+            CaptureProtocolVersion::V2,
         ),
         &key,
         &expected,
@@ -63,7 +66,7 @@ fn all_historical_wrappers_keep_exact_version_decode_errors_in_actual_readers() 
     for suffix in [
         "binding", "reserved", "armed", "response", "prepared", "terminal", "result",
     ] {
-        for version in [2, 3] {
+        for version in [0, 3] {
             let (_dir, store, writer, owner) = fixture()?;
             let occurrence = retained(&store, &writer, &owner, 200)?;
             let exact = work(&owner)?;
@@ -75,16 +78,17 @@ fn all_historical_wrappers_keep_exact_version_decode_errors_in_actual_readers() 
                 "123",
             )?;
             let key = wrapper_key(suffix, &exact, occurrence.attempt())?;
-            let physical = Store::journal_key(SOURCE_ACQUISITION_PHASE, &key);
+            let physical = Store::journal_key(CaptureProtocolVersion::V2.phase(), &key);
             let raw = store.journal.get(&physical)?.ok_or("wrapper")?;
             let text = std::str::from_utf8(&raw)?;
-            let needle = "\"payload\":{\"version\":1";
+            let needle = "\"payload\":{\"version\":2";
             let position = text.find(needle).ok_or("ordered wrapper")?;
             let changed = text.replacen(needle, &format!("\"payload\":{{\"version\":{version}"), 1);
             store.journal.insert(&physical, changed.as_bytes())?;
             let before = rows(&store)?;
             let column = position.checked_add(needle.len()).ok_or("column")?;
-            let expected = format!("unsupported capture protocol at line 1 column {column}");
+            let expected =
+                format!("unsupported capture version {version} at line 1 column {column}");
             exact_decode(
                 read::read_work(
                     &store.db.snapshot(),
@@ -92,7 +96,7 @@ fn all_historical_wrappers_keep_exact_version_decode_errors_in_actual_readers() 
                     &store.receipts,
                     &exact.id()?,
                     &mut AcquisitionReadBudget::for_work(),
-                    CaptureProtocolVersion::V1,
+                    CaptureProtocolVersion::V2,
                 ),
                 &key,
                 &expected,

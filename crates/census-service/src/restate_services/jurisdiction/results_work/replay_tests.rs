@@ -1,7 +1,7 @@
 use super::*;
 use crate::restate_services::results_arms::ResultsSourceRows;
 use crate::spawn::TaskReport;
-use census_domain::model::{AcquisitionFailureV1, SOURCE_ACQUISITION_PHASE};
+use census_domain::model::{AcquisitionFailureV1, CaptureProtocolVersion};
 use census_store::{AcquisitionTerminal, ImmutableAttemptResult};
 use std::time::Duration;
 
@@ -14,7 +14,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 const WAIT: Duration = Duration::from_secs(5);
 
 #[tokio::test(flavor = "current_thread")]
-async fn replayed_capture_results_run_releases_unused_original_owner_admission() -> TestResult {
+async fn historical_single_run_success_journal_refuses_without_releasing_more_work() -> TestResult {
     let fixture = Fixture::new()?;
     fixture.seed_failed_attempt()?;
     require_not_dispatched(&fixture)?;
@@ -25,10 +25,8 @@ async fn replayed_capture_results_run_releases_unused_original_owner_admission()
     let f = &fixture;
     let result = protocol::serve(&fixture, |client, url| async move {
         for _ in 0..2 {
-            let frames = protocol::invoke(&client, &url, f, &journal).await?;
-            protocol::require_replay_only(&frames)?;
-            protocol::require_saved_outcome(&frames, f, &expected)?;
-            check!(eq; protocol::output(&frames)?, serde_json::to_vec(&expected)?);
+            let frames = protocol::invoke_frames(&client, &url, f, &journal).await?;
+            require_historical_refusal(&frames)?;
             check!(eq; snapshot(f).await?, before);
             readmit_same_key(f).await?;
             check!(eq; f.region.coordinator().remaining(), resources);
@@ -48,7 +46,14 @@ async fn capture_results_stage_finalizes_offline_attempt_with_only_stage_permit_
     let result = protocol::serve(&fixture, |client, url| async move {
         let mut journal = protocol::input(f)?;
         let frames = protocol::invoke(&client, &url, f, &journal).await?;
-        let outcome = protocol::completion(&mut journal, &frames)?;
+        let plan = v2::protocol::acknowledge(&mut journal, &frames, "results-v2-plan")?;
+        check!(serde_json::from_slice::<serde_json::Value>(&plan)?
+            .get("pins")
+            .is_some());
+        readmit_same_key(f).await?;
+        let frames = protocol::invoke(&client, &url, f, &journal).await?;
+        let bytes = v2::protocol::acknowledge(&mut journal, &frames, "results-v2-execute")?;
+        let outcome = serde_json::from_slice(&bytes)?;
         require_offline_outcome(&outcome)?;
         require_not_dispatched(f)?;
         check!(eq; f.fetcher.stats().await.physical_requests(), 0);
@@ -65,12 +70,11 @@ async fn capture_results_stage_finalizes_offline_attempt_with_only_stage_permit_
         Ok(())
     })
     .await;
-    finish(&fixture, result, 1, resources).await
+    finish(&fixture, result, 2, resources).await
 }
 
 #[tokio::test(flavor = "current_thread")]
-async fn replayed_capture_results_failure_preserves_error_and_releases_original_owner_admission(
-) -> TestResult {
+async fn historical_single_run_failure_journal_refuses_without_releasing_more_work() -> TestResult {
     let fixture = Fixture::new()?;
     fixture.seed_failed_attempt()?;
     require_not_dispatched(&fixture)?;
@@ -79,8 +83,8 @@ async fn replayed_capture_results_failure_preserves_error_and_releases_original_
     let before = snapshot(&fixture).await?;
     let f = &fixture;
     let result = protocol::serve(&fixture, |client, url| async move {
-        let frames = protocol::invoke(&client, &url, f, &journal).await?;
-        protocol::require_recorded_failure(&frames)?;
+        let frames = protocol::invoke_frames(&client, &url, f, &journal).await?;
+        require_historical_refusal(&frames)?;
         check!(eq; snapshot(f).await?, before);
         readmit_same_key(f).await?;
         check!(eq; f.region.coordinator().remaining(), resources);
@@ -88,6 +92,19 @@ async fn replayed_capture_results_failure_preserves_error_and_releases_original_
     })
     .await;
     finish(&fixture, result, 0, resources).await
+}
+
+fn require_historical_refusal(
+    frames: &[crate::restate_services::national::publication_tests::codec::Frame],
+) -> TestResult {
+    let error = frames
+        .iter()
+        .find(|frame| frame.kind == 0x0002)
+        .ok_or("historical unnamed Results run did not refuse")?;
+    let message = error.text(2)?;
+    check!(message.contains("mismatch") && message.contains("name:  != results-v2-plan"));
+    check!(eq; frames.iter().filter(|frame| matches!(frame.kind, 0x0005 | 0x0401 | 0x0403 | 0x0411)).count(), 0);
+    Ok(())
 }
 
 async fn readmit_same_key(fixture: &Fixture) -> TestResult {
@@ -118,12 +135,12 @@ async fn finish(
 async fn snapshot(fixture: &Fixture) -> TestResult<serde_json::Value> {
     let keys: std::collections::BTreeSet<_> = fixture
         .store
-        .journal_keys(SOURCE_ACQUISITION_PHASE)?
+        .journal_keys(CaptureProtocolVersion::V2.phase())?
         .into_iter()
         .collect();
     Ok(serde_json::json!({
         "acquisition_keys": keys,
-        "acquisition_payloads": fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?,
+        "acquisition_payloads": fixture.store.journal_payloads(CaptureProtocolVersion::V2.phase())?,
         "source_meets": fixture.store.scan::<census_domain::model::SourceMeetRef>(census_store::Table::SourceMeets)?,
         "store_sequence": fixture.store.snapshot().sequence(),
         "fetch_stats": fixture.fetcher.stats().await,
@@ -131,7 +148,9 @@ async fn snapshot(fixture: &Fixture) -> TestResult<serde_json::Value> {
 }
 
 fn require_not_dispatched(fixture: &Fixture) -> TestResult {
-    let keys = fixture.store.journal_keys(SOURCE_ACQUISITION_PHASE)?;
+    let keys = fixture
+        .store
+        .journal_keys(CaptureProtocolVersion::V2.phase())?;
     check!(eq; keys.iter().filter(|key| key.starts_with("slot/") && key.ends_with("/binding")).count(), 1);
     check!(eq; keys.iter().filter(|key| key.starts_with("work/") && key.ends_with("/identity")).count(), 1);
     check!(eq; keys.iter().filter(|key| key.ends_with("/attempt/1/reserved")).count(), 1);
@@ -145,7 +164,7 @@ fn require_not_dispatched(fixture: &Fixture) -> TestResult {
     let key = terminals.first().ok_or("capture terminal key missing")?;
     let value = fixture
         .store
-        .journal_payload(SOURCE_ACQUISITION_PHASE, key)?
+        .journal_payload(CaptureProtocolVersion::V2.phase(), key)?
         .ok_or("capture terminal missing")?;
     let terminal: ImmutableAttemptResult = serde_json::from_value(value)?;
     check!(eq; terminal.attempt().ordinal().get(), 1);
@@ -172,10 +191,11 @@ fn require_offline_outcome(outcome: &ResultsStageOutcome) -> TestResult {
     check!(eq; source.unresolved, None);
     check!(eq; source.resolution, None);
     check!(eq; source.unfinished, vec![fixture::RESULTS_URL.to_owned()]);
-    check!(eq; source.notes.len(), 1);
-    check!(source.notes.first().is_some_and(
-        |note| note.contains(&format!("offline and not cached: {}", fixture::owned_url()))
-    ));
+    let [failure, pages] = source.notes.as_slice() else {
+        return Err("offline result requires failure and discovery page notes".into());
+    };
+    check!(failure.contains(&format!("offline and not cached: {}", fixture::owned_url())));
+    check!(eq; pages, "meet_pages_read=1");
     check!(!outcome.is_terminal());
     Ok(())
 }

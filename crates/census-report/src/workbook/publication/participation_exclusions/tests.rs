@@ -30,7 +30,7 @@ fn participation_audit_retains_all_exclusions_at_zero_selected_row_limit() -> Te
             .iter()
             .find(|value| value.performance_id().as_str() == id)
             .ok_or("exclusion")?;
-        check!(eq; row.get(0).ok_or("athlete")?, expected.athlete_id().as_str());
+        check!(eq; row.first().ok_or("athlete")?, expected.athlete_id().as_str());
         check!(eq; row.get(2).ok_or("event")?, expected.event_id().as_str());
         if expected.reason() == ParticipationExclusionReason::MissingParticipationEvidence {
             check!(eq; row.get(3).ok_or("disposition")?, "unresolved");

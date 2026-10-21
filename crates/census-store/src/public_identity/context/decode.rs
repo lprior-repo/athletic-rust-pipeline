@@ -3,10 +3,12 @@ use super::{wire, Inputs, BUDGET};
 use crate::{StoreError, StoreResult};
 use census_domain::model::StoreIdentity;
 use serde::de::DeserializeOwned;
+#[cfg(test)]
 use sha2::{Digest, Sha256};
 
 type Record = (usize, crate::read::JournalEntry);
 
+#[cfg(test)]
 pub(in crate::public_identity) fn from_bytes(
     bytes: &[u8],
     root: &str,

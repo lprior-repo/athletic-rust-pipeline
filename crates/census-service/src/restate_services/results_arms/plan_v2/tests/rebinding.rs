@@ -24,8 +24,8 @@ impl Fixture {
     pub(super) fn new() -> TestResult<Self> {
         let root = tempfile::tempdir()?;
         let path = root.path().join("store");
-        Store::create_capture_qualification_v2(&path)?;
-        let (store, writer) = Store::open_capture_qualification_v2(&path)?.into_parts();
+        Store::create_capture_qualification(&path)?;
+        let (store, writer) = Store::open_current_qualification_v3(&path)?.into_parts();
         let store = Arc::new(store);
         let run = CensusRun::new(SchoolYear::DEFAULT, 1).ok_or("fixture run")?;
         let manifest = RunManifest {

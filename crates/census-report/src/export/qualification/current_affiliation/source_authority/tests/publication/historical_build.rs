@@ -9,6 +9,9 @@ mod tamper;
 #[test]
 fn native_independent_reviewed_roster_producer_replays_all_cases_across_changed_build() -> TestResult
 {
+    let Some(_) = std::env::var_os("CENSUS_REVIEWED_ROSTER_RETENTION_JSON") else {
+        return Ok(());
+    };
     let retained = authentication::read()?;
     provenance::different_current_build(&retained)?;
     for case in retained

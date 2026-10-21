@@ -42,7 +42,7 @@ fn exact_frame_and_script_match_even_with_repeated_owned_call_frames() -> TestRe
         vec!["caller", "issued"],
         vec!["issued", "issued"],
     ] {
-        assert!(binding.matches(&event(Some("main"), &scripts)?));
+        check!(binding.matches(&event(Some("main"), &scripts)?));
     }
     Ok(())
 }
@@ -56,7 +56,7 @@ fn copied_source_labels_and_function_names_cannot_replace_issued_identity() -> T
         (Some("main"), vec!["forged"]),
         (Some("main"), Vec::new()),
     ] {
-        assert!(!binding.matches(&event(frame, &scripts)?));
+        check!(!binding.matches(&event(frame, &scripts)?));
     }
     Ok(())
 }
@@ -66,10 +66,10 @@ fn missing_stack_and_non_script_initiators_cannot_issue_a_binding() -> TestResul
     let binding = RequestBinding::new(FrameId::new("main"), ScriptId::new("issued"));
     let mut absent = event(Some("main"), &["issued"])?;
     absent.initiator.stack = None;
-    assert!(!binding.matches(&absent));
+    check!(!binding.matches(&absent));
     let mut parser = event(Some("main"), &["issued"])?;
     parser.initiator.r#type = InitiatorType::Parser;
-    assert!(!binding.matches(&parser));
+    check!(!binding.matches(&parser));
     Ok(())
 }
 
@@ -77,8 +77,8 @@ fn missing_stack_and_non_script_initiators_cannot_issue_a_binding() -> TestResul
 fn excessive_stacks_refuse_instead_of_accepting_a_truncated_prefix() -> TestResult {
     let binding = RequestBinding::new(FrameId::new("main"), ScriptId::new("issued"));
     let at_limit = vec!["issued"; 128];
-    assert!(binding.matches(&event(Some("main"), &at_limit)?));
+    check!(binding.matches(&event(Some("main"), &at_limit)?));
     let over_limit = vec!["issued"; 129];
-    assert!(!binding.matches(&event(Some("main"), &over_limit)?));
+    check!(!binding.matches(&event(Some("main"), &over_limit)?));
     Ok(())
 }

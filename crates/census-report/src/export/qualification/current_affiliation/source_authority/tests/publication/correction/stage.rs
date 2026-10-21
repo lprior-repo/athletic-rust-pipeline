@@ -224,7 +224,7 @@ fn resolution_outputs(workbook: &Path, expected: &Resolutions, selected: &Expect
     let cell = |name| -> TestResult<String> {
         let index = headers
             .iter()
-            .position(|value| value.to_string() == name)
+            .position(|value| value == name)
             .ok_or("Athletes identity column")?;
         Ok(row.get(index).ok_or("Athletes identity cell")?.to_string())
     };

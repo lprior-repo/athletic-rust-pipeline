@@ -8,6 +8,8 @@ use crate::{Entity, ReadBudget, ReadCounts, Store, StoreError, Table};
 use census_domain::model::CanonicalAthlete;
 use std::collections::BTreeMap;
 
+type MergedRawRows = Vec<(Vec<u8>, u64)>;
+
 mod portable;
 mod refusal;
 
@@ -139,7 +141,7 @@ fn captured(count: u64) -> TestResult<(tempfile::TempDir, Store, RetainedRawGene
 
 fn merged<S: RawObjectSource>(
     graph: &VerifiedRawGraph<'_, S>,
-) -> TestResult<(ReadCounts, Vec<(Vec<u8>, u64)>)> {
+) -> TestResult<(ReadCounts, MergedRawRows)> {
     let mut rows = Vec::new();
     let counts = graph.for_each_merged(
         AuthorityTableV2::Athletes,

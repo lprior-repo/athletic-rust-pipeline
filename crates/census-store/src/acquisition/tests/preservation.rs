@@ -25,7 +25,7 @@ fn stopped_relocation_backup_restore_preserves_identity_attempts_receipts_and_ca
     Store::backup(&relocated, &backup)?;
     let restored = dir.path().join("restored");
     Store::restore(&backup, &restored)?;
-    let (store, writer) = Store::open_capture_qualification_v1(&restored)?.into_parts();
+    let (store, writer) = Store::open_current_qualification_v3(&restored)?.into_parts();
     check!(eq; writer.store_identity(), &identity);
     check!(eq; rows(&store)?, before);
     check!(eq; std::fs::read(store.http_cache_dir().join("fixture.meta.json"))?, envelope);
@@ -49,10 +49,12 @@ fn invalid_capture_backup_cannot_replace_previous_valid_generation() -> TestResu
         let backup = dir.path().join("backup");
         Store::backup(&root, &backup)?;
         let manifest = std::fs::read(backup.join("backup.json"))?;
-        let (store, _) = Store::open_capture_qualification_v1(&root)?.into_parts();
+        let (store, _) = Store::open_current_qualification_v3(&root)?.into_parts();
         match damage {
             "missing-marker" => {
-                store.meta.remove(CAPTURE_QUALIFICATION_KEY)?;
+                store
+                    .meta
+                    .remove(CaptureProtocolVersion::V2.qualification_key())?;
             }
             "missing-backing" => {
                 let verified = store.read_retained_acquisition_v1(
@@ -90,7 +92,7 @@ fn invalid_capture_backup_cannot_replace_previous_valid_generation() -> TestResu
         check!(eq; std::fs::read(backup.join("backup.json"))?, manifest);
         let restored = dir.path().join("restored");
         Store::restore(&backup, &restored)?;
-        let (restored, _) = Store::open_capture_qualification_v1(&restored)?.into_parts();
+        let (restored, _) = Store::open_current_qualification_v3(&restored)?.into_parts();
         check!(restored
             .read_retained_acquisition_v1(&occurrence, &mut AcquisitionReadBudget::for_work())
             .is_ok());
@@ -131,8 +133,8 @@ fn capture_control_preserves_uppercase_existing_identity_and_never_remints_missi
 ) -> TestResult {
     let dir = tempfile::tempdir()?;
     let root = dir.path().join("store");
-    Store::create_capture_qualification_v1(&root)?;
-    let (store, _) = Store::open_capture_qualification_v1(&root)?.into_parts();
+    Store::create_capture_qualification(&root)?;
+    let (store, _) = Store::open_current_qualification_v3(&root)?.into_parts();
     let identity = StoreIdentity::parse(&"Ab".repeat(32))?;
     let key = Store::journal_key("export-lineage-v1", "store-identity");
     store.journal.insert(
@@ -142,12 +144,12 @@ fn capture_control_preserves_uppercase_existing_identity_and_never_remints_missi
         )?,
     )?;
     store.meta.insert(
-        CAPTURE_QUALIFICATION_KEY,
-        serialized_bytes(&CaptureQualificationV1::new(identity.clone()))?,
+        CaptureProtocolVersion::V2.qualification_key(),
+        serialized_bytes(&CaptureQualificationV2::new(identity.clone()))?,
     )?;
     store.flush()?;
     drop(store);
-    let (store, writer) = Store::open_capture_qualification_v1(&root)?.into_parts();
+    let (store, writer) = Store::open_current_qualification_v3(&root)?.into_parts();
     check!(eq; writer.store_identity(), &identity);
     store.journal.remove(&key)?;
     check!(store.store_identity().is_err());
@@ -162,8 +164,10 @@ fn a_hash_consistent_invalid_restore_cannot_promote_over_an_empty_destination() 
     drop(store);
     let backup = dir.path().join("backup");
     Store::backup(&dir.path().join("store"), &backup)?;
-    let (store, _) = Store::open_capture_qualification_v1(&backup)?.into_parts();
-    store.meta.remove(CAPTURE_QUALIFICATION_KEY)?;
+    let (store, _) = Store::open_current_qualification_v3(&backup)?.into_parts();
+    store
+        .meta
+        .remove(CaptureProtocolVersion::V2.qualification_key())?;
     store.flush()?;
     drop(store);
     let path = backup.join("backup.json");

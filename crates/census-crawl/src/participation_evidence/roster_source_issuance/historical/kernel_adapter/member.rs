@@ -4,7 +4,9 @@ use super::{
     PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 
+#[cfg(test)]
 pub(super) const FULL_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "de66b31716f9f2a3429c3e76f08d8e3e7f5f9340713b6dafc3f8dfbbda2d7d13",
     hash: [
         0xde, 0x66, 0xb3, 0x17, 0x16, 0xf9, 0xf2, 0xa3, 0x42, 0x9c, 0x3e, 0x76, 0xf0, 0x8d, 0x8e,
@@ -16,6 +18,7 @@ pub(super) const FULL_NATIVE: OriginalKernel = OriginalKernel {
 };
 
 pub(super) const ROW_LOCAL_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "779609b96adf5d2418c0b789118f2d893a7edcc0daad9cb539212e1c249ec887",
     hash: [
         0x77, 0x96, 0x09, 0xb9, 0x6a, 0xdf, 0x5d, 0x24, 0x18, 0xc0, 0xb7, 0x89, 0x11, 0x8f, 0x2d,
@@ -26,7 +29,9 @@ pub(super) const ROW_LOCAL_NATIVE: OriginalKernel = OriginalKernel {
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 
+#[cfg(test)]
 pub(super) const FULL_RAW_VALUE_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "49934fe6495d0b18ddf735cff580659627a93bca1be3d8198859682dc3a2ea63",
     hash: [
         0x49, 0x93, 0x4f, 0xe6, 0x49, 0x5d, 0x0b, 0x18, 0xdd, 0xf7, 0x35, 0xcf, 0xf5, 0x80, 0x65,
@@ -38,6 +43,7 @@ pub(super) const FULL_RAW_VALUE_NATIVE: OriginalKernel = OriginalKernel {
 };
 
 pub(super) const ROW_LOCAL_RAW_VALUE_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "3303d1eb3189d5e8b9f5dfe025e2285fe95146ce4709d6c97998ceee8231082d",
     hash: [
         0x33, 0x03, 0xd1, 0xeb, 0x31, 0x89, 0xd5, 0xe8, 0xb9, 0xf5, 0xdf, 0xe0, 0x25, 0xe2, 0x28,
@@ -48,7 +54,9 @@ pub(super) const ROW_LOCAL_RAW_VALUE_NATIVE: OriginalKernel = OriginalKernel {
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 
+#[cfg(test)]
 pub(super) const FULL_PORTABLE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "d80a1e2a3f8f584dfd3df67b1abed49186ef5c974645594cbd73ad11b5798c2c",
     hash: [
         0xd8, 0x0a, 0x1e, 0x2a, 0x3f, 0x8f, 0x58, 0x4d, 0xfd, 0x3d, 0xf6, 0x7b, 0x1a, 0xbe, 0xd4,
@@ -60,6 +68,7 @@ pub(super) const FULL_PORTABLE: OriginalKernel = OriginalKernel {
 };
 
 pub(super) const ROW_LOCAL_PORTABLE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "b06ea1d7ad1c23ca15c6379c030e769c81b18c9d5174d5c7d8b026494622c8e2",
     hash: [
         0xb0, 0x6e, 0xa1, 0xd7, 0xad, 0x1c, 0x23, 0xca, 0x15, 0xc6, 0x37, 0x9c, 0x03, 0x0e, 0x76,
@@ -69,7 +78,9 @@ pub(super) const ROW_LOCAL_PORTABLE: OriginalKernel = OriginalKernel {
     configuration: &PORTABLE_EXECUTING_CONFIGURATION,
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
+#[cfg(test)]
 pub(super) const FULL_CONTEXT_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "095c28bde99e25f76509f3dd0d54cdc3e4dfc8734d3baad9406dc065db3d71e4",
     hash: [
         0x09, 0x5c, 0x28, 0xbd, 0xe9, 0x9e, 0x25, 0xf7, 0x65, 0x09, 0xf3, 0xdd, 0x0d, 0x54, 0xcd,
@@ -81,6 +92,7 @@ pub(super) const FULL_CONTEXT_NATIVE: OriginalKernel = OriginalKernel {
 };
 
 pub(super) const ROW_LOCAL_CONTEXT_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "91b84bc24d72166ed5493e301b360af9828d3e2e0e13cb9f7fc6f899d2c4f47c",
     hash: [
         0x91, 0xb8, 0x4b, 0xc2, 0x4d, 0x72, 0x16, 0x6e, 0xd5, 0x49, 0x3e, 0x30, 0x1b, 0x36, 0x0a,
@@ -90,7 +102,9 @@ pub(super) const ROW_LOCAL_CONTEXT_NATIVE: OriginalKernel = OriginalKernel {
     configuration: &RAW_VALUE_NATIVE_CONFIGURATION,
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
+#[cfg(test)]
 pub(super) const FULL_DECODER_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "8803e4d3305eb27e40e54dd99eb102e432f30f3c2023e675e372d0aebf73ef67",
     hash: [
         0x88, 0x03, 0xe4, 0xd3, 0x30, 0x5e, 0xb2, 0x7e, 0x40, 0xe5, 0x4d, 0xd9, 0x9e, 0xb1, 0x02,
@@ -101,6 +115,7 @@ pub(super) const FULL_DECODER_NATIVE: OriginalKernel = OriginalKernel {
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 pub(super) const ROW_LOCAL_DECODER_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "0f0c1667c44e2de1ebf23fb8d27d0b844a625c9e99a6d14ece6a3ca2f5a99169",
     hash: [
         0x0f, 0x0c, 0x16, 0x67, 0xc4, 0x4e, 0x2d, 0xe1, 0xeb, 0xf2, 0x3f, 0xb8, 0xd2, 0x7d, 0x0b,
@@ -110,7 +125,9 @@ pub(super) const ROW_LOCAL_DECODER_NATIVE: OriginalKernel = OriginalKernel {
     configuration: &RAW_VALUE_NATIVE_CONFIGURATION,
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
+#[cfg(test)]
 pub(super) const FULL_DECODER_PORTABLE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "1c710d344d9fa6f5bd13628c90ffcec4b46ffcf487a467d338888aec8b90f508",
     hash: [
         0x1c, 0x71, 0x0d, 0x34, 0x4d, 0x9f, 0xa6, 0xf5, 0xbd, 0x13, 0x62, 0x8c, 0x90, 0xff, 0xce,
@@ -121,6 +138,7 @@ pub(super) const FULL_DECODER_PORTABLE: OriginalKernel = OriginalKernel {
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 pub(super) const ROW_LOCAL_DECODER_PORTABLE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "9859b26ee2a23ba35347fe38c893c62949f480763305cec852c943f399cb7ebe",
     hash: [
         0x98, 0x59, 0xb2, 0x6e, 0xe2, 0xa2, 0x3b, 0xa3, 0x53, 0x47, 0xfe, 0x38, 0xc8, 0x93, 0xc6,
@@ -131,7 +149,9 @@ pub(super) const ROW_LOCAL_DECODER_PORTABLE: OriginalKernel = OriginalKernel {
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 
+#[cfg(test)]
 pub(super) const FULL_PRE_GRADE_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "40bd0f848af1902697266316d2ec7574c196f09177f831ef03fb26ad89c90052",
     hash: [
         0x40, 0xbd, 0x0f, 0x84, 0x8a, 0xf1, 0x90, 0x26, 0x97, 0x26, 0x63, 0x16, 0xd2, 0xec, 0x75,
@@ -143,6 +163,7 @@ pub(super) const FULL_PRE_GRADE_NATIVE: OriginalKernel = OriginalKernel {
 };
 
 pub(super) const ROW_LOCAL_PRE_GRADE_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "1333c027df5faa8aeff5d8fa74a80df8f7121669b0a730cafdb821b1b46f224a",
     hash: [
         0x13, 0x33, 0xc0, 0x27, 0xdf, 0x5f, 0xaa, 0x8a, 0xef, 0xf5, 0xd8, 0xfa, 0x74, 0xa8, 0x0d,
@@ -153,7 +174,9 @@ pub(super) const ROW_LOCAL_PRE_GRADE_NATIVE: OriginalKernel = OriginalKernel {
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 
+#[cfg(test)]
 pub(super) const FULL_PRE_GRADE_PORTABLE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "582868e8d5ca7117cc71844e76a086b40e456ee5f23f93fdf7512b8f5ffa8e65",
     hash: [
         0x58, 0x28, 0x68, 0xe8, 0xd5, 0xca, 0x71, 0x17, 0xcc, 0x71, 0x84, 0x4e, 0x76, 0xa0, 0x86,
@@ -165,6 +188,7 @@ pub(super) const FULL_PRE_GRADE_PORTABLE: OriginalKernel = OriginalKernel {
 };
 
 pub(super) const ROW_LOCAL_PRE_GRADE_PORTABLE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "e787db366c91e49bf456010f0f153ae2188e630f4fb4aa646564fca6ce896be2",
     hash: [
         0xe7, 0x87, 0xdb, 0x36, 0x6c, 0x91, 0xe4, 0x9b, 0xf4, 0x56, 0x01, 0x0f, 0x0f, 0x15, 0x3a,

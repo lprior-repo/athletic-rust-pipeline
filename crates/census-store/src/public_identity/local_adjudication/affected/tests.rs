@@ -37,10 +37,10 @@ fn decode_bytes(bytes: &[u8]) -> StoreResult<Inputs> {
 fn empty_result_inventory_is_valid_and_preserves_snapshot_header() -> TestResult {
     let bytes = encoded(&empty_header()?)?;
     let restored = decode_bytes(&bytes)?;
-    assert!(restored.performances.is_empty());
-    assert!(restored.relays.is_empty());
-    assert_eq!(restored.header.snapshot_sequence, 1);
-    assert_eq!(
+    check!(restored.performances.is_empty());
+    check!(restored.relays.is_empty());
+    check!(eq;restored.header.snapshot_sequence, 1);
+    check!(eq;
         restored.header.store,
         StoreIdentity::parse(&"1".repeat(64))?
     );
@@ -51,7 +51,7 @@ fn empty_result_inventory_is_valid_and_preserves_snapshot_header() -> TestResult
 fn oversized_section_count_refuses_before_missing_result_decode() -> TestResult {
     let mut header = empty_header()?;
     header.counts = [8193, 0];
-    assert!(matches!(
+    check!(matches!(
         decode_bytes(&encoded(&header)?),
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
             "manual affected section row bound"
@@ -64,14 +64,14 @@ fn oversized_section_count_refuses_before_missing_result_decode() -> TestResult 
 fn retained_record_and_count_budgets_precede_json_decode() -> TestResult {
     let mut oversized = vec![b'x'; crate::journal::context::CONTEXT_RECORD_BYTES];
     oversized.push(b'\n');
-    assert!(matches!(
+    check!(matches!(
         decode_bytes(&oversized),
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
             "manual affected retained record bound"
         )))
     ));
     let too_many = vec![b'\n'; crate::journal::context::CONTEXT_RECORDS + 1];
-    assert!(matches!(
+    check!(matches!(
         decode_bytes(&too_many),
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
             "manual affected inventory count"
@@ -86,13 +86,13 @@ fn physical_key_and_original_byte_limits_precede_payload_decode() -> TestResult 
         physical_key_base64: STANDARD.encode(vec![0; MAX_KEY_BYTES + 1]),
         raw_json: "{".into(),
     };
-    assert!(physical.key().is_err());
+    check!(physical.key().is_err());
     physical.physical_key_base64 = STANDARD.encode(b"bad-key");
     let key = physical.key()?;
-    assert!(physical
+    check!(physical
         .decode::<CanonicalPerformance>(crate::Table::Performances, &key)
         .is_err());
     physical.raw_json = "x".repeat(context::BUDGET.record_bytes + 1);
-    assert!(physical.key().is_err());
+    check!(physical.key().is_err());
     Ok(())
 }

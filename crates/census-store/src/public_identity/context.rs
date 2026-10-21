@@ -7,6 +7,7 @@ pub(super) use read::verify_reviewed;
 mod verify;
 pub(super) use verify::{reviewed as verify_reviewed_inputs, source as verify_source_inputs};
 mod decode;
+#[cfg(test)]
 pub(super) use decode::from_bytes;
 
 #[cfg(test)]

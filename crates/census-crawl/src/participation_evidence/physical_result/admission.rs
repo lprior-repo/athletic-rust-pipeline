@@ -227,7 +227,7 @@ pub(super) fn identity(
     bound(ceiling, MAX_PACKET, "estimated encoded output bytes")
 }
 
-fn canonical_id(value: &str, prefix: &str) -> Result<()> {
+pub(super) fn canonical_id(value: &str, prefix: &str) -> Result<()> {
     let suffix = value
         .strip_prefix(prefix)
         .ok_or(Error::Invalid("proposed canonical ID kind"))?;
@@ -237,7 +237,7 @@ fn canonical_id(value: &str, prefix: &str) -> Result<()> {
     Ok(())
 }
 
-fn digest(value: &str) -> Result<()> {
+pub(super) fn digest(value: &str) -> Result<()> {
     if value.len() != 64 || !value.bytes().all(hex) {
         return Err(Error::Invalid("proposed reference is not a SHA256"));
     }
@@ -248,7 +248,7 @@ fn hex(byte: u8) -> bool {
     byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)
 }
 
-fn text(value: &str, limit: usize) -> Result<()> {
+pub(super) fn text(value: &str, limit: usize) -> Result<()> {
     bound(value.len(), limit, "source text bytes")?;
     if value.is_empty() || value.chars().any(char::is_control) {
         return Err(Error::Invalid("source text empty or contains controls"));

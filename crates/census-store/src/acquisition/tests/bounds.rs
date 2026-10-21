@@ -173,10 +173,10 @@ fn maximum_canonical_envelope_and_physical_key_are_both_debited_before_materiali
         &mut batch,
         &key,
         &payload,
-        CaptureProtocolVersion::V1,
+        CaptureProtocolVersion::V2,
     )?;
     codec::commit(batch)?;
-    let physical = Store::journal_key(SOURCE_ACQUISITION_PHASE, &key);
+    let physical = Store::journal_key(CaptureProtocolVersion::V2.phase(), &key);
     let snapshot = store.db.snapshot();
     let mut value_only = AcquisitionReadBudget::new(1, MAX_CAPTURE_RECORD_BYTES, 0)?;
     check!(matches!(
@@ -185,7 +185,7 @@ fn maximum_canonical_envelope_and_physical_key_are_both_debited_before_materiali
             &store.journal,
             &key,
             &mut value_only,
-            CaptureProtocolVersion::V1
+            CaptureProtocolVersion::V2
         ),
         Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
             resource: "encoded bytes",
@@ -204,7 +204,7 @@ fn maximum_canonical_envelope_and_physical_key_are_both_debited_before_materiali
         &store.journal,
         &key,
         &mut exact,
-        CaptureProtocolVersion::V1,
+        CaptureProtocolVersion::V2,
     )?
     .ok_or("missing staged envelope")?;
     check!(eq; actual.len(), MAX_CAPTURE_RECORD_BYTES);
@@ -248,7 +248,7 @@ fn oversized_canonical_envelope_refuses_before_any_journal_mutation() -> TestRes
             &mut batch,
             &key,
             &payload,
-            CaptureProtocolVersion::V1
+            CaptureProtocolVersion::V2
         ),
         Err(StoreError::RowTooLarge { .. })
     ));

@@ -8,20 +8,12 @@ use super::school_address_join::SchoolAddressJoinRequest;
 use super::{default_concurrency, default_source_parallelism};
 use super::{HistoryWindow, PublicationContract};
 
-fn default_pass_budget() -> usize {
+pub fn default_pass_budget() -> usize {
     96
 }
 
-fn default_pass_delay_seconds() -> u64 {
+pub fn default_pass_delay_seconds() -> u64 {
     900
-}
-
-fn default_export_job_request() -> ExportJobRequest {
-    ExportJobRequest::LegacyV2
-}
-
-fn is_legacy_export_job_request(request: &ExportJobRequest) -> bool {
-    matches!(request, ExportJobRequest::LegacyV2)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,10 +23,6 @@ pub struct NationalRequest {
     pub history: HistoryWindow,
     #[serde(default)]
     pub publication_contract: PublicationContract,
-    #[serde(
-        default = "default_export_job_request",
-        skip_serializing_if = "is_legacy_export_job_request"
-    )]
     pub export_job: ExportJobRequest,
     #[serde(default)]
     pub jurisdictions: Vec<UsJurisdiction>,

@@ -189,7 +189,7 @@ fn selected_bests_refuse_a_verified_view_from_a_different_frozen_input() -> Test
     let facts = Facts::new()?;
     let directory = tempfile::tempdir()?;
     let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
-    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone()])?;
+    let (dataset, _objects) = facts.bind(&store, &writer, std::slice::from_ref(&slower))?;
     let view = facts.view(&dataset, []);
     let foreign = VerifiedParticipationView::fixture(
         "different-frozen-input".into(),

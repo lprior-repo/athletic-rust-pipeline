@@ -1,6 +1,4 @@
-use super::{
-    capture, protected_state, ControlledMark, RowLocator, SourceReference, TestResult, MARKS,
-};
+use super::{capture, protected_state, ControlledMark, RowLocator, SourceReference, TestResult};
 use census_crawl::milesplit::SourceRowLocator;
 use census_crawl::participation_evidence::recorded::record_retained_html_result_capture;
 use census_crawl::participation_evidence::result_ownership::read_retained_html_result_rows;
@@ -65,17 +63,18 @@ fn locator(html: &str) -> TestResult<SourceRowLocator> {
     })
 }
 
-pub(super) fn install(
+pub(super) fn install_with_marks(
     store: &Store,
     venue: &str,
+    marks: &[ControlledMark],
 ) -> TestResult<(Vec<SourceReference>, Vec<RowLocator>)> {
     let mut sources = Vec::new();
     let mut locators = Vec::new();
-    for (index, (meet, mark)) in [495051, 502100, 502101].into_iter().zip(MARKS).enumerate() {
+    for (index, (meet, mark)) in [495051, 502100, 502101].into_iter().zip(marks).enumerate() {
         let url = format!(
             "https://mi.milesplit.com/meets/{meet}-controlled-meet-2026/results/{meet}0/raw"
         );
-        let html = document(meet, mark, &url, venue);
+        let html = document(meet, *mark, &url, venue);
         let capture = capture(
             &url,
             html.as_bytes(),

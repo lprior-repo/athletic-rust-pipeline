@@ -30,7 +30,7 @@ fn merged_alias_audit_preserves_redirect_revision_and_original_candidate_lookup(
 }
 
 mod correction;
-mod fixture;
+use crate::workbook::selected_identity_fixture as fixture;
 
 use crate::report::Scope;
 use fixture::selected_dataset;

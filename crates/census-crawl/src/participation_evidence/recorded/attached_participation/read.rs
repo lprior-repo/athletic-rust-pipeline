@@ -117,39 +117,7 @@ fn packet_from_approved_anchors(
         {
             continue;
         }
-        match view {
-            View::Current(owner) => owner
-                .snapshot()
-                .verify_retained_capture_leaf_v1(candidate, grant)?,
-            View::Frozen(owner) => owner
-                .source()
-                .verify_retained_capture_leaf_v1(candidate, grant)?,
-        }
-        let (store, sequence) = match view {
-            View::Current(owner) => (owner.store_identity(), owner.snapshot_sequence()),
-            View::Frozen(owner) => (owner.store_identity(), owner.snapshot_sequence()),
-        };
-        bytes(
-            grant,
-            store
-                .as_str()
-                .len()
-                .checked_add(candidate.root.key.len())
-                .ok_or(census_store::StoreError::CounterOverflow)?,
-        )?;
-        let reference =
-            crate::participation_evidence::ParticipationEvidenceRefV1::parse(&candidate.root.key)?;
-        let recorded = super::super::read::read_independent_from(
-            view.source(),
-            &reference,
-            || Ok(store.clone()),
-            sequence,
-            grant,
-        )?
-        .ok_or_else(|| invalid("participation packet is missing"))?;
-        if recorded.root() != &candidate.root {
-            return Err(invalid("participation packet root differs").into());
-        }
+        let recorded = read_anchored_packet(view, candidate, grant)?;
         if recorded.checked().status_proof().capture() != item.subject().body.as_str()
             || recorded.checked().subject().reference() != item.subject().subject.as_str()
         {
@@ -176,6 +144,47 @@ fn packet_from_approved_anchors(
         }
     }
     matching.ok_or_else(|| invalid("approved participation packet subject is absent").into())
+}
+
+fn read_anchored_packet(
+    view: View<'_, '_, '_>,
+    candidate: &census_store::RetainedCaptureLeafV1,
+    grant: &mut Grant,
+) -> CrawlResult<super::super::RecordedIndependentParticipationV1> {
+    match view {
+        View::Current(owner) => owner
+            .snapshot()
+            .verify_retained_capture_leaf_v1(candidate, grant)?,
+        View::Frozen(owner) => owner
+            .source()
+            .verify_retained_capture_leaf_v1(candidate, grant)?,
+    }
+    let (store, sequence) = match view {
+        View::Current(owner) => (owner.store_identity(), owner.snapshot_sequence()),
+        View::Frozen(owner) => (owner.store_identity(), owner.snapshot_sequence()),
+    };
+    bytes(
+        grant,
+        store
+            .as_str()
+            .len()
+            .checked_add(candidate.root.key.len())
+            .ok_or(census_store::StoreError::CounterOverflow)?,
+    )?;
+    let reference =
+        crate::participation_evidence::ParticipationEvidenceRefV1::parse(&candidate.root.key)?;
+    let recorded = super::super::read::read_independent_from(
+        view.source(),
+        &reference,
+        || Ok(store.clone()),
+        sequence,
+        grant,
+    )?
+    .ok_or_else(|| invalid("participation packet is missing"))?;
+    if recorded.root() != &candidate.root {
+        return Err(invalid("participation packet root differs").into());
+    }
+    Ok(recorded)
 }
 
 fn bind<'a, 'v, 's>(

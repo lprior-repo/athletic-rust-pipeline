@@ -10,14 +10,14 @@ fn descriptor_bound_refuses_before_staging_or_changing_admission_counters() -> T
     let before = retained_state(&store)?;
     let counters_before = counters(&store)?;
     let sequence = store.snapshot().sequence();
-    assert!(builder
+    check!(builder
         .add(&store, bridge::Node::Page(&generation.page))
         .is_err());
-    assert_eq!(builder.descriptors.len(), MAX_DESCRIPTORS);
-    assert!(builder.finish(&store, &generation.seal).is_err());
-    assert_eq!(counters(&store)?, counters_before);
-    assert_eq!(retained_state(&store)?, before);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(eq;builder.descriptors.len(), MAX_DESCRIPTORS);
+    check!(builder.finish(&store, &generation.seal).is_err());
+    check!(eq;counters(&store)?, counters_before);
+    check!(eq;retained_state(&store)?, before);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }
 
@@ -31,14 +31,14 @@ fn descriptor_decoder_accepts_cumulative_bound_and_refuses_the_next_descriptor()
     let maximum = MAX_DESCRIPTORS
         .min(MAX_PHYSICAL_ROWS / descriptor.physical.row_count())
         .min(MAX_METADATA_BYTES / bytes);
-    assert!(maximum > 0);
-    assert!(maximum < MAX_DESCRIPTORS);
+    check!(maximum > 0);
+    check!(maximum < MAX_DESCRIPTORS);
     let descriptor = serde_json::to_value(descriptor)?;
     let mut raw = serde_json::to_value(&reservation)?;
     *raw.get_mut("descriptors").ok_or("descriptors")? =
         serde_json::Value::Array(vec![descriptor.clone(); maximum]);
     let decoded: GraphReservation = serde_json::from_slice(&serde_json::to_vec(&raw)?)?;
-    assert_eq!(decoded.descriptors.len(), maximum);
+    check!(eq;decoded.descriptors.len(), maximum);
     raw.get_mut("descriptors")
         .and_then(serde_json::Value::as_array_mut)
         .ok_or("descriptors")?
@@ -47,10 +47,10 @@ fn descriptor_decoder_accepts_cumulative_bound_and_refuses_the_next_descriptor()
     let error = serde_json::from_slice::<GraphReservation>(&serde_json::to_vec(&raw)?)
         .err()
         .ok_or("oversized descriptors accepted")?;
-    assert!(error
+    check!(error
         .to_string()
         .contains("cumulative graph admission bound"));
-    assert_eq!(retained_state(&store)?, before);
+    check!(eq;retained_state(&store)?, before);
     Ok(())
 }
 
@@ -65,23 +65,23 @@ fn physical_row_and_metadata_bounds_refuse_without_growing_builder_or_store() ->
         .checked_sub(measured.row_count())
         .ok_or("row bound")?;
     exact.add(&store, bridge::Node::Page(&generation.page))?;
-    assert_eq!(exact.physical_rows, MAX_PHYSICAL_ROWS);
+    check!(eq;exact.physical_rows, MAX_PHYSICAL_ROWS);
     let mut over = GraphPlanBuilder::new(generation.capture.clone());
     over.physical_rows = MAX_PHYSICAL_ROWS;
-    assert!(over
+    check!(over
         .add(&store, bridge::Node::Page(&generation.page))
         .is_err());
-    assert!(over.descriptors.is_empty());
-    assert_eq!(over.physical_rows, MAX_PHYSICAL_ROWS);
+    check!(over.descriptors.is_empty());
+    check!(eq;over.physical_rows, MAX_PHYSICAL_ROWS);
     let mut metadata = GraphPlanBuilder::new(generation.capture.clone());
     metadata.metadata_bytes = MAX_METADATA_BYTES;
-    assert!(metadata
+    check!(metadata
         .add(&store, bridge::Node::Page(&generation.page))
         .is_err());
-    assert!(metadata.descriptors.is_empty());
-    assert_eq!(metadata.metadata_bytes, MAX_METADATA_BYTES);
-    assert_eq!(retained_state(&store)?, before);
-    assert_eq!(counters(&store)?, (admission::HEADER_MARGIN, 0, 0));
+    check!(metadata.descriptors.is_empty());
+    check!(eq;metadata.metadata_bytes, MAX_METADATA_BYTES);
+    check!(eq;retained_state(&store)?, before);
+    check!(eq;counters(&store)?, (admission::HEADER_MARGIN, 0, 0));
     Ok(())
 }
 
@@ -91,17 +91,17 @@ fn missing_child_duplicate_child_or_unreachable_object_cannot_be_reserved() -> T
     let (generation, _plan) = Generation::new(&store, 0)?;
     let before = retained_state(&store)?;
     let mut builder = GraphPlanBuilder::new(generation.capture.clone());
-    assert!(builder
+    check!(builder
         .add(&store, bridge::Node::Block(&generation.block))
         .is_err());
-    assert!(builder
+    check!(builder
         .add(&store, bridge::Node::Seal(&generation.seal))
         .is_err());
     let page = builder.add(&store, bridge::Node::Page(&generation.page))?;
-    assert!(builder
+    check!(builder
         .add(&store, bridge::Node::Page(&generation.page))
         .is_err());
-    assert!(validate::children_present(&builder.descriptors, &[page.clone(), page]).is_err());
+    check!(validate::children_present(&builder.descriptors, &[page.clone(), page]).is_err());
     let padding = generation
         .page
         .rows()
@@ -117,9 +117,9 @@ fn missing_child_duplicate_child_or_unreachable_object_cannot_be_reserved() -> T
     for table in &generation.tables {
         builder.add(&store, bridge::Node::Table(table))?;
     }
-    assert!(builder.finish(&store, &generation.seal).is_err());
-    assert_eq!(retained_state(&store)?, before);
-    assert_eq!(counters(&store)?, (admission::HEADER_MARGIN, 0, 0));
+    check!(builder.finish(&store, &generation.seal).is_err());
+    check!(eq;retained_state(&store)?, before);
+    check!(eq;counters(&store)?, (admission::HEADER_MARGIN, 0, 0));
     Ok(())
 }
 
@@ -134,10 +134,10 @@ fn oversized_reservation_refuses_without_persisting_metadata_or_counters() -> Te
     );
     let before = retained_state(&store)?;
     let sequence = store.snapshot().sequence();
-    assert!(reserve(&store, "oversized-graph", plan).is_err());
-    assert!(load(&store, "oversized-graph")?.is_none());
-    assert_eq!(counters(&store)?, (admission::HEADER_MARGIN, 0, 0));
-    assert_eq!(retained_state(&store)?, before);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(reserve(&store, "oversized-graph", plan).is_err());
+    check!(load(&store, "oversized-graph")?.is_none());
+    check!(eq;counters(&store)?, (admission::HEADER_MARGIN, 0, 0));
+    check!(eq;retained_state(&store)?, before);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }

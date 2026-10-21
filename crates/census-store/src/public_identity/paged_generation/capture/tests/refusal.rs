@@ -6,11 +6,11 @@ fn disabled_input_revisions_refuse_without_implicit_enrollment() -> TestResult {
     let (_directory, store, writer) = crate::public_identity_tests::support::unenrolled_fixture()?;
     crate::public_identity::local_adjudication::admission::enroll_header_for_test(&store)?;
     let sequence = store.snapshot().sequence();
-    assert!(writer
+    check!(writer
         .capture_raw_generation_v2(&store, &operation("disabled")?)
         .is_err());
-    assert_eq!(store.snapshot().sequence(), sequence);
-    assert_eq!(
+    check!(eq;store.snapshot().sequence(), sequence);
+    check!(eq;
         store.snapshot().public_identity_input_revisions_v2()?,
         crate::PublicIdentityInputRevisionsV2::Disabled
     );
@@ -26,9 +26,9 @@ fn oversize_physical_row_refuses_before_reservation_or_objects() -> TestResult {
     store.entities.insert(key, value)?;
     let sequence = store.snapshot().sequence();
     let id = operation("row-budget")?;
-    assert!(writer.capture_raw_generation_v2(&store, &id).is_err());
-    assert_eq!(store.snapshot().sequence(), sequence);
-    assert!(load_graph(&store, writer.store_identity(), &id)?.is_none());
+    check!(writer.capture_raw_generation_v2(&store, &id).is_err());
+    check!(eq;store.snapshot().sequence(), sequence);
+    check!(load_graph(&store, writer.store_identity(), &id)?.is_none());
     Ok(())
 }
 
@@ -48,11 +48,11 @@ fn aggregate_admission_refuses_before_reservation_or_objects() -> TestResult {
     eprintln!("aggregate before journal read: sequence={sequence}, state={before_physical:?}");
     let before = diagnostic::journal_state(&store)?;
     let admission: serde_json::Value = serde_json::from_slice(&before.2)?;
-    assert_eq!(
+    check!(eq;
         admission.get("roots").and_then(serde_json::Value::as_u64),
         Some(0)
     );
-    assert_eq!(
+    check!(eq;
         admission
             .get("reservations")
             .and_then(serde_json::Value::as_u64),
@@ -66,10 +66,10 @@ fn aggregate_admission_refuses_before_reservation_or_objects() -> TestResult {
         "aggregate after measurement: bytes={measured}, state={after_measure:?}, journal={:?}",
         diagnostic::journal_state(&store)?
     );
-    assert_eq!(after_journal_read, before_physical);
-    assert_eq!(after_measure, before_physical);
-    assert_eq!(diagnostic::journal_state(&store)?, before);
-    assert!(
+    check!(eq;after_journal_read, before_physical);
+    check!(eq;after_measure, before_physical);
+    check!(eq;diagnostic::journal_state(&store)?, before);
+    check!(
         measured > 128 * 1024 * 1024,
         "aggregate fixture measured only {measured} bytes"
     );
@@ -83,15 +83,15 @@ fn aggregate_admission_refuses_before_reservation_or_objects() -> TestResult {
             needed,
             available,
         })) => {
-            assert_eq!(*available, 128 * 1024 * 1024);
-            assert!(*needed > *available);
-            assert!(*needed >= measured);
+            check!(eq;*available, 128 * 1024 * 1024);
+            check!(*needed > *available);
+            check!(*needed >= measured);
         }
         other => return Err(format!("unexpected aggregate refusal: {other:?}").into()),
     }
-    assert_eq!(diagnostic::physical_state(&store)?, before_physical);
-    assert_eq!(after, before);
-    assert!(load_graph(&store, writer.store_identity(), &id)?.is_none());
+    check!(eq;diagnostic::physical_state(&store)?, before_physical);
+    check!(eq;after, before);
+    check!(load_graph(&store, writer.store_identity(), &id)?.is_none());
     Ok(())
 }
 
@@ -122,9 +122,9 @@ fn missing_child_refuses_complete_replay_without_repair() -> TestResult {
         .journal
         .remove(crate::journal::object_manifest_key(page.root().as_str())?)?;
     let sequence = store.snapshot().sequence();
-    assert!(retained.verify(&store.snapshot()).is_err());
-    assert!(writer.capture_raw_generation_v2(&store, &id).is_err());
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(retained.verify(&store.snapshot()).is_err());
+    check!(writer.capture_raw_generation_v2(&store, &id).is_err());
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }
 
@@ -141,8 +141,8 @@ fn tampered_child_refuses_complete_replay_without_repair() -> TestResult {
     let key = crate::journal::object_chunk_key(page.root().as_str(), 0)?;
     store.journal.insert(key, b"tampered retained chunk")?;
     let sequence = store.snapshot().sequence();
-    assert!(retained.verify(&store.snapshot()).is_err());
-    assert!(writer.capture_raw_generation_v2(&store, &id).is_err());
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(retained.verify(&store.snapshot()).is_err());
+    check!(writer.capture_raw_generation_v2(&store, &id).is_err());
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }

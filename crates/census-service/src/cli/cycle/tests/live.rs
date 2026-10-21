@@ -158,11 +158,8 @@ async fn unsupported_or_malformed_capability_blocks_all_publication_calls() -> T
             "publication capability response is invalid; no invocation was submitted",
         ),
         (
-            (
-                "200 OK",
-                "{\"publication_contracts\":[\"legacy_separate_v1\"]}".into(),
-            ),
-            "endpoint does not advertise SelectedPublicationV1; no invocation was submitted",
+            ("200 OK", "{\"publication_contracts\":[]}".into()),
+            "endpoint does not advertise SelectedPublicationV2; no invocation was submitted",
         ),
         (
             ("200 OK", "{\"publication_contracts\":[\"unknown\"]}".into()),

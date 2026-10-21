@@ -6,6 +6,7 @@ use crate::{Entity, StoreError, StoreResult, Table};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use census_domain::model::{CanonicalPerformance, RelayResult};
 use serde::de::DeserializeOwned;
+#[cfg(test)]
 use sha2::{Digest, Sha256};
 
 type Record = (usize, crate::read::JournalEntry);
@@ -23,6 +24,7 @@ pub(in crate::public_identity) fn read(
     from_records(records, object.record_count())
 }
 
+#[cfg(test)]
 pub(in crate::public_identity) fn from_bytes(bytes: &[u8], root: &str) -> StoreResult<Inputs> {
     if bytes.len() > crate::journal::context::CONTEXT_TOTAL_BYTES
         || !crate::journal::is_object_id(root)

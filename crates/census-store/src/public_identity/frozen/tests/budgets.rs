@@ -1,36 +1,57 @@
 use super::*;
 use census_domain::public_identity_history::ReplayLimits;
 
+fn frozen_v2_bytes() -> TestResult<(tempfile::TempDir, Vec<u8>)> {
+    let (directory, store, _writer, _) = two_births()?;
+    let frozen = store.snapshot().freeze_public_identity_v2()?;
+    Ok((directory, frozen.bytes().to_vec()))
+}
+
+fn replayed(bytes: &[u8]) -> TestResult<StoreError> {
+    match crate::public_identity::replay_frozen_public_identity_v2(bytes, &digest(bytes)) {
+        Err(error) => Ok(error),
+        Ok(_) => Err("corrupt frozen graph bundle accepted".into()),
+    }
+}
+
 #[test]
-fn frozen_row_budget_precedes_operation_decode() -> TestResult {
-    let historical = historical::two_births()?;
-    let frozen = &historical.frozen;
-    let mut bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
-    bundle.operations.first_mut().ok_or("operation")?.witness = "x".repeat(65_537);
+fn frozen_graph_witness_budget_is_checked_before_replay() -> TestResult {
+    let (_directory, bytes) = frozen_v2_bytes()?;
+    let mut bundle: serde_json::Value = serde_json::from_slice(&bytes)?;
+    let operations = bundle
+        .get_mut("operations")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or("graph operations")?;
+    let witness = operations
+        .first_mut()
+        .and_then(|operation| operation.get_mut("witness"))
+        .ok_or("graph witness")?;
+    *witness = serde_json::Value::String("x".repeat(1024 * 1024 + 1));
+    let tampered = serde_json::to_vec(&bundle)?;
     check!(matches!(
-        tamper::corrupted(&bundle)?,
-        StoreError::RowTooLarge {
-            bytes: 65_537,
-            max: 65_536
-        }
+        replayed(&tampered)?,
+        StoreError::Decode { key, .. } if key == "frozen graph bundle"
     ));
     Ok(())
 }
 
 #[test]
-fn frozen_collection_decoder_refuses_one_more_than_history_limit() -> TestResult {
-    let historical = historical::two_births()?;
-    let frozen = &historical.frozen;
-    let mut bundle: wire::Bundle = serde_json::from_slice(frozen.bytes())?;
-    bundle.contexts = (0..=ReplayLimits::SMALL.records)
-        .map(|_| wire::Context {
-            root: String::new(),
-            bytes: String::new(),
-        })
-        .collect();
-    let error = tamper::corrupted(&bundle)?;
-    check!(matches!(error, StoreError::Decode { key, source }
-        if key == "frozen identity bundle" && source.to_string().contains("frozen identity collection exceeds bound")));
+fn frozen_graph_collection_decoder_refuses_one_more_than_history_limit() -> TestResult {
+    let (_directory, bytes) = frozen_v2_bytes()?;
+    let mut bundle: serde_json::Value = serde_json::from_slice(&bytes)?;
+    let operations = bundle
+        .get("operations")
+        .and_then(serde_json::Value::as_array)
+        .ok_or("graph operations")?;
+    let template = operations.first().ok_or("graph operation")?.clone();
+    let overflowed: Vec<serde_json::Value> =
+        core::iter::repeat_n(template, ReplayLimits::SMALL.records + 1).collect();
+    bundle["operations"] = serde_json::Value::Array(overflowed);
+    let tampered = serde_json::to_vec(&bundle)?;
+    check!(matches!(
+        replayed(&tampered)?,
+        StoreError::Decode { key, .. } if key == "frozen graph bundle"
+    ));
     Ok(())
 }
 

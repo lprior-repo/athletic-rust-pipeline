@@ -34,6 +34,9 @@ pub(super) fn raw(
     budget: &mut AcquisitionReadBudget,
     protocol: CaptureProtocolVersion,
 ) -> StoreResult<Option<Vec<u8>>> {
+    if protocol != CaptureProtocolVersion::V2 {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
     let physical = Store::journal_key(protocol.phase(), key);
     let Some(length) = snapshot
         .size_of(journal, &physical)
@@ -85,7 +88,7 @@ pub(super) fn decode_fact<T: super::facts::FactDecode>(
     protocol: CaptureProtocolVersion,
 ) -> StoreResult<T> {
     match protocol {
-        CaptureProtocolVersion::V1 => decode::<T::Historical>(key, raw).map(T::from_historical),
+        CaptureProtocolVersion::V1 => Err(CaptureError::CaptureProtocolUnsupported.into()),
         CaptureProtocolVersion::V2 => decode(key, raw),
     }
 }
@@ -150,6 +153,9 @@ pub(super) fn stage<T: Serialize>(
     payload: &T,
     protocol: CaptureProtocolVersion,
 ) -> StoreResult<()> {
+    if protocol != CaptureProtocolVersion::V2 {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
     let physical = Store::journal_key(protocol.phase(), key);
     if store
         .db

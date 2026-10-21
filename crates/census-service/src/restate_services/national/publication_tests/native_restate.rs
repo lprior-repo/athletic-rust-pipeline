@@ -1,5 +1,5 @@
-mod endpoint;
-mod node;
+pub(crate) mod endpoint;
+pub(crate) mod node;
 mod reaper;
 use super::TestResult;
 use endpoint::{call_workbook, read_output, register_endpoint};

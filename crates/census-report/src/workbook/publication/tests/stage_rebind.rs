@@ -1,12 +1,28 @@
 use super::*;
-use crate::export::ExportJobRequest;
-use census_store::publish::{Digest, Intent, Request, State};
+use crate::export::{ExportDataset, ExportJobRequest};
+use crate::workbook::{self, Censuses, Options};
+use census_domain::model::CanonicalSchool;
+use census_domain::UsJurisdiction;
+use census_store::{
+    publish::{Digest, Intent, Request, State},
+    Table,
+};
+
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+fn fixture_options(out: Option<std::path::PathBuf>) -> TestResult<Options> {
+    Ok(Options {
+        grad_year: Some(2027),
+        out,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        jurisdictions: vec![UsJurisdiction::Alabama, UsJurisdiction::Wisconsin],
+        school_year: census_domain::model::SchoolYear::new(2026).ok_or("school year")?,
+    })
+}
 
 struct Retained {
-    temp: tempfile::TempDir,
-    store: Store,
-    dataset: ExportDataset,
-    options: Options,
+    fixture: crate::export::selected_test_fixture::Fixture,
     request: Intent,
     old: PathBuf,
     old_bytes: Vec<u8>,
@@ -14,42 +30,21 @@ struct Retained {
 }
 
 impl Retained {
-    fn new() -> TestResult<Self> {
-        let temp = tempfile::tempdir()?;
-        let store = Store::open(temp.path().join("store"))?;
-        let mut options = super::super::fence_tests::options(None)?;
-        let old = crate::workbook::build(&store, &options)?;
+    async fn new(job: &str) -> TestResult<Self> {
+        let fixture = crate::export::selected_test_fixture::Fixture::new().await?;
+        let objects = tempfile::tempdir()?;
+        let dataset = fixture.capture(objects.path())?;
+        let options = fixture_options(None)?;
+        let root = fixture.store.out_dir().join("publication");
+        let censuses = Censuses::of(&dataset, &fixture.store.out_dir(), &options.jurisdictions)?;
+        let old = workbook::build_from(&dataset, &fixture.store, &options, &censuses)?;
         let old_bytes = std::fs::read(&old)?;
-        options.limit = Some(1);
-        let dataset = ExportDataset::for_job_request(
-            &store,
-            "requested-stage-rebind",
-            &ExportJobRequest::LegacyV2,
-        )?;
-        let root = store.out_dir().join("publication");
-        let namespace = binding::namespace(&root)?;
-        let input = binding::input(&dataset, &store, &options)?;
-        let identity =
-            binding::digest(&(&namespace, &dataset.lineage.input_generation, &input.recipe))?;
-        let expires = chrono::Utc::now()
-            .checked_add_signed(chrono::Duration::seconds(1))
-            .ok_or("lease expiry overflow")?
-            .to_rfc3339();
-        let lease_epoch =
-            store.lease_acquire(identity.as_str(), "workbook-publication", &expires)?;
-        let request = store.publication_request(Request {
-            namespace,
-            identity,
-            expected: pointer::read(&root)?,
-            input,
-            lease_epoch,
-        })?;
-        await_expired(&store, &request.request.identity)?;
+        let job_request = ExportJobRequest::SelectedPublicationV1 {
+            selection: fixture.selection.clone(),
+        };
+        let request = expiring_requested(&fixture, &root, job, &job_request).await?;
         Ok(Self {
-            temp,
-            store,
-            dataset,
-            options,
+            fixture,
             request,
             old,
             old_bytes,
@@ -66,6 +61,7 @@ impl Retained {
 
     fn rebound(&self) -> TestResult<Intent> {
         let current = self
+            .fixture
             .store
             .publication_read(&self.request.request.identity)?
             .ok_or("publication request disappeared")?;
@@ -74,7 +70,7 @@ impl Retained {
         expected.lease_epoch = current.request.lease_epoch;
         check!(eq; current.request, expected);
         check!(matches!(
-            self.store.publication_lease_renew(
+            self.fixture.store.publication_lease_renew(
                 &self.request.request.identity,
                 self.request.request.lease_epoch,
             ),
@@ -82,6 +78,37 @@ impl Retained {
         ));
         Ok(current)
     }
+}
+
+async fn expiring_requested(
+    fixture: &crate::export::selected_test_fixture::Fixture,
+    root: &Path,
+    job: &str,
+    job_request: &ExportJobRequest,
+) -> TestResult<Intent> {
+    let dataset = ExportDataset::for_job_request(&fixture.store, job, job_request)?;
+    let options = fixture_options(None)?;
+    let namespace = binding::namespace(root)?;
+    let input = binding::input(&dataset, &fixture.store, &options)?;
+    let identity =
+        binding::digest(&(&namespace, &dataset.lineage.input_generation, &input.recipe))?;
+    let expires = chrono::Utc::now()
+        .checked_add_signed(chrono::Duration::seconds(1))
+        .ok_or("lease expiry overflow")?
+        .to_rfc3339();
+    let lease_epoch =
+        fixture
+            .store
+            .lease_acquire(identity.as_str(), "workbook-publication", &expires)?;
+    let request = fixture.store.publication_request(Request {
+        namespace,
+        identity,
+        expected: pointer::read(root)?,
+        input,
+        lease_epoch,
+    })?;
+    await_expired(&fixture.store, &request.request.identity)?;
+    Ok(request)
 }
 
 fn await_expired(store: &Store, identity: &Digest) -> TestResult {
@@ -100,67 +127,96 @@ fn await_expired(store: &Store, identity: &Digest) -> TestResult {
     }
 }
 
-#[test]
-fn expired_requested_stage_reloads_rebound_epoch_and_publishes() -> TestResult {
-    let f = Retained::new()?;
-    let stage = Stage::begin(&f.dataset, &f.store, &f.options)?;
+#[tokio::test]
+async fn expired_requested_stage_reloads_rebound_epoch_and_publishes() -> TestResult {
+    let f = Retained::new("requested-stage-rebind").await?;
+    let options = fixture_options(None)?;
+    let job_request = ExportJobRequest::SelectedPublicationV1 {
+        selection: f.fixture.selection.clone(),
+    };
+    let job_dataset =
+        ExportDataset::for_job_request(&f.fixture.store, "requested-stage-rebind", &job_request)?;
+    let stage = Stage::begin(&job_dataset, &f.fixture.store, &options)?;
     let rebound = f.rebound()?;
     check!(eq; rebound.state, State::Requested);
     f.unchanged_previous()?;
-    let evidence = f.store.evidence_generation();
-    let derived = f.store.derived_generation();
-    let censuses = crate::workbook::Censuses::of(&f.dataset, &f.store.out_dir(), &[])?;
-    let published = stage.publish(&f.dataset, &f.options, |directory| {
-        crate::workbook::write_artifacts(directory, &f.dataset, &f.options, &censuses)
+    let evidence = f.fixture.store.evidence_generation();
+    let derived = f.fixture.store.derived_generation();
+    let censuses = Censuses::of(
+        &job_dataset,
+        &f.fixture.store.out_dir(),
+        &options.jurisdictions,
+    )?;
+    let published = stage.publish(&job_dataset, &options, |directory| {
+        workbook::write_artifacts(directory, &job_dataset, &options, &censuses)
     })?;
     check!(eq; current_workbook(&f.root)?, published);
     check!(eq; std::fs::read(&f.old)?, f.old_bytes);
     verify_published(&f.old)?;
     verify_published(&published)?;
     assert_no_temporaries(&f.root)?;
-    check!(eq; f.store.evidence_generation(), evidence);
-    check!(eq; f.store.derived_generation(), derived);
+    check!(eq; f.fixture.store.evidence_generation(), evidence);
+    check!(eq; f.fixture.store.derived_generation(), derived);
     let retained = f.rebound()?;
     check!(matches!(retained.state, State::Published { .. }));
     check!(eq; retained.request.lease_epoch, rebound.request.lease_epoch);
-    check!(eq; f.store.publication_active(&retained.request.namespace)?, Some(retained.clone()));
-    f.store.flush()?;
+    check!(eq; f.fixture.store.publication_active(&retained.request.namespace)?, Some(retained.clone()));
+    f.fixture.store.flush()?;
+    let temp = f.fixture.directory.path().to_owned();
+    let root = f.root.clone();
+    let old = f.old.clone();
+    let old_bytes = f.old_bytes.clone();
+    let retained_identity = retained.request.identity.clone();
+    let retained_namespace = retained.request.namespace.clone();
+    let retained_epoch = retained.request.lease_epoch;
     let Retained {
-        temp,
-        store,
-        root,
-        old,
-        old_bytes,
+        fixture:
+            crate::export::selected_test_fixture::Fixture {
+                directory: _keep,
+                store,
+                ..
+            },
         ..
     } = f;
     drop(store);
-    let reopened = Store::open(temp.path().join("store"))?;
-    check!(eq; reopened.publication_read(&retained.request.identity)?, Some(retained.clone()));
-    check!(eq; reopened.publication_active(&retained.request.namespace)?, Some(retained.clone()));
-    check!(eq; reopened.publication_lease(&retained.request.identity)?, rebound.request.lease_epoch);
+    let (reopened, _) =
+        Store::open_public_identity_qualification_v3(temp.join("store"))?.into_parts();
+    check!(eq; reopened.publication_read(&retained_identity)?, Some(retained.clone()));
+    check!(eq; reopened.publication_active(&retained_namespace)?, Some(retained.clone()));
+    check!(eq; reopened.publication_lease(&retained_identity)?, retained_epoch);
     check!(eq; current_workbook(&root)?, published);
     check!(eq; std::fs::read(&old)?, old_bytes);
     verify_published(&published)?;
     Ok(())
 }
 
-#[test]
-fn rebound_requested_stage_still_refuses_changed_evidence_and_keeps_prior_bundle() -> TestResult {
-    let f = Retained::new()?;
-    let stage = Stage::begin(&f.dataset, &f.store, &f.options)?;
+#[tokio::test]
+async fn rebound_requested_stage_still_refuses_changed_evidence_and_keeps_prior_bundle(
+) -> TestResult {
+    let f = Retained::new("rebound-evidence-changed").await?;
+    let options = fixture_options(None)?;
+    let job_request = ExportJobRequest::SelectedPublicationV1 {
+        selection: f.fixture.selection.clone(),
+    };
+    let job_dataset =
+        ExportDataset::for_job_request(&f.fixture.store, "rebound-evidence-changed", &job_request)?;
+    let stage = Stage::begin(&job_dataset, &f.fixture.store, &options)?;
     let rebound = f.rebound()?;
     check!(eq; rebound.state, State::Requested);
-    let censuses = crate::workbook::Censuses::of(&f.dataset, &f.store.out_dir(), &[])?;
-    let result = stage.publish(&f.dataset, &f.options, |directory| {
-        let counts =
-            crate::workbook::write_artifacts(directory, &f.dataset, &f.options, &censuses)?;
+    let censuses = Censuses::of(
+        &job_dataset,
+        &f.fixture.store.out_dir(),
+        &options.jurisdictions,
+    )?;
+    let result = stage.publish(&job_dataset, &options, |directory| {
+        let counts = workbook::write_artifacts(directory, &job_dataset, &options, &censuses)?;
         let (school, _) = CanonicalSchool::new(
             UsJurisdiction::Wisconsin,
             "Late School",
             "late-school",
             None,
         );
-        f.store.append(Table::Schools, &school)?;
+        f.fixture.store.append(Table::Schools, &school)?;
         Ok(counts)
     });
     check!(matches!(

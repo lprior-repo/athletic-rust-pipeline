@@ -77,22 +77,20 @@ async fn a_retained_handler_keeps_the_actual_actor_in_quarantine_until_explicit_
 {
     let (tx, rx) = mpsc::channel(4);
     let (finish, finished) = oneshot::channel();
-    let handler = tokio::spawn(async move {
-        assert_eq!(finished.await, Ok(()));
-    });
+    let handler = tokio::spawn(wait_for_handler_release(finished));
     let (reply, first_report) = oneshot::channel();
     let actor = Actor::draining_for_test(rx, handler, reply)?;
     let status = actor.status.clone();
     let join = tokio::spawn(actor.run());
-    assert_eq!(first_report.await?, crate::drain::DrainReport::default());
-    assert!(!join.is_finished());
-    assert_eq!(
+    check!(eq; first_report.await?, crate::drain::DrainReport::default());
+    check!(!join.is_finished());
+    check!(eq;
         status.read().map_err(|_| "status poisoned")?.state,
         BrowserState::Restarting
     );
     let (reply, answer) = oneshot::channel();
     tx.send(Command::Inspect { reply }).await?;
-    assert_eq!(answer.await??.state, BrowserState::Restarting);
+    check!(eq; answer.await??.state, BrowserState::Restarting);
     let request = RequestSpec {
         url: url::Url::parse("https://www.athletic.net/team/1")?,
         semantic_url: "https://www.athletic.net/team/1".to_owned(),
@@ -101,28 +99,36 @@ async fn a_retained_handler_keeps_the_actual_actor_in_quarantine_until_explicit_
     };
     let (reply, answer) = oneshot::channel();
     tx.send(Command::Fetch { request, reply }).await?;
-    assert_eq!(
+    check!(eq;
         answer.await?,
         BrowserOutcome::failed(BrowserError::Shutdown)
     );
     let (reply, answer) = oneshot::channel();
     tx.send(Command::Restart { reply }).await?;
-    assert!(matches!(answer.await?, Err(BrowserError::Shutdown)));
+    check!(matches!(answer.await?, Err(BrowserError::Shutdown)));
     finish
         .send(())
         .map_err(|_| "handler was aborted instead of retained")?;
     let (reply, report) = oneshot::channel();
     tx.send(Command::Shutdown { reply }).await?;
-    assert_eq!(report.await?, crate::drain::DrainReport::default());
+    check!(eq; report.await?, crate::drain::DrainReport::default());
     let exit = join.await?;
-    assert_eq!(exit.report, crate::drain::DrainReport::default());
-    assert!(
+    check!(eq; exit.report, crate::drain::DrainReport::default());
+    check!(
         matches!(exit.failure, Some(crate::BrowserStartupError::ShutdownFailed(message))
         if message == "browser handler wait timed out")
     );
-    assert_eq!(
+    check!(eq;
         status.read().map_err(|_| "status poisoned")?.state,
         BrowserState::Restarting
     );
     Ok(())
+}
+
+async fn wait_for_handler_release(finished: oneshot::Receiver<()>) {
+    assert_eq!(finished.await, Ok(()));
+}
+
+fn notify_handler_completed(finished: oneshot::Sender<()>) {
+    assert_eq!(finished.send(()), Ok(()));
 }

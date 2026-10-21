@@ -86,7 +86,7 @@ async fn observed_interruption_requires_separate_original_owner_continuation() -
     check!(eq; fixture.count(), 1);
     let rows = fixture
         .store
-        .journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
+        .journal_payloads(census_domain::model::CaptureProtocolVersion::V2.phase())?;
     check!(rows.iter().any(|row| row
         .get("terminal")
         .and_then(|terminal| terminal.get("kind"))
@@ -143,7 +143,7 @@ async fn injected_prearm_timeout_reopens_reserved_without_consuming_attempt() ->
     check!(eq; fixture.fetcher.stats().await.physical_requests(), 0);
     let keys = fixture
         .store
-        .journal_keys(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
+        .journal_keys(census_domain::model::CaptureProtocolVersion::V2.phase())?;
     check!(!keys
         .iter()
         .any(|key| key.ends_with("/armed") || key.ends_with("/terminal")));

@@ -23,13 +23,14 @@ fn graph_qualification_has_exact_independent_wire_and_lifecycle() -> TestResult 
 fn graph_qualification_never_adopts_context_or_source_declarations() -> TestResult {
     let identity = StoreIdentity::parse(&"b".repeat(64))?;
     for old in [
-        serde_json::to_value(PublicIdentityQualificationV1::new(identity.clone()))?,
+        json!({"version":1,"lifecycle":"fresh_qualification","store_identity":identity,
+            "protocol":"public_identity_ledger_v1","history_version":1,
+            "acceptance":"source_bound_establishment_v1"}),
         serde_json::to_value(PublicIdentityQualificationV2::new(identity.clone()))?,
     ] {
         check!(serde_json::from_value::<PublicIdentityQualificationV3>(old).is_err());
     }
     let graph = serde_json::to_value(PublicIdentityQualificationV3::new(identity))?;
-    check!(serde_json::from_value::<PublicIdentityQualificationV1>(graph.clone()).is_err());
     check!(serde_json::from_value::<PublicIdentityQualificationV2>(graph).is_err());
     Ok(())
 }

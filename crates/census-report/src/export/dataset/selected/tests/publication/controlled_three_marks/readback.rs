@@ -90,11 +90,11 @@ fn participation_matches(
     check!(wanted_assessment.diagnostics().is_empty());
     check!(!wanted_assessment.evidence_refs().is_empty());
     if wanted.id == may50.id {
-        assert_may51_eligible(&view, may51)?;
-        assert_may50_eligible(&view, may50)?;
+        assert_may51_eligible(view, may51)?;
+        assert_may50_eligible(view, may50)?;
     } else {
-        assert_may50_revoked(&view, may50, generation)?;
-        assert_may51_eligible(&view, may51)?;
+        assert_may50_revoked(view, may50, generation)?;
+        assert_may51_eligible(view, may51)?;
     }
     Ok(())
 }

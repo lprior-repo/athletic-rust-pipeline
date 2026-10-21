@@ -1,5 +1,5 @@
 use super::{
-    codec, is_qualification_lifecycle, PublicIdentityError, DECLARATION, HEAD, HISTORY, LIFECYCLE,
+    codec, is_qualification_lifecycle, PublicIdentityError, DECLARATION, HEAD, HISTORY,
     MAX_PUBLIC_IDENTITY_HISTORY_BYTES, RETAINED_CONTEXT_LIFECYCLE,
 };
 use crate::{Store, StoreError, StoreFormat, StoreResult};
@@ -236,7 +236,9 @@ fn read_declaration(
     let raw = codec::load(snapshot, meta, DECLARATION, 65_536)?
         .ok_or(PublicIdentityError::Corrupt("missing declaration"))?;
     let declaration = match format.lifecycle_revision {
-        Some(LIFECYCLE) => PublicIdentityQualification::V1(codec::decode(DECLARATION, &raw)?),
+        Some(super::LIFECYCLE) => {
+            return Err(PublicIdentityError::Corrupt("qualification lifecycle").into())
+        }
         Some(RETAINED_CONTEXT_LIFECYCLE) => {
             PublicIdentityQualification::V2(codec::decode(DECLARATION, &raw)?)
         }

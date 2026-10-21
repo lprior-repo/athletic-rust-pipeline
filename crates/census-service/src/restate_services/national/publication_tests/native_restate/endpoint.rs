@@ -8,6 +8,16 @@ pub(super) async fn register_endpoint(
     node: &NativeNode,
     endpoint: SocketAddr,
 ) -> TestResult {
+    register_named_endpoint(client, node, endpoint, "Workbook", "run").await
+}
+
+pub(crate) async fn register_named_endpoint(
+    client: &reqwest::Client,
+    node: &NativeNode,
+    endpoint: SocketAddr,
+    service: &str,
+    handler: &str,
+) -> TestResult {
     let address = format!("http://{endpoint}/");
     let discovery = reqwest::Client::builder()
         .no_proxy()
@@ -21,7 +31,7 @@ pub(super) async fn register_endpoint(
         .await?;
     check!(eq; manifest.status(), reqwest::StatusCode::OK);
     let manifest: serde_json::Value = manifest.json().await?;
-    require_workbook_manifest(&manifest)?;
+    require_manifest(&manifest, service, handler)?;
     let response = client
         .post(format!("{}/deployments", node.admin))
         .json(&serde_json::json!({ "uri": address }))
@@ -35,24 +45,24 @@ pub(super) async fn register_endpoint(
     Ok(())
 }
 
-fn require_workbook_manifest(manifest: &serde_json::Value) -> TestResult {
+fn require_manifest(manifest: &serde_json::Value, service: &str, handler: &str) -> TestResult {
     let services = manifest
         .get("services")
         .and_then(serde_json::Value::as_array)
         .ok_or("endpoint discovery manifest has no services")?;
-    let workbook = services
+    let advertised = services
         .iter()
-        .find(|service| service.get("name").and_then(serde_json::Value::as_str) == Some("Workbook"))
-        .ok_or("endpoint discovery manifest does not advertise Workbook")?;
-    let handlers = workbook
+        .find(|entry| entry.get("name").and_then(serde_json::Value::as_str) == Some(service))
+        .ok_or("endpoint discovery manifest does not advertise the required service")?;
+    let handlers = advertised
         .get("handlers")
         .and_then(serde_json::Value::as_array)
-        .ok_or("Workbook discovery manifest has no handlers")?;
+        .ok_or("discovery manifest has no handlers")?;
     check!(
-        handlers.iter().any(|handler| {
-            handler.get("name").and_then(serde_json::Value::as_str) == Some("run")
+        handlers.iter().any(|entry| {
+            entry.get("name").and_then(serde_json::Value::as_str) == Some(handler)
         }),
-        "endpoint discovery manifest does not advertise Workbook/run"
+        "endpoint discovery manifest does not advertise the required handler"
     );
     Ok(())
 }
@@ -82,7 +92,7 @@ pub(super) async fn call_workbook(
     Ok((status, invocation_id, body.to_vec()))
 }
 
-pub(super) async fn read_output(
+pub(crate) async fn read_output(
     client: &reqwest::Client,
     ingress: &str,
     invocation_id: &str,

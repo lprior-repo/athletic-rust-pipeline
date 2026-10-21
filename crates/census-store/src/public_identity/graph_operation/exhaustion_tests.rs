@@ -173,10 +173,10 @@ fn zero_charge_template(
     let operation = raw_operation(reference.capture().store_identity(), "capacity-template")?;
     let _guard = store.lock_appends();
     let reservation = reserve_graph(store, &operation, plan)?;
-    assert!(reservation.is_complete(store)?);
+    check!(reservation.is_complete(store)?);
     let raw = codec::encode(&reservation, MAX_JOURNAL_VALUE_BYTES)?;
     let key = reservation_key(operation.as_str());
-    assert_eq!(row_charges(&key, &raw)?, (metadata_bytes(&key, &raw)?, 0));
+    check!(eq;row_charges(&key, &raw)?, (metadata_bytes(&key, &raw)?, 0));
     Ok((operation, reservation))
 }
 
@@ -184,7 +184,7 @@ fn fill_valid_reservation_rows(store: &Store, template: &GraphReservation) -> Te
     let _guard = store.lock_appends();
     let mut header = header(store)?;
     let (mut bytes, roots, mut count) = retained_charges(store)?;
-    assert_eq!(
+    check!(eq;
         (
             number(&header, "bytes")?,
             number(&header, "roots")?,
@@ -196,13 +196,14 @@ fn fill_valid_reservation_rows(store: &Store, template: &GraphReservation) -> Te
     let target = RESERVATION_LIMIT
         .checked_sub(1)
         .ok_or("reservation limit")?;
-    for index in count..target {
+    let initial_count = count;
+    for index in initial_count..target {
         let operation = raw_operation(
             template.capture().store_identity(),
             &format!("capacity-fixture-{index:04}"),
         )?;
         let key = reservation_key(operation.as_str());
-        assert!(store.journal.get(&key)?.is_none());
+        check!(store.journal.get(&key)?.is_none());
         let mut value = serde_json::to_value(template)?;
         let field = value
             .pointer_mut("/purpose/operation")
@@ -213,14 +214,14 @@ fn fill_valid_reservation_rows(store: &Store, template: &GraphReservation) -> Te
             .checked_sub(key.len())
             .ok_or("row limit")?;
         let raw = codec::encode(&candidate, limit)?;
-        assert_eq!(row_charges(&key, &raw)?, (metadata_bytes(&key, &raw)?, 0));
+        check!(eq;row_charges(&key, &raw)?, (metadata_bytes(&key, &raw)?, 0));
         bytes = add(bytes, metadata_bytes(&key, &raw)?)?;
         count = add(count, 1)?;
         batch.insert(&store.journal, key.as_bytes(), raw);
     }
-    assert_eq!(count, 4095);
-    assert!(bytes < BYTE_LIMIT);
-    assert!(roots < ROOT_LIMIT);
+    check!(eq;count, 4095);
+    check!(bytes < BYTE_LIMIT);
+    check!(roots < ROOT_LIMIT);
     *header.get_mut("bytes").ok_or("header bytes")? = bytes.into();
     *header.get_mut("reservations").ok_or("header count")? = count.into();
     batch.insert(&store.journal, HEADER_KEY, codec::encode(&header, 4096)?);
@@ -241,7 +242,7 @@ fn unchanged(store: &Store, before: &fjall::Snapshot, sequence: u64) -> TestResu
         let mut complete = false;
         for _ in 0..SNAPSHOT_ROW_LIMIT {
             match (left.next(), right.next()) {
-                (Some(left), Some(right)) => assert_eq!(left.into_inner()?, right.into_inner()?),
+                (Some(left), Some(right)) => check!(eq;left.into_inner()?, right.into_inner()?),
                 (None, None) => {
                     complete = true;
                     break;
@@ -249,9 +250,9 @@ fn unchanged(store: &Store, before: &fjall::Snapshot, sequence: u64) -> TestResu
                 _ => return Err("physical keyspace row count changed".into()),
             }
         }
-        assert!(complete, "physical snapshot comparison bound");
+        check!(complete, "physical snapshot comparison bound");
     }
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }
 
@@ -261,7 +262,7 @@ fn unchanged_journal_prefix(store: &Store, before: &fjall::Snapshot, prefix: &[u
     let mut right = after.prefix(&store.journal, prefix);
     for _ in 0..SNAPSHOT_ROW_LIMIT {
         match (left.next(), right.next()) {
-            (Some(left), Some(right)) => assert_eq!(left.into_inner()?, right.into_inner()?),
+            (Some(left), Some(right)) => check!(eq;left.into_inner()?, right.into_inner()?),
             (None, None) => return Ok(()),
             _ => return Err("journal prefix row count changed".into()),
         }
@@ -283,7 +284,7 @@ fn finish_pending_source_at_capacity(
         return Err("pending source witness".into());
     };
     let before = store.db.snapshot();
-    assert_eq!(writer.head(store)?, reserved.expected_head);
+    check!(eq;writer.head(store)?, reserved.expected_head);
     let resumed = writer.establish_source_bound(
         store,
         &reserved.operation,
@@ -291,9 +292,9 @@ fn finish_pending_source_at_capacity(
         store.snapshot().revision(),
         &reserved.expected_head,
     )?;
-    assert!(!resumed.replayed());
-    assert_eq!(resumed.public_id().as_str(), public_id.as_str());
-    assert_eq!(
+    check!(!resumed.replayed());
+    check!(eq;resumed.public_id().as_str(), public_id.as_str());
+    check!(eq;
         resumed.head(),
         &RegistryHead {
             sequence: add(reserved.expected_head.sequence, 1)?,
@@ -304,12 +305,12 @@ fn finish_pending_source_at_capacity(
         .snapshot()
         .accepted_public_identity_snapshot()?
         .ok_or("accepted identity snapshot")?;
-    assert_eq!(projection.head(), resumed.head());
+    check!(eq;projection.head(), resumed.head());
     let PublicResolution::Canonical(resolved) = projection.resolve_candidate(candidate)? else {
         return Err("resumed source is not canonical".into());
     };
-    assert_eq!(&resolved.public_id, resumed.public_id());
-    assert_eq!(&resolved.representative_candidate, candidate);
+    check!(eq;&resolved.public_id, resumed.public_id());
+    check!(eq;&resolved.representative_candidate, candidate);
     unchanged_journal_prefix(store, &before, b"manual-context-admission-v1\0")?;
     unchanged_journal_prefix(store, &before, b"j2\0")?;
     let committed = store.db.snapshot();
@@ -321,8 +322,8 @@ fn finish_pending_source_at_capacity(
         store.snapshot().revision(),
         &writer.head(store)?,
     )?;
-    assert!(replayed.replayed());
-    assert_eq!(replayed.public_id(), resumed.public_id());
+    check!(replayed.replayed());
+    check!(eq;replayed.public_id(), resumed.public_id());
     unchanged(store, &committed, sequence)
 }
 
@@ -361,9 +362,9 @@ fn valid_reservation_cap_refuses_new_graph_and_preparation_but_replays_existing(
     fill_valid_reservation_rows(&store, &template)?;
     let audited = load_graph(&store, writer.store_identity(), &template_operation)?
         .ok_or("audited template")?;
-    assert_eq!(serialized_digest(&audited)?, serialized_digest(&template)?);
+    check!(eq;serialized_digest(&audited)?, serialized_digest(&template)?);
     let before = header(&store)?;
-    assert_eq!(number(&before, "reservations")?, 4095);
+    check!(eq;number(&before, "reservations")?, 4095);
     let final_reserved = {
         let _guard = store.lock_appends();
         preparation::reserve(&store, final_preparation.clone())?
@@ -371,17 +372,17 @@ fn valid_reservation_cap_refuses_new_graph_and_preparation_but_replays_existing(
     let key = reservation_key(LAST);
     let raw = store.journal.get(&key)?.ok_or("last preparation")?;
     let full = header(&store)?;
-    assert_eq!(number(&full, "reservations")?, RESERVATION_LIMIT);
-    assert_eq!(
+    check!(eq;number(&full, "reservations")?, RESERVATION_LIMIT);
+    check!(eq;
         number(&full, "bytes")?,
         add(number(&before, "bytes")?, metadata_bytes(&key, &raw)?)?
     );
-    assert_eq!(number(&full, "roots")?, number(&before, "roots")?);
-    assert!(number(&full, "bytes")? < BYTE_LIMIT);
-    assert!(number(&full, "roots")? < ROOT_LIMIT);
+    check!(eq;number(&full, "roots")?, number(&before, "roots")?);
+    check!(number(&full, "bytes")? < BYTE_LIMIT);
+    check!(number(&full, "roots")? < ROOT_LIMIT);
     let audited = preparation::load(&store, writer.store_identity(), LAST)?
         .ok_or("audited full-cap preparation")?;
-    assert_eq!(
+    check!(eq;
         serialized_digest(&audited)?,
         serialized_digest(&final_reserved)?
     );
@@ -404,21 +405,21 @@ fn valid_reservation_cap_refuses_new_graph_and_preparation_but_replays_existing(
         let _guard = store.lock_appends();
         preparation::reserve(&store, final_preparation)?
     };
-    assert_eq!(
+    check!(eq;
         serialized_digest(&repeated)?,
         serialized_digest(&final_reserved)?
     );
     unchanged(&store, &baseline, sequence)?;
     let graph_replayed = writer.capture_raw_generation_v2(&store, &final_reserved.raw_operation)?;
-    assert!(matches!(
+    check!(matches!(
         &graph_replayed,
         RawGenerationCaptureOutcomeV2::HistoricalReplay(_)
     ));
-    assert_eq!(
+    check!(eq;
         graph_replayed.retained().binding(),
         final_reserved.graph.capture()
     );
-    assert_eq!(
+    check!(eq;
         graph_replayed.retained().seal(),
         final_reserved.graph.seal()
     );
@@ -430,8 +431,8 @@ fn valid_reservation_cap_refuses_new_graph_and_preparation_but_replays_existing(
         store.snapshot().revision(),
         &writer.head(&store)?,
     )?;
-    assert!(replayed.replayed());
-    assert_eq!(replayed.public_id(), committed.public_id());
+    check!(replayed.replayed());
+    check!(eq;replayed.public_id(), committed.public_id());
     unchanged(&store, &baseline, sequence)?;
     finish_pending_source_at_capacity(&store, &writer, &final_reserved)?;
     Ok(())
@@ -441,7 +442,7 @@ fn valid_reservation_cap_refuses_new_graph_and_preparation_but_replays_existing(
 fn fabricated_full_count_is_corruption_and_never_valid_exhaustion() -> TestResult {
     let (_directory, store, writer) = fixture()?;
     let mut invalid = header(&store)?;
-    assert_eq!(number(&invalid, "reservations")?, 0);
+    check!(eq;number(&invalid, "reservations")?, 0);
     *invalid.get_mut("reservations").ok_or("header count")? = RESERVATION_LIMIT.into();
     let mut batch = store.db.batch();
     batch.insert(&store.journal, HEADER_KEY, codec::encode(&invalid, 4096)?);

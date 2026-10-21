@@ -12,7 +12,6 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::WorkflowIdentity;
 use census_store::{Store, Table};
-#[cfg(feature = "native-fault-injection")]
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::net::{SocketAddr, TcpListener};
@@ -643,7 +642,6 @@ async fn wait_for_consolidate_marker(path: &Path, deadline: Instant) -> Option<s
     None
 }
 
-#[cfg(feature = "native-fault-injection")]
 fn open_qualified(data_dir: &Path) -> TestResult<Store> {
     Ok(Store::open_current_qualification_v3(data_dir)?
         .into_parts()

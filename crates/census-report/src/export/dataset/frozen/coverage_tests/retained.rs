@@ -1,7 +1,7 @@
 use super::super::fixtures::TestResult;
 use super::super::{freeze_v2, objects, to_export_dataset};
 use super::evidence::{self, interpretation, EvidenceShape};
-use crate::export::{ExportDataset, ExportJobRequest};
+use crate::export::ExportDataset;
 use crate::report::{coverage_report, CoverageReport, ReportError};
 use census_domain::model::{
     serialized_bytes, CoachLaneResolution, CoachLaneStage, CoverageRow, CoverageScope,
@@ -120,10 +120,12 @@ fn retained_after_reopen(mutation: Mutation) -> TestResult {
     let seeded = evidence::seed(EvidenceShape::Both)?;
     let store = seeded.store;
     let job = "frozen-coverage:retained";
-    let dataset = ExportDataset::for_job_request(&store, job, &ExportJobRequest::LegacyV2)?;
-    evidence::check_shape(&dataset, EvidenceShape::Both)?;
     let root = freeze_v2(&store, job)?;
+    let dataset = to_export_dataset(&root, &store)?;
+    evidence::check_shape(&dataset, EvidenceShape::Both)?;
     let archive = evidence::job_archive(&store, job)?;
+    std::fs::create_dir_all(archive.parent().ok_or("export inputs parent")?)?;
+    dataset.save_frozen(&archive)?;
     let lineage = dataset.lineage.clone();
     let encoded = serialized_bytes(&dataset)?;
     let interpreted = interpretation(&dataset)?;
@@ -134,11 +136,7 @@ fn retained_after_reopen(mutation: Mutation) -> TestResult {
     check!(ne; live.lineage.input_digest, lineage.input_digest);
     check!(ne; interpretation(&live)?, interpreted);
     stale(dataset.ensure_snapshot(&store.snapshot()))?;
-    stale(ExportDataset::for_job_request(
-        &store,
-        job,
-        &ExportJobRequest::LegacyV2,
-    ))?;
+    stale(ExportDataset::reopen_frozen(&archive)?.ensure_snapshot(&store.snapshot()))?;
     let retained = RetainedBytes::capture(&store, &archive, root.directory(), root.attempt())?;
     drop(live);
     drop(dataset);
@@ -158,11 +156,7 @@ fn retained_after_reopen(mutation: Mutation) -> TestResult {
             evidence::check_shape(dataset, EvidenceShape::Both)?;
             stale(dataset.ensure_snapshot(&reopened_store.snapshot()))
         })?;
-    stale(ExportDataset::for_job_request(
-        &reopened_store,
-        job,
-        &ExportJobRequest::LegacyV2,
-    ))?;
+    stale(ExportDataset::reopen_frozen(&archive)?.ensure_snapshot(&reopened_store.snapshot()))?;
     retained.unchanged(&reopened_store, &archive, root.directory(), root.attempt())
 }
 

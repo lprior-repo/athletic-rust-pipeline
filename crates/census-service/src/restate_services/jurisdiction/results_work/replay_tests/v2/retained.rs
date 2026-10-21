@@ -3,7 +3,7 @@ use super::*;
 
 #[tokio::test(flavor = "current_thread")]
 async fn retained_v2_fixed_plan_lost_ack_reexecutes_exact_retained_truth_and_bytes() -> TestResult {
-    let fixture = Fixture::v2()?;
+    let fixture = Fixture::new()?;
     let prepared = fixture::seed_prepared(&fixture)?;
     support::publish_exact(&fixture, &prepared)?;
     let resources = fixture.region.coordinator().remaining();
@@ -49,7 +49,7 @@ async fn retained_v2_fixed_plan_lost_ack_reexecutes_exact_retained_truth_and_byt
 #[tokio::test(flavor = "current_thread")]
 async fn retained_v2_unavailable_reexecution_preserves_retained_fact_and_replays_unavailable_bytes(
 ) -> TestResult {
-    let fixture = Fixture::v2()?;
+    let fixture = Fixture::new()?;
     let prepared = fixture::seed_prepared(&fixture)?;
     let body = support::publish_exact(&fixture, &prepared)?;
     let resources = fixture.region.coordinator().remaining();

@@ -17,7 +17,7 @@ pub(super) fn verify(
         .next()
         .ok_or("meet headers")?
         .iter()
-        .any(|cell| cell.to_string() == "Meet ID"));
+        .any(|cell| cell == "Meet ID"));
     check!(eq; original_meets.as_array().ok_or("retained meet array")?.len(), 2);
     let meets: Vec<CanonicalMeet> = serde_json::from_value(original_meets.clone())?;
     check!(eq; meets.iter().map(|meet| &meet.id).collect::<BTreeSet<_>>().len(), 2);
@@ -138,7 +138,7 @@ fn performance_row(
 fn cell(headers: &[Data], row: &[Data], name: &str) -> TestResult<String> {
     let column = headers
         .iter()
-        .position(|cell| cell.to_string() == name)
+        .position(|cell| cell == name)
         .ok_or_else(|| format!("missing {name} column"))?;
     Ok(row.get(column).ok_or("historical venue cell")?.to_string())
 }

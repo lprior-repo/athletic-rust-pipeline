@@ -140,7 +140,7 @@ impl<'a> Retained<'a> {
                             .len()
                             .checked_add(1)
                             .ok_or(StoreError::CounterOverflow)?;
-                        super::super::wire::bound(next, wire::MAX_OBJECTS)?;
+                        super::super::bound(next, wire::MAX_OBJECTS)?;
                         reached.insert(key.to_owned(), object.clone());
                     }
                 }

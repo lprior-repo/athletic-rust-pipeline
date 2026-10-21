@@ -1,20 +1,11 @@
 use super::{
-    Declaration, IdentityAcceptance, IdentityProtocol, PublicIdentityQualificationV1,
-    PublicIdentityQualificationV2, PublicIdentityQualificationV3, QualificationLifecycle,
-    RetainedAuthorityAcceptance, RetainedGraphAcceptance,
+    Declaration, IdentityProtocol, PublicIdentityQualificationV2, PublicIdentityQualificationV3,
+    QualificationLifecycle, RetainedAuthorityAcceptance, RetainedGraphAcceptance,
 };
 use crate::model::StoreIdentity;
 use serde::de::{value::MapAccessDeserializer, Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::{fmt, marker::PhantomData};
-
-impl<'de> Deserialize<'de> for PublicIdentityQualificationV1 {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        deserializer
-            .deserialize_map(DeclarationVisitor(PhantomData))
-            .map(Self)
-    }
-}
 
 impl<'de> Deserialize<'de> for PublicIdentityQualificationV2 {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
@@ -92,16 +83,6 @@ impl<'de> Deserialize<'de> for IdentityProtocol {
             deserializer,
             "public_identity_ledger_v1",
             Self::PublicIdentityLedgerV1,
-        )
-    }
-}
-
-impl<'de> Deserialize<'de> for IdentityAcceptance {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        fixed_text(
-            deserializer,
-            "source_bound_establishment_v1",
-            Self::SourceBoundEstablishmentV1,
         )
     }
 }

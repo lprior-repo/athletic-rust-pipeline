@@ -20,7 +20,7 @@ fn interrupted_descendant_resumes_after_store_reopen_without_second_reservation(
         .lines()
         .map(serde_json::from_str::<&serde_json::value::RawValue>)
         .collect::<Result<Vec<_>, _>>()?;
-    assert_eq!(records.len(), 4);
+    check!(eq;records.len(), 4);
     let permit = reservation.permit_for(&store, &root)?;
     let passes = std::cell::Cell::new(0usize);
     let result = crate::journal::context::stage_reserved_context(&store, &permit, |sink| {
@@ -39,18 +39,18 @@ fn interrupted_descendant_resumes_after_store_reopen_without_second_reservation(
         }
         Ok(())
     });
-    assert!(
+    check!(
         matches!(result, Err(StoreError::Refused { detail }) if detail == "graph fixture descendant interruption")
     );
-    assert_eq!(passes.get(), 2);
-    assert_eq!(physical_rows(&store)?.len(), 1);
+    check!(eq;passes.get(), 2);
+    check!(eq;physical_rows(&store)?.len(), 1);
     let chunk_key = crate::journal::object_chunk_key(&root, 0)?;
     let retained_chunk = row(&store, &chunk_key)?.ok_or("interrupted chunk")?;
-    assert!(row(&store, &crate::journal::object_manifest_key(&root)?)?.is_none());
-    assert!(row(&store, &crate::journal::object_index_key(&root, 0)?)?.is_none());
-    assert!(!reservation.is_complete(&store)?);
-    assert_eq!(counters(&store)?, charged);
-    assert_eq!(header_bytes(&store)?, header);
+    check!(row(&store, &crate::journal::object_manifest_key(&root)?)?.is_none());
+    check!(row(&store, &crate::journal::object_index_key(&root, 0)?)?.is_none());
+    check!(!reservation.is_complete(&store)?);
+    check!(eq;counters(&store)?, charged);
+    check!(eq;header_bytes(&store)?, header);
     reservation.require_plan(&generation.plan(&store)?)?;
     drop(permit);
     store.flush()?;
@@ -63,8 +63,8 @@ fn interrupted_descendant_resumes_after_store_reopen_without_second_reservation(
     let before_retry = retained_state(&store)?;
     let plan = generation.plan(&store)?;
     reservation.require_plan(&plan)?;
-    assert_eq!(retained_state(&store)?, before_retry);
-    assert_eq!(
+    check!(eq;retained_state(&store)?, before_retry);
+    check!(eq;
         plan.descriptors
             .first()
             .ok_or("page descriptor")?
@@ -73,15 +73,15 @@ fn interrupted_descendant_resumes_after_store_reopen_without_second_reservation(
         1
     );
     generation.stage(&store, &reservation)?;
-    assert!(reservation.is_complete(&store)?);
-    assert_eq!(row(&store, &chunk_key)?, Some(retained_chunk));
-    assert_eq!(counters(&store)?, charged);
-    assert_eq!(header_bytes(&store)?, header);
+    check!(reservation.is_complete(&store)?);
+    check!(eq;row(&store, &chunk_key)?, Some(retained_chunk));
+    check!(eq;counters(&store)?, charged);
+    check!(eq;header_bytes(&store)?, header);
     let completed = retained_state(&store)?;
     let sequence = store.snapshot().sequence();
     generation.stage(&store, &reservation)?;
-    assert_eq!(retained_state(&store)?, completed);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(eq;retained_state(&store)?, completed);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }
 
@@ -107,8 +107,8 @@ fn recovered_partial_descendant_keeps_original_full_charge_and_exact_rows() -> T
             crate::journal::object_index_key(root, 0)?,
         ],
     )?;
-    assert_eq!(physical_rows(&store)?.len(), 1);
-    assert!(!reservation.is_complete(&store)?);
+    check!(eq;physical_rows(&store)?.len(), 1);
+    check!(!reservation.is_complete(&store)?);
     let charged = counters(&store)?;
     store.flush()?;
     drop(writer);
@@ -119,7 +119,7 @@ fn recovered_partial_descendant_keeps_original_full_charge_and_exact_rows() -> T
     let reservation = load(&store, "recovered-partial")?.ok_or("recovered reservation")?;
     let current = generation.plan(&store)?;
     reservation.require_plan(&current)?;
-    assert_eq!(
+    check!(eq;
         current
             .descriptors
             .first()
@@ -132,8 +132,8 @@ fn recovered_partial_descendant_keeps_original_full_charge_and_exact_rows() -> T
             .incremental
     );
     generation.stage(&store, &reservation)?;
-    assert_eq!(row(&store, &chunk_key)?, Some(chunk));
-    assert_eq!(counters(&store)?, charged);
-    assert!(reservation.is_complete(&store)?);
+    check!(eq;row(&store, &chunk_key)?, Some(chunk));
+    check!(eq;counters(&store)?, charged);
+    check!(reservation.is_complete(&store)?);
     Ok(())
 }

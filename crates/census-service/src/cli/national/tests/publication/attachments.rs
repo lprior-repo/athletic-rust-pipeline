@@ -5,23 +5,6 @@ mod lookup;
 
 const RESOLVED_ID: &str = "inv_1aiqX0vFEFNH1Umgre58JiCLgHfTtztYK5";
 
-fn resolved() -> (&'static str, String) {
-    (
-        "200 OK",
-        serde_json::json!({"invocationId": RESOLVED_ID}).to_string(),
-    )
-}
-
-fn previously_accepted() -> (&'static str, String) {
-    (
-        "202 Accepted",
-        serde_json::json!({
-            "invocationId": "inv_1aiqX0vFEFNH1Umgre58JiCLgHfTtztYK5", "status": "PreviouslyAccepted"
-        })
-        .to_string(),
-    )
-}
-
 fn output_path(path: &str) -> bool {
     path.starts_with("GET /restate/invocation/") && path.ends_with("/output HTTP/1.1\r\n")
 }
@@ -104,21 +87,23 @@ async fn selected_send_error_refuses_nonselected_unbound_pending_or_foreign_atta
 #[tokio::test]
 async fn selected_previously_accepted_uses_verified_retained_request() -> TestResult {
     let (captured, outcome) = exchange(
-        &["--pass-budget", "999"],
+        &[],
         vec![
             ("200 OK", capabilities()?),
             previously_accepted(),
             ("200 OK", bound_request(&["WI"])?),
+            ("200 OK", ready_complete_report()?),
+            ("200 OK", "null".into()),
         ],
     )
     .await?;
     outcome?;
-    check!(eq; captured.len(), 3);
+    check!(eq; captured.len(), 5);
     check!(captured
         .get(2)
         .is_some_and(|(path, _)| path.contains("/request HTTP/1.1")));
     let (_, submitted) = captured.get(1).ok_or("submission absent")?;
-    check!(eq; serde_json::from_slice::<NationalRequest>(submitted)?.pass_budget, 999);
+    check!(eq; serde_json::from_slice::<NationalRequest>(submitted)?.pass_budget, census_service::restate_services::default_pass_budget());
     Ok(())
 }
 
@@ -132,57 +117,38 @@ async fn selected_send_error_verifies_retained_request_before_attaching() -> Tes
             ("200 OK", bound_request(&["WI"])?),
             resolved(),
             ("470 Not Ready", String::new()),
+            ("200 OK", ready_complete_report()?),
+            ("200 OK", "null".into()),
         ],
     )
     .await?;
     outcome?;
-    check!(eq; captured.len(), 5);
+    check!(eq; captured.len(), 7);
     check!(captured
         .get(2)
         .is_some_and(|(path, _)| path.contains("/request HTTP/1.1")));
-    lookup::assert_lookup(&captured, 3, None)?;
+    lookup::assert_lookup(&captured, 3)?;
     check!(captured
         .get(4)
         .is_some_and(|(path, _)| path
             == &format!("GET /restate/invocation/{RESOLVED_ID}/output HTTP/1.1\r\n")));
+    check!(captured
+        .last()
+        .is_some_and(|(path, _)| path.contains("/contact_report ")));
     Ok(())
 }
 
-#[tokio::test]
-async fn nonselected_submission_refuses_before_any_ingress_request() -> TestResult {
-    for contract in [
-        PublicationContract::LegacySeparateV1,
-        PublicationContract::ManagedBundleV2,
-    ] {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-        let origin = format!("http://{}/", listener.local_addr()?);
-        let ingestion = census_service::ingress::client(&origin)?;
-        let encoded: serde_json::Value = serde_json::from_str(&bound_request(&["WI"])?)?;
-        let mut request: NationalRequest =
-            serde_json::from_value(encoded.get("request").ok_or("bound fixture")?.clone())?;
-        request.publication_contract = contract;
-        let identity = census_reconcile::identity::WorkflowIdentity::national(
-            request.season,
-            request.revision,
-            &request.jurisdictions,
+#[test]
+fn nonselected_submission_refuses_before_any_ingress_request() -> TestResult {
+    let encoded: serde_json::Value = serde_json::from_str(&bound_request(&["WI"])?)?;
+    let mut request = encoded.get("request").ok_or("bound fixture")?.clone();
+    request
+        .as_object_mut()
+        .ok_or("bound fixture request")?
+        .insert(
+            "publication_contract".into(),
+            serde_json::json!("legacy_separate_v1"),
         );
-        let (finished, completion) = tokio::sync::oneshot::channel::<()>();
-        let (captured, outcome) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
-            tokio::join!(
-                guarded_resume_ingress(listener, vec![], completion),
-                async {
-                    let outcome = crate::cli::national::run::submit_national(
-                        &origin, &ingestion, &identity, request, None, None, None,
-                    )
-                    .await;
-                    drop(finished);
-                    outcome
-                }
-            )
-        })
-        .await?;
-        check!(outcome.is_err());
-        check!(eq; captured?.len(), 0);
-    }
+    check!(serde_json::from_value::<NationalRequest>(request).is_err());
     Ok(())
 }

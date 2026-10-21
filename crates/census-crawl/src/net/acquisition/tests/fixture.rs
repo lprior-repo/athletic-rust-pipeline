@@ -33,10 +33,6 @@ pub(crate) struct Fixture {
 
 impl Fixture {
     pub(crate) fn new(listener: &TcpListener) -> TestResult<Self> {
-        Self::new_with_protocol(listener, CaptureProtocolVersion::V1)
-    }
-
-    pub(crate) fn new_v2(listener: &TcpListener) -> TestResult<Self> {
         Self::new_with_protocol(listener, CaptureProtocolVersion::V2)
     }
 
@@ -48,17 +44,10 @@ impl Fixture {
             fetcher,
             requests,
         } = self;
-        let protocol = writer.protocol();
         drop(writer);
         drop(store);
-        let (store, writer) = match protocol {
-            CaptureProtocolVersion::V1 => {
-                Store::open_capture_qualification_v1(root.path().join("store"))?.into_parts()
-            }
-            CaptureProtocolVersion::V2 => {
-                Store::open_capture_qualification_v2(root.path().join("store"))?.into_parts()
-            }
-        };
+        let (store, writer) =
+            Store::open_current_qualification_v3(root.path().join("store"))?.into_parts();
         Ok(Self {
             root,
             store,

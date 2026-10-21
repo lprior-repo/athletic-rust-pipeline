@@ -1,4 +1,7 @@
-use super::types::{DiscoveredIdentityLinkedHtmlResultDocumentV1, DiscoveredResultAttachmentV1};
+use super::types::{
+    DiscoveredIdentityLinkedHtmlResultDocumentV1, DiscoveredIdentityLinkedHtmlResultRowV1,
+    DiscoveredResultAttachmentV1,
+};
 use crate::milesplit::parse_published_time;
 use crate::participation_evidence::provider_target::{
     CheckedLinkedCompetitionCategoryV1, CheckedLinkedEventLabelV1, SourceTargetPacketV1,
@@ -65,39 +68,49 @@ fn read_bound(
         if held.root() != &leaf.root || packet.reference()?.as_str() != leaf.root.key {
             return Err(invalid("approved linked-event provider root differs").into());
         }
-        let checked = packet.read()?;
-        let profile = checked.profile();
-        if !owns_person(attachment, profile.person(), grant)? {
-            continue;
-        }
-        let raw = row.checked_row();
-        if raw.parsed_row().name != profile.name()
-            || raw.parsed_row().school != profile.school_name()
-        {
-            return Err(invalid("linked-event source person differs from approved result").into());
-        }
-        if raw.parsed_row().grade.is_some_and(|grade| {
-            GradYear::of(grade, document.checked_document().parsed_page().school_year)
-                != Some(profile.cohort())
-        }) {
-            return Err(invalid("linked-event source cohort contradicts result grade").into());
-        }
-        for linked in checked.categories().rows() {
-            grant.charge_steps(1).map_err(super::domain)?;
-            if !same_result(document, raw, linked)? {
-                continue;
-            }
-            let label = packet.read_event_label(linked.proof())?;
-            if !corroborates(attachment, raw, &label, grant)? {
-                continue;
-            }
-            require_matching_event(&raw.event().kind, &raw.event().label, label.label())?;
-            if matched.replace(label).is_some() {
-                return Err(invalid("approved linked event source is ambiguous").into());
-            }
-        }
+        retain_packet_label(document, &row, &packet, grant, &mut matched)?;
     }
     Ok(matched)
+}
+
+fn retain_packet_label(
+    document: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
+    row: &DiscoveredIdentityLinkedHtmlResultRowV1<'_, '_>,
+    packet: &SourceTargetPacketV1,
+    grant: &mut AttachmentReplayGrantV1,
+    matched: &mut Option<CheckedLinkedEventLabelV1>,
+) -> CrawlResult<()> {
+    let attachment = row.attachment();
+    let checked = packet.read()?;
+    let profile = checked.profile();
+    if !owns_person(attachment, profile.person(), grant)? {
+        return Ok(());
+    }
+    let raw = row.checked_row();
+    if raw.parsed_row().name != profile.name() || raw.parsed_row().school != profile.school_name() {
+        return Err(invalid("linked-event source person differs from approved result").into());
+    }
+    if raw.parsed_row().grade.is_some_and(|grade| {
+        GradYear::of(grade, document.checked_document().parsed_page().school_year)
+            != Some(profile.cohort())
+    }) {
+        return Err(invalid("linked-event source cohort contradicts result grade").into());
+    }
+    for linked in checked.categories().rows() {
+        grant.charge_steps(1).map_err(super::domain)?;
+        if !same_result(document, raw, linked)? {
+            continue;
+        }
+        let label = packet.read_event_label(linked.proof())?;
+        if !corroborates(attachment, raw, &label, grant)? {
+            continue;
+        }
+        require_matching_event(&raw.event().kind, &raw.event().label, label.label())?;
+        if matched.replace(label).is_some() {
+            return Err(invalid("approved linked event source is ambiguous").into());
+        }
+    }
+    Ok(())
 }
 
 fn owns_person(

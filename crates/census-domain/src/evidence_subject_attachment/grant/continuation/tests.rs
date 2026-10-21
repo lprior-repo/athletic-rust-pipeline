@@ -50,7 +50,7 @@ fn poisoned_grant_cannot_issue_or_resume_continuation() -> TestResult {
 fn authority_check_rejects_temporary_swap_before_original_is_restored() -> TestResult {
     let mut grant = AttachmentReplayGrantV1::new();
     let checkpoint = grant.checkpoint()?;
-    let original = std::mem::replace(&mut grant, AttachmentReplayGrantV1::new());
+    let original = std::mem::take(&mut grant);
     check!(checkpoint.require(&mut grant).is_err());
     check!(grant.ensure_available().is_err());
     grant = original;

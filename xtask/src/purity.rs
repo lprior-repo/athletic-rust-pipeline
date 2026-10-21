@@ -13,11 +13,10 @@ const TREE: [&str; 7] = [
     "none",
 ];
 
-const BANNED: [&str; 24] = [
+const BANNED: [&str; 23] = [
     "tokio",
     "fjall",
     "reqwest",
-    "serde_json",
     "restate-sdk",
     "restate-sdk-shared-core",
     "chromiumoxide",

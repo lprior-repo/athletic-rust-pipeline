@@ -106,7 +106,7 @@ fn create(
             protocol,
         )?;
     }
-    let declaration = declaration(version, identity);
+    let declaration = declaration(version, identity)?;
     batch.insert(&meta, DECLARATION, codec::encode(&declaration, 65_536)?);
     batch.insert(&meta, HEAD, codec::encode(&head, 1024)?);
     batch.insert(&meta, HISTORY, b"[]");
@@ -134,19 +134,17 @@ fn create(
 fn declaration(
     version: PublicIdentityQualificationVersion,
     identity: census_domain::model::StoreIdentity,
-) -> PublicIdentityQualification {
+) -> StoreResult<PublicIdentityQualification> {
     match version {
-        PublicIdentityQualificationVersion::SourceBoundV1 => PublicIdentityQualification::V1(
-            census_domain::public_identity_qualification::PublicIdentityQualificationV1::new(
-                identity,
-            ),
+        PublicIdentityQualificationVersion::SourceBoundV1 => {
+            Err(PublicIdentityError::Corrupt("removed public identity V1 declaration").into())
+        }
+        PublicIdentityQualificationVersion::RetainedAuthorityContextV2 => Ok(
+            PublicIdentityQualification::V2(PublicIdentityQualificationV2::new(identity)),
         ),
-        PublicIdentityQualificationVersion::RetainedAuthorityContextV2 => {
-            PublicIdentityQualification::V2(PublicIdentityQualificationV2::new(identity))
-        }
-        PublicIdentityQualificationVersion::RetainedAuthorityGraphV3 => {
-            PublicIdentityQualification::V3(PublicIdentityQualificationV3::new(identity))
-        }
+        PublicIdentityQualificationVersion::RetainedAuthorityGraphV3 => Ok(
+            PublicIdentityQualification::V3(PublicIdentityQualificationV3::new(identity)),
+        ),
     }
 }
 

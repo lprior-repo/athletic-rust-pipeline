@@ -5,7 +5,7 @@ pub(in super::super) fn dataset(
     fixture: &controlled::Controlled,
     expected: &[PublicAthleteId],
 ) -> TestResult {
-    check!(eq; dataset.athletes.len(), 2);
+    check!(eq; dataset.athletes.len(), 3);
     check!(dataset
         .athletes
         .iter()
@@ -17,10 +17,11 @@ pub(in super::super) fn dataset(
         check!(eq; identities.public_id(candidate.as_str()), Some(public));
         check!(eq; resolved(identities.accepted_snapshot().resolve_candidate(candidate)?)?, public.clone());
     }
-    let [genuine, synthetic] = &fixture.candidates;
-    if expected.first() == expected.last() {
-        check!(eq; identities.aliases().len(), 1);
+    let [genuine, synthetic, bystander] = &fixture.candidates;
+    if expected.first() == expected.get(1) {
+        check!(eq; identities.aliases().len(), 2);
         check!(eq; identities.aliases().get(synthetic.as_str()).map(String::as_str), Some(genuine.as_str()));
+        check!(eq; identities.aliases().get(bystander.as_str()).map(String::as_str), Some(genuine.as_str()));
     } else {
         check!(identities.aliases().is_empty());
     }
@@ -74,15 +75,16 @@ pub(in super::super) fn publication(
         .position(|value| value == "resolved_id")
         .ok_or("alias representative header")?;
     let rows = reader.records().collect::<Result<Vec<_>, _>>()?;
-    check!(eq; rows.len(), 2);
-    let [genuine, _] = &fixture.candidates;
+    check!(eq; rows.len(), 3);
+    let [genuine, _, _] = &fixture.candidates;
+    let [canonical, _, _] = &fixture.public;
     for (candidate, identity) in fixture.candidates.iter().zip(expected) {
         let row = rows
             .iter()
             .find(|row| row.get(original) == Some(candidate.as_str()))
             .ok_or("retained alias CSV row")?;
         check!(eq; row.get(public), Some(identity.as_str()));
-        let representative = if expected.first() == expected.last() {
+        let representative = if identity == canonical {
             genuine
         } else {
             candidate

@@ -96,22 +96,24 @@ pub fn workbook_request_key(
     ] {
         validate_key_part(part)?;
     }
-    let base = [&year, scope, &limit, &places, out, &season];
-    match &request.export_job {
-        census_report::export::ExportJobRequest::LegacyV2 => {
-            Ok(run_key("workbook", &base, generation))
-        }
-        census_report::export::ExportJobRequest::SelectedPublicationV1 { selection } => {
-            let digest = census_domain::model::serialized_digest(selection)
-                .map_err(ExportGenerationError::SelectedRequestDigest)?;
-            let selected = format!("selected_v1_{digest}");
-            Ok(run_key(
-                "workbook",
-                &[&year, scope, &limit, &places, out, &season, &selected],
-                generation,
-            ))
-        }
-    }
+    let census_report::export::ExportJobRequest::SelectedPublicationV1 { selection } =
+        &request.export_job;
+    let digest = census_domain::model::serialized_digest(selection)
+        .map_err(ExportGenerationError::SelectedRequestDigest)?;
+    let selected = format!("selected_v1_{digest}");
+    Ok(run_key(
+        "workbook",
+        &[
+            year.as_str(),
+            scope,
+            limit.as_str(),
+            places.as_str(),
+            out,
+            season.as_str(),
+            selected.as_str(),
+        ],
+        generation,
+    ))
 }
 
 mod browser_session;
@@ -140,19 +142,20 @@ mod teams_arms;
 mod wire;
 
 pub use wire::{
-    ArchiveCaptureActivity, ArchiveCaptureEpoch, ArchiveCaptureSample, ArchiveCaptureUnmeasured,
-    ArchiveUnmeasuredReason, BestsReply, BestsRequest, BindRunReply, BindRunRequest,
-    CompletedTeams, ConsolidateReply, ConsolidateRequest, ConsolidatedTable, ContactStatus,
-    ContactSummary, EndpointObservation, HistoricalProgress, HistoryWindow, IncompleteTeams,
-    IngestReply, IngestRequest, IngestState, JurisdictionOpen, JurisdictionReport,
-    JurisdictionRequest, JurisdictionState, NationalRequest, NationalRequestBinding, OpenWorkReply,
-    OpenWorkRequest, PublicationCapabilities, PublicationContract, RefusedSource, ReportReply,
-    ReportRequest, SchoolAddressJoinRequest, SealItem, SealRef, SealReply, SealRequest,
-    SourceObjectInventory, SourceObjectOpen, SourceObjectPageReply, SourceObjectPageRequest,
-    SourcePlan, StageOutcome, StatusReply, SweepReport, SweepRequest, TableCount,
-    TeamsAttemptProgress, TeamsFailure, TeamsSourceFailure, TeamsSourceInspection,
-    TeamsSourceOutcome, TeamsSourceRequest, TeamsStage, WindowRequest, WorkbookReply,
-    WorkbookRequest, ARCHIVE_ACTIVITY_METRIC_VERSION,
+    default_pass_budget, default_pass_delay_seconds, ArchiveCaptureActivity, ArchiveCaptureEpoch,
+    ArchiveCaptureSample, ArchiveCaptureUnmeasured, ArchiveUnmeasuredReason, BestsReply,
+    BestsRequest, BindRunReply, BindRunRequest, CompletedTeams, ConsolidateReply,
+    ConsolidateRequest, ConsolidatedTable, ContactStatus, ContactSummary, EndpointObservation,
+    HistoricalProgress, HistoryWindow, IncompleteTeams, IngestReply, IngestRequest, IngestState,
+    JurisdictionOpen, JurisdictionReport, JurisdictionRequest, JurisdictionState, NationalRequest,
+    NationalRequestBinding, OpenWorkReply, OpenWorkRequest, OriginHeldContinuationRequest,
+    PublicationCapabilities, PublicationContract, RefusedSource, ReportReply, ReportRequest,
+    SchoolAddressJoinRequest, SealItem, SealRef, SealReply, SealRequest, SourceObjectInventory,
+    SourceObjectOpen, SourceObjectPageReply, SourceObjectPageRequest, SourcePlan, StageOutcome,
+    StatusReply, SweepReport, SweepRequest, TableCount, TeamsAttemptProgress,
+    TeamsContinuationOutcome, TeamsFailure, TeamsReconciliationRequest, TeamsSourceFailure,
+    TeamsSourceInspection, TeamsSourceOutcome, TeamsSourceRequest, TeamsStage, WindowRequest,
+    WorkbookReply, WorkbookRequest, ARCHIVE_ACTIVITY_METRIC_VERSION,
 };
 
 pub use plan::{

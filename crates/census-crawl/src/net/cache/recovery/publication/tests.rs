@@ -68,7 +68,7 @@ fn skipped_raw_envelope(
 
 async fn archived_fixture() -> TestResult<Fixture> {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let mut fixture = Fixture::new_v2(&listener)?;
+    let mut fixture = Fixture::new(&listener)?;
     fixture.stop_after_archive();
     let fetch = async {
         let outcome = fixture.acquire(2026, false).await?;

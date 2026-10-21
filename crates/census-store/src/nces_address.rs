@@ -94,6 +94,9 @@ impl Store {
 }
 
 #[cfg(test)]
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use census_domain::school_directory::nces_address::{
@@ -208,6 +211,3 @@ mod tests {
         Ok(())
     }
 }
-
-#[cfg(test)]
-type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;

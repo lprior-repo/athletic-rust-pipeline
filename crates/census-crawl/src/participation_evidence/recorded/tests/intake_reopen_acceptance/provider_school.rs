@@ -4,8 +4,8 @@ use crate::participation_evidence::provider_school::{
 };
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, SourceNamespace, SourceObservation};
 
-mod fixtures;
-mod observations;
+pub(super) mod fixtures;
+pub(super) mod observations;
 mod refusals;
 mod roster_rows;
 

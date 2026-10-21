@@ -148,7 +148,7 @@ mod tests {
         let before = context.entities.clone();
         context.retain(Entity::Athlete(&athlete), [0; 32])?;
         let other = AthleteId::mint("ath_subject", &["foreign"]);
-        assert!(matches!(
+        check!(matches!(
             context.retain(Entity::Athlete(&other), [0; 32]),
             Err(StoreError::BudgetExceeded {
                 what: "verified result context proof count",
@@ -156,8 +156,8 @@ mod tests {
                 available: 1_000_000
             })
         ));
-        assert!(context.entities == before);
-        assert_eq!((context.proofs, context.bytes), (1_000_000, 67_108_864));
+        check!(context.entities == before);
+        check!(eq; (context.proofs, context.bytes), (1_000_000, 67_108_864));
         Ok(())
     }
 
@@ -170,12 +170,12 @@ mod tests {
             bytes: 64 * 1024 * 1024,
             ..Default::default()
         };
-        assert!(matches!(context.retain(Entity::Athlete(&athlete), [0; 32]),
+        check!(matches!(context.retain(Entity::Athlete(&athlete), [0; 32]),
             Err(StoreError::BudgetExceeded {
                 what: "verified result context encoded bytes", needed, available: 67_108_864
             }) if needed == 67_108_864 + added));
-        assert!(context.entities.is_empty());
-        assert_eq!((context.proofs, context.bytes), (7, 67_108_864));
+        check!(context.entities.is_empty());
+        check!(eq; (context.proofs, context.bytes), (7, 67_108_864));
         Ok(())
     }
 
@@ -191,11 +191,11 @@ mod tests {
         context.retain(Entity::Athlete(&athlete), [0; 32])?;
         let mut extra = [0; 32];
         extra[1] = 1;
-        assert!(matches!(context.retain(Entity::Athlete(&athlete), extra),
+        check!(matches!(context.retain(Entity::Athlete(&athlete), extra),
             Err(StoreError::Refused { detail })
             if detail == "verified result context exceeds 256 proofs per physical entity"));
-        assert!(context.entities == before);
-        assert_eq!((context.proofs, context.bytes), counts);
+        check!(context.entities == before);
+        check!(eq; (context.proofs, context.bytes), counts);
         Ok(())
     }
 }

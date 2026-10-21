@@ -64,7 +64,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = { version = "2.5", features = ["serde"] }
 # The seal command reads the exported workbook back, so the reader is a runtime dependency.
-calamine = "=0.36.1"
+calamine = "=0.37.0"
 
 [dev-dependencies]
 base64 = "0.22"

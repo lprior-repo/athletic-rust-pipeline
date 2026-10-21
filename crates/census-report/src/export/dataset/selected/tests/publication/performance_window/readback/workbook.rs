@@ -13,7 +13,7 @@ pub(super) fn pr(path: &Path, expected: &Expected) -> TestResult {
     let column = |label: &str| {
         headers
             .iter()
-            .position(|cell| cell.to_string() == label)
+            .position(|cell| cell == label)
             .ok_or("PR column")
     };
     for (label, value) in [
@@ -43,7 +43,7 @@ pub(super) fn pr(path: &Path, expected: &Expected) -> TestResult {
     let headers = rows.next().ok_or("Athletes headers")?;
     let column = headers
         .iter()
-        .position(|cell| cell.to_string() == "Athlete ID")
+        .position(|cell| cell == "Athlete ID")
         .ok_or("Athletes public identity column")?;
     let row = rows.next().ok_or("selected athlete row")?;
     check!(eq; row.get(column).map(ToString::to_string).as_deref(), Some(expected.public_id.as_str()));

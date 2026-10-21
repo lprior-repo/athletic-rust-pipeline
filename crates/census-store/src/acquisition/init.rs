@@ -5,15 +5,7 @@ use fjall::PersistMode;
 use std::path::Path;
 
 impl Store {
-    pub fn create_capture_qualification_v1(
-        root: impl AsRef<Path>,
-    ) -> StoreResult<CaptureQualificationV1> {
-        match create(root.as_ref(), CaptureProtocolVersion::V1)? {
-            CaptureQualification::V1(record) => Ok(record),
-            CaptureQualification::V2(_) => Err(CaptureError::CaptureProtocolUnsupported.into()),
-        }
-    }
-    pub fn create_capture_qualification_v2(
+    pub fn create_capture_qualification(
         root: impl AsRef<Path>,
     ) -> StoreResult<CaptureQualificationV2> {
         match create(root.as_ref(), CaptureProtocolVersion::V2)? {
@@ -76,14 +68,10 @@ pub(crate) fn stage_qualification(
     identity: StoreIdentity,
     protocol: CaptureProtocolVersion,
 ) -> StoreResult<CaptureQualification> {
-    let record = match protocol {
-        CaptureProtocolVersion::V1 => {
-            CaptureQualification::V1(CaptureQualificationV1::new(identity))
-        }
-        CaptureProtocolVersion::V2 => {
-            CaptureQualification::V2(CaptureQualificationV2::new(identity))
-        }
-    };
+    if protocol != CaptureProtocolVersion::V2 {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
+    let record = CaptureQualification::V2(CaptureQualificationV2::new(identity));
     batch.insert(
         meta,
         protocol.qualification_key(),
@@ -145,5 +133,51 @@ fn io(path: &Path, source: std::io::Error) -> StoreError {
     StoreError::Io {
         path: path.to_path_buf(),
         source,
+    }
+}
+
+impl Store {
+    pub fn create_historical_capture_v1(
+        root: impl AsRef<Path>,
+    ) -> StoreResult<CaptureQualificationV1> {
+        let root = root.as_ref();
+        let protocol = CaptureProtocolVersion::V1;
+        claim_empty_root(root)?;
+        let (db, entities, journal, meta, receipts) =
+            crate::open_keyspaces(root, crate::DEFAULT_CACHE_BYTES)?;
+        require_claimed_root(root)?;
+        for keyspace in [&entities, &journal, &meta, &receipts] {
+            if !keyspace
+                .is_empty()
+                .map_err(|source| StoreError::Read { source })?
+            {
+                return Err(CaptureError::CaptureInitExistingStore.into());
+            }
+        }
+        let mut batch = db.batch();
+        crate::format::stage_initialization(&mut batch, &meta, CAPTURE_QUALIFICATION_LIFECYCLE);
+        for table in Table::ALL {
+            crate::meta::put_text(
+                &mut batch,
+                &meta,
+                &format!("sequence:{}", table.file()),
+                "0",
+            );
+            crate::meta::put_text(&mut batch, &meta, &format!("rows:{}", table.file()), "0");
+        }
+        let identity = crate::lineage::stage_new(&mut batch, &journal, root)?;
+        let record = CaptureQualificationV1::new(identity);
+        batch.insert(
+            &meta,
+            protocol.qualification_key(),
+            crate::records::codec::encode_canonical(&CaptureQualification::V1(record.clone()))?,
+        );
+        batch
+            .durability(Some(PersistMode::SyncData))
+            .commit()
+            .map_err(|source| StoreError::Write { source })?;
+        crate::ensure_dirs(root)?;
+        crate::fs::fsync_dir(root)?;
+        Ok(record)
     }
 }

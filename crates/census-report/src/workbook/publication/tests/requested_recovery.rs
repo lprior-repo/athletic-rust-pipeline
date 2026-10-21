@@ -1,30 +1,50 @@
 use super::*;
-use crate::export::ExportJobRequest;
+use crate::export::{ExportDataset, ExportJobRequest};
+use crate::workbook::{self, Censuses, Options};
+use census_domain::UsJurisdiction;
 use census_store::publish::{Digest, Intent, Request, Root, State};
 
-fn expiring_requested(
-    store: &Store,
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+fn fixture_options(out: Option<std::path::PathBuf>) -> TestResult<Options> {
+    Ok(Options {
+        grad_year: Some(2027),
+        out,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        jurisdictions: vec![UsJurisdiction::Alabama, UsJurisdiction::Wisconsin],
+        school_year: census_domain::model::SchoolYear::new(2026).ok_or("school year")?,
+    })
+}
+
+async fn expiring_requested(
+    fixture: &crate::export::selected_test_fixture::Fixture,
     root: &Path,
-    dataset: &ExportDataset,
-    options: &Options,
+    job: &str,
+    job_request: &ExportJobRequest,
 ) -> TestResult<Intent> {
+    let dataset = ExportDataset::for_job_request(&fixture.store, job, job_request)?;
+    let options = fixture_options(None)?;
     let namespace = binding::namespace(root)?;
-    let input = binding::input(dataset, store, options)?;
+    let input = binding::input(&dataset, &fixture.store, &options)?;
     let identity =
         binding::digest(&(&namespace, &dataset.lineage.input_generation, &input.recipe))?;
     let expires = chrono::Utc::now()
         .checked_add_signed(chrono::Duration::seconds(1))
         .ok_or("lease expiry overflow")?
         .to_rfc3339();
-    let lease_epoch = store.lease_acquire(identity.as_str(), "workbook-publication", &expires)?;
-    let intent = store.publication_request(Request {
+    let lease_epoch =
+        fixture
+            .store
+            .lease_acquire(identity.as_str(), "workbook-publication", &expires)?;
+    let intent = fixture.store.publication_request(Request {
         namespace,
         identity,
         expected: pointer::read(root)?,
         input,
         lease_epoch,
     })?;
-    await_expired(store, &intent.request.identity)?;
+    await_expired(&fixture.store, &intent.request.identity)?;
     Ok(intent)
 }
 
@@ -44,54 +64,72 @@ fn await_expired(store: &Store, identity: &Digest) -> TestResult {
     }
 }
 
-fn select_other_bundle(
-    store: &Store,
-    root: &Path,
+async fn build_other_bundle(
+    fixture: &crate::export::selected_test_fixture::Fixture,
     other_root: PathBuf,
-    options: &Options,
 ) -> TestResult<PathBuf> {
-    let mut other = options.clone();
-    other.limit = Some(2);
-    other.out = Some(other_root);
-    let workbook = crate::workbook::build(store, &other)?;
+    let other_objects = tempfile::tempdir()?;
+    let other_dataset = fixture.capture(other_objects.path())?;
+    let other = fixture_options(Some(other_root))?;
+    let censuses = Censuses::of(
+        &other_dataset,
+        &fixture.store.out_dir(),
+        &other.jurisdictions,
+    )?;
+    let workbook = workbook::build_from(&other_dataset, &fixture.store, &other, &censuses)?;
     let generation = workbook.parent().ok_or("other generation missing")?;
-    let name = generation.file_name().ok_or("other digest missing")?;
-    let digest = Digest::parse(name.to_str().ok_or("other digest is not UTF-8")?)?;
-    let installed = root.join("generations").join(name);
-    std::fs::rename(generation, &installed)?;
-    pointer::switch(root, &digest)?;
-    sync_directory(root)?;
-    Ok(installed.join("workbook.xlsx"))
+    Ok(generation.to_path_buf())
 }
 
-#[test]
-fn expired_requested_stage_cannot_replace_unconsumed_integrity_history() -> TestResult {
-    let temp = tempfile::tempdir()?;
-    let store = Store::open(temp.path().join("store"))?;
-    let mut options = super::super::fence_tests::options(None)?;
-    let old = crate::workbook::build(&store, &options)?;
-    let root = store.out_dir().join("publication");
+#[tokio::test]
+async fn expired_requested_stage_cannot_replace_unconsumed_integrity_history() -> TestResult {
+    let fixture = crate::export::selected_test_fixture::Fixture::new().await?;
+    let options = fixture_options(None)?;
+    let root = fixture.store.out_dir().join("publication");
+    let other_root = tempfile::tempdir()?.keep();
+    let other_dir = build_other_bundle(&fixture, other_root).await?;
+    let other_name = other_dir.file_name().ok_or("other digest missing")?;
+    let other_digest = Digest::parse(other_name.to_str().ok_or("other digest is not UTF-8")?)?;
+    fixture.append_second_meet().await?;
+    let objects = tempfile::tempdir()?;
+    let dataset = fixture
+        .capture(objects.path())
+        .map_err(|error| format!("capturing updated selected input: {error}"))?;
+    let censuses = Censuses::of(&dataset, &fixture.store.out_dir(), &options.jurisdictions)
+        .map_err(|error| format!("deriving updated selected censuses: {error}"))?;
+    let old = workbook::build_from(&dataset, &fixture.store, &options, &censuses)?;
     let namespace = binding::namespace(&root)?;
-    let active = store
+    let active = fixture
+        .store
         .publication_active(&namespace)?
         .ok_or("active publication missing")?;
     let active_bundle = active.desired().ok_or("active bundle missing")?.clone();
-    let selected = select_other_bundle(&store, &root, temp.path().join("other"), &options)?;
+    check!(ne; other_digest, active_bundle);
+    let selected = root.join("generations").join(other_name);
+    std::fs::rename(&other_dir, &selected)?;
+    pointer::switch(&root, &other_digest)?;
+    sync_directory(&root)?;
+    let selected = selected.join("workbook.xlsx");
     let selected_bytes = std::fs::read(&selected)?;
-    options.limit = Some(1);
-    let dataset = ExportDataset::for_job_request(
-        &store,
-        "requested-integrity-history",
-        &ExportJobRequest::LegacyV2,
-    )?;
-    let request = expiring_requested(&store, &root, &dataset, &options)?;
-    let lease = store.get_lease_record(request.request.identity.as_str())?;
+    let job_request = ExportJobRequest::SelectedPublicationV1 {
+        selection: fixture.selection.clone(),
+    };
+    let request =
+        expiring_requested(&fixture, &root, "requested-integrity-history", &job_request).await?;
+    let lease = fixture
+        .store
+        .get_lease_record(request.request.identity.as_str())?;
     let corrupt = old
         .parent()
         .ok_or("old generation missing")?
         .join("recruiting.csv");
     std::fs::write(&corrupt, "retained corrupt artifact")?;
-    let error = match Stage::begin(&dataset, &store, &options) {
+    let job_dataset = ExportDataset::for_job_request(
+        &fixture.store,
+        "requested-integrity-history",
+        &job_request,
+    )?;
+    let error = match Stage::begin(&job_dataset, &fixture.store, &options) {
         Err(error) => error,
         Ok(_) => return Err("Requested rebind discarded an unconsumed integrity incident".into()),
     };
@@ -100,9 +138,13 @@ fn expired_requested_stage_cannot_replace_unconsumed_integrity_history() -> Test
         ReportError::Publication(PublicationError::IntegrityIncident { bundle, .. })
             if bundle == active_bundle
     ));
-    check!(eq; store.publication_active(&namespace)?, Some(active.clone()));
-    check!(eq; store.publication_read(&request.request.identity)?, Some(request.clone()));
-    check!(eq; store.get_lease_record(request.request.identity.as_str())?, lease);
+    check!(eq; fixture.store.publication_active(&namespace)?, Some(active.clone()));
+    check!(eq; fixture.store.publication_read(&request.request.identity)?, Some(request.clone()));
+    check!(
+        eq;
+        fixture.store.get_lease_record(request.request.identity.as_str())?,
+        lease
+    );
     check!(eq; current_workbook(&root)?, selected);
     check!(eq; std::fs::read(&selected)?, selected_bytes);
     check!(eq; std::fs::read(&corrupt)?, b"retained corrupt artifact");
@@ -112,9 +154,16 @@ fn expired_requested_stage_cannot_replace_unconsumed_integrity_history() -> Test
             if bundle == active_bundle
     ));
     assert_no_temporaries(&root)?;
-    store.flush()?;
+    fixture.store.flush()?;
+    let temp = fixture.directory.path().to_owned();
+    let crate::export::selected_test_fixture::Fixture {
+        directory: _keep,
+        store,
+        ..
+    } = fixture;
     drop(store);
-    let reopened = Store::open(temp.path().join("store"))?;
+    let (reopened, _) =
+        Store::open_public_identity_qualification_v3(temp.join("store"))?.into_parts();
     check!(eq; reopened.publication_active(&namespace)?, Some(active));
     check!(eq; reopened.publication_read(&request.request.identity)?, Some(request.clone()));
     check!(eq; reopened.get_lease_record(request.request.identity.as_str())?, lease);
@@ -123,21 +172,22 @@ fn expired_requested_stage_cannot_replace_unconsumed_integrity_history() -> Test
     Ok(())
 }
 
-#[test]
-fn requested_stage_without_active_history_rebinds_exactly_once_before_publication() -> TestResult {
-    let temp = tempfile::tempdir()?;
-    let store = Store::open(temp.path().join("store"))?;
-    let options = super::super::fence_tests::options(None)?;
-    let dataset = ExportDataset::for_job_request(
-        &store,
-        "requested-without-active",
-        &ExportJobRequest::LegacyV2,
-    )?;
-    let root = store.out_dir().join("publication");
-    let request = expiring_requested(&store, &root, &dataset, &options)?;
-    check!(eq; store.publication_active(&request.request.namespace)?, None);
-    let stage = Stage::begin(&dataset, &store, &options)?;
-    let rebound = store
+#[tokio::test]
+async fn requested_stage_without_active_history_rebinds_exactly_once_before_publication(
+) -> TestResult {
+    let fixture = crate::export::selected_test_fixture::Fixture::new().await?;
+    let root = fixture.store.out_dir().join("publication");
+    let job_request = ExportJobRequest::SelectedPublicationV1 {
+        selection: fixture.selection.clone(),
+    };
+    let request =
+        expiring_requested(&fixture, &root, "requested-without-active", &job_request).await?;
+    check!(eq; fixture.store.publication_active(&request.request.namespace)?, None);
+    let job_dataset =
+        ExportDataset::for_job_request(&fixture.store, "requested-without-active", &job_request)?;
+    let stage = Stage::begin(&job_dataset, &fixture.store, &fixture_options(None)?)?;
+    let rebound = fixture
+        .store
         .publication_read(&request.request.identity)?
         .ok_or("rebound request missing")?;
     let next_epoch = request
@@ -150,18 +200,24 @@ fn requested_stage_without_active_history_rebinds_exactly_once_before_publicatio
     let mut expected = request.request.clone();
     expected.lease_epoch = next_epoch;
     check!(eq; rebound.request, expected);
-    check!(eq; store.publication_active(&request.request.namespace)?, Some(rebound));
+    check!(eq; fixture.store.publication_active(&request.request.namespace)?, Some(rebound));
     check!(eq; pointer::read(&root)?, Root::Absent);
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
-    let published = stage.publish(&dataset, &options, |directory| {
-        crate::workbook::write_artifacts(directory, &dataset, &options, &censuses)
+    let options = fixture_options(None)?;
+    let censuses = Censuses::of(
+        &job_dataset,
+        &fixture.store.out_dir(),
+        &options.jurisdictions,
+    )?;
+    let published = stage.publish(&job_dataset, &options, |directory| {
+        workbook::write_artifacts(directory, &job_dataset, &options, &censuses)
     })?;
-    let retained = store
+    let retained = fixture
+        .store
         .publication_read(&request.request.identity)?
         .ok_or("published request missing")?;
     check!(eq; retained.request.lease_epoch, next_epoch);
     check!(matches!(retained.state, State::Published { .. }));
-    check!(eq; store.publication_active(&request.request.namespace)?, Some(retained));
+    check!(eq; fixture.store.publication_active(&request.request.namespace)?, Some(retained));
     check!(eq; current_workbook(&root)?, published);
     verify_published(&published)?;
     assert_no_temporaries(&root)?;

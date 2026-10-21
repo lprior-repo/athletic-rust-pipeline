@@ -7,6 +7,8 @@ use census_domain::public_identity_history::{
     EstablishmentOrdinal, PublicAthleteId, ResolvedSuccessor,
 };
 
+type PhysicalEntityRow = (Vec<u8>, Vec<u8>, u64);
+
 pub(super) fn claims(fixture: &ReviewedFixture, request: &LocalIdentitySplitV1) -> TestResult {
     let athletes = fixture.store.scan::<CanonicalAthlete>(Table::Athletes)?;
     check!(eq; athletes.len(), 5);
@@ -332,7 +334,7 @@ pub(super) fn checkpoints(
     Ok(())
 }
 
-pub(super) fn physical(store: &Store, table: Table) -> TestResult<Vec<(Vec<u8>, Vec<u8>, u64)>> {
+pub(super) fn physical(store: &Store, table: Table) -> TestResult<Vec<PhysicalEntityRow>> {
     use fjall::Readable;
     store
         .db

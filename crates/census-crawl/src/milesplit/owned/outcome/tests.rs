@@ -2,7 +2,7 @@ use super::*;
 use crate::net::capture_fixture::{serve, Fixture, Reply, TestResult, BODY, CAPTURED};
 use crate::net::CaptureTransportError;
 use crate::{CrawlError, ResultsCaptureContext};
-use census_domain::model::SOURCE_ACQUISITION_PHASE;
+use census_domain::model::CaptureProtocolVersion;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 
@@ -78,7 +78,9 @@ async fn sealed_interpretation_resource_returns_the_original_retained_envelope()
     let (fixture, owner, capture) = captured(&body).await?;
     let metadata = serde_json::to_vec(capture.capture())?;
     let body_pointer = capture.capture().body.as_ptr();
-    let before = fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?;
+    let before = fixture
+        .store
+        .journal_payloads(CaptureProtocolVersion::V2.phase())?;
     let result = OwnedMeetOutcome::interpret(capture, 725218, CaptureContext::DurableV1(&owner))?;
     let OwnedInterpretationOutcome::Resource { capture, failure } = result else {
         return Err(format!("expected retained resource failure: {result:?}").into());
@@ -107,7 +109,7 @@ async fn sealed_interpretation_resource_returns_the_original_retained_envelope()
     check!(eq; raw.body.as_ptr(), body_pointer);
     check!(eq; raw.body, body);
     check!(eq; serde_json::to_vec(&raw)?, metadata);
-    check!(eq; fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?, before);
+    check!(eq; fixture.store.journal_payloads(CaptureProtocolVersion::V2.phase())?, before);
     check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, std::collections::HashSet::<String>::new());
     check!(eq; fixture.count(), 1);
     Ok(())
@@ -119,7 +121,9 @@ async fn sealed_interpretation_refuses_historical_authority_before_resource_pars
     let body = resource_body()?;
     let (fixture, owner, retained) = captured(&body).await?;
     let historical = CapturedFetch::historical(retained.into_capture());
-    let before = fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?;
+    let before = fixture
+        .store
+        .journal_payloads(CaptureProtocolVersion::V2.phase())?;
     let result = OwnedMeetOutcome::interpret(historical, 725218, CaptureContext::DurableV1(&owner));
     check!(matches!(
         result,
@@ -127,7 +131,7 @@ async fn sealed_interpretation_refuses_historical_authority_before_resource_pars
             CaptureTransportError::CacheOccurrenceMismatch
         ))
     ));
-    check!(eq; fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?, before);
+    check!(eq; fixture.store.journal_payloads(CaptureProtocolVersion::V2.phase())?, before);
     check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, std::collections::HashSet::<String>::new());
     check!(eq; fixture.store.journal_keys(super::super::OWNED_CAPTURE_PHASE)?, std::collections::HashSet::<String>::new());
     check!(eq; fixture.count(), 1);
@@ -138,7 +142,9 @@ async fn sealed_interpretation_refuses_historical_authority_before_resource_pars
 async fn synthetic_historical_verdict_never_grants_durable_capture_authority() -> TestResult {
     let (fixture, owner, capture) = captured(BODY).await?;
     let metadata = serde_json::to_vec(capture.capture())?;
-    let before = fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?;
+    let before = fixture
+        .store
+        .journal_payloads(CaptureProtocolVersion::V2.phase())?;
     let outcome = OwnedMeetOutcome::historical_fixture(
         capture.into_capture(),
         OwnedMeetVerdict::Refused { status: 418 },
@@ -155,7 +161,7 @@ async fn synthetic_historical_verdict_never_grants_durable_capture_authority() -
             CaptureTransportError::CacheOccurrenceMismatch
         ))
     ));
-    check!(eq; fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?, before);
+    check!(eq; fixture.store.journal_payloads(CaptureProtocolVersion::V2.phase())?, before);
     check!(eq; fixture.store.journal_keys(super::super::OWNED_MEET_PHASE)?, std::collections::HashSet::<String>::new());
     check!(eq; fixture.store.journal_keys(super::super::OWNED_CAPTURE_PHASE)?, std::collections::HashSet::<String>::new());
     check!(eq; fixture.count(), 1);

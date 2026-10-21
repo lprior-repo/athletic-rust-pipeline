@@ -12,16 +12,16 @@ fn affected_inventory_is_exact_sorted_unique_and_includes_all_raw_result_variant
         "affected-inventory",
         canonical,
     )?;
-    assert_eq!(
+    check!(eq;
         inventory.affected_record_keys(),
         results::expected_keys(&fixture)?
     );
     check!(eq; inventory.graph().capture().store_identity(), fixture.writer.store_identity());
-    assert_eq!(
+    check!(eq;
         results::raw::<CanonicalPerformance>(&fixture.store, Table::Performances)?.len(),
         5
     );
-    assert_eq!(
+    check!(eq;
         results::raw::<RelayResult>(&fixture.store, Table::RelayResults)?.len(),
         5
     );
@@ -36,13 +36,13 @@ fn affected_inventory_is_exact_sorted_unique_and_includes_all_raw_result_variant
         .iter()
         .find(|row| row.source_key == "raw-variant")
         .ok_or("raw relay variant")?;
-    assert_eq!(performance.athlete, unrelated.cast());
-    assert_eq!(
+    check!(eq;performance.athlete, unrelated.cast());
+    check!(eq;
         relay.members.first().ok_or("relay member")?.athlete,
         Some(unrelated.cast())
     );
     for unrelated in results::unrelated_keys(&fixture)? {
-        assert!(!inventory.affected_record_keys().contains(&unrelated));
+        check!(!inventory.affected_record_keys().contains(&unrelated));
     }
     let inspected = fixture.writer.inspect_local_adjudication(
         &fixture.store,
@@ -50,7 +50,7 @@ fn affected_inventory_is_exact_sorted_unique_and_includes_all_raw_result_variant
         canonical,
     )?;
     check!(eq; inspected.graph(), inventory.graph());
-    assert_eq!(
+    check!(eq;
         inspected.affected_record_keys(),
         inventory.affected_record_keys()
     );
@@ -112,15 +112,15 @@ fn refused_without_commit(fixture: &ReviewedFixture, request: LocalIdentitySplit
         fixture.store.snapshot().revision(),
         &head,
     );
-    assert!(matches!(
+    check!(matches!(
         result,
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
             "graph manual affected keys"
         )))
     ));
-    assert_eq!(fixture.writer.head(&fixture.store)?, head);
-    assert_eq!(fixture.store.snapshot().sequence(), sequence);
-    assert_eq!(retained_state(&fixture.store)?, before);
+    check!(eq;fixture.writer.head(&fixture.store)?, head);
+    check!(eq;fixture.store.snapshot().sequence(), sequence);
+    check!(eq;retained_state(&fixture.store)?, before);
     Ok(())
 }
 
@@ -136,9 +136,9 @@ fn merge_and_manual_split_preserve_every_original_raw_fact() -> TestResult {
         fixture.store.snapshot().revision(),
         &fixture.writer.head(&fixture.store)?,
     )?;
-    assert_eq!(results::retained_facts(&fixture.store)?, before);
+    check!(eq;results::retained_facts(&fixture.store)?, before);
     let request = request(&fixture)?;
-    assert_eq!(
+    check!(eq;
         request.affected_record_keys,
         results::expected_keys(&fixture)?
     );
@@ -153,6 +153,6 @@ fn merge_and_manual_split_preserve_every_original_raw_fact() -> TestResult {
     fixture
         .writer
         .apply_local_adjudication(&fixture.store, prepared, bytes, digest)?;
-    assert_eq!(results::retained_facts(&fixture.store)?, before);
+    check!(eq;results::retained_facts(&fixture.store)?, before);
     Ok(())
 }

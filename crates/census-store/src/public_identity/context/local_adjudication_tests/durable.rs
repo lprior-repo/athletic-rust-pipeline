@@ -45,9 +45,9 @@ fn approved_manual_split_commits_reopens_and_frozen_replay_keeps_original_eviden
         fixture
             .writer
             .apply_local_adjudication(&fixture.store, prepared, bytes, digest.clone())?;
-    assert!(!outcome.replayed());
-    assert_eq!(outcome.introduced_public_ids().len(), 2);
-    assert_eq!(
+    check!(!outcome.replayed());
+    check!(eq;outcome.introduced_public_ids().len(), 2);
+    check!(eq;
         fixture.store.count(Table::AthleteIdentityDecisions)?,
         accepted_rows
     );
@@ -57,7 +57,7 @@ fn approved_manual_split_commits_reopens_and_frozen_replay_keeps_original_eviden
         .snapshot()
         .accepted_public_identity_snapshot()?
         .ok_or("snapshot")?;
-    assert!(matches!(
+    check!(matches!(
         accepted.resolve_public(&old)?,
         PublicResolution::Ambiguous { .. }
     ));
@@ -68,22 +68,22 @@ fn approved_manual_split_commits_reopens_and_frozen_replay_keeps_original_eviden
         .chain(outcome.introduced_public_ids().iter().cloned())
         .collect::<Vec<_>>();
     expected_ids.sort();
-    assert_eq!(
+    check!(eq;
         accepted.public_ids().cloned().collect::<Vec<_>>(),
         expected_ids
     );
     let expected_inventory = public_inventory(&accepted)?;
     let [_, second_birth, unrelated_birth] = &fixture.births;
-    assert!(matches!(
+    check!(matches!(
         accepted.resolve_public(second_birth.public_id())?,
         PublicResolution::RevokedRedirect { .. }
     ));
-    assert!(matches!(
+    check!(matches!(
         accepted.resolve_public(unrelated_birth.public_id())?,
         PublicResolution::Canonical(_)
     ));
     for introduced in outcome.introduced_public_ids() {
-        assert!(matches!(
+        check!(matches!(
             accepted.resolve_public(introduced)?,
             PublicResolution::Canonical(_)
         ));
@@ -93,9 +93,9 @@ fn approved_manual_split_commits_reopens_and_frozen_replay_keeps_original_eviden
         .writer
         .replay_local_adjudication(&fixture.store, "synthetic-durable-manual", &digest)?
         .ok_or("repeat")?;
-    assert!(repeated.replayed());
-    assert_eq!(repeated.head(), outcome.head());
-    assert_eq!(retained_state(&fixture.store)?, state);
+    check!(repeated.replayed());
+    check!(eq;repeated.head(), outcome.head());
+    check!(eq;retained_state(&fixture.store)?, state);
     let frozen = fixture.store.snapshot().freeze_public_identity_v2()?;
     let root = fixture.directory.path().join("identity");
     let ReviewedFixture {
@@ -107,26 +107,26 @@ fn approved_manual_split_commits_reopens_and_frozen_replay_keeps_original_eviden
     drop(writer);
     drop(store);
     let (reopened, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
-    assert_eq!(writer.head(&reopened)?, *outcome.head());
+    check!(eq;writer.head(&reopened)?, *outcome.head());
     let reopened_snapshot = reopened
         .snapshot()
         .accepted_public_identity_snapshot()?
         .ok_or("reopened snapshot")?;
-    assert_eq!(public_inventory(&reopened_snapshot)?, expected_inventory);
+    check!(eq;public_inventory(&reopened_snapshot)?, expected_inventory);
     let after =
         serde_json::to_value(super::super::Inputs::capture(&reopened.snapshot())?.athletes)?;
-    assert_eq!(after, before);
-    assert_eq!(
+    check!(eq;after, before);
+    check!(eq;
         reopened.count(Table::AthleteIdentityDecisions)?,
         accepted_rows
     );
     let replayed = frozen.replay()?;
-    assert_eq!(replayed.head(), outcome.head());
-    assert_eq!(
+    check!(eq;replayed.head(), outcome.head());
+    check!(eq;
         replayed.resolve_public(&old)?,
         accepted.resolve_public(&old)?
     );
-    assert_eq!(public_inventory(&replayed)?, expected_inventory);
+    check!(eq;public_inventory(&replayed)?, expected_inventory);
     drop(writer);
     drop(reopened);
     drop(directory);
@@ -164,7 +164,7 @@ fn persisted_manual_decoder_refuses_unknown_fields_and_oversized_disposition_inv
         .as_object_mut()
         .ok_or("object")?
         .insert("actor_override".into(), serde_json::json!("model"));
-    assert!(serde_json::from_value::<census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV3>(unknown).is_err());
+    check!(serde_json::from_value::<census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV3>(unknown).is_err());
     let mut oversized = original;
     let request = oversized
         .get_mut("request")
@@ -182,7 +182,7 @@ fn persisted_manual_decoder_refuses_unknown_fields_and_oversized_disposition_inv
         serde_json::Value::Array(vec![one; 4097]),
     );
     let result = serde_json::from_value::<census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV3>(oversized);
-    assert!(result.is_err());
+    check!(result.is_err());
     Ok(())
 }
 
@@ -210,12 +210,12 @@ fn frozen_manual_kind_cannot_carry_a_forged_accepted_decision_row() -> TestResul
         .last_mut()
         .and_then(|value| value.as_object_mut())
         .ok_or("last operation")?;
-    assert!(!last.contains_key("decision"));
+    check!(!last.contains_key("decision"));
     last.insert("decision".into(), serde_json::json!("{}"));
     let changed = serde_json::to_vec(&wire)?;
     let digest = format!("{:x}", Sha256::digest(&changed));
     let result = crate::replay_frozen_public_identity_v2(&changed, &digest);
-    assert!(matches!(
+    check!(matches!(
         result,
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
             "frozen graph decision material kind"
@@ -316,8 +316,8 @@ fn superseded_exact_case_cannot_automatically_remerge_manual_successors() -> Tes
         Err(error) => return Err(format!("unexpected remerge refusal: {error:?}").into()),
         Ok(_) => return Err("superseded graph authority unexpectedly committed".into()),
     }
-    assert_eq!(retained_state(&fixture.store)?, before);
-    assert_eq!(fixture.writer.head(&fixture.store)?, *split.head());
+    check!(eq;retained_state(&fixture.store)?, before);
+    check!(eq;fixture.writer.head(&fixture.store)?, *split.head());
     Ok(())
 }
 
@@ -336,7 +336,7 @@ fn frozen_source_kind_still_requires_accepted_decision_material() -> TestResult 
     let bytes = serde_json::to_vec(&wire)?;
     let digest = format!("{:x}", Sha256::digest(&bytes));
     let result = crate::replay_frozen_public_identity_v2(&bytes, &digest);
-    assert!(matches!(
+    check!(matches!(
         result,
         Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
             "frozen graph decision material kind"
@@ -364,12 +364,12 @@ fn witness_version_byte_budgets_accept_exact_boundary_and_refuse_one_more() -> T
         let key = crate::public_identity::witness::key(sequence);
         let raw = fixture.store.journal.get(&key)?.ok_or("witness")?;
         let mut padded = raw.to_vec();
-        assert!(padded.len() <= ceiling);
+        check!(padded.len() <= ceiling);
         padded.resize(ceiling, b' ');
         crate::public_identity::graph_witness::HeldGraphWitness::decode(&key, &padded)?;
         padded.push(b' ');
         let result = crate::public_identity::graph_witness::HeldGraphWitness::decode(&key, &padded);
-        assert!(matches!(result, Err(StoreError::RowTooLarge { max, .. }) if max == ceiling));
+        check!(matches!(result, Err(StoreError::RowTooLarge { max, .. }) if max == ceiling));
     }
     Ok(())
 }
@@ -389,7 +389,7 @@ fn material_fence_ignores_case_labels_and_model_metadata_but_binds_facts() -> Te
         verdict.reviewer = "Another synthetic model".into();
         verdict.rationale = "Same facts, new wording".into();
     }
-    assert_eq!(
+    check!(eq;
         crate::public_identity::authority::identity_material(&relabeled, &members)?,
         original
     );
@@ -401,7 +401,7 @@ fn material_fence_ignores_case_labels_and_model_metadata_but_binds_facts() -> Te
         .ok_or("unrelated athlete")?;
     athlete.canonical_name = "Changed unrelated source name".into();
     athlete.known_names = vec![athlete.canonical_name.clone()];
-    assert_eq!(
+    check!(eq;
         crate::public_identity::authority::identity_material(&relabeled, &members)?,
         original
     );
@@ -413,7 +413,7 @@ fn material_fence_ignores_case_labels_and_model_metadata_but_binds_facts() -> Te
         .ok_or("requested athlete")?;
     athlete.canonical_name = "Changed synthetic source name".into();
     athlete.known_names = vec![athlete.canonical_name.clone()];
-    assert_ne!(
+    check!(ne;
         crate::public_identity::authority::identity_material(&relabeled, &members)?,
         original
     );

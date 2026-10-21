@@ -54,42 +54,37 @@ fn historical_v1_terminal_wire_is_exact_and_new_loss_cannot_enter_it() -> TestRe
 
 #[test]
 fn qualification_version_gate_refuses_other_execution_and_preserves_rows() -> TestResult {
-    for protocol in [CaptureProtocolVersion::V1, CaptureProtocolVersion::V2] {
-        let (dir, store, _, _) = fixture_for(protocol)?;
-        let before = rows(&store)?;
-        let root = dir.path().join("store");
-        drop(store);
-        let refused = match protocol {
-            CaptureProtocolVersion::V1 => Store::open_capture_qualification_v2(&root),
-            CaptureProtocolVersion::V2 => Store::open_capture_qualification_v1(&root),
-        };
-        check!(matches!(
-            refused,
-            Err(StoreError::Capture(
-                CaptureError::CaptureProtocolUnsupported
-            ))
-        ));
-        check!(matches!(
-            Store::open_existing(&root),
-            Err(StoreError::Capture(
-                CaptureError::CaptureQualificationOptInRequired
-            ))
-        ));
-        check!(matches!(
-            Store::migrate(&root),
-            Err(StoreError::Capture(
-                CaptureError::CaptureQualificationOptInRequired
-            ))
-        ));
-        let control = Store::capture_qualification_control_existing(&root)?;
-        check!(eq; control.show()?.protocol(), protocol);
-        drop(control);
-        let (opened, _) = match protocol {
-            CaptureProtocolVersion::V1 => Store::open_capture_qualification_v1(&root)?.into_parts(),
-            CaptureProtocolVersion::V2 => Store::open_capture_qualification_v2(&root)?.into_parts(),
-        };
-        check!(eq; rows(&opened)?, before);
-    }
+    let (dir, store, _, _) = fixture_for(CaptureProtocolVersion::V2)?;
+    let before = rows(&store)?;
+    let root = dir.path().join("store");
+    drop(store);
+    let refused = fixture_for(CaptureProtocolVersion::V1).map(|_| ());
+    check!(refused.is_err());
+    let error = match refused {
+        Err(error) => error,
+        Ok(()) => return Err("qualification admitted an unsupported execution version".into()),
+    };
+    check!(matches!(
+        error.downcast_ref::<CaptureError>(),
+        Some(CaptureError::CaptureProtocolUnsupported)
+    ));
+    check!(matches!(
+        Store::open_existing(&root),
+        Err(StoreError::Capture(
+            CaptureError::CaptureQualificationOptInRequired
+        ))
+    ));
+    check!(matches!(
+        Store::migrate(&root),
+        Err(StoreError::Capture(
+            CaptureError::CaptureQualificationOptInRequired
+        ))
+    ));
+    let control = Store::capture_qualification_control_existing(&root)?;
+    check!(eq; control.show()?.protocol(), CaptureProtocolVersion::V2);
+    drop(control);
+    let (opened, _) = Store::open_current_qualification_v3(&root)?.into_parts();
+    check!(eq; rows(&opened)?, before);
     Ok(())
 }
 

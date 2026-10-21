@@ -46,17 +46,17 @@ mod tests {
     fn operation_parser_preserves_bytes_and_refuses_unbounded_or_control_input(
     ) -> Result<(), Box<dyn std::error::Error>> {
         let exact = "a".repeat(256);
-        assert_eq!(RawGenerationOperationIdV2::new(&exact)?.as_str(), exact);
-        assert!(RawGenerationOperationIdV2::new("").is_err());
-        assert!(RawGenerationOperationIdV2::new(&"a".repeat(257)).is_err());
-        assert!(RawGenerationOperationIdV2::new("capture\n1").is_err());
-        assert!(RawGenerationOperationIdV2::new("capture\u{0085}1").is_err());
+        check!(eq;RawGenerationOperationIdV2::new(&exact)?.as_str(), exact);
+        check!(RawGenerationOperationIdV2::new("").is_err());
+        check!(RawGenerationOperationIdV2::new(&"a".repeat(257)).is_err());
+        check!(RawGenerationOperationIdV2::new("capture\n1").is_err());
+        check!(RawGenerationOperationIdV2::new("capture\u{0085}1").is_err());
         let id = RawGenerationOperationIdV2::new(" original capture ")?;
         let decoded: RawGenerationOperationIdV2 =
             serde_json::from_slice(&serde_json::to_vec(&id)?)?;
-        assert_eq!(decoded, id);
-        assert_eq!(decoded.as_str(), " original capture ");
-        assert!(serde_json::from_str::<RawGenerationOperationIdV2>("\"bad\\noperation\"").is_err());
+        check!(eq;decoded, id);
+        check!(eq;decoded.as_str(), " original capture ");
+        check!(serde_json::from_str::<RawGenerationOperationIdV2>("\"bad\\noperation\"").is_err());
         Ok(())
     }
 }

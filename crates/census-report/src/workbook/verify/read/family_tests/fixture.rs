@@ -13,7 +13,7 @@ pub(super) fn workbook(path: &Path, pages: &[Page<'_>], lane: Readback) -> TestR
     let mut workbook = Workbook::new();
     for (name, rows) in pages {
         let sheet = match lane {
-            Readback::InlineProfile => workbook.add_worksheet_with_constant_memory(),
+            Readback::InlineProfile => workbook.add_worksheet_with_constant_memory()?,
             Readback::LegacySharedStrings => workbook.add_worksheet(),
         };
         sheet.set_name(*name)?;
@@ -136,7 +136,7 @@ fn rewrite(
 }
 
 fn write_range(workbook: &mut Workbook, name: &str, range: &Range<Data>) -> TestResult {
-    let sheet = workbook.add_worksheet_with_constant_memory();
+    let sheet = workbook.add_worksheet_with_constant_memory()?;
     sheet.set_name(name)?;
     let (first_row, first_column) = range.start().map_or((0, 0), |position| position);
     for (row, column, value) in range.used_cells() {

@@ -11,6 +11,7 @@ mod school;
 mod selection;
 pub use school::{CheckedResultSchoolStatementV1, ResultSchoolStatementV1};
 pub mod school_correspondence;
+pub mod tfrrs;
 mod types;
 pub use types::{CheckedRetainedResultDocumentV1, CheckedRetainedResultRowV1};
 

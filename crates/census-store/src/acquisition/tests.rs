@@ -17,7 +17,6 @@ use support::*;
 
 mod bounds;
 mod historical_readers;
-mod historical_wire;
 mod prepared_session;
 mod selection;
 mod version_family;

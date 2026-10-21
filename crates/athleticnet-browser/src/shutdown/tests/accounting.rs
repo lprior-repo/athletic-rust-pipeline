@@ -35,8 +35,8 @@ async fn pending_accounting_overflow_refuses_intake_and_finishes_the_owed_reply(
             .ok_or("missing shutdown reply")?;
 
         actor.command(Some(Command::Shutdown { reply })).await;
-        assert!(!actor.gate.is_ready());
-        assert_eq!(
+        check!(!actor.gate.is_ready());
+        check!(eq;
             response.await?,
             BrowserOutcome::failed(BrowserError::Shutdown)
         );
@@ -44,7 +44,7 @@ async fn pending_accounting_overflow_refuses_intake_and_finishes_the_owed_reply(
         let join = tokio::spawn(actor.run());
 
         let reported = report.await?;
-        assert_eq!(
+        check!(eq;
             reported,
             DrainReport {
                 accepted: expected_accepted,
@@ -53,14 +53,14 @@ async fn pending_accounting_overflow_refuses_intake_and_finishes_the_owed_reply(
             }
         );
         let exit = join.await?;
-        assert_eq!(exit.report, reported);
-        assert!(matches!(
+        check!(eq; exit.report, reported);
+        check!(matches!(
             exit.failure,
             Some(BrowserStartupError::DrainAccounting(
                 DrainAccountingError::Overflow
             ))
         ));
-        assert_eq!(
+        check!(eq;
             status.read().map_err(|_| "status poisoned")?.state,
             BrowserState::Restarting
         );
@@ -89,7 +89,7 @@ async fn admitted_observers_are_joined_even_when_accepting_their_count_overflows
 
     observation.await?;
     let reported = report.await?;
-    assert_eq!(
+    check!(eq;
         reported,
         DrainReport {
             accepted: u64::MAX,
@@ -98,8 +98,8 @@ async fn admitted_observers_are_joined_even_when_accepting_their_count_overflows
         }
     );
     let exit = join.await?;
-    assert_eq!(exit.report, reported);
-    assert!(matches!(
+    check!(eq; exit.report, reported);
+    check!(matches!(
         exit.failure,
         Some(BrowserStartupError::DrainAccounting(
             DrainAccountingError::Overflow
@@ -113,7 +113,7 @@ async fn a_terminal_counter_overflow_survives_completed_handler_cleanup() -> Tes
     let (_tx, rx) = mpsc::channel(1);
     let (handler_finished, handler_result) = oneshot::channel();
     let handler = tokio::spawn(async move {
-        assert_eq!(handler_finished.send(()), Ok(()));
+        super::notify_handler_completed(handler_finished);
     });
     let (reply, report) = oneshot::channel();
     let mut actor = Actor::draining_for_test(rx, handler, reply)?;
@@ -128,7 +128,7 @@ async fn a_terminal_counter_overflow_survives_completed_handler_cleanup() -> Tes
     let join = tokio::spawn(actor.run());
 
     let reported = report.await?;
-    assert_eq!(
+    check!(eq;
         reported,
         DrainReport {
             accepted: 1,
@@ -137,8 +137,8 @@ async fn a_terminal_counter_overflow_survives_completed_handler_cleanup() -> Tes
         }
     );
     let exit = join.await?;
-    assert_eq!(exit.report, reported);
-    assert!(matches!(
+    check!(eq; exit.report, reported);
+    check!(matches!(
         exit.failure,
         Some(BrowserStartupError::DrainAccounting(
             DrainAccountingError::Overflow

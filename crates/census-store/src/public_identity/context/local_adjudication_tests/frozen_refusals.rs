@@ -23,7 +23,7 @@ fn prior_manual_record_version_and_policy_are_refused_without_reinterpreting_old
         .collect();
     prior.version = 1;
     prior.policy = "local-operator-retained-identity-review/v1".into();
-    assert!(matches!(
+    check!(matches!(
         prior.history_request(&claims),
         Err(HistoryError::Invalid("manual adjudication graph policy"))
     ));
@@ -33,7 +33,7 @@ fn prior_manual_record_version_and_policy_are_refused_without_reinterpreting_old
         .ok_or("prior record object")?
         .remove("graph")
         .ok_or("graph reference")?;
-    assert!(serde_json::from_value::<LocalIdentityAdjudicationRecordV3>(old_shape).is_err());
+    check!(serde_json::from_value::<LocalIdentityAdjudicationRecordV3>(old_shape).is_err());
     Ok(())
 }
 

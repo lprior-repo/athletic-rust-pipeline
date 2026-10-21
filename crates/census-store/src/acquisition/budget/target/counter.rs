@@ -41,6 +41,14 @@ impl Counter {
     }
 }
 
+pub(in crate::acquisition) fn product(count: u64, unit: u64) -> StoreResult<u64> {
+    count.checked_mul(unit).ok_or(StoreError::CounterOverflow)
+}
+
+pub(in crate::acquisition) fn amount(bytes: usize) -> StoreResult<u64> {
+    u64::try_from(bytes).map_err(|_| StoreError::CounterOverflow)
+}
+
 #[cfg(test)]
 mod tests {
     use super::Counter;
@@ -81,12 +89,4 @@ mod tests {
             _ => Err(failure("an exact-limit charge was not admitted")),
         }
     }
-}
-
-pub(in crate::acquisition) fn product(count: u64, unit: u64) -> StoreResult<u64> {
-    count.checked_mul(unit).ok_or(StoreError::CounterOverflow)
-}
-
-pub(in crate::acquisition) fn amount(bytes: usize) -> StoreResult<u64> {
-    u64::try_from(bytes).map_err(|_| StoreError::CounterOverflow)
 }

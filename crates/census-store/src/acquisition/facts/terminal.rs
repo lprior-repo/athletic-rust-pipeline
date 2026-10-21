@@ -1,5 +1,5 @@
 use super::CaptureError;
-use super::{AcquisitionTerminalV1, FactDecode, VersionOne};
+use super::FactDecode;
 use census_domain::model::*;
 use serde::{Deserialize, Serialize};
 
@@ -121,22 +121,4 @@ impl TryFrom<ResultWire> for ImmutableAttemptResult {
         Self::new(value.version, value.attempt, value.terminal)
     }
 }
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(in crate::acquisition) struct HistoricalResultWire {
-    version: VersionOne,
-    attempt: AcquisitionAttemptId,
-    terminal: AcquisitionTerminalV1,
-}
-impl FactDecode for ImmutableAttemptResult {
-    type Historical = HistoricalResultWire;
-    fn from_historical(value: Self::Historical) -> Self {
-        let VersionOne = value.version;
-        Self {
-            version: CaptureProtocolVersion::V1,
-            attempt: value.attempt,
-            terminal: value.terminal.into(),
-        }
-    }
-}
+impl FactDecode for ImmutableAttemptResult {}

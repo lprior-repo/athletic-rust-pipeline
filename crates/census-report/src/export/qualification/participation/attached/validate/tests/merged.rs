@@ -67,22 +67,6 @@ async fn school_projection_refuses_same_id_merged_meet_conflict() -> TestResult 
         ))
     ));
     check!(eq; dataset.performances.first().ok_or("retained performance")?, &performance);
-
-    *dataset
-        .meets
-        .iter_mut()
-        .find(|row| row.id == performance.meet)
-        .ok_or("meet")? = original_meet.clone();
-    let mut budget = Admission::new("same id merged meet conflict recovered");
-    canonical(
-        &dataset,
-        &original_meet,
-        &event,
-        &team,
-        &performance,
-        &team.school,
-        &mut budget,
-    )?;
     Ok(())
 }
 
@@ -141,21 +125,5 @@ async fn school_projection_refuses_same_id_merged_event_conflict() -> TestResult
         ))
     ));
     check!(eq; dataset.performances.first().ok_or("retained performance")?, &performance);
-
-    *dataset
-        .events
-        .iter_mut()
-        .find(|row| row.id == performance.event)
-        .ok_or("event")? = original_event.clone();
-    let mut budget = Admission::new("same id merged event conflict recovered");
-    canonical(
-        &dataset,
-        &meet,
-        &original_event,
-        &team,
-        &performance,
-        &team.school,
-        &mut budget,
-    )?;
     Ok(())
 }

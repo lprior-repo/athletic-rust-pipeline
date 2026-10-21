@@ -66,7 +66,7 @@ pub(in crate::restate_services::jurisdiction::team_source) fn finish(
     Ok(completion)
 }
 
-fn persistence_failure(
+pub(super) fn persistence_failure(
     outcome: &AttemptOutcome,
     resource: Option<census_report::report::ExportResourceError>,
     secondary: census_store::StoreError,

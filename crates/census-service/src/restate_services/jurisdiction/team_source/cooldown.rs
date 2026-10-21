@@ -1,4 +1,7 @@
-use super::{ledger, TeamsSource};
+use super::execution_ledger::ExecutionLedger;
+#[cfg(test)]
+use super::ledger;
+use super::TeamsSource;
 use crate::restate_services::support::{blocking, job_error, JobError};
 use crate::restate_services::wire::{TeamsSourceOutcome, TeamsSourceRequest};
 use census_domain::model::SourceAccessCondition;
@@ -26,9 +29,10 @@ impl TeamsSource {
         &self,
         ctx: &ObjectContext<'_>,
         request: &Arc<TeamsSourceRequest>,
+        scope: &ExecutionLedger,
     ) -> Result<Option<TeamsSourceOutcome>, HandlerError> {
         for round in 1..=MAX_DEFERRAL_ROUNDS {
-            match self.recorded_access_round(ctx, request).await? {
+            match self.recorded_access_round(ctx, request, scope).await? {
                 GateDecision::Proceed => return Ok(None),
                 GateDecision::Settled(outcome) => return Ok(Some(outcome)),
                 GateDecision::Blocked { message } => return Err(deferred(message)),
@@ -55,16 +59,18 @@ impl TeamsSource {
         &self,
         ctx: &ObjectContext<'_>,
         request: &Arc<TeamsSourceRequest>,
+        scope: &ExecutionLedger,
     ) -> Result<GateDecision, HandlerError> {
         let store = Arc::clone(&self.owner.store);
         let clock = Arc::clone(&self.owner.clock);
         let region = Arc::clone(self.jobs.region());
         let request = Arc::clone(request);
         let operation = ctx.key().to_string();
+        let scope = scope.clone();
         let Json(decision) = ctx
             .run(move || async move {
                 blocking(region, move || {
-                    read_decision(&store, clock.as_ref(), &operation, &request)
+                    read_decision_in(&store, clock.as_ref(), &operation, &request, &scope)
                 })
                 .await
                 .map(Json)
@@ -76,13 +82,24 @@ impl TeamsSource {
     }
 }
 
+#[cfg(test)]
 fn read_decision(
     store: &Store,
     clock: &dyn Clock,
     operation: &str,
     request: &TeamsSourceRequest,
 ) -> Result<GateDecision, JobError> {
-    if let Some(outcome) = ledger::status(store, operation, Some(request))? {
+    read_decision_in(store, clock, operation, request, &ExecutionLedger::Original)
+}
+
+fn read_decision_in(
+    store: &Store,
+    clock: &dyn Clock,
+    operation: &str,
+    request: &TeamsSourceRequest,
+    scope: &ExecutionLedger,
+) -> Result<GateDecision, JobError> {
+    if let Some(outcome) = scope.status(store, operation, Some(request))? {
         return Ok(GateDecision::Settled(outcome));
     }
     let Some(source) = census_crawl::registry::descriptor(&request.source) else {

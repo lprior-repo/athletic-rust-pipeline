@@ -159,7 +159,14 @@ impl Fetcher {
             }
             AcquireDecision::FinishPrepared(_) => {
                 if work.protocol() == census_domain::model::CaptureProtocolVersion::V2 {
-                    return Err(census_store::CaptureError::PreparedTargetMismatch.into());
+                    return accepted(
+                        self.recover_prepared_acquisition(
+                            store,
+                            work,
+                            census_store::ExactBodySource::NoneSupplied,
+                        )?,
+                        options,
+                    );
                 }
                 accepted(self.recover_prepared(store, work)?, options)
             }

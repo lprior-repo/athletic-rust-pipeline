@@ -1,6 +1,6 @@
 use super::*;
 use crate::export::ExportJobRequest;
-use census_domain::model::EventSemantics;
+use census_domain::model::{EventSemantics, ProfileId, ProfileSelectionV1};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -33,12 +33,15 @@ fn historical_header_is_read_only(semantics: EventSemantics) -> TestResult {
     check!(eq; reopened.semantic_policy()?, semantics);
     read_only(reopened.ensure_current_policy())?;
     read_only(reopened.ensure_current(&store))?;
+    let _counter_window = super::super::generation_counter_window()?;
     let decoded = super::super::decoded_generations();
-    read_only(ExportDataset::for_job_request(
-        &store,
-        &job,
-        &ExportJobRequest::LegacyV2,
-    ))?;
+    let request = ExportJobRequest::SelectedPublicationV1 {
+        selection: ProfileSelectionV1::new(
+            store.store_identity()?,
+            ProfileId::parse(&"9".repeat(64))?,
+        ),
+    };
+    check!(ExportDataset::for_job_request(&store, &job, &request).is_err());
     check!(eq; super::super::decoded_generations(), decoded);
     check!(eq; store.snapshot().sequence(), sequence);
     check!(eq; std::fs::read(&path)?, before);

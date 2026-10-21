@@ -178,7 +178,7 @@ async fn eligible_cache_reuse_finishes_new_work_without_new_attempt_or_date() ->
     check!(eq; fixture.count(), 1);
     let keys = fixture
         .store
-        .journal_keys(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
+        .journal_keys(census_domain::model::CaptureProtocolVersion::V2.phase())?;
     check!(eq; keys.iter().filter(|key| key.starts_with("slot/")).count(), 2);
     check!(eq; keys.iter().filter(|key| key.ends_with("/terminal")).count(), 1);
     Ok(())
@@ -215,7 +215,7 @@ async fn mismatched_eligible_metadata_cannot_publish_a_work_result() -> TestResu
     ));
     let keys = fixture
         .store
-        .journal_keys(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
+        .journal_keys(census_domain::model::CaptureProtocolVersion::V2.phase())?;
     check!(eq; keys.iter().filter(|key| key.ends_with("/result")).count(), 1);
     check!(eq; fixture.count(), 1);
     Ok(())

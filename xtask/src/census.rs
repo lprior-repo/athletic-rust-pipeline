@@ -116,6 +116,18 @@ pub struct ExportRequest {
     )]
     #[arg(long, value_name = "GENERATION")]
     generation: Option<String>,
+    #[arg(
+        long,
+        value_name = "STORE_IDENTITY",
+        help = "Store identity for the selected publication; requires --selected-profile-id"
+    )]
+    selected_store_identity: Option<String>,
+    #[arg(
+        long,
+        value_name = "PROFILE_ID",
+        help = "Selected publication profile ID; requires --selected-store-identity"
+    )]
+    selected_profile_id: Option<String>,
 }
 
 pub fn status(target: Target) -> Result<()> {

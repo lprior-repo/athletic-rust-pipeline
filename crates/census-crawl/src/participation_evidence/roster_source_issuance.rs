@@ -14,7 +14,7 @@ pub use historical::{
 };
 pub mod semantic_inventory;
 mod semantic_inventory_v2;
-pub use capture_objects::version2::version3::prepare_retained_roster_capture_objects_v3;
+pub use capture_objects::version3::prepare_retained_roster_capture_objects_v3;
 pub(in crate::participation_evidence) use semantic_inventory::require_current_roster_semantic_kernel;
 mod source;
 pub use binding::{

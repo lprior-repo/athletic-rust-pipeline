@@ -20,6 +20,9 @@ mod options;
 pub use options::{options_for_selected_dataset, options_for_selected_request, Options};
 pub mod publication;
 pub mod reference_comparison;
+#[cfg(test)]
+#[path = "publication/normalized/identity_aliases/tests/fixture.rs"]
+pub(crate) mod selected_identity_fixture;
 mod sheet_family;
 #[cfg(test)]
 mod tests;

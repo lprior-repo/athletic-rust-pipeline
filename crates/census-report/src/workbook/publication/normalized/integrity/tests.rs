@@ -7,8 +7,7 @@ use census_domain::participation_candidates::ParticipationReasons;
 use census_store::Table;
 use std::collections::BTreeMap;
 
-#[path = "../identity_aliases/tests/fixture.rs"]
-mod fixture;
+use crate::workbook::selected_identity_fixture as fixture;
 mod result;
 
 #[test]

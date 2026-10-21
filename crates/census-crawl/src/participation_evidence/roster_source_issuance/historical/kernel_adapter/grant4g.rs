@@ -3,7 +3,9 @@ use super::{
     PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 
+#[cfg(test)]
 pub(super) const FULL_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "42744668ae63b7e99007f7e54047f7f2154c30f2fd7557e46b2b266858929b34",
     hash: [
         0x42, 0x74, 0x46, 0x68, 0xae, 0x63, 0xb7, 0xe9, 0x90, 0x07, 0xf7, 0xe5, 0x40, 0x47, 0xf7,
@@ -15,6 +17,7 @@ pub(super) const FULL_NATIVE: OriginalKernel = OriginalKernel {
 };
 
 pub(super) const ROW_LOCAL_NATIVE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "27281319baffd8aa545204505c83d35a232ee599a10c1750ff164f2304e8b388",
     hash: [
         0x27, 0x28, 0x13, 0x19, 0xba, 0xff, 0xd8, 0xaa, 0x54, 0x52, 0x04, 0x50, 0x5c, 0x83, 0xd3,
@@ -25,7 +28,9 @@ pub(super) const ROW_LOCAL_NATIVE: OriginalKernel = OriginalKernel {
     semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 
+#[cfg(test)]
 pub(super) const FULL_PORTABLE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "db2ba2528360184c4aa5ec206af7962d3417b2e99bde6e6cfa66d133318e604e",
     hash: [
         0xdb, 0x2b, 0xa2, 0x52, 0x83, 0x60, 0x18, 0x4c, 0x4a, 0xa5, 0xec, 0x20, 0x6a, 0xf7, 0x96,
@@ -37,6 +42,7 @@ pub(super) const FULL_PORTABLE: OriginalKernel = OriginalKernel {
 };
 
 pub(super) const ROW_LOCAL_PORTABLE: OriginalKernel = OriginalKernel {
+    #[cfg(test)]
     digest: "5f0129948fbb79c8e5d027ea1a25413beda2646efe02c67c66fbd65c4f6cffb1",
     hash: [
         0x5f, 0x01, 0x29, 0x94, 0x8f, 0xbb, 0x79, 0xc8, 0xe5, 0xd0, 0x27, 0xea, 0x1a, 0x25, 0x41,

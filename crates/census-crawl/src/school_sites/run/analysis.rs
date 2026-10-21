@@ -136,8 +136,10 @@ mod tests {
     #[test]
     fn rejected_page_merge_does_not_append_an_earlier_candidate_prefix(
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut retained = Signals::default();
-        retained.staff_pages = vec!["https://school.example/staff".to_owned(); 13];
+        let mut retained = Signals {
+            staff_pages: vec!["https://school.example/staff".to_owned(); 13],
+            ..Signals::default()
+        };
         let before = retained.clone();
         let mut page = Signals::default();
         page.school_mailboxes.push(SchoolMailboxHit {

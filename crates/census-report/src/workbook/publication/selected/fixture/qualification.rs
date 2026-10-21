@@ -79,5 +79,5 @@ fn block_on<T>(ingest: impl std::future::Future<Output = TestResult<T>>) -> Test
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
-    Ok(runtime.block_on(ingest)?)
+    runtime.block_on(ingest)
 }

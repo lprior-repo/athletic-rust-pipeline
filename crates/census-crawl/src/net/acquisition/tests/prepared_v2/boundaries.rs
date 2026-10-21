@@ -5,7 +5,7 @@ use census_store::{CaptureError, StoreError};
 async fn archive_directory_cap_refuses_shared_walk_before_touching_the_old_eligible_pair(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     let (archived_body, _) = publish(&fixture, &prepared)?;
     let directory = archived_body.parent().ok_or("body directory")?;
@@ -39,7 +39,7 @@ async fn archive_directory_cap_refuses_shared_walk_before_touching_the_old_eligi
 async fn invalid_reservation_cannot_delete_an_earlier_validated_record_or_replace_cache(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let reservations = fixture.store.http_cache_dir().join("archive/reservations");
@@ -73,7 +73,7 @@ async fn invalid_reservation_cannot_delete_an_earlier_validated_record_or_replac
 async fn busy_actual_eligible_file_reports_refusal_after_commit_without_touching_old_pair(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let (body, metadata) = fixture.cache_paths()?;
@@ -105,7 +105,7 @@ async fn busy_actual_eligible_file_reports_refusal_after_commit_without_touching
 #[tokio::test]
 async fn v2_http_root_alias_is_refused_before_recovery_effects() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let root = fixture.store.http_cache_dir();

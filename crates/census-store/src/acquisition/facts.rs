@@ -2,29 +2,7 @@ use super::CaptureError;
 use census_domain::model::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "u8", into = "u8")]
-pub(super) struct VersionOne;
-impl TryFrom<u8> for VersionOne {
-    type Error = CaptureError;
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        if value == 1 {
-            Ok(Self)
-        } else {
-            Err(CaptureError::CaptureProtocolUnsupported)
-        }
-    }
-}
-impl From<VersionOne> for u8 {
-    fn from(_: VersionOne) -> Self {
-        1
-    }
-}
-
-pub(super) trait FactDecode: serde::de::DeserializeOwned {
-    type Historical: serde::de::DeserializeOwned;
-    fn from_historical(value: Self::Historical) -> Self;
-}
+pub(super) trait FactDecode: serde::de::DeserializeOwned {}
 mod wire;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

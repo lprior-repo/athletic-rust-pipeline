@@ -7,7 +7,7 @@ use census_store::{AcquisitionTerminal, ImmutableAttemptResult, Receipt};
 mod branch_support;
 mod fixture;
 mod nonempty;
-mod protocol;
+pub(super) mod protocol;
 mod refusal;
 mod retained;
 mod successor;
@@ -17,7 +17,7 @@ const PHASE: &str = "source_acquisition_attempt_v2";
 #[tokio::test(flavor = "current_thread")]
 async fn completed_v2_plan_replays_the_same_closed_pin_after_lost_ack_and_later_history(
 ) -> TestResult {
-    let fixture = Fixture::v2()?;
+    let fixture = Fixture::new()?;
     let prepared = fixture::seed_prepared(&fixture)?;
     let mut alias = super::fixture::meet();
     alias.id = "selected-alias-of-725218".to_owned();

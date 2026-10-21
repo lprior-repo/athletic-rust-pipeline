@@ -1,6 +1,5 @@
 use super::support::refused;
 use crate::PublicIdentityError;
-use census_domain::public_identity_history::genesis;
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 
 use super::*;
@@ -15,29 +14,16 @@ fn public_identity_historical_initialization_and_replay_retain_one_lineage() -> 
         if root.ends_with("empty") {
             std::fs::create_dir(&root)?;
         }
-        let declaration = crate::public_identity::create_historical_test_fixture(
+        let result = crate::public_identity::create_historical_test_fixture(
             &root,
             PublicIdentityQualificationVersion::SourceBoundV1,
-        )?;
-        let before = physical_state(&root)?;
-        let metadata = &before
-            .iter()
-            .find(|(name, _)| name == crate::META)
-            .ok_or("historical fixture lacks metadata")?
-            .1;
-        check!(metadata.iter().any(|(key, value)| {
-            key.as_slice() == crate::format::LIFECYCLE_REVISION_KEY.as_bytes()
-                && value.as_slice() == b"5"
-        }));
-        let accepted = Store::replay_historical_public_identity(&root)?;
-        check!(eq; accepted.qualification_version(), PublicIdentityQualificationVersion::SourceBoundV1);
-        check!(eq; accepted.store_identity(), declaration.store_identity());
-        check!(eq; accepted.head(), &genesis(declaration.store_identity())?);
-        check!(eq; physical_state(&root)?, before);
-        let reopened = Store::replay_historical_public_identity(&root)?;
-        check!(eq; reopened.store_identity(), declaration.store_identity());
-        check!(eq; reopened.head(), &genesis(declaration.store_identity())?);
-        check!(eq; physical_state(&root)?, before);
+        );
+        check!(matches!(
+            result,
+            Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
+                "removed public identity V1 declaration"
+            )))
+        ));
     }
     Ok(())
 }
@@ -78,14 +64,6 @@ fn public_identity_generic_openers_refuse_without_changing_retained_rows() -> Te
         StoreError::PublicIdentity(PublicIdentityError::OptInRequired)
     ));
     check!(eq; physical_state(&root)?, before);
-    check!(matches!(
-        refused(Store::open_capture_qualification_v1(&root))?,
-        StoreError::PublicIdentity(PublicIdentityError::OptInRequired)
-    ));
-    check!(matches!(
-        refused(Store::open_capture_qualification_v2(&root))?,
-        StoreError::PublicIdentity(PublicIdentityError::OptInRequired)
-    ));
     check!(eq; physical_state(&root)?, before);
     Ok(())
 }

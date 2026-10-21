@@ -17,7 +17,7 @@ fn retained_affected_validator_rejects_omitted_and_replaced_record_keys() -> Tes
             .request
             .affected_record_keys
             .retain(|held| held != key);
-        assert!(matches!(
+        check!(matches!(
             validate(&fixture, &graph, &omitted),
             Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
                 "graph manual affected keys"
@@ -32,7 +32,7 @@ fn retained_affected_validator_rejects_omitted_and_replaced_record_keys() -> Tes
             .first_mut()
             .ok_or("affected key")? = unrelated;
         replaced.request.affected_record_keys.sort();
-        assert!(matches!(
+        check!(matches!(
             validate(&fixture, &graph, &replaced),
             Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
                 "graph manual affected keys"
@@ -76,7 +76,7 @@ fn retained_affected_validator_rejects_foreign_snapshot_store_and_authority_bind
         },
     ];
     for changed in changed {
-        assert!(matches!(
+        check!(matches!(
             validate(&fixture, &graph, &changed),
             Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
                 "manual complete capture binding"

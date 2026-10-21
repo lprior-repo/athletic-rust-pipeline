@@ -146,7 +146,7 @@ fn selected_dataset(store: &census_store::Store) -> TestResult<(ExportDataset, t
     for athlete in store.snapshot().athletes()? {
         let (mut school, _) = CanonicalSchool::new(
             UsJurisdiction::Michigan,
-            &format!("Synthetic school {}", athlete.id),
+            format!("Synthetic school {}", athlete.id),
             athlete.school.as_str(),
             None,
         );

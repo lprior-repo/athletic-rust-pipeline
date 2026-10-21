@@ -10,10 +10,6 @@ pub(in crate::restate_services) async fn prepare(
     jobs: &Jobs,
     request: super::WorkbookRequest,
 ) -> Result<(workbook::Options, ExportJobRequest), HandlerError> {
-    request
-        .export_job
-        .require_selected_publication()
-        .map_err(|error| TerminalError::new_with_code(400, error.to_string()))?;
     let store = Arc::clone(&jobs.store);
     let region = Arc::clone(jobs.region());
     let permit = jobs.permit_control().await?;
@@ -31,10 +27,7 @@ pub(in crate::restate_services) fn checked_options(
     store: &Store,
     request: &super::WorkbookRequest,
 ) -> Result<workbook::Options, HandlerError> {
-    let selection = request
-        .export_job
-        .require_selected_publication()
-        .map_err(|error| TerminalError::new_with_code(400, error.to_string()))?;
+    let selection = request.export_job.require_selected_publication();
     let requested_year = request.school_year.ok_or_else(|| {
         job_error(JobError::Terminal {
             message: "workbook publication requires an explicit school year".to_owned(),

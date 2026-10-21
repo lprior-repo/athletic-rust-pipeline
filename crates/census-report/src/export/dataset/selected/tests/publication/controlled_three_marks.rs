@@ -2,6 +2,7 @@ mod attachment;
 pub(super) mod calendar_lifecycle;
 mod calendar_source;
 mod cohort_default;
+pub(crate) mod coverage_fixture;
 mod current_school_identity;
 mod current_school_review;
 mod current_school_source;

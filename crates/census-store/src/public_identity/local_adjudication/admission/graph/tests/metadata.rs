@@ -31,7 +31,7 @@ fn retained_seal_refuses_same_size_descriptor_edge_reordering() -> TestResult {
         .get_mut("children")
         .and_then(serde_json::Value::as_array_mut)
         .ok_or("children")?;
-    assert_eq!(children.len(), 6);
+    check!(eq;children.len(), 6);
     children.swap(0, 1);
     assert_metadata_refused(&store, "changed-edges", &raw)
 }
@@ -44,14 +44,14 @@ fn assert_metadata_refused(
     let key = admission::key(operation);
     let before = row(store, key.as_bytes())?.ok_or("reservation bytes")?;
     let encoded = serde_json::to_vec(altered)?;
-    assert_eq!(before.len(), encoded.len());
+    check!(eq;before.len(), encoded.len());
     let header = header_bytes(store)?;
     write(store, key.as_bytes(), &encoded)?;
     let damaged = retained_state(store)?;
     let sequence = store.snapshot().sequence();
-    assert!(load(store, operation).is_err());
-    assert_eq!(header_bytes(store)?, header);
-    assert_eq!(retained_state(store)?, damaged);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(load(store, operation).is_err());
+    check!(eq;header_bytes(store)?, header);
+    check!(eq;retained_state(store)?, damaged);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }

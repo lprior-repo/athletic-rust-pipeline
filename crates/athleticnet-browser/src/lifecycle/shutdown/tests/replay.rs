@@ -15,7 +15,7 @@ async fn typed_accounting_failure_replays_the_actual_report_after_cleanup() -> T
 
     let (report, failure) = manager.shutdown().await;
 
-    assert_eq!(
+    check!(eq;
         report,
         DrainReport {
             accepted: 1,
@@ -23,21 +23,21 @@ async fn typed_accounting_failure_replays_the_actual_report_after_cleanup() -> T
             ..DrainReport::default()
         }
     );
-    assert!(matches!(
+    check!(matches!(
         failure,
         Some(BrowserStartupError::DrainAccounting(
             DrainAccountingError::Overflow
         ))
     ));
     let (replayed, failure) = manager.shutdown().await;
-    assert_eq!(replayed, report);
-    assert!(matches!(
+    check!(eq; replayed, report);
+    check!(matches!(
         failure,
         Some(BrowserStartupError::DrainAccounting(
             DrainAccountingError::Overflow
         ))
     ));
-    assert_eq!(manager.status().state, BrowserState::Restarting);
+    check!(eq; manager.status().state, BrowserState::Restarting);
     Ok(())
 }
 
@@ -50,12 +50,12 @@ async fn a_closed_control_channel_does_not_override_the_actual_actor_exit() -> T
     actor.draining = true;
     let manager = manager(tx, actor);
     manager.tx.closed().await;
-    assert_eq!(manager.status().state, BrowserState::Stopped);
+    check!(eq; manager.status().state, BrowserState::Stopped);
 
     let (report, failure) = manager.shutdown().await;
 
-    assert!(failure.is_none());
-    assert_eq!(
+    check!(failure.is_none());
+    check!(eq;
         report,
         DrainReport {
             accepted: 1,
@@ -64,9 +64,9 @@ async fn a_closed_control_channel_does_not_override_the_actual_actor_exit() -> T
         }
     );
     let (replayed, failure) = manager.shutdown().await;
-    assert!(failure.is_none());
-    assert_eq!(replayed, report);
-    assert_eq!(manager.status().state, BrowserState::Stopped);
+    check!(failure.is_none());
+    check!(eq; replayed, report);
+    check!(eq; manager.status().state, BrowserState::Stopped);
     Ok(())
 }
 
@@ -75,10 +75,7 @@ async fn a_missing_actor_exit_is_cached_as_unconfirmed_not_as_a_clean_drain() ->
     let (tx, rx) = mpsc::channel(1);
     let (finish, finished) = oneshot::channel();
     let (acknowledge, acknowledged) = oneshot::channel();
-    let handler = tokio::spawn(async move {
-        assert_eq!(finished.await, Ok(()));
-        assert_eq!(acknowledge.send(()), Ok(()));
-    });
+    let handler = tokio::spawn(acknowledge_handler_release(finished, acknowledge));
     let (actor, _events) = controlled_actor(rx, handler)?;
     let manager = manager(tx, actor);
     {
@@ -93,22 +90,22 @@ async fn a_missing_actor_exit_is_cached_as_unconfirmed_not_as_a_clean_drain() ->
 
     let (report, failure) = manager.shutdown().await;
 
-    assert_eq!(report, DrainReport::default());
+    check!(eq; report, DrainReport::default());
     let failure = failure.ok_or("missing unconfirmed shutdown failure")?;
-    assert!(
+    check!(
         matches!(&failure, BrowserStartupError::ShutdownFailed(message)
         if message.starts_with("browser actor task join failed: ") && message.contains("cancelled"))
     );
     let (replayed, replay_failure) = manager.shutdown().await;
-    assert_eq!(replayed, report);
-    assert_eq!(
+    check!(eq; replayed, report);
+    check!(eq;
         replay_failure
             .ok_or("missing replayed failure")?
             .to_string(),
         failure.to_string()
     );
-    assert_eq!(manager.status().state, BrowserState::Restarting);
-    assert!(matches!(
+    check!(eq; manager.status().state, BrowserState::Restarting);
+    check!(matches!(
         &*manager.join.lock().await,
         ActorJoinState::Unconfirmed(_)
     ));
@@ -127,7 +124,7 @@ async fn a_handler_failure_replays_its_actual_report_and_failure() -> TestResult
 
     let (report, failure) = manager.shutdown().await;
 
-    assert_eq!(
+    check!(eq;
         report,
         DrainReport {
             accepted: 1,
@@ -135,10 +132,18 @@ async fn a_handler_failure_replays_its_actual_report_and_failure() -> TestResult
             ..DrainReport::default()
         }
     );
-    assert!(matches!(failure, Some(BrowserStartupError::HandlerStopped)));
+    check!(matches!(failure, Some(BrowserStartupError::HandlerStopped)));
     let (replayed, failure) = manager.shutdown().await;
-    assert_eq!(replayed, report);
-    assert!(matches!(failure, Some(BrowserStartupError::HandlerStopped)));
-    assert_eq!(manager.status().state, BrowserState::Restarting);
+    check!(eq; replayed, report);
+    check!(matches!(failure, Some(BrowserStartupError::HandlerStopped)));
+    check!(eq; manager.status().state, BrowserState::Restarting);
     Ok(())
+}
+
+async fn acknowledge_handler_release(
+    finished: oneshot::Receiver<()>,
+    acknowledge: oneshot::Sender<()>,
+) {
+    assert_eq!(finished.await, Ok(()));
+    assert_eq!(acknowledge.send(()), Ok(()));
 }

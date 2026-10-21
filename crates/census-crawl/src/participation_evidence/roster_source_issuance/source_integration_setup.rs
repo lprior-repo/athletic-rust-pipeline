@@ -121,16 +121,6 @@ pub(super) fn object(bytes: &[u8]) -> Value {
     json!({"digest":hash(bytes), "bytes":bytes.len()})
 }
 
-pub(in crate::participation_evidence::roster_source_issuance) fn actual_proposal(
-    packet: &ProviderSchoolPacketV1,
-    school: &CanonicalSchool,
-    program: &CanonicalTeam,
-    evidence: &RosterSourceEvidenceV1,
-    grant: &mut AttachmentReplayGrantV1,
-) -> TestResult<LocallyCheckedRosterIssuanceV1> {
-    actual_proposal_version(packet, school, program, evidence, grant, false)
-}
-
 pub(in crate::participation_evidence::roster_source_issuance) fn actual_proposal_v3(
     packet: &ProviderSchoolPacketV1,
     school: &CanonicalSchool,

@@ -47,9 +47,6 @@ fn selected_durable_job_preserves_best_school_public_id_retry_and_revocation() -
         selection: ProfileSelectionV1::new(installed.store.store_identity()?, other_profile.id()?),
     };
     check!(ExportDataset::for_job_request(&installed.store, job, &mismatch).is_err());
-    check!(
-        ExportDataset::for_job_request(&installed.store, job, &ExportJobRequest::LegacyV2).is_err()
-    );
     super::super::documentary_lifecycle::revoke(&installed, &accepted50)?;
     check!(ExportDataset::for_job_request(&installed.store, job, &request).is_err());
     check!(super::super::publish::publish(&retry, &installed.store, &profile, &root).is_err());

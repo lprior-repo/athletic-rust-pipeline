@@ -178,6 +178,9 @@ impl OwnedAcquisitionWork {
     pub fn protocol(&self) -> CaptureProtocolVersion {
         self.owner.protocol()
     }
+    pub fn owner(&self) -> &ResultsCaptureOwnerV1 {
+        &self.owner
+    }
     pub fn work(&self) -> &AcquisitionWorkV1 {
         &self.work
     }

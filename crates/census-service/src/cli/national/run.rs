@@ -9,7 +9,6 @@ use census_service::restate_services::{
 };
 use restate_sdk::ingress::{InvocationHandle, SendStatus};
 use restate_sdk::prelude::*;
-use std::num::NonZeroU32;
 
 use super::observe::{observe, observe_jurisdiction, Watch};
 use super::report::{failure_exit, print_jurisdiction, print_national};
@@ -22,9 +21,6 @@ mod request;
 mod resume;
 pub(crate) use attachment::attach_existing;
 use request::national_request;
-#[cfg(test)]
-#[path = "run/size_tests.rs"]
-mod size_tests;
 
 pub(crate) async fn submit_national(
     origin: &str,
@@ -80,96 +76,39 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     let origin = cli.service_origin("national", args.flags.ingress())?;
     let ingestion = ingress::client(origin)?;
     let watched = admitted_scope(&jurisdictions);
-    let cycles = if args.drive { super::DRIVE_CYCLES } else { 1 };
-    let run = NationalRun {
-        cli,
-        args,
-        origin,
-        ingestion: &ingestion,
-        jurisdictions: &jurisdictions,
-        watched: &watched,
-        season,
-        revision,
-    };
-    let mut ordinal = args.resume;
-    for cycle in 1..=cycles {
-        let Some((identity, report)) = run_national_cycle(&run, ordinal).await? else {
-            return Ok(());
-        };
-        match failure_exit(&report) {
-            Ok(()) => {
-                super::publication_notice::show(&ingestion, &identity, &watched).await;
-                return Ok(());
-            }
-            Err(error) if args.drive && cycle < cycles => {
-                ordinal = Some(announce_resume(ordinal, cycle, &error)?);
-            }
-            Err(error) if !args.drive => return Err(error),
-            Err(error) => {
-                return Err(error).context("drive cycles exhausted with the run still owed work")
-            }
-        }
-    }
-    Err(anyhow::anyhow!(
-        "drive finished without a completed run report"
-    ))
-}
-
-struct NationalRun<'a> {
-    cli: &'a Cli,
-    args: &'a NationalArgs,
-    origin: &'a str,
-    ingestion: &'a Ingress,
-    jurisdictions: &'a [census_domain::UsJurisdiction],
-    watched: &'a [census_domain::UsJurisdiction],
-    season: census_domain::model::SchoolYear,
-    revision: Revision,
-}
-
-async fn run_national_cycle(
-    run: &NationalRun<'_>,
-    ordinal: Option<NonZeroU32>,
-) -> Result<Option<(WorkflowIdentity, NationalReport)>> {
-    let identity = resume::identity(run.season, run.revision, run.jurisdictions, ordinal);
-    let request = national_request(
-        run.cli,
-        run.args,
-        run.ingestion,
-        run.season,
-        run.revision,
-        run.jurisdictions,
-        ordinal,
-    )
-    .await?;
+    let identity = WorkflowIdentity::national(season, revision, &jurisdictions);
+    let request = national_request(cli, args, season, revision, &jurisdictions).await?;
     let handle = submit_national(
-        run.origin,
-        run.ingestion,
+        origin,
+        &ingestion,
         &identity,
         request,
-        run.args.selected_store_identity.as_deref(),
-        run.args.selected_profile_id.as_deref(),
-        run.args.generation.as_deref(),
+        args.selected_store_identity.as_deref(),
+        args.selected_profile_id.as_deref(),
+        args.generation.as_deref(),
     )
     .await?;
     announce_national_invocation(&identity, &handle);
-    if run.args.detach {
-        return Ok(None);
-    }
     let report = observe(Watch {
         handle: &handle,
-        ingestion: run.ingestion,
-        jurisdictions: run.watched,
-        season: run.season,
-        revision: run.revision,
-        rounds: run.args.flags.rounds(),
+        ingestion: &ingestion,
+        jurisdictions: &watched,
+        season,
+        revision,
+        rounds: args.flags.rounds(),
     })
     .await
-    .with_context(|| format!(
-        "observation stopped for workflow {} invocation {}; rerun the same command to reattach without changing its resume ordinal",
-        identity.as_str(), handle.invocation_id()
-    ))?;
-    print_national(&report, run.args.flags.json)?;
-    Ok(Some((identity, report)))
+    .with_context(|| {
+        format!(
+            "observation stopped for workflow {} invocation {}; rerun the same command to reattach",
+            identity.as_str(),
+            handle.invocation_id()
+        )
+    })?;
+    print_national(&report, args.flags.json)?;
+    failure_exit(&report)?;
+    super::publication_notice::show(&ingestion, &identity, &watched).await;
+    Ok(())
 }
 
 fn announce_national_invocation(
@@ -181,29 +120,6 @@ fn announce_national_invocation(
         identity.as_str(),
         handle.invocation_id()
     );
-}
-
-fn announce_resume(
-    ordinal: Option<NonZeroU32>,
-    cycle: u32,
-    error: &anyhow::Error,
-) -> Result<NonZeroU32> {
-    let next = next_resume_ordinal(ordinal)?;
-    println!(
-        "drive cycle {cycle}: the completed invocation still owes work ({error:#}); re-driving under resume ordinal {next}"
-    );
-    Ok(next)
-}
-
-fn next_resume_ordinal(ordinal: Option<NonZeroU32>) -> Result<NonZeroU32> {
-    let next = match ordinal {
-        None => 2,
-        Some(current) => current
-            .get()
-            .checked_add(1)
-            .context("resume ordinal exhausted")?,
-    };
-    NonZeroU32::new(next).context("resume ordinal wrapped")
 }
 
 #[tracing::instrument(skip_all, fields(command = "jurisdiction"))]
@@ -239,9 +155,6 @@ pub(crate) async fn run_jurisdiction(cli: &Cli, args: &JurisdictionArgs) -> Resu
         identity.as_str(),
         handle.invocation_id()
     );
-    if args.detach {
-        return Ok(());
-    }
     let report = observe_jurisdiction(&handle, args.flags.rounds()).await?;
     print_jurisdiction(&report, args.flags.json)
 }
@@ -251,7 +164,7 @@ pub(crate) async fn run_national_report(cli: &Cli, args: &NationalReportArgs) ->
     let jurisdictions = crate::cli::within_census_scope(&args.states)?;
     let season = named_season(args.season)?;
     let revision = Revision(args.revision);
-    let identity = resume::identity(season, revision, &jurisdictions, args.resume);
+    let identity = WorkflowIdentity::national(season, revision, &jurisdictions);
     let origin = cli.service_origin("national-report", args.ingress.as_deref())?;
     let ingestion = ingress::client(origin)?;
     let national = NationalCensusIngressClient::from_client(ingestion, identity.as_str());

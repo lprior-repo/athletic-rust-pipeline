@@ -10,7 +10,7 @@ pub(super) fn fixture() -> TestResult<(
     CaptureWriterV1,
     ResultsCaptureOwnerV1,
 )> {
-    fixture_for(CaptureProtocolVersion::V1)
+    fixture_for(CaptureProtocolVersion::V2)
 }
 pub(super) fn fixture_for(
     protocol: CaptureProtocolVersion,
@@ -20,18 +20,13 @@ pub(super) fn fixture_for(
     CaptureWriterV1,
     ResultsCaptureOwnerV1,
 )> {
+    if protocol != CaptureProtocolVersion::V2 {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
     let temporary = tempfile::tempdir()?;
     let root = temporary.path().join("store");
-    let (store, writer) = match protocol {
-        CaptureProtocolVersion::V1 => {
-            Store::create_capture_qualification_v1(&root)?;
-            Store::open_capture_qualification_v1(&root)?.into_parts()
-        }
-        CaptureProtocolVersion::V2 => {
-            Store::create_capture_qualification_v2(&root)?;
-            Store::open_capture_qualification_v2(&root)?.into_parts()
-        }
-    };
+    Store::create_capture_qualification(&root)?;
+    let (store, writer) = Store::open_current_qualification_v3(&root)?.into_parts();
     let run = CensusRun::new(SchoolYear::DEFAULT, 1).ok_or("run")?;
     store.bind_run(&RunManifest {
         store_identity: writer.store_identity().as_str().to_string(),
@@ -161,9 +156,10 @@ pub(super) fn rows(store: &Store) -> TestResult<Vec<(Vec<u8>, Vec<u8>)>> {
 pub(super) fn overwrite<T: serde::Serialize>(store: &Store, key: &str, payload: &T) -> TestResult {
     let encoded =
         serde_json::to_vec(&serde_json::json!({"key":key,"at":"2026-10-14","payload":payload}))?;
-    store
-        .journal
-        .insert(Store::journal_key(SOURCE_ACQUISITION_PHASE, key), encoded)?;
+    store.journal.insert(
+        Store::journal_key(CaptureProtocolVersion::V2.phase(), key),
+        encoded,
+    )?;
     store.flush()?;
     Ok(())
 }

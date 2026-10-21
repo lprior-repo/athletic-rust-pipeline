@@ -198,10 +198,7 @@ fn selected_proof_versions_preserve_exact_numeric_wire_and_refuse_unknowns() -> 
         check!(eq; serde_json::to_value(decoded)?, json!(wire));
     }
     for value in [json!(0), json!(4), json!(u32::MAX), json!(-1), json!("2")] {
-        check!(matches!(
-            serde_json::from_value::<super::Version>(value),
-            Err(_)
-        ));
+        check!(serde_json::from_value::<super::Version>(value).is_err());
     }
     Ok(())
 }

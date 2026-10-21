@@ -10,7 +10,7 @@ fn calendar_venue_mismatch_requires_bridge_then_revokes_to_next() -> TestResult 
     let profile = selection::profile()?;
     installed.store.register_profile(&profile)?;
     let points = point_source::install(&installed)?;
-    let early = points.get(0).ok_or("Feb28 source missing")?;
+    let early = points.first().ok_or("Feb28 source missing")?;
     let fifty = points.get(1).ok_or("May15 source missing")?;
     let fiftyone = points.get(2).ok_or("May16 source missing")?;
     let proposal49 = support::propose_for(&installed, early, 0)?;

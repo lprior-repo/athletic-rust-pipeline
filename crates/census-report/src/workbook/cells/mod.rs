@@ -119,7 +119,9 @@ impl<'a> SheetWriter<'a> {
         widths: &[u16],
     ) -> ReportResult<Self> {
         let mut writer = Self {
-            sheet: book.add_worksheet_with_constant_memory(),
+            sheet: book
+                .add_worksheet_with_constant_memory()
+                .map_err(|source| xlsx_error(path, source))?,
             path,
             bold: Format::new().set_bold(),
             next: 0,

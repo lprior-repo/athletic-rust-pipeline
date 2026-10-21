@@ -31,20 +31,12 @@ pub use entry::{
     assess_retained_roster_source_v3,
 };
 
-#[derive(Clone, Copy)]
-enum InterpretationVersion {
-    OriginalV1,
-    FullV2,
-    RowLocalV3,
-}
-
 fn assess<'a>(
     evidence: &'a RosterSourceEvidenceV1,
     retained_parser_manifest: &[u8],
     retained_contracts: &super::policies::RosterInterpretationContractsV1<'_>,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
-    version: InterpretationVersion,
 ) -> CrawlResult<RosterSourceEvidenceAssessmentV1<'a>> {
     original(evidence, grant, |_| {
         require_snapshot_lineage(evidence, proposal)
@@ -75,10 +67,9 @@ fn assess<'a>(
         &parser_manifest,
         &roster_body,
         proposal,
-        version,
         grant,
     )?;
-    let scoped_rows = derive_scoped_rows(evidence, &checked, proposal, version, grant)?;
+    let scoped_rows = derive_scoped_rows(&checked, proposal, grant)?;
     evidence.require_original_grant(grant)?;
     Ok(RosterSourceEvidenceAssessmentV1 {
         evidence,
@@ -136,47 +127,26 @@ fn derive_objects<'a>(
     parser_manifest: &super::manifest::CheckedRosterParserManifestV1,
     roster_body: &str,
     proposal: &LocallyCheckedRosterIssuanceV1,
-    version: InterpretationVersion,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
-    let objects = match version {
-        InterpretationVersion::OriginalV1 => {
-            super::capture_objects::derive(evidence, packet, parser_manifest, roster_body, grant)?
-        }
-        InterpretationVersion::FullV2 => super::capture_objects::version2::derive(
-            evidence,
-            packet,
-            checked,
-            parser_manifest,
-            roster_body,
-            grant,
-        )?,
-        InterpretationVersion::RowLocalV3 => super::capture_objects::version2::version3::derive(
-            evidence,
-            packet,
-            checked,
-            parser_manifest,
-            roster_body,
-            grant,
-        )?,
-    };
+    let objects = super::capture_objects::version3::derive(
+        evidence,
+        packet,
+        checked,
+        parser_manifest,
+        roster_body,
+        grant,
+    )?;
     objects.require_proposal(proposal, grant)?;
     Ok(objects)
 }
 
 fn derive_scoped_rows(
-    evidence: &RosterSourceEvidenceV1,
     checked: &CheckedProviderSchoolPacketV1,
     proposal: &LocallyCheckedRosterIssuanceV1,
-    version: InterpretationVersion,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<usize> {
-    original(evidence, grant, |grant| match version {
-        InterpretationVersion::RowLocalV3 => scope::scope_row_local(checked, proposal, grant),
-        InterpretationVersion::OriginalV1 | InterpretationVersion::FullV2 => {
-            scope::scope(checked, proposal, grant)
-        }
-    })
+    scope::scope_row_local(checked, proposal, grant)
 }
 
 pub(super) fn original<T>(

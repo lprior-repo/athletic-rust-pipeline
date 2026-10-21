@@ -186,8 +186,10 @@ fn quoted_attribute_cannot_supply_a_coaching_role() -> TestResult {
 fn staff_page_budget_is_checked_before_append() -> TestResult {
     let html = page(&[]);
     let rules = Rules::new()?;
-    let mut signals = Signals::default();
-    signals.staff_pages = vec!["https://school.org/staff".to_owned(); 12];
+    let mut signals = Signals {
+        staff_pages: vec!["https://school.org/staff".to_owned(); 12],
+        ..Signals::default()
+    };
     analyse(&rules, "https://school.org/staff", &html, &mut signals)?;
     check!(eq; signals.staff_pages.len(), 13);
     let previous = signals.clone();

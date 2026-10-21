@@ -16,8 +16,8 @@ fn reserve_partial(store: &Store, id: &RawGenerationOperationIdV2) -> TestResult
         first = false;
         stage_node(store, &reserved, node)
     });
-    assert!(result.is_err());
-    assert!(!reserved.is_complete(store)?);
+    check!(result.is_err());
+    check!(!reserved.is_complete(store)?);
     Ok(reserved)
 }
 
@@ -35,21 +35,21 @@ fn partial_capture_reopens_and_resumes_original_reserved_content() -> TestResult
         Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let outcome = writer.capture_raw_generation_v2(&store, &id)?;
-    assert!(matches!(
+    check!(matches!(
         &outcome,
         RawGenerationCaptureOutcomeV2::Captured(_)
     ));
     let retained = outcome.retained().clone();
-    assert_eq!(retained.seal(), &expected);
-    assert_eq!(retained_rows(&store, &retained)?, 513);
+    check!(eq;retained.seal(), &expected);
+    check!(eq;retained_rows(&store, &retained)?, 513);
     let sequence = store.snapshot().sequence();
     let replay = writer.capture_raw_generation_v2(&store, &id)?;
-    assert!(matches!(
+    check!(matches!(
         &replay,
         RawGenerationCaptureOutcomeV2::HistoricalReplay(_)
     ));
-    assert_eq!(replay.retained(), &retained);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(eq;replay.retained(), &retained);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }
 
@@ -73,13 +73,13 @@ fn complete_capture_reopens_without_original_source_rows() -> TestResult {
     let (store, writer) =
         Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
-    assert_eq!(retained_rows(&store, &retained)?, 513);
+    check!(eq;retained_rows(&store, &retained)?, 513);
     let replay = writer.capture_raw_generation_v2(&store, &id)?;
-    assert!(matches!(
+    check!(matches!(
         &replay,
         RawGenerationCaptureOutcomeV2::HistoricalReplay(_)
     ));
-    assert_eq!(replay.retained(), &retained);
+    check!(eq;replay.retained(), &retained);
     Ok(())
 }
 
@@ -93,9 +93,9 @@ fn incomplete_retry_refuses_moved_inputs_without_writing_or_reclaiming() -> Test
     crate::input_revisions::stage(&store, &mut batch, [Table::Athletes])?;
     batch.durability(Some(PersistMode::SyncData)).commit()?;
     let sequence = store.snapshot().sequence();
-    assert!(writer.capture_raw_generation_v2(&store, &id).is_err());
-    assert_eq!(store.snapshot().sequence(), sequence);
-    assert!(!reserved.is_complete(&store)?);
+    check!(writer.capture_raw_generation_v2(&store, &id).is_err());
+    check!(eq;store.snapshot().sequence(), sequence);
+    check!(!reserved.is_complete(&store)?);
     Ok(())
 }
 
@@ -110,12 +110,12 @@ fn equal_counters_do_not_authorize_divergent_partial_content() -> TestResult {
     value.push(b' ');
     store.entities.insert(key, value)?;
     let sequence = store.snapshot().sequence();
-    assert_eq!(
+    check!(eq;
         store.snapshot().public_identity_input_revisions_v2()?,
         before
     );
-    assert!(writer.capture_raw_generation_v2(&store, &id).is_err());
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(writer.capture_raw_generation_v2(&store, &id).is_err());
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }
 
@@ -134,12 +134,12 @@ fn movement_during_staging_refuses_before_seal_and_keeps_charged_partial_graph()
     let reserved = reserve_partial(&store, &id)?;
     let held = store.snapshot();
     move_inputs(&store)?;
-    assert!(stage(&store, &held, &reserved).is_err());
-    assert!(!reserved.is_complete(&store)?);
+    check!(stage(&store, &held, &reserved).is_err());
+    check!(!reserved.is_complete(&store)?);
     let sequence = store.snapshot().sequence();
-    assert!(writer.capture_raw_generation_v2(&store, &id).is_err());
-    assert_eq!(store.snapshot().sequence(), sequence);
-    assert!(load_graph(&store, writer.store_identity(), &id)?.is_some());
+    check!(writer.capture_raw_generation_v2(&store, &id).is_err());
+    check!(eq;store.snapshot().sequence(), sequence);
+    check!(load_graph(&store, writer.store_identity(), &id)?.is_some());
     Ok(())
 }
 
@@ -151,20 +151,20 @@ fn movement_after_seal_refuses_current_attempt_but_allows_historical_replay() ->
     let reserved = reserve_partial(&store, &id)?;
     let held = store.snapshot();
     stage(&store, &held, &reserved)?;
-    assert!(reserved.is_complete(&store)?);
+    check!(reserved.is_complete(&store)?);
     move_inputs(&store)?;
     let sequence = store.snapshot().sequence();
-    assert!(finish_current(&store, &reserved).is_err());
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(finish_current(&store, &reserved).is_err());
+    check!(eq;store.snapshot().sequence(), sequence);
     let replay = writer.capture_raw_generation_v2(&store, &id)?;
-    assert!(matches!(
+    check!(matches!(
         &replay,
         RawGenerationCaptureOutcomeV2::HistoricalReplay(_)
     ));
     let historical = replay.retained();
-    assert_eq!(historical.binding(), reserved.capture());
-    assert_eq!(historical.seal(), reserved.seal());
-    assert_eq!(retained_rows(&store, historical)?, 513);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(eq;historical.binding(), reserved.capture());
+    check!(eq;historical.seal(), reserved.seal());
+    check!(eq;retained_rows(&store, historical)?, 513);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }

@@ -5,17 +5,13 @@ impl Fixture {
         listener: &TcpListener,
         protocol: CaptureProtocolVersion,
     ) -> TestResult<Self> {
+        if protocol != CaptureProtocolVersion::V2 {
+            return Err(census_store::CaptureError::CaptureProtocolUnsupported.into());
+        }
         let root = tempfile::tempdir()?;
-        let (store, writer) = match protocol {
-            CaptureProtocolVersion::V1 => {
-                Store::create_capture_qualification_v1(root.path().join("store"))?;
-                Store::open_capture_qualification_v1(root.path().join("store"))?.into_parts()
-            }
-            CaptureProtocolVersion::V2 => {
-                Store::create_capture_qualification_v2(root.path().join("store"))?;
-                Store::open_capture_qualification_v2(root.path().join("store"))?.into_parts()
-            }
-        };
+        Store::create_capture_qualification(root.path().join("store"))?;
+        let (store, writer) =
+            Store::open_current_qualification_v3(root.path().join("store"))?.into_parts();
         let manifest = RunManifest {
             store_identity: writer.store_identity().as_str().to_owned(),
             run: CensusRun::new(SchoolYear::new(2026).ok_or("year")?, 1).ok_or("run")?,

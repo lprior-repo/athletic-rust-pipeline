@@ -12,7 +12,6 @@ pub(super) fn validate_purpose(
         OpenPurpose::CurrentQualificationV3 => {
             require_protocol(capture, CaptureProtocolVersion::V2)
         }
-        OpenPurpose::CaptureExecution(expected) => require_protocol(capture, expected),
         OpenPurpose::CaptureControl => capture
             .as_ref()
             .map(|_| ())

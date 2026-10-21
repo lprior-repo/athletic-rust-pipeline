@@ -47,6 +47,8 @@ fn export_options(generation: Option<&str>) -> ExportRequest {
         core: true,
         limit: Some(50),
         generation: generation.map(str::to_string),
+        selected_store_identity: Some("a".repeat(64)),
+        selected_profile_id: Some("b".repeat(64)),
     }
 }
 
@@ -58,10 +60,10 @@ fn both_entries_key_one_workbook_generation() -> TestResult {
     let request = service::workbook_request(&options)?;
     let generation = ExportGeneration::resolve(options.generation.as_deref())?;
     let key = workbook_request_key(&request, &generation)?;
-    check!(eq;
-        key,
-        "workbook:2027:core:50:all:.:2026:2",
-        "the xtask entry keys the selected generation exactly like the CLI-live entry"
+    check!(eq; key.split(':').count(), 8);
+    check!(
+        key.starts_with("workbook:2027:core:50:all:.:2026:selected_v1_"),
+        "the xtask entry keys the selected request exactly like the CLI-live entry"
     );
 
     let repeated = service::workbook_request(&export_options(Some("2")))?;

@@ -10,15 +10,14 @@ fn facility_placement_preserves_existing_flat_event_admission_under_flat_policy(
         for canonical in [EventKind::Track400m, unmapped(label)] {
             let event = owned(canonical, &[label])?;
             let before = serialized_bytes(&event)?;
-            for semantics in [EventSemantics::FlatEvents19] {
-                check!(eq; RecruitingCatalogV1::with_policy(semantics).classify(&event, Sport::IndoorTrack)?, EventDisposition::Included(EventKind::Track400m), "{label}");
-                check!(eq; event.resolved_specification_with_policy(semantics)?, EventSpecification {
-                    indoor_track: Some(IndoorTrackSpecification::new(200_000_000, TrackBanking::Banked)?),
-                    category: Some(CompetitionCategory::Boys),
-                    ..EventSpecification::default()
-                }, "{label}");
-                check!(eq; serialized_bytes(&event)?, before, "{label}");
-            }
+            let semantics = EventSemantics::FlatEvents19;
+            check!(eq; RecruitingCatalogV1::with_policy(semantics).classify(&event, Sport::IndoorTrack)?, EventDisposition::Included(EventKind::Track400m), "{label}");
+            check!(eq; event.resolved_specification_with_policy(semantics)?, EventSpecification {
+                indoor_track: Some(IndoorTrackSpecification::new(200_000_000, TrackBanking::Banked)?),
+                category: Some(CompetitionCategory::Boys),
+                ..EventSpecification::default()
+            }, "{label}");
+            check!(eq; serialized_bytes(&event)?, before, "{label}");
         }
     }
     Ok(())

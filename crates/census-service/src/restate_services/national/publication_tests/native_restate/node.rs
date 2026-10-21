@@ -10,18 +10,18 @@ const READY_DELAY: Duration = Duration::from_millis(250);
 const SHUTDOWN_ATTEMPTS: usize = 300;
 const SHUTDOWN_DELAY: Duration = Duration::from_millis(100);
 
-pub(super) struct NativeNode {
+pub(crate) struct NativeNode {
     binary: PathBuf,
     config: PathBuf,
     root: Option<tempfile::TempDir>,
     root_path: PathBuf,
-    pub(super) admin: String,
-    pub(super) ingress: String,
+    pub(crate) admin: String,
+    pub(crate) ingress: String,
     child: Option<Child>,
 }
 
 impl NativeNode {
-    pub(super) fn new() -> TestResult<Self> {
+    pub(crate) fn new() -> TestResult<Self> {
         let binary = pinned_server()?;
         let (node_port, ingress_port, admin_port) = free_ports()?;
         let root = tempfile::Builder::new()
@@ -77,7 +77,7 @@ impl NativeNode {
         })
     }
 
-    pub(super) fn start(&mut self) -> TestResult {
+    pub(crate) fn start(&mut self) -> TestResult {
         check!(
             self.child.is_none(),
             "native Restate node is already running"
@@ -112,13 +112,13 @@ impl NativeNode {
             .spawn()
     }
 
-    pub(super) async fn restart(&mut self, client: &reqwest::Client) -> TestResult {
+    pub(crate) async fn restart(&mut self, client: &reqwest::Client) -> TestResult {
         self.stop().await?;
         self.start()?;
         self.wait_ready(client).await
     }
 
-    pub(super) async fn wait_ready(&mut self, client: &reqwest::Client) -> TestResult {
+    pub(crate) async fn wait_ready(&mut self, client: &reqwest::Client) -> TestResult {
         let mut last = String::from("no readiness request made");
         for _ in 0..READY_ATTEMPTS {
             self.require_running()?;
@@ -143,7 +143,7 @@ impl NativeNode {
             .into())
     }
 
-    pub(super) async fn stop(&mut self) -> TestResult {
+    pub(crate) async fn stop(&mut self) -> TestResult {
         let Some(child) = self.child.as_mut() else {
             return Ok(());
         };

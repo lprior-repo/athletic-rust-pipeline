@@ -181,7 +181,7 @@ async fn durable_run_request_projects_then_reopens_and_replays_the_same_capture(
     check!(eq; projection.get("rsid").and_then(serde_json::Value::as_str), Some("1266814"));
     let acquisition_roots = fixture
         .store
-        .journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
+        .journal_payloads(census_domain::model::CaptureProtocolVersion::V2.phase())?;
     let fixture = fixture.reopen()?;
     let owner = fixture.context_owner(2026, false)?;
     let ctx = fixture.context(&owner, false)?;
@@ -190,7 +190,7 @@ async fn durable_run_request_projects_then_reopens_and_replays_the_same_capture(
     let after: Vec<CanonicalPerformance> = fixture.store.scan(Table::Performances)?;
     check!(eq; serde_json::to_value(&before)?, serde_json::to_value(&after)?);
     check!(eq; fixture.store.journal_payloads(crate::milesplit::RESULT_SET_PHASE)?, receipts);
-    check!(eq; fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?, acquisition_roots);
+    check!(eq; fixture.store.journal_payloads(census_domain::model::CaptureProtocolVersion::V2.phase())?, acquisition_roots);
     check!(eq; Fixture::occurrence(&acquired(&replay.owned)?.outcome)?, &original);
     check!(eq; fixture.count(), 1);
     Ok(())

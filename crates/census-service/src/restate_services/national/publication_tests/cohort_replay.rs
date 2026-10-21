@@ -1,7 +1,6 @@
-use super::{codec, journal, transport, FixtureClock, NationalCensus, TestResult};
+use super::{codec, journal, TestResult};
 use crate::restate_services::wire::NationalRequest;
-use restate_sdk::prelude::*;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 fn original_prefix() -> TestResult<journal::Journal> {
     let metadata: serde_json::Value =
@@ -43,70 +42,17 @@ fn original_prefix() -> TestResult<journal::Journal> {
     Ok(replay)
 }
 
-async fn replay_once(url: &str) -> TestResult {
-    let replay = original_prefix()?;
-    let expected = super::super::targets(&replay.original).map_err(|error| format!("{error:?}"))?;
-    let client = reqwest::Client::builder()
-        .http2_prior_knowledge()
-        .timeout(Duration::from_secs(10))
-        .build()?;
-    let output = transport::exchange(&client, url, replay.request_body()?, &mut None).await?;
-    transport::terminal(&output)?;
-    if let Some(error) = output.iter().find(|frame| frame.kind == 0x0002) {
-        let mut detail = error.text(2)?;
-        if let Ok(description) = error.text(3) {
-            detail.push_str(&description);
-        }
-        return Err(format!(
-            "original native replay failed ({}): {detail}",
-            error.number(1)?
-        )
-        .into());
-    }
-    let calls: Vec<_> = output.iter().filter(|frame| frame.kind == 0x040D).collect();
-    check!(eq; calls.len(), expected.len());
-    for (_, key) in expected {
-        let call = calls
-            .iter()
-            .find(|frame| frame.text(5).is_ok_and(|actual| actual == key))
-            .ok_or_else(|| format!("original jurisdiction not dispatched: {key}"))?;
-        check!(eq; call.text(1)?, "JurisdictionCensus");
-        check!(eq; call.text(2)?, "run");
-    }
-    check!(!output.iter().any(|frame| frame.kind == 0x0403));
-    Ok(())
-}
-
 #[tokio::test]
-async fn original_d6_bind_prefix_replays_through_first_jurisdiction_dispatch() -> TestResult {
+async fn original_d6_bind_prefix_refuses_legacy_contract_without_dispatch() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Arc::new(census_store::Store::open(directory.path())?);
-    let region = Arc::new(crate::spawn::Spawner::new());
-    let jobs = crate::restate_services::Jobs::new(Arc::clone(&store), Arc::clone(&region));
-    let endpoint = Endpoint::builder()
-        .bind(NationalCensus::new(Arc::new(FixtureClock), jobs))
-        .build();
-    let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await?;
-    let url = format!(
-        "http://{}/invoke/NationalCensus/run",
-        listener.local_addr()?
+    let error = original_prefix()
+        .err()
+        .ok_or("legacy d6 bind prefix decoded")?;
+    check!(
+        error.to_string().contains("selected_publication_v1"),
+        "{error}"
     );
-    let (stop_tx, stop_rx) = tokio::sync::oneshot::channel();
-    let server = HttpServer::new(endpoint).serve_with_cancel(listener, async move {
-        match stop_rx.await {
-            Ok(()) | Err(_) => {}
-        }
-    });
-    let assertions = async move {
-        let result = replay_once(&url).await;
-        stop_tx
-            .send(())
-            .map_err(|_| "replay endpoint lost shutdown owner")?;
-        result
-    };
-    let ((), result) = tokio::join!(server, assertions);
-    region.drain(Duration::from_secs(5)).await?;
-    result?;
     check!(store.run_manifest()?.is_none());
     Ok(())
 }

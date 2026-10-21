@@ -63,6 +63,10 @@ fn export_generations_are_bounded_to_key_safe_text() -> TestResult {
 
 #[test]
 fn workbook_keys_follow_the_selected_generation() -> TestResult {
+    let selection = census_domain::model::ProfileSelectionV1::new(
+        census_domain::model::StoreIdentity::parse(&"a".repeat(64))?,
+        census_domain::model::ProfileId::parse(&"b".repeat(64))?,
+    );
     let request = WorkbookRequest {
         grad_year: Some(2027),
         limit: Some(50),
@@ -70,20 +74,26 @@ fn workbook_keys_follow_the_selected_generation() -> TestResult {
         out: Some("/tmp/root-a".to_string()),
         school_year: Some(2026),
         jurisdictions: Vec::new(),
-        export_job: census_report::export::ExportJobRequest::LegacyV2,
+        export_job: census_report::export::ExportJobRequest::SelectedPublicationV1 { selection },
     };
-    let legacy = ExportGeneration::default_generation();
-    let workbook_legacy = workbook_request_key(&request, &legacy)?;
-    if workbook_legacy.as_str() != "workbook:2027:core:50:all:/tmp/root-a:2026:1" {
-        return Err(format!("workbook key: {}", workbook_legacy.as_str()).into());
+    let previous = ExportGeneration::default_generation();
+    let workbook_previous = workbook_request_key(&request, &previous)?;
+    if !workbook_previous
+        .as_str()
+        .starts_with("workbook:2027:core:50:all:/tmp/root-a:2026:selected_v1_")
+    {
+        return Err(format!("workbook key: {}", workbook_previous.as_str()).into());
     }
     let next = ExportGeneration::parse("2")?;
     let workbook_next = workbook_request_key(&request, &next)?;
-    if workbook_next.as_str() != "workbook:2027:core:50:all:/tmp/root-a:2026:2" {
+    if !workbook_next
+        .as_str()
+        .starts_with("workbook:2027:core:50:all:/tmp/root-a:2026:selected_v1_")
+    {
         return Err(format!("workbook key: {}", workbook_next.as_str()).into());
     }
-    if workbook_legacy == workbook_next {
-        return Err("a fresh generation must not reattach the legacy workflow".into());
+    if workbook_previous == workbook_next {
+        return Err("a fresh generation must not reattach the selected workflow".into());
     }
     Ok(())
 }

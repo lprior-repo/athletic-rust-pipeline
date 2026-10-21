@@ -121,7 +121,7 @@ fn context<'a>(
     capture: &'a crate::ResultsCaptureContext,
 ) -> TestResult<crate::AdapterContext<'a>> {
     Ok(crate::AdapterContext {
-        capture: crate::CaptureContext::DurableV1(&capture),
+        capture: crate::CaptureContext::DurableV1(capture),
         fetcher,
         store,
         refresh: false,

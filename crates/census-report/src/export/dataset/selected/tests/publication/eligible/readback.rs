@@ -115,8 +115,8 @@ fn assert_workbook(path: &Path, public_id: &str, unknown: &str) -> TestResult {
     let review = book.worksheet_range("Review")?;
     check!(review.rows().any(|row| row
         .first()
-        .is_some_and(|cell| cell.to_string() == "Public identity candidate withheld")
-        && row.get(2).is_some_and(|cell| cell.to_string() == unknown)));
+        .is_some_and(|cell| cell == "Public identity candidate withheld")
+        && row.get(2).is_some_and(|cell| cell == unknown)));
     assert_no_pr(&mut book, public_id)?;
     Ok(())
 }
@@ -127,6 +127,6 @@ fn assert_no_pr(book: &mut Xlsx<std::io::BufReader<std::fs::File>>, public_id: &
     let athletes = book.worksheet_range("Athletes")?;
     check!(athletes
         .rows()
-        .any(|row| row.iter().any(|cell| cell.to_string() == public_id)));
+        .any(|row| row.iter().any(|cell| cell == public_id)));
     Ok(())
 }

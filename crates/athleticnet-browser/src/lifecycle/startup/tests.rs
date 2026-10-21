@@ -34,13 +34,13 @@ async fn connect_validates_the_actual_argument_not_an_unrelated_valid_setting() 
             settings.clone(),
             Arc::new(SystemClock),
         );
-        check!(match (expected, result) {
+        check!(matches!(
+            (expected, result),
             ("scheme", Err(BrowserStartupError::CdpBadScheme))
-            | ("loopback", Err(BrowserStartupError::CdpNotLoopback))
-            | ("path", Err(BrowserStartupError::CdpBadPath))
-            | ("credentials", Err(BrowserStartupError::CdpHasCredentials)) => true,
-            _ => false,
-        });
+                | ("loopback", Err(BrowserStartupError::CdpNotLoopback))
+                | ("path", Err(BrowserStartupError::CdpBadPath))
+                | ("credentials", Err(BrowserStartupError::CdpHasCredentials))
+        ));
     }
     Ok(())
 }

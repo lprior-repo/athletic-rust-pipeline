@@ -21,7 +21,7 @@ path = "src/g1/main.rs"
 
 [dependencies]
 anyhow = "1"
-calamine = "=0.36.1"
+calamine = "=0.37.0"
 # The replay cases drive a provider adapter directly, so the harness names the crate that owns them
 # rather than reaching them through `census-service`, which no longer re-exports its adapters.
 census-crawl = { path = "../crates/census-crawl" }

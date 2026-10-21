@@ -16,17 +16,6 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 mod report_split_fixture;
 
-fn options() -> TestResult<workbook::Options> {
-    Ok(workbook::Options {
-        grad_year: Some(2027),
-        out: None,
-        limit: None,
-        scope: Scope::AllSources,
-        jurisdictions: vec![UsJurisdiction::Wisconsin],
-        school_year: SchoolYear::new(2026).ok_or("fixture season")?,
-    })
-}
-
 fn seed(store: &Store, name: &str) -> TestResult {
     let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, name, name, None);
     store.append(Table::Schools, &school)?;
@@ -34,32 +23,33 @@ fn seed(store: &Store, name: &str) -> TestResult {
 }
 
 #[test]
-fn managed_workbook_job_decodes_one_dataset_for_every_revision_six_artifact() -> TestResult {
-    if !isolated("managed_workbook_job_decodes_one_dataset_for_every_revision_six_artifact")? {
+fn managed_workbook_job_decodes_one_dataset_for_every_revision_eight_artifact() -> TestResult {
+    if !isolated("managed_workbook_job_decodes_one_dataset_for_every_revision_eight_artifact")? {
         return Ok(());
     }
-    let directory = tempfile::tempdir()?;
-    let store = Store::open(directory.path())?;
-    seed(&store, "Original High School")?;
+    let controlled = selected_fixture::install()?;
+    let selection = controlled.selection()?;
+    let request = census_report::export::ExportJobRequest::SelectedPublicationV1 { selection };
+    let store = controlled.store();
     let decoded = decoded_generations();
     let resident = resident_generations();
     let reply = build(
-        &store,
-        &options()?,
+        store,
+        &selected_options(controlled.profile())?,
         "managed-publication-fixture",
-        &census_report::export::ExportJobRequest::LegacyV2,
+        &request,
     )?;
     check!(eq; decoded_generations(), decoded.checked_add(1).ok_or("counter overflow")?);
     check!(eq; resident_generations(), resident);
     let generation = Path::new(&reply.path).parent().ok_or("generation absent")?;
     let manifest: serde_json::Value =
         serde_json::from_slice(&std::fs::read(generation.join("manifest.json"))?)?;
-    check!(eq; manifest.get("schema_revision"), Some(&serde_json::json!(6)));
+    check!(eq; manifest.get("schema_revision"), Some(&serde_json::json!(8)));
     let artifacts = manifest
         .get("artifacts")
         .and_then(serde_json::Value::as_object)
         .ok_or("artifacts absent")?;
-    check!(eq; artifacts.len(), 22);
+    check!(eq; artifacts.len(), 24);
     for name in [
         "census-core.json",
         "census-all-sources.json",
@@ -74,6 +64,8 @@ fn managed_workbook_job_decodes_one_dataset_for_every_revision_six_artifact() ->
         "coverage.csv",
         "identity_aliases.csv",
         "combined_exclusions.csv",
+        "current_affiliations.csv",
+        "participation_exclusions.csv",
     ] {
         check!(artifacts.contains_key(name), "missing {name}");
     }
@@ -81,10 +73,32 @@ fn managed_workbook_job_decodes_one_dataset_for_every_revision_six_artifact() ->
         .get("normalized_csv_rows")
         .and_then(serde_json::Value::as_object)
         .ok_or("normalized row counts absent")?;
-    check!(eq; counts.len(), 9);
+    require_selected_csv_families(counts)?;
     check!(eq; counts.get("combined_exclusions.csv"), Some(&serde_json::json!(0)));
     let verified = workbook::publication::verify_published(Path::new(&reply.path))?;
     check!(eq; manifest.get("generation_digest").and_then(serde_json::Value::as_str), Some(verified.generation_digest.as_str()));
+    Ok(())
+}
+
+fn require_selected_csv_families(
+    counts: &serde_json::Map<String, serde_json::Value>,
+) -> TestResult {
+    check!(eq;
+        counts.keys().map(String::as_str).collect::<std::collections::BTreeSet<_>>(),
+        std::collections::BTreeSet::from([
+            "athletes.csv",
+            "best_marks.csv",
+            "coach_contacts.csv",
+            "combined_exclusions.csv",
+            "comparison_classes.csv",
+            "coverage.csv",
+            "current_affiliations.csv",
+            "identity_aliases.csv",
+            "participation_exclusions.csv",
+            "provenance.csv",
+            "schools.csv",
+        ])
+    );
     Ok(())
 }
 
@@ -94,20 +108,20 @@ fn managed_workbook_job_refuses_changed_evidence_without_replacing_its_generatio
     {
         return Ok(());
     }
-    let directory = tempfile::tempdir()?;
-    let store = Store::open(directory.path())?;
-    seed(&store, "Original High School")?;
-    let options = options()?;
-    let job = census_report::export::ExportJobRequest::LegacyV2;
-    let reply = build(&store, &options, "managed-retry-fixture", &job)?;
+    let controlled = selected_fixture::install()?;
+    let selection = controlled.selection()?;
+    let job = census_report::export::ExportJobRequest::SelectedPublicationV1 { selection };
+    let store = controlled.store();
+    let options = selected_options(controlled.profile())?;
+    let reply = build(store, &options, "managed-retry-fixture", &job)?;
     let workbook_bytes = std::fs::read(&reply.path)?;
     let generation = Path::new(&reply.path).parent().ok_or("generation absent")?;
     let manifest = std::fs::read(generation.join("manifest.json"))?;
-    let repeated = build(&store, &options, "managed-retry-fixture", &job)?;
+    let repeated = build(store, &options, "managed-retry-fixture", &job)?;
     check!(eq; repeated.path, reply.path);
-    seed(&store, "Later High School")?;
+    seed(store, "Later High School")?;
     let decoded = decoded_generations();
-    let error = build(&store, &options, "managed-retry-fixture", &job)
+    let error = build(store, &options, "managed-retry-fixture", &job)
         .err()
         .ok_or("changed source evidence reused the same job")?;
     check!(

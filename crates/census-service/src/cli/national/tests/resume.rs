@@ -1,20 +1,7 @@
 use super::*;
-use census_reconcile::identity::WorkflowIdentity;
 
 #[path = "resume/authority.rs"]
 mod authority;
-
-pub(super) async fn refused_resume_ingress(
-    listener: tokio::net::TcpListener,
-    responses: Vec<(&str, String)>,
-) -> Result<Vec<(String, Vec<u8>)>, Box<dyn std::error::Error>> {
-    let mut captured = Vec::new();
-    for (status, body) in responses {
-        let (socket, _) = listener.accept().await?;
-        captured.push(record_and_respond(socket, status, &body).await?);
-    }
-    Ok(captured)
-}
 
 pub(super) async fn guarded_resume_ingress(
     listener: tokio::net::TcpListener,
@@ -58,14 +45,6 @@ pub(super) async fn guarded_resume_with_held_reply(
         }
         captured.push(record);
     }
-}
-
-async fn record_and_respond(
-    socket: tokio::net::TcpStream,
-    status: &str,
-    body: &str,
-) -> Result<(String, Vec<u8>), Box<dyn std::error::Error>> {
-    Ok(record_reply(socket, status, body, None).await?.0)
 }
 
 async fn record_reply(
@@ -148,16 +127,6 @@ async fn guarded_ingress_observes_unexpected_requests_even_when_errors_are_swall
     Ok(())
 }
 
-pub(super) fn bound_history(as_of: Option<&str>) -> Result<String, Box<dyn std::error::Error>> {
-    let state = census_service::restate_services::JurisdictionState {
-        history_window: as_of
-            .map(census_service::restate_services::HistoryWindow::cohort)
-            .transpose()?,
-        ..Default::default()
-    };
-    Ok(serde_json::to_string(&state)?)
-}
-
 pub(super) fn bound_request(jurisdictions: &[&str]) -> Result<String, Box<dyn std::error::Error>> {
     let store = "a".repeat(64);
     let profile = "b".repeat(64);
@@ -165,7 +134,7 @@ pub(super) fn bound_request(jurisdictions: &[&str]) -> Result<String, Box<dyn st
         serde_json::json!({
             "season": 2026, "revision": 1, "jurisdictions": jurisdictions,
             "history": {"first_calendar_year": 2023, "last_calendar_year": 2026, "as_of": "2026-10-01"},
-            "publication_contract": "selected_publication_v1",
+            "publication_contract": "selected_publication_v2",
             "export_job": {"contract": "selected_publication_v1",
                 "selection": {"version": 1, "store_identity": store, "profile_id": profile}},
             "pass_budget": 17,
@@ -182,232 +151,4 @@ pub(super) fn capabilities() -> Result<String, Box<dyn std::error::Error>> {
     Ok(serde_json::to_string(
         &census_service::restate_services::PublicationCapabilities::current(),
     )?)
-}
-
-fn refusal() -> (&'static str, String) {
-    (
-        "404 Not Found",
-        "{\"message\":\"fixture invocation absent\"}".to_owned(),
-    )
-}
-
-#[tokio::test]
-async fn national_resume_submits_and_reattaches_the_selected_parent_not_a_new_revision(
-) -> Result<(), Box<dyn std::error::Error>> {
-    use clap::Parser;
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-    let origin = format!("http://{}/", listener.local_addr()?);
-    let cli = crate::cli::Cli::try_parse_from([
-        "census-service",
-        "national",
-        "--states",
-        "WI",
-        "--revision",
-        "1",
-        "--resume",
-        "7",
-        "--ingress",
-        &origin,
-        "--detach",
-    ])?;
-    let crate::cli::command::Command::National(args) = &cli.command else {
-        return Err("resume parsed as another command".into());
-    };
-    let responses = vec![
-        ("200 OK", bound_request(&["WI"])?),
-        ("200 OK", bound_history(Some("2026-10-01"))?),
-        ("200 OK", capabilities()?),
-        refusal(),
-        ("200 OK", bound_request(&["WI"])?),
-        refusal(),
-    ];
-    let (paths, outcome) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
-        tokio::join!(
-            refused_resume_ingress(listener, responses),
-            run_national(&cli, args)
-        )
-    })
-    .await?;
-    let captured = paths?;
-    check!(outcome.is_err());
-    let expected = format!(
-        "{}:resume:7",
-        WorkflowIdentity::national(
-            census_domain::model::SchoolYear::new(2026).ok_or("fixture season")?,
-            census_domain::model::Revision(1),
-            &[census_domain::UsJurisdiction::Wisconsin],
-        )
-        .as_str()
-    );
-    let expected = expected.replace(':', "%3A");
-    check!(
-        captured
-            .first()
-            .is_some_and(|(path, _)| path.contains("/request HTTP/1.1")),
-        "{captured:?}"
-    );
-    check!(
-        captured
-            .get(3)
-            .is_some_and(|(path, _)| path.contains(&format!("/{expected}/run/send"))),
-        "{captured:?}"
-    );
-    check!(
-        captured
-            .get(5)
-            .is_some_and(|(path, body)| path == "POST /restate/lookup HTTP/1.1\r\n"
-                && serde_json::from_slice::<serde_json::Value>(body)
-                    .ok()
-                    .and_then(|value| value
-                        .get("workflowKey")
-                        .and_then(serde_json::Value::as_str)
-                        .map(str::to_owned))
-                    .is_some_and(|key| key.replace(':', "%3A") == expected)),
-        "{captured:?}"
-    );
-    check!(captured
-        .get(1)
-        .is_some_and(|(path, _)| path.contains("/state HTTP/1.1")));
-    check!(captured
-        .get(2)
-        .is_some_and(|(path, _)| path.contains("/Census/publication_capabilities HTTP/1.1")));
-    check!(captured
-        .get(4)
-        .is_some_and(|(path, _)| path.contains("/request HTTP/1.1")));
-    let (_, payload) = captured.get(3).ok_or("resume request absent")?;
-    let request: census_service::restate_services::NationalRequest =
-        serde_json::from_slice(payload)?;
-    check!(eq; request.revision, census_domain::model::Revision(1));
-    check!(eq; request.history, census_service::restate_services::HistoryWindow::cohort("2026-10-01")?);
-    check!(eq; request.publication_contract, census_service::restate_services::PublicationContract::SelectedPublicationV1);
-    check!(matches!(
-        request.export_job,
-        census_report::export::ExportJobRequest::SelectedPublicationV1 { .. }
-    ));
-    check!(eq; request.pass_budget, 17);
-    check!(eq; request.pass_delay_seconds, 41);
-    check!(eq; request.concurrency, 7);
-    Ok(())
-}
-
-#[tokio::test]
-async fn national_resume_report_reads_the_selected_execution(
-) -> Result<(), Box<dyn std::error::Error>> {
-    use clap::Parser;
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-    let origin = format!("http://{}/", listener.local_addr()?);
-    let cli = crate::cli::Cli::try_parse_from([
-        "census-service",
-        "national-report",
-        "--states",
-        "WI",
-        "--revision",
-        "1",
-        "--resume",
-        "7",
-        "--ingress",
-        &origin,
-    ])?;
-    let crate::cli::command::Command::NationalReport(args) = &cli.command else {
-        return Err("resume report parsed as another command".into());
-    };
-    let (paths, outcome) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
-        tokio::join!(
-            refused_resume_ingress(listener, vec![refusal()]),
-            run_national_report(&cli, args)
-        )
-    })
-    .await?;
-    let paths = paths?.into_iter().map(|(path, _)| path).collect::<Vec<_>>();
-    check!(outcome.is_err());
-    let identity = WorkflowIdentity::national(
-        census_domain::model::SchoolYear::new(2026).ok_or("fixture season")?,
-        census_domain::model::Revision(1),
-        &[census_domain::UsJurisdiction::Wisconsin],
-    );
-    let expected = format!("{}:resume:7", identity.as_str()).replace(':', "%3A");
-    check!(eq; paths, vec![format!("POST /NationalCensus/{expected}/report HTTP/1.1\r\n")]);
-    Ok(())
-}
-
-#[test]
-fn national_resume_rejects_zero_negative_and_overflow_ordinals(
-) -> Result<(), Box<dyn std::error::Error>> {
-    use clap::Parser;
-    for command in ["national", "national-report"] {
-        for ordinal in ["0", "-1", "4294967296"] {
-            let flag = format!("--resume={ordinal}");
-            let error = crate::cli::Cli::try_parse_from(["census-service", command, flag.as_str()])
-                .err()
-                .ok_or("invalid resume ordinal admitted")?;
-            check!(eq; error.kind(), clap::error::ErrorKind::ValueValidation);
-        }
-    }
-    Ok(())
-}
-
-#[tokio::test]
-async fn national_resume_refuses_unbound_conflicting_and_unreadable_history_before_submission(
-) -> Result<(), Box<dyn std::error::Error>> {
-    use clap::Parser;
-    let cases = [
-        (
-            vec![
-                ("200 OK", bound_history(None)?),
-                ("200 OK", bound_history(None)?),
-            ],
-            "no jurisdiction",
-        ),
-        (
-            vec![
-                ("200 OK", bound_history(Some("2026-10-01"))?),
-                ("200 OK", bound_history(Some("2026-10-02"))?),
-            ],
-            "disagrees",
-        ),
-        (
-            vec![(
-                "500 Internal Server Error",
-                "{\"message\":\"retained state unreadable\"}".to_owned(),
-            )],
-            "retained state unreadable",
-        ),
-    ];
-    for (mut responses, expected) in cases {
-        responses.insert(0, ("200 OK", bound_request(&["WI", "IA"])?));
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-        let origin = format!("http://{}/", listener.local_addr()?);
-        let cli = crate::cli::Cli::try_parse_from([
-            "census-service",
-            "national",
-            "--states",
-            "WI,IA",
-            "--resume",
-            "7",
-            "--ingress",
-            &origin,
-            "--detach",
-        ])?;
-        let crate::cli::command::Command::National(args) = &cli.command else {
-            return Err("resume parsed as another command".into());
-        };
-        let (captured, outcome) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
-            tokio::join!(
-                refused_resume_ingress(listener, responses),
-                run_national(&cli, args)
-            )
-        })
-        .await?;
-        let captured = captured?;
-        let error = outcome.err().ok_or("invalid retained history admitted")?;
-        check!(error.to_string().contains(expected), "{error}");
-        check!(
-            captured
-                .iter()
-                .all(|(path, _)| path.contains("/request HTTP/1.1")
-                    || path.contains("/state HTTP/1.1")),
-            "{captured:?}"
-        );
-    }
-    Ok(())
 }

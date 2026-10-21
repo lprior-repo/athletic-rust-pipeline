@@ -82,7 +82,7 @@ pub(crate) async fn drive_jurisdiction(
     if matches!(submitted.send_status(), SendStatus::PreviouslyAccepted) {
         eprintln!(
             "WARNING: {} already has a run, so Restate deduplicated this submission and EVERY CHANGED \
-             PARAMETER WAS IGNORED; to re-drive owed work use --drive, or a NEW --resume ordinal",
+             PARAMETER WAS IGNORED; rerun the same command to reattach and observe it instead",
             identity.as_str()
         );
     }

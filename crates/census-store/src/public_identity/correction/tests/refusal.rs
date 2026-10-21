@@ -127,11 +127,6 @@ fn operation_names_cannot_cross_source_and_reviewed_commits() -> TestResult {
 }
 
 #[test]
-fn historical_v1_refuses_reviewed_fresh_write_without_mutation() -> TestResult {
-    historical_writer_refusal(census_domain::public_identity_qualification::PublicIdentityQualificationVersion::SourceBoundV1)
-}
-
-#[test]
 fn historical_v2_refuses_reviewed_fresh_write_without_mutation() -> TestResult {
     historical_writer_refusal(census_domain::public_identity_qualification::PublicIdentityQualificationVersion::RetainedAuthorityContextV2)
 }

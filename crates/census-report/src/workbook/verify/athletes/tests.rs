@@ -52,8 +52,7 @@ fn selected_athlete_workbook_readback_rejects_candidate_fallback_and_corrupt_ide
     Ok(())
 }
 
-#[path = "../../publication/normalized/identity_aliases/tests/fixture.rs"]
-mod fixture;
+use crate::workbook::selected_identity_fixture as fixture;
 
 #[test]
 fn accepted_identity_workbook_readback_keeps_raw_retained_conflict_visible() -> TestResult {

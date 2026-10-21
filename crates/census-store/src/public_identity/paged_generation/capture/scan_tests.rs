@@ -56,9 +56,9 @@ fn directory_flushes_256_pages_then_retains_one_page_terminal_block() -> TestRes
         directory.push(&binding, reference, &mut visit)?;
     }
     let table = directory.finish(&binding, &mut visit)?;
-    assert_eq!(block_sizes, [256, 1]);
-    assert_eq!(table.inventory().pages(), 257);
-    assert_eq!(table.inventory().rows(), 131_584);
-    assert_eq!(table.inventory().object_count(), 260);
+    check!(eq;block_sizes, [256, 1]);
+    check!(eq;table.inventory().pages(), 257);
+    check!(eq;table.inventory().rows(), 131_584);
+    check!(eq;table.inventory().object_count(), 260);
     Ok(())
 }

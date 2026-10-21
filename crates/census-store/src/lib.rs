@@ -51,8 +51,8 @@ mod public_identity;
 pub use public_identity::paged_generation;
 pub use public_identity::{
     replay_frozen_public_identity_v1, replay_frozen_public_identity_v2,
-    FrozenPublicIdentityBundleV1, FrozenPublicIdentityBundleV2, GraphAuthorityReferenceV1,
-    IdentityCommitOutcomeV1, LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1,
+    FrozenPublicIdentityBundleV2, GraphAuthorityReferenceV1, IdentityCommitOutcomeV1,
+    LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1,
     MembershipWithholdingInventoryV1, MembershipWithholdingOutcomeV1, PreparedLocalAdjudicationV1,
     PreparedMembershipWithholdingV1, PublicIdentityAdmissionResource, PublicIdentityError,
     PublicIdentityQualificationStore, PublicIdentityWriterV1, ReviewedIdentityCommitOutcomeV1,

@@ -1,7 +1,7 @@
 use super::*;
 use census_domain::model::{
-    AcquisitionFailureV1, ConditionalRequestV1, DispatchRequestV1, RequestRepresentationV1,
-    ResponseObservationV1, SOURCE_ACQUISITION_PHASE,
+    AcquisitionFailureV1, CaptureProtocolVersion, ConditionalRequestV1, DispatchRequestV1,
+    RequestRepresentationV1, ResponseObservationV1,
 };
 use census_store::read::{JournalNamespace, ReadBudget};
 use census_store::{
@@ -175,7 +175,7 @@ fn registered(f: &Fixture) -> TestResult<OwnedAcquisitionWork> {
 fn assert_three_attempts_unchanged(store: &Store, before: &StoreSnapshot<'_>) -> TestResult {
     let after = store.snapshot();
     for prefix in ["work/", "slot/"] {
-        let namespace = JournalNamespace::new(SOURCE_ACQUISITION_PHASE, prefix)?;
+        let namespace = JournalNamespace::new(CaptureProtocolVersion::V2.phase(), prefix)?;
         let first = before.journal_namespace_fingerprint(namespace, journal_budget())?;
         let second = after.journal_namespace_fingerprint(namespace, journal_budget())?;
         check!(first.same_contents(store, &second)?);
@@ -188,7 +188,7 @@ fn assert_three_attempts_unchanged(store: &Store, before: &StoreSnapshot<'_>) ->
 fn reserved_count(snapshot: &StoreSnapshot<'_>) -> TestResult<u64> {
     let mut reserved = 0_u64;
     snapshot.for_each_journal_root_bounded(
-        JournalNamespace::new(SOURCE_ACQUISITION_PHASE, "work/")?,
+        JournalNamespace::new(CaptureProtocolVersion::V2.phase(), "work/")?,
         journal_budget(),
         |key| {
             if key.ends_with("/reserved") {

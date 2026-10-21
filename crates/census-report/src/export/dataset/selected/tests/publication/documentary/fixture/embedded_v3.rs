@@ -107,6 +107,7 @@ struct Manifest {
 
 pub(super) fn materialize(bundle_dir: &Path) -> TestResult<(PathBuf, String)> {
     let manifest: Manifest = serde_json::from_str(MANIFEST)?;
+    validate_retention(&manifest)?;
     check!(eq; manifest.schema, "genuine-documentary-v3-retained-archive/v1");
     check!(files::hex(&manifest.report_producer_commit, 40));
     check!(files::hex(&manifest.report_producer_tree, 40));
@@ -131,6 +132,32 @@ pub(super) fn materialize(bundle_dir: &Path) -> TestResult<(PathBuf, String)> {
     let manifest_path = bundle_dir.join("retention.json");
     let sha256 = format!("{:x}", Sha256::digest(MANIFEST.as_bytes()));
     Ok((manifest_path, sha256))
+}
+
+fn validate_retention(manifest: &Manifest) -> TestResult {
+    check!(files::hex(&manifest.store_handoff_sha256, 64));
+    check!(files::hex(&manifest.store_identity, 64));
+    check!(files::hex(&manifest.store_tables_digest, 64));
+    check!(manifest.store_snapshot_sequence > 0);
+    check!(manifest.store_inventory.is_object());
+    check!(!manifest.store_files.is_empty());
+    for file in &manifest.store_files {
+        check!(files::hex(&file.sha256, 64));
+    }
+    check!(eq; manifest.archive, "archive/genuine-documentary.json");
+    check!(eq; manifest.archive_digest, format!("{:x}", Sha256::digest(V3_EMBEDDED_V3_ARCHIVE_GENUINE_DOCUMENTARY_JSON)));
+    let archive: serde_json::Value =
+        serde_json::from_slice(V3_EMBEDDED_V3_ARCHIVE_GENUINE_DOCUMENTARY_JSON)?;
+    check!(eq; archive.get("lineage"), Some(&manifest.lineage));
+    check!(eq; manifest.lineage.get("store_identity").and_then(serde_json::Value::as_str), Some(manifest.store_identity.as_str()));
+    check!(eq; manifest.observations.get("generation"), manifest.lineage.get("input_generation"));
+    check!(!manifest
+        .observations
+        .get("rows")
+        .and_then(serde_json::Value::as_array)
+        .ok_or("retained observations rows")?
+        .is_empty());
+    Ok(())
 }
 
 pub(in super::super) fn provision_retained_bundle() -> TestResult<()> {

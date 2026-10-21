@@ -86,8 +86,8 @@ fn retained_rows(store: &Store, retained: &RetainedRawGenerationV2) -> TestResul
             let page = snapshot.raw_generation_page(&page.object(), &binding)?;
             for row in page.rows() {
                 let (key, value) = raw(index)?;
-                assert_eq!(row.physical_key(), key);
-                assert_eq!(row.raw_value(), value);
+                check!(eq;row.physical_key(), key);
+                check!(eq;row.raw_value(), value);
                 index = index.checked_add(1).ok_or("row count")?;
             }
         }
@@ -100,17 +100,17 @@ fn captures_more_than_8192_raw_variants_and_five_empty_tables() -> TestResult {
     let (_directory, store, writer) = enrolled()?;
     seed(&store, 8_193)?;
     let outcome = writer.capture_raw_generation_v2(&store, &operation("large-raw")?)?;
-    assert!(matches!(
+    check!(matches!(
         &outcome,
         RawGenerationCaptureOutcomeV2::Captured(_)
     ));
     let retained = outcome.retained().clone();
-    assert_eq!(retained_rows(&store, &retained)?, 8_193);
+    check!(eq;retained_rows(&store, &retained)?, 8_193);
     let seal = retained.verify(&store.snapshot())?;
-    assert_eq!(seal.declared_inventory().pages(), 17);
-    assert_eq!(seal.declared_inventory().rows(), 8_193);
+    check!(eq;seal.declared_inventory().pages(), 17);
+    check!(eq;seal.declared_inventory().rows(), 8_193);
     for table in seal.tables().iter().skip(1) {
-        assert_eq!(table.inventory().rows(), 0);
+        check!(eq;table.inventory().rows(), 0);
     }
     Ok(())
 }
@@ -123,9 +123,9 @@ fn completely_empty_capture_retains_six_exhausted_tables() -> TestResult {
         .retained()
         .clone();
     let seal = retained.verify(&store.snapshot())?;
-    assert_eq!(seal.declared_inventory().rows(), 0);
-    assert_eq!(seal.declared_inventory().object_count(), 6);
-    assert_eq!(
+    check!(eq;seal.declared_inventory().rows(), 0);
+    check!(eq;seal.declared_inventory().object_count(), 6);
+    check!(eq;
         seal.inventory_including_seal(retained.seal())?
             .object_count(),
         7

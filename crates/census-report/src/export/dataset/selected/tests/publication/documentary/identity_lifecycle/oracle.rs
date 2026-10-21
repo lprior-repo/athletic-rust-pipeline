@@ -7,20 +7,24 @@ mod consumers;
 pub(super) use attachments::{historical_status_target_moved, moved};
 pub(super) use consumers::{dataset, publication};
 
-pub(super) fn merged(store: &Store, fixture: &controlled::Controlled, sequence: u64) -> TestResult {
+pub(super) fn merged(store: &Store, fixture: &controlled::Controlled, second: u64) -> TestResult {
     let accepted = store
         .snapshot()
         .accepted_public_identity_snapshot()?
         .ok_or("merged snapshot")?;
-    check!(eq; accepted.head().sequence, sequence);
-    let [canonical, alias] = &fixture.public;
+    check!(eq; accepted.head().sequence, second);
+    let [canonical, alias, bystander] = &fixture.public;
     check!(
         matches!(accepted.resolve_public(canonical)?, PublicResolution::Canonical(owner)
         if owner.public_id == *canonical)
     );
     check!(
         matches!(accepted.resolve_public(alias)?, PublicResolution::Redirect { successor, changed_at }
-        if successor.public_id == *canonical && changed_at == sequence)
+        if successor.public_id == *canonical && changed_at == second)
+    );
+    check!(
+        matches!(accepted.resolve_public(bystander)?, PublicResolution::Redirect { successor, changed_at }
+        if successor.public_id == *canonical && changed_at == second)
     );
     for candidate in &fixture.candidates {
         check!(eq; resolved(accepted.resolve_candidate(candidate)?)?, canonical.clone());
@@ -32,7 +36,8 @@ pub(super) fn corrected(
     store: &Store,
     fixture: &controlled::Controlled,
     sequence: u64,
-    merged: u64,
+    first: u64,
+    second: u64,
     branch: Branch,
 ) -> TestResult<Vec<PublicAthleteId>> {
     let accepted = store
@@ -45,7 +50,7 @@ pub(super) fn corrected(
         .history_records()
         .last()
         .ok_or("correction record")?;
-    let [canonical, alias] = &fixture.public;
+    let [canonical, alias, bystander] = &fixture.public;
     let expected = fixture
         .candidates
         .iter()
@@ -54,7 +59,7 @@ pub(super) fn corrected(
     match branch {
         Branch::Split => {
             check!(matches!(&record.request, HistoryRequest::Split(row)
-                if row.partitions == fixture.partitions && row.revoke_merges == vec![merged]));
+                if row.partitions == fixture.partitions && row.revoke_merges == vec![first, second]));
             let PublicResolution::Ambiguous {
                 successors,
                 unresolved_bindings,
@@ -64,10 +69,10 @@ pub(super) fn corrected(
             else {
                 return Err("ambiguous split predecessor".into());
             };
-            check!(eq; successors.len(), 2);
+            check!(eq; successors.len(), 3);
             check!(!unresolved_bindings);
             check!(eq; changed_at, sequence);
-            check!(eq; revoked_merges, vec![merged]);
+            check!(eq; revoked_merges, vec![first, second]);
             check!(expected.iter().all(|id| !fixture.public.contains(id)));
             check!(ne; expected.first(), expected.last());
             for (candidate, id) in fixture.candidates.iter().zip(&expected) {
@@ -78,15 +83,29 @@ pub(super) fn corrected(
         }
         Branch::RevokeRedundantMerge => {
             check!(
-                matches!(&record.request, HistoryRequest::Revoke(row) if row.revoke_merges == vec![merged])
+                matches!(&record.request, HistoryRequest::Revoke(row) if row.revoke_merges == vec![first])
             );
-            check!(eq; expected, vec![canonical.clone(), canonical.clone()]);
+            check!(eq; expected, vec![canonical.clone(), canonical.clone(), canonical.clone()]);
         }
     }
+    let revoked = match branch {
+        Branch::Split => vec![first, second],
+        Branch::RevokeRedundantMerge => vec![first],
+    };
     check!(
         matches!(accepted.resolve_public(alias)?, PublicResolution::RevokedRedirect { successor, changed_at, revoked_merges }
-        if Some(&successor.public_id) == expected.last() && changed_at == sequence && revoked_merges == vec![merged])
+        if Some(&successor.public_id) == expected.get(1) && changed_at == sequence && revoked_merges == revoked)
     );
+    check!(matches!(accepted.resolve_public(bystander)?, resolution
+    if {
+        let target = expected.get(2);
+        match branch {
+            Branch::Split => matches!(&resolution, PublicResolution::RevokedRedirect { successor, changed_at, revoked_merges }
+                if Some(&successor.public_id) == target && *changed_at == sequence && *revoked_merges == vec![first, second]),
+            Branch::RevokeRedundantMerge => matches!(&resolution, PublicResolution::RevokedRedirect { successor, changed_at, revoked_merges }
+                if Some(&successor.public_id) == target && *changed_at == sequence && *revoked_merges == vec![first]),
+        }
+    }));
     Ok(expected)
 }
 

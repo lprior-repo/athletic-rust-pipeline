@@ -13,7 +13,7 @@ async fn reaped_jobs_and_rejected_work_balance_without_counting_timeout_twice() 
     let cancelled = tokio::spawn(std::future::pending::<()>());
     cancelled.abort();
     report.record_killed(cancelled.await)?;
-    let panicked = tokio::spawn(async { panic!("controlled drain fault") });
+    let panicked = tokio::spawn(controlled_drain_fault());
     report.record_killed(panicked.await)?;
     check!(eq; report, DrainReport {
         accepted: 6,
@@ -117,4 +117,8 @@ fn abandonment_is_atomic_when_either_field_cannot_advance() -> TestResult {
         check!(eq; report, before);
     }
     Ok(())
+}
+
+async fn controlled_drain_fault() {
+    panic!("controlled drain fault");
 }

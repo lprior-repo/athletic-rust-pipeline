@@ -15,9 +15,7 @@ pub(super) async fn prepare(
 ) -> Result<GradYear, HandlerError> {
     validate_publication_request(request)?;
     let original = request.clone();
-    let preflight_cohort = (request.publication_contract
-        == PublicationContract::SelectedPublicationV1)
-        .then_some(GradYear::CO2027);
+    let preflight_cohort = None;
     ctx.service_client::<crate::restate_services::census::CensusClient>()
         .workbook_preflight(Json(super::publication::workbook_request(
             request,
@@ -40,20 +38,13 @@ pub(super) async fn prepare(
 }
 
 fn validate_publication_request(request: &NationalRequest) -> Result<(), HandlerError> {
-    if !matches!(
-        request.publication_contract,
-        PublicationContract::SelectedPublicationV1 | PublicationContract::SelectedPublicationV2
-    ) {
+    if request.publication_contract != PublicationContract::SelectedPublicationV2 {
         return Err(TerminalError::new_with_code(
             400,
             "current national publication requires the selected publication contract",
         )
         .into());
     }
-    request
-        .export_job
-        .require_selected_publication()
-        .map_err(|error| TerminalError::new_with_code(400, error.to_string()))?;
     super::publication::generation(request)?;
     Ok(())
 }
@@ -86,5 +77,5 @@ pub(super) async fn read(
     {
         return Ok(NationalRequestBinding::PendingPreflight);
     }
-    Ok(NationalRequestBinding::UnboundLegacy)
+    Ok(NationalRequestBinding::PendingPreflight)
 }

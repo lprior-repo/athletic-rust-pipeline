@@ -20,7 +20,7 @@ pub(super) fn physical_bytes(store: &Store) -> TestResult<u64> {
         .object_count()
         .checked_add(1)
         .ok_or("root count")?;
-    assert!(roots <= 4096, "non-byte root capacity: {roots}");
+    check!(roots <= 4096, "non-byte root capacity: {roots}");
     Ok(total
         .checked_add(measured.incremental_charge().bytes)
         .ok_or("physical sum overflow")?)

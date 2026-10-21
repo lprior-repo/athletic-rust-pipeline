@@ -68,7 +68,7 @@ fn mutation(store: &Store) -> TestResult {
 }
 
 fn require_moved(result: StoreResult<RawGenerationCaptureOutcomeV2>) -> TestResult {
-    assert!(
+    check!(
         matches!(&result, Err(StoreError::Refused { detail })
         if detail == "raw public identity generation V2: capture input lineage or revisions moved"),
         "expected moved-input refusal, observed {result:?}"
@@ -89,17 +89,17 @@ fn public_capture_concurrent_source_mutation_after_reservation_refuses_before_se
         controller.wait()?;
         let reserved = reservation(&store, &writer, &id)?;
         let charge = admission_header(&store)?;
-        assert!(!reserved.is_complete(&store)?);
+        check!(!reserved.is_complete(&store)?);
         mutation(&store)?;
         controller.resume()?;
         require_moved(worker.join().map_err(|_| "capture worker panicked")?)?;
-        assert!(!reserved.is_complete(&store)?);
+        check!(!reserved.is_complete(&store)?);
         let sequence = store.snapshot().sequence();
         require_moved(writer.capture_raw_generation_v2(&store, &id))?;
-        assert_eq!(store.snapshot().sequence(), sequence);
-        assert_eq!(reservation(&store, &writer, &id)?.seal(), reserved.seal());
-        assert_eq!(authority_state(&store, &writer)?, authority);
-        assert_eq!(admission_header(&store)?, charge);
+        check!(eq;store.snapshot().sequence(), sequence);
+        check!(eq;reservation(&store, &writer, &id)?.seal(), reserved.seal());
+        check!(eq;authority_state(&store, &writer)?, authority);
+        check!(eq;admission_header(&store)?, charge);
         Ok(())
     })
 }
@@ -117,22 +117,22 @@ fn public_capture_concurrent_source_mutation_after_seal_refuses_final_return() -
         controller.wait()?;
         let reserved = reservation(&store, &writer, &id)?;
         let charge = admission_header(&store)?;
-        assert!(reserved.is_complete(&store)?);
+        check!(reserved.is_complete(&store)?);
         mutation(&store)?;
         let sequence = store.snapshot().sequence();
         controller.resume()?;
         require_moved(worker.join().map_err(|_| "capture worker panicked")?)?;
-        assert_eq!(store.snapshot().sequence(), sequence);
+        check!(eq;store.snapshot().sequence(), sequence);
         let replay = writer.capture_raw_generation_v2(&store, &id)?;
-        assert!(matches!(
+        check!(matches!(
             &replay,
             RawGenerationCaptureOutcomeV2::HistoricalReplay(_)
         ));
-        assert_eq!(replay.retained().seal(), reserved.seal());
-        assert_eq!(retained_rows(&store, replay.retained())?, 513);
-        assert_eq!(store.snapshot().sequence(), sequence);
-        assert_eq!(authority_state(&store, &writer)?, authority);
-        assert_eq!(admission_header(&store)?, charge);
+        check!(eq;replay.retained().seal(), reserved.seal());
+        check!(eq;retained_rows(&store, replay.retained())?, 513);
+        check!(eq;store.snapshot().sequence(), sequence);
+        check!(eq;authority_state(&store, &writer)?, authority);
+        check!(eq;admission_header(&store)?, charge);
         Ok(())
     })
 }
@@ -151,21 +151,21 @@ fn public_same_operation_overlap_reuses_one_charge_and_one_retained_graph() -> T
         let reserved = reservation(&store, &writer, &id)?;
         let charge = admission_header(&store)?;
         let second = writer.capture_raw_generation_v2(&store, &id)?;
-        assert!(matches!(
+        check!(matches!(
             &second,
             RawGenerationCaptureOutcomeV2::Captured(_)
         ));
-        assert_eq!(second.retained().seal(), reserved.seal());
+        check!(eq;second.retained().seal(), reserved.seal());
         let sequence = store.snapshot().sequence();
         controller.resume()?;
         let first = worker.join().map_err(|_| "capture worker panicked")??;
-        assert!(matches!(&first, RawGenerationCaptureOutcomeV2::Captured(_)));
-        assert_eq!(first.retained(), second.retained());
-        assert_eq!(store.snapshot().sequence(), sequence);
-        assert!(reservation(&store, &writer, &id)?.is_complete(&store)?);
-        assert_eq!(retained_rows(&store, first.retained())?, 513);
-        assert_eq!(authority_state(&store, &writer)?, authority);
-        assert_eq!(admission_header(&store)?, charge);
+        check!(matches!(&first, RawGenerationCaptureOutcomeV2::Captured(_)));
+        check!(eq;first.retained(), second.retained());
+        check!(eq;store.snapshot().sequence(), sequence);
+        check!(reservation(&store, &writer, &id)?.is_complete(&store)?);
+        check!(eq;retained_rows(&store, first.retained())?, 513);
+        check!(eq;authority_state(&store, &writer)?, authority);
+        check!(eq;admission_header(&store)?, charge);
         Ok(())
     })
 }

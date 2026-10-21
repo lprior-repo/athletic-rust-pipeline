@@ -106,14 +106,12 @@ fn old_and_fresh_accepted_heads_work_only_with_their_exact_held_views() -> TestR
 }
 
 #[test]
-fn historical_v1_and_v2_accepted_owners_do_not_authorize_a_current_v3_view() -> TestResult {
+fn historical_v2_accepted_owner_does_not_authorize_a_current_v3_view() -> TestResult {
     let fixture = Fixture::new()?;
     let before = retained_state(&fixture.store)?;
     let view = fixture.store.snapshot();
-    for version in [
-        PublicIdentityQualificationVersion::SourceBoundV1,
-        PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
-    ] {
+    {
+        let version = PublicIdentityQualificationVersion::RetainedAuthorityContextV2;
         let directory = tempfile::tempdir()?;
         let root = directory.path().join("historical");
         let declaration = crate::public_identity::create_historical_test_fixture(&root, version)?;

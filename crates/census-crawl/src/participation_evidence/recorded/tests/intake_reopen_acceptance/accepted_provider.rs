@@ -1,6 +1,6 @@
 use super::*;
 use crate::participation_evidence::provider_school::{
-    CheckedProviderSchoolPacketV1, ProviderSchoolPacketRefV1, ProviderSchoolPacketV1,
+    ProviderSchoolPacketRefV1,
 };
 use census_domain::model::{
     AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId, CanonicalAthlete,
@@ -15,10 +15,7 @@ use census_store::{IdentityCommitOutcomeV1, PublicIdentityError, PublicIdentityW
 mod graph;
 mod identity;
 pub(super) mod installed;
-#[path = "provider_school/fixtures.rs"]
-mod school_fixtures;
-#[path = "provider_school/observations.rs"]
-mod scoped_observations;
+use super::provider_school::{fixtures as school_fixtures, observations as scoped_observations};
 
 const OPERATION: &str = "genuine-provider-source-bound-acceptance";
 

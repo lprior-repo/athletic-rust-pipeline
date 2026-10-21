@@ -1,7 +1,7 @@
 use super::*;
 use crate::restate_services::national::publication_tests::codec::{self, Frame};
 
-pub(super) fn acknowledge(
+pub(in crate::restate_services::jurisdiction::results_work::replay_tests) fn acknowledge(
     journal: &mut Vec<Frame>,
     frames: &[Frame],
     name: &str,

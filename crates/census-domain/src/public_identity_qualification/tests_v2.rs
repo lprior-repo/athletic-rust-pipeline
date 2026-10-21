@@ -236,30 +236,17 @@ fn complete_json_document_refuses_trailing_documents() -> TestResult {
 
 #[test]
 fn declaration_versions_never_upgrade_historical_acceptance() -> TestResult {
-    use super::{
-        PublicIdentityQualification, PublicIdentityQualificationV1,
-        PublicIdentityQualificationVersion,
-    };
+    use super::{PublicIdentityQualification, PublicIdentityQualificationVersion};
     let identity = StoreIdentity::parse(IDENTITY)?;
-    let old = PublicIdentityQualificationV1::new(identity.clone());
+    let retired = json!({"version":1,"lifecycle":"fresh_qualification","store_identity":IDENTITY,
+        "protocol":"public_identity_ledger_v1","history_version":1,
+        "acceptance":"source_bound_establishment_v1"});
+    check!(serde_json::from_value::<PublicIdentityQualificationV2>(retired).is_err());
     let current = PublicIdentityQualificationV2::new(identity.clone());
-    check!(
-        serde_json::from_str::<PublicIdentityQualificationV2>(&serde_json::to_string(&old)?)
-            .is_err()
-    );
-    check!(
-        serde_json::from_str::<PublicIdentityQualificationV1>(&serde_json::to_string(&current)?)
-            .is_err()
-    );
-    let old = PublicIdentityQualification::V1(old);
     let current = PublicIdentityQualification::V2(current);
-    check!(eq; old.version(), PublicIdentityQualificationVersion::SourceBoundV1);
     check!(eq; current.version(), PublicIdentityQualificationVersion::RetainedAuthorityContextV2);
-    check!(eq; old.version().lifecycle_revision(), 5);
     check!(eq; current.version().lifecycle_revision(), 6);
-    check!(eq; old.version().witness_version(), 1);
     check!(eq; current.version().witness_version(), 2);
-    check!(eq; old.store_identity(), &identity);
     check!(eq; current.store_identity(), &identity);
     check!(eq; serde_json::to_string(&current)?, literal());
     Ok(())

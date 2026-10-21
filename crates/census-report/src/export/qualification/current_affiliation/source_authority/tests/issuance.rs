@@ -1,8 +1,6 @@
 use super::*;
 use census_crawl::participation_evidence::roster_source_issuance::{
-    assess_existing_roster_binding, assess_retained_roster_source_v2,
-    assess_retained_roster_source_v3,
-    capture_objects::prepare_retained_roster_capture_objects_v2,
+    assess_existing_roster_binding, assess_retained_roster_source_v3,
     manifest::{assess_retained_roster_parser_manifest, compiled_roster_parser_manifest},
     policies::compiled_roster_interpretation_contracts_v1,
     prepare_retained_roster_capture_objects_v3,
@@ -18,7 +16,6 @@ use census_store::{
 
 #[derive(Clone, Copy)]
 pub(super) enum CaptureRevision {
-    CompleteV2,
     RowLocalV3,
 }
 
@@ -27,7 +24,7 @@ pub(super) fn review(
     capture: &fixture::Capture,
     operation: &str,
 ) -> TestResult {
-    review_revision(fixture, capture, operation, CaptureRevision::CompleteV2).map(|_| ())
+    review_revision(fixture, capture, operation, CaptureRevision::RowLocalV3).map(|_| ())
 }
 
 pub(super) fn review_revision(
@@ -59,13 +56,6 @@ pub(super) fn review_revision(
     let parser = compiled_roster_parser_manifest()?;
     let contracts = compiled_roster_interpretation_contracts_v1();
     let source = match revision {
-        CaptureRevision::CompleteV2 => assess_retained_roster_source_v2(
-            evidence,
-            parser.canonical_bytes(),
-            &contracts,
-            &proposal,
-            grant,
-        )?,
         CaptureRevision::RowLocalV3 => assess_retained_roster_source_v3(
             evidence,
             parser.canonical_bytes(),
@@ -121,7 +111,7 @@ pub(super) fn proposal(
     evidence: &census_store::RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> TestResult<LocallyCheckedRosterIssuanceV1> {
-    proposal_revision(capture, evidence, grant, CaptureRevision::CompleteV2)
+    proposal_revision(capture, evidence, grant, CaptureRevision::RowLocalV3)
 }
 
 fn proposal_revision(
@@ -137,9 +127,6 @@ fn proposal_revision(
         grant,
     )?;
     let objects = match revision {
-        CaptureRevision::CompleteV2 => {
-            prepare_retained_roster_capture_objects_v2(evidence, &checked, grant)?
-        }
         CaptureRevision::RowLocalV3 => {
             prepare_retained_roster_capture_objects_v3(evidence, &checked, grant)?
         }

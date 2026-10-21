@@ -11,10 +11,10 @@ fn exact_key_value_fragment_boundaries_and_one_over() -> TestResult {
             .ok_or("key overhead")?,
     );
     let admitted = row(&binding, &id, MAX_RAW_VALUE_BYTES)?;
-    assert_eq!(admitted.physical_key().len(), MAX_RAW_KEY_BYTES);
-    assert_eq!(admitted.raw_value().len(), MAX_RAW_VALUE_BYTES);
-    assert!(row(&binding, &format!("{id}a"), MAX_RAW_VALUE_BYTES).is_err());
-    assert!(row(&binding, "a", MAX_RAW_VALUE_BYTES + 1).is_err());
+    check!(eq;admitted.physical_key().len(), MAX_RAW_KEY_BYTES);
+    check!(eq;admitted.raw_value().len(), MAX_RAW_VALUE_BYTES);
+    check!(row(&binding, &format!("{id}a"), MAX_RAW_VALUE_BYTES).is_err());
+    check!(row(&binding, "a", MAX_RAW_VALUE_BYTES + 1).is_err());
     for length in [
         RAW_FRAGMENT_BYTES,
         RAW_FRAGMENT_BYTES + 1,
@@ -26,7 +26,7 @@ fn exact_key_value_fragment_boundaries_and_one_over() -> TestResult {
             vec![row(&binding, "a", length)?],
         )?;
         let bytes = page.encode_jsonl()?;
-        assert_eq!(RawPageV2::decode(&bytes, &object(&bytes)?, &binding)?, page);
+        check!(eq;RawPageV2::decode(&bytes, &object(&bytes)?, &binding)?, page);
     }
     Ok(())
 }
@@ -39,7 +39,7 @@ fn exact_512_rows_and_one_over() -> TestResult {
         .collect::<TestResult<Vec<_>>>()?;
     let page = RawPageV2::new(&binding, RawPagePositionV2::new(0, 0)?, rows.clone())?;
     let bytes = page.encode_jsonl()?;
-    assert_eq!(
+    check!(eq;
         RawPageV2::decode(&bytes, &object(&bytes)?, &binding)?
             .rows()
             .len(),
@@ -47,7 +47,7 @@ fn exact_512_rows_and_one_over() -> TestResult {
     );
     let mut excess = rows;
     excess.push(row(&binding, "9999", 0)?);
-    assert!(RawPageV2::new(&binding, RawPagePositionV2::new(0, 0)?, excess).is_err());
+    check!(RawPageV2::new(&binding, RawPagePositionV2::new(0, 0)?, excess).is_err());
     Ok(())
 }
 
@@ -68,16 +68,16 @@ fn exact_sixteen_mib_raw_page_and_one_over() -> TestResult {
         })
         .collect::<TestResult<Vec<_>>>()?;
     let page = RawPageV2::new(&binding, RawPagePositionV2::new(0, 0)?, rows.clone())?;
-    assert_eq!(page.header.raw_bytes, MAX_PAGE_RAW_BYTES);
+    check!(eq;page.header.raw_bytes, MAX_PAGE_RAW_BYTES);
     let bytes = page.encode_jsonl()?;
-    assert!(bytes.len() <= usize::try_from(MAX_PAGE_JSONL_BYTES)?);
-    assert_eq!(RawPageV2::decode(&bytes, &object(&bytes)?, &binding)?, page);
+    check!(bytes.len() <= usize::try_from(MAX_PAGE_JSONL_BYTES)?);
+    check!(eq;RawPageV2::decode(&bytes, &object(&bytes)?, &binding)?, page);
     let mut too_large = rows;
     let first = too_large.first_mut().ok_or("row")?;
     let mut value = first.raw_value().to_vec();
     value.push(b' ');
     *first = RawPhysicalRowV2::new(&binding, first.physical_key(), &value)?;
-    assert!(RawPageV2::new(&binding, RawPagePositionV2::new(0, 0)?, too_large).is_err());
+    check!(RawPageV2::new(&binding, RawPagePositionV2::new(0, 0)?, too_large).is_err());
     Ok(())
 }
 
@@ -85,7 +85,7 @@ fn exact_sixteen_mib_raw_page_and_one_over() -> TestResult {
 fn object_and_record_limits_precede_json_decode() -> TestResult {
     let (binding, _) = page()?;
     let huge = vec![b'x'; usize::try_from(MAX_PAGE_JSONL_BYTES)? + 1];
-    assert!(ObjectRefV2::new(
+    check!(ObjectRefV2::new(
         DigestV2::of_bytes(&huge),
         u32::try_from(huge.len())?,
         1,
@@ -94,15 +94,15 @@ fn object_and_record_limits_precede_json_decode() -> TestResult {
     .is_err());
     let mut line = vec![b' '; MAX_RECORD_BYTES];
     line.push(b'\n');
-    assert!(
+    check!(
         matches!(RawPageV2::decode(&line, &object(&line)?, &binding),
         Err(StoreError::Refused { detail }) if detail == "raw public identity generation V2: record length or missing LF")
     );
-    assert!(ObjectRefV2::new(DigestV2::of_bytes(b"x"), 1, MAX_PAGE_RECORDS + 1, 1).is_err());
-    assert!(ObjectRefV2::new(DigestV2::of_bytes(b"x"), 2, 1, 1).is_err());
-    assert!(RawPagePositionV2::new(MAX_TABLE_PAGES, 0).is_err());
-    assert!(RawPagePositionV2::new(1, u64::MAX).is_err());
-    assert!(page::validate_position(MAX_TABLE_PAGES - 1, MAX_TABLE_ROWS - 1, 2, 10).is_err());
+    check!(ObjectRefV2::new(DigestV2::of_bytes(b"x"), 1, MAX_PAGE_RECORDS + 1, 1).is_err());
+    check!(ObjectRefV2::new(DigestV2::of_bytes(b"x"), 2, 1, 1).is_err());
+    check!(RawPagePositionV2::new(MAX_TABLE_PAGES, 0).is_err());
+    check!(RawPagePositionV2::new(1, u64::MAX).is_err());
+    check!(page::validate_position(MAX_TABLE_PAGES - 1, MAX_TABLE_ROWS - 1, 2, 10).is_err());
     Ok(())
 }
 
@@ -116,7 +116,7 @@ fn generation_inventory_caps_are_inclusive_and_addition_is_checked() -> TestResu
         jsonl_bytes: MAX_GENERATION_JSONL_BYTES,
         physical_bytes: MAX_GENERATION_PHYSICAL_BYTES,
     };
-    assert!(InventoryV2::from_wire(maximum).is_ok());
+    check!(InventoryV2::from_wire(maximum).is_ok());
     for excess in [
         wire::Inventory {
             pages: maximum.pages + 1,
@@ -143,7 +143,7 @@ fn generation_inventory_caps_are_inclusive_and_addition_is_checked() -> TestResu
             ..maximum
         },
     ] {
-        assert!(InventoryV2::from_wire(excess).is_err());
+        check!(InventoryV2::from_wire(excess).is_err());
     }
     let corrupt = InventoryV2(wire::Inventory {
         rows: u64::MAX,
@@ -153,7 +153,7 @@ fn generation_inventory_caps_are_inclusive_and_addition_is_checked() -> TestResu
         rows: 1,
         ..wire::Inventory::default()
     });
-    assert!(matches!(
+    check!(matches!(
         corrupt.plus(one),
         Err(StoreError::CounterOverflow)
     ));
@@ -162,14 +162,14 @@ fn generation_inventory_caps_are_inclusive_and_addition_is_checked() -> TestResu
         rows: MAX_TABLE_ROWS,
         ..wire::Inventory::default()
     });
-    assert!(table.for_table().is_ok());
-    assert!(InventoryV2(wire::Inventory {
+    check!(table.for_table().is_ok());
+    check!(InventoryV2(wire::Inventory {
         pages: MAX_TABLE_PAGES + 1,
         ..table.0
     })
     .for_table()
     .is_err());
-    assert!(InventoryV2(wire::Inventory {
+    check!(InventoryV2(wire::Inventory {
         rows: MAX_TABLE_ROWS + 1,
         ..table.0
     })
@@ -180,19 +180,19 @@ fn generation_inventory_caps_are_inclusive_and_addition_is_checked() -> TestResu
 
 #[test]
 fn aggregate_physical_bytes_cannot_be_less_than_encoded_bytes() -> TestResult {
-    assert!(InventoryV2::from_wire(wire::Inventory {
+    check!(InventoryV2::from_wire(wire::Inventory {
         jsonl_bytes: 2,
         physical_bytes: 1,
         ..wire::Inventory::default()
     })
     .is_err());
-    assert!(InventoryV2::from_wire(wire::Inventory {
+    check!(InventoryV2::from_wire(wire::Inventory {
         jsonl_bytes: 2,
         physical_bytes: 2,
         ..wire::Inventory::default()
     })
     .is_ok());
-    assert!(page::validate_position(0, 0, 2, 3).is_err());
+    check!(page::validate_position(0, 0, 2, 3).is_err());
     Ok(())
 }
 
@@ -206,8 +206,8 @@ fn directory_and_seal_wire_ceilings_are_checked_before_payload_parse() -> TestRe
             records: limit.records,
             physical_bytes: u64::from(limit.bytes),
         };
-        assert!(ObjectRefV2::from_wire(raw.clone(), limit).is_ok());
-        assert!(ObjectRefV2::from_wire(
+        check!(ObjectRefV2::from_wire(raw.clone(), limit).is_ok());
+        check!(ObjectRefV2::from_wire(
             wire::ObjectRef {
                 bytes: limit.bytes + 1,
                 physical_bytes: u64::from(limit.bytes) + 1,
@@ -216,7 +216,7 @@ fn directory_and_seal_wire_ceilings_are_checked_before_payload_parse() -> TestRe
             limit
         )
         .is_err());
-        assert!(ObjectRefV2::from_wire(
+        check!(ObjectRefV2::from_wire(
             wire::ObjectRef {
                 records: limit.records + 1,
                 ..raw
@@ -233,7 +233,7 @@ fn directory_and_seal_wire_ceilings_are_checked_before_payload_parse() -> TestRe
         1,
         u64::try_from(bytes.len())?,
     )?;
-    assert!(
+    check!(
         matches!(RawPageBlockV2::decode(&bytes, &reference, &binding),
         Err(StoreError::Refused { detail }) if detail == "raw public identity generation V2: object reference bounds")
     );
@@ -244,7 +244,7 @@ fn directory_and_seal_wire_ceilings_are_checked_before_payload_parse() -> TestRe
         1,
         u64::try_from(bytes.len())?,
     )?;
-    assert!(
+    check!(
         matches!(RawGenerationSealV2::decode(&bytes, &reference, &capture()?),
         Err(StoreError::Refused { detail }) if detail == "raw public identity generation V2: object reference bounds")
     );

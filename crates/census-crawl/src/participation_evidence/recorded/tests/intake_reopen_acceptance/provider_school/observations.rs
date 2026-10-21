@@ -1,7 +1,7 @@
 use super::*;
 use census_domain::model::SourceAthleteObservation;
 
-pub(super) fn verify(snapshot: &StoreSnapshot<'_>, reference: &str) -> TestResult {
+pub(in super::super) fn verify(snapshot: &StoreSnapshot<'_>, reference: &str) -> TestResult {
     let mut rows: Vec<SourceAthleteObservation> = Vec::new();
     let mut schools = 0usize;
     snapshot.for_each_observation(Table::SourceObservations, |row: SourceObservation| {

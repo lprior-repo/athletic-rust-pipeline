@@ -27,6 +27,52 @@ pub(crate) const MAX_FROZEN_INPUT_BYTES: u64 = 200 * 1024 * 1024 * 1024;
 static RESIDENT_GENERATIONS: AtomicU64 = AtomicU64::new(0);
 static PEAK_RESIDENT_GENERATIONS: AtomicU64 = AtomicU64::new(0);
 static DECODED_GENERATIONS: AtomicU64 = AtomicU64::new(0);
+#[cfg(test)]
+static GENERATION_COUNTER_SERIAL: std::sync::RwLock<()> = std::sync::RwLock::new(());
+
+#[cfg(test)]
+thread_local! {
+    static IN_COUNTER_WINDOW: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+#[cfg(test)]
+pub(crate) struct GenerationCounterWindow {
+    _exclusive: std::sync::RwLockWriteGuard<'static, ()>,
+}
+
+#[cfg(test)]
+impl Drop for GenerationCounterWindow {
+    fn drop(&mut self) {
+        IN_COUNTER_WINDOW.with(|flag| flag.set(false));
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn generation_counter_window() -> Result<GenerationCounterWindow, String> {
+    let exclusive = GENERATION_COUNTER_SERIAL
+        .write()
+        .map_err(|_| "generation counter serial window poisoned".to_string())?;
+    IN_COUNTER_WINDOW.with(|flag| flag.set(true));
+    Ok(GenerationCounterWindow {
+        _exclusive: exclusive,
+    })
+}
+
+#[cfg(test)]
+fn in_counter_window() -> bool {
+    IN_COUNTER_WINDOW.with(|flag| flag.get())
+}
+
+#[cfg(test)]
+fn shared_counter_access() -> Option<std::sync::RwLockReadGuard<'static, ()>> {
+    if in_counter_window() {
+        return None;
+    }
+    Some(match GENERATION_COUNTER_SERIAL.read() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    })
+}
 
 pub fn resident_generations() -> u64 {
     RESIDENT_GENERATIONS.load(Ordering::Relaxed)
@@ -212,6 +258,8 @@ fn team_map(rows: Vec<CanonicalTeam>) -> BTreeMap<TeamId, CanonicalTeam> {
 
 impl Drop for ExportDataset {
     fn drop(&mut self) {
+        #[cfg(test)]
+        let _shared = shared_counter_access();
         release_generation();
     }
 }
@@ -262,6 +310,8 @@ impl ExportDataset {
             lineage,
             identity_projection,
         };
+        #[cfg(test)]
+        let _shared = shared_counter_access();
         note_generation();
         frozen::bind(&mut dataset)?;
         Ok(dataset)

@@ -108,3 +108,35 @@ fn an_unreadable_conversion_original_keeps_the_note_and_the_unknown_basis() -> T
     check!(eq; adjustment.adjusted_mark, performance.mark);
     Ok(())
 }
+
+#[test]
+fn replaying_a_converted_row_preserves_the_adjustment_without_duplication() -> TestResult {
+    let mut row = time_row("Sam Doe", 9_000_005, "9:15.75", YearToken::Junior);
+    row.converted_note = Some(TRACK_SIZE_NOTE.to_string());
+    let (performances, converted, _) =
+        absorbed(vec![metric_section("3200 Meters", 67, vec![row.clone()])])?;
+    let first = performances
+        .into_iter()
+        .next()
+        .ok_or("first absorption retained the row")?;
+    let (replayed, replay_converted, _) =
+        absorbed(vec![metric_section("3200 Meters", 67, vec![row])])?;
+    check!(eq; replay_converted, converted, "replay counts the conversion the same way");
+    let second = replayed
+        .into_iter()
+        .next()
+        .ok_or("replay retained the row")?;
+    check!(eq; first.id, second.id, "replay produces the same performance identity");
+    check!(eq; first.mark, second.mark, "replay preserves the published converted mark");
+    check!(
+        first.adjustment.is_some() == second.adjustment.is_some(),
+        "replay preserves the presence of the adjustment"
+    );
+    let first_adj = first.adjustment.ok_or("first had adjustment")?;
+    let second_adj = second.adjustment.ok_or("replay had adjustment")?;
+    check!(eq; first_adj.kind, second_adj.kind);
+    check!(eq; first_adj.basis, second_adj.basis);
+    check!(eq; first_adj.original_mark, second_adj.original_mark);
+    check!(eq; first_adj.adjusted_mark, second_adj.adjusted_mark);
+    Ok(())
+}

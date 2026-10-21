@@ -7,17 +7,8 @@ const NATIONAL_GENERATION_REVISION: u16 = 1;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PublicationContract {
-    LegacySeparateV1,
-    ManagedBundleV2,
-    SelectedPublicationV1,
     #[default]
     SelectedPublicationV2,
-}
-
-impl PublicationContract {
-    pub fn is_legacy(&self) -> bool {
-        matches!(self, Self::LegacySeparateV1)
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -31,10 +22,7 @@ pub struct PublicationCapabilities {
 impl PublicationCapabilities {
     pub fn current() -> Self {
         Self {
-            publication_contracts: vec![
-                PublicationContract::SelectedPublicationV1,
-                PublicationContract::SelectedPublicationV2,
-            ],
+            publication_contracts: vec![PublicationContract::SelectedPublicationV2],
             national_generation_revision: Some(NATIONAL_GENERATION_REVISION),
         }
     }
@@ -54,7 +42,6 @@ impl PublicationCapabilities {
 pub enum NationalRequestBinding {
     Bound(Box<NationalRequest>),
     PendingPreflight,
-    UnboundLegacy,
 }
 
 #[cfg(test)]

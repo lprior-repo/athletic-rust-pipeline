@@ -1,19 +1,10 @@
 use super::*;
 
-pub(super) fn assert_lookup(
-    captured: &[(String, Vec<u8>)],
-    index: usize,
-    ordinal: Option<std::num::NonZeroU32>,
-) -> TestResult {
+pub(super) fn assert_lookup(captured: &[(String, Vec<u8>)], index: usize) -> TestResult {
     let season = census_domain::model::SchoolYear::new(2026).ok_or("fixture season")?;
     let revision = census_domain::model::Revision(1);
     let states = &[census_domain::UsJurisdiction::Wisconsin];
-    let identity = match ordinal {
-        Some(ordinal) => census_reconcile::identity::WorkflowIdentity::national_resume(
-            season, revision, states, ordinal,
-        ),
-        None => census_reconcile::identity::WorkflowIdentity::national(season, revision, states),
-    };
+    let identity = census_reconcile::identity::WorkflowIdentity::national(season, revision, states);
     let (path, body) = captured.get(index).ok_or("workflow lookup absent")?;
     check!(eq; path, "POST /restate/lookup HTTP/1.1\r\n");
     check!(eq; serde_json::from_slice::<serde_json::Value>(body)?, serde_json::json!({
@@ -51,7 +42,7 @@ async fn managed_attachment_lookup_refusals_never_probe_or_resubmit() -> TestRes
         responses.push(lookup);
         let (captured, error) = exercise(&[], responses).await?;
         check!(eq; captured.len(), 4);
-        assert_lookup(&captured, 3, None)?;
+        assert_lookup(&captured, 3)?;
         check!(
             error.contains("could not resolve the existing workflow"),
             "{error}"
@@ -67,7 +58,7 @@ async fn managed_attachment_missing_output_refuses_after_lookup_without_new_send
     responses.extend([resolved(), absent()]);
     let (captured, error) = exercise(&[], responses).await?;
     check!(eq; captured.len(), 5);
-    assert_lookup(&captured, 3, None)?;
+    assert_lookup(&captured, 3)?;
     check!(captured
         .get(4)
         .is_some_and(|(path, _)| path
@@ -84,11 +75,11 @@ async fn managed_attachment_rejects_output_header_for_another_invocation() -> Te
             "200 OK",
             "{\"invocationId\":\"inv_AnotherInvocation123\"}".into(),
         ),
-        ("200 OK", report().to_string()),
+        ("200 OK", matching_report().to_string()),
     ]);
     let (captured, error) = exercise(&[], responses).await?;
     check!(eq; captured.len(), 5);
-    assert_lookup(&captured, 3, None)?;
+    assert_lookup(&captured, 3)?;
     check!(captured
         .get(4)
         .is_some_and(|(path, _)| path
@@ -100,11 +91,15 @@ async fn managed_attachment_rejects_output_header_for_another_invocation() -> Te
     Ok(())
 }
 
-fn report() -> serde_json::Value {
+fn matching_report() -> serde_json::Value {
     serde_json::json!({
-        "season": 2026, "revision": 1, "jurisdictions": [],
-        "failures": [{"jurisdiction": "WI", "identity": "retained-jurisdiction", "error": "retained failure"}],
-        "rosters_total": 0, "athletes_total": 0, "class_of_2027_total": 0,
+        "season": 2026, "revision": 1,
+        "jurisdictions": [{
+            "jurisdiction": "WI", "identity": "retained-jurisdiction",
+            "rosters_total": 0, "rosters_committed": 0, "rosters_remaining": 0,
+            "rosters_skipped": 0, "blocked": false, "athletes": 0, "class_of_2027": 0
+        }],
+        "failures": [], "rosters_total": 0, "athletes_total": 0, "class_of_2027_total": 0,
         "today": "2026-10-14"
     })
 }
@@ -121,18 +116,21 @@ async fn managed_attachment_accepts_matching_ready_report_and_refuses_foreign_sc
             serde_json::json!([{ "jurisdiction": "IA", "identity": "foreign", "error": "foreign" }]),
             false,
         ),
-        ("failures", serde_json::json!([]), false),
+        ("jurisdictions", serde_json::json!([]), false),
     ] {
-        let mut ready = report();
+        let mut ready = matching_report();
         ready
             .as_object_mut()
             .ok_or("report object")?
             .insert(field.into(), value);
         let mut responses = prefix()?;
         responses.extend([resolved(), ("200 OK", ready.to_string())]);
+        if accepted {
+            responses.extend([("200 OK", ready.to_string()), ("200 OK", "null".into())]);
+        }
         let (captured, outcome) = exchange(&[], responses).await?;
-        check!(eq; captured.len(), 5);
-        assert_lookup(&captured, 3, None)?;
+        check!(eq; captured.len(), if accepted { 7 } else { 5 });
+        assert_lookup(&captured, 3)?;
         check!(eq; outcome.is_ok(), accepted);
         if let Err(error) = outcome {
             check!(
@@ -141,34 +139,6 @@ async fn managed_attachment_accepts_matching_ready_report_and_refuses_foreign_sc
             );
         }
     }
-    Ok(())
-}
-
-#[tokio::test]
-async fn managed_attachment_resolves_exact_selected_resume_key_without_replacement() -> TestResult {
-    let (captured, outcome) = exchange(
-        &["--resume", "7"],
-        vec![
-            ("200 OK", bound_request(&["WI"])?),
-            ("200 OK", bound_history(Some("2026-10-01"))?),
-            ("200 OK", capabilities()?),
-            absent(),
-            ("200 OK", bound_request(&["WI"])?),
-            resolved(),
-            ("470 Not Ready", String::new()),
-        ],
-    )
-    .await?;
-    outcome?;
-    check!(eq; captured.len(), 7);
-    assert_lookup(&captured, 5, std::num::NonZeroU32::new(7))?;
-    check!(captured
-        .get(3)
-        .is_some_and(|(path, _)| path.contains("%3Aresume%3A7/run/send")));
-    check!(captured
-        .get(6)
-        .is_some_and(|(path, _)| path
-            == &format!("GET /restate/invocation/{RESOLVED_ID}/output HTTP/1.1\r\n")));
     Ok(())
 }
 
@@ -209,9 +179,9 @@ async fn managed_attached_observer_validates_ready_output_without_redriving() ->
         if accepted {
             responses.push(("200 OK", "null".into()));
         }
-        let (captured, outcome) = exchange_mode(&["--drive"], responses, false).await?;
+        let (captured, outcome) = exchange_mode(&[], responses).await?;
         check!(eq; captured.len(), if accepted { 7 } else { 6 });
-        assert_lookup(&captured, 3, None)?;
+        assert_lookup(&captured, 3)?;
         check!(captured.iter().skip(4).take(2).all(|(path, _)| path
             == &format!("GET /restate/invocation/{RESOLVED_ID}/output HTTP/1.1\r\n")));
         check!(eq; outcome.is_ok(), accepted);
@@ -226,35 +196,6 @@ async fn managed_attached_observer_validates_ready_output_without_redriving() ->
 }
 
 #[tokio::test]
-async fn managed_attached_observer_refuses_changed_output_header_without_redriving() -> TestResult {
-    let mut responses = prefix()?;
-    responses.extend([
-        (
-            "200 OK",
-            "{\"invocationId\":\"inv_AnotherInvocation123\"}".into(),
-        ),
-        ("470 Not Ready", String::new()),
-        ("200 OK", successful_report().to_string()),
-    ]);
-    let (captured, outcome) = exchange_mode(&["--drive"], responses, false).await?;
-    check!(eq; captured.len(), 6);
-    assert_lookup(&captured, 3, None)?;
-    check!(captured
-        .iter()
-        .skip(4)
-        .all(|(path, _)| path
-            == "GET /restate/invocation/inv_AnotherInvocation123/output HTTP/1.1\r\n"));
-    let error = outcome
-        .err()
-        .ok_or("foreign observed invocation header accepted")?;
-    check!(
-        format!("{error:#}").contains("output invocation ID differs from workflow lookup"),
-        "{error:#}"
-    );
-    Ok(())
-}
-
-#[tokio::test]
 async fn managed_attached_observer_refuses_oversized_transport_reply_without_redriving(
 ) -> TestResult {
     let mut responses = prefix()?;
@@ -263,10 +204,9 @@ async fn managed_attached_observer_refuses_oversized_transport_reply_without_red
         ("470 Not Ready", String::new()),
         ("470 Not Ready", String::new()),
     ]);
-    let (captured, outcome) =
-        exchange_with_held_reply(&["--drive"], responses, false, Some((5, 262_145))).await?;
+    let (captured, outcome) = exchange_with_held_reply(&[], responses, Some((5, 262_145))).await?;
     check!(eq; captured.len(), 6);
-    assert_lookup(&captured, 3, None)?;
+    assert_lookup(&captured, 3)?;
     check!(captured
         .iter()
         .skip(4)

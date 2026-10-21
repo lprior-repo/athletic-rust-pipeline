@@ -7,8 +7,7 @@ use crate::workbook::Options;
 use census_domain::model::SchoolYear;
 use census_domain::public_identity_history::PublicResolution;
 
-#[path = "../../../normalized/identity_aliases/tests/fixture.rs"]
-mod fixture;
+use crate::workbook::selected_identity_fixture as fixture;
 
 type Fields = BTreeMap<String, String>;
 

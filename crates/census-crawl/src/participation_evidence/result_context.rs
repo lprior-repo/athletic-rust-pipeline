@@ -202,7 +202,7 @@ mod tests {
     #[test]
     fn venue_requires_same_owned_unique_metadata_context() -> TestResult {
         let html = document("Synthetic Venue");
-        assert_eq!(
+        check!(eq;
             read(&html, OWNER, "Synthetic Meet", "2026-03-27")?,
             "Synthetic Venue"
         );
@@ -212,7 +212,7 @@ mod tests {
             html.replace("Synthetic Venue", ""),
             format!("{html}{}", document("Other Venue")),
         ] {
-            assert!(read(&changed, OWNER, "Synthetic Meet", "2026-03-27").is_err());
+            check!(read(&changed, OWNER, "Synthetic Meet", "2026-03-27").is_err());
         }
         for changed in [
             html.replace("\"location\":{", "\"location\":{},\"location\":{"),
@@ -221,7 +221,7 @@ mod tests {
                 "\"name\":\"Other Venue\",\"name\":\"Synthetic Venue\"",
             ),
         ] {
-            assert!(read(&changed, OWNER, "Synthetic Meet", "2026-03-27").is_err());
+            check!(read(&changed, OWNER, "Synthetic Meet", "2026-03-27").is_err());
         }
         let array = format!(
             r#"["SportsEvent",null,"{OWNER}",null,"Synthetic Meet","2026-03-27","Outdoor Track & Field",{{"name":"Synthetic Venue","address":{{"addressRegion":"MI"}}}}]"#
@@ -237,10 +237,10 @@ mod tests {
             ),
             html.replace(r#"{"addressRegion":"MI"}"#, r#"["MI"]"#),
         ] {
-            assert!(read(&changed, OWNER, "Synthetic Meet", "2026-03-27").is_err());
+            check!(read(&changed, OWNER, "Synthetic Meet", "2026-03-27").is_err());
         }
         for attribute in ["hidden", "inert"] {
-            assert!(read(
+            check!(read(
                 &format!("<div {attribute}>{html}</div>"),
                 OWNER,
                 "Synthetic Meet",

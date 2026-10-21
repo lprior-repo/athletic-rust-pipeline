@@ -167,7 +167,7 @@ async fn run_offline(
     let options = match publication.as_ref() {
         Some((request, _)) => workbook::options_for_selected_request(
             &store,
-            request.require_selected_publication()?,
+            request.require_selected_publication(),
             &requested,
         )?,
         None => requested,
@@ -234,7 +234,7 @@ async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
         .ok_or_else(|| anyhow::anyhow!("live cycle requires an explicit selected publication"))?;
     super::publication_preflight::require_publication_contract(
         &client,
-        census_service::restate_services::PublicationContract::SelectedPublicationV1,
+        census_service::restate_services::PublicationContract::SelectedPublicationV2,
     )
     .await?;
     publish_workbook_live(origin, &options, &generation, &export_job).await

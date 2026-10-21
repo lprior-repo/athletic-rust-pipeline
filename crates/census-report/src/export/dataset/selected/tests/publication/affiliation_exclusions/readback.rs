@@ -191,7 +191,7 @@ fn workbook_rows(path: &Path, expected: &Expected) -> TestResult {
     check!(review.height() <= 128);
     check!(review.width() <= 128);
     check!(eq; review.rows().filter(|row| {
-        row.first().is_some_and(|value| value.to_string() == "Public identity candidate withheld")
+        row.first().is_some_and(|value| value == "Public identity candidate withheld")
             && row.get(2).is_some_and(|value| value.to_string() == expected.unknown)
     }).count(), 1);
     Ok(())
@@ -204,7 +204,7 @@ fn coverage(book: &mut Xlsx<std::io::BufReader<std::fs::File>>) -> TestResult {
     let prefix = "retained current affiliation exclusions: ";
     let mut exclusions = BTreeSet::new();
     for row in range.rows() {
-        if row.first().is_some_and(|value| value.to_string() == "Note") {
+        if row.first().is_some_and(|value| value == "Note") {
             let note = row.get(1).ok_or("coverage note")?.to_string();
             if note.starts_with(prefix) {
                 check!(exclusions.insert(note));
@@ -232,7 +232,7 @@ fn metrics(book: &mut Xlsx<std::io::BufReader<std::fs::File>>) -> TestResult {
     ] {
         let mut rows = range
             .rows()
-            .filter(|row| row.first().is_some_and(|value| value.to_string() == label));
+            .filter(|row| row.first().is_some_and(|value| value == label));
         let row = rows.next().ok_or("identity metric")?;
         check!(rows.next().is_none());
         check!(eq; row.get(1).ok_or("identity count")?.to_string(), expected);

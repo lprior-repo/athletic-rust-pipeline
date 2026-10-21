@@ -13,33 +13,36 @@ fn native_publication_worker() -> TestResult {
     let Some(store) = std::env::var_os("CENSUS_PUBLICATION_CHILD_STORE") else {
         return Ok(());
     };
-    let store = Store::open(PathBuf::from(store))?;
-    let mut options = super::fence_tests::options(None)?;
-    options.limit = Some(1);
-    let dataset =
-        ExportDataset::for_job_request(&store, "crash-window", &ExportJobRequest::LegacyV2)?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
+    let (store, _writer) =
+        Store::open_public_identity_qualification_v3(PathBuf::from(store))?.into_parts();
+    let request_path = std::env::var_os("CENSUS_PUBLICATION_CHILD_REQUEST")
+        .ok_or("crash worker request path missing")?;
+    let request: ExportJobRequest = sidecars::read_json(&PathBuf::from(request_path))?;
+    let dataset = ExportDataset::for_job_request(&store, "crash-window", &request)?;
+    let options = crate::workbook::options_for_selected_dataset(&dataset, None)?;
+    let censuses =
+        crate::workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions)?;
     crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
     Err("crash worker returned without terminating at its checkpoint".into())
 }
 
-#[test]
-fn publication_fence_kill_after_intent_preserves_old_output_and_retries() -> TestResult {
-    crash("intent", RootSelection::Expected, Termination::Killed)
+#[tokio::test]
+async fn publication_fence_kill_after_intent_preserves_old_output_and_retries() -> TestResult {
+    crash("intent", RootSelection::Expected, Termination::Killed).await
 }
-#[test]
-fn publication_fence_kill_after_rename_before_fsync_retains_visible_bundle() -> TestResult {
-    crash("renamed", RootSelection::Desired, Termination::Killed)
-}
-
-#[test]
-fn publication_fence_abort_after_intent_recovers_byte_identical_bundle() -> TestResult {
-    crash("intent", RootSelection::Expected, Termination::Aborted)
+#[tokio::test]
+async fn publication_fence_kill_after_rename_before_fsync_retains_visible_bundle() -> TestResult {
+    crash("renamed", RootSelection::Desired, Termination::Killed).await
 }
 
-#[test]
-fn publication_fence_abort_after_rename_recovers_byte_identical_bundle() -> TestResult {
-    crash("renamed", RootSelection::Desired, Termination::Aborted)
+#[tokio::test]
+async fn publication_fence_abort_after_intent_recovers_byte_identical_bundle() -> TestResult {
+    crash("intent", RootSelection::Expected, Termination::Aborted).await
+}
+
+#[tokio::test]
+async fn publication_fence_abort_after_rename_recovers_byte_identical_bundle() -> TestResult {
+    crash("renamed", RootSelection::Desired, Termination::Aborted).await
 }
 
 enum Termination {
@@ -51,15 +54,29 @@ enum RootSelection {
     Expected,
     Desired,
 }
-fn crash(window: &str, selection: RootSelection, termination: Termination) -> TestResult {
-    let temp = tempfile::tempdir()?;
-    let store_path = temp.path().join("store");
-    let store = Store::open(&store_path)?;
-    let options = super::fence_tests::options(None)?;
-    let old = crate::workbook::build(&store, &options)?;
+async fn crash(window: &str, selection: RootSelection, termination: Termination) -> TestResult {
+    let fixture = crate::export::selected_test_fixture::Fixture::new().await?;
+    let objects = tempfile::tempdir()?;
+    let dataset = fixture.capture(objects.path())?;
+    let options = crate::workbook::options_for_selected_dataset(&dataset, None)?;
+    let censuses =
+        crate::workbook::Censuses::of(&dataset, &fixture.store.out_dir(), &options.jurisdictions)?;
+    let old = crate::workbook::build_from(&dataset, &fixture.store, &options, &censuses)?;
     let bytes = std::fs::read(&old)?;
-    let root = store.out_dir().join("publication");
+    let root = fixture.store.out_dir().join("publication");
     let expected = pointer::read(&root)?;
+    let request = ExportJobRequest::SelectedPublicationV1 {
+        selection: fixture.selection.clone(),
+    };
+    let request_path = fixture.directory.path().join("crash-request.json");
+    sidecars::write_json(&request_path, &request)?;
+    let store_path = fixture.store.root().to_path_buf();
+    drop(dataset);
+    let crate::export::selected_test_fixture::Fixture {
+        directory: _directory,
+        store,
+        ..
+    } = fixture;
     drop(store);
     let socket_directory = tempfile::tempdir_in("/tmp")?;
     let socket_path = socket_directory.path().join("crash.sock");
@@ -72,6 +89,7 @@ fn crash(window: &str, selection: RootSelection, termination: Termination) -> Te
             "--nocapture",
         ])
         .env("CENSUS_PUBLICATION_CHILD_STORE", &store_path)
+        .env("CENSUS_PUBLICATION_CHILD_REQUEST", &request_path)
         .env("CENSUS_PUBLICATION_CRASH_WINDOW", window)
         .stdin(Stdio::null())
         .env("CENSUS_PUBLICATION_CRASH_SOCKET", &socket_path)
@@ -99,7 +117,7 @@ fn crash(window: &str, selection: RootSelection, termination: Termination) -> Te
     };
     check!(eq; status.signal(), Some(signal));
     std::fs::remove_file(&socket_path)?;
-    let store = Store::open(&store_path)?;
+    let (store, _writer) = Store::open_public_identity_qualification_v3(&store_path)?.into_parts();
     let namespace = binding::namespace(&root)?;
     let intent = store
         .publication_active(&namespace)?
@@ -114,7 +132,8 @@ fn crash(window: &str, selection: RootSelection, termination: Termination) -> Te
     }
     check!(eq; std::fs::read(&old)?, bytes);
     verify_published(&old)?;
-    let outcome = recover_publication(&store, &root)?;
+    let dataset = ExportDataset::for_job_request(&store, "crash-window", &request)?;
+    let outcome = recover_selected_publication(&store, &root, &dataset)?;
     let expected_outcome = match selection {
         RootSelection::Expected => RecoveryOutcome::ExpectedRetried {
             bundle: desired.clone(),
@@ -143,10 +162,25 @@ fn crash(window: &str, selection: RootSelection, termination: Termination) -> Te
 }
 
 fn bundle_bytes(directory: &Path) -> TestResult<std::collections::BTreeMap<PathBuf, Vec<u8>>> {
-    std::fs::read_dir(directory)?
-        .map(|entry| {
+    let mut found = std::collections::BTreeMap::new();
+    let mut stack = vec![directory.to_path_buf()];
+    while let Some(current) = stack.pop() {
+        for entry in std::fs::read_dir(&current)? {
             let entry = entry?;
-            Ok((entry.file_name().into(), std::fs::read(entry.path())?))
-        })
-        .collect()
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+                continue;
+            }
+            if found.len() >= 65_536 {
+                return Err("bundle walk entry budget exhausted".into());
+            }
+            let relative: PathBuf = path
+                .strip_prefix(directory)
+                .map_err(|error| format!("bundle entry escapes generation: {error}"))?
+                .into();
+            found.insert(relative, std::fs::read(&path)?);
+        }
+    }
+    Ok(found)
 }

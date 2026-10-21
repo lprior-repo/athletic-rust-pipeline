@@ -128,7 +128,7 @@ fn successful_remove_moves_exact_owner_and_preserves_remaining_order() -> TestRe
     let removed = records.remove_with_grant(0, &mut grant)?;
     check!(eq; grant.usage().traversal_steps(), before + 2);
     check!(eq; removed.record(), &first);
-    check!(eq; records.records(), &[second.clone()]);
+    check!(eq; records.records(), std::slice::from_ref(&second));
     check!(eq; removed.encode_with_grant(MAXIMUM, &mut grant)?, encode_reviewed_reference(&first, MAXIMUM)?);
     check!(eq; records.into_records(), vec![second]);
     Ok(())

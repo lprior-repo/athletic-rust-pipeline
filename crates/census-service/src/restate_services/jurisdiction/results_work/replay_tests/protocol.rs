@@ -133,49 +133,6 @@ pub(super) fn require_replay_only(frames: &[Frame]) -> TestResult {
     Ok(())
 }
 
-pub(super) fn completion(
-    journal: &mut Vec<Frame>,
-    frames: &[Frame],
-) -> TestResult<ResultsStageOutcome> {
-    let run = frames
-        .iter()
-        .find(|frame| frame.kind == 0x0411)
-        .ok_or("Results Run absent")?;
-    let state = frames
-        .iter()
-        .find(|frame| frame.kind == 0x0407)
-        .ok_or("retained Results state read absent")?;
-    let proposal = frames
-        .iter()
-        .find(|frame| frame.kind == 0x0005)
-        .ok_or("Results Run proposal absent")?;
-    check!(eq; frames.iter().filter(|frame| frame.kind == 0x0411).count(), 1);
-    check!(eq; frames.iter().filter(|frame| frame.kind == 0x0005).count(), 1);
-    check!(codec::field(&run.payload, 12)?.is_none_or(|name| name.is_empty()));
-    check!(eq; proposal.number(1)?, run.number(11)?);
-    let outcome = serde_json::from_slice(proposal.bytes(14)?)?;
-    journal.push(state.clone());
-    journal.push(run.clone());
-    journal.push(codec::notification(
-        0x8011,
-        proposal.number(1)?,
-        proposal.bytes(14)?,
-    )?);
-    Ok(outcome)
-}
-
-pub(super) fn require_recorded_failure(frames: &[Frame]) -> TestResult {
-    let output = frames
-        .iter()
-        .find(|frame| frame.kind == 0x0401)
-        .ok_or("Results failure absent")?;
-    let failure = Frame::new(0, output.bytes(15)?.to_vec());
-    check!(eq; failure.number(1)?, 409);
-    check!(eq; failure.text(2)?, "recorded capture owner conflict");
-    check!(eq; frames.iter().filter(|frame| frame.kind == 0x0403).count(), 0);
-    require_replay_only(frames)
-}
-
 pub(super) fn require_saved_outcome(
     frames: &[Frame],
     fixture: &Fixture,

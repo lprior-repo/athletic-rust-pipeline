@@ -2,8 +2,8 @@ use super::*;
 
 #[test]
 fn retained_capture_reader_cannot_import_a_later_occurrence_into_an_older_snapshot() -> TestResult {
-    for protocol in [CaptureProtocolVersion::V1, CaptureProtocolVersion::V2] {
-        let (_dir, store, writer, owner) = fixture_for(protocol)?;
+    {
+        let (_dir, store, writer, owner) = fixture()?;
         let before = store.snapshot();
         let occurrence = retained(&store, &writer, &owner, 200)?;
         check!(matches!(
@@ -25,7 +25,9 @@ fn retained_capture_reader_uses_the_snapshotted_qualification_marker() -> TestRe
     let (_dir, store, writer, owner) = fixture()?;
     let occurrence = retained(&store, &writer, &owner, 200)?;
     let before = store.snapshot();
-    store.meta.remove(CAPTURE_QUALIFICATION_KEY)?;
+    store
+        .meta
+        .remove(CaptureProtocolVersion::V2.qualification_key())?;
     let verified =
         before.read_retained_acquisition_v1(&occurrence, &mut AcquisitionReadBudget::for_work())?;
     check!(eq; verified.reference(), &occurrence);
@@ -58,11 +60,11 @@ fn snapshot_reader_rejects_foreign_occurrence_without_mutating_either_store() ->
 
 #[test]
 fn retained_capture_reader_uses_snapshotted_terminal_receipts_in_both_protocols() -> TestResult {
-    for protocol in [CaptureProtocolVersion::V1, CaptureProtocolVersion::V2] {
-        let (_dir, store, writer, owner) = fixture_for(protocol)?;
+    {
+        let (_dir, store, writer, owner) = fixture()?;
         let occurrence = retained(&store, &writer, &owner, 200)?;
         let before = store.snapshot();
-        let operation = read::terminal_operation(occurrence.attempt(), protocol);
+        let operation = read::terminal_operation(occurrence.attempt(), CaptureProtocolVersion::V2);
         let receipt = store
             .receipts
             .get(&operation)?
@@ -120,7 +122,7 @@ fn snapshot_revalidation_checks_both_original_and_revalidation_receipts() -> Tes
     )?;
     let snapshot = store.snapshot();
     for reference in [&original, &revalidation] {
-        let operation = read::terminal_operation(reference.attempt(), CaptureProtocolVersion::V1);
+        let operation = read::terminal_operation(reference.attempt(), CaptureProtocolVersion::V2);
         let bytes = store
             .receipts
             .get(&operation)?

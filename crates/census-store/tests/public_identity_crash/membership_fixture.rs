@@ -33,7 +33,7 @@ enum Action {
     },
     Withhold {
         record: Box<LocalMembershipWithholdingRecordV2>,
-        graph: census_store::GraphAuthorityReferenceV1,
+        graph: Box<census_store::GraphAuthorityReferenceV1>,
     },
 }
 pub(super) struct Fixture {
@@ -152,7 +152,7 @@ fn prepare_withholding(
     )?;
     Ok(Action::Withhold {
         record: Box::new(prepared.record().clone()),
-        graph: prepared.graph().clone(),
+        graph: Box::new(prepared.graph().clone()),
     })
 }
 
@@ -165,7 +165,7 @@ impl Plan {
     }
     pub fn withholding_graph(&self) -> TestResult<&census_store::GraphAuthorityReferenceV1> {
         match &self.action {
-            Action::Withhold { graph, .. } => Ok(graph),
+            Action::Withhold { graph, .. } => Ok(graph.as_ref()),
             Action::Attach { .. } => Err("attachment has no manual approval".into()),
         }
     }
@@ -215,7 +215,7 @@ impl Plan {
                     &record.expected_head,
                 )?;
                 check!(eq; prepared.record(), record.as_ref());
-                check!(eq; prepared.graph(), graph);
+                check!(eq; prepared.graph(), graph.as_ref());
                 check!(eq; prepared.approval_bytes()?, bytes);
                 check!(eq; prepared.approval_digest()?, digest);
                 let outcome =

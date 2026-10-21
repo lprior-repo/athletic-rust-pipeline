@@ -23,9 +23,9 @@ fn exact_prepare_retry_preserves_record_and_does_not_write() -> TestResult {
         fixture.store.snapshot().revision(),
         &head,
     )?;
-    assert_eq!(bytes, serde_json::to_vec(second.record())?);
-    assert_eq!(before, retained_state(&fixture.store)?);
-    assert_eq!(sequence, fixture.store.snapshot().sequence());
+    check!(eq;bytes, serde_json::to_vec(second.record())?);
+    check!(eq;before, retained_state(&fixture.store)?);
+    check!(eq;sequence, fixture.store.snapshot().sequence());
     Ok(())
 }
 
@@ -202,16 +202,16 @@ fn concurrent_exact_preparations_share_original_record() -> TestResult {
         serde_json::to_vec(prepared.record()).map_err(|error| error.to_string())
     };
     let (first, second) = std::thread::scope(|scope| {
-        let first = scope.spawn(&run);
-        let second = scope.spawn(&run);
+        let first = scope.spawn(run);
+        let second = scope.spawn(run);
         (first.join(), second.join())
     });
     let first = first.map_err(|_| "first preparation thread failed")??;
     let second = second.map_err(|_| "second preparation thread failed")??;
-    assert_eq!(first, second);
+    check!(eq;first, second);
     let sequence = fixture.store.snapshot().sequence();
-    assert_eq!(first, run()?);
-    assert_eq!(sequence, fixture.store.snapshot().sequence());
+    check!(eq;first, run()?);
+    check!(eq;sequence, fixture.store.snapshot().sequence());
     Ok(())
 }
 

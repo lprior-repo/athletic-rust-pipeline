@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 
 mod codec;
 #[cfg(test)]
-mod tests;
-#[cfg(test)]
 mod tests_v2;
 #[cfg(test)]
 mod tests_v3;
@@ -41,7 +39,6 @@ impl PublicIdentityQualificationVersion {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(untagged)]
 pub enum PublicIdentityQualification {
-    V1(PublicIdentityQualificationV1),
     V2(PublicIdentityQualificationV2),
     V3(PublicIdentityQualificationV3),
 }
@@ -49,7 +46,6 @@ pub enum PublicIdentityQualification {
 impl PublicIdentityQualification {
     pub fn store_identity(&self) -> &StoreIdentity {
         match self {
-            Self::V1(declaration) => declaration.store_identity(),
             Self::V2(declaration) => declaration.store_identity(),
             Self::V3(declaration) => declaration.store_identity(),
         }
@@ -57,7 +53,6 @@ impl PublicIdentityQualification {
 
     pub fn version(&self) -> PublicIdentityQualificationVersion {
         match self {
-            Self::V1(_) => PublicIdentityQualificationVersion::SourceBoundV1,
             Self::V2(_) => PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
             Self::V3(_) => PublicIdentityQualificationVersion::RetainedAuthorityGraphV3,
         }

@@ -14,6 +14,8 @@ pub mod link;
 pub mod postal;
 pub mod provenance;
 
+#[cfg(test)]
+pub(crate) use dataset::generation_counter_window;
 pub use dataset::{
     cancel_freeze_v2, decoded_generations, freeze_v2, peak_resident_generations,
     resident_generations, store_identity, store_lineage, to_export_dataset, CancelOutcome,

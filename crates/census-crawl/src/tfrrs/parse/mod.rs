@@ -11,6 +11,9 @@ mod team;
 #[cfg(test)]
 pub use date::published_date;
 pub use date::PublishedDate;
+pub(crate) fn retained_date_label(raw: String) -> Option<PublishedDate> {
+    date::from_label(raw)
+}
 pub use list::{parse_list_page, ParsedList, ParsedSection};
 pub use mark::{
     clock_seconds, converted_from, feet_inches_metres, is_track_size_conversion, metric_metres,

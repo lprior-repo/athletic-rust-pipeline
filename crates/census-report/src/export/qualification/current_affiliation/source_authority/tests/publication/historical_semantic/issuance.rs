@@ -1,6 +1,6 @@
 use super::*;
 use census_crawl::participation_evidence::roster_source_issuance::{
-    assess_existing_roster_binding, assess_retained_roster_source_v2,
+    assess_existing_roster_binding, assess_retained_roster_source_v3,
     manifest::compiled_roster_parser_manifest,
     policies::compiled_roster_interpretation_contracts_v1,
 };
@@ -40,7 +40,7 @@ pub(super) fn review_forged(
     let proposal = issuance::proposal(capture, evidence, grant)?;
     let parser = compiled_roster_parser_manifest()?;
     let contracts = compiled_roster_interpretation_contracts_v1();
-    let source = assess_retained_roster_source_v2(
+    let source = assess_retained_roster_source_v3(
         evidence,
         parser.canonical_bytes(),
         &contracts,

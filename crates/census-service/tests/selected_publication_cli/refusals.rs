@@ -120,19 +120,14 @@ async fn selected_publication_refuses_invalid_or_unregistered_selection_before_o
     check!(!run(&fixture.root, &missing_path, &out)?.status.success());
     check!(!out.exists());
     let old = fixture.directory.path().join("old-lifecycle");
-    for version in [1, 2] {
-        let result = match version {
-            1 => Store::create_public_identity_qualification_v1(&old).map(|_| ()),
-            _ => Store::create_public_identity_qualification_v2(&old).map(|_| ()),
-        };
-        check!(matches!(
-            result,
-            Err(census_store::StoreError::PublicIdentity(
-                census_store::PublicIdentityError::QualificationVersionMismatch { .. }
-            ))
-        ));
-        check!(!old.exists());
-    }
+    let result = Store::create_public_identity_qualification_v2(&old).map(|_| ());
+    check!(matches!(
+        result,
+        Err(census_store::StoreError::PublicIdentity(
+            census_store::PublicIdentityError::QualificationVersionMismatch { .. }
+        ))
+    ));
+    check!(!old.exists());
     check!(!out.exists());
     Ok(())
 }

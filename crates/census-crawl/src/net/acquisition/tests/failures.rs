@@ -1,11 +1,13 @@
 use super::*;
 use census_domain::model::{
-    AcquisitionFailureV1, ResponseCheckpointRefusalV1, SOURCE_ACQUISITION_PHASE,
+    AcquisitionFailureV1, CaptureProtocolVersion, ResponseCheckpointRefusalV1,
 };
 use census_store::{AcquisitionCheckpointV1, AcquisitionTerminal, ImmutableAttemptResult};
 
 fn terminals(fixture: &Fixture) -> TestResult<Vec<ImmutableAttemptResult>> {
-    let rows = fixture.store.journal_payloads(SOURCE_ACQUISITION_PHASE)?;
+    let rows = fixture
+        .store
+        .journal_payloads(CaptureProtocolVersion::V2.phase())?;
     Ok(rows
         .into_iter()
         .filter_map(|row| serde_json::from_value(row).ok())
@@ -149,7 +151,9 @@ async fn actual_truncated_bodies_reopen_with_observed_failures_and_three_attempt
     });
     let ((), fixture) = tokio::try_join!(serve(listener, replies, requests), fetch)?;
     check!(eq; fixture.count(), 3);
-    let keys = fixture.store.journal_keys(SOURCE_ACQUISITION_PHASE)?;
+    let keys = fixture
+        .store
+        .journal_keys(CaptureProtocolVersion::V2.phase())?;
     check!(eq; keys.iter().filter(|key| key.starts_with("slot/")).count(), 1);
     check!(eq; keys.iter().filter(|key| key.ends_with("/response")).count(), 3);
     check!(eq; keys.iter().filter(|key| key.ends_with("/terminal")).count(), 3);

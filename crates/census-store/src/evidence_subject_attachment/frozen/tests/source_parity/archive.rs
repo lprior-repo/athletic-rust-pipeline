@@ -23,16 +23,10 @@ pub(super) fn capture_roots(
         budget(16),
         &mut journals,
         |_| Ok(()),
-        |rows, key, raw| copy_row(rows, key, raw),
+        copy_row,
     )?;
     let mut receipts = Rows::new();
-    view.visit_receipt_prefix(
-        PREFIX,
-        budget(16),
-        &mut receipts,
-        |_| Ok(()),
-        |rows, key, raw| copy_row(rows, key, raw),
-    )?;
+    view.visit_receipt_prefix(PREFIX, budget(16), &mut receipts, |_| Ok(()), copy_row)?;
     let mut external = Vec::new();
     for root in roots {
         let mut rows = Rows::new();
@@ -42,7 +36,7 @@ pub(super) fn capture_roots(
             budget(16),
             &mut rows,
             |_| Ok(()),
-            |rows, key, raw| copy_row(rows, key, raw),
+            copy_row,
         )?;
         external.push(rows);
     }

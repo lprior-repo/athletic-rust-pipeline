@@ -11,6 +11,28 @@ pub struct TeamsSourceRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OriginHeldContinuationRequest {
+    pub original: TeamsSourceRequest,
+    pub original_outcome_digest: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeamsReconciliationRequest {
+    pub jurisdiction: super::JurisdictionRequest,
+    pub expected_teams_digest: String,
+    pub expected_plan_digest: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeamsContinuationOutcome {
+    pub original_outcome_digest: String,
+    pub outcome: TeamsSourceOutcome,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "status", rename_all = "snake_case")]
 pub enum TeamsSourceInspection {
     Settled { outcome: TeamsSourceOutcome },

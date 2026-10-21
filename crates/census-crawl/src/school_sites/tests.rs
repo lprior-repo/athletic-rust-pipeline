@@ -223,15 +223,17 @@ fn ambiguous_office_blocks_and_student_tables_produce_no_mailbox() -> TestResult
 #[test]
 fn mailbox_budget_is_checked_before_appending() -> TestResult {
     let rules = Rules::new()?;
-    let mut signals = Signals::default();
-    signals.school_mailboxes = vec![
-        super::SchoolMailboxHit {
-            purpose: census_domain::model::SchoolMailboxPurpose::SchoolOffice,
-            email: "office@school.org".to_owned(),
-            url: "https://school.org/contact".to_owned(),
-        };
-        16_383
-    ];
+    let mut signals = Signals {
+        school_mailboxes: vec![
+            super::SchoolMailboxHit {
+                purpose: census_domain::model::SchoolMailboxPurpose::SchoolOffice,
+                email: "office@school.org".to_owned(),
+                url: "https://school.org/contact".to_owned(),
+            };
+            16_383
+        ],
+        ..Signals::default()
+    };
     let html = r#"<p>School office: <a href="mailto:office@school.org">office@school.org</a></p>"#;
     analyse(&rules, "https://school.org/contact", html, &mut signals)?;
     check!(eq; signals.school_mailboxes.len(), 16_384);

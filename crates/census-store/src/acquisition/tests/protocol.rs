@@ -137,12 +137,13 @@ fn generic_journal_receipt_and_credit_paths_cannot_overwrite_capture_roots() -> 
         .publish(&operation, "replacement")
         .is_err());
     check!(store.credit_observations("caller", &operation).is_err());
-    let before = store.receipt(&operation)?.ok_or("receipt")?;
+    let committed = read::terminal_operation(occurrence.attempt(), CaptureProtocolVersion::V2);
+    let before = store.receipt(&committed)?.ok_or("receipt")?;
     store.prune_receipts(&crate::ReplayFrontier {
         at: "2100-01-01".to_string(),
         witnesses: vec![],
     })?;
-    check!(eq; store.receipt(&operation)?, Some(before));
+    check!(eq; store.receipt(&committed)?, Some(before));
     Ok(())
 }
 

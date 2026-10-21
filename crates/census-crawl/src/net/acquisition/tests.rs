@@ -132,7 +132,7 @@ async fn actual_retryable_responses_keep_one_original_slot_and_three_attempt_lim
     check!(eq; fixture.count(), 3);
     let keys = fixture
         .store
-        .journal_keys(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
+        .journal_keys(census_domain::model::CaptureProtocolVersion::V2.phase())?;
     check!(eq; keys.iter().filter(|key| key.starts_with("slot/")).count(), 1);
     check!(eq; keys.iter().filter(|key| key.ends_with("/terminal")).count(), 3);
     Ok(())

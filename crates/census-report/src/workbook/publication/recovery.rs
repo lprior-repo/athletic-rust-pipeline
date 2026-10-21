@@ -267,3 +267,14 @@ pub fn recover_publication(store: &Store, root: &Path) -> ReportResult<RecoveryO
     let _namespace = super::lock_publication(root)?;
     reconcile(store, root, &namespace, &prepared)
 }
+
+pub fn recover_selected_publication(
+    store: &Store,
+    root: &Path,
+    dataset: &crate::export::ExportDataset,
+) -> ReportResult<RecoveryOutcome> {
+    let namespace = super::binding::namespace(root)?;
+    let prepared = prepare(store, root, &namespace)?;
+    let _namespace = super::lock_publication(root)?;
+    reconcile_with_dataset(store, root, &namespace, &prepared, Some(dataset))
+}

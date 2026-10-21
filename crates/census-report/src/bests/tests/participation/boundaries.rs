@@ -17,7 +17,7 @@ fn evidenced_scholastic_club_open_and_unattached_results_survive_on_the_summer_b
         let facts = Facts::new()?;
         let directory = tempfile::tempdir()?;
         let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
-        let (dataset, _objects) = facts.bind(&store, &writer, &[faster.clone()])?;
+        let (dataset, _objects) = facts.bind(&store, &writer, std::slice::from_ref(&faster))?;
         let view = facts.view(
             &dataset,
             [(
@@ -43,7 +43,7 @@ fn a_result_after_the_profile_cutoff_retains_every_exclusion_reason() -> TestRes
     let facts = Facts::new()?;
     let directory = tempfile::tempdir()?;
     let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
-    let (dataset, _objects) = facts.bind(&store, &writer, &[faster.clone()])?;
+    let (dataset, _objects) = facts.bind(&store, &writer, std::slice::from_ref(&faster))?;
     let view = facts.view(
         &dataset,
         [(
@@ -64,7 +64,7 @@ fn inconsistent_verified_outcomes_cannot_be_used_to_bypass_selection() -> TestRe
     let facts = Facts::new()?;
     let directory = tempfile::tempdir()?;
     let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
-    let (dataset, _objects) = facts.bind(&store, &writer, &[faster.clone()])?;
+    let (dataset, _objects) = facts.bind(&store, &writer, std::slice::from_ref(&faster))?;
     let excluded = facts.assessment(&faster.performance, &[ParticipationContext::Collegiate])?;
     [
         (ParticipationOutcome::Eligible, excluded.reasons()),

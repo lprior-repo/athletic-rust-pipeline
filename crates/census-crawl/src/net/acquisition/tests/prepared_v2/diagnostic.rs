@@ -16,7 +16,7 @@ async fn actual_shared_io_refuses_combined_original_cleanup_diagnostics_without_
 
 async fn exercise(name_bytes: usize, exhausted: bool) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let root = fixture.store.http_cache_dir();
@@ -78,7 +78,7 @@ async fn compound_cache_invalid_data_primary_keeps_kind_and_shared_classificatio
 
 async fn classify(kind: Primary) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let root = fixture.store.http_cache_dir();
@@ -140,7 +140,7 @@ async fn classify(kind: Primary) -> TestResult {
 #[tokio::test]
 async fn third_cleanup_leaf_refuses_before_another_compound_allocation() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let root = fixture.store.http_cache_dir();
@@ -169,7 +169,7 @@ async fn third_cleanup_leaf_refuses_before_another_compound_allocation() -> Test
 async fn five_box_fallback_tail_uses_one_admission_and_returns_exact_diagnostic_refusal(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let invalid = fixture.store.http_cache_dir().join("x".repeat(300));
@@ -198,7 +198,7 @@ async fn five_box_fallback_tail_uses_one_admission_and_returns_exact_diagnostic_
 #[tokio::test]
 async fn publication_error_box_admission_refuses_before_old_pair_or_stage_effects() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let (body, metadata) = fixture.cache_paths()?;
@@ -242,7 +242,7 @@ async fn publication_error_box_admission_refuses_before_old_pair_or_stage_effect
 #[tokio::test]
 async fn actual_error_box_preadmission_rejects_exhausted_requested_account() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let mut budget = prepared.budget()?;

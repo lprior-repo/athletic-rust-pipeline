@@ -9,7 +9,9 @@ mod decode;
 mod keys;
 pub(in crate::public_identity) use keys::KeyInventory;
 
-pub(in crate::public_identity) use decode::{from_bytes, read};
+#[cfg(test)]
+pub(in crate::public_identity) use decode::from_bytes;
+pub(in crate::public_identity) use decode::read;
 
 const SCHEMA: &str = "local-identity-affected-records/v1";
 const MAX_KEY_BYTES: usize = 1024;

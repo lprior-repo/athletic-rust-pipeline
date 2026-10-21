@@ -20,7 +20,7 @@ fn anchored_missing_is_distinct_from_unlisted_source_object() -> TestResult {
     let bytes = bundle()?.encode()?;
     let digest = crate::net::cache::content_digest(&bytes);
     let view = FrozenRetainedJournal::from_descriptor(&digest, &"a".repeat(64), 7, &bytes)?;
-    assert_eq!(
+    check!(eq;
         view.journal_payload_bounded(
             super::super::OWNED_CAPTURE_PHASE,
             "synthetic/missing",
@@ -28,7 +28,7 @@ fn anchored_missing_is_distinct_from_unlisted_source_object() -> TestResult {
         )?,
         None
     );
-    assert!(view
+    check!(view
         .journal_payload_bounded(
             super::super::OWNED_CAPTURE_PHASE,
             "synthetic/unlisted",
@@ -44,25 +44,19 @@ fn extra_missing_and_duplicate_inventory_entries_are_refused() -> TestResult {
     let digest = crate::net::cache::content_digest(&original);
     let mut changed = bundle()?;
     changed.entries.clear();
-    assert!(FrozenRetainedJournal::from_descriptor(
-        &digest,
-        &"a".repeat(64),
-        7,
-        &changed.encode()?
-    )
-    .is_err());
+    check!(
+        FrozenRetainedJournal::from_descriptor(&digest, &"a".repeat(64), 7, &changed.encode()?)
+            .is_err()
+    );
     changed.entries.push(Entry {
         phase: super::super::OWNED_CAPTURE_PHASE.into(),
         key: "synthetic/extra".into(),
         payload: RecordedPayload::Absent,
     });
-    assert!(FrozenRetainedJournal::from_descriptor(
-        &digest,
-        &"a".repeat(64),
-        7,
-        &changed.encode()?
-    )
-    .is_err());
+    check!(
+        FrozenRetainedJournal::from_descriptor(&digest, &"a".repeat(64), 7, &changed.encode()?)
+            .is_err()
+    );
     let mut duplicate = bundle()?;
     duplicate.entries.push(Entry {
         phase: super::super::OWNED_CAPTURE_PHASE.into(),
@@ -70,7 +64,7 @@ fn extra_missing_and_duplicate_inventory_entries_are_refused() -> TestResult {
         payload: RecordedPayload::Absent,
     });
     let bytes = duplicate.encode()?;
-    assert!(FrozenRetainedJournal::from_descriptor(
+    check!(FrozenRetainedJournal::from_descriptor(
         &crate::net::cache::content_digest(&bytes),
         &"a".repeat(64),
         7,
@@ -89,10 +83,10 @@ fn lineage_sequence_and_read_budgets_are_binding() -> TestResult {
     };
     let bytes = bundle.encode()?;
     let digest = crate::net::cache::content_digest(&bytes);
-    assert!(FrozenRetainedJournal::from_descriptor(&digest, &"b".repeat(64), 7, &bytes).is_err());
-    assert!(FrozenRetainedJournal::from_descriptor(&digest, &"a".repeat(64), 8, &bytes).is_err());
+    check!(FrozenRetainedJournal::from_descriptor(&digest, &"b".repeat(64), 7, &bytes).is_err());
+    check!(FrozenRetainedJournal::from_descriptor(&digest, &"a".repeat(64), 8, &bytes).is_err());
     let view = FrozenRetainedJournal::from_descriptor(&digest, &"a".repeat(64), 7, &bytes)?;
-    assert!(view
+    check!(view
         .journal_payload_bounded(
             super::super::OWNED_CAPTURE_PHASE,
             "synthetic/missing",
@@ -116,7 +110,7 @@ fn present_json_null_is_not_rewritten_as_absent() -> TestResult {
         7,
         &bytes,
     )?;
-    assert_eq!(
+    check!(eq;
         view.journal_payload_bounded(
             super::super::OWNED_CAPTURE_PHASE,
             "synthetic/missing",
@@ -139,14 +133,14 @@ fn failed_live_read_poison_prevents_freezing_incomplete_inventory() -> TestResul
     )?;
     let snapshot = store.snapshot();
     let recorder = RecordingRetainedJournal::new(&snapshot);
-    assert!(recorder
+    check!(recorder
         .journal_payload_bounded(
             super::super::OWNED_CAPTURE_PHASE,
             "synthetic/large",
             JournalReadBudget::new(1)?
         )
         .is_err());
-    assert!(recorder.finish().is_err());
+    check!(recorder.finish().is_err());
     Ok(())
 }
 
@@ -158,7 +152,7 @@ fn malformed_recorded_grant_and_oversized_entry_are_refused_before_use() -> Test
         minimum_successful_read_budget: 1,
     };
     let bytes = bundle.encode()?;
-    assert!(FrozenRetainedJournal::from_descriptor(
+    check!(FrozenRetainedJournal::from_descriptor(
         &crate::net::cache::content_digest(&bytes),
         &"a".repeat(64),
         7,
@@ -178,7 +172,7 @@ fn malformed_recorded_grant_and_oversized_entry_are_refused_before_use() -> Test
     )
     .err()
     .ok_or("oversized entry accepted")?;
-    assert!(failure
+    check!(failure
         .to_string()
         .contains("entry envelope exceeds its admission budget"));
     Ok(())
@@ -215,7 +209,7 @@ fn entry_count_is_admitted_at_40000_and_refused_before_decoding_40001() -> TestR
     )
     .err()
     .ok_or("entry count accepted")?;
-    assert!(failure
+    check!(failure
         .to_string()
         .contains("entry envelope exceeds its admission budget"));
     Ok(())

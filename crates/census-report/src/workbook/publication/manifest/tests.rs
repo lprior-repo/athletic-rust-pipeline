@@ -1,5 +1,8 @@
 use super::{open_publication, verify_published, Artifact, Manifest};
-use crate::export::{decoded_generations, resident_generations, store_lineage, ExportDataset};
+use crate::export::{
+    decoded_generations, generation_counter_window, resident_generations, store_lineage,
+    ExportDataset,
+};
 use crate::report::{io_error, ReportResult, Scope};
 use crate::workbook::publication::invariant;
 use crate::workbook::Options;
@@ -92,6 +95,7 @@ fn a_stale_store_is_refused_before_the_seal_decodes_the_generation() -> TestResu
     );
     store.append(Table::Schools, &later)?;
     let stale = store_lineage(&store)?;
+    let _counter_window = generation_counter_window()?;
     let decoded_baseline = decoded_generations();
     let error = match open_publication(&published, &stale, Scope::AllSources, GradYear::CO2027) {
         Err(error) => error,
@@ -118,6 +122,7 @@ fn a_seal_opens_one_generation_that_carries_the_published_frozen_input() -> Test
     let published = crate::workbook::build(&store, &options()?)?;
     let generation = published.parent().ok_or("missing generation directory")?;
     let lineage = store_lineage(&store)?;
+    let _counter_window = generation_counter_window()?;
     let baseline = resident_generations();
     let decoded_baseline = decoded_generations();
     let opened = open_publication(&published, &lineage, Scope::AllSources, GradYear::CO2027)?;
@@ -227,6 +232,7 @@ fn seal_verification_shares_one_generation_across_exact_readback() -> TestResult
     seed(&store, "Publishing High School")?;
     let published = crate::workbook::build(&store, &options()?)?;
     let lineage = store_lineage(&store)?;
+    let _counter_window = generation_counter_window()?;
     let decoded = decoded_generations();
     let resident = resident_generations();
     let opened = open_publication(&published, &lineage, Scope::AllSources, GradYear::CO2027)?;

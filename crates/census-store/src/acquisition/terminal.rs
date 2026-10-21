@@ -34,9 +34,6 @@ impl Store {
         work: OwnedAcquisitionWork,
         budget: &mut AcquisitionReadBudget,
     ) -> StoreResult<AcquisitionOccurrenceRefV1> {
-        if work.protocol() == CaptureProtocolVersion::V2 {
-            return Err(CaptureError::PreparedTargetMismatch.into());
-        }
         budget.begin_operation();
         let _writes = self.lock_appends();
         work.verify(self)?;

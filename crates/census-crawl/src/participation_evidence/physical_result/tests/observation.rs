@@ -5,6 +5,9 @@ use census_domain::model::{
 };
 use serde_json::{json, Map, Value};
 
+type PerformanceMutation = (&'static str, Box<dyn FnOnce(&mut CanonicalPerformance)>);
+type NoteMutation = (&'static str, Box<dyn FnOnce(&mut Map<String, Value>)>);
+
 struct ProjectionRows {
     body_sha256: String,
     performances: Vec<CanonicalPerformance>,
@@ -36,7 +39,7 @@ fn projection(change_hints_at: Option<usize>) -> TestResult<ProjectionRows> {
     })
 }
 
-fn first_note<'a>(performance: &'a CanonicalPerformance) -> TestResult<&'a str> {
+fn first_note(performance: &CanonicalPerformance) -> TestResult<&str> {
     match performance
         .evidence
         .first()
@@ -255,7 +258,7 @@ fn changed_physical_fields_never_match_in_either_argument_order() -> TestResult 
         "synthetic subject",
         "synthetic retained conflict",
     );
-    let cases: [(&str, Box<dyn FnOnce(&mut CanonicalPerformance)>); 10] = [
+    let cases: [PerformanceMutation; 10] = [
         (
             "mark",
             Box::new(move |performance| performance.mark = changed_mark),
@@ -317,7 +320,7 @@ fn changed_physical_fields_never_match_in_either_argument_order() -> TestResult 
 fn changed_immutable_note_fields_never_match_in_either_argument_order() -> TestResult {
     let rows = projection(None)?;
     let base = rows.performances.get(1).ok_or("base performance")?;
-    let cases: [(&str, Box<dyn FnOnce(&mut Map<String, Value>)>); 7] = [
+    let cases: [NoteMutation; 7] = [
         (
             "original row digest",
             Box::new(|note| alter_string(note, "original_row_digest")),
@@ -407,7 +410,7 @@ fn foreign_row_note_in_either_collection_breaks_the_match() -> TestResult {
 fn malformed_unknown_or_missing_notes_refuse_in_either_argument_order() -> TestResult {
     let rows = projection(None)?;
     let base = rows.performances.get(1).ok_or("base performance")?;
-    let unknown_cases: [(&str, Box<dyn FnOnce(&mut Map<String, Value>)>); 2] = [
+    let unknown_cases: [NoteMutation; 2] = [
         (
             "unknown note field",
             Box::new(|note| {
@@ -499,7 +502,7 @@ fn empty_evidence_is_never_accepted_in_either_argument() -> TestResult {
 fn foreign_capture_provenance_is_not_the_same_physical_observation() -> TestResult {
     let rows = projection(None)?;
     let base = rows.performances.get(1).ok_or("base performance")?;
-    let cases: [(&str, Box<dyn FnOnce(&mut CanonicalPerformance)>); 3] = [
+    let cases: [PerformanceMutation; 3] = [
         (
             "source url",
             Box::new(|performance| {

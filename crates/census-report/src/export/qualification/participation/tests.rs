@@ -30,10 +30,10 @@ async fn authentic_source_does_not_gain_high_school_status() -> TestResult {
     let fixture = Fixture::prepare(None).await?;
     let (outcome, reasons, references, _) =
         row(fixture.assess()?, &fixture.performance.id)?.into_parts();
-    assert_eq!(outcome, CandidateOutcome::Unresolved);
-    assert!(reasons.contains(ParticipationReason::HighSchoolStatusMissing));
-    assert!(reasons.contains(ParticipationReason::SummerBoundaryUnresolved));
-    assert!(references
+    check!(eq; outcome, CandidateOutcome::Unresolved);
+    check!(reasons.contains(ParticipationReason::HighSchoolStatusMissing));
+    check!(reasons.contains(ParticipationReason::SummerBoundaryUnresolved));
+    check!(references
         .iter()
         .any(|reference| reference.starts_with("acquisition/")));
     Ok(())
@@ -49,21 +49,21 @@ async fn synthetic_scholastic_source_retains_archive_but_lacks_independent_statu
     check!(payload.get("attachment").is_some());
     let payload = payload.get("retained").ok_or("retained V2 payload")?;
     check!(eq; payload.get("version"), Some(&json!(2)));
-    assert!(payload["independent"]["entries"]
+    check!(payload["independent"]["entries"]
         .as_object()
         .ok_or("independent entries")?
         .is_empty());
     let payload = &payload["retained"];
-    assert_eq!(
+    check!(eq;
         payload["profile_id"],
         serde_json::to_value(fixture.profile.id()?)?
     );
-    assert!(payload["journal"]["entries"]
+    check!(payload["journal"]["entries"]
         .as_array()
         .ok_or("objects")?
         .iter()
         .any(|object| object["phase"] == census_crawl::milesplit::OWNED_MEET_PHASE));
-    assert!(payload["journal"]["entries"]
+    check!(payload["journal"]["entries"]
         .as_array()
         .ok_or("objects")?
         .iter()
@@ -71,16 +71,16 @@ async fn synthetic_scholastic_source_retains_archive_but_lacks_independent_statu
             .as_str()
             .is_some_and(|key| key.starts_with("metadata/") && key.ends_with("/0"))));
     let (outcome, reasons, references, gaps) = row(token, &fixture.performance.id)?.into_parts();
-    assert_eq!(outcome, CandidateOutcome::Unresolved, "{gaps:?}");
-    assert_eq!(
+    check!(eq; outcome, CandidateOutcome::Unresolved, "{gaps:?}");
+    check!(eq;
         reasons.iter().collect::<Vec<_>>(),
         vec![
             ParticipationReason::HighSchoolStatusMissing,
             ParticipationReason::SummerBoundaryUnresolved,
         ]
     );
-    assert!(gaps.is_empty());
-    assert!(references.windows(2).all(|pair| pair[0] < pair[1]));
+    check!(gaps.is_empty());
+    check!(references.windows(2).all(|pair| pair[0] < pair[1]));
     Ok(())
 }
 
@@ -100,9 +100,9 @@ async fn synthetic_explicit_non_school_status_stays_excluded_and_auditable() -> 
         let fixture = Fixture::prepare(Some(label)).await?;
         let (outcome, reasons, references, _) =
             row(fixture.assess()?, &fixture.performance.id)?.into_parts();
-        assert_eq!(outcome, CandidateOutcome::Excluded);
-        assert!(reasons.contains(reason));
-        assert!(!references.is_empty());
+        check!(eq; outcome, CandidateOutcome::Excluded);
+        check!(reasons.contains(reason));
+        check!(!references.is_empty());
     }
     Ok(())
 }
@@ -113,8 +113,8 @@ async fn synthetic_club_open_and_unattached_do_not_create_window_endpoints() -> 
         let fixture = Fixture::prepare(Some(label)).await?;
         let (outcome, reasons, _, _) =
             row(fixture.assess()?, &fixture.performance.id)?.into_parts();
-        assert_eq!(outcome, CandidateOutcome::Unresolved);
-        assert!(reasons.contains(ParticipationReason::SummerBoundaryUnresolved));
+        check!(eq; outcome, CandidateOutcome::Unresolved);
+        check!(reasons.contains(ParticipationReason::SummerBoundaryUnresolved));
     }
     Ok(())
 }
@@ -139,13 +139,13 @@ async fn unverified_supplementary_window_remains_in_physical_closure_after_repla
     fixture.store.append(Table::Athletes, &original)?;
     let (outcome, _, references, gaps) =
         row(fixture.assess()?, &fixture.performance.id)?.into_parts();
-    assert_eq!(outcome, CandidateOutcome::Unresolved);
-    assert!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
+    check!(eq; outcome, CandidateOutcome::Unresolved);
+    check!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
     let expected = format!(
         "canonical_evidence:{}",
         serialized_digest(changed.evidence.last().ok_or("supplement")?)?
     );
-    assert!(references.contains(&expected));
+    check!(references.contains(&expected));
     Ok(())
 }
 
@@ -173,8 +173,8 @@ async fn appended_unknown_field_cannot_hide_in_an_otherwise_owned_note() -> Test
     evidence.note = Some(note.to_string());
     fixture.store.append(Table::Athletes, &athlete)?;
     let (outcome, _, _, gaps) = row(fixture.assess()?, &fixture.performance.id)?.into_parts();
-    assert_eq!(outcome, CandidateOutcome::Unresolved);
-    assert!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
+    check!(eq; outcome, CandidateOutcome::Unresolved);
+    check!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
     Ok(())
 }
 
@@ -188,12 +188,12 @@ async fn reasons_union_is_empty_identity_commutative_associative_and_idempotent(
         samples.push(reasons);
     }
     for a in &samples {
-        assert_eq!(a.union(Default::default()), *a);
-        assert_eq!(a.union(*a), *a);
+        check!(eq; a.union(Default::default()), *a);
+        check!(eq; a.union(*a), *a);
         for b in &samples {
-            assert_eq!(a.union(*b), b.union(*a));
+            check!(eq; a.union(*b), b.union(*a));
             for c in &samples {
-                assert_eq!(a.union(*b).union(*c), a.union(b.union(*c)));
+                check!(eq; a.union(*b).union(*c), a.union(b.union(*c)));
             }
         }
     }

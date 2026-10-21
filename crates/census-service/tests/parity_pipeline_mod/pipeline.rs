@@ -33,9 +33,9 @@ pub struct Run {
 }
 
 pub async fn run_pipeline(root: &Path) -> Result<Run> {
-    Store::create_capture_qualification_v2(root)
+    Store::create_capture_qualification(root)
         .with_context(|| format!("creating a capture store at {}", root.display()))?;
-    let (store, writer) = Store::open_capture_qualification_v2(root)
+    let (store, writer) = Store::open_current_qualification_v3(root)
         .with_context(|| format!("opening a capture store at {}", root.display()))?
         .into_parts();
     let fetcher = Fetcher::new(

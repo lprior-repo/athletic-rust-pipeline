@@ -52,7 +52,7 @@ async fn controlled_al_projection_nonempty_consumption_survives_lost_ack_same_ke
     let before = durable_snapshot(&fixture)?;
     let receipts = projection_receipts(&fixture)?;
     let key = fixture.key().to_owned();
-    let fixture = fixture.cold_reopen_v2()?;
+    let fixture = fixture.cold_reopen()?;
     check!(eq; fixture.key(), key);
     check!(eq; retained_rows(&fixture)?, rows);
     check!(eq; projection_receipts(&fixture)?, receipts);
@@ -111,7 +111,7 @@ fn controlled_fixture() -> TestResult<Fixture> {
         results_url: RESULTS.to_owned(),
         ..super::super::fixture::meet()
     };
-    let fixture = Fixture::with_inputs(CaptureProtocolVersion::V2, request, meet)?;
+    let fixture = Fixture::with_inputs(request, meet)?;
     crate::capture_cache::seed(fixture.fetcher.cache_dir(), RAW, RAW_BODY, AT, &[])?;
     for (name, id) in [
         ("Controlled school 38332", "38332"),

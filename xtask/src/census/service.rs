@@ -77,6 +77,18 @@ pub(super) fn workbook_request(options: &ExportRequest) -> Result<WorkbookReques
     } else {
         Scope::AllSources
     };
+    let (Some(store_identity), Some(profile_id)) = (
+        options.selected_store_identity.as_deref(),
+        options.selected_profile_id.as_deref(),
+    ) else {
+        anyhow::bail!(
+            "--selected-store-identity and --selected-profile-id must be supplied together"
+        );
+    };
+    let selection = census_domain::model::ProfileSelectionV1::new(
+        census_domain::model::StoreIdentity::parse(store_identity).map_err(anyhow::Error::msg)?,
+        census_domain::model::ProfileId::parse(profile_id).map_err(anyhow::Error::msg)?,
+    );
     Ok(WorkbookRequest {
         grad_year: Some(grad_year_i16(options.grad_year)?),
         limit: options.limit,
@@ -87,7 +99,7 @@ pub(super) fn workbook_request(options: &ExportRequest) -> Result<WorkbookReques
             .map(|path| path.display().to_string()),
         school_year: Some(school_year_i16(options.school_year)?),
         jurisdictions: Vec::new(),
-        export_job: census_report::export::ExportJobRequest::LegacyV2,
+        export_job: census_report::export::ExportJobRequest::SelectedPublicationV1 { selection },
     })
 }
 

@@ -3,7 +3,7 @@ use crate::restate_services::results_arms::plan_v2::MAX_PLAN_BYTES;
 
 #[tokio::test(flavor = "current_thread")]
 async fn oversized_completed_j0_bytes_refuse_at_real_sdk_decode_before_j1() -> TestResult {
-    let fixture = Fixture::v2()?;
+    let fixture = Fixture::new()?;
     fixture::seed_prepared(&fixture)?;
     let resources = fixture.region.coordinator().remaining();
     let f = &fixture;
@@ -34,7 +34,7 @@ async fn oversized_completed_j0_bytes_refuse_at_real_sdk_decode_before_j1() -> T
 #[tokio::test(flavor = "current_thread")]
 async fn j0_encoding_admission_refusal_never_dispatches_execute_or_changes_acquisitions(
 ) -> TestResult {
-    let fixture = Fixture::v2()?;
+    let fixture = Fixture::new()?;
     fixture::seed_prepared(&fixture)?;
     fixture::pending_overflow(&fixture)?;
     let resources = fixture.region.coordinator().remaining();
@@ -66,7 +66,7 @@ async fn j0_encoding_admission_refusal_never_dispatches_execute_or_changes_acqui
 
 #[tokio::test(flavor = "current_thread")]
 async fn exact_cap_completed_j0_bytes_are_decoded_by_the_actual_sdk_before_execute() -> TestResult {
-    let fixture = Fixture::v2()?;
+    let fixture = Fixture::new()?;
     let prepared = fixture::seed_prepared(&fixture)?;
     let resources = fixture.region.coordinator().remaining();
     let f = &fixture;

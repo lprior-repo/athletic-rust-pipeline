@@ -33,9 +33,6 @@ async fn selected_job_resumes_complete_pending_and_refuses_partial_or_corrupt_in
     let legacy = directory.join(format!("{digest}.json"));
     std::fs::write(&legacy, b"retained-conflicting-representation")?;
     check!(ExportDataset::for_job_request(&fixture.store, job, &request).is_err());
-    check!(
-        ExportDataset::for_job_request(&fixture.store, job, &ExportJobRequest::LegacyV2).is_err()
-    );
     check!(eq; std::fs::read(&legacy)?, b"retained-conflicting-representation");
     std::fs::remove_file(&legacy)?;
     let proof = std::fs::read_dir(root.join("input.json.proofs"))?
@@ -67,8 +64,6 @@ fn selected_job_refuses_legacy_retained_freeze_even_without_legacy_json() -> Tes
     };
     check!(ExportDataset::for_job_request(&store, job, &request).is_err());
     check!(path.is_dir());
-    let legacy = ExportDataset::for_job_request(&store, job, &ExportJobRequest::LegacyV2)?;
-    check!(legacy.selected_profile_id().is_none());
     check!(ExportDataset::for_job_request(&store, job, &request).is_err());
     Ok(())
 }
@@ -77,11 +72,11 @@ fn selected_job_refuses_legacy_retained_freeze_even_without_legacy_json() -> Tes
 fn selected_job_wire_requires_explicit_supported_contract() -> TestResult {
     for value in [
         r#"{}"#,
+        r#"{"contract":"legacy_v2"}"#,
         r#"{"contract":"selected_publication_v1"}"#,
         r#"{"contract":"selected_publication_v2"}"#,
     ] {
         check!(serde_json::from_str::<ExportJobRequest>(value).is_err());
     }
-    check!(eq; serde_json::from_str::<ExportJobRequest>(r#"{"contract":"legacy_v2"}"#)?, ExportJobRequest::LegacyV2);
     Ok(())
 }

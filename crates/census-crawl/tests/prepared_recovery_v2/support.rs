@@ -33,9 +33,9 @@ pub struct Prepared {
 impl Fixture {
     pub fn new() -> TestResult<Self> {
         let root = tempfile::tempdir()?;
-        Store::create_capture_qualification_v2(root.path().join("store"))?;
+        Store::create_capture_qualification(root.path().join("store"))?;
         let (store, writer) =
-            Store::open_capture_qualification_v2(root.path().join("store"))?.into_parts();
+            Store::open_current_qualification_v3(root.path().join("store"))?.into_parts();
         store.bind_run(&RunManifest {
             store_identity: writer.store_identity().as_str().to_owned(),
             run: CensusRun::new(SchoolYear::new(2026).ok_or("year")?, 1).ok_or("run")?,

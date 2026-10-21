@@ -105,7 +105,7 @@ fn require_exact_scope(proposal: &ResultCalendarSourceProposalV1) -> TestResult 
         sha2::Sha256::digest(RESULT_CALENDAR_PARSER_CONTRACT_V1)
     );
     check!(eq; contract.as_str(), expected_digest.as_str());
-    check!(proposal.claim().evidence.len() > 0);
+    check!(!proposal.claim().evidence.is_empty());
     check!(proposal.claim().evidence.len() <= 32);
     Ok(())
 }

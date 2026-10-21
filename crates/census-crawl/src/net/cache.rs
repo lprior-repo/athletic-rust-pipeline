@@ -210,21 +210,7 @@ pub fn seed_eligible_occurrence(seed: EligibleSeed<'_>) -> Result<(), FetchError
     let extra = super::execute::representation::cache_extra(None, &representation);
     let key = super::Fetcher::key_for("GET", &url, &extra);
     let (body_path, meta_path) = seed.fetcher.cache_paths(&key);
-    let digest = content_digest(seed.body);
-    let metadata = CacheMeta {
-        url: url.clone(),
-        response_url: Some(url.clone()),
-        method: "GET".to_owned(),
-        representation,
-        status: 200,
-        content_digest: digest.clone(),
-        bytes: seed.body.len(),
-        fetched_at: seed.fetched_at.to_owned(),
-        etag: None,
-        last_modified: None,
-        content_type: None,
-        redirects: Vec::new(),
-    };
+    let metadata = eligible_seed_metadata(&seed, &url, representation);
     let capture = Capture::from_meta(&metadata, &meta_path)?;
     capture.verify_body(seed.body, &body_path)?;
     let registered = seed
@@ -248,7 +234,7 @@ pub fn seed_eligible_occurrence(seed: EligibleSeed<'_>) -> Result<(), FetchError
         )?,
     )?;
     let input = census_domain::model::PreparedCaptureInputV1::new(
-        &digest,
+        &metadata.content_digest,
         u64::try_from(seed.body.len()).map_err(|_| FetchError::Invariant {
             detail: "seeded eligible body length exceeds the acquisition range".to_owned(),
         })?,
@@ -264,6 +250,27 @@ pub fn seed_eligible_occurrence(seed: EligibleSeed<'_>) -> Result<(), FetchError
     let envelope = EligibleCacheV2::new(metadata, occurrence);
     publish_eligible(&body_path, &meta_path, &envelope, &archived_body)?;
     Ok(())
+}
+
+fn eligible_seed_metadata(
+    seed: &EligibleSeed<'_>,
+    url: &str,
+    representation: RepresentationHeaders,
+) -> CacheMeta {
+    CacheMeta {
+        url: url.to_owned(),
+        response_url: Some(url.to_owned()),
+        method: "GET".to_owned(),
+        representation,
+        status: 200,
+        content_digest: content_digest(seed.body),
+        bytes: seed.body.len(),
+        fetched_at: seed.fetched_at.to_owned(),
+        etag: None,
+        last_modified: None,
+        content_type: None,
+        redirects: Vec::new(),
+    }
 }
 
 #[cfg(test)]

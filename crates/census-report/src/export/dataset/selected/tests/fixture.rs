@@ -15,6 +15,9 @@ use std::path::Path;
 pub(crate) mod consumer;
 mod results;
 mod roster;
+pub(crate) use super::publication::controlled_three_marks::coverage_fixture::{
+    coverage_time_fixture, CoverageTimeFixture,
+};
 pub(crate) use roster::{hash, retain};
 mod transfer;
 

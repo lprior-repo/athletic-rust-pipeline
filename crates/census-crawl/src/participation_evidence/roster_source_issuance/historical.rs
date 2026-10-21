@@ -1,6 +1,4 @@
-use super::{
-    binding, manifest::RetainedRosterParserManifestV1, policies, semantic_inventory, source,
-};
+use super::{binding, manifest::RetainedRosterParserManifestV1, policies, source};
 use crate::participation_evidence::provider_school::CheckedProviderSchoolPacketV1;
 use crate::participation_evidence::{invalid, json};
 use crate::CrawlResult;

@@ -129,11 +129,11 @@ fn absent_ad_preserves_sports_without_creating_a_director() -> anyhow::Result<()
         .iter()
         .map(|coach| coach.name.as_str())
         .collect();
-    assert_eq!(
+    check!(eq;
         names,
         ["Joe DePalma", "Greg King", "James Legins", "Greg King"]
     );
-    assert!(extract
+    check!(extract
         .coaches
         .iter()
         .all(|coach| coach.role == CoachRole::HeadCoach));
@@ -154,12 +154,12 @@ fn tba_coach_does_not_create_an_identity_or_mailbox() -> anyhow::Result<()> {
     );
     let ad = capture(sr.ad_url(), fixture_ad_centerville(), AD_FETCHED);
     let extract = school_entities(&sr, &sports, Some(&ad))?;
-    assert_eq!(extract.coaches.len(), 4);
+    check!(eq; extract.coaches.len(), 4);
     let girls_track = extract
         .coaches
         .iter()
         .find(|coach| coach.sport == Some(Sport::OutdoorTrack) && coach.gender == Gender::Girls);
-    assert_eq!(girls_track, None);
+    check!(eq; girls_track, None);
     Ok(())
 }
 

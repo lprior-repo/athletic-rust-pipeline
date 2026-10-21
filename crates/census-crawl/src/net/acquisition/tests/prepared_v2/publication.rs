@@ -8,7 +8,7 @@ async fn compatibility_skips_leave_busy_old_pair_untouched_before_any_eligible_e
 {
     for encoding in [Encoding::Compact, Encoding::Unknown] {
         let listener = TcpListener::bind("127.0.0.1:0").await?;
-        let fixture = Fixture::new_v2(&listener)?;
+        let fixture = Fixture::new(&listener)?;
         let prepared = prepare(&fixture, BODY, encoding)?;
         publish(&fixture, &prepared)?;
         let (body, metadata) = fixture.cache_paths()?;
@@ -56,7 +56,7 @@ async fn compatibility_skips_leave_busy_old_pair_untouched_before_any_eligible_e
 async fn canonical_publication_streams_and_preserves_unknown_historical_metadata_identity(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let (body, metadata) = fixture.cache_paths()?;
@@ -105,7 +105,7 @@ async fn canonical_publication_streams_and_preserves_unknown_historical_metadata
 #[tokio::test]
 async fn admitted_publication_holds_actual_same_archive_file_until_after_eligible() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let (_, metadata) = fixture.cache_paths()?;
@@ -146,7 +146,7 @@ async fn admitted_publication_holds_actual_same_archive_file_until_after_eligibl
 async fn second_rename_failure_keeps_committed_truth_and_reports_actual_partial_replacement(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let (body, metadata) = fixture.cache_paths()?;

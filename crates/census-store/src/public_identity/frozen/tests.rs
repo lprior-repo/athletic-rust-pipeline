@@ -1,17 +1,14 @@
 use super::*;
-use crate::public_identity_tests::support::{
-    fixture, physical_state, retained_state, subject, TestResult,
-};
+use crate::public_identity_tests::support::{fixture, retained_state, subject, TestResult};
 use crate::{PublicIdentityError, Store, StoreError, Table};
 use census_domain::public_identity_history::PublicResolution;
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 
 mod budgets;
 mod graph;
-mod historical;
 mod tamper;
 
-fn two_births() -> TestResult<(
+pub(super) fn two_births() -> TestResult<(
     tempfile::TempDir,
     Store,
     crate::PublicIdentityWriterV1,
@@ -169,41 +166,18 @@ fn frozen_reviewed_merge_keeps_historical_birth_ids_and_redirects() -> TestResul
 }
 
 #[test]
-fn historical_v1_remains_readable_without_a_mutating_writer() -> TestResult {
+fn historical_v1_fixture_is_refused_without_a_lineage() -> TestResult {
     let directory = tempfile::tempdir()?;
     let root = directory.path().join("historical");
-    let declaration = crate::public_identity::init::create_historical_test_fixture(
-        &root,
-        PublicIdentityQualificationVersion::SourceBoundV1,
-    )?;
-    let before = physical_state(&root)?;
-    let accepted = Store::replay_historical_public_identity(&root)?;
-    check!(eq; accepted.qualification_version(), PublicIdentityQualificationVersion::SourceBoundV1);
-    check!(eq; accepted.store_identity(), declaration.store_identity());
-    check!(eq; accepted.head().sequence, 0);
-    for (result, found) in [
-        (
-            Store::open_public_identity_qualification_v1(&root),
+    check!(matches!(
+        crate::public_identity::init::create_historical_test_fixture(
+            &root,
             PublicIdentityQualificationVersion::SourceBoundV1,
         ),
-        (
-            Store::open_public_identity_qualification_v2(&root),
-            PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
-        ),
-        (
-            Store::open_public_identity_qualification_v3(&root),
-            PublicIdentityQualificationVersion::SourceBoundV1,
-        ),
-    ] {
-        check!(matches!(
-            result,
-            Err(StoreError::PublicIdentity(PublicIdentityError::QualificationVersionMismatch {
-                expected: PublicIdentityQualificationVersion::RetainedAuthorityGraphV3,
-                found: actual,
-            })) if actual == found
-        ));
-    }
-    check!(eq; physical_state(&root)?, before);
+        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
+            "removed public identity V1 declaration"
+        )))
+    ));
     Ok(())
 }
 
@@ -221,12 +195,6 @@ fn current_empty_graph_ledger_freezes_with_exact_empty_object_inventory() -> Tes
     check!(objects.is_empty());
     check!(eq; frozen.replay()?.head(), accepted.head());
     check!(eq; frozen.replay()?.snapshot_sequence(), accepted.snapshot_sequence());
-    check!(matches!(
-        snapshot.freeze_public_identity_v1(),
-        Err(StoreError::PublicIdentity(PublicIdentityError::Corrupt(
-            "frozen identity requires retained authority V2"
-        )))
-    ));
     check!(eq; retained_state(&store)?, before);
     Ok(())
 }

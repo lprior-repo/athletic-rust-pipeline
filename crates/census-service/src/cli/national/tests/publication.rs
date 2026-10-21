@@ -1,7 +1,4 @@
-use super::resume::{
-    bound_history, bound_request, capabilities, guarded_resume_ingress,
-    guarded_resume_with_held_reply,
-};
+use super::resume::{bound_request, capabilities, guarded_resume_with_held_reply};
 use census_service::restate_services::{NationalRequest, PublicationContract};
 use clap::Parser;
 
@@ -28,21 +25,19 @@ async fn exchange(
     arguments: &[&str],
     responses: Vec<(&str, String)>,
 ) -> TestResult<(Vec<(String, Vec<u8>)>, anyhow::Result<()>)> {
-    exchange_mode(arguments, responses, true).await
+    exchange_mode(arguments, responses).await
 }
 
 async fn exchange_mode(
     arguments: &[&str],
     responses: Vec<(&str, String)>,
-    detached: bool,
 ) -> TestResult<(Vec<(String, Vec<u8>)>, anyhow::Result<()>)> {
-    exchange_with_held_reply(arguments, responses, detached, None).await
+    exchange_with_held_reply(arguments, responses, None).await
 }
 
 async fn exchange_with_held_reply(
     arguments: &[&str],
     responses: Vec<(&str, String)>,
-    detached: bool,
     held_reply: Option<(usize, usize)>,
 ) -> TestResult<(Vec<(String, Vec<u8>)>, anyhow::Result<()>)> {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
@@ -50,9 +45,6 @@ async fn exchange_with_held_reply(
     let store = "a".repeat(64);
     let profile = "b".repeat(64);
     let mut input = vec!["census-service", "national", "--states", "WI"];
-    if detached {
-        input.push("--detach");
-    }
     input.extend(["--selected-store-identity", store.as_str()]);
     input.extend(["--selected-profile-id", profile.as_str()]);
     input.extend(["--generation", "qualified-v1"]);
@@ -82,6 +74,43 @@ fn absent() -> (&'static str, String) {
         "404 Not Found",
         "{\"message\":\"fixture invocation absent\"}".into(),
     )
+}
+
+fn previously_accepted() -> (&'static str, String) {
+    (
+        "202 Accepted",
+        serde_json::json!({
+            "invocationId": "inv_1aiqX0vFEFNH1Umgre58JiCLgHfTtztYK5", "status": "PreviouslyAccepted"
+        })
+        .to_string(),
+    )
+}
+
+fn resolved() -> (&'static str, String) {
+    (
+        "200 OK",
+        serde_json::json!({"invocationId": "inv_1aiqX0vFEFNH1Umgre58JiCLgHfTtztYK5"}).to_string(),
+    )
+}
+
+fn ready_complete_report() -> TestResult<String> {
+    Ok(serde_json::to_string(&serde_json::json!({
+        "season": 2026, "revision": 1, "completeness": "final",
+        "jurisdictions": [{
+            "jurisdiction": "WI", "identity": "retained-jurisdiction",
+            "rosters_total": 0, "rosters_committed": 0, "rosters_remaining": 0,
+            "rosters_skipped": 0, "blocked": false, "athletes": 0, "class_of_2027": 0
+        }],
+        "failures": [], "owed": [], "rosters_total": 0, "athletes_total": 0,
+        "class_of_2027_total": 0, "today": "2026-10-14"
+    }))?)
+}
+
+fn send_count(captured: &[(String, Vec<u8>)]) -> usize {
+    captured
+        .iter()
+        .filter(|(path, _)| path.contains("/run/send "))
+        .count()
 }
 
 #[tokio::test]
@@ -129,7 +158,6 @@ async fn fresh_submission_without_complete_selection_refuses_before_any_network(
         "national",
         "--states",
         "WI",
-        "--detach",
         "--ingress",
         origin.as_str(),
     ])?;
@@ -180,84 +208,83 @@ async fn unsupported_missing_or_malformed_capability_never_submits_a_national_ru
 
 #[tokio::test]
 async fn unbound_legacy_resume_does_not_invent_a_contract_or_submission() -> TestResult {
-    let unbound = "{\"status\":\"unbound_legacy\"}".to_owned();
     let (captured, error) = exercise(
-        &["--resume", "7"],
+        &[],
         vec![
-            ("200 OK", unbound.clone()),
-            ("200 OK", unbound.clone()),
-            ("200 OK", unbound),
+            ("200 OK", capabilities()?),
+            absent(),
+            ("200 OK", "{\"status\":\"unbound_legacy\"}".into()),
         ],
     )
     .await?;
     check!(eq; captured.len(), 3);
-    check!(captured
-        .iter()
-        .all(|(path, _)| path.contains("/request HTTP/1.1")));
-    check!(captured
-        .first()
-        .is_some_and(|(path, _)| path.contains("%3Aresume%3A7/request")));
-    check!(captured
-        .get(1)
-        .is_some_and(|(path, _)| !path.contains("%3Aresume%3A")));
+    check!(eq; send_count(&captured), 1);
     check!(captured
         .get(2)
-        .is_some_and(|(path, _)| path.contains("%3Aresume%3A6/request")));
-    check!(
-        error.contains("no bound selected publication request"),
-        "{error}"
-    );
+        .is_some_and(|(path, _)| path.contains("/request HTTP/1.1")));
+    check!(error.contains("invalid request binding"), "{error}");
     Ok(())
 }
 
 #[tokio::test]
-async fn new_resume_reuses_base_request_and_preserves_nondefault_budgets() -> TestResult {
-    let original = bound_request(&["WI"])?;
-    let (captured, _) = exercise(
-        &["--resume", "7", "--pass-budget", "999"],
+async fn send_refusal_reuses_verified_retained_request_without_new_submission() -> TestResult {
+    let (captured, outcome) = exchange(
+        &[],
         vec![
-            ("200 OK", "{\"status\":\"unbound_legacy\"}".into()),
-            ("200 OK", original.clone()),
-            ("200 OK", bound_history(Some("2026-10-01"))?),
             ("200 OK", capabilities()?),
             absent(),
-            absent(),
+            ("200 OK", bound_request(&["WI"])?),
+            resolved(),
+            ("200 OK", ready_complete_report()?),
+            ("200 OK", ready_complete_report()?),
+            ("200 OK", "null".into()),
         ],
     )
     .await?;
-    check!(eq; captured.len(), 6);
-    let (path, body) = captured.get(4).ok_or("resume submission absent")?;
-    check!(path.contains("%3Aresume%3A7/run/send"));
-    let binding: serde_json::Value = serde_json::from_str(&original)?;
-    check!(eq; serde_json::from_slice::<serde_json::Value>(body)?, *binding.get("request").ok_or("bound request absent")?);
-    Ok(())
-}
-
-#[tokio::test]
-async fn incompatible_request_lookup_blocks_resume_without_fallback_submission() -> TestResult {
-    let (captured, error) = exercise(&["--resume", "7"], vec![absent()]).await?;
-    check!(eq; captured.len(), 1);
+    outcome?;
+    check!(eq; captured.len(), 7);
+    check!(eq; send_count(&captured), 1);
     check!(captured
-        .first()
+        .get(2)
         .is_some_and(|(path, _)| path.contains("/request HTTP/1.1")));
-    check!(
-        error.contains("national resume compatibility blocked"),
-        "{error}"
-    );
+    check!(captured
+        .get(3)
+        .is_some_and(|(path, _)| path == "POST /restate/lookup HTTP/1.1\r\n"));
+    check!(!captured
+        .iter()
+        .any(|(path, _)| path.contains("%3Aresume%3A")));
     Ok(())
 }
 
 #[tokio::test]
-async fn pending_original_preflight_blocks_resume_without_searching_other_keys() -> TestResult {
+async fn incompatible_request_lookup_blocks_attachment_without_fallback_submission() -> TestResult {
+    let (captured, error) =
+        exercise(&[], vec![("200 OK", capabilities()?), absent(), absent()]).await?;
+    check!(eq; captured.len(), 3);
+    check!(eq; send_count(&captured), 1);
+    check!(captured
+        .get(2)
+        .is_some_and(|(path, _)| path.contains("/request HTTP/1.1")));
+    check!(error.contains("invalid request binding"), "{error}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn pending_original_preflight_blocks_attachment_without_searching_other_keys() -> TestResult {
     let (captured, error) = exercise(
-        &["--resume", "7"],
-        vec![("200 OK", "{\"status\":\"pending_preflight\"}".into())],
+        &[],
+        vec![
+            ("200 OK", capabilities()?),
+            previously_accepted(),
+            ("200 OK", "{\"status\":\"pending_preflight\"}".into()),
+        ],
     )
     .await?;
-    check!(eq; captured.len(), 1);
-    check!(captured
-        .first()
-        .is_some_and(|(path, _)| path.contains("%3Aresume%3A7/request")));
+    check!(eq; captured.len(), 3);
+    check!(eq; send_count(&captured), 1);
+    check!(!captured
+        .iter()
+        .any(|(path, _)| path.contains("/output HTTP/1.1")));
     check!(
         error.contains("original school-address preflight is incomplete"),
         "{error}"
@@ -266,9 +293,9 @@ async fn pending_original_preflight_blocks_resume_without_searching_other_keys()
 }
 
 #[tokio::test]
-async fn resume_submission_preserves_the_bound_school_address_digest() -> TestResult {
-    let mut original: serde_json::Value = serde_json::from_str(&bound_request(&["WI"])?)?;
-    original
+async fn retained_request_requires_pinned_school_address_digest() -> TestResult {
+    let mut pinned: serde_json::Value = serde_json::from_str(&bound_request(&["WI"])?)?;
+    pinned
         .get_mut("request")
         .and_then(serde_json::Value::as_object_mut)
         .ok_or("fixture bound request")?
@@ -279,19 +306,40 @@ async fn resume_submission_preserves_the_bound_school_address_digest() -> TestRe
                 "expected_digest": "pinned-original-directory-digest"
             }),
         );
-    let (captured, _) = exercise(
-        &["--resume", "7"],
+    let (captured, outcome) = exchange(
+        &[],
         vec![
-            ("200 OK", serde_json::to_string(&original)?),
-            ("200 OK", bound_history(Some("2026-10-01"))?),
             ("200 OK", capabilities()?),
             absent(),
-            absent(),
+            ("200 OK", serde_json::to_string(&pinned)?),
+            resolved(),
+            ("200 OK", ready_complete_report()?),
+            ("200 OK", ready_complete_report()?),
+            ("200 OK", "null".into()),
         ],
     )
     .await?;
-    check!(eq; captured.len(), 5);
-    let (_, body) = captured.get(3).ok_or("resume submission absent")?;
-    check!(eq; serde_json::from_slice::<serde_json::Value>(body)?, *original.get("request").ok_or("fixture bound request")?);
+    outcome?;
+    check!(eq; captured.len(), 7);
+    check!(eq; send_count(&captured), 1);
+    let mut unpinned = pinned.clone();
+    unpinned
+        .get_mut("request")
+        .and_then(serde_json::Value::as_object_mut)
+        .and_then(|request| request.get_mut("school_address"))
+        .and_then(serde_json::Value::as_object_mut)
+        .ok_or("fixture school address")?
+        .remove("expected_digest");
+    let (captured, error) = exercise(
+        &[],
+        vec![
+            ("200 OK", capabilities()?),
+            absent(),
+            ("200 OK", serde_json::to_string(&unpinned)?),
+        ],
+    )
+    .await?;
+    check!(eq; captured.len(), 3);
+    check!(error.contains("no pinned directory digest"), "{error}");
     Ok(())
 }

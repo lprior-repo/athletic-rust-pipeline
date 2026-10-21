@@ -17,7 +17,6 @@ pub(crate) enum OpenPurpose {
     PublicIdentityHistory,
     InstallationControl,
     CaptureControl,
-    CaptureExecution(census_domain::model::CaptureProtocolVersion),
     Inspection,
 }
 
@@ -49,40 +48,6 @@ impl Store {
             super::DEFAULT_CACHE_BYTES,
         )
         .map(crate::CaptureQualificationControl::new)
-    }
-    pub fn open_capture_qualification_v1(
-        root: impl AsRef<Path>,
-    ) -> StoreResult<crate::CaptureQualificationStore> {
-        let store = existing(
-            root.as_ref(),
-            OpenPurpose::CaptureExecution(census_domain::model::CaptureProtocolVersion::V1),
-            super::DEFAULT_CACHE_BYTES,
-        )?;
-        let record = crate::acquisition::qualification::declaration(
-            &store.db.snapshot(),
-            &store.meta,
-            &store.journal,
-            &store.store_format()?,
-        )?
-        .ok_or(crate::CaptureError::CaptureCapabilityMissing)?;
-        Ok(crate::CaptureQualificationStore::new(store, record))
-    }
-    pub fn open_capture_qualification_v2(
-        root: impl AsRef<Path>,
-    ) -> StoreResult<crate::CaptureQualificationStore> {
-        let store = existing(
-            root.as_ref(),
-            OpenPurpose::CaptureExecution(census_domain::model::CaptureProtocolVersion::V2),
-            super::DEFAULT_CACHE_BYTES,
-        )?;
-        let record = crate::acquisition::qualification::declaration(
-            &store.db.snapshot(),
-            &store.meta,
-            &store.journal,
-            &store.store_format()?,
-        )?
-        .ok_or(crate::CaptureError::CaptureCapabilityMissing)?;
-        Ok(crate::CaptureQualificationStore::new(store, record))
     }
 }
 
@@ -165,7 +130,6 @@ fn finish_existing(
     } = keyspaces;
     match purpose {
         OpenPurpose::LegacyExecution
-        | OpenPurpose::CaptureExecution(_)
         | OpenPurpose::CurrentQualificationV3
         | OpenPurpose::PublicIdentityExecution(_) => {
             crate::ensure_dirs(root)?;
@@ -219,7 +183,6 @@ impl ExistingKeyspaces {
         )?;
         match purpose {
             OpenPurpose::LegacyExecution
-            | OpenPurpose::CaptureExecution(_)
             | OpenPurpose::CurrentQualificationV3
             | OpenPurpose::PublicIdentityExecution(_) => {
                 crate::installation::require_legacy_execution(&state)
@@ -250,10 +213,7 @@ impl ExistingKeyspaces {
                 .as_ref()
                 .ok_or(crate::PublicIdentityError::OptInRequired)?
                 .require_version(expected)?,
-            OpenPurpose::CurrentQualificationV3 => identity
-                .as_ref()
-                .ok_or(crate::PublicIdentityError::OptInRequired)?
-                .require_version(PublicIdentityQualificationVersion::RetainedAuthorityGraphV3)?,
+            OpenPurpose::CurrentQualificationV3 => {}
             OpenPurpose::PublicIdentityHistory => {
                 let version = identity
                     .as_ref()

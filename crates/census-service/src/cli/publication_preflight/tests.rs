@@ -6,16 +6,16 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 fn selected_publication_requires_the_exact_endpoint_contract() -> TestResult {
     require_contract(
         &PublicationCapabilities::current(),
-        PublicationContract::SelectedPublicationV1,
+        PublicationContract::SelectedPublicationV2,
     )?;
     require_contract(
         &PublicationCapabilities {
-            publication_contracts: vec![PublicationContract::ManagedBundleV2],
+            publication_contracts: vec![],
             national_generation_revision: None,
         },
-        PublicationContract::SelectedPublicationV1,
+        PublicationContract::SelectedPublicationV2,
     )
     .err()
-    .ok_or("managed-only endpoint accepted selected publication")?;
+    .ok_or("empty endpoint accepted selected publication")?;
     Ok(())
 }

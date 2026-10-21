@@ -12,7 +12,7 @@ pub(super) fn replay(
     bytes: &[u8],
     expected_digest: &str,
 ) -> StoreResult<AcceptedPublicIdentitySnapshot> {
-    super::super::wire::bound(bytes.len(), super::super::MAX_FROZEN_PUBLIC_IDENTITY_BYTES)?;
+    super::super::bound(bytes.len(), super::super::MAX_FROZEN_PUBLIC_IDENTITY_BYTES)?;
     if !crate::journal::is_object_id(expected_digest)
         || super::super::digest(bytes) != expected_digest
     {

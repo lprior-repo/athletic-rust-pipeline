@@ -19,7 +19,6 @@ async fn exchange(
             "1",
             "--ingress",
             &origin,
-            "--detach",
         ]
         .into_iter()
         .chain(flags.iter().copied()),
@@ -55,21 +54,39 @@ fn require_attachment_refusal(exchange: Exchange) -> Result<(), Box<dyn std::err
 }
 
 #[tokio::test]
-async fn explicit_resume_generation_mismatch_refuses_before_submission(
+async fn caller_generation_mismatch_refuses_before_attachment(
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let store = "a".repeat(64);
+    let profile = "b".repeat(64);
     let (captured, outcome) = exchange(
-        &["--resume", "7", "--generation", "qualified-v2"],
+        &[
+            "--selected-store-identity",
+            &store,
+            "--selected-profile-id",
+            &profile,
+            "--generation",
+            "qualified-v2",
+        ],
         vec![
+            ("200 OK", capabilities()?),
+            (
+                "202 Accepted",
+                serde_json::json!({
+                    "invocationId": "inv_1aiqX0vFEFNH1Umgre58JiCLgHfTtztYK5",
+                    "status": "PreviouslyAccepted"
+                })
+                .to_string(),
+            ),
             ("200 OK", bound_request(&["WI"])?),
-            ("200 OK", bound_history(Some("2026-10-01"))?),
         ],
     )
     .await?;
-    check!(outcome.is_err());
-    check!(eq; captured.len(), 2);
-    check!(captured[0].0.contains("/request HTTP/1.1"));
-    check!(captured[1].0.contains("/state HTTP/1.1"));
-    Ok(())
+    let error = outcome.err().ok_or("generation mismatch admitted")?;
+    check!(
+        error.to_string().contains("caller generation differs"),
+        "{error}"
+    );
+    require_attachment_refusal((captured, Err(error)))
 }
 
 #[tokio::test]

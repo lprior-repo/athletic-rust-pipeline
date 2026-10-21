@@ -20,9 +20,9 @@ pub struct DurableCapture {
 impl DurableCapture {
     pub fn mint() -> TestResult<Self> {
         let root = tempfile::tempdir()?;
-        Store::create_capture_qualification_v2(root.path().join("store"))?;
+        Store::create_capture_qualification(root.path().join("store"))?;
         let (store, writer) =
-            Store::open_capture_qualification_v2(root.path().join("store"))?.into_parts();
+            Store::open_current_qualification_v3(root.path().join("store"))?.into_parts();
         let capture = Self::adopt(store, writer)?;
         Ok(Self {
             _root: Some(root),

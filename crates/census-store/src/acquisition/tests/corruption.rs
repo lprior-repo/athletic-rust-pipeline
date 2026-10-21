@@ -22,14 +22,16 @@ fn shared_root_budget_detects_surplus_orphan_and_corrupt_slot_closure() -> TestR
                 &"unsupported",
             )?,
             "orphan-slot" => {
-                store
-                    .journal
-                    .remove(Store::journal_key(SOURCE_ACQUISITION_PHASE, &work_key))?;
+                store.journal.remove(Store::journal_key(
+                    CaptureProtocolVersion::V2.phase(),
+                    &work_key,
+                ))?;
             }
             "orphan-work" => {
-                store
-                    .journal
-                    .remove(Store::journal_key(SOURCE_ACQUISITION_PHASE, &slot_key))?;
+                store.journal.remove(Store::journal_key(
+                    CaptureProtocolVersion::V2.phase(),
+                    &slot_key,
+                ))?;
             }
             "foreign-slot" => overwrite(
                 &store,
@@ -70,7 +72,7 @@ fn retained_reference_and_receipt_corruption_fail_with_no_identity_remint() -> T
     for damage in ["receipt-missing", "receipt-huge", "receipt-digest", "body"] {
         let (_dir, store, writer, owner) = fixture()?;
         let occurrence = retained(&store, &writer, &owner, 200)?;
-        let operation = read::terminal_operation(occurrence.attempt(), CaptureProtocolVersion::V1);
+        let operation = read::terminal_operation(occurrence.attempt(), CaptureProtocolVersion::V2);
         match damage {
             "receipt-missing" => {
                 store.receipts.remove(&operation)?;
@@ -126,15 +128,18 @@ fn marker_namespace_version_and_case_preservation_are_checked_before_open_recove
         let (dir, store, _writer, _owner) = fixture()?;
         match damage {
             "missing" => {
-                store.meta.remove(CAPTURE_QUALIFICATION_KEY)?;
+                store
+                    .meta
+                    .remove(CaptureProtocolVersion::V2.qualification_key())?;
             }
             "extra" => {
                 store.meta.insert("capture:v2:qualification", b"{}")?;
             }
             "version" => {
-                store
-                    .meta
-                    .insert(CAPTURE_QUALIFICATION_KEY, br#"{"version":2}"#)?;
+                store.meta.insert(
+                    CaptureProtocolVersion::V2.qualification_key(),
+                    br#"{"version":2}"#,
+                )?;
             }
             "foreign" => {
                 store.meta.insert(
@@ -159,7 +164,7 @@ fn marker_namespace_version_and_case_preservation_are_checked_before_open_recove
         }
         store.flush()?;
         drop(store);
-        check!(Store::open_capture_qualification_v1(dir.path().join("store")).is_err());
+        check!(Store::open_current_qualification_v3(dir.path().join("store")).is_err());
     }
     Ok(())
 }

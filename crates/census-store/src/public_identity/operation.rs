@@ -44,37 +44,12 @@ impl HeldWitness {
             _ => Err(PublicIdentityError::Corrupt("unsupported identity witness version").into()),
         }
     }
-    pub(super) fn operation(&self) -> &str {
-        match self {
-            Self::Source(held) => &held.operation,
-            Self::Membership(held) => &held.operation,
-            Self::MembershipWithheld(held) => &held.operation,
-            Self::Reviewed(held) => &held.operation,
-            Self::Manual(held) => &held.operation,
-        }
-    }
     pub(super) fn decision_id(&self) -> Option<&str> {
         match self {
             Self::Source(held) => Some(&held.decision_id),
             Self::Reviewed(held) => Some(&held.decision_id),
             Self::Membership(held) => Some(&held.decision_id),
             Self::Manual(_) | Self::MembershipWithheld(_) => None,
-        }
-    }
-    pub(super) fn authority_context(&self) -> Option<&str> {
-        match self {
-            Self::Source(held) => held.authority_context.as_deref(),
-            Self::Reviewed(held) => Some(&held.authority_context),
-            Self::Membership(held) => Some(&held.authority_context),
-            Self::Manual(held) => Some(&held.adjudication.authority_context),
-            Self::MembershipWithheld(held) => Some(&held.adjudication.authority_context),
-        }
-    }
-    pub(super) fn affected_context(&self) -> Option<&str> {
-        match self {
-            Self::Manual(held) => Some(&held.adjudication.affected_context),
-            Self::MembershipWithheld(held) => Some(&held.adjudication.affected_context),
-            Self::Source(_) | Self::Reviewed(_) | Self::Membership(_) => None,
         }
     }
 }

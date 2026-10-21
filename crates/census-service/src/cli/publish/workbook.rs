@@ -107,7 +107,7 @@ pub(crate) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
             let client = census_service::ingress::client(origin)?;
             publication_preflight::require_publication_contract(
                 &client,
-                PublicationContract::SelectedPublicationV1,
+                PublicationContract::SelectedPublicationV2,
             )
             .await?;
             run_workbook_live(
@@ -152,7 +152,7 @@ fn build_offline_selected(
     request: &ExportJobRequest,
     generation: &ExportGeneration,
 ) -> Result<PathBuf> {
-    let selection = request.require_selected_publication()?;
+    let selection = request.require_selected_publication();
     let options = workbook::options_for_selected_request(store, selection, requested)
         .context("binding workbook options to the selected profile")?;
     let job = format!(

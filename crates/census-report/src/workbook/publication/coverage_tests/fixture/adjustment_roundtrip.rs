@@ -1,6 +1,7 @@
-use super::super::{assert_same_root, fixture, readback, selected_bests, TestResult, Witness};
-use super::{coverage_row, pending_lane, seed_population, Captured, Mutation};
-use crate::export::{freeze_v2, to_export_dataset, ExportDataset, ExportJobRequest};
+use super::super::{fixture, readback, selected_bests, TestResult, Witness};
+use super::{coverage_row, pending_lane, Captured, Mutation};
+use crate::export::selected_test_fixture::{coverage_time_fixture, CoverageTimeFixture};
+use crate::export::{ExportDataset, ExportJobRequest};
 use crate::report::{ReportError, Scope};
 use crate::workbook::publication::{open_publication, verify_sidecars};
 use census_domain::model::{
@@ -25,56 +26,62 @@ fn adjustment(original: &str) -> TestResult<Adjustment> {
         seconds("50.00")?,
         Some("Converted from 52.00 for Track Size.".into()),
         Some(SourceRef::new(
-            "wiaa_results",
+            "synthetic_track_conversion",
             Some("https://example.test/coverage".into()),
         )),
     ))
 }
-
-fn only_performance(store: &Store) -> TestResult<CanonicalPerformance> {
-    let rows = store.scan::<CanonicalPerformance>(Table::Performances)?;
-    check!(eq; rows.len(), 1);
-    rows.into_iter()
-        .next()
-        .ok_or_else(|| "adjustment fixture performance missing".into())
-}
-
-fn adjusted_capture() -> TestResult<Captured> {
-    let directory = tempfile::tempdir()?;
-    let store = Store::open(directory.path().join("store"))?;
-    seed_population(&store)?;
-    let mut performance = only_performance(&store)?;
+async fn adjusted_capture() -> TestResult<Captured> {
+    let fixture =
+        coverage_time_fixture(5200).map_err(|error| -> Box<dyn std::error::Error> { error })?;
+    let mut performance = fixture.performance.clone();
     performance.adjustment = Some(adjustment("52.00")?);
-    store.append(Table::Performances, &performance)?;
-    check!(only_performance(&store)?.retained_conflicts.is_empty());
-    store.replace(Table::Coverage, &coverage_row(0))?;
-    store.replace(Table::CoachLanes, &pending_lane()?)?;
-    let frozen = freeze_v2(&store, JOB)?;
-    let dataset = ExportDataset::for_job_request(&store, JOB, &ExportJobRequest::LegacyV2)?;
-    let archive = store
-        .out_dir()
-        .join("export-inputs")
-        .join(format!("{}.json", serialized_digest(&JOB)?));
-    let options = crate::workbook::publication::fence_tests::options(None)?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
-    let workbook = crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
+    fixture.store.append(Table::Performances, &performance)?;
+    let updated = fixture
+        .store
+        .scan::<CanonicalPerformance>(Table::Performances)?
+        .into_iter()
+        .find(|p| p.date == "2026-05-15")
+        .ok_or("adjusted May 15 performance missing")?;
+    check!(updated.retained_conflicts.is_empty());
+    fixture.store.replace(Table::Coverage, &coverage_row(0))?;
+    fixture.store.replace(Table::CoachLanes, &pending_lane()?)?;
+    let request = ExportJobRequest::SelectedPublicationV1 {
+        selection: fixture.selection.clone(),
+    };
+    let dataset = ExportDataset::for_job_request(&fixture.store, JOB, &request)?;
+    let options = crate::workbook::options_for_selected_dataset(&dataset, None)?;
+    let censuses =
+        crate::workbook::Censuses::of(&dataset, &fixture.store.out_dir(), &options.jurisdictions)?;
+    let workbook = crate::workbook::build_from(&dataset, &fixture.store, &options, &censuses)?;
+    let archive = fixture.directory.path().join("adjustment-frozen.json");
+    dataset.save_frozen(&archive)?;
+    let digest = dataset.archive_digest()?;
+    let CoverageTimeFixture {
+        directory,
+        store,
+        selection,
+        ..
+    } = fixture;
     Ok(Captured {
         directory,
         store,
+        selection,
         dataset,
-        frozen,
         workbook,
         options,
         archive,
+        digest,
     })
 }
 
 fn check_adjustment(dataset: &ExportDataset) -> TestResult {
-    check!(eq; dataset.performances.len(), 1);
+    check!(eq; dataset.performances.len(), 3);
     let performance = dataset
         .performances
-        .first()
-        .ok_or("captured performance missing")?;
+        .iter()
+        .find(|p| p.date == "2026-05-15")
+        .ok_or("captured May 15 performance missing")?;
     check!(eq; performance.mark, seconds("50.00")?);
     check!(eq; performance.adjustment, Some(adjustment("52.00")?));
     check!(performance.retained_conflicts.is_empty());
@@ -91,7 +98,7 @@ fn check_adjustment(dataset: &ExportDataset) -> TestResult {
     check!(eq; selected.result.adjustment_basis, Some(AdjustmentBasis::Known));
     check!(eq; selected.result.adjustment_note, Some("Converted from 52.00 for Track Size.".into()));
     check!(eq; selected.result.adjustment_source, Some(SourceRef::new(
-        "wiaa_results", Some("https://example.test/coverage".into()),
+        "synthetic_track_conversion", Some("https://example.test/coverage".into()),
     )));
     check!(eq; selected.source.performance_id, performance.id);
     check!(selected.conflicts.is_empty());
@@ -161,7 +168,7 @@ fn check_sidecar_metadata(directory: &Path, captured: &Captured) -> TestResult {
         ("adjustment_note", "Converted from 52.00 for Track Size."),
         (
             "adjustment_source",
-            "{\"id\":\"wiaa_results\",\"url\":\"https://example.test/coverage\"}",
+            "{\"id\":\"synthetic_track_conversion\",\"url\":\"https://example.test/coverage\"}",
         ),
     ] {
         let index = headers
@@ -238,47 +245,62 @@ fn sidecar_forgeries_are_refused(captured: &Captured) -> TestResult {
     check_sidecar_metadata(scratch.path(), captured)
 }
 
-fn mutate_adjustment(store: &Store) -> TestResult {
-    let mut performance = only_performance(store)?;
+fn mutate_adjustment(captured: &Captured) -> TestResult {
+    let mut performance = captured
+        .store
+        .scan::<CanonicalPerformance>(Table::Performances)?
+        .into_iter()
+        .find(|p| p.date == "2026-05-15")
+        .ok_or("May 15 performance for mutation missing")?;
     performance.adjustment = Some(adjustment("53.00")?);
-    store.append(Table::Performances, &performance)?;
-    check!(!only_performance(store)?.retained_conflicts.is_empty());
-    let live = ExportDataset::load(store)?;
+    captured.store.append(Table::Performances, &performance)?;
+    let updated = captured
+        .store
+        .scan::<CanonicalPerformance>(Table::Performances)?
+        .into_iter()
+        .find(|p| p.date == "2026-05-15")
+        .ok_or("updated May 15 performance missing")?;
+    check!(!updated.retained_conflicts.is_empty());
+    let live_objects = tempfile::tempdir()?;
+    let live = ExportDataset::from_selected_snapshot(
+        &captured.store,
+        &captured.store.snapshot(),
+        &captured.selection,
+        live_objects.path(),
+    )?;
     check!(selected_bests(&live)?.is_empty());
     Ok(())
 }
 
-#[test]
-fn adjusted_bests_and_nonempty_coverage_survive_json_chunks_publication_and_live_mutation(
+#[tokio::test]
+async fn adjusted_bests_and_nonempty_coverage_survive_json_chunks_publication_and_live_mutation(
 ) -> TestResult {
-    let captured = adjusted_capture()?;
+    let captured = adjusted_capture().await?;
     check_adjustment(&captured.dataset)?;
     let expected = serialized_bytes(&captured.dataset)?;
     let witness = Witness::capture(&captured)?;
-    let live = ExportDataset::load(&captured.store)?;
+    let live = ExportDataset::for_job_request(
+        &captured.store,
+        JOB,
+        &ExportJobRequest::SelectedPublicationV1 {
+            selection: captured.selection.clone(),
+        },
+    )?;
     check_adjustment(&live)?;
     check!(eq; serialized_bytes(&live)?, expected);
     check!(eq; live.lineage.input_digest, captured.dataset.lineage.input_digest);
     drop(live);
-    let manifest = captured.frozen.manifest();
-    check!(eq; manifest.streams.len(), 15);
-    check!(eq; manifest.source_fingerprints.len(), 16);
-    check!(eq; manifest.lineage, captured.dataset.lineage);
-    check!(eq; manifest.legacy_logical_digest.as_deref(), Some(captured.dataset.lineage.input_digest.as_str()));
+    check!(captured.dataset.selected_profile_id().is_some());
+    check!(eq; captured.digest, captured.dataset.archive_digest()?);
     same_dataset(
-        &to_export_dataset(&captured.frozen, &captured.store)?,
-        &expected,
-        &witness,
-    )?;
-    same_dataset(
-        &ExportDataset::reopen_frozen(&captured.archive)?,
+        &ExportDataset::reopen_frozen_with_digest(&captured.archive, &captured.digest)?,
         &expected,
         &witness,
     )?;
     sidecar_forgeries_are_refused(&captured)?;
     fixture::mutate(&captured.store, Mutation::Both)?;
-    mutate_adjustment(&captured.store)?;
-    readback::assert_live_changed(&captured.store, Mutation::Both)?;
+    mutate_adjustment(&captured)?;
+    readback::assert_live_changed(&captured.store, &captured.selection, Mutation::Both)?;
     same_dataset(&captured.dataset, &expected, &witness)?;
     check!(
         matches!(captured.dataset.ensure_snapshot(&captured.store.snapshot()),
@@ -287,25 +309,45 @@ fn adjusted_bests_and_nonempty_coverage_survive_json_chunks_publication_and_live
     let Captured {
         directory,
         store,
+        selection,
         dataset,
-        frozen,
         workbook,
         options,
         archive,
+        digest,
     } = captured;
     let root = store.root().to_path_buf();
     store.flush()?;
     drop(dataset);
     drop(store);
-    let reopened = Store::open(root)?;
-    readback::assert_live_changed(&reopened, Mutation::Both)?;
-    check!(selected_bests(&ExportDataset::load(&reopened)?)?.is_empty());
-    let archived = ExportDataset::reopen_frozen(&archive)?;
+    let (reopened, writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
+    drop(writer);
+    readback::assert_live_changed(&reopened, &selection, Mutation::Both)?;
+    let live_objects = tempfile::tempdir()?;
+    let live = ExportDataset::from_selected_snapshot(
+        &reopened,
+        &reopened.snapshot(),
+        &selection,
+        live_objects.path(),
+    )?;
+    check!(selected_bests(&live)?.is_empty());
+    let archived = ExportDataset::reopen_frozen_with_digest(&archive, &digest)?;
     same_dataset(&archived, &expected, &witness)?;
-    same_dataset(&to_export_dataset(&frozen, &reopened)?, &expected, &witness)?;
-    let reused = freeze_v2(&reopened, JOB)?;
-    assert_same_root(&frozen, &reused)?;
-    same_dataset(&to_export_dataset(&reused, &reopened)?, &expected, &witness)?;
+    check!(matches!(
+        ExportDataset::for_job_request(
+            &reopened,
+            JOB,
+            &ExportJobRequest::SelectedPublicationV1 {
+                selection: selection.clone(),
+            }
+        ),
+        Err(ReportError::Invariant { ref detail }) if detail.contains("stale or foreign")
+    ));
+    same_dataset(
+        &ExportDataset::reopen_frozen_with_digest(&archive, &digest)?,
+        &expected,
+        &witness,
+    )?;
     witness.publication_unchanged(&reopened, &workbook, &archive)?;
     crate::workbook::verify::verify_frozen(&workbook, &archived, &options)?;
     let opened = open_publication(

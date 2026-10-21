@@ -175,6 +175,10 @@ impl Fetcher {
         self
     }
 
+    pub fn claim_origin(&self, origin: &str) -> Result<(), FetchError> {
+        self.origin_locks.ensure(origin)
+    }
+
     pub fn is_offline(&self) -> bool {
         self.offline
     }

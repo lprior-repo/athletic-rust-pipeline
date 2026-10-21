@@ -83,13 +83,15 @@ fn wire_boundary_at_four_mib_plus_one_refuses() -> TestResult {
     Ok(())
 }
 
-fn prepared_frozen_bundle() -> TestResult<(
+type PreparedFrozenBundle = (
     tempfile::TempDir,
     Store,
     Vec<u8>,
     RosterFrozenReviewedClaimsReferenceV1,
     Vec<u8>,
-)> {
+);
+
+fn prepared_frozen_bundle() -> TestResult<PreparedFrozenBundle> {
     let (directory, store) = enrolled_store()?;
     let extra = vec![b'x'; 256];
     let extra_digest = hash(&extra);

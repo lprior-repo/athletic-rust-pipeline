@@ -5,35 +5,52 @@ pub(super) fn merge(
     store: &Store,
     writer: &PublicIdentityWriterV1,
     fixture: &controlled::Controlled,
-) -> TestResult<u64> {
-    let case_id = review::install(store, &fixture.candidates, review::Decision::Same)?;
-    let [canonical, _] = &fixture.public;
-    let mut members = fixture.public.to_vec();
+) -> TestResult<(u64, u64)> {
+    let case_id = review::install(store, &fixture.candidates[..2], review::Decision::Same)?;
+    let [canonical, alias, _] = &fixture.public;
+    let mut members = vec![canonical.clone(), alias.clone()];
     members.sort();
     let request = ReviewedIdentityRequestV1::Merge {
         case_id,
         canonical: canonical.clone(),
         members,
     };
-    apply(
+    let first = apply(
         store,
         writer,
         "controlled-genuine-documentary-merge",
         &request,
-    )
+    )?;
+    controlled::link_bystander(store, fixture)?;
+    let case_id = review::install(store, &fixture.candidates[1..], review::Decision::Same)?;
+    let [_, _, third] = &fixture.public;
+    let mut members = vec![canonical.clone(), third.clone()];
+    members.sort();
+    let request = ReviewedIdentityRequestV1::Merge {
+        case_id,
+        canonical: canonical.clone(),
+        members,
+    };
+    let second = apply(
+        store,
+        writer,
+        "controlled-genuine-documentary-bystander-merge",
+        &request,
+    )?;
+    Ok((first, second))
 }
 
 pub(super) fn correct(
     store: &Store,
     writer: &PublicIdentityWriterV1,
     fixture: &controlled::Controlled,
-    merged: u64,
+    merged: (u64, u64),
     branch: Branch,
 ) -> TestResult<u64> {
-    let [canonical, _] = &fixture.public;
+    let [canonical, _, _] = &fixture.public;
     if matches!(branch, Branch::RevokeRedundantMerge) {
         controlled::additional_review_evidence(store, fixture)?;
-        let case_id = review::install(store, &fixture.candidates, review::Decision::Same)?;
+        let case_id = review::install(store, &fixture.candidates[..2], review::Decision::Same)?;
         let request = ReviewedIdentityRequestV1::Merge {
             case_id,
             canonical: canonical.clone(),
@@ -45,17 +62,17 @@ pub(super) fn correct(
             "controlled-genuine-documentary-redundant-merge",
             &request,
         )?;
-        check!(eq; redundant, merged.checked_add(1).ok_or("redundant sequence")?);
+        check!(eq; redundant, merged.1.checked_add(1).ok_or("redundant sequence")?);
     }
     let case_id = review::install(store, &fixture.candidates, review::Decision::Different)?;
     if matches!(branch, Branch::Split) {
-        lone_bridge_refused(store, writer, fixture, merged, &case_id)?;
+        lone_bridge_refused(store, writer, fixture, merged.0, &case_id)?;
     }
     let request = match branch {
         Branch::Split => ReviewedIdentityRequestV1::Split {
             case_id,
             canonical: canonical.clone(),
-            revoke_merges: vec![merged],
+            revoke_merges: vec![merged.0, merged.1],
             partitions: fixture.partitions.clone(),
             unresolved_bindings: Vec::new(),
             affected_record_keys: fixture.affected.clone(),
@@ -63,7 +80,7 @@ pub(super) fn correct(
         Branch::RevokeRedundantMerge => ReviewedIdentityRequestV1::Revoke {
             case_id,
             canonical: canonical.clone(),
-            revoke_merges: vec![merged],
+            revoke_merges: vec![merged.0],
             affected_record_keys: fixture.affected.clone(),
         },
     };
@@ -122,7 +139,7 @@ fn lone_bridge_refused(
     merged: u64,
     case_id: &str,
 ) -> TestResult {
-    let [canonical, _] = &fixture.public;
+    let [canonical, _, _] = &fixture.public;
     let request = ReviewedIdentityRequestV1::Revoke {
         case_id: case_id.into(),
         canonical: canonical.clone(),

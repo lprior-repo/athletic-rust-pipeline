@@ -60,7 +60,7 @@ fn explicit_cli_init_binds_current_graph_and_capture_without_reinitialization() 
 fn current_cli_does_not_upgrade_historical_capture_qualification() -> TestResult {
     let parent = tempfile::tempdir()?;
     let path = parent.path().join("historical-v1");
-    let original = Store::create_capture_qualification_v1(&path)?;
+    let original = Store::create_historical_capture_v1(&path)?;
     let mut output = Vec::new();
     let error = run_to(
         Some(&path),

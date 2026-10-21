@@ -119,12 +119,9 @@ mod resolve_tests {
     }
 
     #[test]
-    fn explicit_generation_parses() {
-        assert_eq!(
-            ExportGeneration::resolve(Some("qualified-v1"))
-                .expect("explicit generation parses")
-                .as_str(),
-            "qualified-v1"
-        );
+    fn explicit_generation_parses() -> Result<(), Box<dyn std::error::Error>> {
+        let generation = ExportGeneration::resolve(Some("qualified-v1"))?;
+        check!(eq; generation.as_str(), "qualified-v1");
+        Ok(())
     }
 }

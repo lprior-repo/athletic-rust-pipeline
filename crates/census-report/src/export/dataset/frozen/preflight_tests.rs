@@ -1,5 +1,4 @@
-use super::super::{decoded_generations, ExportDataset};
-use crate::export::ExportJobRequest;
+use super::super::{decoded_generations, generation_counter_window, ExportDataset};
 use crate::report::ReportError;
 use census_domain::model::CanonicalSchool;
 use census_domain::UsJurisdiction;
@@ -51,19 +50,23 @@ fn stale_job_is_refused_before_a_complete_generation_is_decoded() -> TestResult 
     let temporary = tempfile::tempdir()?;
     let store = Store::open(temporary.path().join("store"))?;
     let job = "preflight-stale-job";
-    let captured = ExportDataset::for_job_request(&store, job, &ExportJobRequest::LegacyV2)?;
+    let root = super::freeze_v2(&store, job)?;
+    let captured = super::super::to_export_dataset(&root, &store)?;
     let lineage = captured.lineage.clone();
-    drop(captured);
-    let archive = store.out_dir().join("export-inputs").join(format!(
+    let directory = store.out_dir().join("export-inputs");
+    std::fs::create_dir_all(&directory)?;
+    let archive = directory.join(format!(
         "{}.json",
         census_domain::model::serialized_digest(&job)?
     ));
+    captured.save_frozen(&archive)?;
     let retained_bytes = std::fs::read(&archive)?;
     let (school, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Later School", "later", None);
     store.append(Table::Schools, &school)?;
+    let _counter_window = generation_counter_window()?;
     let decoded = decoded_generations();
-    let error = match ExportDataset::for_job_request(&store, job, &ExportJobRequest::LegacyV2) {
+    let error = match captured.ensure_current(&store) {
         Err(error) => error,
         Ok(_) => return Err("stale job decoded and reopened".into()),
     };

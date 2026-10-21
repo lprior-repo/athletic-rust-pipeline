@@ -10,6 +10,11 @@ pub fn request() -> TestResult<NationalRequest> {
     Ok(serde_json::from_value(json!({
         "season": 2026, "revision": 1,
         "history": {"first_calendar_year": 2023, "last_calendar_year": 2026, "as_of": "2026-10-12"},
+        "publication_contract": "selected_publication_v2",
+        "export_job": {"contract": "selected_publication_v1",
+            "selection": {"version": 1,
+                "store_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "profile_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}},
         "pass_budget": 0
     }))?)
 }
@@ -73,13 +78,7 @@ pub fn answer(call: &Frame, journal: &mut Journal) -> TestResult<Value> {
     if service == "Census" && handler == "bind_run" {
         return bind_current_run(request, journal);
     }
-    if service == "Workbook"
-        && handler == "run"
-        && (journal.original.publication_contract
-            == crate::restate_services::PublicationContract::SelectedPublicationV1
-            || journal.original.publication_contract
-                == crate::restate_services::PublicationContract::SelectedPublicationV2)
-    {
+    if service == "Workbook" && handler == "run" {
         return selected_workbook(call, request, journal);
     }
     stage_answer(call, journal, &request, &service, &handler)
@@ -95,16 +94,16 @@ fn stage_answer(
     Ok(match (service, handler) {
         ("Census", "school_address_preflight") => json!(journal.address_digest),
         ("JurisdictionCensus", "run") => json!({
-            "identity": call.text(5)?, "jurisdiction": required(&request, "jurisdiction")?, "plan": {},
+            "identity": call.text(5)?, "jurisdiction": required(request, "jurisdiction")?, "plan": {},
             "stages_run": ["teams", "rosters", "meets", "results"], "teams": 1,
-            "rosters": { "state": required(&request, "jurisdiction")?, "teams": 1,
+            "rosters": { "state": required(request, "jurisdiction")?, "teams": 1,
                 "rosters_total": 1, "rosters_committed": if journal.unfinished_rosters {0} else {1},
                 "rosters_remaining": usize::from(journal.unfinished_rosters), "rosters_skipped": 0,
                 "blocked": false, "blocked_skipped": 0,
                 "athletes": 1, "class_of_2027": 1, "class_of_2027_boys": 1,
                 "class_of_2027_girls": 0, "errors": [] },
             "consolidated": [], "history": {"meets": {}, "results": {}},
-            "history_window": required(&request, "history")?, "completed_at": "2026-10-12"
+            "history_window": required(request, "history")?, "completed_at": "2026-10-12"
         }),
         ("TeamsSource", "contacts") => json!({
             "status": "completed", "progress": [],
@@ -120,17 +119,10 @@ fn stage_answer(
             "cohort": "2027", "rows": 49, "jsonl": "out/bests-2027.jsonl", "csv": "out/bests-2027.csv"
         }),
         ("Workbook", "run") => {
-            let path = if journal.original.publication_contract
-                != crate::restate_services::PublicationContract::LegacySeparateV1
-            {
-                MANAGED_WORKBOOK
-            } else {
-                "out/publication/current/workbook.xlsx"
-            };
-            json!({"path": path, "grad_year": 2027})
+            json!({"path": MANAGED_WORKBOOK, "grad_year": 2027})
         }
         ("Census", "publication") => json!({
-            "phase": "sealed", "workbook": required(&request, "workbook")?, "recorded": null,
+            "phase": "sealed", "workbook": required(request, "workbook")?, "recorded": null,
             "sealed": {"digest": "fixture-publication-digest", "sealed_on": "2026-10-12"},
             "open": [], "refusal": null, "wrote": "out/seal.json",
             "counts": {"jurisdiction_buckets": 49, "schools": 49, "meets": 49, "athletes": 49,

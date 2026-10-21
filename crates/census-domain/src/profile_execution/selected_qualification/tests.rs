@@ -62,11 +62,11 @@ fn refused(profile: &QueryProfileV1, expected: ContractRoleV1) -> TestResult {
     let retained = serialized_bytes(profile)?;
     match validate_selected_qualification_profile_v1(profile) {
         Err(ProfileExecutionError::UnsupportedContractReference { role }) => {
-            assert_eq!(role, expected);
+            check!(eq; role, expected);
         }
         other => return Err(format!("expected refusal for {expected:?}, got {other:?}").into()),
     }
-    assert_eq!(serialized_bytes(profile)?, retained);
+    check!(eq; serialized_bytes(profile)?, retained);
     Ok(())
 }
 
@@ -75,9 +75,9 @@ fn admitted_profile_is_borrowed_without_rewriting_or_implying_evidence() -> Test
     let profile = QueryProfileV1::new(input()?)?;
     let bytes = serialized_bytes(&profile)?;
     let admitted = validate_selected_qualification_profile_v1(&profile)?;
-    assert!(std::ptr::eq(admitted.profile(), &profile));
-    assert_eq!(serialized_bytes(admitted.profile())?, bytes);
-    assert!(matches!(
+    check!(std::ptr::eq(admitted.profile(), &profile));
+    check!(eq; serialized_bytes(admitted.profile())?, bytes);
+    check!(matches!(
         compile_profile(&profile),
         Err(ProfileExecutionError::UnsupportedContractReference {
             role: ContractRoleV1::Cohort
@@ -111,7 +111,7 @@ fn all_role_pairs_have_distinct_digests_and_cannot_be_substituted() -> TestResul
             }
             let expected = selected_qualification_contract_ref_v1(role)?;
             let foreign = selected_qualification_contract_ref_v1(other)?;
-            assert_ne!(expected.digest(), foreign.digest());
+            check!(ne; expected.digest(), foreign.digest());
             let mut raw = input()?;
             replace(&mut raw, role, foreign);
             refused(&QueryProfileV1::new(raw)?, role)?;
@@ -137,11 +137,11 @@ fn configuration_only_refs_are_refused_in_every_mixed_slot() -> TestResult {
 #[test]
 fn participation_is_exactly_v3_and_older_revisions_refuse() -> TestResult {
     let current = crate::participation_candidates::participation_policy_v3()?;
-    assert_eq!(
+    check!(eq;
         selected_qualification_contract_ref_v1(ContractRoleV1::Participation)?,
         current
     );
-    assert_eq!(current.revision().get(), 3);
+    check!(eq; current.revision().get(), 3);
     for revision in [1, 2] {
         let mut raw = input()?;
         replace(
@@ -160,7 +160,7 @@ fn unsupported_jurisdictions_refuse_after_exact_refs() -> TestResult {
         let mut raw = input()?;
         raw.jurisdictions.push(jurisdiction);
         let profile = QueryProfileV1::new(raw)?;
-        assert!(matches!(
+        check!(matches!(
             validate_selected_qualification_profile_v1(&profile),
             Err(ProfileExecutionError::UnsupportedJurisdiction { jurisdiction: actual }) if actual == jurisdiction
         ));
@@ -174,21 +174,21 @@ fn unsupported_region_priority_and_provisional_guards_remain_active() -> TestRes
     let mut raw = input()?;
     raw.regional_membership = RegionalMembershipV1::SourceBackedRegion(region.clone());
     let profile = QueryProfileV1::new(raw)?;
-    assert!(matches!(
+    check!(matches!(
         validate_selected_qualification_profile_v1(&profile),
         Err(ProfileExecutionError::UnsupportedRegionalMembership)
     ));
     let mut raw = input()?;
     raw.discovery_priority = DiscoveryPriorityV1::SourceBackedRegionFirst(region);
     let profile = QueryProfileV1::new(raw)?;
-    assert!(matches!(
+    check!(matches!(
         validate_selected_qualification_profile_v1(&profile),
         Err(ProfileExecutionError::UnsupportedDiscoveryPriority)
     ));
     let mut raw = input()?;
     raw.include_provisional = ProvisionalInclusionV1::Include;
     let profile = QueryProfileV1::new(raw)?;
-    assert!(matches!(
+    check!(matches!(
         validate_selected_qualification_profile_v1(&profile),
         Err(ProfileExecutionError::UnsupportedProvisionalInclusion)
     ));
@@ -200,7 +200,7 @@ fn acquisition_after_effective_as_of_is_supported_without_relaxing_configuration
 ) -> TestResult {
     let profile = QueryProfileV1::new(input()?)?;
     let supported = validate_selected_qualification_profile_v1(&profile)?;
-    assert!(std::ptr::eq(supported.profile(), &profile));
+    check!(std::ptr::eq(supported.profile(), &profile));
     let mut raw = input()?;
     raw.acquisition_window = ProfileDateRangeV1::new(
         ProfileDate::parse("2026-10-01")?,
@@ -208,13 +208,13 @@ fn acquisition_after_effective_as_of_is_supported_without_relaxing_configuration
     )?;
     let profile = QueryProfileV1::new(raw)?;
     let supported = validate_selected_qualification_profile_v1(&profile)?;
-    assert!(std::ptr::eq(supported.profile(), &profile));
+    check!(std::ptr::eq(supported.profile(), &profile));
     let mut configuration = profile.input().clone();
     for role in ContractRoleV1::ALL {
         replace(&mut configuration, role, profile_contract_ref_v1(role)?);
     }
     let configuration = QueryProfileV1::new(configuration)?;
-    assert!(matches!(
+    check!(matches!(
         compile_profile(&configuration),
         Err(ProfileExecutionError::AcquisitionAfterAsOf)
     ));
@@ -231,6 +231,6 @@ fn bounded_performance_window_retains_its_exact_meaning() -> TestResult {
     let profile = QueryProfileV1::new(raw)?;
     let bytes = serialized_bytes(&profile)?;
     let supported = validate_selected_qualification_profile_v1(&profile)?;
-    assert_eq!(serialized_bytes(supported.profile())?, bytes);
+    check!(eq; serialized_bytes(supported.profile())?, bytes);
     Ok(())
 }

@@ -2,8 +2,6 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
-#[path = "common/durable_capture.rs"]
-mod durable_capture;
 #[path = "selected_publication_cli/fixture.rs"]
 mod fixture;
 #[path = "selected_publication_cli/paths.rs"]
@@ -203,7 +201,7 @@ fn workbook(path: &Path, expected: &fixture::Fixture) -> TestResult {
     ] {
         let index = headers
             .iter()
-            .position(|header| header.to_string() == name)
+            .position(|header| header == name)
             .ok_or("athlete column")?;
         check!(eq; row.get(index).ok_or("athlete cell")?.to_string(), value);
     }

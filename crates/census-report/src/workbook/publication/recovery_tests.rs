@@ -3,6 +3,17 @@ use census_store::publish::{Digest, InputFence, Intent, Request, Root, State};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 mod requested_advanced;
 
+fn options(out: Option<PathBuf>) -> TestResult<Options> {
+    Ok(Options {
+        grad_year: Some(2027),
+        out,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        school_year: census_domain::model::SchoolYear::new(2026).ok_or("season")?,
+        jurisdictions: Vec::new(),
+    })
+}
+
 struct Fixture {
     _temp: tempfile::TempDir,
     store: Store,
@@ -27,7 +38,7 @@ impl Fixture {
     fn build(lease: Lease) -> TestResult<Self> {
         let temp = tempfile::tempdir()?;
         let store = Store::open(temp.path().join("store"))?;
-        let options = super::fence_tests::options(None)?;
+        let options = options(None)?;
         let old = crate::workbook::build(&store, &options)?;
         let old_bytes = std::fs::read(&old)?;
         let root = store.out_dir().join("publication");

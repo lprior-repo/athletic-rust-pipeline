@@ -15,16 +15,16 @@ fn fragments_preserve_original_whitespace_escape_spelling_and_non_ascii() -> Tes
     )?;
     let bytes = page.encode_jsonl()?;
     let reference = object(&bytes)?;
-    assert_eq!(reference.records(), 4);
-    assert_eq!(
+    check!(eq;reference.records(), 4);
+    check!(eq;
         page.object_reference(reference.physical_bytes())?,
         reference
     );
     let decoded = RawPageV2::decode(&bytes, &reference, &binding)?;
     let recovered = decoded.rows().first().ok_or("missing row")?;
-    assert_eq!(recovered.physical_key(), key);
-    assert_eq!(recovered.raw_value(), raw);
-    assert!(bytes
+    check!(eq;recovered.physical_key(), key);
+    check!(eq;recovered.raw_value(), raw);
+    check!(bytes
         .split_inclusive(|byte| *byte == b'\n')
         .all(|line| line.len() <= MAX_RECORD_BYTES));
     Ok(())
@@ -40,7 +40,7 @@ fn wrong_table_key_payload_id_and_sequence_refuse() -> TestResult {
         crate::keys::observation_key(crate::Table::IdentityVerdicts, "a", 1),
         Vec::new(),
     ] {
-        assert!(RawPhysicalRowV2::new(&binding, &key, &value).is_err());
+        check!(RawPhysicalRowV2::new(&binding, &key, &value).is_err());
     }
     Ok(())
 }
@@ -52,15 +52,15 @@ fn derived_generation_is_checked_before_entity_decode() -> TestResult {
     let error = RawPhysicalRowV2::new(&binding, &key, b"{")
         .err()
         .ok_or("expected refusal")?;
-    assert!(error.to_string().contains("derived generation mismatch"));
+    check!(error.to_string().contains("derived generation mismatch"));
     Ok(())
 }
 
 #[test]
 fn standard_padded_base64_only_and_duplicate_raw_field_rejected() -> TestResult {
-    assert_eq!(raw::decode_base64("YQ==", 1)?, b"a");
+    check!(eq;raw::decode_base64("YQ==", 1)?, b"a");
     for encoded in ["YQ", "YR==", "YQ==\n", "_w==", "YQ==="] {
-        assert!(raw::decode_base64(encoded, 1).is_err());
+        check!(raw::decode_base64(encoded, 1).is_err());
     }
     let (binding, page) = page()?;
     let bytes = page.encode_jsonl()?;
@@ -69,10 +69,10 @@ fn standard_padded_base64_only_and_duplicate_raw_field_rejected() -> TestResult 
         "\"value_bytes\":",
         "\"value_bytes\":1,\"value_bytes\":",
     )?;
-    assert!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
+    check!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
     let encoded = STANDARD.encode(page.rows().first().ok_or("row")?.raw_value());
     let changed = replace(&bytes, &encoded, &STANDARD.encode(b" "))?;
-    assert!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
+    check!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
     Ok(())
 }
 
@@ -89,7 +89,7 @@ fn original_whitespace_mutation_without_digest_update_refuses() -> TestResult {
         &source,
         &STANDARD.encode(&changed_value),
     )?;
-    assert!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
+    check!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
     Ok(())
 }
 
@@ -124,7 +124,7 @@ fn fragment_repartitioning_refuses_even_when_reconstructed_bytes_would_match() -
             bytes_base64: STANDARD.encode(second),
         },
     )?);
-    assert!(
+    check!(
         matches!(RawPageV2::decode(&bytes, &object(&bytes)?, &binding),
         Err(crate::StoreError::Refused { detail }) if detail == "raw public identity generation V2: raw fragment length")
     );

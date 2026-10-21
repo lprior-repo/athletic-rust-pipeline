@@ -27,27 +27,24 @@ fn graph_qualification_creates_lifecycle_seven_without_implicit_capabilities() -
 }
 
 #[test]
-fn historical_families_replay_without_a_mutating_writer_or_reset() -> TestResult {
-    [
-        PublicIdentityQualificationVersion::SourceBoundV1,
-        PublicIdentityQualificationVersion::RetainedAuthorityContextV2,
-    ]
-    .into_iter()
-    .try_for_each(|version| {
-        let directory = tempfile::tempdir()?;
-        let root = directory.path().join("historical");
-        let declaration = create(&root, version, None)?;
-        let before = physical_state(&root)?;
-        let accepted = Store::replay_historical_public_identity(&root)?;
-        check!(eq; accepted.qualification_version(), version);
-        check!(eq; accepted.head(), &genesis(declaration.store_identity())?);
-        check!(Store::open_public_identity_qualification_v1(&root).is_err());
-        check!(Store::open_public_identity_qualification_v2(&root).is_err());
-        check!(Store::open_public_identity_qualification_v3(&root).is_err());
-        check!(Store::create_public_identity_qualification_v3(&root).is_err());
-        check!(eq; physical_state(&root)?, before);
-        Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
-    })
+fn historical_v2_family_replays_without_a_mutating_writer_or_reset() -> TestResult {
+    [PublicIdentityQualificationVersion::RetainedAuthorityContextV2]
+        .into_iter()
+        .try_for_each(|version| {
+            let directory = tempfile::tempdir()?;
+            let root = directory.path().join("historical");
+            let declaration = create(&root, version, None)?;
+            let before = physical_state(&root)?;
+            let accepted = Store::replay_historical_public_identity(&root)?;
+            check!(eq; accepted.qualification_version(), version);
+            check!(eq; accepted.head(), &genesis(declaration.store_identity())?);
+            check!(Store::open_public_identity_qualification_v1(&root).is_err());
+            check!(Store::open_public_identity_qualification_v2(&root).is_err());
+            check!(Store::open_public_identity_qualification_v3(&root).is_err());
+            check!(Store::create_public_identity_qualification_v3(&root).is_err());
+            check!(eq; physical_state(&root)?, before);
+            Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+        })
 }
 
 #[test]

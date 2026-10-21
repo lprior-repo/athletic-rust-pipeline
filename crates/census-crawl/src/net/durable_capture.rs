@@ -8,8 +8,8 @@ use census_domain::UsJurisdiction;
 use census_store::Store;
 
 pub fn durable_capture_context(root: &std::path::Path) -> CrawlResult<ResultsCaptureContext> {
-    Store::create_capture_qualification_v1(root)?;
-    let (store, writer) = Store::open_capture_qualification_v1(root)?.into_parts();
+    Store::create_capture_qualification(root)?;
+    let (store, writer) = Store::open_current_qualification_v3(root)?.into_parts();
     let manifest = RunManifest {
         store_identity: writer.store_identity().as_str().to_owned(),
         run: CensusRun::new(

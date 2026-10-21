@@ -28,7 +28,7 @@ pub use manifest::{
     OpenedPublication, VerifiedPublication,
 };
 pub use protocol::{PublicationError, RecoveryOutcome};
-pub use recovery::recover_publication;
+pub use recovery::{recover_publication, recover_selected_publication};
 pub(super) use sidecars::{write_json, write_sidecars};
 pub(super) use stage::Stage;
 

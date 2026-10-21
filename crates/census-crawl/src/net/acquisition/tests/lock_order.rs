@@ -50,6 +50,7 @@ async fn interrupted_fixture(
 fn observe_recovery(
     meta_path: &Path,
     events: Rc<RefCell<Vec<LockEvent>>>,
+    fence: Option<std::path::PathBuf>,
 ) -> Result<archive_lock_test::Observation, FetchError> {
     let eligible = meta_path.with_extension("json.lock");
     archive_lock_test::observe(move |path, event| {
@@ -66,6 +67,9 @@ fn observe_recovery(
         }
         if event == LockEvent::EligibleAcquired {
             archive_lock_test::require_held(&eligible)?;
+            if let Some(root) = &fence {
+                archive_lock_test::require_held(root)?;
+            }
         }
         events.borrow_mut().push(event);
         Ok(())
@@ -90,7 +94,7 @@ fn receipts(fixture: &Fixture) -> TestResult<Vec<census_store::Receipt>> {
 }
 
 #[tokio::test]
-async fn archive_lock_order_current_v1_recovery_publishes_under_one_archive_guard() -> TestResult {
+async fn archive_lock_order_prepared_recovery_publishes_under_one_archive_guard() -> TestResult {
     let mut previous = BODY.to_vec();
     previous.push(b'\n');
     for prior in [None, Some(previous.as_slice())] {
@@ -105,10 +109,14 @@ async fn archive_lock_order_current_v1_recovery_publishes_under_one_archive_guar
         };
         let requests = fixture.count();
         let events = Rc::new(RefCell::new(Vec::new()));
-        let observation = observe_recovery(&meta_path, Rc::clone(&events))?;
+        let observation = observe_recovery(
+            &meta_path,
+            Rc::clone(&events),
+            Some(fixture.store.http_cache_dir().join("archive-capacity.lock")),
+        )?;
         let recovered = fixture.acquire(2026, true).await??;
         drop(observation);
-        check!(eq; *events.borrow(), vec![LockEvent::BeforeAcquire, LockEvent::Acquired, LockEvent::EligibleAcquired]);
+        check!(eq; *events.borrow(), vec![LockEvent::EligibleAcquired]);
         check!(eq; Fixture::occurrence(&recovered)?.attempt().ordinal().get(), 1);
         check!(eq; recovered.capture().fetched_at, CAPTURED);
         check!(eq; recovered.capture().body, BODY);
@@ -132,12 +140,12 @@ async fn archive_lock_order_current_v1_recovery_publishes_under_one_archive_guar
         }
         let journal = fixture
             .store
-            .journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
+            .journal_payloads(census_domain::model::CaptureProtocolVersion::V2.phase())?;
         let receipts_before = receipts(&fixture)?;
         let fixture = fixture.reopen()?;
         let replay = fixture.acquire(2026, true).await??;
         check!(eq; Fixture::occurrence(&replay)?, Fixture::occurrence(&recovered)?);
-        check!(eq; fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?, journal);
+        check!(eq; fixture.store.journal_payloads(census_domain::model::CaptureProtocolVersion::V2.phase())?, journal);
         check!(eq; receipts(&fixture)?, receipts_before);
         check!(eq; fixture.count(), requests);
         archive_lock_test::require_available(
@@ -172,27 +180,35 @@ async fn archive_lock_order_prepared_missing_or_corrupt_backing_defers_admission
         }
         let before = fixture
             .store
-            .journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
+            .journal_payloads(census_domain::model::CaptureProtocolVersion::V2.phase())?;
         let receipts_before = receipts(&fixture)?;
         let result = fixture.acquire(2026, true).await?;
         let Err(crate::CrawlError::Fetch(FetchError::CaptureStore(error))) = result else {
             return Err("expected existing Store backing refusal before archive admission".into());
         };
         match interruption {
-            CaptureInterruption::AfterPrepared => check!(matches!(
-                error.as_ref(),
-                census_store::StoreError::Capture(
-                    census_store::CaptureError::RequiredBackingMissing
-                )
-            )),
-            CaptureInterruption::AfterArchive => check!(matches!(
-                error.as_ref(),
-                census_store::StoreError::Capture(census_store::CaptureError::BackingIntegrity)
-            )),
+            CaptureInterruption::AfterPrepared => {
+                check!(matches!(
+                    error.as_ref(),
+                    census_store::StoreError::Capture(
+                        census_store::CaptureError::PreparedTargetMismatch
+                    )
+                ));
+                check!(eq; fixture.store.journal_payloads(census_domain::model::CaptureProtocolVersion::V2.phase())?, before);
+                check!(eq; receipts(&fixture)?, receipts_before);
+            }
+            CaptureInterruption::AfterArchive => {
+                check!(matches!(
+                    error.as_ref(),
+                    census_store::StoreError::Capture(
+                        census_store::CaptureError::PreparedRepairRequired
+                    )
+                ));
+                check!(eq; fixture.store.journal_payloads(census_domain::model::CaptureProtocolVersion::V2.phase())?, before);
+                check!(eq; receipts(&fixture)?, receipts_before);
+            }
             _ => return Err("unexpected fixture interruption".into()),
         }
-        check!(eq; fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?, before);
-        check!(eq; receipts(&fixture)?, receipts_before);
         check!(eq; std::fs::read(&record)?, b"malformed");
         check!(eq; fixture.count(), 1);
         if interruption == CaptureInterruption::AfterPrepared {
@@ -228,13 +244,14 @@ async fn archive_lock_order_non200_prepared_recovery_never_runs_archive_admissio
     check!(!meta_path.exists());
     let keys = fixture
         .store
-        .journal_keys(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
+        .journal_keys(census_domain::model::CaptureProtocolVersion::V2.phase())?;
     check!(eq; keys.iter().filter(|key| key.ends_with("/terminal")).count(), 1);
     Ok(())
 }
 
 #[tokio::test]
-async fn archive_lock_order_busy_prepared_recovery_keeps_original_unfinished_facts() -> TestResult {
+async fn archive_lock_order_busy_publish_lock_skips_eligible_and_finishes_prepared_once(
+) -> TestResult {
     let fixture = interrupted_fixture(None, 200, CaptureInterruption::AfterArchive).await?;
     let (_, meta_path) = fixture.cache_paths()?;
     let lock_path = meta_path.with_extension("json.lock");
@@ -245,15 +262,17 @@ async fn archive_lock_order_busy_prepared_recovery_keeps_original_unfinished_fac
         .write(true)
         .open(&lock_path)?;
     lock.lock()?;
-    let before = fixture
-        .store
-        .journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
-    let result = fixture.acquire(2026, true).await?;
-    check!(
-        matches!(result, Err(crate::CrawlError::Fetch(FetchError::Cache { path, source }))
-        if path == lock_path && source.kind() == ErrorKind::WouldBlock)
-    );
-    check!(eq; fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?, before);
+    let (body_path, _) = fixture.cache_paths()?;
+    check!(!body_path.exists());
+    check!(!meta_path.exists());
+    let receipts_before = receipts(&fixture)?;
+    let recovered = fixture.acquire(2026, true).await??;
+    check!(eq; Fixture::occurrence(&recovered)?.attempt().ordinal().get(), 1);
+    check!(eq; recovered.capture().body, BODY);
+    check!(!body_path.exists());
+    check!(!meta_path.exists());
+    let receipts_after = receipts(&fixture)?;
+    check!(eq; receipts_after.len(), receipts_before.len() + 1);
     check!(eq; fixture.count(), 1);
     archive_lock_test::require_available(
         &fixture.store.http_cache_dir().join("archive-capacity.lock"),
@@ -261,6 +280,7 @@ async fn archive_lock_order_busy_prepared_recovery_keeps_original_unfinished_fac
     drop(lock);
     fixture.acquire(2026, true).await??;
     check!(eq; fixture.count(), 1);
+    check!(eq; receipts(&fixture)?.len(), receipts_after.len());
     Ok(())
 }
 
@@ -276,7 +296,7 @@ async fn archive_lock_order_publisher_uses_one_guard_and_preserves_busy_preceden
         .join("archive/bodies")
         .join(format!("{}.body", content_digest(BODY)));
     let events = Rc::new(RefCell::new(Vec::new()));
-    let observation = observe_recovery(&meta_path, Rc::clone(&events))?;
+    let observation = observe_recovery(&meta_path, Rc::clone(&events), None)?;
     crate::net::cache::publish_eligible(&body_path, &meta_path, &envelope, &archived_body)?;
     drop(observation);
     check!(eq; *events.borrow(), vec![LockEvent::BeforeAcquire, LockEvent::Acquired, LockEvent::EligibleAcquired]);
@@ -344,13 +364,15 @@ async fn archive_lock_order_missing_prepared_invalid_capacity_child() -> TestRes
     let fixture = interrupted_fixture(None, 200, CaptureInterruption::AfterPrepared).await?;
     let before = fixture
         .store
-        .journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?;
+        .journal_payloads(census_domain::model::CaptureProtocolVersion::V2.phase())?;
+    let receipts_before = receipts(&fixture)?;
     let result = fixture.acquire(2026, true).await?;
     check!(
         matches!(result, Err(crate::CrawlError::Fetch(FetchError::CaptureStore(error)))
-        if matches!(error.as_ref(), census_store::StoreError::Capture(census_store::CaptureError::RequiredBackingMissing)))
+        if matches!(error.as_ref(), census_store::StoreError::Capture(census_store::CaptureError::PreparedTargetMismatch)))
     );
-    check!(eq; fixture.store.journal_payloads(census_domain::model::SOURCE_ACQUISITION_PHASE)?, before);
+    check!(eq; fixture.store.journal_payloads(census_domain::model::CaptureProtocolVersion::V2.phase())?, before);
+    check!(eq; receipts(&fixture)?, receipts_before);
     check!(eq; fixture.count(), 1);
     check!(!fixture.store.http_cache_dir().join("archive").exists());
     Ok(())

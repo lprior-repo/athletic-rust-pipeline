@@ -215,6 +215,13 @@ pub(super) fn install() -> TestResult<InstalledSource> {
 }
 
 pub(super) fn install_with_result_venue(venue: &str) -> TestResult<InstalledSource> {
+    install_with_marks(venue, &MARKS)
+}
+
+pub(super) fn install_with_marks(
+    venue: &str,
+    marks: &[ControlledMark],
+) -> TestResult<InstalledSource> {
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("store");
     Store::create_public_identity_qualification_v3(&path)?;
@@ -223,7 +230,7 @@ pub(super) fn install_with_result_venue(venue: &str) -> TestResult<InstalledSour
 
     let (school, school_source) = enroll_school(&store)?;
     let (candidate, target_source) = enroll_target(&store)?;
-    let (result_sources, row_locators) = results::install(&store, venue)?;
+    let (result_sources, row_locators) = results::install_with_marks(&store, venue, marks)?;
 
     let mut source_records = vec![school_source, target_source];
     source_records.extend(result_sources);

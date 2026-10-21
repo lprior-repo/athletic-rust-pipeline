@@ -34,8 +34,8 @@ fn selected_time_distance_and_points_exclude_better_and_tied_ineligible_groups()
             check!(eq; best.population.sources, 1);
             check!(eq; best.inventory.eligible_group_count(), 1);
             check!(eq; best.inventory.tied_group_count(), 1);
-            check!(eq; best.inventory.tied_representative_ids(), &[school.performance.id.clone()]);
-            check!(eq; best.supporting_tied_candidate_ids(), &[school.performance.id.clone()]);
+            check!(eq; best.inventory.tied_representative_ids(), std::slice::from_ref(&school.performance.id));
+            check!(eq; best.supporting_tied_candidate_ids(), std::slice::from_ref(&school.performance.id));
             check!(outcome.combined_exclusions.is_empty());
             check!(eq; outcome.participation_exclusions.len(), 1);
             let excluded = outcome
@@ -88,7 +88,7 @@ fn accepted_participation_keeps_retained_conflicts_and_uses_the_clean_fallback()
         check!(eq; best.source.performance_id, slower.performance.id);
         check!(eq; best.inventory.eligible_group_count(), 1);
         check!(eq; best.inventory.tied_group_count(), 1);
-        check!(eq; best.supporting_tied_candidate_ids(), &[slower.performance.id.clone()]);
+        check!(eq; best.supporting_tied_candidate_ids(), std::slice::from_ref(&slower.performance.id));
         check!(eq; best.conflicts.len(), 1);
         check!(eq; best.conflicts.first().ok_or("retained conflict")?.marks,
             vec![crate::bests::mark_text(&faster.performance.mark)]);
@@ -121,7 +121,7 @@ fn mixed_participation_duplicates_and_permutations_keep_exact_tie_inventory() ->
     let mut expected = None;
     for order in super::super::ties::fixture::orders(&observations)? {
         let directory = tempfile::tempdir()?;
-        let order_observations: Vec<Observation> = order.into_iter().map(|row| row).collect();
+        let order_observations: Vec<Observation> = order.into_iter().collect();
         let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
         let (dataset, _objects) = facts.bind(&store, &writer, &order_observations)?;
         let view = facts.view(

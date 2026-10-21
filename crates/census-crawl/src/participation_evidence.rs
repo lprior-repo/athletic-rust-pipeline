@@ -33,8 +33,8 @@ pub use window::{
 };
 
 pub const PARTICIPATION_EVIDENCE_PHASE: &str = "independent_participation_capture_v1";
-const MAX_BODY: usize = 512 * 1024;
-const MAX_PACKET: usize = 2 * 1024 * 1024;
+const MAX_BODY: usize = 2 * 1024 * 1024;
+const MAX_PACKET: usize = 4 * 1024 * 1024;
 const MAX_PACKETS: usize = 16;
 const MAX_BUNDLE: usize = 32 * 1024 * 1024;
 const INTERPRETATION: &str = "mhsaa_subject_dcc_event_day_v1";

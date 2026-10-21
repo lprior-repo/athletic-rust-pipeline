@@ -85,7 +85,7 @@ pub(super) fn list<T>(values: Vec<T>) -> TestResult<AttachmentListV1<T>> {
     Ok(AttachmentListV1::new(values)?)
 }
 
-pub(super) fn span<'a>(body: &'a [u8], start: usize, length: usize) -> TestResult<&'a [u8]> {
+pub(super) fn span(body: &[u8], start: usize, length: usize) -> TestResult<&[u8]> {
     let end = start.checked_add(length).ok_or("original span overflow")?;
     Ok(body.get(start..end).ok_or("exact original span absent")?)
 }

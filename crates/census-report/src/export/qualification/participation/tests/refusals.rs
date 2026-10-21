@@ -6,7 +6,7 @@ async fn foreign_snapshot_profile_policy_and_mutated_dataset_fail_closed() -> Te
     let view = fixture.store.snapshot();
     let mut dataset = fixture.dataset(&view)?;
     let foreign = Fixture::prepare(Some("High School")).await?;
-    assert!(fixture
+    check!(fixture
         .read(&dataset, &foreign.store.snapshot(), &fixture.profile)
         .is_err());
     let unknown = profile::profile(census_domain::model::ContractRefV1::new(
@@ -14,9 +14,9 @@ async fn foreign_snapshot_profile_policy_and_mutated_dataset_fail_closed() -> Te
         2,
         &"b".repeat(64),
     )?)?;
-    assert!(fixture.read(&dataset, &view, &unknown).is_err());
+    check!(fixture.read(&dataset, &view, &unknown).is_err());
     dataset.performances.first_mut().ok_or("performance")?.date = "2026-01-01".into();
-    assert!(fixture.read(&dataset, &view, &fixture.profile).is_err());
+    check!(fixture.read(&dataset, &view, &fixture.profile).is_err());
     Ok(())
 }
 
@@ -40,9 +40,9 @@ async fn missing_source_archive_is_unresolved_with_attempted_proof_references() 
     metadata.note = Some(value.to_string());
     fixture.store.append(Table::Performances, &performance)?;
     let (outcome, _, refs, gaps) = row(fixture.assess()?, &performance.id)?.into_parts();
-    assert_eq!(outcome, CandidateOutcome::Unresolved);
-    assert!(gaps.contains(&ParticipationDiagnostic::SourceUnavailable));
-    assert!(refs.iter().any(|reference| reference.ends_with(&missing)));
+    check!(eq; outcome, CandidateOutcome::Unresolved);
+    check!(gaps.contains(&ParticipationDiagnostic::SourceUnavailable));
+    check!(refs.iter().any(|reference| reference.ends_with(&missing)));
     Ok(())
 }
 
@@ -65,18 +65,18 @@ async fn pinned_view_ignores_later_supplement_while_next_view_preserves_it() -> 
     fixture.store.append(Table::Athletes, &athlete)?;
     let pinned = fixture.read(&dataset, &view, &fixture.profile)?;
     let (outcome, reasons, _, gaps) = row(pinned, &fixture.performance.id)?.into_parts();
-    assert_eq!(outcome, CandidateOutcome::Unresolved);
-    assert_eq!(
+    check!(eq; outcome, CandidateOutcome::Unresolved);
+    check!(eq;
         reasons.iter().collect::<Vec<_>>(),
         vec![
             ParticipationReason::HighSchoolStatusMissing,
             ParticipationReason::SummerBoundaryUnresolved,
         ]
     );
-    assert!(!gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
+    check!(!gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
     let (outcome, _, _, gaps) = row(fixture.assess()?, &fixture.performance.id)?.into_parts();
-    assert_eq!(outcome, CandidateOutcome::Unresolved);
-    assert!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
+    check!(eq; outcome, CandidateOutcome::Unresolved);
+    check!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
     Ok(())
 }
 
@@ -94,8 +94,8 @@ async fn copied_producer_note_with_changed_outer_owner_cannot_close_evidence() -
     athlete.evidence.push(borrowed);
     fixture.store.append(Table::Athletes, &athlete)?;
     let (outcome, _, _, gaps) = row(fixture.assess()?, &fixture.performance.id)?.into_parts();
-    assert_eq!(outcome, CandidateOutcome::Unresolved);
-    assert!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
+    check!(eq; outcome, CandidateOutcome::Unresolved);
+    check!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
     Ok(())
 }
 
@@ -135,16 +135,16 @@ async fn recorded_source_journal_replays_through_the_same_owned_and_raw_readers(
     let owned = read_retained_owned_result_from(&frozen, &notes.owned, &notes.locator, budget)?;
     let source =
         read_retained_result_metadata_from(&frozen, &notes.reference, &notes.raw, &owned, budget)?;
-    assert_eq!(source.result().row().result_id, 201782263);
-    assert_eq!(
+    check!(eq; source.result().row().result_id, 201782263);
+    check!(eq;
         source.division(),
         census_crawl::milesplit::RetainedResultDivision::HighSchool
     );
-    assert_eq!(
+    check!(eq;
         source.snapshot_sequence(),
         token.replay.retained().snapshot_sequence
     );
-    assert_eq!(
+    check!(eq;
         source.store_identity().as_str(),
         token.replay.retained().store_identity
     );
@@ -158,11 +158,11 @@ async fn immutable_replay_objects_round_trip_and_refuse_foreign_descriptor() -> 
     let directory = tempfile::tempdir()?;
     let descriptor = token.replay.install(directory.path())?;
     let replay = ParticipationReplay::load(directory.path(), &descriptor)?;
-    assert_eq!(
+    check!(eq;
         serde_json::to_value(&replay)?,
         serde_json::to_value(&token.replay)?
     );
-    assert!(ParticipationReplay::load(directory.path(), &"f".repeat(64)).is_err());
+    check!(ParticipationReplay::load(directory.path(), &"f".repeat(64)).is_err());
     Ok(())
 }
 
@@ -190,10 +190,10 @@ async fn complete_frozen_participation_replays_identical_decisions_without_store
     )?;
     let live = row(live, &fixture.performance.id)?.into_parts();
     let frozen = row(frozen, &fixture.performance.id)?.into_parts();
-    assert_eq!(live, frozen);
+    check!(eq; live, frozen);
     let mut foreign = fingerprints;
     foreign.insert("performances".into(), "a".repeat(64));
-    assert!(PinnedParticipation::replay(
+    check!(PinnedParticipation::replay(
         &dataset,
         &fixture.profile,
         &directory,
@@ -222,10 +222,10 @@ async fn unverified_supplement_prevents_a_definitive_source_exclusion() -> TestR
     fixture.store.append(Table::Athletes, &athlete)?;
     let (outcome, reasons, refs, gaps) =
         row(fixture.assess()?, &fixture.performance.id)?.into_parts();
-    assert_eq!(outcome, CandidateOutcome::Unresolved);
-    assert!(reasons.contains(ParticipationReason::CollegiateParticipation));
-    assert!(!refs.is_empty());
-    assert!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
+    check!(eq; outcome, CandidateOutcome::Unresolved);
+    check!(reasons.contains(ParticipationReason::CollegiateParticipation));
+    check!(!refs.is_empty());
+    check!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
     Ok(())
 }
 
@@ -238,8 +238,8 @@ async fn authentic_source_note_cannot_bind_missing_or_foreign_canonical_context(
         let changed: CanonicalPerformance = serde_json::from_value(value)?;
         fixture.store.append(Table::Performances, &changed)?;
         let (outcome, _, _, gaps) = row(fixture.assess()?, &changed.id)?.into_parts();
-        assert_eq!(outcome, CandidateOutcome::Unresolved);
-        assert!(
+        check!(eq; outcome, CandidateOutcome::Unresolved);
+        check!(
             gaps.contains(&ParticipationDiagnostic::SourceBindingMismatch)
                 || gaps.contains(&ParticipationDiagnostic::CanonicalConflict)
         );
@@ -275,12 +275,12 @@ async fn historical_team_link_keeps_supplementary_evidence_in_closure() -> TestR
         .store
         .append(Table::Performances, &fixture.performance)?;
     let (outcome, _, refs, gaps) = row(fixture.assess()?, &fixture.performance.id)?.into_parts();
-    assert_eq!(outcome, CandidateOutcome::Unresolved);
-    assert!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
+    check!(eq; outcome, CandidateOutcome::Unresolved);
+    check!(gaps.contains(&ParticipationDiagnostic::UnverifiedAdditionalEvidence));
     let expected = format!(
         "canonical_evidence:{}",
         serialized_digest(team.evidence.last().ok_or("supplement")?)?
     );
-    assert!(refs.contains(&expected));
+    check!(refs.contains(&expected));
     Ok(())
 }

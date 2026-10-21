@@ -1,5 +1,7 @@
 use super::{ExportDataset, Fixture, Table, TestResult};
-use crate::export::dataset::{decoded_generations, resident_generations};
+use crate::export::dataset::{
+    decoded_generations, generation_counter_window, resident_generations,
+};
 use crate::report::ReportError;
 use census_domain::model::{CanonicalMeet, CompetitionLevel};
 use census_store::StoreError;
@@ -18,6 +20,7 @@ async fn selected_capture_refuses_oversized_input_before_generation_and_proof_ob
     row.location = Some("x".repeat(1024 * 1024));
     let bytes = serde_json::to_vec(&row)?.len();
     fixture.store.append(Table::Meets, &row)?;
+    let _counter_window = generation_counter_window()?;
     let decoded = decoded_generations();
     let resident = resident_generations();
     let result = ExportDataset::from_selected_snapshot(

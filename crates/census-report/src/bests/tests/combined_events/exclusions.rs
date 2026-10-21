@@ -67,8 +67,8 @@ fn combined_exclusions_keep_historical_nineteen_semantics() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = fixture.store_with_replay(directory.path(), std::slice::from_ref(&observation))?;
     let mut dataset = ExportDataset::load(&store)?;
-    for policy in [19] {
-        dataset.lineage.policy_revision = policy;
+    {
+        dataset.lineage.policy_revision = 19;
         let outcome = selection_outcome(&dataset)?;
         check!(outcome.combined_exclusions.is_empty());
         check!(eq; outcome.selections.len(), 1);

@@ -106,6 +106,8 @@ impl PendingTransfers {
 mod tests {
     use super::*;
 
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
+
     fn response_json(id: &str, status: i64) -> serde_json::Value {
         serde_json::json!({
             "requestId": id,
@@ -136,8 +138,7 @@ mod tests {
     }
 
     #[test]
-    fn interleaved_response_and_finished_for_two_ids_preserve_exact_values(
-    ) -> Result<(), BrowserError> {
+    fn interleaved_response_and_finished_for_two_ids_preserve_exact_values() -> TestResult {
         let mut ledger = PendingTransfers::default();
         let first_response = make_response("req-a", 200)?;
         let second_response = make_response("req-b", 403)?;
@@ -150,25 +151,24 @@ mod tests {
         let taken_a = ledger
             .take(&RequestId::new("req-a"))
             .ok_or(BrowserError::Protocol)?;
-        assert!(taken_a.response.is_some());
+        check!(taken_a.response.is_some());
         let resp_a = taken_a.response.as_ref().ok_or(BrowserError::Protocol)?;
-        assert_eq!(resp_a.response.status, 200);
-        assert_eq!(taken_a.finished, Some(2048.0));
+        check!(eq; resp_a.response.status, 200);
+        check!(eq; taken_a.finished, Some(2048.0));
 
         let taken_b = ledger
             .take(&RequestId::new("req-b"))
             .ok_or(BrowserError::Protocol)?;
-        assert!(taken_b.response.is_some());
+        check!(taken_b.response.is_some());
         let resp_b = taken_b.response.as_ref().ok_or(BrowserError::Protocol)?;
-        assert_eq!(resp_b.response.status, 403);
-        assert_eq!(taken_b.finished, Some(1024.0));
+        check!(eq; resp_b.response.status, 403);
+        check!(eq; taken_b.finished, Some(1024.0));
 
         Ok(())
     }
 
     #[test]
-    fn sixty_fifth_distinct_id_refuses_without_losing_previous_sixty_four(
-    ) -> Result<(), BrowserError> {
+    fn sixty_fifth_distinct_id_refuses_without_losing_previous_sixty_four() -> TestResult {
         let mut ledger = PendingTransfers::default();
         for index in 0..MAX_PENDING {
             let id = RequestId::new(index.to_string());
@@ -176,52 +176,52 @@ mod tests {
         }
         let excess_id = RequestId::new("excess");
         let result = ledger.observe_finished(&excess_id, 100.0);
-        assert_eq!(result, Err(BrowserError::PayloadLimit));
+        check!(eq; result, Err(BrowserError::PayloadLimit));
 
         for index in 0..MAX_PENDING {
             let id = RequestId::new(index.to_string());
             let taken = ledger.take(&id).ok_or(BrowserError::Protocol)?;
-            assert_eq!(taken.finished, Some(100.0));
+            check!(eq; taken.finished, Some(100.0));
         }
         Ok(())
     }
 
     #[test]
-    fn duplicate_finished_with_different_total_refuses() -> Result<(), BrowserError> {
+    fn duplicate_finished_with_different_total_refuses() -> TestResult {
         let mut ledger = PendingTransfers::default();
         let id = RequestId::new("req-1");
         ledger.observe_finished(&id, 100.0)?;
         let result = ledger.observe_finished(&id, 200.0);
-        assert_eq!(result, Err(BrowserError::Protocol));
+        check!(eq; result, Err(BrowserError::Protocol));
 
         let taken = ledger.take(&id).ok_or(BrowserError::Protocol)?;
-        assert_eq!(taken.finished, Some(100.0));
+        check!(eq; taken.finished, Some(100.0));
         Ok(())
     }
 
     #[test]
-    fn duplicate_response_refuses() -> Result<(), BrowserError> {
+    fn duplicate_response_refuses() -> TestResult {
         let mut ledger = PendingTransfers::default();
         let first = make_response("req-1", 200)?;
         ledger.observe_response(first)?;
         let second = make_response("req-1", 200)?;
         let result = ledger.observe_response(second);
-        assert_eq!(result, Err(BrowserError::Protocol));
+        check!(eq; result, Err(BrowserError::Protocol));
         Ok(())
     }
 
     #[test]
-    fn malformed_numeric_total_is_refused_before_binding() -> Result<(), BrowserError> {
+    fn malformed_numeric_total_is_refused_before_binding() -> TestResult {
         let mut ledger = PendingTransfers::default();
         let id = RequestId::new("req-1");
         let result = ledger.observe_finished(&id, f64::NAN);
-        assert_eq!(result, Err(BrowserError::Protocol));
+        check!(eq; result, Err(BrowserError::Protocol));
 
         let result = ledger.observe_finished(&id, -1.0);
-        assert_eq!(result, Err(BrowserError::Protocol));
+        check!(eq; result, Err(BrowserError::Protocol));
 
         let result = ledger.observe_finished(&id, 0.5);
-        assert_eq!(result, Err(BrowserError::Protocol));
+        check!(eq; result, Err(BrowserError::Protocol));
         Ok(())
     }
 }

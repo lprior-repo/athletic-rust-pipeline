@@ -1,21 +1,10 @@
-use crate::milesplit::{CurrentRosterAssertion, RosterVerdict};
+use crate::milesplit::CurrentRosterAssertion;
 use crate::participation_evidence::invalid;
 use crate::participation_evidence::provider_school::CheckedProviderSchoolPacketV1;
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
 use census_store::StoreError;
-
-pub(in super::super) fn scope(
-    checked: &CheckedProviderSchoolPacketV1,
-    proposal: &LocallyCheckedRosterIssuanceV1,
-    grant: &mut AttachmentReplayGrantV1,
-) -> CrawlResult<usize> {
-    let RosterVerdict::Complete { roster } = checked.roster_verdict() else {
-        return Err(invalid("roster source incomplete roster").into());
-    };
-    scope_members(roster, proposal, grant)
-}
 
 pub(in super::super) fn scope_row_local(
     checked: &CheckedProviderSchoolPacketV1,

@@ -40,7 +40,7 @@ struct Projection {
     count: Option<u64>,
 }
 
-fn project<'a>(raw: &'a RawValue) -> crate::StoreResult<Projection> {
+fn project(raw: &RawValue) -> crate::StoreResult<Projection> {
     serde_json::from_str(raw.get()).map_err(|source| StoreError::Decode {
         key: format!("borrowed journal payload for {PHASE}/{KEY}"),
         source,

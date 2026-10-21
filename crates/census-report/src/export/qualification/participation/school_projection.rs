@@ -3,12 +3,13 @@ use crate::report::{documentary_source_error as source_error, ReportResult};
 use census_crawl::participation_evidence::physical_result::{
     project_retained_html_result_row, ProposedHtmlResultTargetV1,
 };
+use census_crawl::participation_evidence::provider_target::CheckedLinkedEventLabelV1;
 use census_crawl::participation_evidence::recorded::{
     discover_frozen_html_results, DiscoveredIdentityLinkedHtmlResultDocumentV1,
 };
 use census_crawl::participation_evidence::result_ownership::school_correspondence::read::checked_frozen;
 use census_domain::evidence_subject_attachment::{
-    AttachmentFactDispositionV1, AttachmentReplayGrantV1,
+    AttachmentDigestV1, AttachmentFactDispositionV1, AttachmentReplayGrantV1,
 };
 use census_domain::model::{
     CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam, EventDisposition,
@@ -168,6 +169,14 @@ fn reviewed_event_context(
     }) {
         return Ok(None);
     }
+    apply_reviewed_event_context(event, label, &attachment.record().record_digest)
+}
+
+fn apply_reviewed_event_context(
+    event: &mut CanonicalEvent,
+    label: CheckedLinkedEventLabelV1,
+    review: &AttachmentDigestV1,
+) -> ReportResult<Option<SourceEventLabel>> {
     if event.source_labels.len() != 1 {
         return Err(invalid("checked event context has ambiguous original source labels").into());
     }
@@ -182,7 +191,7 @@ fn reviewed_event_context(
         capture: label.heading_proof().capture(),
         locator: label.heading_proof().locator(),
         row: label.row_reference(),
-        review: &attachment.record().record_digest,
+        review,
     };
     let encoded =
         serde_json::to_string(&note).map_err(|source| crate::report::ReportError::Invariant {

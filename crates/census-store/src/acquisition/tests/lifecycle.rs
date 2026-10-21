@@ -4,7 +4,7 @@ use super::*;
 fn explicit_capture_init_and_open_preserve_existing_store_identity() -> TestResult {
     let dir = tempfile::tempdir()?;
     let root = dir.path().join("capture");
-    let created = Store::create_capture_qualification_v1(&root)?;
+    let created = Store::create_capture_qualification(&root)?;
     check!(eq; Store::format(&root)?.lifecycle_revision, Some(4));
     check!(matches!(
         Store::open(&root),
@@ -37,9 +37,9 @@ fn explicit_capture_init_and_open_preserve_existing_store_identity() -> TestResu
         ))
     ));
     let control = Store::capture_qualification_control_existing(&root)?;
-    check!(eq; control.show()?, CaptureQualification::V1(created.clone()));
+    check!(eq; control.show()?, CaptureQualification::V2(created.clone()));
     drop(control);
-    let (store, writer) = Store::open_capture_qualification_v1(&root)?.into_parts();
+    let (store, writer) = Store::open_current_qualification_v3(&root)?.into_parts();
     check!(eq; store.store_identity()?, created.store_identity().clone());
     check!(eq; writer.store_identity(), created.store_identity());
     check!(matches!(
@@ -63,7 +63,7 @@ fn capture_init_never_adopts_legacy_existing_or_artifact_roots() -> TestResult {
         let before = rows(&store)?;
         drop(store);
         check!(matches!(
-            Store::create_capture_qualification_v1(dir.path()),
+            Store::create_capture_qualification(dir.path()),
             Err(StoreError::Capture(CaptureError::CaptureInitExistingStore))
         ));
         let (db, _, journal, meta, receipts) = crate::open_keyspaces(dir.path(), 8_388_608)?;
@@ -79,12 +79,12 @@ fn capture_init_never_adopts_legacy_existing_or_artifact_roots() -> TestResult {
     let dir = tempfile::tempdir()?;
     std::fs::write(dir.path().join("capture.body"), b"historic")?;
     check!(matches!(
-        Store::create_capture_qualification_v1(dir.path()),
+        Store::create_capture_qualification(dir.path()),
         Err(StoreError::Capture(CaptureError::CaptureInitRootNotEmpty))
     ));
     check!(eq; std::fs::read(dir.path().join("capture.body"))?, b"historic".to_vec());
     let empty = tempfile::tempdir()?;
-    Store::create_capture_qualification_v1(empty.path())?;
+    Store::create_capture_qualification(empty.path())?;
     Ok(())
 }
 
@@ -105,7 +105,7 @@ fn capture_owner_requires_actual_bound_manifest_and_real_handle_origin() -> Test
     ));
     let root = dir.path().join("store");
     drop(store);
-    let (reopened, _) = Store::open_capture_qualification_v1(&root)?.into_parts();
+    let (reopened, _) = Store::open_current_qualification_v3(&root)?.into_parts();
     check!(matches!(
         writer.results_owner(&reopened, held_owner.scope().clone()),
         Err(StoreError::Capture(
@@ -119,16 +119,16 @@ fn capture_owner_requires_actual_bound_manifest_and_real_handle_origin() -> Test
 fn capture_init_has_one_real_fjall_owner_and_missing_open_never_creates() -> TestResult {
     let dir = tempfile::tempdir()?;
     let absent = dir.path().join("absent");
-    check!(Store::open_capture_qualification_v1(&absent).is_err());
+    check!(Store::open_current_qualification_v3(&absent).is_err());
     check!(!absent.exists());
-    Store::create_capture_qualification_v1(&absent)?;
-    let (store, _) = Store::open_capture_qualification_v1(&absent)?.into_parts();
+    Store::create_capture_qualification(&absent)?;
+    let (store, _) = Store::open_current_qualification_v3(&absent)?.into_parts();
     check!(matches!(
         Store::capture_qualification_control_existing(&absent),
         Err(StoreError::Open { .. })
     ));
     check!(matches!(
-        Store::open_capture_qualification_v1(&absent),
+        Store::open_current_qualification_v3(&absent),
         Err(StoreError::Open { .. })
     ));
     drop(store);

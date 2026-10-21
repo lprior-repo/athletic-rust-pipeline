@@ -60,7 +60,7 @@ pub(super) fn expected_keys(fixture: &ReviewedFixture) -> TestResult<Vec<String>
         .iter()
         .filter(|row| row.id() != unrelated_observation().id())
         .collect();
-    assert_eq!(observations.len(), 1);
+    check!(eq;observations.len(), 1);
     let mut keys = vec![format!("athletes:{first}"), format!("athletes:{second}")];
     keys.extend(
         observations

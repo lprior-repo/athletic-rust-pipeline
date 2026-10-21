@@ -38,11 +38,11 @@ mod tests {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut budget = Captures::default();
         (0..10_000).try_for_each(|_| budget.charge("owned-fixture", 1024 * 1024))?;
-        assert_eq!(budget.bytes, 1024 * 1024);
-        assert_eq!(budget.seen.len(), 1);
+        check!(eq; budget.bytes, 1024 * 1024);
+        check!(eq; budget.seen.len(), 1);
         budget.charge("second-owned-fixture", 1024 * 1024)?;
-        assert_eq!(budget.bytes, 2 * 1024 * 1024);
-        assert!(budget
+        check!(eq; budget.bytes, 2 * 1024 * 1024);
+        check!(budget
             .charge("oversized-fixture", MAX_ARCHIVE_BYTES as usize)
             .is_err());
         Ok(())

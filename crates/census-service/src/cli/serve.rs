@@ -13,7 +13,7 @@ pub(super) fn run_serve(cli: &Cli) -> Result<()> {
         defaults.drain_timeout.as_secs(),
         defaults.memory_budget_bytes / (1024 * 1024 * 1024)
     );
-    println!("census-serve {flags}");
-    println!("run it with: cargo run --release -p census-service --bin census-serve -- {flags}");
+    println!("build it with: env -u CI tools/moon-local run pipeline:build-portable");
+    println!("target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve {flags}");
     Ok(())
 }

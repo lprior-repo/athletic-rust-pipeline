@@ -61,11 +61,11 @@ pub(super) fn require_canonical(request: &HistoryRequest) -> Result<(), HistoryE
             monotonic(&evidence.members, "evidence members")?;
         }
         HistoryRequest::EstablishMatchedGroup { bindings, evidence } => {
-            for pair in bindings.windows(2) {
-                let order = pair[0]
+            for (left, right) in bindings.iter().zip(bindings.iter().skip(1)) {
+                let order = left
                     .candidate
-                    .cmp(&pair[1].candidate)
-                    .then_with(|| pair[0].id.cmp(&pair[1].id));
+                    .cmp(&right.candidate)
+                    .then_with(|| left.id.cmp(&right.id));
                 if order.is_gt() {
                     return Err(HistoryError::Invalid("noncanonical request order"));
                 }
@@ -88,8 +88,9 @@ pub(super) fn require_canonical(request: &HistoryRequest) -> Result<(), HistoryE
             }
             if split
                 .partitions
-                .windows(2)
-                .any(|pair| pair[0].binding_ids > pair[1].binding_ids)
+                .iter()
+                .zip(split.partitions.iter().skip(1))
+                .any(|(left, right)| left.binding_ids > right.binding_ids)
             {
                 return Err(HistoryError::Invalid("noncanonical request order"));
             }
@@ -104,8 +105,8 @@ pub(super) fn require_canonical(request: &HistoryRequest) -> Result<(), HistoryE
 }
 
 fn monotonic<T: Ord>(values: &[T], field: &'static str) -> Result<(), HistoryError> {
-    for pair in values.windows(2) {
-        match pair[0].cmp(&pair[1]) {
+    for (left, right) in values.iter().zip(values.iter().skip(1)) {
+        match left.cmp(right) {
             std::cmp::Ordering::Less => {}
             std::cmp::Ordering::Equal => return Err(HistoryError::Duplicate(field)),
             std::cmp::Ordering::Greater => {

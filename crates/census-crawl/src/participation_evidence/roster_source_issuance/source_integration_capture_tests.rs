@@ -7,9 +7,9 @@ fn controlled_capture_objects_bind_metadata_and_refuse_equivalent_offset_literal
     let mut inspection =
         store.inspect_roster_source_issuance_v1(request, AttachmentReplayGrantV1::new())?;
     let (evidence, grant) = inspection.source_parts()?;
-    let proposal = actual_proposal(&packet, &school, &program, evidence, grant)?;
+    let proposal = actual_proposal_v3(&packet, &school, &program, evidence, grant)?;
     let compiled = compiled_roster_parser_manifest()?;
-    let source = assess_retained_roster_source(
+    let source = assess_retained_roster_source_v3(
         evidence,
         compiled.canonical_bytes(),
         &compiled_roster_interpretation_contracts_v1(),
@@ -28,7 +28,7 @@ fn controlled_capture_objects_bind_metadata_and_refuse_equivalent_offset_literal
     *changed
         .pointer_mut("/capture/acquired_at")
         .ok_or("timestamp")? = json!("2026-10-15T19:49:43-05:00");
-    check!(assess_retained_roster_source(
+    check!(assess_retained_roster_source_v3(
         evidence,
         compiled.canonical_bytes(),
         &compiled_roster_interpretation_contracts_v1(),
@@ -56,7 +56,7 @@ fn foreign_prechecked_manifest_cannot_bypass_exhausted_original_grant() -> TestR
         .checked_sub(grant.usage().encoded_bytes())
         .ok_or("usage")?;
     grant.charge_bytes(remaining.checked_sub(1).ok_or("remaining")?)?;
-    check!(crate::participation_evidence::roster_source_issuance::capture_objects::prepare_retained_roster_capture_objects(
+    check!(crate::participation_evidence::roster_source_issuance::prepare_retained_roster_capture_objects_v3(
         evidence, &checked, grant).is_err());
     check!(grant.ensure_available().is_err());
     Ok(())
@@ -76,7 +76,7 @@ fn controlled_inspection_refuses_wrong_program_year_or_retained_policy() -> Test
             AttachmentReplayGrantV1::new(),
         )?;
         let (evidence, grant) = inspection.source_parts()?;
-        let proposal = actual_proposal(&packet, &school, &program, evidence, grant)?;
+        let proposal = actual_proposal_v3(&packet, &school, &program, evidence, grant)?;
         let mut value = serde_json::to_value(&proposal)?;
         let mut contracts = compiled_roster_interpretation_contracts_v1();
         if change_year {
@@ -85,7 +85,7 @@ fn controlled_inspection_refuses_wrong_program_year_or_retained_policy() -> Test
             contracts.scope = b"{}";
         }
         let compiled = compiled_roster_parser_manifest()?;
-        check!(assess_retained_roster_source(
+        check!(assess_retained_roster_source_v3(
             evidence,
             compiled.canonical_bytes(),
             &contracts,

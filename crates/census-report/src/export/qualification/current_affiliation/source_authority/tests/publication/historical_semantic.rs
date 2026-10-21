@@ -41,7 +41,7 @@ fn controlled_accepted_syntactic_v2_receipt_cannot_authorize_forged_semantic_inv
         claim.activation_object(&mut grant)?;
         match assess_reviewed_roster_source_historical_v2(claim, &mut grant) {
             Err(census_crawl::CrawlError::Store(census_store::StoreError::Refused { detail })) => {
-                check!(eq; detail, "retained semantic inventory differs from original raw V1 interpretation");
+                check!(eq; detail, "row-local retained inventory differs from original capture");
             }
             _ => {
                 return Err(

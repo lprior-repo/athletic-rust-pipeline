@@ -74,16 +74,16 @@ impl Bundle {
         if self.version != 2 {
             return Err(PublicIdentityError::Corrupt("frozen graph bundle version").into());
         }
-        super::super::wire::bound(self.declaration.len(), 65_536)?;
-        super::super::wire::bound(self.head.len(), 1024)?;
-        super::super::wire::bound(self.history.len(), crate::MAX_PUBLIC_IDENTITY_HISTORY_BYTES)?;
-        super::super::wire::bound(self.operations.len(), ReplayLimits::SMALL.records)?;
-        super::super::wire::bound(self.objects.len(), MAX_OBJECTS)?;
+        super::super::bound(self.declaration.len(), 65_536)?;
+        super::super::bound(self.head.len(), 1024)?;
+        super::super::bound(self.history.len(), crate::MAX_PUBLIC_IDENTITY_HISTORY_BYTES)?;
+        super::super::bound(self.operations.len(), ReplayLimits::SMALL.records)?;
+        super::super::bound(self.objects.len(), MAX_OBJECTS)?;
         self.operations.iter().try_for_each(|operation| {
             HeldGraphWitness::decode("frozen graph witness", operation.witness.as_bytes())?;
-            super::super::wire::bound(operation.receipt.len(), 65_536)?;
+            super::super::bound(operation.receipt.len(), 65_536)?;
             if let Some(bytes) = &operation.decision {
-                super::super::wire::bound(bytes.len(), 65_536)?;
+                super::super::bound(bytes.len(), 65_536)?;
             }
             Ok::<(), StoreError>(())
         })?;
@@ -91,7 +91,7 @@ impl Bundle {
             let total = total
                 .checked_add(object.rows.len())
                 .ok_or(StoreError::CounterOverflow)?;
-            super::super::wire::bound(total, MAX_PHYSICAL_ROWS)?;
+            super::super::bound(total, MAX_PHYSICAL_ROWS)?;
             Ok::<usize, StoreError>(total)
         })?;
         Ok(())
@@ -100,8 +100,8 @@ impl Bundle {
 
 impl PhysicalRow {
     pub(super) fn capture(key: &[u8], value: &[u8]) -> StoreResult<Self> {
-        super::super::wire::bound(key.len(), 1024)?;
-        super::super::wire::bound(value.len(), crate::MAX_JOURNAL_VALUE_BYTES)?;
+        super::super::bound(key.len(), 1024)?;
+        super::super::bound(value.len(), crate::MAX_JOURNAL_VALUE_BYTES)?;
         Ok(Self {
             key_base64: STANDARD.encode(key),
             value_base64: STANDARD.encode(value),
@@ -121,11 +121,11 @@ fn binary(value: &str, limit: usize) -> StoreResult<Vec<u8>> {
         .and_then(|n| n.checked_div(3))
         .and_then(|n| n.checked_mul(4))
         .ok_or(StoreError::CounterOverflow)?;
-    super::super::wire::bound(value.len(), maximum)?;
+    super::super::bound(value.len(), maximum)?;
     let bytes = STANDARD
         .decode(value)
         .map_err(|_| PublicIdentityError::Corrupt("frozen graph physical base64"))?;
-    super::super::wire::bound(bytes.len(), limit)?;
+    super::super::bound(bytes.len(), limit)?;
     if bytes.is_empty() || STANDARD.encode(&bytes) != value {
         return Err(PublicIdentityError::Corrupt("noncanonical frozen physical bytes").into());
     }

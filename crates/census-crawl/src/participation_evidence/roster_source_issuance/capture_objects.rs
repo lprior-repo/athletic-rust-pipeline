@@ -8,8 +8,16 @@ use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
 use census_store::{RosterSourceEvidenceV1, StoreResult};
 
 mod format;
-pub(super) mod version2;
-pub use version2::prepare_retained_roster_capture_objects_v2;
+pub(super) mod version3;
+
+pub fn prepare_retained_roster_capture_objects_v2<'a>(
+    _evidence: &'a RosterSourceEvidenceV1,
+    _parser: &CheckedRosterParserManifestV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
+    grant.poison();
+    Err(invalid("unsupported retained roster capture objects v2").into())
+}
 
 pub struct PreparedRosterCaptureObjectsV1<'a> {
     evidence: &'a RosterSourceEvidenceV1,

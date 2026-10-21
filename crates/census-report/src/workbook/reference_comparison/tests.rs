@@ -135,7 +135,7 @@ pub(super) fn reference_book(
     name: &str,
 ) -> TestResult {
     let mut book = rust_xlsxwriter::Workbook::new();
-    let worksheet = book.add_worksheet_with_constant_memory();
+    let worksheet = book.add_worksheet_with_constant_memory()?;
     worksheet.set_name(sheet)?;
     for (column, header) in [
         id_header,

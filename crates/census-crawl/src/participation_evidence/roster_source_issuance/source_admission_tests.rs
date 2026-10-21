@@ -26,7 +26,7 @@ fn public_capture_preparation_preserves_first_capacity_refusal_and_retained_inpu
         .checked_sub(grant.usage().encoded_bytes())
         .ok_or("inspection already exceeded the grant")?;
     grant.charge_bytes(remaining)?;
-    let error = crate::participation_evidence::roster_source_issuance::capture_objects::prepare_retained_roster_capture_objects(
+    let error = crate::participation_evidence::roster_source_issuance::prepare_retained_roster_capture_objects_v3(
         evidence, &checked, grant)
         .err()
         .ok_or("capture preparation must reject an exhausted grant")?;
@@ -59,7 +59,7 @@ fn public_capture_preparation_preserves_first_capacity_refusal_and_retained_inpu
 }
 
 #[test]
-fn controlled_partial_roster_cannot_activate_a_complete_review() -> TestResult {
+fn controlled_partial_roster_inventories_rejected_row_as_partial_basis() -> TestResult {
     let body = SMALL_ROSTER.replace(
         "</ul>",
         concat!(
@@ -77,23 +77,64 @@ fn controlled_partial_roster_cannot_activate_a_complete_review() -> TestResult {
     let mut inspection =
         store.inspect_roster_source_issuance_v1(request, AttachmentReplayGrantV1::new())?;
     let (evidence, grant) = inspection.source_parts()?;
-    let proposal = actual_proposal(&packet, &school, &program, evidence, grant)?;
+    let proposal = actual_proposal_v3(&packet, &school, &program, evidence, grant)?;
     let parser = compiled_roster_parser_manifest()?;
     let contracts = compiled_roster_interpretation_contracts_v1();
-    let error = assess_retained_roster_source(
+    let source = assess_retained_roster_source_v3(
         evidence,
         parser.canonical_bytes(),
         &contracts,
         &proposal,
         grant,
-    )
-    .err()
-    .ok_or("a rejected row must prevent complete-roster review")?;
-    check!(matches!(
-        error,
-        crate::CrawlError::Store(census_store::StoreError::Refused { detail })
-            if detail == "roster source incomplete roster"
-    ));
+    )?;
+    let interpretation: Value =
+        serde_json::from_slice(source.capture_objects(grant)?.interpretation_bytes(grant)?)?;
+    check!(eq;
+        interpretation.get("schema").and_then(Value::as_str),
+        Some("roster-retained-capture-interpretation-v3")
+    );
+    let inventory = interpretation
+        .get("semantic_inventory")
+        .ok_or("semantic inventory absent")?;
+    check!(eq;
+        inventory.get("disposition").and_then(Value::as_str),
+        Some("partial")
+    );
+    let rows = inventory
+        .get("rows")
+        .and_then(Value::as_array)
+        .ok_or("inventory rows absent")?;
+    let rejected: Vec<_> = rows
+        .iter()
+        .filter(|row| {
+            row.get("outcome")
+                .and_then(|outcome| outcome.get("state"))
+                .and_then(Value::as_str)
+                == Some("rejected")
+        })
+        .collect();
+    let [rejected] = rejected.as_slice() else {
+        return Err("exactly one rejected row must be inventoried".into());
+    };
+    check!(eq;
+        rejected.get("provider_id").and_then(Value::as_str),
+        Some("43")
+    );
+    check!(eq;
+        rejected
+            .get("outcome")
+            .and_then(|outcome| outcome.get("reason"))
+            .and_then(Value::as_str),
+        Some("invalid_graduation_year")
+    );
+    check!(rows.iter().any(|row| {
+        row.get("provider_id").and_then(Value::as_str) == Some("42")
+            && row
+                .get("outcome")
+                .and_then(|outcome| outcome.get("state"))
+                .and_then(Value::as_str)
+                == Some("admitted")
+    }));
     check!(eq; packet.roster().body()?, body);
     check!(eq; store.snapshot().sequence(), sequence);
     check!(eq; store.snapshot().tables_digest(&census_store::Table::ALL)?, tables);

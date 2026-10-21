@@ -39,25 +39,32 @@ fn run(branch: Branch) -> TestResult {
     let controlled = controlled::install(&fixture.store, &writer)?;
     let merged = correction::merge(&fixture.store, &writer, &controlled)?;
     oracle::moved(&fixture)?;
-    oracle::merged(&fixture.store, &controlled, merged)?;
+    oracle::merged(&fixture.store, &controlled, merged.1)?;
     prior.preserved(&root)?;
     let corrected = correction::correct(&fixture.store, &writer, &controlled, merged, branch)?;
     oracle::moved(&fixture)?;
-    let expected = oracle::corrected(&fixture.store, &controlled, corrected, merged, branch)?;
+    let expected = oracle::corrected(
+        &fixture.store,
+        &controlled,
+        corrected,
+        merged.0,
+        merged.1,
+        branch,
+    )?;
     prior.preserved(&root)?;
     let _revoked = super::lifecycle::operation::revoke(&fixture.store)?;
     oracle::historical_status_target_moved(&fixture)?;
     prior.preserved(&root)?;
     drop(writer);
     let fixture = fixture.reopen()?;
-    check!(eq; oracle::corrected(&fixture.store, &controlled, corrected, merged, branch)?, expected);
+    check!(eq; oracle::corrected(&fixture.store, &controlled, corrected, merged.0, merged.1, branch)?, expected);
     oracle::historical_status_target_moved(&fixture)?;
     let retired = attachment_retirement::retire_status(&fixture.store)?;
     retired.replay_without_reactivation(&fixture.store)?;
     prior.preserved(&root)?;
     let fixture = fixture.reopen()?;
     retired.replay_without_reactivation(&fixture.store)?;
-    check!(eq; oracle::corrected(&fixture.store, &controlled, corrected, merged, branch)?, expected);
+    check!(eq; oracle::corrected(&fixture.store, &controlled, corrected, merged.0, merged.1, branch)?, expected);
     let current_objects = tempfile::tempdir()?;
     let dataset = fixture.capture(current_objects.path())?;
     oracle::dataset(&dataset, &controlled, &expected)?;

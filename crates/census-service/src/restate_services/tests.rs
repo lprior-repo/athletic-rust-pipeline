@@ -421,8 +421,13 @@ fn national_request(jurisdictions: Vec<UsJurisdiction>) -> TestResult<NationalRe
         season: SchoolYear::new(2026).ok_or("invalid fixture season")?,
         revision: Revision(1),
         history: HistoryWindow::cohort("2026-09-22")?,
-        publication_contract: super::PublicationContract::LegacySeparateV1,
-        export_job: census_report::export::ExportJobRequest::LegacyV2,
+        publication_contract: super::PublicationContract::SelectedPublicationV2,
+        export_job: census_report::export::ExportJobRequest::SelectedPublicationV1 {
+            selection: census_domain::model::ProfileSelectionV1::new(
+                census_domain::model::StoreIdentity::parse(&"a".repeat(64))?,
+                census_domain::model::ProfileId::parse(&"b".repeat(64))?,
+            ),
+        },
         jurisdictions,
         refresh: false,
         limit_per_state: None,
@@ -1014,6 +1019,30 @@ fn differing_semantic_parts_produce_different_keys() -> TestResult {
     Ok(())
 }
 
+fn synthetic_selection(
+    owner: char,
+    profile: char,
+) -> TestResult<census_domain::model::ProfileSelectionV1> {
+    Ok(census_domain::model::ProfileSelectionV1::new(
+        census_domain::model::StoreIdentity::parse(&owner.to_string().repeat(64))?,
+        census_domain::model::ProfileId::parse(&profile.to_string().repeat(64))?,
+    ))
+}
+
+fn bare_selected_request() -> TestResult<WorkbookRequest> {
+    Ok(WorkbookRequest {
+        grad_year: None,
+        limit: None,
+        scope: None,
+        out: None,
+        school_year: None,
+        jurisdictions: Vec::new(),
+        export_job: census_report::export::ExportJobRequest::SelectedPublicationV1 {
+            selection: synthetic_selection('a', 'b')?,
+        },
+    })
+}
+
 #[test]
 fn a_workbook_request_key_carries_every_selection_and_destination_field() -> TestResult {
     let request = WorkbookRequest {
@@ -1023,16 +1052,21 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() -> Tes
         out: Some("/tmp/root-a".to_string()),
         school_year: Some(2026),
         jurisdictions: Vec::new(),
-        export_job: census_report::export::ExportJobRequest::LegacyV2,
+        export_job: census_report::export::ExportJobRequest::SelectedPublicationV1 {
+            selection: synthetic_selection('a', 'b')?,
+        },
     };
-    let legacy = ExportGeneration::default_generation();
-    let key = workbook_request_key(&request, &legacy)?;
+    let generation = ExportGeneration::default_generation();
+    let key = workbook_request_key(&request, &generation)?;
     let segments: Vec<&str> = key.split(':').collect();
+    check!(eq; segments.len(), 9);
     check!(eq;
-        segments,
-        vec!["workbook", "2027", "core", "50", "all", "/tmp/root-a", "2026", "1"],
-        "the key is workbook:year:scope:limit:places:out:school-year:generation"
+        segments[..7],
+        ["workbook", "2027", "core", "50", "all", "/tmp/root-a", "2026"],
+        "the key is workbook:year:scope:limit:places:out:school-year:selected:generation"
     );
+    check!(segments[7].starts_with("selected_v1_"));
+    check!(eq; segments[8], generation.as_str());
     check!(eq;
         workbook_request_key(&request, &ExportGeneration::default_generation())?,
         key,
@@ -1079,32 +1113,32 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() -> Tes
     );
 
     let bare = workbook_request_key(
-        &WorkbookRequest::default(),
+        &bare_selected_request()?,
         &ExportGeneration::default_generation(),
     )?;
-    check!(eq; bare, "workbook:all:all:all:all:.:unstated:1");
+    check!(bare.starts_with("workbook:all:all:all:all:.:unstated:selected_v1_"));
 
     let mut colon = request.clone();
     colon.out = Some("/tmp/a:b".to_string());
     check!(
-        workbook_request_key(&colon, &legacy).is_err(),
+        workbook_request_key(&colon, &generation).is_err(),
         "a colon in the output path must not silently shift the key segments"
     );
     colon.out = Some("/tmp/root-a".to_string());
     colon.scope = Some("co:re".to_string());
     check!(
-        workbook_request_key(&colon, &legacy).is_err(),
+        workbook_request_key(&colon, &generation).is_err(),
         "a colon scope must not silently shift the key segments"
     );
     colon.scope = Some("".to_string());
     check!(
-        workbook_request_key(&colon, &legacy).is_err(),
+        workbook_request_key(&colon, &generation).is_err(),
         "an empty scope must not collapse the workbook key grammar"
     );
     colon.scope = Some("core".to_string());
     colon.out = Some("".to_string());
     check!(
-        workbook_request_key(&colon, &legacy).is_err(),
+        workbook_request_key(&colon, &generation).is_err(),
         "an empty output path must not collapse the workbook key grammar"
     );
     Ok(())
@@ -1112,36 +1146,39 @@ fn a_workbook_request_key_carries_every_selection_and_destination_field() -> Tes
 
 #[test]
 fn selected_workbook_request_identity_binds_the_versioned_profile_selection() -> TestResult {
-    let legacy = ExportGeneration::default_generation();
-    let selection = |owner: char, profile: char| -> TestResult<_> {
-        Ok(census_domain::model::ProfileSelectionV1::new(
-            census_domain::model::StoreIdentity::parse(&owner.to_string().repeat(64))?,
-            census_domain::model::ProfileId::parse(&profile.to_string().repeat(64))?,
-        ))
+    let generation = ExportGeneration::default_generation();
+    let selected_request = |selection| -> TestResult<WorkbookRequest> {
+        Ok(WorkbookRequest {
+            grad_year: None,
+            limit: None,
+            scope: None,
+            out: None,
+            school_year: None,
+            jurisdictions: Vec::new(),
+            export_job: census_report::export::ExportJobRequest::SelectedPublicationV1 {
+                selection,
+            },
+        })
     };
-    let selected_request = |selection| WorkbookRequest {
-        export_job: census_report::export::ExportJobRequest::SelectedPublicationV1 { selection },
-        ..WorkbookRequest::default()
-    };
-    let first = selected_request(selection('a', 'b')?);
-    let first_key = workbook_request_key(&first, &legacy)?;
+    let first = selected_request(synthetic_selection('a', 'b')?)?;
+    let first_key = workbook_request_key(&first, &generation)?;
     check!(first_key.starts_with("workbook:all:all:all:all:.:unstated:selected_v1_"));
     check!(!first_key.contains(&"a".repeat(64)));
-    check!(eq; workbook_request_key(&first, &legacy)?, first_key);
+    check!(eq; workbook_request_key(&first, &generation)?, first_key);
     check!(ne;
-        workbook_request_key(&selected_request(selection('a', 'c')?), &legacy)?,
+        workbook_request_key(&selected_request(synthetic_selection('a', 'c')?)?, &generation)?,
         first_key,
         "a different profile selection cannot reattach the selected workflow"
     );
     check!(ne;
-        workbook_request_key(&selected_request(selection('c', 'b')?), &legacy)?,
+        workbook_request_key(&selected_request(synthetic_selection('c', 'b')?)?, &generation)?,
         first_key,
         "a different store identity cannot reattach the selected workflow"
     );
     check!(eq;
-        workbook_request_key(&WorkbookRequest::default(), &legacy)?,
-        "workbook:all:all:all:all:.:unstated:1",
-        "legacy workflow identity remains byte-for-byte stable"
+        workbook_request_key(&bare_selected_request()?, &generation)?,
+        first_key,
+        "one selected way keeps one stable workflow identity"
     );
     Ok(())
 }

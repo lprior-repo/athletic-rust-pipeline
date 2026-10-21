@@ -3,7 +3,8 @@ use crate::net::cache::recovery::{publish_recovered_eligible_held, restore_exact
 use crate::net::{FetchError, FetchOutcome, Fetcher};
 use census_domain::model::{AcquisitionOccurrenceRefV1, PreparedRecoveryTarget};
 use census_store::{
-    CommittedRetainedBody, ExactBodySource, ImmutableAttemptResult, PreparedBackingAssessment,
+    AcquisitionReadBudget, CommittedRetainedBody, ExactBodySource, ExistingRecoveryRoute,
+    ImmutableAttemptResult, OwnedAcquisitionWork, PreparedBackingAssessment,
     PreparedRecoveryBudget, PreparedRecoveryRead, Receipt, ResultsCaptureOwnerV1,
     RetainedCaptureParts, Store,
 };
@@ -81,42 +82,96 @@ impl Fetcher {
         if !store.matches_http_cache_root(self.cache_dir()) {
             return Err(census_store::CaptureError::CacheRootMismatch.into());
         }
-        let capacity = super::super::cache::recovery::archive_capacity()?;
         let read = store
             .begin_prepared_recovery(owner, target, budget)?
             .read_backing()?;
+        finish_recovery_read(read, source)
+    }
+
+    pub fn recover_prepared_acquisition(
+        &self,
+        store: &Store,
+        work: OwnedAcquisitionWork,
+        source: ExactBodySource<'_>,
+    ) -> Result<CapturedFetch, FetchError> {
+        let mut reads = AcquisitionReadBudget::for_work();
+        let route = store.read_existing_recovery_target(work.owner(), work.work(), &mut reads)?;
+        let ExistingRecoveryRoute::Prepared(target) = route else {
+            return Err(census_store::CaptureError::PreparedTargetMismatch.into());
+        };
+        let mut budget = PreparedRecoveryBudget::admit(reads.selection_usage(), 1)?;
+        if !store.matches_http_cache_root(self.cache_dir()) {
+            return Err(census_store::CaptureError::CacheRootMismatch.into());
+        }
+        let read = store
+            .begin_prepared_recovery(work.owner(), &target, &mut budget)?
+            .read_backing()?;
         match read {
-            PreparedRecoveryRead::Retained(retained) => Ok(retained_outcome(retained, capacity)),
-            PreparedRecoveryRead::RetainedUnavailable {
-                occurrence,
-                terminal,
-                receipt,
-                consumption_error,
-            } => Ok(PreparedRecoveryOutcome::RetainedUnavailable {
-                occurrence,
-                terminal,
-                receipt,
-                consumption_error: consumption_error.into(),
-            }),
-            PreparedRecoveryRead::RetentionFailed(failure) => {
-                let (terminal, receipt) = failure.into_parts();
-                Ok(PreparedRecoveryOutcome::RetentionFailed { terminal, receipt })
+            PreparedRecoveryRead::Unresolved(session)
+                if matches!(
+                    session.assessment()?,
+                    PreparedBackingAssessment::MissingBody(_)
+                ) && matches!(source, ExactBodySource::NoneSupplied) =>
+            {
+                Err(census_store::CaptureError::PreparedTargetMismatch.into())
             }
-            PreparedRecoveryRead::Unresolved(session) => {
-                resolve_unresolved(session, source, capacity)
-            }
+            read => match finish_recovery_read(read, source)? {
+                PreparedRecoveryOutcome::Retained { captured, .. } => Ok(*captured),
+                PreparedRecoveryOutcome::RetainedUnavailable {
+                    consumption_error, ..
+                } => Err(consumption_error),
+                PreparedRecoveryOutcome::RetentionFailed { .. } => {
+                    Err(census_store::CaptureError::RetainedOutcomeUnknown.into())
+                }
+            },
         }
     }
+}
+
+fn finish_recovery_read(
+    read: PreparedRecoveryRead<'_, '_>,
+    source: ExactBodySource<'_>,
+) -> Result<PreparedRecoveryOutcome, FetchError> {
+    match read {
+        PreparedRecoveryRead::Retained(retained) => {
+            let capacity = super::super::cache::recovery::archive_capacity()?;
+            Ok(retained_outcome(retained, capacity))
+        }
+        PreparedRecoveryRead::RetainedUnavailable {
+            occurrence,
+            terminal,
+            receipt,
+            consumption_error,
+        } => Ok(PreparedRecoveryOutcome::RetainedUnavailable {
+            occurrence,
+            terminal,
+            receipt,
+            consumption_error: consumption_error.into(),
+        }),
+        PreparedRecoveryRead::RetentionFailed(failure) => {
+            let (terminal, receipt) = failure.into_parts();
+            Ok(PreparedRecoveryOutcome::RetentionFailed { terminal, receipt })
+        }
+        PreparedRecoveryRead::Unresolved(session) => resolve_unresolved(session, source, None),
+    }
+}
+
+fn admitted_capacity(pre_admitted: Option<u64>) -> Result<u64, FetchError> {
+    if let Some(capacity) = pre_admitted {
+        return Ok(capacity);
+    }
+    super::super::cache::recovery::archive_capacity()
 }
 
 pub(super) fn resolve_unresolved(
     mut session: census_store::PreparedRecoverySession<'_, '_>,
     source: ExactBodySource<'_>,
-    capacity: u64,
+    capacity_override: Option<u64>,
 ) -> Result<PreparedRecoveryOutcome, FetchError> {
     match session.assessment()? {
         PreparedBackingAssessment::Exact => {
-            return Ok(retained_outcome(session.finish()?, capacity))
+            let capacity = admitted_capacity(capacity_override)?;
+            return Ok(retained_outcome(session.finish()?, capacity));
         }
         PreparedBackingAssessment::RestorationRequired => {
             session.prepare_restore(ExactBodySource::NoneSupplied)?;
@@ -133,11 +188,12 @@ pub(super) fn resolve_unresolved(
         },
     }
     {
+        let capacity = admitted_capacity(capacity_override)?;
         let (fence, prepared, body, io) = session.restoration_io()?;
         restore_exact_prepared_held(fence, prepared, body, capacity, io)?;
+        session.verify_restored()?;
+        Ok(retained_outcome(session.finish()?, capacity))
     }
-    session.verify_restored()?;
-    Ok(retained_outcome(session.finish()?, capacity))
 }
 
 fn retained_outcome(

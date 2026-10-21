@@ -59,24 +59,15 @@ impl ResultsStageBridge {
 
 impl Fixture {
     pub(super) fn new() -> TestResult<Self> {
-        Self::with_protocol(census_domain::model::CaptureProtocolVersion::V1)
-    }
-
-    pub(super) fn v2() -> TestResult<Self> {
-        Self::with_protocol(census_domain::model::CaptureProtocolVersion::V2)
-    }
-
-    fn with_protocol(protocol: census_domain::model::CaptureProtocolVersion) -> TestResult<Self> {
-        Self::with_inputs(protocol, request()?, meet())
+        Self::with_inputs(request()?, meet())
     }
 
     pub(super) fn with_inputs(
-        protocol: census_domain::model::CaptureProtocolVersion,
         request: JurisdictionRequest,
         meet: SourceMeetRef,
     ) -> TestResult<Self> {
         let root = tempfile::tempdir()?;
-        let (store, writer) = open(root.path(), protocol)?;
+        let (store, writer) = open(root.path())?;
         let store = Arc::new(store);
         store.bind_run(&RunManifest {
             store_identity: writer.store_identity().as_str().to_owned(),
@@ -138,7 +129,7 @@ impl Fixture {
         })
     }
 
-    pub(super) fn cold_reopen_v2(self) -> TestResult<Self> {
+    pub(super) fn cold_reopen(self) -> TestResult<Self> {
         check!(*self.region.stopping().borrow());
         let manifest = self.store.run_manifest()?;
         let weak = Arc::downgrade(&self.store);
@@ -159,7 +150,7 @@ impl Fixture {
         drop(store);
         check!(weak.upgrade().is_none());
         let (store, writer) =
-            Store::open_capture_qualification_v2(_root.path().join("store"))?.into_parts();
+            Store::open_current_qualification_v3(_root.path().join("store"))?.into_parts();
         check!(eq; store.run_manifest()?, manifest);
         Self::from_parts(_root, Arc::new(store), writer, request, state)
     }
@@ -285,20 +276,8 @@ pub(super) fn meet() -> SourceMeetRef {
     }
 }
 
-fn open(
-    root: &std::path::Path,
-    protocol: census_domain::model::CaptureProtocolVersion,
-) -> TestResult<(Store, census_store::CaptureWriterV1)> {
-    use census_domain::model::CaptureProtocolVersion;
+fn open(root: &std::path::Path) -> TestResult<(Store, census_store::CaptureWriterV1)> {
     let path = root.join("store");
-    Ok(match protocol {
-        CaptureProtocolVersion::V1 => {
-            Store::create_capture_qualification_v1(&path)?;
-            Store::open_capture_qualification_v1(path)?.into_parts()
-        }
-        CaptureProtocolVersion::V2 => {
-            Store::create_capture_qualification_v2(&path)?;
-            Store::open_capture_qualification_v2(path)?.into_parts()
-        }
-    })
+    Store::create_capture_qualification(&path)?;
+    Ok(Store::open_current_qualification_v3(path)?.into_parts())
 }

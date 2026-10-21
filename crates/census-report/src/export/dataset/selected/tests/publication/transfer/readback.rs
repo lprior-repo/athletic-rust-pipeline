@@ -152,7 +152,7 @@ fn sheet(
     for (label, value) in expected {
         let column = header
             .iter()
-            .position(|cell| cell.to_string() == *label)
+            .position(|cell| cell == *label)
             .ok_or_else(|| format!("missing {name} header {label}"))?;
         check!(eq; row.get(column).ok_or("worksheet value")?.to_string(), *value);
     }

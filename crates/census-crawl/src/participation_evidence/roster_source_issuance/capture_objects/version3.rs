@@ -1,4 +1,4 @@
-use super::super::*;
+use super::*;
 use crate::participation_evidence::provider_school::CheckedProviderSchoolPacketV1;
 use serde::Serialize;
 use serde_json::value::RawValue;
@@ -55,11 +55,11 @@ pub(in crate::participation_evidence::roster_source_issuance) fn derive<'a>(
     body: &str,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<PreparedRosterCaptureObjectsV1<'a>> {
-    let mut objects = super::super::derive(evidence, packet, parser, body, grant)?;
+    let mut objects = super::derive(evidence, packet, parser, body, grant)?;
     if checked.reference().as_str() != evidence.retained_root(grant)?.root().key {
         return Err(invalid("row-local capture packet differs from retained root").into());
     }
-    let inventory = super::super::super::semantic_inventory_v2::capture(
+    let inventory = super::super::semantic_inventory_v2::capture(
         checked,
         parser.retained().canonical_bytes(),
         &objects.metadata,

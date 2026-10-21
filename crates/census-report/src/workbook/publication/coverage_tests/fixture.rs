@@ -1,13 +1,11 @@
 mod adjustment_roundtrip;
 
 use super::*;
+use crate::export::selected_test_fixture::{coverage_time_fixture, CoverageTimeFixture};
 use crate::export::ExportJobRequest;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage,
-    CompetitionLevel, CoverageRow, CoverageScope, EventIdentity, EventKind, EventSpecification,
-    Evidence, ExactSeconds, Gender, Mark, PendingCoachLane, PerformanceIdentity, PerformanceResult,
-    PublishedGraduation, SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
+    CoachLaneObligation, CoachLaneRefusal, CoachLaneResolution, CoachLaneStage, CoverageRow,
+    CoverageScope, PendingCoachLane, ProfileSelectionV1, SchoolYear, SourceRef,
 };
 use census_domain::UsJurisdiction;
 use census_store::Table;
@@ -25,136 +23,55 @@ pub(super) enum Mutation {
 pub(super) struct Captured {
     pub(super) directory: tempfile::TempDir,
     pub(super) store: Store,
+    pub(super) selection: ProfileSelectionV1,
     pub(super) dataset: ExportDataset,
-    pub(super) frozen: FrozenRoot,
     pub(super) workbook: PathBuf,
     pub(super) options: Options,
     pub(super) archive: PathBuf,
+    pub(super) digest: String,
 }
 
 impl Captured {
-    pub(super) fn create() -> TestResult<Self> {
-        let directory = tempfile::tempdir()?;
-        let store = Store::open(directory.path().join("store"))?;
-        seed_population(&store)?;
-        store.replace(Table::Coverage, &coverage_row(0))?;
-        store.replace(Table::CoachLanes, &pending_lane()?)?;
-        let frozen = freeze_v2(&store, JOB)?;
-        let dataset = ExportDataset::for_job_request(&store, JOB, &ExportJobRequest::LegacyV2)?;
-        let archive = store.out_dir().join("export-inputs").join(format!(
-            "{}.json",
-            census_domain::model::serialized_digest(&JOB)?
-        ));
-        let options = super::super::fence_tests::options(None)?;
-        let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
-        let workbook = crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
+    pub(super) async fn create() -> TestResult<Self> {
+        let fixture =
+            coverage_time_fixture(5000).map_err(|error| -> Box<dyn std::error::Error> { error })?;
+        fixture.store.replace(Table::Coverage, &coverage_row(0))?;
+        fixture.store.replace(Table::CoachLanes, &pending_lane()?)?;
+        let request = ExportJobRequest::SelectedPublicationV1 {
+            selection: fixture.selection.clone(),
+        };
+        let dataset = ExportDataset::for_job_request(&fixture.store, JOB, &request)?;
+        let options = crate::workbook::options_for_selected_dataset(&dataset, None)?;
+        let censuses = crate::workbook::Censuses::of(
+            &dataset,
+            &fixture.store.out_dir(),
+            &options.jurisdictions,
+        )?;
+        let workbook = crate::workbook::build_from(&dataset, &fixture.store, &options, &censuses)?;
+        let archive = fixture.directory.path().join("captured-frozen.json");
+        dataset.save_frozen(&archive)?;
+        let digest = dataset.archive_digest()?;
+        let CoverageTimeFixture {
+            directory,
+            store,
+            selection,
+            ..
+        } = fixture;
         Ok(Self {
             directory,
             store,
+            selection,
             dataset,
-            frozen,
             workbook,
             options,
             archive,
+            digest,
         })
     }
 }
 
-fn seed_population(store: &Store) -> TestResult {
-    let source = SourceRef::new("wiaa_results", Some("https://example.test/coverage".into()));
-    let evidence = Evidence::parsed(source.clone(), "2026-05-01");
-    let (mut school, school_id) = CanonicalSchool::new(
-        UsJurisdiction::Wisconsin,
-        "Coverage High",
-        "coverage high",
-        None,
-    );
-    school.evidence.push(evidence.clone());
-    store.append(Table::Schools, &school)?;
-    let mut athlete = CanonicalAthlete::new(
-        &school_id,
-        "Ada Coverage",
-        GradYear::CO2027,
-        Gender::Girls,
-        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "coverage-1"),
-    )?;
-    athlete.evidence.push(evidence.clone());
-    athlete.sports.push(Sport::OutdoorTrack);
-    athlete.published_graduations.push(PublishedGraduation {
-        grad_year: GradYear::CO2027,
-        source,
-    });
-    store.append(Table::Athletes, &athlete)?;
-    let team = CanonicalTeam {
-        id: CanonicalTeam::mint(
-            &school_id,
-            Sport::OutdoorTrack,
-            Gender::Girls,
-            SchoolYear::new(2026).ok_or("fixture season")?,
-        ),
-        school: school_id,
-        sport: Sport::OutdoorTrack,
-        gender: Gender::Girls,
-        school_year: SchoolYear::new(2026).ok_or("fixture season")?,
-        level: None,
-        source_identities: Vec::new(),
-        evidence: Vec::new(),
-        retained_conflicts: Vec::new(),
-    };
-    store.append(Table::Teams, &team)?;
-    seed_performance(store, &athlete, &team, evidence)
-}
-
-fn seed_performance(
-    store: &Store,
-    athlete: &CanonicalAthlete,
-    team: &CanonicalTeam,
-    evidence: Evidence,
-) -> TestResult {
-    let mut meet = CanonicalMeet::new_checked(
-        Some(UsJurisdiction::Wisconsin),
-        "Coverage Invitational",
-        "2026-05-01",
-        CompetitionLevel::Invitational,
-    )?;
-    meet.sports.push(Sport::OutdoorTrack);
-    store.append(Table::Meets, &meet)?;
-    let event = crate::test_events::owned(CanonicalEvent::new(
-        EventIdentity {
-            meet: &meet.id,
-            kind: EventKind::Track400m,
-            gender: Gender::Girls,
-            division: None,
-            round: None,
-        },
-        EventSpecification::default(),
-    )?);
-    store.append(Table::Events, &event)?;
-    let mut performance = CanonicalPerformance::new(
-        PerformanceIdentity {
-            athlete: &athlete.id,
-            event: &event.id,
-            meet: &meet.id,
-            date: "2026-05-01",
-            source_key: "coverage-result",
-        },
-        PerformanceResult {
-            team: &team.id,
-            mark: Mark::TimeSeconds(ExactSeconds::parse("50.00")?),
-            wind_mps: None,
-            adjustment: None,
-            place: Some(1),
-        },
-    )?;
-    performance.timing = Some(TimingMethod::Fat);
-    performance.source_athlete = athlete.source.clone();
-    performance.evidence.push(evidence);
-    store.append(Table::Performances, &performance)?;
-    Ok(())
-}
-
 fn coverage_row(extra: u64) -> CoverageRow {
-    CoverageRow::new(CoverageScope::Jurisdiction, "WI")
+    CoverageRow::new(CoverageScope::Jurisdiction, "CO")
         .with("registered", 7 + extra)
         .with("applicable", 7 + extra)
         .with("attempted", 6 + extra)
@@ -166,7 +83,7 @@ fn coverage_row(extra: u64) -> CoverageRow {
 
 fn pending_lane() -> TestResult<CoachLaneObligation> {
     Ok(CoachLaneObligation::pending(PendingCoachLane {
-        jurisdiction: UsJurisdiction::Wisconsin,
+        jurisdiction: UsJurisdiction::Colorado,
         season: SchoolYear::new(2026).ok_or("fixture season")?,
         revision: 1,
         arm: "synthetic_coach_directory".into(),

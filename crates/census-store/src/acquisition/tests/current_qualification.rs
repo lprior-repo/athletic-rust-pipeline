@@ -68,12 +68,12 @@ fn current_qualification_v3_does_not_enroll_identity_only_roots() -> TestResult 
 fn current_qualification_v3_does_not_adopt_historical_capture_roots() -> TestResult {
     let temporary = tempfile::tempdir()?;
     let root = temporary.path();
-    let original = Store::create_capture_qualification_v1(root)?;
+    let original = Store::create_historical_capture_v1(root)?;
     let before = Store::format(root)?;
     check!(matches!(
         Store::open_current_qualification_v3(root),
-        Err(StoreError::PublicIdentity(
-            crate::PublicIdentityError::OptInRequired
+        Err(StoreError::Capture(
+            CaptureError::CaptureProtocolUnsupported
         ))
     ));
     check!(eq; Store::format(root)?, before);

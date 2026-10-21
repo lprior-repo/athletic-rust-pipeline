@@ -5,7 +5,7 @@ use census_store::{CaptureError, StoreError};
 async fn fixed_missing_closure_is_recorded_once_and_supplied_replay_cannot_create_successor(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     let mut budget = prepared.budget()?;
     let first = fixture.fetcher.recover_prepared_target(
@@ -45,7 +45,7 @@ async fn fixed_missing_closure_is_recorded_once_and_supplied_replay_cannot_creat
 async fn recorded_retention_with_lost_backing_reports_unavailable_without_successor() -> TestResult
 {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     let (body, _) = publish(&fixture, &prepared)?;
     let mut budget = prepared.budget()?;
@@ -93,7 +93,7 @@ async fn recorded_retention_with_lost_backing_reports_unavailable_without_succes
 async fn occupied_corrupt_immutable_body_is_repair_required_and_never_quarantined_or_rewritten(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     let (body, metadata) = publish(&fixture, &prepared)?;
     let mut corrupt = BODY.to_vec();
@@ -125,7 +125,7 @@ async fn occupied_corrupt_immutable_body_is_repair_required_and_never_quarantine
 async fn supplied_exact_and_empty_bodies_are_real_local_restorations() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     for bytes in [BODY, b"".as_slice()] {
-        let fixture = Fixture::new_v2(&listener)?;
+        let fixture = Fixture::new(&listener)?;
         let prepared = prepare(&fixture, bytes, Encoding::Compact)?;
         let candidate = fixture.root.path().join("exact.body");
         std::fs::write(&candidate, bytes)?;
@@ -158,7 +158,7 @@ async fn supplied_exact_and_empty_bodies_are_real_local_restorations() -> TestRe
 async fn recovery_context_rejects_foreign_work_and_same_target_wrong_meet_without_consuming(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let mut budget = prepared.budget()?;
@@ -225,7 +225,7 @@ async fn recovery_context_rejects_foreign_work_and_same_target_wrong_meet_withou
 async fn ordinary_v2_rerun_refuses_unplanned_prepared_without_recovery_or_source_request(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     let before = fixture
         .store
@@ -253,7 +253,7 @@ async fn ordinary_v2_rerun_refuses_unplanned_prepared_without_recovery_or_source
 #[tokio::test]
 async fn thirteen_target_preflight_refuses_before_archive_effects() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     let mut selection = AcquisitionReadBudget::for_selection();
     for _ in 0..13 {
@@ -285,7 +285,7 @@ async fn thirteen_target_preflight_refuses_before_archive_effects() -> TestResul
 #[tokio::test]
 async fn both_held_phases_use_the_same_pre_admitted_capacity_scalar() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     let capacity = u64::try_from(BODY.len())?
         .checked_add(u64::try_from(prepared.metadata.len())?)
@@ -303,7 +303,7 @@ async fn both_held_phases_use_the_same_pre_admitted_capacity_scalar() -> TestRes
     let outcome = super::super::super::recovery::resolve_unresolved(
         session,
         ExactBodySource::SuppliedLocalCopy(&candidate),
-        capacity,
+        Some(capacity),
     )?;
     let PreparedRecoveryOutcome::Retained {
         captured, eligible, ..

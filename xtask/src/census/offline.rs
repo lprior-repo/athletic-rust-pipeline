@@ -31,6 +31,12 @@ pub(super) fn workbook(store: &Path, request: &ExportRequest) -> Result<()> {
     if let Some(limit) = request.limit {
         cmd = cmd.args(["--limit", &limit.to_string()]);
     }
+    if let Some(identity) = request.selected_store_identity.as_deref() {
+        cmd = cmd.args(["--selected-store-identity", identity]);
+    }
+    if let Some(profile) = request.selected_profile_id.as_deref() {
+        cmd = cmd.args(["--selected-profile-id", profile]);
+    }
     cmd.run()
 }
 

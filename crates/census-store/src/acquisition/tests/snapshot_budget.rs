@@ -58,8 +58,8 @@ fn admission_refused<T>(result: StoreResult<T>) -> TestResult {
 
 #[test]
 fn reused_ordinary_budget_rechecks_corrupted_backing_on_the_same_snapshot() -> TestResult {
-    for protocol in [CaptureProtocolVersion::V1, CaptureProtocolVersion::V2] {
-        let (_dir, store, writer, owner) = fixture_for(protocol)?;
+    {
+        let (_dir, store, writer, owner) = fixture()?;
         let occurrence = retained(&store, &writer, &owner, 200)?;
         let snapshot = store.snapshot();
         let sequence = snapshot.sequence();
@@ -87,10 +87,10 @@ fn reused_ordinary_budget_rechecks_corrupted_backing_on_the_same_snapshot() -> T
 
 #[test]
 fn snapshot_selection_admission_exact_limit_succeeds_and_never_resets_on_reuse() -> TestResult {
-    for protocol in [CaptureProtocolVersion::V1, CaptureProtocolVersion::V2] {
-        let (_dir, store, writer, owner) = fixture_for(protocol)?;
+    {
+        let (_dir, store, writer, owner) = fixture()?;
         let occurrence = retained(&store, &writer, &owner, 200)?;
-        let admission = expected_admission(&store, protocol)?;
+        let admission = expected_admission(&store, CaptureProtocolVersion::V2)?;
         let snapshot = store.snapshot();
         let before = rows(&store)?;
         let mut budget = AcquisitionReadBudget::for_selection();
@@ -111,10 +111,10 @@ fn snapshot_selection_admission_exact_limit_succeeds_and_never_resets_on_reuse()
 
 #[test]
 fn snapshot_selection_one_byte_short_refuses_before_closure_or_backing_reads() -> TestResult {
-    for protocol in [CaptureProtocolVersion::V1, CaptureProtocolVersion::V2] {
-        let (_dir, store, writer, owner) = fixture_for(protocol)?;
+    {
+        let (_dir, store, writer, owner) = fixture()?;
         let occurrence = retained(&store, &writer, &owner, 200)?;
-        let admission = expected_admission(&store, protocol)?;
+        let admission = expected_admission(&store, CaptureProtocolVersion::V2)?;
         let snapshot = store.snapshot();
         let before = rows(&store)?;
         let mut budget = AcquisitionReadBudget::for_selection();
@@ -135,10 +135,10 @@ fn snapshot_selection_one_byte_short_refuses_before_closure_or_backing_reads() -
 
 #[test]
 fn snapshot_recovery_exact_admission_preserves_backing_transition_refusal() -> TestResult {
-    for protocol in [CaptureProtocolVersion::V1, CaptureProtocolVersion::V2] {
-        let (_dir, store, writer, owner) = fixture_for(protocol)?;
+    {
+        let (_dir, store, writer, owner) = fixture()?;
         let occurrence = retained(&store, &writer, &owner, 200)?;
-        let admission = expected_admission(&store, protocol)?;
+        let admission = expected_admission(&store, CaptureProtocolVersion::V2)?;
         let snapshot = store.snapshot();
         let before = rows(&store)?;
         let mut budget = AcquisitionReadBudget::for_recovery(42, 3_122_688, 1)?;
@@ -164,10 +164,10 @@ fn snapshot_recovery_exact_admission_preserves_backing_transition_refusal() -> T
 
 #[test]
 fn snapshot_recovery_one_byte_short_refuses_before_closure_or_backing_reads() -> TestResult {
-    for protocol in [CaptureProtocolVersion::V1, CaptureProtocolVersion::V2] {
-        let (_dir, store, writer, owner) = fixture_for(protocol)?;
+    {
+        let (_dir, store, writer, owner) = fixture()?;
         let occurrence = retained(&store, &writer, &owner, 200)?;
-        let admission = expected_admission(&store, protocol)?;
+        let admission = expected_admission(&store, CaptureProtocolVersion::V2)?;
         let snapshot = store.snapshot();
         let before = rows(&store)?;
         let mut budget = AcquisitionReadBudget::for_recovery(42, 3_122_688, 1)?;

@@ -5,9 +5,20 @@ use census_domain::UsJurisdiction;
 use census_store::publish::{Digest, InputFence, Intent, Request, State};
 use census_store::StoreError;
 use std::collections::BTreeMap;
-use std::ffi::OsString;
+use std::path::PathBuf;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+fn options(out: Option<PathBuf>) -> TestResult<Options> {
+    Ok(Options {
+        grad_year: Some(2027),
+        out,
+        limit: None,
+        scope: crate::report::Scope::AllSources,
+        school_year: census_domain::model::SchoolYear::new(2026).ok_or("school year")?,
+        jurisdictions: Vec::new(),
+    })
+}
 
 fn manifest(store: &Store, options: &Options) -> TestResult<RunManifest> {
     Ok(RunManifest {
@@ -22,20 +33,42 @@ fn manifest(store: &Store, options: &Options) -> TestResult<RunManifest> {
     })
 }
 
-fn bundle_bytes(workbook: &Path) -> TestResult<BTreeMap<OsString, Vec<u8>>> {
-    std::fs::read_dir(workbook.parent().ok_or("bundle directory")?)?
-        .map(|entry| -> TestResult<_> {
-            let entry = entry?;
-            Ok((entry.file_name(), std::fs::read(entry.path())?))
-        })
-        .collect()
+fn bundle_bytes(workbook: &Path) -> TestResult<BTreeMap<PathBuf, Vec<u8>>> {
+    let root = workbook.parent().ok_or("bundle directory")?;
+    let mut bytes = BTreeMap::new();
+    collect_bundle(root, root, &mut bytes)?;
+    Ok(bytes)
+}
+
+fn collect_bundle(
+    root: &Path,
+    directory: &Path,
+    bytes: &mut BTreeMap<PathBuf, Vec<u8>>,
+) -> TestResult {
+    for entry in std::fs::read_dir(directory)? {
+        let entry = entry?;
+        let path = entry.path();
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            collect_bundle(root, &path, bytes)?;
+        } else if file_type.is_file() {
+            let relative = path.strip_prefix(root)?.to_path_buf();
+            check!(
+                bytes.insert(relative, std::fs::read(&path)?).is_none(),
+                "publication bundle contains a duplicate entry"
+            );
+        } else {
+            return Err("publication bundle contains a non-file artifact".into());
+        }
+    }
+    Ok(())
 }
 
 fn preserved(
     root: &Path,
     old: &Path,
     pointer: &Path,
-    bytes: &BTreeMap<OsString, Vec<u8>>,
+    bytes: &BTreeMap<PathBuf, Vec<u8>>,
 ) -> TestResult {
     check!(eq; std::fs::read_link(root.join("current"))?, pointer);
     check!(eq; current_workbook(root)?, old);
@@ -66,7 +99,7 @@ enum BindMoment {
 fn late_bind(moment: BindMoment, label: &str) -> TestResult {
     let temp = tempfile::tempdir()?;
     let store = Store::open(temp.path().join("store"))?;
-    let options = super::fence_tests::options(None)?;
+    let options = options(None)?;
     let old = crate::workbook::build(&store, &options)?;
     let root = store.out_dir().join("publication");
     let bytes = bundle_bytes(&old)?;
@@ -113,25 +146,37 @@ fn first_binding_after_preparation_refuses_at_the_live_final_fence() -> TestResu
     late_bind(BindMoment::AfterPreparation, "pinned-run:after-preparation")
 }
 
-#[test]
-fn first_binding_after_stage_begin_preserves_every_previous_bundle_byte() -> TestResult {
-    let temp = tempfile::tempdir()?;
-    let store = Store::open(temp.path().join("store"))?;
-    let options = super::fence_tests::options(None)?;
-    let old = crate::workbook::build(&store, &options)?;
-    let root = store.out_dir().join("publication");
+#[tokio::test]
+async fn first_binding_after_stage_begin_preserves_every_previous_bundle_byte() -> TestResult {
+    let fixture = crate::export::selected_test_fixture::Fixture::new().await?;
+    let objects = tempfile::tempdir()?;
+    let dataset = fixture.capture(objects.path())?;
+    let options = crate::workbook::options_for_selected_dataset(&dataset, None)?;
+    let root = fixture.store.out_dir().join("publication");
+    let censuses =
+        crate::workbook::Censuses::of(&dataset, &fixture.store.out_dir(), &options.jurisdictions)?;
+    let old = crate::workbook::build_from(&dataset, &fixture.store, &options, &censuses)?;
     let bytes = bundle_bytes(&old)?;
     let previous_pointer = std::fs::read_link(root.join("current"))?;
-    let dataset = ExportDataset::for_job_request(
-        &store,
+    let request = ExportJobRequest::SelectedPublicationV1 {
+        selection: fixture.selection.clone(),
+    };
+    let job_dataset = ExportDataset::for_job_request(
+        &fixture.store,
         "pinned-run:stage-before-binding",
-        &ExportJobRequest::LegacyV2,
+        &request,
     )?;
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
-    let stage = Stage::begin(&dataset, &store, &options)?;
-    store.bind_run(&manifest(&store, &options)?)?;
-    let result = stage.publish(&dataset, &options, |directory| {
-        crate::workbook::write_artifacts(directory, &dataset, &options, &censuses)
+    let job_censuses = crate::workbook::Censuses::of(
+        &job_dataset,
+        &fixture.store.out_dir(),
+        &options.jurisdictions,
+    )?;
+    let stage = Stage::begin(&job_dataset, &fixture.store, &options)?;
+    fixture
+        .store
+        .bind_run(&manifest(&fixture.store, &options)?)?;
+    let result = stage.publish(&job_dataset, &options, |directory| {
+        crate::workbook::write_artifacts(directory, &job_dataset, &options, &job_censuses)
     });
     check!(matches!(
         result,
@@ -146,7 +191,7 @@ fn first_binding_after_stage_begin_preserves_every_previous_bundle_byte() -> Tes
 fn new_publication_input_refuses_old_unbound_archive_after_first_binding() -> TestResult {
     let temp = tempfile::tempdir()?;
     let store = Store::open(temp.path().join("store"))?;
-    let options = super::fence_tests::options(None)?;
+    let options = options(None)?;
     let dataset = ExportDataset::load(&store)?;
     store.bind_run(&manifest(&store, &options)?)?;
     let before = store.snapshot().sequence();
@@ -159,32 +204,34 @@ fn new_publication_input_refuses_old_unbound_archive_after_first_binding() -> Te
     Ok(())
 }
 
-#[test]
-fn normal_bound_input_publishes_and_reads_back_under_the_unchanged_fence() -> TestResult {
-    let temp = tempfile::tempdir()?;
-    let store = Store::open(temp.path().join("store"))?;
-    let options = super::fence_tests::options(None)?;
-    let bound = manifest(&store, &options)?;
-    store.bind_run(&bound)?;
-    let dataset = ExportDataset::for_job_request(
-        &store,
-        "pinned-run:bound-publication",
-        &ExportJobRequest::LegacyV2,
-    )?;
-    let snapshot = store.snapshot();
-    let input = binding::input(&dataset, &store, &options)?;
+#[tokio::test]
+async fn normal_bound_input_publishes_and_reads_back_under_the_unchanged_fence() -> TestResult {
+    let fixture = crate::export::selected_test_fixture::Fixture::new().await?;
+    let objects = tempfile::tempdir()?;
+    let captured = fixture.capture(objects.path())?;
+    let options = crate::workbook::options_for_selected_dataset(&captured, None)?;
+    let bound = manifest(&fixture.store, &options)?;
+    fixture.store.bind_run(&bound)?;
+    let request = ExportJobRequest::SelectedPublicationV1 {
+        selection: fixture.selection.clone(),
+    };
+    let dataset =
+        ExportDataset::for_job_request(&fixture.store, "pinned-run:bound-publication", &request)?;
+    let snapshot = fixture.store.snapshot();
+    let input = binding::input(&dataset, &fixture.store, &options)?;
     check!(eq; input.run_manifest, Some(binding::digest(&bound)?));
     check!(eq; input.lineage, Digest::parse(&dataset.lineage.store_identity)?);
     check!(eq; input.token, binding::input_token(&dataset.lineage)?);
-    check!(eq; input.recipe, binding::recipe(&dataset.lineage, &options)?);
+    check!(eq; input.recipe, binding::recipe_for_dataset(&dataset, &options)?);
     check!(eq; input.evidence_generation, snapshot.evidence_generation());
     check!(eq; input.derived_generation, snapshot.derived_generation());
-    let censuses = crate::workbook::Censuses::of(&dataset, &store.out_dir(), &[])?;
-    let workbook = crate::workbook::build_from(&dataset, &store, &options, &censuses)?;
-    let root = store.out_dir().join("publication");
+    let censuses =
+        crate::workbook::Censuses::of(&dataset, &fixture.store.out_dir(), &options.jurisdictions)?;
+    let workbook = crate::workbook::build_from(&dataset, &fixture.store, &options, &censuses)?;
+    let root = fixture.store.out_dir().join("publication");
     check!(eq; current_workbook(&root)?, workbook);
     verify_published(&workbook)?;
-    let current = crate::export::store_lineage(&store)?;
+    let current = crate::export::store_lineage(&fixture.store)?;
     let opened = open_publication(&workbook, &current, options.scope, GradYear::CO2027)?;
     check!(eq; opened.dataset.lineage, dataset.lineage);
     check!(eq; opened.dataset.lineage.run, Some(bound.run));
@@ -203,7 +250,7 @@ fn retained_publication(binding: PublicationBinding) -> TestResult {
     let temp = tempfile::tempdir()?;
     let store_path = temp.path().join("store");
     let store = Store::open(&store_path)?;
-    let options = super::fence_tests::options(None)?;
+    let options = options(None)?;
     let bound = manifest(&store, &options)?;
     if matches!(binding, PublicationBinding::AlreadyBound) {
         store.bind_run(&bound)?;

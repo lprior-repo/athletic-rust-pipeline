@@ -112,19 +112,6 @@ impl StoreSnapshot<'_> {
             &accepted,
         )
     }
-    pub fn freeze_public_identity_v1(&self) -> StoreResult<crate::FrozenPublicIdentityBundleV1> {
-        let accepted = self
-            .accepted_public_identity_snapshot()?
-            .ok_or(PublicIdentityError::OptInRequired)?;
-        crate::public_identity::frozen::capture(
-            &self.snapshot,
-            self.entities,
-            self.meta,
-            self.journal,
-            self.receipts,
-            &accepted,
-        )
-    }
     pub fn require_legacy_identity_publication(&self) -> StoreResult<()> {
         let format = crate::format::read_capture_format(
             &self.snapshot,

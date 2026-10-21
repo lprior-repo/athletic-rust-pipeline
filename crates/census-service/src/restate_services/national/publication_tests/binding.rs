@@ -1,6 +1,6 @@
 use super::{codec, fixtures, journal, TestResult};
 use crate::restate_services::national::request_binding::{KEY_BOUND, KEY_ORIGINAL};
-use crate::restate_services::wire::{NationalRequest, NationalRequestBinding, PublicationContract};
+use crate::restate_services::wire::{NationalRequest, NationalRequestBinding};
 
 #[derive(Clone, Copy)]
 pub(super) enum Scenario {
@@ -8,9 +8,6 @@ pub(super) enum Scenario {
     Resume,
     Changed,
     Pending,
-    LegacyRead,
-    StoredLegacy,
-    StoredManaged,
 }
 
 #[tokio::test]
@@ -33,28 +30,7 @@ async fn pending_run_binding_does_not_expose_a_resumable_request() -> TestResult
     super::exercise(super::Scenario::Address(Scenario::Pending)).await
 }
 
-#[tokio::test]
-async fn readonly_request_lookup_never_reconstructs_an_unbound_legacy_request() -> TestResult {
-    super::exercise(super::Scenario::Address(Scenario::LegacyRead)).await
-}
-
-#[tokio::test]
-async fn readonly_request_lookup_preserves_stored_legacy_binding() -> TestResult {
-    super::exercise(super::Scenario::Address(Scenario::StoredLegacy)).await
-}
-
-#[tokio::test]
-async fn readonly_request_lookup_preserves_stored_managed_binding() -> TestResult {
-    super::exercise(super::Scenario::Address(Scenario::StoredManaged)).await
-}
-
 pub(super) async fn run(scenario: Scenario, client: &reqwest::Client, url: &str) -> TestResult {
-    if matches!(
-        scenario,
-        Scenario::LegacyRead | Scenario::StoredLegacy | Scenario::StoredManaged
-    ) {
-        return read_historical(scenario, client, url).await;
-    }
     let controlled = crate::restate_services::jobs::selected_fixture::install()
         .map_err(|error| error.to_string())?;
     let mut request =
@@ -108,32 +84,6 @@ pub(super) async fn run(scenario: Scenario, client: &reqwest::Client, url: &str)
         .take()
         .ok_or("controlled binding source")?;
     resume(scenario, client, url, bound, controlled).await
-}
-
-async fn read_historical(scenario: Scenario, client: &reqwest::Client, url: &str) -> TestResult {
-    let mut request = fixtures::request()?;
-    if matches!(scenario, Scenario::StoredManaged) {
-        request.publication_contract = PublicationContract::ManagedBundleV2;
-    }
-    let mut historical = journal::Journal::new(&request)?;
-    let expected = if matches!(scenario, Scenario::LegacyRead) {
-        NationalRequestBinding::UnboundLegacy
-    } else {
-        for key in [KEY_ORIGINAL, KEY_BOUND] {
-            let mut entry = codec::blob(1, key.as_bytes())?;
-            entry.extend(codec::blob(
-                3,
-                &codec::value(&serde_json::to_vec(&request)?)?,
-            )?);
-            historical.entries.push(codec::Frame::new(0x0403, entry));
-        }
-        NationalRequestBinding::Bound(Box::new(request))
-    };
-    let before = historical.request_body()?;
-    let visible = read_binding(client, url, &historical).await?;
-    check!(eq; serde_json::to_value(visible)?, serde_json::to_value(expected)?);
-    check!(eq; historical.request_body()?, before);
-    Ok(())
 }
 
 async fn resume(

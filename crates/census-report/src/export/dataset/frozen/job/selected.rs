@@ -1,4 +1,4 @@
-use super::{invalid, io_error, ExportDataset, ExportJobRequest, ReportResult, Store};
+use super::{invalid, io_error, ExportDataset, ReportResult, Store};
 use census_domain::model::ProfileSelectionV1;
 use std::path::{Path, PathBuf};
 

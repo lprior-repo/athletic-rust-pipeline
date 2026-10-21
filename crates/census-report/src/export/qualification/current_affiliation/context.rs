@@ -222,7 +222,7 @@ mod tests {
         let before = context.rows.clone();
         context.retain(&athlete, &proof)?;
         let other = AthleteId::mint("ath_subject", &["foreign"]);
-        assert!(matches!(
+        check!(matches!(
             context.retain(&other, &proof),
             Err(StoreError::BudgetExceeded {
                 what: "verified roster context proof count",
@@ -230,8 +230,8 @@ mod tests {
                 available: 1_000_000
             })
         ));
-        assert_eq!(context.rows, before);
-        assert_eq!(
+        check!(eq; context.rows, before);
+        check!(eq;
             (context.count, context.bytes),
             (1_000_000, 64 * 1024 * 1024)
         );
@@ -248,13 +248,13 @@ mod tests {
             bytes: 64 * 1024 * 1024,
             ..Default::default()
         };
-        assert!(
+        check!(
             matches!(context.retain(&athlete, &proof), Err(StoreError::BudgetExceeded {
             what: "verified roster context encoded bytes", needed, available: 67_108_864
         }) if needed == 67_108_864 + added)
         );
-        assert!(context.rows.is_empty());
-        assert_eq!((context.count, context.bytes), (7, 67_108_864));
+        check!(context.rows.is_empty());
+        check!(eq; (context.count, context.bytes), (7, 67_108_864));
         Ok(())
     }
 
@@ -267,10 +267,10 @@ mod tests {
         }
         let before = (context.rows.clone(), context.count, context.bytes);
         context.retain(&athlete, &evidence("0"))?;
-        assert!(matches!(context.retain(&athlete, &evidence("extra")),
+        check!(matches!(context.retain(&athlete, &evidence("extra")),
             Err(StoreError::Refused { detail })
             if detail == "verified roster context exceeds 256 proofs per physical subject"));
-        assert_eq!((context.rows, context.count, context.bytes), before);
+        check!(eq; (context.rows, context.count, context.bytes), before);
         Ok(())
     }
 }

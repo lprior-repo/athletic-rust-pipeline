@@ -215,10 +215,7 @@ pub(super) async fn bind_run(
     ctx: &WorkflowContext<'_>,
     request: &NationalRequest,
 ) -> Result<GradYear, HandlerError> {
-    let selection = request
-        .export_job
-        .require_selected_publication()
-        .map_err(|error| TerminalError::new_with_code(400, error.to_string()))?;
+    let selection = request.export_job.require_selected_publication();
     let request_jurisdictions = admitted_scope(&request.jurisdictions);
     let expected_jurisdictions =
         super::super::census::requests::admitted_jurisdictions(&request.jurisdictions)?;

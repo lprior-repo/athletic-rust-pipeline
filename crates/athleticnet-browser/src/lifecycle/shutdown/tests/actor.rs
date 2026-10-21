@@ -8,26 +8,24 @@ use tokio::sync::{mpsc, oneshot};
 async fn a_manager_deadline_retains_the_actual_actor_for_a_supervised_reap() -> TestResult {
     let (tx, rx) = mpsc::channel(2);
     let (finish, finished) = oneshot::channel();
-    let handler = tokio::spawn(async move {
-        assert_eq!(finished.await, Ok(()));
-    });
+    let handler = tokio::spawn(super::wait_for_handler_release(finished));
     let (mut actor, _events) = controlled_actor(rx, handler)?;
     observe_shutdown(&mut actor);
     let manager = manager(tx, actor);
 
     let (_, failure) = manager.shutdown().await;
 
-    assert!(
+    check!(
         matches!(failure, Some(BrowserStartupError::ShutdownFailed(message))
         if message == "browser shutdown timed out")
     );
-    assert_eq!(manager.inspect().await?.state, BrowserState::Restarting);
+    check!(eq; manager.inspect().await?.state, BrowserState::Restarting);
     let state = manager.join.lock().await;
-    assert!(matches!(&*state, ActorJoinState::Running(handle) if !handle.is_finished()));
+    check!(matches!(&*state, ActorJoinState::Running(handle) if !handle.is_finished()));
     drop(state);
     finish.send(()).map_err(|_| "actual handler was aborted")?;
     let (report, failure) = manager.shutdown().await;
-    assert_eq!(
+    check!(eq;
         report,
         DrainReport {
             accepted: 1,
@@ -35,17 +33,17 @@ async fn a_manager_deadline_retains_the_actual_actor_for_a_supervised_reap() -> 
             ..DrainReport::default()
         }
     );
-    assert!(
+    check!(
         matches!(failure, Some(BrowserStartupError::ShutdownFailed(message))
         if message == "browser handler wait timed out")
     );
     let (replayed, failure) = manager.shutdown().await;
-    assert_eq!(replayed, report);
-    assert!(
+    check!(eq; replayed, report);
+    check!(
         matches!(failure, Some(BrowserStartupError::ShutdownFailed(message))
         if message == "browser handler wait timed out")
     );
-    assert_eq!(manager.status().state, BrowserState::Restarting);
+    check!(eq; manager.status().state, BrowserState::Restarting);
     Ok(())
 }
 
@@ -53,9 +51,7 @@ async fn a_manager_deadline_retains_the_actual_actor_for_a_supervised_reap() -> 
 async fn public_shutdown_after_caller_cancellation_returns_the_actual_drain() -> TestResult {
     let (tx, rx) = mpsc::channel(2);
     let (finish, finished) = oneshot::channel();
-    let handler = tokio::spawn(async move {
-        assert_eq!(finished.await, Ok(()));
-    });
+    let handler = tokio::spawn(super::wait_for_handler_release(finished));
     let (mut actor, _events) = controlled_actor(rx, handler)?;
     observe_shutdown(&mut actor);
     let manager = manager(tx, actor);
@@ -69,7 +65,7 @@ async fn public_shutdown_after_caller_cancellation_returns_the_actual_drain() ->
         }
     }
     let state = manager.join.lock().await;
-    assert!(matches!(&*state, ActorJoinState::Running(handle) if !handle.is_finished()));
+    check!(matches!(&*state, ActorJoinState::Running(handle) if !handle.is_finished()));
     drop(state);
     finish
         .send(())
@@ -80,7 +76,7 @@ async fn public_shutdown_after_caller_cancellation_returns_the_actual_drain() ->
     if let Some(failure) = failure {
         return Err(failure.into());
     }
-    assert_eq!(
+    check!(eq;
         report,
         DrainReport {
             accepted: 1,
@@ -89,9 +85,9 @@ async fn public_shutdown_after_caller_cancellation_returns_the_actual_drain() ->
         }
     );
     let (replayed, failure) = manager.shutdown().await;
-    assert!(failure.is_none());
-    assert_eq!(replayed, report);
-    assert_eq!(manager.status().state, BrowserState::Stopped);
+    check!(failure.is_none());
+    check!(eq; replayed, report);
+    check!(eq; manager.status().state, BrowserState::Stopped);
     Ok(())
 }
 
@@ -99,9 +95,7 @@ async fn public_shutdown_after_caller_cancellation_returns_the_actual_drain() ->
 async fn concurrent_shutdown_calls_replay_the_same_actual_drain() -> TestResult {
     let (tx, rx) = mpsc::channel(4);
     let (finish, finished) = oneshot::channel();
-    let handler = tokio::spawn(async move {
-        assert_eq!(finished.await, Ok(()));
-    });
+    let handler = tokio::spawn(super::wait_for_handler_release(finished));
     let (mut actor, _events) = controlled_actor(rx, handler)?;
     observe_shutdown(&mut actor);
     let manager = manager(tx, actor);
@@ -121,9 +115,9 @@ async fn concurrent_shutdown_calls_replay_the_same_actual_drain() -> TestResult 
         .map_err(|_| "the actual handler was aborted")?;
     let ((report1, failure1), (report2, failure2)) = tokio::join!(shutdown1, shutdown2);
 
-    assert!(failure1.is_none());
-    assert!(failure2.is_none());
-    assert_eq!(
+    check!(failure1.is_none());
+    check!(failure2.is_none());
+    check!(eq;
         report1,
         DrainReport {
             accepted: 1,
@@ -131,7 +125,7 @@ async fn concurrent_shutdown_calls_replay_the_same_actual_drain() -> TestResult 
             ..DrainReport::default()
         }
     );
-    assert_eq!(report2, report1);
-    assert_eq!(manager.status().state, BrowserState::Stopped);
+    check!(eq; report2, report1);
+    check!(eq; manager.status().state, BrowserState::Stopped);
     Ok(())
 }

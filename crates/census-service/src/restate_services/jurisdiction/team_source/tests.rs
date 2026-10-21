@@ -15,13 +15,19 @@ mod cooldown;
 mod durable_attempts;
 mod gobound_policy;
 pub(crate) mod national_resume;
+mod native_deployment_handoff;
+mod native_origin_continuation;
+mod origin_continuation_replay;
+mod reconciliation_multi_source;
 mod recorded_snapshot;
 mod registration;
 mod registration_cancellation;
 mod replay;
+mod retained_original_prefix;
 mod settlement;
 
-pub(super) fn request() -> Result<TeamsSourceRequest, Box<dyn Error>> {
+pub(in crate::restate_services::jurisdiction) fn request(
+) -> Result<TeamsSourceRequest, Box<dyn Error>> {
     Ok(TeamsSourceRequest {
         jurisdiction: JurisdictionRequest {
             jurisdiction: UsJurisdiction::Ohio,
@@ -310,3 +316,21 @@ fn deliberate_foreign_state_exclusions_complete_teams_acquisition() -> TestResul
 }
 
 mod access_evidence;
+
+pub(in crate::restate_services::jurisdiction) fn bound_national_request(
+    source: &TeamsSourceRequest,
+) -> Result<crate::restate_services::wire::NationalRequest, Box<dyn Error>> {
+    let mut national = crate::restate_services::national::publication_tests::fixtures::request()?;
+    let jurisdiction = &source.jurisdiction;
+    national.season = jurisdiction.season;
+    national.revision = jurisdiction.revision;
+    national.history = jurisdiction.history;
+    national.jurisdictions = vec![jurisdiction.jurisdiction];
+    national.refresh = jurisdiction.refresh;
+    national.limit_per_state = jurisdiction.limit_per_state;
+    national.concurrency = jurisdiction.concurrency;
+    national.observed_on = jurisdiction.observed_on.clone();
+    national.authorized_hosts = jurisdiction.authorized_hosts.clone();
+    national.source_parallelism = jurisdiction.source_parallelism;
+    Ok(national)
+}

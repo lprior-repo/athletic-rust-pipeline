@@ -262,7 +262,10 @@ fn exact_capture_relays(relays: &[RelayResult], athletes: &[CanonicalAthlete]) -
         );
     }
     let key_of = |result_id: i64| {
-        let team_id = parents.get(&result_id).copied().unwrap_or_default();
+        let team_id = match parents.get(&result_id) {
+            Some(team_id) => *team_id,
+            None => 0,
+        };
         format!("athleticnet:team{team_id}-{result_id}")
     };
     for relay in relays {

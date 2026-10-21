@@ -13,6 +13,7 @@ mod admission;
 mod attempt;
 mod completion;
 mod history;
+pub(super) mod origin_continuation;
 mod registration;
 mod settlement;
 #[cfg(test)]
@@ -133,14 +134,23 @@ pub(crate) fn durable_attempts(store: &Store) -> Result<AttemptState, JobError> 
         let identity: Identity = read(&snapshot, &format!("{key}/identity"))?
             .ok_or_else(|| terminal("teams source attempt state has no identity"))?;
         let history = history::read(&snapshot, &key, &identity)?;
+        let (attempt, progress, settled) =
+            match origin_continuation::attempt_history(&snapshot, &key)? {
+                Some(current) => current,
+                None => (
+                    history.attempt,
+                    history.progress.clone(),
+                    validated_settled(&snapshot, &key, &history, false)?.is_some(),
+                ),
+            };
         state.sources = state.sources.saturating_add(1);
-        state.reserved = state.reserved.saturating_add(u64::from(history.attempt));
-        for progress in &history.progress {
+        state.reserved = state.reserved.saturating_add(u64::from(attempt));
+        for progress in &progress {
             if !matches!(progress, TeamsAttemptProgress::Unknown { .. }) {
                 state.recorded = state.recorded.saturating_add(1);
             }
         }
-        if validated_settled(&snapshot, &key, &history, false)?.is_some() {
+        if settled {
             state.settled = state.settled.saturating_add(1);
         }
     }

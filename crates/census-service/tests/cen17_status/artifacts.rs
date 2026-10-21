@@ -1,8 +1,7 @@
 use super::fixtures::{cases, documents, target, FIELD, OBSERVED_ON};
 use super::TestResult;
 
-#[path = "../common/durable_capture.rs"]
-mod durable_capture;
+use super::durable_capture;
 use calamine::Reader;
 use census_crawl::athleticlive::event_doc_url;
 use census_crawl::athleticlive::{collect_results as collect, ResultOptions};

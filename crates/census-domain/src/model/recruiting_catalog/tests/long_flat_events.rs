@@ -84,9 +84,8 @@ fn long_flat_recognition_preserves_xc_and_steeple_identities() -> TestResult {
         ),
     ] {
         let event = owned(kind.clone(), &[label])?;
-        for semantics in [EventSemantics::FlatEvents19] {
-            check!(eq; RecruitingCatalogV1::with_policy(semantics).classify(&event, sport)?, EventDisposition::Included(kind.clone()));
-        }
+        let semantics = EventSemantics::FlatEvents19;
+        check!(eq; RecruitingCatalogV1::with_policy(semantics).classify(&event, sport)?, EventDisposition::Included(kind.clone()));
     }
     Ok(())
 }
@@ -208,9 +207,8 @@ fn short_flat_alias_gate_never_admits_arbitrary_tokens_or_discards_modifiers() -
         "2k mystery (200m banked)",
     ] {
         let event = owned(unmapped(label), &[label])?;
-        for semantics in [EventSemantics::FlatEvents19] {
-            check!(eq; RecruitingCatalogV1::with_policy(semantics).classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::UnknownOrMixedSourceLabels));
-        }
+        let semantics = EventSemantics::FlatEvents19;
+        check!(eq; RecruitingCatalogV1::with_policy(semantics).classify(&event, Sport::IndoorTrack)?, EventDisposition::Unresolved(EventResolutionReason::UnknownOrMixedSourceLabels));
     }
     for label in ["2k (200m banked) 3000m", "2 K (200m banked) 3000m"] {
         let event = owned(unmapped(label), &[label])?;

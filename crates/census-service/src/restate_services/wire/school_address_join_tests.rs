@@ -127,10 +127,7 @@ fn duplicate_optional_fields_are_rejected_even_when_first_value_is_null() -> Tes
 
 #[test]
 fn duplicate_evidence_fields_are_rejected_including_empty_values() -> TestResult {
-    for raw in [r#"{"acquisitions":[],"acquisitions":[]}"#] {
-        rejects_data(raw)?;
-    }
-    Ok(())
+    rejects_data(r#"{"acquisitions":[],"acquisitions":[]}"#)
 }
 
 #[test]
@@ -251,7 +248,7 @@ fn shared_evidence_validation_is_applied_before_wire_request_acceptance() -> Tes
 #[test]
 fn national_request_preserves_nested_new_address_shape() -> TestResult {
     let request: NationalRequest = serde_json::from_str(
-        r#"{"season":2026,"revision":1,"history":{"first_calendar_year":2023,"last_calendar_year":2026,"as_of":"2026-10-12"},"school_address":{"generation":"generation-7","acquisitions":[{"entry":7,"provider":"nces-ccd","path":"ccd.csv","url":"https://nces.ed.gov/ccd"}]}}"#,
+        r#"{"season":2026,"revision":1,"history":{"first_calendar_year":2023,"last_calendar_year":2026,"as_of":"2026-10-12"},"publication_contract":"selected_publication_v2","export_job":{"contract":"selected_publication_v1","selection":{"version":1,"store_identity":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","profile_id":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}},"school_address":{"generation":"generation-7","acquisitions":[{"entry":7,"provider":"nces-ccd","path":"ccd.csv","url":"https://nces.ed.gov/ccd"}]}}"#,
     )?;
     let Some(address) = request.school_address.as_ref() else {
         return Err("national request lost its school address request".into());

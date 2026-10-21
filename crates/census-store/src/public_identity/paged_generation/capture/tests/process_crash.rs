@@ -54,31 +54,31 @@ fn public_capture_seal_survives_process_abort_before_return_and_replays_exactly(
         .stderr(Stdio::inherit())
         .spawn()?;
     let (directory, status) = super::owned_child::wait(child, directory)?;
-    assert_eq!(status.signal(), Some(6));
+    check!(eq;status.signal(), Some(6));
     let root = directory.path().join("identity");
     let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
     let id = operation("public-crash-after-seal")?;
     let reserved =
         load_graph(&store, writer.store_identity(), &id)?.ok_or("missing retained reservation")?;
-    assert!(reserved.is_complete(&store)?);
+    check!(reserved.is_complete(&store)?);
     let sequence = store.snapshot().sequence();
     let charge = super::concurrency::admission_header(&store)?;
     let physical = crate::public_identity_tests::support::retained_state(&store)?;
     let replay = writer.capture_raw_generation_v2(&store, &id)?;
-    assert!(matches!(
+    check!(matches!(
         &replay,
         RawGenerationCaptureOutcomeV2::HistoricalReplay(_)
     ));
-    assert_eq!(replay.retained().binding(), reserved.capture());
-    assert_eq!(replay.retained().seal(), reserved.seal());
-    assert_eq!(retained_rows(&store, replay.retained())?, 513);
-    assert_eq!(store.snapshot().sequence(), sequence);
-    assert_eq!(
+    check!(eq;replay.retained().binding(), reserved.capture());
+    check!(eq;replay.retained().seal(), reserved.seal());
+    check!(eq;retained_rows(&store, replay.retained())?, 513);
+    check!(eq;store.snapshot().sequence(), sequence);
+    check!(eq;
         super::concurrency::authority_state(&store, &writer)?,
         authority
     );
-    assert_eq!(super::concurrency::admission_header(&store)?, charge);
-    assert_eq!(
+    check!(eq;super::concurrency::admission_header(&store)?, charge);
+    check!(eq;
         crate::public_identity_tests::support::retained_state(&store)?,
         physical
     );

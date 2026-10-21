@@ -38,13 +38,9 @@ impl reqwest::dns::Resolve for LocalOnlyDns {
 
 fn local_fixture(
     listener: &TcpListener,
-    protocol: CaptureProtocolVersion,
     held_host: &str,
 ) -> TestResult<(Fixture, Arc<AtomicUsize>)> {
-    let mut fixture = match protocol {
-        CaptureProtocolVersion::V1 => Fixture::new(listener)?,
-        CaptureProtocolVersion::V2 => Fixture::new_v2(listener)?,
-    };
+    let mut fixture = Fixture::new(listener)?;
     let grants = vec![HOST.to_string(), held_host.to_string()];
     let mut destination = DestinationGuard::new(grants.clone());
     destination.fixture_resolution = Some((HOST.into(), listener.local_addr()?));
@@ -126,9 +122,9 @@ fn receipts(fixture: &Fixture) -> TestResult<Vec<census_store::Receipt>> {
     Ok(rows)
 }
 
-async fn redirect_refusal(protocol: CaptureProtocolVersion, held_host: &str) -> TestResult {
+async fn redirect_refusal(held_host: &str) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let (fixture, unexpected_dns) = local_fixture(&listener, protocol, held_host)?;
+    let (fixture, unexpected_dns) = local_fixture(&listener, held_host)?;
     let target = format!("https://{held_host}/retained");
     let headers = format!("Location: {target}\r\n");
     let replies = [Reply {
@@ -157,7 +153,7 @@ async fn redirect_refusal(protocol: CaptureProtocolVersion, held_host: &str) -> 
     })
     .await??;
     assert_refusal_facts(&fixture, &target)?;
-    let phase = protocol.phase();
+    let phase = CaptureProtocolVersion::V2.phase();
     let journal = fixture.store.journal_payloads(phase)?;
     let receipts_before = receipts(&fixture)?;
     let fixture = fixture.reopen()?;
@@ -181,15 +177,12 @@ async fn redirect_refusal(protocol: CaptureProtocolVersion, held_host: &str) -> 
 
 #[tokio::test]
 async fn gobound_redirect_refusal_preserves_adopted_checkpoint_and_settled_replay() -> TestResult {
-    for protocol in [CaptureProtocolVersion::V1, CaptureProtocolVersion::V2] {
-        redirect_refusal(protocol, HELD_HOST).await?;
-    }
-    Ok(())
+    redirect_refusal(HELD_HOST).await
 }
 
-async fn cache_replay(protocol: CaptureProtocolVersion) -> TestResult {
+async fn cache_replay() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let (fixture, unexpected_dns) = local_fixture(&listener, protocol, HELD_HOST)?;
+    let (fixture, unexpected_dns) = local_fixture(&listener, HELD_HOST)?;
     let fetch = async {
         fixture
             .acquire(2025, true)
@@ -220,7 +213,7 @@ async fn cache_replay(protocol: CaptureProtocolVersion) -> TestResult {
     check!(eq; std::fs::read(&metadata)?, pointer);
     check!(eq; std::fs::read(&body)?, BODY);
     check!(eq; receipts(&fixture)?, retained_receipts);
-    let phase = protocol.phase();
+    let phase = CaptureProtocolVersion::V2.phase();
     let keys = fixture.store.journal_keys(phase)?;
     check!(eq; keys.iter().filter(|key| key.starts_with("slot/")).count(), 2);
     check!(eq; keys.iter().filter(|key| key.ends_with("/terminal")).count(), 1);
@@ -244,16 +237,10 @@ async fn cache_replay(protocol: CaptureProtocolVersion) -> TestResult {
 
 #[tokio::test]
 async fn gobound_hold_keeps_unrelated_adopted_cache_and_archive_replay_unchanged() -> TestResult {
-    for protocol in [CaptureProtocolVersion::V1, CaptureProtocolVersion::V2] {
-        cache_replay(protocol).await?;
-    }
-    Ok(())
+    cache_replay().await
 }
 
 #[tokio::test]
 async fn tfrrs_redirect_refusal_preserves_adopted_checkpoint_and_settled_replay() -> TestResult {
-    for protocol in [CaptureProtocolVersion::V1, CaptureProtocolVersion::V2] {
-        redirect_refusal(protocol, "indiana.tfrrs.org").await?;
-    }
-    Ok(())
+    redirect_refusal("indiana.tfrrs.org").await
 }

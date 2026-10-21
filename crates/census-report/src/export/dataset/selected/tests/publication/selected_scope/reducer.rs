@@ -52,7 +52,7 @@ pub(super) fn synthetic_eligible_candidates(dataset: &ExportDataset) -> TestResu
     check!(eq; best.population.marks, 1);
     check!(eq; best.inventory.eligible_group_count(), 1);
     check!(eq; best.inventory.tied_group_count(), 1);
-    check!(eq; best.inventory.tied_representative_ids(), &[retained.id.clone()]);
+    check!(eq; best.inventory.tied_representative_ids(), std::slice::from_ref(&retained.id));
     check!(outcome.participation_exclusions.is_empty());
     check!(outcome.combined_exclusions.is_empty());
     Ok(())

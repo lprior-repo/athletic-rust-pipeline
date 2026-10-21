@@ -9,7 +9,6 @@ use clap::Args;
 use std::time::Duration;
 
 const POLL: Duration = Duration::from_secs(10);
-pub(super) const DRIVE_CYCLES: u32 = 96;
 
 const PROGRESS_EVERY: u64 = 6;
 
@@ -24,7 +23,7 @@ pub(super) struct WorkflowFlags {
     #[arg(long, value_name = "ORIGIN")]
     pub(super) ingress: Option<String>,
     #[arg(
-        help = "Run revision. A run that already exists is reattached to, and this is the deliberate way to invalidate completed work: the identity a run is addressed by carries the season, the run scope the parameters admit and this revision, so the same parameters reproduce their run while a changed jurisdiction set derives an identity of its own instead of re-attaching to another scope. Use `national --resume ORDINAL` to re-drive owed work without changing the revision"
+        help = "Run revision. A run that already exists is reattached to, and this is the deliberate way to invalidate completed work: the identity a run is addressed by carries the season, the run scope the parameters admit and this revision, so the same parameters reproduce their run while a changed jurisdiction set derives an identity of its own instead of re-attaching to another scope"
     )]
     #[arg(long, default_value_t = 1)]
     pub(super) revision: u32,
@@ -92,16 +91,6 @@ pub(super) struct NationalArgs {
     #[command(flatten)]
     flags: RunFlags,
     #[arg(
-        help = "Resume owed work in a new parent invocation for the same run and revision; reuse an ordinal to reattach without resetting source attempts"
-    )]
-    #[arg(long, value_name = "ORDINAL")]
-    resume: Option<std::num::NonZeroU32>,
-    #[arg(
-        long,
-        help = "Drive the fan-out to completion instead of observing one attach: whenever the run is still owed work, reattach under the next --resume ordinal and re-drive it, until the run finishes or the cycle budget is spent. This is the supported way to finish a national census; do not poll by hand. Incompatible with --detach."
-    )]
-    drive: bool,
-    #[arg(
         help = "Jurisdictions to cover. Absent means the 48 contiguous states and the District of Columbia (49 jurisdictions)"
     )]
     #[arg(long, value_delimiter = ',')]
@@ -129,29 +118,18 @@ pub(super) struct NationalArgs {
     #[arg(
         long,
         value_name = "GENERATION",
-        help = "Frozen selected-publication generation; omitted uses the canonical default, resume preserves the bound value"
+        help = "Frozen selected-publication generation; omitted uses the canonical default"
     )]
     generation: Option<String>,
     #[arg(help = "Rosters one jurisdiction fetches concurrently")]
     #[arg(long, default_value_t = 4)]
     concurrency: usize,
-    #[arg(help = "Submit and return. The run continues under Restate")]
-    #[arg(long)]
-    detach: bool,
     #[arg(
         long,
         value_name = "DIR",
         help = "School-directory generation root holding current/; absent means <data-dir>/school-address"
     )]
     school_directory: Option<String>,
-    #[arg(
-        help = "Re-drive rounds for jurisdictions that still owe source work; each round re-runs owed stages and stops early when a round makes no progress. 0 disables re-driving"
-    )]
-    #[arg(long, default_value_t = 96)]
-    pass_budget: usize,
-    #[arg(help = "Durable delay in seconds between re-drive rounds")]
-    #[arg(long, default_value_t = 900)]
-    pass_delay_seconds: u64,
 }
 
 #[derive(Args, Debug, Clone)]
@@ -172,9 +150,6 @@ pub(super) struct JurisdictionArgs {
     #[arg(help = "Rosters fetched concurrently")]
     #[arg(long, default_value_t = 4)]
     concurrency: usize,
-    #[arg(help = "Submit and return. The run continues under Restate")]
-    #[arg(long)]
-    detach: bool,
 }
 
 #[derive(Args, Debug, Clone)]
@@ -191,11 +166,6 @@ pub(super) struct NationalReportArgs {
     #[arg(help = "Run revision")]
     #[arg(long, default_value_t = 1)]
     revision: u32,
-    #[arg(
-        help = "Resume owed work in a new parent invocation for the same run and revision; reuse an ordinal to reattach without resetting source attempts"
-    )]
-    #[arg(long, value_name = "ORDINAL")]
-    resume: Option<std::num::NonZeroU32>,
     #[arg(
         help = "Jurisdictions the run covered. Absent means the 48 contiguous states and the District of Columbia (49 jurisdictions)",
         long_help = "Jurisdictions the run covered. Absent means the 48 contiguous states and the District of Columbia (49 jurisdictions).\n\nThe set is part of the run's identity, so the report of a run submitted with `--states` is only reachable with the same list."

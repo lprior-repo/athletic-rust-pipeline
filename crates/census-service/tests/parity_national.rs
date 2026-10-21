@@ -4,6 +4,8 @@
 #[path = "../../../tools/fallible_checks.rs"]
 mod fallible_checks;
 
+#[path = "common/capture_cache.rs"]
+mod capture_cache;
 mod common;
 #[path = "common/durable_capture.rs"]
 mod durable_capture;

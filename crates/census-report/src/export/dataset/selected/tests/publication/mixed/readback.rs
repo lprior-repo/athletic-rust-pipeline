@@ -99,7 +99,7 @@ fn workbook_pr(path: &Path, expected: &Expected) -> TestResult {
         "Calculated PR",
         "Performance ID",
     ] {
-        check!(header.iter().any(|cell| cell.to_string() == label));
+        check!(header.iter().any(|cell| cell == label));
     }
     let athletes = book.worksheet_range("Athletes")?;
     check!(athletes.rows().any(|row| row

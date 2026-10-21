@@ -5,11 +5,17 @@ mod parse;
 mod report;
 mod run;
 
+pub(crate) use map::row::mark_with_adjustment;
+
 #[cfg(test)]
 mod policy_tests;
 #[cfg(test)]
 mod tests;
 
+pub(crate) use parse::{
+    clock_seconds, converted_from, feet_inches_metres, is_track_size_conversion, metric_metres,
+    retained_date_label, ParsedMark, YearToken,
+};
 pub use parse::{
     parse_list_page, parse_list_path, parse_team_page, parse_team_path, ListPath, TeamPath,
 };

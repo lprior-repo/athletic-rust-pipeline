@@ -27,9 +27,9 @@ fn running_claim_budget_accepts_exact_size_and_stops_before_retaining_overflow()
         claim.claim_path.clone(),
         &value,
     )?;
-    assert_eq!(inventory.remaining, 0);
-    assert_eq!(inventory.claims, vec![claim.clone()]);
-    assert!(inventory
+    check!(eq;inventory.remaining, 0);
+    check!(eq;inventory.claims, vec![claim.clone()]);
+    check!(inventory
         .push(
             &claim.candidate,
             claim.section,
@@ -39,12 +39,12 @@ fn running_claim_budget_accepts_exact_size_and_stops_before_retaining_overflow()
             &value
         )
         .is_err());
-    assert_eq!(inventory.claims, vec![claim.clone()]);
+    check!(eq;inventory.claims, vec![claim.clone()]);
     let mut short = Inventory {
         claims: Vec::new(),
         remaining: size.checked_sub(1).ok_or("size")?,
     };
-    assert!(short
+    check!(short
         .push(
             &claim.candidate,
             claim.section,
@@ -54,6 +54,6 @@ fn running_claim_budget_accepts_exact_size_and_stops_before_retaining_overflow()
             &value
         )
         .is_err());
-    assert!(short.claims.is_empty());
+    check!(short.claims.is_empty());
     Ok(())
 }

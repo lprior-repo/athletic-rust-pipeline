@@ -57,7 +57,7 @@ fn prepared_archive_reopens_and_finishes_original_attempt_without_dispatch() -> 
     drop(prepared);
     drop(store);
     let (reopened, writer) =
-        Store::open_capture_qualification_v1(dir.path().join("store"))?.into_parts();
+        Store::open_current_qualification_v3(dir.path().join("store"))?.into_parts();
     let owner = support::owner(&reopened, &writer, 2026, CaptureCacheIntent::ReuseEligible)?;
     let reference = reopened.finish_prepared_acquisition(
         registered(&reopened, &writer, &owner)?,
@@ -86,7 +86,7 @@ fn cache_replay_and_304_keep_exact_original_body_and_time_without_reference_chai
     check!(eq; verified.reference(), &original);
     let replay_work = work(&replay_owner)?.id()?;
     check!(!store.journal_contains(
-        SOURCE_ACQUISITION_PHASE,
+        CaptureProtocolVersion::V2.phase(),
         &format!("work/{replay_work}/attempt/1/reserved")
     )?);
     let owner = support::owner(&store, &writer, 2024, CaptureCacheIntent::AcquireNew)?;

@@ -1,5 +1,3 @@
-use super::fixtures;
-
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 pub(super) fn publication_services(journal: &super::journal::Journal) -> TestResult<Vec<String>> {
@@ -19,32 +17,20 @@ pub(super) fn publication_services(journal: &super::journal::Journal) -> TestRes
 }
 
 pub(super) fn assert_published(journal: &super::journal::Journal) -> TestResult {
-    let managed = journal.original.publication_contract
-        != crate::restate_services::PublicationContract::LegacySeparateV1;
-    verify_publication_stages(journal, managed)?;
-    super::binding::assert_requests(journal, managed)?;
+    verify_publication_stages(journal)?;
+    super::binding::assert_requests(journal, true)?;
     verify_seal(journal)?;
     verify_report(journal)?;
-    if journal.original.publication_contract
-        == crate::restate_services::PublicationContract::SelectedPublicationV1
-        || journal.original.publication_contract
-            == crate::restate_services::PublicationContract::SelectedPublicationV2
-    {
-        verify_selected_output(journal)?;
-    }
+    verify_selected_output(journal)?;
     Ok(())
 }
 
-fn publication_stages(managed: bool) -> &'static [&'static str] {
-    if managed {
-        &["Consolidate", "Workbook"]
-    } else {
-        &["Consolidate", "Report", "Bests", "Workbook"]
-    }
+fn publication_stages() -> &'static [&'static str] {
+    &["Consolidate", "Workbook"]
 }
 
-fn verify_publication_stages(journal: &super::journal::Journal, managed: bool) -> TestResult {
-    let stages = publication_stages(managed);
+fn verify_publication_stages(journal: &super::journal::Journal) -> TestResult {
+    let stages = publication_stages();
     let mut expected = stages.to_vec();
     expected.push("Census");
     expected.extend((0..journal.seal_refusals).map(|_| "Census"));
@@ -87,17 +73,10 @@ fn verify_seal(journal: &super::journal::Journal) -> TestResult {
 }
 
 fn workbook_path(journal: &super::journal::Journal) -> TestResult<&str> {
-    Ok(match journal.original.publication_contract {
-        crate::restate_services::PublicationContract::SelectedPublicationV1
-        | crate::restate_services::PublicationContract::SelectedPublicationV2 => journal
-            .selected_workbook_path
-            .as_deref()
-            .ok_or("selected National dispatch did not run the controlled workbook job")?,
-        crate::restate_services::PublicationContract::ManagedBundleV2 => fixtures::MANAGED_WORKBOOK,
-        crate::restate_services::PublicationContract::LegacySeparateV1 => {
-            "out/publication/current/workbook.xlsx"
-        }
-    })
+    journal
+        .selected_workbook_path
+        .as_deref()
+        .ok_or_else(|| "selected National dispatch did not run the controlled workbook job".into())
 }
 
 fn verify_report(journal: &super::journal::Journal) -> TestResult {

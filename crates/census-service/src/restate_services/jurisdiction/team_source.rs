@@ -5,17 +5,20 @@ use census_reconcile::identity::WorkflowIdentity;
 
 use super::JurisdictionCensus;
 use crate::restate_services::wire::{
-    StageOutcome, TeamsAttemptProgress, TeamsSourceInspection, TeamsSourceOutcome,
-    TeamsSourceRequest,
+    OriginHeldContinuationRequest, StageOutcome, TeamsAttemptProgress, TeamsSourceInspection,
+    TeamsSourceOutcome, TeamsSourceRequest,
 };
 use crate::restate_services::{blocking, job_error, teams_arms, JobError, Jobs};
 
 mod access_snapshot;
 mod acquisition;
 mod admission;
+mod continuation_scope;
 mod cooldown;
 mod execution;
+mod execution_ledger;
 mod operation;
+mod origin_continuation;
 pub(crate) use operation::contacts_key;
 mod ledger;
 mod ledger_io;
@@ -166,6 +169,43 @@ fn report_outcome(report: census_crawl::AdapterReport, records: usize, at: Strin
     on_max_attempts = "kill"
 ))]
 impl TeamsSource {
+    #[handler]
+    async fn continue_origin_held(
+        &self,
+        ctx: ObjectContext<'_>,
+        Json(request): Json<OriginHeldContinuationRequest>,
+    ) -> Result<Json<TeamsSourceOutcome>, HandlerError> {
+        if request.original.source != "milesplit"
+            || operation::phase(ctx.key(), &request.original).map_err(job_error)?
+                != operation::Phase::Teams
+        {
+            return Err(
+                TerminalError::new("origin continuation does not match its source key").into(),
+            );
+        }
+        self.require_continuation_scope(&ctx, &request.original)
+            .await?;
+        let authorization = self.authorize_origin_continuation(&ctx, &request).await?;
+        self.execute_in(
+            ctx,
+            request.original,
+            execution_ledger::ExecutionLedger::OriginContinuation(authorization),
+        )
+        .await
+    }
+
+    #[handler]
+    async fn current(
+        &self,
+        ctx: SharedObjectContext<'_>,
+    ) -> Result<Json<Option<crate::restate_services::wire::TeamsContinuationOutcome>>, HandlerError>
+    {
+        self.current_source_outcome(ctx.key().to_string())
+            .await
+            .map(Json)
+            .map_err(job_error)
+    }
+
     #[handler]
     async fn run(
         &self,

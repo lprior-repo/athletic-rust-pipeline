@@ -63,7 +63,7 @@ pub(super) fn observe(
     let capture: RetainedHtmlCaptureV1 = serde_json::from_str(root.payload().get())?;
     check!(eq; capture.body()?.as_bytes(), setup::RAW);
     let attachments = current.attachments(&mut grant)?;
-    let discovered = discover_frozen_html_results(&attachments, &mut grant)?;
+    let discovered = discover_frozen_html_results(attachments, &mut grant)?;
     check!(eq; discovered.group_count(), 1);
     let observed = discovered.with_group(0, &mut grant, |linked, grant| {
         Ok(read::checked_frozen(&current, &linked, 0, grant)?

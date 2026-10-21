@@ -5,9 +5,18 @@ use crate::public_identity::{
 };
 use std::collections::BTreeMap;
 
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct InspectedOperation {
+    pub sequence: u64,
+    pub witness: String,
+    pub receipt: String,
+    pub decision: Option<String>,
+}
+
 pub(super) fn inspect(
     bytes: &[u8],
-) -> TestResult<(Vec<wire::Operation>, BTreeMap<String, ObjectRefV2>)> {
+) -> TestResult<(Vec<InspectedOperation>, BTreeMap<String, ObjectRefV2>)> {
     let bundle: serde_json::Value = serde_json::from_slice(bytes)?;
     check!(eq; bundle.get("version").and_then(serde_json::Value::as_u64), Some(2));
     check!(bundle.get("contexts").is_none());
@@ -17,7 +26,7 @@ pub(super) fn inspect(
         .ok_or("graph operations")?
         .iter()
         .cloned()
-        .map(serde_json::from_value::<wire::Operation>)
+        .map(serde_json::from_value::<InspectedOperation>)
         .collect::<Result<Vec<_>, _>>()?;
     let mut objects = BTreeMap::new();
     for object in bundle

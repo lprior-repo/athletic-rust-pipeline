@@ -7,7 +7,7 @@ use std::sync::Arc;
 #[tokio::test(flavor = "current_thread")]
 async fn later_distinct_sdk_invocation_after_actual_drain_alone_creates_ordinal_two() -> TestResult
 {
-    let mut fixture = Fixture::v2()?;
+    let mut fixture = Fixture::new()?;
     let prepared = fixture::seed_prepared(&fixture)?;
     support::create_missing_archive_parents(&fixture, &prepared)?;
     let resources = fixture.region.coordinator().remaining();

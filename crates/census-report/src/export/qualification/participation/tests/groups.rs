@@ -64,6 +64,6 @@ async fn grouped_capture_resolution_preserves_individual_assessments_for_reorder
         .into_iter()
         .map(|(id, row)| (id, row.into_parts()))
         .collect::<BTreeMap<_, _>>();
-    assert_eq!(actual, expected);
+    check!(eq; actual, expected);
     Ok(())
 }

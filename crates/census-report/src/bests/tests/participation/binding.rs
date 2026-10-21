@@ -5,7 +5,7 @@ use census_domain::model::{ContractRefV1, ProfileId};
 fn selected_participation_requires_an_explicit_profile_binding() -> TestResult {
     let (fixture, slower, _) = observations()?;
     let directory = tempfile::tempdir()?;
-    let store = fixture.store_with_replay(directory.path(), &[slower.clone()])?;
+    let store = fixture.store_with_replay(directory.path(), std::slice::from_ref(&slower))?;
     let dataset = ExportDataset::load(&store)?;
     let facts = Facts::new()?;
     let view = facts.view(&dataset, [eligible(&facts, &slower.performance)?]);
@@ -22,7 +22,7 @@ fn selected_participation_requires_an_explicit_rule_binding() -> TestResult {
     let facts = Facts::new()?;
     let directory = tempfile::tempdir()?;
     let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
-    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone()])?;
+    let (dataset, _objects) = facts.bind(&store, &writer, std::slice::from_ref(&slower))?;
     let foreign = ContractRefV1::new(1, 2, &"a".repeat(64))?;
     check!(dataset.selected_participation_rule() != Some(&foreign));
     let view = VerifiedParticipationView::fixture(
@@ -49,7 +49,7 @@ fn selected_participation_rejects_another_profile_on_the_same_frozen_input() -> 
     let facts = Facts::new()?;
     let directory = tempfile::tempdir()?;
     let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
-    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone()])?;
+    let (dataset, _objects) = facts.bind(&store, &writer, std::slice::from_ref(&slower))?;
     let profile = ProfileId::parse(&"b".repeat(64))?;
     check!(dataset.selected_profile_id() != Some(&profile));
     let view = VerifiedParticipationView::fixture(
@@ -76,7 +76,7 @@ fn selected_participation_checks_the_exact_rule_on_the_same_frozen_input() -> Te
     let facts = Facts::new()?;
     let directory = tempfile::tempdir()?;
     let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
-    let (dataset, _objects) = facts.bind(&store, &writer, &[slower.clone()])?;
+    let (dataset, _objects) = facts.bind(&store, &writer, std::slice::from_ref(&slower))?;
     for rule in [
         ContractRefV1::new(1, 2, &"a".repeat(64))?,
         ContractRefV1::new(1, 1, &"b".repeat(64))?,
@@ -108,7 +108,7 @@ fn selected_bound_inputs_cannot_use_historical_participation_admission() -> Test
     let facts = Facts::new()?;
     let directory = tempfile::tempdir()?;
     let (store, writer) = fixture.store_with_selected_replay(directory.path())?;
-    let (mut dataset, _objects) = facts.bind(&store, &writer, &[slower.clone()])?;
+    let (mut dataset, _objects) = facts.bind(&store, &writer, std::slice::from_ref(&slower))?;
     for revision in [18, 19, 20] {
         dataset.lineage.policy_revision = revision;
         check!(matches!(

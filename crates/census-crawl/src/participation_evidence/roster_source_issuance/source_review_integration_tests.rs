@@ -68,10 +68,10 @@ pub(super) fn prepare<'a>(
     let mut inspection =
         store.inspect_roster_source_issuance_v1(request, AttachmentReplayGrantV1::new())?;
     let (evidence, grant) = inspection.source_parts()?;
-    let proposal = actual_proposal(&packet, &school, &program, evidence, grant)?;
+    let proposal = actual_proposal_v3(&packet, &school, &program, evidence, grant)?;
     let parser = compiled_roster_parser_manifest()?;
     let contracts = compiled_roster_interpretation_contracts_v1();
-    let source = assess_retained_roster_source(
+    let source = assess_retained_roster_source_v3(
         evidence,
         parser.canonical_bytes(),
         &contracts,
@@ -121,7 +121,7 @@ fn controlled_review_applies_replays_and_reopens_without_authority_claim() -> Te
     let parser = compiled_roster_parser_manifest()?;
     let contracts = compiled_roster_interpretation_contracts_v1();
     let (evidence, grant) = prepared.source_parts()?;
-    let source = assess_retained_roster_source(
+    let source = assess_retained_roster_source_v3(
         evidence,
         parser.canonical_bytes(),
         &contracts,

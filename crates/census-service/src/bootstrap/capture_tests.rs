@@ -57,7 +57,7 @@ async fn current_capture_serve_preserves_identity_only_and_historical_roots() ->
     let identity = parent.path().join("identity");
     let historical = parent.path().join("historical");
     Store::create_public_identity_qualification_v3(&identity)?;
-    let original = Store::create_capture_qualification_v1(&historical)?;
+    let original = Store::create_historical_capture_v1(&historical)?;
     for path in [&identity, &historical] {
         let before = Store::format(path)?;
         let options = ServeOptions {
@@ -73,13 +73,20 @@ async fn current_capture_serve_preserves_identity_only_and_historical_roots() ->
         let BootstrapError::StoreOpen { source, .. } = error else {
             return Err("acquisition authority did not refuse at Store open".into());
         };
-        check!(matches!(
-            *source,
-            census_store::StoreError::Capture(census_store::CaptureError::CaptureCapabilityMissing)
-                | census_store::StoreError::PublicIdentity(
-                    census_store::PublicIdentityError::OptInRequired
-                )
-        ));
+        let census_store::StoreError::Capture(refusal) = *source else {
+            return Err("unqualified root did not refuse acquisition capability".into());
+        };
+        if path == &identity {
+            check!(matches!(
+                refusal,
+                census_store::CaptureError::CaptureCapabilityMissing
+            ));
+        } else {
+            check!(matches!(
+                refusal,
+                census_store::CaptureError::CaptureProtocolUnsupported
+            ));
+        }
         check!(eq; Store::format(path)?, before);
     }
     check!(eq; Store::capture_qualification_control_existing(&historical)?.show()?,

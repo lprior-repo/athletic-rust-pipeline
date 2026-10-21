@@ -51,9 +51,6 @@ pub(super) fn publish_workbook_offline(
         None => {
             workbook::build(store, options).context("publishing the managed workbook bundle")?
         }
-        Some((ExportJobRequest::LegacyV2, _)) => {
-            anyhow::bail!("offline cycle received an invalid legacy selection request")
-        }
     };
     println!("workbook\t{}", path.display());
     Ok(())

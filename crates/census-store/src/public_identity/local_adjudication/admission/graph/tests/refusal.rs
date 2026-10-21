@@ -22,25 +22,25 @@ fn graph_permits_refuse_unlisted_root_wrong_root_wrong_store_and_unready_parent(
         .as_str();
     let before = retained_state(&store)?;
     let other_before = retained_state(&other)?;
-    assert!(reservation.permit_for(&store, &"f".repeat(64)).is_err());
-    assert!(reservation.permit_for(&other, page_root).is_err());
-    assert!(reservation.permit_for(&store, block_root).is_err());
-    assert!(reservation
+    check!(reservation.permit_for(&store, &"f".repeat(64)).is_err());
+    check!(reservation.permit_for(&other, page_root).is_err());
+    check!(reservation.permit_for(&store, block_root).is_err());
+    check!(reservation
         .permit_for(&store, reservation.seal().root().as_str())
         .is_err());
     let page_permit = reservation.permit_for(&store, page_root)?;
-    assert!(
+    check!(
         matches!(bridge::Node::Block(&generation.block).stage(&store, &page_permit), Err(StoreError::Refused { detail }) if detail.contains("reserved context root changed"))
     );
-    assert!(bridge::Node::Page(&generation.page)
+    check!(bridge::Node::Page(&generation.page)
         .stage(&other, &page_permit)
         .is_err());
-    assert_eq!(retained_state(&store)?, before);
-    assert_eq!(retained_state(&other)?, other_before);
+    check!(eq;retained_state(&store)?, before);
+    check!(eq;retained_state(&other)?, other_before);
     bridge::Node::Page(&generation.page).stage(&store, &page_permit)?;
     let block_permit = reservation.permit_for(&store, block_root)?;
     bridge::Node::Block(&generation.block).stage(&store, &block_permit)?;
-    assert!(!reservation.is_complete(&store)?);
+    check!(!reservation.is_complete(&store)?);
     Ok(())
 }
 
@@ -51,7 +51,7 @@ fn missing_or_corrupted_ready_descendant_refuses_audit_without_repair_or_recharg
         let (generation, plan) = Generation::new(&store, 0)?;
         let reservation = reserve(&store, "damaged-ready", plan)?;
         generation.stage(&store, &reservation)?;
-        assert!(reservation.is_complete(&store)?);
+        check!(reservation.is_complete(&store)?);
         let root = reservation
             .descriptors
             .first()
@@ -71,13 +71,13 @@ fn missing_or_corrupted_ready_descendant_refuses_audit_without_repair_or_recharg
         }
         let damaged = retained_state(&store)?;
         let sequence = store.snapshot().sequence();
-        assert!(load(&store, "damaged-ready").is_err());
-        assert!(reservation.permit_for(&store, root).is_err());
-        assert!(generation.plan(&store).is_err());
-        assert!(reservation.is_complete(&store).is_err());
-        assert_eq!(header_bytes(&store)?, header);
-        assert_eq!(retained_state(&store)?, damaged);
-        assert_eq!(store.snapshot().sequence(), sequence);
+        check!(load(&store, "damaged-ready").is_err());
+        check!(reservation.permit_for(&store, root).is_err());
+        check!(generation.plan(&store).is_err());
+        check!(reservation.is_complete(&store).is_err());
+        check!(eq;header_bytes(&store)?, header);
+        check!(eq;retained_state(&store)?, damaged);
+        check!(eq;store.snapshot().sequence(), sequence);
     }
     Ok(())
 }
@@ -100,15 +100,15 @@ fn extra_partial_descendant_row_refuses_exact_inventory_audit_without_writes() -
         &crate::journal::object_chunk_key(root, 1)?,
         b"extra",
     )?;
-    assert!(row(&store, &crate::journal::object_manifest_key(root)?)?.is_none());
+    check!(row(&store, &crate::journal::object_manifest_key(root)?)?.is_none());
     let before = retained_state(&store)?;
     let sequence = store.snapshot().sequence();
-    assert!(load(&store, "extra-partial").is_err());
-    assert!(reservation.permit_for(&store, root).is_err());
-    assert!(generation.plan(&store).is_err());
-    assert_eq!(header_bytes(&store)?, header);
-    assert_eq!(retained_state(&store)?, before);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(load(&store, "extra-partial").is_err());
+    check!(reservation.permit_for(&store, root).is_err());
+    check!(generation.plan(&store).is_err());
+    check!(eq;header_bytes(&store)?, header);
+    check!(eq;retained_state(&store)?, before);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }
 
@@ -118,7 +118,7 @@ fn changed_capture_duplicate_operation_and_unenrolled_store_refuse_without_write
     let (generation, plan) = Generation::new(&store, 0)?;
     let reservation = reserve(&store, "fixed-operation", plan)?;
     let before = retained_state(&store)?;
-    assert!(reserve(&store, "fixed-operation", generation.plan(&store)?).is_err());
+    check!(reserve(&store, "fixed-operation", generation.plan(&store)?).is_err());
     let mut changed = generation.plan(&store)?;
     changed.capture = CaptureBindingV2::new(
         store.store_identity()?,
@@ -126,14 +126,14 @@ fn changed_capture_duplicate_operation_and_unenrolled_store_refuse_without_write
         RunBindingV2::Unbound,
         CapturePositionV2::new(10, 7, 12, [3, 4, 5, 6, 7, 8]),
     )?;
-    assert!(reservation.require_plan(&changed).is_err());
-    assert_eq!(retained_state(&store)?, before);
+    check!(reservation.require_plan(&changed).is_err());
+    check!(eq;retained_state(&store)?, before);
     let (_directory, unopened, _writer) =
         crate::public_identity_tests::support::unenrolled_fixture()?;
     let (_, plan) = Generation::new(&unopened, 0)?;
     let before = retained_state(&unopened)?;
-    assert!(reserve(&unopened, "not-enrolled", plan).is_err());
-    assert_eq!(retained_state(&unopened)?, before);
+    check!(reserve(&unopened, "not-enrolled", plan).is_err());
+    check!(eq;retained_state(&unopened)?, before);
     Ok(())
 }
 
@@ -152,17 +152,17 @@ fn ready_seal_cannot_hide_a_missing_descendant_manifest() -> TestResult {
         .as_str();
     let manifest = crate::journal::object_manifest_key(root)?;
     remove(&store, &[manifest])?;
-    assert!(row(
+    check!(row(
         &store,
         &crate::journal::object_manifest_key(reservation.seal().root().as_str())?
     )?
     .is_some());
     let before = retained_state(&store)?;
     let sequence = store.snapshot().sequence();
-    assert!(reservation.is_complete(&store).is_err());
-    assert!(load(&store, "sealed-missing-descendant").is_err());
-    assert_eq!(retained_state(&store)?, before);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(reservation.is_complete(&store).is_err());
+    check!(load(&store, "sealed-missing-descendant").is_err());
+    check!(eq;retained_state(&store)?, before);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }
 
@@ -174,22 +174,22 @@ fn zero_charge_ready_permit_cannot_recreate_a_manifest_removed_after_issuance() 
     generation.stage(&store, &original)?;
     let reused = reserve(&store, "ready-reused", generation.plan(&store)?)?;
     let leaf = reused.descriptors.first().ok_or("page")?;
-    assert_eq!((leaf.incremental.bytes, leaf.incremental.roots), (0, 0));
+    check!(eq;(leaf.incremental.bytes, leaf.incremental.roots), (0, 0));
     let root = leaf.object.root().as_str();
     let held_permit = reused.permit_for(&store, root)?;
     let header = header_bytes(&store)?;
     let manifest = crate::journal::object_manifest_key(root)?;
-    remove(&store, &[manifest.clone()])?;
+    remove(&store, std::slice::from_ref(&manifest))?;
     let before = retained_state(&store)?;
     let sequence = store.snapshot().sequence();
-    assert!(reused.permit_for(&store, root).is_err());
-    assert!(bridge::Node::Page(&generation.page)
+    check!(reused.permit_for(&store, root).is_err());
+    check!(bridge::Node::Page(&generation.page)
         .stage(&store, &held_permit)
         .is_err());
-    assert!(row(&store, &manifest)?.is_none());
-    assert_eq!(header_bytes(&store)?, header);
-    assert_eq!(retained_state(&store)?, before);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(row(&store, &manifest)?.is_none());
+    check!(eq;header_bytes(&store)?, header);
+    check!(eq;retained_state(&store)?, before);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }
 
@@ -204,7 +204,7 @@ fn seal_permit_refuses_missing_transitive_descendant_even_when_tables_are_ready(
         stage(&store, &reservation, bridge::Node::Table(table))?;
     }
     for table in generation.seal.tables() {
-        assert!(row(
+        check!(row(
             &store,
             &crate::journal::object_manifest_key(table.object().root().as_str())?
         )?
@@ -221,17 +221,17 @@ fn seal_permit_refuses_missing_transitive_descendant_even_when_tables_are_ready(
     let before = retained_state(&store)?;
     let header = header_bytes(&store)?;
     let sequence = store.snapshot().sequence();
-    assert!(reservation
+    check!(reservation
         .permit_for(&store, reservation.seal().root().as_str())
         .is_err());
-    assert!(row(
+    check!(row(
         &store,
         &crate::journal::object_manifest_key(reservation.seal().root().as_str())?
     )?
     .is_none());
-    assert_eq!(header_bytes(&store)?, header);
-    assert_eq!(retained_state(&store)?, before);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(eq;header_bytes(&store)?, header);
+    check!(eq;retained_state(&store)?, before);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }
 
@@ -251,13 +251,13 @@ fn ready_page_from_another_table_revision_cannot_enter_a_new_capture_plan() -> T
     let before = retained_state(&store)?;
     let charged = counters(&store)?;
     let sequence = store.snapshot().sequence();
-    assert!(builder
+    check!(builder
         .add(&store, bridge::Node::Page(&generation.page))
         .is_err());
-    assert!(builder.descriptors.is_empty());
-    assert_eq!(counters(&store)?, charged);
-    assert_eq!(retained_state(&store)?, before);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(builder.descriptors.is_empty());
+    check!(eq;counters(&store)?, charged);
+    check!(eq;retained_state(&store)?, before);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }
 
@@ -275,12 +275,12 @@ fn same_capture_block_cannot_relabel_a_verdict_page_as_an_athlete_page() -> Test
     let before = retained_state(&store)?;
     let charged = counters(&store)?;
     let sequence = store.snapshot().sequence();
-    assert!(builder
+    check!(builder
         .add(&store, bridge::Node::Block(&relabeled))
         .is_err());
-    assert_eq!(builder.descriptors.len(), 1);
-    assert_eq!(counters(&store)?, charged);
-    assert_eq!(retained_state(&store)?, before);
-    assert_eq!(store.snapshot().sequence(), sequence);
+    check!(eq;builder.descriptors.len(), 1);
+    check!(eq;counters(&store)?, charged);
+    check!(eq;retained_state(&store)?, before);
+    check!(eq;store.snapshot().sequence(), sequence);
     Ok(())
 }

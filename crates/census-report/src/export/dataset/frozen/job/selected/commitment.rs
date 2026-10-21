@@ -1,6 +1,5 @@
-use super::{
-    freshness::Freshness, invalid, io_error, ExportDataset, ExportJobRequest, ReportResult, Store,
-};
+use super::{freshness::Freshness, invalid, io_error, ExportDataset, ReportResult, Store};
+use crate::export::ExportJobRequest;
 use census_domain::model::ProfileSelectionV1;
 use serde::{Deserialize, Serialize};
 use std::io::Read;

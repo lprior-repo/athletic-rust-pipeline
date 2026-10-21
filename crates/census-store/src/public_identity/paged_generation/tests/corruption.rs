@@ -28,7 +28,7 @@ fn duplicate_unknown_fields_and_noncanonical_jsonl_refuse() -> TestResult {
         ),
     ] {
         let changed = replace(&bytes, old, new)?;
-        assert!(
+        check!(
             RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err(),
             "mutation {old}"
         );
@@ -42,9 +42,9 @@ fn duplicate_unknown_fields_and_noncanonical_jsonl_refuse() -> TestResult {
         3,
         u64::try_from(no_lf.len())?,
     )?;
-    assert!(RawPageV2::decode(no_lf, &reference, &binding).is_err());
+    check!(RawPageV2::decode(no_lf, &reference, &binding).is_err());
     let crlf = replace(&bytes, "\n", "\r\n")?;
-    assert!(RawPageV2::decode(&crlf, &object(&crlf)?, &binding).is_err());
+    check!(RawPageV2::decode(&crlf, &object(&crlf)?, &binding).is_err());
     Ok(())
 }
 
@@ -68,7 +68,7 @@ fn missing_extra_reordered_and_malformed_fragments_refuse() -> TestResult {
         vec![*header, *row, *first, *first, *last],
     ] {
         let changed = pieces.concat();
-        assert!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
+        check!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
     }
     for (old, new) in [
         ("\"parts\":2", "\"parts\":1"),
@@ -77,7 +77,7 @@ fn missing_extra_reordered_and_malformed_fragments_refuse() -> TestResult {
         ("\"bytes_base64\":\"", "\"bytes_base64\":\"A"),
     ] {
         let changed = replace(&bytes, old, new)?;
-        assert!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
+        check!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
     }
     Ok(())
 }
@@ -111,7 +111,7 @@ fn seal_rejects_duplicate_binding_policy_inventory_and_table_fields() -> TestRes
         ("/v2", "/v1"),
     ] {
         let changed = replace(&bytes, old, new)?;
-        assert!(
+        check!(
             RawGenerationSealV2::decode(&changed, &object(&changed)?, &binding).is_err(),
             "mutation {old}"
         );
@@ -122,7 +122,7 @@ fn seal_rejects_duplicate_binding_policy_inventory_and_table_fields() -> TestRes
         RunBindingV2::Unbound,
         CapturePositionV2::new(9, 7, 12, [3, 4, 5, 6, 7, 8]),
     )?;
-    assert!(RawGenerationSealV2::decode(&bytes, &object(&bytes)?, &changed_binding).is_err());
+    check!(RawGenerationSealV2::decode(&bytes, &object(&bytes)?, &changed_binding).is_err());
     Ok(())
 }
 
@@ -137,7 +137,7 @@ fn wrong_root_and_unexpected_v1_root_never_fall_back() -> TestResult {
         actual.records(),
         actual.physical_bytes(),
     )?;
-    assert!(RawPageV2::decode(&bytes, &forged, &binding).is_err());
+    check!(RawPageV2::decode(&bytes, &forged, &binding).is_err());
     let legacy = format!("{{\"key\":\"header\",\"at\":\"\",\"payload\":{{\"kind\":\"header\",\"value\":{{\"version\":1,\"authority_policy\":1,\"enrichment_policy\":1,\"lineage\":\"{}\",\"counts\":[0,0,0,0]}}}}}}\n", "1".repeat(64));
     let bytes = legacy.as_bytes();
     let identity = census_domain::model::StoreIdentity::parse(&"1".repeat(64))?;
@@ -146,9 +146,9 @@ fn wrong_root_and_unexpected_v1_root_never_fall_back() -> TestResult {
         DigestV2::of_bytes(bytes).as_str(),
         &identity,
     )?;
-    assert!(retained.athletes.is_empty());
-    assert!(RawPageV2::decode(bytes, &object(bytes)?, &binding).is_err());
-    assert!(RawGenerationSealV2::decode(bytes, &object(bytes)?, &capture()?).is_err());
+    check!(retained.athletes.is_empty());
+    check!(RawPageV2::decode(bytes, &object(bytes)?, &binding).is_err());
+    check!(RawGenerationSealV2::decode(bytes, &object(bytes)?, &capture()?).is_err());
     Ok(())
 }
 
@@ -168,7 +168,7 @@ fn declared_raw_bytes_refuse_before_fragment_decode_or_value_allocation() -> Tes
         &row,
     )?);
     changed.extend_from_slice(b"invalid fragment\n");
-    assert!(
+    check!(
         matches!(RawPageV2::decode(&changed, &object(&changed)?, &binding),
         Err(crate::StoreError::Refused { detail }) if detail == "raw public identity generation V2: raw page allocation exceeds declared byte total")
     );
@@ -183,9 +183,9 @@ fn historical_affected_v1_bytes_decode_only_in_the_original_branch() -> TestResu
         bytes,
         DigestV2::of_bytes(bytes).as_str(),
     )?;
-    assert!(RawGenerationSealV2::decode(bytes, &object(bytes)?, &capture()?).is_err());
+    check!(RawGenerationSealV2::decode(bytes, &object(bytes)?, &capture()?).is_err());
     let binding = capture()?.table_binding(AuthorityTableV2::Performances)?;
-    assert!(RawPageV2::decode(bytes, &object(bytes)?, &binding).is_err());
+    check!(RawPageV2::decode(bytes, &object(bytes)?, &binding).is_err());
     Ok(())
 }
 
@@ -208,7 +208,7 @@ fn duplicate_nested_bound_run_fields_refuse_without_value_roundtrip() -> TestRes
         RunBindingV2::Bound(manifest),
         CapturePositionV2::new(9, 7, 12, [3, 4, 5, 6, 7, 8]),
     )?;
-    assert!(RawGenerationSealV2::new(bound.clone(), empty.tables().clone()).is_err());
+    check!(RawGenerationSealV2::new(bound.clone(), empty.tables().clone()).is_err());
     let tables = AuthorityTableV2::ALL
         .into_iter()
         .map(|table| {
@@ -226,7 +226,7 @@ fn duplicate_nested_bound_run_fields_refuse_without_value_roundtrip() -> TestRes
         ("\"revision\":1", "\"revision\":1,\"revision\":1"),
     ] {
         let changed = replace(&bytes, old, new)?;
-        assert!(RawGenerationSealV2::decode(&changed, &object(&changed)?, &bound).is_err());
+        check!(RawGenerationSealV2::decode(&changed, &object(&changed)?, &bound).is_err());
     }
     Ok(())
 }
@@ -242,7 +242,7 @@ fn duplicate_payload_value_and_raw_part_fields_refuse() -> TestResult {
         ("\"value_sha256\":\"", "\"value_sha256\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value_sha256\":\""),
     ] {
         let changed = replace(&bytes, old, new)?;
-        assert!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
+        check!(RawPageV2::decode(&changed, &object(&changed)?, &binding).is_err());
     }
     Ok(())
 }

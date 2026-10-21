@@ -1,6 +1,6 @@
 use super::*;
 use crate::bests::{self, SharedSelection};
-use crate::export::{freeze_v2, to_export_dataset, DatasetLineage, ExportJobRequest, FrozenRoot};
+use crate::export::{DatasetLineage, ExportJobRequest};
 use crate::report::{coverage_report, Scope};
 use calamine::Data;
 use census_domain::model::{GradYear, SchoolYear};
@@ -29,7 +29,7 @@ struct Witness {
 
 impl Witness {
     fn capture(captured: &Captured) -> TestResult<Self> {
-        readback::assert_baseline(&captured.dataset, &captured.workbook)?;
+        readback::assert_baseline(&captured.dataset)?;
         let verified = verify_published(&captured.workbook)?;
         check!(eq; verified.workbook.mapped_athletes, 1);
         let selection = readback::selection(&captured.workbook)?;
@@ -90,36 +90,45 @@ fn selected_bests(dataset: &ExportDataset) -> crate::report::ReportResult<Vec<Sh
     )
 }
 
-#[test]
-fn published_coverage_readback_uses_captured_evidence_after_live_mutation_and_reopen() -> TestResult
-{
-    let captured = Captured::create()?;
+#[tokio::test]
+async fn published_coverage_readback_uses_captured_evidence_after_live_mutation_and_reopen(
+) -> TestResult {
+    let captured = Captured::create().await?;
     let witness = Witness::capture(&captured)?;
     fixture::mutate(&captured.store, Mutation::Both)?;
-    readback::assert_live_changed(&captured.store, Mutation::Both)?;
+    readback::assert_live_changed(&captured.store, &captured.selection, Mutation::Both)?;
     witness.dataset_unchanged(&captured.dataset)?;
     let Captured {
         directory,
         store,
+        selection,
         dataset,
-        frozen,
         workbook,
         options,
         archive,
+        digest,
     } = captured;
     let root = store.root().to_path_buf();
     store.flush()?;
     drop(dataset);
     drop(store);
-    let reopened = Store::open(&root)?;
-    readback::assert_live_changed(&reopened, Mutation::Both)?;
-    let archived = ExportDataset::reopen_frozen(&archive)?;
+    let (reopened, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+    drop(writer);
+    readback::assert_live_changed(&reopened, &selection, Mutation::Both)?;
+    let archived = ExportDataset::reopen_frozen_with_digest(&archive, &digest)?;
     witness.dataset_unchanged(&archived)?;
-    let materialized = to_export_dataset(&frozen, &reopened)?;
-    witness.dataset_unchanged(&materialized)?;
-    let reused = freeze_v2(&reopened, JOB)?;
-    assert_same_root(&frozen, &reused)?;
-    witness.dataset_unchanged(&to_export_dataset(&reused, &reopened)?)?;
+    check!(matches!(
+        ExportDataset::for_job_request(
+            &reopened,
+            JOB,
+            &ExportJobRequest::SelectedPublicationV1 {
+                selection: selection.clone(),
+            }
+        ),
+        Err(ReportError::Invariant { ref detail }) if detail.contains("stale or foreign")
+    ));
+    let replayed = ExportDataset::reopen_frozen_with_digest(&archive, &digest)?;
+    witness.dataset_unchanged(&replayed)?;
     witness.publication_unchanged(&reopened, &workbook, &archive)?;
     crate::workbook::verify::verify_frozen(&workbook, &archived, &options)?;
     let opened = open_publication(
@@ -134,29 +143,28 @@ fn published_coverage_readback_uses_captured_evidence_after_live_mutation_and_re
     Ok(())
 }
 
-fn assert_same_root(before: &FrozenRoot, after: &FrozenRoot) -> TestResult {
-    check!(eq; after.manifest_digest(), before.manifest_digest());
-    check!(eq; after.attempt(), before.attempt());
-    check!(eq; after.manifest(), before.manifest());
-    Ok(())
+#[tokio::test]
+async fn coverage_only_change_refuses_stale_publication_and_retains_archives() -> TestResult {
+    stale_input_refused(Mutation::CoverageOnly).await
 }
 
-#[test]
-fn coverage_only_change_refuses_stale_publication_and_retains_archives() -> TestResult {
-    stale_input_refused(Mutation::CoverageOnly)
+#[tokio::test]
+async fn coach_lanes_only_change_refuses_stale_publication_and_retains_archives() -> TestResult {
+    stale_input_refused(Mutation::CoachLanesOnly).await
 }
 
-#[test]
-fn coach_lanes_only_change_refuses_stale_publication_and_retains_archives() -> TestResult {
-    stale_input_refused(Mutation::CoachLanesOnly)
-}
-
-fn stale_input_refused(mutation: Mutation) -> TestResult {
-    let captured = Captured::create()?;
+async fn stale_input_refused(mutation: Mutation) -> TestResult {
+    let captured = Captured::create().await?;
     let witness = Witness::capture(&captured)?;
     fixture::mutate(&captured.store, mutation)?;
-    readback::assert_live_changed(&captured.store, mutation)?;
-    let live = ExportDataset::load(&captured.store)?;
+    readback::assert_live_changed(&captured.store, &captured.selection, mutation)?;
+    let live_objects = tempfile::tempdir()?;
+    let live = ExportDataset::from_selected_snapshot(
+        &captured.store,
+        &captured.store.snapshot(),
+        &captured.selection,
+        live_objects.path(),
+    )?;
     check!(ne; live.lineage.source_digest, captured.dataset.lineage.source_digest);
     check!(ne; live.lineage.input_digest, captured.dataset.lineage.input_digest);
     match mutation {
@@ -173,7 +181,13 @@ fn stale_input_refused(mutation: Mutation) -> TestResult {
         Err(ReportError::Invariant { ref detail }) if detail.contains("stale or foreign")
     ));
     check!(matches!(
-        ExportDataset::for_job_request(&captured.store, JOB, &ExportJobRequest::LegacyV2),
+        ExportDataset::for_job_request(
+            &captured.store,
+            JOB,
+            &ExportJobRequest::SelectedPublicationV1 {
+                selection: captured.selection.clone(),
+            }
+        ),
         Err(ReportError::Invariant { ref detail }) if detail.contains("stale or foreign")
     ));
     let censuses =

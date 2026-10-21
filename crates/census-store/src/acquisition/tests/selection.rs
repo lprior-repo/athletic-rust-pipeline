@@ -71,22 +71,7 @@ fn selection_shared_root_budget_never_resets_between_targets() -> TestResult {
 }
 
 #[test]
-fn v1_selector_refuses_before_mutation_and_partial_v2_registration_refuses() -> TestResult {
-    let (_dir, store, writer, owner) = fixture()?;
-    let before = rows(&store)?;
-    check!(matches!(
-        store.read_existing_recovery_target(
-            &owner,
-            &work(&owner)?,
-            &mut AcquisitionReadBudget::for_selection()
-        ),
-        Err(StoreError::Capture(
-            CaptureError::CaptureProtocolUnsupported
-        ))
-    ));
-    check!(eq; rows(&store)?, before);
-    drop(writer);
-    drop(store);
+fn partial_v2_registration_refuses_before_any_mutation() -> TestResult {
     let (_dir, store, writer, owner) = fixture_for(CaptureProtocolVersion::V2)?;
     let exact = work(&owner)?;
     drop(registered(&store, &writer, &owner)?);

@@ -2,7 +2,7 @@ use super::fixtures::{read_back, TestResult};
 use super::inventory::StreamInventory;
 use super::stream::StreamKind;
 use super::{freeze_v2, objects, to_export_dataset, FrozenRoot, INPUT_TABLES};
-use crate::export::{ExportDataset, ExportJobRequest};
+use crate::export::ExportDataset;
 use census_domain::model::{serialized_bytes, serialized_digest, CoachLaneObligation, CoverageRow};
 use census_store::{Entity, Store, Table};
 
@@ -76,20 +76,19 @@ fn round_trip(shape: EvidenceShape) -> TestResult {
     check_manifest(&root, store, &chunked)?;
     check!(eq; serialized_bytes(&chunked)?, serialized_bytes(&live)?);
     check!(eq; interpretation(&chunked)?, interpretation(&live)?);
-    let archived = ExportDataset::for_job_request(
-        store,
-        "frozen-coverage:round-trip",
-        &ExportJobRequest::LegacyV2,
-    )?;
-
+    let lineage = chunked.lineage.clone();
+    let encoded = serialized_bytes(&chunked)?;
+    let interpreted = interpretation(&chunked)?;
     let archive = evidence::job_archive(store, "frozen-coverage:round-trip")?;
+    std::fs::create_dir_all(archive.parent().ok_or("export inputs parent")?)?;
+    chunked.save_frozen(&archive)?;
     let reopened = ExportDataset::reopen_frozen(&archive)?;
-    [archived, reopened]
+    [chunked, reopened]
         .iter()
         .try_for_each(|dataset| -> TestResult {
-            check!(eq; dataset.lineage, chunked.lineage);
-            check!(eq; serialized_bytes(dataset)?, serialized_bytes(&chunked)?);
-            check!(eq; interpretation(dataset)?, interpretation(&chunked)?);
+            check!(eq; dataset.lineage, lineage);
+            check!(eq; serialized_bytes(dataset)?, encoded);
+            check!(eq; interpretation(dataset)?, interpreted);
             evidence::check_shape(dataset, shape)
         })?;
     Ok(())

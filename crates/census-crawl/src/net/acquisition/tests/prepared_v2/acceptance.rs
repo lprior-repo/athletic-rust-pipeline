@@ -8,7 +8,7 @@ use std::rc::Rc;
 async fn fixed_v2_same_content_successor_keeps_new_occurrence_and_original_loss_receipt(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let original = prepare(&fixture, BODY, Encoding::Canonical)?;
     let mut budget = original.budget()?;
     let first = fixture.fetcher.recover_prepared_target(
@@ -107,7 +107,7 @@ async fn fixed_v2_same_content_successor_keeps_new_occurrence_and_original_loss_
 async fn admitted_canonical_publication_runs_once_per_committed_loan_and_denies_second_issue(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let mut budget = prepared.budget()?;
@@ -167,7 +167,7 @@ async fn admitted_canonical_publication_runs_once_per_committed_loan_and_denies_
 async fn actual_held_restoration_preserves_occupied_corrupt_metadata_and_store_refuses_commit(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     let (body, metadata) = publish(&fixture, &prepared)?;
     std::fs::remove_file(&body)?;
@@ -219,7 +219,7 @@ async fn actual_held_restoration_preserves_occupied_corrupt_metadata_and_store_r
 #[tokio::test]
 async fn retained_consumer_allocation_refusal_preserves_committed_parts() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let mut budget = prepared.budget()?;

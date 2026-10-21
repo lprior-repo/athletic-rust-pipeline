@@ -17,8 +17,8 @@ struct Fixture {
 
 fn fixture() -> TestResult<Fixture> {
     let root = tempfile::tempdir()?;
-    Store::create_capture_qualification_v1(root.path())?;
-    let (store, writer) = Store::open_capture_qualification_v1(root.path())?.into_parts();
+    Store::create_capture_qualification(root.path())?;
+    let (store, writer) = Store::open_current_qualification_v3(root.path())?.into_parts();
     let request = JurisdictionRequest {
         jurisdiction: UsJurisdiction::Michigan,
         season: SchoolYear::new(2026).ok_or("season")?,

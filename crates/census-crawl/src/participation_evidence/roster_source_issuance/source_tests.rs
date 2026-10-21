@@ -106,7 +106,7 @@ fn missing_current_statement_refuses_program_assessment() -> TestResult {
     let body = ROSTER.replace("<h4>Current Roster</h4>", "<h4>Past Roster</h4>");
     let packet = fixture(&body)?;
     let proposal = decode(&proposal(&packet, &body)?)?;
-    check!(scope::scope(
+    check!(scope::scope_row_local(
         &packet.read()?,
         &proposal,
         &mut AttachmentReplayGrantV1::new()

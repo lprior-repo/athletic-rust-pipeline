@@ -98,7 +98,7 @@ fn publish(fixture: &Fixture, dataset: &ExportDataset, root: &Path) -> TestResul
     )?)
 }
 
-mod controlled_three_marks;
+pub(crate) mod controlled_three_marks;
 mod eligible;
 
 mod mixed;

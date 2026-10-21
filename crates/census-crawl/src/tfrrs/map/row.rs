@@ -38,7 +38,7 @@ fn published_grade(
     }
 }
 
-pub(super) fn mark_with_adjustment(
+pub(crate) fn mark_with_adjustment(
     mark: &ParsedMark,
     conv_metres: Option<f64>,
     conv_note: Option<&str>,

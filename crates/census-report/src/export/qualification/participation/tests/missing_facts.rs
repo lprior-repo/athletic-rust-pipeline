@@ -46,13 +46,13 @@ async fn unresolved_v4_result_preserves_missing_facts_and_refuses_foreign_bindin
         },
     };
     let (outcome, reasons) = unresolved::assess(query, &fixture.performance)?;
-    assert_eq!(outcome, CandidateOutcome::Unresolved);
+    check!(eq; outcome, CandidateOutcome::Unresolved);
     for reason in [
         ParticipationReason::ResultOwnershipUnresolved,
         ParticipationReason::CohortUnresolved,
         ParticipationReason::MissingPerformanceDate,
     ] {
-        assert!(reasons.contains(reason), "{reason:?}");
+        check!(reasons.contains(reason), "{reason:?}");
     }
     let malformed_rule = census_domain::model::ContractRefV1::new(1, 4, &"f".repeat(64))?;
     let foreign_profile = census_domain::model::ProfileId::parse(&"e".repeat(64))?;
@@ -67,7 +67,7 @@ async fn unresolved_v4_result_preserves_missing_facts_and_refuses_foreign_bindin
         },
     ] {
         let invalid = CandidateQuery { binding, ..query };
-        assert!(matches!(
+        check!(matches!(
             unresolved::assess(invalid, &fixture.performance),
             Err(census_store::StoreError::Refused { .. }),
         ));
@@ -108,11 +108,11 @@ async fn selected_v4_capture_retains_an_unowned_result_as_unresolved() -> TestRe
         .verified_participation()?
         .assessment(&unowned.id)
         .ok_or("unowned result must retain a participation assessment")?;
-    assert_eq!(
+    check!(eq;
         assessment.outcome(),
         crate::export::qualification::ParticipationOutcome::Unresolved,
     );
-    assert!(assessment
+    check!(assessment
         .reasons()
         .contains(ParticipationReason::ResultOwnershipUnresolved));
     Ok(())

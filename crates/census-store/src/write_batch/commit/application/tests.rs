@@ -29,17 +29,17 @@ fn sampled_commit_instant_binds_journal_and_receipt_across_utc_midnight() -> Tes
                 Some(sampled),
             )?
             .ok_or("missing sampled receipt")?;
-        assert!(application.written());
-        assert_eq!(application.receipt().at, expected_day);
-        assert_eq!(application.receipt().appended, 0);
-        assert!(!application.receipt().credited);
-        assert_eq!(store.receipt(key)?.as_ref(), Some(application.receipt()));
+        check!(application.written());
+        check!(eq;application.receipt().at, expected_day);
+        check!(eq;application.receipt().appended, 0);
+        check!(!application.receipt().credited);
+        check!(eq;store.receipt(key)?.as_ref(), Some(application.receipt()));
         let snapshot = store.snapshot_locked();
         let held = snapshot
             .journal_entry_raw_bounded("sampled_time", key, crate::JournalReadBudget::new(4096)?)?
             .ok_or("missing sampled envelope")?;
-        assert_eq!(held.at(), instant);
-        assert_eq!(
+        check!(eq;held.at(), instant);
+        check!(eq;
             serde_json::from_str::<serde_json::Value>(held.payload().get())?,
             payload
         );

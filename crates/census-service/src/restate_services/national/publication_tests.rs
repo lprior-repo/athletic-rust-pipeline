@@ -10,12 +10,12 @@ mod cohort_replay;
 use assertion::{assert_published, publication_services};
 mod binding;
 pub(crate) mod codec;
-pub(super) mod fixtures;
+pub(crate) mod fixtures;
 mod generation;
 pub(super) mod journal;
 mod restricted;
 
-mod native_restate;
+pub(crate) mod native_restate;
 mod resume;
 mod seal_budget;
 mod transport;

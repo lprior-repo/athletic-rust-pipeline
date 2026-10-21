@@ -12,8 +12,7 @@ use census_domain::model::{
 };
 use census_store::{Store, Table};
 
-#[path = "../common/capture_cache.rs"]
-mod capture_cache;
+use crate::capture_cache;
 
 use super::fixture_builders;
 use super::ohsaa_wiaa_builders;

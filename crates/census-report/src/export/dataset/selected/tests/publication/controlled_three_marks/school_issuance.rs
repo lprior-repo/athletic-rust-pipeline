@@ -54,8 +54,7 @@ pub(in super::super) fn enroll(
 
 pub(super) fn issue(installed: &InstalledSource) -> TestResult<Vec<Receipt>> {
     let mut receipts = Vec::new();
-    let mut position = 0usize;
-    for locator in &installed.row_locators {
+    for (position, locator) in installed.row_locators.iter().enumerate() {
         let proposal = propose_for(installed, locator)?;
         if proposal.claim().target.school != installed.school {
             return Err("controlled school differs from installed school".into());
@@ -71,7 +70,6 @@ pub(super) fn issue(installed: &InstalledSource) -> TestResult<Vec<Receipt>> {
             operation,
             "Explicit protected original unique school-cell correspondence review exact performance day only",
         )?);
-        position += 1;
     }
     if receipts.len() != 3 {
         return Err("controlled issuance requires three receipts".into());
@@ -159,11 +157,10 @@ pub(in super::super) fn scope_for(
     let sport = document
         .parsed_page()
         .sport
-        .clone()
         .ok_or(census_store::StoreError::Refused {
             detail: "controlled sport absent".into(),
         })?;
-    let category = row.event().gender.clone();
+    let category = row.event().gender;
     if category == Gender::Unknown {
         return Err(census_store::StoreError::Refused {
             detail: "controlled category unknown".into(),

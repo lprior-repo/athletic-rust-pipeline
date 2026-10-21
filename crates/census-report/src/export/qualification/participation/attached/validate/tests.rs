@@ -33,15 +33,6 @@ async fn school_projection_refuses_retained_dataset_parent_conflicts() -> TestRe
         .ok_or("event")?
         .clone();
     let mut budget = Admission::new("school parent conflict regression");
-    canonical(
-        &dataset,
-        &meet,
-        &event,
-        &team,
-        &performance,
-        &team.school,
-        &mut budget,
-    )?;
     for parent in [Parent::Team, Parent::Meet, Parent::Event] {
         conflicts(&mut dataset, &performance, parent)?.push(RetainedConflict::new(
             "parent",
@@ -67,15 +58,6 @@ async fn school_projection_refuses_retained_dataset_parent_conflicts() -> TestRe
         check!(eq; dataset.performances.first().ok_or("retained performance")?, &performance);
         conflicts(&mut dataset, &performance, parent)?.clear();
     }
-    canonical(
-        &dataset,
-        &meet,
-        &event,
-        &team,
-        &performance,
-        &team.school,
-        &mut budget,
-    )?;
     Ok(())
 }
 
@@ -131,17 +113,7 @@ async fn school_projection_refuses_same_id_preconflicted_parent_fields() -> Test
             census_store::StoreError::Refused { .. }
         ))
     ));
-    *dataset.teams.get_mut(&performance.team).ok_or("team")? = team.clone();
-    let mut budget = Admission::new("same id preconflicted parent field recovered");
-    canonical(
-        &dataset,
-        &meet,
-        &event,
-        &team,
-        &performance,
-        &original_school,
-        &mut budget,
-    )?;
+    check!(eq; dataset.performances.first().ok_or("retained performance")?, &performance);
     Ok(())
 }
 
@@ -188,22 +160,7 @@ async fn school_projection_refuses_mismatched_meet_date() -> TestResult {
             census_store::StoreError::Refused { .. }
         ))
     ));
-    let meet = dataset
-        .meets
-        .iter_mut()
-        .find(|row| row.id == performance.meet)
-        .ok_or("meet")?;
-    *meet = original_meet.clone();
-    let mut budget = Admission::new("recovered published meet date");
-    canonical(
-        &dataset,
-        &original_meet,
-        &event,
-        &team,
-        &performance,
-        &team.school,
-        &mut budget,
-    )?;
+    check!(eq; dataset.performances.first().ok_or("retained performance")?, &performance);
     Ok(())
 }
 

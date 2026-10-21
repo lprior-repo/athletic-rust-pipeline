@@ -8,8 +8,8 @@ use serde::Deserialize;
 use serde_json::value::RawValue;
 use sha2::{Digest, Sha256};
 
-const MAX_BODY_BYTES: usize = 512 * 1024;
-const MAX_BASE64_BYTES: usize = 699_052;
+const MAX_BODY_BYTES: usize = 2 * 1024 * 1024;
+const MAX_BASE64_BYTES: usize = 2_796_204;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -133,20 +133,20 @@ mod tests {
         let v2 = participation_policy_v2()?;
         let v3 = participation_policy_v3()?;
         let v4 = participation_policy_v4()?;
-        assert!(current_policy(&v2).is_err());
-        assert!(current_policy(&v3).is_err());
-        assert!(current_policy(&v4).is_ok());
-        assert!(replay_policy(&v4).is_ok());
-        assert!(replay_policy(&v2).is_ok());
-        assert!(replay_policy(&v3).is_ok());
+        check!(current_policy(&v2).is_err());
+        check!(current_policy(&v3).is_err());
+        check!(current_policy(&v4).is_ok());
+        check!(replay_policy(&v4).is_ok());
+        check!(replay_policy(&v2).is_ok());
+        check!(replay_policy(&v3).is_ok());
         for (revision, digest) in [
             (3, PARTICIPATION_POLICY_V2_SHA256),
             (2, PARTICIPATION_POLICY_V3_SHA256),
             (4, PARTICIPATION_POLICY_V3_SHA256),
         ] {
             let unknown = ContractRefV1::new(1, revision, digest)?;
-            assert!(current_policy(&unknown).is_err());
-            assert!(replay_policy(&unknown).is_err());
+            check!(current_policy(&unknown).is_err());
+            check!(replay_policy(&unknown).is_err());
         }
         Ok(())
     }

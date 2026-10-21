@@ -17,7 +17,7 @@ use support::*;
 #[tokio::test]
 async fn fixed_v2_exact_recovery_moves_the_genuine_body_into_real_parser_once() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     publish(&fixture, &prepared)?;
     let pointer_expected = BODY;
@@ -79,7 +79,7 @@ async fn fixed_v2_exact_recovery_moves_the_genuine_body_into_real_parser_once() 
 #[tokio::test]
 async fn fixed_v2_restoration_uses_exact_metadata_and_store_final_verification() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Compact)?;
     let (body, metadata) = publish(&fixture, &prepared)?;
     std::fs::remove_file(&metadata)?;
@@ -111,7 +111,7 @@ async fn fixed_v2_restoration_uses_exact_metadata_and_store_final_verification()
 #[tokio::test]
 async fn no_op_restoration_cannot_finish_and_failed_candidate_cannot_close() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     let (_, metadata) = publish(&fixture, &prepared)?;
     std::fs::remove_file(metadata)?;
@@ -129,7 +129,7 @@ async fn no_op_restoration_cannot_finish_and_failed_candidate_cannot_close() -> 
     }
     check!(session.verify_restored().is_err());
     check!(session.finish().is_err());
-    let fixture = Fixture::new_v2(&listener)?;
+    let fixture = Fixture::new(&listener)?;
     let prepared = prepare(&fixture, BODY, Encoding::Canonical)?;
     let candidate = fixture.root.path().join("wrong.body");
     std::fs::write(&candidate, b"wrong")?;

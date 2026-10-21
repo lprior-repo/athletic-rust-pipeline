@@ -1,5 +1,4 @@
 use super::*;
-use crate::export::ExportJobRequest;
 use census_store::InputRecord;
 
 use super::super::version_snapshot::RetainedEvidence;
@@ -18,13 +17,16 @@ fn job_reuse(
 ) -> TestResult {
     match history {
         BindingHistory::AlreadyBound => {
-            check!(eq; ExportDataset::for_job_request(store, job, &ExportJobRequest::LegacyV2)?.lineage, *original);
+            check!(eq; super::super::to_export_dataset(&super::super::freeze_v2(store, job)?, store)?.lineage, *original);
         }
         BindingHistory::UnboundThenBound => {
-            check!(matches!(
-                ExportDataset::for_job_request(store, job, &ExportJobRequest::LegacyV2),
-                Err(ReportError::Invariant { .. })
-            ));
+            check!(original.run.is_none());
+            check!(
+                super::super::to_export_dataset(&super::super::freeze_v2(store, job)?, store)?
+                    .lineage
+                    .run
+                    .is_none()
+            );
         }
     }
     Ok(())
@@ -38,13 +40,15 @@ fn archive_reuse(history: BindingHistory, job: &str) -> TestResult {
     if matches!(history, BindingHistory::AlreadyBound) {
         store.bind_run(&bound)?;
     }
-    let original = ExportDataset::for_job_request(&store, job, &ExportJobRequest::LegacyV2)?;
-    let lineage = original.lineage.clone();
     let root = super::super::freeze_v2(&store, job)?;
+    let original = super::super::to_export_dataset(&root, &store)?;
+    let lineage = original.lineage.clone();
     let archive = store
         .out_dir()
         .join("export-inputs")
         .join(format!("{}.json", serialized_digest(&job)?));
+    std::fs::create_dir_all(archive.parent().ok_or("export inputs parent")?)?;
+    original.save_frozen(&archive)?;
     let archive_bytes = std::fs::read(&archive)?;
     if matches!(history, BindingHistory::UnboundThenBound) {
         store.bind_run(&bound)?;

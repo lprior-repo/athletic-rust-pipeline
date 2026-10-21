@@ -12,8 +12,7 @@ use crate::common;
 
 #[path = "replay/assertions.rs"]
 mod assertions;
-#[path = "../../common/capture_cache.rs"]
-mod cache;
+use crate::capture_cache as cache;
 
 pub(crate) use census_crawl::milesplit::troy_fixture::BODY as OWNED;
 pub(crate) const ACQUIRED_AT: &str = "2026-10-01T23:44:16Z";

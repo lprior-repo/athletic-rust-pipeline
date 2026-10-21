@@ -15,8 +15,7 @@ use std::path::Path;
 
 #[path = "../common/capture_cache.rs"]
 mod capture_cache;
-#[path = "../common/durable_capture.rs"]
-mod durable_capture;
+use super::durable_capture;
 
 const MEET: &str =
     include_str!("../../../census-crawl/tests/fixtures/athleticnet/meet_634313_meetdata.json");

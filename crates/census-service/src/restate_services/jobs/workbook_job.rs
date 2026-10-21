@@ -11,12 +11,8 @@ pub(in super::super) fn build(
     job: &str,
     export_job: &census_report::export::ExportJobRequest,
 ) -> ReportResult<WorkbookReply> {
-    let selected_options = match export_job {
-        census_report::export::ExportJobRequest::LegacyV2 => options.clone(),
-        census_report::export::ExportJobRequest::SelectedPublicationV1 { selection } => {
-            workbook::options_for_selected_request(store, selection, options)?
-        }
-    };
+    let census_report::export::ExportJobRequest::SelectedPublicationV1 { selection } = export_job;
+    let selected_options = workbook::options_for_selected_request(store, selection, options)?;
     let dataset = ExportDataset::for_job_request(store, job, export_job)?;
     let censuses =
         workbook::Censuses::of(&dataset, &store.out_dir(), &selected_options.jurisdictions)?;

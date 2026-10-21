@@ -74,9 +74,9 @@ fn durable_capture_context() -> Result<(
     census_crawl::ResultsCaptureContext,
 )> {
     let root = tempfile::tempdir().context("opening the durable capture scratch dir")?;
-    Store::create_capture_qualification_v2(root.path().join("store"))
+    Store::create_capture_qualification(root.path().join("store"))
         .context("creating the durable capture store")?;
-    let (store, writer) = Store::open_capture_qualification_v2(root.path().join("store"))
+    let (store, writer) = Store::open_current_qualification_v3(root.path().join("store"))
         .context("opening the durable capture store")?
         .into_parts();
     store

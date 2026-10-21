@@ -14,12 +14,12 @@ fn capacity_equality_accepts_and_one_unit_over_refuses() {
 #[test]
 fn explicit_enrollment_is_once_only_and_missing_header_is_not_empty() -> TestResult {
     let (_directory, store, _writer) = fixture()?;
-    assert!(load(&store, &store.store_identity()?, "missing").is_err());
+    check!(load(&store, &store.store_identity()?, "missing").is_err());
     enroll_header_for_test(&store)?;
-    assert!(load(&store, &store.store_identity()?, "missing")?.is_none());
+    check!(load(&store, &store.store_identity()?, "missing")?.is_none());
     let sequence = store.snapshot().sequence();
-    assert!(enroll_header_for_test(&store).is_err());
-    assert_eq!(sequence, store.snapshot().sequence());
+    check!(enroll_header_for_test(&store).is_err());
+    check!(eq;sequence, store.snapshot().sequence());
     Ok(())
 }
 
@@ -34,9 +34,9 @@ fn corrupt_header_counter_refuses_without_reset() -> TestResult {
     batch.insert(&store.journal, HEADER, codec::encode(&altered, 4096)?);
     batch.durability(Some(PersistMode::SyncData)).commit()?;
     let sequence = store.snapshot().sequence();
-    assert!(load(&store, &identity, "missing").is_err());
-    assert!(enroll_header_for_test(&store).is_err());
-    assert_eq!(sequence, store.snapshot().sequence());
+    check!(load(&store, &identity, "missing").is_err());
+    check!(enroll_header_for_test(&store).is_err());
+    check!(eq;sequence, store.snapshot().sequence());
     Ok(())
 }
 
@@ -48,8 +48,8 @@ fn enrollment_refuses_an_orphan_physical_row_without_writes() -> TestResult {
     batch.insert(&store.journal, key, b"orphan");
     batch.durability(Some(PersistMode::SyncData)).commit()?;
     let sequence = store.snapshot().sequence();
-    assert!(enroll_header_for_test(&store).is_err());
-    assert_eq!(sequence, store.snapshot().sequence());
+    check!(enroll_header_for_test(&store).is_err());
+    check!(eq;sequence, store.snapshot().sequence());
     Ok(())
 }
 
@@ -65,9 +65,9 @@ fn prior_admission_wire_refuses_without_migration_or_reset() -> TestResult {
     batch.insert(&store.journal, HEADER, codec::encode(&prior, 4096)?);
     batch.durability(Some(PersistMode::SyncData)).commit()?;
     let sequence = store.snapshot().sequence();
-    assert!(load(&store, &identity, "prior-version").is_err());
-    assert!(enroll_header_for_test(&store).is_err());
-    assert_eq!(sequence, store.snapshot().sequence());
+    check!(load(&store, &identity, "prior-version").is_err());
+    check!(enroll_header_for_test(&store).is_err());
+    check!(eq;sequence, store.snapshot().sequence());
     Ok(())
 }
 
@@ -81,28 +81,28 @@ fn partial_graph_enrollment_retains_exact_header_and_retries_same_store() -> Tes
     let athlete = crate::public_identity_tests::support::subject("enrollment", "9191")?;
     store.append(crate::Table::Athletes, &athlete)?;
     let before = crate::public_identity_tests::support::retained_state(&store)?;
-    assert!(matches!(
+    check!(matches!(
         writer.enroll_graph_admission_v1(&store, stale.revision()),
         Err(StoreError::RevisionMoved { .. })
     ));
-    assert_eq!(
+    check!(eq;
         crate::public_identity_tests::support::retained_state(&store)?,
         before
     );
-    assert_eq!(
+    check!(eq;
         store.snapshot().public_identity_input_revisions_v2()?,
         crate::PublicIdentityInputRevisionsV2::Disabled
     );
     writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
-    assert_eq!(store.store_identity()?, identity);
-    assert_eq!(codec::encode(&header(&store, &identity)?, 4096)?, retained);
-    assert!(matches!(
+    check!(eq;store.store_identity()?, identity);
+    check!(eq;codec::encode(&header(&store, &identity)?, 4096)?, retained);
+    check!(matches!(
         store.snapshot().public_identity_input_revisions_v2()?,
         crate::PublicIdentityInputRevisionsV2::Enabled(_)
     ));
     let completed = crate::public_identity_tests::support::retained_state(&store)?;
     writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
-    assert_eq!(
+    check!(eq;
         crate::public_identity_tests::support::retained_state(&store)?,
         completed
     );

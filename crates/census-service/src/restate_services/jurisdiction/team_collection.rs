@@ -14,23 +14,13 @@ pub(super) async fn collect(
     sources: &[String],
     at: &str,
 ) -> Result<TeamsStage, HandlerError> {
-    let selected = sources.iter().filter(|source| {
-        source.as_str() != census_crawl::sidearm_staff::SOURCE_ID
-            && teams_arms::arm_for(source).is_some()
-    });
+    let selected = selected_sources(sources);
     let disposition = if selected.clone().next().is_some() {
         CollectionDisposition::Complete
     } else {
         CollectionDisposition::Unknown
     };
-    let outcome = StageOutcome {
-        records: 0,
-        at: at.to_string(),
-        errors: Vec::new(),
-        notes: Vec::new(),
-        disposition,
-        unfinished: Vec::new(),
-    };
+    let outcome = empty_outcome(at, disposition);
     let (outcome, failures) = stream::iter(selected)
         .map(Ok::<_, HandlerError>)
         .try_fold(
@@ -48,7 +38,33 @@ pub(super) async fn collect(
             },
         )
         .await?;
-    Ok(if failures.is_empty() {
+    Ok(finish(outcome, failures, at))
+}
+
+pub(super) fn selected_sources(sources: &[String]) -> impl Iterator<Item = &String> + Clone {
+    sources.iter().filter(|source| {
+        source.as_str() != census_crawl::sidearm_staff::SOURCE_ID
+            && teams_arms::arm_for(source).is_some()
+    })
+}
+
+pub(super) fn empty_outcome(at: &str, disposition: CollectionDisposition) -> StageOutcome {
+    StageOutcome {
+        records: 0,
+        at: at.into(),
+        errors: Vec::new(),
+        notes: Vec::new(),
+        disposition,
+        unfinished: Vec::new(),
+    }
+}
+
+pub(super) fn finish(
+    outcome: StageOutcome,
+    failures: Vec<TeamsSourceFailure>,
+    at: &str,
+) -> TeamsStage {
+    if failures.is_empty() {
         TeamsStage::from_outcome(outcome, at.to_string())
     } else {
         TeamsStage::Failed(TeamsFailure::SourceFailures {
@@ -56,7 +72,7 @@ pub(super) async fn collect(
             outcome,
             failures,
         })
-    })
+    }
 }
 
 fn source_request(request: &JurisdictionRequest, source: &str, at: &str) -> TeamsSourceRequest {

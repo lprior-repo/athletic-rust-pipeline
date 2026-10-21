@@ -6,7 +6,7 @@ use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::StoreResult;
 
 mod comparison;
-mod kernel;
+pub(super) mod kernel;
 mod replay;
 mod rows;
 mod wire;

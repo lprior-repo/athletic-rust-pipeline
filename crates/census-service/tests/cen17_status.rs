@@ -7,6 +7,9 @@ use census_domain::model::{CentiMetres, EventKind, ExactSeconds, Mark};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
+#[path = "common/durable_capture.rs"]
+mod durable_capture;
+
 #[path = "cen17_status/artifacts.rs"]
 mod artifacts;
 #[path = "cen17_status/athleticnet.rs"]

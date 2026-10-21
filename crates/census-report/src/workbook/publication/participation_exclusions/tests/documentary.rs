@@ -31,7 +31,7 @@ fn documentary_csv_keeps_eight_columns_and_actual_outcome_tags() -> TestResult {
             CandidateOutcome::Excluded => ("excluded", "documentary_assessment_excluded"),
             CandidateOutcome::Unresolved => ("unresolved", "documentary_assessment_unresolved"),
         };
-        check!(eq; record.get(0).ok_or("candidate")?, row.athlete_id().as_str());
+        check!(eq; record.first().ok_or("candidate")?, row.athlete_id().as_str());
         check!(eq; record.get(2).ok_or("event")?, row.event_id().as_str());
         check!(eq; record.get(3).ok_or("disposition")?, disposition);
         check!(eq; record.get(4).ok_or("reasons")?, &serde_json::to_string(&row.assessment().reasons().iter().collect::<Vec<_>>())?);

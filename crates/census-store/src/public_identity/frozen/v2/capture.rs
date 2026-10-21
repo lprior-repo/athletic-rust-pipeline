@@ -124,7 +124,7 @@ fn graph_objects(reader: &Live<'_>, graphs: &Graphs) -> StoreResult<BTreeMap<Str
                         .len()
                         .checked_add(1)
                         .ok_or(StoreError::CounterOverflow)?;
-                    super::super::wire::bound(next, wire::MAX_OBJECTS)?;
+                    super::super::bound(next, wire::MAX_OBJECTS)?;
                     objects.insert(key.to_owned(), object.clone());
                 }
             }
@@ -148,7 +148,7 @@ fn physical_object(
         *physical_rows = physical_rows
             .checked_add(1)
             .ok_or(StoreError::CounterOverflow)?;
-        super::super::wire::bound(*physical_rows, wire::MAX_PHYSICAL_ROWS)?;
+        super::super::bound(*physical_rows, wire::MAX_PHYSICAL_ROWS)?;
         let row = wire::PhysicalRow::capture(key, value)?;
         let encoded_bytes = codec::encode(&row, remaining)?.len();
         charge(&mut remaining, encoded_bytes)?;

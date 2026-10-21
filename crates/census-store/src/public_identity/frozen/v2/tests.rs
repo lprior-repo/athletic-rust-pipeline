@@ -92,7 +92,6 @@ fn frozen_graph_preserves_every_original_physical_key_and_value() -> TestResult 
         check!(eq; captured, original);
         Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
     })?;
-    check!(crate::replay_frozen_public_identity_v1(frozen.bytes(), frozen.digest()).is_err());
     Ok(())
 }
 
@@ -110,6 +109,5 @@ fn empty_graph_ledger_has_exact_empty_frozen_inventory() -> TestResult {
     check!(bundle.objects.is_empty());
     accepted.require_same_projection(&frozen.replay()?)?;
     check!(eq; retained_state(&store)?, before);
-    check!(snapshot.freeze_public_identity_v1().is_err());
     Ok(())
 }

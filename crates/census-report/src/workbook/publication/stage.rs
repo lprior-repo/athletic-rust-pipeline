@@ -43,7 +43,7 @@ impl<'s> Stage<'s> {
         options: &Options,
         render: impl FnOnce(&Path) -> ReportResult<super::inventory::RowCounts>,
     ) -> ReportResult<PathBuf> {
-        selected::ensure_current_options(dataset, options)?;
+        selected::ensure_current_options(dataset, options).map_err(binding::input_refused)?;
         let result = render(&self.directory).and_then(|counts| {
             self.store
                 .publication_lease_renew(

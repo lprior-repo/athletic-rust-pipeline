@@ -125,8 +125,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn physical_inventory_budget_accepts_exact_32_mib_and_refuses_one_more() {
-        let limit = usize::try_from(MAX_PHYSICAL_INVENTORY_BYTES).expect("32 MiB fits usize");
+    fn physical_inventory_budget_accepts_exact_32_mib_and_refuses_one_more(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let limit = usize::try_from(MAX_PHYSICAL_INVENTORY_BYTES)?;
         let mut inventory = Inventory {
             rows: Vec::new(),
             bytes: 0,
@@ -139,8 +140,7 @@ mod tests {
                 key_bytes: 0,
                 value_bytes: limit - 1,
             },
-        )
-        .expect("one byte under the cap is admitted");
+        )?;
         admit(
             &mut inventory,
             &mut grant,
@@ -148,10 +148,9 @@ mod tests {
                 key_bytes: 0,
                 value_bytes: 1,
             },
-        )
-        .expect("the exact cap is admitted");
-        assert_eq!(inventory.bytes, MAX_PHYSICAL_INVENTORY_BYTES);
-        assert!(admit(
+        )?;
+        check!(eq; inventory.bytes, MAX_PHYSICAL_INVENTORY_BYTES);
+        check!(admit(
             &mut inventory,
             &mut grant,
             PhysicalReadAdmissionV1::Value {
@@ -160,6 +159,7 @@ mod tests {
             },
         )
         .is_err());
-        assert_eq!(inventory.bytes, MAX_PHYSICAL_INVENTORY_BYTES);
+        check!(eq; inventory.bytes, MAX_PHYSICAL_INVENTORY_BYTES);
+        Ok(())
     }
 }

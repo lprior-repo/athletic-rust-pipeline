@@ -246,41 +246,36 @@ fn source_advance_during_render_cannot_switch_the_publication_pointer() -> TestR
     Ok(())
 }
 
-#[test]
-fn an_export_job_keeps_its_input_and_changed_evidence_requires_a_new_export() -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let store = Store::open(directory.path().join("store"))?;
-    seed(&store, "First School")?;
-    let first =
-        ExportDataset::for_job_request(&store, "export:first-input", &ExportJobRequest::LegacyV2)?;
-    store.journal_done("unrelated-work", "attempt", &true)?;
-    let replay =
-        ExportDataset::for_job_request(&store, "export:first-input", &ExportJobRequest::LegacyV2)?;
+#[tokio::test]
+async fn an_export_job_keeps_its_input_and_changed_evidence_requires_a_new_export() -> TestResult {
+    let fixture = crate::export::selected_test_fixture::Fixture::composed(false).await?;
+    let request = ExportJobRequest::SelectedPublicationV1 {
+        selection: fixture.selection.clone(),
+    };
+    let first = ExportDataset::for_job_request(&fixture.store, "export:first-input", &request)?;
+    fixture
+        .store
+        .journal_done("unrelated-work", "attempt", &true)?;
+    let replay = ExportDataset::for_job_request(&fixture.store, "export:first-input", &request)?;
     check!(eq; first.lineage, replay.lineage);
-    seed(&store, "Later School")?;
-    let error = match ExportDataset::for_job_request(
-        &store,
-        "export:first-input",
-        &ExportJobRequest::LegacyV2,
-    ) {
+    check!(eq; first.performances.len(), 1);
+    fixture.append_second_meet().await?;
+    let error = match ExportDataset::for_job_request(&fixture.store, "export:first-input", &request)
+    {
         Err(error) => error,
         Ok(_) => return Err("stale export job accepted".into()),
     };
     check!(error.to_string().contains("stale or foreign"));
-    let next = ExportDataset::for_job_request(
-        &store,
-        "export:changed-input",
-        &ExportJobRequest::LegacyV2,
-    )?;
-    check!(ne; next.lineage.input_generation,
-    first.lineage.input_generation);
-    check!(eq; first.schools.len(), 1);
-    check!(eq; next.schools.len(), 2);
-    let archive = store.out_dir().join("export-inputs").join(format!(
-        "{}.json",
+    let next = ExportDataset::for_job_request(&fixture.store, "export:changed-input", &request)?;
+    check!(ne; next.lineage.input_generation, first.lineage.input_generation);
+    check!(ne; next.lineage.source_digest, first.lineage.source_digest);
+    check!(eq; next.performances.len(), 2);
+    let archive = fixture.store.out_dir().join("export-inputs").join(format!(
+        "{}.selected-v1/input.json",
         census_domain::model::serialized_digest(&"export:first-input")?
     ));
-    let retained = ExportDataset::reopen_frozen(&archive)?;
+    let archive_digest = first.archive_digest()?;
+    let retained = ExportDataset::reopen_frozen_with_digest(&archive, &archive_digest)?;
     check!(eq; retained.lineage, first.lineage);
     Ok(())
 }

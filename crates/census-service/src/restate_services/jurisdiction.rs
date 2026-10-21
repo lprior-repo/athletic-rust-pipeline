@@ -38,6 +38,7 @@ mod team_collection;
 #[cfg(test)]
 mod team_collection_tests;
 pub(crate) mod team_source;
+mod teams_reconciliation;
 pub use team_source::{TeamsSource, TeamsSourceClient, TeamsSourceIngressClient};
 
 #[allow(unused_imports)]
@@ -185,6 +186,15 @@ impl JurisdictionCensus {
     )
 )]
 impl JurisdictionCensus {
+    #[handler]
+    async fn reconcile_teams(
+        &self,
+        ctx: ObjectContext<'_>,
+        Json(request): Json<super::wire::TeamsReconciliationRequest>,
+    ) -> Result<Json<super::wire::TeamsStage>, HandlerError> {
+        self.reconcile_team_outcomes(ctx, request).await.map(Json)
+    }
+
     #[handler]
     #[tracing::instrument(skip_all)]
     async fn athleticlive_manifest(

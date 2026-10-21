@@ -4,9 +4,9 @@ use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use chrono::{DateTime, Utc};
 
-pub(super) const DIRECTORY: &[u8] =
+pub(in super::super) const DIRECTORY: &[u8] =
     include_bytes!("../../../../provider_school/fixtures/mi-team-index.html");
-pub(super) const ROSTER: &[u8] =
+pub(in super::super) const ROSTER: &[u8] =
     include_bytes!("../../../../provider_school/fixtures/dcc-provider-roster.html");
 const DIRECTORY_URL: &str = "https://mi.milesplit.com/teams";
 const ROSTER_URL: &str = "https://mi.milesplit.com/teams/12439-detroit-catholic-central/roster";
@@ -38,7 +38,7 @@ fn capture(
     )?)
 }
 
-pub(super) fn packet(directory: &[u8]) -> TestResult<ProviderSchoolPacketV1> {
+pub(in super::super) fn packet(directory: &[u8]) -> TestResult<ProviderSchoolPacketV1> {
     Ok(ProviderSchoolPacketV1::new(
         capture(
             DIRECTORY_URL,
@@ -57,7 +57,9 @@ pub(super) fn packet(directory: &[u8]) -> TestResult<ProviderSchoolPacketV1> {
     )?)
 }
 
-pub(super) fn verify_checked_school(checked: &CheckedProviderSchoolPacketV1) -> TestResult {
+pub(in super::super) fn verify_checked_school(
+    checked: &CheckedProviderSchoolPacketV1,
+) -> TestResult {
     check!(eq; DIRECTORY.len(), 293_847);
     check!(eq; hash(DIRECTORY), "39606bf8e07f0170138bb586ae8a762903bb820b515520e89e34745f6c732351");
     check!(eq; ROSTER.len(), 372_977);

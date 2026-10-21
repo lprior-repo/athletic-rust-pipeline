@@ -22,8 +22,8 @@ fn affected_keys_and_full_raw_inventory_survive_reopen_and_frozen_replay_after_l
         fixture.store.snapshot().revision(),
         &fixture.writer.head(&fixture.store)?,
     )?;
-    assert_eq!(prepared.graph(), inventory.graph());
-    assert_eq!(
+    check!(eq;prepared.graph(), inventory.graph());
+    check!(eq;
         prepared.record().request.affected_record_keys,
         expected_keys
     );
@@ -46,15 +46,15 @@ fn affected_keys_and_full_raw_inventory_survive_reopen_and_frozen_replay_after_l
     fixture
         .store
         .append(Table::RelayResults, &results::relay(&member, "later-live"))?;
-    assert_eq!(
+    check!(eq;
         results::raw::<CanonicalPerformance>(&fixture.store, Table::Performances)?.len(),
         6
     );
-    assert_eq!(
+    check!(eq;
         results::raw::<RelayResult>(&fixture.store, Table::RelayResults)?.len(),
         6
     );
-    assert_eq!(graph_objects(&fixture.store, &graph)?, expected_objects);
+    check!(eq;graph_objects(&fixture.store, &graph)?, expected_objects);
     let grown_facts = results::retained_facts(&fixture.store)?;
     let root = fixture.directory.path().join("identity");
     let ReviewedFixture {
@@ -66,9 +66,9 @@ fn affected_keys_and_full_raw_inventory_survive_reopen_and_frozen_replay_after_l
     drop(writer);
     drop(store);
     let (reopened, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
-    assert_eq!(writer.head(&reopened)?, *outcome.head());
-    assert_eq!(results::retained_facts(&reopened)?, grown_facts);
-    assert_eq!(graph_objects(&reopened, &graph)?, expected_objects);
+    check!(eq;writer.head(&reopened)?, *outcome.head());
+    check!(eq;results::retained_facts(&reopened)?, grown_facts);
+    check!(eq;graph_objects(&reopened, &graph)?, expected_objects);
     let snapshot = reopened
         .snapshot()
         .accepted_public_identity_snapshot()?
@@ -77,8 +77,8 @@ fn affected_keys_and_full_raw_inventory_survive_reopen_and_frozen_replay_after_l
     let repeated = writer
         .replay_local_adjudication(&reopened, "synthetic-affected-replay", &digest)?
         .ok_or("replayed operation")?;
-    assert!(repeated.replayed());
-    assert_eq!(repeated.head(), outcome.head());
+    check!(repeated.replayed());
+    check!(eq;repeated.head(), outcome.head());
     let frozen_after = reopened.snapshot().freeze_public_identity_v2()?;
     assert_frozen_objects(&frozen_after, &expected_objects)?;
     drop(writer);
@@ -207,6 +207,6 @@ fn assert_snapshot_keys(
     let HistoryRequest::Split(split) = &last.request else {
         return Err("last history operation is not a split".into());
     };
-    assert_eq!(split.affected_record_keys, expected);
+    check!(eq;split.affected_record_keys, expected);
     Ok(())
 }

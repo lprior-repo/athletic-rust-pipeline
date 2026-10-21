@@ -44,3 +44,7 @@ fn observe_shutdown(actor: &mut Actor) {
         Ok(())
     });
 }
+
+async fn wait_for_handler_release(finished: oneshot::Receiver<()>) {
+    assert_eq!(finished.await, Ok(()));
+}

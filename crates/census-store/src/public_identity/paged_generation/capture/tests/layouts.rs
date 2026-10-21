@@ -109,10 +109,10 @@ fn check_six(
 ) -> TestResult {
     let snapshot = store.snapshot();
     let seal = retained.verify(&snapshot)?;
-    assert_eq!(seal.declared_inventory().rows(), 6);
+    check!(eq;seal.declared_inventory().rows(), 6);
     for ((kind, key, value), table) in rows.iter().zip(seal.tables()) {
-        assert_eq!(table.table(), *kind);
-        assert_eq!(table.inventory().rows(), 1);
+        check!(eq;table.table(), *kind);
+        check!(eq;table.inventory().rows(), 1);
         let binding = retained.binding().table_binding(*kind)?;
         let table = snapshot.raw_generation_table(&table.object(), &binding)?;
         let block = table.blocks().first().ok_or("block")?;
@@ -120,8 +120,8 @@ fn check_six(
         let page = block.pages().first().ok_or("page")?;
         let page = snapshot.raw_generation_page(&page.object(), &binding)?;
         let row = page.rows().first().ok_or("row")?;
-        assert_eq!(row.physical_key(), key);
-        assert_eq!(row.raw_value(), value);
+        check!(eq;row.physical_key(), key);
+        check!(eq;row.raw_value(), value);
     }
     Ok(())
 }
@@ -133,7 +133,7 @@ fn six_layouts_capture_exact_bytes_and_replay_after_source_absent_reopen() -> Te
     set_rows(&store, &rows)?;
     let id = operation("six-layouts")?;
     let captured = writer.capture_raw_generation_v2(&store, &id)?;
-    assert!(matches!(
+    check!(matches!(
         &captured,
         RawGenerationCaptureOutcomeV2::Captured(_)
     ));
@@ -157,11 +157,11 @@ fn six_layouts_capture_exact_bytes_and_replay_after_source_absent_reopen() -> Te
         Store::open_public_identity_qualification_v3(directory.path().join("identity"))?
             .into_parts();
     let replay = writer.capture_raw_generation_v2(&store, &id)?;
-    assert!(matches!(
+    check!(matches!(
         &replay,
         RawGenerationCaptureOutcomeV2::HistoricalReplay(_)
     ));
-    assert_eq!(replay.retained(), captured.retained());
+    check!(eq;replay.retained(), captured.retained());
     check_six(&store, replay.retained(), &rows)?;
     Ok(())
 }

@@ -14,7 +14,6 @@ struct Interpretation<'a> {
 }
 
 pub(super) enum RetainedInventory<'a> {
-    FullV1(Box<semantic_inventory::UntrustedRetainedRosterSemanticInventoryV1<'a>>),
     RowLocalV2(&'a [u8]),
 }
 
@@ -49,12 +48,10 @@ pub(super) fn read<'a>(
         return Err(invalid("noncanonical historical roster interpretation").into());
     }
     match value.schema {
-        "roster-retained-capture-interpretation-v2" => Ok(RetainedInventory::FullV1(Box::new(
-            semantic_inventory::decode_retained_for_replay(
-                value.semantic_inventory.get().as_bytes(),
-                grant,
-            )?,
-        ))),
+        "roster-retained-capture-interpretation-v2" => {
+            grant.poison();
+            Err(invalid("unsupported retained roster interpretation v2").into())
+        }
         "roster-retained-capture-interpretation-v3" => Ok(RetainedInventory::RowLocalV2(
             value.semantic_inventory.get().as_bytes(),
         )),
