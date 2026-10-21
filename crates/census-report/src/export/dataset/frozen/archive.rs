@@ -52,6 +52,15 @@ pub(super) fn reopen(
             "frozen export input digest does not match its retained data",
         ));
     }
+    hydrate_retained(&mut dataset, path, expected_archive)?;
+    Ok(dataset)
+}
+
+pub(super) fn hydrate_retained(
+    dataset: &mut ExportDataset,
+    path: &Path,
+    expected_archive: Option<&str>,
+) -> ReportResult<()> {
     if let Some(mut proofs) = dataset.selected_proofs.take() {
         if expected_archive.is_none() {
             return Err(invalid(
@@ -68,10 +77,10 @@ pub(super) fn reopen(
         let fingerprints = dataset.selected_authority()?.fingerprints().clone();
         let directory = super::proof_directory(path)?;
         proofs.bind_directory(&directory)?;
-        let hydrated = proofs.hydrate(&mut dataset, &profile, &fingerprints, &directory)?;
+        let hydrated = proofs.hydrate(dataset, &profile, &fingerprints, &directory)?;
         dataset.attach_selected_proofs(proofs, hydrated)?;
     }
-    Ok(dataset)
+    Ok(())
 }
 
 fn decode_archive<T: DeserializeOwned>(
@@ -151,6 +160,27 @@ fn validate(lineage: &DatasetLineage) -> ReportResult<()> {
         return Err(invalid("unsupported or malformed frozen export lineage"));
     }
     Ok(())
+}
+
+pub(in crate::export::dataset::frozen) fn verify_retained(
+    path: &Path,
+    expected_archive: &str,
+    expected_lineage: &DatasetLineage,
+) -> ReportResult<()> {
+    let mut reader = io::open_json(path)?;
+    verify_commitment(path, &mut reader, Some(expected_archive))?;
+    let Header {
+        lineage,
+        _data: _,
+        _selected_proofs: _,
+    } = decode_archive(path, &mut reader)?;
+    validate(&lineage)?;
+    if lineage != *expected_lineage {
+        return Err(invalid(
+            "frozen export lineage does not match the retained dataset",
+        ));
+    }
+    verify_commitment(path, &mut reader, Some(expected_archive))
 }
 
 #[cfg(test)]

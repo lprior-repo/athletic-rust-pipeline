@@ -2897,3 +2897,35 @@ headed profile then started **Ready**,0/2 slots used, cooldown0, in1.43s
 through the public operator command. Executable digest:
 `d269d4a55c41a0e44bf4f7890ba043144eea23a5834930a40f8463b1ce2aeae4`.
 This smoke proves bootstrap, not population coverage or five-state delivery.
+
+## Selected-input reuse and run handoff — 2026-10-21
+
+R7 source: `593a49b0e9683acd1b255117dd12fbe98ba2336d`;
+tested tree: `b8e59c07c3a78e511659c42e76ebf9c37df2d83e`.
+Fresh selected publication retains one dataset instead of constructing three.
+Saved-byte commitments and frozen identity/affiliation/participation replay
+remain checked; promotion preserves request, freshness, source, snapshot,
+proof-inventory and no-replace fences. No format, policy or budget change.
+
+| Check | Result |
+|---|---|
+| Canonical format / all-target check / source lint | PASS `fd04f56a` / `78f7a0a1` / `5b920d7d`; configured advisories remain |
+| Service publication regressions | PASS 6/6 `caebbbae`: one generation, actual selected output, override refusal, retry/revocation, split and stale first admission |
+| Native genuine cold readback | PASS `ec3d2434`: unchanged generation `0276343d…313bc8`, one mapped athlete, 297 rows; Store-free proof verification, not fresh acquisition |
+| Release, full workspace, representative RSS | NOT RUN for this scoped fix |
+
+PR120 landed at `b33180777c53af6bb6c701cb97a8dd5992b8ab3f`.
+Its exact-candidate format/check/lint and 14 navigation regressions passed;
+the same-implementation live bootstrap smoke above is not an exact-candidate
+population acceptance.
+
+At 12:19 UTC, all five MileSplit source endpoints reported `OriginHeld`
+by national PID1995605. The five-state workflow had paused at 03:53 with
+RT0010 endpoint-unreachable. Its original invocation
+`inv_14jQCQ4alEcj3X8qiRl6rijMlf95fHjXxP` resumed at 12:36 on its original
+deployment; running state was verified, not inferred from HTTP200.
+The report records five jurisdiction failures and no completed population.
+Receipts are under `/home/lewis/.cache/athletic-five-state-co2027-20261021/`.
+The user subsequently authorized controlled ownership handoff, then requested
+wrap-up. Handoff was not executed; national state remains untouched.
+No populated five-state or national workbook is delivered by this repair.

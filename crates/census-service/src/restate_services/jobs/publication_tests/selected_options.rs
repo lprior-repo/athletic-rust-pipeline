@@ -1,7 +1,7 @@
 use super::{
     build, check_selected_output, isolated, selected_fixture, selected_options, TestResult,
 };
-use census_report::export::ExportJobRequest;
+use census_report::export::{decoded_generations, resident_generations, ExportJobRequest};
 use census_report::report::{ReportError, Scope};
 use std::path::Path;
 
@@ -47,12 +47,16 @@ fn selected_workbook_service_refuses_profile_population_overrides() -> TestResul
         selection: controlled.selection()?,
     };
     let mut options = selected_options(controlled.profile())?;
+    let decoded = decoded_generations();
+    let resident = resident_generations();
     let full = build(
         controlled.store(),
         &options,
         "controlled-selected-full",
         &request,
     )?;
+    check!(eq; decoded_generations(), decoded.checked_add(1).ok_or("counter overflow")?);
+    check!(eq; resident_generations(), resident);
     check_selected_output(
         Path::new(&full.path),
         controlled.public_id(),
