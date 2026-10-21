@@ -1,4 +1,5 @@
 use crate::report::artifact_corrupt;
+use crate::workbook::verify::canonical::cell_reference;
 use calamine::{Cell, DataRef, XlsxCellReader};
 use std::fs::File;
 use std::io::BufReader;
@@ -64,6 +65,7 @@ fn extent(position: u32) -> usize {
 struct PendingRows {
     held: Option<SparseRow>,
     next: usize,
+    previous: Option<(usize, usize)>,
 }
 
 impl PendingRows {
@@ -74,6 +76,20 @@ impl PendingRows {
         visit: &mut impl FnMut(&mut SparseRow),
     ) -> ReportResult<()> {
         let (row, column) = position(&cell, scope)?;
+        if self
+            .previous
+            .is_some_and(|previous| (row, column) <= previous)
+        {
+            return Err(artifact_corrupt(
+                scope.path,
+                format!(
+                    "sheet {} repeats or reverses cell {}",
+                    scope.name,
+                    cell_reference(row, column)
+                ),
+            ));
+        }
+        self.previous = Some((row, column));
         if self
             .held
             .as_ref()

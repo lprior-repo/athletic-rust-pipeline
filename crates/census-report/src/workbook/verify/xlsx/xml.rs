@@ -209,6 +209,10 @@ impl<'a, H: Handler> Xml<'a, H> {
         if name.starts_with('!') || name.starts_with('?') {
             return Err(scope.corrupt("an XML declaration is malformed"));
         }
+        let qualified_name = name;
+        if self.closing && (qualified_name.contains(':') || self.empty || !trim(rest).is_empty()) {
+            return Err(scope.corrupt("an XML closing tag has an unsupported name or syntax"));
+        }
         let name = name.rsplit(':').next().map_or(name, |local| local);
         self.name.clear();
         self.name.push_str(name);
@@ -226,6 +230,7 @@ impl<'a, H: Handler> Xml<'a, H> {
         }
         let element = Element {
             name: name.as_str(),
+            qualified_name,
             attributes,
         };
         handler.start(&element)?;

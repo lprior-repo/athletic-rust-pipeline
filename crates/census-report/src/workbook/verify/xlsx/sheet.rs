@@ -1,32 +1,16 @@
-use super::xml::{Element, Handler};
+use super::xml::Element;
 use super::{Profile, Scope};
 use crate::report::ReportResult;
 use crate::workbook::verify::canonical::{cell_reference, Value};
 
+mod context;
 mod reference;
 
 use reference::{address, extent};
 
-const WORKSHEET: u8 = 1;
-const SHEET_DATA: u8 = 2;
-const ROW: u8 = 3;
-const CELL: u8 = 4;
-const VALUE: u8 = 5;
-const INLINE: u8 = 6;
-const TEXT: u8 = 7;
-const FORMULA: u8 = 8;
-const OTHER: u8 = 9;
-
 pub(in crate::workbook) trait Cells {
     fn cell(&mut self, row: usize, column: usize, value: Value) -> ReportResult<()>;
     fn finish(&mut self, rows: usize);
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Target {
-    None,
-    Value,
-    Text,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,11 +31,14 @@ pub(super) struct Walk<'a, C> {
     dimension: Option<(usize, usize)>,
     position: Option<(usize, usize)>,
     kind: Kind,
-    target: Target,
     value: String,
     seen: u64,
     extent: usize,
     previous: Option<(usize, usize)>,
+    root_seen: bool,
+    sheet_data_seen: bool,
+    value_seen: bool,
+    inline_string: bool,
 }
 
 impl<'a, C: Cells> Walk<'a, C> {
@@ -74,11 +61,14 @@ impl<'a, C: Cells> Walk<'a, C> {
             dimension: None,
             position: None,
             kind: Kind::Number,
-            target: Target::None,
             value: String::new(),
             seen: 0,
             extent: 0,
             previous: None,
+            root_seen: false,
+            sheet_data_seen: false,
+            value_seen: false,
+            inline_string: false,
         }
     }
 
@@ -88,15 +78,18 @@ impl<'a, C: Cells> Walk<'a, C> {
                 .scope
                 .corrupt("the sheet XML ends with elements still open"));
         }
+        if !self.root_seen || !self.sheet_data_seen {
+            return Err(self
+                .scope
+                .corrupt("the sheet requires one worksheet root and one sheetData element"));
+        }
         let rows = self.dimension.map_or(self.extent, |dimension| dimension.0);
         self.visit.finish(rows);
         Ok(rows)
     }
 
     fn declare(&mut self, element: &Element<'_>) -> ReportResult<()> {
-        let Some(reference) = element.attribute("ref") else {
-            return Ok(());
-        };
+        let reference = element.required("ref", &self.scope)?;
         let (rows, columns) = extent(reference).ok_or_else(|| {
             self.scope.corrupt(format!(
                 "the sheet declares a malformed dimension {reference}"
@@ -138,8 +131,9 @@ impl<'a, C: Cells> Walk<'a, C> {
                     .outside(format!("cell type {other} is not part of the profile")));
             }
         };
+        self.inline_string = element.attribute("t") == Some("inlineStr");
         self.value.clear();
-        self.target = Target::None;
+        self.value_seen = false;
         Ok(())
     }
 
@@ -218,72 +212,5 @@ impl<'a, C: Cells> Walk<'a, C> {
                 self.sheet
             ))),
         }
-    }
-}
-
-impl<C: Cells> Handler for Walk<'_, C> {
-    fn start(&mut self, element: &Element<'_>) -> ReportResult<()> {
-        let code = code(element.name);
-        self.stack.push(code);
-        match code {
-            CELL => self.begin_cell(element)?,
-            VALUE => self.target = Target::Value,
-            TEXT => self.target = Target::Text,
-            FORMULA => {
-                return Err(self
-                    .scope
-                    .outside("formula cells cannot be verified from cached values"));
-            }
-            _ => {}
-        }
-        if element.name == "dimension" {
-            self.declare(element)?;
-        }
-        Ok(())
-    }
-
-    fn end(&mut self, name: &str) -> ReportResult<()> {
-        let code = code(name);
-        if self.stack.pop() != Some(code) {
-            return Err(self
-                .scope
-                .corrupt(format!("sheet {} nests {name} inconsistently", self.sheet)));
-        }
-        match code {
-            CELL => self.end_cell()?,
-            VALUE | TEXT => self.target = Target::None,
-            _ => {}
-        }
-        Ok(())
-    }
-
-    fn text(&mut self, text: &str) -> ReportResult<()> {
-        match self.target {
-            Target::None => Ok(()),
-            Target::Value | Target::Text => {
-                if self.value.len().saturating_add(text.len()) > self.profile.token {
-                    return Err(self.scope.corrupt(format!(
-                        "sheet {} holds a cell value beyond the {} byte token budget",
-                        self.sheet, self.profile.token
-                    )));
-                }
-                self.value.push_str(text);
-                Ok(())
-            }
-        }
-    }
-}
-
-fn code(name: &str) -> u8 {
-    match name {
-        "worksheet" => WORKSHEET,
-        "sheetData" => SHEET_DATA,
-        "row" => ROW,
-        "c" => CELL,
-        "v" => VALUE,
-        "is" => INLINE,
-        "t" => TEXT,
-        "f" => FORMULA,
-        _ => OTHER,
     }
 }

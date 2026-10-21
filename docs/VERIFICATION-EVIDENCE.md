@@ -2832,3 +2832,45 @@ its fetched tree is exactly the tested candidate tree above. Read-only native
 Intent inspection confirms original request`fb271883…b83d2e43` remains Published
 with the original generation as receipt; normal recovery exited0.
 `original-publication-intent-inspection.json` indexes the full native bindings.
+
+## Five-state execution and XLSX refusal baseline — 2026-10-21
+
+Base remote main: `e2ae92b2f33beed1deaf93fba524e889983affd4`.
+The working union is not yet a qualified merge candidate; predecessor passes
+above do not qualify these incoming current-format changes.
+
+| Check | Observed result |
+|---|---|
+| Current CLI / endpoint | Canonical native help runs `73f82018` / `fa4ca1c0`: PASS |
+| Isolated five-state submission | `national:2026-27:bfaa5c60f1fd9fbd:1`, invocation `inv_14jQCQ4alEcj3X8qiRl6rijMlf95fHjXxP` submitted |
+| Actual capture | Serving read: 66 documents, 57 bodies, 8,045,846 payload bytes; subsequent two-second sample added four documents and two bodies |
+| MI / IA acquisition | BLOCKED: protected national endpoint PID1995605 owns their MileSplit origins; no lock bypass or national mutation |
+| Five-state delivery | NOT PASSED: partial report, no independently verified populated five-state workbook |
+| Six malformed-XLSX findings | `20c8232e`: 47/61 PASS before repair; `8d607a73`: all71 XLSX checks PASS, including additional type/container and late-dimension controls |
+| Current source kernel | Fresh producer initially refused its own inventory; all96 file hashes matched generated source closure`7f4205…698d3`; explicit stale pin reconciled without removing validation |
+| Controlled current lifecycle | `016a79e3`: actual50→withdrawal→51 publication, original-operation replay and cold reopen PASS; explicitly synthetic |
+| Native cold verification | `7e56adca`: retained50 generation PASS; separate retained51 CLI verification PASS,157 rows each; competing-source warning remains |
+| Integrated static gates | Format`b5c628bd`, all-target check`7b49229b`, source lint`78c521ea`: PASS with advisories |
+| Coverage/adjustment migration | Four regressions still FAIL in`8d607a73`; scoped caller repair pending; manual adjustment contradicts the source-projected raw result, guard preserved |
+| Earlier genuine workbook probe | Pre-repair binary refused`compiled immutable semantic kernel is unsupported`; original artifact unchanged; not requalified by the controlled proof |
+
+Run root: `var/five-state-co2027-20261021`. Store identity:
+`fea26b14cb1bcac9807665773ae3db5559ddfe7cfea59cb457956f807bc59879`.
+Profile: `29aa9c73788a18bf94dad7d313ec58f0dd12da17f612aa20001f7466fbd3b940`.
+Scope is Class of2027, boys/girls, XC/indoor/outdoor, MI/MN/IA/IL/CO;
+uniform discovery is not qualified UP-first scheduling or national completion.
+Native input, initialization, capability approval, binary digests, deployment
+and first frontier receipts reside in
+`/home/lewis/.cache/athletic-five-state-co2027-20261021/`.
+The partial report does not account for still-running states as completed or
+empty. Address selection, coach-frontier and AthleticLIVE manifest refusals
+remain explicit; roster capability is not accepted membership.
+
+Current controlled native smoke artifacts (not genuine or five-state delivery):
+`/home/lewis/.cache/r14n-TpNM3q/.tmpFJWdaw/publication/generations/4d6bfba0b9047f083cc0a88216a4e186eec78a3350131888fb721fc61b05a471/`
+and
+`/home/lewis/.cache/r14n-TpNM3q/.tmpEqT45m/publication/generations/f8b9ab45f65e3e50efce84435e7e872a21f8973765de79c765eecd3a8b6fb11b/`.
+The separate five-state endpoint was resumed on its original Store/run using
+the repaired immutable executable, not reset or resubmitted. Stop recorded
+175/175 accepted effects completed and no remaining effects, but timed out
+waiting for endpoint connections; one attempt remained unknown and was preserved.
