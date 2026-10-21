@@ -136,3 +136,42 @@ fn unrelated_source_labels_cannot_relabel_an_association_owned_capture(
     }
     Ok(())
 }
+
+#[test]
+fn state_directory_label_must_match_owner_without_address_state(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let owner = SourceIdentity::new(
+        SourceNamespace::school_directory("state-ed", UsJurisdiction::Michigan),
+        "1001",
+    );
+    let mut school =
+        CanonicalSchool::new(UsJurisdiction::Michigan, "Rocket High", "rocket-high", None).0;
+    school.source_identities.push(owner.clone());
+    let street = StreetLine::parse("1 Rocket Drive")?;
+    let make = |state| {
+        SchoolPostalAddress::new(
+            PostalAddress::line(street.clone()),
+            owner.clone(),
+            SourceLabel::StateEducationAgency { state },
+            Evidence::parsed(
+                super::super::SourceRef::new(
+                    "state-ed",
+                    Some("https://schools.test/capture".into()),
+                ),
+                "2026-09-27",
+            ),
+            "a".repeat(64),
+        )
+    };
+    let valid = make(UsJurisdiction::Michigan)?;
+    school.add_postal_address(valid.clone())?;
+    check!(eq; school.postal_addresses.len(), 1);
+    let encoded = serde_json::to_value(&valid)?;
+    check!(eq; serde_json::from_value::<SchoolPostalAddress>(encoded.clone())?, valid);
+    check!(eq; make(UsJurisdiction::NewYork), Err(SchoolAddressError::ForeignJurisdiction));
+    let mut foreign = encoded;
+    foreign["source_label"]["StateEducationAgency"]["state"] =
+        serde_json::to_value(UsJurisdiction::NewYork)?;
+    check!(serde_json::from_value::<SchoolPostalAddress>(foreign).is_err());
+    Ok(())
+}
