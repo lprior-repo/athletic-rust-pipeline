@@ -55,6 +55,10 @@ pub(super) fn claim_state(
             if directory_source(label) != Some(provider.as_str()) {
                 return Err(SchoolAddressError::UnsupportedAuthority);
             }
+            if matches!(label, SourceLabel::StateEducationAgency { state: source } if source != state)
+            {
+                return Err(SchoolAddressError::ForeignJurisdiction);
+            }
             Ok(*state)
         }
         _ => Err(SchoolAddressError::MissingOwner),
