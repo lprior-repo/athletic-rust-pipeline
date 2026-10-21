@@ -149,12 +149,12 @@ fn proposal_value(
             requested_url,
         )?,
         "binding": binding_value(
-            &parents,
+            parents,
             &contracts.year_reference().context("reading the year reference")?,
             &contracts
                 .projection_merge_reference()
                 .context("reading the merge reference")?,
-            &objects,
+            objects,
             evidence,
         )?,
     }))
