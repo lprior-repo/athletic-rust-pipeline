@@ -2816,3 +2816,19 @@ School address and coaching contacts remain unknown. Local-operator provenance
 is explicitly unauthenticated. No national process/Store was changed or census
 started. Full workspace/release gates were not rerun for this slice; earlier
 checkpoint results above are not final-source passes.
+
+Final integration includes incoming PR116 at`ff6ee997`. Candidate
+`17eeab60ea089226c7c06b7f44ccc8eb03eee04d`, tree
+`0dd1063efaec529299f38429efa463dc1cd37571`, passed canonical format
+`d426c830`, all-target check`8ad13ab0`, source lint`fb7c7e90` (advisories remain)
+and scoped regression`cdc4bb93`: **136/136**. This includes the incoming XLSX
+container/formula/relationship checks and the connected review/selection/replay cases.
+`17eeab60-native-acceptance-summary.json` records six native readback/replay/proof
+controls and24 unchanged original artifacts. The stronger independent XML/CSV
+oracle passes; missing/tampered required-proof copies refuse, restored copies pass.
+
+PR117 landed as`7b20bef092fe60a2c33bd0dd5ab909110a64fa3e` on remote main;
+its fetched tree is exactly the tested candidate tree above. Read-only native
+Intent inspection confirms original request`fb271883…b83d2e43` remains Published
+with the original generation as receipt; normal recovery exited0.
+`original-publication-intent-inspection.json` indexes the full native bindings.
