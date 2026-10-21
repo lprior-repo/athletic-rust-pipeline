@@ -2754,5 +2754,65 @@ Digest formulas unchanged, so historical reconstruction manifests verify.
 The 3 remaining failures are pre-existing and reproduce identically with and
 without this branch's changes (verified via stash): identity split/revoke need
 a domain-owner ruling, and `historical_build` needs an external reviewed-roster
-producer bundle that no in-repo producer emits. `PR #110` reports OPEN,
-MERGEABLE, CLEAN.
+producer bundle that no in-repo producer emits. PR110 was OPEN/MERGEABLE/CLEAN
+at that checkpoint; it is included in the later `0bb7dbbd` integration base.
+
+## Genuine Class-of-2027 populated workbook and original replay — 2026-10-21
+
+Implementation `c0bda70550b0a92767da32e3d140f73536dc3f1b`, tree
+`c50a2bf2d45f1367be770c9c0e43b7a6da8bd810`, based on `0bb7dbbd`.
+This is retained-source qualification of **one athlete**, not five-state,
+national, exhaustive lifetime-PR or complete R1–R15 acceptance.
+
+Genuine Owen Courser, MileSplit14570824, Class2027, Detroit Catholic Central,
+Novi MI: the production selector publishes400m **51.12s FAT**,2026-05-09,
+CHSL Championships. Athletes row2 and PRs row2 independently match source-derived
+identity, cohort, school, event, mark, date and source URL. Current-school cutoff
+is2026-10-16; it is not backdated to the performance. The retained profile's
+400m summaries repeat51.12; its masked result listing supplies no additional
+original result rows. No faster comparable original row was found in this bounded
+retained set; broader coverage remains unestablished.
+
+Store`e42b638b78140cb59542bbce1673d500905b1559021c13c34a24e4ec56716427`;
+profile`24b33268725b47d826c5bebe386c80fe6de059b84af15c81755a961c8a362be4`.
+Original generation:
+`0276343dbf363fe810805c4390a2cf14c9442d5cae69904a82e387e4cf313bc8`.
+Workbook30756bytes, SHA256
+`2a3b286b8354fdfa412b86ac128d6f3a03af914a007e4b0e77ed6dbeb026c69c`;
+frozen input262971bytes, SHA256
+`10c621829e47b9b4a9f31518321439055fada3e30e510700cd890b76183d4983`.
+
+| Acceptance | Exercised production path | Evidence/result |
+|---|---|---|
+| Genuine source/cohort/identity | Retained provider/result readers; source-bound identity | Native intersection and original source/approval artifacts retained |
+| Accepted school and eligible mark | Reviewed roster, dated status, school/calendar correspondence; `from_selected_snapshot`, `build_with_exclusions`, `workbook::build_from` | Producer`015ac95f`: one athlete, one selected mark |
+| Literal workbook/normalized agreement | Independent XML/CSV oracle; all eight normalized families | `c0bda705-independent-literal-workbook-readback.json`: PASS; shared input generation`c0cc82d4…78d09e` |
+| Original review/identity replay | `capture-protocol roster-replay`; `local-identity-adjudication establish-source` | `7562fd20`: original90f3e812…receipt, appended0; `cd31fe8d`: same public ID/head1, replayedtrue |
+| Original publication and cold reopen | `recover_publication`, `reopen_frozen_with_digest`, `verify_published` | `87c8adf5` and exact-commit replay: twiceHistoricalSuccess; snapshot70 unchanged; same source digest and24 original artifact hashes |
+| Required-proof refusal | Store-free native verifier, disposable copy only | Exact-commit missing/tampered controls refuse authenticated object inventory; positive/restored controls pass |
+| Adjacent regressions | Canonical scoped tests | `cd4225f5`:87/87, including controlled50→51 withdrawal/reopen; synthetic evidence remains distinct |
+| Review fences and immutable original A | Public source review/read APIs | `b7822cd2`:9/9; stale/foreign/changed approvals and rehashed bindings refuse; original nonempty A and school-correction cold replay pass |
+| Exact candidate static gates | Canonical format/check/source lint | `98f03095`, `4094e00f`, `a855c7db`: PASS; configured arity and existing test dead-code advisories remain |
+
+Evidence root:
+`/home/lewis/.cache/athletic-roster-intake-actual-_7w0hu1f/`.
+Actual workbook is under
+`genuine-co2027-workbook-original-attempt/generations/GENERATION/workbook.xlsx`,
+using the exact generation above. `c0bda705-native-acceptance-summary.json`
+indexes exact commands, exits and proof-control receipts. The native manifest and
+`genuine-co2027-normalized-literal-evidence.json` retain original artifact hashes.
+`bounded-original-source-captures/` holds original captures; `genuine-workbook-objects/`
+holds immutable review commands, approval bytes/digests, records and receipts.
+
+The observed no-mark refusal`715a0b95` was resolved by a reviewed calendar
+successor bound to the current result attachment, not a relaxed matching fence.
+Reviewer label-erasure F1 was withdrawn after checking retained original evidence.
+Actual plain/banked400m mismatch F2 failed`071fc65f`; full-specification
+comparison fixes it (`66c01e4e`, included in the final87-case run).
+Cache-target configuration refusal`d466164f` was preserved and resolved only
+for the measured exact context (`3e1bab9b`), with unchanged compiler/dependencies.
+
+School address and coaching contacts remain unknown. Local-operator provenance
+is explicitly unauthenticated. No national process/Store was changed or census
+started. Full workspace/release gates were not rerun for this slice; earlier
+checkpoint results above are not final-source passes.
