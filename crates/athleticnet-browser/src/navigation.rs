@@ -13,6 +13,8 @@ use crate::clock::Clock;
 use crate::retry::retry_after_now;
 
 mod document;
+mod driver;
+use driver::{drive_events, NavigationSteps};
 mod observer;
 use document::{bootstrap_events, navigation_deadline, BootstrapEvents, DocumentState};
 pub(crate) use observer::start_observer;
@@ -120,45 +122,60 @@ impl NavigationLoop<'_> {
     ) -> Result<(), BrowserError> {
         let navigation = self.page.goto(NavigateParams::new(self.target.to_string()));
         tokio::pin!(navigation);
-        loop {
-            let remaining = self
-                .deadline
-                .saturating_duration_since(self.clock.now_instant());
-            if remaining.is_zero() {
-                return Err(BrowserError::Timeout);
+        let mut steps = PageEvents {
+            context: self,
+            events,
+            state,
+            navigation: navigation.as_mut(),
+        };
+        drive_events(self.clock, self.deadline, &mut steps).await
+    }
+}
+
+struct PageEvents<'a, 'page, N> {
+    context: &'a NavigationLoop<'page>,
+    events: &'a mut BootstrapEvents,
+    state: &'a mut DocumentState,
+    navigation: std::pin::Pin<&'a mut N>,
+}
+
+impl<N, T, E> NavigationSteps for PageEvents<'_, '_, N>
+where
+    N: Future<Output = Result<T, E>> + Send,
+    T: Send,
+    E: Send,
+{
+    async fn step(&mut self, remaining: Duration) -> Result<bool, BrowserError> {
+        let navigation = &mut self.navigation;
+        tokio::select! {
+            biased;
+            result = navigation.as_mut(), if !self.state.navigated() => {
+                result.map_err(|_| BrowserError::Transport)?;
+                self.state.mark_navigated();
             }
-            tokio::select! {
-                biased;
-                result = &mut navigation, if !state.navigated() => {
-                    result.map_err(|_| BrowserError::Transport)?;
-                    state.mark_navigated();
-                }
-                event = events.requests.next() => {
-                    let Some(event) = event else { return Err(BrowserError::Transport); };
-                    state.on_request(self.page, &event, self.main_frame).await?;
-                }
-                event = events.responses.next() => {
-                    let Some(event) = event else { return Err(BrowserError::Transport); };
-                    state.on_response(event, self.gate)?;
-                }
-                event = events.finished.next() => {
-                    let Some(event) = event else { return Err(BrowserError::Transport); };
-                    state.on_finished(self.page, event).await?;
-                }
-                event = events.failures.next() => {
-                    let Some(event) = event else { return Err(BrowserError::Transport); };
-                    state.on_failure(&event);
-                }
-                event = events.data.next() => {
-                    let Some(event) = event else { return Err(BrowserError::Transport); };
-                    state.on_data(&event)?;
-                }
-                _ = tokio::time::sleep(remaining) => return Err(BrowserError::Timeout),
+            event = self.events.requests.next() => {
+                let Some(event) = event else { return Err(BrowserError::Transport); };
+                self.state.on_request(self.context.page, &event, self.context.main_frame).await?;
             }
-            if state.complete() {
-                return Ok(());
+            event = self.events.responses.next() => {
+                let Some(event) = event else { return Err(BrowserError::Transport); };
+                self.state.on_response(event, self.context.gate)?;
             }
+            event = self.events.finished.next() => {
+                let Some(event) = event else { return Err(BrowserError::Transport); };
+                self.state.on_finished(self.context.page, event).await?;
+            }
+            event = self.events.failures.next() => {
+                let Some(event) = event else { return Err(BrowserError::Transport); };
+                self.state.on_failure(&event);
+            }
+            event = self.events.data.next() => {
+                let Some(event) = event else { return Err(BrowserError::Transport); };
+                self.state.on_data(&event)?;
+            }
+            _ = tokio::time::sleep(remaining) => return Err(BrowserError::Timeout),
         }
+        Ok(self.state.complete())
     }
 }
 

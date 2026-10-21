@@ -1,3 +1,5 @@
+mod event_budget;
+
 use super::*;
 use crate::clock::TestClock;
 use std::cell::Cell;
