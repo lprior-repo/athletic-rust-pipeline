@@ -150,23 +150,44 @@ fn end_record(file: &File, length: u64, scope: &Scope<'_>) -> ReportResult<(usiz
     let bytes = read_at(file, start, tail, scope)?;
     let mut index = tail.saturating_sub(END_RECORD);
     loop {
-        let comment = u16::try_from(tail.saturating_sub(index).saturating_sub(END_RECORD))
-            .map_or(u16::MAX, |size| size);
-        if read_u32(&bytes, index) == Some(END_SIGNATURE)
-            && read_u16(&bytes, index.saturating_add(20)) == Some(comment)
-        {
-            break;
+        if read_u32(&bytes, index) == Some(END_SIGNATURE) {
+            let comment = usize::from(field16(&bytes, index.saturating_add(20), scope)?);
+            let remaining = tail.saturating_sub(index).saturating_sub(END_RECORD);
+            if comment <= remaining {
+                if comment != remaining {
+                    return Err(scope.corrupt(
+                        "a trailing or competing end record follows the central directory",
+                    ));
+                }
+                break;
+            }
         }
         if index == 0 {
             return Err(scope.corrupt("the container has no end record"));
         }
-        index = index.saturating_sub(1);
+        index -= 1;
+    }
+    if field16(&bytes, index.saturating_add(4), scope)? != 0
+        || field16(&bytes, index.saturating_add(6), scope)? != 0
+    {
+        return Err(scope.corrupt("the container declares multiple ZIP disks"));
     }
     let declared = usize::from(field16(&bytes, index.saturating_add(10), scope)?);
+    if usize::from(field16(&bytes, index.saturating_add(8), scope)?) != declared {
+        return Err(scope.corrupt("the container has unequal on-disk and total entry counts"));
+    }
     let size = field32(&bytes, index.saturating_add(12), scope)?;
     let offset = field32(&bytes, index.saturating_add(16), scope)?;
     if declared == usize::from(u16::MAX) || size == u32::MAX || offset == u32::MAX {
         return Err(scope.outside("ZIP64 containers are not part of the bounded profile"));
+    }
+    let eocd_offset = start
+        .checked_add(
+            u64::try_from(index).map_err(|_| scope.corrupt("the end record offset overflows"))?,
+        )
+        .ok_or_else(|| scope.corrupt("the end record offset overflows"))?;
+    if u64::from(offset).checked_add(u64::from(size)) != Some(eocd_offset) {
+        return Err(scope.corrupt("data exists between the central directory and the end record"));
     }
     let size = usize::try_from(size).map_err(|_| scope.corrupt("the ZIP size does not fit"))?;
     Ok((declared, u64::from(offset), size))

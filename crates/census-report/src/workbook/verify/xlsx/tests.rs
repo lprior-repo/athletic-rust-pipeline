@@ -1,11 +1,17 @@
 mod container;
+mod context_boundaries;
 mod deflate;
+mod duplicate_cells;
+mod end_record_boundaries;
+mod end_records;
 mod fixture;
 mod formulas;
 mod names;
 mod parity;
 mod publication;
 mod relationships;
+mod structure;
+mod value_containers;
 
 use crate::report::CorruptionClass;
 use crate::workbook::verify::canonical::Value;

@@ -74,38 +74,46 @@ impl Handler for References<'_> {
                 .scope
                 .corrupt("the worksheet table exceeds its member budget"));
         }
-        let name = element.required("name", &self.scope)?.to_string();
+        let name = element.required("name", &self.scope)?;
         if name.is_empty() {
             return Err(self.scope.corrupt("a worksheet has an empty name"));
         }
-        let id = element
+        let rid = element
             .attribute("r:id")
-            .or_else(|| element.attribute("id"))
             .filter(|id| !id.is_empty())
             .ok_or_else(|| {
                 self.scope
                     .corrupt("a worksheet element lacks its relationship id")
-            })?
-            .to_string();
+            })?;
+        for (attr_name, _) in element.attributes {
+            if attr_name == "r:id" {
+                continue;
+            }
+            if attr_name == "id" || (attr_name.contains(':') && attr_name.ends_with(":id")) {
+                return Err(self.scope.corrupt(format!(
+                    "worksheet {name} has ambiguous id attribute {attr_name}"
+                )));
+            }
+        }
         if self
             .items
             .iter()
-            .any(|(prior, _)| prior.eq_ignore_ascii_case(&name))
+            .any(|(prior, _)| prior.eq_ignore_ascii_case(name))
         {
             return Err(self
                 .scope
                 .corrupt(format!("worksheet name {name} is repeated")));
         }
-        if self.items.iter().any(|(_, prior)| prior == &id) {
+        if self.items.iter().any(|(_, prior)| prior == rid) {
             return Err(self
                 .scope
-                .corrupt(format!("worksheet relationship {id} is reused")));
+                .corrupt(format!("worksheet relationship {rid} is reused")));
         }
         self.items.try_reserve(1).map_err(|_| {
             self.scope
                 .corrupt("the worksheet table cannot be allocated")
         })?;
-        self.items.push((name, id));
+        self.items.push((name.to_string(), rid.to_string()));
         Ok(())
     }
 

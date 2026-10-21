@@ -3,6 +3,7 @@ use crate::workbook::verify::xlsx::Scope;
 
 pub(in crate::workbook::verify::xlsx) struct Element<'a> {
     pub(in crate::workbook::verify::xlsx) name: &'a str,
+    pub(in crate::workbook::verify::xlsx) qualified_name: &'a str,
     pub(in crate::workbook::verify::xlsx) attributes: &'a [(String, String)],
 }
 

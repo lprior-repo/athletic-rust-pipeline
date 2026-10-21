@@ -212,6 +212,28 @@ fn xlsx_profile_refuses_repeated_worksheet_attributes() -> TestResult {
 }
 
 #[test]
+fn xlsx_profile_refuses_conflicting_rid_and_id_attributes() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let rels = relationship("rId1", "worksheets/sheet1.xml");
+    for sheets in [
+        "<sheet name=\"Athletes\" r:id=\"rId1\" id=\"rId2\"/>",
+        "<sheet name=\"Athletes\" id=\"rId2\" r:id=\"rId1\"/>",
+        "<sheet name=\"Athletes\" xmlns:x=\"urn:foreign\" r:id=\"rId1\" x:id=\"rId2\"/>",
+        "<sheet name=\"Athletes\" xmlns:x=\"urn:foreign\" x:id=\"rId2\" r:id=\"rId1\"/>",
+        "<sheet name=\"Athletes\" id=\"rId1\"/>",
+        "<sheet name=\"Athletes\" xmlns:x=\"urn:foreign\" x:id=\"rId1\"/>",
+        "<sheet name=\"Athletes\" r:id=\"rId1\" id=\"rId1\"/>",
+    ] {
+        let error = book(directory.path(), sheets, &rels)?
+            .sheet_names()
+            .err()
+            .ok_or("ambiguous or unqualified worksheet relationship was accepted")?;
+        check!(eq; error.corruption(), Some(CorruptionClass::ArtifactCorrupt));
+    }
+    Ok(())
+}
+
+#[test]
 fn xlsx_profile_refuses_repeated_cell_attributes() -> TestResult {
     let directory = tempfile::tempdir()?;
     for cell in [
