@@ -78,3 +78,60 @@ fn verify_corrupt_member_pointing_at_the_wrong_offset_is_refused() -> TestResult
     check!(error.to_string().contains("disagrees"), "{error}");
     Ok(())
 }
+
+#[test]
+fn xlsx_profile_refuses_duplicate_workbook_and_worksheet_members() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    for name in ["xl/workbook.xml", "xl/worksheets/sheet1.xml"] {
+        for second in [b"<first/>".as_slice(), b"<second/>".as_slice()] {
+            let first = b"<first/>";
+            let bytes = fixture::archive(&[
+                (name, first, 0, u32::try_from(first.len())?),
+                (name, second, 0, u32::try_from(second.len())?),
+            ]);
+            let path = fixture::write(directory.path(), "duplicate-member.xlsx", &bytes)?;
+            let error = Archive::open(&path, Profile::inline())
+                .err()
+                .ok_or("a repeated ZIP member name was accepted")?;
+            check!(eq; error.corruption(), Some(CorruptionClass::ArtifactCorrupt));
+            check!(error.to_string().contains(name), "{error}");
+            check!(error.to_string().contains("is repeated"), "{error}");
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn xlsx_profile_refuses_an_underreported_central_directory_before_extra_members() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let mut bytes = fixture::archive(&[("first.xml", b"", 0, 0), ("second.xml", b"", 0, 0)]);
+    let start = bytes.len().checked_sub(14).ok_or("short ZIP end record")?;
+    let end = start.checked_add(4).ok_or("end record offset overflow")?;
+    bytes
+        .get_mut(start..end)
+        .ok_or("missing ZIP member counts")?
+        .copy_from_slice(&[1, 0, 1, 0]);
+    let path = fixture::write(directory.path(), "underreported-members.xlsx", &bytes)?;
+    let error = Archive::open(&path, Profile::inline())
+        .err()
+        .ok_or("an underreported ZIP directory was accepted")?;
+    check!(eq; error.corruption(), Some(CorruptionClass::ArtifactCorrupt));
+    check!(
+        error.to_string().contains("declared member count"),
+        "{error}"
+    );
+    Ok(())
+}
+
+#[test]
+fn xlsx_profile_preserves_distinct_package_members_and_their_cells() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let bytes = fixture::workbook(&fixture::inline_sheet());
+    let path = fixture::write(directory.path(), "distinct-members.xlsx", &bytes)?;
+    let archive = Archive::open(&path, Profile::inline())?;
+    check!(eq; archive.sheet_names()?, vec!["Sheet1"]);
+    let (walked, written) = fixture::walk(&archive, "Sheet1")?;
+    check!(eq; walked.cells.len(), 6);
+    check!(eq; written, Some(3));
+    Ok(())
+}

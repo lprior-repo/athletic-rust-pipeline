@@ -58,7 +58,7 @@ impl Container {
             return Err(scope.corrupt("the central directory runs past the end of the container"));
         }
         let directory = read_at(&file, offset, size, &scope)?;
-        let mut entries = Vec::new();
+        let mut entries: Vec<Entry> = Vec::new();
         entries
             .try_reserve(declared)
             .map_err(|_| scope.corrupt("the member table cannot be allocated"))?;
@@ -67,7 +67,13 @@ impl Container {
             if size.saturating_sub(position) < CENTRAL_RECORD {
                 return Err(scope.corrupt("a central directory record is truncated"));
             }
+            if entries.len() >= declared {
+                return Err(scope.corrupt("the directory exceeds its declared member count"));
+            }
             let (entry, span) = record(&directory, position, &scope, profile)?;
+            if entries.iter().any(|prior| prior.name == entry.name) {
+                return Err(scope.corrupt(format!("archive member {} is repeated", entry.name)));
+            }
             position = position.saturating_add(span);
             entries.push(entry);
         }

@@ -23,10 +23,19 @@ pub(super) fn read(
     let rows = declared_shape(reader, &scope)?;
     let mut pending = PendingRows::default();
     while let Some(cell) = reader
-        .next_cell()
+        .next_cell_with_formula_metadata()
         .map_err(|source| unreadable(scope.path, source))?
     {
-        pending.append(cell, &scope, visit)?;
+        if cell.formula.is_some() {
+            return Err(artifact_corrupt(
+                scope.path,
+                format!(
+                    "sheet {} holds formula cells that cannot be verified from cached values",
+                    scope.name
+                ),
+            ));
+        }
+        pending.append(Cell::new(cell.pos, cell.value), &scope, visit)?;
     }
     pending.finish(rows, visit);
     Ok(Shape { rows })

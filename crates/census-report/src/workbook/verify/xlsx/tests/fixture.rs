@@ -96,6 +96,15 @@ pub(super) fn archive(entries: &[(&str, &[u8], u16, u32)]) -> Vec<u8> {
 }
 
 pub(super) fn workbook_archive(sheet: &[u8], method: u16, declared: u32) -> Vec<u8> {
+    archive_parts(sheet, method, declared, None)
+}
+
+pub(super) fn shared_string_workbook(sheet: &str) -> Vec<u8> {
+    let strings = "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"1\" uniqueCount=\"1\"><si><t>=2+2</t></si></sst>";
+    archive_parts(sheet.as_bytes(), STORED, size(sheet), Some(strings))
+}
+
+fn archive_parts(sheet: &[u8], method: u16, declared: u32, strings: Option<&str>) -> Vec<u8> {
     let content_types = format!(
         "{DECLARATION}<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"xml\" ContentType=\"application/xml\"/></Types>"
     );
@@ -108,7 +117,7 @@ pub(super) fn workbook_archive(sheet: &[u8], method: u16, declared: u32) -> Vec<
     let rels = format!(
         "{DECLARATION}<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/></Relationships>"
     );
-    let parts: Vec<(&str, &[u8], u16, u32)> = vec![
+    let mut parts: Vec<(&str, &[u8], u16, u32)> = vec![
         (
             "[Content_Types].xml",
             content_types.as_bytes(),
@@ -135,6 +144,14 @@ pub(super) fn workbook_archive(sheet: &[u8], method: u16, declared: u32) -> Vec<
         ),
         ("xl/worksheets/sheet1.xml", sheet, method, declared),
     ];
+    if let Some(strings) = strings {
+        parts.push((
+            "xl/sharedStrings.xml",
+            strings.as_bytes(),
+            STORED,
+            size(strings),
+        ));
+    }
     archive(&parts)
 }
 
