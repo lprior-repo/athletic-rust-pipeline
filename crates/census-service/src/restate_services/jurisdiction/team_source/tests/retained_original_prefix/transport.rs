@@ -61,6 +61,12 @@ pub(super) async fn exchange_recorded(
         capture,
         Jobs::new(Arc::clone(store), Arc::clone(&region)),
     );
+    let browser_listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await?;
+    let browser_transport = reqwest::Client::builder().no_proxy().build()?;
+    let lane = census_crawl::net::bridge::BrowserLane::over(census_crawl::ingress::client(
+        format!("http://{}/", browser_listener.local_addr()?).parse()?,
+        browser_transport,
+    )?);
     let fetcher = Arc::new(
         census_crawl::net::Fetcher::new(
             store.http_cache_dir(),
@@ -69,7 +75,8 @@ pub(super) async fn exchange_recorded(
             Default::default(),
             Vec::new(),
         )?
-        .with_offline(true),
+        .with_offline(true)
+        .with_browser_lane(lane),
     );
     *owner.fetcher.lock().await = Some((Vec::new(), 4, Arc::clone(&fetcher)));
     let source = TeamsSource::new(

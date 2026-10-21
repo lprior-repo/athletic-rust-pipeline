@@ -8,7 +8,7 @@ use crate::{JournalReadBudget, ReadBudget, StoreError, StoreResult, MAX_JOURNAL_
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 
 use super::super::MAX_RETAINED_CAPTURE_ENVELOPE_BYTES;
-const MAX_PHYSICAL_ROWS: u64 = 6;
+const MAX_PHYSICAL_ROWS: u64 = 7;
 const MAX_PHYSICAL_BYTES: u64 = 4 * 1024 * 1024;
 const DECODER_PASS_SLOTS: usize = 17;
 

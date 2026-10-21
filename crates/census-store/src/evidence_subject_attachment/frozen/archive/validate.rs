@@ -24,13 +24,17 @@ fn digest(value: &str) -> bool {
 }
 
 pub(super) fn root(kind: Kind, root: Option<&Root<'_>>) -> StoreResult<()> {
+    let limit = u64::try_from(
+        crate::evidence_subject_attachment::external::MAX_RETAINED_CAPTURE_ENVELOPE_BYTES,
+    )
+    .map_err(|_| StoreError::CounterOverflow)?;
     match (kind, root) {
         (Kind::Attachment | Kind::Receipts, None) => Ok(()),
         (Kind::External, Some(root))
             if digest(root.key)
                 && digest(root.payload.digest)
                 && root.payload.bytes > 0
-                && root.payload.bytes <= 2 * 1024 * 1024 =>
+                && root.payload.bytes <= limit =>
         {
             Ok(())
         }

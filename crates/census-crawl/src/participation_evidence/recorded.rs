@@ -80,12 +80,26 @@ pub fn record_retained_html_result_capture(
     recording: &Recording,
     document: &CheckedRetainedResultDocumentV1<'_>,
 ) -> CrawlResult<()> {
-    super::codec::encode(document.capture(), MAX_PACKET)?;
-    let payload = serde_json::to_value(document.capture()).map_err(super::json)?;
+    record_checked_html_capture(
+        store,
+        recording,
+        document.context_reference(),
+        document.capture(),
+    )
+}
+
+pub(super) fn record_checked_html_capture(
+    store: &Store,
+    recording: &Recording,
+    context_reference: &str,
+    capture: &super::RetainedHtmlCaptureV1,
+) -> CrawlResult<()> {
+    super::codec::encode(capture, MAX_PACKET)?;
+    let payload = serde_json::to_value(capture).map_err(super::json)?;
     let schema = RetainedCaptureRootSchemaV1::HtmlResultCaptureV1;
-    Store::check_retained_capture_entry_v1(schema, document.context_reference(), &payload)?;
+    Store::check_retained_capture_entry_v1(schema, context_reference, &payload)?;
     let mut batch = RowSink::Record { store, recording }.write_batch();
-    batch.journal_done(schema.phase(), document.context_reference(), &payload)?;
+    batch.journal_done(schema.phase(), context_reference, &payload)?;
     batch.commit()
 }
 

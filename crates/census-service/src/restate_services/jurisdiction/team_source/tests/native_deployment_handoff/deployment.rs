@@ -50,7 +50,9 @@ pub(super) async fn read(
     let body = response.bytes().await?;
     check!(body.len() <= 1_048_576);
     check!(eq; status, reqwest::StatusCode::OK, "native deployment read failed: {}", String::from_utf8_lossy(&body));
-    Ok(serde_json::from_slice(&body)?)
+    let mut value = serde_json::from_slice(&body)?;
+    order_handlers(&mut value)?;
+    Ok(value)
 }
 
 pub(super) async fn update(
@@ -78,10 +80,35 @@ pub(super) async fn update(
         &json!({"status": status.as_u16(), "body": String::from_utf8_lossy(&body)}),
     )?;
     check!(eq; status, reqwest::StatusCode::OK, "native 1.7.10 deployment PATCH dry_run={dry_run} failed: {}", String::from_utf8_lossy(&body));
-    let value: Value = serde_json::from_slice(&body)?;
+    let mut value: Value = serde_json::from_slice(&body)?;
     check!(eq; value["id"].as_str(), Some(id));
     check!(eq; value["uri"].as_str(), Some(format!("http://{address}/").as_str()));
+    order_handlers(&mut value)?;
     Ok(value)
+}
+
+fn order_handlers(deployment: &mut Value) -> TestResult {
+    let services = deployment["services"]
+        .as_array_mut()
+        .ok_or("deployment services absent")?;
+    for service in services {
+        let handlers = service["handlers"]
+            .as_array_mut()
+            .ok_or("deployment handlers absent")?;
+        for handler in handlers.iter() {
+            handler["name"]
+                .as_str()
+                .ok_or("deployment handler name absent")?;
+        }
+        handlers.sort_unstable_by(|left, right| left["name"].as_str().cmp(&right["name"].as_str()));
+        for (left, right) in handlers.iter().zip(handlers.iter().skip(1)) {
+            check!(
+                left["name"] != right["name"],
+                "duplicate deployment handler name"
+            );
+        }
+    }
+    Ok(())
 }
 
 pub(super) fn require_additive(old: &Value, new: &Value) -> TestResult {

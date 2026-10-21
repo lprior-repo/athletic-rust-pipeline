@@ -215,9 +215,5 @@ fn panic_extraction(root: Option<PathBuf>) -> Result<()> {
 }
 
 fn run_perf(command: PerfCommand) -> Result<()> {
-    match command {
-        PerfCommand::Record => perf::run_record(),
-        PerfCommand::Check { tolerance, reason } => perf::run_check(tolerance, reason),
-        PerfCommand::Profile { group } => perf::run_profile(&group),
-    }
+    command.run()
 }

@@ -2,12 +2,15 @@ use super::{PerfBaseline, BASELINE_FILE};
 use crate::paths;
 use anyhow::{Context, Result};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub fn load_baseline() -> Result<PerfBaseline> {
-    let path = baseline_path();
-    let content = fs::read_to_string(&path)
-        .with_context(|| format!("reading perf baseline: {}", paths::relative(&path)))?;
+    load_baseline_from(&baseline_path())
+}
+
+pub(super) fn load_baseline_from(path: &Path) -> Result<PerfBaseline> {
+    let content = fs::read_to_string(path)
+        .with_context(|| format!("reading perf baseline: {}", paths::relative(path)))?;
     let baseline: PerfBaseline =
         serde_json::from_str(&content).with_context(|| "parsing perf baseline JSON")?;
     Ok(baseline)

@@ -3,12 +3,26 @@ use super::super::*;
 #[test]
 fn duplicate_topology_attributes_refuse_the_exact_shifted_original_row() -> TestResult {
     for (from, to) in [
-        ("<div class=\"row gender_m standard_event_hnd_61\">", "<div class=\"row gender_m standard_event_hnd_61\" class=\"gender_f\">"),
-        ("<div class=\"performance-list-body \">", "<div class=\"performance-list-body \" class=\"other\">"),
-        ("<h3 class=\"font-weight-500\">", "<h3 class=\"font-weight-500\" class=\"other\">"),
+        (
+            "<div class=\"row gender_m standard_event_hnd_61\">",
+            "<div class=\"row gender_m standard_event_hnd_61\" class=\"gender_f\">",
+        ),
+        (
+            "<div class=\"performance-list-body \">",
+            "<div class=\"performance-list-body \" class=\"other\">",
+        ),
+        (
+            "<h3 class=\"font-weight-500\">",
+            "<h3 class=\"font-weight-500\" class=\"other\">",
+        ),
     ] {
         let (capture, row) = fixture::prefix_replaced(from, to)?;
-        check!(matches!(read_retained_tfrrs_list_rows(&capture, &[row]), Err(RetainedResultOwnershipError::Invalid("malformed TFRRS owned topology tag"))));
+        check!(matches!(
+            read_retained_tfrrs_list_rows(&capture, &[row]),
+            Err(RetainedResultOwnershipError::Invalid(
+                "malformed TFRRS owned topology tag"
+            ))
+        ));
     }
     Ok(())
 }

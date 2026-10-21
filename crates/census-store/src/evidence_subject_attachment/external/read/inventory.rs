@@ -36,7 +36,7 @@ pub(super) fn budget(
     let contents = view.scan_journal_namespace(
         JournalNamespace::new(schema.phase(), key)?,
         ReadBudget {
-            rows: 6,
+            rows: 7,
             bytes: 4 * 1024 * 1024,
             record_bytes: MAX_JOURNAL_VALUE_BYTES,
         },
@@ -91,7 +91,7 @@ impl Inventory<'_> {
                 self.chunks = shape
                     .chunks
                     .ok_or(Error::Corrupt("external manifest chunk count"))?;
-                if self.chunks == 0 || self.chunks > 5 {
+                if self.chunks == 0 || self.chunks > 6 {
                     return Err(Error::Corrupt("external manifest chunk bounds").into());
                 }
                 self.grant

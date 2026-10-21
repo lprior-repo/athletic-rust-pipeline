@@ -73,7 +73,11 @@ impl<'a> State<'a> {
                 }
             }
             Token::Error(error) => {
-                if self.section.as_ref().is_some_and(|section| section.open_header.is_some()) {
+                if self
+                    .section
+                    .as_ref()
+                    .is_some_and(|section| section.open_header.is_some())
+                {
                     return Err(invalid("malformed TFRRS owned event header"));
                 }
                 self.last_error = Some(error.span);
@@ -90,8 +94,10 @@ impl<'a> State<'a> {
             .ok_or(RetainedResultOwnershipError::Overflow)?;
         bounded(self.depth, 128)?;
         let classes = context::classes(&tag)?;
-        if context::event(classes) || context::has(classes, "performance-list-body")
-            || context::has(classes, "performance-list-row") {
+        if context::event(classes)
+            || context::has(classes, "performance-list-body")
+            || context::has(classes, "performance-list-row")
+        {
             self.require_tokenized(&tag)?;
         }
         if context::event(classes) {
@@ -111,7 +117,10 @@ impl<'a> State<'a> {
     }
 
     fn require_tokenized(&self, tag: &StartTag<usize>) -> Result<()> {
-        if self.last_error.is_some_and(|error| error.start >= tag.span.start && error.end <= tag.span.end) {
+        if self
+            .last_error
+            .is_some_and(|error| error.start >= tag.span.start && error.end <= tag.span.end)
+        {
             return Err(invalid("malformed TFRRS owned topology tag"));
         }
         Ok(())

@@ -1,7 +1,5 @@
 use super::*;
-use crate::participation_evidence::provider_school::{
-    ProviderSchoolPacketRefV1,
-};
+use crate::participation_evidence::provider_school::ProviderSchoolPacketRefV1;
 use census_domain::model::{
     AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId, CanonicalAthlete,
     CanonicalSchool, SourceNamespace, SourceObservation,

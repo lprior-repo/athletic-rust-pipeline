@@ -145,22 +145,32 @@ fn whole_root_rejects_duplicate_escaped_duplicate_unknown_and_late_other_capture
 
 #[test]
 fn body_bound_accepts_exact_and_refuses_one_over_without_a_leaf() -> TestResult {
-    for length in [512 * 1024, 512 * 1024 + 1] {
+    for length in [2 * 1024 * 1024, 2 * 1024 * 1024 + 1] {
         let directory = tempfile::tempdir()?;
         let store = Store::open(directory.path())?;
         let body = vec![b'x'; length];
         let raw = serde_json::to_string(&capture(&body)?)?;
-        let leaf = install(
-            &store,
-            Schema::HtmlResultCaptureV1,
-            &raw,
-            RetainedCaptureSlotV1::SelfCapture,
-            reference(&body)?,
+        let key = "a".repeat(64);
+        store.journal_done(
+            Schema::HtmlResultCaptureV1.phase(),
+            &key,
+            &serde_json::from_str::<serde_json::Value>(&raw)?,
         )?;
+        let leaf = RetainedCaptureLeafV1 {
+            version: 1,
+            root: RetainedCaptureRootV1 {
+                schema: Schema::HtmlResultCaptureV1,
+                key,
+                payload: reference(raw.as_bytes())?,
+            },
+            slot: RetainedCaptureSlotV1::SelfCapture,
+            kind: RetainedCaptureLeafKindV1::OriginalBody,
+            object: reference(&body)?,
+        };
         let before = retained_state(&store)?;
         let mut grant = AttachmentReplayGrantV1::new();
         let result = verify(&store.snapshot(), &leaf, &mut grant);
-        if length == 512 * 1024 {
+        if length == 2 * 1024 * 1024 {
             result?;
         } else {
             check!(matches!(
@@ -259,5 +269,6 @@ fn selected_capture_and_provenance_are_maps_with_unique_known_fields() -> TestRe
     Ok(())
 }
 
+mod capture_bounds;
 mod school;
 mod window;

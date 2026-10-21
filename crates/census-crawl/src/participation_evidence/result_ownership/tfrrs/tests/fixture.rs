@@ -66,14 +66,25 @@ pub(super) fn first_replaced(
     changed_row(|row| row.replacen(from, to, 1))
 }
 
-pub(super) fn prefix_replaced(from: &str, to: &str) -> TestResult<(RetainedHtmlCaptureV1, SourceRowLocator)> {
+pub(super) fn prefix_replaced(
+    from: &str,
+    to: &str,
+) -> TestResult<(RetainedHtmlCaptureV1, SourceRowLocator)> {
     let mut body = std::str::from_utf8(BODY)?.to_owned();
     let mut row = locators()[0];
     let start = body.find(from).ok_or("fixture topology prefix")?;
     let end = start.checked_add(from.len()).ok_or("fixture prefix end")?;
-    if end > row.byte_offset { return Err("fixture prefix follows selected row".into()); }
-    let added = to.len().checked_sub(from.len()).ok_or("fixture prefix shrink")?;
-    row.byte_offset = row.byte_offset.checked_add(added).ok_or("fixture prefix offset")?;
+    if end > row.byte_offset {
+        return Err("fixture prefix follows selected row".into());
+    }
+    let added = to
+        .len()
+        .checked_sub(from.len())
+        .ok_or("fixture prefix shrink")?;
+    row.byte_offset = row
+        .byte_offset
+        .checked_add(added)
+        .ok_or("fixture prefix offset")?;
     body.replace_range(start..end, to);
     Ok((capture(body.as_bytes())?, row))
 }

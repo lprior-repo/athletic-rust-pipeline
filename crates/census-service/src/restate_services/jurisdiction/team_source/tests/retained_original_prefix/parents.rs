@@ -44,7 +44,7 @@ async fn pre_change_illinois_pass_journal_replays_to_the_same_pending_ihsa_call_
     check!(eq; last_call.text(2)?, "run");
     check!(eq; last_call.text(5)?, "jurisdiction:IL:2026-27:1/teams/ihsa");
     check!(eq; last_call.number(11)?, 6);
-    replay(prefix, "JurisdictionCensus/pass", 6).await
+    replay(prefix, "JurisdictionCensus/pass", 6, false).await
 }
 
 #[tokio::test]
@@ -64,10 +64,15 @@ async fn pre_change_national_run_journal_replays_to_the_same_pending_illinois_pa
     check!(eq; last_call.text(2)?, "pass");
     check!(eq; last_call.text(5)?, "jurisdiction:IL:2026-27:1");
     check!(eq; last_call.number(11)?, 25);
-    replay(prefix, "NationalCensus/run", 25).await
+    replay(prefix, "NationalCensus/run", 25, true).await
 }
 
-async fn replay(prefix: prefix::Journal, handler: &str, pending: u8) -> TestResult {
+async fn replay(
+    prefix: prefix::Journal,
+    handler: &str,
+    pending: u8,
+    unordered: bool,
+) -> TestResult {
     let original: NationalRequest = national_prefix()?.input()?;
     let root = tempfile::tempdir()?;
     Store::create_current_qualification_v3(root.path())?;
@@ -90,6 +95,7 @@ async fn replay(prefix: prefix::Journal, handler: &str, pending: u8) -> TestResu
                 .as_str()
     );
     store.bind_run(&manifest)?;
+    seed_recorded_status(&store, &prefix, handler)?;
     let before = protected(&store)?;
     let clock = Arc::new(transport::UnusedClock::default());
     let frames = transport::exchange_recorded(
@@ -100,7 +106,7 @@ async fn replay(prefix: prefix::Journal, handler: &str, pending: u8) -> TestResu
         handler,
     )
     .await?;
-    assert_pending(&frames, pending)?;
+    assert_pending(&frames, pending, unordered)?;
     check!(eq; clock.0.load(Ordering::SeqCst), 0);
     check!(eq; protected(&store)?, before);
     check!(eq; store.run_manifest()?, Some(manifest));
@@ -110,6 +116,30 @@ async fn replay(prefix: prefix::Journal, handler: &str, pending: u8) -> TestResu
         .is_empty());
     let attempts = ledger::durable_attempts(&store)?;
     check!(eq; (attempts.sources, attempts.reserved, attempts.recorded), (0, 0, 0));
+    Ok(())
+}
+
+fn seed_recorded_status(store: &Store, prefix: &prefix::Journal, handler: &str) -> TestResult {
+    if handler != "JurisdictionCensus/pass" {
+        return Ok(());
+    }
+    let state = prefix.frames.get(1).ok_or("missing retained state")?;
+    check!(eq; state.kind, 0x0407);
+    let value = codec::field(state.bytes(14)?, 1)?.ok_or("missing retained state value")?;
+    let state: crate::restate_services::wire::JurisdictionState = serde_json::from_slice(value)?;
+    let request: JurisdictionRequest = prefix.input()?;
+    let fingerprint = crate::restate_services::plan::compute_plan_fingerprint(
+        request.jurisdiction,
+        request.season,
+        request.revision,
+        crate::restate_services::plan::BrowserLaneState::Configured,
+    );
+    check!(eq; state.plan.as_ref().ok_or("retained plan missing")?.fingerprint, fingerprint);
+    let status = state
+        .athleticlive
+        .ok_or("retained AthleticLIVE status missing")?;
+    let key = format!("{}/athleticlive_manifest/status", prefix.key);
+    store.journal_done("athleticlive_manifest_obligation_v1", &key, &status)?;
     Ok(())
 }
 
@@ -123,9 +153,17 @@ fn protected(store: &Store) -> TestResult<(u64, u64, u64, String)> {
     ))
 }
 
-fn assert_pending(frames: &[codec::Frame], pending: u8) -> TestResult {
-    let mut expected = codec::blob(1, &[pending])?;
-    expected.extend(codec::blob(2, &[1])?);
+fn assert_pending(frames: &[codec::Frame], pending: u8, unordered: bool) -> TestResult {
+    let mut completion = codec::blob(1, &[pending])?;
+    let mut expected = if unordered {
+        completion.extend(codec::integer(5, 1));
+        let mut future = codec::blob(2, &[1])?;
+        future.extend(codec::blob(4, &completion)?);
+        future
+    } else {
+        completion.extend(codec::blob(2, &[1])?);
+        completion
+    };
     expected.extend(codec::integer(5, 1));
     check!(
         (1..=2).contains(&frames.len()),
@@ -134,7 +172,7 @@ fn assert_pending(frames: &[codec::Frame], pending: u8) -> TestResult {
     let (suspension, updates) = frames
         .split_last()
         .ok_or("missing original Call suspension")?;
-    check!(eq; suspension.kind, 0x0001);
+    check!(eq; suspension.kind, 0x0001, "SDK output {frames:?}");
     check!(eq; suspension.payload, codec::blob(4, &expected)?);
     for update in updates {
         check!(eq; update.kind, 0x0006);

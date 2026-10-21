@@ -1,6 +1,6 @@
 use super::{
-    HtmlResultProjectionError as Error, ProposedHtmlResultIdentityV1,
-    ProposedHtmlResultTargetV1, Result, UnadmittedHtmlResultRowV1,
+    HtmlResultProjectionError as Error, ProposedHtmlResultIdentityV1, ProposedHtmlResultTargetV1,
+    Result, UnadmittedHtmlResultRowV1,
 };
 use crate::participation_evidence::result_ownership::tfrrs::{
     CheckedRetainedTfrrsListV1, CheckedRetainedTfrrsRowV1,

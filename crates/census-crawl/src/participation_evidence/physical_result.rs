@@ -6,6 +6,7 @@ mod admission;
 mod observation;
 mod project;
 mod provenance;
+pub mod tfrrs;
 mod types;
 
 pub use types::{

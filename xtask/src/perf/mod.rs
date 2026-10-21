@@ -1,5 +1,7 @@
 mod baseline;
 mod bench;
+mod candidate;
+mod command;
 pub(crate) mod compare;
 mod corpus;
 mod env;
@@ -7,8 +9,7 @@ mod scope;
 
 pub use baseline::load_baseline;
 pub use bench::run_benchmarks;
-
-use clap::Subcommand;
+pub(crate) use command::PerfCommand;
 
 use crate::cmd::Cmd;
 use crate::paths;
@@ -76,13 +77,7 @@ pub(crate) struct Meta {
 }
 
 pub fn run_record() -> Result<()> {
-    let benchmark_data = run_benchmarks()?;
-    let meta = env::build_meta()?;
-    let baseline = PerfBaseline {
-        metadata: meta,
-        check_reason: None,
-        groups: benchmark_data,
-    };
+    let baseline = measure()?;
     let baseline_path = baseline::baseline_path();
     let json = serde_json::to_string_pretty(&baseline).with_context(|| "serializing baseline")?;
     fs::write(&baseline_path, json)
@@ -91,9 +86,24 @@ pub fn run_record() -> Result<()> {
     Ok(())
 }
 
+fn measure() -> Result<PerfBaseline> {
+    let benchmark_data = run_benchmarks()?;
+    let meta = env::build_meta()?;
+    Ok(PerfBaseline {
+        metadata: meta,
+        check_reason: None,
+        groups: benchmark_data,
+    })
+}
+
 pub fn run_check(tolerance: f64, reason: Option<String>) -> Result<()> {
     compare::validate_tolerance(tolerance)?;
     let baseline = load_baseline()?;
+    check(baseline, tolerance, reason)
+}
+
+fn check(baseline: PerfBaseline, tolerance: f64, reason: Option<String>) -> Result<()> {
+    compare::validate_tolerance(tolerance)?;
     compare::check_environment(&baseline)?;
     compare::validate_baseline(&baseline)?;
     let current_data = run_benchmarks()?;
@@ -164,35 +174,3 @@ fn profile_benchmark(bench_name: &str, group: &str) -> Result<()> {
 #[cfg(test)]
 #[path = "perf_tests.rs"]
 mod tests;
-
-#[derive(Subcommand, Debug)]
-pub(crate) enum PerfCommand {
-    #[command(
-        about = "Record Criterion timing, sample-tail timing, throughput and required GNU time RSS/Valgrind DHAT heap allocation measurements"
-    )]
-    Record,
-    #[command(
-        about = "Re-run all three benchmark targets, reject ID or measurement mismatches, and fail regressions beyond the tolerance (default 5%; the sample-maximum tail bound is floored at 20%, the GNU time peak-RSS bound at a seventh of its recorded baseline (1 MiB minimum) and the wall-time/throughput bounds at the case's recorded tail-to-mean spread, capped at the same 20%)"
-    )]
-    Check {
-        #[arg(
-            help = "Override the default 5% regression tolerance (e.g. `--tolerance 0.1` for 10%; the sample-maximum tail bound is floored at 20%, the GNU time peak-RSS bound at a seventh of its recorded baseline (1 MiB minimum) and the wall-time/throughput bounds at the case's recorded tail-to-mean spread, capped at the same 20%)"
-        )]
-        #[arg(long, default_value_t = 0.05)]
-        tolerance: f64,
-        #[arg(
-            help = "Reason for running the check; does not waive environment or metric mismatches"
-        )]
-        #[arg(long)]
-        reason: Option<String>,
-    },
-    #[command(
-        about = "Run one named group under `perf record --call-graph=dwarf`; prints the exact command and explains why it did not run when `perf` is absent"
-    )]
-    Profile {
-        #[arg(
-            help = "Criterion group id to profile, e.g. `census/parse` or `pipeline/result_file`"
-        )]
-        group: String,
-    },
-}

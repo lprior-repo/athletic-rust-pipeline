@@ -341,3 +341,10 @@ fn an_absent_perf_baseline_fails_release_and_skips_development() -> TestResult {
 
 #[path = "memory_tests.rs"]
 mod memory_tests;
+
+#[path = "candidate_compare_tests.rs"]
+mod candidate_compare_tests;
+#[path = "candidate_output_tests.rs"]
+mod candidate_output_tests;
+#[path = "command_tests.rs"]
+mod command_tests;
