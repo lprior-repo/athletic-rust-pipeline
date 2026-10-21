@@ -2874,3 +2874,26 @@ The separate five-state endpoint was resumed on its original Store/run using
 the repaired immutable executable, not reset or resubmitted. Stop recorded
 175/175 accepted effects completed and no remaining effects, but timed out
 waiting for endpoint connections; one attempt remained unknown and was preserved.
+
+PR119 landed at `96521233323065dec24733d44ef0ba8144bbb5af`;
+merge tree `4b3c9aeacc510bfb786695ad6ecf5c0a40b19c13` equals tested
+candidate `e2ae6d1725140a7601069778de09343130870e32`.
+Exact-candidate format`e6e8a8bb`, all-target check`72fcf187`, source
+lint`352b4a11` and71/71 reader tests`e7784464` passed, with advisories.
+Native candidate readback`09b48d50` verified the unchanged genuine original
+workbook and297 rows. Full workspace/release gates were not run for this fix.
+
+Follow-on acquisition: the same archive epoch reached2,488 captures,
+2,246 bodies and195,296,025 payload bytes. CO also hit the protected national
+owner's MileSplit lease. The user selected **keep national running**; no
+ownership bypass, stopped national process or reset is authorized.
+`rm23.1` tracks terminal-cache recovery; `rm23.3` retains the unsupported
+source-declared conversion input gap without weakening source equality.
+
+Browser bootstrap failed at501 CDP events before its deadline. Removing
+the navigation event-count cutoff, while retaining deadline/data/policy
+bounds, passed14 existing navigation regressions`f7be97d3`. The same
+headed profile then started **Ready**,0/2 slots used, cooldown0, in1.43s
+through the public operator command. Executable digest:
+`d269d4a55c41a0e44bf4f7890ba043144eea23a5834930a40f8463b1ce2aeae4`.
+This smoke proves bootstrap, not population coverage or five-state delivery.

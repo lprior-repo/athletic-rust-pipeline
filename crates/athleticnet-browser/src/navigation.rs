@@ -120,13 +120,7 @@ impl NavigationLoop<'_> {
     ) -> Result<(), BrowserError> {
         let navigation = self.page.goto(NavigateParams::new(self.target.to_string()));
         tokio::pin!(navigation);
-        let mut iterations: u64 = 0;
         loop {
-            iterations = iterations.saturating_add(1);
-            if iterations > MAX_ITERATIONS {
-                tracing::warn!(iterations, "navigation run loop reached iteration bound");
-                return Err(BrowserError::Timeout);
-            }
             let remaining = self
                 .deadline
                 .saturating_duration_since(self.clock.now_instant());
