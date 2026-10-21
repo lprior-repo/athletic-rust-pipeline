@@ -32,6 +32,12 @@ pub(super) fn for_assertions<'a>(
         let claim = raw.id.as_str();
         for (_, withdrawal) in index.range((claim, 0)..=(claim, u64::MAX)) {
             charge(grant, 0, 1)?;
+            let mapped = mapped_person(raw.person, withdrawal.decision().person())?;
+            audit.reference(athlete, withdrawal.review_digest())?;
+            audit.reference(athlete, withdrawal.decision().member_claim())?;
+            if !mapped {
+                continue;
+            }
             let change = checked(LocallyCheckedChange::check(RawChange {
                 id: object(withdrawal.review_digest())?,
                 target: raw.id,
@@ -46,11 +52,19 @@ pub(super) fn for_assertions<'a>(
             }))?;
             reserve(&mut changes, grant)?;
             changes.push(change);
-            audit.reference(athlete, withdrawal.review_digest())?;
-            audit.reference(athlete, withdrawal.decision().member_claim())?;
         }
     }
     Ok(changes)
+}
+
+fn mapped_person(person: PersonCandidate<'_>, expected: &SourceSubject) -> StoreResult<bool> {
+    match person {
+        PersonCandidate::Mapped { person, .. } if person == expected => Ok(true),
+        PersonCandidate::Unbound { person, .. } if person == expected => Ok(false),
+        _ => Err(invalid(
+            "reviewed member withdrawal person differs from assertion",
+        )),
+    }
 }
 
 fn reserve(
@@ -75,4 +89,51 @@ fn reserve(
             .map_err(|_| invalid("reviewed member withdrawal allocation refused"))?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use census_domain::model::SourceNamespace;
+    use std::num::NonZeroU64;
+
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+    #[test]
+    fn unbound_withdrawal_requires_exact_source_person_before_skipping() -> TestResult {
+        let source = SourceSubject::new(SourceNamespace::MilesplitAthlete, "77".to_owned())?;
+        let foreign = SourceSubject::new(SourceNamespace::MilesplitAthlete, "78".to_owned())?;
+        let wrong_namespace = SourceSubject::new(SourceNamespace::TfrrsAthlete, "77".to_owned())?;
+        for gap in [SubjectGap::UnacceptedBinding, SubjectGap::ProviderIdReused] {
+            let person = PersonCandidate::Unbound {
+                person: &source,
+                gap,
+            };
+            check!(!mapped_person(person, &source)?);
+            check!(mapped_person(person, &foreign).is_err());
+            check!(mapped_person(person, &wrong_namespace).is_err());
+        }
+        check!(mapped_person(PersonCandidate::MissingKey, &source).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn mapped_withdrawal_requires_exact_source_person() -> TestResult {
+        let source = SourceSubject::new(SourceNamespace::MilesplitAthlete, "77".to_owned())?;
+        let foreign = SourceSubject::new(SourceNamespace::MilesplitAthlete, "78".to_owned())?;
+        let wrong_namespace = SourceSubject::new(SourceNamespace::TfrrsAthlete, "77".to_owned())?;
+        let athlete = AthleteId::mint("ath_subject", &["controlled-withdrawal-person"]);
+        let revision = NonZeroU64::new(1).ok_or("zero controlled revision")?;
+        let known = KnownBounds::new(object("controlled-lineage")?, revision, revision)?;
+        let person = PersonCandidate::Mapped {
+            person: &source,
+            athlete: &athlete,
+            decision: object("controlled-person-binding")?,
+            known,
+        };
+        check!(mapped_person(person, &source)?);
+        check!(mapped_person(person, &foreign).is_err());
+        check!(mapped_person(person, &wrong_namespace).is_err());
+        Ok(())
+    }
 }

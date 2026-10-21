@@ -11,6 +11,7 @@ mod isolation;
 mod progress;
 mod replay;
 mod scope;
+mod unresolved;
 
 #[test]
 fn reviewed_withdrawal_withholds_the_sole_current_school_without_erasing_its_source() -> TestResult
