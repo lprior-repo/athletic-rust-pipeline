@@ -258,44 +258,6 @@ pub(super) fn install_with_marks(
     })
 }
 
-pub(super) fn install_with_marks(marks: &[ControlledMark]) -> TestResult<InstalledSource> {
-    let directory = tempfile::tempdir()?;
-    let path = directory.path().join("store");
-    Store::create_public_identity_qualification_v3(&path)?;
-    let (store, writer) = Store::open_public_identity_qualification_v3(&path)?.into_parts();
-    writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;
-
-    let (school, school_source) = enroll_school(&store)?;
-    let (candidate, target_source) = enroll_target(&store)?;
-    let (result_sources, row_locators) =
-        results::install_with_marks(&store, "Controlled Track Venue", marks)?;
-
-    let mut source_records = vec![school_source, target_source];
-    source_records.extend(result_sources);
-
-    let birth = writer.establish_source_bound(
-        &store,
-        "controlled-source-bound-target",
-        &candidate,
-        store.snapshot().revision(),
-        &writer.head(&store)?,
-    )?;
-    let public = birth.public_id().clone();
-
-    require_originals(&store, &source_records)?;
-
-    Ok(InstalledSource {
-        directory,
-        store,
-        identity_writer: writer,
-        school,
-        public,
-        candidate,
-        source_records,
-        row_locators,
-    })
-}
-
 pub(super) fn require_identity(
     store: &Store,
     candidate: &AthleteCandidateId,
