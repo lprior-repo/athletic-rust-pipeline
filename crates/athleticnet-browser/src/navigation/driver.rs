@@ -1,4 +1,4 @@
-use super::{BrowserError, Clock, Duration, Future, MAX_ITERATIONS};
+use super::{BrowserError, Clock, Duration, Future};
 
 pub(super) trait NavigationSteps: Send {
     fn step(
@@ -15,13 +15,7 @@ pub(super) async fn drive_events<F>(
 where
     F: NavigationSteps,
 {
-    let mut iterations: u64 = 0;
     loop {
-        iterations = iterations.saturating_add(1);
-        if iterations > MAX_ITERATIONS {
-            tracing::warn!(iterations, "navigation loop reached iteration bound");
-            return Err(BrowserError::Timeout);
-        }
         let remaining = deadline.saturating_duration_since(clock.now_instant());
         if remaining.is_zero() {
             return Err(BrowserError::Timeout);
