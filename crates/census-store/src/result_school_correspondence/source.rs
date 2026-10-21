@@ -128,15 +128,17 @@ fn require_subject(
             else {
                 return Err(Error::SourceMismatch("result capture schema").into());
             };
-            statement::require(source, materials, &result, &capture, grant)
+            statement::require(
+                source,
+                materials,
+                subject.namespace.as_str(),
+                &result,
+                &capture,
+                grant,
+            )
         },
     )?;
-    let provider = root(
-        materials,
-        &source.target.provider_school_root,
-        crate::RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1,
-        grant,
-    )?;
+    let provider = school_root(materials, &source.target.provider_school_root, grant)?;
     crate::evidence_subject_attachment::external::with_checked(
         view,
         &provider,
@@ -220,6 +222,23 @@ pub(super) fn root(
     let bytes = object(materials, reference)?.inline_bytes(grant)?;
     let root: crate::RetainedCaptureRootV1 = codec::decode(&bytes, grant)?;
     if root.schema != schema {
+        return Err(Error::SourceMismatch("capture root schema").into());
+    }
+    Ok(root)
+}
+
+pub(super) fn school_root(
+    materials: &[Material],
+    reference: &AttachmentObjectReferenceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<crate::RetainedCaptureRootV1> {
+    let bytes = object(materials, reference)?.inline_bytes(grant)?;
+    let root: crate::RetainedCaptureRootV1 = codec::decode(&bytes, grant)?;
+    if !matches!(
+        root.schema,
+        crate::RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
+            | crate::RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1
+    ) {
         return Err(Error::SourceMismatch("capture root schema").into());
     }
     Ok(root)

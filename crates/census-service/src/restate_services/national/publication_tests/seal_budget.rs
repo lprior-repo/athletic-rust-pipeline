@@ -1,8 +1,10 @@
 use super::{fixtures, journal::Journal, TestResult};
 
-pub(super) async fn run(client: &reqwest::Client, url: &str) -> TestResult {
-    let controlled = crate::restate_services::jobs::selected_fixture::install()
-        .map_err(|error| error.to_string())?;
+pub(super) async fn run(
+    client: &reqwest::Client,
+    url: &str,
+    controlled: crate::restate_services::jobs::selected_fixture::Controlled,
+) -> TestResult {
     let mut request =
         fixtures::selected_request(&controlled, &census_domain::UsJurisdiction::CENSUS_SCOPE)?;
     request.pass_budget = 0;

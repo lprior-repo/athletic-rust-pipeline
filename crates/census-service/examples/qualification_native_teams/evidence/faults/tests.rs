@@ -1,5 +1,5 @@
 use super::*;
-use census_domain::model::serialized_digest;
+use census_domain::model::{serialized_digest, Revision};
 use census_service::restate_services::TeamsSourceRequest;
 use std::collections::BTreeMap;
 

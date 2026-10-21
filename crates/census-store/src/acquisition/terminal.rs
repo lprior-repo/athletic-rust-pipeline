@@ -36,7 +36,7 @@ impl Store {
     ) -> StoreResult<AcquisitionOccurrenceRefV1> {
         budget.begin_operation();
         let _writes = self.lock_appends();
-        work.verify(self)?;
+        work.verify(self, budget)?;
         let snapshot = self.db.snapshot();
         let facts = read::read_work(
             &snapshot,
@@ -85,7 +85,7 @@ impl Store {
     ) -> StoreResult<AcquisitionOccurrenceRefV1> {
         budget.begin_operation();
         let _writes = self.lock_appends();
-        response.work.verify(self)?;
+        response.work.verify(self, budget)?;
         let snapshot = self.db.snapshot();
         let facts = read::read_work(
             &snapshot,

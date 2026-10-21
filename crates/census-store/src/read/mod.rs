@@ -37,8 +37,8 @@ pub(crate) use view::{
     admit_namespace_budget, for_each_retained_journal_root_with_admission,
     read_retained_journal_entry_raw_bounded, retained_source_sealed,
     with_retained_journal_entry_raw_bounded, JournalNamespaceContents,
-    JournalNamespaceContentsInventory, NamespaceScan, ReceiptScan, RetainedJournalBytes,
-    RetainedJournalReadSource,
+    JournalNamespaceContentsInventory, NamespaceScan, PhysicalRetainedJournalSource, ReceiptScan,
+    RetainedJournalBytes, RetainedJournalReadSource,
 };
 
 pub(crate) use directory::directory_bytes;

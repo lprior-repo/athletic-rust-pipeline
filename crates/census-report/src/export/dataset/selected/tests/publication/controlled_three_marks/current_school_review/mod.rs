@@ -13,7 +13,7 @@ use census_store::{
 };
 use chrono::{DateTime, Utc};
 
-mod proposal;
+pub(super) mod proposal;
 
 pub(super) fn accept(
     installed: &InstalledSource,

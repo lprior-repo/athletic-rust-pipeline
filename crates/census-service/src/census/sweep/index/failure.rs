@@ -8,7 +8,7 @@ use super::{load, teams_phase, Disposition, Receipt};
 use crate::census::access::{self, SourceAccessFailure};
 
 #[tracing::instrument(skip_all, fields(state = jurisdiction.code()))]
-pub(in crate::census::sweep) async fn retain_failure(
+pub(crate) async fn retain_failure(
     fetcher: &Fetcher,
     store: &Store,
     jurisdiction: UsJurisdiction,

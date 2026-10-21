@@ -60,7 +60,7 @@ pub(super) fn require_historical(
 const SCHEMA: &str = "roster-semantic-kernel-dependencies/v13";
 const MAX_DOCUMENT: usize = 64 * 1024;
 const EXPECTED_SOURCE_DIGEST: &str =
-    "7f4205a1512e639663f57a21d7f8c80ef2c048d17668d3434db85d5aa6c698d3";
+    "336fc635768727db97c64d2d05728531385dba166a4879721a8f0507a818763c";
 const COMPILED: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v13.json"));
 
@@ -99,7 +99,7 @@ fn validate(bytes: &[u8]) -> StoreResult<()> {
         ));
     }
     if kernel.sources.is_empty()
-        || kernel.sources.len() > 128
+        || kernel.sources.len() > 256
         || kernel.configuration.files.len() != 8
         || kernel.configuration.environment.len() > 128
         || kernel.dependencies.path != "Cargo.lock"

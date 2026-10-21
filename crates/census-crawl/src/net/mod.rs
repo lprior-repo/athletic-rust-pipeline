@@ -21,8 +21,9 @@ mod client;
 pub(crate) use acquisition::tests::fixture as capture_fixture;
 pub(crate) use acquisition::CaptureProvenance;
 pub use acquisition::{
-    CaptureProvenanceView, CapturedFetch, EligiblePublicationOutcome, EligiblePublicationSkip,
-    PreparedRecoveryOutcome,
+    assess_directory_roster_child, CaptureProvenanceView, CapturedFetch, CapturedPublicDirectory,
+    CheckedDirectoryRosterWitnessV1, EligiblePublicationOutcome, EligiblePublicationSkip,
+    PreparedRecoveryOutcome, PublicResourceAcquisition, RetainedObservedCaptureView,
 };
 pub use capture_error::CaptureTransportError;
 mod destination_guard;

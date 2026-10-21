@@ -15,6 +15,7 @@ mod genuine;
 mod parser;
 mod span;
 mod support;
+pub(in crate::participation_evidence) mod tfrrs;
 
 pub(in crate::participation_evidence::recorded) use genuine::verify_genuine;
 use support::*;

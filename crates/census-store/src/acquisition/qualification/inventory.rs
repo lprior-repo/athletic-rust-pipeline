@@ -5,6 +5,8 @@ use fjall::{Keyspace, Readable, Snapshot};
 use std::path::Path;
 
 mod manifest;
+mod scope;
+use scope::{require_supported_work, validate_manifest};
 
 pub(super) fn inventory(
     root: &Path,
@@ -36,6 +38,7 @@ pub(super) fn inventory(
         process_root(
             root,
             snapshot,
+            meta,
             journal,
             receipts,
             declaration,
@@ -74,6 +77,7 @@ fn inventory_key<'a>(
 fn process_root(
     root: &Path,
     snapshot: &Snapshot,
+    meta: &Keyspace,
     journal: &Keyspace,
     receipts: &Keyspace,
     declaration: &CaptureQualification,
@@ -85,11 +89,21 @@ fn process_root(
     let parts: Vec<&str> = key.split('/').take(8).collect();
     match parts.as_slice() {
         ["slot", slot, "binding"] => {
-            inventory_slot(snapshot, journal, key, slot, declaration, budget)?;
+            inventory_slot(
+                snapshot,
+                meta,
+                journal,
+                receipts,
+                key,
+                slot,
+                declaration,
+                budget,
+            )?;
         }
         ["work", id, "identity"] => {
             let id = AcquisitionWorkId::parse(id).map_err(CaptureError::Domain)?;
             let facts = read::read_work(snapshot, journal, receipts, &id, budget, protocol)?;
+            require_supported_work(snapshot, meta, journal, receipts, &facts.work, budget)?;
             validate_manifest(declaration, &facts, manifest)?;
             validate_backing(root, snapshot, journal, receipts, &facts, budget)?;
         }
@@ -103,7 +117,9 @@ fn process_root(
 }
 fn inventory_slot(
     snapshot: &Snapshot,
+    meta: &Keyspace,
     journal: &Keyspace,
+    receipts: &Keyspace,
     key: &str,
     slot: &str,
     declaration: &CaptureQualification,
@@ -123,26 +139,9 @@ fn inventory_slot(
     let identity = format!("work/{}/identity", binding.work_id);
     let work: AcquisitionWorkV1 = codec::get(snapshot, journal, &identity, budget, protocol)?
         .ok_or(CaptureError::SlotWorkMismatch)?;
+    require_supported_work(snapshot, meta, journal, receipts, &work, budget)?;
     if work.slot() != &binding.slot || work.id().map_err(CaptureError::Domain)? != binding.work_id {
         return Err(CaptureError::SlotWorkMismatch.into());
-    }
-    Ok(())
-}
-fn validate_manifest(
-    declaration: &CaptureQualification,
-    facts: &WorkFacts,
-    manifest: Option<&(RunManifest, AcquisitionDigest)>,
-) -> StoreResult<()> {
-    let (manifest, manifest_digest) = manifest.ok_or(CaptureError::CaptureRunManifestMissing)?;
-    if manifest.store_identity != declaration.store_identity().as_str()
-        || facts.work.run() != manifest.run
-        || facts.work.run_manifest_digest() != manifest_digest
-        || manifest.cohort.get() != 2027
-    {
-        return Err(CaptureError::CaptureRunMismatch.into());
-    }
-    if facts.work.slot().store_identity() != declaration.store_identity() {
-        return Err(CaptureError::CaptureCapabilityForeignStore.into());
     }
     Ok(())
 }

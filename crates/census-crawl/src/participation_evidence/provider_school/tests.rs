@@ -284,4 +284,5 @@ fn field_mut<'a>(
         .ok_or_else(|| format!("missing mutable JSON field {field}").into())
 }
 
+mod owned_directory;
 mod transport;

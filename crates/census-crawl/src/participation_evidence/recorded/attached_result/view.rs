@@ -1,5 +1,5 @@
 use super::{domain, subject, RecordedHtmlResultCaptureV1};
-use crate::participation_evidence::result_ownership::CheckedRetainedResultDocumentV1;
+use crate::participation_evidence::result_ownership::CheckedHtmlResultDocumentV1;
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::{
     AttachmentReplayGrantV1, AttachmentSubjectRoleV1, EvidenceSubjectAttachmentError,
@@ -74,7 +74,7 @@ impl<'a, 'v, 's> View<'a, 'v, 's> {
     pub(super) fn bindings(
         self,
         recorded: &RecordedHtmlResultCaptureV1,
-        document: &CheckedRetainedResultDocumentV1<'_>,
+        document: &CheckedHtmlResultDocumentV1<'_>,
         grant: &mut AttachmentReplayGrantV1,
     ) -> CrawlResult<Bindings<'a, 's>> {
         match self {
@@ -100,7 +100,7 @@ impl<'a, 'v, 's> View<'a, 'v, 's> {
 
 fn bind<T>(
     recorded: &RecordedHtmlResultCaptureV1,
-    document: &CheckedRetainedResultDocumentV1<'_>,
+    document: &CheckedHtmlResultDocumentV1<'_>,
     grant: &mut AttachmentReplayGrantV1,
     mut issue: impl FnMut(
         &census_domain::evidence_subject_attachment::RetainedDocumentSubjectReferenceV1,

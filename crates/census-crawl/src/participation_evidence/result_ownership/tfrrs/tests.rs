@@ -2,6 +2,7 @@ use super::*;
 use fixture::{capture, locators, TestResult, BODY};
 
 mod adverse;
+mod calendar;
 mod fixture;
 
 #[test]

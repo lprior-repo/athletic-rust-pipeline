@@ -78,9 +78,15 @@ fn genuine_compact_inventory_retains_partial_under_object_limit() -> TestResult 
         &mut AttachmentReplayGrantV1::new(),
     )?;
     check!(bytes.len() < LIMIT);
+    check!(
+        bytes.len()
+            > census_domain::roster_affiliation_authority::MAX_ROSTER_AUTHORITY_RECORD_BYTES
+    );
     let value: wire::Inventory = serde_json::from_slice(&bytes)?;
     check!(matches!(value.disposition, wire::Disposition::Partial));
     check!(eq; value.rows.len(), 164);
+    check!(eq; value.rows.iter().filter(|row| matches!(row.outcome, wire::Outcome::Admitted { .. })).count(), 146);
+    check!(eq; value.rows.iter().filter(|row| matches!(row.outcome, wire::Outcome::Rejected { reason: crate::milesplit::RosterRejectionKind::InvalidGraduationYear })).count(), 18);
     check!(eq; value.schema, SCHEMA);
     check!(eq; value.policy, POLICY);
     check!(eq; value.packet, checked.reference().as_str());
@@ -89,3 +95,20 @@ fn genuine_compact_inventory_retains_partial_under_object_limit() -> TestResult 
 
 #[path = "retained_tamper.rs"]
 mod retained_tamper;
+
+#[test]
+fn ordinary_context_and_member_preimage_encoder_keeps_64k_ceiling() -> TestResult {
+    let mut value = "x".repeat(64 * 1024 - 2);
+    let mut grant = AttachmentReplayGrantV1::new();
+    check!(eq; encode(&value, &mut grant)?.len(), 64 * 1024);
+    value.push('x');
+    check!(matches!(
+        encode(&value, &mut grant),
+        Err(census_store::StoreError::BudgetExceeded {
+            what: "roster source serialization measurement",
+            needed: 65537,
+            available: 65536,
+        })
+    ));
+    Ok(())
+}

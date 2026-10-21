@@ -6,47 +6,21 @@ use sha2::{Digest, Sha256};
 use crate::participation_evidence::provider_school::{
     PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1, PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
+mod checked;
 pub(in super::super) mod context;
 mod current;
+mod directory_parent;
 mod execution;
 mod grant4g;
 mod member;
+
+pub(in super::super) use checked::CheckedKernelReplayV1;
 
 #[derive(Clone, Copy)]
 pub(in super::super) enum KernelEpoch {
     #[cfg(test)]
     Full,
     RowLocal,
-}
-
-#[must_use]
-pub(in super::super) struct CheckedKernelReplayV1 {
-    #[cfg(test)]
-    digest: &'static str,
-    #[cfg(test)]
-    bytes: u64,
-    semantic_contract: &'static str,
-}
-
-impl CheckedKernelReplayV1 {
-    #[cfg(test)]
-    pub(in super::super) fn require_reference(&self, digest: &str, bytes: u64) -> StoreResult<()> {
-        if self.digest != digest || self.bytes != bytes {
-            return Err(invalid("historical semantic kernel reference mismatch"));
-        }
-        Ok(())
-    }
-
-    pub(in super::super) fn semantic_contract(&self) -> &'static str {
-        self.semantic_contract
-    }
-
-    pub(in super::super) fn require_semantic_contract(&self, contract: &str) -> StoreResult<()> {
-        if contract != self.semantic_contract {
-            return Err(invalid("historical semantic kernel owner policy mismatch"));
-        }
-        Ok(())
-    }
 }
 
 struct OriginalKernel {
@@ -287,6 +261,7 @@ pub(in super::super) fn bind_historical_v1(
         let actual: [u8; 32] = Sha256::digest(retained).into();
         let original = predecessors(epoch)
             .into_iter()
+            .chain(directory_parent::originals(epoch))
             .find(|candidate| candidate.hash == actual)
             .ok_or_else(|| invalid("unsupported historical semantic kernel identity"))?;
         if !execution::compatible(configuration, original.configuration) {

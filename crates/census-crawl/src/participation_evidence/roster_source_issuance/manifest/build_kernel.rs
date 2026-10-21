@@ -26,7 +26,7 @@ pub(super) fn generate(
     configuration: &format::Configuration,
     dependencies: &format::Input,
 ) -> BuildResult<()> {
-    if kernel_sources::SOURCES.len() > 128 {
+    if kernel_sources::SOURCES.len() > 256 {
         return Err("semantic kernel source count exceeded".into());
     }
     let sources = kernel_sources::SOURCES

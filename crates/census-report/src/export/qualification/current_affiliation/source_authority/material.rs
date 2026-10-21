@@ -86,28 +86,31 @@ impl Capture {
     pub(super) fn evidence(&self) -> StoreResult<LocallyCheckedEvidence<'_>> {
         let capture = self.proposal.capture();
         let parser = self.proposal.parser();
-        checked(LocallyCheckedEvidence::check(RawEvidence {
-            occurrence: object(capture.occurrence().as_str())?,
-            manifest_key: object(capture.manifest().digest().as_str())?,
-            manifest_bytes: &self.manifest,
-            metadata: &self.metadata,
-            owner: self.proposal.scope().owner(),
-            source: &self.source,
-            requested_url: capture.requested_url(),
-            final_url: match capture.observed_final_url() {
-                Some(url) => FinalUrl::Observed(url),
-                None => FinalUrl::Unknown,
+        checked(LocallyCheckedEvidence::check_roster_interpretation(
+            RawEvidence {
+                occurrence: object(capture.occurrence().as_str())?,
+                manifest_key: object(capture.manifest().digest().as_str())?,
+                manifest_bytes: &self.manifest,
+                metadata: &self.metadata,
+                owner: self.proposal.scope().owner(),
+                source: &self.source,
+                requested_url: capture.requested_url(),
+                final_url: match capture.observed_final_url() {
+                    Some(url) => FinalUrl::Observed(url),
+                    None => FinalUrl::Unknown,
+                },
+                acquired_at: checked(chrono::DateTime::parse_from_rfc3339(capture.acquired_at()))?
+                    .to_utc(),
+                body: self.body.as_bytes(),
+                interpretation_key: object(capture.interpretation().digest().as_str())?,
+                interpretation_bytes: &self.interpretation,
+                parser_artifact: object(parser.artifact().digest().as_str())?,
+                extraction_schema: object(parser.schema().digest().as_str())?,
+                extraction_config: object(parser.configuration().digest().as_str())?,
+                reference_dependencies: object(parser.dependencies().digest().as_str())?,
             },
-            acquired_at: checked(chrono::DateTime::parse_from_rfc3339(capture.acquired_at()))?
-                .to_utc(),
-            body: self.body.as_bytes(),
-            interpretation_key: object(capture.interpretation().digest().as_str())?,
-            interpretation_bytes: &self.interpretation,
-            parser_artifact: object(parser.artifact().digest().as_str())?,
-            extraction_schema: object(parser.schema().digest().as_str())?,
-            extraction_config: object(parser.configuration().digest().as_str())?,
-            reference_dependencies: object(parser.dependencies().digest().as_str())?,
-        }))
+            &self.proposal,
+        ))
     }
 }
 

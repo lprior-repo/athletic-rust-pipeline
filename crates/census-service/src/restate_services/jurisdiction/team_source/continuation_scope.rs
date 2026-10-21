@@ -11,6 +11,16 @@ impl TeamsSource {
         ctx: &ObjectContext<'_>,
         original: &TeamsSourceRequest,
     ) -> Result<(), HandlerError> {
+        self.bound_continuation_scope(ctx, original)
+            .await
+            .map(|_| ())
+    }
+
+    pub(super) async fn bound_continuation_scope(
+        &self,
+        ctx: &ObjectContext<'_>,
+        original: &TeamsSourceRequest,
+    ) -> Result<NationalRequest, HandlerError> {
         let manifest = self
             .owner
             .store
@@ -28,7 +38,8 @@ impl TeamsSource {
                 "origin continuation requires the original bound national request",
             ));
         };
-        require_scope(&manifest, &bound, original)
+        require_scope(&manifest, &bound, original)?;
+        Ok(*bound)
     }
 }
 
@@ -46,6 +57,24 @@ fn require_scope(
     bound: &NationalRequest,
     original: &TeamsSourceRequest,
 ) -> Result<(), HandlerError> {
+    let scope = require_national_scope(manifest, bound)?;
+    if !scope.contains(&original.jurisdiction.jurisdiction)
+        || serialized_digest(&bound.for_jurisdiction(original.jurisdiction.jurisdiction))
+            .map_err(|error| refusal(&error.to_string()))?
+            != serialized_digest(&original.jurisdiction)
+                .map_err(|error| refusal(&error.to_string()))?
+    {
+        return Err(refusal(
+            "origin continuation request differs from its bound national request",
+        ));
+    }
+    Ok(())
+}
+
+pub(super) fn require_national_scope(
+    manifest: &RunManifest,
+    bound: &NationalRequest,
+) -> Result<Vec<census_domain::UsJurisdiction>, HandlerError> {
     let scope = admitted_scope(&bound.jurisdictions);
     let same_scope = scope.len() == manifest.jurisdictions.len()
         && scope
@@ -57,21 +86,16 @@ fn require_scope(
             .len()
             == scope.len();
     if !same_scope
-        || !scope.contains(&original.jurisdiction.jurisdiction)
         || bound.season != manifest.run.season()
         || bound.revision.get() != manifest.run.revision()
         || WorkflowIdentity::national(bound.season, bound.revision, &bound.jurisdictions).as_str()
             != owner_key(manifest)
-        || serialized_digest(&bound.for_jurisdiction(original.jurisdiction.jurisdiction))
-            .map_err(|error| refusal(&error.to_string()))?
-            != serialized_digest(&original.jurisdiction)
-                .map_err(|error| refusal(&error.to_string()))?
     {
         return Err(refusal(
             "origin continuation request differs from its bound national request",
         ));
     }
-    Ok(())
+    Ok(scope)
 }
 
 fn refusal(message: &str) -> HandlerError {

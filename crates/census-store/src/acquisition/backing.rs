@@ -23,6 +23,7 @@ struct ArchiveBindings {
     content_type: Option<String>,
     #[serde(default)]
     redirects: Vec<RedirectBinding>,
+    observed_http: Option<NormalizedObservedHttpV1>,
 }
 #[derive(Deserialize)]
 struct RedirectBinding {
@@ -45,6 +46,7 @@ pub(super) fn validate_metadata(
         return Err(CaptureError::BackingIntegrity.into());
     }
     validate_response_headers(response, &metadata)?;
+    super::observed::metadata(work, attempt, capture, metadata.observed_http.as_ref())?;
     validate_redirects(attempt, &metadata.redirects)
 }
 fn response_fields_match(

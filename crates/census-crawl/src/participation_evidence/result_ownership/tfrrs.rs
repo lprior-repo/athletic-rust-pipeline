@@ -3,12 +3,15 @@ use crate::milesplit::SourceRowLocator;
 use census_domain::model::{serialized_digest, Gender, Grade, Sport};
 use std::ops::Range;
 
+pub mod calendar;
 mod cells;
 mod context;
 mod marks;
 mod native_links;
 mod row;
 mod scan;
+pub(super) use scan::SelectionStep;
+pub mod team_text;
 mod types;
 mod visibility;
 
@@ -20,23 +23,41 @@ pub fn read_retained_tfrrs_list_rows<'a>(
     capture: &'a RetainedHtmlCaptureV1,
     requested: &[SourceRowLocator],
 ) -> Result<CheckedRetainedTfrrsListV1<'a>> {
-    super::selection::admit_count(requested.len())?;
+    read_selected(capture, requested.len(), |step| match step {
+        SelectionStep::Body(body) => {
+            super::selection::validate_spans(body, requested, &(0..body.len()))?;
+            Ok(false)
+        }
+        SelectionStep::Row(row) => Ok(requested.contains(&row)),
+        SelectionStep::Work => Ok(false),
+    })
+}
+
+pub(super) fn read_selected<'a>(
+    capture: &'a RetainedHtmlCaptureV1,
+    expected_count: usize,
+    mut select: impl FnMut(SelectionStep<'_>) -> Result<bool>,
+) -> Result<CheckedRetainedTfrrsListV1<'a>> {
+    super::selection::admit_count(expected_count)?;
     let body = capture.body()?;
-    super::selection::validate_spans(&body, requested, &(0..body.len()))?;
+    select(SelectionStep::Body(&body))?;
     let (base, list_id, year, sport) = native_links::list(capture.requested_url())?;
-    let selected = scan::selected(&body, requested)?;
-    let mut rows = Vec::new();
+    let selected = scan::selected(&body, expected_count, &mut select)?;
+    let mut rows: Vec<types::Row> = Vec::new();
     rows.try_reserve_exact(selected.len())
         .map_err(|_| RetainedResultOwnershipError::Allocation)?;
     for selected in selected {
+        select(SelectionStep::Work)?;
         let checked = row::read(&body, &base, capture, selected, year)?;
-        if rows.iter().any(|existing: &types::Row| {
-            existing.participant.athlete_id == checked.participant.athlete_id
+        for existing in &rows {
+            select(SelectionStep::Work)?;
+            if existing.participant.athlete_id == checked.participant.athlete_id
                 && existing.calendar.meet_id == checked.calendar.meet_id
                 && existing.context.handle == checked.context.handle
                 && existing.context.gender == checked.context.gender
-        }) {
-            return Err(invalid("duplicate selected TFRRS native performance"));
+            {
+                return Err(invalid("duplicate selected TFRRS native performance"));
+            }
         }
         rows.push(checked);
     }

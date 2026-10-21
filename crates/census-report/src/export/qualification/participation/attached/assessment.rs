@@ -1,5 +1,5 @@
 use super::*;
-use census_crawl::participation_evidence::physical_result::project_retained_html_result_identity;
+use census_crawl::participation_evidence::physical_result::project_checked_html_result_identity;
 use census_crawl::participation_evidence::recorded::DiscoveredIdentityLinkedHtmlResultDocumentV1;
 use census_domain::affiliation_candidates::{KnownBounds, ObjectRef};
 use census_domain::evidence_subject_attachment::AttachmentRecordReferenceV1;
@@ -30,9 +30,8 @@ pub(super) fn row(
     step(grant, 1)?;
     budget.charge(attachment.target().canonical_candidate.as_str().len(), 1)?;
     let athlete: AthleteId = attachment.target().canonical_candidate.cast();
-    let identity =
-        project_retained_html_result_identity(linked.checked_document(), index, &athlete)
-            .map_err(source)?;
+    let identity = project_checked_html_result_identity(linked.checked_document(), index, &athlete)
+        .map_err(source)?;
     let assessed = match sources {
         AssessmentSources::HistoricalWithheld => {
             let assessed = evaluate(

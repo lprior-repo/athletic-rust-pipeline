@@ -45,6 +45,8 @@ fn supervise(signals: &cancellation::Signals) -> Result<()> {
         "127.0.0.1:18096",
         "--data-dir",
         &format!("{GUEST}/store"),
+        "--capture-protocol",
+        "fresh-qualification-v3",
         "--max-concurrent",
         "2",
         "--drain-timeout",

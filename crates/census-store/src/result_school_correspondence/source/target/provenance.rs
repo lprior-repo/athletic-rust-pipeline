@@ -11,7 +11,11 @@ pub(super) fn require(
     provider: &crate::evidence_subject_attachment::external::CheckedSchool<'_>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
-    if root.schema != crate::RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1 {
+    if !matches!(
+        root.schema,
+        crate::RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
+            | crate::RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1
+    ) {
         return Err(Error::SourceMismatch("provider packet root identity").into());
     }
     let mut seen = (false, false);

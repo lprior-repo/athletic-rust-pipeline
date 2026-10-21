@@ -23,7 +23,7 @@ pub(super) fn selection(workbook: &Path) -> TestResult<SelectedOptions> {
     ))
 }
 
-pub(super) fn assert_baseline(dataset: &ExportDataset) -> TestResult {
+pub(super) fn assert_baseline(dataset: &ExportDataset, best: i64) -> TestResult {
     check!(eq; dataset.coverage_evidence.rows.len(), 1);
     check!(eq; dataset.coverage_evidence.coach_lanes.len(), 1);
     let derivation = Derivation::of(
@@ -48,7 +48,7 @@ pub(super) fn assert_baseline(dataset: &ExportDataset) -> TestResult {
     check!(eq; colorado.with_comparable_mark, 1);
     let bests = selected_bests(dataset)?;
     check!(eq; bests.len(), 1);
-    check!(eq; bests.first().ok_or("captured numeric PR")?.result.value, 50_000_000_000);
+    check!(eq; bests.first().ok_or("captured numeric PR")?.result.value, best);
     Ok(())
 }
 

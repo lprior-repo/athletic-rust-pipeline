@@ -40,7 +40,8 @@ pub(crate) use receipt_prefix::ReceiptScan;
 pub(crate) use retained_source::sealed as retained_source_sealed;
 pub(crate) use retained_source::{
     for_each_retained_journal_root_with_admission, read_retained_journal_entry_raw_bounded,
-    with_retained_journal_entry_raw_bounded, RetainedJournalBytes, RetainedJournalReadSource,
+    with_retained_journal_entry_raw_bounded, PhysicalRetainedJournalSource, RetainedJournalBytes,
+    RetainedJournalReadSource,
 };
 mod regions;
 mod roster_source;

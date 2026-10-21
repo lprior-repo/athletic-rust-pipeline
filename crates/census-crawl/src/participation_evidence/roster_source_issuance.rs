@@ -1,5 +1,5 @@
 pub mod manifest;
-use super::provider_school::{CheckedProviderSchoolPacketV1, ProviderSchoolPacketV1};
+use super::provider_school::{CheckedProviderSchoolPacketV1, RetainedProviderSchoolPacketV1};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
 use census_store::{RetainedCaptureRootV1, RosterSourceEvidenceV1, StoreResult};
@@ -27,6 +27,11 @@ pub use source::{
     assess_retained_roster_source_v3,
 };
 
+pub(in crate::participation_evidence) fn current_roster_semantic_kernel_digest(
+) -> StoreResult<&'static str> {
+    semantic_inventory_v2::kernel::compiled_identity().map(|(_, digest)| digest)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RosterSourceUnverifiedJoinV1 {
     ParserQualification,
@@ -40,7 +45,7 @@ pub struct RosterSourceEvidenceAssessmentV1<'a> {
     proposal: LocallyCheckedRosterIssuanceV1,
     root: RetainedCaptureRootV1,
     checked: CheckedProviderSchoolPacketV1,
-    retained_packet: ProviderSchoolPacketV1,
+    retained_packet: RetainedProviderSchoolPacketV1,
     roster_body: String,
     scoped_rows: usize,
     capture_objects: capture_objects::PreparedRosterCaptureObjectsV1<'a>,
@@ -99,7 +104,7 @@ impl RosterSourceEvidenceAssessmentV1<'_> {
     pub fn retained_packet(
         &self,
         grant: &mut AttachmentReplayGrantV1,
-    ) -> StoreResult<&ProviderSchoolPacketV1> {
+    ) -> StoreResult<&RetainedProviderSchoolPacketV1> {
         self.require_original_grant(grant)?;
         Ok(&self.retained_packet)
     }

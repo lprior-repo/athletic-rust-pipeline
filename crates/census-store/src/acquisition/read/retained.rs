@@ -8,6 +8,7 @@ use std::path::Path;
 pub(crate) fn verify_reference(
     root: &Path,
     snapshot: &Snapshot,
+    meta: &Keyspace,
     journal: &Keyspace,
     receipts: &Keyspace,
     reference: &AcquisitionOccurrenceRefV1,
@@ -22,6 +23,16 @@ pub(crate) fn verify_reference(
         budget,
         protocol,
     )?;
+    if facts.work.slot().public_resource().is_some() {
+        crate::acquisition::public_resources::read::validate_work(
+            snapshot,
+            meta,
+            journal,
+            receipts,
+            &facts.work,
+            budget,
+        )?;
+    }
     verify_from_facts(root, snapshot, journal, receipts, &facts, reference, budget)
 }
 pub(in crate::acquisition) fn verify_result(

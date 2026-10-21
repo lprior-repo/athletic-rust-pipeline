@@ -2,7 +2,7 @@ use super::{FetchError, FetchOptions, FetchOutcome, Fetcher, REQUEST_TIMEOUT_SEC
 use std::time::Duration;
 use url::Url;
 
-mod policy;
+pub(super) mod policy;
 use policy::{parse_url, Policy, MAX_POLICY_AGE_SECONDS};
 
 #[derive(Clone, Copy)]
@@ -20,6 +20,17 @@ impl Admission<'_> {
                 .map_or(outcome.url.as_str(), |url| url),
         )?;
         Ok(outcome)
+    }
+
+    pub(in crate::net) fn check_dispatch(
+        self,
+        url: &str,
+        dispatched_at: &str,
+    ) -> Result<(), FetchError> {
+        match self {
+            Self::Unrestricted => Ok(()),
+            Self::Checked(policy) => policy.check_dispatch(url, dispatched_at),
+        }
     }
 
     pub(in crate::net) fn check(self, url: &str) -> Result<(), FetchError> {

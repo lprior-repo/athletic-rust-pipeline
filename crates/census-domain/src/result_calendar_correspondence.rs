@@ -2,10 +2,17 @@ use crate::evidence_subject_attachment::{AttachmentReplayGrantV1, EvidenceSubjec
 use serde::Serialize;
 mod codec;
 use codec::{admit, encode, with_grant};
+mod parser;
 mod replay;
+mod selection;
 mod types;
 mod validate;
+pub use parser::{ResultCalendarSourceParserV1, RESULT_CALENDAR_TFRRS_RONCALLI_PARSER_CONTRACT_V1};
 pub use replay::{replay_result_calendar_records_v1, ResultCalendarProjectionV1};
+pub use selection::{
+    RoncalliSeasonEventProofContextV1, RoncalliSeasonEventSelectionV1,
+    RONCALLI_SEASON_EVENT_INTERPRETATION_V1,
+};
 pub use types::*;
 
 pub const RESULT_CALENDAR_POLICY_V1: &str = "reviewed_exact_result_calendar_day_correspondence_v1";

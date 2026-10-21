@@ -17,11 +17,11 @@ pub struct ResultsCaptureOwnerV1 {
     pub(super) scope: ResultsCaptureScopeV1,
 }
 pub struct RetryOwnerGrant {
-    pub(super) owner: ResultsCaptureOwnerV1,
+    pub(super) owner: super::owner::CaptureOwner,
     pub(super) slot: AcquisitionSlotId,
 }
 pub struct OwnedAcquisitionWork {
-    pub(super) owner: ResultsCaptureOwnerV1,
+    pub(super) owner: super::owner::CaptureOwner,
     pub(super) work: AcquisitionWorkV1,
     pub(super) id: AcquisitionWorkId,
 }
@@ -78,7 +78,7 @@ impl CaptureWriterV1 {
         owner.verify(store)?;
         let slot = owner.slot_for_owned_meet(site, meet_id)?;
         Ok(RetryOwnerGrant {
-            owner: owner.clone(),
+            owner: super::owner::CaptureOwner::Results(owner.clone()),
             slot: slot.id().map_err(CaptureError::Domain)?,
         })
     }
@@ -137,19 +137,7 @@ impl ResultsCaptureOwnerV1 {
     }
     pub fn require_cache_root(&self, store: &Store, cache_root: &Path) -> StoreResult<()> {
         self.verify(store)?;
-        let expected = store.http_cache_dir();
-        let expected = std::fs::canonicalize(&expected).map_err(|source| StoreError::Io {
-            path: expected,
-            source,
-        })?;
-        let actual = std::fs::canonicalize(cache_root).map_err(|source| StoreError::Io {
-            path: cache_root.to_path_buf(),
-            source,
-        })?;
-        if actual != expected {
-            return Err(CaptureError::CacheRootMismatch.into());
-        }
-        Ok(())
+        require_cache_root(store, cache_root)
     }
     pub fn store_identity(&self) -> &StoreIdentity {
         &self.writer.identity
@@ -165,7 +153,9 @@ impl ResultsCaptureOwnerV1 {
         self.verify(store)?;
         let expected = self.for_owned_meet(
             work.slot().source_site(),
-            work.slot().source_meet_id(),
+            work.slot()
+                .source_meet_id()
+                .ok_or(CaptureError::ObligationConflict)?,
             work.request().clone(),
         )?;
         if &expected != work {
@@ -178,8 +168,8 @@ impl OwnedAcquisitionWork {
     pub fn protocol(&self) -> CaptureProtocolVersion {
         self.owner.protocol()
     }
-    pub fn owner(&self) -> &ResultsCaptureOwnerV1 {
-        &self.owner
+    pub fn owner(&self) -> super::CaptureOwnerRef<'_> {
+        (&self.owner).into()
     }
     pub fn work(&self) -> &AcquisitionWorkV1 {
         &self.work
@@ -187,11 +177,39 @@ impl OwnedAcquisitionWork {
     pub fn work_id(&self) -> &AcquisitionWorkId {
         &self.id
     }
-    pub(super) fn verify(&self, store: &Store) -> StoreResult<()> {
-        self.owner.verify_work(store, &self.work)
+    pub(super) fn verify(
+        &self,
+        store: &Store,
+        budget: &mut super::AcquisitionReadBudget,
+    ) -> StoreResult<()> {
+        let owner = self.owner();
+        if owner.public().is_some() {
+            super::admission::owner(store, owner, budget)?;
+            return super::admission::matches_work(store, owner, &self.work, budget);
+        }
+        owner.verify_work(store, &self.work)
     }
 }
+
+pub(super) fn require_cache_root(store: &Store, cache_root: &Path) -> StoreResult<()> {
+    let expected = store.http_cache_dir();
+    let expected = std::fs::canonicalize(&expected).map_err(|source| StoreError::Io {
+        path: expected,
+        source,
+    })?;
+    let actual = std::fs::canonicalize(cache_root).map_err(|source| StoreError::Io {
+        path: cache_root.to_path_buf(),
+        source,
+    })?;
+    if actual != expected {
+        return Err(CaptureError::CacheRootMismatch.into());
+    }
+    Ok(())
+}
 impl ReservedAttempt {
+    pub fn work(&self) -> &AcquisitionWorkV1 {
+        self.work.work()
+    }
     pub fn attempt_id(&self) -> &AcquisitionAttemptId {
         &self.attempt
     }
@@ -208,6 +226,9 @@ impl ArmedDispatch {
     }
 }
 impl DispatchObservation {
+    pub fn request(&self) -> &DispatchRequestV1 {
+        &self.armed.request
+    }
     pub fn dispatch_id(&self) -> &AcquisitionDispatchId {
         &self.armed.dispatch
     }

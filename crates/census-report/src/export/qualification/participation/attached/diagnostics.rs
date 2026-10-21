@@ -69,6 +69,7 @@ fn reason(
         Gap::UnsupportedCaptureSchema => "unsupported_capture_schema",
         Gap::UnsupportedCaptureSlot => "unsupported_capture_slot",
         Gap::UnsupportedCaptureKind => "unsupported_capture_kind",
+        Gap::UnsupportedSourceNamespace => "unsupported_source_namespace",
         Gap::UnsupportedLocatorMaterial => "unsupported_locator_material",
         Gap::UnsupportedLocatorSyntax => "unsupported_locator_syntax",
     }

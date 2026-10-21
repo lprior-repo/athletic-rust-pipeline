@@ -38,7 +38,9 @@ fn original_owner_pass_continuations_keep_one_slot_and_lifetime_cap() -> TestRes
             UsJurisdiction::Michigan,
             "123",
         )?;
-        let work = f.store.register_acquisition_work(&owner, work, grant)?;
+        let work = f
+            .store
+            .register_acquisition_work(owner.as_ref(), work, grant)?;
         let reservation = f.store.reserve_acquisition_attempt(work)?;
         let armed = f.store.arm_acquisition_dispatch(
             reservation,
@@ -62,7 +64,9 @@ fn original_owner_pass_continuations_keep_one_slot_and_lifetime_cap() -> TestRes
     )?;
     let grant =
         writer.continuation_for_owned_meet(&f.store, &owner, UsJurisdiction::Michigan, "123")?;
-    let work = f.store.register_acquisition_work(&owner, work, grant)?;
+    let work = f
+        .store
+        .register_acquisition_work(owner.as_ref(), work, grant)?;
     let decision = f
         .store
         .inspect_acquisition_work(&work, &mut AcquisitionReadBudget::for_work())?;
@@ -90,7 +94,10 @@ fn same_original_owner_cannot_reset_allowance_by_changing_refresh_or_history() -
     )?;
     let grant =
         writer.continuation_for_owned_meet(&f.store, &owner, UsJurisdiction::Michigan, "123")?;
-    drop(f.store.register_acquisition_work(&owner, work, grant)?);
+    drop(
+        f.store
+            .register_acquisition_work(owner.as_ref(), work, grant)?,
+    );
     f.request.refresh = true;
     let ResultsCaptureExecution::FreshQualification { writer, owner, .. } = admit(&f)? else {
         return Err("capture owner missing".into());
@@ -103,7 +110,8 @@ fn same_original_owner_cannot_reset_allowance_by_changing_refresh_or_history() -
     let grant =
         writer.continuation_for_owned_meet(&f.store, &owner, UsJurisdiction::Michigan, "123")?;
     check!(matches!(
-        f.store.register_acquisition_work(&owner, changed, grant),
+        f.store
+            .register_acquisition_work(owner.as_ref(), changed, grant),
         Err(StoreError::Capture(CaptureError::ObligationConflict))
     ));
     f.request.history = HistoryWindow::new(2022, 2026, "2026-10-14")?;
@@ -169,7 +177,8 @@ fn registered(f: &Fixture) -> TestResult<OwnedAcquisitionWork> {
     )?;
     let grant =
         writer.continuation_for_owned_meet(&f.store, &owner, UsJurisdiction::Michigan, "123")?;
-    Ok(f.store.register_acquisition_work(&owner, work, grant)?)
+    Ok(f.store
+        .register_acquisition_work(owner.as_ref(), work, grant)?)
 }
 
 fn assert_three_attempts_unchanged(store: &Store, before: &StoreSnapshot<'_>) -> TestResult {

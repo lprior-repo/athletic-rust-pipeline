@@ -4,6 +4,7 @@ use crate::milesplit::{parse_team_index, validate_retained_index_surface, Site, 
 use crate::{CollectionDisposition, CrawlResult};
 use census_domain::UsJurisdiction;
 use census_store::StoreResult;
+use chrono::{DateTime, Utc};
 
 pub(super) struct Selected {
     pub(super) team: TeamRef,
@@ -13,24 +14,40 @@ pub(super) struct Selected {
 
 pub(super) fn read(capture: &RetainedHtmlCaptureV1, roster_url: &str) -> CrawlResult<Selected> {
     let html = capture.body()?;
-    let site = site(capture.requested_url())?;
-    validate_retained_index_surface(&html, capture.requested_url())?;
-    markup::canonical(&html, capture.requested_url())?;
-    let parsed = parse_team_index(&html)?;
+    read_with(
+        &html,
+        capture.requested_url(),
+        capture.body_sha256(),
+        capture.acquired_at(),
+        |teams, site| select(teams, roster_url, site),
+    )
+}
+
+pub(super) fn read_with(
+    html: &str,
+    requested_url: &str,
+    body_sha256: &str,
+    acquired_at: DateTime<Utc>,
+    select_owner: impl FnOnce(&[TeamRef], &Site) -> StoreResult<TeamRef>,
+) -> CrawlResult<Selected> {
+    let site = site(requested_url)?;
+    validate_retained_index_surface(html, requested_url)?;
+    markup::canonical(html, requested_url)?;
+    let parsed = parse_team_index(html)?;
     if parsed.disposition != CollectionDisposition::Complete
         || parsed.errors != 0
         || !parsed.unfinished.is_empty()
     {
         return Err(invalid("provider school directory interpretation is incomplete").into());
     }
-    let team = select(&parsed.teams, roster_url, &site)?;
-    let spans = row::read(&html, &team)?;
+    let team = select_owner(&parsed.teams, &site)?;
+    let spans = row::read(html, &team)?;
     Ok(Selected {
         team,
         site,
         proof: ProviderSchoolDirectoryProofV1 {
-            capture_sha256: capture.body_sha256().into(),
-            acquired_at: capture.acquired_at(),
+            capture_sha256: body_sha256.into(),
+            acquired_at,
             disposition: parsed.disposition,
             parsed_teams: parsed.teams.len(),
             errors: parsed.errors,
@@ -61,7 +78,7 @@ fn site(requested: &str) -> StoreResult<Site> {
     Ok(site)
 }
 
-fn select(teams: &[TeamRef], roster_url: &str, site: &Site) -> StoreResult<TeamRef> {
+pub(super) fn select(teams: &[TeamRef], roster_url: &str, site: &Site) -> StoreResult<TeamRef> {
     let owner_url = roster_url
         .strip_suffix("/roster")
         .ok_or_else(|| invalid("provider school roster URL is not exact"))?;

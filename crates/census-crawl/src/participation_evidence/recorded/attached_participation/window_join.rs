@@ -28,6 +28,9 @@ pub(super) fn row<'a, 's>(
             return Err(invalid("documentary status and result target disagree").into());
         }
         let source = candidate.recorded.checked();
+        if linked.checked_document().as_milesplit().is_none() {
+            continue;
+        }
         let cohort = applicability(linked, &row, source, grant)?;
         if contains_source(&facts, source, grant)? {
             continue;
@@ -71,8 +74,16 @@ fn applicability(
     grant: &mut Grant,
 ) -> CrawlResult<DocumentaryCohortAgreementV1> {
     steps(grant, 10)?;
-    let page = linked.checked_document().parsed_page();
-    let parsed = row.checked_row().parsed_row();
+    let document = linked
+        .checked_document()
+        .as_milesplit()
+        .ok_or_else(|| invalid("documentary window has no checked MileSplit context"))?;
+    let page = document.parsed_page();
+    let checked = row
+        .checked_row()
+        .as_milesplit()
+        .ok_or_else(|| invalid("documentary window and result source differ"))?;
+    let parsed = checked.parsed_row();
     if source.store_identity() != row.attachment().store_identity()
         || source.snapshot_sequence() != row.attachment().snapshot_sequence()
     {
@@ -81,7 +92,7 @@ fn applicability(
     if source.subject().name() != parsed.name || source.subject().school() != parsed.school {
         return Err(invalid("documentary status subject or participation subject differs").into());
     }
-    if row.checked_row().event().gender != Gender::Boys
+    if checked.event().gender != Gender::Boys
         || page.sport != Some(Sport::OutdoorTrack)
         || page.region.as_deref() != Some("MI")
         || page.school_year != source.school_year()

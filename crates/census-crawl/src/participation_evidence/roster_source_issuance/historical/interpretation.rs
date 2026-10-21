@@ -1,5 +1,7 @@
 use super::super::capture_objects::PreparedRosterCaptureObjectsV1;
 use super::*;
+use crate::participation_evidence::bound;
+use census_domain::roster_affiliation_authority::MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES;
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
 
@@ -31,6 +33,11 @@ pub(super) fn read<'a>(
         return Err(invalid("historical roster capture literal differs").into());
     }
     let bytes = claim.object(capture.interpretation().digest().as_str(), grant)?;
+    bound(
+        bytes.len(),
+        MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES,
+        "row-local semantic interpretation",
+    )?;
     grant.charge_bytes(bytes.len()).map_err(source::domain)?;
     grant
         .charge_steps(bytes.len().div_ceil(32).max(1))
@@ -43,7 +50,7 @@ pub(super) fn read<'a>(
             invalid("unsupported or changed original historical roster interpretation").into(),
         );
     }
-    source::budget::charge_bounded(&value, grant, 64 * 1024)?;
+    source::budget::charge_bounded(&value, grant, MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES)?;
     if serde_json::to_vec(&value).map_err(json)? != bytes {
         return Err(invalid("noncanonical historical roster interpretation").into());
     }

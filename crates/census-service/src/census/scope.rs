@@ -12,6 +12,23 @@ pub(super) fn pending_rosters(
     school_year: SchoolYear,
     revision: std::num::NonZeroU32,
 ) -> StoreResult<Vec<TeamRef>> {
+    require_roster_inputs(teams)?;
+    let phase = rosters_phase(jurisdiction, school_year, revision);
+    teams.iter().try_fold(Vec::new(), |mut pending, team| {
+        let key = format!("{}:{}", jurisdiction.code(), team.id);
+        if !terminal(store, &phase, &key, (team, school_year))? {
+            pending
+                .try_reserve(1)
+                .map_err(|_| census_store::StoreError::Refused {
+                    detail: "allocating bounded pending roster inputs".to_string(),
+                })?;
+            pending.push(team.clone());
+        }
+        Ok(pending)
+    })
+}
+
+pub(super) fn require_roster_inputs(teams: &[TeamRef]) -> StoreResult<()> {
     if teams.len() > 20_000 {
         return Err(census_store::StoreError::TooManyRows {
             table: "configured roster inputs".to_string(),
@@ -46,19 +63,7 @@ pub(super) fn pending_rosters(
             ),
         });
     }
-    let phase = rosters_phase(jurisdiction, school_year, revision);
-    teams.iter().try_fold(Vec::new(), |mut pending, team| {
-        let key = format!("{}:{}", jurisdiction.code(), team.id);
-        if !terminal(store, &phase, &key, (team, school_year))? {
-            pending
-                .try_reserve(1)
-                .map_err(|_| census_store::StoreError::Refused {
-                    detail: "allocating bounded pending roster inputs".to_string(),
-                })?;
-            pending.push(team.clone());
-        }
-        Ok(pending)
-    })
+    Ok(())
 }
 
 fn terminal(

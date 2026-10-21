@@ -233,7 +233,15 @@ async fn stopped_admission_records_a_durable_zero_prefix_that_stays_owed() -> Te
     )?;
     let mut stopped = team();
     stopped.url = "http://127.0.0.1:1/teams/52649-example".to_string();
-    super::super::units::roster_unit(&fetcher, &store, &shared, &stopped, &run).await;
+    super::super::units::roster_unit(
+        &fetcher,
+        &store,
+        &shared,
+        &stopped,
+        &run,
+        super::super::units::RosterSource::Historical,
+    )
+    .await;
     let row = prior(&store, &stopped, &run)?.ok_or("missing stopped journal")?;
     check!(!row.is_terminal());
     check!(row.refusal.is_some());

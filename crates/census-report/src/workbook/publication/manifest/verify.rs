@@ -87,6 +87,11 @@ pub(super) fn verify_against(
             .input()
             .jurisdictions
             .clone();
+        if Selection::of(&options) != manifest.selection {
+            return Err(invariant(
+                "manifest selection differs from the frozen selected profile".into(),
+            ));
+        }
     }
     let counts = super::super::verify_sidecars::verify(
         directory,

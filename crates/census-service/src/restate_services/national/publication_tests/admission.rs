@@ -92,7 +92,12 @@ async fn exact_selected_request_proceeds_through_real_workbook() -> TestResult {
     super::exercise(super::Scenario::Admission(Scenario::SelectedExact)).await
 }
 
-pub(super) async fn run(scenario: Scenario, client: &reqwest::Client, url: &str) -> TestResult {
+pub(super) async fn run(
+    scenario: Scenario,
+    client: &reqwest::Client,
+    url: &str,
+    controlled: crate::restate_services::jobs::selected_fixture::Controlled,
+) -> TestResult {
     if matches!(
         scenario,
         Scenario::ForeignStore
@@ -102,10 +107,10 @@ pub(super) async fn run(scenario: Scenario, client: &reqwest::Client, url: &str)
             | Scenario::WrongAddressPin
             | Scenario::SelectedExact
     ) {
-        return run_exact(scenario, client, url).await;
+        return run_exact(scenario, client, url, controlled).await;
     }
     let mut journal = journal::Journal::new(&fixtures::request()?)?;
-    let input = input(scenario)?;
+    let input = input(scenario, &controlled)?;
     journal.entries = vec![codec::Frame::new(
         0x0400,
         codec::blob(14, &codec::value(&serde_json::to_vec(&input)?)?)?,
@@ -134,7 +139,10 @@ pub(super) async fn run(scenario: Scenario, client: &reqwest::Client, url: &str)
     Ok(())
 }
 
-fn input(scenario: Scenario) -> TestResult<Value> {
+fn input(
+    scenario: Scenario,
+    controlled: &crate::restate_services::jobs::selected_fixture::Controlled,
+) -> TestResult<Value> {
     let mut input = serde_json::to_value(fixtures::request()?)?;
     let object = input
         .as_object_mut()
@@ -169,10 +177,8 @@ fn input(scenario: Scenario) -> TestResult<Value> {
         | Scenario::ManagedSelectedExport
         | Scenario::SelectedMissingGeneration
         | Scenario::OmittedPublicationSelectedExport => {
-            let controlled = crate::restate_services::jobs::selected_fixture::install()
-                .map_err(|error| error.to_string())?;
             let selected = fixtures::selected_request(
-                &controlled,
+                controlled,
                 &census_domain::UsJurisdiction::CENSUS_SCOPE,
             )?;
             object.insert(
@@ -195,9 +201,12 @@ fn input(scenario: Scenario) -> TestResult<Value> {
     }
     Ok(input)
 }
-async fn run_exact(scenario: Scenario, client: &reqwest::Client, url: &str) -> TestResult {
-    let controlled = crate::restate_services::jobs::selected_fixture::install()
-        .map_err(|error| error.to_string())?;
+async fn run_exact(
+    scenario: Scenario,
+    client: &reqwest::Client,
+    url: &str,
+    controlled: crate::restate_services::jobs::selected_fixture::Controlled,
+) -> TestResult {
     let request = exact_request(scenario, &controlled)?;
     let mut journal = journal::Journal::new(&request)?;
     journal.selected_workbook = Some(controlled);

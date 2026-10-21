@@ -11,6 +11,7 @@ mod current_roster;
 mod lifecycle;
 mod preservation;
 mod protocol;
+mod public_root_refusal;
 mod recovery;
 mod support;
 use support::*;

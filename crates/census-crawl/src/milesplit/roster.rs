@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use super::wire::Roster;
-use crate::net::FetchOutcome;
+use super::wire::{Roster, TeamRef};
+use crate::net::{FetchError, FetchOutcome};
+use crate::{CrawlError, CrawlResult};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SourceRowLocator {
@@ -83,3 +84,36 @@ pub struct RosterOutcome {
     pub capture: FetchOutcome,
     pub verdict: RosterVerdict,
 }
+
+impl RosterOutcome {
+    pub fn from_capture(team: &TeamRef, outcome: FetchOutcome) -> CrawlResult<Self> {
+        let verdict = match outcome.status {
+            404 => RosterVerdict::Quarantined {
+                reason: RosterQuarantine::NotFound,
+                rejected: Vec::new(),
+                unfinished: None,
+            },
+            200 => match std::str::from_utf8(&outcome.body) {
+                Ok(body) => super::parse_captured_roster(body, team.clone(), &outcome)?,
+                Err(_) => RosterVerdict::Quarantined {
+                    reason: RosterQuarantine::InvalidEncoding,
+                    rejected: Vec::new(),
+                    unfinished: None,
+                },
+            },
+            status => {
+                return Err(CrawlError::Fetch(FetchError::Http {
+                    status,
+                    url: format!("{}/roster", team.url),
+                }))
+            }
+        };
+        Ok(Self {
+            capture: outcome,
+            verdict,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests;

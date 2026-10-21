@@ -32,7 +32,7 @@ fn retain_controlled_transport(
 fn physical_layout(store: &Store) -> TestResult<(usize, usize)> {
     store
         .journal
-        .iter()
+        .prefix(Store::journal_key(Schema::HtmlResultCaptureV1.phase(), KEY))
         .try_fold((0usize, 0usize), |counts, guard| {
             let (key, value) = guard.into_inner()?;
             check!(value.len() <= crate::MAX_JOURNAL_VALUE_BYTES);
@@ -64,7 +64,10 @@ fn verify_snapshot(store: &Store, leaf: &RetainedCaptureLeafV1, raw: &[u8]) -> T
 
 fn frozen_archive(store: &Store, leaf: &RetainedCaptureLeafV1) -> TestResult<Vec<u8>> {
     let mut rows = Vec::new();
-    for guard in store.journal.iter() {
+    for guard in store
+        .journal
+        .prefix(Store::journal_key(Schema::HtmlResultCaptureV1.phase(), KEY))
+    {
         let (key, value) = guard.into_inner()?;
         let key = key
             .iter()
@@ -121,10 +124,13 @@ fn verify_frozen(store: &Store, leaf: &RetainedCaptureLeafV1, raw: &[u8]) -> Tes
 
 fn cold_roundtrip_with_controlled_transport(body: &[u8]) -> TestResult {
     let directory = tempfile::tempdir()?;
+    let root = directory.path().join("store");
+    let declaration = Store::create_current_qualification_v3(&root)?;
     let payload = capture(body)?;
     let raw = serde_json::to_vec(&payload)?;
     check!(raw.len() > 2 * 1024 * 1024);
-    let store = Store::open(directory.path())?;
+    let store = open_current_qualification(&root)?;
+    check!(eq; store.snapshot().store_identity()?, declaration.store_identity().clone());
     let leaf = retain_controlled_transport(&store, &payload, body)?;
     let layout = physical_layout(&store)?;
     check!(eq; layout.0, 7);
@@ -136,13 +142,20 @@ fn cold_roundtrip_with_controlled_transport(body: &[u8]) -> TestResult {
     check!(eq; retained_state(&store)?, before);
     store.flush()?;
     drop(store);
-    let store = Store::open(directory.path())?;
+    let store = open_current_qualification(&root)?;
+    check!(eq; store.snapshot().store_identity()?, declaration.store_identity().clone());
     check!(eq; retained_state(&store)?, before);
     check!(eq; physical_layout(&store)?, layout);
     verify_snapshot(&store, &leaf, &raw)?;
     verify_frozen(&store, &leaf, &raw)?;
     check!(eq; retained_state(&store)?, before);
     Ok(())
+}
+
+fn open_current_qualification(root: &std::path::Path) -> TestResult<Store> {
+    let (store, writer) = Store::open_current_qualification_v3(root)?.into_parts();
+    drop(writer);
+    Ok(store)
 }
 
 #[test]

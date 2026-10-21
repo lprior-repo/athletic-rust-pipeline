@@ -1,7 +1,9 @@
 use super::CaptureError;
 use crate::{StoreError, StoreResult};
 
+mod parent;
 mod selection;
+pub use parent::PublicParentReadUsage;
 pub(super) mod target;
 pub use selection::AcquisitionSelectionUsage;
 
@@ -13,6 +15,8 @@ pub struct AcquisitionReadBudget {
     encoded: usize,
     backing: u64,
     retained: usize,
+    public_parent: bool,
+    parent_usage: PublicParentReadUsage,
     verified: std::collections::BTreeMap<
         std::path::PathBuf,
         (census_domain::model::AcquisitionDigest, u64),
@@ -42,6 +46,8 @@ impl AcquisitionReadBudget {
             encoded: max_encoded_bytes,
             backing: max_backing_bytes,
             retained: 64 * 1024 * 1024,
+            public_parent: false,
+            parent_usage: PublicParentReadUsage::default(),
             verified: std::collections::BTreeMap::new(),
         })
     }
@@ -53,6 +59,8 @@ impl AcquisitionReadBudget {
             encoded: 90 * (65_536 + crate::MAX_JOURNAL_KEY_BYTES),
             backing: 32 * 1024 * 1024 + 65_536,
             retained: 64 * 1024 * 1024,
+            public_parent: false,
+            parent_usage: PublicParentReadUsage::default(),
             verified: std::collections::BTreeMap::new(),
         }
     }
@@ -64,6 +72,8 @@ impl AcquisitionReadBudget {
             encoded: 512 * 1024 * 1024,
             backing: 2 * 1024 * 1024 * 1024,
             retained: 64 * 1024 * 1024,
+            public_parent: false,
+            parent_usage: PublicParentReadUsage::default(),
             verified: std::collections::BTreeMap::new(),
         }
     }
@@ -75,6 +85,9 @@ impl AcquisitionReadBudget {
     pub fn selection_usage(&self) -> AcquisitionSelectionUsage {
         self.usage
     }
+    pub fn public_parent_usage(&self) -> PublicParentReadUsage {
+        self.parent_usage
+    }
     pub(super) fn target_examined(&mut self) -> StoreResult<()> {
         self.usage.target_examined()
     }
@@ -82,15 +95,33 @@ impl AcquisitionReadBudget {
         self.usage.absent_target()
     }
     pub(super) fn receipt_probe(&mut self) -> StoreResult<()> {
+        if self.public_parent {
+            self.parent_usage.receipt_probe()?;
+        }
+        if self.public_parent && self.recovery.has_admission_budget() {
+            return self.admission_probe();
+        }
         if self.recovery.is_recovery() {
             return self.recovery_receipt_probe();
         }
         self.usage.receipt_probe()
     }
     pub(super) fn present_receipt(&mut self) -> StoreResult<()> {
+        if self.public_parent {
+            self.parent_usage.present_receipt()?;
+            if self.recovery.has_admission_budget() {
+                return Ok(());
+            }
+        }
         self.usage.present_receipt()
     }
     pub(super) fn row(&mut self, key: usize, value: usize) -> StoreResult<()> {
+        if self.public_parent {
+            self.parent_usage.row(key, value)?;
+        }
+        if self.public_parent && self.recovery.has_admission_budget() {
+            return self.admission_value(key, value);
+        }
         if self.recovery.is_recovery() {
             return self.recovery_row(key, value);
         }
@@ -118,7 +149,23 @@ impl AcquisitionReadBudget {
         self.usage.row(bytes)?;
         Ok(())
     }
+    pub(crate) fn public_owner_record(&mut self, key: usize, value: usize) -> StoreResult<()> {
+        if self.recovery.has_admission_budget() {
+            if self.public_parent {
+                self.parent_usage.row(key, value)?;
+            }
+            self.admission_value(key, value)
+        } else {
+            self.row(key, value)
+        }
+    }
     pub(super) fn encoded(&mut self, bytes: usize) -> StoreResult<()> {
+        if self.public_parent {
+            self.parent_usage.encoded(bytes)?;
+        }
+        if self.public_parent && self.recovery.has_admission_budget() {
+            return self.admission_value(0, bytes);
+        }
         if self.recovery.is_recovery() {
             return self.recovery_encoded(bytes);
         }
@@ -157,6 +204,19 @@ impl AcquisitionReadBudget {
         }
         self.verified.clear();
         self.retained = 64 * 1024 * 1024;
+    }
+
+    pub(in crate::acquisition) fn public_parent<T>(
+        &mut self,
+        read: impl FnOnce(&mut Self) -> StoreResult<T>,
+    ) -> StoreResult<T> {
+        if self.public_parent {
+            return Err(CaptureError::TransitionRefused.into());
+        }
+        self.public_parent = true;
+        let result = read(self);
+        self.public_parent = false;
+        result
     }
     pub(super) fn verified(
         &self,
@@ -197,3 +257,9 @@ impl AcquisitionReadBudget {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod public_owner_tests;
+
+#[cfg(test)]
+mod parent_tests;

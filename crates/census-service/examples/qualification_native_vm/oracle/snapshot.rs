@@ -19,7 +19,7 @@ pub(in super::super) fn read() -> Result<Value> {
         !expected.is_empty() && expected.len() <= 100,
         "require 1..100 genuine Class-of-2027 rows"
     );
-    let store = Store::open(root.join("store"))?;
+    let (store, _writer) = Store::open_current_qualification_v3(root.join("store"))?.into_parts();
     let receipt = acknowledged_receipt(&store, &payload, &acknowledgement, expected.len())?;
     let snapshot = store.snapshot();
     let physical = physical_rows(&snapshot, expected)?;

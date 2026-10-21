@@ -143,3 +143,28 @@ fn empty_disallow_and_comment_only_policies_allow_public_paths() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn dispatch_freshness_is_inclusive_and_historical_rules_do_not_sample_a_clock() -> TestResult {
+    let evidence = capture(b"User-agent: *\nDisallow: /private\n", 200);
+    let policy = Policy::from_capture(&url::Url::parse(ROOT)?, &evidence, "test/1")?;
+    let admission = super::Admission::Checked(&policy);
+    for at in ["2026-10-18T00:00:00Z", "2026-10-19T00:00:00Z"] {
+        admission.check_dispatch(ROOT, at)?;
+    }
+    for at in ["2026-10-17T23:59:59Z", "2026-10-19T00:00:01Z"] {
+        check!(
+            matches!(admission.check_dispatch(ROOT, at), Err(FetchError::Policy { detail })
+            if detail == "robots policy is no longer current at dispatch")
+        );
+    }
+    check!(
+        matches!(admission.check_dispatch(ROOT, "invalid"), Err(FetchError::Policy { detail })
+        if detail == "robots dispatch has an invalid timestamp")
+    );
+    admission.check(ROOT)?;
+    check!(admission.check("https://school.example/private").is_err());
+    super::Admission::Unrestricted.check_dispatch(ROOT, "")?;
+    check!(eq; evidence.fetched_at, "2026-10-18T00:00:00Z");
+    Ok(())
+}

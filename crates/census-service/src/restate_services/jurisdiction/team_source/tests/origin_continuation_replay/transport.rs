@@ -2,8 +2,7 @@ use super::{codec, fixture::TestResult, key, replay};
 use crate::restate_services::jurisdiction::{JurisdictionCensus, TeamsSource};
 use crate::restate_services::wire::{NationalRequest, TeamsSourceRequest};
 use crate::restate_services::{CaptureExecution, Jobs};
-use census_domain::model::{CensusRun, GradYear, RunManifest};
-use census_store::{clock::SystemClock, Store};
+use census_store::{clock::SystemClock, CaptureWriterV1, Store};
 use restate_sdk::prelude::*;
 use std::sync::Arc;
 use std::time::Duration;
@@ -11,29 +10,20 @@ use std::time::Duration;
 pub(super) async fn exchange(
     store: &Arc<Store>,
     request: &TeamsSourceRequest,
+    writer: &Arc<CaptureWriterV1>,
     handler: &str,
     journal: &[codec::Frame],
 ) -> TestResult<Vec<codec::Frame>> {
-    bind_run(store)?;
+    super::super::public_resources_fixture::bind(store, request)?;
     let region = Arc::new(crate::spawn::Spawner::new());
     let owner = JurisdictionCensus::new(
         Arc::clone(store),
         Arc::new(SystemClock),
         None,
-        CaptureExecution::LegacyFresh,
+        CaptureExecution::FreshQualification(Arc::clone(writer)),
         Jobs::new(Arc::clone(store), Arc::clone(&region)),
     );
-    let fetcher = Arc::new(
-        census_crawl::net::Fetcher::new(
-            store.http_cache_dir(),
-            None,
-            Duration::ZERO,
-            Default::default(),
-            Vec::new(),
-        )?
-        .with_offline(true)
-        .with_origin_locks(store.root().join("fixture-origin-locks")),
-    );
+    let fetcher = fetcher(store)?;
     *owner.fetcher.lock().await = Some((Vec::new(), 1, Arc::clone(&fetcher)));
     let source = TeamsSource::new(owner, Jobs::new(Arc::clone(store), Arc::clone(&region)));
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await?;
@@ -70,18 +60,31 @@ pub(super) async fn exchange(
     result
 }
 
-pub(super) fn national_request() -> TestResult<NationalRequest> {
-    super::super::bound_national_request(&super::request()?)
+pub(super) fn national_request(store: &Store) -> TestResult<NationalRequest> {
+    super::super::public_resources_fixture::national(store, &super::request()?)
 }
 
-fn bind_run(store: &Store) -> TestResult {
-    let national = national_request()?;
-    store.bind_run(&RunManifest {
-        store_identity: store.store_identity()?.as_str().into(),
-        run: CensusRun::new(national.season, national.revision.get())
-            .ok_or("continuation fixture run identity invalid")?,
-        cohort: GradYear::CO2027,
-        jurisdictions: national.jurisdictions,
-    })?;
-    Ok(())
+pub(super) fn qualified(root: &std::path::Path) -> TestResult<(Arc<Store>, Arc<CaptureWriterV1>)> {
+    Store::create_current_qualification_v3(root)?;
+    let (store, writer) = Store::open_current_qualification_v3(root)?.into_parts();
+    let mut source = super::request()?;
+    source.source = "milesplit".into();
+    super::super::public_resources_fixture::bind(&store, &source)?;
+    let fetcher = fetcher(&store)?;
+    super::super::public_resources_fixture::declare(&store, &writer, &source, fetcher.as_ref())?;
+    Ok((Arc::new(store), Arc::new(writer)))
+}
+
+fn fetcher(store: &Store) -> TestResult<Arc<census_crawl::net::Fetcher>> {
+    Ok(Arc::new(
+        census_crawl::net::Fetcher::new(
+            store.http_cache_dir(),
+            None,
+            Duration::ZERO,
+            Default::default(),
+            Vec::new(),
+        )?
+        .with_offline(true)
+        .with_origin_locks(store.root().join("fixture-origin-locks")),
+    ))
 }

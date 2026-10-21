@@ -102,7 +102,7 @@ fn changed_school_roots_refuse_with_sticky_grant_after_genuine_installation() ->
                     }
                     ChangedRoot::BodyBound => {
                         *capture.get_mut("body_bytes").ok_or("roster body bytes")? =
-                            Value::from(524_289)
+                            Value::from(2 * 1024 * 1024 + 1)
                     }
                     _ => return Err("unexpected school body mutation".into()),
                 }

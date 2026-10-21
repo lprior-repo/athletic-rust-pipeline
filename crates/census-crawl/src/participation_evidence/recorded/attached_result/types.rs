@@ -1,5 +1,6 @@
 use crate::participation_evidence::result_ownership::{
-    CheckedRetainedResultDocumentV1, CheckedRetainedResultRowV1,
+    CheckedHtmlResultDocumentV1, CheckedHtmlResultRowV1, CheckedRetainedResultDocumentV1,
+    CheckedRetainedResultRowV1,
 };
 use census_store::{CurrentEvidenceSubjectAttachmentV1, RetainedCaptureRootV1, StoreSnapshot};
 
@@ -54,14 +55,14 @@ impl<'a, 's> IdentityLinkedHtmlResultRowV1<'a, 's> {
 }
 
 pub struct DiscoveredIdentityLinkedHtmlResultDocumentV1<'a, 's> {
-    pub(super) document: &'a CheckedRetainedResultDocumentV1<'a>,
+    pub(super) document: &'a CheckedHtmlResultDocumentV1<'a>,
     pub(super) root: &'a RetainedCaptureRootV1,
     pub(super) attachments: super::view::Bindings<'a, 's>,
     pub(super) venue: std::sync::OnceLock<String>,
 }
 
 impl<'a, 's> DiscoveredIdentityLinkedHtmlResultDocumentV1<'a, 's> {
-    pub fn checked_document(&self) -> &CheckedRetainedResultDocumentV1<'a> {
+    pub fn checked_document(&self) -> &CheckedHtmlResultDocumentV1<'a> {
         self.document
     }
     pub fn recorded_root(&self) -> &RetainedCaptureRootV1 {
@@ -95,12 +96,12 @@ impl<'a, 's> DiscoveredIdentityLinkedHtmlResultDocumentV1<'a, 's> {
 }
 
 pub struct DiscoveredIdentityLinkedHtmlResultRowV1<'a, 's> {
-    source: CheckedRetainedResultRowV1<'a>,
+    source: CheckedHtmlResultRowV1<'a>,
     attachment: DiscoveredResultAttachmentV1<'a, 's>,
 }
 
 impl<'a, 's> DiscoveredIdentityLinkedHtmlResultRowV1<'a, 's> {
-    pub fn checked_row(&self) -> &CheckedRetainedResultRowV1<'a> {
+    pub fn checked_row(&self) -> &CheckedHtmlResultRowV1<'a> {
         &self.source
     }
     pub fn attachment(&self) -> &DiscoveredResultAttachmentV1<'a, 's> {

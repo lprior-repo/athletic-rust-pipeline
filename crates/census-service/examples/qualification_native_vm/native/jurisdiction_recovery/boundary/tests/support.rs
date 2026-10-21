@@ -30,6 +30,7 @@ pub(super) fn active() -> Result<(Original, Observation)> {
             .to_string();
     let plan = SourcePlan {
         sweepable: vec!["milesplit".to_owned(), "riil".to_owned()],
+        satisfied: Vec::new(),
         refused: Vec::new(),
         fingerprint: "retained-plan".to_owned(),
     };

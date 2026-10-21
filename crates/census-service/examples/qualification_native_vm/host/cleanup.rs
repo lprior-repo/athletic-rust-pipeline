@@ -4,6 +4,8 @@ use serde_json::{json, Value};
 use std::path::Path;
 use std::process::ExitStatus;
 
+mod diagnostics;
+
 pub(super) fn attach(
     result: Result<()>,
     label: &str,
@@ -38,12 +40,20 @@ fn finish_owned(
 ) -> Result<()> {
     let seed_stop = seed.stop();
     let health = vm.health_status();
+    let before_diagnostics = primary
+        .as_ref()
+        .err()
+        .map(|_| diagnostics::collect(root, ssh, "before-drain"));
     let guest_stop = guest_drain(ssh, vm, health.as_ref().ok().copied().flatten());
+    let after_diagnostics = guest_stop
+        .as_ref()
+        .err()
+        .map(|_| diagnostics::collect(root, ssh, "after-drain"));
     let vm_stop = vm.stop();
     let orderly = health.is_ok() && guest_stop.is_ok() && vm_stop.is_ok();
     let published = artifacts::publish(
         &root.join("cleanup.json"),
-        &json!({"signal_reason":cancellation::current().reason(),"bootstrap":format!("{seed_stop:?}"),"guest_services":format!("{guest_stop:?}"),"guest_drain_certificate":guest_stop.as_ref().ok(),"qemu_health":format!("{health:?}"),"qemu":format!("{vm_stop:?}"),"qemu_exit":vm.evidence(),"qemu_orderly":orderly,"qemu_state":if orderly { "ORDERLY" } else { "UNPROVEN" },"failure":primary.as_ref().err().map(|error| format!("{error:#}")),"disks_and_logs_preserved":true,"serial_evidence":vm.log}),
+        &json!({"signal_reason":cancellation::current().reason(),"bootstrap":format!("{seed_stop:?}"),"guest_services":format!("{guest_stop:?}"),"guest_drain_certificate":guest_stop.as_ref().ok(),"qemu_health":format!("{health:?}"),"qemu":format!("{vm_stop:?}"),"qemu_exit":vm.evidence(),"qemu_orderly":orderly,"qemu_state":if orderly { "ORDERLY" } else { "UNPROVEN" },"failure":primary.as_ref().err().map(|error| format!("{error:#}")),"disks_and_logs_preserved":true,"serial_evidence":vm.log,"before_drain_diagnostics":diagnostics_result(&before_diagnostics),"after_drain_diagnostics":diagnostics_result(&after_diagnostics)}),
     );
     [
         ("bootstrap cleanup", seed_stop.as_ref().err()),
@@ -83,4 +93,12 @@ pub(super) fn spawn_failure(root: &Path, seed: &mut Seed, error: anyhow::Error) 
             published.as_ref().err(),
         )
     })
+}
+
+fn diagnostics_result(result: &Option<Result<Value>>) -> Value {
+    match result {
+        None => json!({"requested":false}),
+        Some(result) => json!({"requested":true,"evidence":result.as_ref().ok(),
+            "failure":result.as_ref().err().map(|error|format!("{error:#}"))}),
+    }
 }

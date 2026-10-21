@@ -147,7 +147,16 @@ impl Fetcher {
         status: u16,
         session: &mut CaptureSession<'_>,
     ) -> Result<FetchOutcome, FetchError> {
-        if let Err(error) = record_response(response, plan, status, redirects, session).await {
+        if let Err(error) = record_response(
+            response,
+            plan,
+            status,
+            redirects,
+            session,
+            &self.capture_clock,
+        )
+        .await
+        {
             if session.is_adopted() {
                 return Err(error);
             }
@@ -175,7 +184,16 @@ impl Fetcher {
         redirects: &[crate::net::RedirectHop],
         session: &mut CaptureSession<'_>,
     ) -> Result<FetchOutcome, FetchError> {
-        cache_and_record(response, plan, 200, &self.stats, redirects, session).await
+        cache_and_record(
+            response,
+            plan,
+            200,
+            &self.stats,
+            redirects,
+            session,
+            &self.capture_clock,
+        )
+        .await
     }
 
     async fn handle_404(
@@ -186,8 +204,16 @@ impl Fetcher {
         session: &mut CaptureSession<'_>,
     ) -> Result<FetchOutcome, FetchError> {
         let status = 404u16;
-        let outcome =
-            cache_and_record(response, plan, status, &self.stats, redirects, session).await?;
+        let outcome = cache_and_record(
+            response,
+            plan,
+            status,
+            &self.stats,
+            redirects,
+            session,
+            &self.capture_clock,
+        )
+        .await?;
         if plan.options.allow_not_found {
             Ok(outcome)
         } else {

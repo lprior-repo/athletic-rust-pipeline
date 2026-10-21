@@ -1,11 +1,13 @@
 use super::{artifacts, process, GUEST};
 use anyhow::{ensure, Context, Result};
+use census_store::Store;
 use serde_json::json;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::process::Command;
 
 mod enablement;
+mod profile;
 mod supervision;
 
 pub fn initialize() -> Result<()> {
@@ -48,6 +50,9 @@ pub fn initialize() -> Result<()> {
     writeln!(&fstab, "UUID={} {GUEST} btrfs defaults 0 0", uuid.trim())?;
     fstab.sync_all()?;
     copy_payload(staging, Path::new(GUEST))?;
+    Store::create_current_qualification_v3(Path::new(GUEST).join("store"))?;
+    Store::create_current_qualification_v3(Path::new(GUEST).join("clock-acquisition-store"))?;
+    profile::initialize()?;
     install_captures()?;
     artifacts::publish(
         &Path::new(GUEST).join("disk.json"),

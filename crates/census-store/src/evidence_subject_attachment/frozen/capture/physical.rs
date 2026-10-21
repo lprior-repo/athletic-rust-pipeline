@@ -65,7 +65,10 @@ pub(super) fn scan<'r>(
         Group::Attachment | Group::External(_) => {
             let (namespace, rows) = match group {
                 Group::External(root) => {
-                    (JournalNamespace::new(root.schema.phase(), &root.key)?, 6)
+                    (
+                        JournalNamespace::new(root.schema.phase(), &root.key)?,
+                        crate::evidence_subject_attachment::external::MAX_RETAINED_CAPTURE_PHYSICAL_ROWS,
+                    )
                 }
                 _ => (JournalNamespace::whole_phase(PHASE)?, 8192),
             };

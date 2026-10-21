@@ -130,8 +130,9 @@ async fn exercise(scenario: Scenario) -> TestResult {
         "http://{}/invoke/NationalCensus/run",
         listener.local_addr()?
     );
-    let directory = tempfile::tempdir()?;
-    let store = Arc::new(census_store::Store::open(directory.path())?);
+    let controlled = crate::restate_services::jobs::selected_fixture::install()
+        .map_err(|error| error.to_string())?;
+    let store = Arc::new(controlled.store().clone());
     let region = Arc::new(crate::spawn::Spawner::new());
     let jobs = crate::restate_services::Jobs::new(store, Arc::clone(&region));
     let endpoint = Endpoint::builder()
@@ -145,11 +146,11 @@ async fn exercise(scenario: Scenario) -> TestResult {
     });
     let assertions = async move {
         let result = if matches!(scenario, Scenario::Generation) {
-            Ok(resume::run_scenario(scenario, &url).await)
+            Ok(resume::run_scenario(scenario, &url, controlled).await)
         } else {
             tokio::time::timeout(
                 Duration::from_secs(30),
-                resume::run_scenario(scenario, &url),
+                resume::run_scenario(scenario, &url, controlled),
             )
             .await
         };

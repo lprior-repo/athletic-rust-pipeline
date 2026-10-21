@@ -1,5 +1,5 @@
 use super::*;
-use census_crawl::participation_evidence::physical_result::project_retained_html_result_identity;
+use census_crawl::participation_evidence::physical_result::project_checked_html_result_identity;
 use census_crawl::participation_evidence::recorded::{
     AttachedParticipationV1, CheckedDocumentaryParticipationFactsV1,
     DiscoveredIdentityLinkedHtmlResultDocumentV1,
@@ -49,9 +49,8 @@ fn evaluate(
     let attachment = row.attachment();
     attachment.require_original_grant(grant)?;
     let athlete: AthleteId = attachment.target().canonical_candidate.cast();
-    let identity =
-        project_retained_html_result_identity(linked.checked_document(), index, &athlete)
-            .map_err(source)?;
+    let identity = project_checked_html_result_identity(linked.checked_document(), index, &athlete)
+        .map_err(source)?;
     let date = ProfileDate::parse(identity.date()).map_err(source)?;
     let record = record(attachment, grant)?;
     let proof = result_proof(

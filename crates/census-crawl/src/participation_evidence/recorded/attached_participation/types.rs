@@ -85,6 +85,7 @@ pub enum DocumentarySeasonApplicabilityV1 {
     CompetitionMismatch,
     VenueMismatch,
     CompetitionAndVenueMismatch,
+    ReviewedCalendarRequired,
 }
 
 pub struct CheckedDocumentaryParticipationFactsV1<'a> {

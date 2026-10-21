@@ -137,6 +137,8 @@ pub enum AffiliationCandidateError {
     LengthMismatch,
     #[error("capture digest differs from supplied body")]
     HashMismatch,
+    #[error("roster interpretation differs from the checked issuance reference")]
+    InterpretationMismatch,
     #[error("source span is empty, missing or too large")]
     InvalidLocator,
     #[error("requested, observed or published owner disagrees")]

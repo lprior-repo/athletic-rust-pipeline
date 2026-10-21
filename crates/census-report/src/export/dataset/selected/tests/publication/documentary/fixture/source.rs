@@ -56,7 +56,10 @@ fn rows<'s>(
     grant: &mut AttachmentReplayGrantV1,
 ) -> TestResult<Vec<Expected>> {
     check!(eq; linked.row_count(), 3);
-    let document = linked.checked_document();
+    let document = linked
+        .checked_document()
+        .as_milesplit()
+        .ok_or("genuine MileSplit document")?;
     check!(eq; document.meet_id(), "763888");
     check!(eq; document.result_document_id(), "1304896");
     check!(eq; document.published_start(), "2026-05-15");
@@ -86,7 +89,10 @@ fn rows<'s>(
     .enumerate()
     {
         let linked_row = linked.row(index).ok_or("genuine linked row")?;
-        let row = linked_row.checked_row();
+        let row = linked_row
+            .checked_row()
+            .as_milesplit()
+            .ok_or("genuine MileSplit row")?;
         let attachment = linked_row.attachment();
         attachment.require_original_grant(grant)?;
         check!(eq; row.parsed_row().mark, Mark::TimeSeconds(ExactSeconds::parse(mark)?));

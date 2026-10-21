@@ -10,9 +10,14 @@ use tokio::sync::Mutex;
 use tracing::info;
 
 pub(crate) mod access;
+mod collect;
 pub(crate) mod index;
+pub(crate) use index::retain_failure as retain_team_index_failure;
+mod owned;
+pub use collect::{collect_owned_state_rosters, collect_state_rosters};
 pub(super) mod roster;
 mod units;
+pub use owned::OwnedRosterSource;
 
 #[cfg(feature = "native-fault-injection")]
 pub use self::roster::install_boundary_hook;
@@ -31,21 +36,22 @@ pub async fn collect_state_teams(
     jurisdiction: UsJurisdiction,
     refresh: bool,
 ) -> Result<Vec<TeamRef>, access::SourceAccessFailure> {
-    let site = Site::for_jurisdiction(jurisdiction);
-    let read = match milesplit::fetch_team_index(
-        fetcher,
-        site,
-        &FetchOptions {
-            refresh,
-            ..Default::default()
-        },
-    )
-    .await
-    {
-        Ok(read) => read,
-        Err(error) => return Err(index::retain_failure(fetcher, store, jurisdiction, error).await),
+    let options = FetchOptions {
+        refresh,
+        ..Default::default()
     };
-    let teams = match index::configure(store, jurisdiction, read) {
+    let read =
+        milesplit::fetch_team_index(fetcher, Site::for_jurisdiction(jurisdiction), &options).await;
+    accept_state_team_index(fetcher, store, jurisdiction, read).await
+}
+
+pub async fn accept_state_team_index(
+    fetcher: &Fetcher,
+    store: &Store,
+    jurisdiction: UsJurisdiction,
+    read: CrawlResult<milesplit::TeamIndexRead>,
+) -> Result<Vec<TeamRef>, access::SourceAccessFailure> {
+    let teams = match read.and_then(|read| index::configure(store, jurisdiction, read)) {
         Ok(teams) => teams,
         Err(error) => return Err(index::retain_failure(fetcher, store, jurisdiction, error).await),
     };
@@ -134,47 +140,6 @@ fn progress_of(
         blocked_skipped: shared.blocked_skipped,
         teams: rosters_total,
     })
-}
-
-#[tracing::instrument(skip_all, fields(state = jurisdiction.code()))]
-pub async fn collect_state_rosters(
-    fetcher: &Fetcher,
-    store: &Store,
-    teams: &[TeamRef],
-    options: &CollectOptions,
-    jurisdiction: UsJurisdiction,
-) -> CrawlResult<StateProgress> {
-    team_bound(teams.len())?;
-    let pending = pending_rosters(
-        store,
-        teams,
-        jurisdiction,
-        options.school_year,
-        options.revision,
-    )?;
-    let shared = shared(pending.len())?;
-    let run = RosterRun {
-        site: Site::for_jurisdiction(jurisdiction),
-        observed_on: &options.observed_on,
-        school_year: options.school_year,
-        refresh: options.refresh,
-        revision: options.revision,
-    };
-    stream::iter(&pending)
-        .take(options.limit_per_state.map_or(pending.len(), |limit| limit))
-        .for_each_concurrent(options.concurrency.clamp(1, 64), |team| {
-            roster_unit(fetcher, store, &shared, team, &run)
-        })
-        .await;
-    let phase = rosters_phase(jurisdiction, options.school_year, options.revision);
-    let summary = roster::summarize(store, &phase, teams, jurisdiction, options.school_year)?;
-    let progress = progress_of(
-        jurisdiction,
-        summary.total,
-        summary,
-        &mut *shared.lock().await,
-    )?;
-    index::guard_progress(store, jurisdiction, teams, progress)
 }
 
 #[tracing::instrument(skip_all, fields(state = jurisdiction.code()))]

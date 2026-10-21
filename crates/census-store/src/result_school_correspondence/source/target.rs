@@ -11,7 +11,7 @@ pub(super) fn require_contracts(
 ) -> StoreResult<()> {
     let parser = object(materials, &source.statement.parser_contract)?.inline_bytes(grant)?;
     let year = object(materials, &source.target.year_contract)?.inline_bytes(grant)?;
-    if parser != RESULT_SCHOOL_PARSER_CONTRACT_V1
+    if ResultSchoolSourceParserV1::from_contract(&parser).is_none()
         || year != RESULT_SCHOOL_YEAR_CONTRACT_V1
         || SchoolYear::from_date(source.target.day.as_str()) != Some(source.target.year)
     {

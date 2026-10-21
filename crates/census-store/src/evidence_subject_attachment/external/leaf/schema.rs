@@ -2,9 +2,12 @@ use super::super::super::RetainedCaptureRootSchemaV1 as Schema;
 use super::{capture, Error, RetainedCaptureSlotV1 as Slot};
 use crate::{StoreError, StoreResult};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
+use census_domain::result_calendar_correspondence::RoncalliSeasonEventSelectionV1;
 use census_domain::roster_affiliation_authority::SourceRowLocator;
 use serde::Deserialize;
 use serde_json::value::RawValue;
+
+mod pdf;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -15,6 +18,8 @@ struct Participation<'a> {
     #[serde(borrow)]
     schedule: &'a RawValue,
     result_row: Option<SourceRowLocator>,
+    #[serde(default)]
+    roncalli_season_event: Option<RoncalliSeasonEventSelectionV1>,
 }
 
 #[derive(Deserialize)]
@@ -57,6 +62,7 @@ pub(crate) enum CheckedRoot<'a> {
         status: capture::CheckedCapture<'a>,
         schedule: capture::CheckedCapture<'a>,
         result_row: Option<SourceRowLocator>,
+        roncalli_season_event: Option<RoncalliSeasonEventSelectionV1>,
     },
     Provider {
         profile: capture::CheckedCapture<'a>,
@@ -65,6 +71,7 @@ pub(crate) enum CheckedRoot<'a> {
     School(CheckedSchool<'a>),
     Html(capture::CheckedCapture<'a>),
     Window(capture::CheckedCapture<'a>),
+    Pdf(capture::CheckedCapture<'a>),
 }
 
 impl CheckedRoot<'_> {
@@ -87,7 +94,9 @@ impl CheckedRoot<'_> {
             ) => Ok(linked_results),
             (CheckedRoot::School(school), Slot::ProviderSchoolDirectory) => Ok(&school.directory),
             (CheckedRoot::School(school), Slot::ProviderSchoolRoster) => Ok(&school.roster),
-            (CheckedRoot::Html(capture), Slot::SelfCapture) => Ok(capture),
+            (CheckedRoot::Html(capture) | CheckedRoot::Pdf(capture), Slot::SelfCapture) => {
+                Ok(capture)
+            }
             (CheckedRoot::Window(capture), Slot::ParticipationWindow) => Ok(capture),
             _ => Err(Error::Corrupt("external root capture slot").into()),
         }
@@ -100,6 +109,13 @@ fn participation_packet<'a>(
     let packet: Participation<'a> = parse(raw, grant)?;
     if packet.version != 1 {
         return Err(Error::Corrupt("participation root version").into());
+    }
+    if packet
+        .roncalli_season_event
+        .as_ref()
+        .is_some_and(|selection| packet.result_row.is_some() || !selection.is_bounded())
+    {
+        return Err(Error::Corrupt("participation source selector").into());
     }
     if let Some(row) = packet.result_row {
         if row.byte_length() == 0 || row.byte_offset().checked_add(row.byte_length()).is_none() {
@@ -116,6 +132,10 @@ pub(in crate::evidence_subject_attachment::external) fn checked<'a>(
 ) -> StoreResult<CheckedRoot<'a>> {
     match schema {
         Schema::HtmlResultCaptureV1 => Ok(CheckedRoot::Html(capture::checked(raw, grant)?)),
+        Schema::MhsaaCoopPdfPacketV1 => Ok(CheckedRoot::Pdf(capture::checked(
+            pdf::capture(raw, grant)?,
+            grant,
+        )?)),
         Schema::ParticipationWindowPacketV1 => {
             let packet = window_packet(raw, grant)?;
             Ok(CheckedRoot::Window(capture::checked(packet.window, grant)?))
@@ -127,12 +147,16 @@ pub(in crate::evidence_subject_attachment::external) fn checked<'a>(
                 roster: capture::checked(packet.roster, grant)?,
             }))
         }
+        Schema::ProviderSchoolObservedPacketV1 => {
+            capture::observed::school(raw, grant).map(CheckedRoot::School)
+        }
         Schema::ParticipationPacketV1 => {
             let packet = participation_packet(raw, grant)?;
             Ok(CheckedRoot::Participation {
                 status: capture::checked(packet.status, grant)?,
                 schedule: capture::checked(packet.schedule, grant)?,
                 result_row: packet.result_row,
+                roncalli_season_event: packet.roncalli_season_event,
             })
         }
         Schema::ProviderTargetPacketV1 => {
@@ -181,7 +205,16 @@ pub(super) fn select<'a>(
                 _ => Err(Error::Corrupt("external root capture slot").into()),
             }
         }
+        Schema::MhsaaCoopPdfPacketV1 => {
+            let raw = pdf::capture(raw, grant)?;
+            capture::validate(raw, grant)?;
+            if slot != Slot::SelfCapture {
+                return Err(Error::Corrupt("external root capture slot").into());
+            }
+            Ok(raw)
+        }
         Schema::ProviderSchoolPacketV1 => school(raw, slot, grant),
+        Schema::ProviderSchoolObservedPacketV1 => capture::observed::select(raw, slot, grant),
         Schema::ParticipationWindowPacketV1 => {
             let packet = window_packet(raw, grant)?;
             capture::validate(packet.window, grant)?;
@@ -250,3 +283,6 @@ fn window_packet<'a>(
     }
     Ok(packet)
 }
+
+#[cfg(test)]
+mod tests;

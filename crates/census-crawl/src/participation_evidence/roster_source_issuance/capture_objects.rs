@@ -1,11 +1,11 @@
 use super::manifest::CheckedRosterParserManifestV1;
 use super::source::{budget, domain, original};
-use crate::participation_evidence::provider_school::ProviderSchoolPacketV1;
+use crate::participation_evidence::provider_school::RetainedProviderSchoolPacketV1;
 use crate::participation_evidence::{bound, hash, invalid, json, MAX_PACKET};
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::roster_affiliation_authority::LocallyCheckedRosterIssuanceV1;
-use census_store::{RosterSourceEvidenceV1, StoreResult};
+use census_store::{RetainedCaptureRootSchemaV1, RosterSourceEvidenceV1, StoreResult};
 
 mod format;
 pub(super) mod version3;
@@ -83,24 +83,26 @@ pub fn prepare_retained_roster_capture_objects<'a>(
         let held = evidence.retained_root(grant)?;
         let raw = held.payload().get().as_bytes();
         bound(raw.len(), MAX_PACKET, "retained capture object packet")?;
-        grant.charge_bytes(raw.len()).map_err(domain)?;
-        grant.charge_steps(1).map_err(domain)?;
-        if held.root().schema != census_store::RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
-            || held.root().payload.digest.as_str() != hash(raw)
+        precharge_packet(held.root().schema, raw.len(), grant)?;
+        if !matches!(
+            held.root().schema,
+            RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
+                | RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1
+        ) || held.root().payload.digest.as_str() != hash(raw)
             || held.root().payload.bytes
                 != u64::try_from(raw.len())
                     .map_err(|_| census_store::StoreError::CounterOverflow)?
         {
             return Err(invalid("capture object retained root mismatch").into());
         }
-        let packet: ProviderSchoolPacketV1 = serde_json::from_slice(raw).map_err(json)?;
+        let packet = RetainedProviderSchoolPacketV1::from_root(held.root().schema, raw)?;
         budget::charge(&packet, grant)?;
         if hash(&packet.encode()?) != held.root().key {
             return Err(invalid("capture object packet key mismatch").into());
         }
         budget::charge(&packet, grant)?;
-        budget::charge(packet.directory(), grant)?;
-        budget::charge(packet.roster(), grant)?;
+        budget::charge(&packet.directory(), grant)?;
+        budget::charge(&packet.roster(), grant)?;
         original(evidence, grant, |_| packet.read())?;
         let body = packet.roster().body()?;
         derive(evidence, &packet, &parser, &body, grant)
@@ -113,7 +115,7 @@ pub fn prepare_retained_roster_capture_objects<'a>(
 
 pub(super) fn derive<'a>(
     evidence: &'a RosterSourceEvidenceV1,
-    packet: &ProviderSchoolPacketV1,
+    packet: &RetainedProviderSchoolPacketV1,
     parser: &CheckedRosterParserManifestV1,
     body: &str,
     grant: &mut AttachmentReplayGrantV1,
@@ -148,7 +150,7 @@ fn replay_parser(
 
 pub(super) fn derive_retained<'a>(
     evidence: &'a RosterSourceEvidenceV1,
-    packet: &ProviderSchoolPacketV1,
+    packet: &RetainedProviderSchoolPacketV1,
     parser: &super::manifest::RetainedRosterParserManifestV1,
     body: &str,
     grant: &mut AttachmentReplayGrantV1,
@@ -157,3 +159,26 @@ pub(super) fn derive_retained<'a>(
         format::derive(evidence, packet, parser, body, grant)
     })
 }
+
+fn precharge_packet(
+    schema: RetainedCaptureRootSchemaV1,
+    bytes: usize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    let (bytes, steps) = if schema == RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1 {
+        (
+            bytes
+                .checked_mul(3)
+                .ok_or(census_store::StoreError::CounterOverflow)?,
+            64,
+        )
+    } else {
+        (bytes, 1)
+    };
+    grant.charge_bytes(bytes).map_err(domain)?;
+    grant.charge_steps(steps).map_err(domain)?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests;

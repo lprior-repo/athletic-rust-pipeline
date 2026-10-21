@@ -25,10 +25,12 @@ pub(super) fn validate_root(
         super::RetainedCaptureRootSchemaV1::ProviderTargetPacketV1 => {
             RetainedCaptureSlotV1::ProviderProfile
         }
-        super::RetainedCaptureRootSchemaV1::HtmlResultCaptureV1 => {
+        super::RetainedCaptureRootSchemaV1::HtmlResultCaptureV1
+        | super::RetainedCaptureRootSchemaV1::MhsaaCoopPdfPacketV1 => {
             RetainedCaptureSlotV1::SelfCapture
         }
-        super::RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1 => {
+        super::RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
+        | super::RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1 => {
             RetainedCaptureSlotV1::ProviderSchoolDirectory
         }
     };
@@ -106,6 +108,9 @@ fn verify_checked(
                     ) | (
                         super::RetainedCaptureRootSchemaV1::ParticipationPacketV1,
                         RetainedCaptureSlotV1::ParticipationStatus
+                    ) | (
+                        super::RetainedCaptureRootSchemaV1::MhsaaCoopPdfPacketV1,
+                        RetainedCaptureSlotV1::SelfCapture
                     )
                 ) {
                     return Err(Error::Corrupt("external root JSON kind differs").into());

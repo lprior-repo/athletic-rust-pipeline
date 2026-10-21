@@ -8,6 +8,7 @@ mod grade;
 mod grant4g;
 mod member;
 mod portable;
+mod pre_directory;
 mod raw_value;
 mod raw_value_portable;
 mod shared_fixture;

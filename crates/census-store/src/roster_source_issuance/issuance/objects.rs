@@ -86,8 +86,22 @@ pub(super) fn collect(
     retain_contracts(&mut objects, grant, supplied, proposal)?;
     retain_root_payload(&mut objects, evidence, grant, proposal)?;
     retain_descriptors(&mut objects, evidence, grant, proposal)?;
+    retain_observed_admission(&mut objects, evidence, grant)?;
     evidence.require_original_grant(grant)?;
     Ok(objects)
+}
+
+fn retain_observed_admission(
+    objects: &mut Objects,
+    evidence: &super::super::inspection::RosterSourceEvidenceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    evidence.require_original_grant(grant)?;
+    if let Some(proof) = evidence.observed.as_ref() {
+        insert(objects, proof.mint_bytes(), grant)?;
+        insert(objects, proof.receipt_bytes(), grant)?;
+    }
+    Ok(())
 }
 
 fn retain_contracts(

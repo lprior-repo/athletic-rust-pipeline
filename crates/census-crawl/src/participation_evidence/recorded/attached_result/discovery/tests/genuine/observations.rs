@@ -12,7 +12,10 @@ pub(super) fn observe(
 ) -> TestResult<Observed> {
     check!(eq; document.row_count(), 3);
     check!(document.row(3).is_none());
-    let checked = document.checked_document();
+    let checked = document
+        .checked_document()
+        .as_milesplit()
+        .ok_or("genuine MileSplit document")?;
     check!(eq; checked.context_reference(), document.recorded_root().key);
     check!(eq; checked.meet_id(), "763888");
     check!(eq; checked.result_document_id(), "1304896");
@@ -42,7 +45,10 @@ pub(super) fn observe(
     .enumerate()
     {
         let linked = document.row(index).ok_or("discovered genuine row absent")?;
-        let row = linked.checked_row();
+        let row = linked
+            .checked_row()
+            .as_milesplit()
+            .ok_or("genuine MileSplit row")?;
         let attachment = linked.attachment();
         check!(eq; row.locator(), SourceRowLocator { ordinal, byte_offset: offset, byte_length: length });
         check!(eq; row.parsed_row().mark, Mark::TimeSeconds(ExactSeconds::parse(mark)?));

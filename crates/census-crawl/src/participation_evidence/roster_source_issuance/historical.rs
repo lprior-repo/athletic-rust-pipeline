@@ -13,7 +13,7 @@ pub(super) mod kernel_adapter;
 
 pub(super) struct CheckedOriginalRosterPacket<'a> {
     evidence: &'a census_store::RosterSourceEvidenceV1,
-    packet: crate::participation_evidence::provider_school::ProviderSchoolPacketV1,
+    packet: crate::participation_evidence::provider_school::RetainedProviderSchoolPacketV1,
 }
 
 impl<'a> CheckedOriginalRosterPacket<'a> {
@@ -47,7 +47,8 @@ impl<'a> CheckedOriginalRosterPacket<'a> {
     pub(super) fn packet(
         &self,
         grant: &mut AttachmentReplayGrantV1,
-    ) -> StoreResult<&crate::participation_evidence::provider_school::ProviderSchoolPacketV1> {
+    ) -> StoreResult<&crate::participation_evidence::provider_school::RetainedProviderSchoolPacketV1>
+    {
         self.evidence.require_original_grant(grant)?;
         Ok(&self.packet)
     }

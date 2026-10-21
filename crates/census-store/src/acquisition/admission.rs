@@ -1,4 +1,5 @@
-use super::{codec, AcquisitionReadBudget, CaptureError, ResultsCaptureOwnerV1};
+use super::owner::OwnerScopeProof;
+use super::{codec, AcquisitionReadBudget, CaptureError, CaptureOwnerRef};
 use crate::{Store, StoreResult};
 use census_domain::model::*;
 use fjall::Readable;
@@ -7,7 +8,7 @@ use std::sync::{Arc, Mutex};
 pub(crate) struct ValidatedRecoveryOwner {
     origin: Arc<Mutex<()>>,
     identity: StoreIdentity,
-    scope: ResultsCaptureScopeV1,
+    scope: OwnerScopeProof,
     worker: std::thread::ThreadId,
     owned_bytes: usize,
 }
@@ -18,23 +19,24 @@ impl ValidatedRecoveryOwner {
     pub(in crate::acquisition) fn matches(
         &self,
         store: &Store,
-        owner: &ResultsCaptureOwnerV1,
+        owner: CaptureOwnerRef<'_>,
     ) -> bool {
         Arc::ptr_eq(&self.origin, &store.appends)
-            && Arc::ptr_eq(&self.origin, &owner.writer.origin)
+            && Arc::ptr_eq(&self.origin, &owner.writer().origin)
             && self.identity == *owner.store_identity()
-            && self.scope == *owner.scope()
+            && self.scope.matches(owner)
             && self.worker == std::thread::current().id()
             && owner.protocol() == CaptureProtocolVersion::V2
     }
 }
 
 impl Store {
-    pub fn validate_prepared_recovery_owner(
+    pub fn validate_prepared_recovery_owner<'owner>(
         &self,
-        owner: &ResultsCaptureOwnerV1,
+        owner: impl Into<CaptureOwnerRef<'owner>>,
         budget: &mut super::recovery::PreparedRecoveryBudget,
     ) -> StoreResult<()> {
+        let owner = owner.into();
         budget.prepare_owner()?;
         let _writes = self.lock_appends();
         let reads = budget.reads();
@@ -45,21 +47,19 @@ impl Store {
 
 pub(super) fn validated(
     store: &Store,
-    owner: &ResultsCaptureOwnerV1,
+    owner: CaptureOwnerRef<'_>,
     reads: &mut AcquisitionReadBudget,
 ) -> StoreResult<ValidatedRecoveryOwner> {
     self::owner(store, owner, reads)?;
-    let scope = owner.scope();
     let length = owner
         .store_identity()
         .as_str()
         .len()
-        .checked_add(scope.owner_key().len())
-        .and_then(|bytes| bytes.checked_add(128))
+        .checked_add(OwnerScopeProof::owned_bytes(owner))
         .ok_or(crate::StoreError::CounterOverflow)?;
     reads.reserve_recovery_owned(length)?;
     let identity = owner.store_identity().try_clone().map_err(allocation)?;
-    let scope = scope.try_clone().map_err(allocation)?;
+    let scope = OwnerScopeProof::try_new(owner).map_err(allocation)?;
     reads.promote_recovery_owned(length)?;
     Ok(ValidatedRecoveryOwner {
         origin: Arc::clone(&store.appends),
@@ -75,14 +75,25 @@ fn allocation(source: std::collections::TryReserveError) -> crate::StoreError {
 }
 
 pub(super) fn matches_work(
-    owner: &ResultsCaptureOwnerV1,
+    store: &Store,
+    owner: CaptureOwnerRef<'_>,
     work: &AcquisitionWorkV1,
+    budget: &mut AcquisitionReadBudget,
 ) -> StoreResult<()> {
-    let scope = owner.scope();
+    let Some(results) = owner.results() else {
+        owner
+            .public()
+            .ok_or(CaptureError::ObligationConflict)?
+            .matches_work(work)?;
+        return super::public_resources::read::for_work(store, &store.db.snapshot(), work, budget);
+    };
+    let scope = results.scope();
     let slot = work.slot();
     if slot.store_identity() != owner.store_identity()
         || slot.owner_key() != scope.owner_key()
-        || slot.historical_year() != scope.historical_year()
+        || slot.historical_year() != Some(scope.historical_year())
+        || slot.public_resource().is_some()
+        || work.public_resource_obligation().is_some()
         || work.run() != scope.run()
         || work.run_manifest_digest() != scope.run_manifest_digest()
         || work.history() != scope.history()
@@ -92,6 +103,19 @@ pub(super) fn matches_work(
         return Err(CaptureError::ObligationConflict.into());
     }
     Ok(())
+}
+
+pub(super) fn matches_read_work(
+    store: &Store,
+    owner: CaptureOwnerRef<'_>,
+    facts: &super::facts::WorkFacts,
+    budget: &mut AcquisitionReadBudget,
+) -> StoreResult<()> {
+    let Some(public) = owner.public() else {
+        return matches_work(store, owner, &facts.work, budget);
+    };
+    public.matches_work(&facts.work)?;
+    super::public_resources::read::for_read_work(store, &store.db.snapshot(), facts, budget)
 }
 
 pub(crate) enum ReadMeter<'a> {
@@ -121,13 +145,13 @@ impl ReadMeter<'_> {
 
 pub(super) fn owner(
     store: &Store,
-    owner: &ResultsCaptureOwnerV1,
+    owner: CaptureOwnerRef<'_>,
     budget: &mut AcquisitionReadBudget,
 ) -> StoreResult<()> {
     if owner.protocol() != CaptureProtocolVersion::V2 {
         return Err(CaptureError::CaptureProtocolUnsupported.into());
     }
-    if !Arc::ptr_eq(&owner.writer.origin, &store.appends) {
+    if !Arc::ptr_eq(&owner.writer().origin, &store.appends) {
         return Err(CaptureError::CaptureCapabilityForeignStore.into());
     }
     let snapshot = store.db.snapshot();
@@ -144,6 +168,19 @@ pub(super) fn owner(
         || declaration.store_identity() != owner.store_identity()
     {
         return Err(CaptureError::CaptureCapabilityForeignStore.into());
+    }
+    if let Some(public) = owner.public() {
+        let declaration = super::public_resources::read::declaration_after_capture(
+            &snapshot,
+            &store.meta,
+            &store.journal,
+            &store.receipts,
+            &declaration,
+            budget,
+        )?
+        .ok_or(CaptureError::CaptureCapabilityNamespaceUnsupported)?;
+        budget.reserve_recovery_owned(4096)?;
+        return public.validate_declaration(&declaration);
     }
     let key = crate::run::RUN_MANIFEST;
     if let Some(length) = snapshot
@@ -164,5 +201,6 @@ pub(super) fn owner(
     }
     let manifest =
         crate::run::read(&snapshot, &store.meta)?.ok_or(CaptureError::CaptureRunManifestMissing)?;
-    super::capability::validate_scope(owner.store_identity(), owner.scope(), &manifest)
+    let results = owner.results().ok_or(CaptureError::ObligationConflict)?;
+    super::capability::validate_scope(owner.store_identity(), results.scope(), &manifest)
 }

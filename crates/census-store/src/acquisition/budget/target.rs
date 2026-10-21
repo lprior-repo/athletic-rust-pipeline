@@ -68,6 +68,9 @@ impl RecoveryReadLedger {
     pub(super) fn is_recovery(self) -> bool {
         self.mode == ReadMode::Recovery
     }
+    pub(super) fn has_admission_budget(self) -> bool {
+        self.mode != ReadMode::Ordinary
+    }
     fn charged(mut self, debit: ReadDebit) -> StoreResult<Self> {
         if self.mode == ReadMode::Ordinary {
             return Ok(self);

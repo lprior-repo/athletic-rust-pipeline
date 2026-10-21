@@ -125,7 +125,7 @@ impl NationalCensus {
         let contacts = contact_phase::collect(&ctx, &request, &targets, &contact_at).await?;
 
         let today = super::journaled_today_workflow(&ctx, &self.clock).await?;
-        reconciliation::run(self, &ctx, &identity, request.season, &today).await?;
+        reconciliation::run(self, &ctx, &identity, &request, cohort, &today).await?;
         let report = assemble(
             request.season,
             request.revision,

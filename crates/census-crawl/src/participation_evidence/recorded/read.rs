@@ -210,7 +210,7 @@ pub(super) fn read_independent_from(
     })
 }
 
-pub(super) fn with_grant<T>(
+pub(in crate::participation_evidence) fn with_grant<T>(
     grant: &mut AttachmentReplayGrantV1,
     read: impl FnOnce(&mut AttachmentReplayGrantV1) -> CrawlResult<T>,
 ) -> CrawlResult<T> {

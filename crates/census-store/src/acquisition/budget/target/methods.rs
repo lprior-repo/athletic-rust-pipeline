@@ -14,6 +14,8 @@ impl AcquisitionReadBudget {
             encoded,
             backing: 2_147_483_648,
             retained: 67_108_864,
+            public_parent: false,
+            parent_usage: super::super::PublicParentReadUsage::default(),
             verified: std::collections::BTreeMap::new(),
             recovery: RecoveryReadLedger::planned(count)?,
         })

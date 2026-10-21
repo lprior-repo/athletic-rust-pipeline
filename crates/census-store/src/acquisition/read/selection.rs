@@ -1,5 +1,5 @@
 use super::{read_work, AcquisitionReadBudget, CaptureError};
-use crate::acquisition::{facts::digest, ResultsCaptureOwnerV1};
+use crate::acquisition::{facts::digest, CaptureOwnerRef};
 use crate::{Store, StoreError, StoreResult};
 use census_domain::model::*;
 use fjall::Readable;
@@ -12,18 +12,24 @@ pub enum ExistingRecoveryRoute {
 }
 
 impl Store {
-    pub fn read_existing_recovery_target(
+    pub fn read_existing_recovery_target<'owner>(
         &self,
-        owner: &ResultsCaptureOwnerV1,
+        owner: impl Into<CaptureOwnerRef<'owner>>,
         exact_work: &AcquisitionWorkV1,
         budget: &mut AcquisitionReadBudget,
     ) -> StoreResult<ExistingRecoveryRoute> {
+        let owner = owner.into();
         if owner.protocol() != CaptureProtocolVersion::V2 {
             return Err(CaptureError::CaptureProtocolUnsupported.into());
         }
         let _writes = self.lock_appends();
         crate::acquisition::admission::owner(self, owner, budget)?;
-        crate::acquisition::admission::matches_work(owner, exact_work)?;
+        if owner.results().is_some() {
+            crate::acquisition::admission::matches_work(self, owner, exact_work, budget)?;
+        }
+        if let Some(public) = owner.public() {
+            public.matches_work(exact_work)?;
+        }
         budget.target_examined()?;
         budget.reserve_recovery_owned(MAX_CAPTURE_RECORD_BYTES + 8192)?;
         let snapshot = self.db.snapshot();
@@ -58,12 +64,15 @@ impl Store {
         if &facts.work != exact_work {
             return Err(CaptureError::ObligationConflict.into());
         }
+        if owner.public().is_some() {
+            crate::acquisition::admission::matches_read_work(self, owner, &facts, budget)?;
+        }
         prepared_route(owner, slot, &facts)
     }
 }
 
 fn prepared_route(
-    owner: &ResultsCaptureOwnerV1,
+    owner: CaptureOwnerRef<'_>,
     slot: AcquisitionSlotId,
     facts: &crate::acquisition::facts::WorkFacts,
 ) -> StoreResult<ExistingRecoveryRoute> {

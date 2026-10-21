@@ -96,7 +96,7 @@ fn capture(
     view.scan_journal_namespace_preadmitted(
         crate::read::JournalNamespace::new(root.schema.phase(), &root.key)?,
         ReadBudget {
-            rows: 6,
+            rows: crate::evidence_subject_attachment::external::MAX_RETAINED_CAPTURE_PHYSICAL_ROWS,
             bytes: 4 * 1024 * 1024,
             record_bytes: crate::MAX_JOURNAL_VALUE_BYTES,
         },

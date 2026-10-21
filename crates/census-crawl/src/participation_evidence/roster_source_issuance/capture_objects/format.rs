@@ -1,38 +1,11 @@
 use super::*;
 use crate::milesplit::CurrentRosterAssertion;
-use crate::participation_evidence::RetainedHttpProvenanceV1;
-use census_store::RetainedCaptureRootV1;
-use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize)]
-struct PacketLiteral {
-    roster: CaptureLiteral,
-}
-#[derive(Deserialize)]
-struct CaptureLiteral {
-    acquired_at: String,
-    final_url: String,
-    status: u16,
-}
+use serde::Serialize;
 
 #[derive(Serialize)]
 struct Reference<'a> {
     digest: &'a str,
     bytes: usize,
-}
-#[derive(Serialize)]
-struct Metadata<'a> {
-    schema: &'static str,
-    leaf_role: &'static str,
-    root: &'a RetainedCaptureRootV1,
-    body: Reference<'a>,
-    requested_url: &'a str,
-    observed_final_url: &'a str,
-    status: u16,
-    retained_acquired_at: &'a str,
-    timestamp_provenance: &'static str,
-    normalized_utc_day: &'a str,
-    http_provenance: &'a RetainedHttpProvenanceV1,
 }
 #[derive(Serialize)]
 struct Interpretation<'a> {
@@ -46,7 +19,7 @@ struct Interpretation<'a> {
 
 pub(super) fn derive<'a>(
     evidence: &'a RosterSourceEvidenceV1,
-    packet: &ProviderSchoolPacketV1,
+    packet: &RetainedProviderSchoolPacketV1,
     parser: &super::super::manifest::RetainedRosterParserManifestV1,
     body: &str,
     grant: &mut AttachmentReplayGrantV1,
@@ -55,39 +28,15 @@ pub(super) fn derive<'a>(
     let raw = held.payload().get().as_bytes();
     grant.charge_bytes(raw.len()).map_err(domain)?;
     grant.charge_steps(1).map_err(domain)?;
-    let literal: PacketLiteral = original(evidence, grant, |_| {
-        Ok(serde_json::from_slice(raw).map_err(json)?)
-    })?;
     let capture = packet.roster();
-    let instant = chrono::DateTime::parse_from_rfc3339(&literal.roster.acquired_at)
-        .map_err(|_| invalid("retained capture timestamp literal"))?
-        .to_utc();
-    if instant != capture.acquired_at() {
-        return Err(invalid("retained capture timestamp differs").into());
-    }
-    budget::charge(capture, grant)?;
+    let value = original(evidence, grant, |_| {
+        Ok(capture.roster_metadata(held.root(), raw, body)?)
+    })?;
+    let instant = capture.acquired_at()?;
+    budget::charge(&capture, grant)?;
     let day = instant.date_naive().to_string();
-    let metadata = encode(
-        evidence,
-        &Metadata {
-            schema: "roster-retained-capture-metadata-v1",
-            leaf_role: "provider_school.roster",
-            root: held.root(),
-            body: Reference {
-                digest: capture.body_sha256(),
-                bytes: body.len(),
-            },
-            requested_url: capture.requested_url(),
-            observed_final_url: &literal.roster.final_url,
-            status: literal.roster.status,
-            retained_acquired_at: &literal.roster.acquired_at,
-            timestamp_provenance:
-                "retained-packet-decoded-string; original-transport-spelling-unknown",
-            normalized_utc_day: &day,
-            http_provenance: capture.provenance(),
-        },
-        grant,
-    )?;
+    let metadata = encode(evidence, &value, grant)?;
+    let acquired_at = value.acquired_at().to_owned();
     let occurrence = digest(evidence, &metadata, grant)?;
     let interpretation =
         build_interpretation(evidence, &metadata, &occurrence, parser, &day, grant)?;
@@ -96,7 +45,7 @@ pub(super) fn derive<'a>(
         metadata,
         interpretation,
         occurrence,
-        acquired_at: literal.roster.acquired_at,
+        acquired_at,
     })
 }
 

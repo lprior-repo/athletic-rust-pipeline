@@ -14,7 +14,7 @@ impl Store {
     ) -> StoreResult<VerifiedRetainedOccurrence> {
         budget.begin_operation();
         let _writes = self.lock_appends();
-        work.verify(self)?;
+        work.verify(self, budget)?;
         let snapshot = self.db.snapshot();
         let facts = read::read_work(
             &snapshot,

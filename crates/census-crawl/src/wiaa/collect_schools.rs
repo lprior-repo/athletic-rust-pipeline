@@ -161,6 +161,7 @@ mod tests {
                 let stamp = "2026-09-20T10:30:00Z";
                 let meta = CacheMeta {
                     url: url.clone(),
+                    observed_http: None,
                     response_url: Some(url.clone()),
                     method: "GET".into(),
                     status: 200,

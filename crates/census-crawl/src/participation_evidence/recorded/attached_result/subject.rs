@@ -1,5 +1,5 @@
 use super::{domain, RecordedHtmlResultCaptureV1};
-use crate::participation_evidence::result_ownership::CheckedRetainedResultRowV1;
+use crate::participation_evidence::result_ownership::CheckedHtmlResultRowV1;
 use crate::participation_evidence::{hash, DocumentSubjectV1};
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::{
@@ -10,7 +10,7 @@ use census_store::StoreError;
 
 pub(super) fn reference(
     recorded: &RecordedHtmlResultCaptureV1,
-    row: &CheckedRetainedResultRowV1<'_>,
+    row: &CheckedHtmlResultRowV1<'_>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<RetainedDocumentSubjectReferenceV1> {
     grant.charge_steps(10).map_err(domain)?;

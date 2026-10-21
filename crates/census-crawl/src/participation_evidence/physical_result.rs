@@ -6,6 +6,7 @@ mod admission;
 mod observation;
 mod project;
 mod provenance;
+mod source;
 pub mod tfrrs;
 mod types;
 
@@ -15,6 +16,7 @@ pub use types::{
 };
 
 pub use observation::matches_physical_observation;
+pub use source::{project_checked_html_result_identity, project_checked_html_result_row};
 type Result<T> = std::result::Result<T, HtmlResultProjectionError>;
 const INTERPRETATION: &str = "milesplit_html_physical_projection_v1";
 const SOURCE_KEY: &str = "milesplit_html_row_v1";

@@ -1,5 +1,7 @@
 use super::*;
 
+mod segmented;
+
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn prefix(key: char) -> TestResult<CapturedExternalPrefix> {

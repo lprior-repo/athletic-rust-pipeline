@@ -41,7 +41,7 @@ impl Parent {
             history_window: Some(request.jurisdiction.history),
             plan: Some(SourcePlan {
                 sweepable: vec!["milesplit".into()],
-                fingerprint: "controlled-native-origin-continuation-plan".into(),
+                fingerprint: super::super::public_resources_fixture::fingerprint(request),
                 ..SourcePlan::default()
             }),
             teams: team_collection::finish(outcome, failures, &request.observed_on),

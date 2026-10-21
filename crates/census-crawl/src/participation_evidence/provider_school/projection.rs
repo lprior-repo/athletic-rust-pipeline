@@ -4,12 +4,14 @@ use super::{
     CheckedProviderSchoolPacketV1, ProviderSchoolPacketRefV1, ProviderSchoolPacketV1,
     PROVIDER_SCHOOL_INTAKE_PHASE,
 };
-use crate::milesplit::RosterOwnerWitnessPolicy;
 use crate::milesplit::{parse_captured_roster_with_witness_v1, roster_entities, Site};
+use crate::milesplit::{
+    PublishedRosterOwnersV1, RosterOwnerWitnessPolicy, RosterVerdict, RosterWitnessUnavailableV1,
+};
 use crate::net::FetchOutcome;
 use crate::CrawlResult;
 use census_domain::model::{
-    Evidence, SchoolYear, SourceNamespace, SourceRef, SourceSchoolObservation,
+    CanonicalSchool, Evidence, SchoolYear, SourceNamespace, SourceRef, SourceSchoolObservation,
 };
 use census_store::StoreResult;
 use serde::Serialize;
@@ -22,13 +24,8 @@ pub(super) fn read(
 ) -> CrawlResult<CheckedProviderSchoolPacketV1> {
     let body = packet.roster.body()?;
     let fetch = fetch(packet.roster(), &body)?;
-    let (roster_verdict, published_roster_owners) =
-        parse_captured_roster_with_witness_v1(&body, selected.team.clone(), &fetch, policy)?;
-    let date = packet.roster.acquired_at().format("%Y-%m-%d").to_string();
-    let year = SchoolYear::from_date(&date)
-        .ok_or_else(|| invalid("provider school acquisition year unsupported"))?;
-    let at = packet.roster.acquired_at().to_rfc3339();
-    let (mut school, _, _) = roster_entities(&selected.team, &[], year, &at, &selected.site)?;
+    let projected = roster(&selected, &fetch, policy)?;
+    let mut school = projected.school;
     school.evidence.clear();
     school
         .evidence
@@ -67,9 +64,39 @@ pub(super) fn read(
         semantic_contract: semantic_contract(policy),
         school,
         observation,
-        roster_verdict,
+        roster_verdict: projected.verdict,
         directory_proof: selected.proof,
-        published_roster_owners,
+        published_roster_owners: projected.owners,
+    })
+}
+
+pub(super) struct RosterProjection {
+    pub(super) school: CanonicalSchool,
+    pub(super) verdict: RosterVerdict,
+    pub(super) owners: Result<PublishedRosterOwnersV1, RosterWitnessUnavailableV1>,
+}
+
+pub(super) fn roster(
+    selected: &Selected,
+    fetch: &FetchOutcome,
+    policy: RosterOwnerWitnessPolicy,
+) -> CrawlResult<RosterProjection> {
+    let body = std::str::from_utf8(&fetch.body)
+        .map_err(|_| invalid("provider school roster body is not UTF-8"))?;
+    let (verdict, owners) =
+        parse_captured_roster_with_witness_v1(body, selected.team.clone(), fetch, policy)?;
+    let acquired_at = chrono::DateTime::parse_from_rfc3339(&fetch.fetched_at)
+        .map_err(|_| invalid("provider school roster acquisition timestamp invalid"))?
+        .with_timezone(&chrono::Utc);
+    let date = acquired_at.format("%Y-%m-%d").to_string();
+    let year = SchoolYear::from_date(&date)
+        .ok_or_else(|| invalid("provider school acquisition year unsupported"))?;
+    let at = acquired_at.to_rfc3339();
+    let (school, _, _) = roster_entities(&selected.team, &[], year, &at, &selected.site)?;
+    Ok(RosterProjection {
+        school,
+        verdict,
+        owners,
     })
 }
 

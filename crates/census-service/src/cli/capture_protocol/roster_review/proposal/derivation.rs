@@ -3,7 +3,7 @@ use super::{
     SourceObjects,
 };
 use anyhow::{Context, Result};
-use census_crawl::participation_evidence::provider_school::ProviderSchoolPacketV1;
+use census_crawl::participation_evidence::provider_school::RetainedProviderSchoolPacketV1;
 use census_crawl::participation_evidence::recorded::read_retained_provider_roster_body_v1;
 use census_crawl::participation_evidence::roster_source_issuance::{
     capture_objects::PreparedRosterCaptureObjectsV1,
@@ -24,7 +24,7 @@ use census_store::{
 };
 
 pub(super) fn derive(
-    packet: &ProviderSchoolPacketV1,
+    packet: &RetainedProviderSchoolPacketV1,
     inspection: &mut RosterIssuanceInspectionV1<'_>,
 ) -> Result<(LocallyCheckedRosterProposalV1, RosterSourceReviewObjectsV1)> {
     let (evidence, grant) = inspection
@@ -40,7 +40,11 @@ pub(super) fn derive(
     let parents = parents(school_row, program_row)?;
     let encoded = packet.encode().context("encoding the retained packet")?;
     let roster = packet.roster();
-    let observed_day = roster.acquired_at().date_naive().to_string();
+    let observed_day = roster
+        .acquired_at()
+        .context("reading the retained acquisition instant")?
+        .date_naive()
+        .to_string();
     let requested_url = roster.requested_url();
     let compiled = compiled_roster_parser_manifest().context("compiling the parser manifest")?;
     let claim = compiled

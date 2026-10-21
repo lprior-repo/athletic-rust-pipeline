@@ -98,7 +98,14 @@ fn group<'s>(
                 checked.locator(),
                 checked.original_row_digest().to_owned(),
             ),
-            day: linked.checked_document().published_start().to_owned(),
+            day: linked
+                .checked_document()
+                .as_milesplit()
+                .ok_or_else(|| {
+                    crate::participation_evidence::invalid("controlled MileSplit context absent")
+                })?
+                .published_start()
+                .to_owned(),
             sources: documentary,
         });
     }

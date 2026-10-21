@@ -1,5 +1,6 @@
 use super::super::super::{codec, format, RosterStartupValidationBudgetV1};
 use super::*;
+use crate::evidence_subject_attachment::external::MAX_RETAINED_CAPTURE_PHYSICAL_ROWS;
 use crate::read::JournalNamespace;
 use crate::{PhysicalReadAdmissionV1, ReadBudget, StoreError};
 use fjall::Readable;
@@ -203,7 +204,7 @@ fn roots(
     Ok(roots.into_values().collect())
 }
 
-fn capture(
+pub(super) fn capture(
     view: &StoreSnapshot<'_>,
     root: crate::RetainedCaptureRootV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -215,7 +216,7 @@ fn capture(
     view.scan_journal_namespace_preadmitted(
         JournalNamespace::new(root.schema.phase(), &root.key)?,
         ReadBudget {
-            rows: 6,
+            rows: MAX_RETAINED_CAPTURE_PHYSICAL_ROWS,
             bytes: u64::try_from(remaining)
                 .map_err(|_| Error::BudgetExceeded)?
                 .min(super::MAX_EXTERNAL_CAPTURE_BYTES),

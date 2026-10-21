@@ -1,5 +1,6 @@
 use super::*;
 use crate::participation_evidence::provider_school::CheckedProviderSchoolPacketV1;
+use census_domain::roster_affiliation_authority::MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES;
 use serde::Serialize;
 use serde_json::value::RawValue;
 
@@ -20,23 +21,25 @@ pub fn prepare_retained_roster_capture_objects_v3<'a>(
         let held = evidence.retained_root(grant)?;
         let raw = held.payload().get().as_bytes();
         bound(raw.len(), MAX_PACKET, "row-local retained packet")?;
-        grant.charge_bytes(raw.len()).map_err(domain)?;
-        grant.charge_steps(1).map_err(domain)?;
-        if held.root().schema != census_store::RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
-            || held.root().payload.digest.as_str() != hash(raw)
+        precharge_packet(held.root().schema, raw.len(), grant)?;
+        if !matches!(
+            held.root().schema,
+            RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
+                | RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1
+        ) || held.root().payload.digest.as_str() != hash(raw)
             || held.root().payload.bytes
                 != u64::try_from(raw.len())
                     .map_err(|_| census_store::StoreError::CounterOverflow)?
         {
             return Err(invalid("row-local retained root mismatch").into());
         }
-        let packet: ProviderSchoolPacketV1 = serde_json::from_slice(raw).map_err(json)?;
+        let packet = RetainedProviderSchoolPacketV1::from_root(held.root().schema, raw)?;
         budget::charge(&packet, grant)?;
         if packet.reference()?.as_str() != held.root().key {
             return Err(invalid("row-local retained packet key mismatch").into());
         }
-        budget::charge(packet.directory(), grant)?;
-        budget::charge(packet.roster(), grant)?;
+        budget::charge(&packet.directory(), grant)?;
+        budget::charge(&packet.roster(), grant)?;
         let checked = packet.read()?;
         let body = packet.roster().body()?;
         derive(evidence, &packet, &checked, &parser, &body, grant)
@@ -49,7 +52,7 @@ pub fn prepare_retained_roster_capture_objects_v3<'a>(
 
 pub(in crate::participation_evidence::roster_source_issuance) fn derive<'a>(
     evidence: &'a RosterSourceEvidenceV1,
-    packet: &ProviderSchoolPacketV1,
+    packet: &RetainedProviderSchoolPacketV1,
     checked: &CheckedProviderSchoolPacketV1,
     parser: &CheckedRosterParserManifestV1,
     body: &str,
@@ -72,9 +75,13 @@ pub(in crate::participation_evidence::roster_source_issuance) fn derive<'a>(
         original_capture_interpretation: original,
         semantic_inventory: inventory,
     };
-    budget::charge_bounded(&value, grant, 64 * 1024)?;
+    budget::charge_bounded(&value, grant, MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES)?;
     let bytes = serde_json::to_vec(&value).map_err(json)?;
-    bound(bytes.len(), 64 * 1024, "row-local semantic interpretation")?;
+    bound(
+        bytes.len(),
+        MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES,
+        "row-local semantic interpretation",
+    )?;
     evidence.require_original_grant(grant)?;
     objects.interpretation = bytes;
     Ok(objects)

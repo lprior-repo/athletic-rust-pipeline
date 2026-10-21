@@ -21,8 +21,9 @@ impl JurisdictionCensus {
         jurisdiction: UsJurisdiction,
     ) -> Result<StateProgress, HandlerError> {
         let store = Arc::clone(&self.store);
+        let capture = self.capture.clone();
         let Json(progress) = ctx
-            .run(move || jobs::rosters_stage(store, fetcher, options, jurisdiction))
+            .run(move || jobs::rosters_stage(store, fetcher, options, jurisdiction, capture))
             .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
         Ok(progress)

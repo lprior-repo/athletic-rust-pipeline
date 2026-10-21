@@ -1,3 +1,4 @@
+mod owned_rosters;
 mod source_access;
 pub(super) mod workbook_job;
 
@@ -233,7 +234,15 @@ pub(super) async fn rosters_stage(
     fetcher: Arc<Fetcher>,
     options: CollectOptions,
     jurisdiction: UsJurisdiction,
+    capture: super::CaptureExecution,
 ) -> Result<Json<StateProgress>, HandlerError> {
+    if let super::CaptureExecution::FreshQualification(writer) = capture {
+        install_native_boundary_hook();
+        return owned_rosters::collect(&store, &fetcher, &writer, &options, jurisdiction)
+            .await
+            .map(Json)
+            .map_err(|error| job_error(error.into()));
+    }
     let teams = census::collect_state_teams(&fetcher, &store, jurisdiction, false)
         .await
         .map_err(|error| job_error(error.into()))?;

@@ -1,15 +1,21 @@
 use super::super::provider_school::{
     CheckedProviderSchoolPacketV1, ProviderSchoolPacketRefV1, ProviderSchoolPacketV1,
+    RetainedProviderSchoolPacketV1,
 };
 use super::super::{bound, codec, invalid, json, MAX_PACKET};
-use super::read::{retained, with_grant};
+use super::read::with_grant;
 use crate::recording::RowSink;
 use crate::{CrawlResult, Recording};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{SchoolId, SourceObservation};
 use census_store::{
-    EvidenceSubjectAttachmentStoreError, RetainedCaptureRootSchemaV1, RetainedCaptureRootV1,
-    RosterSourceEvidenceV1, Store, StoreError, StoreSnapshot, Table,
+    EvidenceSubjectAttachmentStoreError, RetainedCaptureRootReadV1, RetainedCaptureRootSchemaV1,
+    RetainedCaptureRootV1, RosterSourceEvidenceV1, Store, StoreError, StoreSnapshot, Table,
+};
+
+mod packet;
+pub(crate) use packet::{
+    decode as decode_provider_school_packet, original as read_original_provider_school,
 };
 
 pub struct RecordedProviderSchoolV1 {
@@ -56,15 +62,14 @@ pub fn read_recorded_provider_school(
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<Option<RecordedProviderSchoolV1>> {
     with_grant(grant, |grant| {
-        let Some((packet, held)) = retained::<ProviderSchoolPacketV1>(
-            snapshot,
-            RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1,
-            reference.as_str(),
-            grant,
-        )?
-        else {
+        let Some(held) = school_root(snapshot, reference, grant)? else {
             return Ok(None);
         };
+        let packet = decode_provider_school_packet(
+            held.root().schema,
+            held.payload().get().as_bytes(),
+            grant,
+        )?;
         let checked = packet.read()?;
         if checked.reference() != reference {
             return Err(
@@ -76,13 +81,41 @@ pub fn read_recorded_provider_school(
     })
 }
 
+fn school_root(
+    snapshot: &StoreSnapshot<'_>,
+    reference: &ProviderSchoolPacketRefV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<Option<RetainedCaptureRootReadV1>> {
+    let raw = snapshot.read_retained_capture_root_v1(
+        RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1,
+        reference.as_str(),
+        grant,
+    )?;
+    let observed = snapshot.read_retained_capture_root_v1(
+        RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1,
+        reference.as_str(),
+        grant,
+    )?;
+    match (raw, observed) {
+        (Some(held), None) | (None, Some(held)) => Ok(Some(held)),
+        (None, None) => Ok(None),
+        (Some(_), Some(_)) => {
+            Err(invalid("recorded provider school has multiple root schemas").into())
+        }
+    }
+}
+
 pub fn read_retained_provider_roster_body_v1(
     evidence: &RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<Vec<u8>> {
     with_grant(grant, |grant| {
         let held = evidence.retained_root(grant)?;
-        if held.root().schema != RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1 {
+        if !matches!(
+            held.root().schema,
+            RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
+                | RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1
+        ) {
             return Err(invalid("roster body requires the retained provider-school root").into());
         }
         let raw = held.payload().get().as_bytes();
@@ -103,7 +136,21 @@ pub fn read_retained_provider_roster_body_v1(
             .charge_steps(1)
             .map_err(EvidenceSubjectAttachmentStoreError::Domain)
             .map_err(StoreError::from)?;
-        let packet: ProviderSchoolPacketV1 = serde_json::from_slice(raw).map_err(json)?;
+        if held.root().schema == RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1 {
+            grant
+                .charge_bytes(
+                    raw.len()
+                        .checked_mul(3)
+                        .ok_or(StoreError::CounterOverflow)?,
+                )
+                .map_err(EvidenceSubjectAttachmentStoreError::Domain)
+                .map_err(StoreError::from)?;
+            grant
+                .charge_steps(64)
+                .map_err(EvidenceSubjectAttachmentStoreError::Domain)
+                .map_err(StoreError::from)?;
+        }
+        let packet = RetainedProviderSchoolPacketV1::from_root(held.root().schema, raw)?;
         if packet.reference()?.as_str() != held.root().key {
             return Err(invalid("roster body packet differs from its retained key").into());
         }

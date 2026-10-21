@@ -9,6 +9,7 @@ pub use leaf::{RetainedCaptureLeafKindV1, RetainedCaptureLeafV1, RetainedCapture
 pub use read::RetainedCaptureRootReadV1;
 
 pub(crate) const MAX_RETAINED_CAPTURE_ENVELOPE_BYTES: usize = 4 * 1024 * 1024;
+pub(crate) const MAX_RETAINED_CAPTURE_PHYSICAL_ROWS: u64 = 7;
 
 pub(crate) use leaf::verify as verify_leaf;
 pub(crate) use read::owned as read_owned;

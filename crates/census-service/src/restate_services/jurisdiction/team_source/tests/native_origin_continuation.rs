@@ -5,6 +5,7 @@ use crate::restate_services::national::publication_tests::native_restate::{
 use restate_sdk::prelude::{Endpoint, HttpServer};
 use std::time::Duration;
 
+mod controlled_capture;
 mod exercise;
 mod fixture;
 mod parent;

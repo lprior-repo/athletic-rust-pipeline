@@ -12,6 +12,7 @@ pub(super) async fn record_response(
     status: u16,
     redirects: &[RedirectHop],
     session: &mut CaptureSession<'_>,
+    clock: &crate::net::time::CaptureClock,
 ) -> Result<FetchOutcome, crate::net::FetchError> {
     let url = plan.url;
     let meta_path = plan.meta_path;
@@ -26,7 +27,13 @@ pub(super) async fn record_response(
         Some(observed) => observed,
         None => now_iso8601(),
     };
+    let observed_http = if session.observed_http_required() {
+        session.finish_observed_http(&content_hex, body_vec.len(), &clock.observed_at())?
+    } else {
+        None
+    };
     let meta = CacheMeta {
+        observed_http,
         redirects: redirects.to_vec(),
         url: url.to_string(),
         response_url,
@@ -62,8 +69,9 @@ pub(super) async fn cache_and_record(
     stats: &Mutex<FetchStats>,
     redirects: &[RedirectHop],
     session: &mut CaptureSession<'_>,
+    clock: &crate::net::time::CaptureClock,
 ) -> Result<FetchOutcome, crate::net::FetchError> {
-    let outcome = record_response(response, plan, status, redirects, session).await?;
+    let outcome = record_response(response, plan, status, redirects, session, clock).await?;
     let downloaded = u64::try_from(outcome.bytes).map_or(u64::MAX, |value| value);
     record_download_stats(
         stats,
@@ -218,6 +226,7 @@ mod tests {
                         &stats,
                         &[],
                         &mut CaptureSession::Legacy,
+                        &crate::net::time::CaptureClock::System,
                     )
                     .await?;
                     check!(eq; outcome.status, status);

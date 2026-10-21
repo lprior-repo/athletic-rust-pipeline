@@ -3,9 +3,9 @@ use super::{
     manifest::assess_retained_roster_parser_manifest, RosterSourceEvidenceAssessmentV1,
 };
 use crate::participation_evidence::provider_school::{
-    CheckedProviderSchoolPacketV1, ProviderSchoolPacketV1,
+    CheckedProviderSchoolPacketV1, RetainedProviderSchoolPacketV1,
 };
-use crate::participation_evidence::{bound, hash, invalid, json, MAX_PACKET};
+use crate::participation_evidence::{bound, hash, invalid, MAX_PACKET};
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::{
     AttachmentReplayGrantV1, EvidenceSubjectAttachmentError,
@@ -104,7 +104,7 @@ fn load_retained_content<'a>(
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<(
     &'a RetainedCaptureRootReadV1,
-    ProviderSchoolPacketV1,
+    RetainedProviderSchoolPacketV1,
     String,
     CheckedProviderSchoolPacketV1,
 )> {
@@ -113,8 +113,8 @@ fn load_retained_content<'a>(
     let roster_body = original(evidence, grant, |grant| capture(&packet, proposal, grant))?;
     let checked = original(evidence, grant, |grant| {
         budget::charge(&packet, grant)?;
-        budget::charge(packet.directory(), grant)?;
-        budget::charge(packet.roster(), grant)?;
+        budget::charge(&packet.directory(), grant)?;
+        budget::charge(&packet.roster(), grant)?;
         packet.read()
     })?;
     Ok((held, packet, roster_body, checked))
@@ -122,7 +122,7 @@ fn load_retained_content<'a>(
 
 fn derive_objects<'a>(
     evidence: &'a RosterSourceEvidenceV1,
-    packet: &ProviderSchoolPacketV1,
+    packet: &RetainedProviderSchoolPacketV1,
     checked: &CheckedProviderSchoolPacketV1,
     parser_manifest: &super::manifest::CheckedRosterParserManifestV1,
     roster_body: &str,
@@ -199,19 +199,33 @@ pub(super) fn packet(
     held: &RetainedCaptureRootReadV1,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
-) -> CrawlResult<ProviderSchoolPacketV1> {
+) -> CrawlResult<RetainedProviderSchoolPacketV1> {
     let root = held.root();
     let bytes = held.payload().get().as_bytes();
     bound(bytes.len(), MAX_PACKET, "roster source packet")?;
     grant.charge_bytes(bytes.len()).map_err(domain)?;
     grant.charge_steps(1).map_err(domain)?;
-    if root.schema != RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
-        || root.payload.bytes != size(bytes.len())?
+    if !matches!(
+        root.schema,
+        RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
+            | RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1
+    ) || root.payload.bytes != size(bytes.len())?
         || root.payload.digest.as_str() != hash(bytes)
     {
         return Err(invalid("roster source retained root mismatch").into());
     }
-    let packet: ProviderSchoolPacketV1 = serde_json::from_slice(bytes).map_err(json)?;
+    if root.schema == RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1 {
+        grant
+            .charge_bytes(
+                bytes
+                    .len()
+                    .checked_mul(3)
+                    .ok_or(StoreError::CounterOverflow)?,
+            )
+            .map_err(domain)?;
+        grant.charge_steps(64).map_err(domain)?;
+    }
+    let packet = RetainedProviderSchoolPacketV1::from_root(root.schema, bytes)?;
     budget::charge(&packet, grant)?;
     let canonical = packet.encode()?;
     let expected = proposal.binding().provider_packet();
@@ -225,7 +239,7 @@ pub(super) fn packet(
 }
 
 pub(super) fn capture(
-    packet: &ProviderSchoolPacketV1,
+    packet: &RetainedProviderSchoolPacketV1,
     proposal: &LocallyCheckedRosterIssuanceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<String> {
@@ -233,7 +247,7 @@ pub(super) fn capture(
     let retained = packet.roster();
     let expected_bytes =
         usize::try_from(expected.body().bytes().get()).map_err(|_| StoreError::CounterOverflow)?;
-    budget::charge(retained, grant)?;
+    budget::charge(&retained, grant)?;
     let body = retained.body()?;
     let instant = DateTime::parse_from_rfc3339(expected.acquired_at())
         .map_err(|_| invalid("roster source acquisition instant"))?
@@ -242,8 +256,8 @@ pub(super) fn capture(
         || expected_bytes != body.len()
         || expected.requested_url() != retained.requested_url()
         || expected.observed_final_url() != Some(retained.requested_url())
-        || instant != retained.acquired_at()
-        || expected.observed_day().as_str() != retained.acquired_at().date_naive().to_string()
+        || instant != retained.acquired_at()?
+        || expected.observed_day().as_str() != retained.acquired_at()?.date_naive().to_string()
     {
         return Err(invalid("roster source capture mismatch").into());
     }

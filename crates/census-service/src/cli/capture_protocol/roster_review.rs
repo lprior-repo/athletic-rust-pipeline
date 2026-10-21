@@ -63,18 +63,16 @@ pub(super) fn run_to<W: Write>(root: &Path, args: &RosterReviewArgs, output: &mu
     let (store, _writer) = Store::open_current_qualification_v3(root)
         .context("opening the stopped current-qualification store")?
         .into_parts();
-    let held = proposal::retained(&store, &reference)?;
-    let packet = proposal::packet(&held)?;
+    let mut grant = census_domain::evidence_subject_attachment::AttachmentReplayGrantV1::new();
+    let held = proposal::retained(&store, &reference, &mut grant)?;
+    let packet = proposal::packet(&held, &mut grant)?;
     let request = RosterIssuanceInspectionRequestV1 {
         root: held.root().clone(),
         school,
         program,
     };
     let mut inspection = store
-        .inspect_roster_source_issuance_v1(
-            request,
-            census_domain::evidence_subject_attachment::AttachmentReplayGrantV1::new(),
-        )
+        .inspect_roster_source_issuance_v1(request, grant)
         .context("inspecting the roster source issuance")?;
     let (proposal, supplied) = proposal::derive(&packet, &mut inspection)
         .context("deriving the source-backed proposal")?;

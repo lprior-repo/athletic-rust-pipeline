@@ -42,7 +42,7 @@ pub(in crate::restate_services) async fn execute(
     .map_err(|failure| crate::restate_services::job_error(failure.into()))?;
     if !plan.pins.is_empty() {
         store
-            .validate_prepared_recovery_owner(owner, &mut budget)
+            .validate_prepared_recovery_owner(owner.as_ref(), &mut budget)
             .map_err(|failure| crate::restate_services::job_error(failure.into()))?;
     }
     let execution = Execution {

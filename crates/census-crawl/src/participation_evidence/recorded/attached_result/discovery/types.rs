@@ -7,6 +7,7 @@ pub enum AttachmentHtmlResultDiscoveryGapV1 {
     UnsupportedCaptureSchema,
     UnsupportedCaptureSlot,
     UnsupportedCaptureKind,
+    UnsupportedSourceNamespace,
     UnsupportedLocatorMaterial,
     UnsupportedLocatorSyntax,
 }

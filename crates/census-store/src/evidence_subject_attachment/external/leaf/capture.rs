@@ -8,6 +8,8 @@ use serde::Deserialize;
 use serde_json::value::RawValue;
 use sha2::{Digest, Sha256};
 
+pub(super) mod observed;
+
 const MAX_BODY_BYTES: usize = 2 * 1024 * 1024;
 const MAX_BASE64_BYTES: usize = 2_796_204;
 
@@ -118,7 +120,7 @@ fn encoded<'a>(capture: &Capture<'a>, grant: &mut AttachmentReplayGrantV1) -> St
     Ok(text)
 }
 
-impl CheckedCapture<'_> {
+impl<'a> CheckedCapture<'a> {
     pub(crate) fn requested_url(
         &self,
         grant: &mut AttachmentReplayGrantV1,
@@ -138,7 +140,7 @@ impl CheckedCapture<'_> {
         }
     }
 
-    pub(in crate::evidence_subject_attachment::external) fn raw(&self) -> &RawValue {
+    pub(in crate::evidence_subject_attachment::external) fn raw(&self) -> &'a RawValue {
         self.raw
     }
 

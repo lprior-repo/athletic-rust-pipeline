@@ -2,6 +2,48 @@ use crate::net::representation::{MAX_REPRESENTATION_HEADERS, MAX_REPRESENTATION_
 use crate::net::request::RequestBody;
 use crate::net::{FetchError, RepresentationHeaders};
 
+pub(in crate::net) fn observed_headers(
+    headers: &[(String, String)],
+    user_agent: &str,
+) -> Result<Vec<(String, String)>, FetchError> {
+    canonical_request("https://example.com/", headers)?;
+    let mut headers = headers.to_vec();
+    for (name, value) in [
+        ("accept", "*/*"),
+        ("user-agent", user_agent),
+        ("accept-encoding", "identity"),
+    ] {
+        if !headers
+            .iter()
+            .any(|(key, _)| key.trim().eq_ignore_ascii_case(name))
+        {
+            headers.push((name.to_owned(), value.to_owned()));
+        }
+    }
+    canonical_request("https://example.com/", &headers)?;
+    Ok(headers)
+}
+
+pub(in crate::net) fn materialize_observed(
+    request: &mut reqwest::Request,
+    user_agent: &str,
+) -> Result<(), FetchError> {
+    for (name, value) in [
+        ("accept", "*/*"),
+        ("user-agent", user_agent),
+        ("accept-encoding", "identity"),
+    ] {
+        if !request.headers().contains_key(name) {
+            let value = reqwest::header::HeaderValue::from_str(value)
+                .map_err(|_| crate::net::CaptureTransportError::RequestMismatch)?;
+            request
+                .headers_mut()
+                .insert(reqwest::header::HeaderName::from_static(name), value);
+        }
+    }
+    Ok(())
+}
+
 pub(super) fn is_validator(name: &str) -> bool {
     name.eq_ignore_ascii_case("if-none-match") || name.eq_ignore_ascii_case("if-modified-since")
 }

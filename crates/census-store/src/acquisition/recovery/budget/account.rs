@@ -55,7 +55,7 @@ impl<'budget> TargetAccount<'budget> {
     pub(in crate::acquisition::recovery) fn owner_admission(
         &mut self,
         store: &crate::Store,
-        owner: &crate::ResultsCaptureOwnerV1,
+        owner: crate::CaptureOwnerRef<'_>,
     ) -> StoreResult<OwnerAdmission> {
         match std::mem::replace(self.owner, super::OwnerState::Refused) {
             super::OwnerState::Pending(proof) => {

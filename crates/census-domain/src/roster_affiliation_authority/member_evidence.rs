@@ -11,6 +11,7 @@ pub use locator::SourceRowLocator;
 use super::{charge, size};
 use crate::roster_affiliation_authority::{
     LocallyCheckedRosterIssuanceV1, RosterAuthorityError, RosterAuthorityLimitsV1,
+    MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES,
 };
 use sha2::{Digest, Sha256};
 
@@ -54,7 +55,7 @@ fn admit(interpretation: &[u8], witness: &[u8], limits: RosterAuthorityLimitsV1)
     charge(
         "interpretation bytes",
         size(interpretation.len())?,
-        size(limits.record_bytes)?,
+        size(MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES)?,
     )?;
     charge(
         "witness bytes",

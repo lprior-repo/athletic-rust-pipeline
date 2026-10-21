@@ -3,7 +3,7 @@ use crate::participation_evidence::recorded::{
     CheckedDocumentaryParticipationFactsV1, DiscoveredIdentityLinkedHtmlResultDocumentV1,
     DiscoveredResultAttachmentV1,
 };
-use crate::participation_evidence::result_ownership::read_retained_html_result_rows;
+use crate::participation_evidence::result_ownership::read_retained_source_result_rows;
 use crate::participation_evidence::{ParticipationEvidenceRefV1, RetainedHtmlCaptureV1};
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
@@ -179,7 +179,7 @@ fn documentary_matches<'a>(
 fn require_original(
     source: &ReplayedResultCalendarCorrespondencesV1<'_>,
     linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
-    linked_row: &crate::participation_evidence::result_ownership::CheckedRetainedResultRowV1<'_>,
+    linked_row: &crate::participation_evidence::result_ownership::CheckedHtmlResultRowV1<'_>,
     attached: &DiscoveredResultAttachmentV1<'_, '_>,
     record: &ResultCalendarReviewedRecordV1,
     grant: &mut AttachmentReplayGrantV1,
@@ -196,13 +196,15 @@ fn require_original(
     }
     let capture: RetainedHtmlCaptureV1 = serde_json::from_str(original.payload().get())
         .map_err(crate::participation_evidence::json)?;
-    let document = read_retained_html_result_rows(&capture, &[linked_row.locator()])
-        .map_err(super::super::original::ownership)?;
+    let document =
+        read_retained_source_result_rows(&capture, &[linked_row.locator()], linked_row.source())
+            .map_err(super::super::original::ownership)?;
     let row = document
         .row(0)
         .ok_or_else(|| invalid("frozen calendar original selected row absent"))?;
     super::super::original::subject(original.root(), &row, attached, grant)?;
-    let scope = super::scope(&document, &row)?;
+    let parser = super::result::parser(&document, &row)?;
+    let scope = super::result::scope(&document, &row)?;
     let accepted = &record.command.source;
     if accepted.day != scope.day
         || accepted.sport != scope.sport
@@ -212,8 +214,9 @@ fn require_original(
         return Err(invalid("frozen calendar result date linkage differs"));
     }
     let mut objects = super::objects::Objects::new(grant)?;
-    let result = super::result_claim(original.root(), &document, &row, &mut objects, grant)?;
-    if accepted.result != result {
+    let result = super::result::claim(original.root(), &document, &row, &mut objects, grant)?;
+    let parser_contract = objects.bytes(parser.contract(), grant)?;
+    if accepted.result != result || accepted.parser_contract != parser_contract {
         return Err(invalid(
             "frozen calendar result differs from original source",
         ));

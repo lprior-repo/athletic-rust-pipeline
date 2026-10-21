@@ -14,6 +14,8 @@ pub(super) struct Admission {
     pub(super) root: crate::RetainedCaptureRootV1,
     admission: String,
     original_http_authorization: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    observed_intake: Option<super::super::super::inspection::observed::ObservedIntakePins>,
 }
 
 pub(super) fn objects(
@@ -61,8 +63,12 @@ pub(super) fn admission(
     let value: Admission =
         serde_json::from_slice(raw).map_err(|_| Error::Corrupt("review source admission"))?;
     if value.schema != "roster-retained-source-admission-v1"
-        || value.admission != "completed-exact-provider-school-root"
-        || value.original_http_authorization != "unknown"
+        || !super::super::super::inspection::observed::descriptor_matches(
+            value.root.schema,
+            &value.admission,
+            &value.original_http_authorization,
+            value.observed_intake.is_some(),
+        )
         || &value.store != proposal.binding().store()
         || value.inspected_sequence != proposal.binding().snapshot_revision().get()
         || &value.school != proposal.binding().school()
@@ -158,6 +164,7 @@ fn claim_for_record(
 ) -> StoreResult<(ReviewedRosterSourceClaimV1, (&'static str, String))> {
     let proposal = super::super::proposal(&record.basis.proposal)?;
     let admitted = admission(&proposal, objects, grant)?;
+    require_observed_closure(&admitted, &record, grant)?;
     let root = (admitted.root.schema.phase(), admitted.root.key.clone());
     let held = source
         .read_root(admitted.root.schema, &admitted.root.key, grant)?
@@ -165,7 +172,13 @@ fn claim_for_record(
     if held.root() != &admitted.root {
         return Err(Error::InspectedClosureChanged.into());
     }
-    let evidence = evidence(archive, &proposal, held, objects, grant)?;
+    let mut evidence = evidence(archive, &proposal, held, objects, grant)?;
+    evidence.observed = super::super::super::inspection::observed::restore(
+        &evidence,
+        admitted.observed_intake.as_ref(),
+        objects,
+        grant,
+    )?;
     let (qualification, activation) = review_references(&record, objects, grant)?;
     for reference in &record.basis.closure {
         super::super::ledger::object(objects, reference)?;
@@ -184,6 +197,35 @@ fn claim_for_record(
         },
         root,
     ))
+}
+
+fn require_observed_closure(
+    admitted: &Admission,
+    record: &ReviewRecord,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    let Some(pins) = admitted.observed_intake.as_ref() else {
+        return Ok(());
+    };
+    for pin in pins.references() {
+        grant
+            .charge_steps(record.basis.closure.len())
+            .map_err(super::super::super::source_error)?;
+        let index = record
+            .basis
+            .closure
+            .binary_search_by(|held| held.digest.as_str().cmp(pin.digest.as_str()))
+            .map_err(|_| Error::Corrupt("owned intake proof is outside review closure"))?;
+        let held = record
+            .basis
+            .closure
+            .get(index)
+            .ok_or(Error::Corrupt("owned intake closure index"))?;
+        if u64::try_from(held.bytes).map_err(|_| Error::BudgetExceeded)? != pin.bytes {
+            return Err(Error::Corrupt("owned intake proof closure length").into());
+        }
+    }
+    Ok(())
 }
 
 fn evidence(

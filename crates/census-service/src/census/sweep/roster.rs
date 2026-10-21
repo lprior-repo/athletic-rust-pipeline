@@ -18,7 +18,10 @@ mod counts;
 mod effects;
 pub(crate) mod journal;
 mod metadata;
+mod owned_projection;
 use census_crawl::participation_evidence::recorded::roster_provenance;
+#[cfg(test)]
+mod captured_tests;
 pub(super) mod refusal;
 mod summary;
 #[cfg(test)]
@@ -29,6 +32,7 @@ use commit::Commit;
 use counts::Counts;
 use journal::Records;
 use metadata::Window;
+pub(super) use owned_projection::retain as retain_owned_school_projection;
 pub(super) use refusal::retain_error;
 pub(super) use summary::{remaining, summarize, Summary};
 
@@ -57,6 +61,20 @@ pub(super) async fn fetch_and_store(
                 .map_err(Failure::Primary),
             Err(error) => Err(retain_error(fetcher, store, team, run, error).await),
         }
+    };
+    scoped(store, team, run, body).await
+}
+
+pub(super) async fn accept_captured(
+    store: &Store,
+    team: &TeamRef,
+    run: &RosterRun<'_>,
+    read: &RosterOutcome,
+) -> Result<Application, Failure> {
+    let body = async {
+        apply(store, team, run, read)
+            .await
+            .map_err(Failure::Primary)
     };
     scoped(store, team, run, body).await
 }

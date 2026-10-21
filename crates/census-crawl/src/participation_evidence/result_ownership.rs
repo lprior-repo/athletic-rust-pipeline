@@ -5,6 +5,14 @@ use census_domain::participation_candidates::MAX_PARTICIPATION_FACTS;
 
 mod active;
 pub mod calendar_correspondence;
+mod common;
+pub(in crate::participation_evidence) use common::discovery::read_retained_source_result_spans;
+#[cfg(test)]
+pub(in crate::participation_evidence) use common::tests::fixture as common_fixture;
+pub use common::{
+    read_retained_source_result_rows, CheckedHtmlResultDocumentV1, CheckedHtmlResultRowV1,
+    CheckedHtmlResultSourceV1,
+};
 pub(super) mod discovery;
 mod original;
 mod school;

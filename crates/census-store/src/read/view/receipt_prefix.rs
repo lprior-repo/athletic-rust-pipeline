@@ -24,31 +24,51 @@ impl StoreSnapshot<'_> {
         prefix: &[u8],
         budget: ReadBudget,
         state: &mut G,
-        mut admit_row: impl FnMut(&mut G) -> StoreResult<()>,
-        mut visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
+        admit_row: impl FnMut(&mut G) -> StoreResult<()>,
+        visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
     ) -> StoreResult<ReadCounts> {
-        let mut scan = ReceiptScan::new(prefix, budget)?;
-        for guard in self.snapshot.prefix(self.receipts, prefix) {
-            admit_row(state)?;
-            scan.charge_visit()?;
-            let key = guard.key().map_err(|source| StoreError::Read { source })?;
-            let raw = scan.read(
-                &key,
-                || {
-                    self.snapshot
-                        .size_of(self.receipts, &key)
-                        .map_err(|source| StoreError::Read { source })
-                },
-                || {
-                    self.snapshot
-                        .get(self.receipts, &key)
-                        .map_err(|source| StoreError::Read { source })
-                },
-            )?;
-            visit(state, &key, &raw)?;
-        }
-        Ok(scan.finish())
+        scan_receipts(
+            &self.snapshot,
+            self.receipts,
+            prefix,
+            budget,
+            state,
+            admit_row,
+            visit,
+        )
     }
+}
+
+pub(crate) fn scan_receipts<G>(
+    snapshot: &fjall::Snapshot,
+    receipts: &fjall::Keyspace,
+    prefix: &[u8],
+    budget: ReadBudget,
+    state: &mut G,
+    mut admit_row: impl FnMut(&mut G) -> StoreResult<()>,
+    mut visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
+) -> StoreResult<ReadCounts> {
+    let mut scan = ReceiptScan::new(prefix, budget)?;
+    for guard in snapshot.prefix(receipts, prefix) {
+        admit_row(state)?;
+        scan.charge_visit()?;
+        let key = guard.key().map_err(|source| StoreError::Read { source })?;
+        let raw = scan.read(
+            &key,
+            || {
+                snapshot
+                    .size_of(receipts, &key)
+                    .map_err(|source| StoreError::Read { source })
+            },
+            || {
+                snapshot
+                    .get(receipts, &key)
+                    .map_err(|source| StoreError::Read { source })
+            },
+        )?;
+        visit(state, &key, &raw)?;
+    }
+    Ok(scan.finish())
 }
 
 pub(crate) struct ReceiptScan {

@@ -1,7 +1,9 @@
 use super::DiscoveredIdentityLinkedHtmlResultDocumentV1;
 use super::{domain, grouping, invalid, read, reserve, view, Member};
 use crate::milesplit::SourceRowLocator;
-use crate::participation_evidence::result_ownership::discovery as source_rows;
+use crate::participation_evidence::result_ownership::{
+    read_retained_source_result_spans, CheckedHtmlResultDocumentV1, CheckedHtmlResultSourceV1,
+};
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::ActiveAttachmentSubjectDiscoveryV1;
@@ -19,9 +21,10 @@ pub(super) fn group<'s, T>(
     let first = members
         .first()
         .ok_or_else(|| invalid("empty result group"))?;
-    let (_, context) = grouping::key(metadata, first.index)?;
-    let locators = recover(view, metadata, members, grant)?;
-    super::super::with_results(view, context.digest.as_str(), &locators, grant, consume)?
+    let (root, _) = grouping::key(metadata, first.index)?;
+    let expected_source = source(metadata, first.index)?;
+    let locators = recover(view, metadata, members, expected_source, grant)?;
+    super::super::with_results(view, &root.key, &locators, expected_source, grant, consume)?
         .ok_or_else(|| invalid("discovered HTML result capture absent").into())
 }
 
@@ -29,13 +32,14 @@ fn recover(
     view: view::View<'_, '_, '_>,
     metadata: &ActiveAttachmentSubjectDiscoveryV1<'_>,
     members: &[Member],
+    expected_source: CheckedHtmlResultSourceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<Vec<SourceRowLocator>> {
     let first = members
         .first()
         .ok_or_else(|| invalid("empty result group"))?;
-    let (root, context) = grouping::key(metadata, first.index)?;
-    let recorded = read::reopen_html_result_capture(view.source(), context.digest.as_str(), grant)?
+    let (root, _) = grouping::key(metadata, first.index)?;
+    let recorded = read::reopen_html_result_capture(view.source(), &root.key, grant)?
         .ok_or_else(|| invalid("discovered HTML result capture absent"))?;
     grant.charge_steps(1).map_err(domain)?;
     if recorded.root() != root {
@@ -47,9 +51,11 @@ fn recover(
         spans.push(member.span);
     }
     grant.charge_steps(1).map_err(domain)?;
-    let document = source_rows::read(recorded.capture(), &spans, grant).map_err(read::ownership)?;
+    let document =
+        read_retained_source_result_spans(recorded.capture(), &spans, expected_source, grant)
+            .map_err(read::ownership)?;
     grant.charge_steps(1).map_err(domain)?;
-    if document.context_reference() != context.digest.as_str() {
+    if document.context_reference() != root.key {
         return Err(invalid("recorded HTML result context differs from its typed key").into());
     }
     locators(&recorded, &document, metadata, members, grant)
@@ -57,7 +63,7 @@ fn recover(
 
 fn locators(
     recorded: &super::super::RecordedHtmlResultCaptureV1,
-    document: &crate::participation_evidence::result_ownership::CheckedRetainedResultDocumentV1<'_>,
+    document: &CheckedHtmlResultDocumentV1<'_>,
     metadata: &ActiveAttachmentSubjectDiscoveryV1<'_>,
     members: &[Member],
     grant: &mut AttachmentReplayGrantV1,
@@ -80,4 +86,16 @@ fn locators(
         locators.push(row.locator());
     }
     Ok(locators)
+}
+
+fn source(
+    metadata: &ActiveAttachmentSubjectDiscoveryV1<'_>,
+    index: usize,
+) -> CrawlResult<CheckedHtmlResultSourceV1> {
+    let subject = metadata
+        .subjects()
+        .get(index)
+        .ok_or_else(|| invalid("discovery subject absent"))?;
+    CheckedHtmlResultSourceV1::from_document_namespace(subject.subject().namespace.as_str())
+        .ok_or_else(|| invalid("unsupported discovered result namespace").into())
 }

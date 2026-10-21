@@ -189,6 +189,7 @@ pub(super) fn commit(batch: OwnedWriteBatch) -> StoreResult<()> {
 }
 
 pub(crate) fn reject_generic_phase(phase: &str) -> StoreResult<()> {
+    super::public_resources::format::refuse_generic_phase(phase)?;
     if phase.starts_with("source_acquisition_attempt_") {
         return Err(CaptureError::CaptureQualificationOptInRequired.into());
     }

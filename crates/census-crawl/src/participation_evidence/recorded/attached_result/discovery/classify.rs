@@ -1,6 +1,7 @@
 use super::types::{Diagnostic, Member};
 use super::{domain, grouping, invalid, reserve, AttachmentHtmlResultDiscoveryGapV1 as Gap};
 use crate::participation_evidence::result_ownership::discovery::OriginalResultSpan;
+use crate::participation_evidence::result_ownership::CheckedHtmlResultSourceV1;
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_store::{
@@ -43,9 +44,15 @@ fn classify(
         return Ok(Err(Gap::UnsupportedCaptureKind));
     }
     grant.charge_steps(1).map_err(domain)?;
+    let Some(expected_source) =
+        CheckedHtmlResultSourceV1::from_document_namespace(source.subject().namespace.as_str())
+    else {
+        return Ok(Err(Gap::UnsupportedSourceNamespace));
+    };
     if leaf.version != 1
         || leaf.object != leaf.root.payload
-        || leaf.root.key != source.context().digest.as_str()
+        || (expected_source == CheckedHtmlResultSourceV1::MileSplit
+            && leaf.root.key != source.context().digest.as_str())
     {
         return Err(invalid("discovered HTML capture descriptor differs").into());
     }

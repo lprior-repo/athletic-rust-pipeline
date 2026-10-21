@@ -24,11 +24,11 @@ pub(in crate::participation_evidence::roster_source_issuance) fn compare(
         let kernel = kernel::require_historical(inventory.kernel_document.as_bytes(), grant)?;
         kernel.require_semantic_contract(&inventory.provider_semantic_contract)?;
         let packet = original.packet(grant)?;
-        budget::charge(packet.directory(), grant)?;
-        budget::charge(packet.roster(), grant)?;
+        budget::charge(&packet.directory(), grant)?;
+        budget::charge(&packet.roster(), grant)?;
         let checked = packet.read_semantic_contract(kernel.semantic_contract())?;
         let recomputed = super::inventory(&checked, parser.canonical_bytes(), metadata, grant)?;
-        if encode(&inventory, grant)?.as_slice() != retained
+        if encode_inventory(&inventory, grant)?.as_slice() != retained
             || !comparison::same_outcome(&inventory, &recomputed)
         {
             return Err(

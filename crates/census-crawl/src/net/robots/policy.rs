@@ -15,10 +15,11 @@ pub(in crate::net) struct Policy {
     delay: Duration,
     locator: String,
     digest: String,
+    fetched_at: DateTime<Utc>,
 }
 
 impl Policy {
-    pub(super) fn from_capture(
+    pub(in crate::net) fn from_capture(
         target: &Url,
         capture: &FetchOutcome,
         user_agent: &str,
@@ -42,6 +43,7 @@ impl Policy {
             delay,
             locator: capture.url.clone(),
             digest: capture.content_digest.clone(),
+            fetched_at: retrieval_time(capture)?,
         })
     }
 
@@ -68,7 +70,22 @@ impl Policy {
         Ok(())
     }
 
-    pub(super) fn delay(&self) -> Duration {
+    pub(in crate::net) fn check_dispatch(
+        &self,
+        url: &str,
+        dispatched_at: &str,
+    ) -> Result<(), FetchError> {
+        self.check(url)?;
+        let dispatched_at = DateTime::parse_from_rfc3339(dispatched_at)
+            .map_err(|_| refusal("robots dispatch has an invalid timestamp"))?
+            .with_timezone(&Utc);
+        if !current_at(self.fetched_at, dispatched_at) {
+            return Err(refusal("robots policy is no longer current at dispatch"));
+        }
+        Ok(())
+    }
+
+    pub(in crate::net) fn delay(&self) -> Duration {
         self.delay
     }
 }
@@ -154,24 +171,32 @@ fn inspect_line(delay: Option<Duration>, raw: &str) -> Result<Option<Duration>, 
         .map_err(|_| refusal("robots crawl-delay is not representable"))
 }
 
-pub(super) fn capture_is_current(
+pub(in crate::net) fn capture_is_current(
     capture: &FetchOutcome,
     now: DateTime<Utc>,
 ) -> Result<bool, FetchError> {
-    let observed = DateTime::parse_from_rfc3339(&capture.fetched_at)
-        .map_err(|_| refusal("robots capture has an invalid retrieval timestamp"))?;
-    let age = now.signed_duration_since(observed);
-    Ok(age >= chrono::Duration::zero() && age <= chrono::Duration::seconds(MAX_POLICY_AGE_SECONDS))
+    Ok(current_at(retrieval_time(capture)?, now))
 }
 
-pub(super) fn parse_url(raw: &str) -> Result<Url, FetchError> {
+fn retrieval_time(capture: &FetchOutcome) -> Result<DateTime<Utc>, FetchError> {
+    DateTime::parse_from_rfc3339(&capture.fetched_at)
+        .map(|value| value.with_timezone(&Utc))
+        .map_err(|_| refusal("robots capture has an invalid retrieval timestamp"))
+}
+
+fn current_at(observed: DateTime<Utc>, now: DateTime<Utc>) -> bool {
+    let age = now.signed_duration_since(observed);
+    age >= chrono::Duration::zero() && age <= chrono::Duration::seconds(MAX_POLICY_AGE_SECONDS)
+}
+
+pub(in crate::net) fn parse_url(raw: &str) -> Result<Url, FetchError> {
     Url::parse(raw).map_err(|source| FetchError::InvalidUrl {
         url: raw.to_owned(),
         source,
     })
 }
 
-pub(super) fn refusal(detail: &str) -> FetchError {
+pub(in crate::net) fn refusal(detail: &str) -> FetchError {
     FetchError::Policy {
         detail: detail.to_owned(),
     }

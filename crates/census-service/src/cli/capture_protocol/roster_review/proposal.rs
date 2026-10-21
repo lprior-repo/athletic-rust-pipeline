@@ -1,6 +1,6 @@
 use anyhow::{ensure, Context, Result};
 use census_crawl::participation_evidence::provider_school::{
-    ProviderSchoolPacketRefV1, ProviderSchoolPacketV1,
+    ProviderSchoolPacketRefV1, RetainedProviderSchoolPacketV1,
 };
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{
@@ -51,30 +51,80 @@ fn object(bytes: &[u8]) -> serde_json::Value {
 pub(super) fn retained(
     store: &Store,
     reference: &ProviderSchoolPacketRefV1,
+    grant: &mut AttachmentReplayGrantV1,
 ) -> Result<RetainedCaptureRootReadV1> {
-    store
-        .snapshot()
-        .read_retained_capture_root_v1(
-            RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1,
-            reference.as_str(),
-            &mut AttachmentReplayGrantV1::new(),
-        )
-        .context("reading the retained packet root")?
-        .context("retained packet missing")
+    let result = (|| {
+        let view = store.snapshot();
+        let raw = view
+            .read_retained_capture_root_v1(
+                RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1,
+                reference.as_str(),
+                grant,
+            )
+            .context("reading the retained Raw packet root")?;
+        let owned = view
+            .read_retained_capture_root_v1(
+                RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1,
+                reference.as_str(),
+                grant,
+            )
+            .context("reading the retained observed packet root")?;
+        match (raw, owned) {
+            (Some(root), None) | (None, Some(root)) => Ok(root),
+            (None, None) => anyhow::bail!("retained packet missing"),
+            (Some(_), Some(_)) => anyhow::bail!("retained packet has multiple root schemas"),
+        }
+    })();
+    if result.is_err() {
+        grant.poison();
+    }
+    result
 }
 
-pub(super) fn packet(held: &RetainedCaptureRootReadV1) -> Result<ProviderSchoolPacketV1> {
-    let packet: ProviderSchoolPacketV1 = serde_json::from_slice(held.payload().get().as_bytes())
-        .context("decoding the retained packet")?;
-    ensure!(
-        packet
-            .reference()
-            .context("referencing the retained packet")?
-            .as_str()
-            == held.root().key,
-        "retained packet key differs"
-    );
-    Ok(packet)
+pub(super) fn packet(
+    held: &RetainedCaptureRootReadV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> Result<RetainedProviderSchoolPacketV1> {
+    decode_packet(
+        held.root().schema,
+        held.payload().get().as_bytes(),
+        &held.root().key,
+        grant,
+    )
+}
+
+fn decode_packet(
+    schema: RetainedCaptureRootSchemaV1,
+    raw: &[u8],
+    key: &str,
+    grant: &mut AttachmentReplayGrantV1,
+) -> Result<RetainedProviderSchoolPacketV1> {
+    let result = (|| {
+        grant.ensure_available()?;
+        if schema == RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1 {
+            grant.charge_bytes(
+                raw.len()
+                    .checked_mul(3)
+                    .ok_or(census_store::StoreError::CounterOverflow)?,
+            )?;
+            grant.charge_steps(64)?;
+        }
+        let packet = RetainedProviderSchoolPacketV1::from_root(schema, raw)
+            .context("decoding the retained packet")?;
+        ensure!(
+            packet
+                .reference()
+                .context("referencing the retained packet")?
+                .as_str()
+                == key,
+            "retained packet key differs"
+        );
+        Ok(packet)
+    })();
+    if result.is_err() {
+        grant.poison();
+    }
+    result
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -222,7 +272,7 @@ fn assemble_supplied(
 }
 
 pub(super) fn derive(
-    packet: &ProviderSchoolPacketV1,
+    packet: &RetainedProviderSchoolPacketV1,
     inspection: &mut RosterIssuanceInspectionV1<'_>,
 ) -> Result<(LocallyCheckedRosterProposalV1, RosterSourceReviewObjectsV1)> {
     derivation::derive(packet, inspection)

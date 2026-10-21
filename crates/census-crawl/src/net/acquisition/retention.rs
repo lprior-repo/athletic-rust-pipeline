@@ -26,9 +26,16 @@ impl CaptureSession<'_> {
             }
             return Ok(());
         };
-        let AdoptedSession { store, stage, .. } = adopted.as_mut();
+        let AdoptedSession {
+            store,
+            stage,
+            observed_http,
+            retained_metadata,
+            ..
+        } = adopted.as_mut();
         let capture = Capture::from_meta(metadata, meta_path)?;
         capture.verify_body(body, body_path)?;
+        let original_metadata = observed_http.as_ref().map(|_| capture.encoded.clone());
         let length =
             u64::try_from(body.len()).map_err(|_| CaptureTransportError::BackingUnavailable)?;
         let input = PreparedCaptureInputV1::new(&metadata.content_digest, length, capture.encoded)?;
@@ -49,6 +56,7 @@ impl CaptureSession<'_> {
             occurrence.clone(),
             occurrence.clone(),
         ));
+        *retained_metadata = original_metadata;
         if metadata.status == 200 {
             let envelope = EligibleCacheV2::new(metadata.clone(), occurrence);
             publish_eligible(body_path, meta_path, &envelope, &archived_body)?;
@@ -68,6 +76,8 @@ impl CaptureSession<'_> {
             store,
             stage,
             cached,
+            observed_http,
+            retained_metadata,
             ..
         } = adopted.as_mut();
         let pinned = cached
@@ -87,6 +97,14 @@ impl CaptureSession<'_> {
             Ok((reference, body))
         })?;
         let meta = &pinned.envelope.metadata;
+        if observed_http.is_some() {
+            let mut read_budget = AcquisitionReadBudget::for_work();
+            let retained = store.read_retained_acquisition_v1(
+                &pinned.envelope.original_occurrence,
+                &mut read_budget,
+            )?;
+            *retained_metadata = Some(retained.prepared().metadata_bytes().to_vec());
+        }
         *stage = Stage::Complete(CaptureProvenance::retained(
             result,
             pinned.envelope.original_occurrence.clone(),

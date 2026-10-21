@@ -2,7 +2,7 @@ use super::{codec, key, ledger, transport};
 use crate::restate_services::wire::{NationalRequestBinding, TeamsSourceRequest};
 use census_domain::model::Revision;
 use census_reconcile::identity::WorkflowIdentity;
-use census_store::Store;
+use census_store::{CaptureWriterV1, Store};
 use serde::Serialize;
 use std::path::Path;
 use std::sync::Arc;
@@ -16,13 +16,15 @@ struct Events {
 }
 
 pub(super) struct Driver {
+    pub(super) writer: Arc<CaptureWriterV1>,
     journal: Vec<codec::Frame>,
     pub(super) run_values: Vec<serde_json::Value>,
 }
 
 impl Driver {
-    pub(super) fn new(request: &impl Serialize) -> TestResult<Self> {
+    pub(super) fn new(request: &impl Serialize, writer: &Arc<CaptureWriterV1>) -> TestResult<Self> {
         Ok(Self {
+            writer: Arc::clone(writer),
             journal: vec![codec::Frame::new(
                 0x0400,
                 codec::blob(14, &codec::value(&serde_json::to_vec(request)?)?)?,
@@ -37,7 +39,8 @@ impl Driver {
         request: &TeamsSourceRequest,
         handler: &str,
     ) -> TestResult<Events> {
-        let frames = transport::exchange(store, request, handler, &self.journal).await?;
+        let frames =
+            transport::exchange(store, request, &self.writer, handler, &self.journal).await?;
         let mut events = Events::default();
         for frame in frames {
             match frame.kind {
@@ -88,7 +91,7 @@ impl Driver {
             format!("national-request-{}", call.number(11)?).as_bytes(),
         )?);
         self.journal.push(codec::Frame::new(0x800E, invocation));
-        let response = NationalRequestBinding::Bound(Box::new(transport::national_request()?));
+        let response = NationalRequestBinding::Bound(Box::new(transport::national_request(store)?));
         self.journal.push(codec::notification(
             0x800D,
             call.number(11)?,

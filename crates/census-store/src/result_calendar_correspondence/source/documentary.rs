@@ -7,8 +7,11 @@ use crate::{
 use census_domain::evidence_subject_attachment::{
     AttachmentDigestV1, RetainedDocumentSubjectReferenceV1,
 };
-use census_domain::model::{Gender, Sport};
 use census_domain::roster_affiliation_authority::SourceRowLocator;
+
+mod preimage;
+mod roncalli;
+use preimage::{inline, interpretation, locator_range};
 
 pub(super) fn require(
     view: &impl RetainedJournalReadSource,
@@ -17,7 +20,8 @@ pub(super) fn require(
     authority: (&ReviewedAttachmentSourceV1<'_>, &ReviewedReferenceRecordV1),
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
-    if source.sport != Sport::OutdoorTrack || source.category != Gender::Boys {
+    let parser = super::selected_parser(source, materials, grant)?;
+    if !parser.supports_scope(source.sport, source.category) {
         return Err(Error::SourceMismatch("unsupported documentary parser scope").into());
     }
     let root = super::root(
@@ -53,6 +57,7 @@ fn packet(
         status,
         schedule,
         result_row,
+        roncalli_season_event,
     } = checked
     else {
         return Err(Error::SourceMismatch("documentary packet schema").into());
@@ -61,17 +66,30 @@ fn packet(
     if subject.namespace.as_str() == "milesplit_result_document_v1" {
         status.require_reference(&retained(materials, &subject.capture)?.object, grant)?;
     }
-    let interpretation_name = match (subject.namespace.as_str(), result_row) {
-        ("mhsaa_article_v1", None) => "mhsaa_subject_dcc_event_day_v1",
-        ("milesplit_result_document_v1", Some(_)) => {
-            "milesplit_original_student_grade_dcc_event_day_v1"
-        }
-        _ => return Err(Error::SourceMismatch("unknown documentary namespace or row").into()),
-    };
+    let parser = super::selected_parser(source, materials, grant)?;
+    let interpretation_name = parser
+        .documentary_interpretation(
+            subject.namespace.as_str(),
+            result_row.is_some(),
+            roncalli_season_event.is_some(),
+        )
+        .ok_or(Error::SourceMismatch(
+            "unknown documentary namespace or row",
+        ))?;
     if status.body_sha256 != subject.body.as_str()
         || schedule.body_sha256 != source.calendar.capture.as_str()
     {
         return Err(Error::SourceMismatch("documentary original capture binding").into());
+    }
+    if let Some(selection) = roncalli_season_event {
+        return roncalli::require(
+            source,
+            materials,
+            subject,
+            &selection,
+            (&status, &schedule),
+            grant,
+        );
     }
     interpretation(
         materials,
@@ -214,68 +232,4 @@ fn within_row(
         return Err(Error::SourceMismatch("grade documentary row bounds").into());
     }
     Ok(start >= row_start && end <= row_end)
-}
-
-fn interpretation(
-    materials: &[Material],
-    body_digest: &AttachmentDigestV1,
-    locator_digest: &AttachmentDigestV1,
-    interpretation_digest: &AttachmentDigestV1,
-    interpretation_name: &str,
-    grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<()> {
-    let locator = inline(materials, locator_digest, 96, grant)?;
-    let body = materials
-        .iter()
-        .find(|material| &material.reference().digest == body_digest)
-        .ok_or(Error::SourceMismatch("calendar original body reference"))?;
-    locator_range(body.reference(), &locator)?;
-    let interpretation = inline(materials, interpretation_digest, 256, grant)?;
-    let name_bytes = interpretation_name.as_bytes();
-    let expected = [
-        name_bytes,
-        b"\n",
-        body_digest.as_str().as_bytes(),
-        b"\n",
-        locator.as_slice(),
-    ];
-    if !expected.into_iter().flatten().eq(interpretation.iter()) {
-        return Err(Error::SourceMismatch("calendar interpretation preimage").into());
-    }
-    Ok(())
-}
-
-fn locator_range(body: &AttachmentObjectReferenceV1, locator: &[u8]) -> StoreResult<(u64, u64)> {
-    let text = std::str::from_utf8(locator)
-        .map_err(|_| Error::SourceMismatch("calendar locator UTF-8"))?;
-    let (start, end) = text
-        .strip_prefix("html_bytes:")
-        .and_then(|text| text.split_once(':'))
-        .ok_or(Error::SourceMismatch("calendar locator shape"))?;
-    let start: u64 = start
-        .parse()
-        .map_err(|_| Error::SourceMismatch("calendar locator start"))?;
-    let end: u64 = end
-        .parse()
-        .map_err(|_| Error::SourceMismatch("calendar locator end"))?;
-    if start >= end || end > body.bytes {
-        return Err(Error::SourceMismatch("calendar locator byte range").into());
-    }
-    Ok((start, end))
-}
-
-fn inline(
-    materials: &[Material],
-    digest: &AttachmentDigestV1,
-    maximum: u64,
-    grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<Vec<u8>> {
-    let material = materials
-        .iter()
-        .find(|material| &material.reference().digest == digest)
-        .ok_or(Error::SourceMismatch("calendar required preimage absent"))?;
-    if material.reference().bytes > maximum {
-        return Err(Error::SourceMismatch("calendar preimage bound").into());
-    }
-    material.inline_bytes(grant)
 }

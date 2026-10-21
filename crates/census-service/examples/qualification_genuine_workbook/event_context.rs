@@ -23,6 +23,17 @@ pub(super) fn inspect(store: &Store) -> Result<Value, Box<dyn std::error::Error>
                         "checked event source row disappeared",
                     ))
                 })?;
+                let (Some(raw), Some(document)) = (
+                    row.checked_row().as_milesplit(),
+                    linked.checked_document().as_milesplit(),
+                ) else {
+                    return Err(
+                        StoreError::from(EvidenceSubjectAttachmentStoreError::Corrupt(
+                            "checked MileSplit event original source differs",
+                        ))
+                        .into(),
+                    );
+                };
                 let value = json!({
                     "source_person": label.person(),
                     "public_id": row.attachment().target().public_id,
@@ -35,10 +46,10 @@ pub(super) fn inspect(store: &Store) -> Result<Value, Box<dyn std::error::Error>
                     "row_locator": label.row_proof().locator(),
                     "heading_reference": label.heading_reference(),
                     "row_reference": label.row_reference(),
-                    "original_event_heading": row.checked_row().event().label,
+                    "original_event_heading": raw.event().label,
                     "original_result_row": row.checked_row().reference(),
-                    "original_mark": row.checked_row().parsed_row().mark,
-                    "competition_day": linked.checked_document().published_start(),
+                    "original_mark": raw.parsed_row().mark,
+                    "competition_day": document.published_start(),
                 });
                 if found.as_ref().is_some_and(|original| original != &value) {
                     return Err(

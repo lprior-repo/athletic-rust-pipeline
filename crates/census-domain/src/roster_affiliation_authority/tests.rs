@@ -13,7 +13,7 @@ fn reference(id: u32) -> Value {
 fn contract() -> Value {
     json!({"version": 1, "revision": 1, "digest": "a".repeat(64)})
 }
-fn fixture() -> TestResult<Value> {
+pub(super) fn fixture() -> TestResult<Value> {
     let owner = SourceSubject::new(SourceNamespace::MilesplitSchool, "10002".into())?;
     let program_owner = SourceSubject::new(SourceNamespace::MilesplitTeam, "10002".into())?;
     Ok(json!({
@@ -49,7 +49,7 @@ fn record() -> TestResult<Value> {
         "negative_actions":0, "approval_envelope":reference(17), "review_provenance":reference(18), "issuance_receipt":reference(19)}),
     )
 }
-fn proposal_fixture() -> TestResult<Value> {
+pub(super) fn proposal_fixture() -> TestResult<Value> {
     let owner = SourceSubject::new(SourceNamespace::MilesplitSchool, "10002".into())?;
     let program_owner = SourceSubject::new(SourceNamespace::MilesplitTeam, "10002".into())?;
     Ok(json!({

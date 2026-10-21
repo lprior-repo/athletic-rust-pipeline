@@ -12,6 +12,10 @@ pub(in crate::participation_evidence) struct OriginalResultSpan {
 }
 
 impl OriginalResultSpan {
+    pub(in crate::participation_evidence) fn range(self) -> std::ops::Range<usize> {
+        self.start..self.end
+    }
+
     pub(in crate::participation_evidence) fn parse(bytes: &[u8]) -> Option<Self> {
         if bytes.len() > MAX_LOCATOR_TEXT_BYTES {
             return None;

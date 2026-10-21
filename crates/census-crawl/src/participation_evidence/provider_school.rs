@@ -6,9 +6,20 @@ use serde::{Deserialize, Serialize};
 mod current;
 mod directory;
 mod json;
+mod owned_directory;
+mod owned_packet;
 mod projection;
+mod retained;
 mod row;
 mod types;
+
+pub(crate) use owned_directory::read_directory_roster_child;
+pub use owned_packet::{
+    OwnedProviderSchoolPacketV1, OWNED_PROVIDER_SCHOOL_INTAKE_PHASE,
+    OWNED_PROVIDER_SCHOOL_INTERPRETATION,
+};
+
+pub use retained::{RetainedProviderSchoolCaptureV1, RetainedProviderSchoolPacketV1};
 
 pub use types::{
     CheckedProviderSchoolPacketV1, ProviderSchoolDirectoryProofV1, ProviderSchoolPacketRefV1,

@@ -1,7 +1,7 @@
 use super::super::{invalid, objects::Objects, original, ownership, statement, target};
-use crate::participation_evidence::provider_school::ProviderSchoolPacketV1;
+use crate::participation_evidence::recorded::read_original_provider_school;
 use crate::participation_evidence::recorded::DiscoveredIdentityLinkedHtmlResultDocumentV1;
-use crate::participation_evidence::result_ownership::read_retained_html_result_rows;
+use crate::participation_evidence::result_ownership::read_retained_source_result_rows;
 use crate::participation_evidence::RetainedHtmlCaptureV1;
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
@@ -79,16 +79,20 @@ pub(super) fn require(
     }
     let capture: RetainedHtmlCaptureV1 = serde_json::from_str(original.payload().get())
         .map_err(crate::participation_evidence::json)?;
-    let document = read_retained_html_result_rows(&capture, &[linked_row.checked_row().locator()])
-        .map_err(ownership)?;
+    let document = read_retained_source_result_rows(
+        &capture,
+        &[linked_row.checked_row().locator()],
+        linked_row.checked_row().source(),
+    )
+    .map_err(ownership)?;
     let row = document
         .row(0)
         .ok_or_else(|| invalid("reviewed school original selected row absent"))?;
     original::subject(original.root(), &row, linked_row.attachment(), grant)?;
     let scope = super::scope(&record.command.source);
-    target::scope(&document, &row, &scope)?;
+    target::scope_source(&document, &row, &scope)?;
     let mut objects = Objects::new(grant)?;
-    let statement = statement::build(original.root(), &document, &row, &mut objects, grant)?;
+    let statement = statement::build_source(original.root(), &document, &row, &mut objects, grant)?;
     let target = provider(source, record, scope, &mut objects, grant)?;
     let accepted = &record.command.source;
     if accepted.statement != statement
@@ -110,17 +114,11 @@ fn provider(
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<census_domain::result_school_correspondence::ResultSchoolTargetClaimV1> {
     let root = source.provider_root(&record.record_digest, grant)?;
-    let original = source.root(
-        RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1,
-        &root.key,
-        grant,
-    )?;
+    let original = source.root(root.schema, &root.key, grant)?;
     if original.root() != &root {
         return Err(invalid("reviewed school original provider root differs"));
     }
-    let packet: ProviderSchoolPacketV1 = serde_json::from_str(original.payload().get())
-        .map_err(crate::participation_evidence::json)?;
-    let checked = packet.read_semantic_contract_v1()?;
+    let checked = read_original_provider_school(&original, grant)?;
     if checked.reference().as_str() != root.key {
         return Err(invalid("reviewed school original provider key differs"));
     }

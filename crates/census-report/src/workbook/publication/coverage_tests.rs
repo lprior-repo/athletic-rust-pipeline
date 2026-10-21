@@ -29,7 +29,11 @@ struct Witness {
 
 impl Witness {
     fn capture(captured: &Captured) -> TestResult<Self> {
-        readback::assert_baseline(&captured.dataset)?;
+        Self::capture_with_best(captured, 50_000_000_000)
+    }
+
+    fn capture_with_best(captured: &Captured, best: i64) -> TestResult<Self> {
+        readback::assert_baseline(&captured.dataset, best)?;
         let verified = verify_published(&captured.workbook)?;
         check!(eq; verified.workbook.mapped_athletes, 1);
         let selection = readback::selection(&captured.workbook)?;

@@ -60,7 +60,12 @@ pub(super) fn ranges(
     for (index, member) in members.iter().enumerate() {
         grant.charge_steps(1).map_err(domain)?;
         if let Some(prior) = previous {
-            if compare(metadata, prior, member.index, grant)? != Ordering::Equal {
+            let batch_full = is_tfrrs(metadata, prior)?
+                && index
+                    .checked_sub(start)
+                    .ok_or(census_store::StoreError::CounterOverflow)?
+                    == MAX_PARTICIPATION_FACTS;
+            if batch_full || compare(metadata, prior, member.index, grant)? != Ordering::Equal {
                 push(&mut groups, start..index)?;
                 start = index;
             }
@@ -103,9 +108,26 @@ fn compare(
     if root == Ordering::Equal && left_root.payload != right_root.payload {
         return Err(invalid("discovery capture root descriptors conflict").into());
     }
-    Ok(root
+    let left_tfrrs = is_tfrrs(metadata, left)?;
+    let right_tfrrs = is_tfrrs(metadata, right)?;
+    let root = root
         .then_with(|| left_root.payload.cmp(&right_root.payload))
-        .then_with(|| left_context.cmp(right_context)))
+        .then_with(|| left_tfrrs.cmp(&right_tfrrs));
+    if left_tfrrs && right_tfrrs {
+        return Ok(root);
+    }
+    Ok(root.then_with(|| left_context.cmp(right_context)))
+}
+
+fn is_tfrrs(metadata: &ActiveAttachmentSubjectDiscoveryV1<'_>, index: usize) -> CrawlResult<bool> {
+    Ok(metadata
+        .subjects()
+        .get(index)
+        .ok_or_else(|| invalid("discovery subject absent"))?
+        .subject()
+        .namespace
+        .as_str()
+        == "tfrrs_result_document_v1")
 }
 
 pub(super) fn key<'a>(

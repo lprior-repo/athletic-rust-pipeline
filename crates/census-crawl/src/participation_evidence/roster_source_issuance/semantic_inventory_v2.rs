@@ -13,7 +13,8 @@ mod wire;
 pub(super) use replay::compare;
 const SCHEMA: &str = "roster-source-semantic-inventory-v2";
 const POLICY: &str = "milesplit-row-local-current-roster/v2";
-const LIMIT: usize = 64 * 1024;
+const LIMIT: usize =
+    census_domain::roster_affiliation_authority::MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES;
 const MAX_ROWS: usize = 256;
 
 pub(super) fn checked_roster<'a>(
@@ -34,7 +35,7 @@ pub(super) fn capture(
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<u8>> {
     let value = inventory(checked, parser, metadata, grant)?;
-    encode(&value, grant)
+    encode_inventory(&value, grant)
 }
 
 fn inventory(
@@ -84,10 +85,25 @@ fn encode(
     value: &impl serde::Serialize,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<u8>> {
-    budget::charge_bounded(value, grant, LIMIT)?;
+    encode_bounded(value, grant, 64 * 1024)
+}
+
+fn encode_inventory(
+    value: &wire::Inventory,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Vec<u8>> {
+    encode_bounded(value, grant, LIMIT)
+}
+
+fn encode_bounded(
+    value: &impl serde::Serialize,
+    grant: &mut AttachmentReplayGrantV1,
+    limit: usize,
+) -> StoreResult<Vec<u8>> {
+    budget::charge_bounded(value, grant, limit)?;
     grant.charge_steps(1).map_err(domain)?;
     let bytes = serde_json::to_vec(value).map_err(json)?;
-    bound(bytes.len(), LIMIT, "row-local semantic inventory")?;
+    bound(bytes.len(), limit, "row-local semantic inventory")?;
     Ok(bytes)
 }
 

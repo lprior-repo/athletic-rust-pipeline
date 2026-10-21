@@ -15,6 +15,8 @@ struct RetainedAdmission<'a> {
     root: &'a RetainedCaptureRootV1,
     admission: &'static str,
     original_http_authorization: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    observed_intake: Option<super::observed::ObservedIntakePins>,
 }
 
 #[derive(Serialize)]
@@ -41,8 +43,13 @@ impl RosterSourceEvidenceV1 {
             school: self.requested_school(),
             program: self.requested_program(),
             root: held.root(),
-            admission: "completed-exact-provider-school-root",
-            original_http_authorization: "unknown",
+            admission: super::observed::admission_kind(held.root().schema),
+            original_http_authorization: super::observed::authorization(held.root().schema),
+            observed_intake: self
+                .observed
+                .as_ref()
+                .map(super::observed::pins)
+                .transpose()?,
         };
         encode(self, &value, grant)
     }
@@ -59,7 +66,7 @@ impl RosterSourceEvidenceV1 {
             encoded_bytes: ReplayLimits::SMALL.total_text_bytes,
             traversal_steps: ReplayLimits::SMALL.traversal_steps,
             policy: "one-original-origin-monotonic-usage-poison-on-error-no-reset",
-            original_http_authorization: "unknown",
+            original_http_authorization: super::observed::authorization(held.root().schema),
         };
         encode(self, &value, grant)
     }

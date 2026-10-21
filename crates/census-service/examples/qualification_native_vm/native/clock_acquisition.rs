@@ -143,16 +143,15 @@ async fn fetch(fetcher: &Fetcher) -> Result<(FetchOutcome, FetchStats)> {
 fn prepare(phase: Phase) -> Result<Session> {
     let guest = std::fs::canonicalize(GUEST)?;
     let root = guest.join("clock-acquisition-store");
-    if phase == Phase::Before && !root.try_exists()? {
-        std::fs::create_dir(&root)?;
-    }
     ensure!(
         std::fs::canonicalize(&root)? == root,
         "acquisition root must not be a symlink"
     );
     persistence::ensure_owned_directories(&root)?;
     let identity = identity()?;
-    let store = Store::open(&root).context("opening distinct guest-owned acquisition store")?;
+    let (store, _writer) = Store::open_current_qualification_v3(&root)
+        .context("opening distinct current-qualified guest acquisition store")?
+        .into_parts();
     let previous = persistence::previous(&store, &root, &identity, phase)?;
     let descriptor = registry::descriptor("riil").context("RIIL source descriptor absent")?;
     ensure!(

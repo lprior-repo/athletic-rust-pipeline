@@ -116,6 +116,7 @@ pub struct VerifiedIndependentParticipationV1 {
     pub(super) season_scope: String,
     pub(super) status: IndependentParticipationProofV1,
     pub(super) season: IndependentParticipationProofV1,
+    pub(super) roncalli_event: Option<super::roncalli::CheckedRoncalliEventCandidateV1>,
 }
 
 impl VerifiedIndependentParticipationV1 {
@@ -154,6 +155,9 @@ impl VerifiedIndependentParticipationV1 {
     }
     pub fn status_proof(&self) -> &IndependentParticipationProofV1 {
         &self.status
+    }
+    pub fn roncalli_event(&self) -> Option<&super::roncalli::CheckedRoncalliEventCandidateV1> {
+        self.roncalli_event.as_ref()
     }
     pub fn season_proof(&self) -> &IndependentParticipationProofV1 {
         &self.season

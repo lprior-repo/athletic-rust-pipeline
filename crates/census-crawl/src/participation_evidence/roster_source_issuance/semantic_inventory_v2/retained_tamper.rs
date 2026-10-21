@@ -109,6 +109,8 @@ fn genuine_retained_disposition_tampering_refuses_after_valid_replay_and_rehashe
     Ok(())
 }
 
+#[path = "capacity.rs"]
+mod capacity;
 #[path = "journal_boundary.rs"]
 mod journal_boundary;
 

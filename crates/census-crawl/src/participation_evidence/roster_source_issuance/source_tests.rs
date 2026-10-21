@@ -1,5 +1,6 @@
 use super::*;
 use crate::milesplit::CurrentRosterAssertion;
+use crate::participation_evidence::provider_school::ProviderSchoolPacketV1;
 use crate::participation_evidence::{
     RetainedBodyEncodingV1, RetainedHtmlCaptureV1, RetainedHttpProvenanceV1,
 };
@@ -92,7 +93,7 @@ fn source_capture_mismatch_and_unknown_final_url_refuse() -> TestResult {
         let mut value = proposal(&packet, ROSTER)?;
         *value.pointer_mut(path).ok_or("fixture field")? = replacement;
         check!(capture(
-            &packet,
+            &RetainedProviderSchoolPacketV1::Raw(Box::new(packet.clone())),
             &decode(&value)?,
             &mut AttachmentReplayGrantV1::new()
         )
@@ -123,7 +124,7 @@ fn utc_equivalent_timestamp_is_same_capture_instant() -> TestResult {
         .pointer_mut("/capture/acquired_at")
         .ok_or("fixture instant")? = json!("2026-10-15T19:49:43-05:00");
     capture(
-        &packet,
+        &RetainedProviderSchoolPacketV1::Raw(Box::new(packet.clone())),
         &decode(&value)?,
         &mut AttachmentReplayGrantV1::new(),
     )?;
@@ -142,7 +143,12 @@ fn underdeclared_body_cannot_bypass_real_capture_precharge() -> TestResult {
     let maximum = AttachmentReplayGrantV1::MAX_ENCODED_BYTES;
     grant.charge_bytes(maximum.checked_sub(1).ok_or("grant limit")?)?;
     let before = grant.usage().encoded_bytes();
-    check!(capture(&packet, &proposal, &mut grant).is_err());
+    check!(capture(
+        &RetainedProviderSchoolPacketV1::Raw(Box::new(packet.clone())),
+        &proposal,
+        &mut grant
+    )
+    .is_err());
     check!(eq; grant.usage().encoded_bytes(), before);
     check!(grant.ensure_available().is_err());
     Ok(())

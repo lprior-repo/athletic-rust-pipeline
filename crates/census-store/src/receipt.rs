@@ -104,6 +104,7 @@ impl Store {
 }
 
 pub(super) fn refuse_over_operation(operation: &str, digest: &str) -> StoreResult<()> {
+    crate::acquisition::public_resources::format::refuse_generic_operation(operation)?;
     crate::public_identity::refuse_reserved(operation)?;
     crate::evidence_subject_attachment::refuse_generic_operation(operation)?;
     crate::roster_source_issuance::refuse_generic_operation(operation)?;

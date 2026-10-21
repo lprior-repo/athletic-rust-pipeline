@@ -4,6 +4,8 @@ use census_domain::model::{CanonicalPerformance, Evidence, EvidenceMethod};
 use serde::Deserialize;
 use serde_json::value::RawValue;
 
+mod tfrrs;
+
 pub fn matches_physical_observation(
     actual: &CanonicalPerformance,
     projected: &CanonicalPerformance,
@@ -15,6 +17,9 @@ pub fn matches_physical_observation(
         .evidence
         .first()
         .ok_or(Error::Invalid("physical projection has no source evidence"))?;
+    if baseline.source.id == super::tfrrs::INTERPRETATION {
+        return tfrrs::matches(actual, projected, baseline);
+    }
     if actual.evidence.is_empty()
         || baseline.method != EvidenceMethod::Parsed
         || baseline.source.id != INTERPRETATION

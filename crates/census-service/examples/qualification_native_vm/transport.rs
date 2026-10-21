@@ -42,6 +42,19 @@ impl Ssh {
         self.exec_bounded(label, remote, 1800)
     }
 
+    pub(super) fn exec_until(
+        &self,
+        label: &str,
+        remote: &str,
+        deadline: Instant,
+    ) -> Result<String> {
+        let mut command = Command::new("/usr/bin/ssh");
+        self.options(&mut command);
+        command.args(["-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=1"]);
+        command.args(["-p", &self.port.to_string(), "root@127.0.0.1", remote]);
+        process::command_until(&self.root, label, &mut command, deadline)
+    }
+
     fn exec_bounded(&self, label: &str, remote: &str, ticks: usize) -> Result<String> {
         let mut command = Command::new("/usr/bin/ssh");
         self.options(&mut command);

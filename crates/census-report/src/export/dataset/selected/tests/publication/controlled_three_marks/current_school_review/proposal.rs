@@ -17,7 +17,7 @@ use census_store::{
 };
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-pub(super) fn prepare(
+pub(in super::super) fn prepare(
     school: &CanonicalSchool,
     program: &CanonicalTeam,
     evidence: &RosterSourceEvidenceV1,

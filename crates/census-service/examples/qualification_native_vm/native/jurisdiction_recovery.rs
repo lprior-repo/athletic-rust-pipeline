@@ -12,6 +12,7 @@ mod input;
 mod journal;
 mod observe;
 mod offline;
+mod owned_admission;
 mod recovery;
 
 pub(super) fn offline() -> Result<Value> {
@@ -29,9 +30,12 @@ pub(super) async fn quiescence(client: &Client) -> Result<Value> {
 pub(super) async fn start(client: &Client) -> Result<Value> {
     let original = input::submit(client).await?;
     let boundary = boundary::wait(client, &original).await?;
+    let owned_resource_parent_hold =
+        owned_admission::before_reset(client, &original, &boundary).await?;
     let evidence = json!({
         "original": original,
         "boundary": boundary,
+        "owned_resource_parent_hold": owned_resource_parent_hold,
         "reached_real_source_stage": true,
         "physical_request_in_flight_proven": false,
         "unproven_obligations": [
@@ -67,11 +71,16 @@ pub(super) async fn finish(client: &Client) -> Result<Value> {
         "recovery machine changed"
     );
     let retained = injection::retained(&original, &before)?;
+    let owned_admission = owned_admission::after_reset(client, &original, &before).await?;
     let mut evidence = recovery::finish(client, &original, &before, clock).await?;
     evidence
         .as_object_mut()
         .context("recovery evidence malformed")?
         .insert("native_source_boundary_retained".to_owned(), retained);
+    evidence
+        .as_object_mut()
+        .context("recovery evidence malformed")?
+        .insert("owned_resource_admission".to_owned(), owned_admission);
     artifacts::publish(
         &Path::new(GUEST).join("jurisdiction-recovery-finished.json"),
         &evidence,

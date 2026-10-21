@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 pub(super) fn require(
     source: &ResultSchoolSourceClaimV1,
     materials: &[Material],
+    namespace: &str,
     root: &RetainedCaptureRootV1,
     capture: &CheckedCapture<'_>,
     grant: &mut AttachmentReplayGrantV1,
@@ -44,6 +45,7 @@ pub(super) fn require(
     interpretation(
         source,
         materials,
+        namespace,
         capture.requested_url(grant)?.as_ref(),
         grant,
     )
@@ -60,15 +62,20 @@ fn span(body: &[u8], offset: u64, length: u64) -> StoreResult<&[u8]> {
 fn interpretation(
     source: &ResultSchoolSourceClaimV1,
     materials: &[Material],
+    namespace: &str,
     requested_url: &str,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
     let bytes = object(materials, &source.statement.interpretation)?.inline_bytes(grant)?;
+    let parser_bytes = object(materials, &source.statement.parser_contract)?.inline_bytes(grant)?;
+    let parser = ResultSchoolSourceParserV1::from_contract(&parser_bytes)
+        .ok_or(Error::SourceMismatch("school parser contract"))?;
     let (contract, url, body, locator): (&str, &str, &str, &RawValue) =
         serde_json::from_slice(&bytes)
             .map_err(|_| Error::Corrupt("row interpretation preimage"))?;
     grant.charge_bytes(bytes.len()).map_err(grant_error)?;
-    if contract != "retained-milesplit-html-result-row/v1"
+    if contract != parser.row_interpretation()
+        || namespace != parser.document_namespace()
         || body != source.statement.body.digest.as_str()
     {
         return Err(Error::SourceMismatch("row interpretation binding").into());

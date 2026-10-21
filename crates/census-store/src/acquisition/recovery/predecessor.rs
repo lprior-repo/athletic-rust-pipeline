@@ -8,7 +8,7 @@ pub(in crate::acquisition) fn reserve(
 ) -> StoreResult<ReservedAttempt> {
     let mut budget = PreparedRecoveryBudget::predecessor()?;
     let mut account = budget.begin_target()?;
-    admission::owner(store, &work.owner, account.reads())?;
+    admission::owner(store, work.owner(), account.reads())?;
     let (http, _fence) = begin::acquire_archive_fence(store, &mut account)?;
     let _writes = store.lock_appends();
     let facts = read::read_work(
@@ -22,6 +22,7 @@ pub(in crate::acquisition) fn reserve(
     if facts.work != work.work {
         return Err(CaptureError::ObligationConflict.into());
     }
+    admission::matches_read_work(store, work.owner(), &facts, account.reads())?;
     account.reserve_scratch()?;
     let mut scratch = [0; 32768];
     facts

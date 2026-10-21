@@ -260,7 +260,7 @@ fn completion(value: &Value, field: &str) -> Result<u32> {
     )?)
 }
 
-fn bytes(value: &Value) -> Result<Vec<u8>> {
+pub(super) fn bytes(value: &Value) -> Result<Vec<u8>> {
     let values = value.as_array().context("journal byte payload malformed")?;
     ensure!(
         values.len() <= 64 * 1024,

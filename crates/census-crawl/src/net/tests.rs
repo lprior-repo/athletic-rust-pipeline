@@ -72,6 +72,7 @@ fn a_corrupted_cache_body_is_rejected_not_served() -> TestResult {
             use super::cache::{content_digest, write_cache};
             let meta = super::cache::CacheMeta {
                 redirects: Vec::new(),
+                observed_http: None,
                 representation: RepresentationHeaders::default(),
                 url: "https://example.com/teams".to_string(),
                 response_url: None,

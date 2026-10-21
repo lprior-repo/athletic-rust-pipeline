@@ -9,6 +9,7 @@ mod scan;
 
 pub(crate) use contents::{JournalNamespaceContents, JournalNamespaceContentsInventory};
 pub use namespace::JournalNamespace;
+pub(super) use scan::scan_contents;
 pub(crate) use scan::{admit as admit_namespace_budget, NamespaceScan};
 
 pub struct JournalNamespaceFingerprint<'s> {

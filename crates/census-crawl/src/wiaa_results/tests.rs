@@ -158,6 +158,7 @@ pub(super) fn seed_result_cache(
     let (body_path, meta_path) = fetcher.cache_paths(&key);
     let meta = CacheMeta {
         redirects: Vec::new(),
+        observed_http: None,
         representation,
         url: url.to_owned(),
         response_url: None,

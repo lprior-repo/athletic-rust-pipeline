@@ -11,7 +11,7 @@ mod admission;
 mod project;
 mod provenance;
 
-const INTERPRETATION: &str = "tfrrs_html_physical_projection_v1";
+pub(super) const INTERPRETATION: &str = "tfrrs_html_physical_projection_v1";
 const SOURCE_KEY: &str = "tfrrs_html_row_v1";
 
 pub fn project_retained_tfrrs_result_row(

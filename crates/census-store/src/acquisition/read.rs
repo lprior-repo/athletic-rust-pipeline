@@ -51,7 +51,7 @@ impl Store {
     ) -> StoreResult<AcquireDecision> {
         budget.begin_operation();
         let _writes = self.lock_appends();
-        work.verify(self)?;
+        work.verify(self, budget)?;
         let snapshot = self.db.snapshot();
         let facts = read_work(
             &snapshot,

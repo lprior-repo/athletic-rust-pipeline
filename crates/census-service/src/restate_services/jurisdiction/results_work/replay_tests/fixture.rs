@@ -205,7 +205,9 @@ impl Fixture {
             UsJurisdiction::Michigan,
             "725218",
         )?;
-        let work = self.store.register_acquisition_work(&owner, work, grant)?;
+        let work = self
+            .store
+            .register_acquisition_work(owner.as_ref(), work, grant)?;
         let attempt = self.store.reserve_acquisition_attempt(work)?;
         self.store
             .refuse_acquisition_attempt(attempt, AcquisitionFailureV1::AdmissionRefused)?;

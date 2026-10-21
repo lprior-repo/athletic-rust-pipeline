@@ -1,6 +1,9 @@
 mod error;
 mod identity;
+mod observed_http;
 mod protocol;
+mod public_resource;
+mod public_resource_obligation;
 mod qualification;
 mod qualification_v2;
 mod recovery;
@@ -13,10 +16,16 @@ pub use error::CaptureDomainError;
 pub use identity::{
     AcquisitionAttemptId, AcquisitionDispatchId, AcquisitionOccurrenceRefV1, AcquisitionSlotV1,
 };
+pub use observed_http::{
+    NormalizedObservedHttpV1, ObservedHttpHeaderV1, ObservedHttpHopV1, ObservedHttpProtocolV1,
+    ObservedHttpRequestV1, ObservedHttpResponseV1,
+};
 pub use protocol::{
     AcquisitionFailureV1, CaptureDispositionV1, InterruptionCauseV1, PreparedCaptureInputV1,
     ResponseCheckpointRefusalV1, ResponseObservationV1, ResponseStatusV1, ResponseUrlV1,
 };
+pub use public_resource::{PublicSourceResourceKindV1, PublicSourceResourceV1};
+pub use public_resource_obligation::PublicResourceObligationV1;
 pub use qualification::CaptureQualificationV1;
 pub use qualification_v2::{CaptureQualification, CaptureQualificationV2};
 pub use recovery::{
@@ -29,8 +38,8 @@ pub use scalar::{
 };
 pub use version::CaptureProtocolVersion;
 pub use work::{
-    AcquisitionWorkV1, CaptureCacheIntent, ResultsCaptureScopeV1, SelectedHistoryV1,
-    SourceAdmissionV1,
+    AcquisitionWorkV1, CaptureCacheIntent, PublicResourceCaptureScopeV1, ResultsCaptureScopeV1,
+    SelectedHistoryV1, SourceAdmissionV1,
 };
 
 pub const SOURCE_ACQUISITION_PHASE: &str = "source_acquisition_attempt_v1";

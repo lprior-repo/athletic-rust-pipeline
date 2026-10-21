@@ -12,6 +12,7 @@ pub struct RosterSourceEvidenceV1 {
     held: RetainedCaptureRootReadV1,
     rows: Vec<RosterPhysicalProjectionRowV1>,
     continuation: AttachmentReplayContinuationV1,
+    pub(in crate::roster_source_issuance) observed: Option<crate::PublicSchoolIntakeAdmissionV1>,
 }
 
 impl RosterSourceEvidenceV1 {
@@ -32,6 +33,7 @@ impl RosterSourceEvidenceV1 {
             held,
             rows,
             continuation,
+            observed: None,
         }
     }
 

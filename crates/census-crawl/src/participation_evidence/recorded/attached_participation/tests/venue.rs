@@ -43,6 +43,8 @@ fn measure(
         .ok_or("cold delta")?;
     let parser_cost = linked
         .checked_document()
+        .as_milesplit()
+        .ok_or("controlled MileSplit document")?
         .original_document()
         .len()
         .checked_mul(4)

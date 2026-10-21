@@ -2,7 +2,7 @@ use crate::export::ExportDataset;
 use crate::grouping::Admission;
 use crate::report::{documentary_source_error as source, ReportResult};
 use census_crawl::participation_evidence::physical_result::{
-    project_retained_html_result_row, ProposedHtmlResultTargetV1,
+    project_checked_html_result_row, ProposedHtmlResultTargetV1,
 };
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1 as Grant;
 use census_domain::model::PerformanceId;
@@ -103,20 +103,8 @@ fn project(
         proposed_attachment_reference: attachment.record().record_digest.as_str(),
         proposed_school_binding_reference: checked.record().record_digest.as_str(),
     };
-    let projection = project_retained_html_result_row(linked.checked_document(), index, &target)
+    let (meet, first) = project_checked_html_result_row(linked.checked_document(), index, &target)
         .map_err(source)?;
-    let (meet, proposed) = projection.into_proposed_entities();
-    if proposed.len() != 1 {
-        return Err(
-            super::super::invalid("single row projection returned unexpected row count").into(),
-        );
-    }
-    let first = match proposed.into_iter().next() {
-        Some(value) => value,
-        None => {
-            return Err(super::super::invalid("projection row vanished").into());
-        }
-    };
     let (event, team, performance) = first.into_proposed_entities();
     Ok((meet, event, team, performance))
 }

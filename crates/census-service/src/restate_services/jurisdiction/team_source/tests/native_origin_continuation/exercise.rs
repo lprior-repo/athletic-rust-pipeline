@@ -34,7 +34,27 @@ pub(super) async fn run(
     let parent = Parent::seed(fixture, client, node, &outcome).await?;
     parent.assert_unsettled_refused(client, node).await?;
     drop(held);
-    fixture.install_retained_index().await?;
+    let declaration = call(
+        client,
+        &node.ingress,
+        "TeamsSource",
+        &operation,
+        "admit_public_resources",
+        "admit-original-public-resources",
+        &fixture.request,
+    )
+    .await?;
+    let application: census_store::Application = serde_json::from_slice(&declaration.body)?;
+    check!(application.written());
+    check!(eq; fixture.initial.stats().await.physical_requests(), 0);
+    fixture.install_controlled_owned_index().await?;
+    let owned_captures = receipts::phase(
+        &fixture.store,
+        census_domain::model::CaptureProtocolVersion::V2.phase(),
+    )?;
+    check!(!owned_captures.is_empty());
+    let archive_before = receipts::archives(fixture.continued.cache_dir())?;
+    check!(eq; archive_before.len(), 4);
     let continuation = OriginHeldContinuationRequest {
         original: fixture.request.clone(),
         original_outcome_digest: serialized_digest(&outcome)?,
@@ -55,13 +75,14 @@ pub(super) async fn run(
         if outcome.records == 1 && outcome.disposition.is_complete() && outcome.errors.is_empty())
     );
     check!(eq; fixture.continued.stats().await.physical_requests(), 0);
-    check!(eq; fixture.continued.stats().await.cache_hits, 1);
+    check!(eq; fixture.continued.stats().await.cache_hits, 0);
+    check!(eq; receipts::phase(&fixture.store, census_domain::model::CaptureProtocolVersion::V2.phase())?, owned_captures);
     check!(eq; receipts::phase(&fixture.store, ledger::PHASE)?, original_ledger);
     receipts::assert_budget(&fixture.store, &operation)?;
     let reconciled = parent.reconcile(client, node).await?;
     let continued_ledger = receipts::phase(&fixture.store, ledger::origin_continuation::PHASE)?;
     let archive = receipts::archives(fixture.continued.cache_dir())?;
-    check!(!archive.is_empty());
+    check!(eq; archive, archive_before);
     fixture.store.flush()?;
     node.restart(client).await?;
     assert_output(client, node, &original).await?;
@@ -119,7 +140,8 @@ pub(super) async fn run(
     check!(eq; receipts::archives(fixture.continued.cache_dir())?, archive);
     receipts::assert_budget(&fixture.store, &operation)?;
     check!(eq; fixture.continued.stats().await.physical_requests(), 0);
-    check!(eq; fixture.continued.stats().await.cache_hits, 1);
+    check!(eq; fixture.continued.stats().await.cache_hits, 0);
+    check!(eq; receipts::phase(&fixture.store, census_domain::model::CaptureProtocolVersion::V2.phase())?, owned_captures);
     println!("native OriginHeld continuation: original={} continuation={} reconciliation={} source={} attempts=2/3 records=1 parent_records=1 original_receipt_unchanged=true network_requests=0 restart_outputs_exact=true", original.invocation, continued.invocation, reconciled.invocation, operation);
     Ok(())
 }

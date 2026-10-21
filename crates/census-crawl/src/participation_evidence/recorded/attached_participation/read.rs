@@ -225,5 +225,6 @@ fn supported(item: &ActiveAttachmentSubjectV1<'_>) -> bool {
         && leaf.slot == RetainedCaptureSlotV1::ParticipationStatus
         && leaf.kind == RetainedCaptureLeafKindV1::CaptureJson)
         && (item.subject().namespace.as_str() == "mhsaa_article_v1"
-            || item.subject().namespace.as_str() == "milesplit_result_document_v1")
+            || item.subject().namespace.as_str() == "milesplit_result_document_v1"
+            || item.subject().namespace.as_str() == "roncalli_girls_track_season_review_v1")
 }

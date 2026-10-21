@@ -26,6 +26,7 @@ mod review;
 mod scope;
 mod setup;
 mod stale_subject;
+mod tfrrs;
 
 fn text(value: &str) -> TestResult<AttachmentTextV1> {
     Ok(AttachmentTextV1::parse(value)?)

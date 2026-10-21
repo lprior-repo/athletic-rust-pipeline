@@ -13,8 +13,9 @@ pub(super) async fn exercise() -> TestResult {
         "http://{}/invoke/NationalCensus/run",
         listener.local_addr()?
     );
-    let directory = tempfile::tempdir()?;
-    let store = Arc::new(census_store::Store::open(directory.path())?);
+    let controlled = crate::restate_services::jobs::selected_fixture::install()
+        .map_err(|error| error.to_string())?;
+    let store = Arc::new(controlled.store().clone());
     let region = Arc::new(crate::spawn::Spawner::new());
     let jobs = crate::restate_services::Jobs::new(store, Arc::clone(&region));
     let clock: Arc<dyn Clock> = Arc::new(super::FixtureClock);
@@ -28,7 +29,7 @@ pub(super) async fn exercise() -> TestResult {
         }
     });
     let assertions = async {
-        let result = drive_restricted(&url).await;
+        let result = drive_restricted(&url, controlled).await;
         stop_tx
             .send(())
             .map_err(|_| "fixture endpoint lost its shutdown owner")?;
@@ -39,14 +40,15 @@ pub(super) async fn exercise() -> TestResult {
     result
 }
 
-async fn drive_restricted(url: &str) -> TestResult {
+async fn drive_restricted(
+    url: &str,
+    controlled: crate::restate_services::jobs::selected_fixture::Controlled,
+) -> TestResult {
     tokio::time::timeout(Duration::from_secs(30), async {
         let client = reqwest::Client::builder()
             .http2_prior_knowledge()
             .timeout(Duration::from_secs(5))
             .build()?;
-        let controlled = crate::restate_services::jobs::selected_fixture::install()
-            .map_err(|error| error.to_string())?;
         let request = fixtures::selected_request(
             &controlled,
             &[

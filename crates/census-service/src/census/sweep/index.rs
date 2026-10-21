@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use super::super::{teams_phase, SourceObject, StateProgress};
 
 mod failure;
-pub(super) use failure::retain_failure;
+pub(crate) use failure::retain_failure;
 mod ids;
 mod inputs;
 mod inspection;

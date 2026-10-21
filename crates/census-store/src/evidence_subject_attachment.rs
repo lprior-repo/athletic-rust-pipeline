@@ -33,10 +33,12 @@ mod guard;
 mod keys;
 mod plan;
 mod target;
-pub(crate) use external::MAX_RETAINED_CAPTURE_ENVELOPE_BYTES;
 pub use external::{
     RetainedCaptureLeafKindV1, RetainedCaptureLeafV1, RetainedCaptureRootReadV1,
     RetainedCaptureRootSchemaV1, RetainedCaptureRootV1, RetainedCaptureSlotV1,
+};
+pub(crate) use external::{
+    MAX_RETAINED_CAPTURE_ENVELOPE_BYTES, MAX_RETAINED_CAPTURE_PHYSICAL_ROWS,
 };
 pub(crate) use guard::AttachmentCommitGuard;
 pub(crate) use plan::AttachmentJournalPlanV1;

@@ -17,6 +17,8 @@ use attached_participation::tests::{
     verify_source_count as verify_source_count_attached_participation,
     verify_targets as verify_targets_attached_participation,
 };
+#[cfg(test)]
+pub(in crate::participation_evidence) use attached_result::install_controlled_tfrrs_result_attachments;
 mod provider;
 mod provider_school;
 mod read;
@@ -24,6 +26,8 @@ mod roster_projection;
 pub mod roster_provenance;
 pub use roster_projection::{record_provider_roster_intake, record_provider_roster_rows_v3};
 mod schools;
+mod source;
+mod tfrrs;
 mod window;
 
 pub use attached_participation::{
@@ -40,14 +44,23 @@ pub use attached_result::{
     IdentityLinkedHtmlResultRowV1, UnresolvedAttachmentHtmlResultV1,
 };
 pub use provider::{ProviderTargetIntakeDispositionV1, ProviderTargetWithheldV1};
+#[cfg(test)]
+pub(crate) use provider_school::decode_provider_school_packet;
+pub(crate) use provider_school::read_original_provider_school;
 pub use provider_school::{
     read_recorded_provider_school, read_retained_provider_roster_body_v1,
     record_provider_school_intake, RecordedProviderSchoolV1,
 };
+pub(in crate::participation_evidence) use read::with_grant;
 pub use read::{
     read_recorded_html_result_capture, read_recorded_independent_participation,
     read_recorded_provider_target, RecordedHtmlResultCaptureV1, RecordedIndependentParticipationV1,
     RecordedProviderTargetV1,
+};
+pub use source::read_recorded_source_html_result_capture;
+pub use tfrrs::{
+    read_recorded_tfrrs_list_capture, record_retained_tfrrs_list_capture,
+    RecordedTfrrsListCaptureV1,
 };
 pub use window::{
     read_recorded_independent_participation_window, record_independent_participation_window_packet,

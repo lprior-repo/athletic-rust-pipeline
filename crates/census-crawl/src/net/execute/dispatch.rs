@@ -13,13 +13,24 @@ impl Fetcher {
         plan: &FetchPlan<'_>,
         session: &mut crate::net::acquisition::CaptureSession<'_>,
     ) -> Result<reqwest::Response, FetchError> {
-        let request = self.planned_request(url, plan)?;
+        let mut request = self.planned_request(url, plan)?;
+        if session.observed_http_required() {
+            super::representation::materialize_observed(&mut request, &self.effective_user_agent)?;
+        }
         if session.is_adopted() {
             self.admit_adopted_dispatch(url, host).await?;
         }
         #[cfg(test)]
         session.prearm_timeout(url)?;
-        let armed = session.arm(&request)?;
+        let started_at = if session.observed_http_required()
+            || matches!(plan.admission, crate::net::robots::Admission::Checked(_))
+        {
+            self.capture_clock.observed_at()
+        } else {
+            String::new()
+        };
+        plan.admission.check_dispatch(url, &started_at)?;
+        let armed = session.arm(&request, &started_at)?;
         #[cfg(test)]
         session.interrupt(crate::net::acquisition::CaptureInterruption::AfterArm)?;
         self.count_attempt(host).await;

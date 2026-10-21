@@ -1,10 +1,10 @@
-use crate::net::{FetchError, FetchOptions, Fetcher};
+use crate::net::{FetchError, FetchOptions, FetchOutcome, Fetcher};
 use crate::{CrawlError, CrawlResult};
 
 use super::boundary;
 use super::parse::{parse_team_index, TeamIndexRead};
 use super::raw::{parse_raw, RawPage};
-use super::roster::{RosterOutcome, RosterQuarantine, RosterVerdict};
+use super::roster::RosterOutcome;
 use super::wire::{ResultSetRef, Site, TeamRef};
 
 pub async fn fetch_team_index(
@@ -13,25 +13,31 @@ pub async fn fetch_team_index(
     options: &FetchOptions,
 ) -> CrawlResult<TeamIndexRead> {
     let outcome = fetcher.get(&site.teams_url(), options).await?;
-    if outcome.status != 200 {
-        return Err(CrawlError::Fetch(FetchError::Http {
-            status: outcome.status,
+    TeamIndexRead::from_capture(&outcome)
+}
+
+impl TeamIndexRead {
+    pub fn from_capture(outcome: &FetchOutcome) -> CrawlResult<Self> {
+        if outcome.status != 200 {
+            return Err(CrawlError::Fetch(FetchError::Http {
+                status: outcome.status,
+                url: outcome.url.clone(),
+            }));
+        }
+        if outcome.body.len() > 8 * 1024 * 1024 {
+            return Err(CrawlError::Resource {
+                resource: "team-index capture bytes",
+                requested: outcome.body.len(),
+                limit: 8 * 1024 * 1024,
+            });
+        }
+        let body = std::str::from_utf8(&outcome.body).map_err(|_| CrawlError::Schema {
             url: outcome.url.clone(),
-        }));
+            detail: "team index is not UTF-8".to_string(),
+        })?;
+        super::index::validate_surface(body, &outcome.url)?;
+        parse_team_index(body)
     }
-    if outcome.body.len() > 8 * 1024 * 1024 {
-        return Err(CrawlError::Resource {
-            resource: "team-index capture bytes",
-            requested: outcome.body.len(),
-            limit: 8 * 1024 * 1024,
-        });
-    }
-    let body = std::str::from_utf8(&outcome.body).map_err(|_| CrawlError::Schema {
-        url: outcome.url.clone(),
-        detail: "team index is not UTF-8".to_string(),
-    })?;
-    super::index::validate_surface(body, &outcome.url)?;
-    parse_team_index(body)
 }
 
 pub async fn fetch_roster(
@@ -56,26 +62,7 @@ pub async fn fetch_roster(
     if let Some(hook) = hook {
         hook.reached(boundary::Point::ResponseReceived).await?;
     }
-    let verdict = match outcome.status {
-        404 => RosterVerdict::Quarantined {
-            reason: RosterQuarantine::NotFound,
-            rejected: Vec::new(),
-            unfinished: None,
-        },
-        200 => match std::str::from_utf8(&outcome.body) {
-            Ok(body) => super::parse::roster::parse_captured_roster(body, team.clone(), &outcome)?,
-            Err(_) => RosterVerdict::Quarantined {
-                reason: RosterQuarantine::InvalidEncoding,
-                rejected: Vec::new(),
-                unfinished: None,
-            },
-        },
-        status => return Err(CrawlError::Fetch(FetchError::Http { status, url })),
-    };
-    let roster = RosterOutcome {
-        capture: outcome,
-        verdict,
-    };
+    let roster = RosterOutcome::from_capture(team, outcome)?;
     if let Some(hook) = hook {
         hook.reached(boundary::Point::CaptureCommitted).await?;
     }

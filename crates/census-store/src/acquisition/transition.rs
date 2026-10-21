@@ -4,6 +4,7 @@ use crate::{Store, StoreResult};
 use census_domain::model::*;
 mod work;
 pub(super) use work::reserve_facts;
+pub(super) use work::stage_identity;
 
 impl Store {
     pub fn arm_acquisition_dispatch(
@@ -22,6 +23,8 @@ impl Store {
             return Err(CaptureError::TransitionRefused.into());
         }
         verify_conditional(self, &facts, &request, &snapshot, &mut budget)?;
+        super::observed::request(&facts.work, &request)?;
+        super::observed::prefix(&facts.work, last, Some(&request), None)?;
         let dispatch = AcquisitionDispatchId::new(
             attempt.attempt,
             HopOrdinal::new(0).map_err(CaptureError::Domain)?,
@@ -49,6 +52,13 @@ impl Store {
         if !response.is_for_dispatch(&dispatch.armed.request) {
             return Err(CaptureError::TransitionRefused.into());
         }
+        super::observed::response(
+            &facts.work,
+            &dispatch.armed.dispatch,
+            &dispatch.armed.request,
+            &response,
+        )?;
+        super::observed::prefix(&facts.work, last, None, Some(&response))?;
         let observed = Observed {
             version: facts.protocol,
             dispatch: dispatch.armed.dispatch,
@@ -89,6 +99,7 @@ impl Store {
         if !response.observed.response.redirects_to(&request) {
             return Err(CaptureError::TransitionRefused.into());
         }
+        super::observed::redirect(&facts.work, &response.observed.response, &request)?;
         let hop = response
             .observed
             .dispatch
@@ -96,6 +107,8 @@ impl Store {
             .next()
             .map_err(CaptureError::Domain)?;
         verify_conditional(self, &facts, &request, &snapshot, &mut budget)?;
+        super::observed::request(&facts.work, &request)?;
+        super::observed::prefix(&facts.work, last, Some(&request), None)?;
         let dispatch =
             AcquisitionDispatchId::new(response.observed.dispatch.attempt().clone(), hop);
         arm(self, response.work, dispatch, request)
@@ -171,7 +184,7 @@ pub(super) fn current(
     snapshot: &fjall::Snapshot,
     budget: &mut AcquisitionReadBudget,
 ) -> StoreResult<WorkFacts> {
-    work.verify(store)?;
+    work.verify(store, budget)?;
     let facts = read::read_work(
         snapshot,
         &store.journal,

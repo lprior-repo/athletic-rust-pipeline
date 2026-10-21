@@ -1,7 +1,7 @@
 use super::workbook_job::build;
 use super::*;
 use census_domain::model::CanonicalSchool;
-use census_report::export::{decoded_generations, resident_generations};
+use census_report::export::{decoded_generations, peak_resident_generations, resident_generations};
 use census_report::workbook;
 use std::path::Path;
 
@@ -39,8 +39,9 @@ fn managed_workbook_job_decodes_one_dataset_for_every_revision_eight_artifact() 
         "managed-publication-fixture",
         &request,
     )?;
-    check!(eq; decoded_generations(), decoded.checked_add(3).ok_or("counter overflow")?);
+    check!(eq; decoded_generations(), decoded.checked_add(1).ok_or("counter overflow")?);
     check!(eq; resident_generations(), resident);
+    check!(eq; peak_resident_generations(), 1);
     let generation = Path::new(&reply.path).parent().ok_or("generation absent")?;
     let manifest: serde_json::Value =
         serde_json::from_slice(&std::fs::read(generation.join("manifest.json"))?)?;

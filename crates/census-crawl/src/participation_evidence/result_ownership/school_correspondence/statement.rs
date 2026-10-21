@@ -13,6 +13,27 @@ use census_store::{
     RetainedCaptureLeafKindV1, RetainedCaptureLeafV1, RetainedCaptureRootV1, RetainedCaptureSlotV1,
 };
 
+mod tfrrs;
+
+pub(super) fn build_source(
+    root: &RetainedCaptureRootV1,
+    document: &super::super::CheckedHtmlResultDocumentV1<'_>,
+    row: &super::super::CheckedHtmlResultRowV1<'_>,
+    objects: &mut Objects,
+    grant: &mut AttachmentReplayGrantV1,
+) -> CrawlResult<ResultSchoolStatementClaimV1> {
+    use super::super::{CheckedHtmlResultDocumentV1 as Document, CheckedHtmlResultRowV1 as Row};
+    match (document, row) {
+        (Document::MileSplit(document), Row::MileSplit(row)) => {
+            build(root, document, row, objects, grant)
+        }
+        (Document::Tfrrs(document), Row::Tfrrs(row)) => {
+            tfrrs::build(root, document, row, objects, grant)
+        }
+        _ => Err(invalid("school statement and original source differ")),
+    }
+}
+
 pub(super) fn build(
     root: &RetainedCaptureRootV1,
     document: &CheckedRetainedResultDocumentV1<'_>,

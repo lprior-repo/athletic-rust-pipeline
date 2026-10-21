@@ -212,6 +212,24 @@ pub(super) fn work(facts: &WorkFacts) -> StoreResult<()> {
         return Err(CaptureError::CaptureProtocolUnsupported.into());
     }
     for (index, attempt) in facts.attempts.iter().enumerate() {
+        crate::acquisition::observed::prefix(&facts.work, attempt, None, None)?;
+        for pair in attempt.dispatches.windows(2) {
+            let [(_, Some(prior)), (next, _)] = pair else {
+                return Err(CaptureError::CorruptClosure.into());
+            };
+            crate::acquisition::observed::redirect(&facts.work, &prior.response, &next.request)?;
+        }
+        for (armed, observed) in &attempt.dispatches {
+            crate::acquisition::observed::request(&facts.work, &armed.request)?;
+            if let Some(observed) = observed {
+                crate::acquisition::observed::response(
+                    &facts.work,
+                    &armed.dispatch,
+                    &armed.request,
+                    &observed.response,
+                )?;
+            }
+        }
         if index.checked_add(1).is_some_and(|position| position < facts.attempts.len()) && !attempt.terminal.as_ref().is_some_and(|t| matches!(t.terminal(), AcquisitionTerminal::PreparedRetentionFailed { .. } | AcquisitionTerminal::OutcomeUnknown { .. } | AcquisitionTerminal::ResponseRetained { disposition: CaptureDispositionV1::RetryableResponse, .. }) || matches!(t.terminal(), AcquisitionTerminal::FailedUncaptured { failure, .. } if failure.allows_continuation())) { return Err(CaptureError::CorruptClosure.into()); }
         if attempt
             .dispatches

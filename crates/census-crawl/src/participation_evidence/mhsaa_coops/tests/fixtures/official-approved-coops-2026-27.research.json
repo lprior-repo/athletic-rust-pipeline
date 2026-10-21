@@ -1,0 +1,33 @@
+{
+  "schema": "research_capture_v1",
+  "scope": "Research original only; no Owned acquisition or documentary acceptance",
+  "requested_url": "https://www.mhsaa.com/sites/default/files/Enrollment%20and%20Classification/hscoop.pdf",
+  "started_at": "2026-10-21T22:13:45.920Z",
+  "completed_at": "2026-10-21T22:13:46.025Z",
+  "curl_exit": 0,
+  "signal": null,
+  "transfer": "status=200\nhttp_version=2\nurl=https://www.mhsaa.com/sites/default/files/Enrollment%20and%20Classification/hscoop.pdf\nbytes=123213\nredirects=0\ntime_seconds=0.097507\n",
+  "stderr": "",
+  "method": "GET",
+  "request_headers": [
+    [
+      "User-Agent",
+      "census-service/0.1"
+    ],
+    [
+      "Accept",
+      "*/*"
+    ],
+    [
+      "Accept-Encoding",
+      "identity"
+    ]
+  ],
+  "follow_redirects": false,
+  "body_file": "/tmp/athletic-work-20261021/up-current-membership-research/current-approved-high-school-coops.body",
+  "body_bytes": 123213,
+  "body_sha256": "80fe9a2f50949b90143212dbc505452f1a4d15f1ccf9ddd52215fbb73008c7d4",
+  "header_dump_file": "/tmp/athletic-work-20261021/up-current-membership-research/current-approved-high-school-coops.headers",
+  "header_dump_sha256": "ddc8e5813caeafaeec763d4eae75a5d38615f967bf21d57ac44ceb5b09b9bdf7",
+  "header_representation": "curl exposed textual response headers; not original HTTP wire bytes and not reqwest API normalized metadata"
+}

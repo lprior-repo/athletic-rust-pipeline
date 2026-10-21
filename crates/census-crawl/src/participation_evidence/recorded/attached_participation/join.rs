@@ -2,6 +2,8 @@ use super::*;
 use crate::participation_evidence::recorded::DiscoveredResultAttachmentV1;
 use census_domain::model::{Gender, GradYear, Sport};
 
+mod roncalli;
+
 pub(super) fn row<'a, 's>(
     sources: &'a AttachedParticipationV1<'_, 's>,
     linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, 's>,
@@ -40,12 +42,7 @@ pub(super) fn row<'a, 's>(
             16,
             "attached participation source count",
         )?;
-        let venue = linked.documentary_venue(index, grant)?;
-        let season = season(
-            &linked.checked_document().parsed_page().meet.name,
-            venue,
-            source,
-        );
+        let season = source_season(linked, index, source, grant)?;
         reserve(&mut facts, grant)?;
         facts.push(CheckedDocumentarySourceFactsV1 {
             source,
@@ -93,9 +90,26 @@ fn applicability(
     grant: &mut Grant,
 ) -> CrawlResult<Option<DocumentaryCohortAgreementV1>> {
     steps(grant, 10)?;
-    let document = linked.checked_document();
+    if source.roncalli_event().is_some() {
+        steps(grant, 20)?;
+        if source.store_identity() != row.attachment().store_identity()
+            || source.snapshot_sequence() != row.attachment().snapshot_sequence()
+        {
+            return Err(
+                invalid("documentary status source or attachment authority differs").into(),
+            );
+        }
+        return roncalli::applicability(linked.checked_document(), row.checked_row(), source);
+    }
+    let Some(document) = linked.checked_document().as_milesplit() else {
+        return Ok(None);
+    };
     let page = document.parsed_page();
-    let parsed = row.checked_row().parsed_row();
+    let checked = row
+        .checked_row()
+        .as_milesplit()
+        .ok_or_else(|| invalid("documentary status and result source differ"))?;
+    let parsed = checked.parsed_row();
     if source.store_identity() != row.attachment().store_identity()
         || source.snapshot_sequence() != row.attachment().snapshot_sequence()
     {
@@ -111,7 +125,7 @@ fn applicability(
     if source.subject().name() != parsed.name || source.subject().school() != parsed.school {
         return Err(invalid("documentary status subject or participation subject differs").into());
     }
-    if row.checked_row().event().gender != Gender::Boys
+    if checked.event().gender != Gender::Boys
         || page.sport != Some(Sport::OutdoorTrack)
         || page.region.as_deref() != Some("MI")
         || page.school_year != source.school_year()
@@ -123,6 +137,23 @@ fn applicability(
         page.school_year,
         source.cohort(),
     )))
+}
+
+fn source_season(
+    linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
+    index: usize,
+    source: &VerifiedIndependentParticipationV1,
+    grant: &mut Grant,
+) -> CrawlResult<DocumentarySeasonApplicabilityV1> {
+    if source.roncalli_event().is_some() {
+        return Ok(roncalli::calendar_requirement());
+    }
+    let venue = linked.documentary_venue(index, grant)?;
+    let document = linked
+        .checked_document()
+        .as_milesplit()
+        .ok_or_else(|| invalid("documentary status has no checked MileSplit context"))?;
+    Ok(season(&document.parsed_page().meet.name, venue, source))
 }
 
 pub(super) fn season(

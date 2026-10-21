@@ -74,11 +74,16 @@ impl<'a> FrozenRosterJournalSource<'a> {
             }
             Ok(held)
         });
-        if result.is_err() {
-            grant.poison();
+        match result {
+            Ok(held) => {
+                self.require_original_grant(grant)?;
+                Ok(held)
+            }
+            Err(error) => {
+                grant.poison();
+                Err(error)
+            }
         }
-        self.require_original_grant(grant)?;
-        result
     }
 
     fn group(&self, phase: &str, logical: &str) -> StoreResult<&CapturedExternalPrefix> {

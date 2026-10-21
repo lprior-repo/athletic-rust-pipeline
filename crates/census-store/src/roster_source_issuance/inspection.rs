@@ -11,6 +11,7 @@ mod admission;
 mod evidence;
 pub(super) mod inventory;
 mod manifest;
+pub(in crate::roster_source_issuance) mod observed;
 pub use evidence::RosterSourceEvidenceV1;
 pub use inventory::RosterPhysicalProjectionRowV1;
 
@@ -113,7 +114,11 @@ fn inspect<'s>(
         &mut RosterStartupValidationBudgetV1::new(),
     )?;
     if lifecycle != Some(LIFECYCLE)
-        || request.root.schema != RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
+        || !matches!(
+            request.root.schema,
+            RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1
+                | RetainedCaptureRootSchemaV1::ProviderSchoolObservedPacketV1
+        )
         || request.root.key.len() != 64
     {
         return Err(Error::EnrollmentRequired.into());
@@ -133,7 +138,7 @@ fn inspect<'s>(
     let raw = read_authority_head(store, grant)?;
     continuation.require(grant).map_err(super::source_error)?;
     let identity = view.store_identity()?;
-    let evidence = RosterSourceEvidenceV1::new(
+    let mut evidence = RosterSourceEvidenceV1::new(
         identity.clone(),
         view.sequence(),
         request.school.clone(),
@@ -142,6 +147,7 @@ fn inspect<'s>(
         rows,
         continuation,
     );
+    evidence.observed = observed::inspect(&view, &evidence, grant)?;
     Ok((
         view.revision(),
         identity,

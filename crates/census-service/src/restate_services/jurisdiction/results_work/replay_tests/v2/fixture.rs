@@ -47,7 +47,7 @@ pub(super) fn seed_prepared_body(
     )?;
     let owned = fixture
         .store
-        .register_acquisition_work(&owner, work, grant)?;
+        .register_acquisition_work(owner.as_ref(), work, grant)?;
     let reserved = fixture.store.reserve_acquisition_attempt(owned)?;
     let url = format!(
         "https://{}.milesplit.com/api/v1/meets/{}/performances?isMeetPro=0&fields={}",

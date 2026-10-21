@@ -58,6 +58,7 @@ impl FixtureRun {
             body.as_bytes(),
             &CacheMeta {
                 redirects: Vec::new(),
+                observed_http: None,
                 representation: crate::net::RepresentationHeaders::default(),
                 url: url.to_string(),
                 response_url: Some(url.to_string()),

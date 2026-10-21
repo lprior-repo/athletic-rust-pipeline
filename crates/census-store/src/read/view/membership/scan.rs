@@ -66,52 +66,72 @@ impl<'s> StoreSnapshot<'s> {
         namespace: JournalNamespace<'_>,
         budget: ReadBudget,
         state: &mut G,
-        mut preadmit: impl FnMut(&mut G, super::super::PhysicalReadAdmissionV1) -> StoreResult<()>,
-        mut admit_row: impl FnMut(&mut G) -> StoreResult<()>,
-        mut visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
+        preadmit: impl FnMut(&mut G, super::super::PhysicalReadAdmissionV1) -> StoreResult<()>,
+        admit_row: impl FnMut(&mut G) -> StoreResult<()>,
+        visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
     ) -> StoreResult<JournalNamespaceContents> {
-        use super::super::PhysicalReadAdmissionV1;
-        admit(budget)?;
-        let prefix = namespace.physical_prefix()?;
-        preadmit(state, PhysicalReadAdmissionV1::KeyProbe)?;
-        let mut physical = self.snapshot.prefix(self.journal, &prefix);
-        let mut scan = NamespaceScan::new(namespace, budget)?;
-        for _ in 0..=budget.rows {
-            preadmit(state, PhysicalReadAdmissionV1::KeyProbe)?;
-            let Some(guard) = physical.next() else {
-                return Ok(scan.finish());
-            };
-            admit_row(state)?;
-            scan.charge_visit()?;
-            let key = guard.key().map_err(|source| StoreError::Read { source })?;
-            preadmit(state, PhysicalReadAdmissionV1::ValueSizeProbe)?;
-            let length = self
-                .snapshot
-                .size_of(self.journal, &key)
-                .map_err(|source| StoreError::Read { source })?
-                .ok_or_else(|| namespace.refusal("namespace value size is missing"))?;
-            let length = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
-            scan.require_size(key.len(), length)?;
-            preadmit(
-                state,
-                PhysicalReadAdmissionV1::Value {
-                    key_bytes: key.len(),
-                    value_bytes: length,
-                },
-            )?;
-            let raw = self
-                .snapshot
-                .get(self.journal, &key)
-                .map_err(|source| StoreError::Read { source })?
-                .ok_or_else(|| namespace.refusal("namespace value is missing"))?;
-            if raw.len() != length {
-                return Err(namespace.refusal("namespace value size changed"));
-            }
-            scan.accept(&key, &raw)?;
-            visit(state, &key, &raw)?;
-        }
-        Err(namespace.refusal("namespace scan did not prove exhaustion"))
+        scan_contents(
+            &self.snapshot,
+            self.journal,
+            namespace,
+            budget,
+            state,
+            preadmit,
+            admit_row,
+            visit,
+        )
     }
+}
+
+pub(crate) fn scan_contents<G>(
+    snapshot: &fjall::Snapshot,
+    journal: &fjall::Keyspace,
+    namespace: JournalNamespace<'_>,
+    budget: ReadBudget,
+    state: &mut G,
+    mut preadmit: impl FnMut(&mut G, super::super::PhysicalReadAdmissionV1) -> StoreResult<()>,
+    mut admit_row: impl FnMut(&mut G) -> StoreResult<()>,
+    mut visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
+) -> StoreResult<JournalNamespaceContents> {
+    use super::super::PhysicalReadAdmissionV1;
+    admit(budget)?;
+    let prefix = namespace.physical_prefix()?;
+    preadmit(state, PhysicalReadAdmissionV1::KeyProbe)?;
+    let mut physical = snapshot.prefix(journal, &prefix);
+    let mut scan = NamespaceScan::new(namespace, budget)?;
+    for _ in 0..=budget.rows {
+        preadmit(state, PhysicalReadAdmissionV1::KeyProbe)?;
+        let Some(guard) = physical.next() else {
+            return Ok(scan.finish());
+        };
+        admit_row(state)?;
+        scan.charge_visit()?;
+        let key = guard.key().map_err(|source| StoreError::Read { source })?;
+        preadmit(state, PhysicalReadAdmissionV1::ValueSizeProbe)?;
+        let length = snapshot
+            .size_of(journal, &key)
+            .map_err(|source| StoreError::Read { source })?
+            .ok_or_else(|| namespace.refusal("namespace value size is missing"))?;
+        let length = usize::try_from(length).map_err(|_| StoreError::CounterOverflow)?;
+        scan.require_size(key.len(), length)?;
+        preadmit(
+            state,
+            PhysicalReadAdmissionV1::Value {
+                key_bytes: key.len(),
+                value_bytes: length,
+            },
+        )?;
+        let raw = snapshot
+            .get(journal, &key)
+            .map_err(|source| StoreError::Read { source })?
+            .ok_or_else(|| namespace.refusal("namespace value is missing"))?;
+        if raw.len() != length {
+            return Err(namespace.refusal("namespace value size changed"));
+        }
+        scan.accept(&key, &raw)?;
+        visit(state, &key, &raw)?;
+    }
+    Err(namespace.refusal("namespace scan did not prove exhaustion"))
 }
 
 pub(crate) struct NamespaceScan {

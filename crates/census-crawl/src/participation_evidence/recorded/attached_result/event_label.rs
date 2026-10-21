@@ -86,13 +86,18 @@ fn retain_packet_label(
     if !owns_person(attachment, profile.person(), grant)? {
         return Ok(());
     }
-    let raw = row.checked_row();
+    let Some(raw) = row.checked_row().as_milesplit() else {
+        return Ok(());
+    };
+    let document = document
+        .checked_document()
+        .as_milesplit()
+        .ok_or_else(|| invalid("linked event label and result source differ"))?;
     if raw.parsed_row().name != profile.name() || raw.parsed_row().school != profile.school_name() {
         return Err(invalid("linked-event source person differs from approved result").into());
     }
     if raw.parsed_row().grade.is_some_and(|grade| {
-        GradYear::of(grade, document.checked_document().parsed_page().school_year)
-            != Some(profile.cohort())
+        GradYear::of(grade, document.parsed_page().school_year) != Some(profile.cohort())
     }) {
         return Err(invalid("linked-event source cohort contradicts result grade").into());
     }
@@ -141,11 +146,10 @@ fn owns_person(
 }
 
 fn same_result(
-    document: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
+    checked: &crate::participation_evidence::result_ownership::CheckedRetainedResultDocumentV1<'_>,
     raw: &CheckedRetainedResultRowV1<'_>,
     linked: &CheckedLinkedCompetitionCategoryV1,
 ) -> CrawlResult<bool> {
-    let checked = document.checked_document();
     if linked.meet_id() != checked.meet_id()
         || linked.result_document_id() != checked.result_document_id()
         || linked.meet_day().as_str() != checked.published_start()

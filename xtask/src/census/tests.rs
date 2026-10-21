@@ -60,11 +60,13 @@ fn both_entries_key_one_workbook_generation() -> TestResult {
     let request = service::workbook_request(&options)?;
     let generation = ExportGeneration::resolve(options.generation.as_deref())?;
     let key = workbook_request_key(&request, &generation)?;
-    check!(eq; key.split(':').count(), 8);
+    let segments: Vec<&str> = key.split(':').collect();
+    check!(eq; segments.len(), 9);
     check!(
         key.starts_with("workbook:2027:core:50:all:.:2026:selected_v1_"),
         "the xtask entry keys the selected request exactly like the CLI-live entry"
     );
+    check!(eq; segments[8], generation.as_str());
 
     let repeated = service::workbook_request(&export_options(Some("2")))?;
     check!(eq;
@@ -72,6 +74,8 @@ fn both_entries_key_one_workbook_generation() -> TestResult {
         key,
         "the same explicit generation reattaches the same workflow"
     );
+    let other_generation = ExportGeneration::resolve(Some("3"))?;
+    check!(ne; workbook_request_key(&request, &other_generation)?, key);
 
     let omitted = export_options(None);
     check!(

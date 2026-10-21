@@ -1,0 +1,60 @@
+[
+  {
+    "kind": "directory",
+    "requested_url": "https://in.milesplit.com/teams",
+    "request_method": "GET",
+    "request_headers": [
+      [
+        "User-Agent",
+        "OpenAI-research/0.1"
+      ],
+      [
+        "Accept",
+        "text/html"
+      ],
+      [
+        "Accept-Encoding",
+        "identity"
+      ]
+    ],
+    "started_at": "2026-10-21T21:55:10.904913+00:00",
+    "acquired_at": "2026-10-21T21:55:11.360682+00:00",
+    "curl_exit": 0,
+    "transport_summary": "200 https://in.milesplit.com/teams 195723",
+    "stderr": "",
+    "body_bytes": 195723,
+    "body_sha256": "79982b1483925fd6db245383de6acc6c62bd6194ab866a4b8074986a069854f7",
+    "body_file": "/tmp/athletic-work-20261021/r4-roncalli-provider-research/directory.html",
+    "header_file": "/tmp/athletic-work-20261021/r4-roncalli-provider-research/directory.headers",
+    "ownership": "independent research acquisition, not owned production acquisition evidence"
+  },
+  {
+    "kind": "roster",
+    "requested_url": "https://in.milesplit.com/teams/10561-roncalli-high-school/roster",
+    "request_method": "GET",
+    "request_headers": [
+      [
+        "User-Agent",
+        "OpenAI-research/0.1"
+      ],
+      [
+        "Accept",
+        "text/html"
+      ],
+      [
+        "Accept-Encoding",
+        "identity"
+      ]
+    ],
+    "started_at": "2026-10-21T21:55:11.360968+00:00",
+    "acquired_at": "2026-10-21T21:55:11.986137+00:00",
+    "curl_exit": 0,
+    "transport_summary": "200 https://in.milesplit.com/teams/10561-roncalli-high-school/roster 463035",
+    "stderr": "",
+    "body_bytes": 463035,
+    "body_sha256": "ed2377dcb2ff937f831d9feb85746b02d10f6d5dd4c8276dd30a3892d608004d",
+    "body_file": "/tmp/athletic-work-20261021/r4-roncalli-provider-research/roster.html",
+    "header_file": "/tmp/athletic-work-20261021/r4-roncalli-provider-research/roster.headers",
+    "ownership": "independent research acquisition, not owned production acquisition evidence"
+  }
+]

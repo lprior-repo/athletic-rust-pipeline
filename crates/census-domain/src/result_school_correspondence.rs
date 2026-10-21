@@ -1,7 +1,9 @@
 use crate::evidence_subject_attachment::{AttachmentReplayGrantV1, EvidenceSubjectAttachmentError};
 use serde::Serialize;
 mod codec;
+mod parser;
 use codec::{encode, with_grant};
+pub use parser::{ResultSchoolSourceParserV1, RESULT_SCHOOL_TFRRS_PARSER_CONTRACT_V1};
 
 mod replay;
 mod types;

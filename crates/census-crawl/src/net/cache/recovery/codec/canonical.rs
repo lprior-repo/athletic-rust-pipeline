@@ -2,6 +2,8 @@ use crate::net::cache::CacheMeta;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 
+mod observed;
+
 pub(super) struct Metadata<'a>(pub(super) &'a CacheMeta);
 
 impl Serialize for Metadata<'_> {
@@ -21,6 +23,9 @@ impl Serialize for Metadata<'_> {
             map.serialize_entry("last_modified", value)?;
         }
         map.serialize_entry("method", &meta.method)?;
+        if let Some(value) = &meta.observed_http {
+            map.serialize_entry("observed_http", &observed::Observed(value))?;
+        }
         if !meta.redirects.is_empty() {
             map.serialize_entry("redirects", &meta.redirects)?;
         }
@@ -35,3 +40,6 @@ impl Serialize for Metadata<'_> {
         map.end()
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -13,7 +13,13 @@ pub const MAX_USER_AGENT_BYTES: usize = 200;
 
 pub const USER_AGENT_NAME: &str = "user-agent";
 
-const ALLOWED_NAMES: [&str; 4] = ["accept", "accept-language", "anettokens", USER_AGENT_NAME];
+const ALLOWED_NAMES: [&str; 5] = [
+    "accept",
+    "accept-language",
+    "anettokens",
+    "accept-encoding",
+    USER_AGENT_NAME,
+];
 
 pub fn validate_user_agent(value: &str) -> Result<(), FetchError> {
     let reason = if value.is_empty() {
@@ -65,6 +71,11 @@ impl RepresentationHeaders {
         let mut entries: Vec<(String, String)> = Vec::with_capacity(source.len());
         for (name, value) in source {
             let normalized = name.trim().to_ascii_lowercase();
+            if normalized == "accept-encoding" && value != "identity" {
+                return Err(FetchError::Policy {
+                    detail: "only identity response encoding is admitted".to_owned(),
+                });
+            }
             if !ALLOWED_NAMES.contains(&normalized.as_str())
                 && !url.is_some_and(|url| source_policy::permits(url, &normalized, value))
             {

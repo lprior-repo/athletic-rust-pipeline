@@ -15,6 +15,7 @@ fn seed(fetcher: &crate::net::Fetcher, url: &str, body: &[u8]) -> TestResult {
         body,
         &CacheMeta {
             redirects: Vec::new(),
+            observed_http: None,
             representation,
             url: url.into(),
             response_url: None,

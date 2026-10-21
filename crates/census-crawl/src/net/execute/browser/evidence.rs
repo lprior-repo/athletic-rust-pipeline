@@ -69,6 +69,7 @@ impl Fetcher {
         };
         let meta = CacheMeta {
             redirects: Vec::new(),
+            observed_http: None,
             url: plan.url.to_string(),
             response_url: capture.response.response_url.as_deref().map(str::to_owned),
             method: plan.method.to_string(),
@@ -114,6 +115,7 @@ impl Fetcher {
         };
         let meta = CacheMeta {
             redirects: Vec::new(),
+            observed_http: None,
             url: plan.url.to_string(),
             response_url: capture.response.response_url.map(|url| url.into_string()),
             method: plan.method.to_string(),
@@ -158,6 +160,7 @@ impl Fetcher {
         };
         let meta = CacheMeta {
             redirects: Vec::new(),
+            observed_http: None,
             url: plan.url.to_string(),
             response_url: capture.response.response_url.map(|url| url.into_string()),
             method: plan.method.to_string(),

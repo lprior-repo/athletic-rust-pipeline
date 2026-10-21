@@ -1,4 +1,7 @@
 use super::*;
+use crate::evidence_subject_attachment::external::{
+    MAX_RETAINED_CAPTURE_ENVELOPE_BYTES, MAX_RETAINED_CAPTURE_PHYSICAL_ROWS,
+};
 
 pub(super) fn prefixes(
     prefixes: &[CapturedExternalPrefix],
@@ -9,6 +12,8 @@ pub(super) fn prefixes(
     if prefixes.len() > 4096 {
         return Err(outside());
     }
+    let payload_limit = u64::try_from(MAX_RETAINED_CAPTURE_ENVELOPE_BYTES)
+        .map_err(|_| StoreError::CounterOverflow)?;
     let mut previous = None;
     for group in prefixes {
         grant.charge_steps(1).map_err(domain)?;
@@ -22,7 +27,7 @@ pub(super) fn prefixes(
                 .bytes()
                 .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
             || group.root.payload.bytes == 0
-            || group.root.payload.bytes > 2 * 1024 * 1024
+            || group.root.payload.bytes > payload_limit
         {
             return Err(outside());
         }
@@ -35,7 +40,7 @@ pub(super) fn prefixes(
 fn rows(group: &CapturedExternalPrefix, grant: &mut AttachmentReplayGrantV1) -> StoreResult<()> {
     let namespace = JournalNamespace::new(group.root.schema.phase(), &group.root.key)?;
     let budget = ReadBudget {
-        rows: 6,
+        rows: MAX_RETAINED_CAPTURE_PHYSICAL_ROWS,
         bytes: super::super::MAX_EXTERNAL_CAPTURE_BYTES,
         record_bytes: crate::MAX_JOURNAL_VALUE_BYTES,
     };

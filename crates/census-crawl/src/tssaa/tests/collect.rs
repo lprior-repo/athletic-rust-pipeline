@@ -90,6 +90,7 @@ fn seed(fetcher: &Fetcher, url: &str, body: &[u8]) -> anyhow::Result<()> {
         body,
         &CacheMeta {
             redirects: Vec::new(),
+            observed_http: None,
             representation: crate::net::RepresentationHeaders::default(),
             url: url.to_string(),
             response_url: None,

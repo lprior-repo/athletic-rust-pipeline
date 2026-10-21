@@ -14,16 +14,19 @@ impl DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_> {
                 .row(index)
                 .ok_or_else(|| invalid("documentary venue row missing"))?;
             row.attachment().require_original_grant(grant)?;
+            let document = self
+                .checked_document()
+                .as_milesplit()
+                .ok_or_else(|| invalid("documentary venue source is unsupported"))?;
             if self.venue.get().is_none() {
-                let bytes = self
-                    .checked_document()
+                let bytes = document
                     .original_document()
                     .len()
                     .checked_mul(4)
                     .and_then(|value| value.checked_add(256))
                     .ok_or(census_store::StoreError::CounterOverflow)?;
                 grant.charge_bytes(bytes).map_err(domain)?;
-                let venue = result_context::documentary_result_venue(self.checked_document())?;
+                let venue = result_context::documentary_result_venue(document)?;
                 self.venue
                     .set(venue)
                     .map_err(|_| invalid("documentary venue initialized twice"))?;

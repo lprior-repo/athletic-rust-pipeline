@@ -53,6 +53,14 @@ impl RetainedHtmlCaptureV1 {
     pub fn requested_url(&self) -> &str {
         &self.requested_url
     }
+    #[cfg(test)]
+    pub(crate) fn final_url(&self) -> &str {
+        &self.final_url
+    }
+    #[cfg(test)]
+    pub(crate) fn status(&self) -> u16 {
+        self.status
+    }
     pub fn acquired_at(&self) -> DateTime<Utc> {
         self.acquired_at
     }

@@ -329,6 +329,7 @@ fn the_production_collector_preserves_unknown_season_and_actual_summary_capture_
             let (body_path, meta_path) = fetcher.cache_paths(&key);
             write_cache(&body_path, &meta_path, body, &CacheMeta {
         redirects: Vec::new(),
+        observed_http: None,
                 representation: crate::net::RepresentationHeaders::default(),
                 url, response_url: None, method: "GET".to_string(), status: 200,
                 content_digest: content_digest(body), bytes: body.len(), fetched_at: RETRIEVED.to_string(),

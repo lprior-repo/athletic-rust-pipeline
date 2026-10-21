@@ -1,5 +1,8 @@
 use super::bounds::{check_limit, AffiliationCandidateError, ObjectRef, Resource};
 use crate::model::{SourceCapture, SourceRef, SourceSubject};
+use crate::roster_affiliation_authority::{
+    LocallyCheckedRosterIssuanceV1, MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES,
+};
 use chrono::{DateTime, NaiveDate, Utc};
 use sha2::{Digest, Sha256};
 
@@ -36,7 +39,35 @@ pub struct LocallyCheckedEvidence<'a> {
 
 impl<'a> LocallyCheckedEvidence<'a> {
     pub fn check(raw: RawEvidence<'a>) -> Result<Self, AffiliationCandidateError> {
-        check_material(&raw)?;
+        Self::check_with_interpretation_limit(raw, 65_536)
+    }
+
+    pub fn check_roster_interpretation(
+        raw: RawEvidence<'a>,
+        issuance: &LocallyCheckedRosterIssuanceV1,
+    ) -> Result<Self, AffiliationCandidateError> {
+        check_limit(
+            Resource::MetadataBytes,
+            raw.interpretation_bytes.len(),
+            MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES,
+        )?;
+        let original = issuance.capture().interpretation();
+        let bytes = u64::try_from(raw.interpretation_bytes.len())
+            .map_err(|_| AffiliationCandidateError::CounterOverflow)?;
+        if raw.interpretation_key.as_str() != original.digest().as_str()
+            || bytes != original.bytes().get()
+            || !digest_matches(raw.interpretation_bytes, original.digest().as_str())
+        {
+            return Err(AffiliationCandidateError::InterpretationMismatch);
+        }
+        Self::check_with_interpretation_limit(raw, MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES)
+    }
+
+    fn check_with_interpretation_limit(
+        raw: RawEvidence<'a>,
+        interpretation_limit: usize,
+    ) -> Result<Self, AffiliationCandidateError> {
+        check_material(&raw, interpretation_limit)?;
         check_source(&raw)?;
         let date = NaiveDate::parse_from_str(raw.metadata.captured_at(), "%Y-%m-%d")
             .map_err(|_| AffiliationCandidateError::AcquisitionDateMismatch)?;
@@ -67,7 +98,10 @@ impl<'a> LocallyCheckedEvidence<'a> {
     }
 }
 
-fn check_material(raw: &RawEvidence<'_>) -> Result<(), AffiliationCandidateError> {
+fn check_material(
+    raw: &RawEvidence<'_>,
+    interpretation_limit: usize,
+) -> Result<(), AffiliationCandidateError> {
     if raw.body.is_empty() || raw.manifest_bytes.is_empty() {
         return Err(AffiliationCandidateError::MissingCaptureMaterial);
     }
@@ -79,7 +113,7 @@ fn check_material(raw: &RawEvidence<'_>) -> Result<(), AffiliationCandidateError
     check_limit(
         Resource::MetadataBytes,
         raw.interpretation_bytes.len(),
-        65_536,
+        interpretation_limit,
     )?;
     check_limit(
         Resource::MetadataBytes,

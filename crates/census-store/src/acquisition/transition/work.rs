@@ -6,19 +6,21 @@ use census_domain::model::*;
 use fjall::Readable;
 
 impl Store {
-    pub fn register_acquisition_work(
+    pub fn register_acquisition_work<'owner>(
         &self,
-        owner: &ResultsCaptureOwnerV1,
+        owner: impl Into<crate::CaptureOwnerRef<'owner>>,
         work: AcquisitionWorkV1,
         grant: RetryOwnerGrant,
     ) -> StoreResult<OwnedAcquisitionWork> {
+        let owner = owner.into();
         let _writes = self.lock_appends();
-        owner.verify_work(self, &work)?;
-        grant.owner.verify(self)?;
+        owner.verify_candidate(self, &work)?;
+        let grant_owner = crate::CaptureOwnerRef::from(&grant.owner);
+        grant_owner.verify(self)?;
         let slot_id = work.slot().id().map_err(CaptureError::Domain)?;
         let protocol = owner.protocol();
         let grant_slot = grant.slot.clone();
-        if grant.owner.scope != owner.scope || grant_slot != slot_id {
+        if !grant_owner.same_owner(owner) || grant_slot != slot_id {
             return Err(CaptureError::SlotWorkMismatch.into());
         }
         let id = work.id().map_err(CaptureError::Domain)?;
@@ -45,15 +47,23 @@ impl Store {
             &mut budget,
             protocol,
         )? {
+            if owner.public().is_some() {
+                crate::acquisition::public_resources::read::for_work(
+                    self,
+                    &snapshot,
+                    &work,
+                    &mut budget,
+                )?;
+            }
             return Ok(OwnedAcquisitionWork {
-                owner: owner.clone(),
+                owner: owner.to_owned(),
                 work,
                 id,
             });
         }
-        store_new_registration(self, &work, &id, &slot_key, &work_key, protocol)?;
+        store_new_registration(self, owner, &work, protocol)?;
         Ok(OwnedAcquisitionWork {
-            owner: owner.clone(),
+            owner: owner.to_owned(),
             work,
             id,
         })
@@ -76,21 +86,44 @@ impl Store {
 
 fn store_new_registration(
     store: &Store,
+    owner: crate::CaptureOwnerRef<'_>,
     work: &AcquisitionWorkV1,
-    id: &AcquisitionWorkId,
-    slot_key: &str,
-    work_key: &str,
     protocol: CaptureProtocolVersion,
 ) -> StoreResult<()> {
+    let mut batch = store.db.batch();
+    stage_identity(store, &mut batch, work, protocol)?;
+    crate::acquisition::public_resources::stage_entry(store, &mut batch, owner, work)?;
+    codec::commit(batch)?;
+    Ok(())
+}
+
+pub(in crate::acquisition) fn stage_identity(
+    store: &Store,
+    batch: &mut fjall::OwnedWriteBatch,
+    work: &AcquisitionWorkV1,
+    protocol: CaptureProtocolVersion,
+) -> StoreResult<()> {
+    let id = work.id().map_err(CaptureError::Domain)?;
+    let slot = work.slot().id().map_err(CaptureError::Domain)?;
     let binding = SlotBinding {
         version: protocol,
         slot: work.slot().clone(),
-        work_id: id.clone(),
+        work_id: id,
     };
-    let mut batch = store.db.batch();
-    codec::stage(store, &mut batch, slot_key, &binding, protocol)?;
-    codec::stage(store, &mut batch, work_key, work, protocol)?;
-    codec::commit(batch)?;
+    codec::stage(
+        store,
+        batch,
+        &format!("slot/{slot}/binding"),
+        &binding,
+        protocol,
+    )?;
+    codec::stage(
+        store,
+        batch,
+        &format!("work/{}/identity", binding.work_id),
+        work,
+        protocol,
+    )?;
     Ok(())
 }
 

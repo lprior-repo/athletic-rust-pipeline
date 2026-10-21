@@ -5,6 +5,8 @@ use crate::net::{CaptureTransportError, FetchError};
 use census_domain::model::{AcquisitionFailureV1, DispatchRequestV1};
 use census_store::{ArmedDispatch, DispatchObservation, ObservedResponse, ReservedAttempt, Store};
 
+mod observed;
+
 pub(in crate::net) enum CaptureSession<'a> {
     Legacy,
     Adopted(Box<AdoptedSession<'a>>),
@@ -14,6 +16,8 @@ pub(in crate::net) struct AdoptedSession<'a> {
     pub(super) store: &'a Store,
     pub(super) stage: Stage,
     pub(super) cached: Option<PinnedEligibleCache>,
+    pub(super) observed_http: Option<Vec<census_domain::model::ObservedHttpHopV1>>,
+    pub(super) retained_metadata: Option<Vec<u8>>,
     #[cfg(test)]
     pub(super) interruption: super::CaptureInterruption,
 }
@@ -59,10 +63,17 @@ impl<'a> CaptureSession<'a> {
         attempt: ReservedAttempt,
         cached: Option<PinnedEligibleCache>,
     ) -> Self {
+        let observed_http = attempt
+            .work()
+            .request()
+            .observed_http_required()
+            .then(Vec::new);
         Self::Adopted(Box::new(AdoptedSession {
             store,
             stage: Stage::Reserved(attempt),
             cached,
+            observed_http,
+            retained_metadata: None,
             #[cfg(test)]
             interruption: super::CaptureInterruption::None,
         }))
@@ -85,6 +96,7 @@ impl<'a> CaptureSession<'a> {
     pub(in crate::net) fn arm(
         &mut self,
         request: &reqwest::Request,
+        started_at: &str,
     ) -> Result<ArmedLease<'a>, FetchError> {
         let Self::Adopted(adopted) = self else {
             return Ok(ArmedLease::Legacy);
@@ -93,10 +105,19 @@ impl<'a> CaptureSession<'a> {
             store,
             stage,
             cached,
+            observed_http,
             ..
         } = adopted.as_mut();
         let conditional = conditional(request, cached.as_ref())?;
-        let dispatch = DispatchRequestV1::new(request.url().as_str(), conditional)?;
+        let dispatch = if observed_http.is_some() {
+            DispatchRequestV1::new_observed(
+                request.url().as_str(),
+                conditional,
+                super::normalized::request(request, started_at)?,
+            )?
+        } else {
+            DispatchRequestV1::new(request.url().as_str(), conditional)?
+        };
         let armed = match std::mem::replace(stage, Stage::Consumed) {
             Stage::Reserved(attempt) => store.arm_acquisition_dispatch(attempt, dispatch)?,
             Stage::Observed(response) => store.arm_acquisition_redirect(response, dispatch)?,
@@ -110,37 +131,6 @@ impl<'a> CaptureSession<'a> {
         })
     }
 
-    pub(in crate::net) fn observed(
-        &mut self,
-        lease: DispatchLease<'_>,
-        response: &reqwest::Response,
-        observed_at: &str,
-    ) -> Result<(), FetchError> {
-        let DispatchLease::Adopted { store, observation } = lease else {
-            return Ok(());
-        };
-        let observed = match observation_of(response, observed_at) {
-            Ok(value) => value,
-            Err(error) => {
-                store.refuse_acquisition_response_checkpoint(
-                    *observation,
-                    response.status().as_u16(),
-                    response.url().as_str(),
-                    census_domain::model::ResponseCheckpointRefusalV1::UnrepresentableResponse,
-                )?;
-                return Err(error);
-            }
-        };
-        let retained = store.record_acquisition_response(*observation, observed)?;
-        match self {
-            Self::Adopted(adopted) => {
-                adopted.stage = Stage::Observed(retained);
-                Ok(())
-            }
-            Self::Legacy => Err(CaptureTransportError::DispatchConsumed.into()),
-        }
-    }
-
     pub(in crate::net) fn observed_at(&self) -> Result<Option<&str>, FetchError> {
         match self {
             Self::Legacy => Ok(None),
@@ -151,11 +141,13 @@ impl<'a> CaptureSession<'a> {
         }
     }
 
-    pub(in crate::net) fn provenance(self) -> Result<CaptureProvenance, FetchError> {
+    pub(in crate::net) fn into_parts(
+        self,
+    ) -> Result<(CaptureProvenance, Option<Vec<u8>>), FetchError> {
         match self {
-            Self::Legacy => Ok(CaptureProvenance::historical()),
+            Self::Legacy => Ok((CaptureProvenance::historical(), None)),
             Self::Adopted(adopted) => match adopted.stage {
-                Stage::Complete(provenance) => Ok(provenance),
+                Stage::Complete(provenance) => Ok((provenance, adopted.retained_metadata)),
                 _ => Err(CaptureTransportError::DispatchConsumed.into()),
             },
         }

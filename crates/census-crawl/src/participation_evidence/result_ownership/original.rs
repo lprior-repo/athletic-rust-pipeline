@@ -1,8 +1,8 @@
 use crate::participation_evidence::recorded::{
-    read_recorded_html_result_capture, DiscoveredIdentityLinkedHtmlResultDocumentV1,
+    read_recorded_source_html_result_capture, DiscoveredIdentityLinkedHtmlResultDocumentV1,
     DiscoveredResultAttachmentV1, RecordedHtmlResultCaptureV1,
 };
-use crate::participation_evidence::result_ownership::CheckedRetainedResultRowV1;
+use crate::participation_evidence::result_ownership::CheckedHtmlResultRowV1;
 use crate::CrawlResult;
 use census_domain::evidence_subject_attachment::{
     AttachmentDigestV1, AttachmentObjectReferenceV1, AttachmentReplayGrantV1,
@@ -41,7 +41,7 @@ pub(super) fn current(
 
 pub(super) fn subject(
     root: &RetainedCaptureRootV1,
-    row: &CheckedRetainedResultRowV1<'_>,
+    row: &CheckedHtmlResultRowV1<'_>,
     attached: &DiscoveredResultAttachmentV1<'_, '_>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<()> {
@@ -70,13 +70,14 @@ pub(super) fn subject(
 pub(super) fn reopen(
     snapshot: &StoreSnapshot<'_>,
     linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
-    row: &CheckedRetainedResultRowV1<'_>,
+    row: &CheckedHtmlResultRowV1<'_>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<RecordedHtmlResultCaptureV1> {
-    let recorded = read_recorded_html_result_capture(
+    let recorded = read_recorded_source_html_result_capture(
         snapshot,
-        row.context_reference(),
+        &linked.recorded_root().key,
         &[row.locator()],
+        row.source(),
         grant,
     )?
     .ok_or_else(|| invalid("school original capture absent"))?;

@@ -16,7 +16,9 @@ enum Body {
 #[serde(rename_all = "snake_case")]
 enum TransportRecipe {
     DirectHttpOneShotV1,
+    ReqwestNormalizedObservedHttpV1,
 }
+mod normalized;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RequestWire")]
@@ -83,17 +85,26 @@ impl RequestRepresentationV1 {
     pub fn effective_user_agent(&self) -> &str {
         &self.effective_user_agent
     }
+    pub fn observed_http_required(&self) -> bool {
+        self.transport_recipe == TransportRecipe::ReqwestNormalizedObservedHttpV1
+    }
 }
 impl TryFrom<RequestWire> for RequestRepresentationV1 {
     type Error = CaptureDomainError;
     fn try_from(w: RequestWire) -> Result<Self, Self::Error> {
-        let (Method::Get, Body::Empty, TransportRecipe::DirectHttpOneShotV1) =
-            (w.method, w.body, w.transport_recipe);
-        Self::get(
-            &w.original_url,
-            w.representation_headers,
-            &w.effective_user_agent,
-        )
+        let (Method::Get, Body::Empty) = (w.method, w.body);
+        match w.transport_recipe {
+            TransportRecipe::DirectHttpOneShotV1 => Self::get(
+                &w.original_url,
+                w.representation_headers,
+                &w.effective_user_agent,
+            ),
+            TransportRecipe::ReqwestNormalizedObservedHttpV1 => Self::normalized_get(
+                &w.original_url,
+                w.representation_headers,
+                &w.effective_user_agent,
+            ),
+        }
     }
 }
 
@@ -132,12 +143,15 @@ impl ConditionalRequestV1 {
 pub struct DispatchRequestV1 {
     target_url: String,
     conditional: ConditionalRequestV1,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    observed_http: Option<Box<super::ObservedHttpRequestV1>>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct DispatchWire {
     target_url: String,
     conditional: ConditionalRequestV1,
+    observed_http: Option<super::ObservedHttpRequestV1>,
 }
 impl DispatchRequestV1 {
     pub fn new(
@@ -149,6 +163,7 @@ impl DispatchRequestV1 {
         Ok(Self {
             target_url: target_url.to_string(),
             conditional,
+            observed_http: None,
         })
     }
     pub fn target_url(&self) -> &str {
@@ -157,11 +172,29 @@ impl DispatchRequestV1 {
     pub fn conditional(&self) -> &ConditionalRequestV1 {
         &self.conditional
     }
+    pub fn new_observed(
+        target_url: &str,
+        conditional: ConditionalRequestV1,
+        observed_http: super::ObservedHttpRequestV1,
+    ) -> Result<Self, CaptureDomainError> {
+        let mut result = Self::new(target_url, conditional)?;
+        if observed_http.target_url() != target_url {
+            return Err(CaptureDomainError::RequestTargetMismatch);
+        }
+        result.observed_http = Some(Box::new(observed_http));
+        Ok(result)
+    }
+    pub fn observed_http(&self) -> Option<&super::ObservedHttpRequestV1> {
+        self.observed_http.as_deref()
+    }
 }
 impl TryFrom<DispatchWire> for DispatchRequestV1 {
     type Error = CaptureDomainError;
     fn try_from(w: DispatchWire) -> Result<Self, Self::Error> {
-        Self::new(&w.target_url, w.conditional)
+        match w.observed_http {
+            Some(observed) => Self::new_observed(&w.target_url, w.conditional, observed),
+            None => Self::new(&w.target_url, w.conditional),
+        }
     }
 }
 

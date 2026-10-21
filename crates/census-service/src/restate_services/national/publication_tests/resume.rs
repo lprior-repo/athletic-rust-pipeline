@@ -1,19 +1,21 @@
 use super::*;
 
-pub(super) async fn run_scenario(scenario: Scenario, url: &str) -> TestResult {
+pub(super) async fn run_scenario(
+    scenario: Scenario,
+    url: &str,
+    controlled: crate::restate_services::jobs::selected_fixture::Controlled,
+) -> TestResult {
     let client = reqwest::Client::builder()
         .http2_prior_knowledge()
         .timeout(Duration::from_secs(5))
         .build()?;
     match scenario {
-        Scenario::Address(mode) => return binding::run(mode, &client, url).await,
-        Scenario::Admission(mode) => return admission::run(mode, &client, url).await,
-        Scenario::SealBudgetExhausted => return seal_budget::run(&client, url).await,
-        Scenario::Generation => return generation::run(&client, url).await,
+        Scenario::Address(mode) => return binding::run(mode, &client, url, controlled).await,
+        Scenario::Admission(mode) => return admission::run(mode, &client, url, controlled).await,
+        Scenario::SealBudgetExhausted => return seal_budget::run(&client, url, controlled).await,
+        Scenario::Generation => return generation::run(&client, url, controlled).await,
         _ => {}
     }
-    let controlled = crate::restate_services::jobs::selected_fixture::install()
-        .map_err(|error| error.to_string())?;
     let mut request =
         fixtures::selected_request(&controlled, &census_domain::UsJurisdiction::CENSUS_SCOPE)?;
     if matches!(scenario, Scenario::RefusedSeal) {

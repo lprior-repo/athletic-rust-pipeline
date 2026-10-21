@@ -1,5 +1,5 @@
 use super::super::super::{artifacts, GUEST};
-use super::super::http::{query, request, rows, INGRESS};
+use super::super::http::{query, rows, INGRESS};
 use super::captures::{self, CaptureRef};
 use super::injection;
 use anyhow::{ensure, Context, Result};
@@ -9,10 +9,12 @@ use census_domain::{
 };
 use census_reconcile::identity::WorkflowIdentity;
 use census_service::restate_services::{plan, BrowserLaneState, JurisdictionRequest, SourcePlan};
-use reqwest::{Client, Method, Url};
+use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::path::Path;
+
+pub(super) mod national;
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct Original {
@@ -39,6 +41,8 @@ pub(super) async fn submit(client: &Client) -> Result<Original> {
     let manifest = artifacts::json(&root.join("manifest.json"))?;
     let request_body = qualification_request(&manifest)?;
     let key = identity(&request_body);
+    let national = national::body(&request_body)?;
+    national::ensure_unused(client, &national).await?;
     let existing = query(client, &format!("SELECT id FROM sys_invocation WHERE target_service_name = 'JurisdictionCensus' AND target_service_key = '{key}' LIMIT 2")).await?;
     ensure!(
         rows(&existing)?.is_empty(),
@@ -58,18 +62,12 @@ pub(super) async fn submit(client: &Client) -> Result<Original> {
     let deployment = artifacts::json(&root.join("deployment.json"))?;
     let owner = artifacts::json(&root.join("current-owner.json"))?;
     let native_source_boundary = injection::prepare(&request_body, &source_plan)?;
-    let intent = json!({"key":key,"request":request_body,"clock":clock,"manifest":manifest,"source_plan":source_plan,"captures_before":captures_before,"deployment":deployment,"owner":owner,"native_source_boundary":native_source_boundary});
+    let intent = json!({"key":key,"request":request_body,"clock":clock,"manifest":manifest,"source_plan":source_plan,"captures_before":captures_before,"deployment":deployment,"owner":owner,"native_source_boundary":native_source_boundary,"national_request":national});
     artifacts::write(
         &root.join("jurisdiction-recovery-intent.json"),
         &serde_json::to_vec_pretty(&intent)?,
     )?;
-    let accepted = request(
-        client,
-        Method::POST,
-        &target("send", "JurisdictionCensus", &key, "run")?,
-        Some(&serde_json::to_value(&request_body)?),
-    )
-    .await?;
+    let accepted = national::submit(client, &national, &request_body).await?;
     let id = text(&accepted, "invocationId")?.to_owned();
     safe_id(&id)?;
     let original = Original {
@@ -107,9 +105,7 @@ fn qualification_request(manifest: &Value) -> Result<JurisdictionRequest> {
         jurisdiction: UsJurisdiction::RhodeIsland,
         season: SchoolYear::new(season).context("invalid season")?,
         revision: Revision(revision),
-        history: census_service::restate_services::HistoryWindow::cohort(
-            &census_crawl::net::today_iso(),
-        )?,
+        history: census_service::restate_services::HistoryWindow::cohort(&national::as_of()?)?,
         refresh: false,
         limit_per_state: Some(1),
         concurrency: 1,

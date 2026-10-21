@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 mod result_status;
+pub(super) mod roncalli;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -19,6 +20,9 @@ pub struct IndependentParticipationPacketV1 {
     schedule: RetainedHtmlCaptureV1,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     result_row: Option<SourceRowLocator>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    roncalli_season_event:
+        Option<census_domain::result_calendar_correspondence::RoncalliSeasonEventSelectionV1>,
 }
 
 impl IndependentParticipationPacketV1 {
@@ -31,6 +35,7 @@ impl IndependentParticipationPacketV1 {
             status,
             schedule,
             result_row: None,
+            roncalli_season_event: None,
         };
         packet.bytes()?;
         Ok(packet)
@@ -45,9 +50,35 @@ impl IndependentParticipationPacketV1 {
             status,
             schedule,
             result_row: Some(row),
+            roncalli_season_event: None,
         };
         packet.bytes()?;
         Ok(packet)
+    }
+    pub fn from_roncalli_season_event(
+        status: RetainedHtmlCaptureV1,
+        schedule: RetainedHtmlCaptureV1,
+        selection: census_domain::result_calendar_correspondence::RoncalliSeasonEventSelectionV1,
+    ) -> StoreResult<Self> {
+        let packet = Self {
+            version: 1,
+            status,
+            schedule,
+            result_row: None,
+            roncalli_season_event: Some(selection),
+        };
+        packet.bytes()?;
+        Ok(packet)
+    }
+    fn require_selection(&self) -> StoreResult<()> {
+        if let Some(selection) = &self.roncalli_season_event {
+            if self.result_row.is_some() || !selection.is_bounded() {
+                return Err(invalid(
+                    "participation source selectors conflict or exceed bounds",
+                ));
+            }
+        }
+        Ok(())
     }
     pub fn schedule(&self) -> &RetainedHtmlCaptureV1 {
         &self.schedule
@@ -67,6 +98,7 @@ impl IndependentParticipationPacketV1 {
         ])
     }
     fn bytes(&self) -> StoreResult<Vec<u8>> {
+        self.require_selection()?;
         let bytes = super::codec::encode(self, MAX_PACKET)?;
         bound(
             bytes.len(),
@@ -84,6 +116,10 @@ impl IndependentParticipationPacketV1 {
             return Err(invalid(
                 "unsupported independent participation packet version",
             ));
+        }
+        self.require_selection()?;
+        if let Some(selection) = &self.roncalli_season_event {
+            return roncalli::read(self, selection, store_identity, snapshot_sequence);
         }
         let (status, interpretation) = match self.result_row {
             Some(row) => (
@@ -111,6 +147,7 @@ impl IndependentParticipationPacketV1 {
             season_scope: season.scope,
             status: status_proof,
             season: season_proof,
+            roncalli_event: None,
         })
     }
 }

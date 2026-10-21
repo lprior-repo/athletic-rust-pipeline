@@ -398,9 +398,17 @@ fn ensure_calendar_enrollment(store: &census_store::Store) -> Result<(), Error> 
 }
 
 fn school_scope(
-    document: &census_crawl::participation_evidence::result_ownership::CheckedRetainedResultDocumentV1<'_>,
-    row: &census_crawl::participation_evidence::result_ownership::CheckedRetainedResultRowV1<'_>,
+    document: &census_crawl::participation_evidence::result_ownership::CheckedHtmlResultDocumentV1<
+        '_,
+    >,
+    row: &census_crawl::participation_evidence::result_ownership::CheckedHtmlResultRowV1<'_>,
 ) -> Result<school_correspondence::ResultSchoolScopeV1, census_crawl::CrawlError> {
+    let (Some(document), Some(row)) = (document.as_milesplit(), row.as_milesplit()) else {
+        return Err(census_store::StoreError::Refused {
+            detail: "genuine school parser contract does not support this source".into(),
+        }
+        .into());
+    };
     let day = ProfileDate::parse(document.published_start()).map_err(|_| {
         census_store::StoreError::Refused {
             detail: "genuine performance day unsupported".into(),

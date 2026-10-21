@@ -10,9 +10,11 @@ async fn resumed_selected_generation_refuses_recapture_and_new_generation_select
     super::exercise(super::Scenario::Generation).await
 }
 
-pub(super) async fn run(client: &reqwest::Client, url: &str) -> TestResult {
-    let controlled =
-        selected_fixture::install().map_err(|error| -> Box<dyn std::error::Error> { error })?;
+pub(super) async fn run(
+    client: &reqwest::Client,
+    url: &str,
+    controlled: selected_fixture::Controlled,
+) -> TestResult {
     let mut request =
         fixtures::selected_request(&controlled, &[census_domain::UsJurisdiction::Colorado])?;
     let mut first = Journal::new(&request)?;

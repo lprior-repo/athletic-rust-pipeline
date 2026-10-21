@@ -30,9 +30,12 @@ async fn pending_run_binding_does_not_expose_a_resumable_request() -> TestResult
     super::exercise(super::Scenario::Address(Scenario::Pending)).await
 }
 
-pub(super) async fn run(scenario: Scenario, client: &reqwest::Client, url: &str) -> TestResult {
-    let controlled = crate::restate_services::jobs::selected_fixture::install()
-        .map_err(|error| error.to_string())?;
+pub(super) async fn run(
+    scenario: Scenario,
+    client: &reqwest::Client,
+    url: &str,
+    controlled: crate::restate_services::jobs::selected_fixture::Controlled,
+) -> TestResult {
     let mut request =
         fixtures::selected_request(&controlled, &[census_domain::UsJurisdiction::Wisconsin])?;
     request.school_address = Some(serde_json::from_value(serde_json::json!({

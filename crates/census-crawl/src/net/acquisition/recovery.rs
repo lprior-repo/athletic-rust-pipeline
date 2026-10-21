@@ -3,10 +3,9 @@ use crate::net::cache::recovery::{publish_recovered_eligible_held, restore_exact
 use crate::net::{FetchError, FetchOutcome, Fetcher};
 use census_domain::model::{AcquisitionOccurrenceRefV1, PreparedRecoveryTarget};
 use census_store::{
-    AcquisitionReadBudget, CommittedRetainedBody, ExactBodySource, ExistingRecoveryRoute,
-    ImmutableAttemptResult, OwnedAcquisitionWork, PreparedBackingAssessment,
-    PreparedRecoveryBudget, PreparedRecoveryRead, Receipt, ResultsCaptureOwnerV1,
-    RetainedCaptureParts, Store,
+    AcquisitionReadBudget, CaptureOwnerRef, CommittedRetainedBody, ExactBodySource,
+    ExistingRecoveryRoute, ImmutableAttemptResult, OwnedAcquisitionWork, PreparedBackingAssessment,
+    PreparedRecoveryBudget, PreparedRecoveryRead, Receipt, RetainedCaptureParts, Store,
 };
 
 pub use crate::net::cache::recovery::{EligiblePublicationOutcome, EligiblePublicationSkip};
@@ -46,7 +45,7 @@ impl CapturedFetch {
             body,
             occurrence,
             original_occurrence,
-            prepared: _,
+            prepared,
             terminal,
             receipt,
         } = retained.into_parts();
@@ -65,16 +64,17 @@ impl CapturedFetch {
         let captured = Self {
             capture,
             provenance: CaptureProvenance::retained(occurrence, original_occurrence),
+            original_metadata: Some(prepared.into_metadata_bytes()),
         };
         (captured, terminal, receipt)
     }
 }
 
 impl Fetcher {
-    pub fn recover_prepared_target(
+    pub fn recover_prepared_target<'owner>(
         &self,
         store: &Store,
-        owner: &ResultsCaptureOwnerV1,
+        owner: impl Into<CaptureOwnerRef<'owner>>,
         target: &PreparedRecoveryTarget,
         budget: &mut PreparedRecoveryBudget,
         source: ExactBodySource<'_>,

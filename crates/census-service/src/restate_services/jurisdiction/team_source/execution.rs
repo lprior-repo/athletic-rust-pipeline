@@ -166,7 +166,7 @@ impl TeamsSource {
             admission,
             scope,
         } = admitted;
-        let (result, conditions) = self.acquire(&request, observed_on, fetcher).await;
+        let (result, conditions) = self.acquire(&request, observed_on, fetcher, &scope).await;
         match self
             .finish_attempt_in(operation, attempt, result, admission, conditions, scope)
             .await

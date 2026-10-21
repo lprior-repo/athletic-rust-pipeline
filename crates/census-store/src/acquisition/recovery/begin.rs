@@ -4,12 +4,13 @@ use crate::{StoreError, StoreResult};
 use std::sync::Arc;
 
 impl Store {
-    pub fn begin_prepared_recovery<'store, 'budget>(
+    pub fn begin_prepared_recovery<'store, 'budget, 'owner>(
         &'store self,
-        owner: &crate::ResultsCaptureOwnerV1,
+        owner: impl Into<crate::CaptureOwnerRef<'owner>>,
         target: &PreparedRecoveryTarget,
         budget: &'budget mut PreparedRecoveryBudget,
     ) -> StoreResult<PreparedRecoverySession<'store, 'budget>> {
+        let owner = owner.into();
         let mut account = budget.begin_target()?;
         account.diagnostic_bytes(512)?;
         account.reserve_owned(512)?;
@@ -24,7 +25,7 @@ impl Store {
             account.reads(),
             CaptureProtocolVersion::V2,
         )?;
-        admission::matches_work(owner, &facts.work)?;
+        admission::matches_read_work(self, owner, &facts, account.reads())?;
         let index = exact_target(&facts, target)?;
         account.reserve_owned(320)?;
         let target = target.try_clone().map_err(|source| {
@@ -55,14 +56,14 @@ impl Store {
 
 fn admit_recovery_owner(
     store: &Store,
-    owner: &crate::ResultsCaptureOwnerV1,
+    owner: crate::CaptureOwnerRef<'_>,
     target: &PreparedRecoveryTarget,
     account: &mut budget::TargetAccount<'_>,
 ) -> StoreResult<()> {
     if owner.protocol() != CaptureProtocolVersion::V2 {
         return Err(CaptureError::CaptureProtocolUnsupported.into());
     }
-    if !Arc::ptr_eq(&owner.writer.origin, &store.appends)
+    if !Arc::ptr_eq(&owner.writer().origin, &store.appends)
         || owner.store_identity() != target.store_identity()
     {
         return Err(CaptureError::CaptureCapabilityForeignStore.into());

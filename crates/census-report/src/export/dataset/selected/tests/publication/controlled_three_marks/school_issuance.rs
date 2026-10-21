@@ -137,9 +137,17 @@ fn propose_for(
 }
 
 pub(in super::super) fn scope_for(
-    document: &census_crawl::participation_evidence::result_ownership::CheckedRetainedResultDocumentV1<'_>,
-    row: &census_crawl::participation_evidence::result_ownership::CheckedRetainedResultRowV1<'_>,
+    document: &census_crawl::participation_evidence::result_ownership::CheckedHtmlResultDocumentV1<
+        '_,
+    >,
+    row: &census_crawl::participation_evidence::result_ownership::CheckedHtmlResultRowV1<'_>,
 ) -> census_crawl::CrawlResult<ResultSchoolScopeV1> {
+    let (Some(document), Some(row)) = (document.as_milesplit(), row.as_milesplit()) else {
+        return Err(census_store::StoreError::Refused {
+            detail: "controlled school fixture requires its MileSplit source".into(),
+        }
+        .into());
+    };
     let day = ProfileDate::parse(document.published_start()).map_err(|_| {
         census_store::StoreError::Refused {
             detail: "controlled performance day".into(),

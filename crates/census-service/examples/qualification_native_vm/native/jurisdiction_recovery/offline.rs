@@ -19,7 +19,8 @@ pub(super) fn read() -> Result<Value> {
         "offline source oracle has no recovered original invocation"
     );
     super::recovery::verify_finished(&finished, &original)?;
-    let store = Store::open(root.join("store"))?;
+    let (store, writer) = Store::open_current_qualification_v3(root.join("store"))?.into_parts();
+    let owned_admission = super::owned_admission::cold(&store, &writer, &original, &finished)?;
     let ledgers = source_ledgers(&store, &finished)?;
     let reservation = reservation(&store)?;
     let acknowledged_effects = super::effects::read(&store)?;
@@ -31,7 +32,7 @@ pub(super) fn read() -> Result<Value> {
         "original_registration":reservation.get("registration"),
         "original_reservation":reservation.get("reservation"),
         "captures":retained,"corpus":corpus,"drain_certificate":drain,
-        "acknowledged_effects":acknowledged_effects,
+        "acknowledged_effects":acknowledged_effects,"owned_resource_admission":owned_admission,
         "parent_recovery":finished.get("parent_recovery").context("parent recovery disposition absent")?,
         "single_owner_offline":true,
         "scope":"cold exact source-stage journal and physical corpus readback; no HTTP subphase claim"

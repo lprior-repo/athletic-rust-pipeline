@@ -31,11 +31,15 @@ pub use state::{
 pub(crate) use sweep::access;
 pub use sweep::access::{combined_failure as access_failure, SourceAccessFailure};
 pub(crate) use sweep::index::{inspect_rosters, RosterIndexEvidence};
+pub(crate) use sweep::retain_team_index_failure;
 
 pub use sweep::index::team_index_report;
 #[cfg(feature = "native-fault-injection")]
 pub use sweep::install_boundary_hook;
-pub use sweep::{collect_milesplit, collect_state_rosters, collect_state_teams};
+pub use sweep::{
+    accept_state_team_index, collect_milesplit, collect_owned_state_rosters, collect_state_rosters,
+    collect_state_teams, OwnedRosterSource,
+};
 
 pub const DEFAULT_ORIGIN_LOCK_ROOT: &str = "var/locks";
 

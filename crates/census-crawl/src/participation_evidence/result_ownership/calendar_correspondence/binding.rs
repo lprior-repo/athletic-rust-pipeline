@@ -170,13 +170,7 @@ fn retain_proof_context(
     objects: &mut Objects,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<()> {
-    let name = super::proof_interpretation_name(source.subject())?;
-    let bytes = format!(
-        "{name}\n{}\n{}",
-        source.status_proof().capture(),
-        source.status_proof().locator()
-    )
-    .into_bytes();
+    let bytes = super::proof::preimage(source, false)?.into_bytes();
     let reference = object_reference(&bytes, grant)?;
     if reference.digest != *expected
         || reference.digest.as_str() != source.status_proof().interpretation()

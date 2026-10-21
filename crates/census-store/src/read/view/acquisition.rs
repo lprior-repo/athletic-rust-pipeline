@@ -4,6 +4,21 @@ use crate::{AcquisitionReadBudget, CaptureError, StoreResult, VerifiedRetainedOc
 use census_domain::model::AcquisitionOccurrenceRefV1;
 
 impl StoreSnapshot<'_> {
+    pub fn read_public_school_intake_admission_v1(
+        &self,
+        packet: &crate::PublicSchoolIntakePacketV1,
+        budget: &mut AcquisitionReadBudget,
+    ) -> StoreResult<crate::PublicSchoolIntakeAdmissionV1> {
+        crate::acquisition::public_resources::intake::read_admission(
+            &self.snapshot,
+            self.meta,
+            self.journal,
+            self.receipts,
+            packet,
+            budget,
+        )
+    }
+
     pub fn read_retained_acquisition_v1(
         &self,
         reference: &AcquisitionOccurrenceRefV1,
@@ -25,6 +40,7 @@ impl StoreSnapshot<'_> {
         verify_reference(
             self.root,
             &self.snapshot,
+            self.meta,
             self.journal,
             self.receipts,
             reference,

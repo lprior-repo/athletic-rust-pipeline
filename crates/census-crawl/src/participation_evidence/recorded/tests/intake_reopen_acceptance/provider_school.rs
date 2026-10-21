@@ -6,6 +6,7 @@ use census_domain::model::{CanonicalAthlete, CanonicalSchool, SourceNamespace, S
 
 pub(super) mod fixtures;
 pub(super) mod observations;
+mod original_reader;
 mod refusals;
 mod roster_rows;
 

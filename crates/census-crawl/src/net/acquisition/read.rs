@@ -38,6 +38,10 @@ pub(super) fn outcome(
         retained.reference().clone(),
         retained.body_reference().clone(),
     );
+    let original_metadata = metadata
+        .observed_http
+        .as_ref()
+        .map(|_| retained.prepared().metadata_bytes().to_vec());
     Ok(CapturedFetch {
         capture: FetchOutcome {
             url: metadata.url,
@@ -52,6 +56,7 @@ pub(super) fn outcome(
             body,
         },
         provenance,
+        original_metadata,
     })
 }
 

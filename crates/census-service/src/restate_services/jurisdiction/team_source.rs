@@ -19,6 +19,7 @@ mod execution;
 mod execution_ledger;
 mod operation;
 mod origin_continuation;
+mod public_resources;
 pub(crate) use operation::contacts_key;
 mod ledger;
 mod ledger_io;
@@ -170,11 +171,21 @@ fn report_outcome(report: census_crawl::AdapterReport, records: usize, at: Strin
 ))]
 impl TeamsSource {
     #[handler]
+    async fn admit_public_resources(
+        &self,
+        ctx: ObjectContext<'_>,
+        Json(original): Json<TeamsSourceRequest>,
+    ) -> Result<Json<census_store::Application>, HandlerError> {
+        self.admit_public_resource_roots(&ctx, &original).await
+    }
+
+    #[handler]
     async fn continue_origin_held(
         &self,
         ctx: ObjectContext<'_>,
         Json(request): Json<OriginHeldContinuationRequest>,
     ) -> Result<Json<TeamsSourceOutcome>, HandlerError> {
+        self.public_resource_writer()?;
         if request.original.source != "milesplit"
             || operation::phase(ctx.key(), &request.original).map_err(job_error)?
                 != operation::Phase::Teams

@@ -14,67 +14,11 @@ pub enum CaptureCacheIntent {
     ReuseEligible,
     AcquireNew,
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum AdmissionKind {
-    LegacyRestateSourceSelectionV1,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum StateKey {
-    State,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum SelectedSource {
-    Milesplit,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum SelectedArm {
-    MilesplitResults,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum DurableRole {
-    StructuredWholeMeet,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SourceAdmissionV1 {
-    kind: AdmissionKind,
-    state_key: StateKey,
-    plan_fingerprint: AcquisitionDigest,
-    selected_source: SelectedSource,
-    selected_arm: SelectedArm,
-    durable_role: DurableRole,
-}
-impl SourceAdmissionV1 {
-    pub fn try_clone(&self) -> Result<Self, std::collections::TryReserveError> {
-        Ok(Self {
-            kind: self.kind,
-            state_key: self.state_key,
-            plan_fingerprint: self.plan_fingerprint.try_clone()?,
-            selected_source: self.selected_source,
-            selected_arm: self.selected_arm,
-            durable_role: self.durable_role,
-        })
-    }
-    pub fn milesplit_results(plan_fingerprint: &str) -> Result<Self, CaptureDomainError> {
-        Ok(Self {
-            kind: AdmissionKind::LegacyRestateSourceSelectionV1,
-            state_key: StateKey::State,
-            plan_fingerprint: AcquisitionDigest::parse(plan_fingerprint)?,
-            selected_source: SelectedSource::Milesplit,
-            selected_arm: SelectedArm::MilesplitResults,
-            durable_role: DurableRole::StructuredWholeMeet,
-        })
-    }
-    pub fn plan_fingerprint(&self) -> &AcquisitionDigest {
-        &self.plan_fingerprint
-    }
-}
+mod admission;
+mod public;
+mod public_scope;
+pub use admission::SourceAdmissionV1;
+pub use public_scope::PublicResourceCaptureScopeV1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SelectedHistoryV1 {
@@ -182,6 +126,8 @@ pub struct AcquisitionWorkV1 {
     request: RequestRepresentationV1,
     cache_intent: CaptureCacheIntent,
     protocol: CaptureProtocol,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    public_resource_obligation: Option<Box<super::PublicResourceObligationV1>>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -195,6 +141,7 @@ struct WorkWire {
     request: RequestRepresentationV1,
     cache_intent: CaptureCacheIntent,
     protocol: CaptureProtocol,
+    public_resource_obligation: Option<super::PublicResourceObligationV1>,
 }
 impl AcquisitionWorkV1 {
     pub fn for_owned_meet(
@@ -221,12 +168,32 @@ impl AcquisitionWorkV1 {
             request,
             cache_intent: scope.cache_intent,
             protocol: CaptureProtocol::SourceAcquisitionAttemptV1,
+            public_resource_obligation: None,
         };
         result.validate()?;
         Ok(result)
     }
     fn validate(&self) -> Result<(), CaptureDomainError> {
-        if !self.history.years().contains(&self.slot.historical_year()) {
+        if self.slot.public_resource().is_some() {
+            return self.validate_public_resource();
+        }
+        if self.public_resource_obligation.is_some()
+            || self.source_admission.is_public_resources()
+            || self.request.observed_http_required()
+        {
+            return Err(CaptureDomainError::Invalid {
+                field: "work resource role",
+            });
+        }
+        let year = self
+            .slot
+            .historical_year()
+            .ok_or(CaptureDomainError::HistoryConflict)?;
+        let meet_id = self
+            .slot
+            .source_meet_id()
+            .ok_or(CaptureDomainError::RequestTargetMismatch)?;
+        if !self.history.years().contains(&year) {
             return Err(CaptureDomainError::HistoryConflict);
         }
         let url = super::scalar::url(self.request.original_url())?;
@@ -234,7 +201,7 @@ impl AcquisitionWorkV1 {
             "{}.milesplit.com",
             self.slot.source_site().code().to_ascii_lowercase()
         );
-        let path = format!("/api/v1/meets/{}/performances", self.slot.source_meet_id());
+        let path = format!("/api/v1/meets/{meet_id}/performances");
         if url.scheme() != "https"
             || url.host_str() != Some(host.as_str())
             || url.port().is_some()
@@ -285,6 +252,7 @@ impl TryFrom<WorkWire> for AcquisitionWorkV1 {
             request: w.request,
             cache_intent: w.cache_intent,
             protocol: w.protocol,
+            public_resource_obligation: w.public_resource_obligation.map(Box::new),
         };
         result.validate()?;
         Ok(result)

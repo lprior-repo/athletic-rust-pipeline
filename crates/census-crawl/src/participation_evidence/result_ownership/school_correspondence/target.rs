@@ -1,8 +1,8 @@
 use super::{invalid, objects::Objects, ResultSchoolScopeV1};
-use crate::participation_evidence::provider_school::{
-    CheckedProviderSchoolPacketV1, ProviderSchoolPacketV1,
+use crate::participation_evidence::provider_school::CheckedProviderSchoolPacketV1;
+use crate::participation_evidence::recorded::{
+    read_original_provider_school, RecordedProviderSchoolV1,
 };
-use crate::participation_evidence::recorded::RecordedProviderSchoolV1;
 use crate::participation_evidence::result_ownership::{
     CheckedRetainedResultDocumentV1, CheckedRetainedResultRowV1,
 };
@@ -12,7 +12,32 @@ use census_domain::model::{CanonicalSchool, Gender, SchoolYear, SourceSubject};
 use census_domain::result_school_correspondence::{
     ResultSchoolTargetClaimV1, RESULT_SCHOOL_YEAR_CONTRACT_V1,
 };
-use census_store::{RetainedCaptureRootSchemaV1, RetainedCaptureRootV1, StoreSnapshot, Table};
+use census_store::{RetainedCaptureRootV1, StoreSnapshot, Table};
+
+pub(super) fn scope_source(
+    document: &super::super::CheckedHtmlResultDocumentV1<'_>,
+    row: &super::super::CheckedHtmlResultRowV1<'_>,
+    scope: &ResultSchoolScopeV1,
+) -> CrawlResult<()> {
+    use super::super::{CheckedHtmlResultDocumentV1 as Document, CheckedHtmlResultRowV1 as Row};
+    match (document, row) {
+        (Document::MileSplit(document), Row::MileSplit(row)) => self::scope(document, row, scope),
+        (Document::Tfrrs(document), Row::Tfrrs(row)) => {
+            if row.published_date() != scope.day.as_str()
+                || document.sport() != scope.sport
+                || row.gender() == Gender::Unknown
+                || row.gender() != scope.category
+                || SchoolYear::from_date(row.published_date()) != Some(scope.year)
+            {
+                return Err(invalid(
+                    "TFRRS school date sport category year differs from original row",
+                ));
+            }
+            Ok(())
+        }
+        _ => Err(invalid("school scope and original source differ")),
+    }
+}
 
 pub(super) fn scope(
     document: &CheckedRetainedResultDocumentV1<'_>,
@@ -45,20 +70,14 @@ pub(super) fn build(
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<ResultSchoolTargetClaimV1> {
     let original = snapshot
-        .read_retained_capture_root_v1(
-            RetainedCaptureRootSchemaV1::ProviderSchoolPacketV1,
-            &provider.root().key,
-            grant,
-        )?
+        .read_retained_capture_root_v1(provider.root().schema, &provider.root().key, grant)?
         .ok_or_else(|| invalid("school original provider packet absent"))?;
     if original.root() != provider.root() {
         return Err(invalid(
             "school provider packet differs from actual original",
         ));
     }
-    let packet: ProviderSchoolPacketV1 = serde_json::from_str(original.payload().get())
-        .map_err(crate::participation_evidence::json)?;
-    let actual = packet.read_semantic_contract_v1()?;
+    let actual = read_original_provider_school(&original, grant)?;
     if actual.reference().as_str() != original.root().key {
         return Err(invalid("school provider packet original key differs"));
     }

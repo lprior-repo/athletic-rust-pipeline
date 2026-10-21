@@ -9,6 +9,8 @@ pub enum RetainedCaptureRootSchemaV1 {
     ProviderTargetPacketV1,
     HtmlResultCaptureV1,
     ProviderSchoolPacketV1,
+    ProviderSchoolObservedPacketV1,
+    MhsaaCoopPdfPacketV1,
 }
 
 impl RetainedCaptureRootSchemaV1 {
@@ -19,6 +21,8 @@ impl RetainedCaptureRootSchemaV1 {
             Self::ProviderTargetPacketV1 => "provider_target_intake_v1",
             Self::HtmlResultCaptureV1 => "retained_html_result_capture_v1",
             Self::ProviderSchoolPacketV1 => "provider_school_intake_v1",
+            Self::ProviderSchoolObservedPacketV1 => "public_resource_school_intake_v1",
+            Self::MhsaaCoopPdfPacketV1 => "mhsaa_coop_pdf_capture_v1",
         }
     }
 }

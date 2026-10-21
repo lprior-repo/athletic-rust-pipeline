@@ -41,6 +41,8 @@ pub struct CacheMeta {
     pub content_type: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub redirects: Vec<super::RedirectHop>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) observed_http: Option<census_domain::model::NormalizedObservedHttpV1>,
 }
 
 impl Fetcher {
@@ -270,6 +272,7 @@ fn eligible_seed_metadata(
         last_modified: None,
         content_type: None,
         redirects: Vec::new(),
+        observed_http: None,
     }
 }
 

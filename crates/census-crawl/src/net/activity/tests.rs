@@ -21,6 +21,7 @@ impl census_store::clock::Clock for FixtureClock {
 fn meta_for(body: &[u8], url: &str, fetched_at: &str) -> CacheMeta {
     CacheMeta {
         url: url.to_string(),
+        observed_http: None,
         response_url: None,
         method: "GET".to_string(),
         representation: RepresentationHeaders::default(),

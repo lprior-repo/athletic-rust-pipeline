@@ -22,7 +22,7 @@ enum CaptureBinding {
         site: UsJurisdiction,
         meet_id: String,
     },
-    Prepared(AcquisitionWorkV1),
+    Prepared(Box<AcquisitionWorkV1>),
 }
 
 enum GrantSlot {
@@ -68,7 +68,8 @@ impl ResultsCaptureContext {
         let slot = exact_work.slot();
         let expected = owner.for_owned_meet(
             slot.source_site(),
-            slot.source_meet_id(),
+            slot.source_meet_id()
+                .ok_or(CaptureTransportError::TargetMismatch)?,
             exact_work.request().clone(),
         )?;
         if owner.protocol() != census_domain::model::CaptureProtocolVersion::V2
@@ -84,7 +85,7 @@ impl ResultsCaptureContext {
         }
         Ok(Self {
             owner,
-            binding: CaptureBinding::Prepared(exact_work),
+            binding: CaptureBinding::Prepared(Box::new(exact_work)),
             grant: Mutex::new(GrantSlot::Resolved { target, captured }),
         })
     }
@@ -126,7 +127,7 @@ impl ResultsCaptureContext {
                 meet_id: expected_meet,
             } => *expected_site == site && expected_meet == meet_id,
             CaptureBinding::Prepared(work) => {
-                work.slot().source_site() == site && work.slot().source_meet_id() == meet_id
+                work.slot().source_site() == site && work.slot().source_meet_id() == Some(meet_id)
             }
         }
     }

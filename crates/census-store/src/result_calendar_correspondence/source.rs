@@ -84,10 +84,7 @@ pub(super) fn require_historical(
             material.verify(view, grant)?;
         }
     }
-    let parser = object(materials, &source.parser_contract)?.inline_bytes(grant)?;
-    if parser != RESULT_CALENDAR_PARSER_CONTRACT_V1 {
-        return Err(Error::SourceMismatch("calendar parser contract").into());
-    }
+    require_result_parser(source, materials, subject, grant)?;
     let result = root(
         materials,
         &source.result.result_root,
@@ -116,6 +113,16 @@ pub(super) fn require_historical(
         (originals, documentary_record),
         grant,
     )
+}
+
+fn selected_parser(
+    source: &ResultCalendarSourceClaimV1,
+    materials: &[Material],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<ResultCalendarSourceParserV1> {
+    let bytes = object(materials, &source.parser_contract)?.inline_bytes(grant)?;
+    ResultCalendarSourceParserV1::from_contract(&bytes)
+        .ok_or_else(|| Error::SourceMismatch("calendar parser contract").into())
 }
 
 pub(super) fn validate_inventory(
@@ -218,3 +225,23 @@ pub(super) fn require_accepted_head(
     }
     Ok(())
 }
+
+fn require_result_parser(
+    source: &ResultCalendarSourceClaimV1,
+    materials: &[Material],
+    subject: &census_domain::evidence_subject_attachment::RetainedDocumentSubjectReferenceV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<ResultCalendarSourceParserV1> {
+    let parser = selected_parser(source, materials, grant)?;
+    if subject.namespace.as_str() != parser.result_namespace()
+        || !parser.supports_scope(source.sport, source.category)
+    {
+        return Err(Error::SourceMismatch("calendar original source scope").into());
+    }
+    Ok(parser)
+}
+
+#[cfg(test)]
+mod test_fixture;
+#[cfg(test)]
+mod tests;

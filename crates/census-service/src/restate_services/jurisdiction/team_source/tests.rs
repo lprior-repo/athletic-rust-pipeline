@@ -18,6 +18,7 @@ pub(crate) mod national_resume;
 mod native_deployment_handoff;
 mod native_origin_continuation;
 mod origin_continuation_replay;
+mod public_resources_fixture;
 mod reconciliation_multi_source;
 mod recorded_snapshot;
 mod registration;

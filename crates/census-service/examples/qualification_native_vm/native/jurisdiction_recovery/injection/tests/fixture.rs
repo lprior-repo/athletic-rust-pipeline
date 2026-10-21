@@ -43,6 +43,7 @@ pub(super) fn original(jurisdiction: UsJurisdiction, revision: u32) -> Result<Or
         owner: json!({}),
         source_plan: SourcePlan {
             sweepable: vec!["milesplit".to_owned(), "riil".to_owned()],
+            satisfied: Vec::new(),
             refused: Vec::new(),
             fingerprint: "owned-plan".to_owned(),
         },

@@ -6,6 +6,8 @@ use census_domain::model::SchoolYear;
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
 
+mod tfrrs;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SourceRowLocator {
@@ -55,25 +57,34 @@ pub(super) fn require(
         return Err(Error::SourceMismatch("original body root/slot/kind").into());
     }
     let body = capture.body_bytes(&source.result.body, grant)?;
-    let locator = interpretation(source, materials, capture, grant)?;
+    let parser = super::require_result_parser(source, materials, subject, grant)?;
+    let locator = interpretation(source, materials, capture, parser, grant)?;
     let row = span(&body, locator.byte_offset, locator.byte_length)?;
     if codec::digest(row, grant)? != source.result.row_digest {
         return Err(Error::SourceMismatch("original result row bytes").into());
     }
-    context(source, materials, subject, root, grant)
+    match parser {
+        ResultCalendarSourceParserV1::MileSplitDcc => {
+            context(source, materials, subject, root, grant)
+        }
+        ResultCalendarSourceParserV1::TfrrsRoncalli => {
+            tfrrs::require(source, materials, subject, (capture, &body), locator, grant)
+        }
+    }
 }
 
 fn interpretation(
     source: &ResultCalendarSourceClaimV1,
     materials: &[Material],
     capture: &CheckedCapture<'_>,
+    parser: ResultCalendarSourceParserV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<SourceRowLocator> {
     let bytes = object(materials, &source.result.interpretation)?.inline_bytes(grant)?;
     let (contract, url, body, locator): RowPreimage = codec::decode(&bytes, grant)?;
     let requested_url = capture.requested_url(grant)?;
     let row_locator = locator_digest(&locator, grant)?;
-    if contract != "retained-milesplit-html-result-row/v1"
+    if contract != parser.row_interpretation()
         || body != source.result.body.digest.as_str()
         || requested_url.as_ref() != url.as_str()
         || row_locator != source.result.row_locator

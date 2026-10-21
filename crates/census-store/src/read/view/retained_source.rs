@@ -4,6 +4,8 @@ use crate::{JournalReadBudget, StoreResult};
 
 pub(super) mod legacy;
 mod live;
+mod physical;
+pub(crate) use physical::PhysicalRetainedJournalSource;
 pub(crate) mod sealed {
     pub(crate) trait Sealed {}
 }

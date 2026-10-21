@@ -57,15 +57,16 @@ pub fn build_claim(
         let attached = row.attachment();
         original::current(current, attached, grant)?;
         let recorded = original::reopen(current.snapshot(), linked, row.checked_row(), grant)?;
-        let document = recorded.read(&[row.checked_row().locator()])?;
+        let document =
+            recorded.read_source(&[row.checked_row().locator()], row.checked_row().source())?;
         let checked = document
             .row(0)
             .ok_or_else(|| invalid("reopened result row absent"))?;
         original::subject(recorded.root(), &checked, attached, grant)?;
-        target::scope(&document, &checked, &scope)?;
+        target::scope_source(&document, &checked, &scope)?;
         let mut objects = objects::Objects::new(grant)?;
         let statement =
-            statement::build(recorded.root(), &document, &checked, &mut objects, grant)?;
+            statement::build_source(recorded.root(), &document, &checked, &mut objects, grant)?;
         let target = target::build(current.snapshot(), provider, scope, &mut objects, grant)?;
         let source = ResultSchoolSourceClaimV1 {
             statement,

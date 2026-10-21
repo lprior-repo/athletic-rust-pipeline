@@ -270,6 +270,9 @@ pub(crate) fn validate_protected_authorities(
     format: &StoreFormat,
 ) -> StoreResult<()> {
     crate::input_revisions::validate_format(snapshot, meta, format)?;
+    crate::acquisition::public_resources::format::validate_format(
+        snapshot, meta, journal, receipts, format,
+    )?;
     crate::result_calendar_correspondence::validate_format(
         snapshot,
         meta,

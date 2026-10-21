@@ -3,12 +3,23 @@ use crate::milesplit::SourceRowLocator;
 use crate::participation_evidence::markup;
 use html5gum::{DefaultEmitter, EndTag, StartTag, Token, Tokenizer};
 
-pub(super) fn selected(html: &str, requested: &[SourceRowLocator]) -> Result<Vec<RawRow>> {
+pub(in super::super) enum SelectionStep<'a> {
+    Body(&'a str),
+    Row(SourceRowLocator),
+    Work,
+}
+
+pub(super) fn selected(
+    html: &str,
+    expected_count: usize,
+    select: &mut impl FnMut(SelectionStep<'_>) -> Result<bool>,
+) -> Result<Vec<RawRow>> {
     let mut emitter = DefaultEmitter::<usize>::new_with_span();
     emitter.naively_switch_states(true);
     let mut visibility = markup::Active::default();
-    let mut state = State::new(requested)?;
+    let mut state = State::new(expected_count, select)?;
     for (index, token) in Tokenizer::new_with_emitter(html, emitter).enumerate() {
+        (state.select)(SelectionStep::Work)?;
         bounded(
             index
                 .checked_add(1)
@@ -22,7 +33,7 @@ pub(super) fn selected(html: &str, requested: &[SourceRowLocator]) -> Result<Vec
         }
     }
     visibility.finish()?;
-    if state.section.is_some() || state.row.is_some() || state.output.len() != requested.len() {
+    if state.section.is_some() || state.row.is_some() || state.output.len() != expected_count {
         return Err(invalid(
             "requested TFRRS rows have no complete active ownership",
         ));
@@ -30,28 +41,33 @@ pub(super) fn selected(html: &str, requested: &[SourceRowLocator]) -> Result<Vec
     Ok(state.output)
 }
 
-struct State<'a> {
+struct State<'a, F> {
     depth: usize,
     ordinal: u32,
     section: Option<context::Section>,
     row: Option<(usize, usize, u32)>,
-    requested: &'a [SourceRowLocator],
+    expected_count: usize,
+    select: &'a mut F,
     output: Vec<RawRow>,
     last_error: Option<html5gum::Span<usize>>,
 }
 
-impl<'a> State<'a> {
-    fn new(requested: &'a [SourceRowLocator]) -> Result<Self> {
+impl<'a, F> State<'a, F>
+where
+    F: FnMut(SelectionStep<'_>) -> Result<bool>,
+{
+    fn new(expected_count: usize, select: &'a mut F) -> Result<Self> {
         let mut output = Vec::new();
         output
-            .try_reserve_exact(requested.len())
+            .try_reserve_exact(expected_count)
             .map_err(|_| RetainedResultOwnershipError::Allocation)?;
         Ok(Self {
             depth: 0,
             ordinal: 0,
             section: None,
             row: None,
-            requested,
+            expected_count,
+            select,
             output,
             last_error: None,
         })
@@ -178,6 +194,7 @@ impl<'a> State<'a> {
                 .ok_or_else(|| invalid("TFRRS section close"))?;
             section.finish()?;
             for row in &mut self.output {
+                (self.select)(SelectionStep::Work)?;
                 if row.context.section_span.start == section.start {
                     row.context.section_span.end = tag.span.end;
                 }
@@ -199,7 +216,10 @@ impl<'a> State<'a> {
                 .checked_sub(start)
                 .ok_or(RetainedResultOwnershipError::Overflow)?,
         };
-        if self.requested.contains(&locator) {
+        if (self.select)(SelectionStep::Row(locator))? {
+            if self.output.len() >= self.expected_count {
+                return Err(invalid("duplicate successful TFRRS locator"));
+            }
             let context = self
                 .section
                 .as_ref()
