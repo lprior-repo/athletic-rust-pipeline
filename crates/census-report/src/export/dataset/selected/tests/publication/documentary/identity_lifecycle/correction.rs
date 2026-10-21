@@ -155,14 +155,16 @@ fn lone_bridge_refused(
         store.snapshot().revision(),
         &head,
     );
-    check!(matches!(
+    if !matches!(
         result,
         Err(census_store::StoreError::PublicIdentity(
             census_store::PublicIdentityError::History(
                 census_domain::public_identity_history::HistoryError::SplitRequired
             )
         ))
-    ));
+    ) {
+        return Err(format!("DEBUG probe lone_bridge actual: {result:?}").into());
+    }
     check!(eq; writer.head(store)?, head);
     check!(eq; store.snapshot().tables_digest(&Table::ALL)?, facts);
     Ok(())
