@@ -2,6 +2,7 @@ use super::super::super::RetainedCaptureRootSchemaV1 as Schema;
 use super::{capture, Error, RetainedCaptureSlotV1 as Slot};
 use crate::{StoreError, StoreResult};
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
+use census_domain::roster_affiliation_authority::SourceRowLocator;
 use serde::Deserialize;
 use serde_json::value::RawValue;
 
@@ -13,6 +14,7 @@ struct Participation<'a> {
     status: &'a RawValue,
     #[serde(borrow)]
     schedule: &'a RawValue,
+    result_row: Option<SourceRowLocator>,
 }
 
 #[derive(Deserialize)]
@@ -54,6 +56,7 @@ pub(crate) enum CheckedRoot<'a> {
     Participation {
         status: capture::CheckedCapture<'a>,
         schedule: capture::CheckedCapture<'a>,
+        result_row: Option<SourceRowLocator>,
     },
     Provider {
         profile: capture::CheckedCapture<'a>,
@@ -71,13 +74,9 @@ impl CheckedRoot<'_> {
     ) -> StoreResult<&capture::CheckedCapture<'_>> {
         match (self, slot) {
             (CheckedRoot::Participation { status, .. }, Slot::ParticipationStatus) => Ok(status),
-            (
-                CheckedRoot::Participation {
-                    status: _,
-                    schedule,
-                },
-                Slot::ParticipationSchedule,
-            ) => Ok(schedule),
+            (CheckedRoot::Participation { schedule, .. }, Slot::ParticipationSchedule) => {
+                Ok(schedule)
+            }
             (CheckedRoot::Provider { profile, .. }, Slot::ProviderProfile) => Ok(profile),
             (
                 CheckedRoot::Provider {
@@ -93,6 +92,21 @@ impl CheckedRoot<'_> {
             _ => Err(Error::Corrupt("external root capture slot").into()),
         }
     }
+}
+fn participation_packet<'a>(
+    raw: &'a RawValue,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Participation<'a>> {
+    let packet: Participation<'a> = parse(raw, grant)?;
+    if packet.version != 1 {
+        return Err(Error::Corrupt("participation root version").into());
+    }
+    if let Some(row) = packet.result_row {
+        if row.byte_length() == 0 || row.byte_offset().checked_add(row.byte_length()).is_none() {
+            return Err(Error::Corrupt("participation result row bounds").into());
+        }
+    }
+    Ok(packet)
 }
 
 pub(in crate::evidence_subject_attachment::external) fn checked<'a>(
@@ -114,13 +128,11 @@ pub(in crate::evidence_subject_attachment::external) fn checked<'a>(
             }))
         }
         Schema::ParticipationPacketV1 => {
-            let packet: Participation<'a> = parse(raw, grant)?;
-            if packet.version != 1 {
-                return Err(Error::Corrupt("participation root version").into());
-            }
+            let packet = participation_packet(raw, grant)?;
             Ok(CheckedRoot::Participation {
                 status: capture::checked(packet.status, grant)?,
                 schedule: capture::checked(packet.schedule, grant)?,
+                result_row: packet.result_row,
             })
         }
         Schema::ProviderTargetPacketV1 => {
@@ -145,10 +157,7 @@ pub(super) fn select<'a>(
 ) -> StoreResult<&'a RawValue> {
     match schema {
         Schema::ParticipationPacketV1 => {
-            let packet: Participation<'a> = parse(raw, grant)?;
-            if packet.version != 1 {
-                return Err(Error::Corrupt("participation root version").into());
-            }
+            let packet = participation_packet(raw, grant)?;
             capture::validate(packet.status, grant)?;
             capture::validate(packet.schedule, grant)?;
             match slot {

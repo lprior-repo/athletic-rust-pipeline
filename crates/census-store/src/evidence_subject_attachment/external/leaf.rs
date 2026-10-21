@@ -98,10 +98,16 @@ fn verify_checked(
                 capture.body_bytes(&leaf.object, grant).map(|_| ())
             }
             RetainedCaptureLeafKindV1::RootJson => {
-                if leaf.root.schema
-                    != super::RetainedCaptureRootSchemaV1::ParticipationWindowPacketV1
-                    || leaf.slot != RetainedCaptureSlotV1::ParticipationWindow
-                {
+                if !matches!(
+                    (leaf.root.schema, leaf.slot),
+                    (
+                        super::RetainedCaptureRootSchemaV1::ParticipationWindowPacketV1,
+                        RetainedCaptureSlotV1::ParticipationWindow
+                    ) | (
+                        super::RetainedCaptureRootSchemaV1::ParticipationPacketV1,
+                        RetainedCaptureSlotV1::ParticipationStatus
+                    )
+                ) {
                     return Err(Error::Corrupt("external root JSON kind differs").into());
                 }
                 capture::require_reference(raw.get().as_bytes(), &leaf.object, grant)

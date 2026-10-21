@@ -72,15 +72,51 @@ fn discover_checked<'a, P>(
             count
                 .checked_mul(std::mem::size_of::<ActiveAttachmentSubjectV1<'_>>())
                 .ok_or(crate::StoreError::CounterOverflow)?;
+            grant
+                .charge_bytes(std::mem::size_of::<ActiveAttachmentSubjectV1<'_>>())
+                .map_err(Error::Domain)?;
             material::allocate(&mut rows)?;
+            let retained_root_anchors = root_anchors(ledger, record, grant)?;
             rows.push(ActiveAttachmentSubjectV1 {
                 record,
                 subject,
                 capture,
                 locator,
                 context,
+                retained_root_anchors,
             });
         }
     }
     Ok(ActiveAttachmentSubjectDiscoveryV1 { rows })
+}
+
+fn root_anchors<'a, P>(
+    ledger: &'a VerifiedLedger<P>,
+    record: &ReviewedReferenceRecordV1,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<Vec<&'a RetainedCaptureLeafV1>> {
+    let references = record.command.reviewed_context.objects.as_slice();
+    if references.len() > census_domain::participation_candidates::MAX_PARTICIPATION_FACTS {
+        return Err(Error::Corrupt("active subject root anchor bound").into());
+    }
+    let mut anchors = Vec::new();
+    for reference in references {
+        grant.charge_steps(1).map_err(Error::Domain)?;
+        let material = ledger.object(&reference.digest, grant)?;
+        if material.reference() != reference {
+            return Err(Error::Corrupt("active subject root anchor reference").into());
+        }
+        let Material::Retained { leaf } = material else {
+            continue;
+        };
+        if leaf.kind != super::super::RetainedCaptureLeafKindV1::RootJson {
+            continue;
+        }
+        grant
+            .charge_bytes(std::mem::size_of::<&RetainedCaptureLeafV1>())
+            .map_err(Error::Domain)?;
+        material::allocate(&mut anchors)?;
+        anchors.push(leaf);
+    }
+    Ok(anchors)
 }

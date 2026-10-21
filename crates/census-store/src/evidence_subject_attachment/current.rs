@@ -121,6 +121,7 @@ impl<'v, 's> CurrentEvidenceSubjectAttachmentReferencesV1<'v, 's> {
         role: AttachmentSubjectRoleV1,
         grant: &mut AttachmentReplayGrantV1,
     ) -> StoreResult<ActiveAttachmentSubjectDiscoveryV1<'a>> {
+        self.continuation.require(grant).map_err(Error::Domain)?;
         discovery::discover(&self.ledger, self.accepted.view(), role, grant)
     }
     pub fn discover_active_result_subjects_v1<'a>(

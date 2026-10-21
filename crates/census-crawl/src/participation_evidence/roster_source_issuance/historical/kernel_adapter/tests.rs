@@ -4,11 +4,13 @@ use std::sync::LazyLock;
 mod af9;
 mod current;
 mod decoder;
+mod grade;
 mod grant4g;
 mod member;
 mod portable;
 mod raw_value;
 mod raw_value_portable;
+mod shared_fixture;
 
 type TestResult<E = Box<dyn std::error::Error>> = Result<(), E>;
 

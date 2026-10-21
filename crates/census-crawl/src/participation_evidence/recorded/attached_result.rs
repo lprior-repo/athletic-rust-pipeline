@@ -9,6 +9,7 @@ use census_store::{
 };
 
 mod discovery;
+mod event_label;
 mod subject;
 mod types;
 mod venue;

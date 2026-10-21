@@ -151,10 +151,23 @@ They are historical fixtures, not regenerated current documents.
 
 The executing103-file closure includes context rules, historical registries,
 the canonical counterpart generator and its authenticated configuration template.
-Both semantic owners pin`d9eff86d965dbcb4449a06f7e9ca319ac2142a875382241e81a910694ac5c34a`.
+The 2026-10-20 owners pinned`d9eff86d965dbcb4449a06f7e9ca319ac2142a875382241e81a910694ac5c34a`.
 Epoch schemas12/13 and participationV4 do not change. Qualification still requires
 the unchanged original-A consumer and frozen-generation readback; no earlier pass
 qualifies this amended source automatically.
+
+**2026-10-21 genuine-row qualification:** both current semantic owners pin the
+103-file closure`1a2b0ca6de39f230ead27685872b9be9d9c007019039cf862496a03d24580b0a`.
+The shared-fixture dependency move changes the authenticated Store manifest, not
+the compiler or locked dependencies. Executing native context
+`2971795c3e0e2e0be7d780b3e7cb3b3ec75c6352baa415694da0d7d832226a3c`
+may additionally consume already-recognized originals requiring`a01453e2…d3787d`.
+No reverse, unknown-context or portable allowance follows. Original-A bytes and
+owner semantics remain unchanged; no new epoch or participation policy is issued.
+Moving only the Cargo target directory changes this file-bound context to
+`a4e895d322d4c48f2dc5890480f6b55e46ef756f9c9093b7ae3a93cd1b613ae5`.
+With unchanged compiler, environment and locked dependencies, this exact lane may
+consume the two native contexts above; portable and unknown contexts still refuse.
 
 The optimized owned-feature context qualified on source`9a6fff5a` is
 `8befb4a63644c885bd231fa2aed429963959fc88cd602176ec6667e55b72ed43`.
@@ -365,10 +378,22 @@ or point-status dates infer a full window. This checked input is source metadata
 not accepted eligibility or NCAA certification; public review and selector binding
 remain separate requirements.
 
-`ParticipationWindowPacketV1` uses its own retained phase and slot. Its `RootJson`
-leaf binds the exact whole packet, not a capture leaf that another packet may
-already own. The kind is refused on other roots/slots. Original bodies and distinct
-subject-heading/window-paragraph proof locations remain retained and replayable.
+`RootJson` binds an exact whole retained packet, not a child capture whose bytes
+another packet may already own. It is admitted only for
+`ParticipationWindowPacketV1` / `ParticipationWindow` and, by the 2026-10-20
+custody amendment, `ParticipationPacketV1` / `ParticipationStatus`. Other pairs
+refuse. The added pair establishes container custody, not participation eligibility.
+Current and frozen readers require an anchor approved by that review, an exact
+native packet and matching subject/row proof; shared child bytes do not select
+the first packet. Missing, foreign, ambiguous or tampered anchors refuse.
+Original captures, grants, receipts and point/window meanings remain unchanged.
+
+Checked linked-event context must bind the same accepted source person, original
+result row, date and mark through an approved exact cross-reference. A new reviewed
+H3 fact may resolve an ambiguous display label only when the complete event
+specification agrees, including track banking, hurdles and implement qualifiers.
+The original label and source references remain in the event-context evidence;
+retained parent conflicts still refuse. Earlier approvals are not rewritten.
 
 The full-window input introduced dependency epochs 6/7 with a 94-input closure.
 The qualified `af9c58e7` checkpoint emitted 10/11 with a 96-input closure. Current

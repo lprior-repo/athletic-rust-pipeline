@@ -12,7 +12,7 @@ use census_domain::evidence_subject_attachment::{
 use census_store::{
     CurrentEvidenceSubjectAttachmentReferencesV1, DiscoveredAttachmentCaptureV1,
     DiscoveredAttachmentLocatorV1, ReadAttachmentContextObjectV1, RetainedCaptureLeafKindV1,
-    RetainedCaptureLeafV1, RetainedCaptureRootV1, RetainedCaptureSlotV1,
+    RetainedCaptureRootV1, RetainedCaptureSlotV1,
 };
 
 pub(super) fn status_binding(
@@ -75,11 +75,12 @@ fn retain_status_capture(
     objects: &mut Objects,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<RetainedCaptureRootV1> {
+    let packet_root = recorded.root();
     let DiscoveredAttachmentCaptureV1::Retained(leaf) = item.capture() else {
         return Err(invalid("calendar documentary capture is not retained"));
     };
-    if leaf.root != *recorded.root() || leaf.object.digest != item.subject().capture {
-        return Err(invalid("calendar documentary capture root differs"));
+    if leaf.object.digest != item.subject().capture {
+        return Err(invalid("calendar documentary capture object differs"));
     }
     let context = item.record().command.reviewed_context.objects.as_slice();
     grant
@@ -89,18 +90,39 @@ fn retain_status_capture(
         .iter()
         .find(|reference| reference.digest == item.subject().body)
         .ok_or_else(|| invalid("calendar approved original status body absent"))?;
+    if item.subject().namespace.as_str() == "milesplit_result_document_v1" {
+        let anchor = context
+            .iter()
+            .find(|reference| *reference == &packet_root.payload)
+            .ok_or_else(|| invalid("calendar approved packet payload anchor absent"))?;
+        objects.retain(
+            census_store::RetainedCaptureLeafV1 {
+                version: 1,
+                root: packet_root.clone(),
+                slot: RetainedCaptureSlotV1::ParticipationStatus,
+                kind: RetainedCaptureLeafKindV1::RootJson,
+                object: anchor.clone(),
+            },
+            grant,
+        )?;
+    } else if leaf.root != *packet_root
+        || leaf.slot != RetainedCaptureSlotV1::ParticipationStatus
+        || leaf.kind != RetainedCaptureLeafKindV1::CaptureJson
+    {
+        return Err(invalid("calendar documentary capture owner differs"));
+    }
     objects.retain(leaf.clone(), grant)?;
     objects.retain(
-        RetainedCaptureLeafV1 {
+        census_store::RetainedCaptureLeafV1 {
             version: 1,
             root: leaf.root.clone(),
             slot: leaf.slot,
-            kind: RetainedCaptureLeafKindV1::OriginalBody,
+            kind: census_store::RetainedCaptureLeafKindV1::OriginalBody,
             object: body.clone(),
         },
         grant,
     )?;
-    Ok(leaf.root.clone())
+    Ok(packet_root.clone())
 }
 
 pub(super) fn retain_result_context(
@@ -148,8 +170,9 @@ fn retain_proof_context(
     objects: &mut Objects,
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<()> {
+    let name = super::proof_interpretation_name(source.subject())?;
     let bytes = format!(
-        "mhsaa_subject_dcc_event_day_v1\n{}\n{}",
+        "{name}\n{}\n{}",
         source.status_proof().capture(),
         source.status_proof().locator()
     )

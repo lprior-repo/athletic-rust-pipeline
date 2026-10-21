@@ -6,20 +6,47 @@ use census_store::Entity;
 
 pub(super) fn extend(loaded: &mut Loaded, projection: SchoolProjection) -> ReportResult<()> {
     let count = projection.rows.len();
+    let physical_event_count = loaded.events.len();
+    loaded
+        .events
+        .sort_unstable_by(|left, right| left.id.cmp(&right.id));
     reserve(&mut loaded.events, count)?;
     reserve(&mut loaded.meets, count)?;
     reserve(&mut loaded.teams, count)?;
     reserve(&mut loaded.performances, count)?;
     for row in projection.rows {
+        if let Some(original) = &row.original_event_label {
+            let physical = &mut loaded.events[..physical_event_count];
+            let first = physical.partition_point(|event| event.id < row.event.id);
+            for existing in physical[first..]
+                .iter_mut()
+                .take_while(|event| event.id == row.event.id)
+            {
+                existing.source_labels.retain(|label| label != original);
+            }
+        }
         loaded.events.push(row.event);
         loaded.meets.push(row.meet);
         loaded.teams.push(row.team);
         loaded.performances.push(row.performance);
     }
-    merge(&mut loaded.events, false)?;
-    merge(&mut loaded.meets, false)?;
-    merge(&mut loaded.teams, false)?;
-    merge(&mut loaded.performances, true)
+    merge(&mut loaded.events, |_, _| Ok(()))?;
+    merge(&mut loaded.meets, |_, _| Ok(()))?;
+    merge(&mut loaded.teams, |_, _| Ok(()))?;
+    merge(&mut loaded.performances, |left, right| {
+        let same =
+            census_crawl::participation_evidence::physical_result::matches_physical_observation(
+                left, right,
+            )
+            .map_err(crate::report::documentary_source_error)?;
+        if same {
+            Ok(())
+        } else {
+            Err(invalid(
+                "school-proved performance conflicts with a physical source",
+            ))
+        }
+    })
 }
 
 fn reserve<T>(rows: &mut Vec<T>, count: usize) -> ReportResult<()> {
@@ -27,7 +54,10 @@ fn reserve<T>(rows: &mut Vec<T>, count: usize) -> ReportResult<()> {
         .map_err(|_| invalid("school-proved projection allocation refused"))
 }
 
-fn merge<T: Entity + PartialEq>(rows: &mut Vec<T>, exact: bool) -> ReportResult<()> {
+fn merge<T: Entity>(
+    rows: &mut Vec<T>,
+    validate_duplicate: impl Fn(&T, &T) -> ReportResult<()>,
+) -> ReportResult<()> {
     if rows.is_empty() {
         return Ok(());
     }
@@ -39,14 +69,8 @@ fn merge<T: Entity + PartialEq>(rows: &mut Vec<T>, exact: bool) -> ReportResult<
             .last_mut()
             .filter(|prior| prior.entity_id() == row.entity_id())
         {
-            if exact && *prior != row {
-                return Err(invalid(
-                    "school-proved performance conflicts with a physical source",
-                ));
-            }
-            if !exact {
-                prior.merge(row);
-            }
+            validate_duplicate(prior, &row)?;
+            prior.merge(row);
         } else {
             merged.push(row);
         }

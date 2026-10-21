@@ -4,6 +4,15 @@ pub mod read;
 use binding::{retain_calendar_original_body, retain_result_context, status_binding};
 use objects::{digest, domain, guarded, invalid, object_reference, Objects};
 
+fn proof_interpretation_name(
+    subject: &crate::participation_evidence::DocumentSubjectV1,
+) -> CrawlResult<&'static str> {
+    match subject.document_namespace() {
+        "mhsaa_article_v1" => Ok("mhsaa_subject_dcc_event_day_v1"),
+        "milesplit_result_document_v1" => Ok("milesplit_original_student_grade_dcc_event_day_v1"),
+        _ => Err(invalid("unsupported documentary status namespace")),
+    }
+}
 use crate::participation_evidence::recorded::{
     read_recorded_independent_participation, with_current_attached_participation,
     CheckedDocumentaryParticipationFactsV1, DiscoveredIdentityLinkedHtmlResultDocumentV1,
@@ -260,11 +269,8 @@ fn calendar_claim(
     grant: &mut AttachmentReplayGrantV1,
 ) -> CrawlResult<ResultCalendarEntryClaimV1> {
     let proof = source.season_proof();
-    let interpretation = format!(
-        "mhsaa_subject_dcc_event_day_v1\n{}\n{}",
-        proof.capture(),
-        proof.locator()
-    );
+    let name = proof_interpretation_name(source.subject())?;
+    let interpretation = format!("{name}\n{}\n{}", proof.capture(), proof.locator());
     let expected = object_reference(interpretation.as_bytes(), grant)?;
     if expected.digest.as_str() != proof.interpretation() {
         return Err(invalid("calendar season interpretation digest differs"));

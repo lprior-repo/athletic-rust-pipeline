@@ -83,6 +83,15 @@ impl<'a, 's> DiscoveredIdentityLinkedHtmlResultDocumentV1<'a, 's> {
             attachment: DiscoveredResultAttachmentV1 { inner: attachment },
         })
     }
+    pub fn checked_event_label(
+        &self,
+        index: usize,
+        grant: &mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1,
+    ) -> crate::CrawlResult<
+        Option<crate::participation_evidence::provider_target::CheckedLinkedEventLabelV1>,
+    > {
+        super::event_label::read(self, index, grant)
+    }
 }
 
 pub struct DiscoveredIdentityLinkedHtmlResultRowV1<'a, 's> {
@@ -111,7 +120,7 @@ enum Attachment<'a, 's> {
     Frozen(&'a census_store::FrozenCurrentEvidenceSubjectAttachmentV1<'a, 's>),
 }
 
-impl DiscoveredResultAttachmentV1<'_, '_> {
+impl<'a, 's> DiscoveredResultAttachmentV1<'a, 's> {
     pub fn subject(
         &self,
     ) -> &census_domain::evidence_subject_attachment::RetainedDocumentSubjectReferenceV1 {
@@ -169,6 +178,32 @@ impl DiscoveredResultAttachmentV1<'_, '_> {
         match &self.inner {
             Attachment::Current(value) => value.require_original_grant(grant),
             Attachment::Frozen(value) => value.require_original_grant(grant),
+        }
+    }
+    pub(super) fn source(&self) -> super::view::Source<'_, 's> {
+        match &self.inner {
+            Attachment::Current(value) => super::view::Source::Current(value.snapshot()),
+            Attachment::Frozen(value) => super::view::Source::Frozen(value.source()),
+        }
+    }
+
+    pub(super) fn accepted_public_identities(
+        &self,
+    ) -> &census_store::AcceptedPublicIdentitySnapshot {
+        match &self.inner {
+            Attachment::Current(value) => value.accepted_public_identities(),
+            Attachment::Frozen(value) => value.accepted_public_identities(),
+        }
+    }
+
+    pub(super) fn read_context_object(
+        &self,
+        reference: &census_domain::evidence_subject_attachment::AttachmentObjectReferenceV1,
+        grant: &mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1,
+    ) -> census_store::StoreResult<Option<census_store::ReadAttachmentContextObjectV1<'_>>> {
+        match &self.inner {
+            Attachment::Current(value) => value.read_context_object_v1(reference, grant),
+            Attachment::Frozen(value) => value.read_context_object_v1(reference, grant),
         }
     }
 }
