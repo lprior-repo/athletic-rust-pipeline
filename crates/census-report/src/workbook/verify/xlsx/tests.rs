@@ -1,8 +1,11 @@
 mod container;
 mod deflate;
 mod fixture;
+mod formulas;
+mod names;
 mod parity;
 mod publication;
+mod relationships;
 
 use crate::report::CorruptionClass;
 use crate::workbook::verify::canonical::Value;

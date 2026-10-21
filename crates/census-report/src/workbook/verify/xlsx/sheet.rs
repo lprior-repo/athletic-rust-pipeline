@@ -27,7 +27,6 @@ enum Target {
     None,
     Value,
     Text,
-    Formula,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -230,7 +229,11 @@ impl<C: Cells> Handler for Walk<'_, C> {
             CELL => self.begin_cell(element)?,
             VALUE => self.target = Target::Value,
             TEXT => self.target = Target::Text,
-            FORMULA => self.target = Target::Formula,
+            FORMULA => {
+                return Err(self
+                    .scope
+                    .outside("formula cells cannot be verified from cached values"));
+            }
             _ => {}
         }
         if element.name == "dimension" {
@@ -248,7 +251,7 @@ impl<C: Cells> Handler for Walk<'_, C> {
         }
         match code {
             CELL => self.end_cell()?,
-            VALUE | TEXT | FORMULA => self.target = Target::None,
+            VALUE | TEXT => self.target = Target::None,
             _ => {}
         }
         Ok(())
@@ -256,7 +259,7 @@ impl<C: Cells> Handler for Walk<'_, C> {
 
     fn text(&mut self, text: &str) -> ReportResult<()> {
         match self.target {
-            Target::None | Target::Formula => Ok(()),
+            Target::None => Ok(()),
             Target::Value | Target::Text => {
                 if self.value.len().saturating_add(text.len()) > self.profile.token {
                     return Err(self.scope.corrupt(format!(

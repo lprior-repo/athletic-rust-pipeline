@@ -270,6 +270,14 @@ impl<'a, H: Handler> Xml<'a, H> {
             self.attributes.push((key, value));
             rest = trim(tail.get(1..).map_or(&[], |rest| rest));
         }
+        self.attributes
+            .sort_unstable_by(|left, right| left.0.cmp(&right.0));
+        if let Some(name) = self.attributes.windows(2).find_map(|pair| match pair {
+            [first, second] if first.0 == second.0 => Some(first.0.as_str()),
+            _ => None,
+        }) {
+            return Err(scope.corrupt(format!("XML attribute {name} is repeated")));
+        }
         Ok(())
     }
 }
