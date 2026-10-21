@@ -3,10 +3,13 @@ use super::{
     ParticipationEvidenceRefV1, RetainedHtmlCaptureV1, VerifiedIndependentParticipationV1,
     INTERPRETATION, MAX_PACKET,
 };
+use crate::milesplit::SourceRowLocator;
 use census_domain::model::StoreIdentity;
 use census_store::StoreResult;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+mod result_status;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -14,6 +17,8 @@ pub struct IndependentParticipationPacketV1 {
     version: u32,
     status: RetainedHtmlCaptureV1,
     schedule: RetainedHtmlCaptureV1,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    result_row: Option<SourceRowLocator>,
 }
 
 impl IndependentParticipationPacketV1 {
@@ -25,6 +30,21 @@ impl IndependentParticipationPacketV1 {
             version: 1,
             status,
             schedule,
+            result_row: None,
+        };
+        packet.bytes()?;
+        Ok(packet)
+    }
+    pub fn from_result_row(
+        status: RetainedHtmlCaptureV1,
+        schedule: RetainedHtmlCaptureV1,
+        row: SourceRowLocator,
+    ) -> StoreResult<Self> {
+        let packet = Self {
+            version: 1,
+            status,
+            schedule,
+            result_row: Some(row),
         };
         packet.bytes()?;
         Ok(packet)
@@ -65,12 +85,18 @@ impl IndependentParticipationPacketV1 {
                 "unsupported independent participation packet version",
             ));
         }
-        let status = status::read(&self.status)?;
+        let (status, interpretation) = match self.result_row {
+            Some(row) => (
+                result_status::read(&self.status, row)?,
+                "milesplit_original_student_grade_dcc_event_day_v1",
+            ),
+            None => (status::read(&self.status)?, INTERPRETATION),
+        };
         let season = schedule::read(&self.schedule, &status.day)?;
         let cohort = census_domain::model::GradYear::of(status.grade, season.school_year)
             .ok_or_else(|| invalid("source status grade/season cohort unsupported"))?;
-        let status_proof = proof(&self.status, &status.subject.locator);
-        let season_proof = proof(&self.schedule, &season.locator);
+        let status_proof = proof(&self.status, &status.subject.locator, interpretation);
+        let season_proof = proof(&self.schedule, &season.locator, interpretation);
         Ok(VerifiedIndependentParticipationV1 {
             store_identity,
             snapshot_sequence,
@@ -89,11 +115,15 @@ impl IndependentParticipationPacketV1 {
     }
 }
 
-fn proof(capture: &RetainedHtmlCaptureV1, locator: &str) -> IndependentParticipationProofV1 {
+fn proof(
+    capture: &RetainedHtmlCaptureV1,
+    locator: &str,
+    interpretation: &str,
+) -> IndependentParticipationProofV1 {
     IndependentParticipationProofV1 {
         capture: capture.body_sha256().into(),
         interpretation: hash(
-            format!("{INTERPRETATION}\n{}\n{locator}", capture.body_sha256()).as_bytes(),
+            format!("{interpretation}\n{}\n{locator}", capture.body_sha256()).as_bytes(),
         ),
         locator: locator.into(),
         acquired_at: capture.acquired_at(),

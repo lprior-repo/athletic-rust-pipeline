@@ -8,6 +8,7 @@ use census_domain::model::{
 mod error;
 mod fixture;
 mod identity;
+mod observation;
 mod refusals;
 mod replay;
 mod selected_row;

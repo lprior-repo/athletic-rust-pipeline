@@ -4,10 +4,12 @@ use serde::{Deserialize, Serialize};
 
 mod json;
 mod linked;
+mod linked_event_label;
 mod profile;
 mod types;
 mod urls;
 
+pub use linked_event_label::CheckedLinkedEventLabelV1;
 pub use types::{
     CheckedLinkedCompetitionCategoryV1, CheckedMileSplitProfileSubjectV1,
     CheckedProviderTargetIntakeV1, CompetitionCategoryEvidenceV1, ProviderTargetProofV1,
@@ -70,6 +72,12 @@ impl SourceTargetPacketV1 {
             profile,
             categories,
         })
+    }
+    pub fn read_event_label(
+        &self,
+        row_proof: &ProviderTargetProofV1,
+    ) -> StoreResult<CheckedLinkedEventLabelV1> {
+        linked_event_label::read(self, row_proof)
     }
 }
 

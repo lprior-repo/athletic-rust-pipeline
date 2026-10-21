@@ -1,8 +1,8 @@
 use super::*;
 
 #[test]
-fn active_inline_context_returns_exact_approved_bytes() -> TestResult {
-    let case = committed("active-inline-context")?;
+fn bound_read_returns_the_exact_approved_inline_bytes() -> TestResult {
+    let case = committed("active-inline-bound-exact")?;
     let object = case
         .context
         .objects
@@ -11,12 +11,11 @@ fn active_inline_context_returns_exact_approved_bytes() -> TestResult {
     let view = case.fixture.store.snapshot();
     let mut grant = AttachmentReplayGrantV1::new();
     let owner = view.read_current_evidence_subject_attachment_references_v1(&mut grant)?;
+    let bound = owner
+        .bind_exact_subject(&case.context.subject, &mut grant)?
+        .ok_or("active subject absent")?;
     check!(matches!(
-        owner.read_active_context_object_v1(
-            &case.context.subject,
-            &object.reference,
-            &mut grant,
-        )?,
+        bound.read_context_object_v1(&object.reference, &mut grant)?,
         Some(crate::ReadAttachmentContextObjectV1::Inline { reference, bytes })
             if reference == &object.reference && bytes.as_slice() == object.bytes.as_slice()
     ));
@@ -24,110 +23,117 @@ fn active_inline_context_returns_exact_approved_bytes() -> TestResult {
 }
 
 #[test]
-fn active_inline_context_refuses_wrong_length_and_returns_none_for_unapproved_digest() -> TestResult
-{
-    let case = committed("active-inline-context-authorization")?;
+fn bound_read_returns_none_for_an_object_introduced_by_another_active_record() -> TestResult {
+    let case = committed("active-inline-bound-cross-record")?;
+    let later = case.fixture.second_birth()?;
+    let other = Context::synthetic("active-inline-bound-cross-other")?;
+    let inspection = inspect_first(&case.fixture.store, later.public_id())?;
+    let command = other.command("active-inline-bound-cross-other-attach", &inspection)?;
+    written(apply(
+        &case.fixture.store,
+        prepare(&case.fixture.store, inspection, command, &other)?,
+    )?)?;
+    let other_object = other
+        .objects
+        .first()
+        .ok_or("other synthetic inline object absent")?;
+
+    let listed_view = case.fixture.store.snapshot();
+    let mut listed_grant = AttachmentReplayGrantV1::new();
+    let listed = listed_view.read_evidence_subject_attachment_references_v1(&mut listed_grant)?;
+    check!(listed.records().iter().any(|record| {
+        record
+            .command
+            .reviewed_context
+            .objects
+            .as_slice()
+            .contains(&other_object.reference)
+    }));
+
+    let before = retained_state(&case.fixture.store)?;
+    let view = case.fixture.store.snapshot();
+    let mut grant = AttachmentReplayGrantV1::new();
+    let owner = view.read_current_evidence_subject_attachment_references_v1(&mut grant)?;
+    let bound = owner
+        .bind_exact_subject(&case.context.subject, &mut grant)?
+        .ok_or("original active subject absent")?;
+    check!(eq; bound.record(), &case.record);
+    check!(bound
+        .read_context_object_v1(&other_object.reference, &mut grant)?
+        .is_none());
+    let other_bound = owner
+        .bind_exact_subject(&other.subject, &mut grant)?
+        .ok_or("other active subject absent")?;
+    check!(matches!(
+        other_bound.read_context_object_v1(&other_object.reference, &mut grant)?,
+        Some(crate::ReadAttachmentContextObjectV1::Inline { reference, bytes })
+            if reference == &other_object.reference
+                && bytes.as_slice() == other_object.bytes.as_slice()
+    ));
+    check!(eq; retained_state(&case.fixture.store)?, before);
+    Ok(())
+}
+
+#[test]
+fn bound_read_refuses_a_wrong_length_reference_with_the_same_digest_and_poisons() -> TestResult {
+    let case = committed("active-inline-bound-wrong-length")?;
     let approved = case
         .context
         .objects
         .first()
         .ok_or("synthetic inline object absent")?;
-    let view = case.fixture.store.snapshot();
-    let mut owner_grant = AttachmentReplayGrantV1::new();
-    let owner = view.read_current_evidence_subject_attachment_references_v1(&mut owner_grant)?;
-
     let mut wrong_length = approved.reference.clone();
     wrong_length.bytes = wrong_length
         .bytes
         .checked_add(1)
         .ok_or("inline object length overflow")?;
-    check!(matches!(
-        owner
-            .read_active_context_object_v1(&case.context.subject, &wrong_length, &mut owner_grant,),
-        Err(StoreError::EvidenceSubjectAttachment(Error::Corrupt(_)))
-    ));
-    poisoned(&mut owner_grant)?;
+    check!(eq; wrong_length.digest, approved.reference.digest);
+    check!(ne; wrong_length.bytes, approved.reference.bytes);
 
-    let unapproved = InlineObject::synthetic("active-inline-context-unapproved")?;
-    let mut fresh_grant = AttachmentReplayGrantV1::new();
-    let fresh_owner =
-        view.read_current_evidence_subject_attachment_references_v1(&mut fresh_grant)?;
-    check!(fresh_owner
-        .read_active_context_object_v1(
-            &case.context.subject,
-            &unapproved.reference,
-            &mut fresh_grant,
-        )?
-        .is_none());
-    Ok(())
-}
-
-#[test]
-fn active_inline_context_is_absent_after_subject_revocation() -> TestResult {
-    let case = committed("active-inline-context-revoked")?;
-    let inspection = case.fixture.store.inspect_evidence_subject_attachment_v1(
-        AttachmentInspectionRequestV1::Revoke {
-            prior: case.record.reference(),
-        },
-    )?;
-    let command = next_command(&case.record, "active-inline-context-revoke", &inspection)?;
-    written(apply(
-        &case.fixture.store,
-        case.fixture.store.prepare_evidence_subject_attachment_v1(
-            command,
-            Preparation::New {
-                inspection,
-                context: &[],
-            },
-        )?,
-    )?)?;
-
+    let before = retained_state(&case.fixture.store)?;
     let view = case.fixture.store.snapshot();
     let mut grant = AttachmentReplayGrantV1::new();
     let owner = view.read_current_evidence_subject_attachment_references_v1(&mut grant)?;
-    check!(owner
-        .read_active_context_object_v1(
-            &case.context.subject,
-            &case
-                .context
-                .objects
-                .first()
-                .ok_or("object absent")?
-                .reference,
-            &mut grant,
-        )?
-        .is_none());
+    let bound = owner
+        .bind_exact_subject(&case.context.subject, &mut grant)?
+        .ok_or("active subject absent")?;
+    check!(matches!(
+        bound.read_context_object_v1(&wrong_length, &mut grant),
+        Err(StoreError::EvidenceSubjectAttachment(Error::Corrupt(_)))
+    ));
+    poisoned(&mut grant)?;
+    check!(eq; retained_state(&case.fixture.store)?, before);
     Ok(())
 }
 
 #[test]
-fn active_inline_context_rejects_a_foreign_grant_and_poison_is_not_recoverable() -> TestResult {
-    let case = committed("active-inline-context-foreign-grant")?;
+fn bound_read_refuses_a_foreign_continuation_grant_without_changing_state() -> TestResult {
+    let case = committed("active-inline-bound-foreign-grant")?;
     let object = case
         .context
         .objects
         .first()
         .ok_or("synthetic inline object absent")?;
+    let before = retained_state(&case.fixture.store)?;
     let view = case.fixture.store.snapshot();
     let mut original = AttachmentReplayGrantV1::new();
     let owner = view.read_current_evidence_subject_attachment_references_v1(&mut original)?;
+    let bound = owner
+        .bind_exact_subject(&case.context.subject, &mut original)?
+        .ok_or("active subject absent")?;
     let mut foreign = AttachmentReplayGrantV1::new();
     check!(matches!(
-        owner
-            .read_active_context_object_v1(&case.context.subject, &object.reference, &mut foreign,),
+        bound.read_context_object_v1(&object.reference, &mut foreign),
         Err(StoreError::EvidenceSubjectAttachment(Error::Domain(
             EvidenceSubjectAttachmentError::Invalid(_)
         )))
     ));
     poisoned(&mut foreign)?;
     check!(matches!(
-        owner.read_active_context_object_v1(
-            &case.context.subject,
-            &object.reference,
-            &mut original,
-        )?,
+        bound.read_context_object_v1(&object.reference, &mut original)?,
         Some(crate::ReadAttachmentContextObjectV1::Inline { reference, bytes })
             if reference == &object.reference && bytes.as_slice() == object.bytes.as_slice()
     ));
+    check!(eq; retained_state(&case.fixture.store)?, before);
     Ok(())
 }

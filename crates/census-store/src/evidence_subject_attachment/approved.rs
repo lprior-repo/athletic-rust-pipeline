@@ -100,6 +100,34 @@ impl<'a> ReviewedAttachmentSubjectV1<'a> {
         Ok(self.material(&self.subject.body, grant)?.reference())
     }
 
+    pub(crate) fn locator(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<Vec<u8>> {
+        let material = self.material(&self.subject.locator, grant)?;
+        if material.reference().bytes > 96 {
+            return Err(Error::Corrupt("original subject locator bound").into());
+        }
+        material.inline_bytes(grant)
+    }
+
+    pub(crate) fn root_anchor(
+        &self,
+        root: &crate::RetainedCaptureRootV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<&'a RetainedCaptureLeafV1> {
+        let Material::Retained { leaf } = self.material(&root.payload.digest, grant)? else {
+            return Err(Error::Corrupt("original root anchor is not retained").into());
+        };
+        if leaf.version != 1
+            || leaf.kind != crate::RetainedCaptureLeafKindV1::RootJson
+            || leaf.slot != crate::RetainedCaptureSlotV1::ParticipationStatus
+            || root.schema != crate::RetainedCaptureRootSchemaV1::ParticipationPacketV1
+            || &leaf.root != root
+            || leaf.object != root.payload
+        {
+            return Err(Error::Corrupt("original root anchor differs").into());
+        }
+        Ok(leaf)
+    }
+
     fn material(
         &self,
         digest: &AttachmentDigestV1,

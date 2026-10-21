@@ -1,8 +1,9 @@
+use super::super::material;
 use super::*;
 use crate::Receipt;
 use census_domain::evidence_subject_attachment::{
-    AttachmentInventoryV1, AttachmentReplayContinuationV1, AttachmentTargetV1,
-    ReviewedReferenceRecordV1,
+    AttachmentInventoryV1, AttachmentObjectReferenceV1, AttachmentReplayContinuationV1,
+    AttachmentTargetV1, ReviewedReferenceRecordV1,
 };
 use census_domain::model::StoreIdentity;
 use census_domain::public_identity_history::RegistryHead;
@@ -17,7 +18,7 @@ pub struct CurrentEvidenceSubjectAttachmentV1<'a, 's> {
     pub(super) continuation: &'a AttachmentReplayContinuationV1,
 }
 
-impl<'s> CurrentEvidenceSubjectAttachmentV1<'_, 's> {
+impl<'a, 's> CurrentEvidenceSubjectAttachmentV1<'a, 's> {
     pub fn snapshot(&self) -> &StoreSnapshot<'s> {
         self.view
     }
@@ -42,9 +43,26 @@ impl<'s> CurrentEvidenceSubjectAttachmentV1<'_, 's> {
     pub fn accepted_public_head(&self) -> &RegistryHead {
         self.accepted.head()
     }
+    pub fn accepted_public_identities(&self) -> &crate::AcceptedPublicIdentitySnapshot {
+        self.accepted
+    }
     pub fn require_original_grant(&self, grant: &mut AttachmentReplayGrantV1) -> StoreResult<()> {
         self.continuation
             .require(grant)
             .map_err(|source| Error::Domain(source).into())
+    }
+    pub fn read_context_object_v1(
+        &self,
+        reference: &AttachmentObjectReferenceV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<Option<material::ReadAttachmentContextObjectV1<'a>>> {
+        self.require_original_grant(grant)?;
+        let result = self
+            .ledger
+            .read_approved_context_object(self.record, reference, grant);
+        if result.is_err() {
+            grant.poison();
+        }
+        result
     }
 }

@@ -142,6 +142,14 @@ impl CheckedCapture<'_> {
         self.raw
     }
 
+    pub(crate) fn require_reference(
+        &self,
+        reference: &AttachmentObjectReferenceV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<()> {
+        require_reference(self.raw.get().as_bytes(), reference, grant)
+    }
+
     pub(crate) fn body_bytes(
         &self,
         reference: &AttachmentObjectReferenceV1,

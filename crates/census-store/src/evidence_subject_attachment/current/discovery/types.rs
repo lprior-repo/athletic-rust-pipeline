@@ -15,6 +15,7 @@ pub struct ActiveAttachmentSubjectV1<'a> {
     pub(super) capture: &'a Material,
     pub(super) locator: Locator<'a>,
     pub(super) context: &'a AttachmentObjectReferenceV1,
+    pub(super) retained_root_anchors: Vec<&'a RetainedCaptureLeafV1>,
 }
 
 pub(super) enum Locator<'a> {
@@ -46,6 +47,9 @@ impl ActiveAttachmentSubjectV1<'_> {
     }
     pub fn context(&self) -> &AttachmentObjectReferenceV1 {
         self.context
+    }
+    pub fn retained_root_anchors(&self) -> &[&RetainedCaptureLeafV1] {
+        &self.retained_root_anchors
     }
     pub fn capture(&self) -> DiscoveredAttachmentCaptureV1<'_> {
         match self.capture {

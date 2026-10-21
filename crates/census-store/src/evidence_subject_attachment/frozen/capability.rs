@@ -1,3 +1,4 @@
+use super::super::material;
 use super::*;
 use crate::Receipt;
 use census_domain::evidence_subject_attachment::{
@@ -38,6 +39,9 @@ impl<'a, 'b> FrozenCurrentEvidenceSubjectAttachmentV1<'a, 'b> {
     pub fn accepted_public_head(&self) -> &RegistryHead {
         self.owner.accepted_public_head()
     }
+    pub fn accepted_public_identities(&self) -> &crate::AcceptedPublicIdentitySnapshot {
+        self.owner.accepted_snapshot()
+    }
     pub fn snapshot_sequence(&self) -> u64 {
         self.owner.snapshot_sequence()
     }
@@ -46,5 +50,20 @@ impl<'a, 'b> FrozenCurrentEvidenceSubjectAttachmentV1<'a, 'b> {
             .continuation
             .require(grant)
             .map_err(|source| Error::Domain(source).into())
+    }
+    pub fn read_context_object_v1(
+        &self,
+        reference: &AttachmentObjectReferenceV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<Option<material::ReadAttachmentContextObjectV1<'a>>> {
+        self.require_original_grant(grant)?;
+        let result = self
+            .owner
+            .ledger
+            .read_approved_context_object(self.record, reference, grant);
+        if result.is_err() {
+            grant.poison();
+        }
+        result
     }
 }

@@ -7,9 +7,13 @@ use census_crawl::participation_evidence::recorded::{
     discover_frozen_html_results, DiscoveredIdentityLinkedHtmlResultDocumentV1,
 };
 use census_crawl::participation_evidence::result_ownership::school_correspondence::read::checked_frozen;
-use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
+use census_domain::evidence_subject_attachment::{
+    AttachmentFactDispositionV1, AttachmentReplayGrantV1,
+};
 use census_domain::model::{
-    CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam, PerformanceId,
+    CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam, EventDisposition,
+    EventResolutionReason, EventSemantics, Evidence, PerformanceId, RecruitingCatalogV1,
+    SourceEventLabel, Sport,
 };
 use census_store::ReplayedResultSchoolCorrespondencesV1;
 use std::collections::BTreeSet;
@@ -24,6 +28,8 @@ pub(crate) struct SchoolProjectedRow {
     pub(crate) event: CanonicalEvent,
     pub(crate) team: CanonicalTeam,
     pub(crate) performance: CanonicalPerformance,
+    #[serde(skip)]
+    pub(crate) original_event_label: Option<SourceEventLabel>,
 }
 
 pub(crate) fn collect(
@@ -98,13 +104,112 @@ fn project_row(
         Some(value) => value,
         None => return Err(invalid("projection row vanished").into()),
     };
-    let (event, team, performance) = first.into_proposed_entities();
+    let (mut event, team, performance) = first.into_proposed_entities();
+    let original_event_label = reviewed_event_context(linked, index, &mut event, grant)?;
     Ok(Some(SchoolProjectedRow {
         meet,
         event,
         team,
         performance,
+        original_event_label,
     }))
+}
+
+fn reviewed_event_context(
+    linked: &DiscoveredIdentityLinkedHtmlResultDocumentV1<'_, '_>,
+    index: usize,
+    event: &mut CanonicalEvent,
+    grant: &mut AttachmentReplayGrantV1,
+) -> ReportResult<Option<SourceEventLabel>> {
+    let row = linked
+        .row(index)
+        .ok_or_else(|| invalid("reviewed event context result row absent"))?;
+    let attachment = row.attachment();
+    let facts = attachment
+        .record()
+        .command
+        .reviewed_context
+        .facts
+        .as_slice();
+    let subject = &attachment.subject().subject;
+    grant
+        .charge_steps(facts.len())
+        .map_err(census_store::EvidenceSubjectAttachmentStoreError::Domain)
+        .map_err(census_store::StoreError::from)?;
+    if !facts.iter().any(|fact| {
+        &fact.subject == subject && fact.disposition == AttachmentFactDispositionV1::ContextOnly
+    }) {
+        return Ok(None);
+    }
+    if RecruitingCatalogV1::with_policy(EventSemantics::CURRENT)
+        .classify(event, Sport::Unknown)
+        .map_err(|source| crate::report::ReportError::Catalog {
+            event: event.id.clone(),
+            source,
+        })?
+        != EventDisposition::Unresolved(EventResolutionReason::UnknownOrMixedSourceLabels)
+    {
+        return Ok(None);
+    }
+    let Some(label) = linked
+        .checked_event_label(index, grant)
+        .map_err(source_error)?
+    else {
+        return Ok(None);
+    };
+    grant
+        .charge_steps(facts.len())
+        .map_err(census_store::EvidenceSubjectAttachmentStoreError::Domain)
+        .map_err(census_store::StoreError::from)?;
+    if !facts.iter().any(|fact| {
+        &fact.subject == subject
+            && fact.fact == label.heading_reference().digest
+            && fact.disposition == AttachmentFactDispositionV1::ContextOnly
+    }) {
+        return Ok(None);
+    }
+    if event.source_labels.len() != 1 {
+        return Err(invalid("checked event context has ambiguous original source labels").into());
+    }
+    let original = event
+        .source_labels
+        .pop()
+        .ok_or_else(|| invalid("checked event context original source label absent"))?;
+    let note = EventContextNote {
+        role: "checked_linked_result_event_context",
+        original: &original,
+        heading: label.heading_reference(),
+        capture: label.heading_proof().capture(),
+        locator: label.heading_proof().locator(),
+        row: label.row_reference(),
+        review: &attachment.record().record_digest,
+    };
+    let encoded =
+        serde_json::to_string(&note).map_err(|source| crate::report::ReportError::Invariant {
+            detail: format!("encoding checked source event context: {source}"),
+        })?;
+    let observed = label.heading_proof().acquired_at().to_rfc3339();
+    let source_label = label.into_source_label();
+    let mut evidence = Evidence::parsed(source_label.source.clone(), observed);
+    evidence.note = Some(encoded);
+    event
+        .evidence
+        .try_reserve(1)
+        .map_err(|_| invalid("checked event context evidence allocation refused"))?;
+    event.source_labels.push(source_label);
+    event.evidence.push(evidence);
+    Ok(Some(original))
+}
+
+#[derive(serde::Serialize)]
+struct EventContextNote<'a> {
+    role: &'static str,
+    original: &'a SourceEventLabel,
+    heading: &'a census_domain::evidence_subject_attachment::AttachmentObjectReferenceV1,
+    capture: &'a str,
+    locator: &'a str,
+    row: &'a census_domain::evidence_subject_attachment::AttachmentObjectReferenceV1,
+    review: &'a census_domain::evidence_subject_attachment::AttachmentDigestV1,
 }
 
 fn admit_row(

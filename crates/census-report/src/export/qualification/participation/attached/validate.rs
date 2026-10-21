@@ -27,7 +27,12 @@ pub(super) fn canonical(
     for candidate in &dataset.performances {
         budget.charge(0, 1)?;
         if candidate.id == performance.id {
-            if candidate != performance {
+            if !census_crawl::participation_evidence::physical_result::matches_physical_observation(
+                candidate,
+                performance,
+            )
+            .map_err(crate::report::documentary_source_error)?
+            {
                 return Err(super::super::invalid(
                     "school-projected performance conflicts with a physical source",
                 )

@@ -3,6 +3,7 @@ use census_domain::model::{EventIdentityError, PerformanceError, SpecificationEr
 use census_domain::participation_candidates::MAX_PARTICIPATION_FACTS;
 
 mod admission;
+mod observation;
 mod project;
 mod provenance;
 mod types;
@@ -12,6 +13,7 @@ pub use types::{
     UnadmittedHtmlResultRowV1,
 };
 
+pub use observation::matches_physical_observation;
 type Result<T> = std::result::Result<T, HtmlResultProjectionError>;
 const INTERPRETATION: &str = "milesplit_html_physical_projection_v1";
 const SOURCE_KEY: &str = "milesplit_html_row_v1";

@@ -118,6 +118,42 @@ impl<P> VerifiedLedger<P> {
         }
         Ok(None)
     }
+    pub(super) fn read_approved_context_object<'a>(
+        &'a self,
+        record: &ReviewedReferenceRecordV1,
+        reference: &AttachmentObjectReferenceV1,
+        grant: &mut AttachmentReplayGrantV1,
+    ) -> StoreResult<Option<material::ReadAttachmentContextObjectV1<'a>>> {
+        let objects = record.command.reviewed_context.objects.as_slice();
+        grant.charge_steps(objects.len()).map_err(Error::Domain)?;
+        let Some(approved) = objects
+            .iter()
+            .find(|candidate| candidate.digest == reference.digest)
+        else {
+            return Ok(None);
+        };
+        if approved != reference {
+            return Err(Error::Corrupt("context object length differs").into());
+        }
+
+        let object = self
+            .find_object(&reference.digest, grant)?
+            .ok_or(Error::Corrupt("missing retained context object"))?;
+        if object.reference() != reference {
+            return Err(Error::Corrupt("context object reference differs").into());
+        }
+        Ok(Some(match object {
+            material::Material::Inline { reference, .. } => {
+                material::ReadAttachmentContextObjectV1::Inline {
+                    reference,
+                    bytes: object.inline_bytes(grant)?,
+                }
+            }
+            material::Material::Retained { leaf } => {
+                material::ReadAttachmentContextObjectV1::Retained(leaf)
+            }
+        }))
+    }
 
     pub(super) fn find_object(
         &self,
