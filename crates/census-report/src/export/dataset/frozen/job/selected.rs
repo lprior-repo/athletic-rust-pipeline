@@ -31,31 +31,38 @@ pub(super) fn capture(
                 "selected export job has both retained and pending inputs",
             ));
         }
-        let dataset = reopen(store, job, selection, root)?;
+        let (dataset, _) = reopen(store, job, selection, root)?;
         super::sync_directory(
             root.parent()
                 .ok_or_else(|| invalid("selected job has no parent"))?,
         )?;
         return Ok(dataset);
     }
-    if !present(&pending)? {
-        prepare(store, job, selection, &pending)?;
-    }
-    drop(reopen(store, job, selection, &pending)?);
-    sync_bundle(&pending)?;
-    rustix::fs::renameat_with(
-        rustix::fs::CWD,
+    let (dataset, archive_digest) = if !present(&pending)? {
+        let (mut prepared, archive_digest) = prepare(store, job, selection, &pending)?;
+        super::super::archive::verify_retained(
+            &pending.join("input.json"),
+            &archive_digest,
+            &prepared.lineage,
+        )?;
+        super::super::archive::hydrate_retained(
+            &mut prepared,
+            &pending.join("input.json"),
+            Some(&archive_digest),
+        )?;
+        (prepared, archive_digest)
+    } else {
+        reopen(store, job, selection, &pending)?
+    };
+    promote(
+        store,
+        job,
+        selection,
         &pending,
-        rustix::fs::CWD,
         root,
-        rustix::fs::RenameFlags::NOREPLACE,
+        dataset,
+        &archive_digest,
     )
-    .map_err(|source| io_error(root, source.into()))?;
-    super::sync_directory(
-        root.parent()
-            .ok_or_else(|| invalid("selected job has no parent"))?,
-    )?;
-    reopen(store, job, selection, root)
 }
 
 fn prepare(
@@ -63,7 +70,7 @@ fn prepare(
     job: &str,
     selection: &ProfileSelectionV1,
     pending: &Path,
-) -> ReportResult<()> {
+) -> ReportResult<(ExportDataset, String)> {
     let snapshot = store.snapshot();
     let profile = snapshot.selected_profile(selection)?;
     let freshness = freshness::capture(&snapshot, &profile)?;
@@ -81,7 +88,8 @@ fn prepare(
     let commitment = Commitment::new(job, selection, &dataset, freshness)?;
     dataset.save_frozen(&archive)?;
     commitment.write(&pending.join("commitment.json"))?;
-    sync_bundle(pending)
+    sync_bundle(pending)?;
+    Ok((dataset, commitment.archive_digest))
 }
 
 fn reopen(
@@ -89,7 +97,7 @@ fn reopen(
     job: &str,
     selection: &ProfileSelectionV1,
     root: &Path,
-) -> ReportResult<ExportDataset> {
+) -> ReportResult<(ExportDataset, String)> {
     require_directory(root)?;
     let commitment = Commitment::read(&root.join("commitment.json"))?;
     commitment.require_request(store, job, selection)?;
@@ -116,7 +124,83 @@ fn reopen(
     dataset.ensure_current_selected_write()?;
     dataset.ensure_snapshot(&snapshot)?;
     sync_bundle(root)?;
+    Ok((dataset, commitment.archive_digest))
+}
+
+fn promote(
+    store: &Store,
+    job: &str,
+    selection: &ProfileSelectionV1,
+    pending: &Path,
+    root: &Path,
+    mut dataset: ExportDataset,
+    archive_digest: &str,
+) -> ReportResult<ExportDataset> {
+    require_current(&mut dataset, store, job, selection, pending, archive_digest)?;
+    if let Some(proofs) = dataset.selected_proofs.as_mut() {
+        proofs.bind_directory(&super::super::proof_directory(&pending.join("input.json"))?)?;
+    }
+    sync_bundle(pending)?;
+    rustix::fs::renameat_with(
+        rustix::fs::CWD,
+        pending,
+        rustix::fs::CWD,
+        root,
+        rustix::fs::RenameFlags::NOREPLACE,
+    )
+    .map_err(|source| io_error(root, source.into()))?;
+    super::sync_directory(
+        root.parent()
+            .ok_or_else(|| invalid("selected job has no parent"))?,
+    )?;
+    if let Some(proofs) = dataset.selected_proofs.as_mut() {
+        proofs.bind_directory(&super::super::proof_directory(&root.join("input.json"))?)?;
+    }
+    require_current(&mut dataset, store, job, selection, root, archive_digest)?;
+    super::super::archive::verify_retained(
+        &root.join("input.json"),
+        archive_digest,
+        &dataset.lineage,
+    )?;
+    sync_bundle(root)?;
     Ok(dataset)
+}
+
+fn require_current(
+    dataset: &mut ExportDataset,
+    store: &Store,
+    job: &str,
+    selection: &ProfileSelectionV1,
+    root: &Path,
+    archive_digest: &str,
+) -> ReportResult<()> {
+    require_directory(root)?;
+    let commitment = Commitment::read(&root.join("commitment.json"))?;
+    commitment.require_request(store, job, selection)?;
+    if commitment.archive_digest != archive_digest {
+        return Err(invalid(
+            "selected export commitment differs from its bound dataset",
+        ));
+    }
+    let snapshot = store.snapshot();
+    let profile = snapshot.selected_profile(selection)?;
+    if freshness::capture(&snapshot, &profile)? != commitment.freshness {
+        return Err(invalid(
+            "selected export job authority changed; retained input is preserved",
+        ));
+    }
+    super::preflight(store, job, &dataset.lineage)?;
+    if dataset.selected_profile_id() != Some(selection.profile_id())
+        || dataset.selected_authority()?.profile() != &profile
+    {
+        return Err(invalid(
+            "selected export job differs from its immutable profile selection",
+        ));
+    }
+    dataset.selected_job_freshness = Some(commitment.freshness);
+    dataset.ensure_current_selected_write()?;
+    dataset.ensure_snapshot(&snapshot)?;
+    Ok(())
 }
 
 fn require_directory(path: &Path) -> ReportResult<()> {
