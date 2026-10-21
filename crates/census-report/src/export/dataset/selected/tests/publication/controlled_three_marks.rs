@@ -10,6 +10,8 @@ mod documentary_lifecycle;
 mod documentary_material;
 mod documentary_review;
 mod flow;
+#[path = "controlled_three_marks/current_school_review/genuine_tessa/mod.rs"]
+mod genuine_tessa;
 mod objects;
 mod point_source;
 mod producer;

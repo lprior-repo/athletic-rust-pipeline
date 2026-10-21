@@ -17,6 +17,7 @@ mod gobound_policy;
 pub(crate) mod national_resume;
 mod native_deployment_handoff;
 mod native_origin_continuation;
+mod ordinary_pass_continuation;
 mod origin_continuation_replay;
 mod public_resources_fixture;
 mod reconciliation_multi_source;

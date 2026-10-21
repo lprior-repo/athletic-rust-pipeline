@@ -13,7 +13,7 @@ use crate::restate_services::{blocking, job_error, teams_arms, JobError, Jobs};
 mod access_snapshot;
 mod acquisition;
 mod admission;
-mod continuation_scope;
+pub(super) mod continuation_scope;
 mod cooldown;
 mod execution;
 mod execution_ledger;

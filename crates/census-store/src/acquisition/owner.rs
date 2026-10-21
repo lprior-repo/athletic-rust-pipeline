@@ -8,6 +8,7 @@ use std::path::Path;
 
 mod proof;
 mod public;
+mod service;
 pub(super) use proof::OwnerScopeProof;
 
 #[derive(Clone)]

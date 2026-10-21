@@ -38,6 +38,7 @@ mod team_collection;
 #[cfg(test)]
 mod team_collection_tests;
 pub(crate) mod team_source;
+mod teams_continuation;
 mod teams_reconciliation;
 pub use team_source::{TeamsSource, TeamsSourceClient, TeamsSourceIngressClient};
 
@@ -278,6 +279,8 @@ impl JurisdictionCensus {
         let mut state = self.load_object(&ctx).await?;
         let (stages_run, failures) = self
             .run_owed_stages_resilient(&ctx, &request, &mut state)
+            .await?;
+        self.consume_team_continuation(&ctx, &request, &mut state)
             .await?;
         let (owed, owed_reasons) = owed_work(&state, &request);
         let mut reasons = failures;

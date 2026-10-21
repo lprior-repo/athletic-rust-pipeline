@@ -57,7 +57,13 @@ pub(in super::super) fn prepare(
     let issuance = decode_roster_issuance_claim(
         &serde_json::to_vec(&value)?,
         RosterAuthorityLimitsV1::new(64 * 1024, 8 * 1024 * 1024)?,
-    )?;
+    )
+    .map_err(|error| {
+        format!(
+            "roster issuance claim: {error}; role bytes: {:?}",
+            role_bytes(&value)
+        )
+    })?;
     let source = assess_retained_roster_source_v3(
         evidence,
         parser.canonical_bytes(),
@@ -194,4 +200,24 @@ fn review_objects(
 
 fn object(bytes: &[u8]) -> Value {
     json!({"digest": format!("{:x}", Sha256::digest(bytes)), "bytes": bytes.len()})
+}
+
+fn role_bytes(value: &Value) -> [(&'static str, Option<u64>); 14] {
+    [
+        "/capture/body/bytes",
+        "/binding/provider_packet/bytes",
+        "/parser/artifact/bytes",
+        "/parser/schema/bytes",
+        "/parser/configuration/bytes",
+        "/parser/dependencies/bytes",
+        "/capture/manifest/bytes",
+        "/capture/interpretation/bytes",
+        "/capture/retained_source_admission/bytes",
+        "/capture/verification_grant/bytes",
+        "/binding/school_projection/bytes",
+        "/binding/program_projection/bytes",
+        "/binding/physical_projection_inventory/bytes",
+        "/semantic_review_evidence/bytes",
+    ]
+    .map(|path| (path, value.pointer(path).and_then(Value::as_u64)))
 }

@@ -2,7 +2,7 @@ use super::types::{FinalUrl, IssuanceWire, ProposalWire, RecordWire, RosterAutho
 use super::{
     charge, size, Result, RosterAuthorityError, RosterAuthorityLimitsV1, RosterAuthorityScopeV1,
     RosterCaptureClaimV1, RosterExistingBindingClaimV1, MAX_BODY_BYTES, MAX_OBJECT_BYTES,
-    MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES,
+    MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES, MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES,
 };
 use crate::model::{Gender, SourceNamespace, Sport};
 use chrono::{DateTime, Utc};
@@ -186,6 +186,8 @@ fn check_references(
             MAX_BODY_BYTES
         } else if index == 7 {
             size(MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES)?
+        } else if index == 12 {
+            size(MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES)?
         } else {
             MAX_OBJECT_BYTES
         };

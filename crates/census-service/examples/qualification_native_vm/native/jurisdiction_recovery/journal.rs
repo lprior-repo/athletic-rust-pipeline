@@ -12,7 +12,7 @@ pub(super) use admission::settled_sources;
 
 mod future;
 mod ledger;
-pub(super) use future::awaited;
+pub(super) use future::{awaited, awaited_child};
 pub(super) use ledger::source_ledger;
 
 #[cfg(test)]

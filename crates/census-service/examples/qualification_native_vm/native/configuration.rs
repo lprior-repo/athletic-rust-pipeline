@@ -4,6 +4,8 @@ use anyhow::{ensure, Context, Result};
 use reqwest::{Client, Method};
 use serde_json::{json, Value};
 
+mod parents;
+
 #[tracing::instrument(skip(client, deployment))]
 pub(super) async fn configure(client: &Client, deployment: &Value) -> Result<Value> {
     let id = deployment
@@ -21,8 +23,9 @@ pub(super) async fn configure(client: &Client, deployment: &Value) -> Result<Val
     let endpoint = measure_endpoint(client, id).await?;
     let sweep = configure_sweep(client, id).await?;
     let teams = configure_teams(client, id).await?;
+    let parents = parents::configure(client, id).await?;
     Ok(
-        json!({"endpoint":endpoint,"sweep":sweep,"teams":teams,"scope":"isolated guest only; unchanged production defaults; configured before first workflow acceptance"}),
+        json!({"endpoint":endpoint,"sweep":sweep,"teams":teams,"parents":parents,"scope":"isolated guest only; unchanged production defaults; configured before first workflow acceptance"}),
     )
 }
 

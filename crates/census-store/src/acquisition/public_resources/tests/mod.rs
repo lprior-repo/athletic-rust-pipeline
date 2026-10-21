@@ -7,4 +7,5 @@ mod frontier;
 mod owner;
 mod profiles;
 mod replay;
+mod service_binding;
 mod store;

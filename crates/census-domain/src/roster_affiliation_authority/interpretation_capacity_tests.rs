@@ -84,7 +84,6 @@ fn every_neighbor_metadata_role_stays_at_64k() -> TestResult {
             "/capture/verification_grant/bytes",
             "/binding/school_projection/bytes",
             "/binding/program_projection/bytes",
-            "/binding/physical_projection_inventory/bytes",
         ] {
             let mut raw = sample(proposal)?;
             set_bytes(&mut raw, path, 64 * 1024)?;

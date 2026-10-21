@@ -16,7 +16,7 @@ pub(super) async fn before_reset(
     boundary: &Value,
 ) -> Result<Value> {
     let (call, previous) = witness::boundary(boundary)?;
-    let control = hold::pause_jurisdiction(client, &original.id, &original.key).await?;
+    let control = hold::pause_jurisdiction(client, &original.id, &original.key, &call).await?;
     let current = source::read_held(client, original).await?;
     witness::held(original, &call, &previous, &current)?;
     let national = national_held(client, original).await?;
@@ -85,7 +85,6 @@ async fn national_held(client: &Client, original: &Original) -> Result<Value> {
         "id",
         "pinned_deployment_id",
         "pinned_service_protocol_version",
-        "retry_count",
     ] {
         ensure!(
             original
@@ -95,5 +94,10 @@ async fn national_held(client: &Client, original: &Original) -> Result<Value> {
             "original national hold changed {field}"
         );
     }
+    let expected = original
+        .accepted
+        .pointer("/national_pause/budget_after")
+        .context("original National persistent retry metadata absent")?;
+    hold::unchanged_budget(client, id, expected).await?;
     Ok(current)
 }

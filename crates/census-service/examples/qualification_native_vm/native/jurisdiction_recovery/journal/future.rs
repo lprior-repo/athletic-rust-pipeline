@@ -5,6 +5,14 @@ use serde_json::Value;
 use std::collections::BTreeSet;
 
 pub(in super::super) fn awaited(status: &Value) -> Result<BTreeSet<u32>> {
+    parse(status, false)
+}
+
+pub(in super::super) fn awaited_child(status: &Value) -> Result<BTreeSet<u32>> {
+    parse(status, true)
+}
+
+fn parse(status: &Value, child_only: bool) -> Result<BTreeSet<u32>> {
     let field = match input::text(status, "status")? {
         "suspended" => "suspended_waiting_future_json",
         "running" => "last_awaiting_on_future_json",
@@ -30,10 +38,18 @@ pub(in super::super) fn awaited(status: &Value) -> Result<BTreeSet<u32>> {
                 matches!(kind, "CompletionId" | "SignalIndex" | "SignalName"),
                 "unknown future notification"
             );
+            ensure!(
+                !child_only || kind == "CompletionId",
+                "child wait contains a signal"
+            );
             if kind == "CompletionId" {
-                ids.insert(u32::try_from(
+                let inserted = ids.insert(u32::try_from(
                     value.as_u64().context("future completion malformed")?,
                 )?);
+                ensure!(
+                    !child_only || inserted,
+                    "child wait duplicates a completion"
+                );
             }
             return Ok(());
         }
@@ -48,7 +64,15 @@ pub(in super::super) fn awaited(status: &Value) -> Result<BTreeSet<u32>> {
             .contains(&kind),
             "unknown future branch"
         );
+        ensure!(
+            !child_only || kind != "Unknown",
+            "unknown child-wait branch"
+        );
         let children = value.as_array().context("future branch malformed")?;
+        ensure!(
+            !child_only || !children.is_empty(),
+            "empty child-wait branch"
+        );
         ensure!(
             pending
                 .len()

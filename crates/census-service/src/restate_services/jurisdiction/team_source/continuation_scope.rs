@@ -71,7 +71,7 @@ fn require_scope(
     Ok(())
 }
 
-pub(super) fn require_national_scope(
+pub(in crate::restate_services::jurisdiction) fn require_national_scope(
     manifest: &RunManifest,
     bound: &NationalRequest,
 ) -> Result<Vec<census_domain::UsJurisdiction>, HandlerError> {

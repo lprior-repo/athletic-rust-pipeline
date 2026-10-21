@@ -2929,3 +2929,61 @@ Receipts are under `/home/lewis/.cache/athletic-five-state-co2027-20261021/`.
 The user subsequently authorized controlled ownership handoff, then requested
 wrap-up. Handoff was not executed; national state remains untouched.
 No populated five-state or national workbook is delivered by this repair.
+
+## Genuine converted-result publication and retained continuation — 2026-10-21 23:47 UTC
+
+The working candidate based on `bbecb004` passed the genuine Tessa Mize
+Class-of-2027 adjusted-result publication regression. The original TFRRS athlete
+`8779607`, performance `5841286`, and retained row digest
+`d33bf3fb6858f07f8e41576232afd0bf89c848e420fbe67bef779f0be6f1df8d`
+bind the published `11:23.56` and original `11:29.42` to the unchanged capture,
+conversion note, byte spans and source URL. The separate optional adjustment
+source is correctly absent; physical evidence retains the actual provenance.
+The test covers eligible-best selection, workbook/normalized revision-8 output,
+Store-free frozen reopening, same-root cold reopening, original review receipt
+replay, source equality and required-proof refusal. Its Indiana population and
+controlled qualification approvals do not establish production acceptance or
+five-state coverage.
+
+The complete genuine roster retains 201 parsed rows: 195 admitted and six
+graduation-year rejections. Its 68,462-byte physical projection manifest now
+uses the existing one-MiB Store codec limit in the corresponding domain role.
+Other metadata, witness, aggregate and caller-grant limits remain checked.
+The measured current kernel binds 208 source files, 864,453 bytes, digest
+`2aa8f8d8b9a1c3b7df2e183dfb6618f8392e85e5057e3d8b5328b540bb8da450`.
+
+The ordinary jurisdiction pass consumes a settled authorized continuation after
+retained roster work, validates the original owner/request/profile/plan binding,
+and preserves other-source outcomes and non-Teams state. All three retained
+plan inventories must be mutually unique before source RPCs. SDK tests cover
+the actual pass handler with a controlled completed prefix, original captured
+Illinois/National/source prefixes, commit-boundary replay, seven malformed-plan
+cases, unchanged physical-request counts and original attempt ledgers. These
+are SDK replay checks, not an executed native endpoint handoff.
+
+| Executed check | Result |
+|---|---|
+| `pipeline:tests-scoped -p census-report --lib -E test(genuine_tessa_adjusted_eligible_best_publishes_revision_eight_and_replays_cold)` | PASS 1/1, `b65d10f7`; 146.893 seconds test time |
+| Service ordinary-pass, retained-prefix and native-oracle unit tests, `--lib --examples` | PASS 23/23, `8e0cdf75` |
+| Domain interpretation/physical-manifest limits, Store owner/manifest limits and compiled-kernel identity | PASS 19/19, `3cda59a6` |
+| Canonical format / all-target check / source lint | PASS, `a16e4af1` / `58332db4` / `4a46ebc2`; configured argument-count warnings remain |
+
+Commands use `env -u CI`, repository-root `tools/moon-local`, four build jobs,
+and four test threads for scoped tests. Exact logs are
+`/tmp/athletic-work-20261021/resume-report-provenance-tests-187.log`,
+`resume-continuation-full-pass-tests-191.log`,
+`resume-manifest-owner-kernel-tests-193.log`, and
+`resume-workbook-continuation-quality-192.log` in that directory.
+
+Native VM attempt 165 failed: its old pause oracle incorrectly equated transient
+invoker retry metadata with a retained lifetime counter, and cleanup separately
+reported one unsettled reservation. The replacement test oracle checks actual
+quiescent child waiting and persisted vqueue metadata without defaulting missing
+values. Source and read-only served 1.7.10 queries match that schema; a fresh
+native run is still required. Failure-only cleanup remains a proposal.
+
+Full workspace/release, parser fuzz, all 17 native faults, candidate performance,
+native post-roster deployment handoff, protected regional authority and the
+fully populated five-state workbook remain unqualified. The original immutable
+five-state profile remains Uniform/AllSelected; a future regional profile cannot
+retroactively certify UP-first acquisition or reset the original run budgets.
