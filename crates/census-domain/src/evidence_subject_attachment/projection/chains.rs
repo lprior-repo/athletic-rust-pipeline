@@ -55,12 +55,12 @@ fn replace(
     let state = states
         .get_mut(index)
         .ok_or(EvidenceSubjectAttachmentError::Invalid("predecessor state"))?;
+    let previous = prefix
+        .get(index)
+        .ok_or(EvidenceSubjectAttachmentError::Invalid("predecessor index"))?;
     if *state == State::Active
-        && (prefix[index].command.target != record.command.target
-            || prefix[index]
-                .command
-                .reviewed_context
-                .accepted_target_witness
+        && (previous.command.target != record.command.target
+            || previous.command.reviewed_context.accepted_target_witness
                 != record.command.reviewed_context.accepted_target_witness)
     {
         return Err(EvidenceSubjectAttachmentError::Conflict(
@@ -83,12 +83,12 @@ fn revoke(
     let state = states
         .get_mut(index)
         .ok_or(EvidenceSubjectAttachmentError::Invalid("predecessor state"))?;
+    let previous = prefix
+        .get(index)
+        .ok_or(EvidenceSubjectAttachmentError::Invalid("predecessor index"))?;
     if *state != State::Active
-        || prefix[index].command.target != record.command.target
-        || prefix[index]
-            .command
-            .reviewed_context
-            .accepted_target_witness
+        || previous.command.target != record.command.target
+        || previous.command.reviewed_context.accepted_target_witness
             != record.command.reviewed_context.accepted_target_witness
     {
         return Err(EvidenceSubjectAttachmentError::Conflict(

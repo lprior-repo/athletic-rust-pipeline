@@ -30,8 +30,8 @@ fn grade(grade: u8, year: i16) -> Result<ObservedGrade, Box<dyn std::error::Erro
 fn no_observed_grades_yields_empty_cells() -> Result<(), Box<dyn std::error::Error>> {
     let athlete = make_athlete()?;
     let (grade_cell, year_cell) = observed_grade(&athlete)?;
-    assert!(matches!(grade_cell, Cell::Empty));
-    assert!(matches!(year_cell, Cell::Empty));
+    check!(matches!(grade_cell, Cell::Empty));
+    check!(matches!(year_cell, Cell::Empty));
     Ok(())
 }
 

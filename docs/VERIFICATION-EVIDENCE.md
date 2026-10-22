@@ -3640,8 +3640,12 @@ Clean-source release 522 used exact `103dcffd...`; the actual Nextest environmen
 was checked as `NEXTEST_TEST_THREADS=16`. The prior National timeout case passed
 in 26.272 seconds. The suite nevertheless FAILED a separate performance candidate
 output test (`left=2 right=1`): 9,075/9,237 ran, 9,074 passed, one failed, 15 slow,
-13 skipped, 648.301 seconds execution. Fail-fast left other tests unrun; later
-gate lanes are still running. This is not a complete release qualification.
+13 skipped, 648.301 seconds execution. Fail-fast left other tests unrun. The gate
+then exited 1 after 36m17.846s: tests, panic extraction, strict Clippy, ratchet,
+durability and performance failed. Panic extraction found two assertions in the
+worksheet grade test; strict Clippy found four unchecked attachment predecessor
+accesses. Durability lacked the native VM capture in that clean worktree; perf
+refused corpus size 154,721 versus 155,677. This is not release qualification.
 
 The next population work remains on `athletic-rust-pipeline-loa`: normal durable
 source-reported profile PR acquisition and the existing worksheet PR column.
@@ -3651,3 +3655,36 @@ Store explicitly refuses arbitrary profile work as an unsupported frontier root
 role. Both worksheet writer and independent verifier currently require the
 source-declared PR cell to be empty. No fixture, invented performance, new source
 key or widened old `/stats` contract was substituted for actual acquisition.
+
+### Positive-baseline proof refusals and resumed Michigan work — 2026-10-22
+
+Proof checks 531 and 532 used a separate owned copy of the passing 523 bundle.
+Removing one proof exited 1 with an authenticated object-inventory mismatch.
+Restoring it and changing one byte, preserving length, exited 1 because the
+frozen object did not hash to its name. The supplied Store root stayed absent;
+the canonical publication and independent passing copy were not changed.
+
+Both local GPU coders supplied bounded drafts for the release defects above.
+Main reviewed and applied only checked predecessor lookups and the worksheet
+test's existing nonpanicking assertion macro. Source checks 536 passed format,
+compile and lint in 38.732s; existing behavioral tests 537 passed 91/91 in
+0.058s execution, 32.217s overall. Ratchet 538 still failed on existing unchecked
+arithmetic in Store acquisition modules; no debt baseline or waiver changed.
+
+Read-only journal inspection 540 found the original Michigan pass
+`inv_1lc4hnnCg2sx2enaNxUz6vV1J4li1RYIJr`, index 805, had failed result selection:
+`results live captures would require 2 but only 1 is available`. That pass
+predates the current endpoint restart. Live ingress reports 6,692 Michigan
+meet-index observations; retained backup responses have matching requested
+2023–2026 calendar months. The ordinary HTTP backup contains no athlete-profile
+captures. These observations do not establish complete result coverage.
+
+After checking that only the original CO/National invocations were paused and
+Michigan had no active worker, normal owed-work pass 543 was submitted once
+using the exact original body, SHA-256
+`47ead404af1b845792cd9c194c84db0b960b7f30788ddf940266cc3f0ae5a100`.
+HTTP 202 returned `inv_1lc4hnnCg2sx0Qu2MAynE6whQuPt5yqsyx`; it is running on the
+existing deployment and has reached `results-v2-plan`. Original object, revision,
+history, limits and source parallelism were preserved. No run reset, new scope,
+deployment change or paused-invocation mutation occurred. Outcome and new useful
+result population remain pending; the delivered workbook is still partial.
