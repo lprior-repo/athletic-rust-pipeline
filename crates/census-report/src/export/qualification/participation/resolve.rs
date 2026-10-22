@@ -17,6 +17,7 @@ use census_store::StoreResult;
 use serde_json::Value;
 use std::collections::BTreeSet;
 
+mod errors;
 mod groups;
 mod independent;
 mod notes;
@@ -128,7 +129,8 @@ impl<V: RetainedJournalView> Resolver<'_, V> {
                 .read(&notes.reference, &notes.raw, &notes.owned, &notes.locator)
             {
                 Ok(source) => source,
-                Err(_) => {
+                Err(error) => {
+                    errors::source_unavailable(error)?;
                     result.gaps.insert(Gap::SourceUnavailable);
                     return Ok(());
                 }

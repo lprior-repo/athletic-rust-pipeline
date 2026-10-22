@@ -15,7 +15,7 @@ pub use frozen::FrozenRetainedJournal;
 pub use recording::RecordingRetainedJournal;
 
 const MAX_BYTES: usize = 512 * 1024 * 1024;
-const MAX_ENTRIES: usize = 40_000;
+const MAX_ENTRIES: usize = 262_144;
 const MAX_PAYLOAD: usize = 4 * 1024 * 1024;
 
 pub trait RetainedJournalView: sealed::Sealed {

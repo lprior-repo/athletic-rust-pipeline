@@ -129,7 +129,19 @@ impl RetainedJournalView for RecordingRetainedJournal<'_, '_> {
         budget: JournalReadBudget,
     ) -> StoreResult<Option<Value>> {
         let result = self.read_and_record(phase, name, budget);
-        if result.is_err() {
+        if let Err(error) = &result {
+            if matches!(self.health.get(), RecordingHealth::Complete) {
+                tracing::warn!(
+                    phase,
+                    key = name,
+                    read_limit = budget.max_encoded_bytes(),
+                    snapshot_sequence = self.view.sequence(),
+                    recorded_entries = ?self.entries.try_borrow().ok().map(|entries| entries.len()),
+                    recorded_bytes = self.bytes.get(),
+                    error = %error,
+                    "retained source journal first failed read"
+                );
+            }
             self.health.set(RecordingHealth::ReadFailed);
         }
         result

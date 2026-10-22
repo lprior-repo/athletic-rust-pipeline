@@ -178,39 +178,4 @@ fn malformed_recorded_grant_and_oversized_entry_are_refused_before_use() -> Test
     Ok(())
 }
 
-#[test]
-fn entry_count_is_admitted_at_40000_and_refused_before_decoding_40001() -> TestResult {
-    let mut bundle = bundle()?;
-    bundle.entries = (0..MAX_ENTRIES)
-        .map(|index| Entry {
-            phase: super::super::OWNED_CAPTURE_PHASE.into(),
-            key: format!("synthetic/{index:05}"),
-            payload: RecordedPayload::Absent,
-        })
-        .collect();
-    let bytes = bundle.encode()?;
-    FrozenRetainedJournal::from_descriptor(
-        &crate::net::cache::content_digest(&bytes),
-        &"a".repeat(64),
-        7,
-        &bytes,
-    )?;
-    bundle.entries.push(Entry {
-        phase: super::super::OWNED_CAPTURE_PHASE.into(),
-        key: "synthetic/40000".into(),
-        payload: RecordedPayload::Absent,
-    });
-    let bytes = bundle.encode()?;
-    let failure = FrozenRetainedJournal::from_descriptor(
-        &crate::net::cache::content_digest(&bytes),
-        &"a".repeat(64),
-        7,
-        &bytes,
-    )
-    .err()
-    .ok_or("entry count accepted")?;
-    check!(failure
-        .to_string()
-        .contains("entry envelope exceeds its admission budget"));
-    Ok(())
-}
+mod entry_capacity;
