@@ -32,15 +32,7 @@ pub(super) fn finish(
         .checked_add(count)
         .ok_or(StoreError::CounterOverflow)?;
     let mut batch = store.db.batch();
-    let mut outcomes = Vec::new();
-    let mut decisions = BTreeSet::new();
-    for item in &pending.items {
-        if !decisions.insert(&item.accepted.record().id) {
-            return Err(PublicIdentityError::Corrupt("duplicate batch decision").into());
-        }
-        stage(store, &mut batch, item, &pending.capture.observed_at)?;
-        push(&mut outcomes, outcome(&item.witness, &item.record, false)?)?;
-    }
+    let outcomes = stage_items(store, &mut batch, &pending)?;
     store.put_row_mark(&mut batch, crate::Table::AthleteIdentityDecisions, rows);
     batch.insert(&store.meta, HEAD, codec::encode(&pending.head, 1024)?);
     batch.insert(&store.meta, HISTORY, pending.history);
@@ -90,4 +82,21 @@ fn stage(
     );
     batch.insert(&store.receipts, operation, codec::encode(&receipt, 65_536)?);
     Ok(())
+}
+
+fn stage_items(
+    store: &Store,
+    batch: &mut fjall::OwnedWriteBatch,
+    pending: &Pending,
+) -> StoreResult<Vec<IdentityCommitOutcomeV1>> {
+    let mut outcomes = Vec::new();
+    let mut decisions = BTreeSet::new();
+    for item in &pending.items {
+        if !decisions.insert(&item.accepted.record().id) {
+            return Err(PublicIdentityError::Corrupt("duplicate batch decision").into());
+        }
+        stage(store, batch, item, &pending.capture.observed_at)?;
+        push(&mut outcomes, outcome(&item.witness, &item.record, false)?)?;
+    }
+    Ok(outcomes)
 }

@@ -91,6 +91,16 @@ fn packet(
             grant,
         );
     }
+    interpret_documents(source, materials, subject, interpretation_name, grant)
+}
+
+fn interpret_documents(
+    source: &ResultCalendarSourceClaimV1,
+    materials: &[Material],
+    subject: &RetainedDocumentSubjectReferenceV1,
+    interpretation_name: &str,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
     interpretation(
         materials,
         &subject.body,

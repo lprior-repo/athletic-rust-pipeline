@@ -148,12 +148,7 @@ pub(super) fn owner(
     owner: CaptureOwnerRef<'_>,
     budget: &mut AcquisitionReadBudget,
 ) -> StoreResult<()> {
-    if owner.protocol() != CaptureProtocolVersion::V2 {
-        return Err(CaptureError::CaptureProtocolUnsupported.into());
-    }
-    if !Arc::ptr_eq(&owner.writer().origin, &store.appends) {
-        return Err(CaptureError::CaptureCapabilityForeignStore.into());
-    }
+    require_owner_origin(store, owner)?;
     let snapshot = store.db.snapshot();
     let format = crate::format::read_capture_format(&snapshot, &store.meta, budget)?;
     let declaration = super::qualification::declaration_admitted(
@@ -203,4 +198,14 @@ pub(super) fn owner(
         crate::run::read(&snapshot, &store.meta)?.ok_or(CaptureError::CaptureRunManifestMissing)?;
     let results = owner.results().ok_or(CaptureError::ObligationConflict)?;
     super::capability::validate_scope(owner.store_identity(), results.scope(), &manifest)
+}
+
+fn require_owner_origin(store: &Store, owner: CaptureOwnerRef<'_>) -> StoreResult<()> {
+    if owner.protocol() != CaptureProtocolVersion::V2 {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
+    if !Arc::ptr_eq(&owner.writer().origin, &store.appends) {
+        return Err(CaptureError::CaptureCapabilityForeignStore.into());
+    }
+    Ok(())
 }

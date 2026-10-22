@@ -1,5 +1,5 @@
 use super::{accepted, read, CaptureSession, CapturedFetch};
-use crate::net::{CaptureTransportError, FetchError, FetchOptions, Fetcher};
+use crate::net::{CaptureTransportError, FetchError, FetchOptions, FetchOutcome, Fetcher};
 use census_domain::model::{AcquisitionWorkV1, CaptureCacheIntent, InterruptionCauseV1};
 use census_store::{AcquireDecision, AcquisitionReadBudget, OwnedAcquisitionWork, Store};
 
@@ -156,19 +156,26 @@ impl Fetcher {
                 admission,
             )
             .await;
-        match fetched {
-            Ok(capture) => {
-                let (provenance, original_metadata) = session.into_parts()?;
-                Ok(CapturedFetch {
-                    capture,
-                    provenance,
-                    original_metadata,
-                })
-            }
-            Err(error) => {
-                session.fail(&error)?;
-                Err(error)
-            }
+        finish_acquisition(session, fetched)
+    }
+}
+
+fn finish_acquisition(
+    mut session: CaptureSession<'_>,
+    fetched: Result<FetchOutcome, FetchError>,
+) -> Result<CapturedFetch, FetchError> {
+    match fetched {
+        Ok(capture) => {
+            let (provenance, original_metadata) = session.into_parts()?;
+            Ok(CapturedFetch {
+                capture,
+                provenance,
+                original_metadata,
+            })
+        }
+        Err(error) => {
+            session.fail(&error)?;
+            Err(error)
         }
     }
 }

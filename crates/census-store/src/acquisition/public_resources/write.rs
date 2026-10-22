@@ -61,18 +61,7 @@ impl Store {
         binding.validate(&capture, &manifest, &profile)?;
         let declaration = PublicResourceDeclarationV1::new(binding, admitted_at)?;
         let receipt = declaration.receipt()?;
-        let mut batch = self.db.batch();
-        batch.insert(
-            &self.journal,
-            DECLARATION.as_bytes(),
-            codec::encode(&declaration)?,
-        );
-        batch.insert(
-            &self.receipts,
-            receipt.operation.as_bytes(),
-            codec::encode(&receipt)?,
-        );
-        crate::acquisition::codec::commit(batch)?;
+        persist_declaration(self, &declaration, &receipt)?;
         Ok(Application::Written(receipt))
     }
 }
@@ -126,5 +115,25 @@ pub(in crate::acquisition) fn stage_entry(
         receipt.operation.as_bytes(),
         codec::encode(&receipt)?,
     );
+    Ok(())
+}
+
+fn persist_declaration(
+    store: &Store,
+    declaration: &PublicResourceDeclarationV1,
+    receipt: &crate::Receipt,
+) -> StoreResult<()> {
+    let mut batch = store.db.batch();
+    batch.insert(
+        &store.journal,
+        DECLARATION.as_bytes(),
+        codec::encode(declaration)?,
+    );
+    batch.insert(
+        &store.receipts,
+        receipt.operation.as_bytes(),
+        codec::encode(receipt)?,
+    );
+    crate::acquisition::codec::commit(batch)?;
     Ok(())
 }

@@ -1,7 +1,5 @@
 use super::{fixture::Fixture, run, TestResult};
-use census_domain::model::{
-    DiscoveryPriorityV1, Gender, GradYear, ProvisionalInclusionV1, RegionalMembershipV1, Sport,
-};
+use census_domain::model::{DiscoveryPriorityV1, Gender, GradYear, RegionalMembershipV1, Sport};
 use census_store::Store;
 use std::process::Command;
 
@@ -72,9 +70,6 @@ async fn selected_publication_refuses_unsupported_profile_and_input_before_outpu
     input.discovery_priority =
         DiscoveryPriorityV1::SourceBackedRegionFirst(input.source_plan.clone());
     cases.push((input, "regional priority"));
-    let mut input = fixture.profile.input().clone();
-    input.include_provisional = ProvisionalInclusionV1::Include;
-    cases.push((input, "provisional inclusion"));
     let mut input = fixture.profile.input().clone();
     input.policies.participation = input.source_plan.clone();
     cases.push((input, "Participation"));

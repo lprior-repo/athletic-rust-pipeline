@@ -82,27 +82,7 @@ fn repeated(
                 && binding.slot == *entry.work.slot()
                 && work == entry.work =>
         {
-            let held = super::read::validate_entry(
-                &snapshot,
-                &store.journal,
-                &store.receipts,
-                entry.key()?.as_bytes(),
-                declaration,
-                budget,
-            )?;
-            if &held != entry {
-                return Err(refused("public roster child witness rebound"));
-            }
-            crate::acquisition::read::read_work(
-                &snapshot,
-                &store.journal,
-                &store.receipts,
-                &id,
-                budget,
-                protocol,
-            )?;
-            acquisition::repeat(store)?;
-            Ok(true)
+            repeat_child(store, &snapshot, declaration, entry, &id, budget)
         }
         (None, None) => {
             if snapshot
@@ -178,4 +158,35 @@ fn admit(
     );
     acquisition::commit(batch)?;
     Ok(())
+}
+
+fn repeat_child(
+    store: &Store,
+    snapshot: &fjall::Snapshot,
+    declaration: &super::PublicResourceDeclarationV1,
+    entry: &Entry,
+    id: &AcquisitionWorkId,
+    budget: &mut AcquisitionReadBudget,
+) -> StoreResult<bool> {
+    let held = super::read::validate_entry(
+        snapshot,
+        &store.journal,
+        &store.receipts,
+        entry.key()?.as_bytes(),
+        declaration,
+        budget,
+    )?;
+    if &held != entry {
+        return Err(refused("public roster child witness rebound"));
+    }
+    crate::acquisition::read::read_work(
+        snapshot,
+        &store.journal,
+        &store.receipts,
+        id,
+        budget,
+        CaptureProtocolVersion::V2,
+    )?;
+    acquisition::repeat(store)?;
+    Ok(true)
 }

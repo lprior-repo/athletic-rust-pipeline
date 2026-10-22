@@ -10,17 +10,7 @@ pub(super) fn prepare(
     let snapshot = store.snapshot();
     let view = VerifiedRawGraph::verify(&snapshot, capture.graph.capture(), capture.graph.seal())?;
     let sources = graph::accepted_sources(&view, &capture.observed_at)?;
-    let mut cohort = BTreeSet::new();
-    view.for_each_merged::<CanonicalAthlete>(
-        AuthorityTableV2::Athletes,
-        graph::BUDGET,
-        |athlete, _| {
-            if athlete.grad_year == request.cohort {
-                cohort.insert(athlete.id.cast());
-            }
-            Ok(())
-        },
-    )?;
+    let cohort = collect_cohort(&view, request)?;
     let (mut records, mut projection) = ledger.history.into_parts();
     let mut items = Vec::new();
     for (candidate, (accepted, source)) in sources {
@@ -107,4 +97,22 @@ fn prepare_item(
         record: prepared.uncommitted_record,
         witness: held,
     })
+}
+
+fn collect_cohort<S: crate::public_identity::paged_generation::RawObjectSource>(
+    view: &VerifiedRawGraph<'_, S>,
+    request: &Request,
+) -> StoreResult<BTreeSet<AthleteCandidateId>> {
+    let mut cohort = BTreeSet::new();
+    view.for_each_merged::<CanonicalAthlete>(
+        AuthorityTableV2::Athletes,
+        graph::BUDGET,
+        |athlete, _| {
+            if athlete.grad_year == request.cohort {
+                cohort.insert(athlete.id.cast());
+            }
+            Ok(())
+        },
+    )?;
+    Ok(cohort)
 }

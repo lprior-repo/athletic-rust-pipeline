@@ -100,16 +100,7 @@ fn build_source(
         &mut objects,
         grant,
     )?;
-    if parser
-        .documentary_interpretation(
-            documentary.subject().document_namespace(),
-            documentary.subject().document_namespace() == "milesplit_result_document_v1",
-            documentary.roncalli_event().is_some(),
-        )
-        .is_none()
-    {
-        return Err(invalid("calendar parser and documentary source differ"));
-    }
+    validate_parser_documentary_match(&parser, documentary)?;
     let calendar = calendar_claim(documentary, &documentary_root, &mut objects, grant)?;
     retain_calendar_original_body(
         requested,
@@ -123,10 +114,7 @@ fn build_source(
         result,
         calendar,
         person: attached.target().clone(),
-        result_attachment: AttachmentRecordReferenceV1 {
-            operation: attached.record().command.operation.clone(),
-            digest: attached.record().record_digest.clone(),
-        },
+        result_attachment: attached.record().reference(),
         documentary_attachment,
         attachment_inventory: current.inventory().clone(),
         day: scope.day,
@@ -204,4 +192,21 @@ fn calendar_claim(
         )
         .map_err(domain)?,
     })
+}
+
+fn validate_parser_documentary_match(
+    parser: &census_domain::result_calendar_correspondence::ResultCalendarSourceParserV1,
+    documentary: &crate::participation_evidence::VerifiedIndependentParticipationV1,
+) -> CrawlResult<()> {
+    if parser
+        .documentary_interpretation(
+            documentary.subject().document_namespace(),
+            documentary.subject().document_namespace() == "milesplit_result_document_v1",
+            documentary.roncalli_event().is_some(),
+        )
+        .is_none()
+    {
+        return Err(invalid("calendar parser and documentary source differ"));
+    }
+    Ok(())
 }

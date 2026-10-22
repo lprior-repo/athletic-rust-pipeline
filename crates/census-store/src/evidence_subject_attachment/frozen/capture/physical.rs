@@ -48,44 +48,7 @@ pub(super) fn scan<'r>(
         bytes: 0,
         digest: Sha256::new(),
     };
-    match group {
-        Group::Receipts => {
-            view.visit_receipt_prefix(
-                OPERATION_PREFIX.as_bytes(),
-                ReadBudget {
-                    rows: 4096,
-                    bytes: 4 * 1024 * 1024,
-                    record_bytes: 2048,
-                },
-                &mut state,
-                |state| steps(state.grant, 1),
-                accept,
-            )?;
-        }
-        Group::Attachment | Group::External(_) => {
-            let (namespace, rows) = match group {
-                Group::External(root) => {
-                    (
-                        JournalNamespace::new(root.schema.phase(), &root.key)?,
-                        crate::evidence_subject_attachment::external::MAX_RETAINED_CAPTURE_PHYSICAL_ROWS,
-                    )
-                }
-                _ => (JournalNamespace::whole_phase(PHASE)?, 8192),
-            };
-            RetainedJournalReadSource::scan_journal_namespace(
-                view,
-                namespace,
-                ReadBudget {
-                    rows,
-                    bytes: 4 * 1024 * 1024,
-                    record_bytes: crate::MAX_JOURNAL_VALUE_BYTES,
-                },
-                &mut state,
-                |state| steps(state.grant, 4),
-                accept,
-            )?;
-        }
-    }
+    scan_group(view, group, &mut state)?;
     Ok(Summary {
         group,
         rows: state.rows,
@@ -172,4 +135,50 @@ fn admit_row<W>(state: &mut State<'_, W>, key: &[u8], bytes: &[u8]) -> StoreResu
         MAX_ARCHIVE_BYTES,
     )?;
     Ok(length)
+}
+
+fn scan_group<W: Write>(
+    view: &StoreSnapshot<'_>,
+    group: Group<'_>,
+    state: &mut State<'_, W>,
+) -> StoreResult<()> {
+    match group {
+        Group::Receipts => {
+            view.visit_receipt_prefix(
+                OPERATION_PREFIX.as_bytes(),
+                ReadBudget {
+                    rows: 4096,
+                    bytes: 4 * 1024 * 1024,
+                    record_bytes: 2048,
+                },
+                state,
+                |state| steps(state.grant, 1),
+                accept,
+            )?;
+        }
+        Group::Attachment | Group::External(_) => {
+            let (namespace, rows) = match group {
+                Group::External(root) => {
+                    (
+                        JournalNamespace::new(root.schema.phase(), &root.key)?,
+                        crate::evidence_subject_attachment::external::MAX_RETAINED_CAPTURE_PHYSICAL_ROWS,
+                    )
+                }
+                _ => (JournalNamespace::whole_phase(PHASE)?, 8192),
+            };
+            RetainedJournalReadSource::scan_journal_namespace(
+                view,
+                namespace,
+                ReadBudget {
+                    rows,
+                    bytes: 4 * 1024 * 1024,
+                    record_bytes: crate::MAX_JOURNAL_VALUE_BYTES,
+                },
+                state,
+                |state| steps(state.grant, 4),
+                accept,
+            )?;
+        }
+    }
+    Ok(())
 }

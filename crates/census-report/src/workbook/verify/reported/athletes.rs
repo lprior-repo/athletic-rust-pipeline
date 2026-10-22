@@ -8,7 +8,7 @@ use super::super::read::Book;
 use super::super::report::Findings;
 use crate::report::ReportResult;
 use crate::workbook::reported::Projection;
-use census_domain::model::{CanonicalAthlete, Sport};
+use census_domain::model::{CanonicalAthlete, CanonicalPerformance, Sport};
 use std::collections::BTreeSet;
 
 mod summaries;
@@ -22,23 +22,7 @@ pub(super) fn verify(
     let schema = Schema::of(expectations.dataset.semantic_policy()?);
     let verified = ordered_athletes(expectations);
     expected_ids(expectations, &verified)?;
-    let mut headers = vec!["Record Basis", "Verification Status"];
-    headers.extend(
-        public_identity::sheet_headers(expectations.dataset, schema.headers())
-            .into_iter()
-            .map(|header| match header {
-                "Conflict Flag" => "Retained Source Conflict",
-                "Review Status" => "Identity Authority",
-                other => other,
-            }),
-    );
-    headers.extend([
-        "Reported Source Person IDs",
-        "Reported Source Evidence",
-        "Reported School ID",
-        "Reported State",
-        "Reported School Name",
-    ]);
+    let headers = headers(expectations, schema);
     let total = verified
         .len()
         .checked_add(projection.athletes.len())
@@ -132,6 +116,51 @@ fn reported_values(
             .into_iter()
             .map(|_| Value::Empty),
     );
+    row.extend(source_values(projection, athlete, performances)?);
+    Ok(row)
+}
+
+fn expected_evidence(value: &str) -> Value {
+    use sha2::{Digest, Sha256};
+
+    let units = value.encode_utf16().count();
+    match units {
+        0..=32_767 => Value::text(value),
+        _ => {
+            let digest = Sha256::digest(value.as_bytes());
+            Value::text(format!(
+                "Excel display overflow: {units} UTF-16 units; SHA-256 {digest:x}; full evidence in frozen-input.json; performance evidence in reported_performances.csv"
+            ))
+        }
+    }
+}
+
+fn headers(expectations: &Expectations<'_>, schema: Schema) -> Vec<&'static str> {
+    let mut headers = vec!["Record Basis", "Verification Status"];
+    headers.extend(
+        public_identity::sheet_headers(expectations.dataset, schema.headers())
+            .into_iter()
+            .map(|header| match header {
+                "Conflict Flag" => "Retained Source Conflict",
+                "Review Status" => "Identity Authority",
+                other => other,
+            }),
+    );
+    headers.extend([
+        "Reported Source Person IDs",
+        "Reported Source Evidence",
+        "Reported School ID",
+        "Reported State",
+        "Reported School Name",
+    ]);
+    headers
+}
+
+fn source_values(
+    projection: &Projection<'_>,
+    athlete: &CanonicalAthlete,
+    performances: &[&CanonicalPerformance],
+) -> ReportResult<[Value; 5]> {
     let source_ids = athlete
         .identities()
         .chain(
@@ -150,7 +179,7 @@ fn reported_values(
     let evidence = serde_json::to_string(&source_evidence)
         .map_err(|_| super::invalid("encoding expected reported athlete evidence"))?;
     let school = projection.source.schools.get(&athlete.school);
-    row.extend([
+    Ok([
         Value::text(source_ids),
         expected_evidence(&evidence),
         Value::text(athlete.school.as_str()),
@@ -160,21 +189,5 @@ fn reported_values(
                 .map(|state| state.code()),
         ),
         Value::optional(school.map(|school| school.name.as_str())),
-    ]);
-    Ok(row)
-}
-
-fn expected_evidence(value: &str) -> Value {
-    use sha2::{Digest, Sha256};
-
-    let units = value.encode_utf16().count();
-    match units {
-        0..=32_767 => Value::text(value),
-        _ => {
-            let digest = Sha256::digest(value.as_bytes());
-            Value::text(format!(
-                "Excel display overflow: {units} UTF-16 units; SHA-256 {digest:x}; full evidence in frozen-input.json; performance evidence in reported_performances.csv"
-            ))
-        }
-    }
+    ])
 }

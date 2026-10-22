@@ -3186,3 +3186,87 @@ and the separate user-owned performance edit
 Full release umbrella, live exact-build publication, all 17 native fault cases,
 accepted-population coverage and the complete workbook goal are not qualified
 by these source tests.
+
+### 2026-10-22 — bounded source-size prerequisite, no workbook replacement
+
+`athletic-rust-pipeline-rm23.11` extracts cohesive private helpers for the 17
+over-60 callables reported by scan 405, across 16 existing production files.
+The changes preserve source validation, batch and generation ordering, snapshot
+and owner scope, lease failure handling, capture completion and reported readback.
+There are no new source files, public APIs, wire/schema changes or size waivers.
+Two additional service test files correct stale expectations discovered by the
+full workspace run; they do not change production behavior.
+
+Commands use the same verified temporary Moon 2.2.4 executable and canonical
+`env -u CI tools/moon-local` entrypoint described above. Logs remain under
+`/tmp/athletic-work-20261021/`:
+
+- PASS: `pipeline:fmt-write`, `size-gate-format-409.log`, after command 408 stopped
+  at formatting differences. Command 408 is not a passing check.
+- PASS: `pipeline:fmt pipeline:check pipeline:lint-src`, three tasks in
+  32.945 seconds, `size-gate-check-410.log`. Configured arity warnings remain
+  visible; the six-parameter child replay helper retains one coherent validation
+  operation without a parameter bag or waiver.
+- FAIL overall: forced `pipeline:tests`, `size-gate-tests-411.log`.
+  Nextest ran 9,220 tests: 9,218 passed, two failed and 13 were skipped,
+  in 565.596 seconds of test execution. Interim progress indexes were incorrectly
+  described as passing counts; this was explicitly corrected when the final
+  summary was read. The complete workspace run is not reported as a pass.
+- The first failure was an obsolete unsupported-profile matrix entry expecting
+  explicit provisional Include to refuse. Existing domain regressions in 411
+  passed for exact v3/v4/v5 opt-in profile identity and foreign-contract refusal.
+  Only that obsolete matrix entry and its unused import were removed.
+- The second failure used HTTP 409 while expecting no workflow lookup. Existing
+  production behavior resolves and reattaches the same workbook workflow on 409.
+  Changing that fixture to HTTP 400 preserves its original two-request,
+  terminal-message and no-separate-export assertions. Dedicated 409 lookup and
+  attachment regressions remain unchanged.
+- PASS: forced `pipeline:tests-scoped -- -p census-service --no-tests fail`,
+  `size-gate-service-tests-412.log`: 1,885/1,885 passed, seven skipped,
+  99.863 seconds of test execution, 146.048 seconds overall. Both previously
+  failing tests passed, along with the complete service package selection.
+- FAIL: `pipeline:xtask --force -- scan`, `size-gate-scan-413.log`:
+  2,836 production files and 30,369 callables checked, no unresolved sites;
+  one remaining function, `build_source`, measured 61 logical lines. Reusing
+  the existing `ReviewedReferenceRecordV1::reference` accessor replaces the
+  identical inline operation/digest construction without a new helper or behavior.
+- Command 414's `pipeline:check` and `pipeline:lint-src` passed after that
+  correction. The combined command failed because `pipeline:fmt` required the
+  shortened test import on one line; it is not recorded as an overall pass.
+  Command 415's canonical `pipeline:fmt-write` passed, leaving the separate user
+  edit and Cargo.lock byte-identical. Final `pipeline:fmt` 416 passed.
+- PASS: forced `pipeline:tests-scoped -- -p census-crawl --lib` with the explicit
+  `genuine_tessa::correspondence::` and `result_ownership::tfrrs::tests::calendar::`
+  filter, `size-gate-calendar-tests-417.log`: six tests passed, 2,174 skipped,
+  40.855 seconds of test execution. This includes the genuine
+  school/calendar review with frozen and cold replay after accessor reuse.
+- PASS: `pipeline:xtask --force -- scan`, `size-gate-final-scan-418.log`,
+  281.791 seconds overall. The trusted scan and its final certification completed:
+  2,836 production files, 30,369 callables, zero functions over 60 logical lines
+  and no unresolved measurement sites. All 17 hard findings from scan 405 are
+  removed without waivers. Advisory length and arity findings remain visible.
+- PASS: staged `git diff --check`, `size-gate-diff-check-419.log`, restricted by
+  staging to the 18 owned Rust files and this evidence document. The original
+  captured bodies from checkpoint 017f7689 were not changed or staged again.
+
+Both actual local GPUs returned five HTTP-200 drafting responses in 407, with
+one request per GPU at a time. Main rejected incorrect target and semantic
+changes in the drafts and integrated the bounded helper extractions against the
+actual types and existing behavior. Both GPUs returned HTTP 200 for advisory
+test-fixture reviews in 412. The 5090 review's opening finding contradicted its
+body, so it is not recorded as a clean approval. GPU responses do not replace
+execution evidence; the supporting chat's missing-reference review remains
+NOT RUN.
+
+No live Store apply, acquisition, deployment, new publication job identity or
+delivered workbook replacement occurred. The retained revision-9 XLSX and its
+generation remain the delivered output. Full release and native-17 qualification,
+the actual revision-9-to-10 publication transition, current-affiliation authority,
+accepted-population and sport/state coverage remain unfinished.
+Rechecked unchanged after the final source correction: XLSX `f78d414b`, generation
+manifest `6846105c`, Cargo.lock `c31c8ba7`, user performance edit `b96da5a9`
+(full SHA256 values are recorded immediately above). The original live service
+remains active with sole owner PID 906506.
+Validation describes the working tree with the separate user performance edit
+present; it does not certify an otherwise clean checkout or an exact native
+release build.

@@ -60,21 +60,26 @@ impl Fetcher {
             }
         };
         if let Err(error) = session.observed(lease, &response, &self.capture_clock.observed_at()) {
-            if let Some(kind) = blocking_kind(response.status().as_u16()) {
-                self.record_access_condition(
-                    host,
-                    kind,
-                    response.status().as_u16(),
-                    retry_after_secs(&response),
-                    response.url().as_str().to_owned(),
-                )
-                .await;
-            }
+            self.record_failed_observation(host, &response).await;
             return Err(error);
         }
         #[cfg(test)]
         session.interrupt(crate::net::acquisition::CaptureInterruption::AfterObserved)?;
         Ok(response)
+    }
+
+    #[tracing::instrument(skip(self, response))]
+    async fn record_failed_observation(&self, host: &str, response: &reqwest::Response) {
+        if let Some(kind) = blocking_kind(response.status().as_u16()) {
+            self.record_access_condition(
+                host,
+                kind,
+                response.status().as_u16(),
+                retry_after_secs(response),
+                response.url().as_str().to_owned(),
+            )
+            .await;
+        }
     }
     async fn admit_adopted_dispatch(&self, url: &str, host: &str) -> Result<(), FetchError> {
         self.destination.validate_resolved_url(url).await?;

@@ -12,14 +12,7 @@ pub(super) fn replay(
         .as_ref()
         .map(|raw| codec::decode(&request.operation, raw))
         .transpose()?;
-    if let Some(receipt) = &receipt {
-        if receipt.digest != request.digest {
-            return Err(PublicIdentityError::OperationConflict.into());
-        }
-        if receipt.operation != request.operation || receipt.appended == 0 || receipt.credited {
-            return Err(PublicIdentityError::Corrupt("cohort completion receipt").into());
-        }
-    }
+    validate_completion_receipt(request, &receipt)?;
     let mut outcomes = Vec::new();
     let mut seen = BTreeSet::new();
     let mut graph = None;
@@ -103,6 +96,21 @@ fn replay_graph(
     let graph = graph.ok_or(PublicIdentityError::Corrupt("cohort graph missing"))?;
     if graph.capture() != reserved.capture() || graph.seal() != reserved.seal() {
         return Err(PublicIdentityError::Corrupt("cohort raw operation binding").into());
+    }
+    Ok(())
+}
+
+fn validate_completion_receipt(
+    request: &Request,
+    receipt: &Option<crate::Receipt>,
+) -> StoreResult<()> {
+    if let Some(receipt) = receipt {
+        if receipt.digest != request.digest {
+            return Err(PublicIdentityError::OperationConflict.into());
+        }
+        if receipt.operation != request.operation || receipt.appended == 0 || receipt.credited {
+            return Err(PublicIdentityError::Corrupt("cohort completion receipt").into());
+        }
     }
     Ok(())
 }

@@ -62,26 +62,7 @@ impl Fetcher {
                 return;
             }
         };
-        let bytes = body.len();
-        let fetched_at = match capture.fetched_at_ms.and_then(instant_iso8601) {
-            Some(value) => value,
-            None => now_iso8601(),
-        };
-        let meta = CacheMeta {
-            redirects: Vec::new(),
-            observed_http: None,
-            url: plan.url.to_string(),
-            response_url: capture.response.response_url.as_deref().map(str::to_owned),
-            method: plan.method.to_string(),
-            representation: plan.representation.clone(),
-            status,
-            content_digest: content_digest(&body),
-            bytes,
-            fetched_at,
-            etag: None,
-            last_modified: None,
-            content_type: content_type(&capture.response.headers),
-        };
+        let meta = refusal_metadata(plan, capture, status, &body);
         if let Err(error) = write_archive(plan.body_path, plan.meta_path, &body, &meta) {
             self.record_refusal_evidence_loss(
                 plan.url,
@@ -218,5 +199,33 @@ impl Fetcher {
         if failed {
             warn!(status, url = plan.url, "non-success response");
         }
+    }
+}
+
+fn refusal_metadata(
+    plan: &FetchPlan<'_>,
+    capture: &BrowserCapture,
+    status: u16,
+    body: &[u8],
+) -> CacheMeta {
+    let bytes = body.len();
+    let fetched_at = match capture.fetched_at_ms.and_then(instant_iso8601) {
+        Some(value) => value,
+        None => now_iso8601(),
+    };
+    CacheMeta {
+        redirects: Vec::new(),
+        observed_http: None,
+        url: plan.url.to_string(),
+        response_url: capture.response.response_url.as_deref().map(str::to_owned),
+        method: plan.method.to_string(),
+        representation: plan.representation.clone(),
+        status,
+        content_digest: content_digest(body),
+        bytes,
+        fetched_at,
+        etag: None,
+        last_modified: None,
+        content_type: content_type(&capture.response.headers),
     }
 }

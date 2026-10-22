@@ -189,7 +189,7 @@ async fn failed_selected_workbook_never_falls_back_to_separate_exports() -> Test
         vec![
             ("200 OK", capabilities()?),
             (
-                "409 Conflict",
+                "400 Bad Request",
                 "{\"message\":\"fixture publication refused\"}".into(),
             ),
         ],

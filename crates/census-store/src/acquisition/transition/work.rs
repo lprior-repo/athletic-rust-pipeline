@@ -32,12 +32,7 @@ impl Store {
             codec::get_fact(&snapshot, &self.journal, &slot_key, &mut budget, protocol)?;
         let identity: Option<AcquisitionWorkV1> =
             codec::get(&snapshot, &self.journal, &work_key, &mut budget, protocol)?;
-        if binding
-            .as_ref()
-            .is_some_and(|binding| binding.version != protocol)
-        {
-            return Err(CaptureError::CaptureProtocolUnsupported.into());
-        }
+        require_binding_protocol(&binding, protocol)?;
         if registration(
             self,
             &snapshot,
@@ -242,4 +237,17 @@ fn copy_attempt(
 }
 fn allocation(source: std::collections::TryReserveError) -> crate::StoreError {
     CaptureError::allocation_reservation_failed("acquisition attempt identity", None, source).into()
+}
+
+fn require_binding_protocol(
+    binding: &Option<SlotBinding>,
+    protocol: CaptureProtocolVersion,
+) -> StoreResult<()> {
+    if binding
+        .as_ref()
+        .is_some_and(|binding| binding.version != protocol)
+    {
+        return Err(CaptureError::CaptureProtocolUnsupported.into());
+    }
+    Ok(())
 }

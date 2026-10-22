@@ -132,6 +132,35 @@ fn collect_school(
     schools: &mut BTreeMap<String, SchoolInventory>,
     count: &mut u64,
 ) -> StoreResult<()> {
+    let packets = collect_school_packets(&school, count)?;
+    if packets.is_empty() {
+        return Ok(());
+    }
+    let owner = ProviderOwners::new(&school.source_identities, &SourceNamespace::MilesplitSchool);
+    let id = school.id.as_str().to_owned();
+    if schools.contains_key(&id) {
+        return Err(refused("duplicate merged school in inventory"));
+    }
+    schools.insert(
+        id.clone(),
+        SchoolInventory {
+            school_id: id,
+            school_name: school.name,
+            jurisdiction: school.state.map(|s| s.code().to_owned()),
+            provider_namespace: SourceNamespace::MilesplitSchool,
+            owner,
+            retained_conflicts: school.retained_conflicts.len(),
+            packets,
+            programs: Vec::new(),
+        },
+    );
+    Ok(())
+}
+
+fn collect_school_packets(
+    school: &CanonicalSchool,
+    count: &mut u64,
+) -> StoreResult<BTreeMap<String, PacketHint>> {
     let mut packets: BTreeMap<String, PacketHint> = BTreeMap::new();
     for evidence in &school.evidence {
         if evidence.method != EvidenceMethod::Parsed {
@@ -165,28 +194,7 @@ fn collect_school(
         );
         *count = next;
     }
-    if packets.is_empty() {
-        return Ok(());
-    }
-    let owner = ProviderOwners::new(&school.source_identities, &SourceNamespace::MilesplitSchool);
-    let id = school.id.as_str().to_owned();
-    if schools.contains_key(&id) {
-        return Err(refused("duplicate merged school in inventory"));
-    }
-    schools.insert(
-        id.clone(),
-        SchoolInventory {
-            school_id: id,
-            school_name: school.name,
-            jurisdiction: school.state.map(|s| s.code().to_owned()),
-            provider_namespace: SourceNamespace::MilesplitSchool,
-            owner,
-            retained_conflicts: school.retained_conflicts.len(),
-            packets,
-            programs: Vec::new(),
-        },
-    );
-    Ok(())
+    Ok(packets)
 }
 
 fn collect_team(

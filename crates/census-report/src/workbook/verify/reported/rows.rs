@@ -1,5 +1,5 @@
 use super::super::canonical::{cell_at, Value};
-use super::super::read::{compare, verify_header, verify_width, Book, Budget};
+use super::super::read::{compare, verify_header, verify_width, Book, Budget, Shape};
 use super::super::report::Findings;
 use crate::report::ReportResult;
 
@@ -59,6 +59,17 @@ pub(super) fn verify(
     if let Some(error) = failure {
         return Err(error);
     }
+    compare_extent(sheet, shape, expected_rows, findings);
+    record_count(sheet, seen, total, findings);
+    Ok(())
+}
+
+fn compare_extent(
+    sheet: &str,
+    shape: Option<Shape>,
+    expected_rows: usize,
+    findings: &mut Findings,
+) {
     match shape {
         Some(shape) if shape.rows != expected_rows => {
             findings.note(format!(
@@ -69,11 +80,13 @@ pub(super) fn verify(
         None => findings.note(format!("sheet {sheet} is missing")),
         Some(_) => {}
     }
+}
+
+fn record_count(sheet: &str, seen: usize, total: usize, findings: &mut Findings) {
     if seen != total {
         findings.note(format!(
             "{sheet} read {seen} mixed data rows; expected {total}"
         ));
     }
     findings.rows(seen);
-    Ok(())
 }
