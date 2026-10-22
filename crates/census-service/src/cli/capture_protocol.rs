@@ -9,6 +9,7 @@ use super::Cli;
 mod result_intake;
 mod roster_enrollment;
 mod roster_intake;
+mod roster_inventory;
 mod roster_replay;
 mod roster_review;
 
@@ -38,6 +39,8 @@ enum CaptureProtocolCommand {
         about = "Retain original roster rows as unreviewed facts without accepting identity or affiliation"
     )]
     RosterIntake(roster_intake::RosterIntakeArgs),
+    #[command(about = "List bounded unreviewed retained roster packets and matching program IDs")]
+    RosterInventory,
     #[command(
         about = "Preview source-backed roster approval; supply its SHA256 to accept the exact retained representation"
     )]
@@ -78,6 +81,9 @@ fn run_to<W: Write>(root: Option<&Path>, args: &CaptureProtocolArgs, output: &mu
         }
         CaptureProtocolCommand::RosterIntake(args) => {
             return roster_intake::run_to(root, args, output);
+        }
+        CaptureProtocolCommand::RosterInventory => {
+            return roster_inventory::run_to(root, output);
         }
         CaptureProtocolCommand::RosterReview(args) => {
             return roster_review::run_to(root, args, output);
