@@ -3799,3 +3799,38 @@ in 291.266s execution, 299.617s overall, including the existing large capture's
 replay without new charges. Format, all-target compilation and source lint 586
 passed in 33.963s; argument-count review warnings remain. These checks do not
 establish canonical cohort acceptance or a populated certified workbook.
+
+Portable build 588 passed in 213.853s from main `3b8c745b`; all 8,399 source
+inventory entries rechecked unchanged. Endpoint SHA256 is
+`d634c2918192f2ba8030cfd424a92d9a042025038c7323cc79e11296d943d816`;
+CLI is `6134fb23484846f5c032a0615717939981fd5b20635d9f228f985ffe846be2dc`.
+Both binaries and the source inventory were copied to that new immutable release.
+The prior 563/380 units remain stopped. Unit
+`athletic-five-state-co2027-workbook590.service` is the sole original Store owner
+on `127.0.0.1:9103`. HTTP/2 discovery using manifest v4 returned 200; registration
+returned 201, deployment `dp_11RutewsIjAw2fzz9OBXZgR`, twelve services at revision 7.
+Discovery v3 refused the newer retry-policy option; it was not a serving check.
+Ingress canaries confirmed the original Store identity, 20,780 captures,
+20,444 unique body files and 3,086,046,991 payload bytes. The two historical
+paused CO/national invocations retain their original deployment and state.
+
+Normal MI pass 591 was submitted once with the original request SHA256
+`47ead404af1b845792cd9c194c84db0b960b7f30788ddf940266cc3f0ae5a100`:
+`inv_1lc4hnnCg2sx2WxMFUNVA43OuGPWIMqETi`. Admin readback confirmed the new
+deployment, successful 1,443,537-byte plan journal completion 805, and running
+`results-v2-execute` at journal 806. This is pending execution evidence, not
+successful collection, new workbook rows or canonical cohort acceptance.
+No Downloads workbook was modified during this handoff.
+
+The reported worksheet's source-ID projection and the generic checked profile-PR
+parser do not require an accepted public athlete identity. Certification therefore
+does not gate honest source-declared PR facts. The missing production path is
+roster-owned profile acquisition, durable distinct reported facts, frozen input,
+column U and normalized readback. The existing profile resource constructor and
+kind already exist; adding arbitrary profile roots is not the missing permission.
+Read-only coordination confirmed that the old profile-plus-results packet must
+retain its original meaning and that source PRs should remain outside canonical
+athletes, certified performance rows and the certified selected-proof bundle.
+RTX 5090/3090 supplied packet/worksheet drafts in run 594; Main retained them
+outside the repository because they contain validation, API and cell-budget
+defects. No completed PR acquisition or populated PR column is claimed.
