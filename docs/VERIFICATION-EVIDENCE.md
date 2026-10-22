@@ -3023,3 +3023,90 @@ These checks do not establish native publication, a memory envelope, full
 release qualification or the populated five-state workbook. Native retries
 must retain the original source-cohort operation and separate copied-store
 qualification from the canonical Store and normal Restate publication.
+
+## 2026-10-22 populated source-reported five-state workbook
+
+Main `b9a3037728b8435e6005744307963e79e7190039` produced the actual
+Class-of-2027 MI/MN/IA/IL/CO workbook from retained database input. The
+immutable serve binary hashes to
+`3d28c108480ad90bf8310cf0bd0b834c8b1121816e13df8ce396bab298eca8d0`;
+the paired CLI hashes to
+`7fc18fef646c084450c42254d2305d547678c04fc0f33a7ac285d83fa08256a0`.
+The explicit Include profile is
+`825ede8b5268f558169144bdab944e68ef8b464f94cde8decb44317d697be763`.
+
+The original generation03 export failed on an aggregate evidence cell exceeding
+Excel's 32,767 UTF-16-unit limit. The repair displays an explicit count/hash/
+retained-evidence reference for oversized athlete evidence; complete evidence
+remains in the frozen input and normalized performance rows. Same-input
+`workbook --resume-frozen` reused the promoted native job and generation
+`five-state2027-20261022-03`, without another capture or replacement key.
+
+Normal publication completed at 08:59:45 UTC through the Intent, receipt and
+relative current-pointer fence. The publication root is
+`output/recruiting-five-states-2027`; its selected bundle is
+`3c83c1a91961a2d123f3bfd4457cd73f81343aeb6a6fcac87ae78a90a8e0a79d`.
+The user copy is `output/Recruiting-Class-of-2027-MI-MN-IA-IL-CO.xlsx`.
+Both 43,473,863-byte XLSX files hash to
+`f78d414b5a550f2c6899318605e0e1c8d27187e75cb0a452929fbbac52c1468f`.
+The manifest hashes to
+`6846105ce2d97085c0c0be70d6ccc0814e47884d97789011916341517f8bd698`.
+The retained 1,955,620,892-byte frozen input remains byte-identical at
+`cc0356f713678dfe0a91a9a800296489c81139ca49db77761decc218e3c64f81`.
+
+The 14-sheet workbook contains 62,950 source-reported athlete rows, all with
+graduation year 2027 and source links, and 1,496 reported best-in-retained-set
+rows. Athlete states below are reported school context; mark states are school
+context at performance time. Neither establishes current-school membership.
+
+| State | Reported athlete rows | Reported best rows | Retained reported performance CSV rows |
+| --- | ---: | ---: | ---: |
+| MI | 16,246 | 0 | 3 |
+| MN | 11,290 | 2 | 2 |
+| IA | 8,683 | 65 | 6,382 |
+| IL | 19,373 | 0 | 5 |
+| CO | 7,358 | 1,429 | 5,840 |
+| Total | 62,950 | 1,496 | 12,232 |
+
+Athlete rows comprise 27,380 Girls and 35,570 Boys. Reported best rows comprise
+1,490 outdoor and six indoor rows; no comparable XC best row is published.
+XC participation flags and retained observations do not prove comparable XC
+coverage. All 12 declared normalized CSV row counts match the manifest.
+Verified `athletes.csv` and `best_marks.csv` remain empty apart from headers;
+reported rows retain their explicit unverified/needs-review statuses.
+
+Observed checks, with logs under `/tmp/athletic-work-20261021/`:
+
+- PASS: canonical format, all-target check and source lint, `workbook-check-379.log`.
+- PASS: full census-report library, 1,472/1,472, `workbook-full-tests-381.log`.
+- PASS: normal producer all-row frozen readback, 447,282 rows, `workbook-recovery-380.log`.
+- PASS: separate actual CLI cold verification, exit zero at 09:22:58 UTC,
+  `workbook-cold-verify-382.log`.
+- PASS: independent selected-generation XML/CSV audit, all three million cells
+  inspected, `workbook-independent-audit-380/audit.json`.
+- PASS: native LibreOffice open and two-page visual render of a byte-identical
+  disposable copy. The bundled artifact reader exhausted its own heap during
+  import; no native Excel application qualification is claimed.
+- PASS: isolated actual-generation proof removal refused with authenticated
+  object-inventory mismatch; changed proof bytes refused because the frozen
+  object does not hash to its name. Both CLI processes exited one as expected;
+  `workbook-proof-negative-384/{missing,tampered}.log`. The canonical proof and
+  both delivered XLSX hashes were rechecked unchanged after these probes.
+- PASS: original failed invocation replay retained exact response SHA
+  `a0ec6158a201849c972176fabbbb40d0bb1e79378c7ca0f6b463e9321251cce8`.
+  Actual normal CLI replay returned that original failure; exactly one original
+  workbook invocation remains. This is historical replay, not a new successful
+  Restate workflow invocation.
+- PASS: supported post-publication cold backup, 100,604 files and
+  21,092,241,839 bytes, count-validated at `workbook-publication-382` beneath the
+  existing local backup root. Restate and the external publication directory
+  remain separately retained. The same-store immutable endpoint was restored
+  on `127.0.0.1:9100`, deployment `dp_13JQTG6rWqz8Kymuo3wJWoh`, revision 5;
+  actual served Census status returned HTTP 200.
+
+This completes the explicitly source-reported workbook delivery, not the full
+accepted-population goal. Accepted identity, current-school affiliation,
+eligible best marks, complete state/sport coverage and authoritative UP
+membership remain unfinished. Old paused National/CO invocation identities and
+pins remain preserved; no acquisition continuation is claimed. Full release
+umbrella and all 17 native fault scenarios were not rerun on this release.
