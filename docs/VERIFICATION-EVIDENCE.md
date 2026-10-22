@@ -3721,5 +3721,36 @@ existing early-allocation refusals still execute at the new cap; no assertion
 was relaxed. Attempt 556 exposed those two fixture boundaries, 34/36 passing.
 Updated suite 558 passed 36/36 in 0.647s execution, 17.684s overall. Source checks
 559 passed format, all-target compilation and source lint in 63.473s overall.
-This candidate is not yet deployed or proven by normal result collection;
-the workbook remains partial and the previously recorded release holds remain.
+Those checks alone did not establish successful normal result collection.
+
+Portable build 560 passed in 224.260s. Its immutable endpoint SHA256 is
+`170075fabfd5ddbab1a2a20d99fcdf487a077832f5e4a63e81541fa9b19c8c8d`;
+CLI SHA256 is `6365b720d386d9428cb7d3ea54652d9f74a62b9a7b37a631938ac8361368d3b2`.
+The 8,399-file source inventory was rechecked unchanged after building main
+`970b3fe46125ad408641159b69d80b7c71332f93`, including the preserved foreign
+candidate and lockfile hashes.
+
+Preflight 561 found only the two original paused CO/National invocations.
+The old 380 endpoint stopped on SIGTERM with no remaining work: accepted/completed
+925/925, still-running/remaining zero. Its report retained one failed job and
+18 reserved, 17 recorded, one unknown attempt; this is not business success.
+Cold backup 562 passed: 105,677 files, 21,320,585,633 bytes, no links, 516.073s,
+all 19 table counts matching the retained baseline. No migration or reset ran.
+
+Unit `athletic-five-state-co2027-workbook563.service` now owns the original root
+as PID 2285519 on `127.0.0.1:9102`; the old unit is stopped. Registration 564
+returned HTTP 201, deployment `dp_12LSImCj3X1Hx5eT45NTsm5`. Serving canaries confirmed
+the original Store/archive identity, 20,780 captures and 6,692 MI index observations.
+Normal owed-work pass 565 used the unchanged original request bytes and returned
+HTTP 202: `inv_1lc4hnnCg2sx4PV29p4av2FkTEYLHkSK2a`. Readback 567 confirmed it
+running on that deployment at `results-v2-plan`. Terminal readback 568 found
+the 1,443,537-byte, 1,635-meet plan successfully journaled, then execution refused
+`ResultsPlanLimit: allocation`; no successful result stage or new parsed rows
+is claimed. Its checked cumulative charges require at least 680,869,424 bytes:
+340,451,696 preflight, 73,326,816 decode validation, 73,326,816 actual binding
+revalidation, 86,612,736 owned request derivation and 107,151,360 ordinary failure
+presentation. Actual binding exhausts the 512-MiB allowance before collection;
+this is separate from the earlier plan-building refusal. Original paused
+invocations/registrations and all three
+Downloads workbook hashes were preserved. The workbook remains partial;
+the previously recorded full release holds remain.
