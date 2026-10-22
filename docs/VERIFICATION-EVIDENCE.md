@@ -3769,3 +3769,33 @@ refusal, then passed at 1 GiB. Run 575 passed 37/37 in 0.634s execution,
 Source checks 576 passed format, all-target compilation and source lint;
 existing argument-count review warnings remain. This candidate still needs
 normal runtime collection evidence; it does not populate the workbook by itself.
+
+Portable build 578 passed in 211.648s from main `79d61d7c`; its 8,399-file
+source inventory rechecked unchanged. Immutable endpoint SHA256 is
+`a927ddfa61d7818de170513c2c3c2dead36f698c27f8676e00e6774703e0880f`;
+CLI is `03318b399ef0ad90345472daea093b463fd677c168d088ba2bf119b33a8df458`.
+The old 563 endpoint stopped with accepted/completed 809/809, zero remaining,
+one failed job and the existing one unknown attempt preserved. Cold backup 581
+passed in 321.249s: 105,684 files, 21,183,949,993 bytes, zero links and all 19
+table counts matching the retained baseline. No replacement endpoint started.
+
+Native canonical cohort retry 582 used that CLI against the original Store and
+unchanged operation `five-state-co2027-source-cohort-20261022`, cohort 2027.
+It failed in 3m34.14s, maximum RSS 1,492,528 KiB: cumulative durable admission
+needed 4,640,733,426 bytes against 4,294,967,296 available. This is a quota
+refusal, not an accepted identity or publication result. The original operation,
+capture and charges remain recoverable. The quota check precedes the admission
+batch commit in `admission/graph/persist.rs`; no reset or re-enrollment ran.
+All three Downloads workbook hashes remain unchanged.
+
+The bounded quota candidate changes only `MAX_BYTES` to 8 GiB, preserving header
+keys, policy format, usage counters, root/reservation ceilings and source attempts.
+Older 4-GiB readers refuse a header exceeding their ceiling; downgrade acceptance
+is not claimed. Main rejected RTX 5090's unrelated header-key change before
+applying the scalar. The measured-charge regression 584 reproduced the exact
+native capacity refusal at 4 GiB. Native success on the candidate is still pending.
+Run 585 passed 115/115 affected admission, source-cohort and raw-generation tests
+in 291.266s execution, 299.617s overall, including the existing large capture's
+replay without new charges. Format, all-target compilation and source lint 586
+passed in 33.963s; argument-count review warnings remain. These checks do not
+establish canonical cohort acceptance or a populated certified workbook.

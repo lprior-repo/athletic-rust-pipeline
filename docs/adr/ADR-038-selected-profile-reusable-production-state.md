@@ -491,6 +491,14 @@ reads use the same finite limits. The frozen V2 union retains its independent
 262,144-row aggregate ceiling; admitting a graph does not multiply that union
 allowance. Recovery must continue the original operation and preserve its
 partial capture, charges and source identity.
+Canonical retry 582 then refused the cumulative durable admission quota:
+4,640,733,426 bytes proposed against 4 GiB. This quota now permits 8 GiB;
+existing header usage, reservations, key names and policy format remain intact.
+It does not reset charges or source attempts, and it is not a resident-memory
+limit. The 4,096-root and reservation ceilings remain. An older 4-GiB reader
+refuses a header above its ceiling; retaining the old binary does not establish
+rollback compatibility after such a charge. Continue the original operation
+and retain its cold backup and evidence.
 These limits do not reserve their maximum sizes. They do not establish the
 separate 16-GiB process envelope, real-source workbook publication, replay or
 cold-read acceptance; those require exact-build native evidence and measured

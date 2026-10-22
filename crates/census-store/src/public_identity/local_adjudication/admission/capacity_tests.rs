@@ -30,6 +30,13 @@ fn capacity_accepts_zero_and_exact_limits() -> TestResult {
 }
 
 #[test]
+fn byte_capacity_admits_measured_canonical_cohort_total() -> TestResult {
+    require_capacity(4_640_733_426, MAX_ROOTS, MAX_RESERVATIONS)?;
+    check!(eq; MAX_BYTES, 8_589_934_592);
+    Ok(())
+}
+
+#[test]
 fn byte_capacity_reports_exact_proposed_total_and_limit() -> TestResult {
     let needed = MAX_BYTES.checked_add(1).ok_or("byte test bound")?;
     require_exhausted(
