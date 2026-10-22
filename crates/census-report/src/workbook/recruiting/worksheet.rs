@@ -57,19 +57,20 @@ pub(super) fn write(
     dataset: &Dataset<'_>,
     reported: Option<&Projection<'_>>,
 ) -> ReportResult<()> {
+    let schools = SelectedSchools::of(dataset.source)?;
     let mut accepted = dataset.athletes.iter().collect::<Vec<_>>();
     accepted.sort_by_key(|athlete| athletes::display_key(dataset, athlete));
     let rows = std::iter::once(Ok(HEADERS.into_iter().map(Cell::text).collect()))
         .chain(
             accepted
                 .into_iter()
-                .map(|athlete| row(dataset, athlete, Basis::Accepted, reported)),
+                .map(|athlete| row(dataset, athlete, Basis::Accepted, reported, &schools)),
         )
         .chain(
             reported
                 .into_iter()
                 .flat_map(|projection| projection.athletes.iter())
-                .map(|athlete| row(dataset, athlete, Basis::Reported, reported)),
+                .map(|athlete| row(dataset, athlete, Basis::Reported, reported, &schools)),
         );
     write_sheet_rows(
         book,
@@ -101,12 +102,13 @@ fn row(
     athlete: &CanonicalAthlete,
     basis: Basis,
     reported: Option<&Projection<'_>>,
+    schools: &SelectedSchools<'_>,
 ) -> ReportResult<Vec<Cell>> {
     let mut cells = person(dataset, athlete, basis)?;
     cells.extend(school(dataset, athlete, basis)?);
-    cells.extend(current_school(dataset, athlete, basis)?);
+    cells.extend(current_school(schools, athlete, basis)?);
     cells.extend(coaches(dataset, athlete, basis));
-    cells.extend(marks::cells(dataset, athlete, reported)?);
+    cells.extend(marks::cells(dataset, athlete, reported, schools)?);
     cells.push(Cell::Empty);
     cells.push(
         profiles_of(athlete)
@@ -204,14 +206,14 @@ fn school(
 }
 
 fn current_school(
-    dataset: &Dataset<'_>,
+    schools: &SelectedSchools<'_>,
     athlete: &CanonicalAthlete,
     basis: Basis,
 ) -> ReportResult<[Cell; 3]> {
     match basis {
         Basis::Reported => Ok([Cell::text("Unknown"), Cell::text("Unknown"), Cell::Empty]),
         Basis::Accepted => {
-            let fields = SelectedSchools::of(dataset.source)?.fields(athlete.id.as_str())?;
+            let fields = schools.fields(athlete.id.as_str())?;
             Ok([
                 Cell::text(fields.current_school),
                 Cell::text(fields.current_state),

@@ -37,12 +37,12 @@ const FIELDS: [(usize, &str); 25] = [
 
 pub(super) fn values(
     expected: &Expectations<'_>,
+    affiliations: &AffiliationExpectations<'_>,
     athlete: &CanonicalAthlete,
     projection: Option<&Projection<'_>>,
 ) -> ReportResult<[Value; 3]> {
-    let schools = AffiliationExpectations::of(expected.dataset)?;
     let accepted = expected.prs_of(athlete.id.as_str()).map(|pr| {
-        let values = prs::values(pr, expected, Some(&schools))?.collect::<Vec<_>>();
+        let values = prs::values(pr, expected, Some(affiliations))?.collect::<Vec<_>>();
         let text = format(&values, 0, "verified_eligible_best")?;
         comparison(text, &pr.key)
     });

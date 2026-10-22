@@ -59,6 +59,7 @@ pub(super) fn verify(
         .len()
         .checked_add(reported.as_ref().map_or(0, |rows| rows.athletes.len()))
         .ok_or_else(|| invalid("single worksheet population overflow"))?;
+    let affiliations = AffiliationExpectations::of(expected.dataset)?;
     super::reported::rows::verify(
         book,
         "Athletes",
@@ -80,7 +81,7 @@ pub(super) fn verify(
                     Subject::Reported(athlete)
                 }
             };
-            values(expected, subject, reported.as_ref())
+            values(expected, &affiliations, subject, reported.as_ref())
         },
         findings,
     )
@@ -88,6 +89,7 @@ pub(super) fn verify(
 
 fn values(
     expected: &Expectations<'_>,
+    affiliations: &AffiliationExpectations<'_>,
     subject: Subject<'_>,
     reported: Option<&Projection<'_>>,
 ) -> ReportResult<Vec<Value>> {
@@ -106,9 +108,9 @@ fn values(
     ];
     row.extend(grade(athlete));
     row.extend(school(expected, athlete, subject)?);
-    row.extend(current(expected, athlete, subject)?);
+    row.extend(current(affiliations, athlete, subject)?);
     row.extend(coaches(expected, athlete, subject));
-    row.extend(marks::values(expected, athlete, reported)?);
+    row.extend(marks::values(expected, affiliations, athlete, reported)?);
     row.push(Value::Empty);
     row.push(Value::optional(
         athletes::cells::profiles_of(athlete).milesplit,
@@ -181,15 +183,14 @@ fn school(
 }
 
 fn current(
-    expected: &Expectations<'_>,
+    affiliations: &AffiliationExpectations<'_>,
     athlete: &CanonicalAthlete,
     subject: Subject<'_>,
 ) -> ReportResult<[Value; 3]> {
     match subject {
         Subject::Reported(_) => Ok([Value::text("Unknown"), Value::text("Unknown"), Value::Empty]),
         Subject::Accepted(_) => {
-            let [_, name, state, as_of] =
-                AffiliationExpectations::of(expected.dataset)?.values(athlete.id.as_str())?;
+            let [_, name, state, as_of] = affiliations.values(athlete.id.as_str())?;
             Ok([Value::text(name), Value::text(state), Value::text(as_of)])
         }
     }

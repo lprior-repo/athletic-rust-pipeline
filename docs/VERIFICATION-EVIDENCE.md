@@ -3444,6 +3444,44 @@ bytes and all 19 table counts. The original native frozen-input commitment is
 byte-identical in the restored copy and live root. The live endpoint and its
 Store were not stopped, opened offline or modified. The original publication,
 Downloads workbook, Cargo.lock and separate user performance edit retain their
-previously recorded hashes. Actual derivation 485 is running against the
-isolated copy and a different sibling publication root. It is not yet delivery
-or genuine five-state population acceptance.
+previously recorded hashes.
+
+Actual derivation 485 was stopped with SIGTERM, exit 143, after input validation
+and partial normalized output. This is neither a pass nor clean-drain evidence.
+Static inspection found a whole frozen-dataset serialization/hash for each
+reported result through `Projection::interpretation`; the new worksheet would
+also have repeated checked-view construction for each athlete. The existing
+validation accessors and immutable views remain intact. Five caller files now
+construct the checked participation/affiliation views once and reuse borrowed
+views while iterating. All event filters, literal cells and refusal behavior
+remain unchanged. The interrupted staging files were preserved separately at
+`~/.cache/athletic-five-state-co2027-20261021/interrupted-derivation-485-staging`
+before normal publication recovery. No live owner was interrupted.
+
+Both local GPUs returned HTTP 200 for bounded drafts 490. Main rejected the
+5090 draft's removal of the unresolved-event filter and retained the filter.
+The drafts are not acquisition or acceptance receipts. PASS: forced source
+format/check/lint 492, 35.483 seconds overall, with advisories visible. PASS:
+optimized native build 493, 218.807 seconds overall. Its service SHA-256 is
+`5c5172f215f235a56c23a5d2f6370ff11a1bce296f7f528ef1d20699492b161d`
+and endpoint SHA-256 is
+`91838596f4e03acf2b66bea6da3c1f9c5b094a06bd2b8caf62cfc25aa753da9f`.
+These binaries are retained under the service hash in the immutable release
+cache. PASS: forced full workspace 494 ran 9,237 tests, all passed, 14 slow,
+13 skipped, 581.256 seconds of test execution and 630.869 seconds overall.
+Both local GPUs returned HTTP 200 for focused read-only review 496; neither
+found a demonstrated semantic regression or remaining per-row checked accessor
+in the supplied paths. This advisory review does not replace execution evidence.
+The exact 482 service binary was also recovered from the perf build-ID cache,
+rehashed to `5134aae7267fa529dec9449138d979a5689bd58bdf1b4a227fd6e2840dd3a8c8`
+and copied into its immutable release directory, preserving the failed-run
+executable alongside its source checkpoint and partial output.
+
+PASS: trusted scan 497 checked 2,845 production files and 30,494 callables,
+zero functions over 60 logical lines and no unresolved measurement sites,
+317.989 seconds overall. The arity and 25-line advisories remain visible.
+Actual derivation 495b is running. Attempt 495 refused a mistyped digest before
+opening the Store; 495b uses the original exact profile, request and generation
+against the same isolated root and sibling destination.
+Actual delivery, replay, cold-read verification and genuine five-state
+population remain unfinished.

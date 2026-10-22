@@ -17,10 +17,10 @@ pub(super) fn cells(
     dataset: &Dataset<'_>,
     athlete: &CanonicalAthlete,
     reported: Option<&Projection<'_>>,
+    schools: &SelectedSchools<'_>,
 ) -> ReportResult<[Cell; 3]> {
-    let schools = SelectedSchools::of(dataset.source)?;
     let accepted = dataset.prs_of(athlete.id.as_str()).map(|pr| {
-        prs::cells(pr, dataset.public_identities, Some(&schools))
+        prs::cells(pr, dataset.public_identities, Some(schools))
             .and_then(|cells| detail(&cells, 0, "verified_eligible_best"))
             .and_then(|text| comparison(text, &pr.key))
     });

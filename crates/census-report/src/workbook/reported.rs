@@ -1,5 +1,5 @@
 use crate::bests::{Parents, SharedSelection};
-use crate::export::ExportDataset;
+use crate::export::{ExportDataset, VerifiedParticipationView};
 use crate::report::{Derivation, EventAdmission, ReportError, ReportResult};
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventId,
@@ -19,6 +19,7 @@ pub(super) struct Projection<'a> {
     by_performance: HashMap<&'a str, &'a CanonicalPerformance>,
     by_athlete: HashMap<&'a str, Vec<&'a CanonicalPerformance>>,
     by_best: HashMap<AthleteId, Vec<usize>>,
+    participation: &'a VerifiedParticipationView,
 }
 
 pub(super) struct ReportedBest<'a> {
@@ -67,6 +68,7 @@ impl<'a> Projection<'a> {
             .iter()
             .map(|row| (row.id.as_str(), *row))
             .collect();
+        let participation = dataset.verified_participation()?;
         let mut projection = Self {
             source: dataset,
             athletes,
@@ -77,6 +79,7 @@ impl<'a> Projection<'a> {
             by_performance,
             by_athlete,
             by_best: HashMap::new(),
+            participation,
         };
         projection.assemble_bests(admission, verified_selections)?;
         projection.assemble_reviews(admission)?;
@@ -159,7 +162,7 @@ impl<'a> Projection<'a> {
     }
 
     fn assemble_reviews(&mut self, admission: &EventAdmission<'_>) -> ReportResult<()> {
-        let participation = self.source.verified_participation()?;
+        let participation = self.participation;
         self.reviews = self
             .performances
             .iter()
@@ -187,8 +190,7 @@ impl<'a> Projection<'a> {
         performance: &CanonicalPerformance,
     ) -> ReportResult<Option<&crate::export::ReportedEventInterpretation>> {
         Ok(self
-            .source
-            .verified_participation()?
+            .participation
             .assessment(&performance.id)
             .and_then(|row| row.reported_event()))
     }
