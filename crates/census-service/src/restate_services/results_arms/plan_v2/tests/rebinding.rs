@@ -154,6 +154,44 @@ fn sdk_replay_rebinds_the_actual_structured_work_before_effects() -> TestResult 
 }
 
 #[test]
+fn sdk_large_ordinary_plan_rebinds_and_reserves_before_collection() -> TestResult {
+    let fixture = Fixture::new()?;
+    let mut plan = fixture.plan()?;
+    let meet = plan.meets.first().ok_or("fixture meet")?.clone();
+    let route = *plan.routes.first().ok_or("fixture route")?;
+    let options = census_crawl::milesplit::ResultSetOptions {
+        urls: (100_001..=100_002)
+            .map(|id| census_crawl::milesplit::ResultSetRequest {
+                url: format!("https://mi.milesplit.com/meets/123/results/{id}/raw"),
+                jurisdiction: UsJurisdiction::Michigan,
+            })
+            .collect(),
+    };
+    plan.meets = vec![meet; 2048];
+    plan.routes = vec![route; 2048];
+    plan.discovery = (0..2048)
+        .map(|_| {
+            Discovery::Ready(ReadyDiscovery {
+                options: options.clone(),
+                pages_read: 1,
+                quarantines: Vec::new(),
+            })
+        })
+        .collect();
+    let mut replay = decode(&mut encode(&plan)?)?;
+    fixture
+        .require(&mut replay, &fixture.fetcher)
+        .map_err(crate::restate_services::tests::sdk_error)?;
+    replay.reserve_execution()?;
+    let charged = MAX_PLAN_ALLOCATIONS
+        .checked_sub(replay.allocation.remaining()?)
+        .ok_or("fixture charged allocation")?;
+    check!(charged > 536_870_912);
+    check!(charged < MAX_PLAN_ALLOCATIONS);
+    Ok(())
+}
+
+#[test]
 fn syntactically_valid_forged_work_id_refuses_actual_rebinding() -> TestResult {
     let fixture = Fixture::new()?;
     let mut plan = fixture.plan()?;

@@ -3754,3 +3754,18 @@ this is separate from the earlier plan-building refusal. Original paused
 invocations/registrations and all three
 Downloads workbook hashes were preserved. The workbook remains partial;
 the previously recorded full release holds remain.
+
+Execution-admission repair 569–576 raises only the cumulative allowance from
+512 MiB to 1 GiB. The real plan arithmetic above establishes the need; this is
+not a live-RAM measurement or unbounded admission. Encoded bytes, row/text/pin
+bounds, checked charging, actual-work binding and attempt ownership are unchanged.
+RTX 5090/3090 supplied bounded drafts/reviews; Main rejected their initial
+incorrect arithmetic and proposals that merely moved the refusal earlier.
+A new ordinary 2,048-row SDK replay regression exercises real offline owner/work
+rebinding and execution reservation, checking charged bytes exceed the former
+allowance. It failed at 512 MiB in run 572 with the same terminal allocation
+refusal, then passed at 1 GiB. Run 575 passed 37/37 in 0.634s execution,
+19.739s overall, including exact-cap-plus-one and enlarged hostile-input refusals.
+Source checks 576 passed format, all-target compilation and source lint;
+existing argument-count review warnings remain. This candidate still needs
+normal runtime collection evidence; it does not populate the workbook by itself.
