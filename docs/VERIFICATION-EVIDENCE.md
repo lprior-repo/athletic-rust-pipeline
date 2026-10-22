@@ -3702,3 +3702,24 @@ lint diagnostics. Main-checkout attempt 544 refused generated output symlinks;
 it was not counted as passing. Full release remains unqualified. The verified
 single-worksheet publication task is closed; population work and the overall
 five-state workbook goal remain in progress.
+
+### Michigan result-plan allocation candidate — 2026-10-22
+
+Normal pass 543 completed at 17:49:01.518Z after 18m59.199s, with result planning
+failed at journal 805: `ResultsPlanLimit: allocation`. Its reply still owes
+results; this was not successful result collection. Serving samples 549/552
+measured 20,753 then 20,780 archive documents under the same Store/directory
+epoch, a net increase of 27 documents and 1,762,619 logical body bytes. Archive
+activity is not run-attributed parsed coverage. Existing captures remain retained.
+
+The installed 380 source inventory and current source have identical plan-limit
+and charging files: both already used 256 MiB. Main reviewed bounded RTX5090 and
+RTX3090 work and increased only the cumulative plan allowance to 512 MiB. The
+8-MiB encoded-plan limit, row/pin bounds, checked charging, source ownership and
+attempt ceilings are unchanged. Two hostile inputs were enlarged so their
+existing early-allocation refusals still execute at the new cap; no assertion
+was relaxed. Attempt 556 exposed those two fixture boundaries, 34/36 passing.
+Updated suite 558 passed 36/36 in 0.647s execution, 17.684s overall. Source checks
+559 passed format, all-target compilation and source lint in 63.473s overall.
+This candidate is not yet deployed or proven by normal result collection;
+the workbook remains partial and the previously recorded release holds remain.

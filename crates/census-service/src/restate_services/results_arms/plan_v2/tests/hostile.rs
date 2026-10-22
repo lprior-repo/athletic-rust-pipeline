@@ -43,7 +43,7 @@ fn sdk_rejects_oversized_text_before_owned_string_growth() -> TestResult {
 
 #[test]
 fn sdk_rejects_many_small_values_before_decoded_container_growth() -> TestResult {
-    let entries = vec![""; 65_536];
+    let entries = vec![""; 131_072];
     let mut bytes = fixture::mutate("pending", serde_json::json!(entries))?;
     limit(decode(&mut bytes), "decode allocation")
 }
@@ -112,6 +112,10 @@ fn sdk_rejects_nested_option_growth_at_frontier_sequence_limit() -> TestResult {
 #[test]
 fn sdk_rejects_aggregate_nested_options_at_decode_allocation_limit() -> TestResult {
     let discovery = serde_json::json!([
+        {"ready": nested_options(4096)},
+        {"ready": nested_options(4096)},
+        {"ready": nested_options(4096)},
+        {"ready": nested_options(4096)},
         {"ready": nested_options(4096)},
         {"ready": nested_options(4096)},
         {"ready": nested_options(4096)},

@@ -28,7 +28,7 @@ pub(in crate::restate_services) use wire::{
 pub(in crate::restate_services) const PLAN_RUN: &str = "results-v2-plan";
 pub(in crate::restate_services) const EXECUTE_RUN: &str = "results-v2-execute";
 pub(in crate::restate_services) const MAX_PLAN_BYTES: usize = 8_388_608;
-pub(in crate::restate_services) const MAX_PLAN_ALLOCATIONS: u64 = 268_435_456;
+pub(in crate::restate_services) const MAX_PLAN_ALLOCATIONS: u64 = 536_870_912;
 pub(in crate::restate_services) const MAX_SELECTION_ROWS: usize = 65_536;
 pub(in crate::restate_services) const MAX_PINS: usize = 12;
 pub(in crate::restate_services) const MAX_TEXT_BYTES: usize = 4096;
