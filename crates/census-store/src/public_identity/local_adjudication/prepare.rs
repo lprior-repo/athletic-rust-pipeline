@@ -185,13 +185,13 @@ pub(super) fn rebuild_history(
     ledger: &crate::public_identity::qualification::Ledger,
 ) -> StoreResult<census_domain::public_identity_history::PreparedHistoryRecord> {
     let retained = store.db.snapshot();
-    let reader = crate::public_identity::retained::Live {
-        snapshot: &retained,
-        entities: &store.entities,
-        meta: &store.meta,
-        journal: &store.journal,
-        receipts: &store.receipts,
-    };
+    let reader = crate::public_identity::retained::Live::new(
+        &retained,
+        &store.entities,
+        &store.meta,
+        &store.journal,
+        &store.receipts,
+    )?;
     crate::public_identity::graph_witness::manual::rebuild_manual(
         &reader,
         graph,

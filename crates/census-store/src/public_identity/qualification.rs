@@ -147,13 +147,7 @@ pub(crate) fn validate(
     let raw = codec::load(snapshot, meta, HISTORY, MAX_PUBLIC_IDENTITY_HISTORY_BYTES)?
         .ok_or(PublicIdentityError::Corrupt("missing history"))?;
     let history = codec::history(&raw, declaration.store_identity(), &head)?;
-    let reader = super::retained::Live {
-        snapshot,
-        entities,
-        meta,
-        journal,
-        receipts,
-    };
+    let reader = super::retained::Live::new(snapshot, entities, meta, journal, receipts)?;
     let accepted = match declaration.version() {
         PublicIdentityQualificationVersion::RetainedAuthorityGraphV3 => {
             graph_witnesses::accepted_decisions(&reader, history.records())?

@@ -29,13 +29,7 @@ pub(crate) fn capture(
             PublicIdentityError::Corrupt("frozen graph requires its V3 accepted snapshot").into(),
         );
     }
-    let reader = Live {
-        snapshot,
-        entities,
-        meta,
-        journal,
-        receipts,
-    };
+    let reader = Live::new(snapshot, entities, meta, journal, receipts)?;
     let mut bundle = wire::Bundle {
         version: 2,
         store_identity: accepted.store_identity().clone(),

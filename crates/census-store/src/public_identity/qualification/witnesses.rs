@@ -25,13 +25,7 @@ pub(super) fn validate(
 ) -> StoreResult<()> {
     witness::verify_count(snapshot, journal, history.records().len())?;
     witness::verify_count(snapshot, receipts, history.records().len())?;
-    let reader = Live {
-        snapshot,
-        entities,
-        meta,
-        journal,
-        receipts,
-    };
+    let reader = Live::new(snapshot, entities, meta, journal, receipts)?;
     validate_retained(&reader, history, declaration)
 }
 

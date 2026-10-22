@@ -7,13 +7,13 @@ fn frozen_original_bytes_are_preserved_inside_bundle() -> TestResult {
     let (operations, _) = graph::inspect(frozen.bytes())?;
     let bundle: serde_json::Value = serde_json::from_slice(frozen.bytes())?;
     let snapshot = store.db.snapshot();
-    let reader = crate::public_identity::retained::Live {
-        snapshot: &snapshot,
-        entities: &store.entities,
-        meta: &store.meta,
-        journal: &store.journal,
-        receipts: &store.receipts,
-    };
+    let reader = crate::public_identity::retained::Live::new(
+        &snapshot,
+        &store.entities,
+        &store.meta,
+        &store.journal,
+        &store.receipts,
+    )?;
     use crate::public_identity::retained::{Read, Rows};
     for operation in &operations {
         let key = crate::public_identity::witness::key(operation.sequence);

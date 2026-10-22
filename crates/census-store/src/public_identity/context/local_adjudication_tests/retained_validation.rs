@@ -105,13 +105,13 @@ fn validate(
     record: &LocalIdentityAdjudicationRecordV3,
 ) -> crate::StoreResult<()> {
     let snapshot = fixture.store.db.snapshot();
-    let reader = Live {
-        snapshot: &snapshot,
-        entities: &fixture.store.entities,
-        meta: &fixture.store.meta,
-        journal: &fixture.store.journal,
-        receipts: &fixture.store.receipts,
-    };
+    let reader = Live::new(
+        &snapshot,
+        &fixture.store.entities,
+        &fixture.store.meta,
+        &fixture.store.journal,
+        &fixture.store.receipts,
+    )?;
     let ledger = fixture.writer.verified(&fixture.store)?;
     rebuild_manual(
         &reader,

@@ -7,13 +7,13 @@ fn physical_rows(
     retained: &RetainedRawGenerationV2,
 ) -> StoreResult<BTreeMap<Vec<u8>, Vec<u8>>> {
     let snapshot = store.db.snapshot();
-    let source = Live {
-        snapshot: &snapshot,
-        entities: &store.entities,
-        meta: &store.meta,
-        journal: &store.journal,
-        receipts: &store.receipts,
-    };
+    let source = Live::new(
+        &snapshot,
+        &store.entities,
+        &store.meta,
+        &store.journal,
+        &store.receipts,
+    )?;
     let mut rows = BTreeMap::new();
     verify::verify(&source, retained.binding(), retained.seal(), |_, object| {
         graph_physical_rows(&snapshot, &store.journal, object, |key, value| {

@@ -55,7 +55,6 @@ pub struct HistoryProjection {
     pub(super) identities: BTreeMap<PublicAthleteId, IdentityEntry>,
     pub(super) bindings: BTreeMap<String, BindingEntry>,
     pub(super) memberships: BTreeMap<String, super::membership::MembershipEntry>,
-    // Derived from retained claims; stable IDs preserve live ownership after corrections.
     pub(super) candidate_bindings: BTreeMap<AthleteCandidateId, BTreeSet<String>>,
     pub(super) candidate_memberships: BTreeMap<AthleteCandidateId, BTreeSet<String>>,
     pub(super) source_bindings: BTreeMap<SourceObjectKey, BTreeSet<String>>,

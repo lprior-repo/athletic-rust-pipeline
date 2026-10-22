@@ -7,9 +7,9 @@ use fjall::{Keyspace, Readable, Snapshot};
 pub(in crate::public_identity) struct Live<'a> {
     pub snapshot: &'a Snapshot,
     pub entities: &'a Keyspace,
-    pub meta: &'a Keyspace,
     pub journal: &'a Keyspace,
     pub receipts: &'a Keyspace,
+    revision: Revision,
 }
 
 impl Read for Live<'_> {
@@ -28,19 +28,7 @@ impl Read for Live<'_> {
         }
     }
     fn revision(&self) -> StoreResult<Revision> {
-        Ok(Revision {
-            evidence_generation: inventory::number(
-                self.snapshot,
-                self.meta,
-                crate::generation::ENTITIES,
-            )?,
-            derived_generation: inventory::number(
-                self.snapshot,
-                self.meta,
-                crate::generation::DERIVED_CURRENT,
-            )?,
-            snapshot_sequence: self.snapshot.seqno(),
-        })
+        Ok(self.revision)
     }
 }
 
@@ -80,3 +68,33 @@ impl Live<'_> {
             .map_err(|source| StoreError::Read { source })
     }
 }
+
+impl<'a> Live<'a> {
+    pub(in crate::public_identity) fn new(
+        snapshot: &'a Snapshot,
+        entities: &'a Keyspace,
+        meta: &'a Keyspace,
+        journal: &'a Keyspace,
+        receipts: &'a Keyspace,
+    ) -> StoreResult<Self> {
+        let revision = Revision {
+            evidence_generation: inventory::number(snapshot, meta, crate::generation::ENTITIES)?,
+            derived_generation: inventory::number(
+                snapshot,
+                meta,
+                crate::generation::DERIVED_CURRENT,
+            )?,
+            snapshot_sequence: snapshot.seqno(),
+        };
+        Ok(Self {
+            snapshot,
+            entities,
+            journal,
+            receipts,
+            revision,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests;

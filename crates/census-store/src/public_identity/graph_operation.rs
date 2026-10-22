@@ -225,13 +225,13 @@ pub(super) fn require_available_live(
     witness: &HeldGraphWitness,
 ) -> StoreResult<()> {
     let retained = store.db.snapshot();
-    let live = super::retained::Live {
-        snapshot: &retained,
-        entities: &store.entities,
-        meta: &store.meta,
-        journal: &store.journal,
-        receipts: &store.receipts,
-    };
+    let live = super::retained::Live::new(
+        &retained,
+        &store.entities,
+        &store.meta,
+        &store.journal,
+        &store.receipts,
+    )?;
     require_available(&live, identity, ledger.history.records(), witness)
 }
 
