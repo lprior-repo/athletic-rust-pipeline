@@ -38,7 +38,7 @@ impl Allocations {
     }
     pub(in crate::acquisition) const fn selection() -> Self {
         Self {
-            owned: Counter::new(limits::NONBODY),
+            owned: Counter::new(256 * 1024 * 1024),
             body: Counter::new(0),
             scratch: Counter::new(0),
             calls: Counter::new(u64::MAX),
@@ -134,6 +134,35 @@ mod tests {
 
     fn failure(message: &'static str) -> Box<dyn std::error::Error> {
         std::io::Error::other(message).into()
+    }
+
+    #[test]
+    fn selection_admits_illinois_failure_and_enforces_256_mib() -> TestResult {
+        let selection = Allocations::selection().reserved(AllocationKind::Owned, 67_113_800)?;
+        let full = selection.reserved(AllocationKind::Owned, 268_435_456 - 67_113_800)?;
+        check!(matches!(
+            full.reserved(AllocationKind::Owned, 1),
+            Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+                resource: "allocation",
+                required: 268_435_457,
+                limit: 268_435_456,
+            }))
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn single_target_recovery_retains_64_mib_limit() -> TestResult {
+        let full = Allocations::new(1)?.reserved(AllocationKind::Owned, 67_108_864)?;
+        check!(matches!(
+            full.reserved(AllocationKind::Owned, 1),
+            Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+                resource: "allocation",
+                required: 67_108_865,
+                limit: 67_108_864,
+            }))
+        ));
+        Ok(())
     }
 
     #[test]
