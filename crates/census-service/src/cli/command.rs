@@ -123,8 +123,8 @@ pub(super) enum Command {
     StoreMigrate,
     #[command(about = "Check the store's own integrity")]
     StoreIntegrity,
-    #[command(about = "Print the command that runs the `census-serve` Restate endpoint")]
-    Serve,
+    #[command(about = "Run the supervised Restate endpoint against its selected store")]
+    Serve(super::serve::ServeArgs),
     #[command(
         about = "Submit the durable national census fan-out (one `JurisdictionCensus` per state) and observe it. Requires a running `census-serve` deployment; opens no store of its own"
     )]

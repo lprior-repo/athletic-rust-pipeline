@@ -1,5 +1,6 @@
 mod aliases;
 mod captured;
+mod multiple;
 mod ordering;
 mod ownership;
 
@@ -77,6 +78,7 @@ fn corrupt_workbook(
     target: &std::path::Path,
     name: &str,
     header: &str,
+    replacement: &str,
 ) -> TestResult {
     let mut reader: Xlsx<_> = open_workbook(source)?;
     let mut writer = Workbook::new();
@@ -94,7 +96,7 @@ fn corrupt_workbook(
                 let r = u32::try_from(row)?;
                 let c = u16::try_from(column)?;
                 if row == 1 && selected == Some(column) {
-                    sheet.write_string(r, c, "forged postal claim")?;
+                    sheet.write_string(r, c, replacement)?;
                     continue;
                 }
                 match value {

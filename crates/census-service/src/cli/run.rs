@@ -87,7 +87,7 @@ async fn run_async(cli: Cli) -> Result<()> {
         Command::StoreIntegrity => store::run_integrity(&cli.store_root()),
         Command::StoreMigrate => store::run_migrate(&cli.store_root()),
         Command::Verify(args) => verify::run_verify(&cli.store_root(), args),
-        Command::Serve => serve::run_serve(&cli),
+        Command::Serve(args) => serve::run_serve(&cli, args).await,
         Command::RepairRetainedMarks(args) => retained_marks::run_repair_retained_marks(&cli, args),
         Command::RepairRetainedEvents(args) => {
             retained_events::run_repair_retained_events(&cli, args)

@@ -6,10 +6,10 @@ use census_domain::model::{
     normalize_name, AthleteId, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiMetres, CoachContactClaim,
     CoachContactProgram, CoachRole, CoachTenure, CoachTenureEvidence, CompetitionLevel,
-    ContactResearch, ContactResearchOutcome, ContactResearchSubject, EventId, EventIdentity,
-    EventKind, EventSpecification, Evidence, ExactSeconds, Gender, GradYear, Grade, Mark, MeetId,
-    ObservedGrade, PublishedGraduation, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
-    SourceRef, Sport,
+    ContactResearch, ContactResearchAttempt, ContactResearchOutcome, ContactResearchSubject,
+    EventId, EventIdentity, EventKind, EventSpecification, Evidence, ExactSeconds, Gender,
+    GradYear, Grade, Mark, MeetId, ObservedGrade, PublishedGraduation, SchoolId, SchoolYear,
+    SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -1025,16 +1025,27 @@ fn a_schools_research_outcome_reaches_the_athletes_contact_coverage_state() -> T
         );
         school.athletics_website = Some("https://schools.test/athletics".to_string());
         school.evidence = evidence("wiaa_results", Some("https://wiaa.test/schools"));
-        school.contact_research.push(ContactResearch {
-            school: school_id.clone(),
-            subject: ContactResearchSubject::Program(CoachContactProgram::Team {
-                sport: Sport::OutdoorTrack,
-                gender: Gender::Boys,
-            }),
-            school_year: SchoolYear::new(2026).ok_or("invalid fixture season")?,
-            outcome: outcome.clone(),
-            attempts: Vec::new(),
-        });
+        let school_year = SchoolYear::new(2026).ok_or("invalid fixture season")?;
+        school.contact_research = ContactResearch::programs()
+            .into_iter()
+            .map(|program| ContactResearch {
+                school: school_id.clone(),
+                subject: ContactResearchSubject::Program(program),
+                school_year,
+                outcome: outcome.clone(),
+                attempts: if outcome == ContactResearchOutcome::Unattempted {
+                    Vec::new()
+                } else {
+                    vec![ContactResearchAttempt {
+                        locator: "https://schools.test/athletics".into(),
+                        acquired_at: "2026-09-20T00:00:00Z".into(),
+                        source_sha256: Some("a".repeat(64)),
+                        outcome: outcome.clone(),
+                        reason: "Synthetic retained staff capture".into(),
+                    }]
+                },
+            })
+            .collect();
         store.append(Table::Schools, &school)?;
         let mut athlete = CanonicalAthlete::new(
             &school_id,

@@ -80,12 +80,13 @@ fn contradictory_postal_addresses_keep_aligned_provenance_on_both_workbook_sheet
         "Schools {header}");
     }
     let athletes = sheet(&mut book, "Athletes")?;
+    let expected_address = format!("{CAPTURED_ADDRESS}\n2 Review Road");
     check!(eq; text(
         &athletes,
         row_of(&athletes, athlete.id.as_str())?,
         column_of(&athletes, "School Address")?
     ),
-    CAPTURED_ADDRESS);
+    expected_address);
     let mut reader = ::csv::Reader::from_path(
         path.parent()
             .ok_or("missing generation directory")?
@@ -97,7 +98,7 @@ fn contradictory_postal_addresses_keep_aligned_provenance_on_both_workbook_sheet
         .iter()
         .position(|value| value == "school_address")
         .ok_or("missing CSV column school_address")?;
-    check!(eq; record.get(address_column), Some(CAPTURED_ADDRESS));
+    check!(eq; record.get(address_column), Some(expected_address.as_str()));
     Ok(())
 }
 

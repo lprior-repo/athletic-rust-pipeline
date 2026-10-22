@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+mod command;
 mod drain;
 mod error;
 mod guard;
@@ -22,6 +23,7 @@ pub const MEMORY_BUDGET_CEILING_GIB: u64 = 1024;
 
 pub use census_store::clock::{Clock, SystemClock};
 
+pub use command::serve_command;
 pub use drain::{DrainReport, EndpointShutdown};
 pub use options::{MemoryAccounting, ServeCaptureProtocol, ServeOptions};
 pub use serve::{init_tracing, serve, serve_until};

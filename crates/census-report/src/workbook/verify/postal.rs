@@ -2,7 +2,7 @@ use crate::export::ExportDataset;
 use crate::report::{ReportError, ReportResult};
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, SchoolPostalAddress};
 use census_domain::school_directory::AddressKind;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub(in crate::workbook) fn athlete_address_index(
     dataset: &ExportDataset,
@@ -20,13 +20,49 @@ pub(in crate::workbook) fn athlete_address_index(
 fn address_line<'a>(
     schools: impl IntoIterator<Item = &'a CanonicalSchool>,
 ) -> ReportResult<String> {
-    let Some((_, claim)) = ordered_claims(schools)?.into_iter().flatten().next() else {
-        return Ok(String::new());
-    };
-    let address = claim.address();
-    let mut line = street_city(address);
-    append_state_zip(&mut line, address);
-    Ok(line)
+    let tuples = ordered_claims(schools)?
+        .into_iter()
+        .flatten()
+        .map(|(school, claim)| {
+            validate_owner(school, claim)?;
+            Ok((&school.id, claim.address()))
+        })
+        .collect::<ReportResult<BTreeSet<_>>>()?;
+    let mut expected = String::new();
+    let mut units = 0usize;
+    for (_, address) in tuples {
+        let mut line = street_city(address);
+        append_state_zip(&mut line, address);
+        append_address(&mut expected, &mut units, &line)?;
+    }
+    Ok(expected)
+}
+
+fn append_address(cell: &mut String, units: &mut usize, line: &str) -> ReportResult<()> {
+    let separator = usize::from(!cell.is_empty());
+    let next = units
+        .checked_add(separator)
+        .and_then(|count| count.checked_add(line.encode_utf16().count()))
+        .filter(|count| *count <= 32_767)
+        .ok_or_else(|| ReportError::Invariant {
+            detail: "frozen school address exceeds UTF-16 cell budget".into(),
+        })?;
+    let bytes = line
+        .len()
+        .checked_add(separator)
+        .ok_or_else(|| ReportError::Invariant {
+            detail: "frozen school address byte length overflow".into(),
+        })?;
+    cell.try_reserve(bytes)
+        .map_err(|error| ReportError::Invariant {
+            detail: format!("allocating frozen school address: {error}"),
+        })?;
+    if separator != 0 {
+        cell.push('\n');
+    }
+    cell.push_str(line);
+    *units = next;
+    Ok(())
 }
 
 fn street_city(address: &census_domain::school_directory::PostalAddress) -> String {

@@ -107,7 +107,7 @@ fn tampering_any_published_postal_component_or_provenance_cell_fails_workbook_re
         .map(|(header, _)| ("Schools", header))
         .chain([("Athletes", "School Address")])
     {
-        corrupt_workbook(&path, &target, name, header)?;
+        corrupt_workbook(&path, &target, name, header, "forged postal claim")?;
         let error = match verify_frozen(&target, &dataset, &options) {
             Err(error) => error.to_string(),
             Ok(_) => return Err(format!("forged {name} {header} accepted").into()),

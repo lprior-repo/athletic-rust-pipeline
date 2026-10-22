@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use census_domain::model::{
-    CanonicalCoach, CanonicalSchool, CoachRole, ContactResearchOutcome, ContactResearchSubject,
-    Gender, SchoolId, SchoolYear,
+    CanonicalCoach, CanonicalSchool, CoachRole, ContactResearch, ContactResearchOutcome, Gender,
+    SchoolId, SchoolYear,
 };
 
 use super::heads::{individuals, HeadScope, Heads};
@@ -127,14 +127,9 @@ pub(in crate::workbook) fn attach_research(
 }
 
 fn research_outcome(school: &CanonicalSchool, school_year: SchoolYear) -> ContactResearchOutcome {
-    school
-        .contact_research
+    ContactResearch::programs()
         .iter()
-        .filter(|research| research.school_year == school_year)
-        .filter_map(|research| match research.subject {
-            ContactResearchSubject::Program(_) => Some(research.outcome.clone()),
-            ContactResearchSubject::SchoolMailbox(_) => None,
-        })
+        .map(|program| census_domain::model::school_contact_research(school, program, school_year))
         .reduce(ContactResearchOutcome::combine)
         .map_or(ContactResearchOutcome::Unattempted, core::convert::identity)
 }

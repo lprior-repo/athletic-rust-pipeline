@@ -58,7 +58,7 @@ pub(super) const DEFAULT_STORE_ROOT: &str = "var/census-service";
 )]
 pub(super) struct Cli {
     #[arg(
-        help = "Store root (cache, journals, entity logs and output). Selects offline store access, requiring census-serve stopped. Exception: verify reads only the immutable bundle and uses this root for its default artifact path. Other pipeline commands default to the running Restate service"
+        help = "Store root (cache, journals, entity logs and output). Offline access requires the endpoint stopped. The serve command hosts the endpoint with this root; verify reads only the immutable bundle and uses it for its default artifact path. Other pipeline commands default to the running Restate service"
     )]
     #[arg(long, global = true, value_name = "DIR")]
     store: Option<PathBuf>,

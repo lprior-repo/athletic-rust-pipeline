@@ -1,8 +1,8 @@
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachContactClaim, CoachContactProgram,
-    CoachRole, CoachTenure, CoachTenureEvidence, ContactResearch, ContactResearchOutcome,
-    ContactResearchSubject, Gender, GradYear, SchoolId, SchoolYear, SourceIdentity,
-    SourceNamespace, SourceRef, Sport,
+    CoachRole, CoachTenure, CoachTenureEvidence, ContactResearch, ContactResearchAttempt,
+    ContactResearchOutcome, ContactResearchSubject, Gender, GradYear, SchoolId, SchoolYear,
+    SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use std::collections::BTreeMap;
@@ -299,16 +299,27 @@ fn researched_school(outcome: ContactResearchOutcome) -> TestResult<CanonicalSch
         None,
     );
     record.id = school();
-    record.contact_research.push(ContactResearch {
-        school: school(),
-        subject: ContactResearchSubject::Program(CoachContactProgram::Team {
-            sport: Sport::OutdoorTrack,
-            gender: Gender::Boys,
-        }),
-        school_year: year()?,
-        outcome,
-        attempts: Vec::new(),
-    });
+    let school_year = year()?;
+    record.contact_research = ContactResearch::programs()
+        .into_iter()
+        .map(|program| ContactResearch {
+            school: school(),
+            subject: ContactResearchSubject::Program(program),
+            school_year,
+            outcome: outcome.clone(),
+            attempts: if outcome == ContactResearchOutcome::Unattempted {
+                Vec::new()
+            } else {
+                vec![ContactResearchAttempt {
+                    locator: "https://example.invalid/staff".into(),
+                    acquired_at: "2026-08-01T00:00:00Z".into(),
+                    source_sha256: Some("a".repeat(64)),
+                    outcome: outcome.clone(),
+                    reason: "Synthetic retained staff capture".into(),
+                }]
+            },
+        })
+        .collect();
     Ok(record)
 }
 

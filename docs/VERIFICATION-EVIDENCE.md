@@ -3926,3 +3926,68 @@ workbook still hashes to
 `1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`.
 Foreign Beads files, `xtask/src/perf/candidate.rs`, output artifacts and the
 running Store were preserved. No live Store was opened by a second owner.
+
+## 2026-10-22 — worksheet address, contact research and shared serve fixes
+
+Based on main `d4011a5021ec905127dda491a5506fda4d9a5940`, Main integrated the
+reviewed isolated address, coach and CLI patches. The compact school-address cell
+now keeps each distinct whole owner/address tuple in deterministic readable order;
+a locality-only claim cannot hide a street address. Existing postal provenance
+columns retain every claim. Independent frozen verification derives the tuples
+separately and enforces the same 32,767 UTF-16-unit cell bound without truncation.
+The controlled North Carolina regression checks actual XLSX and recruiting CSV,
+moves the generation outside the Store, removes the original Store path, reopens
+frozen input and rejects either omitted address. This is rendering/cold-read
+evidence, not genuine five-state cohort acceptance.
+
+Coach research now reuses the existing domain assessor for all seven program
+categories. Capture-free summaries, malformed/foreign claims, missing categories
+and prior-season research cannot certify successful completion. Cold-reopen tests
+retain exact current coach source metadata. The existing domain limitation for an
+old retrieval timestamp falsely labelled with the current school year remains
+open; this slice does not certify that boundary or collect missing public contacts.
+
+`census-service serve` now invokes the same bootstrap, option validation, drain
+receipt and exit policy as `census-serve`, within its existing runtime. It does not
+spawn another endpoint or open a Store before shared validation.
+
+Executed through `env -u CI tools/moon-local`, with the pinned Moon directory on
+PATH, `MOON_RUST_BUILD_JOBS=4` and test lanes `MOON_RUST_TEST_THREADS=4`. Logs below
+are under `/tmp/athletic-work-20261021/`:
+
+- **FAIL retained:** `worksheet-fixes-tests-651.log`, 90/93; Main corrected the
+  old single-address expectation, relocated-publication fixture and CLI test's
+  parser-only assertion. `worksheet-fixes-regressions-654.log` then passed 3/3.
+- **FAIL retained:** `worksheet-fixes-adjacent-tests-655.log`, 1,824/1,827,
+  Nextest `10bff2f7-901c-4bf7-9737-37f85c18b87d`, 397.777 s. Main corrected two
+  tests that still treated supported recipe 13 as a future version, preserving
+  unknown-version refusal with 14 and explicitly testing 13 success; the other
+  fixture now supplies controlled captured attempts across all seven categories.
+- **PASS:** `worksheet-fixes-final-tests-658.log`, 96/96, Nextest
+  `8e4dad28-8a88-486f-9886-8984ef341195`, 20.093 s total. This includes all six
+  repaired regressions, postal/coach/contact and shared CLI/bootstrap tests.
+- **PASS:** `worksheet-fixes-final-source-659.log`, `pipeline:fmt`,
+  `pipeline:check` and `pipeline:lint-src`, 33.334 s total. Existing forced arity
+  advisories remain visible under repository policy.
+- **PASS expected refusal:** `worksheet-cli-conflict-660.log`, actual
+  `pipeline:run-scoped -- -p census-service --bin census-service -- --store
+  '/tmp/athletic-work-20261021/cli-660-first root' serve --data-dir
+  '/tmp/athletic-work-20261021/cli-660-second root'` exited 1 with the explicit
+  conflicting-root error. Both paths remained absent. No endpoint was launched.
+- **PASS:** `worksheet-fixes-panic-661.log`, `pipeline:xtask -- panic-extraction
+  --root crates`, 5,508 Rust files and three rendered templates, 27.502 s total.
+
+Both GPUs returned real HTTP-200 reviews/drafts in runs 650/652/656. Main rejected
+unsupported API/exit-propagation/timeout claims and the forbidden-macro test draft;
+none of those claims is acceptance evidence. The separate current-policy helper
+remains deferred and unapplied. The robots patch is verified but not part of this
+slice. No release-gate pass or new native workbook publication is claimed.
+
+The original MI invocation `inv_1lc4hnnCg2sx2WxMFUNVA43OuGPWIMqETi` is still
+running under sole Store owner endpoint 590/PID 2403935. Ingress read 661 reports
+1,047,012 athlete rows, 469,797 performances, 1,137,649 source observations and
+zero identity decisions. These are acquired rows, not accepted recruits. The
+Downloads workbook remains byte-identical at SHA256
+`1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`.
+Foreign Beads/candidate files, live state, keys, receipts and artifacts remain
+preserved. The fully populated five-state workbook goal remains incomplete.
