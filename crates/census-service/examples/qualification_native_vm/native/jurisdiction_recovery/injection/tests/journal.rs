@@ -88,6 +88,106 @@ fn registration_follows_a_null_payload_run_to_the_journaled_authority() -> Resul
     Ok(())
 }
 
+fn current_source_sequence() -> Result<Vec<Value>> {
+    let mut original = entries()?;
+    let registration = original.pop().context("fixture registration absent")?;
+    let payload = registration
+        .pointer("/entry_json/Notification/Completion/Run/result/Success")
+        .context("fixture registration bytes absent")?
+        .clone();
+    let mut rows = vec![original.first().context("fixture Input absent")?.clone()];
+    for (index, completion, payload) in [
+        (1, 1, Some(json!(b"null"))),
+        (3, 2, Some(json!(br#""Proceed""#))),
+        (5, 3, Some(payload)),
+        (7, 4, Some(json!(b"0"))),
+        (9, 5, None),
+    ] {
+        rows.push(fixture::entry(
+            "inv_child",
+            index,
+            "Command: Run",
+            json!({"Command":{"Run":{"completion_id":completion,"name":""}}}),
+        ));
+        if let Some(payload) = payload {
+            rows.push(fixture::entry(
+                "inv_child", index.checked_add(1).context("fixture index overflow")?, "Notification: Run",
+                json!({"Notification":{"Completion":{"Run":{"completion_id":completion,"result":{"Success":payload}}}}}),
+            ));
+        }
+    }
+    Ok(rows)
+}
+
+#[test]
+fn registration_selects_authority_between_proceed_and_zero_baseline() -> Result<()> {
+    let rows = current_source_sequence()?;
+    let retained = serde_json::to_vec(&rows)?;
+    let (identity, references) = journal::registration(&rows)?.context("registration absent")?;
+    assert_eq!(
+        identity,
+        journal::registration(&entries()?)?
+            .context("fixture identity absent")?
+            .0
+    );
+    assert_eq!(
+        references,
+        json!({"command":{"invocation_id":"inv_child","index":5,"version":2},"completion":{"invocation_id":"inv_child","index":6,"version":2}})
+    );
+    assert_eq!(serde_json::to_vec(&rows)?, retained);
+    let mut missing = rows;
+    missing.get_mut(6).context("fixture registration absent")?["entry_json"]["Notification"]
+        ["Completion"]["Run"]["completion_id"] = json!(99);
+    assert!(journal::registration(&missing)?.is_none());
+    Ok(())
+}
+
+#[test]
+fn registration_refuses_unknown_payloads_before_and_after_authority() -> Result<()> {
+    for payload in [
+        br#""Unknown""#.as_slice(),
+        b"1",
+        b"-1",
+        b"0.0",
+        b"null ",
+        br#""Proceed" "#,
+        b"{}",
+        br#"{"Proceed":null}"#,
+        b"[0]",
+        b"{",
+    ] {
+        for index in [2, 8] {
+            let mut rows = current_source_sequence()?;
+            rows.get_mut(index).context("fixture completion absent")?["entry_json"]
+                ["Notification"]["Completion"]["Run"]["result"] = json!({"Success":payload});
+            assert!(failure(journal::registration(&rows))?
+                .contains("journaled source registration malformed"));
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn registration_keeps_duplicate_refusal_with_current_source_prefix() -> Result<()> {
+    let mut rows = current_source_sequence()?;
+    rows.push(rows.get(6).context("fixture registration absent")?.clone());
+    assert!(failure(journal::registration(&rows))?
+        .contains("duplicate journaled source registration completion"));
+    let mut rows = current_source_sequence()?;
+    let mut command = rows
+        .get(5)
+        .context("fixture registration command absent")?
+        .clone();
+    command["entry_json"]["Command"]["Run"]["completion_id"] = json!(6);
+    let mut completion = rows.get(6).context("fixture registration absent")?.clone();
+    completion["entry_json"]["Notification"]["Completion"]["Run"]["completion_id"] = json!(6);
+    rows.extend([command, completion]);
+    assert!(
+        failure(journal::registration(&rows))?.contains("duplicate journaled source registration")
+    );
+    Ok(())
+}
+
 #[test]
 fn registration_refuses_malformed_digest_date_and_payload_bytes() -> Result<()> {
     [

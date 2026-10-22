@@ -52,7 +52,7 @@ pub(super) fn registration(entries: &[Value]) -> Result<Option<(Registration, Va
                 "registration notification type differs"
             );
             let bytes = success(run)?;
-            if bytes == b"null" {
+            if bytes == b"null" || bytes == br#""Proceed""# || bytes == b"0" {
                 continue;
             }
             let identity: Registration = serde_json::from_slice(&bytes)
