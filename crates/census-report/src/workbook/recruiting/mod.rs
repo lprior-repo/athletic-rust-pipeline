@@ -32,6 +32,7 @@ pub use csv::{write_recruiting_csv, RecruitingCsvCounts};
 
 pub(super) struct Recruiting<'a> {
     dataset: Dataset<'a>,
+    reported: Option<crate::workbook::reported::Projection<'a>>,
 }
 
 impl<'a> Recruiting<'a> {
@@ -41,13 +42,24 @@ impl<'a> Recruiting<'a> {
         prs: Vec<bests::SharedSelection>,
         admission: &crate::report::EventAdmission<'d>,
     ) -> ReportResult<Self> {
+        let reported = crate::workbook::reported::Projection::of(
+            derivation.dataset(),
+            derivation,
+            admission,
+            &prs,
+        )?;
         Ok(Self {
             dataset: Dataset::of(derivation, school_year, prs, admission)?,
+            reported,
         })
     }
 
     pub(super) fn write_athletes(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
-        let widths = self.identity_widths(&athletes::WIDTHS);
+        let mut widths = self.identity_widths(&athletes::WIDTHS);
+        if self.reported.is_some() {
+            widths.splice(0..0, [24, 36]);
+            widths.extend([48, 60, 22, 14, 32]);
+        }
         write_sheet_rows(
             book,
             path,
@@ -56,7 +68,7 @@ impl<'a> Recruiting<'a> {
                 widths: &widths,
                 chrome: SheetChrome::Filtered,
             },
-            athletes::rows(&self.dataset),
+            athletes::rows_with_reported(&self.dataset, self.reported.as_ref()),
         )
     }
 
@@ -72,6 +84,10 @@ impl<'a> Recruiting<'a> {
         if schools.is_some() {
             widths.extend([30, 14, 22]);
         }
+        if self.reported.is_some() {
+            widths.splice(0..0, [24, 40]);
+            widths.extend([22, 60]);
+        }
         write_sheet_rows(
             book,
             path,
@@ -80,10 +96,11 @@ impl<'a> Recruiting<'a> {
                 widths: &widths,
                 chrome: SheetChrome::Filtered,
             },
-            prs::rows(
+            prs::rows_with_reported(
                 &self.dataset.prs,
                 self.dataset.public_identities,
                 schools.as_ref(),
+                self.reported.as_ref(),
             ),
         )
     }

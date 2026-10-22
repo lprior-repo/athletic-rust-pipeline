@@ -1,5 +1,4 @@
 use super::{CurrentAffiliationError, CurrentAffiliationInventory, CurrentAffiliationRequest};
-use crate::model::ProvisionalInclusionV1;
 
 pub(super) fn check(
     request: &CurrentAffiliationRequest<'_>,
@@ -9,9 +8,6 @@ pub(super) fn check(
         return Err(CurrentAffiliationError::InventoryViewMismatch);
     }
     let profile = request.profile.input();
-    if profile.include_provisional != ProvisionalInclusionV1::Exclude {
-        return Err(CurrentAffiliationError::ProvisionalInclusionUnsupported);
-    }
     if !profile.sports.contains(&request.sport) {
         return Err(CurrentAffiliationError::SportNotSelected);
     }

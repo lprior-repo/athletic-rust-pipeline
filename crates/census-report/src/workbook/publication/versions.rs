@@ -2,7 +2,7 @@ use crate::report::ReportResult;
 
 pub(super) fn validate_policy(artifact: u32, policy: u32) -> ReportResult<()> {
     match (artifact, policy) {
-        (1..=5, 0..=20) | (6..=8, 21..=22) => Ok(()),
+        (1..=5, 0..=20) | (6..=9, 21..=22) => Ok(()),
         _ => Err(super::invariant(format!(
             "publication artifact revision {artifact} is incompatible with selection policy {policy}"
         ))),
@@ -22,9 +22,11 @@ mod tests {
         validate_policy(6, 21)?;
         validate_policy(7, 21)?;
         validate_policy(8, 21)?;
+        validate_policy(9, 21)?;
         validate_policy(6, 22)?;
         validate_policy(7, 22)?;
         validate_policy(8, 22)?;
+        validate_policy(9, 22)?;
         for artifact in 1..=5 {
             check!(validate_policy(artifact, 21).is_err());
             for policy in 18..=20 {
@@ -32,9 +34,10 @@ mod tests {
                 check!(validate_policy(6, policy).is_err());
                 check!(validate_policy(7, policy).is_err());
                 check!(validate_policy(8, policy).is_err());
+                check!(validate_policy(9, policy).is_err());
             }
         }
-        for pair in [(0, 21), (9, 21), (5, 22), (u32::MAX, u32::MAX)] {
+        for pair in [(0, 21), (10, 21), (5, 22), (u32::MAX, u32::MAX)] {
             check!(validate_policy(pair.0, pair.1).is_err());
         }
         Ok(())

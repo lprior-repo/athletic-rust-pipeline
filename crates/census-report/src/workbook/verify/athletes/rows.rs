@@ -1,12 +1,34 @@
 use super::super::canonical::Value;
+use super::super::expectations::Expectations;
 use super::super::public_identity::Expected;
+use super::super::report::Findings;
 use super::super::{labels::athlete_headers::Schema, reach};
-use super::{cells, Verifier};
+use super::cells;
 use crate::bests::SharedSelection;
 use crate::report::ReportResult;
 use census_domain::model::{CanonicalAthlete, IdentityStatus, Sport};
 
-impl Verifier<'_, '_> {
+pub(in crate::workbook::verify) fn values(
+    expectations: &Expectations<'_>,
+    schema: Schema,
+    athlete: &CanonicalAthlete,
+    findings: &mut Findings,
+) -> ReportResult<Vec<Value>> {
+    RowValues {
+        expectations,
+        schema,
+        findings,
+    }
+    .values(athlete)
+}
+
+struct RowValues<'a, 'd> {
+    expectations: &'a Expectations<'d>,
+    schema: Schema,
+    findings: &'a mut Findings,
+}
+
+impl RowValues<'_, '_> {
     pub(super) fn values(&mut self, athlete: &CanonicalAthlete) -> ReportResult<Vec<Value>> {
         let identity = Expected::of(&self.expectations.identities, athlete.id.as_str())?;
         let prs: Vec<&SharedSelection> = self.expectations.prs_of(athlete.id.as_str()).collect();

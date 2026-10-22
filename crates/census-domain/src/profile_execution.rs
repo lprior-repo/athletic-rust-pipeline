@@ -1,6 +1,5 @@
 use crate::model::{
-    CanonicalJsonError, DiscoveryPriorityV1, ProfileError, ProvisionalInclusionV1, QueryProfileV1,
-    RegionalMembershipV1,
+    CanonicalJsonError, DiscoveryPriorityV1, ProfileError, QueryProfileV1, RegionalMembershipV1,
 };
 use crate::UsJurisdiction;
 
@@ -105,12 +104,6 @@ fn check_selection_configuration(profile: &QueryProfileV1) -> Result<(), Profile
         DiscoveryPriorityV1::Uniform => {}
         DiscoveryPriorityV1::SourceBackedRegionFirst(_) => {
             return Err(ProfileExecutionError::UnsupportedDiscoveryPriority);
-        }
-    }
-    match input.include_provisional {
-        ProvisionalInclusionV1::Exclude => {}
-        ProvisionalInclusionV1::Include => {
-            return Err(ProfileExecutionError::UnsupportedProvisionalInclusion);
         }
     }
     Ok(())

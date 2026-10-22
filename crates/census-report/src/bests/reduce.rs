@@ -2,6 +2,7 @@ mod build;
 mod combined;
 mod grouping;
 mod identity;
+mod reported;
 mod reports;
 mod row;
 mod support;
@@ -10,6 +11,7 @@ mod support;
 pub(super) use build::build_outcome;
 pub(crate) use build::{build_admitted_outcome, build_from_derivation, build_selected_outcome};
 pub use build::{build_from_dataset, build_with_exclusions};
+pub(crate) use reported::{reported_best_groups, ReportedBestGroup};
 
 use grouping::ReportGroupKey;
 use reports::{ContextIntegrity, ReportGroup, RetainedContexts};
@@ -37,6 +39,19 @@ impl<'a> PrSlot<'a> {
             reports: BTreeMap::new(),
             marks: 0,
         }
+    }
+
+    fn candidate(&self) -> Option<&Candidate<'a>> {
+        self.reports
+            .values()
+            .filter_map(ReportGroup::eligible)
+            .reduce(|incumbent, candidate| {
+                if candidate.wins_over(incumbent) {
+                    candidate
+                } else {
+                    incumbent
+                }
+            })
     }
 }
 
@@ -164,17 +179,7 @@ fn close(
     scope: Scope,
     semantics: census_domain::model::EventSemantics,
 ) -> Option<SharedSelection> {
-    let candidate = slot
-        .reports
-        .values()
-        .filter_map(ReportGroup::eligible)
-        .reduce(|incumbent, candidate| {
-            if candidate.wins_over(incumbent) {
-                candidate
-            } else {
-                incumbent
-            }
-        })?;
+    let candidate = slot.candidate()?;
     let specification = candidate
         .event
         .resolved_specification_with_policy(semantics)

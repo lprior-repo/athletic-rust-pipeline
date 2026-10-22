@@ -20,6 +20,7 @@ mod reach;
 mod read;
 mod relays;
 mod report;
+mod reported;
 pub(in crate::workbook) mod xlsx;
 
 #[derive(Debug)]
@@ -41,8 +42,19 @@ pub fn verify_frozen(
     read::verify_inventory(&book, &expectations, &mut findings);
     performances::verify(&mut book, &expectations, &mut findings)?;
     relays::verify(&mut book, &expectations, &mut findings)?;
-    athletes::verify(&mut book, &expectations, &mut findings)?;
-    prs::verify(&mut book, &expectations, &mut findings)?;
+    if dataset.selected_profile_id().is_some()
+        && dataset
+            .selected_authority()?
+            .profile()
+            .input()
+            .include_provisional
+            == census_domain::model::ProvisionalInclusionV1::Include
+    {
+        reported::verify(&mut book, &expectations, &mut findings)?;
+    } else {
+        athletes::verify(&mut book, &expectations, &mut findings)?;
+        prs::verify(&mut book, &expectations, &mut findings)?;
+    }
     coaches::verify(&mut book, &expectations, &mut findings)?;
     meta::verify(&mut book, &expectations, &mut findings)?;
     let rows = findings.finish(path)?;

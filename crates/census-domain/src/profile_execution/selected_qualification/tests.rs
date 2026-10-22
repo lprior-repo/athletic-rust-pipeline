@@ -9,6 +9,8 @@ use crate::UsJurisdiction;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod provisional;
+
 pub(super) fn input() -> TestResult<QueryProfileInputV1> {
     Ok(QueryProfileInputV1 {
         version: 1,
@@ -169,7 +171,7 @@ fn unsupported_jurisdictions_refuse_after_exact_refs() -> TestResult {
 }
 
 #[test]
-fn unsupported_region_priority_and_provisional_guards_remain_active() -> TestResult {
+fn unsupported_region_priority_guards_remain_active() -> TestResult {
     let region = ContractRefV1::new(1, 1, &"b".repeat(64))?;
     let mut raw = input()?;
     raw.regional_membership = RegionalMembershipV1::SourceBackedRegion(region.clone());
@@ -184,13 +186,6 @@ fn unsupported_region_priority_and_provisional_guards_remain_active() -> TestRes
     check!(matches!(
         validate_selected_qualification_profile_v1(&profile),
         Err(ProfileExecutionError::UnsupportedDiscoveryPriority)
-    ));
-    let mut raw = input()?;
-    raw.include_provisional = ProvisionalInclusionV1::Include;
-    let profile = QueryProfileV1::new(raw)?;
-    check!(matches!(
-        validate_selected_qualification_profile_v1(&profile),
-        Err(ProfileExecutionError::UnsupportedProvisionalInclusion)
     ));
     Ok(())
 }

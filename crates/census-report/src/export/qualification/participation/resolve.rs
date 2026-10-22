@@ -1,6 +1,6 @@
 use super::{
-    closure::Closure, contexts::ResultContexts, invalid, note, ParticipationDiagnostic as Gap,
-    PinnedParticipationRow,
+    closure::IndexedClosure, contexts::ResultContexts, invalid, note,
+    ParticipationDiagnostic as Gap, PinnedParticipationRow,
 };
 use crate::export::{
     participation_bridge::{assess_with_independent, SourceCohortAgreement},
@@ -26,7 +26,7 @@ pub(super) struct Resolver<'a, V> {
     pub(super) identities: crate::export::public_identity::population::IdentityPopulation<'a>,
     pub(super) sources: RetainedResultSession<'a, V>,
     pub(super) contexts: ResultContexts,
-    pub(super) closure: &'a Closure,
+    pub(super) closure: IndexedClosure<'a>,
     pub(super) roster_context: super::VerifiedRosterContext<'a>,
     pub(super) budget: super::budget::Captures,
     pub(super) independent:
@@ -100,7 +100,6 @@ impl<V: RetainedJournalView> Resolver<'_, V> {
         mut result: Accumulated,
     ) -> StoreResult<PinnedParticipationRow> {
         result.gaps.extend(self.closure.gate(
-            self.dataset,
             &self.identities,
             performance,
             &self.contexts,
@@ -159,9 +158,7 @@ impl<V: RetainedJournalView> Resolver<'_, V> {
     fn evidence(&self, performance: &CanonicalPerformance) -> StoreResult<Vec<(Evidence, Value)>> {
         let mut seen = BTreeSet::new();
         self.closure
-            .performances
-            .iter()
-            .filter(|row| row.id == performance.id)
+            .performances(performance)
             .flat_map(|row| &row.evidence)
             .try_fold(Vec::new(), |mut evidence, item| {
                 if !seen.insert(serialized_digest(item)?) {

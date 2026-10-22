@@ -15,7 +15,9 @@ pub(super) fn newest_observation(athlete: &CanonicalAthlete) -> Option<&Observed
         .max_by_key(|grade| (grade.school_year.get(), grade.grade.get()))
 }
 
-pub(super) fn observed_season(athlete: &CanonicalAthlete) -> Option<SchoolYear> {
+pub(in crate::workbook::verify) fn observed_season(
+    athlete: &CanonicalAthlete,
+) -> Option<SchoolYear> {
     newest_observation(athlete)
         .map(|grade| grade.school_year)
         .or_else(|| {
@@ -31,7 +33,7 @@ pub(super) fn flag(recorded: bool) -> Value {
     Value::flagged(recorded)
 }
 
-pub(super) fn source_count(athlete: &CanonicalAthlete) -> usize {
+pub(in crate::workbook::verify) fn source_count(athlete: &CanonicalAthlete) -> usize {
     athlete
         .identities()
         .map(|identity| &identity.namespace)
@@ -40,13 +42,13 @@ pub(super) fn source_count(athlete: &CanonicalAthlete) -> usize {
 }
 
 #[derive(Default)]
-pub(super) struct Profiles {
-    pub(super) athletic_net: Option<String>,
-    pub(super) milesplit: Option<String>,
-    pub(super) other: Vec<String>,
+pub(in crate::workbook::verify) struct Profiles {
+    pub(in crate::workbook::verify) athletic_net: Option<String>,
+    pub(in crate::workbook::verify) milesplit: Option<String>,
+    pub(in crate::workbook::verify) other: Vec<String>,
 }
 
-pub(super) fn profiles_of(athlete: &CanonicalAthlete) -> Profiles {
+pub(in crate::workbook::verify) fn profiles_of(athlete: &CanonicalAthlete) -> Profiles {
     let mut profiles = Profiles::default();
     let mut seen: Vec<String> = Vec::new();
     let candidates = athlete.public_profile_urls.iter().cloned().chain(

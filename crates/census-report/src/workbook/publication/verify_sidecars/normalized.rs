@@ -12,6 +12,7 @@ mod contacts;
 mod coverage;
 mod facts;
 mod inventory;
+mod reported_performances;
 mod revision;
 pub(in crate::workbook::publication) mod rows;
 mod schema;
@@ -55,6 +56,19 @@ pub(super) fn verify_outcome(
         directory, inputs, bests, &schools, &coaches, &facts, revision,
     )?;
     insert_exclusion_counts(directory, inputs, outcome, revision, &mut counts)?;
+    if artifact_revision == crate::workbook::publication::selected::REPORTED_REVISION {
+        let projection = crate::workbook::reported::Projection::of(
+            inputs.dataset,
+            &inputs.derivation,
+            &inputs.admission,
+            bests,
+        )?
+        .ok_or_else(|| super::defect("revision 9 lacks Include reported projection".into()))?;
+        counts.insert(
+            "reported_performances.csv".into(),
+            reported_performances::verify(directory, &projection)?,
+        );
+    }
     Ok(counts)
 }
 
@@ -141,7 +155,7 @@ pub(in crate::workbook) fn visit_athletes(
 ) -> ReportResult<u64> {
     let additional = match artifact_revision {
         1..=6 => None,
-        7 | 8 => Some(["canonical_candidate_id", "identity_resolution"]),
+        7..=9 => Some(["canonical_candidate_id", "identity_resolution"]),
         _ => {
             return Err(super::defect(format!(
                 "unsupported comparison artifact revision {artifact_revision}"

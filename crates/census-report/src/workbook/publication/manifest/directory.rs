@@ -15,7 +15,7 @@ pub(in crate::workbook::publication) fn verify_directory(
     let path = directory.join("manifest.json");
     let head: RevisionHead = sidecars::read_json(&path)?;
     match head.schema_revision {
-        1..=8 => {}
+        1..=9 => {}
         _ => {
             return Err(invariant(
                 "unsupported publication artifact revision".into(),
@@ -47,7 +47,7 @@ pub(in crate::workbook::publication) fn verify_directory(
     }
     let artifact_bytes = verify_artifacts(directory, &manifest)?;
     verify_inventory(directory, &manifest)?;
-    if matches!(manifest.schema_revision, 7 | 8) {
+    if matches!(manifest.schema_revision, 7..=9) {
         verify_frozen_proofs(directory, &manifest, artifact_bytes)?;
     }
     Ok(manifest)
@@ -76,7 +76,7 @@ fn verify_inventory(directory: &Path, manifest: &Manifest) -> ReportResult<()> {
     entries.try_for_each(|entry| {
         let entry = entry.map_err(|source| io_error(directory, source))?;
         let name = entry.file_name();
-        if name == "frozen-input.json.proofs" && matches!(manifest.schema_revision, 7 | 8) {
+        if name == "frozen-input.json.proofs" && matches!(manifest.schema_revision, 7..=9) {
             let metadata = std::fs::symlink_metadata(entry.path())
                 .map_err(|source| io_error(&entry.path(), source))?;
             if !metadata.file_type().is_dir() {

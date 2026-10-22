@@ -179,8 +179,6 @@ fn validate_profile(
     profile: &census_domain::model::QueryProfileV1,
 ) -> StoreResult<()> {
     if dataset.selected_as_of() != Some(&profile.input().as_of)
-        || profile.input().include_provisional
-            != census_domain::model::ProvisionalInclusionV1::Exclude
         || dataset.selected_profile_id() != Some(&profile.id()?)
         || census_domain::model::serialized_digest(dataset)? != dataset.lineage.input_digest
     {

@@ -100,27 +100,6 @@ fn the_inventory_must_match_every_declared_view_coordinate() -> TestResult {
 }
 
 #[test]
-fn provisional_inclusion_is_refused_even_with_a_single_school_candidate() -> TestResult {
-    let fixture = Fixture::new()?;
-    let evidence = fixture.evidence()?;
-    let published = [&fixture.owner];
-    let assertions = [LocallyCheckedAssertion::check(fixture.assertion(
-        &evidence,
-        &published,
-        key("claim-A")?,
-    )?)?];
-    let mut input = profile("2026-10-10")?.input().clone();
-    input.include_provisional = ProvisionalInclusionV1::Include;
-    let profile = QueryProfileV1::new(input)?;
-    let request = request(&fixture, &profile)?;
-    check!(matches!(
-        assess_current_affiliation(request, inventory(request, &assertions, &[])),
-        Err(CurrentAffiliationError::ProvisionalInclusionUnsupported)
-    ));
-    Ok(())
-}
-
-#[test]
 fn the_assessed_sport_must_be_selected_in_the_exact_profile() -> TestResult {
     let fixture = Fixture::new()?;
     let profile = profile("2026-10-10")?;

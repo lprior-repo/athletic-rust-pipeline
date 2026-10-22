@@ -104,20 +104,32 @@ fn object_metadata_limits_are_admitted_before_read() -> TestResult {
 
 #[test]
 fn identity_bundle_chunk_count_and_boundaries_are_exact() -> TestResult {
-    let chunk = json!({ "digest": "a".repeat(64), "bytes": 4_194_304 });
-    let boundary = json!({ "digest": "b".repeat(64), "bytes": 134_217_728, "chunks": vec![chunk.clone(); 32] });
+    let chunk_bytes = 4 * 1024 * 1024;
+    let max_bytes = census_store::MAX_FROZEN_PUBLIC_IDENTITY_BYTES;
+    let max_chunks = max_bytes.checked_div(chunk_bytes).ok_or("chunk division")?;
+    let chunk = json!({ "digest": "a".repeat(64), "bytes": chunk_bytes });
+    let boundary = json!({ "digest": "b".repeat(64), "bytes": max_bytes, "chunks": vec![chunk.clone(); max_chunks] });
     let valid: identity::Bundle = serde_json::from_value(boundary.clone())?;
     valid.validate()?;
     let mut changed = boundary.clone();
-    changed["bytes"] = json!(134_217_729);
+    changed["bytes"] = json!(max_bytes
+        .checked_add(1)
+        .ok_or("bundle byte ceiling overflow")?);
     check!(serde_json::from_value::<identity::Bundle>(changed)?
         .validate()
         .is_err());
     let mut changed = boundary.clone();
-    changed["chunks"] = json!(vec![chunk; 33]);
+    changed["chunks"] = json!(vec![
+        chunk;
+        max_chunks
+            .checked_add(1)
+            .ok_or("chunk ceiling overflow")?
+    ]);
     check!(serde_json::from_value::<identity::Bundle>(changed).is_err());
     let mut changed = boundary;
-    changed["chunks"][0]["bytes"] = json!(4_194_303);
+    changed["chunks"][0]["bytes"] = json!(chunk_bytes
+        .checked_sub(1)
+        .ok_or("chunk boundary underflow")?);
     check!(serde_json::from_value::<identity::Bundle>(changed)?
         .validate()
         .is_err());

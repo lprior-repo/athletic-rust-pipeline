@@ -69,7 +69,7 @@ fn each_outside49_jurisdiction_is_refused_without_rewriting_raw_profile() -> Tes
 }
 
 #[test]
-fn unsupported_membership_priority_and_provisional_modes_refuse_independently() -> TestResult {
+fn unsupported_membership_priority_modes_refuse_independently() -> TestResult {
     let region = ContractRefV1::new(1, 1, &"b".repeat(64))?;
     let mut membership = input()?;
     membership.regional_membership = RegionalMembershipV1::SourceBackedRegion(region.clone());
@@ -89,16 +89,45 @@ fn unsupported_membership_priority_and_provisional_modes_refuse_independently() 
     ) {
         return Err("source-backed priority was not refused".into());
     }
-    let mut provisional = input()?;
-    provisional.include_provisional = ProvisionalInclusionV1::Include;
-    let profile = QueryProfileV1::new(provisional)?;
-    if !matches!(
-        compile_profile(&profile),
-        Err(ProfileExecutionError::UnsupportedProvisionalInclusion)
-    ) {
-        return Err("provisional inclusion was not refused".into());
-    }
     Ok(())
+}
+
+#[test]
+fn explicit_provisional_opt_in_preserves_profile_binding_and_exact_contract_guards() -> TestResult {
+    let exclude = QueryProfileV1::new(input()?)?;
+    let bytes = serialized_bytes(&exclude)?;
+    let id = exclude.id()?;
+    let digest = census_domain::model::serialized_digest(&exclude)?;
+    let mut raw = exclude.input().clone();
+    raw.include_provisional = ProvisionalInclusionV1::Include;
+    let include = QueryProfileV1::new(raw)?;
+    for profile in [&exclude, &include] {
+        let retained = serialized_bytes(profile)?;
+        let retained_id = profile.id()?;
+        let compiled = compile_profile(profile)?;
+        equal(std::ptr::eq(compiled.profile(), profile), true)?;
+        equal(serialized_bytes(compiled.profile())?, retained)?;
+        equal(compiled.profile().id()?, retained_id)?;
+    }
+    if include.id()? == id || census_domain::model::serialized_digest(&include)? == digest {
+        return Err("provisional opt-in must retain its distinct profile identity".into());
+    }
+    let mut restored = include.input().clone();
+    restored.include_provisional = ProvisionalInclusionV1::Exclude;
+    let restored = QueryProfileV1::new(restored)?;
+    equal(serialized_bytes(&restored)?, bytes)?;
+    equal(restored.id()?, id)?;
+    equal(census_domain::model::serialized_digest(&restored)?, digest)?;
+    let mut invalid = include.input().clone();
+    replace_reference(
+        &mut invalid,
+        ContractRoleV1::Cohort,
+        ContractRefV1::new(1, u32::MAX, include.input().policies.cohort.digest())?,
+    );
+    refused_role(
+        compile_profile(&QueryProfileV1::new(invalid)?),
+        ContractRoleV1::Cohort,
+    )
 }
 
 #[test]

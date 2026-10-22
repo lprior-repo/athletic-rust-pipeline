@@ -1,3 +1,5 @@
+mod reported;
+
 use super::super::cells::Cell;
 use crate::bests::{Conflict, SharedSelection};
 use crate::export::current_school::SelectedSchools;
@@ -66,6 +68,25 @@ pub(super) fn rows<'a>(
         .map(Cell::text)
         .collect();
     std::iter::once(Ok(header)).chain(prs.iter().map(move |pr| cells(pr, view, schools)))
+}
+
+pub(super) fn rows_with_reported<'a>(
+    prs: &'a [SharedSelection],
+    view: Option<&'a VerifiedPublicIdentityView>,
+    schools: Option<&'a SelectedSchools<'a>>,
+    projection: Option<&'a crate::workbook::reported::Projection<'a>>,
+) -> Box<dyn Iterator<Item = ReportResult<Vec<Cell>>> + 'a> {
+    match projection {
+        None => Box::new(rows(prs, view, schools)),
+        Some(projection) => Box::new(
+            rows(prs, view, schools)
+                .enumerate()
+                .map(|(index, row)| reported::verified(row, index == 0))
+                .chain(projection.bests.iter().map(move |reported| {
+                    reported::row(reported, projection, view.is_some(), schools.is_some())
+                })),
+        ),
+    }
 }
 
 fn cells(

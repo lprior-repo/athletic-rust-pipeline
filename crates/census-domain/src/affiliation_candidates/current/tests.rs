@@ -13,6 +13,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 mod boundaries;
 use crate::affiliation_candidates::fixture;
 mod metadata;
+mod provisional;
 mod relationships;
 mod retained;
 mod transfer;

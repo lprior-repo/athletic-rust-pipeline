@@ -258,8 +258,9 @@ fn normalized_csv_uses_shared_schema_row_count_and_bounded_decoder() -> TestResu
     let bytes = std::fs::metadata(&path)?.len();
     Index::read(&path, bytes, 1, 7)?;
     Index::read(&path, bytes, 1, 8)?;
+    Index::read(&path, bytes, 1, 9)?;
     check!(Index::read(&path, bytes, 1, 6).is_err());
-    check!(Index::read(&path, bytes, 1, 9).is_err());
+    check!(Index::read(&path, bytes, 1, 10).is_err());
     Ok(())
 }
 

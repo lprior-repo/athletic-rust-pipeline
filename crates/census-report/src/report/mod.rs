@@ -30,6 +30,7 @@ mod rows;
 mod tables;
 mod writer;
 
+pub(crate) use coverage::in_requested_year;
 pub use coverage::{
     coverage_report, coverage_report_for_derivation, CoverageGap, CoverageReport, CoverageTotals,
     GapClass, JurisdictionCoverage, UNKNOWN_JURISDICTION,

@@ -9,9 +9,11 @@ use super::labels::athlete_headers::Schema;
 use super::read::{compare, verify_header, verify_width, Book, Budget, SparseRow};
 use super::report::Findings;
 
-mod cells;
+pub(super) mod cells;
 mod membership;
 mod rows;
+
+pub(super) use rows::values;
 
 pub(super) fn verify(
     book: &mut Book,
@@ -46,23 +48,7 @@ impl<'a, 'd> Verifier<'a, 'd> {
                 },
             )
             .collect();
-        let expected_ids: Vec<_> = ordered
-            .iter()
-            .map(|athlete| {
-                Expected::of(&expectations.identities, athlete.id.as_str())
-                    .map(|identity| identity.athlete_id)
-            })
-            .collect::<ReportResult<_>>()?;
-        if expected_ids
-            .iter()
-            .collect::<std::collections::BTreeSet<_>>()
-            .len()
-            != expected_ids.len()
-        {
-            return Err(crate::report::ReportError::Invariant {
-                detail: "workbook athlete inventory repeats a public identity".into(),
-            });
-        }
+        let expected_ids = expected_ids(expectations, &ordered)?;
         Ok(Self {
             expectations,
             schema,
@@ -130,7 +116,7 @@ impl<'a, 'd> Verifier<'a, 'd> {
     }
 
     fn compare_row(&mut self, row: &SparseRow, athlete: &CanonicalAthlete) {
-        match self.values(athlete) {
+        match values(self.expectations, self.schema, athlete, self.findings) {
             Ok(values) => values.iter().enumerate().for_each(|(column, expected)| {
                 compare(row, labels::ATHLETES, column, expected, self.findings);
             }),
@@ -143,7 +129,33 @@ impl<'a, 'd> Verifier<'a, 'd> {
     }
 }
 
-fn ordered_athletes<'a>(expectations: &'a Expectations<'_>) -> Vec<&'a CanonicalAthlete> {
+pub(super) fn expected_ids(
+    expectations: &Expectations<'_>,
+    ordered: &[&CanonicalAthlete],
+) -> ReportResult<Vec<String>> {
+    let expected_ids: Vec<_> = ordered
+        .iter()
+        .map(|athlete| {
+            Expected::of(&expectations.identities, athlete.id.as_str())
+                .map(|identity| identity.athlete_id)
+        })
+        .collect::<ReportResult<_>>()?;
+    if expected_ids
+        .iter()
+        .collect::<std::collections::BTreeSet<_>>()
+        .len()
+        != expected_ids.len()
+    {
+        return Err(crate::report::ReportError::Invariant {
+            detail: "workbook athlete inventory repeats a public identity".into(),
+        });
+    }
+    Ok(expected_ids)
+}
+
+pub(super) fn ordered_athletes<'a>(
+    expectations: &'a Expectations<'_>,
+) -> Vec<&'a CanonicalAthlete> {
     let mut ordered = expectations
         .derivation
         .athletes()

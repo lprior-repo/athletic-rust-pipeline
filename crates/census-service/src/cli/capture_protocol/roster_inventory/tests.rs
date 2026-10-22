@@ -11,14 +11,14 @@ fn note(role: &str, packet: &str) -> String {
 
 #[test]
 fn parses_packet_field_and_ignores_unrelated_notes() -> Result<()> {
-    assert_eq!(parse_known_note("ordinary non-JSON evidence")?, None);
-    assert_eq!(parse_known_note(&note("directory_name_city", "a"))?, None);
-    assert_eq!(
+    check!(eq; parse_known_note("ordinary non-JSON evidence")?, None);
+    check!(eq; parse_known_note(&note("directory_name_city", "a"))?, None);
+    check!(eq;
         parse_known_note(&note("provider_roster_owner", &"a".repeat(64)))?,
         Some("a".repeat(64))
     );
-    assert!(parse_known_note(&note("provider_roster_owner", "bad-ref")).is_err());
-    assert!(parse_known_note(OWNED_PROVIDER_SCHOOL_INTAKE_PHASE).is_err());
+    check!(parse_known_note(&note("provider_roster_owner", "bad-ref")).is_err());
+    check!(parse_known_note(OWNED_PROVIDER_SCHOOL_INTAKE_PHASE).is_err());
     Ok(())
 }
 
@@ -52,10 +52,10 @@ fn provider_owner_preserves_distinct_ids_without_selecting_ambiguity() {
 #[test]
 fn encoding_overflow_publishes_no_partial_inventory() -> Result<()> {
     let mut output = Vec::new();
-    assert!(emit(&mut output, &"oversized", 4).is_err());
-    assert!(output.is_empty());
+    check!(emit(&mut output, &"oversized", 4).is_err());
+    check!(output.is_empty());
     emit(&mut output, &"ok", 5)?;
-    assert_eq!(output, b"\"ok\"\n");
+    check!(eq; output, b"\"ok\"\n");
     Ok(())
 }
 
@@ -103,14 +103,14 @@ fn ambiguous_school_and_program_preserve_packet_hints_and_ordinary_rows() -> Res
     let mut program_count = 0;
     collect_team(ambiguous_program, &mut schools, &mut program_count)?;
     collect_team(ordinary_program, &mut schools, &mut program_count)?;
-    assert_eq!((schools.len(), packet_count, program_count), (2, 2, 2));
+    check!(eq; (schools.len(), packet_count, program_count), (2, 2, 2));
     let diagnostic = schools
         .get(ambiguous.id.as_str())
         .context("ambiguous school missing")?;
-    assert!(diagnostic.packets.contains_key(&packet));
-    assert_eq!(diagnostic.owner.provider_id, None);
-    assert_eq!(diagnostic.owner.provider_ids.len(), 2);
-    assert_eq!(
+    check!(diagnostic.packets.contains_key(&packet));
+    check!(eq; diagnostic.owner.provider_id, None);
+    check!(eq; diagnostic.owner.provider_ids.len(), 2);
+    check!(eq;
         diagnostic.owner.owner_diagnostic,
         Some("ambiguous_provider_owners")
     );
@@ -118,22 +118,22 @@ fn ambiguous_school_and_program_preserve_packet_hints_and_ordinary_rows() -> Res
         .programs
         .first()
         .context("ambiguous program missing")?;
-    assert_eq!(program.owner.provider_id, None);
-    assert_eq!(program.owner.provider_ids.len(), 2);
-    assert_eq!(
+    check!(eq; program.owner.provider_id, None);
+    check!(eq; program.owner.provider_ids.len(), 2);
+    check!(eq;
         program.owner.owner_diagnostic,
         Some("ambiguous_provider_owners")
     );
-    assert_eq!(program.provider_join, "provider_owner_unresolved");
+    check!(eq; program.provider_join, "provider_owner_unresolved");
     let retained = schools
         .get(ordinary.id.as_str())
         .context("ordinary school missing")?;
-    assert_eq!(retained.owner.provider_id.as_deref(), Some("918"));
+    check!(eq; retained.owner.provider_id.as_deref(), Some("918"));
     let program = retained
         .programs
         .first()
         .context("ordinary program missing")?;
-    assert_eq!(program.owner.provider_id.as_deref(), Some("918"));
-    assert_eq!(program.provider_join, "same_unique_provider_owner");
+    check!(eq; program.owner.provider_id.as_deref(), Some("918"));
+    check!(eq; program.provider_join, "same_unique_provider_owner");
     Ok(())
 }

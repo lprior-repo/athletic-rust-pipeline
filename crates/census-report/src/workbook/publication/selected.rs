@@ -8,6 +8,7 @@ use census_domain::profile_execution::{
 use serde::{Deserialize, Serialize};
 
 pub(super) const REVISION: u32 = 8;
+pub(super) const REPORTED_REVISION: u32 = 9;
 pub(super) const HISTORICAL_REVISION: u32 = 7;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -42,7 +43,7 @@ impl SelectedProfile {
 pub(super) fn revision(dataset: &ExportDataset) -> ReportResult<u32> {
     let revision = if dataset.selected_profile_id().is_some() {
         dataset.ensure_current_selected_write()?;
-        REVISION
+        current_revision(dataset)?
     } else {
         super::ARTIFACT_REVISION
     };
@@ -60,8 +61,15 @@ pub(super) fn binding(
         HISTORICAL_REVISION if dataset.is_historical_selected_replay() => {
             SelectedProfile::of(dataset).map(Some)
         }
-        REVISION => {
-            verified_profile(dataset)?;
+        REVISION | REPORTED_REVISION => {
+            let profile = verified_profile(dataset)?;
+            let expected = current_revision_from_profile(profile);
+            if revision != expected {
+                return Err(super::invariant(
+                    "publication revision does not match the frozen provisional-inclusion profile"
+                        .into(),
+                ));
+            }
             SelectedProfile::of(dataset).map(Some)
         }
         _ => Err(super::invariant(
@@ -72,10 +80,22 @@ pub(super) fn binding(
 
 pub(super) fn validate(revision: u32, binding: Option<&SelectedProfile>) -> ReportResult<()> {
     match (revision, binding) {
-        (1..=6, None) | (HISTORICAL_REVISION | REVISION, Some(_)) => Ok(()),
+        (1..=6, None) | (HISTORICAL_REVISION | REVISION | REPORTED_REVISION, Some(_)) => Ok(()),
         _ => Err(super::invariant(
             "publication revision and selected profile binding disagree".into(),
         )),
+    }
+}
+
+fn current_revision(dataset: &ExportDataset) -> ReportResult<u32> {
+    let profile = verified_profile(dataset)?;
+    Ok(current_revision_from_profile(profile))
+}
+
+fn current_revision_from_profile(profile: &census_domain::model::QueryProfileV1) -> u32 {
+    match profile.input().include_provisional {
+        census_domain::model::ProvisionalInclusionV1::Exclude => REVISION,
+        census_domain::model::ProvisionalInclusionV1::Include => REPORTED_REVISION,
     }
 }
 
@@ -128,7 +148,7 @@ pub(in crate::workbook) fn ensure_current_options(
     if dataset.selected_profile_id().is_none() {
         return Ok(());
     }
-    ensure_options_for_revision(dataset, options, REVISION)
+    ensure_options_for_revision(dataset, options, current_revision(dataset)?)
 }
 
 pub(in crate::workbook) fn ensure_verification_options(
@@ -141,7 +161,7 @@ pub(in crate::workbook) fn ensure_verification_options(
     let revision = if dataset.is_historical_selected_replay() {
         HISTORICAL_REVISION
     } else {
-        REVISION
+        current_revision(dataset)?
     };
     ensure_options_for_revision(dataset, options, revision)
 }
@@ -152,7 +172,7 @@ pub(super) fn ensure_options_for_revision(
     revision: u32,
 ) -> ReportResult<()> {
     binding(revision, dataset)?;
-    if revision == REVISION {
+    if matches!(revision, REVISION | REPORTED_REVISION) {
         ensure_profile_options(verified_profile(dataset)?, options)?;
     }
     Ok(())
@@ -194,3 +214,6 @@ mod tests;
 
 #[cfg(test)]
 mod revision_tests;
+
+#[cfg(test)]
+mod reported_tests;

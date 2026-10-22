@@ -7,6 +7,10 @@ use census_store::{StoreError, StoreResult};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
+const MAX_PROOFS_PER_ENTITY: usize = 65_536;
+const MAX_PROOFS: u64 = 1_000_000;
+const MAX_BYTES: u64 = 128 * 1024 * 1024;
+
 #[derive(Clone, Copy)]
 pub(super) enum Entity<'a> {
     Athlete(&'a AthleteId),
@@ -90,9 +94,9 @@ impl ResultContexts {
         if proofs.is_some_and(|proofs| proofs.contains(&digest)) {
             return Ok(());
         }
-        if proofs.is_some_and(|proofs| proofs.len() >= 256) {
+        if proofs.is_some_and(|proofs| proofs.len() >= MAX_PROOFS_PER_ENTITY) {
             return Err(invalid(
-                "verified result context exceeds 256 proofs per physical entity",
+                "verified result context exceeds 65536 proofs per physical entity",
             ));
         }
         let length = id
@@ -104,13 +108,13 @@ impl ResultContexts {
         charge(
             &mut proof_count,
             1,
-            1_000_000,
+            MAX_PROOFS,
             "verified result context proof count",
         )?;
         charge(
             &mut bytes,
             length,
-            64 * 1024 * 1024,
+            MAX_BYTES,
             "verified result context encoded bytes",
         )?;
         self.entities
@@ -130,72 +134,4 @@ fn fingerprint(evidence: &Evidence) -> StoreResult<[u8; 32]> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    type TestResult = Result<(), Box<dyn std::error::Error>>;
-
-    #[test]
-    fn aggregate_boundary_accepts_duplicate_but_refusal_preserves_result_state() -> TestResult {
-        let athlete = AthleteId::mint("ath_subject", &["context"]);
-        let added = u64::try_from(athlete.as_str().len() + 33)?;
-        let mut context = ResultContexts {
-            proofs: 999_999,
-            bytes: 64 * 1024 * 1024 - added,
-            ..Default::default()
-        };
-        context.retain(Entity::Athlete(&athlete), [0; 32])?;
-        let before = context.entities.clone();
-        context.retain(Entity::Athlete(&athlete), [0; 32])?;
-        let other = AthleteId::mint("ath_subject", &["foreign"]);
-        check!(matches!(
-            context.retain(Entity::Athlete(&other), [0; 32]),
-            Err(StoreError::BudgetExceeded {
-                what: "verified result context proof count",
-                needed: 1_000_001,
-                available: 1_000_000
-            })
-        ));
-        check!(context.entities == before);
-        check!(eq; (context.proofs, context.bytes), (1_000_000, 67_108_864));
-        Ok(())
-    }
-
-    #[test]
-    fn byte_refusal_does_not_insert_result_entity_or_charge_count() -> TestResult {
-        let athlete = AthleteId::mint("ath_subject", &["context"]);
-        let added = u64::try_from(athlete.as_str().len() + 33)?;
-        let mut context = ResultContexts {
-            proofs: 7,
-            bytes: 64 * 1024 * 1024,
-            ..Default::default()
-        };
-        check!(matches!(context.retain(Entity::Athlete(&athlete), [0; 32]),
-            Err(StoreError::BudgetExceeded {
-                what: "verified result context encoded bytes", needed, available: 67_108_864
-            }) if needed == 67_108_864 + added));
-        check!(context.entities.is_empty());
-        check!(eq; (context.proofs, context.bytes), (7, 67_108_864));
-        Ok(())
-    }
-
-    #[test]
-    fn physical_entity_limit_preserves_result_state_and_duplicate_identity() -> TestResult {
-        let athlete = AthleteId::mint("ath_subject", &["context"]);
-        let mut context = ResultContexts::default();
-        for ordinal in 0..=u8::MAX {
-            context.retain(Entity::Athlete(&athlete), [ordinal; 32])?;
-        }
-        let before = context.entities.clone();
-        let counts = (context.proofs, context.bytes);
-        context.retain(Entity::Athlete(&athlete), [0; 32])?;
-        let mut extra = [0; 32];
-        extra[1] = 1;
-        check!(matches!(context.retain(Entity::Athlete(&athlete), extra),
-            Err(StoreError::Refused { detail })
-            if detail == "verified result context exceeds 256 proofs per physical entity"));
-        check!(context.entities == before);
-        check!(eq; (context.proofs, context.bytes), counts);
-        Ok(())
-    }
-}
+mod tests;

@@ -28,8 +28,9 @@ fn selected_artifact_eight_has_distinct_recipe_and_preserves_exact_seven_recipe(
     check!(eq; recipes::recipe_for_selected(lineage, options, &selected)?, original);
     check!(eq; recipes::recipe_for_selected_revision(lineage, options, &selected, 7)?, original);
     check!(ne; recipes::recipe_for_selected_revision(lineage, options, &selected, 8)?, original);
+    check!(ne; recipes::recipe_for_selected_revision(lineage, options, &selected, 9)?, original);
     check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 6).is_err());
-    check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 9).is_err());
+    check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 10).is_err());
     check!(eq; inventory::names(7)?, inventory::names(8)?);
     Ok(())
 }

@@ -16,7 +16,10 @@ pub use notation::{disagreement, format_time, mark_text};
 pub use participation::{
     ParticipationExclusion, ParticipationExclusionOutcome, ParticipationExclusionReason,
 };
-pub(crate) use reduce::{build_admitted_outcome, build_from_derivation, build_selected_outcome};
+pub(crate) use reduce::{
+    build_admitted_outcome, build_from_derivation, build_selected_outcome, reported_best_groups,
+    ReportedBestGroup,
+};
 pub use reduce::{build_from_dataset, build_with_exclusions};
 pub use selection::{
     Conflict, HistoricalInventory, Population, ResultGroupInventory, SelectionAthlete,

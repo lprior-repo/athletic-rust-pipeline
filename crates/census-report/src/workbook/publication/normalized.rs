@@ -15,6 +15,7 @@ mod coverage;
 mod identity_aliases;
 mod integrity;
 mod provenance;
+pub(in crate::workbook::publication) mod reported_performances;
 mod schools;
 #[cfg(test)]
 mod tests;
@@ -64,7 +65,11 @@ pub(in crate::workbook) fn write_outcome(
             "normalized selection differs from its bound derivation",
         ));
     }
-    if revision != super::selected::REVISION && !outcome.participation_exclusions.is_empty() {
+    if !matches!(
+        revision,
+        super::selected::REVISION | super::selected::REPORTED_REVISION
+    ) && !outcome.participation_exclusions.is_empty()
+    {
         return Err(defect(
             "historical output cannot discard participation exclusions",
         ));
@@ -76,7 +81,10 @@ pub(in crate::workbook) fn write_outcome(
         &outcome.selections,
         &outcome.combined_exclusions,
     )?;
-    if revision == super::selected::REVISION {
+    if matches!(
+        revision,
+        super::selected::REVISION | super::selected::REPORTED_REVISION
+    ) {
         counts.insert(
             "current_affiliations.csv".into(),
             super::current_affiliations::write(directory, dataset)?,
@@ -90,6 +98,20 @@ pub(in crate::workbook) fn write_outcome(
                 outcome,
             )?,
         );
+        if revision == super::selected::REPORTED_REVISION {
+            let admission = EventAdmission::of(dataset)?;
+            let projection = crate::workbook::reported::Projection::of(
+                dataset,
+                derivation,
+                &admission,
+                &outcome.selections,
+            )?
+            .ok_or_else(|| defect("revision 9 lacks Include reported projection"))?;
+            counts.insert(
+                "reported_performances.csv".into(),
+                reported_performances::write(directory, &projection)?,
+            );
+        }
     }
     Ok(counts)
 }

@@ -6,6 +6,7 @@ use census_store::{Store, Table};
 pub(super) mod fixture;
 pub(super) mod identity;
 mod performance;
+mod provisional;
 mod refusals;
 mod retention;
 mod temporal;

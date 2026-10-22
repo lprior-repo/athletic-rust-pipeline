@@ -234,9 +234,11 @@ fn assess(
             frozen,
         },
     };
+    let identities = crate::export::public_identity::population::IdentityPopulation::of(dataset)?;
+    let closure = closure.indexed(dataset, &identities);
     let mut resolver = resolve::Resolver {
         dataset,
-        identities: crate::export::public_identity::population::IdentityPopulation::of(dataset)?,
+        identities,
         sources: RetainedResultSession::new(
             view,
             CaptureReadBudget::new(32 * 1024 * 1024)

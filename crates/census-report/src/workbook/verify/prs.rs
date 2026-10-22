@@ -111,7 +111,7 @@ fn blank_pr(row: &SparseRow, pr: &SharedSelection, findings: &mut Findings) {
     ));
 }
 
-fn values(
+pub(super) fn values(
     pr: &SharedSelection,
     expectations: &Expectations<'_>,
     schools: Option<&AffiliationExpectations<'_>>,

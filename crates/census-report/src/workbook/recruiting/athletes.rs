@@ -1,4 +1,5 @@
 mod cells;
+mod reported;
 mod rules;
 
 pub(crate) use rules::{HEADERS, TITLE, WIDTHS};
@@ -50,6 +51,26 @@ pub(super) fn rows<'a>(
             .into_iter()
             .map(move |(athlete, _)| row_for(dataset, athlete)),
     )
+}
+
+pub(super) fn rows_with_reported<'a>(
+    dataset: &'a Dataset<'a>,
+    projection: Option<&'a crate::workbook::reported::Projection<'a>>,
+) -> Box<dyn Iterator<Item = ReportResult<Vec<Cell>>> + 'a> {
+    match projection {
+        None => Box::new(rows(dataset)),
+        Some(projection) => Box::new(
+            rows(dataset)
+                .enumerate()
+                .map(|(index, row)| reported::verified(row, index == 0))
+                .chain(
+                    projection
+                        .athletes
+                        .iter()
+                        .map(move |athlete| reported::row(dataset, athlete, projection)),
+                ),
+        ),
+    }
 }
 
 fn display_key(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> (String, String, String) {

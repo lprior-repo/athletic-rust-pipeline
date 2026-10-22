@@ -26,16 +26,17 @@ fn duplicate_raw_count_filenames_are_refused_even_when_values_match() -> TestRes
 }
 
 #[test]
-fn count_map_refuses_twelfth_entry_before_accepting_its_value() -> TestResult {
-    let entries = (0..11)
+fn count_map_refuses_thirteenth_entry_before_accepting_its_value() -> TestResult {
+    let entries = (0..12)
         .map(|index| format!("\"{index}.csv\":0"))
         .collect::<Vec<_>>()
         .join(",");
-    let body = format!("{{\"normalized_csv_rows\":{{{entries},\"twelfth.csv\":\"not a count\"}}}}");
+    let body =
+        format!("{{\"normalized_csv_rows\":{{{entries},\"thirteenth.csv\":\"not a count\"}}}}");
     let error = serde_json::from_str::<Envelope>(&body)
         .err()
         .ok_or("oversized map accepted")?;
-    check!(error.to_string().contains("exceeds eleven entries"));
+    check!(error.to_string().contains("exceeds twelve entries"));
     Ok(())
 }
 
@@ -88,9 +89,9 @@ impl<'de> serde::de::MapAccess<'de> for FiniteMap<'_> {
 }
 
 #[test]
-fn finite_count_visitor_accepts_eleven_and_never_polls_after_exhaustion() -> TestResult {
+fn finite_count_visitor_accepts_twelve_and_never_polls_after_exhaustion() -> TestResult {
     use serde::de::Visitor;
-    for length in [0, 1, 8, 9, 10, 11] {
+    for length in [0, 1, 8, 9, 10, 11, 12] {
         let polls = std::cell::Cell::new(0);
         let map = FiniteMap {
             keys: 0..length,

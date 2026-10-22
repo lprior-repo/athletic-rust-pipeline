@@ -1,6 +1,6 @@
 use super::{
     contexts::{Entity, ResultContexts},
-    invalid, ParticipationDiagnostic as Gap,
+    ParticipationDiagnostic as Gap,
 };
 use crate::export::participation_bridge::SourceCohortAgreement;
 use crate::export::public_identity::population::{IdentityAdmission, IdentityPopulation};
@@ -9,8 +9,15 @@ use census_domain::model::{
     serialized_digest, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalTeam, Evidence,
 };
-use census_store::StoreResult;
+use census_store::{StoreError, StoreResult};
 use std::collections::BTreeSet;
+
+mod index;
+
+const MAX_EVIDENCE_REFERENCES: u64 = 65_536;
+
+#[cfg(test)]
+mod tests;
 
 pub(super) struct Closure {
     pub(super) athletes: Vec<CanonicalAthlete>,
@@ -20,17 +27,31 @@ pub(super) struct Closure {
     pub(super) events: Vec<CanonicalEvent>,
 }
 
+pub(super) struct IndexedClosure<'a> {
+    index: index::Index<'a>,
+}
+
 impl Closure {
+    pub(super) fn indexed<'a>(
+        &'a self,
+        dataset: &'a ExportDataset,
+        identities: &IdentityPopulation<'_>,
+    ) -> IndexedClosure<'a> {
+        IndexedClosure {
+            index: index::Index::new(self, dataset, identities),
+        }
+    }
+}
+
+impl<'raw> IndexedClosure<'raw> {
     pub(super) fn cohort(
         &self,
         identities: &IdentityPopulation<'_>,
         performance: &CanonicalPerformance,
     ) -> SourceCohortAgreement {
-        self.athletes
-            .iter()
-            .filter(|athlete| {
-                identities.same_group(athlete.id.as_str(), performance.athlete.as_str())
-            })
+        self.index
+            .athletes(identities, performance.athlete.as_str())
+            .into_iter()
             .fold(SourceCohortAgreement::Missing, |held, athlete| {
                 if athlete.has_cohort_conflict() {
                     return SourceCohortAgreement::Conflicting;
@@ -47,7 +68,6 @@ impl Closure {
 
     pub(super) fn gate(
         &self,
-        dataset: &ExportDataset,
         identities: &IdentityPopulation<'_>,
         performance: &CanonicalPerformance,
         contexts: &ResultContexts,
@@ -57,31 +77,24 @@ impl Closure {
         if identities.admission(performance.athlete.as_str()) != IdentityAdmission::Accepted {
             gaps.insert(Gap::IdentityUnaccepted);
         }
-        if performance.source_athlete.as_ref().is_none_or(|owner| {
-            !dataset.athletes.iter().any(|athlete| {
-                identities.same_group(athlete.id.as_str(), performance.athlete.as_str())
-                    && identities.admission(athlete.id.as_str()) == IdentityAdmission::Accepted
-                    && athlete.identities().any(|identity| {
-                        identity.namespace == owner.namespace && identity.id == owner.id
-                    })
-            })
-        }) {
+        if !self.index.source_bound(identities, performance) {
             gaps.insert(Gap::SourceBindingMismatch);
         }
         if self
-            .performances
-            .iter()
-            .any(|row| row.id == performance.id && !row.retained_conflicts.is_empty())
+            .performances(performance)
+            .any(|row| !row.retained_conflicts.is_empty())
         {
             gaps.insert(Gap::CanonicalConflict);
         }
         if !performance.retained_conflicts.is_empty() {
             gaps.insert(Gap::CanonicalConflict);
         }
-        if self.athletes.iter().any(|athlete| {
-            identities.same_group(athlete.id.as_str(), performance.athlete.as_str())
-                && !athlete.retained_conflicts.is_empty()
-        }) {
+        if self
+            .index
+            .athletes(identities, performance.athlete.as_str())
+            .into_iter()
+            .any(|athlete| !athlete.retained_conflicts.is_empty())
+        {
             gaps.insert(Gap::CanonicalConflict);
         }
         if self.related_conflict(performance) {
@@ -127,56 +140,44 @@ impl Closure {
         references: &mut BTreeSet<String>,
     ) -> StoreResult<()> {
         self.evidence(identities, performance)
-            .try_for_each(|(_, evidence)| {
-                references.insert(format!(
-                    "canonical_evidence:{}",
-                    serialized_digest(evidence)?
-                ));
-                if references.len() > 256 {
-                    return Err(invalid(
-                        "participation evidence closure exceeds 256 distinct proofs",
-                    ));
-                }
-                Ok(())
-            })
+            .try_for_each(|(_, evidence)| retain_reference(references, evidence))
     }
 
     fn evidence<'a, 'i>(
         &'a self,
         identities: &'a IdentityPopulation<'i>,
         performance: &'a CanonicalPerformance,
-    ) -> impl Iterator<Item = (Entity<'a>, &'a Evidence)> + use<'a, 'i> {
-        let teams: BTreeSet<_> = self.versions(performance).map(|row| &row.team).collect();
-        let meets: BTreeSet<_> = self.versions(performance).map(|row| &row.meet).collect();
-        let events: BTreeSet<_> = self.versions(performance).map(|row| &row.event).collect();
-        self.athletes
-            .iter()
-            .filter(move |athlete| {
-                identities.same_group(athlete.id.as_str(), performance.athlete.as_str())
-            })
+    ) -> impl Iterator<Item = (Entity<'a>, &'a Evidence)> + use<'a, 'i, 'raw> {
+        let teams = self
+            .index
+            .teams(self.versions(performance).map(|row| &row.team));
+        let meets = self
+            .index
+            .meets(self.versions(performance).map(|row| &row.meet));
+        let events = self
+            .index
+            .events(self.versions(performance).map(|row| &row.event));
+        self.index
+            .athletes(identities, performance.athlete.as_str())
+            .into_iter()
             .flat_map(|row| tagged(Entity::Athlete(&row.id), &row.evidence))
             .chain(
-                self.performances
-                    .iter()
-                    .filter(|row| row.id == performance.id)
+                self.performances(performance)
                     .flat_map(|row| tagged(Entity::Performance(&row.id), &row.evidence)),
             )
             .chain(
-                self.teams
-                    .iter()
-                    .filter(move |row| teams.contains(&row.id))
+                teams
+                    .into_iter()
                     .flat_map(|row| tagged(Entity::Team(&row.id), &row.evidence)),
             )
             .chain(
-                self.meets
-                    .iter()
-                    .filter(move |row| meets.contains(&row.id))
+                meets
+                    .into_iter()
                     .flat_map(|row| tagged(Entity::Meet(&row.id), &row.evidence)),
             )
             .chain(
-                self.events
-                    .iter()
-                    .filter(move |row| events.contains(&row.id))
+                events
+                    .into_iter()
                     .flat_map(|row| tagged(Entity::Event(&row.id), &row.evidence)),
             )
     }
@@ -184,29 +185,28 @@ impl Closure {
         &'a self,
         performance: &'a CanonicalPerformance,
     ) -> impl Iterator<Item = &'a CanonicalPerformance> {
-        self.performances
-            .iter()
-            .filter(|row| row.id == performance.id)
+        self.performances(performance)
             .chain(std::iter::once(performance))
+    }
+
+    pub(super) fn performances<'a>(
+        &'a self,
+        performance: &CanonicalPerformance,
+    ) -> std::vec::IntoIter<&'a CanonicalPerformance> {
+        self.index.performances(&performance.id).into_iter()
     }
 
     fn related_conflict(&self, performance: &CanonicalPerformance) -> bool {
         self.versions(performance).any(|version| {
-            !self.teams.iter().any(|row| row.id == version.team)
-                || !self.meets.iter().any(|row| row.id == version.meet)
-                || !self.events.iter().any(|row| row.id == version.event)
-                || self
-                    .teams
-                    .iter()
-                    .any(|row| row.id == version.team && !row.retained_conflicts.is_empty())
-                || self
-                    .meets
-                    .iter()
-                    .any(|row| row.id == version.meet && !row.retained_conflicts.is_empty())
-                || self
-                    .events
-                    .iter()
-                    .any(|row| row.id == version.event && !row.retained_conflicts.is_empty())
+            let teams = self.index.team(&version.team);
+            let meets = self.index.meet(&version.meet);
+            let events = self.index.event(&version.event);
+            teams.is_empty()
+                || meets.is_empty()
+                || events.is_empty()
+                || teams.iter().any(|row| !row.retained_conflicts.is_empty())
+                || meets.iter().any(|row| !row.retained_conflicts.is_empty())
+                || events.iter().any(|row| !row.retained_conflicts.is_empty())
         })
     }
 }
@@ -216,4 +216,24 @@ fn tagged<'a>(
     evidence: &'a [Evidence],
 ) -> impl Iterator<Item = (Entity<'a>, &'a Evidence)> {
     evidence.iter().map(move |evidence| (entity, evidence))
+}
+
+fn retain_reference(references: &mut BTreeSet<String>, evidence: &Evidence) -> StoreResult<()> {
+    let reference = format!("canonical_evidence:{}", serialized_digest(evidence)?);
+    if references.contains(&reference) {
+        return Ok(());
+    }
+    let needed = u64::try_from(references.len())
+        .map_err(|_| StoreError::CounterOverflow)?
+        .checked_add(1)
+        .ok_or(StoreError::CounterOverflow)?;
+    if needed > MAX_EVIDENCE_REFERENCES {
+        return Err(StoreError::BudgetExceeded {
+            what: "participation evidence closure distinct proofs",
+            needed,
+            available: MAX_EVIDENCE_REFERENCES,
+        });
+    }
+    references.insert(reference);
+    Ok(())
 }

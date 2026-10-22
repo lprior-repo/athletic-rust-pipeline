@@ -88,7 +88,7 @@ pub(in crate::workbook::publication) fn table(
     })
 }
 
-pub(super) fn read_table(
+pub(in crate::workbook::publication) fn read_table(
     path: &Path,
     header: &[&str],
     expected: usize,

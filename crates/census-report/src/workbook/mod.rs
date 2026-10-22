@@ -9,6 +9,7 @@ use std::time::Instant;
 mod cells;
 pub mod meta;
 mod public_identity;
+mod reported;
 
 mod performances;
 mod relays;
