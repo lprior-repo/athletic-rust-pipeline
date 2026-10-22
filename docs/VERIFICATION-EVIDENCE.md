@@ -3596,3 +3596,58 @@ tests, while the gate uses Nextest's default CPU count. [Nextest documents](http
 16-test retry can compare these configurations without changing any deadline,
 assertion, source rule, retry policy or required test. Concurrency as the cause
 of this timeout remains an inference until checked.
+
+### Published single worksheet and independent cold reader — 2026-10-22
+
+Actual corrected publication 510 completed with exit 0 in 2,107.229 seconds.
+Immutable CLI `aef161d4...` resumed the original native job, cohort, selected
+Store/profile, logical generation and frozen input from stopped restored root
+480. The sibling publication now selects generation
+`f27bd24d3eac5a6b14468e21f098dccf1bce4c4d52c431a186b6872c279676e3`.
+Its recipe-12 manifest hashes to
+`466e0ce38c2f0dab5640c531482bb6efb6caaba601fd3433ecf7d83289dcfe19`.
+All twelve normalized row counts match the original frozen generation. This
+derivation neither refreshes acquisition nor accepts new athletes or marks.
+
+The published 9,554,529-byte workbook was copied to the separate Downloads path
+`Recruiting-Class-of-2027-MI-MN-IA-IL-CO-Single-Sheet.xlsx`. Both copies hash to
+`1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`.
+The user's original workbook and the earlier unaccepted preview retain their
+previous hashes. Independent XML readback 524 found one worksheet, 62,950 unique
+2027 IDs, no duplicate IDs, and the same five-state and boys/girls counts as
+readback 501. Actual artifact-library import/render 525 completed successfully;
+Main inspected the rendered header and person/school cells. All rows are still
+reported/unverified; 899 have reported bests and 3,908 have unresolved results.
+Observed grades, school addresses, coach cells and source-declared PR cells are
+empty in this frozen population. Accepted athletes and accepted bests remain zero.
+
+Native build 521 passed in 220.223 seconds. The retained CLI hashes to
+`45b07939bb37fcf2d3b225d86027b9e7049634c9981f8ac04d939e6de05174a6`;
+the endpoint hashes to
+`3597926d9a9901fb96a6e61596db3d3c356cac4599bede52f214e023f83f57b8`.
+Independent verification 523 used that immutable CLI on a complete owned copy
+of the new generation and exited 0 with `verify: OK (complete frozen generation)`.
+The copied and published manifests compare equal. The explicitly supplied
+`cold-reader-no-store-523` root remained absent before and after verification.
+This proves Store-free frozen readback, not a physically empty OS page cache.
+Exact original-request replay 529 is running with its original job, generation,
+binary and destination; its commitment, manifest and pointer baselines are retained.
+
+Actual inventory 526 with the rebuilt CLI still FAILED before emitting JSON:
+268,437,966 encoded team bytes would exceed the 268,435,456-byte limit. No source
+review or identity authority was applied. Further budget inflation is deferred.
+Clean-source release 522 used exact `103dcffd...`; the actual Nextest environment
+was checked as `NEXTEST_TEST_THREADS=16`. The prior National timeout case passed
+in 26.272 seconds. The suite nevertheless FAILED a separate performance candidate
+output test (`left=2 right=1`): 9,075/9,237 ran, 9,074 passed, one failed, 15 slow,
+13 skipped, 648.301 seconds execution. Fail-fast left other tests unrun; later
+gate lanes are still running. This is not a complete release qualification.
+
+The next population work remains on `athletic-rust-pipeline-loa`: normal durable
+source-reported profile PR acquisition and the existing worksheet PR column.
+The generic retained profile table reader alone does not supply that path:
+current owned public acquisition exposes directory/roster children, and the
+Store explicitly refuses arbitrary profile work as an unsupported frontier root
+role. Both worksheet writer and independent verifier currently require the
+source-declared PR cell to be empty. No fixture, invented performance, new source
+key or widened old `/stats` contract was substituted for actual acquisition.
