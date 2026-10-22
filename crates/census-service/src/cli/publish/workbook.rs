@@ -16,6 +16,8 @@ use crate::cli::{
     scope_of, Cli, Route,
 };
 
+mod derived;
+
 #[derive(Args, Debug)]
 pub(crate) struct WorkbookArgs {
     #[arg(
@@ -60,6 +62,13 @@ pub(crate) struct WorkbookArgs {
         help = "Resume an existing native workbook frozen input with the same request and generation; requires --store and a stopped owner, and never captures new input"
     )]
     resume_frozen: bool,
+    #[arg(
+        long,
+        requires = "resume_frozen",
+        value_name = "ROOT",
+        help = "Derive a current workbook in a different sibling publication root from the original --out request's frozen input; preserves the original publication"
+    )]
+    derive_out: Option<PathBuf>,
     #[arg(
         long,
         value_name = "STORE_IDENTITY",
@@ -164,7 +173,7 @@ fn build_offline_selected(
     generation: &ExportGeneration,
 ) -> Result<PathBuf> {
     let selection = request.require_selected_publication();
-    let options = workbook::options_for_selected_request(store, selection, requested)
+    let mut options = workbook::options_for_selected_request(store, selection, requested)
         .context("binding workbook options to the selected profile")?;
     let dataset = if args.resume_frozen {
         let native = workbook_request(requested, request);
@@ -181,6 +190,13 @@ fn build_offline_selected(
         ExportDataset::for_job_request(store, &job, request)
             .context("capturing the selected workbook input")?
     };
+    if let Some(destination) = &args.derive_out {
+        let original = match &options.out {
+            Some(root) => root.clone(),
+            None => store.out_dir().join("publication"),
+        };
+        options.out = Some(derived::destination(&original, destination)?);
+    }
     let censuses = workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions)?;
     workbook::build_from(&dataset, store, &options, &censuses)
         .context("building the selected census workbook")

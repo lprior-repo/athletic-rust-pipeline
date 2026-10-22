@@ -3270,3 +3270,129 @@ remains active with sole owner PID 906506.
 Validation describes the working tree with the separate user performance edit
 present; it does not certify an otherwise clean checkout or an exact native
 release build.
+
+### Retained-input derivation and public profile PR interpretation, 2026-10-22
+
+The existing offline `workbook --resume-frozen` command now accepts
+`--derive-out` for a different sibling publication root. The original `--out`,
+selected request and generation still select the original native frozen input.
+Only after the existing resume checks succeed does the canonical writer use
+the derived root. This is source implementation evidence for rm23.12, not
+qualification of the actual retained revision-9 production generation.
+
+- PASS: `retained-derivation-scoped-435.log`, canonical `pipeline:tests-scoped`,
+  12 tests, 257 skipped, 3.286 seconds of test execution. The actual CLI preserves
+  the original root, published intent, frozen commitment and nonempty proof
+  inventory; the derived artifact cold-verifies after the isolated test Store
+  is removed. Retry preserves its current generation and receipt. The existing
+  publisher may retain another unreferenced attempt directory on retry.
+- Negative checks refuse absent input, changed source state, missing or damaged
+  isolated proof files, original/overlapping roots and unsafe destination
+  layouts. A controlled opaque predecessor manifest exercises non-decoding of
+  that root; it is not an authentic revision-9 compatibility fixture.
+- Earlier fixture runs 426, 429, 430 and 432 failed before corrections: selected
+  jurisdiction mismatch, ambiguous test conversion, verifier use of the
+  `current` symlink instead of the canonical generation path, and an incorrect
+  whole-directory retry assertion. Those failures are not recorded as passes.
+- PASS: `retained-derivation-source-checks-436.log`, forced canonical format,
+  check and source lint tasks. `retained-derivation-scan-437.log` passed the
+  trusted scan: 2,837 production files, 30,372 callables, zero over 60 logical
+  lines and no unresolved measurement sites. Advisory findings remain.
+- FAIL: `retained-transition-tests-420.log`, full canonical workspace tests:
+  9,219 passed, one SIGSEGV, 13 skipped. The crash was the address tuple workbook
+  test in `cen12_address_tuple`. Its isolated canonical rerun 423 passed, but
+  that does not establish a fix or a root cause. The retained core's stack
+  reaches coverage `share_pct`; the executable was rebuilt before subsequent
+  debugger inspection, so that inspection cannot prove the original machine
+  instruction. Full workspace acceptance remains unresolved pending a fresh run.
+
+The loa.1 `/stats` extension to existing public-resource V1 was rejected and
+reverted. Although its seven target tests passed in 441, full workspace run
+`retained-and-profile-full-tests-442.log` failed: 9,005 passed, 226 failed,
+13 skipped, 458.911 seconds of test execution. Failures exposed refusal of the
+modified compiled immutable roster kernel. The earlier address tuple crash did
+not recur in 442; its root cause remains unproved. The rejected patch is retained
+in `/tmp/athletic-work-20261021/rejected-profile-target-kernel-regression-446.patch`.
+Both domain target files are restored byte-for-byte to HEAD. No expected kernel
+digest, historical adapter or original acquisition receipt was broadened.
+
+The separate new source-reported PR interpretation reads the existing public
+profile table through html5gum and the bounded markup reader. It preserves raw
+event, mark, date, source mode, source level and original byte locator. Published
+cell text is entity-decoded and whitespace-normalized; the original captured row
+bytes remain available through the locator. It does
+not collapse repeated filters or invent meets, wind, timing or accepted bests.
+`profile-pr-tests-445.log` passed five focused checks, 2,179 skipped, including all
+46 advertised rows of the existing genuine Michigan capture and controlled
+owner/cell/capture corruption and 256/257-row boundary cases. Subsequent layout
+keeps this new interpretation in `provider_target::profile_pr`, outside the
+unchanged roster kernel call graph; it does not change old target admission.
+For an already retained `/stats` body, the new reader verifies the exact base
+profile owner. It does not authorize that URL under an old acquisition work.
+The existing base profile URL remains the acquisition surface.
+
+An independent recomputation of all 210 entries in the existing kernel source
+inventory after the correction matches the original pinned source digest,
+`1e3c0c6b2df80d81f48de0dd03b292a91fce995b0b9fd23409b9790dc6344ba2`.
+The new reader also opens source packets through the existing bounded retained
+root API; its cold Store replay test checks identical PR interpretation and
+unchanged protected Store state. PASS: `profile-pr-crawl-tests-448.log`, canonical
+`pipeline:tests-scoped -- -p census-crawl --lib`: 2,184 tests passed, no skips,
+164.254 seconds of test execution, 190.091 seconds overall. This includes the
+existing immutable-kernel guard tests, acquisition/roster tests, the new full
+table interpretation and normal retained packet cold replay. The recorded
+packet, entity projection and existing source observations retain their old
+meaning; no PR observation table or acquisition work is fabricated.
+PASS: `profile-pr-source-checks-449.log`, forced canonical `pipeline:fmt`,
+`pipeline:check` and `pipeline:lint-src`; advisory arity warnings remain visible.
+This is scoped source acceptance, not a successful full workspace or release
+qualification after correction of run 442.
+The normal retained `ProviderTargetPacketV1` route remains Michigan-only; the
+generic raw-capture interpretation takes an explicit jurisdiction. No five-state
+bulk intake is implied by that generic reader.
+
+Trusted scan 451 passed before the final missing-mode guard: 2,841 production
+files, 30,398 callables, zero over 60 logical lines, no unresolved measurement
+sites, 293.774 seconds overall. The pin-450 read-only supporting review found a
+real row-loss edge: a PR-shaped row lacking `data-pr-mode` was silently skipped.
+Main added refusal for any such data-cell row or level-advertised row while
+retaining ordinary heading rows. That final correction requires its own checks;
+451 is not represented as covering the later change. The review also confirmed
+the MI-only retained route and normalized-text distinction, neither of which is
+presented as five-state acceptance or byte-verbatim cell extraction.
+PASS after that correction: `profile-pr-mode-guard-tests-452.log`, six focused
+parser/provider/cold retained-root checks, 2,178 skipped, 1.514 seconds of test
+execution, 16.778 seconds overall. This includes the removed-mode mutation;
+malformed advertised rows refuse rather than disappearing from the returned PRs.
+PASS: final forced format/check/source lint, `profile-pr-final-source-checks-453.log`,
+all three canonical tasks, 28.454 seconds overall. The strict arity advisories
+remain; no waiver suppresses them. Full workspace and release/native qualification
+are still pending, as distinct from these source checks.
+PASS: final trusted scan `profile-pr-final-scan-454.log`, including the
+missing-mode guard: 2,841 production files, 30,398 callables, zero functions over
+60 logical lines, no unresolved measurement sites, 285.730 seconds overall.
+The pin-450 supporting review was read-only and ran no tests; its accepted
+row-loss finding is corrected and exercised in 452. Both GPUs also returned
+HTTP 200 for bounded bulk-intake scouts 455. These drafts are input to later
+implementation; the 3090's unsupported MI-only claim about the generic school
+intake packet is rejected. No draft constitutes an acquisition or acceptance
+receipt.
+
+Both local GPUs returned HTTP 200 for scouts 424, 427, 439 and 443. Main rejected
+invented APIs, inaccurate findings, wrong-language drafts and fabricated athlete
+details. The 3090 count of 49 rows in 443 was wrong; the actual source and test
+show 46. No such incorrect draft was admitted as source or capture evidence.
+These are advisory drafting attempts, not independent acceptance approvals.
+
+No live Store apply, acquisition, service replacement, new production
+publication or workbook replacement occurred in these checks. The original
+manifest remains `6846105ce2d97085c0c0be70d6ccc0814e47884d97789011916341517f8bd698`.
+The retained generation workbook and the user's moved Downloads workbook both
+remain `f78d414b5a550f2c6899318605e0e1c8d27187e75cb0a452929fbbac52c1468f`.
+Cargo.lock remains `c31c8ba79a8eec38a990238c9bd7179b84f6f76e09d4bff86f29da9af5dfebcc`
+and the separate user performance edit remains
+`b96da5a96ddc0f3a0544f978b97ad3139172343ac4019b541301e136fa1de8f8`.
+The delivered workbook is still revision 9 with the previously documented
+population and coverage gaps. Bulk profile PR ingestion, the requested single
+worksheet, native publication transition, full release and native-17 acceptance
+remain unfinished.

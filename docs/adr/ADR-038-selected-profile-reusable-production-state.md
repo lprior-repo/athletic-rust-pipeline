@@ -291,6 +291,17 @@ bundle and its original freshness. Retrying a logical job may reuse only its own
 a changed profile/input/policy requires an explicit new publication identity. Corrections publish
 new artifacts; they never edit an artifact already given to a consumer.
 
+The existing offline workbook command may explicitly derive a current artifact from its own
+unchanged retained native input using `--resume-frozen --derive-out`. The original raw request,
+including `--out`, still identifies that input job; only the rendering destination changes to a
+different sibling publication root after the original commitment, proofs, current policy and
+freshness checks succeed. The existing publisher binds the new artifact to a distinct canonical
+root namespace and current recipe. It preserves the original input-generation/export-job lineage,
+publication receipt and Restate outcome without reading or changing the predecessor artifact.
+Same-target retries reuse the derived identity. Unsupported or stale input refuses without
+recapture; old-format output is neither decoded nor relabeled. This contract is source support,
+not evidence of an actual old-artifact transition, a qualified runtime or completed coverage.
+
 National publication uses the existing checked `ExportGeneration` and canonical selected
 workbook request identity, independently of parent resume ordinals. It does not mint new
 acquisition identities or reset attempts. New National submission requires advertised

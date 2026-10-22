@@ -6,6 +6,7 @@ mod json;
 mod linked;
 mod linked_event_label;
 mod profile;
+pub mod profile_pr;
 mod types;
 mod urls;
 
@@ -78,6 +79,16 @@ impl SourceTargetPacketV1 {
         row_proof: &ProviderTargetProofV1,
     ) -> StoreResult<CheckedLinkedEventLabelV1> {
         linked_event_label::read(self, row_proof)
+    }
+
+    pub fn read_profile_prs(&self) -> StoreResult<profile_pr::CheckedProfilePrTableV1<'_>> {
+        self.reference()?;
+        let person = urls::person(self.profile.requested_url())?;
+        profile_pr::read(
+            &self.profile,
+            census_domain::UsJurisdiction::Michigan,
+            &person.id,
+        )
     }
 }
 

@@ -69,6 +69,10 @@ fn genuine_profile_and_linked_rows_preserve_distinct_source_scopes() -> TestResu
         "3a8c7b8c30d42117c784c8401acebd07d4cd804ea58079d244d29682b979393d"
     );
     let value = packet(PROFILE, RESULTS)?.read()?;
+    let pr_packet = packet(PROFILE, RESULTS)?;
+    let declared = pr_packet.read_profile_prs()?;
+    check!(eq; declared.rows().len(), 46);
+    check!(eq; declared.athlete().id.as_str(), "7223777");
     let profile = value.profile();
     check!(eq;
         profile.person().namespace,

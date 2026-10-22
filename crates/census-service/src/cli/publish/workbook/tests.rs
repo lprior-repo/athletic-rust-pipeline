@@ -76,6 +76,29 @@ fn frozen_resume_uses_raw_native_request_options_before_profile_defaults() -> Te
     Ok(())
 }
 
+#[test]
+fn derivation_requires_frozen_resume_and_preserves_original_request_root() -> TestResult {
+    check!(Cli::try_parse_from(arguments(&[
+        "--derive-out",
+        "/publication/derived",
+        "--generation",
+        "g0"
+    ]))
+    .is_err());
+    let args = parsed(&[
+        "--resume-frozen",
+        "--generation",
+        "g0",
+        "--out",
+        "/publication/original",
+        "--derive-out",
+        "/publication/derived",
+    ])?;
+    check!(eq; args.out.as_deref(), Some(std::path::Path::new("/publication/original")));
+    check!(eq; args.derive_out.as_deref(), Some(std::path::Path::new("/publication/derived")));
+    Ok(())
+}
+
 #[tokio::test]
 async fn frozen_resume_refuses_live_route_before_network_submission() -> TestResult {
     let mut argv = arguments(&["--resume-frozen", "--generation", "g0"]);

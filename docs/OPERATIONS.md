@@ -964,6 +964,22 @@ independent live-store reads. Review decisions must be applied before capture. R
 job reuses its archived input; source advancement refuses that input rather than silently
 recapturing it. Changed accepted inputs require an explicitly new publication generation;
 changing a path alone does not authorize recapture or reset exhausted work budgets.
+For an explicitly requested current derivation from an existing native workbook input, the offline
+`workbook --resume-frozen --derive-out <sibling-root>` route retains the original `--out`, generation,
+selection and all request options as the frozen input locator. It authenticates that same job and
+its proofs before changing only the rendering destination. The derived root must be a different
+real sibling directory of the original publication root, with an existing parent; it may be absent,
+empty, or an existing publication layout for normal retry. Same-root aliases, nested roots, root
+symlinks and non-publication data directories refuse. The ordinary publisher verifies the current
+format and creates a distinct namespace/recipe-bound publication identity. Repeating the same
+derivation uses that same identity and input; it never creates a replacement input job.
+The original publication root, receipt, frozen job and recorded Restate outcome retain their
+original meanings. This route does not decode an old artifact, migrate retained data, repair
+damaged proofs, resume acquisition or turn an old failed invocation into success. It requires the
+explicit offline Store selection and a stopped sole owner, the same as `--resume-frozen`.
+Source tests do not qualify an actual retained-input transition or authorize a deployment; follow
+[deployment-lifecycle.md](deployment-lifecycle.md) for exact-build release/native qualification,
+drain, cold backup and same-store handoff before production use.
 Returning an existing capture also synchronizes its archive directory, so retry success cannot
 skip a previously failed directory-durability step. A fresh publication root, a fresh
 `<store>/out/export-inputs` archive and any fresh output directory create every missing ancestor and

@@ -29,6 +29,23 @@ fn genuine_provider_packet_reopens_exact_sources_without_unknown_school_birth() 
     let mut grant = AttachmentReplayGrantV1::new();
     let reopened = read_recorded_provider_target(&snapshot, &reference, &mut grant)?
         .ok_or("provider holder")?;
+    let held_prs = snapshot
+        .read_retained_capture_root_v1(
+            RetainedCaptureRootSchemaV1::ProviderTargetPacketV1,
+            reference.as_str(),
+            &mut grant,
+        )?
+        .ok_or("retained profile PR packet")?;
+    let before_pr_read = protected_state(&store)?;
+    let retained_prs = crate::participation_evidence::provider_target::profile_pr::read_retained(
+        &held_prs, &mut grant,
+    )?;
+    check!(eq; retained_prs.root(), held_prs.root());
+    let prs = retained_prs.read()?;
+    check!(eq; prs.rows().len(), 46);
+    check!(eq; prs.athlete().id.as_str(), "7223777");
+    check!(eq; prs.reference(), packet.read_profile_prs()?.reference());
+    check!(eq; protected_state(&store)?, before_pr_read);
     exact_root(
         &snapshot,
         reopened.root(),
