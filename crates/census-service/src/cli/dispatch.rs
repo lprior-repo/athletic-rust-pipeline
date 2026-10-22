@@ -25,7 +25,6 @@ pub(super) async fn dispatch(cli: &Cli, store: &Store) -> Result<()> {
         Command::Consolidate => publish::run_consolidate(store)?,
         Command::Index(args) => publish::index::run_index(store, args)?,
         Command::FjallStats => store::print_store_stats(store)?,
-        Command::StoreRestore(args) => store::run_restore(args)?,
         Command::ExportData(args) => export_data::run_export_data(store, args)?,
         Command::QaReports(args) => qa_reports::run_qa_reports(args)?,
         Command::SchoolNames(args) => school_names::run_school_names(store, args)?,

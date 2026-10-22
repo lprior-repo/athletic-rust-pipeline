@@ -4095,3 +4095,44 @@ continues under sole endpoint 590. The Downloads workbook remains SHA256
 `1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`.
 No live Store, source-work identity, historical receipt or delivered artifact was
 replaced. The fully populated five-state workbook goal remains incomplete.
+
+## 2026-10-22 — native cold-restore dispatch preserves unrelated owners
+
+Main owns `athletic-rust-pipeline-rm23.14`. Actual native command 686 first
+refused positional restore arguments (exit 2). Corrected command 687 used
+`store-restore --from <backup581> --to <unused-target686>` but refused the
+unrelated default `var/census-service` schema before reaching restoration.
+Neither attempt created the destination. The correction routes `StoreRestore`
+before generic Store opening and removes its generic dispatch arm; the existing
+backup verification, restoration and destination refusal implementation is unchanged.
+
+Actual canonical Moon results in `/tmp/athletic-work-20261021/`:
+
+- **RED 690:** three real CLI process tests failed before the routing correction;
+  Nextest `168fc6b5-a4e3-4bfa-a9f3-fcf124f6de50`, 0/3 passed.
+- **GREEN 691:** the same tests passed after correction; Nextest
+  `50b35814-8661-4ebd-b152-bae9aca3db82`, 3/3, 0.039 s tests, 11.833 s total.
+  They hold unrelated default/explicit Store owners open, verify their identity,
+  sequence and generation witnesses, preserve the restored source identity on
+  repeated-target refusal, and reject an invalid backup without creating either
+  default Store or destination.
+- **PASS 694:** native restore, current integrity and backup adjacency, 11/11;
+  Nextest `5620fcd8-c71e-4958-b0b7-2e6f6ab2dce3`, 3.672 s tests, 16.385 s total.
+- **PASS:** format write 692. Command 695 refused a test-thread environment
+  override on non-test tasks; corrected format/check/source-lint 696 passed all
+  three tasks, 35.579 s total. Existing forced arity advisories remain visible.
+
+Local RTX 5090 drafts 688/689 returned HTTP 200. Main used the two routing lines
+and rejected both test drafts for invalid APIs, setup or coverage, then authored
+and executed the process regressions above. No draft response is test evidence.
+
+Full cold-backup restore 693 is still running at this checkpoint. It uses a
+separate immutable corrected CLI, SHA256
+`65967b6ade69d74ffaa7439bd622fcb1d65e4cb67d752ab9dd33a3fe83d37e33`,
+and the preserved 21,183,949,993-byte backup 581, whose `backup.json` digest is
+`160249de5f84984bffe159e15109532f44201128fc0ea170595bb78d6c1a5a17`.
+No successful full-corpus cohort qualification is claimed yet. Original MI591
+remains running under sole live owner 590. Status 697 reports 571,461 retained
+performance records and zero accepted identity decisions. The separate restored
+copy does not confer acceptance on live state. Normal roster-owned profile
+acquisition and the fully populated workbook remain unfinished.

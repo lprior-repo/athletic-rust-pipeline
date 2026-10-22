@@ -82,6 +82,7 @@ async fn run_async(cli: Cli) -> Result<()> {
         Command::MergeCoaches(args) => merge_coaches::run_merge_coaches(args),
         Command::VerifyCoaches(args) => verify_coaches::run_verify_coaches(args).await,
         Command::CensusDoc(args) => census_doc::run_census_doc(args),
+        Command::StoreRestore(args) => store::run_restore(args),
         Command::SchoolAddress(args) => census_service::school_address::run(args),
         Command::StoreBackup(args) => store::run_backup(&cli.store_root(), args),
         Command::StoreIntegrity => store::run_integrity(&cli.store_root()),
