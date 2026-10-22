@@ -1,3 +1,5 @@
+mod physical_rows;
+
 use super::*;
 use crate::public_identity::paged_generation::MAX_RAW_VALUE_BYTES;
 
@@ -45,12 +47,6 @@ fn descriptor_decoder_bound(padding: usize) -> TestResult {
     } else {
         "cumulative graph admission bound"
     };
-    if padding == 0 {
-        check!(eq; maximum, MAX_DESCRIPTORS);
-    } else {
-        check!(eq; maximum, MAX_PHYSICAL_ROWS / descriptor.physical.row_count());
-        check!(maximum < MAX_DESCRIPTORS);
-    }
     let descriptor = serde_json::to_value(descriptor)?;
     let mut raw = serde_json::to_value(&reservation)?;
     *raw.get_mut("descriptors").ok_or("descriptors")? =

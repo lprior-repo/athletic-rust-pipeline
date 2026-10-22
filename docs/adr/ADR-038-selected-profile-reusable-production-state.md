@@ -469,6 +469,17 @@ The existing shared graph budget also bounds retained grade enrichment and
 affected performance/relay traversals at 4 GiB; its 1,048,576-row and 1-MiB
 record limits remain unchanged. No scan, merge, enrichment, charge or source
 check is removed; the aggregate limit can still refuse combined sections.
+Native canonical source-cohort331 then refused its unchanged operation at
+16,390 cumulative graph-admission physical rows against the former 16,384-row
+ceiling. A raw-generation admission now permits 262,144 cumulative physical
+rows and 128 MiB of metadata, retaining the 4,096-descriptor ceiling. Its
+conservative physical-fingerprint allowance is 66 MiB at those row and
+descriptor counts; actual encoded metadata and child references are still
+independently checked. Builder, decoder, retained validation and protected-row
+reads use the same finite limits. The frozen V2 union retains its independent
+262,144-row aggregate ceiling; admitting a graph does not multiply that union
+allowance. Recovery must continue the original operation and preserve its
+partial capture, charges and source identity.
 These limits do not reserve their maximum sizes. They do not establish the
 separate 16-GiB process envelope, real-source workbook publication, replay or
 cold-read acceptance; those require exact-build native evidence and measured
