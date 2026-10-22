@@ -155,3 +155,51 @@ fn office_mailbox_research_does_not_complete_coach_research() -> TestResult {
     research.subject = ContactResearchSubject::SchoolMailbox(SchoolMailboxPurpose::SchoolOffice);
     reused_research(&[record], ContactState::ContactResearchUnknown)
 }
+
+#[test]
+fn stale_completed_research_outside_school_year_is_blocked() -> TestResult {
+    for terminal in [
+        ContactResearchOutcome::CompletedEmpty,
+        ContactResearchOutcome::CompletedClaims,
+    ] {
+        for at in ["2025-08-01T00:00:00Z", "2027-08-01T00:00:00Z"] {
+            let mut record = researched_school(terminal.clone())?;
+            recapture(&mut record, at);
+            reused_research(&[record], ContactState::ContactResearchBlocked)?;
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn newer_stale_completion_cannot_revive_older_in_year_completion() -> TestResult {
+    for terminal in [
+        ContactResearchOutcome::CompletedEmpty,
+        ContactResearchOutcome::CompletedClaims,
+    ] {
+        let older = researched_school(terminal.clone())?;
+        let mut newer = researched_school(terminal)?;
+        recapture(&mut newer, "2027-08-01T00:00:00Z");
+        for records in [[older.clone(), newer.clone()], [newer, older]] {
+            reused_research(&records, ContactState::ContactResearchBlocked)?;
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn equal_utc_instants_different_offsets_conflict_after_reopen() -> TestResult {
+    for terminal in [
+        ContactResearchOutcome::CompletedEmpty,
+        ContactResearchOutcome::CompletedClaims,
+    ] {
+        let mut first = researched_school(terminal.clone())?;
+        recapture(&mut first, "2026-08-01T00:30:00+02:00");
+        let mut second = researched_school(terminal)?;
+        recapture(&mut second, "2026-07-31T22:30:00Z");
+        for records in [[first.clone(), second.clone()], [second, first]] {
+            reused_research(&records, ContactState::ContactResearchBlocked)?;
+        }
+    }
+    Ok(())
+}

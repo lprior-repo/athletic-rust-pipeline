@@ -6,6 +6,10 @@ use super::{
 use crate::model::CanonicalSchool;
 use std::collections::BTreeMap;
 
+#[cfg(test)]
+#[path = "tests/research_timestamp.rs"]
+mod research_timestamp;
+
 pub fn mailbox(
     school: &CanonicalSchool,
     purpose: SchoolMailboxPurpose,
@@ -139,7 +143,7 @@ fn assess(
             state = state.combine(Outcome::Partial);
         }
         for attempt in row.attempts.iter().filter(|attempt| matches(attempt)) {
-            retain(&mut attempts, attempt, &row.outcome);
+            retain(&mut attempts, attempt, &row.outcome, year);
         }
     }
     if attempts.is_empty() && state == Outcome::CompletedEmpty {
@@ -151,11 +155,19 @@ fn assess(
             Outcome::Unattempted
         };
     }
-    let admitted_empty = attempts
-        .values()
-        .any(|(_, _, outcome, tied)| !tied && *outcome == Outcome::CompletedEmpty);
-    for (_, (_, _, outcome, tied)) in attempts {
-        state = state.combine(if tied { Outcome::Conflict } else { outcome });
+    aggregate(attempts, state, year)
+}
+
+fn aggregate(attempts: Attempts<'_>, mut state: Outcome, year: SchoolYear) -> Outcome {
+    let admitted_empty = attempts.values().any(|(_, at, outcome, tied)| {
+        !tied && current_outcome(at, outcome, year) == Outcome::CompletedEmpty
+    });
+    for (_, (_, at, outcome, tied)) in attempts {
+        state = state.combine(if tied {
+            Outcome::Conflict
+        } else {
+            current_outcome(&at, &outcome, year)
+        });
     }
     if admitted_empty && state == Outcome::Exhausted {
         Outcome::CompletedEmpty
@@ -167,7 +179,20 @@ fn assess(
 type Timestamp = Option<chrono::DateTime<chrono::FixedOffset>>;
 type Attempts<'a> = BTreeMap<&'a str, (&'a ContactResearchAttempt, Timestamp, Outcome, bool)>;
 
-fn retain<'a>(attempts: &mut Attempts<'a>, next: &'a ContactResearchAttempt, summary: &Outcome) {
+fn current_outcome(at: &Timestamp, outcome: &Outcome, year: SchoolYear) -> Outcome {
+    if outcome.is_terminal() && at.as_ref().is_some_and(|at| !captured_in(at, year)) {
+        Outcome::Stale
+    } else {
+        outcome.clone()
+    }
+}
+
+fn retain<'a>(
+    attempts: &mut Attempts<'a>,
+    next: &'a ContactResearchAttempt,
+    summary: &Outcome,
+    year: SchoolYear,
+) {
     let at = chrono::DateTime::parse_from_rfc3339(&next.acquired_at).ok();
     let invalid = (at.is_none() && next.outcome != Outcome::Failed)
         || next.locator.trim().is_empty()
@@ -187,7 +212,11 @@ fn retain<'a>(attempts: &mut Attempts<'a>, next: &'a ContactResearchAttempt, sum
             *slot = (next, at, outcome.combine(Outcome::Failed), invalid);
         }
         std::cmp::Ordering::Greater => *slot = (next, at, outcome, invalid),
-        std::cmp::Ordering::Equal => slot.3 |= invalid || outcome != slot.2,
+        std::cmp::Ordering::Equal => {
+            slot.3 |= invalid
+                || outcome != slot.2
+                || current_outcome(&at, &outcome, year) != current_outcome(&slot.1, &slot.2, year);
+        }
         std::cmp::Ordering::Less if at.is_none() && outcome == Outcome::Failed => {
             slot.2 = slot.2.clone().combine(outcome)
         }

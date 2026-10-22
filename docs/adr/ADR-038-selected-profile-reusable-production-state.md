@@ -287,6 +287,20 @@ work. Corrections, withdrawals, identity remaps and policy changes invalidate th
 projection keys durably. Retain candidate marks needed for corrected-winner fallback. Do not
 change accepted source evidence merely to obtain a smaller unresolved set or easier seal.
 
+**2026-10-22 contact capture-year correction:** completed research must belong
+to the requested school year by its actual RFC3339 capture time, using the
+existing August–July and literal local-offset calendar rule. A row's school-year
+label cannot refresh an old capture. Select the latest attempt per source locator
+before classifying it; a newer out-of-year completion must not revive an older
+success. Equal UTC instants with conflicting capture-year classifications remain
+conflicted in either input order. Genuine denials, failures and malformed evidence
+retain their existing precedence. This corrects enforcement of the existing
+selected-year condition; it introduces no persisted shape, policy identity or
+alternate execution path. Retained attempts, labels, original artifacts and
+receipts remain immutable. An invalid historical completion is not permission to
+rewrite its input or certify it as current. Changed-build current/frozen readback
+still requires execution evidence; this decision is not a passing receipt.
+
 ## 5. Generation, acceptance and query-copy boundary
 
 Preserve ADR-026's explicit format classification, one store owner, fenced evidence reads,

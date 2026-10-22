@@ -4052,3 +4052,46 @@ source work, keys, attempts, receipts, live Store or Downloads workbook were
 replaced. The isolated research-timestamp draft remains unapplied pending review.
 Passing these checks does not establish accepted five-state athletes or deliver
 the fully populated workbook. That goal remains incomplete.
+
+## 2026-10-22 — Contact research uses its actual capture year (rm23.9)
+
+The shared contact assessor now classifies the selected latest attempt by its
+actual capture time and the existing August–July/local-offset school-year rule.
+A false current-year label cannot certify old or future research. Classification
+does not discard a newer stale attempt and revive an older success. Equal UTC
+instants on opposite sides of the local-calendar boundary conflict independently
+of row order. Original capture metadata, research labels, failure precedence,
+serialized records, policy references and frozen artifacts are not rewritten.
+This enforces the existing selected-year condition without another execution path.
+
+The isolated root-authored v2 draft was reviewed and registered by Main. Main
+found and required correction of the original draft's offset tie before applying
+it. The local 5090 persisted-test drafts 678/680 returned HTTP 200; 678's changed
+school-year labels and incorrect oracle were rejected. Main corrected 680's enum
+moves before adding three real Store close/reopen worksheet-projection cases.
+They keep names and emails blank for stale/conflicted research and retain the
+original research rows and Store sequence. These are controlled tests, not newly
+acquired coach contacts.
+
+Actual canonical Moon results, logs under `/tmp/athletic-work-20261021/`:
+
+- **FAIL before repair:** tests-only 677, 5/14 passed, nine failed; Nextest
+  `2cc3a71c-5fbf-439e-9f19-65e9ebb56e58`. **PASS after repair:** 679, 14/14;
+  Nextest `553d1d37-e794-42c1-853e-35449264cdac`.
+- **PASS:** adjacency 681, 1,340/1,340, 3,229 skipped, 232.201 s tests;
+  Nextest `660842f4-a0db-444a-a753-7f78bb0d5f0e`. This includes all Domain
+  tests, contact and school-site cases, the three new persisted projection
+  cases, controlled current/frozen/cold publication, unchanged independently
+  retained V3 readback, and identity split/revocation preservation of G0.
+- **PASS:** format write 683; format/check/source lint 684, three tasks,
+  44.613 s total. Existing forced arity advisories remain visible.
+
+This is source qualification of the corrected selector, not a new optimized
+runtime or deployment receipt. Original-A qualification for the changed robots
+dependency context and the full release gate remain unqualified. Ingress status
+682 reports 1,082,128 athlete rows, 504,951 performances, 1,184,524 source
+observations and zero accepted identity decisions. The original MI591 invocation
+continues under sole endpoint 590. The Downloads workbook remains SHA256
+`1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`.
+No live Store, source-work identity, historical receipt or delivered artifact was
+replaced. The fully populated five-state workbook goal remains incomplete.
