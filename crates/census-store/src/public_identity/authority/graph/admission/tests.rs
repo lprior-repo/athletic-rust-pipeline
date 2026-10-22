@@ -24,27 +24,29 @@ fn full_record_value() -> TestResult<String> {
 #[test]
 fn retained_record_limit_includes_envelope_and_newline() -> TestResult {
     let value = full_record_value()?;
-    measure_context_object(|sink| Section::new("athlete").record(sink, &value))?;
+    measure(|sink| Section::new("athlete").record(sink, &value))?;
     let larger = format!("{value}x");
-    check!(measure_context_object(|sink| Section::new("athlete").record(sink, &larger)).is_err());
+    check!(measure(|sink| Section::new("athlete").record(sink, &larger)).is_err());
     Ok(())
 }
 
 #[test]
 fn retained_section_boundary_does_not_reset_per_row() -> TestResult {
     let value = full_record_value()?;
-    measure_context_object(|sink| {
+    let initial = BUDGET
+        .bytes
+        .checked_sub(u64::try_from(CONTEXT_RECORD_BYTES)?)
+        .ok_or("section bound")?;
+    measure(|sink| {
         let mut section = Section::new("athlete");
-        for _ in 0..16 {
-            section.record(sink, &value)?;
-        }
+        section.bytes = initial;
+        section.record(sink, &value)?;
         Ok(())
     })?;
-    check!(measure_context_object(|sink| {
+    check!(measure(|sink| {
         let mut section = Section::new("athlete");
-        for _ in 0..16 {
-            section.record(sink, &value)?;
-        }
+        section.bytes = initial;
+        section.record(sink, &value)?;
         section.record(sink, &"")
     })
     .is_err());
@@ -64,18 +66,17 @@ fn aggregate_keeps_one_record_reserved_for_header() -> TestResult {
 
 #[test]
 fn section_row_limit_is_cumulative() -> TestResult {
-    measure_context_object(|sink| {
+    let initial = BUDGET.rows.checked_sub(1).ok_or("row bound")?;
+    measure(|sink| {
         let mut section = Section::new("athlete");
-        for _ in 0..BUDGET.rows {
-            section.record(sink, &"")?;
-        }
+        section.rows = initial;
+        section.record(sink, &"")?;
         Ok(())
     })?;
-    check!(measure_context_object(|sink| {
+    check!(measure(|sink| {
         let mut section = Section::new("athlete");
-        for _ in 0..BUDGET.rows {
-            section.record(sink, &"")?;
-        }
+        section.rows = initial;
+        section.record(sink, &"")?;
         section.record(sink, &"")
     })
     .is_err());

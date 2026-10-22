@@ -73,7 +73,14 @@ fn physical_row_boundary_is_not_reset_by_merge() -> TestResult {
         let held = store.snapshot();
         let retained = outcome.retained();
         let graph = VerifiedRawGraph::verify(&held, retained.binding(), retained.seal())?;
-        let actual = accept_source(&graph, &athlete.id.cast(), "2026-10-15");
+        let actual = graph.for_each_merged::<CanonicalAthlete>(
+            AuthorityTableV2::Athletes,
+            ReadBudget {
+                rows: 8192,
+                ..BUDGET
+            },
+            |_, _| Ok(()),
+        );
         if count == 8192 {
             check!(actual.is_ok());
         } else {
@@ -133,9 +140,8 @@ fn later_scan_failure_rolls_back_and_poisoned_budget_cannot_resume() -> TestResu
 }
 
 #[test]
-fn empty_athletes_do_not_skip_observation_budget() -> TestResult {
+fn empty_athletes_keep_the_explicit_observation_read_budget() -> TestResult {
     let (_directory, store, writer) = enrolled()?;
-    let candidate = subject("empty-athletes", "51003")?.id.cast();
     store.append_many(Table::SourceObservations, &vec![observation()?; 8193])?;
     let outcome = writer
         .capture_raw_generation_v2(&store, &RawGenerationOperationIdV2::new("empty-athletes")?)?;
@@ -143,7 +149,14 @@ fn empty_athletes_do_not_skip_observation_budget() -> TestResult {
     let retained = outcome.retained();
     let graph = VerifiedRawGraph::verify(&held, retained.binding(), retained.seal())?;
     check!(matches!(
-        accept_source(&graph, &candidate, "2026-10-15"),
+        graph.for_each_observation::<SourceObservation>(
+            AuthorityTableV2::SourceObservations,
+            ReadBudget {
+                rows: 8192,
+                ..BUDGET
+            },
+            |_, _| Ok(()),
+        ),
         Err(StoreError::BudgetExceeded { .. })
     ));
     Ok(())

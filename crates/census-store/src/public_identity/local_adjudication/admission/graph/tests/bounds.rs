@@ -1,4 +1,5 @@
 use super::*;
+use crate::public_identity::paged_generation::MAX_RAW_VALUE_BYTES;
 
 #[test]
 fn descriptor_bound_refuses_before_staging_or_changing_admission_counters() -> TestResult {
@@ -23,8 +24,15 @@ fn descriptor_bound_refuses_before_staging_or_changing_admission_counters() -> T
 
 #[test]
 fn descriptor_decoder_accepts_cumulative_bound_and_refuses_the_next_descriptor() -> TestResult {
+    for padding in [0, MAX_RAW_VALUE_BYTES] {
+        descriptor_decoder_bound(padding)?;
+    }
+    Ok(())
+}
+
+fn descriptor_decoder_bound(padding: usize) -> TestResult {
     let (_directory, store, _writer) = enrolled()?;
-    let (_generation, plan) = Generation::new(&store, 0)?;
+    let (_generation, plan) = Generation::new(&store, padding)?;
     let reservation = reserve(&store, "descriptor-codec", plan)?;
     let descriptor = reservation.descriptors.first().ok_or("page descriptor")?;
     let bytes = codec::encode(descriptor, MAX_METADATA_BYTES)?.len();
@@ -32,7 +40,17 @@ fn descriptor_decoder_accepts_cumulative_bound_and_refuses_the_next_descriptor()
         .min(MAX_PHYSICAL_ROWS / descriptor.physical.row_count())
         .min(MAX_METADATA_BYTES / bytes);
     check!(maximum > 0);
-    check!(maximum < MAX_DESCRIPTORS);
+    let expected = if maximum == MAX_DESCRIPTORS {
+        "graph descriptor count"
+    } else {
+        "cumulative graph admission bound"
+    };
+    if padding == 0 {
+        check!(eq; maximum, MAX_DESCRIPTORS);
+    } else {
+        check!(eq; maximum, MAX_PHYSICAL_ROWS / descriptor.physical.row_count());
+        check!(maximum < MAX_DESCRIPTORS);
+    }
     let descriptor = serde_json::to_value(descriptor)?;
     let mut raw = serde_json::to_value(&reservation)?;
     *raw.get_mut("descriptors").ok_or("descriptors")? =
@@ -47,10 +65,38 @@ fn descriptor_decoder_accepts_cumulative_bound_and_refuses_the_next_descriptor()
     let error = serde_json::from_slice::<GraphReservation>(&serde_json::to_vec(&raw)?)
         .err()
         .ok_or("oversized descriptors accepted")?;
-    check!(error
-        .to_string()
-        .contains("cumulative graph admission bound"));
+    check!(error.to_string().contains(expected));
     check!(eq;retained_state(&store)?, before);
+    Ok(())
+}
+
+#[test]
+fn protected_reader_uses_graph_cap_and_preserves_nongraph_cap() -> TestResult {
+    let (_directory, store, _writer) = enrolled()?;
+    let (_generation, plan) = Generation::new(&store, 0)?;
+    let reservation = reserve(&store, "protected-reader", plan)?;
+    let key = admission::key("protected-reader");
+    let length = crate::MAX_JOURNAL_VALUE_BYTES
+        .checked_add(1)
+        .ok_or("reader bound")?;
+    let mut raw = codec::encode(&reservation, MAX_METADATA_BYTES)?;
+    raw.resize(length, b' ');
+    write(&store, key.as_bytes(), &raw)?;
+    let identity = store.store_identity()?;
+    let (bytes, _) = admission::audit_row(&store, &store.db.snapshot(), key.as_bytes(), &identity)?;
+    check!(bytes >= u64::try_from(length)?);
+    for version in [2, 4] {
+        let mut raw = serde_json::to_vec(&serde_json::json!({"version": version}))?;
+        raw.resize(length, b' ');
+        write(&store, key.as_bytes(), &raw)?;
+        match admission::audit_row(&store, &store.db.snapshot(), key.as_bytes(), &identity) {
+            Err(StoreError::RowTooLarge { bytes, max }) => {
+                check!(eq; bytes, length);
+                check!(eq; max, crate::MAX_JOURNAL_VALUE_BYTES);
+            }
+            other => return Err(format!("expected nongraph byte refusal, got {other:?}").into()),
+        }
+    }
     Ok(())
 }
 

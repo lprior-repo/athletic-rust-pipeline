@@ -57,6 +57,25 @@ fn sdk_encoding_refuses_allocation_before_output_growth() -> TestResult {
 }
 
 #[test]
+fn plan_allocation_accepts_256_mib_and_refuses_one_more_byte() -> TestResult {
+    check!(eq; MAX_PLAN_ALLOCATIONS, 268_435_456);
+    let mut allocation = PlanAllocation::default();
+    allocation.charge_u64(67_108_864)?;
+    allocation.charge_u64(
+        MAX_PLAN_ALLOCATIONS
+            .checked_sub(67_108_864)
+            .ok_or("fixture allocation")?,
+    )?;
+    check!(eq; allocation.remaining()?, 0);
+    check!(matches!(
+        allocation.charge_u64(1),
+        Err(ResultsPlanError::Limit("allocation"))
+    ));
+    check!(eq; allocation.remaining()?, 0);
+    Ok(())
+}
+
+#[test]
 fn sdk_rejects_trailing_non_whitespace() -> TestResult {
     let mut bytes = encode(&fixture::empty()?)?.to_vec();
     bytes.extend_from_slice(b" false");

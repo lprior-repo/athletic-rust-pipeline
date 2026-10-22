@@ -5,8 +5,8 @@ use crate::public_identity::paged_generation::{
 use serde::{Deserialize, Deserializer, Serialize};
 
 pub(super) const MAX_DESCRIPTORS: usize = 4096;
-pub(super) const MAX_PHYSICAL_ROWS: usize = 4096;
-pub(super) const MAX_METADATA_BYTES: usize = crate::MAX_JOURNAL_VALUE_BYTES;
+pub(super) const MAX_PHYSICAL_ROWS: usize = 16_384;
+pub(super) const MAX_METADATA_BYTES: usize = 8 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]

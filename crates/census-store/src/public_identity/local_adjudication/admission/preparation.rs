@@ -153,7 +153,7 @@ pub(super) fn audit(
         &store.db.snapshot(),
         &store.journal,
         &graph_key,
-        MAX_JOURNAL_VALUE_BYTES,
+        super::graph_wire::MAX_METADATA_BYTES,
     )?
     .ok_or_else(invalid)?;
     let graph: super::graph::GraphReservation = codec::decode(&graph_key, &raw)?;

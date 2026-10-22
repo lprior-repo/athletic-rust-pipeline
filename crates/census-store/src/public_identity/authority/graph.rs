@@ -8,7 +8,11 @@ pub(in crate::public_identity) use members::{member_rows, members, review_case};
 #[cfg(test)]
 mod tests;
 
-use crate::public_identity::context::BUDGET;
+const BUDGET: crate::read::ReadBudget = crate::read::ReadBudget {
+    rows: 1_048_576,
+    bytes: 512 * 1024 * 1024,
+    record_bytes: 1024 * 1024,
+};
 use crate::public_identity::paged_generation::{
     AuthorityTableV2, RawObjectSource, VerifiedRawGraph,
 };

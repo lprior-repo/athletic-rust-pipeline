@@ -103,9 +103,22 @@ fn sdk_rejects_thirteen_pins_during_bounded_sequence_decode() -> TestResult {
 }
 
 #[test]
-fn sdk_rejects_nested_option_growth_at_decode_allocation_limit() -> TestResult {
+fn sdk_rejects_nested_option_growth_at_frontier_sequence_limit() -> TestResult {
     let discovery = serde_json::json!([{"ready": nested_options(4097)}]);
     let mut bytes = fixture::mutate("discovery", discovery)?;
+    json_error(decode(&mut bytes), "sequence limit")
+}
+
+#[test]
+fn sdk_rejects_aggregate_nested_options_at_decode_allocation_limit() -> TestResult {
+    let discovery = serde_json::json!([
+        {"ready": nested_options(4096)},
+        {"ready": nested_options(4096)},
+        {"ready": nested_options(4096)},
+        {"ready": nested_options(4096)},
+    ]);
+    let mut bytes = fixture::mutate("discovery", discovery)?;
+    check!(bytes.len() < MAX_PLAN_BYTES);
     limit(decode(&mut bytes), "decode allocation")
 }
 

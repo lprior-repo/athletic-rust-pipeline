@@ -1,14 +1,43 @@
 use super::{AuthorityTableV2, RawObjectSource, VerifiedRawGraph, BUDGET};
-use crate::journal::context::{
-    measure_context_object, ContextRecordSink, CONTEXT_RECORD_BYTES, CONTEXT_TOTAL_BYTES,
-};
-use crate::public_identity::context::{storage::charge_section_bytes, wire};
+use crate::public_identity::{codec, context::wire};
 use crate::{Entity, StoreError, StoreResult};
 use census_domain::model::{CanonicalAthlete, ReviewCase, ReviewVerdictRecord, SourceObservation};
 use serde::Serialize;
 
+const CONTEXT_RECORD_BYTES: usize = BUDGET.record_bytes;
+const CONTEXT_TOTAL_BYTES: usize = 1024 * 1024 * 1024;
+
+#[derive(Default)]
+struct AuthorityBytes {
+    bytes: usize,
+}
+
+impl AuthorityBytes {
+    fn written_bytes(&self) -> usize {
+        self.bytes
+    }
+
+    fn record(&mut self, row: &impl Serialize) -> StoreResult<()> {
+        let bytes = codec::encode(row, CONTEXT_RECORD_BYTES - 1)?
+            .len()
+            .checked_add(1)
+            .ok_or(StoreError::CounterOverflow)?;
+        let next = self
+            .bytes
+            .checked_add(bytes)
+            .ok_or(StoreError::CounterOverflow)?;
+        aggregate(next)?;
+        self.bytes = next;
+        Ok(())
+    }
+}
+
+fn measure(emit: impl FnOnce(&mut AuthorityBytes) -> StoreResult<()>) -> StoreResult<()> {
+    emit(&mut AuthorityBytes::default())
+}
+
 pub(super) fn preflight<S: RawObjectSource>(view: &VerifiedRawGraph<'_, S>) -> StoreResult<()> {
-    measure_context_object(|sink| {
+    measure(|sink| {
         merged::<CanonicalAthlete, S>(view, sink, AuthorityTableV2::Athletes, "athlete")?;
         let mut section = Section::new("observation");
         view.for_each_observation::<SourceObservation>(
@@ -24,7 +53,7 @@ pub(super) fn preflight<S: RawObjectSource>(view: &VerifiedRawGraph<'_, S>) -> S
 
 fn merged<T: Entity, S: RawObjectSource>(
     view: &VerifiedRawGraph<'_, S>,
-    sink: &mut ContextRecordSink<'_>,
+    sink: &mut AuthorityBytes,
     table: AuthorityTableV2,
     kind: &'static str,
 ) -> StoreResult<()> {
@@ -48,11 +77,7 @@ impl Section {
         }
     }
 
-    fn record<T: Serialize>(
-        &mut self,
-        sink: &mut ContextRecordSink<'_>,
-        row: &T,
-    ) -> StoreResult<()> {
+    fn record<T: Serialize>(&mut self, sink: &mut AuthorityBytes, row: &T) -> StoreResult<()> {
         let rows = self
             .rows
             .checked_add(1)
@@ -77,7 +102,18 @@ impl Section {
             .written_bytes()
             .checked_sub(before)
             .ok_or(StoreError::CounterOverflow)?;
-        self.bytes = charge_section_bytes(self.bytes, added)?;
+        let bytes = self
+            .bytes
+            .checked_add(u64::try_from(added).map_err(|_| StoreError::CounterOverflow)?)
+            .ok_or(StoreError::CounterOverflow)?;
+        if bytes > BUDGET.bytes {
+            return Err(StoreError::BudgetExceeded {
+                what: "graph authority section bytes",
+                needed: bytes,
+                available: BUDGET.bytes,
+            });
+        }
+        self.bytes = bytes;
         aggregate(sink.written_bytes())?;
         self.rows = rows;
         Ok(())
@@ -103,7 +139,7 @@ fn aggregate(sections: usize) -> StoreResult<()> {
 mod tests;
 
 pub(super) fn affected<S: RawObjectSource>(view: &VerifiedRawGraph<'_, S>) -> StoreResult<()> {
-    measure_context_object(|sink| {
+    measure(|sink| {
         physical::<census_domain::model::CanonicalPerformance, S>(
             view,
             sink,
@@ -122,7 +158,7 @@ pub(super) fn affected<S: RawObjectSource>(view: &VerifiedRawGraph<'_, S>) -> St
 
 fn physical<T: Entity, S: RawObjectSource>(
     view: &VerifiedRawGraph<'_, S>,
-    sink: &mut ContextRecordSink<'_>,
+    sink: &mut AuthorityBytes,
     table: AuthorityTableV2,
     kind: &'static str,
 ) -> StoreResult<()> {

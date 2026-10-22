@@ -17,7 +17,7 @@ const PREFIX: &str = "manual-context-admission-v1\0";
 const HEADER: &str = "manual-context-admission-v1\0header";
 const RESERVATIONS: &str = "manual-context-admission-v1\0reservation\0";
 const POLICY: &str = "manual-context-admission/v2";
-const MAX_BYTES: u64 = 128 * 1024 * 1024;
+const MAX_BYTES: u64 = 1024 * 1024 * 1024;
 const MAX_ROOTS: u64 = 4096;
 const MAX_RESERVATIONS: u64 = 4096;
 const HEADER_MARGIN: u64 = 4096;
@@ -109,13 +109,24 @@ fn audit_row(
     identity: &StoreIdentity,
 ) -> StoreResult<(u64, u64)> {
     let row_key = std::str::from_utf8(row_key).map_err(|_| invalid())?;
-    let raw = codec::load(snapshot, &store.journal, row_key, MAX_JOURNAL_VALUE_BYTES)?
-        .ok_or_else(invalid)?;
+    let raw = codec::load(
+        snapshot,
+        &store.journal,
+        row_key,
+        graph_wire::MAX_METADATA_BYTES,
+    )?
+    .ok_or_else(invalid)?;
     #[derive(Deserialize)]
     struct Version {
         version: u8,
     }
     let version: Version = codec::decode(row_key, &raw)?;
+    if version.version != 3 && raw.len() > MAX_JOURNAL_VALUE_BYTES {
+        return Err(StoreError::RowTooLarge {
+            bytes: raw.len(),
+            max: MAX_JOURNAL_VALUE_BYTES,
+        });
+    }
     match version.version {
         3 => return graph::audit(store, row_key, &raw, identity),
         4 => return preparation::audit(store, row_key, &raw, identity),

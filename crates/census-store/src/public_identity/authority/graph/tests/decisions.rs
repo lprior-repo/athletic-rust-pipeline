@@ -84,6 +84,29 @@ fn competing_provider_identity_outside_first_batch_refuses() -> TestResult {
 }
 
 #[test]
+fn source_authority_preserves_ambiguity_beyond_8192_candidates() -> TestResult {
+    let (_directory, store, writer) = enrolled()?;
+    let mut athletes = (0..8193)
+        .map(|index| subject(&format!("large-graph-{index}"), &format!("910{index:05}")))
+        .collect::<Result<Vec<_>, _>>()?;
+    athletes.sort_by(|left, right| left.id.cmp(&right.id));
+    let first = athletes.first().ok_or("first athlete")?.clone();
+    athletes.last_mut().ok_or("last athlete")?.source = first.source.clone();
+    store.append_many(Table::Athletes, &athletes)?;
+    let captured = writer.capture_raw_generation_v2(
+        &store,
+        &RawGenerationOperationIdV2::new("large-source-ambiguity")?,
+    )?;
+    let held = store.snapshot();
+    let retained = captured.retained();
+    let view = VerifiedRawGraph::verify(&held, retained.binding(), retained.seal())?;
+    let accepted = accepted_sources(&view, "2026-10-15")?;
+    check!(eq; accepted.len(), 8191);
+    check!(!accepted.contains_key(&first.id.cast()));
+    Ok(())
+}
+
+#[test]
 fn unresolved_review_conflict_matches_historical_refusal() -> TestResult {
     let (_directory, store, writer) = enrolled()?;
     let athlete = subject("graph-review", "51002")?;
