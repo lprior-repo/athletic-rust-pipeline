@@ -197,7 +197,8 @@ fn build_offline_selected(
         };
         options.out = Some(derived::destination(&original, destination)?);
     }
-    let censuses = workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions)?;
+    let source_out = std::path::Path::new(&dataset.lineage.store_root).join("out");
+    let censuses = workbook::Censuses::of(&dataset, &source_out, &options.jurisdictions)?;
     workbook::build_from(&dataset, store, &options, &censuses)
         .context("building the selected census workbook")
 }

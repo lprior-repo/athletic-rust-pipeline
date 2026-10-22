@@ -3480,8 +3480,72 @@ executable alongside its source checkpoint and partial output.
 PASS: trusted scan 497 checked 2,845 production files and 30,494 callables,
 zero functions over 60 logical lines and no unresolved measurement sites,
 317.989 seconds overall. The arity and 25-line advisories remain visible.
-Actual derivation 495b is running. Attempt 495 refused a mistyped digest before
-opening the Store; 495b uses the original exact profile, request and generation
-against the same isolated root and sibling destination.
-Actual delivery, replay, cold-read verification and genuine five-state
-population remain unfinished.
+Attempt 495 refused a mistyped digest before opening the Store. Actual native
+derivation 495b used the exact original profile, native request, frozen job and
+generation against the isolated restored root and sibling destination. It
+completed the reported-results CSV and the XLSX, then FAILED with exit 1:
+`census-core.json` notes named the physical restore's `out` path while the
+independent frozen verifier correctly expected the original lineage root's
+`out` path. The original 548,861-byte interrupted-485 CSV prefix exactly matches
+the new complete CSV prefix. The new 70,552,173-byte CSV also retains the
+reported-event-interpretation column absent from the original revision-9
+artifact; no byte-equality claim is made across these artifact recipes.
+
+The failed revision-12 bundle has generation digest
+`0158530a7a6351db475f08d86386d51d8be75ffcef01c62df97c2538db55cc7c`.
+Its frozen input is byte-identical to the original, SHA-256
+`cc0356f713678dfe0a91a9a800296489c81139ca49db77761decc218e3c64f81`;
+all twelve normalized family row counts also match the original manifest.
+The normal failure path removed the new staging directory. A complete,
+unchanged reflink copy made before failure remains under
+`~/.cache/athletic-five-state-co2027-20261021/workbook-cold-read-502/generations/`
+with that generation name. Cold reader 503 against this copy was explicitly
+SIGTERM-stopped, exit 143, after the publisher exposed the mismatch; it is NOT
+a cold-verification pass. Its supplied nonexistent Store root remains absent.
+
+The complete XLSX was preserved from copy 502 as
+`/home/lewis/Downloads/Recruiting-Class-of-2027-MI-MN-IA-IL-CO-Single-Sheet-Preview.xlsx`,
+9,554,528 bytes, SHA-256
+`8812134721393efbf701c4ea714506540a38a5dc6b49d85cab9151a17b5cca7b`.
+This is an explicitly unaccepted preview, not a published generation.
+Read-only rendering 500 imported that exact XLSX through the bundled artifact
+library; Main inspected the actual header/person/school preview. Independent
+XML readback 501 counted one worksheet, 62,950 unique athlete IDs, all 2027:
+MI 16,246, MN 11,290, IA 8,683, IL 19,373, CO 7,358; boys 35,570, girls 27,380.
+All rows retain a source profile and reported/unverified status. Reported bests
+are present for 899 athletes and unresolved results for 3,908. Observed-grade,
+school-address and coach cells remain empty in this frozen reported population;
+accepted athletes and eligible accepted bests remain zero. No missing fact was
+invented to fill these columns. The user's original Downloads file is unchanged.
+
+Release attempt 498 observed a generated `output/.../current` symlink refusal
+in the zero-comment lane and was SIGINT-interrupted (Moon reports interrupted
+and skipped). The publication was preserved. Clean attached source worktree
+`~/.codex/worktrees/workbook-release-b566/athletic-rust-pipeline` initially
+matched pushed `b566a28d2598fb59d46842dad5045ef107c15b18` with no edits.
+Release 499 there passed format, zero comments (5,663 Rust files), architecture,
+check and docs, then FAILED tests: 7,390 passed, one reconciliation checkpoint
+test returned `Elapsed(())` after 46.005 seconds, 13 skipped; fail-fast left
+other tests unrun. Main subsequently SIGINT-interrupted the gate during
+all-target panic extraction to serialize the required native rebuild. Neither
+attempt is a full release pass, and neither waives native-17 or parser fuzzing.
+
+The minimal caller correction derives the census provenance path from immutable
+`dataset.lineage.store_root` instead of the physical restored Store. The shared
+reducer and independent verifier remain unchanged, and no original Store is
+opened to create these notes. GPU draft 504 returned HTTP 200 on both devices
+(5090 13.487 seconds, 3090 125.278 seconds). Main reviewed the exact two-line
+caller replacement; the 3090 review's contradictory description of the fix's
+direction is rejected. PASS: source format/check/lint 505, 44.371 seconds overall.
+PASS: focused 506, all nine tests, 19.005 seconds execution, 59.386 seconds
+overall, four Nextest threads. This includes native argument/destination guards,
+forged census semantic refusal and the previously timed-out reconciliation case
+(19.002 seconds in isolation). The timeout's root cause is not established, and
+this isolated pass does not repair the failed full release claim. PASS: native
+rebuild 507, 224.945 seconds overall. Retained service SHA-256 is
+`aef161d436931c5296184ba297348f3247bcdfaf1ddfc7f8339ee2f06147f382`;
+endpoint SHA-256 is
+`efcaf9d78ebf2b14cd9527f4b98f41194e15454a0334040f5fa3ad4a98b55b0a`.
+Both are copied into the immutable release cache under the service hash.
+The actual corrected derivation remains pending. Publication, replay,
+cold-read acceptance and genuine five-state population are unfinished.
