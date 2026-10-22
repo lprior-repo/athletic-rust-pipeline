@@ -10,6 +10,43 @@ fn source_decision_matches_historical_inputs() -> TestResult {
 }
 
 #[test]
+fn accepted_source_map_matches_every_historical_candidate() -> TestResult {
+    let (_directory, store, writer) = enrolled()?;
+    let athletes = [
+        subject("map-independent-first", "71001")?,
+        subject("map-independent-second", "71002")?,
+        subject("map-competing-first", "71003")?,
+        subject("map-competing-second", "71003")?,
+    ];
+    store.append_many(Table::Athletes, &athletes)?;
+    let inputs = crate::public_identity::context::Inputs::capture(&store.snapshot())?;
+    let outcome = writer.capture_raw_generation_v2(
+        &store,
+        &RawGenerationOperationIdV2::new("all-source-outcomes")?,
+    )?;
+    let held = store.snapshot();
+    let retained = outcome.retained();
+    let graph = VerifiedRawGraph::verify(&held, retained.binding(), retained.seal())?;
+    let mut actual = accepted_sources(&graph, "2026-10-15")?;
+    check!(eq; actual.len(), 2);
+    for athlete in &athletes {
+        let candidate: AthleteCandidateId = athlete.id.cast();
+        let expected =
+            crate::public_identity::authority::accept_inputs(&inputs, &candidate, "2026-10-15");
+        match (expected, actual.remove(&candidate)) {
+            (Ok((expected, expected_source)), Some((actual, actual_source))) => {
+                check!(eq; expected.record(), actual.record());
+                check!(eq; expected_source, actual_source);
+            }
+            (Err(_), None) => {}
+            _ => return Err("source map differs from historical authority".into()),
+        }
+    }
+    check!(actual.is_empty());
+    Ok(())
+}
+
+#[test]
 fn competing_provider_identity_outside_first_batch_refuses() -> TestResult {
     let (_directory, store, writer) = enrolled()?;
     let mut athletes = Vec::new();

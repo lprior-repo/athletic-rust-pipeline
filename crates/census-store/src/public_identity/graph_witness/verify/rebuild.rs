@@ -4,7 +4,8 @@ impl HeldGraphWitness {
     pub(super) fn rebuild_source<R: GraphRead>(
         &self,
         reader: &R,
-        view: &VerifiedRawGraph<'_, R>,
+        accepted: census_domain::model::AcceptedAthleteIdentity,
+        source: census_domain::model::SourceIdentity,
         previous: &HistoryProjection,
         record: &HistoryRecord,
     ) -> StoreResult<PreparedHistoryRecord> {
@@ -17,7 +18,6 @@ impl HeldGraphWitness {
             return Err(PublicIdentityError::Corrupt("graph witness payload family").into());
         };
 
-        let (accepted, source) = graph::accept_source(view, candidate, &self.observed_at)?;
         self.verify_decision(reader, decision, accepted.record())?;
         let digest = witness::request_digest(&record.installation, &self.operation, candidate)?;
         if digest != self.request_digest {

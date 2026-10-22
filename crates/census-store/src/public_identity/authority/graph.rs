@@ -20,30 +20,51 @@ use census_domain::model::{
     AthleteIdentityIndex, CanonicalAthlete, IdentityApplication, IdentityProjectionBuilder,
     ReviewCase, ReviewVerdictRecord, SourceIdentity, SourceObservation,
 };
+use std::collections::BTreeMap;
 
-const ATHLETE_BATCH: usize = 256;
+pub(in crate::public_identity) type AcceptedSources =
+    BTreeMap<AthleteCandidateId, (AcceptedAthleteIdentity, SourceIdentity)>;
+type SourceOwners = BTreeMap<AthleteCandidateId, SourceIdentity>;
 
 pub(in crate::public_identity) fn accept_source<S: RawObjectSource>(
     view: &VerifiedRawGraph<'_, S>,
     candidate: &AthleteCandidateId,
     at: &str,
 ) -> StoreResult<(AcceptedAthleteIdentity, SourceIdentity)> {
+    accepted_sources(view, at)?
+        .remove(candidate)
+        .ok_or_else(|| PublicIdentityError::NotSourceBound.into())
+}
+
+pub(in crate::public_identity) fn accepted_sources<S: RawObjectSource>(
+    view: &VerifiedRawGraph<'_, S>,
+    at: &str,
+) -> StoreResult<AcceptedSources> {
     admission::preflight(view)?;
-    let (index, source) = indexed(view, Some(candidate))?;
-    let source = source.ok_or(PublicIdentityError::NotSourceBound)?;
+    let (index, mut sources) = indexed(view)?;
     let cases = collect::<ReviewCase, S>(view, AuthorityTableV2::ReviewCases)?;
     let verdicts = collect::<ReviewVerdictRecord, S>(view, AuthorityTableV2::IdentityVerdicts)?;
     let (_, bound) = separate_generic_identity_cases(cases, &verdicts);
     let builder = IdentityProjectionBuilder::new(index, &bound, &verdicts)?;
+    let mut accepted_sources = BTreeMap::new();
     for application in builder.source_applications(at) {
         if let IdentityApplication::Accepted(accepted) = application? {
-            if matches!(accepted.record().members.as_slice(), [member] if &member.subject == candidate)
+            let [member] = accepted.record().members.as_slice() else {
+                continue;
+            };
+            let candidate = member.subject.clone();
+            let Some(source) = sources.remove(&candidate) else {
+                continue;
+            };
+            if accepted_sources
+                .insert(candidate, (accepted, source))
+                .is_some()
             {
-                return Ok((accepted, source));
+                return Err(PublicIdentityError::Corrupt("duplicate accepted source").into());
             }
         }
     }
-    Err(PublicIdentityError::NotSourceBound.into())
+    Ok(accepted_sources)
 }
 
 pub(in crate::public_identity) fn accept_reviewed<S: RawObjectSource>(
@@ -52,7 +73,7 @@ pub(in crate::public_identity) fn accept_reviewed<S: RawObjectSource>(
     at: &str,
 ) -> StoreResult<AcceptedAthleteIdentity> {
     admission::preflight(view)?;
-    let (index, _) = indexed(view, None)?;
+    let (index, _) = indexed(view)?;
     let cases = collect::<ReviewCase, S>(view, AuthorityTableV2::ReviewCases)?;
     let verdicts = collect::<ReviewVerdictRecord, S>(view, AuthorityTableV2::IdentityVerdicts)?;
     let (_, bound) = separate_generic_identity_cases(cases, &verdicts);
@@ -73,7 +94,7 @@ pub(in crate::public_identity) fn identity_material<S: RawObjectSource>(
     members: &[AthleteCandidateId],
 ) -> StoreResult<String> {
     admission::preflight(view)?;
-    let (index, _) = indexed(view, None)?;
+    let (index, _) = indexed(view)?;
     let evidence = index.case_evidence("local-adjudication-material", "v1", members)?;
     Ok(ReviewCase::pending_with_evidence(
         census_domain::model::ATHLETE_IDENTITY_FAMILY,
@@ -87,36 +108,10 @@ pub(in crate::public_identity) fn identity_material<S: RawObjectSource>(
 
 fn indexed<S: RawObjectSource>(
     view: &VerifiedRawGraph<'_, S>,
-    candidate: Option<&AthleteCandidateId>,
-) -> StoreResult<(AthleteIdentityIndex, Option<SourceIdentity>)> {
-    let mut batch = Vec::new();
-    batch.try_reserve_exact(ATHLETE_BATCH).map_err(allocation)?;
-    let mut index = AthleteIdentityIndex::default();
-    let mut source = None;
+) -> StoreResult<(AthleteIdentityIndex, SourceOwners)> {
+    let mut athletes = collect::<CanonicalAthlete, S>(view, AuthorityTableV2::Athletes)?;
     let mut enrichment = RetainedEnrichment::new(BUDGET);
-    view.for_each_merged::<CanonicalAthlete>(AuthorityTableV2::Athletes, BUDGET, |row, _| {
-        if candidate.is_some_and(|candidate| row.id.as_str() == candidate.as_str()) {
-            source = row.source.clone();
-        }
-        batch.push(row);
-        if batch.len() == ATHLETE_BATCH {
-            observe_batch(view, &mut batch, &mut enrichment, &mut index)?;
-        }
-        Ok(())
-    })?;
-    if !batch.is_empty() {
-        observe_batch(view, &mut batch, &mut enrichment, &mut index)?;
-    }
-    Ok((index, source))
-}
-
-fn observe_batch<S: RawObjectSource>(
-    view: &VerifiedRawGraph<'_, S>,
-    batch: &mut Vec<CanonicalAthlete>,
-    enrichment: &mut RetainedEnrichment,
-    index: &mut AthleteIdentityIndex,
-) -> StoreResult<()> {
-    enrichment.enrich(batch, |targets| {
+    enrichment.enrich(&mut athletes, |targets| {
         view.for_each_observation::<SourceObservation>(
             AuthorityTableV2::SourceObservations,
             BUDGET,
@@ -124,9 +119,18 @@ fn observe_batch<S: RawObjectSource>(
         )?;
         Ok(())
     })?;
-    batch
-        .drain(..)
-        .try_for_each(|row| index.observe(&row).map_err(Into::into))
+    let mut index = AthleteIdentityIndex::default();
+    let mut sources = BTreeMap::new();
+    for athlete in athletes {
+        let candidate = athlete.id.cast();
+        index.observe(&athlete)?;
+        if let Some(source) = athlete.source {
+            if sources.insert(candidate, source).is_some() {
+                return Err(PublicIdentityError::Corrupt("duplicate source owner").into());
+            }
+        }
+    }
+    Ok((index, sources))
 }
 
 fn collect<T: Entity, S: RawObjectSource>(

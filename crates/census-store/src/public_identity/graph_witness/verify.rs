@@ -14,6 +14,42 @@ use census_domain::public_identity_history::{
     PreparedHistoryRecord, PublicAthleteId, ReplayLimits,
 };
 
+#[derive(Default)]
+pub(in crate::public_identity) struct SourceReplayCache {
+    current: Option<(
+        super::GraphAuthorityReferenceV1,
+        String,
+        graph::AcceptedSources,
+    )>,
+}
+
+impl SourceReplayCache {
+    fn source<R: GraphRead>(
+        &mut self,
+        reader: &R,
+        held: &HeldGraphWitness,
+        candidate: &census_domain::model::AthleteCandidateId,
+    ) -> StoreResult<(
+        census_domain::model::AcceptedAthleteIdentity,
+        census_domain::model::SourceIdentity,
+    )> {
+        let hit = self
+            .current
+            .as_ref()
+            .is_some_and(|(graph, at, _)| graph == &held.graph && at == &held.observed_at);
+        if !hit {
+            let view = VerifiedRawGraph::verify(reader, held.graph.capture(), held.graph.seal())?;
+            let sources = graph::accepted_sources(&view, &held.observed_at)?;
+            self.current = Some((held.graph.clone(), held.observed_at.clone(), sources));
+        }
+        self.current
+            .as_ref()
+            .and_then(|(_, _, sources)| sources.get(candidate))
+            .cloned()
+            .ok_or_else(|| PublicIdentityError::NotSourceBound.into())
+    }
+}
+
 impl HeldGraphWitness {
     pub(in crate::public_identity) fn verify(
         &self,
@@ -21,6 +57,7 @@ impl HeldGraphWitness {
         previous: &HistoryProjection,
         prepared: &PreparedHistoryRecord,
         records: &[HistoryRecord],
+        sources: &mut SourceReplayCache,
     ) -> StoreResult<()> {
         self.validate_shape()?;
         self.graph.capture().require_identity_graph_v3_format()?;
@@ -37,11 +74,19 @@ impl HeldGraphWitness {
             snapshot_sequence: self.graph.capture().snapshot_sequence(),
         })?;
         self.verify_receipt(reader)?;
-        let view = VerifiedRawGraph::verify(reader, self.graph.capture(), self.graph.seal())?;
         let rebuilt = match &self.payload {
-            Payload::Source { .. } => self.rebuild_source(reader, &view, previous, record)?,
-            Payload::Reviewed { .. } => self.rebuild_reviewed(reader, &view, previous, record)?,
+            Payload::Source { candidate, .. } => {
+                let (accepted, source) = sources.source(reader, self, candidate)?;
+                self.rebuild_source(reader, accepted, source, previous, record)?
+            }
+            Payload::Reviewed { .. } => {
+                let view =
+                    VerifiedRawGraph::verify(reader, self.graph.capture(), self.graph.seal())?;
+                self.rebuild_reviewed(reader, &view, previous, record)?
+            }
             Payload::Membership { .. } => {
+                let view =
+                    VerifiedRawGraph::verify(reader, self.graph.capture(), self.graph.seal())?;
                 self.rebuild_membership(reader, &view, previous, record)?
             }
             Payload::Manual { adjudication, .. } => {
@@ -60,10 +105,6 @@ impl HeldGraphWitness {
                 PublicIdentityError::Corrupt("graph authority prepared history binding").into(),
             );
         }
-        previous
-            .clone()
-            .extend_candidate(record)
-            .map_err(PublicIdentityError::from)?;
         self.verify_approval()?;
         Ok(())
     }

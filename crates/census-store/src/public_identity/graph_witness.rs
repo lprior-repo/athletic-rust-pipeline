@@ -1,6 +1,7 @@
 pub(in crate::public_identity) mod manual;
 mod outcome;
 mod verify;
+pub(in crate::public_identity) use verify::SourceReplayCache;
 
 use super::{codec, graph_reference::GraphAuthorityReferenceV1, PublicIdentityError};
 use crate::StoreResult;

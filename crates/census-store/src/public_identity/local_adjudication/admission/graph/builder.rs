@@ -16,16 +16,19 @@ impl GraphPlanBuilder {
         store: &Store,
         node: bridge::Node<'_>,
     ) -> StoreResult<ObjectRefV2> {
-        if matches!(&node, bridge::Node::Seal(_)) || self.descriptors.len() >= MAX_DESCRIPTORS {
+        if matches!(&node, bridge::Node::Seal(_)) {
             return Err(invalid());
         }
         self.add_node(store, node)
     }
 
     fn add_node(&mut self, store: &Store, node: bridge::Node<'_>) -> StoreResult<ObjectRefV2> {
-        if self.descriptors.len() >= MAX_DESCRIPTORS {
-            return Err(invalid());
-        }
+        let descriptors = self
+            .descriptors
+            .len()
+            .checked_add(1)
+            .ok_or(StoreError::CounterOverflow)?;
+        Self::require_plan_capacity("graph admission descriptors", descriptors, MAX_DESCRIPTORS)?;
         let scope = node.admission_table(&self.capture)?;
         let children = node.children()?;
         self.require_scope(scope, &children)?;
@@ -39,17 +42,7 @@ impl GraphPlanBuilder {
             measured.full_bytes(),
         )?;
         self.require_new_root(&object)?;
-        let rows = self
-            .physical_rows
-            .checked_add(measured.row_count())
-            .ok_or(StoreError::CounterOverflow)?;
-        let projected = self
-            .metadata_bytes
-            .checked_add(measured.metadata_bytes_bound())
-            .ok_or(StoreError::CounterOverflow)?;
-        if rows > MAX_PHYSICAL_ROWS || projected > MAX_METADATA_BYTES {
-            return Err(invalid());
-        }
+        let rows = self.require_measured_capacity(&measured)?;
         let mut references = Vec::new();
         references
             .try_reserve_exact(children.len())
@@ -66,9 +59,11 @@ impl GraphPlanBuilder {
             .metadata_bytes
             .checked_add(bytes)
             .ok_or(StoreError::CounterOverflow)?;
-        if metadata > MAX_METADATA_BYTES {
-            return Err(invalid());
-        }
+        Self::require_plan_capacity(
+            "graph admission actual metadata bytes",
+            metadata,
+            MAX_METADATA_BYTES,
+        )?;
         self.descriptors.try_reserve(1).map_err(|_| invalid())?;
         self.scopes.try_reserve(1).map_err(|_| invalid())?;
         self.descriptors.push(descriptor);
@@ -124,5 +119,45 @@ impl GraphPlanBuilder {
             seal: object,
             descriptors: self.descriptors,
         })
+    }
+
+    fn require_plan_capacity(
+        what: &'static str,
+        needed: usize,
+        available: usize,
+    ) -> StoreResult<()> {
+        if needed > available {
+            return Err(StoreError::BudgetExceeded {
+                what,
+                needed: u64::try_from(needed).map_err(|_| StoreError::CounterOverflow)?,
+                available: u64::try_from(available).map_err(|_| StoreError::CounterOverflow)?,
+            });
+        }
+        Ok(())
+    }
+
+    fn require_measured_capacity(
+        &self,
+        measured: &crate::journal::context::ContextPhysicalPlan,
+    ) -> StoreResult<usize> {
+        let rows = self
+            .physical_rows
+            .checked_add(measured.row_count())
+            .ok_or(StoreError::CounterOverflow)?;
+        let projected = self
+            .metadata_bytes
+            .checked_add(measured.metadata_bytes_bound())
+            .ok_or(StoreError::CounterOverflow)?;
+        Self::require_plan_capacity(
+            "graph admission cumulative physical rows",
+            rows,
+            MAX_PHYSICAL_ROWS,
+        )?;
+        Self::require_plan_capacity(
+            "graph admission metadata bound bytes",
+            projected,
+            MAX_METADATA_BYTES,
+        )?;
+        Ok(rows)
     }
 }

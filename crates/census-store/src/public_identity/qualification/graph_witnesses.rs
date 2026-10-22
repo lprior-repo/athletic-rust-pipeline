@@ -1,5 +1,5 @@
 use crate::public_identity::{
-    graph_witness::HeldGraphWitness,
+    graph_witness::{HeldGraphWitness, SourceReplayCache},
     retained::{GraphRead, Read, Rows},
     witness, PublicIdentityError,
 };
@@ -37,6 +37,7 @@ pub(in crate::public_identity) fn validate_graph_retained(
     let initial = genesis(identity).map_err(PublicIdentityError::from)?;
     let prefix = replay_candidate_history(identity, &initial, &[], ReplayLimits::SMALL)
         .map_err(PublicIdentityError::from)?;
+    let mut sources = SourceReplayCache::default();
     let (prefix, _) = history.records().iter().try_fold(
         (prefix, BTreeSet::new()),
         |(prefix, mut superseded), record| -> StoreResult<_> {
@@ -54,7 +55,7 @@ pub(in crate::public_identity) fn validate_graph_retained(
             }
             let held = load(reader, record.sequence)?;
             held.require_available(reader, identity, &superseded)?;
-            held.verify(reader, &prefix, &prepared, history.records())?;
+            held.verify(reader, &prefix, &prepared, history.records(), &mut sources)?;
             held.retain_superseded_material(reader, &mut superseded)?;
             let next = prefix
                 .extend_candidate(record)

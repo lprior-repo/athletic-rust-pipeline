@@ -4,7 +4,7 @@ use super::{
     VerdictKind, ATHLETE_IDENTITY_FAMILY, ATHLETE_IDENTITY_POLICY,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AcceptedAthleteIdentity(AppliedAthleteIdentity);
 
 impl AcceptedAthleteIdentity {
