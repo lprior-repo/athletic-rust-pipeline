@@ -3630,8 +3630,11 @@ of the new generation and exited 0 with `verify: OK (complete frozen generation)
 The copied and published manifests compare equal. The explicitly supplied
 `cold-reader-no-store-523` root remained absent before and after verification.
 This proves Store-free frozen readback, not a physically empty OS page cache.
-Exact original-request replay 529 is running with its original job, generation,
-binary and destination; its commitment, manifest and pointer baselines are retained.
+Exact original-request replay 529 exited 0 using its original native job,
+generation, binary and destination, returning the same generation. Its pre-run
+commitment and manifest hashes verify unchanged; before/after current pointers
+compare equal. Canonical and Downloads workbooks retain the same hash above.
+This is native derivation replay, not resumption of the failed Restate invocation.
 
 Actual inventory 526 with the rebuilt CLI still FAILED before emitting JSON:
 268,437,966 encoded team bytes would exceed the 268,435,456-byte limit. No source
@@ -3688,3 +3691,14 @@ existing deployment and has reached `results-v2-plan`. Original object, revision
 history, limits and source parallelism were preserved. No run reset, new scope,
 deployment change or paused-invocation mutation occurred. Outcome and new useful
 result population remain pending; the delivered workbook is still partial.
+
+Current-source publication regressions 546 passed 4/4 in 3.755s execution,
+28.273s overall. The reopened-retained-input test checked literal bests and
+refused six independent cell changes, extra/missing worksheets and a missing
+reported-results sidecar. The overflow test retained complete frozen/CSV evidence.
+Clean-worktree panic lane 545 on `d804b726...` completed compilation with the
+fatal worksheet assertion diagnostic gone, but still failed 21 other all-target
+lint diagnostics. Main-checkout attempt 544 refused generated output symlinks;
+it was not counted as passing. Full release remains unqualified. The verified
+single-worksheet publication task is closed; population work and the overall
+five-state workbook goal remain in progress.
