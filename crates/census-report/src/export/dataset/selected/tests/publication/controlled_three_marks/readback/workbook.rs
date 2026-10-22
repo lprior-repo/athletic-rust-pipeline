@@ -1,6 +1,7 @@
 use super::super::source::TestResult;
 use super::{artifacts, Expected};
 use crate::export::ExportDataset;
+use calamine::Reader;
 use census_domain::model::CanonicalPerformance;
 use census_domain::UsJurisdiction;
 use std::path::Path;
@@ -31,6 +32,7 @@ pub(super) fn matches(
     check!(std::fs::metadata(workbook)?.len() <= 16 * 1024 * 1024);
     let mut book: calamine::Xlsx<std::io::BufReader<std::fs::File>> =
         calamine::open_workbook(workbook)?;
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
     pr_sheet(&mut book, wanted, expected)?;
     athletes_sheet(&mut book, expected)?;
     recruiting(workbook, expected)
@@ -41,24 +43,30 @@ fn pr_sheet(
     wanted: &CanonicalPerformance,
     expected: &Expected<'_>,
 ) -> TestResult<()> {
-    let rows = artifacts::sheet(book, "PRs")?;
+    let rows = artifacts::sheet(book, "Athletes")?;
     check!(eq; rows.len(), 1);
+    let row = rows.first().ok_or("athlete bests row")?;
     artifacts::fields(
-        rows.first().ok_or("PR row")?,
+        row,
         &[
             ("Athlete ID", expected.public.as_str()),
-            ("Calculated PR", expected.seconds),
-            ("PR date", expected.day),
-            ("Performance ID", wanted.id.as_str()),
-            ("Source Key", wanted.source_key.as_str()),
-            ("Canonical Candidate ID", wanted.athlete.as_str()),
             ("Current school", CURRENT_SCHOOL),
             ("Current state", "CO"),
             ("Current school as-of", CUTOFF),
-            ("School at performance", HISTORICAL_SCHOOL),
-            ("State at performance", "MI"),
         ],
-    )
+    )?;
+    let bests = row.get("Observed bests").ok_or("observed bests")?;
+    for (label, value) in [
+        ("Calculated PR", expected.seconds),
+        ("PR date", expected.day),
+        ("Performance ID", wanted.id.as_str()),
+        ("Source Key", wanted.source_key.as_str()),
+        ("School", HISTORICAL_SCHOOL),
+        ("State", "MI"),
+    ] {
+        check!(bests.contains(&format!("{label}: {value}")), "{label}");
+    }
+    Ok(())
 }
 
 fn athletes_sheet(
@@ -73,7 +81,7 @@ fn athletes_sheet(
             ("Athlete ID", expected.public.as_str()),
             ("School ID", expected.current_school.as_str()),
             ("School", CURRENT_SCHOOL),
-            ("State", "CO"),
+            ("School State", "CO"),
         ],
     )
 }

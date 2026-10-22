@@ -157,7 +157,7 @@ pub(in crate::workbook) fn visit_athletes(
 ) -> ReportResult<u64> {
     let additional = match artifact_revision {
         1..=6 => None,
-        7 | 8 | 10 => Some(["canonical_candidate_id", "identity_resolution"]),
+        7 | 8 | 10..=12 => Some(["canonical_candidate_id", "identity_resolution"]),
         _ => {
             return Err(super::defect(format!(
                 "unsupported comparison artifact revision {artifact_revision}"

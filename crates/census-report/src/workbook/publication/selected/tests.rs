@@ -40,8 +40,8 @@ fn current_selected_recipe_binds_profile_cutoff_and_participation_rule_without_c
     let selected = recipes::recipe_for_selected(&dataset.lineage, &fixture.options, &profile)?;
     check!(eq; dataset.lineage.policy_revision, 22);
     check!(eq; census_domain::model::EventSemantics::CURRENT.revision(), 22);
-    check!(eq; revision(dataset)?, 8);
-    check!(eq; recipes::recipe_for_dataset(dataset, &fixture.options)?, recipes::recipe_for_selected_revision(&dataset.lineage, &fixture.options, &profile, 8)?);
+    check!(eq; revision(dataset)?, 11);
+    check!(eq; recipes::recipe_for_dataset(dataset, &fixture.options)?, recipes::recipe_for_selected_revision(&dataset.lineage, &fixture.options, &profile, 11)?);
     check!(eq; super::super::ARTIFACT_REVISION, 6);
     check!(recipes::recipe_for_artifact(&dataset.lineage, &fixture.options, 7).is_err());
     check!(ne; selected, recipes::recipe(&dataset.lineage, &fixture.options)?);
@@ -85,7 +85,7 @@ fn selected_revision_requires_runtime_verified_binding_and_never_downgrades_to_s
     let digest = format!("{:x}", Sha256::digest(&bytes));
     let reopened = ExportDataset::reopen_frozen_with_digest(&frozen, &digest)?;
     check!(reopened.selected_profile_id().is_some());
-    check!(eq; revision(&reopened)?, 8);
+    check!(eq; revision(&reopened)?, 11);
     check!(binding(6, &fixture.dataset).is_err());
     fixture.dataset.bind_historical_policy_for_test(21)?;
     check!(eq; revision(&fixture.dataset)?, 6);

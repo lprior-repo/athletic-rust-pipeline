@@ -1,5 +1,5 @@
 use super::{Expected, TestResult};
-use calamine::{open_workbook, Xlsx};
+use calamine::{open_workbook, Reader, Xlsx};
 use std::collections::BTreeSet;
 use std::path::Path;
 
@@ -218,6 +218,7 @@ fn exclusions(directory: &Path, expected: &Expected) -> TestResult {
 fn workbook_rows(path: &Path, expected: &Expected) -> TestResult {
     check!(std::fs::metadata(path)?.len() <= 16 * 1024 * 1024);
     let mut book: Xlsx<_> = open_workbook(path)?;
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
     if expected.included {
         super::super::meet_geography::verify(
             &mut book,
@@ -232,9 +233,9 @@ fn workbook_rows(path: &Path, expected: &Expected) -> TestResult {
             athletes.first().ok_or("workbook athlete")?,
             &[
                 ("Athlete ID", &expected.public_id),
-                ("Canonical Candidate ID", &expected.canonical),
                 ("School", "Synthetic Transfer High"),
-                ("State", "WI"),
+                ("School State", "WI"),
+                ("Observed bests", ""),
                 ("School City", "Madison"),
                 (
                     "School Address",
@@ -243,23 +244,26 @@ fn workbook_rows(path: &Path, expected: &Expected) -> TestResult {
             ],
         )?;
     }
-    check!(sheet(&mut book, "PRs")?.is_empty());
-    let rows = sheet(&mut book, "Performances_001")?;
-    check!(eq; rows.len(), if expected.included { 2 } else { 0 });
     if expected.included {
+        let frozen: serde_json::Value = serde_json::from_slice(&read(
+            &path.parent().ok_or("generation")?.join("frozen-input.json"),
+        )?)?;
+        let retained: Vec<census_domain::model::CanonicalPerformance> = serde_json::from_value(
+            frozen
+                .pointer("/data/performances")
+                .ok_or("retained performances")?
+                .clone(),
+        )?;
+        check!(eq; retained.len(), 2);
         for performance in &expected.performances {
-            let row = unique(&rows, "Canonical Result ID", performance.id.as_str())?;
-            fields(
-                row,
-                &[
-                    ("Retained Candidate ID", &expected.canonical),
-                    ("School", "Synthetic selected school"),
-                    ("Date", &performance.date),
-                    ("Source ResultID", &performance.source_key),
-                ],
-            )?;
-            if performance.source_key == "milesplit_result:201782264" {
-                fields(row, &[("Mark", "14-9"), ("Date", "2026-04-03")])?;
+            let row = retained
+                .iter()
+                .find(|row| row.id == performance.id)
+                .ok_or("retained historical result")?;
+            check!(eq; row, performance);
+            if row.source_key == "milesplit_result:201782264" {
+                check!(eq; crate::bests::mark_text(&row.mark), "14-9");
+                check!(eq; row.date, "2026-04-03");
             }
         }
     }

@@ -216,6 +216,7 @@ fn resolution_outputs(workbook: &Path, expected: &Resolutions, selected: &Expect
     }
     check!(eq; seen, expected.keys().cloned().collect());
     let mut book: Xlsx<_> = open_workbook(workbook)?;
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
     let range = book.worksheet_range("Athletes")?;
     check!(eq; range.height(), 2);
     let mut rows = range.rows();
@@ -228,11 +229,16 @@ fn resolution_outputs(workbook: &Path, expected: &Resolutions, selected: &Expect
             .ok_or("Athletes identity column")?;
         Ok(row.get(index).ok_or("Athletes identity cell")?.to_string())
     };
-    check!(eq; cell("Canonical Candidate ID")?, selected.athlete.as_str());
     let resolution = expected
         .get(selected.athlete.as_str())
         .ok_or("selected oracle resolution")?;
-    let actual: Value = serde_json::from_str(&cell("Identity Resolution")?)?;
-    check!(eq; actual, serde_json::to_value(ResolutionAudit(resolution))?);
+    let public = match resolution {
+        PublicResolution::Canonical(owner) => &owner.public_id,
+        PublicResolution::Redirect { successor, .. }
+        | PublicResolution::RevokedRedirect { successor, .. } => &successor.public_id,
+        _ => return Err("selected worksheet lacks unique oracle owner".into()),
+    };
+    check!(eq; cell("Athlete ID")?, public.as_str());
+    check!(!headers.iter().any(|cell| cell == "Identity Resolution"));
     Ok(())
 }

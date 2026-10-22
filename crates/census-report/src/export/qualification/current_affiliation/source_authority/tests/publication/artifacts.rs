@@ -112,10 +112,12 @@ fn positive_rows(
             .ok_or("required nonempty workbook athlete")?,
         &[
             ("Athlete ID", public.as_str()),
-            ("Canonical Candidate ID", expected.athlete.as_str()),
             ("School ID", expected.current_school.as_str()),
             ("School", &expected.school_name),
-            ("State", "MI"),
+            ("School State", "MI"),
+            ("Current school", &expected.school_name),
+            ("Current state", "MI"),
+            ("Record Basis", "verified"),
         ],
     )
 }
@@ -151,6 +153,7 @@ fn csv_rows(path: &Path) -> TestResult<Vec<Row>> {
 fn sheet_rows(path: &Path) -> TestResult<Vec<Row>> {
     check!(std::fs::metadata(path)?.len() <= 16 * 1024 * 1024);
     let mut workbook: Xlsx<_> = open_workbook(path)?;
+    check!(eq; workbook.sheet_names(), vec!["Athletes".to_owned()]);
     let range = workbook.worksheet_range("Athletes")?;
     check!(range.height() <= 128 && range.width() <= 128);
     let mut rows = range.rows();

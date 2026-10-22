@@ -70,7 +70,7 @@ impl Profile {
     pub(in crate::workbook) const fn inline() -> Self {
         Self {
             container: 256 * 1024 * 1024,
-            member: 64 * 1024 * 1024,
+            member: 256 * 1024 * 1024,
             inflated: 512 * 1024 * 1024,
             token: 1024 * 1024,
             cells: 32 * 1024 * 1024,

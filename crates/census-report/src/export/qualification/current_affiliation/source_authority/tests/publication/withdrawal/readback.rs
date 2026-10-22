@@ -77,10 +77,9 @@ pub(super) fn independent_positive(
         sheet_row,
         &[
             ("Athlete ID", public),
-            ("Canonical Candidate ID", source.athlete.id.as_str()),
             ("School ID", source.school.id.as_str()),
             ("School", source.school.name.as_str()),
-            ("State", "MI"),
+            ("School State", "MI"),
         ],
     )?;
     let manifest: Value = serde_json::from_slice(&std::fs::read(directory.join("manifest.json"))?)?;
@@ -181,6 +180,7 @@ fn csv_rows(path: &Path) -> TestResult<Vec<Row>> {
 fn sheet_rows(path: &Path) -> TestResult<Vec<Row>> {
     check!(std::fs::metadata(path)?.len() <= 16 * 1024 * 1024);
     let mut workbook: Xlsx<_> = open_workbook(path)?;
+    check!(eq; workbook.sheet_names(), vec!["Athletes".to_owned()]);
     let range = workbook.worksheet_range("Athletes")?;
     check!(range.height() <= 128 && range.width() <= 128);
     let mut rows = range.rows();

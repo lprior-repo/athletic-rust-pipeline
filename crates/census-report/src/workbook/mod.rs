@@ -208,6 +208,13 @@ fn write_workbook(path: &Path, views: Views<'_>) -> ReportResult<()> {
 }
 
 fn write_objective_sheets(book: &mut Workbook, path: &Path, views: Views<'_>) -> ReportResult<()> {
+    if views.derivation.dataset().selected_profile_id().is_some()
+        && !views.derivation.dataset().is_historical_selected_replay()
+    {
+        views.recruiting.write_worksheet(book, path)?;
+        views.recruiting.trace_counts();
+        return Ok(());
+    }
     write_recruiting_sheets(book, path, views.recruiting)?;
     write_performance_sheets(book, path, views.derivation)?;
     relays::write_sheet(book, path, views.derivation, views.admission)?;

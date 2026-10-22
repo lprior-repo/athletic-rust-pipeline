@@ -2,7 +2,7 @@ use super::*;
 use crate::workbook::reported::ReportedBest;
 use std::collections::BTreeSet;
 
-pub(super) fn values(
+pub(in crate::workbook::verify) fn values(
     projection: &Projection<'_>,
     reported: &ReportedBest<'_>,
     expectations: &Expectations<'_>,

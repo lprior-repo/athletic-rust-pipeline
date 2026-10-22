@@ -1,11 +1,12 @@
 use super::{Expected, TestResult};
-use calamine::{open_workbook, Data, Reader, Xlsx};
+use calamine::{open_workbook, Reader, Xlsx};
 use std::path::Path;
 
 pub(super) fn pr(path: &Path, expected: &Expected) -> TestResult {
     let [eligible_source_url, _] = &expected.result_capture_urls;
     let mut book: Xlsx<_> = open_workbook(path)?;
-    let range = book.worksheet_range("PRs")?;
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
+    let range = book.worksheet_range("Athletes")?;
     check!(eq; range.height(), 2);
     let mut rows = range.rows();
     let headers = rows.next().ok_or("PR headers")?;
@@ -18,8 +19,18 @@ pub(super) fn pr(path: &Path, expected: &Expected) -> TestResult {
     };
     for (label, value) in [
         ("Athlete ID", expected.public_id.as_str()),
-        ("Canonical Candidate ID", expected.eligible.athlete.as_str()),
-        ("Athlete", "Synthetic Participant"),
+        ("Name", "Synthetic Participant"),
+        ("Current school", "Detroit Catholic Central"),
+        ("Current state", "MI"),
+        ("Current school as-of", "2026-10-01"),
+    ] {
+        check!(eq; row.get(column(label)?).map(ToString::to_string).as_deref(), Some(value));
+    }
+    let bests = row
+        .get(column("Observed bests")?)
+        .ok_or("observed bests")?
+        .to_string();
+    for (label, value) in [
         ("Calculated PR", "13-9"),
         ("Unit", "m"),
         ("Performance ID", expected.eligible.id.as_str()),
@@ -28,15 +39,12 @@ pub(super) fn pr(path: &Path, expected: &Expected) -> TestResult {
         ("Meet ID", expected.eligible.meet.as_str()),
         ("Meet", "Synthetic Michigan March Meet"),
         ("Result URL", eligible_source_url.as_str()),
-        ("School at performance", "Detroit Catholic Central"),
-        ("State at performance", "MI"),
-        ("Current school", "Detroit Catholic Central"),
-        ("Current state", "MI"),
-        ("Current school as-of", "2026-10-01"),
+        ("School", "Detroit Catholic Central"),
+        ("State", "MI"),
+        ("Mark Value", "4.191"),
     ] {
-        check!(eq; row.get(column(label)?).map(ToString::to_string).as_deref(), Some(value));
+        check!(bests.contains(&format!("{label}: {value}")), "{label}");
     }
-    check!(eq; row.get(column("Mark Value")?), Some(&Data::Float(4.191)));
     let athletes = book.worksheet_range("Athletes")?;
     check!(eq; athletes.height(), 2);
     let mut rows = athletes.rows();

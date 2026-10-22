@@ -3396,3 +3396,54 @@ The delivered workbook is still revision 9 with the previously documented
 population and coverage gaps. Bulk profile PR ingestion, the requested single
 worksheet, native publication transition, full release and native-17 acceptance
 remain unfinished.
+
+### Single recruiting worksheet qualification, 2026-10-22
+
+Current selected recipes 11 and 12 render one `Athletes` worksheet. Each row
+keeps the athlete identity, cohort, observed grade and observation school year,
+school identity/location/address, separate current-school fields, coach names,
+all retained best-mark comparison groups, unresolved results and source profile.
+Reported rows explicitly retain `reported_unverified_needs_review`; no accepted
+identity, current affiliation, grade or source-declared PR is fabricated.
+The source-declared PR column remains empty until genuine intake is connected.
+Full normalized, frozen, provenance and contact artifacts remain in the bundle.
+The independent reader reconstructs all 24 literal cells from the frozen input
+and rejects changed cells and extra or missing worksheets. Timing, wind,
+surface, measurement, specification, adjustment and context remain in complete
+comparison keys. UTF-16 cell limits refuse overflow without truncation.
+
+The initial report run 462 exposed 38 obsolete display-tab/revision expectations.
+After preserving their normalized and source assertions, run 468 passed 1,476
+of 1,477 tests. Its remaining helper omitted the required external frozen-input
+digest. The helper now supplies the actual manifested digest; no production
+commitment check was relaxed. Focused run 473 passed all five checks, including
+that exclusion case, observed-grade handling, distinct equal-mark comparison
+classes and exact UTF-16/separator boundaries. Source checks 475 passed format,
+check and source lint. Arity advisories remain visible without new waivers.
+
+PASS: forced full workspace run `worksheet-workspace-tests-476.log` ran 9,237
+tests: all passed, 19 slow, 13 skipped, 676.701 seconds of test execution,
+712.438 seconds overall. It includes the genuine retained Tessa source case,
+native retained-input derivation/replay, complete normalized readback and the
+added cell/inventory mutations. This is workspace evidence, not full release
+or native-17 acceptance.
+
+Build attempts 478 and 480 were explicitly interrupted before success to
+serialize heavy builds; neither counts as a pass. PASS: native release build
+482, 239.002 seconds overall. Its service binary SHA-256 is
+`5134aae7267fa529dec9449138d979a5689bd58bdf1b4a227fd6e2840dd3a8c8`;
+the endpoint binary is
+`b03b8f699c2fdb2fa2959b6fc10931c6b331d44611d8a2d3d4f588f0b37b8828`.
+PASS: trusted scan 484 checked 2,845 production files and 30,494 callables,
+zero functions over 60 logical lines and no unresolved sites, 322.705 seconds
+overall. The 25-line and five-parameter advisories remain reported.
+
+PASS: native restore 481 reconciled the immutable `workbook-publication-382`
+backup into isolated `workbook-derivation-480`: 100,604 files, 21,092,241,839
+bytes and all 19 table counts. The original native frozen-input commitment is
+byte-identical in the restored copy and live root. The live endpoint and its
+Store were not stopped, opened offline or modified. The original publication,
+Downloads workbook, Cargo.lock and separate user performance edit retain their
+previously recorded hashes. Actual derivation 485 is running against the
+isolated copy and a different sibling publication root. It is not yet delivery
+or genuine five-state population acceptance.

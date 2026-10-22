@@ -2,7 +2,7 @@ use super::*;
 use crate::workbook::reported::{Projection, ReportedReview};
 use census_domain::model::performance_comparison::{mark_unit, Measure, SurfaceClass};
 
-pub(super) fn row(
+pub(in crate::workbook::recruiting) fn row(
     review: &ReportedReview<'_>,
     projection: &Projection<'_>,
     identity: bool,

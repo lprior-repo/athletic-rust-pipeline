@@ -9,8 +9,8 @@ use crate::report::ReportResult;
 use crate::workbook::reported::Projection;
 use census_domain::model::performance_comparison::mark_unit;
 
-mod best;
-mod review;
+pub(in crate::workbook::verify) mod best;
+pub(in crate::workbook::verify) mod review;
 
 pub(super) fn verify(
     book: &mut Book,

@@ -6,7 +6,7 @@ use crate::workbook::publication::{normalized, selected::fixture::Fixture};
 fn selected_normalized_public_ids_roundtrip_and_reject_candidate_fallback_or_resolution_changes(
 ) -> TestResult {
     let fixture = Fixture::new()?;
-    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 8)?;
+    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 11)?;
     let outcome = inputs.outcome()?;
     let directory = tempfile::tempdir()?;
     let candidate = fixture
@@ -32,7 +32,7 @@ fn selected_normalized_public_ids_roundtrip_and_reject_candidate_fallback_or_res
             &fixture.options,
             &outcome,
         )?;
-        super::super::verify_outcome(directory.path(), &inputs, 8, &outcome)?;
+        super::super::verify_outcome(directory.path(), &inputs, 11, &outcome)?;
         let path = directory.path().join("athletes.csv");
         let mut reader = csv::Reader::from_path(&path)?;
         let headers = reader.headers()?.clone();
@@ -66,7 +66,7 @@ fn selected_normalized_public_ids_roundtrip_and_reject_candidate_fallback_or_res
             .iter()
             .try_for_each(|row| writer.write_record(row))?;
         writer.flush()?;
-        check!(super::super::verify_outcome(directory.path(), &inputs, 8, &outcome).is_err());
+        check!(super::super::verify_outcome(directory.path(), &inputs, 11, &outcome).is_err());
     }
     Ok(())
 }
@@ -74,7 +74,7 @@ fn selected_normalized_public_ids_roundtrip_and_reject_candidate_fallback_or_res
 #[test]
 fn selected_alias_audit_retains_candidate_keys_separately_from_public_identity() -> TestResult {
     let fixture = Fixture::new()?;
-    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 8)?;
+    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 11)?;
     let outcome = inputs.outcome()?;
     let directory = tempfile::tempdir()?;
     normalized::write_outcome(
@@ -116,7 +116,7 @@ fn selected_alias_audit_retains_candidate_keys_separately_from_public_identity()
 fn selected_populated_best_marks_rejects_candidate_fallback_and_changed_identity_audit(
 ) -> TestResult {
     let fixture = crate::workbook::public_identity::fixture::Fixture::new()?;
-    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 8)?;
+    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 11)?;
     let outcome = inputs.outcome()?;
     check!(eq; outcome.selections.len(), 1);
     let candidate = fixture
@@ -143,7 +143,7 @@ fn selected_populated_best_marks_rejects_candidate_fallback_and_changed_identity
             &fixture.options,
             &outcome,
         )?;
-        super::super::verify_outcome(directory.path(), &inputs, 8, &outcome)?;
+        super::super::verify_outcome(directory.path(), &inputs, 11, &outcome)?;
         let path = directory.path().join("best_marks.csv");
         let mut reader = csv::Reader::from_path(&path)?;
         let headers = reader.headers()?.clone();
@@ -169,7 +169,7 @@ fn selected_populated_best_marks_rejects_candidate_fallback_and_changed_identity
         writer.write_record(&headers)?;
         writer.write_record(&fields)?;
         writer.flush()?;
-        check!(super::super::verify_outcome(directory.path(), &inputs, 8, &outcome).is_err());
+        check!(super::super::verify_outcome(directory.path(), &inputs, 11, &outcome).is_err());
     }
     Ok(())
 }

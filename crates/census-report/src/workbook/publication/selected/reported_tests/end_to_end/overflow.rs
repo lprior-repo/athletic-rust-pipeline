@@ -2,11 +2,10 @@ use super::fixture::IncludedFixture;
 use super::mutation::{corrupt_cell, WorkbookMutation};
 use super::TestResult;
 use calamine::{open_workbook, Reader, Xlsx};
-use sha2::{Digest, Sha256};
 
 #[test]
-fn aggregate_evidence_overflow_keeps_full_frozen_and_csv_evidence_and_verifies_the_marker(
-) -> TestResult {
+fn aggregate_evidence_overflow_preserves_full_frozen_and_csv_evidence_without_marker() -> TestResult
+{
     let athlete_note = format!("athlete-{}", "a".repeat(14_000));
     let performance_note = format!("performance-{}", "b".repeat(14_000));
     let fixture = IncludedFixture::with_aggregate_evidence(&athlete_note, &performance_note)?;
@@ -71,21 +70,33 @@ fn aggregate_evidence_overflow_keeps_full_frozen_and_csv_evidence_and_verifies_t
     let full = serde_json::to_string(&evidence)?;
     let units = full.encode_utf16().count();
     check!(units > 32_767);
-    let full_digest = Sha256::digest(full.as_bytes());
-    let expected = format!(
-        "Excel display overflow: {units} UTF-16 units; SHA-256 {full_digest:x}; full evidence in frozen-input.json; performance evidence in reported_performances.csv"
-    );
     let mut reader: Xlsx<_> = open_workbook(&workbook)?;
+    check!(eq; reader.sheet_names(), vec!["Athletes"]);
     let athletes = reader.worksheet_range("Athletes")?;
     let headers = athletes.rows().next().ok_or("athlete header")?;
     let id = headers
         .iter()
         .position(|cell| cell.to_string() == "Athlete ID")
         .ok_or("athlete ID column")?;
-    let evidence = headers
+    let name = headers
         .iter()
-        .position(|cell| cell.to_string() == "Reported Source Evidence")
-        .ok_or("athlete evidence column")?;
+        .position(|cell| cell.to_string() == "Name")
+        .ok_or("athlete name column")?;
+    let basis = headers
+        .iter()
+        .position(|cell| cell.to_string() == "Record Basis")
+        .ok_or("record basis column")?;
+    let status = headers
+        .iter()
+        .position(|cell| cell.to_string() == "Verification Status")
+        .ok_or("verification status column")?;
+    let reported = headers
+        .iter()
+        .position(|cell| cell.to_string() == "Reported bests")
+        .ok_or("reported bests column")?;
+    check!(headers
+        .iter()
+        .all(|cell| cell.to_string() != "Reported Source Evidence"));
     let row = athletes
         .rows()
         .skip(1)
@@ -94,12 +105,11 @@ fn aggregate_evidence_overflow_keeps_full_frozen_and_csv_evidence_and_verifies_t
                 .is_some_and(|cell| cell.to_string() == athlete.id.as_str())
         })
         .ok_or("reported athlete row")?;
-    let actual = row
-        .get(evidence)
-        .ok_or("reported evidence cell")?
-        .to_string();
-    check!(eq; actual, expected);
-    check!(actual.encode_utf16().count() <= 32_767);
+    check!(eq; row.get(name).ok_or("name cell")?.to_string(), athlete.canonical_name);
+    check!(eq; row.get(basis).ok_or("basis cell")?.to_string(), "source_reported");
+    check!(eq; row.get(status).ok_or("status cell")?.to_string(), "reported_unverified_needs_review");
+    let reported_text = row.get(reported).ok_or("reported bests cell")?.to_string();
+    check!(reported_text.contains(&performance.id.to_string()));
     let mut csv = csv::Reader::from_path(generation.join("reported_performances.csv"))?;
     let headers = csv.headers()?.clone();
     let id = headers
@@ -121,16 +131,14 @@ fn aggregate_evidence_overflow_keeps_full_frozen_and_csv_evidence_and_verifies_t
     check!(found);
     crate::workbook::verify::verify_frozen(&workbook, &reopened, &fixture.options)?;
     crate::workbook::publication::verify_published(&workbook)?;
-    let changed_digest = expected.replace(&format!("{full_digest:x}"), &"0".repeat(64));
-    let changed_count = expected.replace(&format!("{units} UTF-16"), "32768 UTF-16");
-    for value in ["", "[]", changed_digest.as_str(), changed_count.as_str()] {
+    for value in ["", "[]", "different performance id", "changed text"] {
         let tampered = fixture.directory.path().join("tampered-overflow.xlsx");
         corrupt_cell(
             &workbook,
             &tampered,
             WorkbookMutation {
                 sheet: "Athletes",
-                header: "Reported Source Evidence",
+                header: "Reported bests",
                 row_key: athlete.id.as_str(),
                 value,
             },

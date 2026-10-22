@@ -90,18 +90,16 @@ fn exclusions(directory: &Path, expected: &Expected) -> TestResult {
 
 fn workbook_pr(path: &Path, expected: &Expected) -> TestResult {
     let mut book: Xlsx<_> = open_workbook(path)?;
-    let range = book.worksheet_range("PRs")?;
-    check!(eq; range.height(), 1);
-    let header = range.rows().next().ok_or("PR headers")?;
-    for label in [
-        "Athlete ID",
-        "Canonical Candidate ID",
-        "Calculated PR",
-        "Performance ID",
-    ] {
-        check!(header.iter().any(|cell| cell == label));
-    }
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
     let athletes = book.worksheet_range("Athletes")?;
+    let header = athletes.rows().next().ok_or("athlete header")?;
+    let column = header
+        .iter()
+        .position(|cell| cell == "Observed bests")
+        .ok_or("observed bests column")?;
+    check!(athletes.rows().skip(1).all(|row| row
+        .get(column)
+        .is_some_and(|cell| cell.to_string().is_empty())));
     check!(athletes.rows().any(|row| row
         .iter()
         .any(|cell| cell.to_string() == expected.public_id)));

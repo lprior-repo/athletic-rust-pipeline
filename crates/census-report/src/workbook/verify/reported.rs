@@ -5,8 +5,8 @@ use crate::report::{ReportError, ReportResult};
 use crate::workbook::reported::Projection;
 
 mod athletes;
-mod prs;
-mod rows;
+pub(super) mod prs;
+pub(super) mod rows;
 
 pub(super) fn verify(
     book: &mut Book,

@@ -16,7 +16,7 @@ pub(super) fn selected_bundle(
     let generation = path.parent().ok_or("selected generation")?;
     let manifest: Value =
         serde_json::from_slice(&std::fs::read(generation.join("manifest.json"))?)?;
-    check!(eq; manifest.get("schema_revision").and_then(Value::as_u64), Some(8));
+    check!(eq; manifest.get("schema_revision").and_then(Value::as_u64), Some(11));
     check!(manifest.get("selected_profile").is_some());
     let counts = manifest
         .get("normalized_csv_rows")

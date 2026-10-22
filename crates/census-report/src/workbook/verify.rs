@@ -21,6 +21,7 @@ mod read;
 mod relays;
 mod report;
 mod reported;
+mod worksheet;
 pub(in crate::workbook) mod xlsx;
 
 #[derive(Debug)]
@@ -40,6 +41,14 @@ pub fn verify_frozen(
     let mut book = read::Book::open(path)?;
     let mut findings = report::Findings::default();
     read::verify_inventory(&book, &expectations, &mut findings);
+    if dataset.selected_profile_id().is_some() && !dataset.is_historical_selected_replay() {
+        worksheet::verify(&mut book, &expectations, &mut findings)?;
+        return Ok(VerifiedWorkbook {
+            sheets: count(book.names().len())?,
+            rows: count(findings.finish(path)?)?,
+            mapped_athletes: count(expectations.derivation.athletes().len())?,
+        });
+    }
     performances::verify(&mut book, &expectations, &mut findings)?;
     relays::verify(&mut book, &expectations, &mut findings)?;
     if dataset.selected_profile_id().is_some()

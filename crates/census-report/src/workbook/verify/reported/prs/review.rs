@@ -2,7 +2,7 @@ use super::*;
 use crate::workbook::reported::ReportedReview;
 use census_domain::model::performance_comparison::{Measure, SurfaceClass};
 
-pub(super) fn values(
+pub(in crate::workbook::verify) fn values(
     projection: &Projection<'_>,
     review: &ReportedReview<'_>,
     expectations: &Expectations<'_>,

@@ -3,7 +3,7 @@ use super::super::read::{compare, verify_header, verify_width, Book, Budget, Sha
 use super::super::report::Findings;
 use crate::report::ReportResult;
 
-pub(super) fn verify(
+pub(in crate::workbook::verify) fn verify(
     book: &mut Book,
     sheet: &str,
     headers: &[&str],

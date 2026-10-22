@@ -8,7 +8,7 @@ const FILE: &str = "current_affiliations.csv";
 #[test]
 fn zero_limit_selected_inventory_keeps_audits_for_excluded_affiliations() -> TestResult {
     let fixture = fixture::fixture()?;
-    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 8)?;
+    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 11)?;
     let outcome = inputs.outcome()?;
     check!(outcome.selections.is_empty());
     check!(eq; inputs.derivation.athletes().len(), 1);
@@ -31,15 +31,15 @@ fn zero_limit_selected_inventory_keeps_audits_for_excluded_affiliations() -> Tes
     check!(eq; written.len(), 11);
     check!(eq; written.get(FILE), Some(&7));
     check!(eq; written.get("athletes.csv"), Some(&1));
-    let read = super::super::verify_outcome(directory.path(), &inputs, 8, &inputs.outcome()?)?;
-    inventory::compare(8, Some(&written), &read)?;
+    let read = super::super::verify_outcome(directory.path(), &inputs, 11, &inputs.outcome()?)?;
+    inventory::compare(11, Some(&written), &read)?;
     Ok(())
 }
 
 #[test]
 fn independent_selected_readback_requires_the_affiliation_audit_family() -> TestResult {
     let fixture = fixture::fixture()?;
-    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 8)?;
+    let inputs = Inputs::for_revision(&fixture.dataset, &fixture.options, 11)?;
     let directory = tempfile::tempdir()?;
     normalized::write_outcome(
         directory.path(),
@@ -49,7 +49,7 @@ fn independent_selected_readback_requires_the_affiliation_audit_family() -> Test
     )?;
     std::fs::remove_file(directory.path().join(FILE))?;
     check!(
-        super::super::verify_outcome(directory.path(), &inputs, 8, &inputs.outcome()?,).is_err()
+        super::super::verify_outcome(directory.path(), &inputs, 11, &inputs.outcome()?,).is_err()
     );
     Ok(())
 }

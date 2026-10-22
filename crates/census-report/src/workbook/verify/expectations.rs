@@ -131,6 +131,11 @@ impl<'a> Expectations<'a> {
     }
 
     pub(super) fn sheet_names(&self) -> Vec<String> {
+        if self.dataset.selected_profile_id().is_some()
+            && !self.dataset.is_historical_selected_replay()
+        {
+            return vec![labels::ATHLETES.to_owned()];
+        }
         let mut names = vec![
             labels::ATHLETES.to_string(),
             labels::PRS.to_string(),

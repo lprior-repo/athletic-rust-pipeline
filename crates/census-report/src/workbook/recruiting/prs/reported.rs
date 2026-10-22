@@ -29,7 +29,7 @@ pub(super) fn verified(cells: ReportResult<Vec<Cell>>, header: bool) -> ReportRe
     Ok(result)
 }
 
-pub(super) fn row(
+pub(in crate::workbook::recruiting) fn row(
     reported: &ReportedBest<'_>,
     projection: &Projection<'_>,
     identity: bool,

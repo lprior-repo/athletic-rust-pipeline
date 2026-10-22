@@ -164,7 +164,7 @@ fn artifacts(path: &Path, expected: &fixture::Fixture) -> TestResult {
     check!(std::fs::read_to_string(directory.join("best-results-co2027.jsonl"))?.is_empty());
     let manifest: serde_json::Value =
         serde_json::from_slice(&std::fs::read(directory.join("manifest.json"))?)?;
-    check!(eq; manifest["schema_revision"], 8);
+    check!(eq; manifest["schema_revision"], 11);
     let mut exclusions = csv::Reader::from_path(directory.join("participation_exclusions.csv"))?;
     let headers = exclusions.headers()?.clone();
     let rows = exclusions.records().collect::<Result<Vec<_>, _>>()?;
@@ -190,7 +190,7 @@ fn artifacts(path: &Path, expected: &fixture::Fixture) -> TestResult {
 fn workbook(path: &Path, expected: &fixture::Fixture) -> TestResult {
     use calamine::Reader;
     let mut book: calamine::Xlsx<_> = calamine::open_workbook(path)?;
-    check!(eq; book.worksheet_range("PRs")?.height(), 1);
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
     let range = book.worksheet_range("Athletes")?;
     check!(eq; range.height(), 2);
     let mut rows = range.rows();
@@ -199,7 +199,8 @@ fn workbook(path: &Path, expected: &fixture::Fixture) -> TestResult {
     for (name, value) in [
         ("Athlete ID", expected.public_id.as_str()),
         ("School", "Synthetic selected school"),
-        ("State", "AL"),
+        ("School State", "AL"),
+        ("Observed bests", ""),
     ] {
         let index = headers
             .iter()

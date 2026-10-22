@@ -50,18 +50,15 @@ fn read(
     let exclusions = csv(&directory.join("participation_exclusions.csv"))?;
     let mut book: Xlsx<_> = open_workbook(path)?;
     let athlete_sheet = sheet(&mut book, "Athletes")?;
-    let performances = sheet(&mut book, "Performances_001")?;
-    let school_sheet = sheet(&mut book, "Schools")?;
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
     let included = matches!(case, Case::Current);
     let count = usize::from(included);
     check!(eq; athletes.len(),count);
     check!(eq; recruiting.len(),count);
     check!(eq; athlete_sheet.len(),count);
-    check!(eq; performances.len(),count);
     check!(eq; affiliations.len(),2);
     check!(eq; aliases.len(),2);
     check!(csv(&directory.join("best_marks.csv"))?.is_empty());
-    check!(sheet(&mut book, "PRs")?.is_empty());
     let identities = dataset.verified_public_identities()?;
     let public = identities
         .public_id(old.athlete.id.as_str())
@@ -115,9 +112,9 @@ fn read(
             athlete_sheet.first().ok_or("nonempty workbook transfer")?,
             &[
                 ("Athlete ID", public.as_str()),
-                ("Canonical Candidate ID", old.athlete.id.as_str()),
                 ("School ID", current.school.id.as_str()),
-                ("State", "MI"),
+                ("School State", "MI"),
+                ("Observed bests", ""),
                 (
                     "School Address",
                     "123 Controlled Transfer Lane, Novi, MI 48375",
@@ -142,30 +139,15 @@ fn read(
                 ("postal_capture_sha256", address),
             ],
         )?;
-        fields(
-            unique(&school_sheet, "School ID", current.school.id.as_str())?,
-            &[
-                ("Postal School ID", current.school.id.as_str()),
-                (
-                    "Postal Source URL",
-                    "https://controlled-association.test/schools/current-transfer",
-                ),
-                ("Postal Capture SHA256", address),
-            ],
-        )?;
-        fields(
-            unique(
-                &performances,
-                "Canonical Result ID",
-                performance.id.as_str(),
-            )?,
-            &[
-                ("Retained Candidate ID", old.athlete.id.as_str()),
-                ("School", &old.school.name),
-                ("Date", "2026-05-01"),
-                ("Source ResultID", "old-result"),
-            ],
-        )?;
+        check!(eq; performance.athlete, old.athlete.id);
+        check!(eq; performance.date, "2026-05-01");
+        check!(eq; performance.source_key, "old-result");
+        check!(eq; dataset.teams.get(&performance.team).ok_or("historical team")?.school, old.school.id);
+        let retained_school = dataset
+            .schools
+            .get(&current.school.id)
+            .ok_or("retained current postal school")?;
+        check!(eq; retained_school.postal_addresses, current.school.postal_addresses);
         check!(eq; exclusions.len(),1);
     }
     let frozen: Value =
@@ -173,7 +155,7 @@ fn read(
     check!(eq; frozen.pointer("/data/performances"),Some(&serde_json::to_value(&dataset.performances)?));
     check!(eq; frozen.pointer("/data/teams"),Some(&serde_json::to_value(&dataset.teams)?));
     Ok(
-        json!({"athletes":athletes,"recruiting":recruiting,"schools":schools,"affiliations":affiliations,"aliases":aliases,"exclusions":exclusions,"athlete_sheet":athlete_sheet,"performances":performances,"school_sheet":school_sheet}),
+        json!({"athletes":athletes,"recruiting":recruiting,"schools":schools,"affiliations":affiliations,"aliases":aliases,"exclusions":exclusions,"athlete_sheet":athlete_sheet}),
     )
 }
 

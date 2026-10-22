@@ -73,7 +73,10 @@ pub(super) fn rows_with_reported<'a>(
     }
 }
 
-fn display_key(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> (String, String, String) {
+pub(super) fn display_key(
+    dataset: &Dataset<'_>,
+    athlete: &CanonicalAthlete,
+) -> (String, String, String) {
     let school = athlete.school.as_str();
     (
         dataset.school_state(school),

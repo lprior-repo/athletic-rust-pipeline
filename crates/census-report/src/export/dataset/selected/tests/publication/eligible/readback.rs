@@ -10,7 +10,7 @@ pub(super) fn artifacts(
     unknown: &str,
 ) -> TestResult {
     let manifest = json(&directory.join("manifest.json"))?;
-    check!(eq; manifest.get("schema_revision").and_then(serde_json::Value::as_u64), Some(8));
+    check!(eq; manifest.get("schema_revision").and_then(serde_json::Value::as_u64), Some(11));
     let counts = manifest
         .get("normalized_csv_rows")
         .and_then(serde_json::Value::as_object)
@@ -84,49 +84,36 @@ fn assert_unknown(directory: &Path, unknown: &str) -> TestResult {
 
 fn assert_workbook(path: &Path, public_id: &str, unknown: &str) -> TestResult {
     let mut book: Xlsx<_> = open_workbook(path)?;
-    let metrics = book.worksheet_range("Run Metrics")?;
-    let metrics: Vec<Vec<String>> = metrics
-        .rows()
-        .map(|row| row.iter().map(ToString::to_string).collect())
-        .collect();
-    for (label, value) in [
-        ("Recruiting athletes", "1"),
-        ("Best-mark rows reduced", "0"),
-        ("Retained athlete candidate records", "2"),
-        ("Accepted candidate records", "1"),
-        ("Withheld or unknown candidate records", "1"),
-        ("Accepted public people", "1"),
-    ] {
-        let observed = metrics
-            .iter()
-            .find(|row| row.first().is_some_and(|cell| cell == label))
-            .and_then(|row| row.get(1))
-            .ok_or("identity metric")?;
-        check!(eq; observed, value);
-    }
-    let people = metrics
-        .iter()
-        .rev()
-        .find(|row| row.first().is_some_and(|cell| cell == "Athletes"))
-        .ok_or("people reconciliation")?;
-    check!(eq; people.get(1).map(String::as_str), Some("1"));
-    check!(eq; people.get(2).map(String::as_str), Some("1"));
-    check!(eq; people.get(3).map(String::as_str), Some("reconciled"));
-    let review = book.worksheet_range("Review")?;
-    check!(review.rows().any(|row| row
-        .first()
-        .is_some_and(|cell| cell == "Public identity candidate withheld")
-        && row.get(2).is_some_and(|cell| cell == unknown)));
-    assert_no_pr(&mut book, public_id)?;
-    Ok(())
-}
-
-fn assert_no_pr(book: &mut Xlsx<std::io::BufReader<std::fs::File>>, public_id: &str) -> TestResult {
-    let prs = book.worksheet_range("PRs")?;
-    check!(eq; prs.height(), 1);
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
     let athletes = book.worksheet_range("Athletes")?;
-    check!(athletes
+    check!(eq; athletes.height(), 2);
+    let mut rows = athletes.rows();
+    let headers = rows.next().ok_or("athlete headers")?;
+    let row = rows.next().ok_or("selected athlete")?;
+    for (label, expected) in [("Athlete ID", public_id), ("Observed bests", "")] {
+        let column = headers
+            .iter()
+            .position(|cell| cell == label)
+            .ok_or("athlete column")?;
+        check!(eq; row.get(column).ok_or("athlete cell")?.to_string(), expected);
+    }
+    check!(!athletes
         .rows()
-        .any(|row| row.iter().any(|cell| cell == public_id)));
+        .skip(1)
+        .any(|row| row.iter().any(|cell| cell == unknown)));
+    let aliases = csv_rows(
+        &path
+            .parent()
+            .ok_or("generation")?
+            .join("identity_aliases.csv"),
+    )?;
+    check!(eq; aliases.len(), 2);
+    let accepted = aliases
+        .iter()
+        .filter_map(|row| row.get("public_athlete_id"))
+        .filter(|id| !id.is_empty())
+        .collect::<Vec<_>>();
+    check!(eq; accepted.len(), 1);
+    check!(eq; accepted.into_iter().collect::<std::collections::BTreeSet<_>>().len(), 1);
     Ok(())
 }

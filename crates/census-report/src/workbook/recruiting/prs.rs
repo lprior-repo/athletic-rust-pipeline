@@ -1,5 +1,5 @@
-mod reported;
-mod review;
+pub(super) mod reported;
+pub(super) mod review;
 
 use super::super::cells::Cell;
 use crate::bests::{Conflict, SharedSelection};
@@ -93,7 +93,7 @@ pub(super) fn rows_with_reported<'a>(
     }
 }
 
-fn cells(
+pub(super) fn cells(
     pr: &SharedSelection,
     view: Option<&VerifiedPublicIdentityView>,
     schools: Option<&SelectedSchools<'_>>,

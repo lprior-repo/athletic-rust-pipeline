@@ -151,7 +151,7 @@ async fn retained_derivation_preserves_original_input_files_receipt_and_replays_
     let verified = publication::verify_published(&path)?;
     let old = manifest(&predecessor)?;
     let current = manifest(&path)?;
-    check!(eq; current["schema_revision"], 10);
+    check!(eq; current["schema_revision"], 12);
     check!(eq; current["lineage"], old["lineage"]);
     check!(eq; current["selected_profile"], old["selected_profile"]);
     let original_input = old

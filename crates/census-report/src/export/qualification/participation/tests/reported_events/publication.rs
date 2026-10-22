@@ -1,5 +1,5 @@
 use super::*;
-use calamine::{open_workbook, Data, Reader, Xlsx};
+use calamine::{open_workbook, Reader, Xlsx};
 use census_domain::model::{ProfileSelectionV1, SchoolYear};
 use std::collections::BTreeMap;
 
@@ -37,7 +37,7 @@ async fn genuine_reported_interpretations_match_workbook_csv_and_cold_readback()
         check!(eq; csv::Reader::from_path(generation.join("athletes.csv"))?.records().count(), 0);
         let manifest: Value =
             serde_json::from_slice(&std::fs::read(generation.join("manifest.json"))?)?;
-        check!(eq; manifest.get("schema_revision").and_then(Value::as_u64), Some(10));
+        check!(eq; manifest.get("schema_revision").and_then(Value::as_u64), Some(12));
     }
     Ok(())
 }
@@ -67,48 +67,59 @@ fn csv_interpretations(path: &std::path::Path) -> TestResult<BTreeMap<String, Va
 
 fn verify_cells(workbook: &std::path::Path, expected: &BTreeMap<String, Value>) -> TestResult {
     let mut book: Xlsx<_> = open_workbook(workbook)?;
-    let sheet = book.worksheet_range("PRs")?;
-    let headers = sheet.rows().next().ok_or("PR headers")?;
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
+    let sheet = book.worksheet_range("Athletes")?;
+    let headers = sheet.rows().next().ok_or("athlete headers")?;
     let column = |name: &str| {
         headers
             .iter()
-            .position(|header| header.to_string() == name)
+            .position(|header| header == name)
             .ok_or_else(|| format!("column {name}"))
     };
-    let id = column("Performance ID")?;
-    let status = column("Verification Status")?;
-    let interpretation = column("Reported Event Interpretation")?;
     let mut found = BTreeMap::new();
-    for row in sheet.rows().skip(1).filter(|row| {
-        row.get(status).is_some_and(|cell| {
-            cell.to_string() == "reported_event_context_needs_review_not_a_best"
-        })
-    }) {
-        let performance = row.get(id).ok_or("PR ID")?.to_string();
-        let value: Value = serde_json::from_str(
-            &row.get(interpretation)
-                .ok_or("PR interpretation")?
-                .to_string(),
-        )?;
-        check!(eq; expected.get(&performance), Some(&value));
-        for unknown in [
-            "Calculated PR",
-            "School at performance",
-            "State at performance",
-            "Current school",
-            "Current state",
-            "Current school as-of",
+    for row in sheet.rows().skip(1) {
+        for (label, expected) in [
+            ("Record Basis", "source_reported"),
+            ("Verification Status", "reported_unverified_needs_review"),
+            ("Current school", "Unknown"),
+            ("Current state", "Unknown"),
+            ("Current school as-of", ""),
+            ("Observed bests", ""),
         ] {
-            check!(row
-                .get(column(unknown)?)
-                .is_none_or(|cell| matches!(cell, Data::Empty)));
+            check!(eq; row.get(column(label)?).ok_or("athlete cell")?.to_string(), expected);
         }
-        check!(!row
-            .get(column("Published mark")?)
-            .ok_or("published mark")?
-            .to_string()
-            .is_empty());
-        found.insert(performance, value);
+        let unresolved = row
+            .get(column("Unresolved results")?)
+            .ok_or("unresolved results")?
+            .to_string();
+        for line in unresolved.lines() {
+            check!(line.starts_with("reported_event_context_needs_review_not_a_best; "));
+            let id = line
+                .split_once("; Performance ID: ")
+                .ok_or("performance ID")?
+                .1
+                .split(';')
+                .next()
+                .ok_or("performance identifier")?;
+            let interpretation = line
+                .split_once("; Reported Event Interpretation: ")
+                .ok_or("interpretation")?
+                .1;
+            let value: Value = serde_json::from_str(interpretation)?;
+            check!(eq; expected.get(id), Some(&value));
+            for absent in ["; Calculated PR: ", "; School: ", "; State: "] {
+                check!(!line.contains(absent));
+            }
+            let mark = line
+                .split_once("; Published mark: ")
+                .ok_or("published mark")?
+                .1
+                .split(';')
+                .next()
+                .ok_or("published mark text")?;
+            check!(!mark.is_empty());
+            check!(found.insert(id.to_owned(), value).is_none());
+        }
     }
     check!(eq; &found, expected);
     Ok(())

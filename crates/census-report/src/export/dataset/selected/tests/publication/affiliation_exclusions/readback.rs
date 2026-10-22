@@ -182,60 +182,43 @@ fn aliases(directory: &Path, expected: &Expected) -> TestResult {
 fn workbook_rows(path: &Path, expected: &Expected) -> TestResult {
     check!(std::fs::metadata(path)?.len() <= 16 * 1024 * 1024);
     let mut book: Xlsx<_> = open_workbook(path)?;
-    for name in ["Athletes", "PRs", "Performances_001"] {
-        check!(sheet(&mut book, name)?.is_empty());
-    }
-    coverage(&mut book)?;
-    metrics(&mut book)?;
-    let review = book.worksheet_range("Review")?;
-    check!(review.height() <= 128);
-    check!(review.width() <= 128);
-    check!(eq; review.rows().filter(|row| {
-        row.first().is_some_and(|value| value == "Public identity candidate withheld")
-            && row.get(2).is_some_and(|value| value.to_string() == expected.unknown)
-    }).count(), 1);
-    Ok(())
-}
-
-fn coverage(book: &mut Xlsx<std::io::BufReader<std::fs::File>>) -> TestResult {
-    let range = book.worksheet_range("Coverage")?;
-    check!(range.height() <= 256);
-    check!(range.width() <= 128);
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
+    check!(sheet(&mut book, "Athletes")?.is_empty());
+    let directory = path.parent().ok_or("publication generation")?;
+    let aliases = csv(&directory.join("identity_aliases.csv"))?;
+    check!(eq; aliases.len(), 5);
+    let accepted = aliases
+        .iter()
+        .filter_map(|row| row.get("public_athlete_id"))
+        .filter(|id| !id.is_empty())
+        .collect::<Vec<_>>();
+    check!(eq; accepted.len(), 4);
+    check!(eq; accepted.into_iter().collect::<BTreeSet<_>>().len(), 2);
+    let withheld = aliases
+        .iter()
+        .filter(|row| row.get("original_id") == Some(&expected.unknown))
+        .collect::<Vec<_>>();
+    check!(eq; withheld.len(), 1);
+    check!(eq; withheld.first().and_then(|row| row.get("publication_identity_status")).map(String::as_str), Some("unknown"));
+    let manifest = json(&directory.join("manifest.json"))?;
+    let digest = manifest
+        .pointer("/artifacts/frozen-input.json/sha256")
+        .and_then(Value::as_str)
+        .ok_or("frozen commitment")?;
+    let dataset = crate::export::ExportDataset::reopen_frozen_with_digest(
+        &directory.join("frozen-input.json"),
+        digest,
+    )?;
+    let report = crate::report::coverage_report(&dataset, Some(2027))?;
     let prefix = "retained current affiliation exclusions: ";
-    let mut exclusions = BTreeSet::new();
-    for row in range.rows() {
-        if row.first().is_some_and(|value| value == "Note") {
-            let note = row.get(1).ok_or("coverage note")?.to_string();
-            if note.starts_with(prefix) {
-                check!(exclusions.insert(note));
-            }
-        }
-    }
-    check!(eq; exclusions, BTreeSet::from([
+    let notes = report
+        .notes
+        .into_iter()
+        .filter(|note| note.starts_with(prefix))
+        .collect::<BTreeSet<_>>();
+    check!(eq; notes, BTreeSet::from([
         format!("{prefix}reason=current_affiliation_unresolved status=conflicting_affiliation_evidence athletes=1"),
         format!("{prefix}reason=current_affiliation_unresolved status=current_affiliation_unknown athletes=1"),
     ]));
-    Ok(())
-}
-
-fn metrics(book: &mut Xlsx<std::io::BufReader<std::fs::File>>) -> TestResult {
-    let range = book.worksheet_range("Run Metrics")?;
-    check!(range.height() <= 256);
-    check!(range.width() <= 128);
-    for (label, expected) in [
-        ("Recruiting athletes", "0"),
-        ("Best-mark rows reduced", "0"),
-        ("Retained athlete candidate records", "5"),
-        ("Accepted candidate records", "4"),
-        ("Withheld or unknown candidate records", "1"),
-        ("Accepted public people", "2"),
-    ] {
-        let mut rows = range
-            .rows()
-            .filter(|row| row.first().is_some_and(|value| value == label));
-        let row = rows.next().ok_or("identity metric")?;
-        check!(rows.next().is_none());
-        check!(eq; row.get(1).ok_or("identity count")?.to_string(), expected);
-    }
     Ok(())
 }

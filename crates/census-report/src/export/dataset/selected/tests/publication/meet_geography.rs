@@ -1,5 +1,5 @@
 use super::TestResult;
-use calamine::{Data, Reader, Xlsx};
+use calamine::{Reader, Xlsx};
 use census_domain::model::{CanonicalMeet, CanonicalPerformance, SourceNamespace};
 use census_domain::UsJurisdiction;
 use serde_json::Value;
@@ -10,23 +10,11 @@ pub(super) fn verify(
     original_meets: &Value,
     performances: &[CanonicalPerformance],
 ) -> TestResult {
-    let directory = book.worksheet_range("Meets")?;
-    check!(eq; directory.height(), 1);
-    check!(directory
-        .rows()
-        .next()
-        .ok_or("meet headers")?
-        .iter()
-        .any(|cell| cell == "Meet ID"));
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
     check!(eq; original_meets.as_array().ok_or("retained meet array")?.len(), 2);
     let meets: Vec<CanonicalMeet> = serde_json::from_value(original_meets.clone())?;
     check!(eq; meets.iter().map(|meet| &meet.id).collect::<BTreeSet<_>>().len(), 2);
     check!(eq; performances.len(), 2);
-    let range = book.worksheet_range("Performances_001")?;
-    check!(eq; range.height(), 3);
-    check!(range.width() <= 128);
-    let headers = range.rows().next().ok_or("performance headers")?;
-    check!(eq; headers.iter().map(ToString::to_string).collect::<BTreeSet<_>>().len(), headers.len());
     for (key, name, date, owner, url) in [
         (
             "milesplit_result:201782263",
@@ -53,18 +41,7 @@ pub(super) fn verify(
             .ok_or("retained venue")?;
         venue(meet, name, date, owner, url)?;
         source(performance, name, date, url)?;
-        let mut found = None;
-        for row in range.rows().skip(1) {
-            if cell(headers, row, "Canonical Result ID")? == performance.id.as_str() {
-                check!(found.replace(row).is_none());
-            }
-        }
-        performance_row(
-            headers,
-            found.ok_or("published historical result")?,
-            performance,
-            meet,
-        )?;
+        check!(eq; performance.date, meet.date);
     }
     Ok(())
 }
@@ -102,43 +79,4 @@ fn source(performance: &CanonicalPerformance, name: &str, date: &str, url: &str)
     check!(eq; note.get("team_id").and_then(Value::as_u64), Some(38332));
     check!(eq; note.get("capture_url").and_then(Value::as_str), evidence.source.url.as_deref());
     Ok(())
-}
-
-fn performance_row(
-    headers: &[Data],
-    row: &[Data],
-    performance: &CanonicalPerformance,
-    meet: &CanonicalMeet,
-) -> TestResult {
-    let source = performance
-        .evidence
-        .first()
-        .ok_or("original result source")?;
-    let source_url = source
-        .source
-        .url
-        .as_deref()
-        .ok_or("owned result capture URL")?;
-    for (field, expected) in [
-        ("Meet ID", meet.id.as_str()),
-        ("Meet", meet.name.as_str()),
-        ("Date", meet.date.as_str()),
-        ("State", "AL"),
-        ("School", "Synthetic selected school"),
-        ("Retained Candidate ID", performance.athlete.as_str()),
-        ("Source", source.source.id.as_str()),
-        ("Source URL", source_url),
-        ("Source ResultID", performance.source_key.as_str()),
-    ] {
-        check!(eq; cell(headers, row, field)?, expected, "{field}");
-    }
-    Ok(())
-}
-
-fn cell(headers: &[Data], row: &[Data], name: &str) -> TestResult<String> {
-    let column = headers
-        .iter()
-        .position(|cell| cell == name)
-        .ok_or_else(|| format!("missing {name} column"))?;
-    Ok(row.get(column).ok_or("historical venue cell")?.to_string())
 }

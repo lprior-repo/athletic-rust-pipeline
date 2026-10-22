@@ -1,6 +1,41 @@
 use super::TestResult;
 use calamine::{open_workbook, Data, Reader, Xlsx};
 
+pub(super) fn change_inventory(
+    source: &std::path::Path,
+    target: &std::path::Path,
+    extra: bool,
+) -> TestResult {
+    let mut reader: Xlsx<_> = open_workbook(source)?;
+    let mut writer = rust_xlsxwriter::Workbook::new();
+    if extra {
+        let range = reader.worksheet_range("Athletes")?;
+        let sheet = writer.add_worksheet();
+        sheet.set_name("Athletes")?;
+        for (row, cells) in range.rows().enumerate() {
+            for (column, cell) in cells.iter().enumerate() {
+                let row = u32::try_from(row)?;
+                let column = u16::try_from(column)?;
+                match cell {
+                    Data::Empty => {}
+                    Data::Float(value) => {
+                        sheet.write_number(row, column, *value)?;
+                    }
+                    Data::Int(value) => {
+                        sheet.write_number(row, column, f64::from(i32::try_from(*value)?))?;
+                    }
+                    _ => {
+                        sheet.write_string(row, column, cell.to_string())?;
+                    }
+                }
+            }
+        }
+    }
+    writer.add_worksheet().set_name("Unexpected")?;
+    writer.save(target)?;
+    Ok(())
+}
+
 pub(super) struct WorkbookMutation<'a> {
     pub(super) sheet: &'a str,
     pub(super) header: &'a str,

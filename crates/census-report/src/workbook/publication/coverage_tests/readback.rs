@@ -4,9 +4,24 @@ use calamine::{open_workbook, Reader, Xlsx};
 use census_domain::model::ProfileSelectionV1;
 
 pub(super) fn coverage_cells(workbook: &Path) -> TestResult<Vec<Vec<Data>>> {
-    let mut workbook: Xlsx<_> = open_workbook(workbook)?;
-    let range = workbook.worksheet_range("Coverage")?;
-    Ok(range.rows().map(|row| row.to_vec()).collect())
+    let book: Xlsx<_> = open_workbook(workbook)?;
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
+    let mut reader =
+        csv::Reader::from_path(workbook.parent().ok_or("generation")?.join("coverage.csv"))?;
+    let mut rows = vec![reader
+        .headers()?
+        .iter()
+        .map(|text| Data::String(text.to_owned()))
+        .collect()];
+    for record in reader.records() {
+        rows.push(
+            record?
+                .iter()
+                .map(|text| Data::String(text.to_owned()))
+                .collect(),
+        );
+    }
+    Ok(rows)
 }
 
 pub(super) fn archive_path(workbook: &Path) -> TestResult<PathBuf> {

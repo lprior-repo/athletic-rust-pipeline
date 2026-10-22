@@ -146,7 +146,7 @@ impl Manifest {
                 &self.artifacts,
                 &self.normalized_csv_rows,
             )),
-            7 | 8 | 10 => census_domain::model::serialized_digest(&(
+            7 | 8 | 10..=12 => census_domain::model::serialized_digest(&(
                 self.schema_revision,
                 &self.lineage,
                 &self.selection,

@@ -121,13 +121,15 @@ fn schools(directory: &Path, expected: &Expected) -> TestResult {
 
 fn workbook_rows(path: &Path, expected: &Expected) -> TestResult {
     let mut book: Xlsx<_> = open_workbook(path)?;
+    check!(eq; book.sheet_names(), vec!["Athletes".to_owned()]);
     sheet(
         &mut book,
         "Athletes",
         &[
             ("Athlete ID", &expected.public_id),
             ("School", "Synthetic Transfer High"),
-            ("State", "WI"),
+            ("School State", "WI"),
+            ("Observed bests", ""),
             ("School City", "Madison"),
             (
                 "School Address",
@@ -135,7 +137,6 @@ fn workbook_rows(path: &Path, expected: &Expected) -> TestResult {
             ),
         ],
     )?;
-    check!(eq; book.worksheet_range("PRs")?.height(), 1);
     Ok(())
 }
 

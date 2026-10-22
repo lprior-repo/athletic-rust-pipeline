@@ -21,6 +21,7 @@ mod facts;
 pub(in crate::workbook) mod mailbox_provenance;
 pub(in crate::workbook) mod profiles;
 mod prs;
+mod worksheet;
 
 #[cfg(test)]
 mod provenance_tests;
@@ -36,6 +37,10 @@ pub(super) struct Recruiting<'a> {
 }
 
 impl<'a> Recruiting<'a> {
+    pub(super) fn write_worksheet(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
+        worksheet::write(book, path, &self.dataset, self.reported.as_ref())
+    }
+
     pub(super) fn of<'d>(
         derivation: &'a Derivation<'d>,
         school_year: census_domain::model::SchoolYear,

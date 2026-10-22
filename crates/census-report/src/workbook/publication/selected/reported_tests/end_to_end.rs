@@ -1,5 +1,5 @@
 use super::TestResult;
-use calamine::{open_workbook, Data, Reader, Xlsx};
+use calamine::{open_workbook, Reader, Xlsx};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
@@ -73,7 +73,7 @@ fn include_publication_writes_only_reported_rows_from_reopened_retained_facts() 
     check!(eq; repeated, workbook);
     check!(eq; std::fs::read(&repeated)?, original_bytes);
 
-    check!(eq; manifest.get("schema_revision").and_then(serde_json::Value::as_u64), Some(10));
+    check!(eq; manifest.get("schema_revision").and_then(serde_json::Value::as_u64), Some(12));
     let counts = manifest
         .get("normalized_csv_rows")
         .and_then(serde_json::Value::as_object)
@@ -128,137 +128,136 @@ fn include_publication_writes_only_reported_rows_from_reopened_retained_facts() 
     check!(eq; retained.get(fixture.second_performance.id.as_str()).map(String::as_str), Some("55.00"));
 
     let mut reader: Xlsx<_> = open_workbook(&workbook)?;
+    check!(eq; reader.sheet_names(), vec!["Athletes".to_owned()]);
     let athletes = reader.worksheet_range("Athletes")?;
-    let prs = reader.worksheet_range("PRs")?;
-    let athlete_rows = athletes.rows().collect::<Vec<_>>();
-    let pr_rows = prs.rows().collect::<Vec<_>>();
-    check!(eq; athlete_rows.len(), 3);
-    check!(eq; pr_rows.len(), 3);
-    let athlete_header = athlete_rows.first().ok_or("Athletes header")?;
-    let pr_header = pr_rows.first().ok_or("PRs header")?;
-    let column = |header: &[Data], name: &str| -> TestResult<usize> {
-        header
+    let rows = athletes.rows().collect::<Vec<_>>();
+    check!(eq; rows.len(), 3);
+    let headers = rows.first().ok_or("single worksheet headers")?;
+    let column = |name: &str| -> TestResult<usize> {
+        headers
             .iter()
             .position(|cell| cell.to_string() == name)
-            .ok_or_else(|| format!("missing workbook column {name}").into())
+            .ok_or_else(|| format!("missing worksheet column {name}").into())
     };
-    let athlete_basis = column(athlete_header, "Record Basis")?;
-    let athlete_status = column(athlete_header, "Verification Status")?;
-    let athlete_id = column(athlete_header, "Athlete ID")?;
-    let athlete_evidence = column(athlete_header, "Reported Source Evidence")?;
-    let athlete_school_name = column(athlete_header, "Reported School Name")?;
-    let athlete_state = column(athlete_header, "Reported State")?;
-    let athlete_rows_by_id = athlete_rows
+    for name in [
+        "School Address",
+        "Observed Grade",
+        "Grade School Year",
+        "Head TF Coach",
+        "Head XC Coach",
+        "Source-declared PRs",
+    ] {
+        column(name)?;
+    }
+    check!(headers
+        .iter()
+        .all(|cell| !cell.to_string().to_ascii_lowercase().contains("email")));
+    let id_column = column("Athlete ID")?;
+    let by_id = rows
         .iter()
         .skip(1)
         .map(|row| {
-            let id = row
-                .get(athlete_id)
-                .map(ToString::to_string)
-                .ok_or("reported athlete ID")?;
-            Ok((id, *row))
+            Ok((
+                row.get(id_column)
+                    .ok_or("worksheet athlete ID")?
+                    .to_string(),
+                *row,
+            ))
         })
         .collect::<TestResult<BTreeMap<_, _>>>()?;
-    check!(eq; athlete_rows_by_id.len(), 2);
+    check!(eq; by_id.len(), 2);
     for athlete in [&fixture.first, &fixture.second] {
-        let row = athlete_rows_by_id
+        let row = by_id
             .get(athlete.id.as_str())
-            .ok_or("expected source-reported athlete row")?;
-        check!(eq; row.get(athlete_basis).map(ToString::to_string).as_deref(), Some("source_reported"));
-        check!(eq; row.get(athlete_status).map(ToString::to_string).as_deref(), Some("reported_unverified_needs_review"));
+            .ok_or("source reported athlete")?;
+        check!(eq; row.get(column("Record Basis")?).map(ToString::to_string).as_deref(), Some("source_reported"));
+        check!(eq; row.get(column("Verification Status")?).map(ToString::to_string).as_deref(), Some("reported_unverified_needs_review"));
+        check!(eq; row.get(column("School")?).map(ToString::to_string).as_deref(), Some("Synthetic Michigan High"));
+        check!(eq; row.get(column("School State")?).map(ToString::to_string).as_deref(), Some("MI"));
+        check!(eq; row.get(column("Current school")?).map(ToString::to_string).as_deref(), Some("Unknown"));
         check!(row
-            .get(athlete_evidence)
-            .is_some_and(|cell| !cell.to_string().is_empty()));
-        check!(eq; row.get(athlete_school_name).map(ToString::to_string).as_deref(), Some("Synthetic Michigan High"));
-        check!(eq; row.get(athlete_state).map(ToString::to_string).as_deref(), Some("MI"));
-    }
-
-    let pr_basis = column(pr_header, "Record Basis")?;
-    let pr_status = column(pr_header, "Verification Status")?;
-    let pr_athlete_id = column(pr_header, "Athlete ID")?;
-    let pr_mark = column(pr_header, "Calculated PR")?;
-    let pr_performance_id = column(pr_header, "Performance ID")?;
-    let pr_evidence = column(pr_header, "Performance Evidence")?;
-    let mut reported_marks = BTreeMap::new();
-    for row in pr_rows.iter().skip(1) {
-        check!(eq; row.get(pr_basis).map(ToString::to_string).as_deref(), Some("source_reported"));
-        check!(eq; row.get(pr_status).map(ToString::to_string).as_deref(), Some("reported_best_in_retained_set"));
+            .get(column("Observed bests")?)
+            .is_none_or(|cell| cell.to_string().is_empty()));
         check!(row
-            .get(pr_evidence)
-            .is_some_and(|cell| !cell.to_string().is_empty()));
-        let performance_id = row
-            .get(pr_performance_id)
-            .map(ToString::to_string)
-            .ok_or("reported performance ID")?;
-        let mark = row
-            .get(pr_mark)
-            .map(ToString::to_string)
-            .ok_or("reported PR mark")?;
-        let athlete = row
-            .get(pr_athlete_id)
-            .map(ToString::to_string)
-            .ok_or("reported PR athlete ID")?;
-        reported_marks.insert(mark, (performance_id, athlete, *row));
+            .get(column("Source-declared PRs")?)
+            .is_none_or(|cell| cell.to_string().is_empty()));
     }
-    check!(eq; reported_marks.len(), 2);
-    check!(reported_marks.contains_key("49.00"));
-    check!(reported_marks.contains_key("55.00"));
-    check!(eq;
-        reported_marks.get("49.00").map(|(_, athlete, _)| athlete.as_str()),
-        Some(fixture.first.id.as_str()),
-    );
-    check!(eq;
-        reported_marks.get("55.00").map(|(_, athlete, _)| athlete.as_str()),
-        Some(fixture.second.id.as_str()),
-    );
-    check!(eq;
-        reported_marks.get("49.00").map(|(id, _, _)| id.as_str()),
-        Some(fixture.faster_performance.id.as_str()),
-    );
-    check!(eq;
-        reported_marks.get("55.00").map(|(id, _, _)| id.as_str()),
-        Some(fixture.second_performance.id.as_str()),
-    );
-    if let Some(current_school) = pr_header
-        .iter()
-        .position(|cell| cell.to_string() == "Current school")
-    {
-        for (_, _, row) in reported_marks.values() {
-            check!(row
-                .get(current_school)
-                .is_none_or(|cell| cell.to_string().is_empty()));
-        }
+    let first = by_id
+        .get(fixture.first.id.as_str())
+        .ok_or("first athlete")?;
+    let best = first
+        .get(column("Reported bests")?)
+        .ok_or("all first athlete bests")?
+        .to_string();
+    for literal in [
+        "Calculated PR: 49.00",
+        "PR date: 2026-05-11",
+        "Meet: Second 400m Meet",
+        "Timing Class: fat",
+        "Surface: outdoor",
+        "https://mi.milesplit.com/results/reported-49",
+        fixture.faster_performance.id.as_str(),
+    ] {
+        check!(best.contains(literal));
     }
-
+    check!(!best.contains("Calculated PR: 50.00"));
+    let second = by_id
+        .get(fixture.second.id.as_str())
+        .ok_or("second athlete")?;
+    let second_best = second
+        .get(column("Reported bests")?)
+        .ok_or("second athlete best")?
+        .to_string();
+    check!(second_best.contains("Calculated PR: 55.00"));
+    check!(second_best.contains(fixture.second_performance.id.as_str()));
     let mutations = [
         WorkbookMutation {
-            sheet: "PRs",
-            header: "Calculated PR",
-            row_key: fixture.faster_performance.id.as_str(),
-            value: "48.25",
+            sheet: "Athletes",
+            header: "Reported bests",
+            row_key: fixture.first.id.as_str(),
+            value: "Calculated PR: 48.25",
         },
         WorkbookMutation {
             sheet: "Athletes",
-            header: "Reported State",
+            header: "School State",
             row_key: fixture.first.id.as_str(),
             value: "",
         },
         WorkbookMutation {
             sheet: "Athletes",
-            header: "Reported School Name",
+            header: "School",
             row_key: fixture.second.id.as_str(),
             value: "Wrong School",
         },
         WorkbookMutation {
-            sheet: "PRs",
-            header: "Performance Evidence",
-            row_key: fixture.second_performance.id.as_str(),
-            value: "[]",
+            sheet: "Athletes",
+            header: "Current school",
+            row_key: fixture.first.id.as_str(),
+            value: "Unsupported current school",
+        },
+        WorkbookMutation {
+            sheet: "Athletes",
+            header: "Observed Grade",
+            row_key: fixture.first.id.as_str(),
+            value: "12",
+        },
+        WorkbookMutation {
+            sheet: "Athletes",
+            header: "Source-declared PRs",
+            row_key: fixture.first.id.as_str(),
+            value: "Invented profile PR",
         },
     ];
     for mutation in mutations {
         let tampered = fixture.directory.path().join("tampered.xlsx");
         corrupt_cell(&workbook, &tampered, mutation)?;
+        check!(
+            crate::workbook::verify::verify_frozen(&tampered, &reopened, &fixture.options).is_err()
+        );
+    }
+    for extra in [true, false] {
+        let tampered = fixture.directory.path().join("changed-inventory.xlsx");
+        mutation::change_inventory(&workbook, &tampered, extra)?;
         check!(
             crate::workbook::verify::verify_frozen(&tampered, &reopened, &fixture.options).is_err()
         );

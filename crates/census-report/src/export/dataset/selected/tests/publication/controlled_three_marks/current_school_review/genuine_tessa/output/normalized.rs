@@ -40,7 +40,7 @@ pub(super) fn observe(
 fn manifest(directory: &Path) -> TestResult {
     let manifest: serde_json::Value =
         serde_json::from_slice(&artifacts::bytes(&directory.join("manifest.json"))?)?;
-    check!(eq; manifest.get("schema_revision").and_then(serde_json::Value::as_u64),Some(8));
+    check!(eq; manifest.get("schema_revision").and_then(serde_json::Value::as_u64),Some(11));
     let counts = manifest
         .get("normalized_csv_rows")
         .and_then(serde_json::Value::as_object)

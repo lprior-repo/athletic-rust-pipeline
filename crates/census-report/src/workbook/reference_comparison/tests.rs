@@ -261,7 +261,7 @@ fn normalized_csv_uses_shared_schema_row_count_and_bounded_decoder() -> TestResu
     Index::read(&path, bytes, 1, 10)?;
     check!(Index::read(&path, bytes, 1, 6).is_err());
     check!(Index::read(&path, bytes, 1, 9).is_err());
-    check!(Index::read(&path, bytes, 1, 11).is_err());
+    check!(Index::read(&path, bytes, 1, 13).is_err());
     Ok(())
 }
 

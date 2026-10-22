@@ -142,7 +142,7 @@ pub(super) fn reject_option_overrides(
 
 pub(super) fn manifest_revision(directory: &Path) -> TestResult {
     let manifest: Value = serde_json::from_slice(&std::fs::read(directory.join("manifest.json"))?)?;
-    check!(eq; manifest.get("schema_revision"), Some(&json!(8)));
+    check!(eq; manifest.get("schema_revision"), Some(&json!(11)));
     check!(eq; manifest.pointer("/selection/school_year"), Some(&json!(2026)));
     Ok(())
 }
